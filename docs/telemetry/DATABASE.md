@@ -1,9 +1,10 @@
 # Telemetry SQL schema and role contract (#261)
 
-Migration `0014_telemetry_storage` adds exactly six InnoDB tables. Its ID was
-allocated after checking canonical master `9e0bfac624aa19eccbfc8045edbfa8cfddfb575f`
-on 2026-09-13. Existing immutable migrations and the 170-table baseline retain their
-original content and checksums. The current runtime inventory becomes 184 tables.
+Migration `0014_telemetry_storage` adds exactly six InnoDB tables. The additive
+migration `0017_telemetry_rollup_support` adds the two replay-safe rollup support
+stores described below. Existing immutable migrations and the 170-table baseline
+retain their original content and checksums; the current runtime inventory is 187
+tables.
 
 | Table | Grain and ownership |
 | --- | --- |
@@ -13,6 +14,8 @@ original content and checksums. The current runtime inventory becomes 184 tables
 | `telemetry_player_day` | Rollup definition/generation/environment/season/UTC-day/subject/session contribution. The six duration counters, attributable coverage and watermark remain separate from raw session totals. |
 | `telemetry_cohort_day` | Rollup definition/generation/environment/season/day/level band/primary class/race/faction/zone/config/category sums and counts. |
 | `telemetry_rollup_state` | Definition/generation/environment/season committed input watermark, publication state, occurrence coverage and rebuild range. |
+| `telemetry_rollup_session` | Definition/generation/environment/season/original session identity projection with greatest checkpoint revision, absolute checkpoint totals, sealed interval coverage, attribution and provisional quality. Primary key is the replay identity; `idx_rollup_session_subject` supports bounded subject keysets. |
+| `telemetry_cohort_member` | Definition/generation/environment/season/UTC-day/captured cohort dimensions/category/member contribution. `membership_kind` distinguishes one subject member (zero session identity) from one original session member; the full member identity is the replay-safe primary key. |
 
 The tagged fact stream stores named columns, with SQL NULL for fields absent from
 the selected kind. Allowed all-zero session and connection references remain zero
@@ -58,7 +61,7 @@ may serve as a telemetry fallback.
 | Role | Allowed table operations |
 | --- | --- |
 | Telemetry writer | SELECT and INSERT on `telemetry_interval` and `telemetry_config`; SELECT, INSERT and UPDATE on `telemetry_session`. No aggregate writes or gameplay-table privileges. |
-| External rollup | Bounded SELECT on the three raw/projection/config stores; SELECT, INSERT and UPDATE on the three aggregate/state stores. No gameplay writes or raw UPDATE/DELETE. |
+| External rollup | Bounded SELECT on `telemetry_interval`, `telemetry_config` and `telemetry_session`; SELECT, INSERT and UPDATE on `telemetry_player_day`, `telemetry_cohort_day`, `telemetry_rollup_session`, `telemetry_cohort_member` and `telemetry_rollup_state`. No gameplay writes or raw UPDATE/DELETE. |
 | Reports | SELECT only on reviewed aggregate/state tables or restricted views; no unrestricted raw history or gameplay access. |
 | Migration/lifecycle operator | Existing reviewed administrative workflow; distinct from runtime identities. No automatic purge is authorized. |
 
@@ -69,7 +72,7 @@ sequential writer with ambiguous commits resolved before later batches.
 
 ## Lifecycle and recovery
 
-All six stores are registered in `migrations/data_lifecycle_manifest.json` with
+All eight stores are registered in `migrations/data_lifecycle_manifest.json` with
 season and terminal action `retain`, pending retention/archive/controller/export
 decisions, and destructive rules disabled. The fact/config/state stores protect
 replay and rebuild evidence. Telemetry is observational and never an economic or
@@ -79,7 +82,7 @@ retention as a controller policy.
 Scoped subject/PID facts and per-subject contributions require a reviewed subject
 processing route before activation. No account linkage is claimed or derived from
 current player rows. Aggregate disclosure also remains pending. Backup and restore
-must preserve the six tables together, including facts, config identities,
+must preserve the eight tables together, including facts, config identities,
 projection revisions, rollup generations and cursor state. Rebuild is possible only
 while required fact detail is retained. Restored/test worlds require a fresh
 environment and producer incarnation before new observations. Copyover retains the
@@ -109,7 +112,8 @@ the connection requires reacquiring ownership before retry. This also prevents a
 replacement writer from advancing the ingest cursor while an old connection is
 still committing. Startup probes only the three ingest-owned tables, consistent
 with the documented writer privileges. The full runtime schema validator owns
-six-table compatibility. No main handle, pool acquisition or fallback path exists.
+compatibility for all eight stores. No main handle, pool acquisition or fallback
+path exists.
 
 Each bounded batch uses one transaction and each candidate gets a savepoint.
 Representation-invalid rows, missing configuration, scope changes and replay
@@ -146,10 +150,11 @@ initialization helper. Initialization and apply are single-worker-only APIs.
 The new migration verifier enforces explicit local/production scope and verified
 remote TLS; no remote connection falls back to plaintext or preferred-mode TLS.
 
-No explicit shared runner or Makefile registration changes are made. Generic
-Python test discovery runs offline checks; SQL-only checks skip or compile without
-a disposable-fixture opt-in. F owns server build integration and L owns later
-integration-test registration. From a Linux checkout with compiler/database
+The additive migration is registered in the immutable manifest and the
+lifecycle/runtime inventories; no new shared runner or Makefile target is required.
+Generic Python test discovery runs offline checks; SQL-only checks skip or compile
+without a disposable-fixture opt-in. F owns server build integration and L owns
+later integration-test registration. From a Linux checkout with compiler/database
 development dependencies:
 
 ```sh
@@ -193,16 +198,17 @@ ENVIRONMENT=test TELEMETRY_SCHEMA_TEST=1 DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=
   DB_NAME=duris_telemetry_schema_test python3 tests/async/test_telemetry_schema_mysql.py
 ```
 
-Both MariaDB 10.11 and MySQL 8.4 were verified from the complete bootstrap plus
-immutable migrations, including reapply, signed/unsigned extremes, identity/index
-constraints, deliberate schema damage, full runtime compatibility, and rejection
-of each missing telemetry store. On Windows CRLF checkouts, checksum-sensitive
+The historical MariaDB 10.11 and MySQL 8.4 verification covers the pre-0017
+six-store schema, including reapply, signed/unsigned extremes, identity/index
+constraints, deliberate schema damage, full runtime compatibility, and rejection of
+each missing telemetry store. On Windows CRLF checkouts, checksum-sensitive
 verification used an isolated LF copy; no historical migration bytes/checksums
-were changed. These results do not qualify rollup/report plans or the future load
-gate. Permission grant provisioning, scoped disclosure and lifecycle activation
-remain explicit operator/integration work.
-The runtime contract is pinned to migration head 0014. A previously built binary
-pinned to head 0013 will refuse the upgraded schema; additive tables do not make
-a binary-only rollback compatible. Recovery requires a reviewed compatible
-binary/schema pair. Disabling telemetry retains its tables and does not authorize
-a destructive down migration.
+were changed. The 0017 extension is statically verified here; parent-owned MariaDB
+migration, grant, and drift checks remain required. These results do not qualify
+rollup/report plans or the future load gate. Permission grant provisioning, scoped
+disclosure and lifecycle activation remain explicit operator/integration work.
+The runtime contract is pinned to migration head 0017. A previously built binary
+pinned to head 0016 will refuse the upgraded schema; additive tables do not make a
+binary-only rollback compatible. Recovery requires a reviewed compatible
+binary/schema pair. Disabling telemetry retains its tables and does not authorize a
+destructive down migration.

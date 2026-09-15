@@ -24,7 +24,7 @@ for _ in $(seq 1 90); do
 done
 [[ "$ready" == 1 ]]
 docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -e "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-migration_files=$(PYTHONPATH="$ROOT/scripts" python3 - <<'PYTHON'
+migration_files=$(PYTHONPATH="$ROOT/scripts" python3 - <<'PYTHON' | tr -d '\r'
 import migration_runner as m
 for step in m.load_manifest().migrations:
     print(step.apply_path.relative_to(m.ROOT / "migrations"))

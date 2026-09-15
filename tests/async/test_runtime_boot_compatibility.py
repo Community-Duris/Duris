@@ -49,15 +49,16 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes both death recovery tables, verified on both supported engines.
-        self.assertEqual(report["current_table_count"], 190)
+        self.assertEqual(report["current_table_count"], 193)
         for table in ("player_death_disposition", "player_death_custody"):
             self.assertIn("'" + table + "'", self.header)
         for table in ("collector_catalog_state", "collector_deaths",
                       "collector_listings", "collector_ledger",
                       "collector_reconciliation_quarantine"):
             self.assertIn("'" + table + "'", self.header)
+        self.assertIn("'corpse_catalog_state'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0017_collector_catalog")
+                         "0019_corpse_lifecycle_authority")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

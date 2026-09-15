@@ -70,14 +70,25 @@ static void record(Clock::time_point start, command_latency_kind kind, int state
 		&tracker, &event,
 		std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count());
 }
+static int pending_pulses = 0;
 static void drain(P_desc d, command_latency_kind kind)
 {
 	auto deadline = Clock::now() + std::chrono::seconds(15);
 	while (d->password_request)
 	{
+		// Only the completion asks for prompt framing (IAC GA); a pending pulse
+		// that did would frame an empty prompt on every pulse while hashing.
+		d->prompt_mode = FALSE;
 		auto start = Clock::now();
 		assert(password_async_pulse(d));
 		record(start, kind, STATE(d));
+		if (d->password_request)
+		{
+			assert(!d->prompt_mode);
+			++pending_pulses;
+		}
+		else
+			assert(d->prompt_mode);
 		assert(Clock::now() < deadline);
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -112,6 +123,7 @@ int main(int argc, char **)
 	assert(d->password_request && !d->account->acct_password && !entered[0]);
 	drain(d, COMMAND_LATENCY_NANNY);
 	assert(STATE(d) == CON_VERIFY_NEW_ACCT_PASSWD);
+	assert(pending_pulses > 0); // The pending-pulse check above actually ran.
 	char wrong[] = "different";
 	nanny_start = Clock::now();
 	verify_new_account_password(d, wrong);
@@ -169,7 +181,9 @@ int main(int argc, char **)
 			d->account->acct_confirmed = 1;
 			output.clear();
 			int previous_failures = auth_failures;
+			d->prompt_mode = FALSE;
 			assert(password_async_pulse(d));
+			assert(d->prompt_mode); // The cancellation text is framed like a completion.
 			assert(!d->password_request && !d->account && !account_list);
 			assert(STATE(d) == CON_GET_ACCT_NAME && saves == 1);
 			assert(auth_failures == previous_failures + websocket);

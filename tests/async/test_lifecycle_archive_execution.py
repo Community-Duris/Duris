@@ -39,7 +39,9 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         self.assertEqual(MODULE.DEFAULT_SCHEMA_FILES, MODULE.lifecycle_policy.DEFAULT_SCHEMA_FILES)
         for name in ("0003_season_reset_state.sql", "0004_server_reboots.sql",
                      "0014_telemetry_storage.sql", "0016_artifact_mana.sql",
-                     "0017_collector_catalog.sql"):
+                     "0017_telemetry_rollup_support.sql",
+                     "0018_collector_catalog.sql",
+                     "0019_corpse_lifecycle_authority.sql"):
             self.assertIn(
                 ROOT / "migrations" / "immutable" / name,
                 MODULE.DEFAULT_SCHEMA_FILES,
@@ -145,7 +147,7 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["stores"], 213)
+        self.assertEqual(report["stores"], 216)
         self.assertEqual(report["approved_destructive_rules"], 0)
         self.assertFalse(report["destructive_rules_enabled"])
         self.assertEqual(report["scheduler_state"], "blocked_by_policy")

@@ -1,11 +1,102 @@
 &+W======================================================================&n
 &+Y                           DURIS PLAYER NEWS&n
 &+W======================================================================&n
-&+WUpdated: September 6, 2026&n
+&+WUpdated: September 14, 2026&n
 
-Welcome back! This catch-up covers December 14, 2025 to September 6, 2026.
+Welcome back! This catch-up covers December 14, 2025 to September 14, 2026.
 The newest changes come first. Each month has short sections so you can
 find what matters to your character. Later updates replace older rules.
+
+&+R09/07/26 - 09/14/26 - Kingdoms, magic tune-ups, lag-free play & more!&n
+&+W----------------------------------------------------------------------&n
+
+&+CKingdoms, guards and gathering bags&n
+- Missed an upkeep cycle? Don't panic: land in arrears now only loses a
+  single outer square per missed cycle instead of entire rings collapsing.
+- Re-school your kingdom guards for 1,000 prestige using the command
+  'kingdom respec <#> <class>', or re-swear your Champion for 5,000 prestige
+  using 'kingdom champion respec <class> <class>'.
+- Kingdom Champions can now master specialized callings: Dreadlord, Reaver,
+  Avenger, Dragoon, Blighter, Ethermancer, Illusionist, Theurgist, Summoner,
+  Conjurer, or Psionicist!
+- Garrison guards now come properly equipped with weapons suited to their
+  class and boast healthy, reliable hit point pools everywhere.
+- Unguilded gatherers rejoice! Four new Gathering Bags are now stocked in
+  guildhall shops. Anyone can carry one and use 'harvest' at resource nodes
+  to collect physical materials into their bag.
+- Your society overview ('soc') now displays your kingdom's rings, garrison
+  size and level cap, champion status, and weekly upkeep at a glance.
+
+&+CSpells, healing and casting&n
+- Healing magic plays much nicer together! Regeneration and Accelerated
+  Healing now comfortably coexist without blocking each other.
+- Recasting Regeneration refreshes its duration smoothly instead of locking
+  you out.
+- The Crown of Aramus grants its slumber regeneration independently without
+  wiping away your active healing spells when you wake up.
+- Type ahead while casting! Commands entered while preparing a spell now
+  queue up safely instead of getting lost.
+- If you need to stop casting, typing 'abort' halts your cast immediately
+  without interfering with anyone else.
+- If a spell gets canceled or interrupted, your casting state and mana roll
+  back cleanly.
+- Casters can now study and cast from their owned spellbooks even in pitch
+  black darkness.
+- Scribed spells inside spellbooks now safely survive storing and retrieving
+  them from lockers.
+
+&+CScore, coins and looting&n
+- Track your stash at a glance: the 'score' command now displays the total
+  platinum, gold, silver, and copper tucked inside any open or transparent
+  containers you carry or wear!
+- Picking up coins is prettier and cleaner: coin messages use shiny color
+  formatting and hide empty zero amounts (e.g. "You get 5 platinum and 10
+  gold" instead of a wall of 0s).
+- Coins no longer count against your inventory item limit when looting, and
+  messages for grabbing piles of items are cleanly spaced.
+- Fixed picking up coins placed in rooms by zone builders.
+
+&+CQuests, world and exploration&n
+- Bartenders have fresh bounties! Tavern quests dynamically select safe,
+  level-appropriate targets and will find fresh targets if previous ones
+  were already completed.
+- Ocean travel feels right: movement costs for swimming and sailing across
+  water sectors are properly balanced.
+- Overland and zone automaps now track your position marker ('*') accurately
+  even near the far edges of a zone.
+- Four-armed warriors (like Thri-Kreen) keep their preferred combat weapons
+  and shields in the right hands when equipping gear.
+- Fixed duplicate shopkeepers and ensured store inventories restock cleanly.
+
+&+CCombat, death and companions&n
+- Loyal companions survive reboots! Owned pets are safely preserved across
+  game restarts and copyovers.
+- Respawning after death cleanly restores your standing position and vitals,
+  preventing ghost limbo states.
+- Corpse identity and generated loot are safely tracked across server
+  recoveries.
+- Fixed an issue where monsters on Chaos servers had 1 hit point, restored
+  proper spell scaling for leveling monsters, and gave monster area spells
+  a 20% punch for thrilling group battles!
+- Fixed 'grouped' accidentally toggling AFK or guild golem status.
+
+&+CAccounts, login and ease of life&n
+- Forgot your password? You can now type '?' at the password prompt to get
+  a secure reset code emailed to your registered address.
+- Jump right into the game! Character creation skips the old rules pop-up
+  (the rules are always available via 'rules' or 'help rules').
+- Browse help at your own pace! The waiting cooldown between reading help
+  and info topics (like 'faq', 'rules', 'wizlist', and 'credits') is gone,
+  and pages load instantly.
+- Deleting an account character now gives clear, confirmed feedback.
+- Rock out to Duris: check out the new Land of Bloodlust theme tracks and
+  lyrics in the game records!
+
+&+CSmoother play and lag fixes&n
+- Silky smooth gameplay: account logins and password hashing now run in the
+  background, eliminating the annoying combat freezes when players log in.
+- Walking through crowded cities and monster lairs is noticeably smoother
+  thanks to optimized room movement checks.
 
 &+R09/06/26 - Latest fixes&n
 &+W----------------------------------------------------------------------&n

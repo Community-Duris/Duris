@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 190;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 193;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -21,8 +21,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'auctions','boon_reward_outcome','boon_reward_outcome_entry','boons',"
 	"'boons_progress','boons_shop','categories','changes',"
 	"'classes','collector_catalog_state','collector_deaths','collector_ledger',"
-	"'collector_listings','collector_reconciliation_quarantine','combat_frag_baseline','combat_frag_ledger','combat_outcome',"
-	"'combat_outcome_participant','corpse_item_affects','corpse_item_extra_descr','corpse_items',"
+	"'collector_listings','collector_reconciliation_quarantine','combat_frag_baseline','combat_frag_ledger',"
+	"'combat_outcome','combat_outcome_participant','corpse_catalog_state','corpse_item_affects',"
+	"'corpse_item_extra_descr','corpse_items',"
 	"'corpses','critical_operation_inbox','critical_outbox','critical_outbox_delivery_dedupe',"
 	"'critical_test_state','ctf_data','currency_bank_baseline','currency_ledger',"
 	"'currency_wallet_baseline','epic_balance_baseline','epic_bonus','epic_gain',"
@@ -53,25 +54,26 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'ship_crew','ship_slots','ships','shop_trophy',"
 	"'shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_items',"
 	"'shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items',"
-	"'statistics','telemetry_cohort_day','telemetry_config','telemetry_interval',"
-	"'telemetry_player_day','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
+	"'statistics','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_interval',"
+	"'telemetry_player_day','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"ce5ad5ce389cc455b4cad9b74970ef3e72e2ab27cb3199fee2e1c806b4749cfd";
+	"d6065ed328c8fafa112da047a68774975ebd03300bd35ba36b893cd81471548d";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"82376c23f1931a4c6c5cb442f65d20b19268822fad3857e9e0ad1c1b0671f105";
-/* Includes the six telemetry stores introduced by migration 0014 and the five
- * collector authority stores introduced by migration 0017.
- * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0017_collector_catalog";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 17;
+	"ec94ee3203d24b1d587cd9c24611eadcb782dae6ea302db76df633fe2d5ab788";
+/* Includes the six telemetry stores introduced by migration 0014, the two
+ * rollup stores introduced by migration 0017, the five Collector authority
+ * stores introduced by migration 0018, and corpse catalog authority introduced
+ * by migration 0019. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0019_corpse_lifecycle_authority";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 19;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"495fbd3af270eca4c644d2fc2098c57d5562734e1e47f6cbf27b3ea5669dc525";
+	"8ac72d8fa55b2c676f0f3c6e51f640292ffa7a3cb932f598e3a35922c9d343d5";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"235c992cf697890957fb6f49ddf36acfdbb8a77903ad552ee0280d109b32a075";
+	"17a3c0f826c8048f34e02cd5856e2ade5d748b262557e5a9a7536039dbb3b82b";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"3e07dc962f4af304350ce2755c003514ad4ee7f81a3cdd90fbd98f2918234f19";
+	"b0cec04964766a91f7a14dd24ea1871ba61f364a6da0b722bd101e15d86e6ce5";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
