@@ -1,5 +1,7 @@
 #include "sql/sql_telemetry_connection.h"
+#include "sql/mysql_client_compat.h"
 #include <cassert>
+#include <fcntl.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -89,6 +91,7 @@ int main()
 	RUNNING_PORT = 7777;
 	MYSQL *conn = sql_open_telemetry_connection();
 	assert(conn && calls == 1);
+	assert(fcntl(sql_mysql_socket_descriptor(conn), F_GETFD) & FD_CLOEXEC);
 	unsigned int timeout = 0;
 	assert(mysql_get_option(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) == 0 && timeout == 2);
 	assert(mysql_get_option(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) == 0 && timeout == 2);
