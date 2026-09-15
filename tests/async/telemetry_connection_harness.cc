@@ -61,7 +61,7 @@ extern "C" MYSQL *__wrap_mysql_real_connect(MYSQL *conn, const char *host, const
 	{
 		// Start with an inheritable socket even if this client library protects
 		// its sockets itself; the telemetry factory must enforce the contract.
-		int fd = static_cast<int>(mysql_get_socket(connected));
+		int fd = sql_telemetry_socket(connected);
 		int flags = fcntl(fd, F_GETFD);
 		assert(flags >= 0 && fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC) == 0);
 	}
@@ -98,14 +98,13 @@ static void exec_releases_socket_and_lock(const char *executable)
 		char lock[80], socket[24];
 		std::snprintf(lock, sizeof(lock), "telemetry_copyover_fixture_%ld",
 			      static_cast<long>(getpid()));
-		std::snprintf(socket, sizeof(socket), "%d",
-			      static_cast<int>(mysql_get_socket(conn)));
+		std::snprintf(socket, sizeof(socket), "%d", sql_telemetry_socket(conn));
 		acquire_lock(conn, lock);
 		// A failed exec must leave both this connection and its lock intact.
 		std::string missing = std::string(executable) + ".missing";
 		errno = 0;
 		assert(execl(missing.c_str(), missing.c_str(), nullptr) == -1 && errno == ENOENT);
-		int flags = fcntl(static_cast<int>(mysql_get_socket(conn)), F_GETFD);
+		int flags = fcntl(sql_telemetry_socket(conn), F_GETFD);
 		assert(flags >= 0 && (flags & FD_CLOEXEC) != 0);
 		char query[160];
 		std::snprintf(query, sizeof(query), "SELECT IS_USED_LOCK('%s')=CONNECTION_ID()",
@@ -163,7 +162,7 @@ int main(int argc, char **argv)
 	RUNNING_PORT = 7777;
 	MYSQL *conn = sql_open_telemetry_connection();
 	assert(conn && calls == 1);
-	int descriptor_flags = fcntl(static_cast<int>(mysql_get_socket(conn)), F_GETFD);
+	int descriptor_flags = fcntl(sql_telemetry_socket(conn), F_GETFD);
 	assert(descriptor_flags >= 0 && (descriptor_flags & FD_CLOEXEC) != 0);
 	unsigned int timeout = 0;
 	assert(mysql_get_option(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) == 0 && timeout == 2);

@@ -106,7 +106,9 @@ and two-second InnoDB lock wait. These are connector options, not a proven end-t
 shutdown deadline. Budget one additional ingest connection; external reports and
 rollups share at most one additional separately budgeted connection.
 
-The private writer socket preserves descriptor flags and adds `FD_CLOEXEC` before
+The private writer uses MariaDB's socket accessor or Oracle MySQL's public
+`MYSQL::net.fd`, matching the selected client library. It preserves descriptor
+flags and adds `FD_CLOEXEC` before
 the factory returns it. Failure to read or set those flags closes and refuses the
 connection. Successful exec closes the old writer socket and releases its advisory
 lock; failed exec leaves the original connection usable. Player sockets and the
@@ -195,6 +197,7 @@ behavior, stop requests and concurrent cached health:
 
 ```sh
 TELEMETRY_REPOSITORY_DISPOSABLE=1 python3 tests/async/test_telemetry_repository.py --sql-fixture
+# MYSQL_CONFIG may select a separate Oracle or MariaDB client installation.
 TELEMETRY_REPOSITORY_DISPOSABLE=1 python3 tests/async/test_telemetry_connection.py
 ```
 
@@ -204,9 +207,10 @@ its real session initialization, with a link-time credential-selection spy that 
 role before using the fixture's existing passwordless root account. It does not
 create users or change grants. It also holds a real advisory lock across a failed
 exec, then checks socket closure and lock reacquisition after a successful exec.
-This is foundation-level process coverage; the real-player lifecycle journey
-remains part of #265 integration. It is not proof of provisioned ingest-role
-permissions or remote TLS operation. The repository fault tests similarly use
+This is factory-level process coverage. Full player lifecycle coverage lives in
+`tests/async/run_telemetry_player_journey.py`, integrated by #384. Neither the
+factory test nor its credential spy proves provisioned ingest-role permissions
+or remote TLS operation. The repository fault tests similarly use
 controlled connector failures; real network teardown and representative load
 qualification remain L/#272. No live game, production migration, load generation,
 or production activation was performed.

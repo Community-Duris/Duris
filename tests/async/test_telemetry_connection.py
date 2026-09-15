@@ -16,8 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 if os.environ.get("TELEMETRY_REPOSITORY_DISPOSABLE") != "1":
     print("SKIP: real-factory SQL test requires explicitly disposable loopback fixture")
     raise SystemExit(0)
-flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
-libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True)) + ["-lcrypto"]
+mysql_config = os.environ.get("MYSQL_CONFIG", "mysql_config")
+flags = shlex.split(subprocess.check_output([mysql_config, "--cflags"], text=True))
+libs = shlex.split(subprocess.check_output([mysql_config, "--libs"], text=True)) + ["-lcrypto"]
 with tempfile.TemporaryDirectory(prefix="telemetry-connection-") as directory:
     obj = str(Path(directory) / "sql.o")
     exe = str(Path(directory) / "factory")

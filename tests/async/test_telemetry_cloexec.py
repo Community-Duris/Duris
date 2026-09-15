@@ -21,15 +21,15 @@ harness = r'''
 #include <cstdarg>
 #include <cerrno>
 #include <fcntl.h>
-struct MYSQL {};
-static MYSQL connection;
+#include "sql/sql_telemetry_connection.h"
+static MYSQL connection{{31}};
 static int closes, gets, sets, executes;
 static int original_flags, written_flags;
 static bool fail_connect, fail_get, fail_set, fail_execute;
 static constexpr int socket_fd = 31;
 static MYSQL *sql_open_verified_connection(unsigned long, const char *, const char *, unsigned int)
 { return fail_connect ? nullptr : &connection; }
-static int mysql_get_socket(MYSQL *conn) { assert(conn == &connection); return socket_fd; }
+
 static void mysql_close(MYSQL *conn) { assert(conn == &connection); ++closes; }
 static bool sql_connection_execute(MYSQL *conn, const char *)
 { assert(conn == &connection); ++executes; return !fail_execute; }
@@ -88,8 +88,22 @@ with tempfile.TemporaryDirectory(prefix="telemetry-cloexec-") as directory:
     cpp = Path(directory) / "factory.cc"
     exe = Path(directory) / "factory"
     cpp.write_text(harness)
-    subprocess.run([*shlex.split(os.environ.get("CXX", "g++")), "-std=c++20",
-                    "-Wall", "-Wextra", "-Werror",
-                    str(cpp), "-o", str(exe)], check=True, timeout=60)
-    subprocess.run([str(exe)], check=True, timeout=10)
+    # Compile the actual header/factory with each client's distinct API shape.
+    # Oracle intentionally has no mysql_get_socket declaration. MariaDB's
+    # net.fd deliberately differs from its accessor to catch the wrong branch.
+    for client in ("oracle", "mariadb_base", "mariadb_package"):
+        stub = "struct MYSQL { struct { int fd; } net; };\n"
+        if client != "oracle":
+            macro = ("MARIADB_BASE_VERSION" if client == "mariadb_base"
+                     else "MARIADB_PACKAGE_VERSION")
+            stub += f"#define {macro} 1\n"
+            stub += "inline int mysql_get_socket(MYSQL *) { return 31; }\n"
+        (Path(directory) / "mysql.h").write_text(stub)
+        cpp.write_text(harness.replace("connection{{31}}", "connection{{-1}}")
+                       if client != "oracle" else harness)
+        subprocess.run([*shlex.split(os.environ.get("CXX", "g++")), "-std=c++20",
+                        "-Wall", "-Wextra", "-Werror", "-I" + directory,
+                        "-I" + str(ROOT / "src"),
+                        str(cpp), "-o", str(exe)], check=True, timeout=60)
+        subprocess.run([str(exe)], check=True, timeout=10)
 print("PASS: telemetry descriptor flags preserved; get/set failures close the connection")

@@ -1131,7 +1131,7 @@ MYSQL *sql_open_telemetry_connection(void)
 	// Copyover exec must release this producer's advisory writer lock. An
 	// inherited SQL socket would keep the old connection (and lock) alive,
 	// preventing the replacement telemetry worker from opening its writer.
-	const int fd = static_cast<int>(mysql_get_socket(conn));
+	const int fd = sql_telemetry_socket(conn);
 	const int flags = fcntl(fd, F_GETFD);
 	if (flags < 0 || fcntl(fd, F_SETFD, flags | FD_CLOEXEC) < 0 ||
 	    !sql_connection_execute(conn, "SET SESSION innodb_lock_wait_timeout=2"))
