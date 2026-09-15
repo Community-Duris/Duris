@@ -1009,9 +1009,14 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 	 * material it had already spent on a piece the buyer keeps. The write is
 	 * the realm's alone -- no treasury moved -- and kingdom_persist_realm()
 	 * keeps the pending rule: a realm with a paired payment still pending is
-	 * left dirty for that retry, not published alone. */
-	if (wants_material)
-		kingdom_persist_realm(realm);
+	 * left dirty for that retry, not published alone. kingdom_store_command()
+	 * refuses a sale while one is pending, so this write is never held; a
+	 * write that fails leaves the realm dirty for the flush, and is logged. */
+	if (wants_material && !kingdom_persist_realm(realm))
+		logit(LOG_KINGDOM,
+		      "STORE RECORD PENDING: realm %d (assoc %d) holds %s's draw in memory only; "
+		      "the flush retries it.",
+		      realm.realm_id, realm.assoc_id, GET_NAME(ch));
 
 	send_to_char_f(ch,
 		       "You pay &+W%ld&n platinum, and your realm's workshops make you %s&n.\r\n",
@@ -1034,7 +1039,8 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
  * guild store; kingdoms are on; the buyer is a member in good standing of
  * THE HALL'S OWN guild (not an ally, not an applicant, not on parole); that
  * guild is a kingdom; this is its main hall and the realm is not dormant;
- * the realm is not in arrears; and at least one workshop stands. */
+ * the realm is not in arrears; no sale while its paired treasury write is
+ * pending; and at least one workshop stands. */
 bool kingdom_store_command(struct char_data *ch, int room_vnum, bool buying, char *argument)
 {
 	if (!ch || IS_NPC(ch))
@@ -1086,6 +1092,18 @@ bool kingdom_store_command(struct char_data *ch, int room_vnum, bool buying, cha
 	{
 		send_to_char("The store is shut while the realm is in arrears. Pay the upkeep "
 			     "first.\r\n",
+			     ch);
+		return true;
+	}
+
+	/* A realm whose paired treasury write is still pending cannot publish its
+	 * record alone (kingdom_persist_realm() holds it for the retry), so a sale
+	 * now would leave its material draw in memory only. Selling waits until
+	 * the pair lands; looking at the shelves does not. */
+	if (buying && realm->payment_pending)
+	{
+		send_to_char("The realm's ledgers are still being settled. Try the counter again "
+			     "in a moment.\r\n",
 			     ch);
 		return true;
 	}

@@ -2380,7 +2380,9 @@ def test_store_gear_is_made_of_real_material_with_no_material_floor() -> None:
         )
     ac = function_bodies(read("src/magic/affects.c"), r"\bint\s+apply_ac\s*\(")
     ac_code = strip_comments(ac[0]) if ac else ""
-    floor = ac_code.find("if (kingdom_store_piece(ch->equipment[eq_pos]))")
+    # kingdom_store_bound(), not the vnum test alone: a piece whose object
+    # index is unresolved is still known by its token, and gets no floor.
+    floor = ac_code.find("if (kingdom_store_bound(ch->equipment[eq_pos]))")
     zeroed = ac_code.find("value = 0;", floor) if floor >= 0 else -1
     shield = ac_code.find("value = MAX(value, ch->equipment[eq_pos]->value[3])")
     armour = ac_code.find("value = MAX(value, ch->equipment[eq_pos]->value[0])")
@@ -2400,12 +2402,23 @@ def test_workshop_rollback_removes_the_room_by_identity() -> None:
     back to match storage: the new room removed by identity rather than by
     trusting it is last, any live world exit between the two rooms taken down,
     the hall's exit reset and the vnum's ROOM_GUILD mark cleared."""
-    body = function_bodies(read("src/guild/guildhall_cmds.c"), r"\bbool\s+construct_workshop_room\s*\(")
+    body = function_bodies(
+        read("src/guild/guildhall_cmds.c"),
+        r"\bworkshop_build_result\s+construct_workshop_room\s*\(",
+    )
     check(len(body) == 1, "construct_workshop_room is defined once", f"{len(body)}")
     if not body:
         return
     code = strip_comments(body[0])
     undo = _block_after(code, "if (!gh->save())")
+    reload = _block_after(code, "if (!gh->reload())")
+    check(
+        "return WORKSHOP_SAVED_NOT_LIVE;" in reload
+        and "return TRUE" not in code
+        and "return FALSE" not in code,
+        "a hall that saved its new room but did not reload reports saved-not-live, never built",
+    )
+    check("return WORKSHOP_NOT_BUILT;" in undo, "a failed save reports the room not built")
     check("pop_back(" not in code, "the rollback never trusts the new room to be the last")
     check(
         re.search(
@@ -2554,8 +2567,18 @@ def test_kingdom_build_pays_first_and_credits_back_a_room_that_fails() -> None:
     code = strip_comments(body[0])
     gate = code.find("kingdom_actor_guild(")
     pay = code.find("kingdom_pay_from_treasury(")
-    build = code.find("if (!construct_workshop_room(")
-    failed = _block_after(code, "if (!construct_workshop_room(")
+    build = code.find("construct_workshop_room(")
+    failed = _block_after(code, "if (raised == WORKSHOP_NOT_BUILT)")
+    not_live = _block_after(code, "if (raised == WORKSHOP_SAVED_NOT_LIVE)")
+    check(
+        not_live != ""
+        and "send_to_char_f(" in not_live
+        and "add_copper(" not in not_live
+        and code.find("kingdom_persist_paid_change(guild, *realm, \"BUILD\")")
+        < code.find("if (raised == WORKSHOP_SAVED_NOT_LIVE)"),
+        "a room saved but not live keeps its charge, has the pair written, and gets its own "
+        "message instead of the one that says it stands",
+    )
     end = code.find(failed) + len(failed) if failed else -1
     persist = code.find("kingdom_persist_paid_change(", end) if end >= 0 else -1
     check(
@@ -2608,6 +2631,33 @@ def test_store_room_proc_routes_only_list_and_buy() -> None:
     check(
         "funct = guildhall_store_room" in strip_comments(read("src/guild/guildhall_rooms.c")),
         "the guild-store room binds the proc",
+    )
+
+
+def test_store_sells_nothing_while_a_paired_payment_is_pending() -> None:
+    """kingdom_persist_realm() holds a realm whose paired treasury write is
+    still pending, so a sale then would keep its material draw in memory only,
+    and a crash would hand the material back. The store refuses to sell --
+    before any coin or material moves -- until the pair lands; `list` still
+    works. A sale's own realm write is checked and logged if it fails."""
+    body = function_bodies(
+        read("src/kingdom/kingdom_craft.c"), r"\bbool\s+kingdom_store_command\s*\("
+    )
+    code = strip_comments(body[0]) if body else ""
+    gate = code.find("buying && realm->payment_pending")
+    sale = code.find("kingdom_store_buy(")
+    check(
+        -1 < gate < sale,
+        "the store refuses a sale while the realm's paired payment is pending, before it sells",
+        f"gate {gate}, sale {sale}",
+    )
+    check(
+        re.search(
+            r"if\s*\(\s*wants_material\s*&&\s*!\s*kingdom_persist_realm\(\s*realm\s*\)\s*\)",
+            _store_buy_code(),
+        )
+        is not None,
+        "a sale's realm write is checked, and a write that does not land is logged",
     )
 
 

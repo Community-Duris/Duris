@@ -876,13 +876,15 @@ bool kingdom_claim_next(P_char ch)
  * PAY, THEN BUILD -- AND PUT THE COIN BACK IF THE ROOM CANNOT BE RAISED.
  * The treasury is charged first through sub_copper(), which checks and debits
  * as one step, in memory, writing nothing. Only then is the room built. If
- * construct_workshop_room() says false, the hall is exactly as it was (it
- * leaves nothing behind), so the charge is credited straight back with
- * add_copper() and the pair written: a refused build costs nothing. If it
- * says true the room is durable, and the guild's debit is made durable with
- * the realm through the paired write every treasury verb here uses. Either
- * way a room never stands unpaid for, and coin is never kept for a room that
- * does not stand. The credit is the undoing of this verb's own charge, not a
+ * construct_workshop_room() reports WORKSHOP_NOT_BUILT, the hall is exactly
+ * as it was (it leaves nothing behind), so the charge is credited straight
+ * back with add_copper() and the pair written: a refused build costs
+ * nothing. Otherwise the room is durable, and the guild's debit is made
+ * durable with the realm through the paired write every treasury verb here
+ * uses. A room saved but not yet live (the hall did not reload) keeps its
+ * charge, since it stands from the next reload or boot, and the builder is
+ * told it is not open yet. Either way a room never stands unpaid for, and
+ * coin is never kept for a room that does not stand. The credit is the undoing of this verb's own charge, not a
  * refund of anything bought -- the module's "nothing refunds" is about what
  * a realm buys, which here was never delivered. */
 void kingdom_build_work(P_char ch, char *rest)
@@ -998,10 +1000,13 @@ void kingdom_build_work(P_char ch, char *rest)
 		return;
 	}
 
-	if (!construct_workshop_room(hall->id, from_vnum, dir, type))
+	const workshop_build_result raised =
+		construct_workshop_room(hall->id, from_vnum, dir, type);
+
+	if (raised == WORKSHOP_NOT_BUILT)
 	{
 		/* The hall is exactly as it was -- construct_workshop_room() leaves
-		 * nothing behind when it says false -- so the charge goes straight
+		 * nothing behind when it says WORKSHOP_NOT_BUILT -- so the charge goes straight
 		 * back, and the pair is written so the guild's record holds what the
 		 * treasury holds.
 		 *
@@ -1033,18 +1038,34 @@ void kingdom_build_work(P_char ch, char *rest)
 		return;
 	}
 
-	/* `here` is gone now: construct_workshop_room() reloaded the hall, which
-	 * deletes and recreates every GuildhallRoom it holds. Nothing below may
-	 * touch it.
+	/* `here` may be gone now: construct_workshop_room() reloaded the hall (or
+	 * tried to), which deletes and recreates every GuildhallRoom it holds.
+	 * Nothing below may touch it.
 	 *
 	 * The room is durable already (construct_workshop_room() saved the hall);
 	 * this makes the treasury's side durable, through the same paired write
 	 * every other treasury verb in this file uses. */
 	const bool durable = kingdom_persist_paid_change(guild, *realm, "BUILD");
 
-	send_to_char_f(ch,
-		       "Builders raise your realm's %s %s of here, and the treasury pays %s.\r\n",
-		       name, dirs[dir], kingdom_price_string(price));
+	if (raised == WORKSHOP_SAVED_NOT_LIVE)
+	{
+		/* Saved, but the hall did not reload, so the room is not in the live
+		 * world yet. The charge stands -- the room is on record and opens at
+		 * the next reload or boot -- but the builder is not told it is open. */
+		send_to_char_f(
+			ch,
+			"Builders raise your realm's %s %s of here, and the treasury pays %s, "
+			"but the hall cannot be opened up to it just now. It will stand after "
+			"the next reboot; petition to have the hall reloaded sooner.\r\n",
+			name, dirs[dir], kingdom_price_string(price));
+	}
+	else
+	{
+		send_to_char_f(
+			ch,
+			"Builders raise your realm's %s %s of here, and the treasury pays %s.\r\n",
+			name, dirs[dir], kingdom_price_string(price));
+	}
 
 	if (!durable)
 	{
@@ -1056,9 +1077,10 @@ void kingdom_build_work(P_char ch, char *rest)
 	snprintf(told, sizeof(told), "The realm raises a %s in the guildhall.", name);
 	send_to_guild(guild, "The Royal Builder", told);
 
-	logit(LOG_KINGDOM, "BUILD: %s (assoc %d) raised a %s off vnum %d for %ld copper%s.",
+	logit(LOG_KINGDOM, "BUILD: %s (assoc %d) raised a %s off vnum %d for %ld copper%s%s.",
 	      guild->get_name().c_str(), realm->assoc_id, name, from_vnum, price,
-	      durable ? "" : " (record pending)");
+	      durable ? "" : " (record pending)",
+	      raised == WORKSHOP_SAVED_NOT_LIVE ? " (NOT LIVE until the hall reloads)" : "");
 }
 
 /* ------------------------------------------------------------------ *

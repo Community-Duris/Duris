@@ -1304,25 +1304,26 @@ bool construct_new_guildhall_room(int id, int from_vnum, int dir)
  * one. Unlike that function it leaves nothing behind when it fails before the
  * room is durable -- no phantom room in the hall, no exit pointing at it, no
  * vnum left marked ROOM_GUILD -- because its one caller (`kingdom build`)
- * charges the treasury only after this answers true and must be able to
- * trust a false.
+ * charges the treasury first and must be able to trust WORKSHOP_NOT_BUILT.
  *
- * True means the room is SAVED. A reload that then fails is logged rather than
- * reported: the room is in storage and stands from the next reload or boot, so
- * a caller that declined to charge for it would be giving it away. */
-bool construct_workshop_room(int id, int from_vnum, int dir, int type)
+ * Once the hall is saved the room is durable, and it goes live when the hall
+ * reloads. A reload that fails is REPORTED, as WORKSHOP_SAVED_NOT_LIVE: the
+ * room stands in storage, and in the world from the next reload or boot, but
+ * not yet. The caller keeps the charge -- refunding a durable room would give
+ * it away -- and must not tell the builder the room is open. */
+workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, int type)
 {
 	if (!from_vnum || dir < 0 || dir >= NUM_EXITS || !real_room0(from_vnum) ||
 	    type <= GH_ROOM_TYPE_GENERIC || type >= GH_ROOM_NUM_TYPES)
 	{
-		return FALSE;
+		return WORKSHOP_NOT_BUILT;
 	}
 
 	Guildhall *gh = Guildhall::find_by_id(id);
 
 	if (!gh || !gh->can_add_room())
 	{
-		return FALSE;
+		return WORKSHOP_NOT_BUILT;
 	}
 
 	GuildhallRoom *from_room = gh->find_room_by_vnum(from_vnum);
@@ -1330,14 +1331,14 @@ bool construct_workshop_room(int id, int from_vnum, int dir, int type)
 	if (!from_room || from_room->has_exit(dir) ||
 	    world[real_room0(from_room->vnum)].dir_option[dir])
 	{
-		return FALSE;
+		return WORKSHOP_NOT_BUILT;
 	}
 
 	const int vnum = next_guildhall_room_vnum();
 
 	if (vnum < 0)
 	{
-		return FALSE;
+		return WORKSHOP_NOT_BUILT;
 	}
 
 	GuildhallRoom *room = make_guildhall_room(type);
@@ -1371,18 +1372,19 @@ bool construct_workshop_room(int id, int from_vnum, int dir, int type)
 		disconnect_rooms(from_room->vnum, vnum);
 		delete room;
 		REMOVE_BIT(world[real_room0(vnum)].room_flags, ROOM_GUILD);
-		return FALSE;
+		return WORKSHOP_NOT_BUILT;
 	}
 
 	if (!gh->reload())
 	{
 		logit(LOG_GUILDHALLS,
 		      "construct_workshop_room(): guildhall %d saved its new room %d but did not "
-		      "reload",
+		      "reload; it goes live at the next reload or boot",
 		      gh->id, vnum);
+		return WORKSHOP_SAVED_NOT_LIVE;
 	}
 
-	return TRUE;
+	return WORKSHOP_BUILT;
 }
 
 bool construct_golem(Guildhall *gh, int slot, int type)

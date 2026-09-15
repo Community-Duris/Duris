@@ -151,10 +151,19 @@ int guildhall_bank_room(int room, P_char ch, int cmd, char *arg);
 int guildhall_store_room(int room, P_char ch, int cmd, char *arg);
 int guildhall_cargo_board(P_obj obj, P_char ch, int cmd, char *arg);
 
-/* Build a kingdom workshop or the guild store as a NEW room of `type` off
- * from_vnum in `dir` (guildhall_cmds.c). True only once the room is saved;
- * false leaves the hall exactly as it was, so a caller may charge on true. */
-bool construct_workshop_room(int id, int from_vnum, int dir, int type);
+/* What construct_workshop_room() (guildhall_cmds.c) achieved when building a
+ * kingdom workshop or the guild store as a NEW room of `type` off from_vnum in
+ * `dir`. NOT_BUILT leaves the hall exactly as it was, so a caller that charged
+ * first can credit back. SAVED_NOT_LIVE is durable but not yet in the live
+ * world (the hall did not reload), so a charge stands but the room is not
+ * open until the next reload or boot. */
+enum workshop_build_result
+{
+	WORKSHOP_NOT_BUILT,
+	WORKSHOP_BUILT,
+	WORKSHOP_SAVED_NOT_LIVE,
+};
+workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, int type);
 
 int check_gh_home(P_char ch, int r_room);
 P_obj find_gh_library_book_obj(P_char ch);
