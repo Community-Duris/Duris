@@ -534,25 +534,6 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 	const std::string owner_filter =
 		"own.owner_type=1 AND own.owner_id=" + std::to_string(owner_id) +
 		" AND own.owner_context_id=0 AND own.state=1";
-	if (!runtime_present)
-	{
-		query_result delivered_query = execute(
-			connection,
-			"SELECT d.item_uid FROM player_death_restitution_delivery d JOIN item_current_owner own "
-			"ON own.item_uid=d.item_uid WHERE " +
-				owner_filter + " LIMIT 1");
-		if (!delivered_query.ok)
-			return delivered_query;
-		MYSQL_RES *delivered = mysql_store_result(connection);
-		if (!delivered)
-			return { false, mysql_errno(connection) };
-		const bool missing_runtime = mysql_fetch_row(delivered) != nullptr;
-		mysql_free_result(delivered);
-		return missing_runtime ? query_result{ false, ENOENT } : query_result{ true, 0 };
-	}
-	if (items.empty())
-		return { true, 0 };
-
 	std::unordered_set<uint64_t> requested;
 	std::ostringstream uid_list;
 	try
@@ -570,20 +551,30 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 	{
 		return { false, ENOMEM };
 	}
-	if (requested.empty())
-		return { true, 0 };
 
-	// Lock the current-owner/runtime rows together. The current owner is the
-	// authority for a moved delivery; recipient_pid remains immutable history.
+	// Include both sides of the custody/projection comparison. The requested
+	// predicate keeps a delivered UID visible when its current-owner row is
+	// missing or foreign; the owner predicate finds an active delivery that the
+	// snapshot omitted. Either case must roll back instead of being treated as
+	// an empty scoped result.
+	const std::string requested_filter =
+		requested.empty() ? "0" : "d.item_uid IN (" + uid_list.str() + ")";
+	const std::string runtime_select =
+		runtime_present ? ",HEX(runtime.state_digest),SHA2(runtime.state_payload,256)" : "";
+	const std::string runtime_join =
+		runtime_present ?
+			" LEFT JOIN player_death_restitution_runtime runtime ON runtime.item_uid=d.item_uid" :
+			"";
 	const std::string scoped_sql =
-		"SELECT d.item_uid,ri.vnum,own.vnum,HEX(runtime.state_digest),"
-		"SHA2(runtime.state_payload,256) FROM player_death_restitution_delivery d "
+		"SELECT d.item_uid,ri.vnum,own.item_uid,own.owner_type,own.owner_id,"
+		"own.owner_context_id,own.vnum,own.state" +
+		runtime_select +
+		" FROM player_death_restitution_delivery d "
 		"JOIN player_death_restitution_item ri ON ri.restitution_id=d.restitution_id "
-		"AND ri.item_uid=d.item_uid JOIN item_current_owner own ON own.item_uid=d.item_uid "
-		"LEFT JOIN player_death_restitution_runtime runtime ON runtime.item_uid=d.item_uid "
-		"WHERE " +
-		owner_filter + " AND d.item_uid IN (" + uid_list.str() +
-		") ORDER BY d.item_uid FOR UPDATE";
+		"AND ri.item_uid=d.item_uid LEFT JOIN item_current_owner own ON "
+		"own.item_uid=d.item_uid" +
+		runtime_join + " WHERE (" + requested_filter + " OR (" + owner_filter +
+		")) ORDER BY d.item_uid FOR UPDATE";
 	query_result scoped_query = execute(connection, scoped_sql);
 	if (!scoped_query.ok)
 		return scoped_query;
@@ -602,28 +593,46 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 	}
 	MYSQL_ROW row;
 	size_t scoped_delivery_count = 0;
+	const std::string player_owner_type =
+		std::to_string(static_cast<unsigned>(item_owner_type::player));
+	const std::string expected_owner_id = std::to_string(owner_id);
 	while ((row = mysql_fetch_row(scoped)) != nullptr)
 	{
-		++scoped_delivery_count;
-		if (!row[0] || !row[1] || !row[2] || !row[3] || !row[4])
+		uint64_t item_uid = 0;
+		if (!row[0])
 		{
 			mysql_free_result(scoped);
 			return { false, EINVAL };
 		}
 		char *end = nullptr;
 		errno = 0;
-		const unsigned long long item_uid = std::strtoull(row[0], &end, 10);
-		if (errno || end == row[0] || *end || item_uid == 0 ||
-		    requested.find(item_uid) == requested.end() || strcasecmp(row[3], row[4]) != 0)
+		const unsigned long long parsed_uid = std::strtoull(row[0], &end, 10);
+		item_uid = static_cast<uint64_t>(parsed_uid);
+		if (errno || end == row[0] || *end || !item_uid || !row[1] || !row[2] ||
+		    std::strcmp(row[0], row[2]) != 0 || !row[3] || !row[4] || !row[5] || !row[6] ||
+		    !row[7] || player_owner_type != row[3] || expected_owner_id != row[4] ||
+		    std::strcmp(row[5], "0") != 0 || std::strcmp(row[7], "1") != 0 ||
+		    requested.find(item_uid) == requested.end())
 		{
 			mysql_free_result(scoped);
-			return { false, EINVAL };
+			return { false, ENOENT };
+		}
+		++scoped_delivery_count;
+		if (!runtime_present)
+		{
+			mysql_free_result(scoped);
+			return { false, ENOENT };
+		}
+		if (!row[8] || !row[9] || strcasecmp(row[8], row[9]) != 0)
+		{
+			mysql_free_result(scoped);
+			return { false, ENOENT };
 		}
 		const auto source = std::find_if(items.begin(), items.end(),
 						 [item_uid](const player_item_snapshot &candidate)
 						 { return candidate.object_uid == item_uid; });
 		if (source == items.end() || std::to_string(source->vnum) != row[1] ||
-		    std::to_string(source->vnum) != row[2])
+		    std::to_string(source->vnum) != row[6])
 		{
 			mysql_free_result(scoped);
 			return { false, EINVAL };
@@ -639,8 +648,8 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 		}
 	}
 	mysql_free_result(scoped);
-	// Every scoped delivery must have a runtime row. A missing row is not a
-	// reason to mint or replay metadata, and the caller's transaction rolls back.
+	// Every active delivery owned by this player must be represented exactly
+	// once in the requested snapshot.
 	if (restored.size() != scoped_delivery_count)
 		return { false, ENOENT };
 

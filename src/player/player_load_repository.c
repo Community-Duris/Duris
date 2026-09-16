@@ -806,16 +806,12 @@ bool load_restitution_runtime_state(MYSQL *connection, player_load_result *resul
 	if (!delivery_present)
 		return true;
 
-	// Consumption and other legacy removal paths can leave an active custody row
-	// after their projection disappears. Match the existing missing-payload policy:
-	// count/preserve that authority, never recreate it, and load the remaining items.
-	// A projected item still requires its intact exact-state sidecar below.
+	// An active delivery is committed custody. It must remain visible to this
+	// check even when its player_items projection is missing; otherwise the
+	// loader can silently accept an incomplete projection and skip validation.
 	const std::string owner_filter =
 		"own.owner_type=1 AND own.owner_id=" + std::to_string(result->pid) +
-		" AND own.owner_context_id=0 AND own.state=1 "
-		"AND EXISTS (SELECT 1 FROM player_items present WHERE present.obj_uid=own.item_uid "
-		"AND present.pid=" +
-		std::to_string(result->pid) + ")";
+		" AND own.owner_context_id=0 AND own.state=1";
 	if (!runtime_present)
 	{
 		MYSQL_RES *delivered = query(

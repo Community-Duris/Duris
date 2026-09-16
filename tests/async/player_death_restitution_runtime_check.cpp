@@ -636,7 +636,7 @@ void check_exact_loaded_state(MYSQL *connection, const player_load_result &loade
 	    child.craftsmanship != (mutated ? 47 : 29) || child.dynamic_affects.size() != 1 ||
 	    child.dynamic_affects[0].data != expected_affect_data ||
 	    child.dynamic_affects[0].extra2 != expected_affect_extra2 ||
-	    unique.name != "unique gloves" || artifact.extra_flags != (UINT32_C(1) << 29) ||
+	    unique.name != "unique gloves" || artifact.extra_flags != ITEM_ARTIFACT ||
 	    artifact.timers[0] != 1700000100 || newer.name != "newer item")
 		fail("exact runtime state did not survive the production loader: key=" +
 		     std::to_string(child.generated_key) + " timer5=" +
@@ -870,6 +870,52 @@ int main()
 			fail("save did not roll back when a scoped runtime row was missing");
 		restore_runtime_row(connection, 1002, changed_runtime);
 
+		/* A full player snapshot must not drop a delivered UID whose authority
+		 * moved, disappeared, or was omitted from the requested projection. */
+		player_snapshot missing_delivery = loaded.snapshot;
+		missing_delivery.items.erase(std::remove_if(missing_delivery.items.begin(),
+							    missing_delivery.items.end(),
+							    [](const player_item_snapshot &item)
+							    { return item.object_uid == 1002; }),
+					     missing_delivery.items.end());
+		const player_save_apply_result omitted_delivery =
+			apply_snapshot(connection, missing_delivery, 3);
+		if (omitted_delivery.outcome == player_save_apply_outcome::applied ||
+		    scalar_u64(connection, "SELECT save_revision FROM player_data WHERE pid=43") !=
+			    2 ||
+		    scalar_u64(connection, "SELECT COUNT(*) FROM player_items WHERE pid=43") != 6)
+			fail("save accepted a snapshot that omitted a currently delivered UID");
+
+		exec_sql(connection,
+			 "UPDATE item_current_owner SET owner_id=44 WHERE item_uid=1002");
+		const player_save_apply_result foreign_delivery =
+			apply_snapshot(connection, loaded.snapshot, 3);
+		if (foreign_delivery.outcome == player_save_apply_outcome::applied ||
+		    scalar_u64(connection, "SELECT save_revision FROM player_data WHERE pid=43") !=
+			    2 ||
+		    scalar_u64(connection, "SELECT COUNT(*) FROM player_items WHERE pid=43") != 6)
+			fail("save accepted a delivered UID owned by a different player");
+		exec_sql(connection,
+			 "UPDATE item_current_owner SET owner_id=43 WHERE item_uid=1002");
+
+		const uint64_t missing_owner_revision = scalar_u64(
+			connection,
+			"SELECT item_revision FROM item_current_owner WHERE item_uid=1002");
+		exec_sql(connection, "DELETE FROM item_current_owner WHERE item_uid=1002");
+		const player_save_apply_result absent_delivery =
+			apply_snapshot(connection, loaded.snapshot, 3);
+		if (absent_delivery.outcome == player_save_apply_outcome::applied ||
+		    scalar_u64(connection, "SELECT save_revision FROM player_data WHERE pid=43") !=
+			    2 ||
+		    scalar_u64(connection, "SELECT COUNT(*) FROM player_items WHERE pid=43") != 6)
+			fail("save accepted a delivered UID with no current-owner row");
+		exec_sql(
+			connection,
+			"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
+			"owner_id,owner_context_id,item_revision,vnum,state) VALUES "
+			"(1002,1000,1000,1,43,0," +
+				std::to_string(missing_owner_revision) + ",102,1)");
+
 		exec_sql(connection, "DROP TABLE player_death_restitution_runtime");
 		require_load_rejected(connection, 336, "missing runtime table");
 		const player_save_apply_result missing_table_save =
@@ -888,19 +934,17 @@ int main()
 			fail("normal save did not recover after restoring the runtime table");
 
 		exec_sql(connection, "DELETE FROM player_items WHERE pid=43 AND obj_uid=1002");
-		const player_load_result consumed = load_player(connection, 337);
-		if (consumed.outcome != player_load_outcome::applied ||
-		    consumed.snapshot.items.size() != 5 || consumed.missing_payload_rows != 1 ||
-		    std::any_of(consumed.snapshot.items.begin(), consumed.snapshot.items.end(),
-				[](const player_item_snapshot &item)
-				{ return item.object_uid == 1002; }) ||
+		const player_load_result missing_projection = load_player(connection, 337);
+		if (missing_projection.outcome == player_load_outcome::applied ||
+		    !missing_projection.failed_component ||
+		    std::strcmp(missing_projection.failed_component, "items") != 0 ||
 		    scalar_u64(
 			    connection,
 			    "SELECT COUNT(*) FROM player_death_restitution_delivery WHERE item_uid=1002") !=
 			    1 ||
 		    scalar_u64(connection,
 			       "SELECT COUNT(*) FROM player_items WHERE obj_uid=1002") != 0)
-			fail("consumed delivery blocked login, disappeared from audit, or was resurrected");
+			fail("missing delivered projection was silently accepted or altered audit state");
 		/* Restore the deliberately removed fixture from its retained test snapshot. */
 		const player_save_apply_result final_restore =
 			apply_snapshot(connection, mutated, 4);
