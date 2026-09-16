@@ -43,7 +43,7 @@ void aura_broken(struct char_link_data *cld)
 		bool has_other_auras = false;
 		for (struct affected_type *aff = ch->affected; aff; aff = aff->next)
 		{
-			if (aff->type >= FIRST_AURA && aura_type <= LAST_AURA)
+			if (aff != cld->affect && aff->type >= FIRST_AURA && aff->type <= LAST_AURA)
 				has_other_auras = true;
 		}
 
