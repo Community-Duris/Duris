@@ -151,9 +151,9 @@ void save_alliances()
 
 	for (size_t i = 0; i < alliances.size(); i++)
 	{
-		if (!qry("INSERT INTO alliances (forging_assoc_id, joining_assoc_id) VALUES ('%d', '%d')",
-			 alliances[i].forging_assoc->get_id(),
-			 alliances[i].joining_assoc->get_id()))
+		if (!qry("INSERT INTO alliances (forging_assoc_id, joining_assoc_id, tribute_owed) VALUES ('%d', '%d', '%d')",
+			 alliances[i].forging_assoc->get_id(), alliances[i].joining_assoc->get_id(),
+			 alliances[i].tribute_owed))
 		{
 			logit(LOG_DEBUG, "save_alliances(): insert failed at index %zu", i);
 			if (own_txn)
