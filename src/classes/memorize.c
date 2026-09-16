@@ -2322,16 +2322,16 @@ void add_scribe_data(int spl, P_char ch, P_obj book, int flag, P_obj obj, P_char
 
 	tmp.ch = ch;
 	tmp.book = book;
+	if (flag)
+		tmp.source.obj = obj;
+	else
+		tmp.source.teacher = teacher;
 	/*
 	   added check -- DTS 7/11/95
 	 */
 	tmp.flag = (flag == 1 ?
 			    (((tmp.source.obj) && (tmp.source.obj->type == ITEM_SCROLL)) ? 2 : 1) :
 			    0);
-	if (flag)
-		tmp.source.obj = obj;
-	else
-		tmp.source.teacher = teacher;
 	tmp.spell = spl;
 
 	tmp.done_func = done_func;
@@ -2661,7 +2661,8 @@ void event_scribe(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void
 	if ((GET_STAT(ch) != STAT_RESTING) ||
 	    ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING)) ||
 	    (!s_data || !(s_data->book)) || !scribing_implement(ch, ITEM_SPELLBOOK, s_data->book) ||
-	    !scribing_implement(ch, ITEM_PEN))
+	    !scribing_implement(ch, ITEM_PEN) ||
+	    (s_data && s_data->flag == 2 && !s_data->source.obj))
 	{
 		disarm_char_nevents(ch, event_scribe);
 		send_to_char("So much for that scribing effort!\n", ch);
