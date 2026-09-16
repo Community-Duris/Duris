@@ -1,6 +1,7 @@
 #include "player/player_load_repository.h"
 
 #include "persistence/persistence_observability.h"
+#include "persistence/player_death_restitution_command.h"
 #include "player/player_snapshot_codec.h"
 #include "sql/item_extra_descr_codec.h"
 #include "world/vnum.obj.h"
@@ -770,6 +771,103 @@ bool decode_hex_payload(const char *text, std::vector<uint8_t> *payload)
 	return true;
 }
 
+bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t item_uid,
+					int64_t expected_vnum, player_item_snapshot *item)
+{
+	if (!item || payload.size() < sizeof(uint32_t))
+		return false;
+	try
+	{
+		// A snapshot-list payload is the format written after a successful player
+		// save.  A restitution commit writes the smaller IST1 item-state payload
+		// before that first save; both are valid sidecar states.
+		std::vector<player_item_snapshot> snapshots;
+		const bool native_state = payload[0] == 'I' && payload[1] == 'S' &&
+					  payload[2] == 'T' && payload[3] == '1';
+		if (!native_state)
+		{
+			if (player_item_snapshot_list_decode(payload.data(), payload.size(), &snapshots) !=
+				player_snapshot_codec_result::ok ||
+			    snapshots.size() != 1 || snapshots[0].object_uid != item_uid ||
+			    snapshots[0].vnum != expected_vnum)
+				return false;
+			*item = std::move(snapshots[0]);
+			return true;
+		}
+
+		player_death_restitution_item_state state = {};
+		if (!player_death_restitution_item_state_decode(payload.data(), payload.size(), &state) ||
+		    state.item_uid != item_uid || state.vnum > INT32_MAX ||
+		    static_cast<int64_t>(state.vnum) != expected_vnum || state.quantity != 1 ||
+		    state.extra_flags > UINT32_MAX || state.wear_flags < 0 ||
+		    state.affects.size() > item->affects.size() ||
+		    state.extra_descriptions.size() > PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
+			return false;
+
+		player_item_snapshot converted = {};
+		converted.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		converted.equipment_slot = state.equip_slot;
+		converted.object_uid = state.item_uid;
+		converted.vnum = static_cast<int32_t>(state.vnum);
+		converted.type = state.item_type;
+		converted.timers.fill(0);
+		converted.timers[0] = state.timer;
+		converted.extra_flags = static_cast<uint32_t>(state.extra_flags);
+		converted.wear_flags = static_cast<uint32_t>(state.wear_flags);
+		converted.weight = state.weight;
+		converted.cost = state.cost;
+		converted.material = state.material;
+		converted.condition = state.condition;
+		converted.values = state.values;
+		converted.bitvectors = state.bitvectors;
+		constexpr std::array<uint8_t, 4> string_masks = { 1, 4, 2, 8 };
+		std::array<std::string *, 4> strings = {
+			&converted.name, &converted.short_description, &converted.description,
+			&converted.action_description,
+		};
+		for (size_t index = 0; index < strings.size(); ++index)
+			if (state.string_present[index])
+			{
+				converted.string_mask |= string_masks[index];
+				if (state.strings[index].empty())
+					strings[index]->clear();
+				else
+					strings[index]->assign(
+						reinterpret_cast<const char *>(state.strings[index].data()),
+						state.strings[index].size());
+			}
+		for (size_t index = 0; index < state.affects.size(); ++index)
+			converted.affects[index] =
+				{ state.affects[index].location, state.affects[index].modifier };
+		for (const auto &source : state.extra_descriptions)
+		{
+			const auto bytes_to_string = [](const std::vector<uint8_t> &bytes)
+			{
+				return bytes.empty() ? std::string() : std::string(
+					reinterpret_cast<const char *>(bytes.data()), bytes.size());
+			};
+			std::string keyword = bytes_to_string(source.keyword);
+			std::string description = bytes_to_string(source.description);
+			// Keep the legacy raw marker compatible with the SQL loader's
+			// normalization path; native exports normally carry SPELLBOOK/JSON.
+			if (keyword.size() == 3 && keyword[0] == 3 && keyword[1] == 1 && keyword[2] == 3)
+			{
+				keyword = "SPELLBOOK";
+				description = "[]";
+			}
+			const bool spellbook = keyword == "SPELLBOOK";
+			converted.extra_descriptions.push_back(
+				{ std::move(keyword), std::move(description), spellbook, {} });
+		}
+		*item = std::move(converted);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
 bool load_restitution_runtime_state(MYSQL *connection, player_load_result *result,
 				    const std::unordered_map<uint64_t, size_t> &item_by_uid)
 {
@@ -857,18 +955,14 @@ bool load_restitution_runtime_state(MYSQL *connection, player_load_result *resul
 				   custody_vnum != result->snapshot.items[found->second].vnum)
 				       return false;
 			       std::vector<uint8_t> payload;
-			       std::vector<player_item_snapshot> decoded;
+			       player_item_snapshot decoded = {};
 			       if (!decode_hex_payload(row[3], &payload) ||
-				   player_item_snapshot_list_decode(payload.data(), payload.size(),
-								    &decoded) !=
-					   player_snapshot_codec_result::ok ||
-				   decoded.size() != 1 || decoded[0].object_uid != item_uid ||
-				   decoded[0].vnum != custody_vnum)
-				       return false;
+			           !decode_runtime_item_payload(payload, item_uid, custody_vnum, &decoded))
+			       return false;
 			       player_item_snapshot &item = result->snapshot.items[found->second];
 			       const int32_t parent_index = item.parent_index;
 			       const int16_t equipment_slot = item.equipment_slot;
-			       item = std::move(decoded[0]);
+			       item = std::move(decoded);
 			       // The ownership ledger, not the death payload, owns the live
 			       // placement and UID identity after restitution.
 			       item.parent_index = parent_index;

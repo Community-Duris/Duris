@@ -136,19 +136,24 @@ player_snapshot death_snapshot(int pid, uint64_t owner_revision)
 	gloves.condition = 100;
 	snapshot.death->corpse.push_back(gloves);
 
+	player_item_snapshot spellbook = item(51005, 7, 0, ITEM_SPELLBOOK, ITEM_TAKE, 0,
+					      "qaspellbook recovered spellbook", "a recovered spellbook");
+	spellbook.values = { 27, 1, 0, 0, 0, 0, 0, 0 };
+	spellbook.extra_descriptions.push_back({ "SPELLBOOK", "", true, { 601, 602 } });
+	snapshot.death->corpse.push_back(spellbook);
+
 	player_item_snapshot coins = item(51006, VOBJ_COINS, 0, ITEM_MONEY, ITEM_TAKE, 0, "coins",
 					  "a pile of recovered coins");
 	coins.values = { 1, 2, 3, 4, 0, 0, 0, 0 };
 	snapshot.death->corpse.push_back(coins);
 
-	// This UID remains in custody but intentionally has no serialized payload.
 	snapshot.death->custody.push_back(custody(51000, 51000, 0, 391, pid, owner_revision));
 	snapshot.death->custody.push_back(custody(51001, 51000, 51000, 15, pid, owner_revision));
 	snapshot.death->custody.push_back(custody(51002, 51002, 0, 677, pid, owner_revision));
 	snapshot.death->custody.push_back(custody(51003, 51003, 0, 67259, pid, owner_revision));
+	snapshot.death->custody.push_back(custody(51005, 51005, 0, 7, pid, owner_revision));
 	snapshot.death->custody.push_back(
 		custody(51006, 51006, 0, VOBJ_COINS, pid, owner_revision));
-	snapshot.death->custody.push_back(custody(51005, 51005, 0, 102, pid, owner_revision));
 	return snapshot;
 }
 }

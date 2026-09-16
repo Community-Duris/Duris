@@ -51,7 +51,7 @@ VALUES
  ({pid},77,51002,51002,0,10,677,1,1,{pid},0,{owner_revision}),
  ({pid},77,51003,51003,0,10,67259,1,1,{pid},0,{owner_revision}),
  ({pid},77,51006,51006,0,10,3,1,1,{pid},0,{owner_revision}),
- ({pid},77,51005,51005,0,10,102,1,1,{pid},0,{owner_revision});
+ ({pid},77,51005,51005,0,10,7,1,1,{pid},0,{owner_revision});
 
 INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision)
 VALUES (1,{pid},0,{owner_revision + 1})
@@ -66,7 +66,7 @@ VALUES
  (51002,51002,NULL,1,{pid},0,677,11,3),
  (51003,51003,NULL,1,{pid},0,67259,11,3),
  (51006,51006,NULL,1,{pid},0,3,11,3),
- (51005,51005,NULL,1,{pid},0,102,11,3);
+ (51005,51005,NULL,1,{pid},0,7,11,3);
 
 INSERT INTO item_ownership_quarantine
  (item_uid,source_table,source_row_id,conflict_code,evidence)
