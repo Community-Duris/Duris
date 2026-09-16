@@ -533,15 +533,15 @@ bool WorkshopRoom::deinit()
 		this->prop = NULL;
 	}
 
-	if (this->room && this->workshop_description)
+	if (this->workshop_description)
 	{
 		/* Hand the room its own description back only while ours is still
-		 * the one on it; anything that replaced it owns what it put there. */
-		if (this->room->description == this->workshop_description)
-		{
+		 * the one on it; anything that replaced it owns what it put there.
+		 * The copy is ours either way, so it is always freed -- leaving it
+		 * behind when something else had replaced it leaked it. */
+		if (this->room && this->room->description == this->workshop_description)
 			this->room->description = this->plain_description;
-			str_free(this->workshop_description);
-		}
+		str_free(this->workshop_description);
 		this->workshop_description = NULL;
 		this->plain_description = NULL;
 	}

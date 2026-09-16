@@ -39,15 +39,16 @@ inline bool kingdom_store_piece(const struct obj_data *obj)
 }
 
 /* True for gear the store's binding governs: a store piece by vnum, OR any
- * object whose keywords carry a binding token. The second arm fails closed:
- * a piece whose object index were unresolved (R_num < 0) would fail the vnum
- * test, and would otherwise fall through to the legacy name test that a
- * character named "Kingdom" or "Steel" passes. The armour-class floor
- * (magic/affects.c) keeps the vnum test alone, since it describes the blank
- * object the piece was read from. */
+ * object carrying a binding token in its action description, where the store
+ * writes it (kingdom_craft_bind.h). The second arm fails closed: a piece whose
+ * object index were unresolved (R_num < 0) would fail the vnum test, and would
+ * otherwise fall through to the legacy soulbind name test that a character
+ * named "Kingdom" or "Steel" passes -- and would get the material armour-class
+ * floor (magic/affects.c) its own scaled armour class is meant to replace. */
 inline bool kingdom_store_bound(const struct obj_data *obj)
 {
-	return kingdom_store_piece(obj) || (obj && kingdom_craft_keywords_carry_bind(obj->name));
+	return kingdom_store_piece(obj) ||
+	       (obj && kingdom_craft_binding_present(obj->action_description));
 }
 
 /* True when `ch` is the character who bought store piece `obj`: a player
@@ -58,7 +59,7 @@ inline bool kingdom_store_bound(const struct obj_data *obj)
 inline bool kingdom_store_piece_owner(struct char_data *ch, const struct obj_data *obj)
 {
 	return ch && IS_PC(ch) && GET_PID(ch) > 0 && kingdom_store_bound(obj) &&
-	       kingdom_craft_keywords_bind(obj->name, GET_PID(ch));
+	       kingdom_craft_binding_is(obj->action_description, GET_PID(ch));
 }
 
 #endif /* _KINGDOM_STORE_PIECE_H_ */

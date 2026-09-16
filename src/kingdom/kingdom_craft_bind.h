@@ -13,6 +13,13 @@
  *  the buyer's PLAYER ID instead, and the wear check for store pieces
  *  (kingdom_store_piece.h) looks for that token and nothing else.
  *
+ *  THE TOKEN LIVES IN THE PIECE'S ACTION DESCRIPTION, not among its keywords.
+ *  Keywords are what player commands target, so a token there would let
+ *  anyone type `get kingdom-bound-1042 bag` and read player ids off other
+ *  people's gear. An action description is shown only for notes and corpses,
+ *  is never matched by isname(), and is saved with the object everywhere
+ *  (STRUNG_DESC3).
+ *
  *  THE TOKEN is "kingdom-bound-<pid>", as in "kingdom-bound-1042". No
  *  character name can equal it: names are letters only (_parse_name(),
  *  account/nanny.c), and the token carries hyphens and digits. A player id
@@ -59,23 +66,24 @@ inline bool kingdom_craft_bind_token(long pid, char *out, size_t out_len)
 	return true;
 }
 
-/* True when `keywords` carries the token for `pid` as a WHOLE word: that
- * exact token, with the start of the string or a space before it and the end
- * of the string or a space after it. The token for id 10 is therefore not
- * found inside "kingdom-bound-104", and no plain word matches at all. Case is
- * compared exactly: the writer emits the token in one case only. */
-inline bool kingdom_craft_keywords_bind(const char *keywords, long pid)
+/* True when `binding` -- the string the store writes the token into, which is
+ * the piece's action description -- carries the token for `pid` as a WHOLE
+ * word: that exact token, with the start of the string or a space before it
+ * and the end of the string or a space after it. The token for id 10 is
+ * therefore not found inside "kingdom-bound-104", and no plain word matches at
+ * all. Case is compared exactly: the writer emits the token in one case only. */
+inline bool kingdom_craft_binding_is(const char *binding, long pid)
 {
 	char token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
 
-	if (!keywords || !kingdom_craft_bind_token(pid, token, sizeof(token)))
+	if (!binding || !kingdom_craft_bind_token(pid, token, sizeof(token)))
 		return false;
 
 	const size_t length = std::strlen(token);
 
-	for (const char *at = std::strstr(keywords, token); at; at = std::strstr(at + 1, token))
+	for (const char *at = std::strstr(binding, token); at; at = std::strstr(at + 1, token))
 	{
-		const bool starts = at == keywords || at[-1] == ' ';
+		const bool starts = at == binding || at[-1] == ' ';
 		const bool ends = at[length] == '\0' || at[length] == ' ';
 
 		if (starts && ends)
@@ -84,19 +92,19 @@ inline bool kingdom_craft_keywords_bind(const char *keywords, long pid)
 	return false;
 }
 
-/* True when `keywords` carry ANY binding token: a word that begins with the
+/* True when `binding` carries ANY binding token: a word that begins with the
  * prefix, whatever follows it. This recognises store gear by its token alone,
- * failing closed: any such object is judged by kingdom_craft_keywords_bind()
- * and never by the legacy name test. */
-inline bool kingdom_craft_keywords_carry_bind(const char *keywords)
+ * failing closed: any such object is judged by kingdom_craft_binding_is() and
+ * never by the legacy name test. */
+inline bool kingdom_craft_binding_present(const char *binding)
 {
-	if (!keywords)
+	if (!binding)
 		return false;
 
-	for (const char *at = std::strstr(keywords, KINGDOM_CRAFT_BIND_PREFIX); at;
+	for (const char *at = std::strstr(binding, KINGDOM_CRAFT_BIND_PREFIX); at;
 	     at = std::strstr(at + 1, KINGDOM_CRAFT_BIND_PREFIX))
 	{
-		if (at == keywords || at[-1] == ' ')
+		if (at == binding || at[-1] == ' ')
 			return true;
 	}
 	return false;

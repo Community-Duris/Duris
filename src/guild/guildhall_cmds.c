@@ -1306,11 +1306,18 @@ bool construct_new_guildhall_room(int id, int from_vnum, int dir)
  * vnum left marked ROOM_GUILD -- because its one caller (`kingdom build`)
  * charges the treasury first and must be able to trust WORKSHOP_NOT_BUILT.
  *
- * Once the hall is saved the room is durable, and it goes live when the hall
- * reloads. A reload that fails is REPORTED, as WORKSHOP_SAVED_NOT_LIVE: the
- * room stands in storage, and in the world from the next reload or boot, but
- * not yet. The caller keeps the charge -- refunding a durable room would give
- * it away -- and must not tell the builder the room is open. */
+ * Once the hall is saved the room is durable. It is then brought live BY
+ * ITSELF -- not through Guildhall::reload(), which deinitialises and clears
+ * every room in the hall before loading them again, so a failure part way
+ * through would leave the whole hall torn down around the players in it, to
+ * add one room. Only the new room is initialised here, and only the doorway
+ * between it and the room it opens off is wired.
+ *
+ * A room that cannot be brought live is REPORTED, as WORKSHOP_SAVED_NOT_LIVE:
+ * it stands in storage, and in the world from the next reload or boot, but not
+ * yet; the rest of the hall is untouched. The caller keeps the charge --
+ * refunding a durable room would give it away -- and must not tell the builder
+ * the room is open. */
 workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, int type)
 {
 	if (!from_vnum || dir < 0 || dir >= NUM_EXITS || !real_room0(from_vnum) ||
@@ -1375,14 +1382,22 @@ workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, in
 		return WORKSHOP_NOT_BUILT;
 	}
 
-	if (!gh->reload())
+	/* add_room() already gave the room its hall, association and guild, which
+	 * is everything Guildhall::init() hands a room before initialising it. */
+	if (!room->init())
 	{
 		logit(LOG_GUILDHALLS,
-		      "construct_workshop_room(): guildhall %d saved its new room %d but did not "
-		      "reload; it goes live at the next reload or boot",
+		      "construct_workshop_room(): guildhall %d saved its new room %d but could not "
+		      "bring it live; it opens at the next reload or boot",
 		      gh->id, vnum);
 		return WORKSHOP_SAVED_NOT_LIVE;
 	}
+
+	/* GuildhallRoom::init() wires the new room's own side of the doorway. The
+	 * hall's side is an exit on a room that was initialised before this room
+	 * existed, so it is connected here; connect_rooms() adds only what is
+	 * missing. */
+	connect_rooms(from_room->vnum, room->vnum, dir, rev_dir[dir]);
 
 	return WORKSHOP_BUILT;
 }

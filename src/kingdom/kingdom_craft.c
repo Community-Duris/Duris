@@ -677,8 +677,17 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 	 * name can equal (kingdom_craft_bind.h). can_equip_soulbound_item()
 	 * (cmd/actobj.c) asks store pieces for that token instead of running its
 	 * legacy name test, which any character named "Steel" or "Kingdom" would
-	 * pass. The buyer's name goes in as well, but only so the piece reads as
-	 * theirs and answers to it: nothing grants ownership by name. */
+	 * pass.
+	 *
+	 * The token is written as the piece's ACTION DESCRIPTION, never as one of
+	 * its keywords. Keywords are what commands target, so a token among them
+	 * would let anyone type `get kingdom-bound-1042 bag` and read a player id
+	 * off other people's gear. Nothing shows an action description for armour,
+	 * a weapon or jewellery -- only notes and corpses use it -- and it is
+	 * saved with the object on every path a piece can travel.
+	 *
+	 * The buyer's NAME is still a keyword, so the piece answers to its owner
+	 * and reads as theirs; nothing grants ownership by name. */
 	char bind_token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
 
 	if (!kingdom_craft_bind_token(GET_PID(buyer), bind_token, sizeof(bind_token)))
@@ -688,8 +697,6 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 	}
 	keywords += " kingdom ";
 	keywords += GET_NAME(buyer);
-	keywords += " ";
-	keywords += bind_token;
 
 	std::string long_description = shown;
 
@@ -706,6 +713,12 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 	set_keywords(obj, keywords.c_str());
 	set_short_description(obj, shown.c_str());
 	set_long_description(obj, long_description.c_str());
+	/* There is no set_action_description(); this is what the engine's own
+	 * writers do (cmd/mail.c, classes/necromancy.c). Marking str_mask makes
+	 * the string ours, so free_obj() frees it and never the prototype's, and
+	 * every save path carries it (STRUNG_DESC3). */
+	obj->action_description = str_dup(bind_token);
+	SET_BIT(obj->str_mask, STRUNG_DESC3);
 
 	return obj;
 }
@@ -986,8 +999,14 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 			}
 			/* Written now rather than left to the flush, like the draw it
 			 * undoes (below): the realm's record should hold its material
-			 * back as promptly as the buyer's purse holds its coin. */
-			kingdom_persist_realm(realm);
+			 * back as promptly as the buyer's purse holds its coin. A write
+			 * that does not land leaves the realm dirty for the flush, and
+			 * says so in the log, as the sale's own write does. */
+			if (!kingdom_persist_realm(realm))
+				logit(LOG_KINGDOM,
+				      "STORE RECORD PENDING: realm %d (assoc %d) holds %s's returned "
+				      "material in memory only; the flush retries it.",
+				      realm.realm_id, realm.assoc_id, GET_NAME(ch));
 		}
 		send_to_char(
 			"The workshops could not hand the piece over just now, so nothing has "

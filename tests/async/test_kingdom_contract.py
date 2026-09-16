@@ -2300,11 +2300,11 @@ def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
     bound_code = strip_comments(bound[0]) if bound else ""
     check(
         "kingdom_store_piece(obj)" in bound_code
-        and "kingdom_craft_keywords_carry_bind(obj->name)" in bound_code,
-        "the binding governs a store piece by vnum OR by a token in its keywords, so an "
-        "unresolved object index never drops a piece to the name test",
+        and "kingdom_craft_binding_present(obj->action_description)" in bound_code,
+        "the binding governs a store piece by vnum OR by a token in its action description, so "
+        "an unresolved object index never drops a piece to the name test",
     )
-    carry = function_bodies(bind, r"\binline\s+bool\s+kingdom_craft_keywords_carry_bind\s*\(")
+    carry = function_bodies(bind, r"\binline\s+bool\s+kingdom_craft_binding_present\s*\(")
     check(
         len(carry) == 1 and "KINGDOM_CRAFT_BIND_PREFIX" in carry[0],
         "carrying a token is having a word that begins with the binding prefix",
@@ -2313,7 +2313,7 @@ def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
     owner_code = strip_comments(owner[0]) if owner else ""
     check(
         "GET_PID(ch)" in owner_code
-        and "kingdom_craft_keywords_bind(" in owner_code
+        and "kingdom_craft_binding_is(obj->action_description, GET_PID(ch))" in owner_code
         and "kingdom_store_bound(obj)" in owner_code,
         "owning a store piece is having the player id in its token",
     )
@@ -2341,9 +2341,20 @@ def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
     make = function_bodies(
         read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+P_obj\s+kingdom_craft_make\s*\("
     )
+    make_code = strip_comments(make[0]) if make else ""
     check(
-        len(make) == 1 and "kingdom_craft_bind_token(GET_PID(buyer)" in strip_comments(make[0]),
+        len(make) == 1 and "kingdom_craft_bind_token(GET_PID(buyer)" in make_code,
         "every store piece is stamped with its buyer's player-id token",
+    )
+    # Keywords are what player commands target: a token among them would let
+    # anyone type `get kingdom-bound-1042 bag` and read player ids off other
+    # people's gear. The action description is targeted by nothing.
+    check(
+        "action_description = str_dup(bind_token)" in make_code
+        and "STRUNG_DESC3" in make_code
+        and "keywords += bind_token" not in make_code
+        and re.search(r"keywords\s*\+=[^;]*bind_token", make_code) is None,
+        "the token is the piece's action description, never one of its keywords",
     )
 
 
@@ -2411,12 +2422,19 @@ def test_workshop_rollback_removes_the_room_by_identity() -> None:
         return
     code = strip_comments(body[0])
     undo = _block_after(code, "if (!gh->save())")
-    reload = _block_after(code, "if (!gh->reload())")
+    live = _block_after(code, "if (!room->init())")
     check(
-        "return WORKSHOP_SAVED_NOT_LIVE;" in reload
+        "return WORKSHOP_SAVED_NOT_LIVE;" in live
         and "return TRUE" not in code
         and "return FALSE" not in code,
-        "a hall that saved its new room but did not reload reports saved-not-live, never built",
+        "a room that saved but could not be brought live reports saved-not-live, never built",
+    )
+    # Guildhall::reload() deinitialises and clears EVERY room in the hall before
+    # loading them again, so a failure part way through would tear the hall down
+    # around the players in it. Adding one room initialises that room alone.
+    check(
+        "reload(" not in code and "room->init()" in code,
+        "the new room is brought live by itself, never by reloading the whole hall",
     )
     check("return WORKSHOP_NOT_BUILT;" in undo, "a failed save reports the room not built")
     check("pop_back(" not in code, "the rollback never trusts the new room to be the last")

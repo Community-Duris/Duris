@@ -117,32 +117,31 @@ int main()
 	expect(tiny[0] == '\0', 1, "a token cut short leaves nothing behind");
 
 	const char *keys = "steel vambraces vambraces kingdom Tyrus kingdom-bound-1042";
-	expect(kingdom_craft_keywords_bind(keys, 1042), 1, "the buyer's own id binds");
-	expect(kingdom_craft_keywords_bind(keys, 104), 0, "a prefix of the id does not bind");
-	expect(kingdom_craft_keywords_bind(keys, 10420), 0, "a longer id does not bind");
-	expect(kingdom_craft_keywords_bind("kingdom-bound-10420", 1042), 0,
+	expect(kingdom_craft_binding_is(keys, 1042), 1, "the buyer's own id binds");
+	expect(kingdom_craft_binding_is(keys, 104), 0, "a prefix of the id does not bind");
+	expect(kingdom_craft_binding_is(keys, 10420), 0, "a longer id does not bind");
+	expect(kingdom_craft_binding_is("kingdom-bound-10420", 1042), 0,
 	       "the token inside a longer one does not bind");
-	expect(kingdom_craft_keywords_bind("xkingdom-bound-1042", 1042), 0,
+	expect(kingdom_craft_binding_is("xkingdom-bound-1042", 1042), 0,
 	       "the token glued to a word does not bind");
-	expect(kingdom_craft_keywords_bind("kingdom-bound-1042 steel", 1042), 1,
+	expect(kingdom_craft_binding_is("kingdom-bound-1042 steel", 1042), 1,
 	       "the token first in the list binds");
-	expect(kingdom_craft_keywords_bind("steel vambraces kingdom tyrus", 1042), 0,
-	       "keywords without a token bind nobody");
-	expect(kingdom_craft_keywords_bind(nullptr, 1042), 0, "no keywords bind nobody");
-	expect(kingdom_craft_keywords_bind(keys, 0), 0, "pid 0 binds nothing");
+	expect(kingdom_craft_binding_is("steel vambraces kingdom tyrus", 1042), 0,
+	       "a binding without a token binds nobody");
+	expect(kingdom_craft_binding_is(nullptr, 1042), 0, "no binding binds nobody");
+	expect(kingdom_craft_binding_is(keys, 0), 0, "pid 0 binds nothing");
 
 	// Carrying a token at all -- whoever it names -- is what keeps a piece off
 	// the legacy name test even when its object index is unresolved.
-	expect(kingdom_craft_keywords_carry_bind(keys), 1, "a piece's keywords carry a token");
-	expect(kingdom_craft_keywords_carry_bind("kingdom-bound-1042"), 1,
-	       "a token alone is carried");
-	expect(kingdom_craft_keywords_carry_bind("steel kingdom-bound-7 kingdom"), 1,
+	expect(kingdom_craft_binding_present(keys), 1, "a piece's binding carries a token");
+	expect(kingdom_craft_binding_present("kingdom-bound-1042"), 1, "a token alone is carried");
+	expect(kingdom_craft_binding_present("steel kingdom-bound-7 kingdom"), 1,
 	       "a token mid-list is carried");
-	expect(kingdom_craft_keywords_carry_bind("steel vambraces kingdom tyrus"), 0,
+	expect(kingdom_craft_binding_present("steel vambraces kingdom tyrus"), 0,
 	       "plain words, 'kingdom' among them, carry no token");
-	expect(kingdom_craft_keywords_carry_bind("xkingdom-bound-1042"), 0,
+	expect(kingdom_craft_binding_present("xkingdom-bound-1042"), 0,
 	       "the prefix glued to a word is not a token");
-	expect(kingdom_craft_keywords_carry_bind(nullptr), 0, "no keywords carry no token");
+	expect(kingdom_craft_binding_present(nullptr), 0, "no keywords carry no token");
 
 	if (failures)
 	{

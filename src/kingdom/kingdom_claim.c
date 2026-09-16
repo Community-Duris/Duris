@@ -1038,9 +1038,10 @@ void kingdom_build_work(P_char ch, char *rest)
 		return;
 	}
 
-	/* `here` may be gone now: construct_workshop_room() reloaded the hall (or
-	 * tried to), which deletes and recreates every GuildhallRoom it holds.
-	 * Nothing below may touch it.
+	/* Nothing below touches `here`. construct_workshop_room() no longer
+	 * reloads the hall -- it brings the new room live by itself -- but a
+	 * reload deletes and recreates every GuildhallRoom, so this stays the
+	 * rule for anything that changes there.
 	 *
 	 * The room is durable already (construct_workshop_room() saved the hall);
 	 * this makes the treasury's side durable, through the same paired write

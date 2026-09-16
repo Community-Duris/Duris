@@ -19,9 +19,10 @@ purchase the realm's stores cannot supply, taking nothing. It harvests mineral
 and wood into the realm, then in the store lists and buys a pair of
 vambraces. It checks they were made at level 56 (Tyrus is above the cap) with
 the level-56 armour class and strength, that they are NOSELL, SOULBIND,
-CRAFTED and STOREITEM carrying Tyrus's binding token, that the realm's stores
-fell by exactly the bill, and that Tyrus's platinum fell by the price while
-the treasury did not rise.
+CRAFTED and STOREITEM, that their keywords carry the buyer's name but NOT the
+binding token (which lives in the action description, where no command reaches
+it), that the realm's stores fell by exactly the bill, and that Tyrus's
+platinum fell by the price while the treasury did not rise.
 
 Then the binding. Tyrus wears the piece, takes it off, puts it in a basket (a
 soulbound piece cannot be given or dropped, but what it is in can) and leaves
@@ -525,7 +526,13 @@ def run(binary: pathlib.Path) -> None:
                 require(re.search(r"Affects:\s*\S+\s+By\s+2\b", stat) is not None,
                         f"level-56 vambraces strength is not +2:\n{stat}")
                 require("tyrus" in stat.lower(), f"the keywords lack the buyer's name:\n{stat}")
-                require("kingdom-bound-" in stat, f"the keywords lack the binding token:\n{stat}")
+                # The binding token is the piece's action description, which no
+                # command targets and `stat obj` does not print. What must be
+                # true here is that it is NOT among the keywords, where anyone
+                # could type it. That the binding works is proven below, by who
+                # can wear the piece and who cannot.
+                require("kingdom-bound-" not in stat,
+                        f"the binding token is among the keywords, where commands reach it:\n{stat}")
                 material = re.search(r"Material[^\n]*", stat)
                 if material:
                     require("steel" in material.group(0).lower(), f"the vambraces are not steel:\n{stat}")
