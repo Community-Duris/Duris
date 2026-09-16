@@ -790,10 +790,6 @@ void do_mine(P_char ch, char *arg, int /*cmd*/)
 	if (!ch || IS_NPC(ch))
 		return;
 
-	// Anyone wana take a crack at this below to make it work correctly?
-	// If you don't get the idea, give me a hollar.
-	// From hearing Torgal's responses to it as well as knowing nobody ever uses
-	// this command, i'm going to go ahead and get the engine in game. -Venthix
 	if (GET_CHAR_SKILL(ch, SKILL_MINE) <= 1)
 	{
 		send_to_char("&+LYou dont know how to mine.\r\n", ch);
@@ -801,12 +797,9 @@ void do_mine(P_char ch, char *arg, int /*cmd*/)
 	}
 
 	int i;
-	char buff[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	char buf2[MAX_STRING_LENGTH];
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	half_chop(arg, arg1, arg2);
-	// one_argument(arg, buff);
-
-	// debug("(arg) %s, (arg1) %s, (arg2) %s", arg, arg1, arg2);
 
 	if (!strcmp(arg1, "reset") && IS_TRUSTED(ch))
 	{
@@ -824,23 +817,16 @@ void do_mine(P_char ch, char *arg, int /*cmd*/)
 				return;
 			}
 		}
-		snprintf(buf2, MAX_STRING_LENGTH, "Available options for mine reset: map | ud\n");
-		/*
-		  for (i = 0; mine_data[i].start; i++);
-		  {
-		  strcat(buf2, (mine_data[i].abbrev));
-		  if (mine_data[i+1].abbrev)
-		    strcat(buf2, " | ");
-		}
-		strcat(buf2, "\n");
-		*/
+		snprintf(buf2, MAX_STRING_LENGTH,
+			 "Available options for mine reset: map | ud | tharnrift | mapg | udg\n");
 		send_to_char(buf2, ch);
+		return;
 	}
 	else if (!strcmp(arg1, "load") && IS_TRUSTED(ch))
 	{
 		for (i = 0; mine_data[i].start; i++)
 		{
-			if (!strcmp(arg, mine_data[i].abbrev))
+			if (isname(arg2, mine_data[i].abbrev))
 			{
 				wizlog(56, "%s loaded mine in %s", GET_NAME(ch), mine_data[i].name);
 				logit(LOG_WIZ, "%s loaded mine in %s", GET_NAME(ch),
@@ -849,72 +835,92 @@ void do_mine(P_char ch, char *arg, int /*cmd*/)
 				return;
 			}
 		}
-		snprintf(buf2, MAX_STRING_LENGTH, "Available options for mine load: map | ud\n");
-		/*for (i = 0; mine_data[i].abbrev; i++);
-		{
-		  debug("%s", mine_data[i].abbrev);
-		  strcat(buf2,  mine_data[i].abbrev);
-		  if (mine_data[i+1].abbrev)
-		    strcat(buf2, " | ");
-		}
-		strcat(buf2, "\n");
-		*/
+		snprintf(buf2, MAX_STRING_LENGTH,
+			 "Available options for mine load: map | ud | tharnrift | mapg | udg\n");
 		send_to_char(buf2, ch);
+		return;
 	}
-	else if (!strcmp(buff, "purge") && IS_TRUSTED(ch))
+	else if (!strcmp(arg1, "purge") && IS_TRUSTED(ch))
 	{
-		P_obj tobj = object_list;
-		P_obj next = object_list->next;
+		const bool purge_all = !strcmp(arg2, "all");
+		int region = -1;
 
-		for (i = 0; mine_data[i].start; i++)
+		if (!purge_all)
 		{
-			if (!strcmp(arg, mine_data[i].abbrev))
-				break;
+			for (i = 0; mine_data[i].start; i++)
+			{
+				if (isname(arg2, mine_data[i].abbrev))
+				{
+					region = i;
+					break;
+				}
+			}
 		}
 
-		for (; tobj && next; tobj = next)
+		if (!purge_all && region < 0)
 		{
-			next = tobj->next;
+			snprintf(
+				buf2, MAX_STRING_LENGTH,
+				"Available options for mine purge: all | map | ud | tharnrift | mapg | udg\n");
+			send_to_char(buf2, ch);
+			return;
+		}
 
-			if ((OBJ_VNUM(tobj) == VOBJ_MINE) && (!strcmp(arg, mine_data[i].abbrev)) &&
-			    (world[tobj->loc.room].number >= mine_data[i].start) &&
-			    (world[tobj->loc.room].number <= mine_data[i].end))
+		for (P_obj tobj = object_list; tobj;)
+		{
+			P_obj next = tobj->next;
+			bool purge = false;
+
+			if (IS_SET(tobj->loc_p, LOC_ROOM) && tobj->loc.room >= 0 &&
+			    tobj->loc.room <= top_of_world)
+			{
+				const int room_vnum = world[tobj->loc.room].number;
+
+				if (purge_all)
+				{
+					for (i = 0; mine_data[i].start; i++)
+					{
+						if (OBJ_VNUM(tobj) == mine_data[i].type &&
+						    room_vnum >= mining_config_region_value(
+									 i, "start",
+									 mine_data[i].start) &&
+						    room_vnum <=
+							    mining_config_region_value(
+								    i, "end", mine_data[i].end))
+						{
+							purge = true;
+							break;
+						}
+					}
+				}
+				else if (OBJ_VNUM(tobj) == mine_data[region].type &&
+					 room_vnum >= mining_config_region_value(
+							      region, "start",
+							      mine_data[region].start) &&
+					 room_vnum <= mining_config_region_value(
+							      region, "end", mine_data[region].end))
+				{
+					purge = true;
+				}
+			}
+
+			if (purge)
 			{
 				extract_obj(tobj, TRUE); // Not an arti, but 'in game.'
 			}
-			// The all factor
-			else if (OBJ_VNUM(tobj) == VOBJ_MINE && (!strcmp(arg, "all")))
-			{
-				extract_obj(tobj, TRUE);
-			}
+			tobj = next;
 		}
-		if (!strcmp(arg, "all"))
+
+		if (purge_all)
 		{
 			wizlog(56, "%s purged all mines.", GET_NAME(ch));
 			logit(LOG_WIZ, "%s purged all mines.", GET_NAME(ch));
 			return;
 		}
-		else if (!strcmp(arg, mine_data[i].abbrev))
-		{
-			wizlog(56, "%s purged %s mines.", GET_NAME(ch), mine_data[i].name);
-			logit(LOG_WIZ, "%s purged %s mines.", GET_NAME(ch), mine_data[i].name);
-			return;
-		}
-		else
-		{
-			snprintf(buf2, MAX_STRING_LENGTH,
-				 "Available options for mine purge: all | map | tharnrift\n");
-			/*
-			for (i = 0; mine_data[i].start; i++);
-			{
-			  strcat(buf2, mine_data[i].abbrev);
-			  if (mine_data[i+1].abbrev)
-			    strcat(buf2, " | ");
-			}
-			strcat(buf2, " | all\n");
-			*/
-			send_to_char(buf2, ch);
-		}
+
+		wizlog(56, "%s purged %s mines.", GET_NAME(ch), mine_data[region].name);
+		logit(LOG_WIZ, "%s purged %s mines.", GET_NAME(ch), mine_data[region].name);
+		return;
 	}
 	send_to_char("You can't mine here!\n", ch);
 }
