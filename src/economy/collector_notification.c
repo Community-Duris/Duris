@@ -68,14 +68,15 @@ std::string deadline_text(uint64_t deadline)
 
 bool message_id_for(const collector::record &entry, critical_operation_id *message_id)
 {
-	return message_id && critical_operation_id_from_hex(entry.death_operation.data(), message_id) &&
+	return message_id &&
+	       critical_operation_id_from_hex(entry.death_operation.data(), message_id) &&
 	       !critical_operation_id_is_zero(*message_id);
 }
 
 void hint_completed(P_char character, bool committed, const collector_command_result &result,
-			    unsigned int error_code, const collector_command_payload &payload);
+		    unsigned int error_code, const collector_command_payload &payload);
 void hint_acknowledged(P_char character, bool committed, const collector_command_result &result,
-			       unsigned int error_code, const collector_command_payload &payload);
+		       unsigned int error_code, const collector_command_payload &payload);
 
 bool submit_acknowledgement(pending_delivery &delivery)
 {
@@ -125,8 +126,8 @@ bool deliver(pending_delivery &delivery)
 		return true;
 	}
 	if (send_to_pid_offline_deduplicated(delivery.message.c_str(),
-						     static_cast<int>(delivery.entry.beneficiary),
-						     delivery.message_id.bytes.data()))
+					     static_cast<int>(delivery.entry.beneficiary),
+					     delivery.message_id.bytes.data()))
 	{
 		delivery.delivery_accepted = true;
 		(void)submit_acknowledgement(delivery);
@@ -135,8 +136,7 @@ bool deliver(pending_delivery &delivery)
 	return false;
 }
 
-void start_delivery(const collector::record &entry, uint64_t claim_revision,
-			    bool claim_in_flight)
+void start_delivery(const collector::record &entry, uint64_t claim_revision, bool claim_in_flight)
 {
 	if (!entry.listing || pending.find(entry.listing) != pending.end())
 		return;
@@ -197,7 +197,7 @@ void schedule(const collector::record &entry)
 }
 
 void hint_completed(P_char character, bool committed, const collector_command_result &result,
-			    unsigned int error_code, const collector_command_payload &payload)
+		    unsigned int error_code, const collector_command_payload &payload)
 {
 	(void)character;
 	(void)error_code;
@@ -223,7 +223,7 @@ void hint_completed(P_char character, bool committed, const collector_command_re
 }
 
 void hint_acknowledged(P_char character, bool committed, const collector_command_result &result,
-			       unsigned int error_code, const collector_command_payload &payload)
+		       unsigned int error_code, const collector_command_payload &payload)
 {
 	(void)character;
 	(void)result;
@@ -241,18 +241,19 @@ void hint_acknowledged(P_char character, bool committed, const collector_command
 
 bool collector_notification_format(const collector::record &entry, std::string *message)
 {
-	if (!message || !collector::valid_record(entry) || entry.status != collector::state::available ||
-	    entry.holding_paused || !entry.beneficiary || !entry.available_at || !entry.expires_at ||
+	if (!message || !collector::valid_record(entry) ||
+	    entry.status != collector::state::available || entry.holding_paused ||
+	    !entry.beneficiary || !entry.available_at || !entry.expires_at ||
 	    entry.expires_at <= entry.available_at)
 		return false;
 	std::ostringstream output;
 	output << "The Collector's ledger now holds an eligible recovery for you.\r\n"
-		   << "Find the Collector of Antiquities in any registered auction room.\r\n"
-		   << "Commands: collector list\r\n"
-		   << "Inspect a listing with: collector inspect <number>\r\n"
-		   << "Buy a listing with: collector buy <number>\r\n"
-		   << "Carry the fee: " << entry.price_value << " copper.\r\n"
-		   << "Holding deadline: " << deadline_text(entry.expires_at) << ".\r\n";
+	       << "Find the Collector of Antiquities in any registered auction room.\r\n"
+	       << "Commands: collector list\r\n"
+	       << "Inspect a listing with: collector inspect <number>\r\n"
+	       << "Buy a listing with: collector buy <number>\r\n"
+	       << "Carry the fee: " << entry.price_value << " copper.\r\n"
+	       << "Holding deadline: " << deadline_text(entry.expires_at) << ".\r\n";
 	*message = output.str();
 	return !message->empty();
 }
@@ -291,7 +292,8 @@ void collector_notification_pulse(void)
 		{
 			collector::record current = {};
 			const uint64_t now = now_seconds();
-			if (!now || !collector_runtime_find(listing, &current) || !available_now(current, now))
+			if (!now || !collector_runtime_find(listing, &current) ||
+			    !available_now(current, now))
 				pending.erase(found);
 		}
 	}
@@ -301,8 +303,8 @@ void collector_notification_pulse(void)
 	uint64_t next_cursor = 0;
 	bool reached_end = false;
 	if (!collector_runtime_hint_candidates(candidate_cursor, notification_scan_limit,
-					       notification_result_limit, now_seconds(), &candidates,
-					       &next_cursor, &reached_end))
+					       notification_result_limit, now_seconds(),
+					       &candidates, &next_cursor, &reached_end))
 		return;
 	candidate_cursor = reached_end ? 0 : next_cursor;
 	for (const collector::record &entry : candidates)

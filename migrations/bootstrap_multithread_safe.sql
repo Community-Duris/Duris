@@ -2506,4 +2506,92 @@ CREATE TABLE IF NOT EXISTS `telemetry_cohort_member` (
   CONSTRAINT `chk_telemetry_cohort_member_subject` CHECK (`subject_id` <> 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `player_death_restitution_receipt` (
+  `restitution_id` binary(16) NOT NULL,
+  `source_pid` int NOT NULL,
+  `death_revision` bigint unsigned NOT NULL,
+  `recipient_pid` int NOT NULL,
+  `death_operation_id` binary(16) NOT NULL,
+  `evidence_digest` binary(32) NOT NULL,
+  `plan_digest` binary(32) NOT NULL,
+  `status` tinyint unsigned NOT NULL DEFAULT '1',
+  `actor` varchar(128) NOT NULL,
+  `reason` varchar(255) NOT NULL,
+  `candidate_count` smallint unsigned NOT NULL DEFAULT '0',
+  `delivered_count` smallint unsigned NOT NULL DEFAULT '0',
+  `unresolved_count` smallint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `approved_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `applied_at` timestamp(6) NULL DEFAULT NULL,
+  `verified_at` timestamp(6) NULL DEFAULT NULL,
+  PRIMARY KEY (`restitution_id`),
+  UNIQUE KEY `uq_restitution_plan` (`source_pid`,`death_revision`,`recipient_pid`,`plan_digest`),
+  KEY `idx_restitution_source` (`source_pid`,`death_revision`),
+  KEY `idx_restitution_operation` (`death_operation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `player_death_restitution_item` (
+  `restitution_id` binary(16) NOT NULL,
+  `item_uid` bigint unsigned NOT NULL,
+  `source_root_item_uid` bigint unsigned NOT NULL DEFAULT '0',
+  `source_parent_item_uid` bigint unsigned NOT NULL DEFAULT '0',
+  `delivered_root_item_uid` bigint unsigned NOT NULL DEFAULT '0',
+  `delivered_parent_item_uid` bigint unsigned NOT NULL DEFAULT '0',
+  `source_item_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `delivered_item_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `vnum` int NOT NULL DEFAULT '0',
+  `artifact_vnum` int NOT NULL DEFAULT '0',
+  `disposition` tinyint unsigned NOT NULL,
+  `classification` varchar(64) NOT NULL,
+  `metadata_digest` binary(32) NULL,
+  `metadata_payload` mediumblob NULL,
+  `note` varchar(255) NOT NULL DEFAULT '',
+  `artifact_loss_epoch` bigint unsigned NOT NULL DEFAULT '0',
+  `artifact_source_timer_epoch` bigint unsigned NOT NULL DEFAULT '0',
+  `artifact_usable_lifetime_seconds` bigint unsigned NOT NULL DEFAULT '0',
+  `artifact_delivered_timer_epoch` bigint unsigned NOT NULL DEFAULT '0',
+  `artifact_timing_basis` varchar(64) NOT NULL DEFAULT '',
+  `artifact_compensation_reference` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`restitution_id`,`item_uid`),
+  KEY `idx_restitution_item_uid` (`item_uid`),
+  CONSTRAINT `restitution_item_receipt_fk` FOREIGN KEY (`restitution_id`)
+      REFERENCES `player_death_restitution_receipt` (`restitution_id`)
+      ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `player_death_restitution_delivery` (
+  `item_uid` bigint unsigned NOT NULL,
+  `restitution_id` binary(16) NOT NULL,
+  `source_pid` int NOT NULL,
+  `death_revision` bigint unsigned NOT NULL,
+  `recipient_pid` int NOT NULL,
+  `source_item_revision` bigint unsigned NOT NULL,
+  `delivered_item_revision` bigint unsigned NOT NULL,
+  `delivered_item_id` int unsigned NOT NULL,
+  `metadata_digest` binary(32) NOT NULL,
+  `original_payload` mediumblob NOT NULL,
+  `delivered_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`item_uid`),
+  UNIQUE KEY `uq_restitution_delivery_receipt_item` (`restitution_id`,`item_uid`),
+  KEY `idx_restitution_delivery_receipt` (`restitution_id`),
+  KEY `idx_restitution_delivery_recipient` (`recipient_pid`,`item_uid`),
+  CONSTRAINT `restitution_delivery_receipt_fk` FOREIGN KEY (`restitution_id`,`item_uid`)
+      REFERENCES `player_death_restitution_item` (`restitution_id`,`item_uid`)
+      ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `player_death_restitution_runtime` (
+  `item_uid` bigint unsigned NOT NULL,
+  `recipient_pid` int NOT NULL,
+  `state_payload` mediumblob NOT NULL,
+  `state_digest` binary(32) NOT NULL,
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+      ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`item_uid`),
+  KEY `idx_restitution_runtime_recipient` (`recipient_pid`,`item_uid`),
+  CONSTRAINT `restitution_runtime_delivery_fk` FOREIGN KEY (`item_uid`)
+      REFERENCES `player_death_restitution_delivery` (`item_uid`)
+      ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

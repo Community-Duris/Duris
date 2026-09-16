@@ -733,6 +733,157 @@ bool append_loaded_extra_description(
 	return true;
 }
 
+bool decode_hex_payload(const char *text, std::vector<uint8_t> *payload)
+{
+	if (!text || !payload)
+		return false;
+	const size_t length = strlen(text);
+	if ((length & 1U) || length > 2 * ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES)
+		return false;
+	try
+	{
+		payload->clear();
+		payload->reserve(length / 2);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	auto nibble = [](char value) -> int
+	{
+		if (value >= '0' && value <= '9')
+			return value - '0';
+		if (value >= 'a' && value <= 'f')
+			return value - 'a' + 10;
+		if (value >= 'A' && value <= 'F')
+			return value - 'A' + 10;
+		return -1;
+	};
+	for (size_t index = 0; index < length; index += 2)
+	{
+		const int high = nibble(text[index]);
+		const int low = nibble(text[index + 1]);
+		if (high < 0 || low < 0)
+			return false;
+		payload->push_back(static_cast<uint8_t>((high << 4) | low));
+	}
+	return true;
+}
+
+bool load_restitution_runtime_state(MYSQL *connection, player_load_result *result,
+				    const std::unordered_map<uint64_t, size_t> &item_by_uid)
+{
+	if (!connection || !result)
+		return false;
+
+	// Delivery recipient is immutable evidence, not current ownership. Discover both
+	// sidecar tables before touching them so a pre-migration database keeps ordinary
+	// inventories loadable while a database with delivered UIDs fails closed.
+	MYSQL_RES *availability = query(
+		connection,
+		"SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_name IN ('player_death_restitution_delivery',"
+		"'player_death_restitution_runtime') ORDER BY table_name",
+		result);
+	if (!availability)
+		return false;
+	bool delivery_present = false;
+	bool runtime_present = false;
+	MYSQL_ROW availability_row;
+	while ((availability_row = mysql_fetch_row(availability)) != nullptr)
+	{
+		if (!availability_row[0])
+		{
+			mysql_free_result(availability);
+			return false;
+		}
+		if (!strcmp(availability_row[0], "player_death_restitution_delivery"))
+			delivery_present = true;
+		else if (!strcmp(availability_row[0], "player_death_restitution_runtime"))
+			runtime_present = true;
+	}
+	mysql_free_result(availability);
+	if (!delivery_present)
+		return true;
+
+	// Consumption and other legacy removal paths can leave an active custody row
+	// after their projection disappears. Match the existing missing-payload policy:
+	// count/preserve that authority, never recreate it, and load the remaining items.
+	// A projected item still requires its intact exact-state sidecar below.
+	const std::string owner_filter =
+		"own.owner_type=1 AND own.owner_id=" + std::to_string(result->pid) +
+		" AND own.owner_context_id=0 AND own.state=1 "
+		"AND EXISTS (SELECT 1 FROM player_items present WHERE present.obj_uid=own.item_uid "
+		"AND present.pid=" +
+		std::to_string(result->pid) + ")";
+	if (!runtime_present)
+	{
+		MYSQL_RES *delivered = query(
+			connection,
+			"SELECT d.item_uid FROM player_death_restitution_delivery d JOIN item_current_owner own "
+			"ON own.item_uid=d.item_uid WHERE " +
+				owner_filter + " LIMIT 1",
+			result);
+		if (!delivered)
+			return false;
+		const bool missing_runtime = mysql_fetch_row(delivered) != nullptr;
+		mysql_free_result(delivered);
+		// No current delivery means this is still a normal pre-sidecar save/load. Any
+		// current delivered UID without its companion table is unrecoverable state.
+		return !missing_runtime;
+	}
+
+	const std::string sql =
+		"SELECT d.item_uid,ri.vnum,own.vnum,HEX(runtime.state_payload),"
+		"HEX(runtime.state_digest),SHA2(runtime.state_payload,256) "
+		"FROM player_death_restitution_delivery d "
+		"JOIN player_death_restitution_item ri ON ri.restitution_id=d.restitution_id "
+		"AND ri.item_uid=d.item_uid JOIN item_current_owner own ON own.item_uid=d.item_uid "
+		"LEFT JOIN player_death_restitution_runtime runtime ON runtime.item_uid=d.item_uid "
+		"WHERE " +
+		owner_filter + " ORDER BY d.item_uid";
+	if (!load_rows(connection, sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       uint64_t item_uid = 0;
+			       int64_t custody_vnum = 0;
+			       int64_t owner_vnum = 0;
+			       if (!parse_unsigned(row[0], UINT64_MAX, &item_uid) || !row[1] ||
+				   !row[2] ||
+				   !parse_signed(row[1], INT32_MIN, INT32_MAX, &custody_vnum) ||
+				   !parse_signed(row[2], INT32_MIN, INT32_MAX, &owner_vnum) ||
+				   !row[3] || !row[4] || !row[5] || strcasecmp(row[4], row[5]) != 0)
+				       return false;
+			       const auto found = item_by_uid.find(item_uid);
+			       // A delivery with no current player projection must not be silently
+			       // omitted and must never be recreated from the sidecar payload.
+			       if (found == item_by_uid.end() || custody_vnum != owner_vnum ||
+				   custody_vnum != result->snapshot.items[found->second].vnum)
+				       return false;
+			       std::vector<uint8_t> payload;
+			       std::vector<player_item_snapshot> decoded;
+			       if (!decode_hex_payload(row[3], &payload) ||
+				   player_item_snapshot_list_decode(payload.data(), payload.size(),
+								    &decoded) !=
+					   player_snapshot_codec_result::ok ||
+				   decoded.size() != 1 || decoded[0].object_uid != item_uid ||
+				   decoded[0].vnum != custody_vnum)
+				       return false;
+			       player_item_snapshot &item = result->snapshot.items[found->second];
+			       const int32_t parent_index = item.parent_index;
+			       const int16_t equipment_slot = item.equipment_slot;
+			       item = std::move(decoded[0]);
+			       // The ownership ledger, not the death payload, owns the live
+			       // placement and UID identity after restitution.
+			       item.parent_index = parent_index;
+			       item.equipment_slot = equipment_slot;
+			       item.object_uid = item_uid;
+			       return true;
+		       }))
+		return false;
+	return true;
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
@@ -1023,6 +1174,8 @@ bool load_items(MYSQL *connection, player_load_result *result)
 			    return append_loaded_extra_description(item.extra_descriptions, row[5],
 								   row[6], result);
 		    }))
+		return false;
+	if (!load_restitution_runtime_state(connection, result, item_by_uid))
 		return false;
 	return result->snapshot.items.size() == result->item_identities.size();
 }

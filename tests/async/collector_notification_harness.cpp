@@ -24,7 +24,7 @@ bool collector_runtime_find_death(uint32_t, uint64_t, collector_death_snapshot *
 }
 
 bool collector_runtime_hint_candidates(uint64_t, size_t, size_t, uint64_t,
-					       std::vector<collector::record> *, uint64_t *, bool *)
+				       std::vector<collector::record> *, uint64_t *, bool *)
 {
 	return false;
 }
@@ -55,8 +55,8 @@ int main()
 	collector::rules policy;
 	policy.enabled = true;
 	collector::record entry;
-	assert(collector::enroll(77, "0123456789abcdef0123456789abcdef", 42, 9001, 3, 1000,
-					 policy, &entry) == collector::outcome::applied);
+	assert(collector::enroll(77, "0123456789abcdef0123456789abcdef", 42, 9001, 3, 1000, policy,
+				 &entry) == collector::outcome::applied);
 	entry.status = collector::state::available;
 	entry.available_at = entry.sale_at;
 	entry.expires_at = entry.available_at + entry.policy.holding_duration;
@@ -73,7 +73,7 @@ int main()
 	assert(message.find("collector buy <number>") != std::string::npos);
 	assert(message.find("Carry the fee: 123456 copper") != std::string::npos);
 	assert(message.find("Holding deadline: " + std::to_string(entry.expires_at) +
-					" (Unix seconds)") != std::string::npos);
+			    " (Unix seconds)") != std::string::npos);
 	assert(message.find(entry.death_operation.data()) == std::string::npos);
 	assert(message.find("death room") == std::string::npos);
 	assert(message.find("other player") == std::string::npos);

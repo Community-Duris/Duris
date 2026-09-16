@@ -137,8 +137,7 @@ bool sql_run_multi_query(const char *query);
 void send_to_pid_offline(const char *msg, int pid);
 // Enqueue a replay-stable offline message. The caller supplies a deterministic
 // 16-byte identity; implementations must treat an exact replay as idempotent.
-bool send_to_pid_offline_deduplicated(const char *msg, int pid,
-					      const unsigned char *message_id);
+bool send_to_pid_offline_deduplicated(const char *msg, int pid, const unsigned char *message_id);
 void send_offline_messages(P_char ch);
 
 int sql_shop_sell(P_char ch, P_obj obj, int value);

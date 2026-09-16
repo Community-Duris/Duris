@@ -275,11 +275,11 @@ const death_state *find_death(const collector_catalog &catalog,
 				candidate.begin() + collector::death_operation_hex_size);
 		});
 	return found != catalog.deaths.end() && death_equal(found->operation, operation) ? &*found :
-																						 nullptr;
+											   nullptr;
 }
 
 death_state *find_death_mutable(collector_catalog *catalog,
-					const collector::death_operation_id &operation)
+				const collector::death_operation_id &operation)
 {
 	if (!catalog)
 		return nullptr;
@@ -462,8 +462,7 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, collector_catalog *catalo
 	uint64_t file_revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
 	    !header.number(&file_revision) || (version != 1 && version != catalog_version) ||
-	    !file_revision ||
-	    payload_size != bytes.size() - header_size)
+	    !file_revision || payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -1261,7 +1260,7 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 	if (!listing)
 		result_code = ENOENT;
 	else if (payload.action != collector_action::hint_ack &&
-			 listing->entry.revision != payload.expected_listing_revision)
+		 listing->entry.revision != payload.expected_listing_revision)
 		result_code = ESTALE;
 
 	flatfile_wallet_mutation wallet_read;
@@ -1299,7 +1298,7 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 	collector::record updated = listing ? listing->entry : collector::record{};
 	collector::outcome policy = collector::outcome::invalid;
 	const bool hint_action = payload.action == collector_action::hint ||
-					 payload.action == collector_action::hint_ack;
+				 payload.action == collector_action::hint_ack;
 	if (!result_code && hint_action)
 	{
 		death_state *death = find_death_mutable(&candidate, updated.death_operation);
@@ -1308,8 +1307,8 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 			result_code = EBADMSG;
 		else if (payload.action == collector_action::hint)
 		{
-			if (updated.status != collector::state::available || updated.holding_paused ||
-			    payload.observed_at < updated.available_at ||
+			if (updated.status != collector::state::available ||
+			    updated.holding_paused || payload.observed_at < updated.available_at ||
 			    payload.observed_at >= updated.expires_at)
 				result_code = ESTALE;
 			else if (death->hint_state != COLLECTOR_HINT_NONE)
@@ -1323,7 +1322,7 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 		else if (death->hint_state == COLLECTOR_HINT_DELIVERED)
 			result_code = EALREADY;
 		else if (death->hint_state != COLLECTOR_HINT_PENDING ||
-				 death->hint_revision != payload.expected_listing_revision)
+			 death->hint_revision != payload.expected_listing_revision)
 			result_code = ESTALE;
 		else
 			death->hint_state = COLLECTOR_HINT_DELIVERED;

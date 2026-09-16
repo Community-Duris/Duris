@@ -223,8 +223,10 @@ bool valid_payload(const collector_command_payload &payload)
 	    payload.item_blob_size > payload.item_blob.size())
 		return false;
 	if (payload.action == collector_action::activate ||
-	    payload.action == collector_action::pause || payload.action == collector_action::resume ||
-	    payload.action == collector_action::hint || payload.action == collector_action::hint_ack)
+	    payload.action == collector_action::pause ||
+	    payload.action == collector_action::resume ||
+	    payload.action == collector_action::hint ||
+	    payload.action == collector_action::hint_ack)
 		return payload.cancel_reason == collector::reason::none && metadata_only(payload);
 	if (payload.action == collector_action::cancel && !payload.item_count)
 		return valid_cancel_reason(payload.cancel_reason) && metadata_only(payload);

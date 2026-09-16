@@ -25,6 +25,7 @@
 #include "core/utils.h"
 #include "sql/sql.h"
 #include "sql/sql_telemetry_connection.h"
+#include "sql/sql_exclusion_guard.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
@@ -405,9 +406,10 @@ static bool enqueue_flat_offline_message(const char *message, int pid,
 		return false;
 	std::string error;
 	const bool success = root && message && pid > 0 &&
-				 flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid),
-							 operation_id.bytes, message,
-							 &error) == flatfile_offline_message_result::ok;
+			     flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid),
+							      operation_id.bytes, message,
+							      &error) ==
+				     flatfile_offline_message_result::ok;
 	if (!success)
 		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
 				  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
@@ -421,8 +423,7 @@ void send_to_pid_offline(const char *message, int pid)
 {
 	enqueue_flat_offline_message(message, pid);
 }
-bool send_to_pid_offline_deduplicated(const char *message, int pid,
-					      const unsigned char *message_id)
+bool send_to_pid_offline_deduplicated(const char *message, int pid, const unsigned char *message_id)
 {
 	return message_id && enqueue_flat_offline_message(message, pid, message_id);
 }
@@ -1119,6 +1120,12 @@ static MYSQL *sql_open_verified_connection(unsigned long client_flags, const cha
 			      "Database connection rejected: transport or session contract failed");
 			return NULL;
 		}
+		if (!duris_sql_exclusion_guard_allows(conn))
+		{
+			logit(LOG_STATUS,
+			      "Database connection rejected: runtime exclusion guard is not owned");
+			return NULL;
+		}
 		return owned.release();
 	}
 	catch (...)
@@ -1431,6 +1438,14 @@ int initialize_mysql()
 	{
 		return -1;
 	}
+	if (!duris_sql_exclusion_guard_acquire(DB))
+	{
+		logit(LOG_STATUS,
+		      "FATAL: database runtime exclusion guard is held by another session; aborting boot");
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
 
 	logit(LOG_STATUS, "Connection established.");
 
@@ -1442,6 +1457,7 @@ int initialize_mysql()
 		      "FATAL: required database connection/schema check failed, aborting boot");
 		if (DB)
 		{
+			duris_sql_exclusion_guard_release();
 			mysql_close(DB);
 			DB = NULL;
 		}
@@ -1451,6 +1467,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: season reset state is missing, invalid, or not active; recovery is required");
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 		return -1;
@@ -1459,6 +1476,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: COMPAT-E007 lookup dataset publication failed or commit outcome is ambiguous");
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 		return -1;
@@ -1467,6 +1485,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: could not reserve a collision-free item UID range at boot");
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 		return -1;
@@ -1494,6 +1513,7 @@ void shutdown_mysql(void)
 	}
 	if (DB)
 	{
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 	}
@@ -3491,8 +3511,7 @@ void send_to_pid_offline(const char *msg, int pid)
 	    buff);
 }
 
-bool send_to_pid_offline_deduplicated(const char *msg, int pid,
-					      const unsigned char *message_id)
+bool send_to_pid_offline_deduplicated(const char *msg, int pid, const unsigned char *message_id)
 {
 	if (!DB || !msg || pid <= 0 || !message_id)
 		return false;
@@ -3524,7 +3543,7 @@ bool send_to_pid_offline_deduplicated(const char *msg, int pid,
 	{
 		mysql_real_escape_string(DB, buff, msg, message_length);
 		if (qry("SELECT id FROM offline_messages WHERE pid = '%d' AND message = '%s' LIMIT 1",
-				pid, buff))
+			pid, buff))
 		{
 			MYSQL_RES *res = mysql_store_result(DB);
 			if (res)
@@ -3533,9 +3552,10 @@ bool send_to_pid_offline_deduplicated(const char *msg, int pid,
 				mysql_free_result(res);
 				success = already_queued ||
 					  qry("INSERT INTO offline_messages (date, pid, message) "
-					      "VALUES (now(), '%d', '%s')", pid, buff);
+					      "VALUES (now(), '%d', '%s')",
+					      pid, buff);
 			}
-			}
+		}
 	}
 	if (!success && message_length >= sizeof(buff) / 2)
 		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",

@@ -65,7 +65,7 @@ bool same_record(const collector::record &left, const collector::record &right)
 }
 
 bool operation_matches(const critical_operation_id &operation,
-			       const collector::death_operation_id &encoded)
+		       const collector::death_operation_id &encoded)
 {
 	constexpr char digits[] = "0123456789abcdef";
 	for (size_t index = 0; index < operation.bytes.size(); ++index)
@@ -233,10 +233,10 @@ bool collector_runtime_publish(const collector_command_result &result)
 		return false;
 	if (result.action == collector_action::hint)
 		collector_runtime_publish_hint(result.entry, COLLECTOR_HINT_PENDING,
-						result.entry.revision);
+					       result.entry.revision);
 	else if (result.action == collector_action::hint_ack)
 		collector_runtime_publish_hint(result.entry, COLLECTOR_HINT_DELIVERED,
-						result.entry.revision);
+					       result.entry.revision);
 	auto found = records.find(result.entry.listing);
 	if (found != records.end())
 	{
@@ -311,12 +311,11 @@ bool collector_runtime_find_death(uint32_t beneficiary_pid, uint64_t death_time,
 }
 
 bool collector_runtime_hint_candidates(uint64_t after_listing, size_t scan_limit,
-					       size_t result_limit, uint64_t now,
-					       std::vector<collector::record> *entries,
-					       uint64_t *next_after_listing, bool *reached_end)
+				       size_t result_limit, uint64_t now,
+				       std::vector<collector::record> *entries,
+				       uint64_t *next_after_listing, bool *reached_end)
 {
-	if (!scan_limit || !result_limit || !now || !entries || !next_after_listing ||
-	    !reached_end)
+	if (!scan_limit || !result_limit || !now || !entries || !next_after_listing || !reached_end)
 		return false;
 	std::vector<collector::record> candidate;
 	auto current = after_listing ? records.upper_bound(after_listing) : records.begin();
@@ -332,7 +331,8 @@ bool collector_runtime_hint_candidates(uint64_t after_listing, size_t scan_limit
 			const collector::record &entry = current->second;
 			++current;
 			++scanned;
-			if (!available(entry) || entry.available_at > now || entry.expires_at <= now)
+			if (!available(entry) || entry.available_at > now ||
+			    entry.expires_at <= now)
 				continue;
 			const collector_death_snapshot *death = death_for_record(entry);
 			if (death && death->hint_state < COLLECTOR_HINT_DELIVERED)
@@ -350,7 +350,7 @@ bool collector_runtime_hint_candidates(uint64_t after_listing, size_t scan_limit
 }
 
 void collector_runtime_publish_hint(const collector::record &entry, uint8_t state,
-					    uint64_t hint_revision)
+				    uint64_t hint_revision)
 {
 	if (!state || state > COLLECTOR_HINT_DELIVERED || !collector::valid_record(entry))
 		return;
