@@ -324,6 +324,8 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
 				 persistence/critical_command_repository.o \
+				 persistence/player_death_restitution_command.o \
+				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
 				 item/item_ownership_runtime.o \
@@ -639,5 +641,9 @@ valgrind: $(PROGS)
 # Auto-generated dependency files alongside objects
 DEPFILES := $(DMS_OBJS:.o=.d) $(PFILE_OBJS:.o=.d) $(SHARED_PFILE_OBJS:.o=.d)
 -include $(DEPFILES)
+
+# Scoped first-slice native restitution tests; no server or database is started.
+test-player-death-restitution-native:
+	../tests/async/build_player_death_restitution_native.sh
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.

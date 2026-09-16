@@ -68,6 +68,7 @@ enum class item_transfer_reason : uint16_t
 	collector_collect,
 	collector_buyback,
 	collector_expire,
+	death_restitution,
 };
 
 enum class item_custody_state : uint8_t

@@ -2243,6 +2243,8 @@ bool do_save_silent(P_char ch, int type)
 
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
 		return false;
+	if (GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return false;
 
 	if (IS_HARDCORE(ch) && hardcore_config_get()->death_hall_of_fame)
 	{

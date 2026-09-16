@@ -135,6 +135,7 @@
 #include "world/vnum.mob.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_adapter.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "core/test_async.h"
 #endif
@@ -276,6 +277,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	boon_reward_transaction_handle_completions(completions, count);
 	boon_shop_transaction_handle_completions(completions, count);
 	zone_touch_transaction_handle_completions(completions, count);
+	player_death_restitution_runtime_handle_completions(completions, count);
 }
 
 #ifndef __NO_MYSQL__
@@ -1008,6 +1010,7 @@ void run_the_game(int port, int sslport)
 	help_cache_shutdown();
 	account_recovery_shutdown();
 	password_login_shutdown();
+	player_death_restitution_runtime_shutdown();
 	critical_command_coordinator_shutdown();
 	locker_identify_shutdown();
 	critical_outbox_shutdown();

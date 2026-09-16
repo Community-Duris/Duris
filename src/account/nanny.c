@@ -56,6 +56,7 @@
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_adapter.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
 #include "redis/redis_presence_runtime.h"
@@ -2481,6 +2482,15 @@ void reconnect(P_desc d, P_char tmp_ch)
 static void finish_legacy_player_login(P_desc d)
 {
 	char buf[MAX_STRING_LENGTH];
+	if (d && d->character && GET_PID(d->character) > 0 &&
+	    !player_death_restitution_runtime_login_admit(GET_PID(d->character)))
+	{
+		SEND_TO_Q(
+			"That character is temporarily unavailable; please try again shortly.\r\n",
+			d);
+		STATE(d) = CON_FLUSH;
+		return;
+	}
 	if ((used_descs >= avail_descs) && (GET_LEVEL(d->character) < AVATAR))
 	{
 		SEND_TO_Q("Sorry, the game is almost full and the last slot is reserved...\r\n", d);
@@ -2559,6 +2569,20 @@ void nanny_player_load_complete(P_desc d, player_load_result result)
 		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 		SEND_TO_Q(
 			"Seems to be a problem reading that player. Please choose another name.\r\n",
+			d);
+		if (d->character)
+		{
+			free_char(d->character);
+			d->character = NULL;
+		}
+		STATE(d) = CON_NAME;
+		return;
+	}
+	if (!player_death_restitution_runtime_login_admit(result.pid))
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		SEND_TO_Q(
+			"That character is temporarily unavailable; please try again shortly.\r\n",
 			d);
 		if (d->character)
 		{
@@ -2677,9 +2701,28 @@ void select_pwd(P_desc d, char *arg)
 				if (!tmp_ch->desc && IS_PC(tmp_ch) &&
 				    !str_cmp(GET_NAME(d->character), GET_NAME(tmp_ch)))
 				{
+					if (!player_death_restitution_runtime_login_admit(
+						    GET_PID(tmp_ch)))
+					{
+						SEND_TO_Q(
+							"That character is temporarily unavailable; please try again shortly.\r\n",
+							d);
+						STATE(d) = CON_FLUSH;
+						return;
+					}
 					reconnect(d, tmp_ch);
 					return;
 				}
+			}
+
+			if (GET_PID(d->character) > 0 &&
+			    !player_death_restitution_runtime_login_admit(GET_PID(d->character)))
+			{
+				SEND_TO_Q(
+					"That character is temporarily unavailable; please try again shortly.\r\n",
+					d);
+				STATE(d) = CON_FLUSH;
+				return;
 			}
 
 			if (d->character->only.pc->pwd[0] != '$')
@@ -2696,9 +2739,11 @@ void select_pwd(P_desc d, char *arg)
 			request.player_name = GET_NAME(d->character);
 			request.deadline_usec =
 				persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+			d->player_load_pid = GET_PID(d->character);
 			if (player_load_pipeline_submit(request) !=
 			    player_load_submit_outcome::accepted)
 			{
+				d->player_load_pid = 0;
 				SEND_TO_Q(
 					"Player loading is temporarily unavailable. Please try again.\r\n",
 					d);
@@ -2706,7 +2751,6 @@ void select_pwd(P_desc d, char *arg)
 				return;
 			}
 			d->player_load_request_id = request.request_id;
-			d->player_load_pid = 0;
 			d->player_load_mode = PLAYER_LOAD_MODE_LEGACY;
 			STATE(d) = CON_PLAYER_LOAD;
 			SEND_TO_Q("Loading character...\r\n", d);

@@ -9,11 +9,35 @@ CREATE TABLE critical_operation_inbox (
     schema_version INT UNSIGNED NOT NULL,
     payload_version INT UNSIGNED NOT NULL,
     status TINYINT UNSIGNED NOT NULL,
-    result_code INT NOT NULL,
-    durable_revision BIGINT UNSIGNED NOT NULL,
+    result_code INT NOT NULL DEFAULT 0,
+    durable_revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
     result_payload VARBINARY(4096) NOT NULL,
     committed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (operation_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE critical_outbox (
+    outbox_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    operation_id BINARY(16) NOT NULL,
+    event_index SMALLINT UNSIGNED NOT NULL,
+    destination SMALLINT UNSIGNED NOT NULL,
+    event_type SMALLINT UNSIGNED NOT NULL,
+    payload_version SMALLINT UNSIGNED NOT NULL,
+    payload BLOB NOT NULL,
+    status TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    attempt_count SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    next_attempt_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    delivered_at TIMESTAMP(6) NULL,
+    dead_lettered_at TIMESTAMP(6) NULL,
+    last_error_code INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (outbox_id), UNIQUE KEY uq_critical_outbox_operation_event (operation_id,event_index)
+) ENGINE=InnoDB;
+
+CREATE TABLE player_data (
+    pid INT NOT NULL,
+    save_revision BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (pid)
 ) ENGINE=InnoDB;
 
 CREATE TABLE item_owner_revision (
@@ -163,4 +187,12 @@ CREATE TABLE artifact_domain_state (
     item_revision BIGINT UNSIGNED NULL,
     revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
     KEY idx_artifact_domain_item (item_uid)
+) ENGINE=InnoDB;
+
+CREATE TABLE artifact_domain_baseline (
+    vnum INT NOT NULL PRIMARY KEY,
+    opening_timer_epoch BIGINT NOT NULL,
+    opening_bind_owner_pid INT NOT NULL,
+    opening_bind_timer_epoch BIGINT NOT NULL,
+    opening_revision BIGINT UNSIGNED NOT NULL DEFAULT 0
 ) ENGINE=InnoDB;
