@@ -20,6 +20,7 @@ import re
 import shlex
 import shutil
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
@@ -51,6 +52,32 @@ from player_death_restitution_target import (  # noqa: E402
 
 CODEC_SOURCE = ROOT / "scripts" / "player_death_restitution_codec.cpp"
 CODEC_BINARY = ROOT / "bin" / "tools" / "player_death_restitution_codec"
+
+STAFF_PAYLOAD_FORMAT = "duris-player-death-restitution-staff-payload-v1"
+STAFF_PAYLOAD_MAX_BYTES = 512 * 1024
+STAFF_CHUNK_HEX = 1022
+NATIVE_COMMAND_SCHEMA_VERSION = 1
+NATIVE_COMMAND_TYPE_PLAYER_DEATH_RESTITUTION = 19
+NATIVE_COMMAND_PAYLOAD_VERSION = 2
+NATIVE_COMMAND_SOURCE_OPERATOR_REPAIR = 6
+NATIVE_COMMAND_DEADLINE_INTERACTIVE = 1
+NATIVE_COMMAND_ENTITY_PLAYER = 1
+NATIVE_PLAN_MAGIC = 0x31524450  # PDR1, little endian
+NATIVE_ITEM_STATE_MAGIC = 0x31545349  # IST1, little endian
+NATIVE_ITEM_STATE_VERSION = 1
+NATIVE_MAX_ITEMS = 64
+NATIVE_MAX_CLASSIFICATION_BYTES = 64
+NATIVE_MAX_NOTE_BYTES = 255
+NATIVE_MAX_ITEM_STATE_BYTES = 64 * 1024
+NATIVE_MAX_ORIGINAL_PAYLOAD_BYTES = 64 * 1024
+NATIVE_MAX_TIMER_SECONDS = 365 * 24 * 60 * 60
+NATIVE_ARTIFACT_LOCATION_ON_PLAYER = 3
+NATIVE_ARTIFACT_LOCATION_ON_CORPSE = 5
+NATIVE_ARTIFACT_TYPE_MAJOR = 1
+NATIVE_ARTIFACT_TYPE_UNIQUE = 2
+NATIVE_ARTIFACT_TYPE_IOUN = 3
+NATIVE_ARTIFACT_LEGACY_GOD = 1 << 0
+NATIVE_ARTIFACT_LEGACY_MORTAL = 1 << 1
 
 TOOL_VERSION = 3
 DEATH_SCHEMA_VERSION = 6
@@ -743,6 +770,32 @@ def fetch_recipient_uids(db: Mysql, pid: int) -> list[int]:
     return result
 
 
+def fetch_player_authority(db: Mysql, pids: Iterable[int]) -> dict[str, dict[str, int]]:
+    """Read the save and player-owner revisions needed by native fencing."""
+    values = sorted({int_value(pid, "player pid", 1, 2**31 - 1) for pid in pids})
+    if not values:
+        return {}
+    rows = db.run(
+        "SELECT data.pid,data.save_revision,COALESCE(revision.revision,0) "
+        "FROM player_data data LEFT JOIN item_owner_revision revision "
+        "ON revision.owner_type=1 AND revision.owner_id=data.pid AND revision.owner_context_id=0 "
+        "WHERE data.pid IN " + sql_list(values) + " ORDER BY data.pid"
+    )
+    result: dict[str, dict[str, int]] = {}
+    for row in rows:
+        if len(row) != 3:
+            raise ToolError("player authority row has an unexpected shape")
+        pid = row_int(row, 0, "player authority pid", 1)
+        if pid is None:
+            raise ToolError("player authority row has no PID")
+        result[str(pid)] = {
+            "pid": pid,
+            "save_revision": row_int(row, 1, "player save revision", 0) or 0,
+            "owner_revision": row_int(row, 2, "player owner revision", 0) or 0,
+        }
+    return result
+
+
 def fetch_deliveries(db: Mysql, uids: Iterable[int]) -> dict[str, dict[str, Any]]:
     values = sorted({int_value(uid, "item UID", 1, 2**64 - 1) for uid in uids})
     if not values:
@@ -1274,6 +1327,7 @@ def build_inspection(
     owners = fetch_current_owners(db, all_uids)
     projections = fetch_player_projections(db, all_uids)
     recipient_uids = fetch_recipient_uids(db, recipient_pid)
+    player_authority = fetch_player_authority(db, {pid, recipient_pid})
     related = fetch_related_deaths(db, pid, revision, all_uids, decode_payload)
     related_pairs = related_death_pairs(db, pid, revision, all_uids)
     related_custody_by_pair = fetch_custody_pairs(db, related_pairs)
@@ -1325,6 +1379,7 @@ def build_inspection(
         "custody_db": custody,
         "current_owners": owners,
         "player_projections": projections,
+        "player_authority": player_authority,
         "recipient_existing_uids": sorted(set(recipient_uids)),
         "related_deaths": related,
         "related_custody": related_custody,
@@ -1534,6 +1589,25 @@ def plan_from_inspection(
     pid = int_value(source["pid"], "source pid", 1, 2**31 - 1)
     revision = int_value(source["death_revision"], "death revision", 1, 2**64 - 1)
     recipient = int_value(inspection["recipient_pid"], "recipient pid", 1, 2**31 - 1)
+    player_authority = inspection.get("player_authority", {})
+    if not isinstance(player_authority, Mapping):
+        raise ToolError("inspection player authority has an invalid shape")
+    source_authority = player_authority.get(str(pid))
+    recipient_authority = player_authority.get(str(recipient))
+    native_fence = {
+        "expected_recipient_save_revision": (
+            recipient_authority.get("save_revision")
+            if isinstance(recipient_authority, Mapping) else None
+        ),
+        "expected_source_owner_revision": (
+            source_authority.get("owner_revision")
+            if isinstance(source_authority, Mapping) else None
+        ),
+        "expected_recipient_owner_revision": (
+            recipient_authority.get("owner_revision")
+            if isinstance(recipient_authority, Mapping) else None
+        ),
+    }
     item_by_uid, payload_parent, payload_root, evidence_order, evidence_conflicts = payload_evidence_maps(inspection)
     custody_by_uid = {str(row["item_uid"]): row for row in inspection["custody_db"]}
     owners = inspection["current_owners"]
@@ -1889,6 +1963,7 @@ def plan_from_inspection(
         "destination": "player_inventory",
         "evidence_digest": inspection["evidence_digest"],
         "payload_digest": inspection["payload_digest"],
+        "native_fence": native_fence,
         "items": plans,
         "candidate_count": len(plans),
         "eligible_count": eligible_count,
@@ -2025,6 +2100,640 @@ def validate_artifact_timing_compensations(plan: Mapping[str, Any]) -> None:
             raise ToolError("artifact timing compensation does not match the planned UID")
     if approved_uids != set(compensations):
         raise ToolError("artifact timing compensation UID map does not match planned artifacts")
+
+
+
+
+# ---------- native staff handoff ----------
+
+
+def _native_append(output: bytearray, fmt: str, value: Any, label: str) -> None:
+    try:
+        output.extend(struct.pack(fmt, value))
+    except (struct.error, TypeError) as exc:
+        raise ToolError(f"invalid {label} for native restitution payload") from exc
+
+
+def _native_hex(value: Any, label: str, size: int | None = None,
+                maximum: int | None = None, required: bool = False) -> bytes:
+    if not isinstance(value, str):
+        raise ToolError(f"native restitution item has no {label}")
+    decoded = hex_bytes(value, label)
+    if required and not decoded:
+        raise ToolError(f"native restitution item has an empty {label}")
+    if size is not None and len(decoded) != size:
+        raise ToolError(f"native restitution {label} has an invalid size")
+    if maximum is not None and len(decoded) > maximum:
+        raise ToolError(f"native restitution {label} exceeds its bound")
+    return decoded
+
+
+def _native_text(value: Any, label: str, maximum: int) -> bytes:
+    if not isinstance(value, str):
+        raise ToolError(f"native restitution item has an invalid {label}")
+    encoded = value.encode("utf-8")
+    if len(encoded) > maximum:
+        raise ToolError(f"native restitution {label} exceeds its bound")
+    return encoded
+
+
+def validate_staff_approval(actor: str, reason: str) -> tuple[str, str]:
+    """Validate the identity and reason copied into the native plan."""
+    if not isinstance(actor, str) or not isinstance(reason, str):
+        raise ToolError("staff export requires an actor and reason")
+    actor = actor.strip()
+    reason = reason.strip()
+    if not re.fullmatch(r"[A-Za-z0-9_.@:/ -]{1,128}", actor):
+        raise ToolError("actor must be a short non-secret operator label")
+    if not re.fullmatch(r"[A-Za-z0-9_.@:/()\[\], -]{1,255}", reason):
+        raise ToolError("reason contains unsupported characters")
+    return actor, reason
+
+
+def _native_item_state_payload(metadata: Mapping[str, Any], item_uid: int,
+                               planned_equipment_slot: int) -> bytes:
+    """Encode one snapshot item into the native IST1 projection format."""
+    metadata_uid = int_value(metadata.get("object_uid"), "native metadata UID", 1, 2**64 - 1)
+    if metadata_uid != item_uid:
+        raise ToolError("native metadata UID differs from the planned UID")
+    vnum = int_value(metadata.get("vnum"), "native metadata vnum", 1, 2**32 - 1)
+    equipment_slot = int_value(planned_equipment_slot, "native equipment slot", -32768, 32767)
+    item_type = int_value(metadata.get("type"), "native item type", -128, 127)
+    string_mask = int_value(metadata.get("string_mask"), "native string mask", 0, 0xff)
+    if string_mask & ~0x1f:
+        raise ToolError("native metadata contains unsupported string flags")
+
+    strings: list[bytes] = []
+    string_specs = (
+        ("name_hex", 0x01),
+        ("short_description_hex", 0x04),
+        ("description_hex", 0x02),
+        ("action_description_hex", 0x08),
+    )
+    string_present: list[bool] = []
+    for field, mask in string_specs:
+        raw = metadata.get(field, "")
+        if raw is None:
+            raw = ""
+        value = _native_hex(raw, field, maximum=4096)
+        present = bool(string_mask & mask)
+        if not present and value:
+            raise ToolError(f"native metadata has text in an absent {field} slot")
+        string_present.append(present)
+        strings.append(value)
+
+    values = metadata.get("values")
+    if not isinstance(values, list) or len(values) != 8:
+        raise ToolError("native metadata must contain exactly eight item values")
+    timers = metadata.get("timers")
+    if not isinstance(timers, list) or not timers:
+        raise ToolError("native metadata has no item timer")
+    bitvectors = metadata.get("bitvectors")
+    if not isinstance(bitvectors, list) or len(bitvectors) != 5:
+        raise ToolError("native metadata must contain exactly five bitvectors")
+    affects = metadata.get("affects", [])
+    descriptions = metadata.get("extra_descriptions", [])
+    if not isinstance(affects, list) or len(affects) > 128:
+        raise ToolError("native metadata has too many item affects")
+    if not isinstance(descriptions, list) or len(descriptions) > 128:
+        raise ToolError("native metadata has too many extra descriptions")
+
+    encoded = bytearray()
+    _native_append(encoded, "<I", NATIVE_ITEM_STATE_MAGIC, "item-state magic")
+    _native_append(encoded, "<H", NATIVE_ITEM_STATE_VERSION, "item-state version")
+    flags = sum(1 << index for index, present in enumerate(string_present) if present)
+    # The snapshot codec does not expose SQL NULL bitvector presence.  Its
+    # values are authoritative, so carry all five values as present rather
+    # than silently dropping a zero-valued bitvector.
+    flags |= sum(1 << (index + 4) for index in range(5))
+    _native_append(encoded, "<H", flags, "item-state flags")
+    _native_append(encoded, "<Q", item_uid, "item UID")
+    _native_append(encoded, "<I", vnum, "item vnum")
+    _native_append(encoded, "<h", equipment_slot, "equipment slot")
+    _native_append(encoded, "<H", 1, "item quantity")
+    _native_append(encoded, "<i", int_value(metadata.get("weight"), "item weight", -2**31, 2**31 - 1), "item weight")
+    _native_append(encoded, "<i", int_value(metadata.get("cost"), "item cost", -2**31, 2**31 - 1), "item cost")
+    _native_append(encoded, "<i", int_value(timers[0], "item timer", -2**31, 2**31 - 1), "item timer")
+    _native_append(encoded, "<Q", int_value(metadata.get("extra_flags"), "item extra flags", 0, 2**64 - 1), "item extra flags")
+    _native_append(encoded, "<i", int_value(metadata.get("wear_flags"), "item wear flags", -2**31, 2**31 - 1), "item wear flags")
+    _native_append(encoded, "<b", item_type, "item type")
+    for index, value in enumerate(values):
+        _native_append(encoded, "<i", int_value(value, f"item value {index}", -2**31, 2**31 - 1), f"item value {index}")
+    _native_append(encoded, "<b", int_value(metadata.get("material"), "item material", -128, 127), "item material")
+    _native_append(encoded, "<h", int_value(metadata.get("condition"), "item condition", -32768, 32767), "item condition")
+    for index, text in enumerate(strings):
+        if len(text) > 0xffff:
+            raise ToolError(f"native item string {index} exceeds its length bound")
+        _native_append(encoded, "<H", len(text), f"item string {index} length")
+        encoded.extend(text)
+    for index, value in enumerate(bitvectors):
+        _native_append(encoded, "<Q", int_value(value, f"item bitvector {index}", 0, 2**64 - 1), f"item bitvector {index}")
+    _native_append(encoded, "<H", len(affects), "item affect count")
+    _native_append(encoded, "<H", len(descriptions), "item description count")
+    for index, affect in enumerate(affects):
+        if not isinstance(affect, (list, tuple)) or len(affect) != 2:
+            raise ToolError(f"native item affect {index} has an invalid shape")
+        _native_append(encoded, "<h", int_value(affect[0], f"affect {index} location", -32768, 32767), f"affect {index} location")
+        _native_append(encoded, "<h", int_value(affect[1], f"affect {index} modifier", -32768, 32767), f"affect {index} modifier")
+    for index, description in enumerate(descriptions):
+        if not isinstance(description, Mapping):
+            raise ToolError(f"native item description {index} has an invalid shape")
+        keyword = _native_hex(description.get("keyword_hex", ""), f"description {index} keyword", maximum=255)
+        text = _native_hex(description.get("description_hex", ""), f"description {index} text", maximum=4096)
+        if description.get("spellbook"):
+            keyword = b"SPELLBOOK"
+            spell_ids = description.get("spell_ids", [])
+            if not isinstance(spell_ids, list):
+                raise ToolError(f"native spellbook description {index} has invalid spell IDs")
+            text = ("[" + ",".join(str(int_value(value, "spell ID", -2**31, 2**31 - 1)) for value in spell_ids) + "]").encode()
+        if not keyword:
+            raise ToolError(f"native item description {index} has an empty keyword")
+        _native_append(encoded, "<H", len(keyword), f"description {index} keyword length")
+        _native_append(encoded, "<I", len(text), f"description {index} text length")
+        encoded.extend(keyword)
+        encoded.extend(text)
+    if len(encoded) > NATIVE_MAX_ITEM_STATE_BYTES:
+        raise ToolError("native item state exceeds its size bound")
+    return bytes(encoded)
+
+
+def _native_artifact_fields(row: Mapping[str, Any], source_pid: int,
+                            item_uid: int, expected_item_revision: int) -> dict[str, Any]:
+    reconciliation = row.get("artifact_reconciliation")
+    timing = row.get("artifact_timing")
+    if not isinstance(reconciliation, Mapping) or not isinstance(timing, Mapping):
+        raise ToolError("eligible artifact has no complete native authority evidence")
+    basis = timing.get("basis")
+    if basis not in {"historical_loss_remainder", "approved_compensation"}:
+        raise ToolError("eligible artifact has no supported native timing basis")
+    loss_epoch = int_value(timing.get("loss_epoch"), "artifact loss epoch", 0, 2**63 - 1)
+    source_timer_epoch = int_value(timing.get("source_timer_epoch"), "artifact source timer", 0, 2**63 - 1)
+    usable_lifetime = int_value(
+        timing.get("usable_lifetime_seconds"), "artifact usable lifetime", 1, NATIVE_MAX_TIMER_SECONDS
+    )
+    if basis == "historical_loss_remainder":
+        if source_timer_epoch <= loss_epoch or usable_lifetime != source_timer_epoch - loss_epoch:
+            raise ToolError("historical artifact timing does not match its UID evidence")
+        timing_evidence = True
+        timing_approved = False
+        approval_uid = 0
+    else:
+        reference = timing.get("compensation_reference")
+        if not isinstance(reference, str) or not reference:
+            raise ToolError("approved artifact timing has no UID-specific reference")
+        timing_evidence = False
+        timing_approved = True
+        approval_uid = item_uid
+
+    legacy = row.get("artifact_legacy_before", {})
+    if not isinstance(legacy, Mapping) or not legacy:
+        legacy = reconciliation.get("legacy_before", {})
+    if not isinstance(legacy, Mapping) or not legacy:
+        raise ToolError("artifact has no retained legacy authority projection")
+    legacy_mask = 0
+    for name in legacy:
+        if name == "god":
+            legacy_mask |= NATIVE_ARTIFACT_LEGACY_GOD
+        elif name == "mortal":
+            legacy_mask |= NATIVE_ARTIFACT_LEGACY_MORTAL
+        else:
+            raise ToolError("artifact has an unsupported legacy authority projection")
+    if not legacy_mask:
+        raise ToolError("artifact has no supported legacy authority projection")
+
+    domain = row.get("artifact_before")
+    if not isinstance(domain, Mapping):
+        domain = reconciliation.get("domain_before")
+    baseline = reconciliation.get("baseline_before")
+    bind = row.get("artifact_bind_before")
+    if not isinstance(bind, Mapping):
+        bind = reconciliation.get("bind_before")
+
+    source_authority: Mapping[str, Any] | None = None
+    for candidate in legacy.values():
+        if isinstance(candidate, Mapping):
+            source_authority = candidate
+            break
+    if source_authority is None:
+        source_authority = domain if isinstance(domain, Mapping) else reconciliation.get("domain_seed")
+    if not isinstance(source_authority, Mapping):
+        raise ToolError("artifact has no source location authority")
+    source_location_type = int_value(source_authority.get("loc_type"), "artifact source location type", 0, 0xff)
+    source_location = int_value(source_authority.get("location"), "artifact source location", -2**31, 2**31 - 1)
+    artifact_type = int_value(source_authority.get("artifact_type"), "artifact type", NATIVE_ARTIFACT_TYPE_MAJOR, NATIVE_ARTIFACT_TYPE_IOUN)
+    if source_location_type not in {NATIVE_ARTIFACT_LOCATION_ON_PLAYER, NATIVE_ARTIFACT_LOCATION_ON_CORPSE}:
+        raise ToolError("artifact source location is not supported by native restitution")
+    if source_location_type == NATIVE_ARTIFACT_LOCATION_ON_PLAYER and source_location not in {source_pid, -2}:
+        raise ToolError("artifact source location is not tied to the source PID")
+    if source_location_type == NATIVE_ARTIFACT_LOCATION_ON_CORPSE and source_location != source_pid:
+        raise ToolError("artifact corpse location is not tied to the source PID")
+
+    domain_present = isinstance(domain, Mapping)
+    domain_uid_present = False
+    domain_uid = 0
+    domain_item_revision = 0
+    domain_revision = 0
+    if domain_present:
+        raw_domain_uid = domain.get("item_uid")
+        if raw_domain_uid is not None and int_value(raw_domain_uid, "artifact domain item UID", 0, 2**64 - 1):
+            domain_uid_present = True
+            domain_uid = int_value(raw_domain_uid, "artifact domain item UID", 1, 2**64 - 1)
+        domain_item_revision = int_value(domain.get("item_revision", 0), "artifact domain item revision", 0, 2**64 - 2)
+        domain_revision = int_value(domain.get("revision", 0), "artifact domain revision", 0, 2**64 - 2)
+    baseline_present = isinstance(baseline, Mapping)
+    baseline_timer = 0
+    baseline_owner = 0
+    baseline_bind_timer = 0
+    baseline_revision = 0
+    if baseline_present:
+        baseline_timer = int_value(baseline.get("opening_timer_epoch"), "artifact baseline timer", 0, 2**63 - 1)
+        baseline_owner = int_value(baseline.get("opening_bind_owner_pid"), "artifact baseline bind owner", -2**31, 2**31 - 1)
+        baseline_bind_timer = int_value(baseline.get("opening_bind_timer_epoch"), "artifact baseline bind timer", 0, 2**63 - 1)
+        baseline_revision = int_value(baseline.get("opening_revision"), "artifact baseline revision", 0, 2**64 - 2)
+    bind_present = isinstance(bind, Mapping)
+    bind_owner = 0
+    bind_timer = 0
+    if bind_present:
+        bind_owner = int_value(bind.get("owner_pid"), "artifact bind owner", -2**31, 2**31 - 1)
+        bind_timer = int_value(bind.get("timer"), "artifact bind timer", 0, 2**31 - 1)
+    elif domain_present:
+        # The canonical domain row is also the source of the binding when no
+        # separate artifact_bind row exists. Preserve -1 as an explicit
+        # unbound marker instead of normalizing it to zero.
+        bind_owner = int_value(domain.get("bind_owner_pid", 0), "artifact domain bind owner", -2**31, 2**31 - 1)
+        bind_timer = int_value(domain.get("bind_timer_epoch", 0), "artifact domain bind timer", 0, 2**31 - 1)
+    if domain_present:
+        if (
+            int_value(domain.get("owned"), "artifact domain ownership", 0, 1) != 1
+            or int_value(domain.get("loc_type"), "artifact domain location type", 0, 0xff) != source_location_type
+            or int_value(domain.get("location"), "artifact domain location", -2**31, 2**31 - 1) != source_location
+            or int_value(domain.get("timer_epoch"), "artifact domain timer", 0, 2**63 - 1) != source_timer_epoch
+            or int_value(domain.get("artifact_type"), "artifact domain type", NATIVE_ARTIFACT_TYPE_MAJOR, NATIVE_ARTIFACT_TYPE_IOUN) != artifact_type
+            or int_value(domain.get("bind_owner_pid", 0), "artifact domain bind owner", -2**31, 2**31 - 1) != bind_owner
+            or int_value(domain.get("bind_timer_epoch", 0), "artifact domain bind timer", 0, 2**31 - 1) != bind_timer
+        ):
+            raise ToolError("artifact domain evidence is not internally consistent")
+        if domain_uid_present and (domain_uid != item_uid or domain_item_revision != expected_item_revision):
+            raise ToolError("artifact domain UID/revision does not match the native ownership fence")
+    if baseline_present and (
+        baseline_timer != source_timer_epoch
+        or baseline_owner != bind_owner
+        or baseline_bind_timer != bind_timer
+        or (not domain_present and baseline_revision != 0)
+    ):
+        raise ToolError("artifact baseline evidence is not internally consistent")
+
+    return {
+        "timing_evidence": timing_evidence,
+        "timing_approved": timing_approved,
+        "approval_uid": approval_uid,
+        "loss_epoch": loss_epoch,
+        "source_timer_epoch": source_timer_epoch,
+        "usable_lifetime": usable_lifetime,
+        "source_location_type": source_location_type,
+        "source_location": source_location,
+        "artifact_type": artifact_type,
+        "legacy_mask": legacy_mask,
+        "domain_present": domain_present,
+        "domain_uid_present": domain_uid_present,
+        "domain_uid": domain_uid,
+        "domain_item_revision": domain_item_revision,
+        "domain_revision": domain_revision,
+        "baseline_present": baseline_present,
+        "baseline_timer": baseline_timer,
+        "baseline_owner": baseline_owner,
+        "baseline_bind_timer": baseline_bind_timer,
+        "baseline_revision": baseline_revision,
+        "bind_present": bind_present,
+        "bind_owner": bind_owner,
+        "bind_timer": bind_timer,
+    }
+
+
+def _native_item_payload(row: Mapping[str, Any], plan: Mapping[str, Any],
+                         source_pid: int) -> bytes:
+    uid = int_value(row.get("item_uid"), "planned item UID", 1, 2**64 - 1)
+    classification = _native_text(row.get("classification"), "classification", NATIVE_MAX_CLASSIFICATION_BYTES)
+    note = _native_text(row.get("note", ""), "note", NATIVE_MAX_NOTE_BYTES)
+    eligible = row.get("eligible") is True
+    encoded = bytearray()
+    _native_append(encoded, "<Q", uid, "item UID")
+
+    if not eligible:
+        # The native schema has only deliver/unresolved/excluded.  Refusal
+        # classifications stay in the audit text; they are explicitly emitted
+        # as unresolved rather than being mistaken for a delivery.
+        _native_append(encoded, "<Q", 0, "source root UID")
+        _native_append(encoded, "<Q", 0, "source parent UID")
+        _native_append(encoded, "<Q", 0, "delivered root UID")
+        _native_append(encoded, "<Q", 0, "delivered parent UID")
+        for field in ("source item revision", "expected item revision", "expected owner revision"):
+            _native_append(encoded, "<Q", 0, field)
+        _native_append(encoded, "<B", 0, "expected owner state")
+        _native_append(encoded, "<Q", 0, "custody item revision")
+        _native_append(encoded, "<B", 0, "custody state")
+        _native_append(encoded, "<B", 0, "custody owner type")
+        _native_append(encoded, "<Q", 0, "custody owner ID")
+        _native_append(encoded, "<Q", 0, "custody owner context")
+        _native_append(encoded, "<Q", 0, "custody owner revision")
+        _native_append(encoded, "<I", int_value(row.get("vnum", 0), "unresolved item vnum", 0, 2**32 - 1), "unresolved item vnum")
+        _native_append(encoded, "<I", 0, "unresolved artifact vnum")
+        _native_append(encoded, "<B", 2, "unresolved disposition")
+        _native_append(encoded, "<B", 0, "unresolved artifact flags")
+        _native_append(encoded, "<B", 0, "unresolved source location type")
+        _native_append(encoded, "<i", 0, "unresolved source location")
+        _native_append(encoded, "<B", 0, "unresolved artifact type")
+        _native_append(encoded, "<B", 0, "unresolved legacy mask")
+        _native_append(encoded, "<H", 0, "unresolved item reserved")
+        for field in ("unresolved approval UID", "unresolved loss epoch", "unresolved source timer", "unresolved lifetime",
+                      "unresolved domain UID", "unresolved domain item revision", "unresolved domain revision",
+                      "unresolved baseline timer"):
+            _native_append(encoded, "<Q", 0, field)
+        _native_append(encoded, "<i", 0, "unresolved baseline owner")
+        _native_append(encoded, "<q", 0, "unresolved baseline bind timer")
+        _native_append(encoded, "<Q", 0, "unresolved baseline revision")
+        _native_append(encoded, "<i", 0, "unresolved bind owner")
+        _native_append(encoded, "<q", 0, "unresolved bind timer")
+        _native_append(encoded, "<H", len(classification), "classification length")
+        _native_append(encoded, "<H", len(note), "note length")
+        _native_append(encoded, "<I", 0, "unresolved metadata length")
+        _native_append(encoded, "<I", 0, "unresolved original length")
+        encoded.extend(b"\0" * 32)
+        encoded.extend(classification)
+        encoded.extend(note)
+        return bytes(encoded)
+
+    if row.get("disposition") != DISPOSITION["recoverable_exact"] and row.get("disposition") not in {
+        DISPOSITION["recoverable_topology_reconciled"], DISPOSITION["recoverable_artifact_reconciled"]
+    }:
+        raise ToolError("eligible plan row has an unsupported source disposition")
+    expected_current = row.get("expected_current")
+    if not isinstance(expected_current, Mapping):
+        raise ToolError("eligible item has no current-owner fence")
+    source_root = int_value(row.get("source_root_item_uid"), "source root UID", 1, 2**64 - 1)
+    source_parent = int_value(row.get("source_parent_item_uid", 0), "source parent UID", 0, 2**64 - 1)
+    delivered_root = int_value(row.get("delivered_root_item_uid"), "delivered root UID", 1, 2**64 - 1)
+    delivered_parent = int_value(row.get("delivered_parent_item_uid", 0), "delivered parent UID", 0, 2**64 - 1)
+    source_revision = int_value(row.get("source_item_revision"), "source item revision", 0, 2**64 - 2)
+    expected_revision = int_value(expected_current.get("item_revision"), "expected item revision", 0, 2**64 - 2)
+    expected_owner_revision = int_value(expected_current.get("owner_revision"), "expected owner revision", 0, 2**64 - 2)
+    expected_owner_state = int_value(expected_current.get("state"), "expected owner state", 0, 0xff)
+    custody_revision = int_value(row.get("custody_expected_item_revision"), "custody item revision", 0, 2**64 - 2)
+    custody_state = int_value(row.get("custody_expected_state"), "custody state", 1, 0xff)
+    custody_owner_type = int_value(row.get("custody_owner_type"), "custody owner type", 0, 0xff)
+    custody_owner_id = int_value(row.get("custody_owner_id"), "custody owner ID", 0, 2**64 - 1)
+    custody_owner_context = int_value(row.get("custody_owner_context_id"), "custody owner context", 0, 2**64 - 1)
+    custody_owner_revision = int_value(row.get("custody_owner_revision"), "custody owner revision", 0, 2**64 - 2)
+    vnum = int_value(row.get("vnum"), "planned item vnum", 1, 2**32 - 1)
+    if source_revision != expected_revision or expected_owner_state != STATE_QUARANTINED or custody_owner_type != OWNER_PLAYER or custody_owner_id != source_pid or custody_owner_context:
+        raise ToolError("eligible item does not carry the native ownership fence")
+    metadata = row.get("metadata")
+    if not isinstance(metadata, Mapping):
+        raise ToolError("eligible item has no native metadata")
+    metadata_vnum = int_value(metadata.get("vnum"), "native metadata vnum", 1, 2**32 - 1)
+    if metadata_vnum != vnum:
+        raise ToolError("native metadata vnum differs from the planned vnum")
+    state_payload = _native_item_state_payload(
+        metadata, uid, int_value(row.get("equipment_slot", 0), "equipment slot", -32768, 32767)
+    )
+    original_payload = _native_hex(
+        metadata.get("item_payload_hex"), "original item payload",
+        maximum=NATIVE_MAX_ORIGINAL_PAYLOAD_BYTES, required=True
+    )
+    artifact = _native_artifact_fields(row, source_pid, uid, expected_revision) if row.get("kind") == "artifact" else None
+    _native_append(encoded, "<Q", source_root, "source root UID")
+    _native_append(encoded, "<Q", source_parent, "source parent UID")
+    _native_append(encoded, "<Q", delivered_root, "delivered root UID")
+    _native_append(encoded, "<Q", delivered_parent, "delivered parent UID")
+    _native_append(encoded, "<Q", source_revision, "source item revision")
+    _native_append(encoded, "<Q", expected_revision, "expected item revision")
+    _native_append(encoded, "<Q", expected_owner_revision, "expected owner revision")
+    _native_append(encoded, "<B", expected_owner_state, "expected owner state")
+    _native_append(encoded, "<Q", custody_revision, "custody item revision")
+    _native_append(encoded, "<B", custody_state, "custody state")
+    _native_append(encoded, "<B", custody_owner_type, "custody owner type")
+    _native_append(encoded, "<Q", custody_owner_id, "custody owner ID")
+    _native_append(encoded, "<Q", custody_owner_context, "custody owner context")
+    _native_append(encoded, "<Q", custody_owner_revision, "custody owner revision")
+    _native_append(encoded, "<I", vnum, "planned item vnum")
+    _native_append(encoded, "<I", vnum if artifact else 0, "artifact vnum")
+    _native_append(encoded, "<B", 1, "deliver disposition")
+    artifact_flags = 0
+    if artifact:
+        artifact_flags = (
+            (1 if artifact["timing_evidence"] else 0) |
+            (2 if artifact["timing_approved"] else 0) |
+            (4 if artifact["domain_present"] else 0) |
+            (8 if artifact["domain_uid_present"] else 0) |
+            (16 if artifact["baseline_present"] else 0) |
+            (32 if artifact["bind_present"] else 0)
+        )
+    _native_append(encoded, "<B", artifact_flags, "artifact flags")
+    _native_append(encoded, "<B", artifact["source_location_type"] if artifact else 0, "artifact source location type")
+    _native_append(encoded, "<i", artifact["source_location"] if artifact else 0, "artifact source location")
+    _native_append(encoded, "<B", artifact["artifact_type"] if artifact else 0, "artifact type")
+    _native_append(encoded, "<B", artifact["legacy_mask"] if artifact else 0, "artifact legacy mask")
+    _native_append(encoded, "<H", 0, "item reserved")
+    for field in ("approval_uid", "loss_epoch", "source_timer_epoch", "usable_lifetime", "domain_uid",
+                  "domain_item_revision", "domain_revision", "baseline_timer"):
+        _native_append(encoded, "<Q", artifact[field] if artifact else 0, field)
+    _native_append(encoded, "<i", artifact["baseline_owner"] if artifact else 0, "artifact baseline owner")
+    _native_append(encoded, "<q", artifact["baseline_bind_timer"] if artifact else 0, "artifact baseline bind timer")
+    _native_append(encoded, "<Q", artifact["baseline_revision"] if artifact else 0, "artifact baseline revision")
+    _native_append(encoded, "<i", artifact["bind_owner"] if artifact else 0, "artifact bind owner")
+    _native_append(encoded, "<q", artifact["bind_timer"] if artifact else 0, "artifact bind timer")
+    _native_append(encoded, "<H", len(classification), "classification length")
+    _native_append(encoded, "<H", len(note), "note length")
+    _native_append(encoded, "<I", len(state_payload), "metadata length")
+    _native_append(encoded, "<I", len(original_payload), "original length")
+    encoded.extend(hashlib.sha256(state_payload).digest())
+    encoded.extend(classification)
+    encoded.extend(note)
+    encoded.extend(state_payload)
+    encoded.extend(original_payload)
+    return bytes(encoded)
+
+
+def _native_plan_payload(plan: Mapping[str, Any], actor: str, reason: str) -> bytes:
+    source = plan.get("source")
+    if not isinstance(source, Mapping):
+        raise ToolError("plan has no native source identity")
+    source_pid = int_value(source.get("pid"), "source pid", 1, 2**31 - 1)
+    death_revision = int_value(source.get("death_revision"), "death revision", 1, 2**64 - 1)
+    recipient_pid = int_value(plan.get("recipient_pid"), "recipient pid", 1, 2**31 - 1)
+    if source_pid != recipient_pid:
+        raise ToolError("native staff export only supports source-player restitution")
+    restitution_id = _native_hex(plan.get("restitution_id_hex"), "restitution ID", size=16, required=True)
+    death_operation = _native_hex(source.get("operation_id_hex"), "death operation", size=16, required=True)
+    evidence_digest = _native_hex(plan.get("evidence_digest"), "evidence digest", size=32, required=True)
+    plan_digest = _native_hex(plan.get("plan_digest"), "plan digest", size=32, required=True)
+    fence = plan.get("native_fence")
+    if not isinstance(fence, Mapping):
+        raise ToolError("plan has no authoritative native revision fence; regenerate the plan")
+    recipient_save = int_value(fence.get("expected_recipient_save_revision"), "recipient save revision", 0, 2**64 - 2)
+    source_owner = int_value(fence.get("expected_source_owner_revision"), "source owner revision", 0, 2**64 - 2)
+    recipient_owner = int_value(fence.get("expected_recipient_owner_revision"), "recipient owner revision", 0, 2**64 - 2)
+    if source_owner != recipient_owner:
+        raise ToolError("native source and recipient owner revisions differ")
+    rows = plan.get("items")
+    if not isinstance(rows, list) or not rows or len(rows) > NATIVE_MAX_ITEMS:
+        raise ToolError("native staff export requires one to 64 plan candidates")
+    if not any(row.get("eligible") is True for row in rows if isinstance(row, Mapping)):
+        raise ToolError("native staff export requires an exact recoverable item")
+    eligible = [row for row in rows if isinstance(row, Mapping) and row.get("eligible") is True]
+    expected_owner_revisions = {
+        int_value(row.get("expected_current", {}).get("owner_revision"), "eligible owner revision", 0, 2**64 - 2)
+        for row in eligible if isinstance(row.get("expected_current"), Mapping)
+    }
+    if expected_owner_revisions != {source_owner}:
+        raise ToolError("native owner revision fence does not match every eligible UID")
+
+    encoded = bytearray()
+    _native_append(encoded, "<I", NATIVE_PLAN_MAGIC, "plan magic")
+    _native_append(encoded, "<H", NATIVE_COMMAND_PAYLOAD_VERSION, "plan version")
+    _native_append(encoded, "<H", 0, "plan reserved")
+    _native_append(encoded, "<I", source_pid, "source pid")
+    _native_append(encoded, "<Q", death_revision, "death revision")
+    _native_append(encoded, "<I", recipient_pid, "recipient pid")
+    _native_append(encoded, "<Q", recipient_save, "recipient save revision")
+    _native_append(encoded, "<Q", source_owner, "source owner revision")
+    _native_append(encoded, "<Q", recipient_owner, "recipient owner revision")
+    _native_append(encoded, "<Q", int_value(source.get("loss_epoch"), "loss epoch", 1, 2**63 - 1), "loss epoch")
+    encoded.extend(restitution_id)
+    encoded.extend(death_operation)
+    encoded.extend(evidence_digest)
+    encoded.extend(plan_digest)
+    actor_bytes = _native_text(actor, "actor", 128)
+    reason_bytes = _native_text(reason, "reason", NATIVE_MAX_NOTE_BYTES)
+    _native_append(encoded, "<H", len(actor_bytes), "actor length")
+    _native_append(encoded, "<H", len(reason_bytes), "reason length")
+    _native_append(encoded, "<H", len(rows), "candidate count")
+    _native_append(encoded, "<H", 0, "plan reserved")
+    encoded.extend(actor_bytes)
+    encoded.extend(reason_bytes)
+    for row in rows:
+        if not isinstance(row, Mapping):
+            raise ToolError("plan contains an invalid candidate")
+        encoded.extend(_native_item_payload(row, plan, source_pid))
+    if len(encoded) > 350 * 1024:
+        raise ToolError("native restitution plan exceeds its size bound")
+    return bytes(encoded)
+
+
+def _native_command_bytes(plan: Mapping[str, Any], actor: str, reason: str) -> bytes:
+    payload = _native_plan_payload(plan, actor, reason)
+    restitution_id = _native_hex(plan.get("restitution_id_hex"), "restitution ID", size=16, required=True)
+    fence = plan["native_fence"]
+    recipient = int_value(plan.get("recipient_pid"), "recipient pid", 1, 2**31 - 1)
+    recipient_save = int_value(fence["expected_recipient_save_revision"], "recipient save revision", 0, 2**64 - 2)
+    accepted_at_usec = time.time_ns() // 1000
+    if accepted_at_usec <= 0 or accepted_at_usec > 2**64 - 1:
+        raise ToolError("native staff export could not assign an acceptance timestamp")
+    encoded = bytearray(b"CCM1")
+    _native_append(encoded, "<I", NATIVE_COMMAND_SCHEMA_VERSION, "command schema")
+    encoded.extend(restitution_id)
+    _native_append(encoded, "<H", NATIVE_COMMAND_TYPE_PLAYER_DEATH_RESTITUTION, "command type")
+    _native_append(encoded, "<H", NATIVE_COMMAND_PAYLOAD_VERSION, "command payload version")
+    _native_append(encoded, "<H", NATIVE_COMMAND_SOURCE_OPERATOR_REPAIR, "command source")
+    _native_append(encoded, "<B", NATIVE_COMMAND_DEADLINE_INTERACTIVE, "command deadline")
+    _native_append(encoded, "<B", 0, "command reserved")
+    _native_append(encoded, "<Q", accepted_at_usec, "accepted timestamp")
+    _native_append(encoded, "<I", 1, "command key count")
+    _native_append(encoded, "<I", 1, "command revision count")
+    _native_append(encoded, "<I", len(payload), "command payload length")
+    _native_append(encoded, "<B", NATIVE_COMMAND_ENTITY_PLAYER, "command key type")
+    encoded.extend(b"\0" * 7)
+    _native_append(encoded, "<Q", recipient, "command recipient key")
+    _native_append(encoded, "<B", NATIVE_COMMAND_ENTITY_PLAYER, "command revision type")
+    encoded.extend(b"\0" * 7)
+    _native_append(encoded, "<Q", recipient, "command revision key")
+    _native_append(encoded, "<Q", recipient_save, "command recipient revision")
+    encoded.extend(payload)
+    if len(encoded) > STAFF_PAYLOAD_MAX_BYTES:
+        raise ToolError("native staff command exceeds its encoded size bound")
+    return bytes(encoded)
+
+
+def _revalidate_export_lineage(plan: dict[str, Any], inspection: dict[str, Any]) -> None:
+    if plan.get("backend") != "sql":
+        raise ToolError("native staff export requires a SQL-derived plan")
+    if plan.get("evidence_digest") != inspection.get("evidence_digest"):
+        raise ToolError("plan and inspection carry different evidence digests")
+    target = plan.get("target")
+    target_info = None
+    if target is not None:
+        target_info = {"target": target, "maintenance_boundary": plan.get("maintenance_boundary")}
+    rebuilt = plan_from_inspection(
+        inspection,
+        bool(plan.get("artifact_reconciliation_approved")),
+        target_info=target_info,
+        backup_receipt=plan.get("backup_receipt"),
+        approve_production=bool(plan.get("production_approved")),
+        artifact_timing_compensations=plan.get("artifact_timing_compensations"),
+    )
+    if rebuilt["plan_digest"] != plan.get("plan_digest") or rebuilt["restitution_id_hex"] != plan.get("restitution_id_hex"):
+        raise ToolError("plan is not the exact protected result of this inspection")
+    if plan.get("applyable") is not True:
+        raise ToolError("staff export requires an applyable plan")
+
+
+def build_staff_payload(plan: dict[str, Any], inspection: dict[str, Any],
+                        actor: str, reason: str) -> dict[str, Any]:
+    actor, reason = validate_staff_approval(actor, reason)
+    _revalidate_export_lineage(plan, inspection)
+    validate_artifact_timing_compensations(plan)
+    rows = plan.get("items")
+    if not isinstance(rows, list):
+        raise ToolError("plan has no candidate rows")
+    command = _native_command_bytes(plan, actor, reason)
+    chunks = [command.hex()[offset:offset + STAFF_CHUNK_HEX]
+              for offset in range(0, len(command.hex()), STAFF_CHUNK_HEX)]
+    approvals: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping) or row.get("eligible") is not True or row.get("kind") != "artifact":
+            continue
+        uid = str(int_value(row.get("item_uid"), "artifact UID", 1, 2**64 - 1))
+        timing = row.get("artifact_timing")
+        if not isinstance(timing, Mapping):
+            raise ToolError("exported artifact has no UID-specific timing evidence")
+        approvals[uid] = {
+            "item_uid": int(uid),
+            "basis": timing.get("basis"),
+            "approved": timing.get("basis") == "approved_compensation",
+            "usable_lifetime_seconds": int_value(
+                timing.get("usable_lifetime_seconds"), "artifact usable lifetime", 1, NATIVE_MAX_TIMER_SECONDS
+            ),
+            "approval_reference": timing.get("compensation_reference", ""),
+        }
+    body: dict[str, Any] = {
+        "artifact_version": TOOL_VERSION,
+        "kind": "death_restitution_staff_payload",
+        "format": STAFF_PAYLOAD_FORMAT,
+        "source_site": "operator_repair",
+        "deadline_class": "interactive",
+        "actor": actor,
+        "reason": reason,
+        "source": {
+            "pid": plan["source"]["pid"],
+            "death_revision": plan["source"]["death_revision"],
+            "operation_id_hex": plan["source"]["operation_id_hex"],
+            "loss_epoch": plan["source"].get("loss_epoch"),
+        },
+        "recipient_pid": plan["recipient_pid"],
+        "restitution_id_hex": plan["restitution_id_hex"],
+        "evidence_digest": plan["evidence_digest"],
+        "plan_digest": plan["plan_digest"],
+        "native_fence": dict(plan["native_fence"]),
+        "candidate_count": len(rows),
+        "eligible_count": sum(1 for row in rows if isinstance(row, Mapping) and row.get("eligible") is True),
+        "unresolved_count": sum(1 for row in rows if not isinstance(row, Mapping) or row.get("eligible") is not True),
+        "artifact_timing_approvals": approvals,
+        "command_digest": digest_bytes(command),
+        "canonical_hex": command.hex(),
+        "chunks": chunks,
+    }
+    body["approval_digest"] = digest_json(body)
+    return body
 
 
 # ---------- quiescence and apply ----------
@@ -3576,6 +4285,20 @@ def parser() -> argparse.ArgumentParser:
         "--approve-production", action="store_true",
         help="approve this exact target, boundary, and backup for production apply",
     )
+    export = sub.add_parser(
+        "export",
+        help="export a protected operator-approved canonical payload for the native staff command",
+    )
+    export.add_argument("--plan", required=True, type=Path)
+    export.add_argument(
+        "--inspect", required=True, type=Path,
+        help="the exact protected inspection used to produce the plan",
+    )
+    export.add_argument("--artifact", required=True, type=Path)
+    export.add_argument("--overwrite", action="store_true")
+    export.add_argument("--approve", action="store_true")
+    export.add_argument("--actor", required=True)
+    export.add_argument("--reason", required=True)
     apply = sub.add_parser("apply")
     apply.add_argument("--plan", required=True, type=Path)
     apply.add_argument("--offline-proof", required=True, type=Path)
@@ -3661,6 +4384,22 @@ def main(argv: list[str]) -> int:
         print("plan written: candidates=%d eligible=%d unresolved=%d applyable=%s plan_digest=%s" % (
             plan["candidate_count"], plan["eligible_count"], plan["unresolved_count"],
             str(plan["applyable"]).lower(), plan["plan_digest"]))
+        return 0
+    if args.command == "export":
+        if not args.approve:
+            raise ToolError("staff export requires explicit --approve")
+        plan = load_plan(args.plan)
+        inspection = load_inspection(args.inspect)
+        artifact = build_staff_payload(plan, inspection, args.actor, args.reason)
+        atomic_write_json(args.artifact, artifact, args.overwrite)
+        print(
+            "staff payload written: candidates=%d eligible=%d unresolved=%d bytes=%d chunks=%d "
+            "command_digest=%s approval_digest=%s" % (
+                artifact["candidate_count"], artifact["eligible_count"], artifact["unresolved_count"],
+                len(artifact["canonical_hex"]) // 2, len(artifact["chunks"]),
+                artifact["command_digest"], artifact["approval_digest"],
+            )
+        )
         return 0
     if args.command == "apply":
         if not args.approve:
