@@ -8901,7 +8901,14 @@ void do_wear(P_char ch, char *argument, int /*cmd*/)
 							ch);
 						continue;
 					}
-					if (!can_equip_soulbound_item(ch, obj_object, true))
+					/* Silently: this is the inner loop of `wear all`,
+					 * walking every carried item for every empty
+					 * slot, so a spoken refusal fires once per slot
+					 * per item. Someone carrying looted store gear
+					 * to sell, or an account-bound piece that is not
+					 * theirs, would get pages of it. An explicit
+					 * `wear <item>` still says why. */
+					if (!can_equip_soulbound_item(ch, obj_object, false))
 						continue;
 					if (obj_object->type != ITEM_SPELLBOOK)
 					{

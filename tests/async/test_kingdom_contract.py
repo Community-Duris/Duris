@@ -2368,6 +2368,32 @@ def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
         "only the buyer may wear a store piece, and that is tested before the soulbind flag gate",
         f"store gate {store_gate}, flag gate {flag_gate}",
     )
+    # `wear all` walks every carried item for every empty slot, so a spoken
+    # refusal there fires once per slot per item: someone carrying looted store
+    # gear to sell would get pages of it. That path asks silently; an explicit
+    # `wear <item>` still says why.
+    actobj = read("src/cmd/actobj.c")
+    # `wear all`'s inner loop, by its own markers. NOT by the CUR_MAX_WEAR loop
+    # header or the outer loop's end: there is more than one such loop, and the
+    # explicit-wear site -- which SHOULD speak -- sits inside a window anchored
+    # on the first of them.
+    check(
+        actobj.count("// Inner Loop") == 1 and actobj.count("// End Inner Loop") == 1,
+        "`wear all`'s inner loop is marked exactly once, so the check below reads the right lines",
+        f"{actobj.count('// Inner Loop')} start marker(s), "
+        f"{actobj.count('// End Inner Loop')} end marker(s)",
+    )
+    inner_at = actobj.find("// Inner Loop")
+    inner_end = actobj.find("// End Inner Loop", inner_at) if inner_at >= 0 else -1
+    loop_window = actobj[inner_at:inner_end] if inner_at >= 0 and inner_end > inner_at else ""
+    check(
+        loop_window != ""
+        and "can_equip_soulbound_item(ch, obj_object, false)" in loop_window
+        and "can_equip_soulbound_item(ch, obj_object, true)" not in loop_window,
+        "the `wear all` loop asks the equip check silently, so a carried piece is not refused "
+        "once per empty slot",
+        f"inner loop {inner_at}, end {inner_end}",
+    )
     remove = function_bodies(read("src/magic/magic.c"), r"\bvoid\s+remove_soulbind\s*\(")
     check(
         len(remove) == 1 and "!kingdom_store_bound(obj)" in strip_comments(remove[0]),
