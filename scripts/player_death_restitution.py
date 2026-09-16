@@ -58,7 +58,7 @@ STAFF_PAYLOAD_MAX_BYTES = 512 * 1024
 STAFF_CHUNK_HEX = 1022
 NATIVE_COMMAND_SCHEMA_VERSION = 1
 NATIVE_COMMAND_TYPE_PLAYER_DEATH_RESTITUTION = 19
-NATIVE_COMMAND_PAYLOAD_VERSION = 2
+NATIVE_COMMAND_PAYLOAD_VERSION = 3
 NATIVE_COMMAND_SOURCE_OPERATOR_REPAIR = 6
 NATIVE_COMMAND_DEADLINE_INTERACTIVE = 1
 NATIVE_COMMAND_ENTITY_PLAYER = 1
@@ -2566,6 +2566,7 @@ def _native_plan_payload(plan: Mapping[str, Any], actor: str, reason: str) -> by
     restitution_id = _native_hex(plan.get("restitution_id_hex"), "restitution ID", size=16, required=True)
     death_operation = _native_hex(source.get("operation_id_hex"), "death operation", size=16, required=True)
     evidence_digest = _native_hex(plan.get("evidence_digest"), "evidence digest", size=32, required=True)
+    payload_digest = _native_hex(plan.get("payload_digest"), "payload digest", size=32, required=True)
     plan_digest = _native_hex(plan.get("plan_digest"), "plan digest", size=32, required=True)
     fence = plan.get("native_fence")
     if not isinstance(fence, Mapping):
@@ -2602,6 +2603,7 @@ def _native_plan_payload(plan: Mapping[str, Any], actor: str, reason: str) -> by
     encoded.extend(restitution_id)
     encoded.extend(death_operation)
     encoded.extend(evidence_digest)
+    encoded.extend(payload_digest)
     encoded.extend(plan_digest)
     actor_bytes = _native_text(actor, "actor", 128)
     reason_bytes = _native_text(reason, "reason", NATIVE_MAX_NOTE_BYTES)

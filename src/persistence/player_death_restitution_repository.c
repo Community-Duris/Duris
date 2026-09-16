@@ -171,13 +171,13 @@ bool verify_death_evidence(MYSQL *connection, const player_death_restitution_pla
 	uint64_t save_revision = plan.death_revision;
 	int64_t loss_epoch = static_cast<int64_t>(plan.loss_epoch);
 	unsigned long operation_length = plan.death_operation_id.bytes.size();
-	unsigned long digest_length = plan.evidence_digest.size();
+	unsigned long digest_length = plan.payload_digest.size();
 	MYSQL_BIND parameters[5] = {};
 	bind_int(&parameters[0], MYSQL_TYPE_LONG, &pid, true);
 	bind_int(&parameters[1], MYSQL_TYPE_LONGLONG, &save_revision, true);
 	bind_blob(&parameters[2], const_cast<uint8_t *>(plan.death_operation_id.bytes.data()),
 		  &operation_length);
-	bind_blob(&parameters[3], const_cast<uint8_t *>(plan.evidence_digest.data()),
+	bind_blob(&parameters[3], const_cast<uint8_t *>(plan.payload_digest.data()),
 		  &digest_length);
 	bind_int(&parameters[4], MYSQL_TYPE_LONGLONG, &loss_epoch, false);
 	uint8_t found_value = 0;
@@ -993,8 +993,14 @@ bool insert_delivery(MYSQL *connection, const player_death_restitution_plan &pla
 	uint32_t source_pid = plan.source_pid, recipient_pid = plan.recipient_pid;
 	uint64_t death_revision = plan.death_revision,
 		 delivered_revision = item.expected_item_revision + 1;
+	// The delivery record's metadata_digest authenticates the immutable
+	// original_payload.  item.metadata_digest belongs to the mutable native
+	// metadata_payload (IST1) domain and is intentionally different.
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> original_payload_digest = {};
+	SHA256(item.original_payload.data(), item.original_payload.size(),
+	       original_payload_digest.data());
 	unsigned long rid_length = plan.restitution_id.bytes.size(),
-		      metadata_length = item.metadata_digest.size(),
+		      delivery_digest_length = original_payload_digest.size(),
 		      original_length = item.original_payload.size();
 	MYSQL_BIND parameters[10] = {};
 	bind_int(&parameters[0], MYSQL_TYPE_LONGLONG, const_cast<uint64_t *>(&item.item_uid), true);
@@ -1007,8 +1013,7 @@ bool insert_delivery(MYSQL *connection, const player_death_restitution_plan &pla
 		 const_cast<uint64_t *>(&item.source_item_revision), true);
 	bind_int(&parameters[6], MYSQL_TYPE_LONGLONG, &delivered_revision, true);
 	bind_int(&parameters[7], MYSQL_TYPE_LONG, &delivered_id, true);
-	bind_blob(&parameters[8], const_cast<uint8_t *>(item.metadata_digest.data()),
-		  &metadata_length);
+	bind_blob(&parameters[8], original_payload_digest.data(), &delivery_digest_length);
 	bind_blob(&parameters[9], const_cast<uint8_t *>(item.original_payload.data()),
 		  &original_length);
 	const bool ok = mysql_stmt_bind_param(statement, parameters) == 0 &&

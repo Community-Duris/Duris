@@ -469,6 +469,7 @@ bool encode_plan_internal(const player_death_restitution_plan &plan, std::vector
 		append_bytes(*encoded, plan.death_operation_id.bytes.data(),
 			     plan.death_operation_id.bytes.size());
 		append_bytes(*encoded, plan.evidence_digest.data(), plan.evidence_digest.size());
+		append_bytes(*encoded, plan.payload_digest.data(), plan.payload_digest.size());
 		append_bytes(*encoded, plan.plan_digest.data(), plan.plan_digest.size());
 		append_le<uint16_t>(*encoded, static_cast<uint16_t>(plan.actor.size()));
 		append_le<uint16_t>(*encoded, static_cast<uint16_t>(plan.reason.size()));
@@ -593,6 +594,10 @@ bool decode_plan_internal(const uint8_t *encoded, size_t encoded_size,
 		return false;
 	memcpy(decoded.evidence_digest.data(), encoded + offset, decoded.evidence_digest.size());
 	offset += decoded.evidence_digest.size();
+	if (offset > encoded_size || decoded.payload_digest.size() > encoded_size - offset)
+		return false;
+	memcpy(decoded.payload_digest.data(), encoded + offset, decoded.payload_digest.size());
+	offset += decoded.payload_digest.size();
 	if (offset > encoded_size || decoded.plan_digest.size() > encoded_size - offset)
 		return false;
 	memcpy(decoded.plan_digest.data(), encoded + offset, decoded.plan_digest.size());
@@ -768,7 +773,8 @@ bool player_death_restitution_plan_valid(const player_death_restitution_plan &pl
 	    plan.recipient_pid > static_cast<uint32_t>(INT32_MAX) ||
 	    critical_operation_id_is_zero(plan.restitution_id) ||
 	    critical_operation_id_is_zero(plan.death_operation_id) ||
-	    !digest_nonzero(plan.evidence_digest) || !digest_nonzero(plan.plan_digest) ||
+	    !digest_nonzero(plan.evidence_digest) || !digest_nonzero(plan.payload_digest) ||
+	    !digest_nonzero(plan.plan_digest) ||
 	    plan.expected_recipient_save_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
 	    plan.expected_source_owner_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||
 	    plan.expected_recipient_owner_revision == PLAYER_DEATH_RESTITUTION_REVISION_WILDCARD ||

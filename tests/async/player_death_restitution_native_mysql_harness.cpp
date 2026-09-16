@@ -289,7 +289,8 @@ void assert_unchanged_after_rejection(MYSQL *connection, uint32_t expected_owner
 		"rejection changed legacy artifact projection");
 }
 
-uint64_t positive_delivery(MYSQL *connection, const critical_command &command)
+uint64_t positive_delivery(MYSQL *connection, const fixture &value,
+			   const critical_command &command)
 {
 	const critical_apply_result applied =
 		critical_command_repository_apply(connection, command);
@@ -305,6 +306,44 @@ uint64_t positive_delivery(MYSQL *connection, const critical_command &command)
 		"positive result payload was not decodable");
 	require(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=1004") == "1",
 		"artifact player item was not projected");
+	const std::string delivery_digest = scalar(
+		connection,
+		"SELECT LOWER(HEX(metadata_digest)) FROM player_death_restitution_delivery "
+		"WHERE item_uid=1004");
+	const std::string original_payload_digest = scalar(
+		connection,
+		"SELECT LOWER(SHA2(original_payload,256)) FROM player_death_restitution_delivery "
+		"WHERE item_uid=1004");
+	const std::string native_ist1_digest = scalar(
+		connection,
+		"SELECT LOWER(HEX(metadata_digest)) FROM player_death_restitution_item "
+		"WHERE item_uid=1004");
+	require(scalar(
+			connection,
+			"SELECT LEFT(HEX(metadata_payload),8) FROM player_death_restitution_item "
+			"WHERE item_uid=1004") == "49535431",
+		"receipt item metadata payload is not native IST1");
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> expected_original_digest = {};
+	SHA256(value.plan.items[0].original_payload.data(),
+	       value.plan.items[0].original_payload.size(), expected_original_digest.data());
+	const std::string expected_original_digest_hex = hex_bytes(expected_original_digest);
+	const std::string expected_native_ist1_digest =
+		hex_bytes(value.plan.items[0].metadata_digest);
+	require(original_payload_digest == expected_original_digest_hex,
+		"fixture original payload digest was not reproduced by SQL");
+	require(native_ist1_digest == expected_native_ist1_digest,
+		"fixture IST1 metadata digest was not reproduced by SQL");
+	require(original_payload_digest != native_ist1_digest,
+		"native fixture did not keep original and IST1 digests distinct");
+	require(delivery_digest == original_payload_digest,
+		"delivery metadata digest does not authenticate immutable original_payload");
+	require(delivery_digest != native_ist1_digest,
+		"delivery metadata digest reused the native IST1 metadata digest");
+	require(scalar(
+			connection,
+			"SELECT LOWER(HEX(metadata_digest))=LOWER(SHA2(metadata_payload,256)) "
+			"FROM player_death_restitution_item WHERE item_uid=1004") == "1",
+		"receipt item metadata digest no longer authenticates IST1 metadata_payload");
 	require(scalar(connection, "SELECT pid FROM player_items WHERE obj_uid=1004") == "43",
 		"artifact projected to wrong player");
 	require(scalar(connection, "SELECT HEX(name) FROM player_items WHERE obj_uid=1004") ==
@@ -439,7 +478,7 @@ void run_positive_and_replay(MYSQL *connection)
 	const fixture value = make_fixture(0x30);
 	seed_database(connection, value);
 	const critical_command command = build_command(value);
-	const uint64_t timer = positive_delivery(connection, command);
+	const uint64_t timer = positive_delivery(connection, value, command);
 	require(timer > 1700000000ULL, "delivery timer was not based on current delivery epoch");
 	const critical_apply_result replay = critical_command_repository_apply(connection, command);
 	require(replay.outcome == critical_apply_outcome::already_applied,

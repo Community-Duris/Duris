@@ -11,7 +11,10 @@
 
 // The native slice is deliberately bounded to individual item records.  It
 // never carries or replaces a complete player snapshot.
-constexpr uint16_t PLAYER_DEATH_RESTITUTION_PAYLOAD_VERSION = 2;
+// Version 3 carries the protected inspection digest and the raw death-payload
+// digest separately: the former binds the receipt identity, while the latter
+// is the live death-evidence fence.
+constexpr uint16_t PLAYER_DEATH_RESTITUTION_PAYLOAD_VERSION = 3;
 constexpr size_t PLAYER_DEATH_RESTITUTION_MAX_ITEMS = 64;
 constexpr size_t PLAYER_DEATH_RESTITUTION_MAX_CLASSIFICATION_BYTES = 64;
 constexpr size_t PLAYER_DEATH_RESTITUTION_MAX_NOTE_BYTES = 255;
@@ -141,6 +144,7 @@ struct player_death_restitution_plan
 	critical_operation_id restitution_id;
 	critical_operation_id death_operation_id;
 	std::array<uint8_t, 32> evidence_digest;
+	std::array<uint8_t, 32> payload_digest;
 	std::array<uint8_t, 32> plan_digest;
 	uint64_t expected_recipient_save_revision;
 	uint64_t expected_source_owner_revision;

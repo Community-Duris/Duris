@@ -5,6 +5,7 @@ from _paths import ROOT
 
 import hashlib
 import json
+import struct
 import subprocess
 import sys
 import tempfile
@@ -368,6 +369,7 @@ with tempfile.TemporaryDirectory(prefix="duris-restitution-handoff-") as temp_di
         "--reason", "death_restitution",
     )
     payload = json.loads(export_path.read_text())
+    plan = json.loads(plan_path.read_text())
     assert payload["format"] == "duris-player-death-restitution-staff-payload-v1"
     assert payload["source_site"] == "operator_repair"
     assert payload["deadline_class"] == "interactive"
@@ -378,6 +380,14 @@ with tempfile.TemporaryDirectory(prefix="duris-restitution-handoff-") as temp_di
     assert all(0 < len(chunk) <= 1022 for chunk in payload["chunks"])
     command = bytes.fromhex(payload["canonical_hex"])
     assert hashlib.sha256(command).hexdigest() == payload["command_digest"]
+    # The command header is 92 bytes; the native plan places its two distinct
+    # digests after the 88-byte scalar/identity prefix.
+    native_plan_offset = 92
+    digest_offset = native_plan_offset + 88
+    assert struct.unpack_from("<H", command, native_plan_offset + 4)[0] == cli.NATIVE_COMMAND_PAYLOAD_VERSION
+    assert command[digest_offset:digest_offset + 32] == bytes.fromhex(plan["evidence_digest"])
+    assert command[digest_offset + 32:digest_offset + 64] == bytes.fromhex(plan["payload_digest"])
+    assert command[digest_offset + 64:digest_offset + 96] == bytes.fromhex(plan["plan_digest"])
     approval_digest = payload.pop("approval_digest")
     assert cli.digest_json(payload) == approval_digest
 
