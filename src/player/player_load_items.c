@@ -102,18 +102,24 @@ bool parse_spellbook(const std::string &json, char *spell_bits = nullptr)
 		skip_space();
 		if (position >= json.size() || json[position] < '0' || json[position] > '9')
 			return false;
+		const size_t number_start = position;
 		uint64_t value = 0;
 		while (position < json.size() && json[position] >= '0' && json[position] <= '9')
 		{
-			value = value * 10 + static_cast<unsigned int>(json[position++] - '0');
-			if (value >= MAX_SKILLS)
+			const uint64_t digit = static_cast<unsigned int>(json[position++] - '0');
+			if (value > (static_cast<uint64_t>(MAX_SKILLS) - 1 - digit) / 10)
 				return false;
+			value = value * 10 + digit;
 		}
+		if (json[number_start] == '0' && position != number_start + 1)
+			return false;
 		if (seen[value])
 			return false;
 		seen[value] = true;
 		if (spell_bits)
-			spell_bits[value / 8] |= static_cast<char>(1U << (value % 8));
+			spell_bits[value / 8] = static_cast<char>(
+				static_cast<unsigned char>(spell_bits[value / 8]) |
+				static_cast<unsigned char>(1U << (value % 8)));
 		skip_space();
 		if (position >= json.size())
 			return false;
@@ -147,7 +153,9 @@ bool decode_saved_spellbook(const player_item_extra_description_snapshot &descri
 			return false;
 		seen[spell] = true;
 		if (spell_bits)
-			spell_bits[spell / 8] |= static_cast<char>(1U << (spell % 8));
+			spell_bits[spell / 8] = static_cast<char>(
+				static_cast<unsigned char>(spell_bits[spell / 8]) |
+				static_cast<unsigned char>(1U << (spell % 8)));
 	}
 	return true;
 }

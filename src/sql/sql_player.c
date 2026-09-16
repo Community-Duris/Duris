@@ -999,16 +999,33 @@ static void sql_load_item_extra_descr_values(const char *db_keyword, const char 
 
 	if (stored_spellbook)
 	{
+		const size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
+		char decoded_bits[(MAX_SKILLS + 1) / 8 + 1];
+		const sql_spellbook_decode_status status = sql_decode_stored_spellbook(
+			db_keyword, db_description, decoded_bits, sizeof(decoded_bits));
+		if (status == sql_spellbook_decode_status::invalid)
+		{
+			// Keep malformed canonical data visible instead of silently replacing it
+			// with an empty native bitmap. It cannot be used as a spellbook until
+			// repaired, but a later save must not erase the evidence we need to recover.
+			ed->keyword = db_keyword ? str_dup(db_keyword) : str_dup("");
+			ed->description = db_description ? str_dup(db_description) : NULL;
+			persistence_alert(
+				AVATAR, "item_extra_descr", table ? table : "unknown", "none",
+				"none", "invalid_spellbook_encoding",
+				"item_id=%d had a malformed canonical spellbook description; preserved it for repair",
+				item_id);
+			return;
+		}
+
 		CREATE(ed->keyword, char, 4, MEM_TAG_STRING);
 		ed->keyword[0] = 3;
 		ed->keyword[1] = 1;
 		ed->keyword[2] = 3;
 		ed->keyword[3] = '\0';
 
-		const size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
 		CREATE(ed->description, char, buflen, MEM_TAG_STRING);
-		const sql_spellbook_decode_status status = sql_decode_stored_spellbook(
-			db_keyword, db_description, ed->description, buflen);
+		memcpy(ed->description, decoded_bits, buflen);
 		if (status == sql_spellbook_decode_status::legacy_corrupt)
 		{
 			persistence_alert(
@@ -2336,13 +2353,18 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 	return batch_count;
 }
 
+static bool sql_merge_duplicate_spellbook(struct extra_descr_data *existing,
+					  struct extra_descr_data *candidate);
+
 static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const char *table)
 {
 	char query[256];
 	if (!obj || !DB)
 		return true;
 
-	// load extra descriptions (spellbooks etc)
+	// TABLE is the base item table name; this helper appends _extra_descr.
+	// Keep callers on the base name so locker_item does not become
+	// locker_item_extra_descr_extra_descr.
 	snprintf(query, sizeof(query),
 		 "SELECT keyword, description "
 		 "FROM %s_extra_descr "
@@ -2352,6 +2374,7 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 	MYSQL_RES *result = db_query("%s", query);
 	if (result)
 	{
+		struct extra_descr_data *loaded_spellbook = NULL;
 		MYSQL_ROW row;
 		while ((row = mysql_fetch_row(result)))
 		{
@@ -2360,12 +2383,60 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 
 			sql_load_item_extra_descr_values(row[0], row[1], ed, table, item_id);
 
+			if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+			{
+				if (loaded_spellbook &&
+				    sql_merge_duplicate_spellbook(loaded_spellbook, ed))
+				{
+					persistence_alert(
+						AVATAR, "item_extra_descr",
+						table ? table : "unknown", "none", "none",
+						"duplicate_spellbook_rows",
+						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
+						item_id);
+					continue;
+				}
+				loaded_spellbook = ed;
+			}
 			ed->next = obj->ex_description;
 			obj->ex_description = ed;
 			obj->str_mask |= STRUNG_EDESC;
 		}
 		mysql_free_result(result);
 	}
+	return true;
+}
+
+// A legacy save can leave both a raw-marker row (which decodes to an empty
+// safe bitmap) and a later canonical row for the same item. Never let row
+// order decide which one find_spell_description() sees; merge duplicate native
+// bitmaps before attaching the candidate to the object. The caller supplies
+// only rows loaded from this table, so a native marker from the object
+// prototype is not accidentally merged into persisted state.
+static bool sql_merge_duplicate_spellbook(struct extra_descr_data *existing,
+					  struct extra_descr_data *candidate)
+{
+	if (!existing || !candidate ||
+	    !sql_item_extra_descr_is_spellbook_marker(existing->keyword) ||
+	    !sql_item_extra_descr_is_spellbook_marker(candidate->keyword))
+		return false;
+
+	const size_t byte_count = (MAX_SKILLS + 1) / 8 + 1;
+	if (existing->description && candidate->description)
+		for (size_t offset = 0; offset < byte_count; ++offset)
+			existing->description[offset] = static_cast<char>(
+				static_cast<unsigned char>(existing->description[offset]) |
+				static_cast<unsigned char>(candidate->description[offset]));
+	else if (!existing->description && candidate->description)
+	{
+		existing->description = candidate->description;
+		candidate->description = NULL;
+	}
+	if (candidate->keyword)
+		str_free(candidate->keyword);
+	if (candidate->description)
+		str_free(candidate->description);
+	FREE(candidate);
 	return true;
 }
 
@@ -2440,6 +2511,21 @@ static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 	if (!obj->ex_description)
 		return true;
 
+	const size_t spellbook_bytes = (MAX_SKILLS + 1) / 8 + 1;
+	char spellbook_bits[(MAX_SKILLS + 1) / 8 + 1] = {};
+	static const char spellbook_marker[] = { 3, 1, 3, 0 };
+	for (struct extra_descr_data *source = obj->ex_description; source; source = source->next)
+	{
+		if (!sql_item_extra_descr_is_spellbook_marker(source->keyword) ||
+		    !source->description)
+			continue;
+		for (size_t offset = 0; offset < spellbook_bytes; ++offset)
+			spellbook_bits[offset] = static_cast<char>(
+				static_cast<unsigned char>(spellbook_bits[offset]) |
+				static_cast<unsigned char>(source->description[offset]));
+	}
+
+	bool spellbook_emitted = false;
 	std::unordered_set<std::string> description_keys;
 	struct extra_descr_data *ed;
 	for (ed = obj->ex_description; ed; ed = ed->next)
@@ -2447,10 +2533,21 @@ static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 		if (!ed->keyword)
 			continue;
 
+		const char *source_keyword = ed->keyword;
+		const char *source_description = ed->description;
+		if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+		{
+			if (spellbook_emitted)
+				continue;
+			spellbook_emitted = true;
+			source_keyword = spellbook_marker;
+			source_description = spellbook_bits;
+		}
+
 		char *db_keyword = NULL;
 		char *db_desc = NULL;
 
-		if (!sql_encode_item_extra_descr(ed->keyword, ed->description, &db_keyword,
+		if (!sql_encode_item_extra_descr(source_keyword, source_description, &db_keyword,
 						 &db_desc))
 			return false;
 		std::string description_key = db_keyword;
@@ -2465,20 +2562,28 @@ static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 			continue;
 		}
 
-		char query[8192];
+		char query[32768];
+		int written;
 		if (db_desc)
 		{
-			snprintf(
+			written = snprintf(
 				query, sizeof(query),
 				"INSERT INTO %s (item_id, keyword, description) VALUES (%d, '%s', '%s')",
 				table, item_id, db_keyword, db_desc);
 		}
 		else
 		{
-			snprintf(
+			written = snprintf(
 				query, sizeof(query),
 				"INSERT INTO %s (item_id, keyword, description) VALUES (%d, '%s', NULL)",
 				table, item_id, db_keyword);
+		}
+		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
+		{
+			free(db_keyword);
+			if (db_desc)
+				free(db_desc);
+			return false;
 		}
 
 		free(db_keyword);
@@ -2608,8 +2713,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	if (!sql_save_item_affects(item_id, obj))
 		return 0;
 
-	if (obj->ex_description &&
-	    !sql_save_item_extra_descr(item_id, obj, "player_item_extra_descr"))
+	if (!sql_save_item_extra_descr(item_id, obj, "player_item_extra_descr"))
 		return 0;
 
 	// save container contents - batch simple items, individual for complex ones
@@ -3438,8 +3542,7 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 		return 0;
 	}
 
-	if (obj->ex_description &&
-	    !sql_save_item_extra_descr(item_id, obj, "player_pet_item_extra_descr"))
+	if (!sql_save_item_extra_descr(item_id, obj, "player_pet_item_extra_descr"))
 	{
 		if (own_txn)
 			sql_rollback();
@@ -4370,6 +4473,8 @@ bool sql_load_player_items(P_char ch)
 	mysql_free_result(result);
 
 	int loaded_count = idx;
+	struct extra_descr_data **loaded_spellbooks =
+		(struct extra_descr_data **)calloc(num_rows, sizeof(*loaded_spellbooks));
 
 	// load all item affects in one query (was N+1 queries, now 1)
 	// track which items have had their prototype affects cleared
@@ -4455,11 +4560,13 @@ bool sql_load_player_items(P_char ch)
 			int db_id = atoi(row[0]);
 
 			P_obj obj = NULL;
+			int object_index = -1;
 			for (int i = 0; i < loaded_count; i++)
 			{
 				if (item_ids[i] == db_id && items[i])
 				{
 					obj = items[i];
+					object_index = i;
 					break;
 				}
 			}
@@ -4471,12 +4578,29 @@ bool sql_load_player_items(P_char ch)
 
 			sql_load_item_extra_descr_values(row[1], row[2], ed, "player_item", db_id);
 
+			if (loaded_spellbooks && object_index >= 0 &&
+			    sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+			{
+				if (loaded_spellbooks[object_index] &&
+				    sql_merge_duplicate_spellbook(loaded_spellbooks[object_index],
+								  ed))
+				{
+					persistence_alert(
+						AVATAR, "item_extra_descr", "player_item", "none",
+						"none", "duplicate_spellbook_rows",
+						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
+						db_id);
+					continue;
+				}
+				loaded_spellbooks[object_index] = ed;
+			}
 			ed->next = obj->ex_description;
 			obj->ex_description = ed;
 			obj->str_mask |= STRUNG_EDESC;
 		}
 		mysql_free_result(result);
 	}
+	free(loaded_spellbooks);
 
 	// place items in containers using linear search
 	for (int i = 0; i < loaded_count; i++)
@@ -5803,8 +5927,7 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 		return 0;
 	}
 
-	if (obj->ex_description &&
-	    !sql_save_item_extra_descr(item_id, obj, "locker_item_extra_descr"))
+	if (!sql_save_item_extra_descr(item_id, obj, "locker_item_extra_descr"))
 	{
 		logit(LOG_DEBUG,
 		      "sql_save_locker_item: extra descr save failed item_id=%d locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu",
@@ -6137,9 +6260,10 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		}
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
+		obj->db_item_id = item_id;
 
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
-		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item_extra_descr");
+		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item");
 
 		obj->contains =
 			sql_load_locker_items_filtered(locker_id, item_id, chest_id, depth + 1);
@@ -6931,7 +7055,9 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 			continue;
 		}
 
+		obj->db_item_id = item_id;
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
+		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item");
 
 		// Put the chest item into the room before loading nested contents so
 		// nested containers do not get rejected by a fit check while still full.
@@ -7518,8 +7644,7 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 		return 0;
 	}
 
-	if (obj->ex_description &&
-	    !sql_save_item_extra_descr(item_id, obj, "corpse_item_extra_descr"))
+	if (!sql_save_item_extra_descr(item_id, obj, "corpse_item_extra_descr"))
 	{
 		if (own_txn)
 			sql_rollback();
@@ -8566,6 +8691,8 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 
 	if (!sql_save_shopkeeper_item_affects(item_id, obj))
 		return 0;
+	if (!sql_save_item_extra_descr(item_id, obj, "shopkeeper_item_extra_descr"))
+		return 0;
 
 	if (obj->contains)
 	{
@@ -8828,6 +8955,8 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 
 	if (!sql_save_saved_item_affects(item_id, obj))
 		return 0;
+	if (!sql_save_item_extra_descr(item_id, obj, "saved_item_extra_descr"))
+		return 0;
 
 	if (obj->contains)
 	{
@@ -9020,6 +9149,8 @@ static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], 
 			obj->bitvector4 = strtoul(row[25], NULL, 10);
 		if (row[26])
 			obj->bitvector5 = strtoul(row[26], NULL, 10);
+		obj->db_item_id = item_id;
+		sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item");
 
 		struct shopkeeper_item_temp *temp =
 			(struct shopkeeper_item_temp *)malloc(sizeof(struct shopkeeper_item_temp));
@@ -9830,6 +9961,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 			continue;
 		}
 		obj->db_item_id = item_id;
+		sql_load_item_extra_descr_from_table(item_id, obj, "saved_item");
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query),
@@ -10000,6 +10132,7 @@ void sql_restore_saved_items(void)
 			continue;
 		}
 		obj->db_item_id = item_id;
+		sql_load_item_extra_descr_from_table(item_id, obj, "saved_item");
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query),

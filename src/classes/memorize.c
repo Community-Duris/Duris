@@ -292,7 +292,9 @@ int get_spell_circle(P_char ch, int spl)
 
 int SpellInThisSpellBook_p(struct extra_descr_data *tmp, int spl)
 {
-	return (IS_SET(tmp->description[spl / 8], 1 << (spl % 8)));
+	if (!tmp || !tmp->description || spl < 0 || spl >= MAX_SKILLS)
+		return 0;
+	return (static_cast<unsigned char>(tmp->description[spl / 8]) & (1U << (spl % 8))) != 0;
 }
 
 int SpellInThisSpellBook(struct extra_descr_data *tmp, int spl)
@@ -2081,9 +2083,11 @@ void use_spell(P_char ch, int spell)
 struct extra_descr_data *find_spell_description(P_obj obj)
 {
 	struct extra_descr_data *tmp;
+	if (!obj)
+		return NULL;
 
 	for (tmp = obj->ex_description; tmp; tmp = tmp->next)
-		if (tmp->keyword && tmp->description)
+		if (tmp->keyword && tmp->description && strlen(tmp->keyword) == 3)
 			if ((tmp->keyword[0] == 3) && (tmp->keyword[1] == 1) &&
 			    (tmp->keyword[2] == 3))
 				return tmp;
@@ -2190,6 +2194,8 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 int AddSpellToSpellBook(P_char ch, P_obj obj, int spl)
 {
 	struct extra_descr_data *tmp;
+	if (!obj || spl < 0 || spl >= MAX_SKILLS)
+		return FALSE;
 
 	if (!(tmp = find_spell_description(obj)))
 	{
@@ -2198,13 +2204,17 @@ int AddSpellToSpellBook(P_char ch, P_obj obj, int spl)
 		 */
 
 		CREATE(tmp, extra_descr_data, 1, MEM_TAG_EXDESCD);
+		memset(tmp, 0, sizeof(*tmp));
 
 		tmp->next = obj->ex_description;
 		obj->ex_description = tmp;
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "%c%c%c", (char)3, (char)1, (char)3);
 		tmp->keyword = str_dup(Gbuf1);
-		CREATE(tmp->description, char, (MAX_SKILLS + 1) / 8 + 1, MEM_TAG_BUFFER);
+		const size_t byte_count = (MAX_SKILLS + 1) / 8 + 1;
+		CREATE(tmp->description, char, byte_count, MEM_TAG_BUFFER);
+		memset(tmp->description, 0, byte_count);
 	}
+	SET_BIT(obj->str_mask, STRUNG_EDESC);
 	if (SpellInThisSpellBook(tmp, spl))
 		return FALSE;
 	if (!obj->value[1])
@@ -2213,7 +2223,9 @@ int AddSpellToSpellBook(P_char ch, P_obj obj, int spl)
 		obj->value[0] = TONGUE_MAGIC;
 
 	/* not there, we've gotta add it */
-	SET_BIT(tmp->description[spl / 8], 1 << (spl % 8));
+	tmp->description[spl / 8] =
+		static_cast<char>(static_cast<unsigned char>(tmp->description[spl / 8]) |
+				  static_cast<unsigned char>(1U << (spl % 8)));
 
 	/*
 	   ok, we done, we happy campers.
