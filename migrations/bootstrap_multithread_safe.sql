@@ -785,8 +785,22 @@ CREATE TABLE `offline_messages` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `pid` int NOT NULL DEFAULT '0',
+  `message_id` binary(16) DEFAULT NULL,
   `message` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_offline_message_identity` (`pid`,`message_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `offline_message_receipts` (
+  `pid` int NOT NULL,
+  `message_id` binary(16) NOT NULL,
+  `message` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` tinyint unsigned NOT NULL DEFAULT '0',
+  `attempt_count` smallint unsigned NOT NULL DEFAULT '0',
+  `last_attempt_at` timestamp(6) NULL DEFAULT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `delivered_at` timestamp(6) NULL DEFAULT NULL,
+  PRIMARY KEY (`pid`,`message_id`),
+  KEY `idx_offline_message_receipt_pending` (`pid`,`status`,`last_attempt_at`,`created_at`,`message_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `outposts` (
   `id` int NOT NULL,

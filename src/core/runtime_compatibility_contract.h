@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 197;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 198;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -38,7 +38,7 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'locker_kickouts','locker_session_state','lockers','log_entries',"
 	"'lookup_dataset_state','mud_info','mud_schema_baselines','mud_schema_history',"
 	"'mud_schema_migration_state','mud_schema_migrations','multiplay_whitelist','nexus_stones',"
-	"'offline_messages','outposts','pages','persistence_item_events',"
+	"'offline_message_receipts','offline_messages','outposts','pages','persistence_item_events',"
 	"'persistence_scalar_events','personal_data_export_audit','personal_data_export_requests','personal_data_export_sections',"
 	"'ping','pkill_event','pkill_info','player_affects',"
 	"'player_data','player_death_custody','player_death_disposition','player_death_restitution_delivery',"
@@ -60,22 +60,24 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"6dfde439c4044f2b080996326b46c7b5d4aaea4ee1175c4814de56e5cd287a6f";
+	"5bf48841c2119651ec94af1c98aab2671844657c0184daff41b23a185a3e96d9";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"55770aa68ff15fd2aa0baefe1d7a4251106dc412083decc4a27d92c4ed785787";
+	"b0a3e15753e954488f47923b42c81bad35e69232301f8c4a3d6050dd58d4d6aa";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced
- * by migration 0019, and restitution receipt/runtime stores introduced by
- * migration 0020. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0020_player_death_restitution";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 20;
+ * by migration 0019, restitution receipt/runtime stores introduced by
+ * migration 0020, and identity-stable Collector notification receipt/outbox
+ * state introduced by migration 0021. Fingerprints are measured on MySQL 8
+ * and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0021_collector_notification_identity";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 21;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"1e9127ea00b008938948b496a12244ce742a133690f58a48f26edce9cd8c6724";
+	"602c481fdab8e7ca0a28a35c285cd4e045834147ad8570f83c9fa2864b2e7924";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"f43423923db249fcf3dda17039d876283728287eebe99a872c03d1adc1d9df6e";
+	"a2c22d6d3edacf9493f095114d73b2ca0d3c75cbccd3283eda7f81c9674e1e0d";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"da4d0c7d0c7f5365940f4f022f2b3ab41b5bac9af41ba3b48cb40da00142230a";
+	"675ad9112d9180f25f45e7e0e2a936c80de471f25997af6f1d0043f97632c42a";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

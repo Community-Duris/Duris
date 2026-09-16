@@ -3511,6 +3511,20 @@ void send_to_pid_offline(const char *msg, int pid)
 	    buff);
 }
 
+static bool sql_escape_offline_message(const char *message, std::string *escaped)
+{
+	if (!DB || !message || !escaped)
+		return false;
+	const size_t message_length = strnlen(message, MAX_STRING_LENGTH);
+	if (message_length >= MAX_STRING_LENGTH)
+		return false;
+	escaped->resize(message_length * 2 + 1);
+	const unsigned long escaped_length = mysql_real_escape_string(
+		DB, &(*escaped)[0], message, static_cast<unsigned long>(message_length));
+	escaped->resize(escaped_length);
+	return true;
+}
+
 bool send_to_pid_offline_deduplicated(const char *msg, int pid, const unsigned char *message_id)
 {
 	if (!DB || !msg || pid <= 0 || !message_id)
@@ -3519,86 +3533,135 @@ bool send_to_pid_offline_deduplicated(const char *msg, int pid, const unsigned c
 	memcpy(operation_id.bytes.data(), message_id, operation_id.bytes.size());
 	if (critical_operation_id_is_zero(operation_id))
 		return false;
-	char lock_id[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
-	if (!critical_operation_id_to_hex(operation_id, lock_id, sizeof(lock_id)))
-		return false;
-	char lock_name[64] = {};
-	if (snprintf(lock_name, sizeof(lock_name), "duris:offline:%d:%s", pid, lock_id) >=
-	    static_cast<int>(sizeof(lock_name)))
-		return false;
-	if (!qry("SELECT GET_LOCK('%s', 5)", lock_name))
-		return false;
-	MYSQL_RES *lock_result = mysql_store_result(DB);
-	MYSQL_ROW lock_row = lock_result ? mysql_fetch_row(lock_result) : nullptr;
-	const bool lock_acquired = lock_row && lock_row[0] && atoi(lock_row[0]) == 1;
-	if (lock_result)
-		mysql_free_result(lock_result);
-	if (!lock_acquired)
+	char message_id_hex[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+	if (!critical_operation_id_to_hex(operation_id, message_id_hex, sizeof(message_id_hex)))
 		return false;
 
-	bool success = false;
-	char buff[MAX_STRING_LENGTH];
-	const size_t message_length = strnlen(msg, sizeof(buff));
-	if (message_length < sizeof(buff) / 2)
+	std::string escaped_message;
+	if (!sql_escape_offline_message(msg, &escaped_message))
 	{
-		mysql_real_escape_string(DB, buff, msg, message_length);
-		if (qry("SELECT id FROM offline_messages WHERE pid = '%d' AND message = '%s' LIMIT 1",
-			pid, buff))
-		{
-			MYSQL_RES *res = mysql_store_result(DB);
-			if (res)
-			{
-				const bool already_queued = mysql_num_rows(res) != 0;
-				mysql_free_result(res);
-				success = already_queued ||
-					  qry("INSERT INTO offline_messages (date, pid, message) "
-					      "VALUES (now(), '%d', '%s')",
-					      pid, buff);
-			}
-		}
-	}
-	if (!success && message_length >= sizeof(buff) / 2)
 		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
 				  "message_too_large", "pid=%d", pid);
-	const bool released = qry("SELECT RELEASE_LOCK('%s')", lock_name);
-	MYSQL_RES *release_result = mysql_store_result(DB);
-	if (release_result)
-		mysql_free_result(release_result);
-	return success && released;
+		return false;
+	}
+
+	// The receipt is the durable outbox. The physical queue row is rebuilt from
+	// a pending receipt, so a crash between enqueue/dequeue and restart cannot
+	// lose a notification. The primary key, not an advisory lock or message
+	// text, owns identity and concurrent retries.
+	std::string query =
+		"START TRANSACTION;"
+		"INSERT INTO offline_message_receipts "
+		"(pid,message_id,message,status) VALUES (";
+	query += std::to_string(pid);
+	query += ",UNHEX('";
+	query += message_id_hex;
+	query += "'),'";
+	query += escaped_message;
+	query += "',0) ON DUPLICATE KEY UPDATE message=message;"
+		"INSERT IGNORE INTO offline_messages (date,pid,message,message_id) "
+		"SELECT UTC_TIMESTAMP(6),pid,message,message_id "
+		"FROM offline_message_receipts WHERE pid=";
+	query += std::to_string(pid);
+	query += " AND message_id=UNHEX('";
+	query += message_id_hex;
+	query += "') AND status IN (0,1);"
+		"COMMIT;";
+
+	if (sql_run_multi_query(query.c_str()))
+		return true;
+	(void)sql_run_multi_query("ROLLBACK;");
+	return false;
 }
+
+struct sql_offline_delivery
+{
+	bool durable = false;
+	int queue_id = 0;
+	std::string message_id;
+	std::string message;
+};
 
 void send_offline_messages(P_char ch)
 {
 	if (!ch)
 		return;
+	const int pid = GET_PID(ch);
 
-	if (!qry("SELECT id, message FROM offline_messages WHERE pid = '%d' ORDER BY date ASC",
-		 GET_PID(ch)))
+	// A claimed receipt is retried only after its short lease expires. This
+	// makes a process restart recover an in-flight delivery without a 5-second
+	// advisory lock held by the game loop.
+	if (!qry("UPDATE offline_message_receipts SET status=0 "
+		 "WHERE pid='%d' AND status=1 AND (last_attempt_at IS NULL OR "
+		 "last_attempt_at < UTC_TIMESTAMP(6) - INTERVAL 30 SECOND)",
+		 pid))
+	{
+		return;
+	}
+	if (!qry("SELECT 'R' AS delivery_kind, 0 AS queue_id, LOWER(HEX(r.message_id)) AS message_id, "
+		 "r.message, r.created_at AS created_at FROM offline_message_receipts r "
+		 "WHERE r.pid='%d' AND r.status=0 "
+		 "UNION ALL "
+		 "SELECT 'L', m.id, '', m.message, m.date FROM offline_messages m "
+		 "WHERE m.pid='%d' AND m.message_id IS NULL "
+		 "ORDER BY created_at ASC, delivery_kind ASC, queue_id ASC",
+		 pid, pid))
 	{
 		return;
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
+	if (!res)
 		return;
-	}
-
-	std::vector<int> delete_ids;
+	std::vector<sql_offline_delivery> deliveries;
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
 	{
-		send_to_char(row[1], ch);
-		delete_ids.push_back(atoi(row[0]));
+		sql_offline_delivery delivery;
+		delivery.durable = row[0] && row[0][0] == 'R';
+		delivery.queue_id = row[1] ? atoi(row[1]) : 0;
+		if (row[2])
+			delivery.message_id = row[2];
+		if (row[3])
+			delivery.message = row[3];
+		deliveries.push_back(std::move(delivery));
 	}
-
 	mysql_free_result(res);
 
-	for (int id : delete_ids)
+	for (const sql_offline_delivery &delivery : deliveries)
 	{
-		qry("DELETE FROM offline_messages WHERE id = '%d'", id);
+		if (delivery.durable)
+		{
+			if (delivery.message_id.empty() ||
+			    !qry("UPDATE offline_message_receipts SET status=1, "
+				 "attempt_count=attempt_count+1,last_attempt_at=UTC_TIMESTAMP(6) "
+				 "WHERE pid='%d' AND message_id=UNHEX('%s') AND status=0",
+				 pid, delivery.message_id.c_str()) ||
+			    mysql_affected_rows(DB) != 1)
+				continue;
+
+			send_to_char(delivery.message.c_str(), ch);
+			if (!qry("UPDATE offline_message_receipts SET status=2, "
+				 "delivered_at=UTC_TIMESTAMP(6) WHERE pid='%d' "
+				 "AND message_id=UNHEX('%s') AND status=1",
+				 pid, delivery.message_id.c_str()) ||
+			    mysql_affected_rows(DB) != 1)
+			{
+				persistence_alert(AVATAR, "offline_message", "player", "unknown",
+						  "acknowledge", "database_write_failed", "pid=%d", pid);
+				break;
+			}
+			// The receipt remains as the durable acknowledgement. Failure to
+			// remove this physical row is harmless because delivered receipts
+			// are excluded from the next delivery scan.
+			(void)qry("DELETE FROM offline_messages WHERE pid='%d' "
+				  "AND message_id=UNHEX('%s')", pid, delivery.message_id.c_str());
+			continue;
+		}
+
+		send_to_char(delivery.message.c_str(), ch);
+		if (!qry("DELETE FROM offline_messages WHERE id='%d'", delivery.queue_id))
+			break;
 	}
 }
 

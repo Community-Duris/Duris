@@ -3023,6 +3023,35 @@
       "dependencies": []
     },
     {
+      "id": "database:offline_message_receipts",
+      "kind": "database_table",
+      "locator": "offline_message_receipts",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "account_id",
+      "technical_purpose": "identity-stable Collector notification delivery receipts and restart-safe outbox recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:offline_messages"]
+    },
+    {
       "id": "database:outposts",
       "kind": "database_table",
       "locator": "outposts",
