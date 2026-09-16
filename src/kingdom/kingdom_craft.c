@@ -20,9 +20,10 @@
  *  buy level-56 work and a level 56 still gets sound mid-level gear. It costs
  *  platinum, which is DESTROYED -- a money sink, credited to no treasury -- and
  *  realm material, drawn through kingdom_resource_spend(), the store's one way
- *  out. It is soulbound to its buyer, no shop will buy it, and it carries no
- *  effect flags and no procs: only armour, hit points, mana, attributes,
- *  hitroll and damroll.
+ *  out. It is ORDINARY PROPERTY (ruled 2026-09-16) -- worn by anyone who can
+ *  wear it, given, looted and sold, and worth a tenth of its price in a shop's
+ *  ledger -- and it carries no effect flags and no procs: only armour, hit
+ *  points, mana, attributes, hitroll and damroll.
  *
  *  The catalogue is ONE compiled table below so the numbers can be tuned in
  *  one place; the arithmetic that scales them is kingdom_craft_math.h.
@@ -199,8 +200,9 @@ void kingdom_works_describe(unsigned built, char *out, size_t out_len)
  * that figure is a floor; under store gear it would be the wrong one, handing
  * a level-10 buyer level-56 armour class (steel on the body alone is 24). So
  * apply_ac() drops the figure for store pieces alone -- known by their blank's
- * vnum, kingdom_store_piece.h -- and the level-scaled AC below is exactly
- * what the buyer gets. Every piece is made of its REAL material -- steel from
+ * vnum, or by the maker's mark when that vnum cannot be resolved
+ * (kingdom_store_piece.h) -- and the level-scaled AC below is exactly what the
+ * buyer gets. Every piece is made of its REAL material -- steel from
  * the forge, cloth or leather from the loom, silver from the jeweller -- so
  * everything else that reads a material treats it as what it is.
  */
@@ -545,13 +547,18 @@ static void kingdom_craft_forms_text(const kingdom_craft_item &item, const char 
  * (ruled 2026-09-15: store gear has no effect flags) -- and any class or race
  * restriction, which the design leaves off.
  *
- * STAMPED so it cannot become coin or pass to anyone else: NOSELL (no shop
- * buys it), cost 0 (and none would pay anything for it if one did), SOULBIND
- * with the buyer's player-id token in the keywords (only the character who
- * bought it may wear it -- see THE BINDING below; it cannot be given or
- * dropped), CRAFTED (no giving it to a mob either) and STOREITEM (it cannot be
- * salvaged back into materials). NULL, with nothing left behind, if the blank
- * will not load or the buyer has no player id to bind it to. */
+ * ORDINARY PROPERTY (ruled 2026-09-16). A piece can be worn by anyone who can
+ * wear it, given, dropped, looted from a corpse and sold: it is not soulbound
+ * and carries no NOSELL. It is worth a tenth of what it cost in a shop's
+ * ledger (kingdom_craft_resale_copper(), kingdom.craft.resale.permille), and a
+ * shopkeeper pays its own fraction of that again, so a looter nets a modest
+ * sum rather than nothing.
+ *
+ * STILL STAMPED: CRAFTED (it cannot be given to a mob) and STOREITEM (it
+ * cannot be salvaged back into materials -- gear must not become a way to mint
+ * the realm's resources). The maker's mark names the purchase it came from
+ * (see THE MARK below); it binds nothing. NULL, with nothing left behind, if
+ * the blank will not load or the buyer has no player id to stamp it with. */
 static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 				const kingdom_craft_variant *form, int level,
 				const char *realm_name)
@@ -580,7 +587,11 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 	obj->wear_flags = ITEM_TAKE | item.wear;
 	obj->material = item.material;
 	obj->weight = item.pounds;
-	obj->cost = 0;
+	/* What a shop's ledger says it is worth: a tenth of its purchase price at
+	 * the shipped scale. The keeper pays its own fraction of this again. */
+	obj->cost = static_cast<int>(kingdom_craft_resale_copper(
+		item.weight_tenths, level, kingdom_cfg.craft_price_permille,
+		kingdom_cfg.craft_resale_permille));
 	obj->anti_flags = 0;
 	obj->anti2_flags = 0;
 
@@ -648,8 +659,6 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 		obj->affected[slot].modifier = kingdom_craft_scaled_stat(form->line.top, level);
 	}
 
-	SET_BIT(obj->extra_flags, ITEM_NOSELL);
-	SET_BIT(obj->extra2_flags, ITEM2_SOULBIND);
 	SET_BIT(obj->extra2_flags, ITEM2_CRAFTED);
 	SET_BIT(obj->extra2_flags, ITEM2_STOREITEM);
 
@@ -673,21 +682,23 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 		keywords += " ";
 		keywords += form->name;
 	}
-	/* THE BINDING is the buyer's PLAYER ID, written as a token no character
-	 * name can equal (kingdom_craft_bind.h). can_equip_soulbound_item()
-	 * (cmd/actobj.c) asks store pieces for that token instead of running its
-	 * legacy name test, which any character named "Steel" or "Kingdom" would
-	 * pass.
+	/* THE MAKER'S MARK names the purchase a piece came from, as the buyer's
+	 * PLAYER ID in a token no character name can equal (kingdom_craft_bind.h).
+	 * It BINDS NOTHING -- store gear is ordinary property -- and it is how the
+	 * engine still knows a piece is store gear when its object index is
+	 * unresolved, which decides one thing: that apply_ac() must not put a
+	 * material armour-class floor under armour scaled to the level it was made
+	 * at (kingdom_store_piece.h).
 	 *
-	 * The token is written as the piece's ACTION DESCRIPTION, never as one of
+	 * The mark is written as the piece's ACTION DESCRIPTION, never as one of
 	 * its keywords. Keywords are what commands target, so a token among them
 	 * would let anyone type `get kingdom-bound-1042 bag` and read a player id
 	 * off other people's gear. Nothing shows an action description for armour,
 	 * a weapon or jewellery -- only notes and corpses use it -- and it is
 	 * saved with the object on every path a piece can travel.
 	 *
-	 * The buyer's NAME is still a keyword, so the piece answers to its owner
-	 * and reads as theirs; nothing grants ownership by name. */
+	 * The buyer's NAME is a keyword, so a piece answers to the character who
+	 * bought it and reads as theirs; it grants nothing. */
 	char bind_token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
 
 	if (!kingdom_craft_bind_token(GET_PID(buyer), bind_token, sizeof(bind_token)))
@@ -771,8 +782,9 @@ static void kingdom_store_list(P_char ch, const kingdom_realm &realm, P_Guild gu
 	APPENDF(out,
 		"\r\n'&+Wbuy <item> [form]&n' buys one, as in '&+Wbuy ring health&n'. The "
 		"platinum is\r\n"
-		"destroyed; the material comes from the realm's stores. Store gear is soulbound\r\n"
-		"to you, no shop will buy it, and it carries no magical effects.\r\n");
+		"destroyed; the material comes from the realm's stores. Store gear is yours to\r\n"
+		"keep, give or sell -- a shop pays a little for it -- and it carries no magical\r\n"
+		"effects.\r\n");
 
 	send_to_char(out, ch);
 }

@@ -2088,10 +2088,12 @@ def test_store_checks_material_before_coin_and_pays_before_spending() -> None:
     )
 
 
-def test_store_gear_carries_no_effects_and_is_bound() -> None:
-    """Store gear has NO effect flags (ruled 2026-09-15), is soulbound to its
-    buyer by player id, cannot be sold to a shop or salvaged, and carries no
-    proc."""
+def test_store_gear_carries_no_effects_and_is_ordinary_property() -> None:
+    """Store gear has NO effect flags (ruled 2026-09-15) and carries no proc.
+    Ruled 2026-09-16 it is ordinary property: NOT soulbound and NOT NOSELL, so
+    it can be given, looted and sold, and worth a tenth of its purchase price
+    in a shop's ledger. It stays CRAFTED and STOREITEM, so it cannot be handed
+    to a mob or salvaged back into the realm's materials."""
     code = _craft_code()
     sets = re.findall(r"SET_BIT\(\s*obj->bitvector\w*|obj->bitvector\w*\s*\|=", code)
     check(
@@ -2114,8 +2116,6 @@ def test_store_gear_carries_no_effects_and_is_bound() -> None:
             f"kingdom_craft_make() zeroes obj->{mask}",
         )
     for field, flag in (
-        ("extra_flags", "ITEM_NOSELL"),
-        ("extra2_flags", "ITEM2_SOULBIND"),
         ("extra2_flags", "ITEM2_CRAFTED"),
         ("extra2_flags", "ITEM2_STOREITEM"),
     ):
@@ -2124,11 +2124,27 @@ def test_store_gear_carries_no_effects_and_is_bound() -> None:
             is not None,
             f"store gear is stamped {flag}",
         )
+    # Ruled 2026-09-16: ordinary property. A shop refuses NOSELL outright
+    # (trade_with(), economy/shop.c), and soulbound gear cannot be given or
+    # looted at all.
+    for flag in ("ITEM_NOSELL", "ITEM2_SOULBIND"):
+        check(
+            flag not in body,
+            f"store gear is not stamped {flag}: it is given, looted and sold like anything else",
+        )
     check(
         "kingdom_craft_bind_token(GET_PID(buyer)" in body and "set_keywords(" in body,
-        "the buyer's player-id token goes into the keywords the store's soulbind check reads",
+        "every piece is stamped with its buyer's player-id mark, and still keyworded",
     )
-    check(re.search(r"obj->cost\s*=\s*0\s*;", body) is not None, "store gear is worth nothing")
+    # A shop refuses anything worth less than 1, so gear that is meant to sell
+    # must carry a real cost -- and it comes from the arithmetic header, not a
+    # number written out here.
+    check(
+        re.search(r"obj->cost\s*=[^;]*kingdom_craft_resale_copper\(", body) is not None
+        and re.search(r"obj->cost\s*=\s*0\s*;", body) is None,
+        "store gear is worth a share of its purchase price, through "
+        "kingdom_craft_resale_copper()",
+    )
     check(
         re.search(r"obj->value\[\s*[4-7]\s*\]\s*=", body) is None,
         "no proc value (value[4..7]) is ever written on store gear",
@@ -2259,14 +2275,16 @@ def test_store_writes_the_realm_after_a_sale_and_a_reversal() -> None:
     )
 
 
-def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
-    """A store piece's keywords are ordinary words, so the legacy soulbind
-    test -- is the wearer's NAME one of the keywords? -- would let a character
-    named "Steel" or "Kingdom" wear another's piece, and remove_soulbind()
-    would let one destroy every such piece. Store gear is bound to the buyer's
-    PLAYER ID through a token no name can equal; the wear check asks store
-    pieces for that token only; every other soulbound item keeps the name
-    test."""
+def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
+    """Store gear binds to nobody (ruled 2026-09-16), so nothing here decides
+    who may wear a piece. What it decides is that a store piece is never judged
+    by its NAME: its keywords are ordinary words, so the engine's legacy
+    soulbind test -- is the wearer's name one of the keywords? -- would let a
+    character called "Steel" or "Kingdom" claim one, and remove_soulbind() would
+    let one destroy every such piece. Those paths stay guarded by the maker's
+    mark, a token keyed to the buyer's player id that no name can equal, so they
+    remain correct if a store piece ever reaches them. Every other soulbound
+    item keeps the name test."""
     bind = strip_comments(read("src/kingdom/kingdom_craft_bind.h"))
     check(
         '#define KINGDOM_CRAFT_BIND_PREFIX "kingdom-bound-"' in bind

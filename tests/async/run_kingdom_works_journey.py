@@ -18,19 +18,19 @@ a store before any workshop and a second forge, and builds a forge and a store
 purchase the realm's stores cannot supply, taking nothing. It harvests mineral
 and wood into the realm, then in the store lists and buys a pair of
 vambraces. It checks they were made at level 56 (Tyrus is above the cap) with
-the level-56 armour class and strength, that they are NOSELL, SOULBIND,
-CRAFTED and STOREITEM, that their keywords carry the buyer's name but NOT the
-binding token (which lives in the action description, where no command reaches
+the level-56 armour class and strength, that they are CRAFTED and STOREITEM
+but neither SOULBIND nor NOSELL, that they are worth 5,800 copper -- a tenth of
+the 58p they cost -- that their keywords carry the buyer's name but NOT the
+maker's mark (which lives in the action description, where no command reaches
 it), that the realm's stores fell by exactly the bill, and that Tyrus's
 platinum fell by the price while the treasury did not rise.
 
-Then the binding. Tyrus wears the piece, takes it off, puts it in a basket (a
-soulbound piece cannot be given or dropped, but what it is in can) and leaves
-the basket for two characters on other accounts: one NAMED "Vambraces", a
-word on the piece that the old name-based soulbind test let through, and one
-with an ordinary name. Each sheds its starter kit (a new character starts
-over its carrying limit), takes the piece out of the basket and is refused it
-when they try to wear it.
+Then who may wear it. Store gear binds to nobody (ruled 2026-09-16), so it is
+ordinary property: Tyrus wears the piece, takes it off, puts it in a basket and
+leaves the basket for two characters on other accounts -- one NAMED
+"Vambraces", a word on the piece, and one with an ordinary name. Each sheds its
+starter kit (a new character starts over its carrying limit), takes the piece
+out of the basket and wears it.
 
 The journey's own copy of lib/kingdom.cfg sets the build costs to 1,000
 platinum and the material scale to a quarter, so the realm needs a minute of
@@ -76,9 +76,10 @@ PIECE_SHORT = "steel vambraces"
 # would be ambiguous -- `get vambraces bag` looks in the kit's own bag.
 BASKET_VNUM = 387
 BASKET = "basket"
-# Characters who try to wear Tyrus's piece. "Vambraces" is a word on the piece
-# and no mob's keyword, so character creation allows it -- the name the old
-# name-based soulbind test would have let through.
+# Characters who take Tyrus's piece and wear it. Nothing binds store gear, so
+# both must manage it. "Vambraces" is a word on the piece and no mob's keyword,
+# so character creation allows it; it stays here as the name most likely to
+# trip a stray name check, being the one the old soulbind test let through.
 OTHERS = (("Worksthief", "thief@example.invalid", "Vambraces"),
           ("Workspeer", "peer@example.invalid", "Quillomen"))
 
@@ -278,9 +279,13 @@ def find_seat(client: journey.MudClient) -> int:
     raise AssertionError(f"no legal realm seat within {12 * 6} squares of {SURFACE_START}")
 
 
-def refused_the_piece(other: journey.MudClient, name: str) -> None:
-    """`name` takes Tyrus's piece out of the basket at their feet, is refused
-    it when they try to wear it, and puts it back.
+def wore_the_piece(other: journey.MudClient, name: str) -> None:
+    """`name` takes Tyrus's piece out of the basket at their feet, wears it,
+    and puts it back.
+
+    Store gear is ordinary property (ruled 2026-09-16): nothing binds it to the
+    character who bought it, so another character on another account may take
+    it and wear it.
 
     A new character starts over its carrying limit -- the starter kit is 28
     items against a limit of 11 -- and can pick up nothing until it sheds
@@ -310,12 +315,16 @@ def refused_the_piece(other: journey.MudClient, name: str) -> None:
     got = plain(command(other, f"get {PIECE} {BASKET}", ""))
     wait_for(inventory, lambda text: PIECE_SHORT in text,
              f"{name} never got the piece out of the {BASKET} (the get said: {got[-400:]!r})")
-    # Either the refusal or the piece's own name, which a successful wear
-    # would print; the require then says which it was.
-    _, reply = command_any(other, f"wear {PIECE}", ("bound to someone", PIECE_SHORT))
+    # Either the piece's own name, which a successful wear prints, or the
+    # soulbind refusal; the require then says which it was.
+    _, reply = command_any(other, f"wear {PIECE}", (PIECE_SHORT, "bound to someone"))
     reply = plain(reply)
-    require("bound to someone" in reply, f"{name} was not refused Tyrus's piece:\n{reply}")
-    require(PIECE_SHORT in inventory(), f"{name} no longer holds the piece after the refusal")
+    require("bound to someone" not in reply, f"{name} was refused Tyrus's piece:\n{reply}")
+    worn = plain(command(other, "equipment", ""))
+    require(PIECE_SHORT in worn, f"{name} could not wear Tyrus's piece:\n{worn}")
+    command(other, f"remove {PIECE}", "")
+    wait_for(inventory, lambda text: PIECE_SHORT in text,
+             f"{name} never took the piece off again")
     command(other, f"put {PIECE} {BASKET}", "")
     wait_for(inventory, lambda text: PIECE_SHORT not in text, f"{name} never put the piece back")
 
@@ -519,9 +528,15 @@ def run(binary: pathlib.Path) -> None:
 
                 # The piece itself.
                 stat = plain(command(client, f"stat obj {PIECE}", "Extra2", timeout=30))
-                for flag in ("SOULBIND", "CRAFTED", "STOREITEM"):
+                for flag in ("CRAFTED", "STOREITEM"):
                     require(flag in stat, f"the vambraces are not {flag}:\n{stat}")
-                require("NOSELL" in stat, f"the vambraces are not NOSELL:\n{stat}")
+                # Ruled 2026-09-16: ordinary property. A shop refuses NOSELL
+                # outright, and soulbound gear cannot be given or looted at all.
+                for flag in ("SOULBIND", "NOSELL"):
+                    require(flag not in stat, f"the vambraces are still {flag}:\n{stat}")
+                # Worth a tenth of the 58p price, in copper: `stat obj` prints
+                # it as the item's Value.
+                require("5,800" in stat, f"the vambraces are not worth 5,800 copper:\n{stat}")
                 require(re.search(r"AC-apply:\s*10\b", stat) is not None, f"level-56 vambraces AC is not 10:\n{stat}")
                 require(re.search(r"Affects:\s*\S+\s+By\s+2\b", stat) is not None,
                         f"level-56 vambraces strength is not +2:\n{stat}")
@@ -561,9 +576,9 @@ def run(binary: pathlib.Path) -> None:
                 wait_for(lambda: plain(command(client, "inventory", "")),
                          lambda text: PIECE_SHORT in text, "the piece never came off")
 
-                # Nobody else may, whatever they are called. A container is
-                # the route a looter or a trade would take: a soulbound piece
-                # cannot be given or dropped, but what it is in can.
+                # And so may anyone else, whatever they are called: nothing
+                # binds store gear. A container is the route a looter or a
+                # trade would take.
                 command(client, "goto 58449", "")
                 command(client, f"load obj {BASKET_VNUM}", "")
                 command(client, f"put {PIECE} {BASKET}", "")
@@ -577,8 +592,8 @@ def run(binary: pathlib.Path) -> None:
                     create_account(other, account, email)
                     create_character(other, name)
                     command(client, f"transfer {name.lower()}", "")
-                    refused_the_piece(other, name)
-                    print(f"{name} could not wear Tyrus's piece", flush=True)
+                    wore_the_piece(other, name)
+                    print(f"{name} wore Tyrus's piece", flush=True)
                 for other in others:
                     other.close()
                 others.clear()
@@ -593,7 +608,7 @@ def run(binary: pathlib.Path) -> None:
                 require("FATAL:" not in log and "assert:" not in log, "server logged a fatal or assertion")
                 print("[PASS] kingdom works journey: realm, builds and refusals (an unaffordable forge "
                       "among them), a purchase refused for material, harvest, list, buy, level-56 stats, "
-                      "flags, binding to the buyer alone (a keyword-named character refused), material "
+                      "flags and resale value, gear two other characters could wear, material "
                       "draw, destroyed platinum", flush=True)
             except Exception as error:
                 transcript = bytes(client.transcript).decode("utf-8", errors="replace") if client else ""

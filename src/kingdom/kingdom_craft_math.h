@@ -89,6 +89,36 @@ constexpr long kingdom_craft_material_units(int weight_tenths, int level, int re
 }
 
 /*
+ * RESALE VALUE, in copper (1 platinum = 1000 copper)
+ *
+ *     value = price in platinum x resale scale, carried into copper
+ *
+ *     scale  kingdom.craft.resale.permille / 1000, so the shipped 100 makes a
+ *            piece worth a tenth of what it cost
+ *
+ * Store gear is ordinary property (ruled 2026-09-16): it is looted, given and
+ * sold like anything else, and this is what it is worth in a shop's ledger. A
+ * shopkeeper pays its own fraction of that again (shop_index[].buy_percent),
+ * so what a looter actually nets is smaller still.
+ *
+ * At W = 1 and the shipped scales: level-10 gear is worth 1,200 copper (1p 2g)
+ * against 12p to buy, level-56 gear 5,800 (5p 8g) against 58p.
+ *
+ * A piece is never worth 0 unless the knob turns resale off altogether: a shop
+ * refuses anything worth less than 1 (trade_with(), economy/shop.c), and gear
+ * no shop will take is the very thing this ruling undoes.
+ */
+constexpr long kingdom_craft_resale_copper(int weight_tenths, int level, int price_permille,
+					   int resale_permille)
+{
+	if (weight_tenths <= 0 || resale_permille <= 0)
+		return 0;
+	const long value = kingdom_craft_price_platinum(weight_tenths, level, price_permille) *
+			   resale_permille;
+	return value < 1 ? 1 : value;
+}
+
+/*
  * THE SPLIT between a station's two resources
  *
  *     primary   = 70% of the units, rounded UP

@@ -537,7 +537,8 @@ static void kingdom_cmd_help(P_char ch)
 	out += "  In the store, '&+Wlist&n' and '&+Wbuy <item> [form]&n' sell what the hall's\r\n";
 	out += "  workshops make, made for the BUYER'S level (to 56) and paid for twice: in\r\n";
 	out += "  platinum, which is destroyed, and in the realm's resources. Store gear is\r\n";
-	out += "  soulbound to its buyer, no shop will buy it, and it carries no effects.\r\n";
+	out += "  ordinary property: keep it, give it or sell it for a little, and it carries\r\n";
+	out += "  no effects.\r\n";
 
 	out += "\r\n'&+Whelp kingdoms&n' holds the full rules.\r\n\r\n";
 	out += KINGDOM_SYNTAX;

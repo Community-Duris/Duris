@@ -261,6 +261,8 @@ static bool kingdom_apply_value(const char *key, const char *value)
 		 KINGDOM_CRAFT_PERMILLE_MAX)
 	KCFG_INT("kingdom.craft.resource.permille", craft_resource_permille, 0,
 		 KINGDOM_CRAFT_PERMILLE_MAX)
+	KCFG_INT("kingdom.craft.resale.permille", craft_resale_permille, 0,
+		 KINGDOM_CRAFT_PERMILLE_MAX)
 
 #undef KCFG_BOOL
 #undef KCFG_INT
@@ -370,9 +372,9 @@ void kingdom_config_load(void)
 	      kingdom_cfg.min_entrance_distance);
 	logit(LOG_KINGDOM,
 	      "Works: a workshop costs %ld copper, the guild store %ld; store prices x%d/1000, "
-	      "store material x%d/1000.",
+	      "store material x%d/1000, store gear resells at x%d/1000 of its price.",
 	      kingdom_cfg.station_cost, kingdom_cfg.store_cost, kingdom_cfg.craft_price_permille,
-	      kingdom_cfg.craft_resource_permille);
+	      kingdom_cfg.craft_resource_permille, kingdom_cfg.craft_resale_permille);
 	logit(LOG_STATUS, "Kingdom config loaded from %s; kingdoms %s.", KINGDOM_CONFIG_FILE,
 	      kingdom_cfg.enabled ? "ENABLED" : "disabled");
 }

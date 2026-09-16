@@ -67,6 +67,18 @@ int main()
 	// A level 62 buyer pays the level-56 price, not more.
 	expect(kingdom_craft_price_platinum(10, 62, 1000), 58, "price W1 L62 is L56's");
 
+	// Resale value in copper: a tenth of the purchase price at the shipped
+	// scales (1 platinum = 1000 copper), and worth nothing only when the knob
+	// turns resale off.
+	expect(kingdom_craft_resale_copper(10, 56, 1000, 100), 5800, "resale W1 L56 = 5800 copper");
+	expect(kingdom_craft_resale_copper(10, 10, 1000, 100), 1200, "resale W1 L10 = 1200 copper");
+	expect(kingdom_craft_resale_copper(20, 56, 1000, 100), 11600, "resale W2 L56");
+	expect(kingdom_craft_resale_copper(8, 56, 1000, 100), 4600, "resale W0.8 L56");
+	expect(kingdom_craft_resale_copper(10, 62, 1000, 100), 5800, "resale at L62 is L56's");
+	expect(kingdom_craft_resale_copper(10, 56, 1000, 0), 0, "resale off is worth nothing");
+	expect(kingdom_craft_resale_copper(10, 56, 0, 100), 1,
+	       "gear given away free still sells for a coin");
+
 	// Stat lines: max(1, round(top x L / 56)); zero stays zero.
 	expect(kingdom_craft_scaled_stat(25, 56), 25, "AC 25 at L56");
 	expect(kingdom_craft_scaled_stat(25, 10), 4, "AC 25 at L10 (4.46)");

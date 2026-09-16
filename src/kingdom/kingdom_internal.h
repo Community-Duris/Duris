@@ -297,6 +297,12 @@ struct kingdom_config
 	 * kingdom_craft_math.h. */
 	int craft_price_permille = 1000;
 	int craft_resource_permille = 1000;
+	/* What a store piece is worth in a shop's ledger, PER MILLE of its
+	 * purchase price: the shipped 100 is a tenth of what it cost. Store gear
+	 * is ordinary property (ruled 2026-09-16) -- given, looted and sold like
+	 * anything else -- and 0 makes it worthless, as it was while it was
+	 * soulbound. */
+	int craft_resale_permille = 100;
 };
 extern kingdom_config kingdom_cfg;
 void kingdom_config_load(void);

@@ -2,16 +2,15 @@
  *  kingdom_craft_bind.h
  *  Duris
  *
- *  THE BINDING TOKEN on guild-store gear, and nothing else.
+ *  THE MAKER'S MARK on guild-store gear, and nothing else.
  *
- *  Store gear is soulbound to the one character who bought it (ruled
- *  2026-09-15: not to an account, not to an alt, not to a trade partner).
- *  The engine's legacy soulbind test asks whether the wearer's NAME is one of
- *  the object's keywords, and a store piece's keywords are ordinary words --
- *  "steel", "vambraces", "kingdom", "strength" -- so any character named after
- *  one of them would pass it. A store piece therefore carries a token keyed to
- *  the buyer's PLAYER ID instead, and the wear check for store pieces
- *  (kingdom_store_piece.h) looks for that token and nothing else.
+ *  Store gear is ordinary property (ruled 2026-09-16): it can be given, looted
+ *  and sold like anything else, so this token BINDS NOTHING. It records which
+ *  purchase a piece came from, and it is how the engine knows a piece is store
+ *  gear at all when its object index is unresolved -- which decides only one
+ *  thing: that apply_ac() must not put a material armour-class floor under a
+ *  piece whose armour class is scaled to its buyer's level
+ *  (kingdom_store_piece.h).
  *
  *  THE TOKEN LIVES IN THE PIECE'S ACTION DESCRIPTION, not among its keywords.
  *  Keywords are what player commands target, so a token there would let

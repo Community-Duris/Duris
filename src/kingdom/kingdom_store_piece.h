@@ -3,7 +3,13 @@
  *  Duris
  *
  *  What the rest of the engine asks about guild-store gear: is this object a
- *  store piece, and is this character the one who bought it.
+ *  store piece, and which purchase did it come from.
+ *
+ *  Store gear is ordinary property (ruled 2026-09-16) -- given, looted and
+ *  sold like anything else -- so none of this decides who may wear a piece.
+ *  Knowing a piece is store gear decides one thing: that apply_ac() must not
+ *  put a material armour-class floor under armour whose class is scaled to the
+ *  level it was made at.
  *
  *  Both are INLINE on purpose. The files that ask -- cmd/actobj.c (wearing),
  *  magic/magic.c (remove_soulbind) and magic/affects.c (armour class) -- are
