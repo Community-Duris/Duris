@@ -4067,7 +4067,14 @@ def verify_plan(
             expected_descriptions.add((key_bytes, text_bytes))
         if descriptions.get(uid, set()) != expected_descriptions:
             failures.append("item extra descriptions differ")
-        if runtimes.get(key) != item["item_payload_hex"]:
+        # The offline writer stores the captured snapshot-list bytes, while
+        # native delivery projects the same evidence into IST1.  Accept only
+        # either exact encoding of the approved metadata, never a header-only
+        # or digest-only approximation of the current runtime state.
+        native_delivery_hex = _native_item_state_payload(
+            item, uid, int_value(row.get("equipment_slot", 0), "equipment slot", -32768, 32767)
+        ).hex()
+        if runtimes.get(key) not in (item["item_payload_hex"], native_delivery_hex):
             failures.append("exact runtime metadata payload differs")
         if row.get("kind") == "artifact":
             receipt_timing = receipt_item_rows.get(key)

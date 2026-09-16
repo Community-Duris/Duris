@@ -669,6 +669,10 @@ def main() -> int:
             "5",
             timeout=180,
         )
+        # Verify original delivery before materialization/save can legitimately
+        # change container weights or add prototype-derived metadata.
+        base.cli(wrapper, ["verify", "--plan", str(plan_path)], timeout=180)
+        evidence.append("strict pre-login delivery metadata/ownership verification: passed")
         recovered_plan = plan
         recovered_state, timer_reference = assert_recovered(wrapper, recipient_pid, source_timer, recovered_plan)
         evidence.append(f"native SQL recovery readback graph/spellbook/artifact timer: verified ({recovered_state})")
