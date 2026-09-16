@@ -173,6 +173,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_runtime.o \
 				 economy/collector_presence.o \
 				 economy/collector_service.o \
+				 economy/collector_notification.o \
 				 economy/collector_transaction.o \
 				 economy/collector_repository.o \
 				 classes/bard.o \

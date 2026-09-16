@@ -357,6 +357,93 @@ bool load_listing(MYSQL *connection, uint64_t listing, bool for_update, listing_
 	return true;
 }
 
+bool mutate_hint(MYSQL *connection, const collector::record &entry,
+			 const collector_command_payload &payload, unsigned int *result_code)
+{
+	if (!connection || !result_code)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (payload.action == collector_action::hint &&
+	    (entry.status != collector::state::available || entry.holding_paused ||
+	     payload.observed_at < entry.available_at || payload.observed_at >= entry.expires_at))
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	const std::string death_hex(entry.death_operation.data(),
+					collector::death_operation_hex_size);
+	if (!execute(connection,
+			     "SELECT beneficiary_pid,death_time,hint_state,hint_revision "
+			     "FROM collector_deaths WHERE death_operation_id=UNHEX('" + death_hex +
+			     "') FOR UPDATE"))
+		return false;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	MYSQL_ROW row = rows ? mysql_fetch_row(rows) : nullptr;
+	uint64_t values[4] = {};
+	const bool parsed = row && mysql_num_rows(rows) == 1 &&
+				parse_u64(row[0], &values[0]) && parse_u64(row[1], &values[1]) &&
+				parse_u64(row[2], &values[2]) && parse_u64(row[3], &values[3]);
+	if (rows)
+		mysql_free_result(rows);
+	if (!row)
+	{
+		*result_code = ENOENT;
+		return true;
+	}
+	if (!parsed || values[0] != entry.beneficiary || values[1] != entry.death_time ||
+	    values[2] > COLLECTOR_HINT_DELIVERED)
+	{
+		*result_code = EBADMSG;
+		return true;
+	}
+	const std::string where =
+		" WHERE death_operation_id=UNHEX('" + death_hex + "') AND hint_state=" +
+		std::to_string(payload.action == collector_action::hint ? COLLECTOR_HINT_NONE :
+									 COLLECTOR_HINT_PENDING) +
+		" AND hint_revision=" +
+		std::to_string(payload.action == collector_action::hint ? 0 :
+									 payload.expected_listing_revision);
+	if (payload.action == collector_action::hint)
+	{
+		if (values[2] != COLLECTOR_HINT_NONE)
+		{
+			*result_code = EALREADY;
+			return true;
+		}
+		if (!execute(connection, "UPDATE collector_deaths SET hint_state=" +
+								 std::to_string(COLLECTOR_HINT_PENDING) +
+								 ",hint_revision=" +
+								 std::to_string(entry.revision) + where) ||
+		    mysql_affected_rows(connection) != 1)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		return true;
+	}
+	if (values[2] == COLLECTOR_HINT_DELIVERED)
+	{
+		*result_code = EALREADY;
+		return true;
+	}
+	if (values[2] != COLLECTOR_HINT_PENDING ||
+	    values[3] != payload.expected_listing_revision)
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	if (!execute(connection, "UPDATE collector_deaths SET hint_state=" +
+					 std::to_string(COLLECTOR_HINT_DELIVERED) + where) ||
+	    mysql_affected_rows(connection) != 1)
+	{
+		errno = ESTALE;
+		return false;
+	}
+	return true;
+}
+
 bool owner_less(const item_owner_identity &left, const item_owner_identity &right)
 {
 	if (left.type != right.type)
@@ -2046,9 +2133,22 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 		*result_code = EBADMSG;
 		return true;
 	}
-	if (listing.entry.revision != payload.expected_listing_revision)
+	if (payload.action != collector_action::hint_ack &&
+	    listing.entry.revision != payload.expected_listing_revision)
 	{
 		*result_code = ESTALE;
+		return true;
+	}
+	if (payload.action == collector_action::hint || payload.action == collector_action::hint_ack)
+	{
+		if (!mutate_hint(connection, listing.entry, payload, result_code))
+			return false;
+		if (*result_code)
+			return true;
+		result->record_present = true;
+		result->catalog_revision = catalog.revision;
+		result->entry = listing.entry;
+		*mutation_applied = true;
 		return true;
 	}
 

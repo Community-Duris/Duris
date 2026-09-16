@@ -394,17 +394,24 @@ bool qry_at(struct persistence_query_site site, const char *format, ...)
 	(void)format;
 	return FALSE;
 }
-static void enqueue_flat_offline_message(const char *message, int pid)
+static bool enqueue_flat_offline_message(const char *message, int pid,
+					 const unsigned char *message_id = nullptr)
 {
 	const char *root = persistence_mode_flatfile_root();
 	critical_operation_id operation_id = {};
+	if (message_id)
+		memcpy(operation_id.bytes.data(), message_id, operation_id.bytes.size());
+	else if (!critical_operation_id_generate(&operation_id))
+		return false;
 	std::string error;
-	if (!root || !message || pid <= 0 || !critical_operation_id_generate(&operation_id) ||
-	    flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid), operation_id.bytes,
-					     message,
-					     &error) != flatfile_offline_message_result::ok)
+	const bool success = root && message && pid > 0 &&
+				 flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid),
+							 operation_id.bytes, message,
+							 &error) == flatfile_offline_message_result::ok;
+	if (!success)
 		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
 				  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
+	return success;
 }
 void send_to_char_offline(const char *message, int pid)
 {
@@ -413,6 +420,11 @@ void send_to_char_offline(const char *message, int pid)
 void send_to_pid_offline(const char *message, int pid)
 {
 	enqueue_flat_offline_message(message, pid);
+}
+bool send_to_pid_offline_deduplicated(const char *message, int pid,
+					      const unsigned char *message_id)
+{
+	return message_id && enqueue_flat_offline_message(message, pid, message_id);
 }
 void send_offline_messages(P_char ch)
 {
@@ -3477,6 +3489,62 @@ void send_to_pid_offline(const char *msg, int pid)
 	mysql_real_escape_string(DB, buff, msg, strlen(msg));
 	qry("INSERT INTO offline_messages (date, pid, message) VALUES (now(), '%d', '%s')", pid,
 	    buff);
+}
+
+bool send_to_pid_offline_deduplicated(const char *msg, int pid,
+					      const unsigned char *message_id)
+{
+	if (!DB || !msg || pid <= 0 || !message_id)
+		return false;
+	critical_operation_id operation_id = {};
+	memcpy(operation_id.bytes.data(), message_id, operation_id.bytes.size());
+	if (critical_operation_id_is_zero(operation_id))
+		return false;
+	char lock_id[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+	if (!critical_operation_id_to_hex(operation_id, lock_id, sizeof(lock_id)))
+		return false;
+	char lock_name[64] = {};
+	if (snprintf(lock_name, sizeof(lock_name), "duris:offline:%d:%s", pid, lock_id) >=
+	    static_cast<int>(sizeof(lock_name)))
+		return false;
+	if (!qry("SELECT GET_LOCK('%s', 5)", lock_name))
+		return false;
+	MYSQL_RES *lock_result = mysql_store_result(DB);
+	MYSQL_ROW lock_row = lock_result ? mysql_fetch_row(lock_result) : nullptr;
+	const bool lock_acquired = lock_row && lock_row[0] && atoi(lock_row[0]) == 1;
+	if (lock_result)
+		mysql_free_result(lock_result);
+	if (!lock_acquired)
+		return false;
+
+	bool success = false;
+	char buff[MAX_STRING_LENGTH];
+	const size_t message_length = strnlen(msg, sizeof(buff));
+	if (message_length < sizeof(buff) / 2)
+	{
+		mysql_real_escape_string(DB, buff, msg, message_length);
+		if (qry("SELECT id FROM offline_messages WHERE pid = '%d' AND message = '%s' LIMIT 1",
+				pid, buff))
+		{
+			MYSQL_RES *res = mysql_store_result(DB);
+			if (res)
+			{
+				const bool already_queued = mysql_num_rows(res) != 0;
+				mysql_free_result(res);
+				success = already_queued ||
+					  qry("INSERT INTO offline_messages (date, pid, message) "
+					      "VALUES (now(), '%d', '%s')", pid, buff);
+			}
+			}
+	}
+	if (!success && message_length >= sizeof(buff) / 2)
+		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
+				  "message_too_large", "pid=%d", pid);
+	const bool released = qry("SELECT RELEASE_LOCK('%s')", lock_name);
+	MYSQL_RES *release_result = mysql_store_result(DB);
+	if (release_result)
+		mysql_free_result(release_result);
+	return success && released;
 }
 
 void send_offline_messages(P_char ch)

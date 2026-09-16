@@ -24,6 +24,17 @@ bool collector_runtime_publish(const collector_command_result &result);
 bool collector_runtime_find(uint64_t listing, collector::record *entry);
 bool collector_runtime_find_death(uint32_t beneficiary_pid, uint64_t death_time,
 				  collector_death_snapshot *death);
+// Return a bounded, ordered batch of available listings whose per-death hint is
+// not delivered. State PENDING is intentionally included so a restart can
+// resume a claim that was committed before delivery finished.
+bool collector_runtime_hint_candidates(uint64_t after_listing, size_t scan_limit,
+					       size_t result_limit, uint64_t now,
+					       std::vector<collector::record> *entries,
+					       uint64_t *next_after_listing, bool *reached_end);
+// Monotonic game-thread publication of the durable hint projection. Persistence
+// remains authoritative; a missing in-memory death is not a publication error.
+void collector_runtime_publish_hint(const collector::record &entry, uint8_t state,
+					    uint64_t hint_revision);
 bool collector_runtime_snapshot(collector::catalog *catalog);
 bool collector_runtime_available_for(uint32_t beneficiary, size_t limit,
 				     std::vector<collector::record> *entries);

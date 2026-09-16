@@ -64,7 +64,7 @@ uint32_t get_u32(const uint8_t *input)
 
 bool valid_action(collector_action action)
 {
-	return action > collector_action::unknown && action <= collector_action::resume;
+	return action > collector_action::unknown && action <= collector_action::hint_ack;
 }
 
 bool valid_cancel_reason(collector::reason why)
@@ -223,7 +223,8 @@ bool valid_payload(const collector_command_payload &payload)
 	    payload.item_blob_size > payload.item_blob.size())
 		return false;
 	if (payload.action == collector_action::activate ||
-	    payload.action == collector_action::pause || payload.action == collector_action::resume)
+	    payload.action == collector_action::pause || payload.action == collector_action::resume ||
+	    payload.action == collector_action::hint || payload.action == collector_action::hint_ack)
 		return payload.cancel_reason == collector::reason::none && metadata_only(payload);
 	if (payload.action == collector_action::cancel && !payload.item_count)
 		return valid_cancel_reason(payload.cancel_reason) && metadata_only(payload);
@@ -347,6 +348,13 @@ bool result_state_matches(const collector_command_result &result)
 	case collector_action::resume:
 		return result.entry.status == collector::state::available &&
 		       !result.entry.holding_paused;
+	case collector_action::hint:
+		return result.entry.status == collector::state::available &&
+		       !result.entry.holding_paused;
+	case collector_action::hint_ack:
+		// A delivery acknowledgement may race with purchase or expiry. It only
+		// publishes the current listing image; the hint state is the mutation.
+		return collector::valid_record(result.entry);
 	case collector_action::unknown:
 		return false;
 	}
