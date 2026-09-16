@@ -132,6 +132,7 @@
 #include "economy/boon_shop_transaction.h"
 #include "world/zone_touch_transaction.h"
 #include "world/epic_transaction.h"
+#include "world/vnum.mob.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -750,7 +751,11 @@ void run_the_game(int port, int sslport)
 	}
 
 	boot_db(mini_mode);
-	if (!mini_mode && !collector_presence_init())
+	// Minimal test worlds normally omit the collector prototype. A deliberately
+	// complete fixture may include it so the real service can be exercised without
+	// booting the production world; ordinary minimal boots stay silent and inert.
+	if ((!mini_mode || real_mobile(VMOB_COLLECTOR_ANTIQUITIES) >= 0) &&
+	    !collector_presence_init())
 		logit(LOG_STATUS,
 		      "Collector presence unavailable; collector commands fail closed.");
 

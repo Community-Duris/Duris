@@ -17,6 +17,7 @@ def main() -> None:
 
     comm = (ROOT / "src/net/comm.c").read_text()
     assert "collector_presence_init()" in comm
+    assert "real_mobile(VMOB_COLLECTOR_ANTIQUITIES) >= 0" in comm
     assert "collector_presence_pulse();" in comm
     assert "collector_presence_shutdown();" in comm
     service = (ROOT / "src/economy/collector_service.c").read_text()
