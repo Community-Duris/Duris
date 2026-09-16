@@ -354,7 +354,7 @@ make test-db
 `make test-all` covers maintained builds, generated world data, Python
 regressions, and native tests. `make test-db` additionally creates disposable
 MySQL containers for schema contracts, immutable migration checks, and the full
-historical 143-step legacy upgrade, replay, fresh-bootstrap equivalence, and
+historical 145-step legacy upgrade, replay, fresh-bootstrap equivalence, and
 runtime-compatibility test. It never targets the database configured in `.env`.
 
 During development, run the smallest relevant regression directly:

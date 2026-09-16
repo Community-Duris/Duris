@@ -145,6 +145,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "mobconv.c",               # NPC construction
             "db.c",                    # NPC construction
             "copyover.c",              # NPC restoration
+            "generated_npc_runtime.c",  # generated NPC restoration
             "smagic.c",                # summoned NPC setup
             "necromancy.c",            # summoned NPC setup
             "random.mob.c",            # NPC construction

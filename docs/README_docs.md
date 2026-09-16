@@ -14,7 +14,7 @@ docs/
   content/       builders and world content    gates/        release gates
   records/       standing records              adr/          decision records
   diagrams/      architecture diagrams         assets/       images
-  examples/      versioned configuration samples
+  design/        feature designs and status    examples/     versioned configuration samples
   legacy/        inherited upstream text
   lib/           runtime game data (not documentation)
 ```
@@ -50,6 +50,12 @@ docs/
 | [EXCEPTIONAL_TARGET_WINS_MERGE.md](persistence/EXCEPTIONAL_TARGET_WINS_MERGE.md) | Protected account-parent collision dispositions and aggregate preflight verification. |
 | [LEGACY_ITEM_QUARANTINE.md](persistence/LEGACY_ITEM_QUARANTINE.md) | Protected classification, disposition, and recovery planning for ambiguous legacy items. |
 | [LEGACY_MEMBERSHIP_RECONCILIATION.md](persistence/LEGACY_MEMBERSHIP_RECONCILIATION.md) | Protected semantic classification, disposition, and clone rehearsal for normalized legacy association/guild state. |
+
+## design/ - feature designs and status
+
+| Document | Purpose |
+|----------|---------|
+| [COLLECTOR_OF_ANTIQUITIES.md](design/COLLECTOR_OF_ANTIQUITIES.md) | Collector lifecycle policy, authorities, runtime publication, and the disabled-by-default promotion evidence. |
 
 ## guides/ - daily development
 

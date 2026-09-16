@@ -9,6 +9,7 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "economy/auction_houses.h"
+#include "economy/auction_room_registry.h"
 #include "economy/auction_transaction.h"
 #include "economy/currency_transaction.h"
 #include "flatfile/flatfile_auction_repository.h"
@@ -31,6 +32,29 @@
 #include "sql/sql_player.h"
 #include "net/ws_handlers.h"
 using namespace std;
+
+extern P_room world;
+
+namespace
+{
+void install_auction_house_room_procedures()
+{
+	for (size_t index = 0; index < AUCTION_HOUSE_REGISTERED_ROOM_COUNT; ++index)
+	{
+		int room_vnum = NOWHERE;
+		if (!auction_house_registered_room_vnum(index, &room_vnum))
+			continue;
+		const int room_rnum = real_room(room_vnum);
+		if (room_rnum == NOWHERE)
+		{
+			logit(LOG_WIZ, "Auction service room %d is not present in the world",
+			      room_vnum);
+			continue;
+		}
+		world[room_rnum].funct = auction_house_room_proc;
+	}
+}
+} // namespace
 
 #ifdef __NO_MYSQL__
 extern P_obj object_list;
@@ -372,6 +396,7 @@ string format_time(long seconds)
 void init_auction_houses()
 {
 	fprintf(stderr, "-- Initializing Flat-File Auctions\r\n");
+	install_auction_house_room_procedures();
 	flat_default_auction_length = get_property("auctions.defaultLength", 2 * 24 * 60 * 60);
 	flat_bid_time_extension = get_property("auctions.bidTimeExtension", 5 * 60);
 	flat_listing_fee = get_property("auctions.listingFee", 1000);
@@ -1017,17 +1042,7 @@ static void auction_money_pickup_committed(P_char ch, bool committed,
 void init_auction_houses()
 {
 	fprintf(stderr, "-- Initializing Auctions\r\n");
-
-	world[real_room0(16885)].funct = auction_house_room_proc;
-	world[real_room0(83117)].funct = auction_house_room_proc;
-	world[real_room0(97756)].funct = auction_house_room_proc;
-	world[real_room0(17736)].funct = auction_house_room_proc;
-	world[real_room0(55193)].funct = auction_house_room_proc;
-	world[real_room0(888)].funct = auction_house_room_proc;
-	world[real_room0(1200)].funct = auction_house_room_proc;
-	world[real_room0(69)].funct = auction_house_room_proc;
-	world[real_room0(420)].funct = auction_house_room_proc;
-	world[real_room0(132821)].funct = auction_house_room_proc;
+	install_auction_house_room_procedures();
 
 	sorter = new EqSort();
 

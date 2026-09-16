@@ -30,6 +30,7 @@
 #include "guild/assocs.h"
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_presence.h"
 #include "persistence/deferred_save_policy.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
@@ -3262,6 +3263,13 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	{
 		send_to_char("Steal what from who?\r\n", ch);
 		// CharWait(ch, PULSE_VIOLENCE);
+		return;
+	}
+	if (collector_presence_is_npc(victim))
+	{
+		send_to_char("The collector and the antiquity ledger are beyond your "
+			     "reach.\r\n",
+			     ch);
 		return;
 	}
 

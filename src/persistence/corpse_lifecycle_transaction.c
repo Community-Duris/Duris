@@ -1,8 +1,10 @@
 #include "persistence/corpse_lifecycle_transaction.h"
 
 #include "item/item_transfer_command.h"
+#include "redis/redis_report_cache.h"
 
 #include <cerrno>
+#include <mutex>
 #include <new>
 #include <string>
 #include <unordered_map>
@@ -37,6 +39,8 @@ enum class submit_outcome
 std::unordered_map<uint64_t, corpse_state> states;
 std::unordered_map<std::string, uint64_t> operations;
 corpse_lifecycle_transaction_health health = {};
+std::mutex outbox_mutex;
+std::unordered_map<uint64_t, bool> outbox_publications;
 
 std::string operation_key(const critical_operation_id &operation_id)
 {
@@ -627,6 +631,64 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 	account_health();
 }
 
+critical_outbox_delivery_result
+corpse_lifecycle_transaction_outbox_delivery(const critical_outbox_record &record, void *)
+{
+	if (record.destination != CORPSE_LIFECYCLE_OUTBOX_DESTINATION ||
+	    record.event_type != CORPSE_LIFECYCLE_OUTBOX_EVENT_MUTATED ||
+	    record.payload_version != CORPSE_LIFECYCLE_RESULT_VERSION || !record.outbox_id ||
+	    critical_operation_id_is_zero(record.operation_id))
+		return critical_outbox_delivery_result::terminal_failure;
+	corpse_lifecycle_result result = {};
+	if (!corpse_lifecycle_command_decode_result(record.payload.data(), record.payload.size(),
+						    &result))
+		return critical_outbox_delivery_result::terminal_failure;
+	std::lock_guard<std::mutex> lock(outbox_mutex);
+	const auto found = outbox_publications.find(record.outbox_id);
+	if (found != outbox_publications.end())
+	{
+		if (found->second)
+		{
+			outbox_publications.erase(found);
+			return critical_outbox_delivery_result::delivered;
+		}
+		return critical_outbox_delivery_result::retryable_failure;
+	}
+	if (outbox_publications.size() >= CORPSE_LIFECYCLE_PENDING_MAX)
+		return critical_outbox_delivery_result::retryable_failure;
+	try
+	{
+		outbox_publications.emplace(record.outbox_id, false);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return critical_outbox_delivery_result::retryable_failure;
+	}
+	return critical_outbox_delivery_result::retryable_failure;
+}
+
+void corpse_lifecycle_transaction_publish_outbox(void)
+{
+	bool publish = false;
+	{
+		std::lock_guard<std::mutex> lock(outbox_mutex);
+		for (auto &[outbox_id, published] : outbox_publications)
+		{
+			(void)outbox_id;
+			if (!published)
+			{
+				published = true;
+				publish = true;
+			}
+		}
+	}
+	if (publish)
+	{
+		redis_invalidate_artifact_cache();
+		critical_outbox_resume();
+	}
+}
+
 bool corpse_lifecycle_transaction_busy(uint32_t owner_pid, uint32_t save_id)
 {
 	const auto found = states.find(corpse_key(owner_pid, save_id));
@@ -644,4 +706,6 @@ void corpse_lifecycle_transaction_reset_for_tests(void)
 	states.clear();
 	operations.clear();
 	health = {};
+	std::lock_guard<std::mutex> lock(outbox_mutex);
+	outbox_publications.clear();
 }

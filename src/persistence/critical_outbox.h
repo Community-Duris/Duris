@@ -1,6 +1,8 @@
 #ifndef CRITICAL_OUTBOX_H
 #define CRITICAL_OUTBOX_H
 
+#include "persistence/critical_command.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -26,6 +28,7 @@ enum class critical_outbox_delivery_result : uint8_t
 struct critical_outbox_record
 {
 	uint64_t outbox_id;
+	critical_operation_id operation_id;
 	uint16_t destination;
 	uint16_t event_type;
 	uint16_t payload_version;

@@ -1148,6 +1148,151 @@
       "dependencies": []
     },
     {
+      "id": "database:collector_catalog_state",
+      "kind": "database_table",
+      "locator": "collector_catalog_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_applicable",
+      "technical_purpose": "monotonic collector catalog identity and durable listing allocation",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-METADATA-EXCLUSION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:collector_deaths",
+      "kind": "database_table",
+      "locator": "collector_deaths",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id",
+      "technical_purpose": "durable collector death beneficiary and once-per-death hint state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:collector_ledger",
+      "kind": "database_table",
+      "locator": "collector_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent collector replay reconciliation auditability and custody correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:collector_listings",
+      "kind": "database_table",
+      "locator": "collector_listings",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id",
+      "technical_purpose": "durable collector listing policy item payload custody and terminal history",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:collector_deaths"]
+    },
+    {
+      "id": "database:collector_reconciliation_quarantine",
+      "kind": "database_table",
+      "locator": "collector_reconciliation_quarantine",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "collector custody conflict evidence and operator repair auditability",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:combat_frag_baseline",
       "kind": "database_table",
       "locator": "combat_frag_baseline",
@@ -1262,6 +1407,35 @@
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
       "dependencies": ["database:combat_outcome"]
+    },
+    {
+      "id": "database:corpse_catalog_state",
+      "kind": "database_table",
+      "locator": "corpse_catalog_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_applicable",
+      "technical_purpose": "monotonic corpse catalog revision for atomic disposal and replay authority",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-METADATA-EXCLUSION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
     },
     {
       "id": "database:corpse_item_affects",
