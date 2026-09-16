@@ -30,6 +30,7 @@ extern "C" MYSQL *sql_pool_replace_connection(MYSQL *)
 #include <optional>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -65,6 +66,7 @@ using P_obj = object *;
 using completion_fn = void (*)(P_char, bool, const currency_command_result &, unsigned,
 			       const uint8_t *, size_t);
 P_char live = nullptr;
+std::unordered_map<uint32_t, P_char> other_players;
 std::string output, root, mode;
 bool bank_purchase = false, admit = true;
 unsigned submissions = 0;
@@ -81,7 +83,10 @@ bool test_receipt_write(const std::string &directory, const locker_receipt &rece
 }
 P_char find_player_by_pid(uint32_t pid)
 {
-	return live && live->pid == pid ? live : nullptr;
+	if (live && live->pid == pid)
+		return live;
+	const auto found = other_players.find(pid);
+	return found == other_players.end() ? nullptr : found->second;
 }
 const char *get_account_name_safe(P_char ch)
 {
@@ -243,6 +248,7 @@ bool currency_transaction_submit_prepared(P_char ch, const critical_command &com
 void tick()
 {
 	locker_identify_pulse();
+	assert(requests.size() <= 16);
 	std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 template <class Predicate> void until(Predicate predicate)
@@ -266,7 +272,7 @@ void finish(unsigned override_error = 0)
 }
 void drained()
 {
-	until([] { return requests.empty(); });
+	until([] { return requests.empty() && deferred_replays.empty(); });
 }
 
 int main(int argc, char **argv)
@@ -274,6 +280,9 @@ int main(int argc, char **argv)
 	assert(argc == 4);
 	root = argv[1];
 	mode = argv[2];
+	const bool saturated = mode.starts_with("saturated-");
+	if (saturated)
+		mode.erase(0, strlen("saturated-"));
 	bank_purchase = std::string(argv[3]) == "bank";
 	descriptor descriptor;
 	character ch;
@@ -282,11 +291,32 @@ int main(int argc, char **argv)
 	baseline(&ch);
 	assert(locker_identify_init(root.c_str()));
 	object obj{ &ch, 0, "ORIGINAL SWORD STATS" };
+	// Copyover enqueues all playing characters before the first service pulse.
+	// The last player's recovery must survive more than two full admission batches.
+	std::vector<character> crowd(40, ch);
+	if (saturated)
+	{
+		for (size_t n = 0; n < crowd.size(); ++n)
+		{
+			crowd[n].pid = ch.pid + 1000 + n;
+			other_players.emplace(crowd[n].pid, &crowd[n]);
+			locker_identify_replay(&crowd[n]);
+			locker_identify_replay(&crowd[n]);
+		}
+		assert(requests.size() == 16);
+		assert(deferred_replays.size() == 24);
+	}
 	if (mode == "replay")
 	{
 		hold_writes = true;
 		locker_identify_replay(&ch);
-		until([&] { return requests.at(ch.pid)->stage == phase::delivering; });
+		until(
+			[&]
+			{
+				const auto found = requests.find(ch.pid);
+				return found != requests.end() &&
+				       found->second->stage == phase::delivering;
+			});
 		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
 		output.clear();
 		// A reread arriving during the delivered-marker write is still honored.
@@ -355,6 +385,7 @@ int main(int argc, char **argv)
 		}
 		drained();
 		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+		assert(output.find("ORIGINAL SWORD STATS") == output.rfind("ORIGINAL SWORD STATS"));
 		assert(output.find("DIFFERENT STATS") == std::string::npos);
 		output.clear();
 		finish();
@@ -490,11 +521,62 @@ int main(int argc, char **argv)
 		drained();
 		live = &ch;
 		fail_writes = false;
+		// Overflow is deduplicated, skips disconnected owners, and is drained in
+		// bounded batches even when no I/O is needed for those disconnected IDs.
+		output.clear();
+		for (size_t n = 0; n < crowd.size(); ++n)
+		{
+			crowd[n].pid = ch.pid + 1000 + n;
+			other_players.emplace(crowd[n].pid, &crowd[n]);
+			locker_identify_replay(&crowd[n]);
+		}
+		locker_identify_replay(&ch);
+		locker_identify_replay(&ch);
+		assert(requests.size() == 16 && deferred_replays.size() == 25);
+		locker_identify_receipt(&ch);
+		assert(output.find("busy") != std::string::npos);
+		assert(deferred_replays.count(ch.pid) == 1);
+		for (auto &player : crowd)
+			player.desc = nullptr;
+		ch.desc = nullptr;
+		output.clear();
+		drained();
+		assert(output.empty() && submissions == 5);
+		ch.desc = &descriptor;
+		// An explicit read can claim a waiting ID when a slot has opened. It
+		// consumes the deferred entry instead of scheduling a second recovery.
+		locker_identify_replay(&ch);
+		drained();
+		output.clear();
+		for (auto &player : crowd)
+		{
+			player.desc = &descriptor;
+			locker_identify_replay(&player);
+		}
+		locker_identify_replay(&ch);
+		assert(deferred_replays.count(ch.pid) == 1);
+		// Finish one no-receipt read without pumping deferred work, simulating
+		// the admission window before the next service pulse.
+		auto slot = requests.begin();
+		slot->second->io.wait();
+		requests.erase(slot);
+		locker_identify_receipt(&ch);
+		assert(deferred_replays.count(ch.pid) == 0);
+		drained();
+		assert(submissions == 5);
+		assert(output.find("The identification payment failed") != std::string::npos);
+		assert(output.find("The identification payment failed") ==
+		       output.rfind("The identification payment failed"));
+		// Shutdown must discard queued session notifications along with requests.
+		for (auto &player : crowd)
+			locker_identify_replay(&player);
+		assert(!deferred_replays.empty());
 	}
 	locker_identify_shutdown();
+	assert(requests.empty() && deferred_replays.empty());
 #ifndef __NO_MYSQL__
 	mysql_close(db);
 #endif
-	std::cout << mode << " " << (bank_purchase ? "bank" : "wallet")
-		  << " receipt/payment checks passed\n";
+	std::cout << (saturated ? "saturated-" : "") << mode << " "
+		  << (bank_purchase ? "bank" : "wallet") << " receipt/payment checks passed\n";
 }

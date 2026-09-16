@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "item/device_actions.h"
 #include "player/output_message.h"
 #include "cmd/color_command.h"
@@ -29,6 +30,7 @@
 #include "guild/assocs.h"
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_presence.h"
 #include "persistence/deferred_save_policy.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
@@ -1717,6 +1719,13 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 
 	sql_log_player_login(ch, "logout");
 	redis_player_offline(ch);
+	/* do_quit moves mortal descriptors to CON_PWD_D_CONF before the terminal
+	 * save completes, so the central extraction hook cannot infer logout from
+	 * descriptor state.  Capture the explicit terminal exit while its
+	 * connection identity is still available. */
+	if (ch->telemetry_session_sequence != 0U)
+		(void)telemetry_runtime_game_session_exit(ch, ch->desc,
+							  telemetry_session_end_reason::logout);
 	extract_char_after_terminal_save(ch);
 	ch = NULL;
 }
@@ -3254,6 +3263,13 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	{
 		send_to_char("Steal what from who?\r\n", ch);
 		// CharWait(ch, PULSE_VIOLENCE);
+		return;
+	}
+	if (collector_presence_is_npc(victim))
+	{
+		send_to_char("The collector and the antiquity ledger are beyond your "
+			     "reach.\r\n",
+			     ch);
 		return;
 	}
 

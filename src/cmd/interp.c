@@ -11,12 +11,14 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/falling.h"
 #include "cmd/interp.h"
 #include "kingdom/kingdom.h"
 #include "core/utils.h"
@@ -28,6 +30,7 @@
 #include "guild/alliances.h"
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
+#include "economy/collector_service.h"
 #include "classes/avengers.h"
 #include "economy/boon.h"
 #include "world/buildings.h"
@@ -63,6 +66,53 @@
  */
 extern struct time_info_data time_info;
 extern P_desc descriptor_list;
+
+static bool is_normal_movement_command(int cmd)
+{
+	return (cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE);
+}
+
+static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
+{
+	if (cmd == CMD_SAY || cmd == CMD_SAY2 || cmd == CMD_GSHOUT || cmd == CMD_TELL ||
+	    cmd == CMD_WHISPER || cmd == CMD_EMOTE || cmd == CMD_EMOTE2 || cmd == CMD_GSAY ||
+	    cmd == CMD_SHOUT || cmd == CMD_NCHAT || cmd == CMD_CHANNEL)
+		return telemetry_runtime_evidence_kind::communication;
+
+	if (cmd == CMD_CAST || cmd == CMD_USE || cmd == CMD_RECITE || cmd == CMD_QUAFF ||
+	    cmd == CMD_GET || cmd == CMD_TAKE || cmd == CMD_DROP || cmd == CMD_PUT ||
+	    cmd == CMD_GIVE || cmd == CMD_WEAR || cmd == CMD_WIELD || cmd == CMD_REMOVE ||
+	    cmd == CMD_OPEN || cmd == CMD_CLOSE || cmd == CMD_LOCK || cmd == CMD_UNLOCK ||
+	    cmd == CMD_DRINK || cmd == CMD_EAT || cmd == CMD_READ || cmd == CMD_POUR ||
+	    cmd == CMD_GRAB || cmd == CMD_PICK || cmd == CMD_STEAL || cmd == CMD_OFFER ||
+	    cmd == CMD_EXAMINE || cmd == CMD_FORAGE || cmd == CMD_GROUP)
+		return telemetry_runtime_evidence_kind::interaction;
+
+	if (is_normal_movement_command(cmd))
+		return telemetry_runtime_evidence_kind::movement;
+
+	/* IS_AGG_CMD includes cast/use/recite, which are interaction evidence above. */
+	if (IS_AGG_CMD(cmd) && cmd != CMD_CAST && cmd != CMD_USE && cmd != CMD_RECITE)
+		return telemetry_runtime_evidence_kind::combat_participation;
+
+	return telemetry_runtime_evidence_kind::player_action;
+}
+
+static void telemetry_record_recognized_command(P_char source, P_char executor, int cmd)
+{
+	if (!source || !executor || !IS_PC(executor))
+		return;
+	P_desc descriptor = source->desc ? source->desc : executor->desc;
+	if (!descriptor || descriptor->connected != CON_PLAYING || descriptor->str ||
+	    descriptor->showstr_count || cmd == CMD_QUIT || cmd == CMD_RENT || cmd == CMD_CAMP)
+		return;
+	const telemetry_runtime_evidence_kind kind = telemetry_command_evidence_kind(cmd);
+	/* Movement is captured after char_to_room succeeds so a blocked exit does
+	 * not create a second activity observation. */
+	if (kind == telemetry_runtime_evidence_kind::movement)
+		return;
+	(void)telemetry_runtime_game_evidence(executor, descriptor, kind);
+}
 
 extern char debug_mode;
 extern int hometown[];
@@ -1111,7 +1161,8 @@ const char *command[MAX_CMD] = {
 	"difficulty",
 	"itemmana",
 	"pulse",
-	"\n" /* MAX_CMD = 862, MAX_CMD_LIST = 1000 */
+	"collector",
+	"\n" /* MAX_CMD = 863, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -1234,10 +1285,21 @@ bool cmd_allowed_while_casting(P_char ch, int cmd)
 		(item_action_active(ch) || PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)));
 }
 
+static bool is_retired_command_spelling(const char *word, uint length)
+{
+	static const char *const spellings[] = { "add", "deploy", NULL };
+
+	for (int i = 0; spellings[i]; ++i)
+		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
+			return true;
+	return false;
+}
+
 /** Commands whose result depends on the player's live inventory or equipment.
  * A pending ownership transaction has already committed or is about to commit
  * a different authoritative view, so item moves and synchronous consumers must
- * wait for its publication. */
+ * wait for its publication.  A few special commands are included when their
+ * next step can submit a currency transaction from that item state. */
 bool cmd_depends_on_item_movement(int cmd)
 {
 	switch (cmd)
@@ -1275,19 +1337,28 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_JUNK:
 	case CMD_DONATE:
 	case CMD_SACRIFICE:
+	case CMD_ASK:
 	case CMD_BUY:
 	case CMD_SELL:
 	case CMD_EQUIPMENT:
 	case CMD_INVENTORY:
+	case CMD_COLLECTOR:
 		return true;
 	default:
 		return false;
 	}
 }
 
-/** Commands that may submit a non-rebasable wallet or bank debit.  Preserve
- * typed input until an earlier currency operation publishes the authoritative
- * balance instead of consuming it on the transient player/account fence. */
+/** Commands that may read or mutate the live wallet or bank.  Preserve typed
+ * input until an earlier currency operation publishes the authoritative
+ * balance instead of consuming it on the transient player/account fence.
+ *
+ * This is deliberately an explicit list of paid entry points audited against
+ * the command specials and their helpers.  SAY/TELL remain independent for
+ * ordinary communication; the stateful blackjack SAY actions are handled by
+ * input_is_currency_dependent_speech() and confirmation handling below.
+ * GUILDHALL, TRAIN, and EPIC use non-wallet currencies or only display
+ * information and therefore stay out of this wallet fence. */
 bool cmd_depends_on_currency_transaction(int cmd)
 {
 	switch (cmd)
@@ -1298,6 +1369,32 @@ bool cmd_depends_on_currency_transaction(int cmd)
 	case CMD_GIVE:
 	case CMD_DEPOSIT:
 	case CMD_WITHDRAW:
+	case CMD_COLLECTOR:
+	case CMD_ASK:
+	case CMD_BUY:
+	case CMD_SELL:
+	case CMD_OFFER:
+	case CMD_RENT:
+	case CMD_PRAY:
+	case CMD_EXCHANGE:
+	case CMD_SPLIT:
+	case CMD_RELOAD:
+	case CMD_REPAIR:
+	case CMD_SUMMON:
+	case CMD_MAIL:
+	case CMD_HOME:
+	case CMD_AUCTION:
+	case CMD_CONSTRUCT:
+	case CMD_ENTER:
+	case CMD_EQUIPMENT:
+	case CMD_STAT:
+	case CMD_HIRE:
+	case CMD_FORGE:
+	case CMD_REFINE:
+	case CMD_ENHANCE:
+	case CMD_PRACTICE:
+	case CMD_PRACTISE:
+	case CMD_ENCHANT:
 		return true;
 	default:
 		return false;
@@ -1324,6 +1421,67 @@ static int input_command_number(const char *input)
 	}
 	word[len] = '\0';
 
+	return old_search_block(word, 0, len, command, 2);
+}
+
+/** Return whether a speech line is a stateful blackjack continuation of OFFER. */
+static bool input_is_currency_dependent_speech(const char *input)
+{
+	const int cmd = input_command_number(input);
+	if (cmd != CMD_SAY && cmd != CMD_SAY2)
+		return false;
+
+	const char *cursor = input;
+	while (*cursor == ' ')
+		++cursor;
+	while (*cursor > ' ')
+		++cursor;
+	while (*cursor == ' ')
+		++cursor;
+
+	char action[MAX_INPUT_LENGTH];
+	uint length = 0;
+	while (length < sizeof(action) - 1 && cursor[length] > ' ')
+	{
+		action[length] = LOWER(cursor[length]);
+		++length;
+	}
+	action[length] = '\0';
+
+	return !strcmp(action, "deal") || !strcmp(action, "stay") || !strcmp(action, "fold") ||
+	       !strcmp(action, "hit");
+}
+
+/** A pending "yes" can confirm a paid command before command parsing. */
+static bool input_is_currency_dependent_confirmation(const char *input)
+{
+	if (!input)
+		return false;
+	while (*input == ' ')
+		++input;
+	return LOWER(*input) == 'y';
+}
+
+/** Resolve an ordered command exactly as the interpreter will dispatch it. */
+int ordered_command_number(const char *input)
+{
+	char word[MAX_INPUT_LENGTH];
+	uint begin = 0;
+	uint len = 0;
+
+	if (!input)
+		return CMD_NONE;
+	while (input[begin] == ' ')
+		begin++;
+	while (input[begin + len] > ' ' && len < sizeof(word) - 1)
+	{
+		word[len] = LOWER(input[begin + len]);
+		len++;
+	}
+	word[len] = '\0';
+
+	if (len == 0 || is_retired_command_spelling(word, len))
+		return CMD_NONE;
 	return old_search_block(word, 0, len, command, 2);
 }
 
@@ -1363,7 +1521,9 @@ bool input_allowed_while_currency_pending(const char *input)
 	if (!input)
 		return FALSE;
 
-	return !cmd_depends_on_currency_transaction(input_command_number(input));
+	return !cmd_depends_on_currency_transaction(input_command_number(input)) &&
+	       !input_is_currency_dependent_speech(input) &&
+	       !input_is_currency_dependent_confirmation(input);
 }
 
 /** Apply both selective gates when item and currency publication overlap. */
@@ -1436,16 +1596,6 @@ void do_confirm(P_char ch, bool yes)
 
 	ch->desc->confirm_state = CONFIRM_DONE;
 	command_interpreter(ch, ch->desc->last_command);
-}
-
-static bool is_retired_command_spelling(const char *word, uint length)
-{
-	static const char *const spellings[] = { "add", "deploy", NULL };
-
-	for (int i = 0; spellings[i]; ++i)
-		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
-			return true;
-	return false;
 }
 
 /*
@@ -1562,6 +1712,8 @@ void command_interpreter(P_char ch, char *argument)
 	if (IS_PC(ch) && IS_SET(ch->specials.act, PLR_AFK))
 	{
 		REMOVE_BIT(ch->specials.act, PLR_AFK);
+		if (ch->desc && ch->desc->connected == CON_PLAYING)
+			(void)telemetry_runtime_game_context(ch, ch->desc);
 	}
 
 	/* The casting gate must run before anything with a side effect: comm.c now
@@ -1599,8 +1751,9 @@ void command_interpreter(P_char ch, char *argument)
 
 	if (world[ch->in_room].chance_fall && number(1, 100) <= world[ch->in_room].chance_fall)
 	{
-		// Starting speed 0, and do not kill.
-		if (falling_char(ch, 0, FALSE))
+		const falling_start_result falling = falling_start(ch);
+		if (falling == falling_start_result::scheduled ||
+		    falling == falling_start_result::schedule_rejected)
 		{
 			return;
 		}
@@ -1750,8 +1903,11 @@ void command_interpreter(P_char ch, char *argument)
 					break;
 				}
 			if (IS_FIGHTING(ch) && !cmd_info[cmd].in_battle)
-				send_to_char("Sorry, you aren't allowed to do that in combat.\r\n",
-					     ch);
+				send_to_char(
+					is_normal_movement_command(cmd) ?
+						"You cannot move normally while fighting; use 'flee' to escape.\r\n" :
+						"Sorry, you aren't allowed to do that in combat.\r\n",
+					ch);
 			return;
 		}
 		else
@@ -2108,6 +2264,15 @@ void command_interpreter(P_char ch, char *argument)
 			{
 				return;
 			}
+
+			/* Record only a recognized command that survived parser, state,
+			 * permission, special-proc, and item-teleport gates.  The old comm.c
+			 * hook ran before pager/editor handling and treated rejected input as
+			 * player activity. */
+			if (cmd_info[cmd].req_confirm != 1 ||
+			    (exec_char->desc && (exec_char->desc->confirm_state == CONFIRM_DONE ||
+						 !strcmp(argument + begin + look_at, "confirm"))))
+				telemetry_record_recognized_command(ch, exec_char, cmd);
 
 			// Execute the bloody thing!!!
 			if ((cmd_info[cmd].req_confirm == 1) &&
@@ -3162,6 +3327,7 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_DIFFICULTY, STAT_DEAD + POS_PRONE, do_difficulty, LESSER_G);
 	CMD_Y(CMD_ITEMMANA, STAT_RESTING + POS_PRONE, do_itemmana, 0, FALSE);
 	CMD_GRT(CMD_PULSE, STAT_DEAD + POS_PRONE, do_pulse, LESSER_G);
+	CMD_Y(CMD_COLLECTOR, STAT_NORMAL + POS_STANDING, collector_service_command, 0, FALSE);
 	CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 	CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 

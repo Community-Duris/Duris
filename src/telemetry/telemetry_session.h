@@ -249,6 +249,11 @@ telemetry_session_state_result telemetry_session_state_exit(telemetry_session_st
 telemetry_session_state_result
 telemetry_session_state_handoff_copy(telemetry_session_state *state, telemetry_session_ref session,
 				     telemetry_session_handoff *handoff) noexcept;
+/* Shares the classifier's flush cut so a failed copyover can continue accounting. */
+telemetry_session_state_result telemetry_session_state_handoff_copy_at(
+	telemetry_session_state *state, telemetry_session_ref session,
+	telemetry_session_handoff *handoff, telemetry_monotonic_usec at_monotonic_usec,
+	telemetry_utc_usec at_utc_usec) noexcept;
 
 /*
  * A valid handoff imports cumulative state and emits exactly one attached

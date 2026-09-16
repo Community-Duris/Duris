@@ -23,6 +23,10 @@ SQL = ['src/item/item_transfer_command.c', 'src/item/item_transfer_repository.c'
        'src/economy/boon_reward_repository.c', 'src/world/zone_touch_command.c',
        'src/world/zone_touch_repository.c', 'src/account/session_audit_command.c',
        'src/account/session_audit_repository.c', 'src/economy/coin_transfer_command.c',
+       'src/economy/collector_command.c', 'src/economy/collector_codec.c',
+       'src/economy/collector_policy.c', 'src/economy/collector_repository.c',
+       'src/persistence/corpse_lifecycle_command.c',
+       'src/persistence/corpse_lifecycle_repository.c',
        'src/player/player_snapshot_codec.c', 'src/player/player_load_repository.c',
        'src/player/player_load_topology.c', 'src/persistence/persistence_observability.c',
        'src/persistence/critical_command_repository.c']
@@ -44,11 +48,13 @@ def run_backend(temp, mysql=False):
     for purse in ('wallet', 'bank'):
         subprocess.run([str(binary), str(directory / ('normal-'+purse)), 'normal', purse], check=True, timeout=30)
         for crash, exit_code in [('before-payment', 77), ('after-payment', 78), ('after-receipt', 79)]:
-            state = str(directory / (crash+'-'+purse))
-            result = subprocess.run([str(binary), state, crash, purse], timeout=30)
-            assert result.returncode == exit_code, (crash, result.returncode)
-            subprocess.run([str(binary), state, 'replay' if crash == 'after-receipt' else 'recover', purse], check=True, timeout=30)
-            subprocess.run([str(binary), state, 'delivered', purse], check=True, timeout=30)
+            for prefix in ('', 'saturated-'):
+                state = str(directory / (prefix+crash+'-'+purse))
+                result = subprocess.run([str(binary), state, crash, purse], timeout=30)
+                assert result.returncode == exit_code, (crash, result.returncode)
+                recovery = 'replay' if crash == 'after-receipt' else 'recover'
+                subprocess.run([str(binary), state, prefix+recovery, purse], check=True, timeout=30)
+                subprocess.run([str(binary), state, prefix+'delivered', purse], check=True, timeout=30)
 
 
 (ROOT / 'bin/tests').mkdir(parents=True, exist_ok=True)

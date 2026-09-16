@@ -653,17 +653,24 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 		" AND owner_id=" + pid + " AND owner_context_id=0";
 	const std::string active =
 		std::to_string(static_cast<unsigned>(item_custody_state::active));
-	result = execute(connection,
-			 "UPDATE item_owner_revision SET revision=revision+1 WHERE " + owner +
-				 " AND EXISTS (SELECT 1 FROM item_current_owner WHERE " + owner +
-				 " AND state=" + active + ")");
+	const std::string death_custody =
+		" AND EXISTS (SELECT 1 FROM player_death_custody death_row WHERE death_row.pid=" +
+		pid + " AND death_row.save_revision=" + revision +
+		" AND (death_row.item_uid=current_item.item_uid OR "
+		"death_row.root_item_uid=current_item.root_item_uid))";
+	result = execute(
+		connection,
+		"UPDATE item_owner_revision SET revision=revision+1 WHERE " + owner +
+			" AND EXISTS (SELECT 1 FROM item_current_owner current_item WHERE " +
+			owner + " AND current_item.state=" + active + death_custody + ")");
 	if (result.ok)
 		result = execute(
 			connection,
-			"UPDATE item_current_owner SET item_revision=item_revision+1,state=" +
+			"UPDATE item_current_owner AS current_item SET item_revision=item_revision+1,state=" +
 				std::to_string(
 					static_cast<unsigned>(item_custody_state::quarantined)) +
-				" WHERE " + owner + " AND state=" + active);
+				" WHERE " + owner + " AND current_item.state=" + active +
+				death_custody);
 	return result;
 }
 

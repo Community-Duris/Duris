@@ -1,5 +1,8 @@
 # Documentation Index
 
+Read the selected guides in the [project documentation library](https://community-duris.github.io/Duris/#documentation).
+See [Project website](guides/GITHUB_PAGES.md) for publishing and local development.
+
 Setup and first boot live in the root [README](../README.md); its Quick start is the
 onboarding path. This directory holds the verified development, architecture,
 operations, database, and builder references.
@@ -11,7 +14,7 @@ docs/
   content/       builders and world content    gates/        release gates
   records/       standing records              adr/          decision records
   diagrams/      architecture diagrams         assets/       images
-  examples/      versioned configuration samples
+  design/        feature designs and status    examples/     versioned configuration samples
   legacy/        inherited upstream text
   lib/           runtime game data (not documentation)
 ```
@@ -47,6 +50,12 @@ docs/
 | [EXCEPTIONAL_TARGET_WINS_MERGE.md](persistence/EXCEPTIONAL_TARGET_WINS_MERGE.md) | Protected account-parent collision dispositions and aggregate preflight verification. |
 | [LEGACY_ITEM_QUARANTINE.md](persistence/LEGACY_ITEM_QUARANTINE.md) | Protected classification, disposition, and recovery planning for ambiguous legacy items. |
 | [LEGACY_MEMBERSHIP_RECONCILIATION.md](persistence/LEGACY_MEMBERSHIP_RECONCILIATION.md) | Protected semantic classification, disposition, and clone rehearsal for normalized legacy association/guild state. |
+
+## design/ - feature designs and status
+
+| Document | Purpose |
+|----------|---------|
+| [COLLECTOR_OF_ANTIQUITIES.md](design/COLLECTOR_OF_ANTIQUITIES.md) | Collector lifecycle policy, authorities, runtime publication, and the disabled-by-default promotion evidence. |
 
 ## guides/ - daily development
 
@@ -107,6 +116,8 @@ Kept when the `.spec_system/` tracking tree was retired.
 ## Decisions and diagrams
 
 - [Architecture decision template](adr/0000-template.md)
+- [Refactor investigations #343-#347](adr/0001-refactor-investigation-343-347.md): alternatives,
+  chosen ownership boundaries, performance risks, dependencies, and migration/test gates.
 - [Server architecture diagram](diagrams/duris-server-architecture.html) and
   [database model](diagrams/duris-database-model.html)
 

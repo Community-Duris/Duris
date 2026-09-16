@@ -145,6 +145,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "mobconv.c",               # NPC construction
             "db.c",                    # NPC construction
             "copyover.c",              # NPC restoration
+            "generated_npc_runtime.c",  # generated NPC restoration
             "smagic.c",                # summoned NPC setup
             "necromancy.c",            # summoned NPC setup
             "random.mob.c",            # NPC construction
@@ -153,12 +154,24 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "guildhall_rooms.c",       # NPC construction
             "specs.mobile.c",           # NPC vendor/undead balances
         }
+        generated_npc_restoration = {
+            "GET_COPPER(pet) = wallet[0];",
+            "GET_SILVER(pet) = wallet[1];",
+            "GET_GOLD(pet) = wallet[2];",
+            "GET_PLATINUM(pet) = wallet[3];",
+        }
         violations = []
         for path in SRC.rglob("*.c"):
             if path.name in allowed:
                 continue
+            relative = path.relative_to(SRC).as_posix()
             for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
                 if line.lstrip().startswith("//"):
+                    continue
+                if (
+                    relative == "world/generated_npc_runtime.c"
+                    and line.strip() in generated_npc_restoration
+                ):
                     continue
                 if assignment.search(line):
                     violations.append(f"{path.relative_to(ROOT)}:{number}:{line.strip()}")
@@ -175,6 +188,28 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("currency_transaction_handle_completions", comm)
         self.assertIn("currency_transaction_player_ready", nanny)
         self.assertIn("critical_command_coordinator_is_fenced", transaction)
+
+    def test_unresolved_publication_is_explicit_and_operator_visible(self):
+        header = (SRC / "economy/currency_transaction.h").read_text()
+        transaction = (SRC / "economy/currency_transaction.c").read_text()
+        world_status = (SRC / "cmd/actinf.c").read_text()
+        for state in (
+            "awaiting_completion",
+            "waiting_for_player",
+            "retrying_callback",
+            "blocked_receipt",
+        ):
+            self.assertIn(state, transaction)
+        self.assertIn("currency_transaction_can_submit_nonrebasable", header)
+        self.assertNotIn("currency_transaction_can_submit(P_char", header)
+        for metric in (
+            "currency_transactions",
+            "retained_offline",
+            "publication_blocked",
+            "publication_retrying",
+            "publication_abandoned",
+        ):
+            self.assertIn(metric, world_status)
 
 
 if __name__ == "__main__":

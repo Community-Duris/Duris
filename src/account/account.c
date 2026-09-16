@@ -5,11 +5,22 @@
 
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
 #include "world/db.h"
+#include "world/epic_transaction.h"
+#include "world/handler.h"
+#include "world/zone_touch_transaction.h"
 #include "cmd/interp.h"
+#include "economy/auction_transaction.h"
+#include "economy/boon_reward_transaction.h"
+#include "economy/collector_service.h"
+#include "economy/collector_transaction.h"
+#include "economy/currency_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "item/locker_identify.h"
+#include "economy/shop_trade_transaction.h"
 #include "core/utils.h"
 #include "account/account.h"
 #include "account/account_recovery.h"
@@ -230,6 +241,66 @@ void display_account_login_pages(P_desc d)
 	SEND_TO_Q("\r\n&+YNews:&n Type 'news' in game to read the latest updates.\r\n", d);
 	SEND_TO_Q(motd.c_str(), d);
 	SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
+}
+
+bool prepare_account_reconnect(P_char character, P_desc descriptor)
+{
+	if (!character || !descriptor)
+		return false;
+
+	const auto save_fenced = [character]()
+	{
+		return collector_service_player_save_fenced(character) ||
+		       corpse_raise_player_save_fenced(character);
+	};
+	const auto discard_stale_body = [character, descriptor]()
+	{
+		// Keep the account state machine attached to its menu descriptor.  A
+		// fenced linkdead body must not be extracted while it still owns the
+		// descriptor, because extract_char() would move that descriptor to the
+		// account menu as a side effect and the caller would lose its pending
+		// character-selection state.
+		if (descriptor->character == character)
+			descriptor->character = NULL;
+		character->desc = NULL;
+		SEND_TO_Q(
+			"Your previous session needs an authoritative inventory reload; loading a fresh character snapshot now.\r\n",
+			descriptor);
+		extract_char_after_terminal_save(character);
+	};
+
+	// Never replay a retained purchase or any other ready hook into a body
+	// whose graph is already fenced.  In particular, a pending purchase replay
+	// must not materialize an item immediately before a corpse fence extracts
+	// the same stale graph.
+	if (save_fenced())
+	{
+		discard_stale_body();
+		return false;
+	}
+
+	// Keep the descriptor present while readiness callbacks run so a successful
+	// replay can report its result to the reconnecting player.  The caller only
+	// enters CON_PLAYING after this preflight succeeds.
+	character->desc = descriptor;
+	epic_transaction_player_ready(character);
+	zone_touch_transaction_player_ready(character);
+	currency_transaction_player_ready(character);
+	locker_identify_replay(character);
+	item_movement_transaction_player_ready(character);
+	shop_trade_transaction_player_ready(character);
+	auction_transaction_player_ready(character);
+	collector_transaction_player_ready(character);
+	collector_service_player_ready(character, false);
+	corpse_raise_player_ready(character, false);
+	boon_reward_transaction_player_ready(character);
+
+	if (save_fenced())
+	{
+		discard_stale_body();
+		return false;
+	}
+	return true;
 }
 } // namespace
 
@@ -646,6 +717,8 @@ bool account_login_password_pulse(P_desc d)
 		return true;
 	password_login_release(d->login_password_job);
 	d->login_password_job = nullptr;
+	// As in password_async_pulse(): the result's prompt arrives without input.
+	d->prompt_mode = TRUE;
 	if (d->login_password_websocket)
 		ws_finish_login(d, valid);
 	else
@@ -843,6 +916,7 @@ void verify_account_name(P_desc d, char *arg)
 		SEND_TO_Q("Ok, what then?\r\n", d);
 		d->account = free_account(d->account);
 		STATE(d) = CON_GET_ACCT_NAME;
+		SEND_TO_Q("Account Name: ", d);
 		return;
 	}
 	else
@@ -926,6 +1000,7 @@ void verify_new_account_email(P_desc d, char *arg)
 		FREE(d->account->acct_email);
 		d->account->acct_email = NULL;
 		STATE(d) = CON_GET_NEW_ACCT_EMAIL;
+		get_new_account_email(d, NULL);
 		return;
 	}
 	else
@@ -991,7 +1066,7 @@ void verify_new_account_password(P_desc d, char *arg)
 	if (!arg)
 	{
 		echo_on(d);
-		SEND_TO_Q("Please verify your password:  ", d);
+		SEND_TO_Q("Please re-enter the same password to confirm:  ", d);
 		echo_off(d);
 		return;
 	}
@@ -2121,12 +2196,16 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 		{
 			echo_on(d);
 			SEND_TO_Q("Reconnecting...\r\n", d);
+			if (!prepare_account_reconnect(ch, d))
+				return 0;
 			act("$n has reconnected.", TRUE, ch, 0, 0, TO_ROOM);
 			d->character = ch;
-			ch->desc = d;
 			// sql_update_playerIP(ch);  // Deprecated function
 			ch->specials.timer = 0;
 			STATE(d) = CON_PLAYING;
+			(void)telemetry_runtime_game_connection_transition(
+				ch, d, telemetry_connection_transition_kind::attached);
+			(void)telemetry_runtime_game_context(ch, d);
 
 			logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character),
 			      d->host);
@@ -2340,8 +2419,8 @@ void account_new_char_name(P_desc d, char *arg)
 
 	if (_parse_name(arg, tmp_name))
 	{
-		SEND_TO_Q("Illegal account name, please try another.\r\n", d);
-		SEND_TO_Q("Account Name: ", d);
+		SEND_TO_Q("Illegal character name, please try another.\r\n", d);
+		account_new_char(d, NULL);
 		return;
 	}
 

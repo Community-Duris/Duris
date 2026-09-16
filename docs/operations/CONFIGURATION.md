@@ -34,6 +34,88 @@ Loading a profile does not opt existing callers into styling. Callers still need
 an explicit output context; animation effects and player preference commands are
 separate follow-up work.
 
+## Telemetry runtime
+
+Telemetry is opt-in at the server boundary. The parent startup path should pass
+`telemetry_runtime_options_from_environment()` to `telemetry_runtime_init()`;
+this source performs no database access, and reads only the reviewed property
+catalog at bootstrap. `TELEMETRY_ENABLED` must be an accepted true value
+(`TRUE`, `1`, `YES`, or `ON`) before any telemetry worker starts. Unset, false,
+malformed, or out-of-range values fail closed to the default-disabled snapshot.
+A client-free (`__NO_MYSQL__`) build always returns `flatfile_disabled` and
+remains disabled, even when the opt-in variable is true.
+
+| Variable | Default when opted in | Accepted values / range | Meaning |
+| --- | --- | --- | --- |
+| `TELEMETRY_ENABLED` | disabled | `TRUE`/`1`/`YES`/`ON`; false equivalents disable | Explicitly opt into the SQL telemetry writer. |
+| `TELEMETRY_BACKEND` | `sql` on SQL builds | `sql`, `flatfile_disabled`, `disabled`, `off` | Select SQL or the deliberate disabled backend; flat-file is not an observational sink. |
+| `TELEMETRY_PROPERTY_CATALOG_FILE` | required for enabled SQL | owner-readable reviewed catalog path | Full effective-property digest to stable property-version mapping; missing or invalid input disables telemetry only. |
+| `TELEMETRY_CONFIG_REVISION` | `1` | positive `uint64` | Reviewed effective configuration revision floor. |
+| `TELEMETRY_BUILD_VERSION`, `TELEMETRY_CONTENT_VERSION` | `1` | positive `uint32` | Versioned inputs included in the config identity. |
+| `TELEMETRY_CLASSIFIER_VERSION`, `TELEMETRY_POLICY_VERSION` | `1` | positive `uint32` | Classifier/policy identities attached to observations. |
+| `TELEMETRY_SEASON_ID`, `TELEMETRY_ENVIRONMENT_ID` | `1` | positive `uint64` | Scope identity carried by session records. |
+| `TELEMETRY_INTERVAL_USEC` | proposal default | `1` through the proposal maximum | Activity interval cadence. |
+| `TELEMETRY_CHECKPOINT_INTERVAL_USEC` | `300000000` | `1` through the proposal maximum | Cumulative session checkpoint cadence. |
+| `TELEMETRY_ACTIVE_WINDOW_USEC` | proposal default | `1` through the proposal maximum | Recent-evidence active window. |
+| `TELEMETRY_CONTEXT_SEGMENTS_PER_MINUTE` | proposal default | `1` through the configured cap | Context segment rate cap. |
+| `TELEMETRY_PULSE_SLOT_COUNT` | `1` | `1` through the configured cap | Number of staggered pulse cohorts. |
+
+The catalog is a reviewed, preloaded text file. Blank lines and lines beginning
+with `#` are ignored; every other line must contain exactly four whitespace-
+separated fields:
+
+```text
+<64 lowercase-or-uppercase hex digest> <property_version> <stable_namespace> <stable_catalog_version>
+```
+
+All three numeric fields are nonzero `uint32` values. Full digests must be
+unique, and a `property_version` may not be reused for another full digest.
+Unknown effective digests are refused; the runtime never derives a usable
+property identity from a digest prefix, increments a process-local counter, or
+uses `TELEMETRY_PROPERTY_VERSION`. The loader rejects malformed, duplicate, or
+collision entries before the worker starts. After bootstrap, capture/reload,
+pulse, and action paths perform no catalog file I/O or SQL query. The effective
+reader calls the game's normal `get_property()` conversion with each registry
+fallback, so a property reload is observed only after `apply_properties()` has
+rebuilt its cached consumers.
+
+These values are copied into one immutable snapshot and fingerprinted before
+capture. Changing the environment requires the normal server restart/config
+review path. Capture and pulse remain fixed-value, bounded operations: they do
+not query SQL, append a spool, or call `fsync` on the game thread. The transport
+worker owns its private repository connection; DB-down operation stays degraded
+and does not borrow gameplay persistence or reject saves/copyover.
+
+### Telemetry shutdown request and final reap
+
+Shutdown has two lifecycle steps. `telemetry_runtime_shutdown()` closes
+telemetry admission, marks the runtime `stopping`, asks the worker to stop, and
+waits only until the supplied monotonic deadline for the worker to report done.
+It does not detach the worker, reset runtime/config state, or call repository
+teardown. `accepted` means the worker reported done within that request window;
+the worker handle and borrowed callback binding remain owned until the reap.
+If a repository callback is still running at the deadline, the request returns
+`stopping` and retains all state so the callback can finish safely.
+
+`telemetry_runtime_final_reap()` is mandatory for an enabled runtime after the
+request, including when the request returned `stopping` or the runtime clock
+could not provide a deadline. It joins the worker before invoking repository
+and transport teardown, and may block on an in-flight repository callback.
+Call it from the off-game-thread process-lifetime shutdown path, before
+`shutdown_mysql()` or process return; it is not a hard bounded shutdown step.
+
+Copyover version 15 stores one bounded telemetry handoff per preserved telnet
+session. Save accounts through the handoff cut and writes only value data;
+recover allocates a new process-local connection and resumes the logical session.
+Legacy copyover versions and failed handoff capture use an explicit absent
+handoff, so the next observation marks an unclosed tail instead of inventing
+continuity. Telemetry resume failure is logged and never rejects the game-state
+copyover. Before writing candidate handoffs, synchronous copyover requests a
+worker-owned flush and waits at most 250ms. It writes absent handoffs unless
+all admitted records are acknowledged without permanent rejection. This wait
+never issues SQL or stops/joins the worker on the game thread; a failed copyover
+can continue using the same runtime.
+
 ## Persistence
 
 `PERSISTENCE_MODE` selects one whole-server authority. It defaults to

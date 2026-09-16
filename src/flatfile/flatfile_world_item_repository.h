@@ -96,6 +96,13 @@ struct flatfile_corpse_release_mutation
 	uint64_t catalog_revision = 0;
 };
 
+struct collector_command_payload;
+struct flatfile_collector_world_mutation
+{
+	flatfile_authority_after_image after_image;
+	bool changed = false;
+};
+
 enum class flatfile_world_item_result
 {
 	ok,
@@ -135,6 +142,10 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_transfer_payload &payload, flatfile_room_transfer_mutation *mutation,
 	std::string *error);
+flatfile_world_item_result flatfile_world_item_prepare_collector_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const collector_command_payload &payload, flatfile_collector_world_mutation *mutation,
+	unsigned int *result_code, std::string *error);
 struct coin_transfer_payload;
 struct coin_transfer_result;
 flatfile_world_item_result

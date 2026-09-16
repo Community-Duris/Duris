@@ -1,5 +1,6 @@
 -- Permit the append-only shopkeeper custody type (9) in existing ownership tables.
--- Re-runnable: each named constraint is replaced with the same widened predicate.
+-- Keep the newer collector type (10) admissible so rerunning this older migration
+-- can never narrow a database that already contains collector custody.
 
 DROP PROCEDURE IF EXISTS widen_item_owner_types_for_shopkeepers;
 DELIMITER //
@@ -15,7 +16,7 @@ BEGIN
         ALTER TABLE item_owner_revision DROP CONSTRAINT chk_item_owner_revision_type;
     END IF;
     ALTER TABLE item_owner_revision ADD CONSTRAINT chk_item_owner_revision_type
-        CHECK (owner_type BETWEEN 1 AND 9);
+        CHECK (owner_type BETWEEN 1 AND 10);
 
     SELECT COUNT(*) INTO constraint_exists
       FROM information_schema.table_constraints
@@ -25,7 +26,7 @@ BEGIN
         ALTER TABLE item_current_owner DROP CONSTRAINT chk_item_current_owner_type;
     END IF;
     ALTER TABLE item_current_owner ADD CONSTRAINT chk_item_current_owner_type
-        CHECK (owner_type BETWEEN 1 AND 9);
+        CHECK (owner_type BETWEEN 1 AND 10);
 
     SELECT COUNT(*) INTO constraint_exists
       FROM information_schema.table_constraints
@@ -35,7 +36,7 @@ BEGIN
         ALTER TABLE item_ownership_baseline DROP CONSTRAINT chk_item_baseline_owner_type;
     END IF;
     ALTER TABLE item_ownership_baseline ADD CONSTRAINT chk_item_baseline_owner_type
-        CHECK (owner_type BETWEEN 1 AND 9);
+        CHECK (owner_type BETWEEN 1 AND 10);
 END//
 DELIMITER ;
 CALL widen_item_owner_types_for_shopkeepers();

@@ -31,6 +31,7 @@ HARNESS = r'''
 #include <vector>
 
 #define MAX_STRING_LENGTH 65536
+#define CURRENCY_DENOMINATION_COUNT 4
 #define TRUE 1
 #define TO_ROOM 0
 #define ITEM_CORPSE 24
@@ -88,6 +89,9 @@ struct bulk_get_state
 	uint64_t container_uid = 0;
 	bool failed = false;
 	std::vector<std::string> rejections;
+	std::string corpse_name;
+	std::vector<std::string> haul;
+	bool announced = false;
 };
 
 static std::string actor_text;
@@ -143,7 +147,7 @@ static void finish_bulk_get(P_char actor, uint32_t pid) {
     bulk_gets.erase(pid);
 }
 void debug(const char *, ...) {}
-''' + extract_function("utility.c", "char *coins_to_string(int platinum, int gold, int silver, int copper, const char *color_string)") + "\n" + extract_function("actobj.c", "static void report_bulk_get(P_char actor, const bulk_get_state &state)") + "\n" + extract_function("actobj.c", "struct coin_pickup_context") + ";\n" + extract_function("actobj.c", "static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,") + r'''
+''' + extract_function("utility.c", "char *coins_to_string(int platinum, int gold, int silver, int copper, const char *color_string)") + "\n" + extract_function("actobj.c", "static bulk_get_state *corpse_bulk_get(") + "\n" + extract_function("actobj.c", "static void report_bulk_get(P_char actor, const bulk_get_state &state)") + "\n" + extract_function("actobj.c", "struct coin_pickup_context") + ";\n" + extract_function("actobj.c", "static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,") + r'''
 
 // A zero-denomination omission failure must name the denomination token
 // itself (e.g. "0g" as a standalone count), not a trailing digit of a

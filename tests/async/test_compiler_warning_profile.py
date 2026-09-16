@@ -82,6 +82,7 @@ repository_headers = [
     "auction_repository.h",
     "boon_reward_repository.h",
     "combat_outcome_repository.h",
+    "collector_repository.h",
     "critical_command_repository.h",
     "item_transfer_repository.h",
     "item_uid_allocator.h",

@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "account/newbie_kit_plan.h"
 #include "world/object_template.h"
 #include "account/creation_availability_config.h"
@@ -39,6 +40,8 @@
 #include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_transaction.h"
 #include "economy/auction_transaction.h"
+#include "economy/collector_service.h"
+#include "economy/collector_transaction.h"
 #include "economy/boon_reward_transaction.h"
 #include "core/files.h"
 #include "flatfile/flatfile_identity_adapter.h"
@@ -66,6 +69,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "world/vnum.obj.h"
 #include "world/vnum.room.h"
+#include "world/handler.h"
 #include "net/ws_handlers.h"
 #include "core/safe_format.h"
 
@@ -1807,6 +1811,9 @@ void enter_game(P_desc d)
 	item_movement_transaction_player_ready(ch);
 	shop_trade_transaction_player_ready(ch);
 	auction_transaction_player_ready(ch);
+	collector_transaction_player_ready(ch);
+	collector_service_player_ready(ch, true);
+	corpse_raise_player_ready(ch, true);
 	boon_reward_transaction_player_ready(ch);
 	if (!writeCharacter(ch, 1, NOWHERE))
 	{
@@ -1932,6 +1939,15 @@ void enter_game(P_desc d)
 	if (has_innate(ch, INNATE_SUMMON_BOOK))
 	{
 		do_summon_book(ch, writable_arg(""), 0);
+	}
+
+	/* enter_game has several callers (account, legacy menu, and websocket).
+	 * Only the caller that has moved the descriptor to CON_PLAYING may open a
+	 * gameplay session; the legacy menu completes that transition below. */
+	if (STATE(d) == CON_PLAYING)
+	{
+		(void)telemetry_runtime_game_enter(ch, d);
+		(void)telemetry_runtime_game_context(ch, d);
 	}
 }
 
@@ -2418,6 +2434,9 @@ void reconnect(P_desc d, P_char tmp_ch)
 	tmp_ch->only.pc->last_ip = ip2ul(d->host);
 	tmp_ch->specials.timer = 0;
 	STATE(d) = CON_PLAYING;
+	(void)telemetry_runtime_game_connection_transition(
+		tmp_ch, d, telemetry_connection_transition_kind::attached);
+	(void)telemetry_runtime_game_context(tmp_ch, d);
 	epic_transaction_player_ready(tmp_ch);
 	zone_touch_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
@@ -2425,6 +2444,9 @@ void reconnect(P_desc d, P_char tmp_ch)
 	item_movement_transaction_player_ready(tmp_ch);
 	shop_trade_transaction_player_ready(tmp_ch);
 	auction_transaction_player_ready(tmp_ch);
+	collector_transaction_player_ready(tmp_ch);
+	collector_service_player_ready(tmp_ch, false);
+	corpse_raise_player_ready(tmp_ch, false);
 	boon_reward_transaction_player_ready(tmp_ch);
 	act("$n has reconnected.", TRUE, tmp_ch, 0, 0, TO_ROOM);
 	logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
@@ -2860,6 +2882,8 @@ void select_main_menu(P_desc d, char *arg)
 		}
 		enter_game(d);
 		STATE(d) = CON_PLAYING;
+		(void)telemetry_runtime_game_enter(d->character, d);
+		(void)telemetry_runtime_game_context(d->character, d);
 		d->prompt_mode = !item_creation_grant_blocks_commands(d->character);
 		break;
 	case '2': /* read background story */
@@ -2978,6 +3002,7 @@ void select_hardcore(P_desc d, char *arg)
 		break;
 	case 'N':
 	case 'n':
+		REMOVE_BIT(d->character->specials.act2, PLR2_HARDCORE_CHAR);
 		break;
 	case 'z':
 	case 'Z':
@@ -2993,10 +3018,35 @@ void select_hardcore(P_desc d, char *arg)
 	display_classtable(d);
 	STATE(d) = CON_GET_CLASS;
 }
-void select_sex(P_desc d, char *arg)
+static void prompt_hardcore_or_class(P_desc d)
 {
 	char hardcore_message[MAX_STRING_LENGTH];
 
+	if (hardcore_config_get()->creation_enabled &&
+	    !(chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos) &&
+	    (!hardcore_config_get()->creation_veterans_only || !IS_NEWBIE(d->character)))
+	{
+		snprintf(
+			hardcore_message, sizeof(hardcore_message),
+			"\r\n\r\nDo you want to play hardcore? Hardcore char can only die %d time%s, then it's gone for ever.\r\n",
+			hardcore_config_get()->death_max_count,
+			hardcore_config_get()->death_max_count == 1 ? "" : "s");
+		SEND_TO_Q(hardcore_message, d);
+		SEND_TO_Q(
+			"Only recommended for &+Yvery&n experience player who are looking for a new challange.\r\n",
+			d);
+		SEND_TO_Q("Please select either H (for Hardcore), N (for Normal)", d);
+		STATE(d) = CON_HARDCORE;
+	}
+	else
+	{
+		display_classtable(d);
+		STATE(d) = CON_GET_CLASS;
+	}
+}
+
+void select_sex(P_desc d, char *arg)
+{
 	/* skip whitespaces */
 	for (; isspace(*arg); arg++)
 		;
@@ -3025,30 +3075,7 @@ void select_sex(P_desc d, char *arg)
 		return;
 	}
 
-	if (hardcore_config_get()->creation_enabled &&
-	    !(chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos) &&
-	    (!hardcore_config_get()->creation_veterans_only || !IS_NEWBIE(d->character)))
-	{
-		snprintf(
-			hardcore_message, sizeof(hardcore_message),
-			"\r\n\r\nDo you want to play hardcore? Hardcore char can only die %d time%s, then it's gone for ever.\r\n",
-			hardcore_config_get()->death_max_count,
-			hardcore_config_get()->death_max_count == 1 ? "" : "s");
-		SEND_TO_Q(hardcore_message, d);
-		SEND_TO_Q(
-			"Only recommended for &+Yvery&n experience player who are looking for a new challange.\r\n",
-			d);
-		SEND_TO_Q("Please select either H (for Hardcore), N (for Normal)", d);
-		STATE(d) = CON_HARDCORE;
-	}
-	else
-	{
-		display_classtable(d);
-		STATE(d) = CON_GET_CLASS;
-	}
-	// re-enabling hardcore - drannak
-	/*   display_classtable(d);
-	   STATE(d) = CON_GET_CLASS;*/
+	prompt_hardcore_or_class(d);
 }
 
 static void display_available_races(P_desc d)
@@ -3277,6 +3304,7 @@ void select_race(P_desc d, char *arg)
 	if (*Gbuf)
 	{
 		do_help(d->character, Gbuf, -4);
+		SEND_TO_Q("\r\n[Press Return or Enter to return to the Race Menu]", d);
 		return;
 	}
 	else if (GET_RACE(d->character) == RACE_NONE)
@@ -3288,7 +3316,8 @@ void select_race(P_desc d, char *arg)
 
 	// not anymore, it's sex/class baby
 
-	if (invitemode && EVIL_RACE(d->character) && !is_invited(GET_NAME(d->character)))
+	if (invitemode && OLD_RACE_EVIL(GET_RACE(d->character), GET_ALIGNMENT(d->character)) &&
+	    !is_invited(GET_NAME(d->character)))
 	{
 		SEND_TO_Q(
 			"\r\nSorry, but only those players that have been invited can roll evil characters.\r\n\r\n",
@@ -3297,6 +3326,7 @@ void select_race(P_desc d, char *arg)
 		// since STATE is not changed, player should be forced back into race selection
 
 		GET_RACE(d->character) = RACE_NONE;
+		display_available_races(d);
 	}
 	else if ((GET_RACE(d->character) != RACE_ILLITHID) &&
 		 (GET_RACE(d->character) != RACE_PILLITHID))
@@ -3307,9 +3337,7 @@ void select_race(P_desc d, char *arg)
 	else
 	{
 		d->character->player.sex = SEX_NEUTRAL;
-
-		display_classtable(d);
-		STATE(d) = CON_GET_CLASS;
+		prompt_hardcore_or_class(d);
 	}
 }
 
@@ -3413,7 +3441,7 @@ void select_bonus(P_desc d, char *arg)
 			SEND_TO_Q("\r\nEnter stat for fourth bonus:  ", d);
 			break;
 		case CON_BONUS5:
-			SEND_TO_Q("\r\nEnter stat for fifth bonus:  ", d);
+			SEND_TO_Q("\r\nEnter stat for fourth bonus:  ", d);
 			break;
 		}
 		return;
@@ -3515,8 +3543,20 @@ void select_class(P_desc d, char *arg)
 		}
 		else if (tolower(*arg) == 'z')
 		{
-			SEND_TO_Q("\r\nIs your character Male or Female (Z for race)? (M/F/Z) ", d);
-			STATE(d) = CON_GET_SEX;
+			if (GET_RACE(d->character) == RACE_ILLITHID ||
+			    GET_RACE(d->character) == RACE_PILLITHID)
+			{
+				display_available_races(d);
+				STATE(d) = CON_GET_RACE;
+			}
+			else
+			{
+				SEND_TO_Q(
+					"\r\nIs your character Male or Female (Z for race)? (M/F/Z) ",
+					d);
+				STATE(d) = CON_GET_SEX;
+			}
+			return;
 		}
 		else
 			continue;
@@ -3534,6 +3574,7 @@ void select_class(P_desc d, char *arg)
 	if (*Gbuf)
 	{
 		do_help(d->character, Gbuf, -4);
+		SEND_TO_Q("\r\n[Press Return or Enter to return to the Class Menu]", d);
 		return;
 	}
 	else if (d->character->player.m_class == CLASS_NONE)
@@ -3546,6 +3587,7 @@ void select_class(P_desc d, char *arg)
 		    5)
 	{
 		SEND_TO_Q("\r\nThis is not an allowed class for your race!", d);
+		display_classtable(d);
 		return;
 	}
 	/* Krov: We do alignment/hometown choice after class now, _then_
@@ -3677,7 +3719,7 @@ void display_classtable(P_desc d)
 	strcat(buf, "\r\n");
 	SEND_TO_Q(buf, d);
 
-	if (GET_RACE(d->character) == RACE_ILLITHID)
+	if (GET_RACE(d->character) == RACE_ILLITHID || GET_RACE(d->character) == RACE_PILLITHID)
 		SEND_TO_Q("\r\nz) Return to previous menu (selecting your race).", d);
 	else
 		SEND_TO_Q("\r\nz) Return to previous prompt (selecting your sex).", d);
@@ -3845,12 +3887,15 @@ void select_keepchar(P_desc d, char *arg)
 		break;
 	case 'q':
 		SEND_TO_Q("\r\n\r\nCome back again real soon.\r\n", d);
-		close_socket(d);
+		STATE(d) = CON_FLUSH;
 		break;
 	case 'y':
-	default:
 		SEND_TO_Q("\r\n\r\nWelcome to Duris, Land of Bloodlust!\r\n\r\n", d);
 		STATE(d) = CON_RMOTD;
+		break;
+	default:
+		SEND_TO_Q("\r\nPlease select Y (keep), N (discard), or Q (quit).\r\n", d);
+		SEND_TO_Q(keepchar, d);
 		break;
 	}
 }
@@ -4748,15 +4793,15 @@ void nanny(P_desc d, char *arg)
 		{
 			if (*arg == 'n' || *arg == 'N')
 			{
-				SEND_TO_Q(
-					"\r\nOk, what IS it, then? Type 'generate' for name generator.",
-					d);
 				FREE(d->character->player.name);
 				d->character->player.name = 0;
 #ifndef USE_ACCOUNT
+				SEND_TO_Q(
+					"\r\nOk, what IS it, then? Type 'generate' for name generator.",
+					d);
 				STATE(d) = CON_NAME;
 #else
-				STATE(d) = CON_ACCT_NEW_CHAR;
+				account_new_char(d, NULL);
 #endif
 			}
 			else
@@ -4790,12 +4835,16 @@ void nanny(P_desc d, char *arg)
 		{
 			if (*arg == 'n' || *arg == 'N')
 			{
+				FREE(d->character->player.name);
+				d->character->player.name = 0;
+#ifndef USE_ACCOUNT
 				SEND_TO_Q(
 					"Resetting...\r\n\r\nBy what name do you wish to be known? Type 'generate' to get to name generator.",
 					d);
-				FREE(d->character->player.name);
-				d->character->player.name = 0;
 				STATE(d) = CON_NAME;
+#else
+				account_new_char(d, NULL);
+#endif
 			}
 			else
 			{

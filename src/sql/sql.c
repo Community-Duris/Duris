@@ -1126,7 +1126,13 @@ MYSQL *sql_open_telemetry_connection(void)
 	/* No credential fallback or alternate target; never consult DB/sql_pool. */
 	MYSQL *conn = sql_open_verified_connection(0, getenv("TELEMETRY_DB_USER"),
 						   getenv("TELEMETRY_DB_PASSWD"), 2U);
-	if (conn && !sql_connection_execute(conn, "SET SESSION innodb_lock_wait_timeout=2"))
+	if (!conn)
+		return NULL;
+	// Copyover exec must release this producer's advisory writer lock. An
+	// inherited SQL socket would keep the old connection (and lock) alive,
+	// preventing the replacement telemetry worker from opening its writer.
+	if (!sql_telemetry_set_cloexec(conn) ||
+	    !sql_connection_execute(conn, "SET SESSION innodb_lock_wait_timeout=2"))
 	{
 		mysql_close(conn);
 		return NULL;
@@ -5457,6 +5463,8 @@ bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
 		expected_type = item_owner_type::auction;
 	else if (!strcmp(owner_type, "shopkeeper"))
 		expected_type = item_owner_type::shopkeeper;
+	else if (!strcmp(owner_type, "collector"))
+		expected_type = item_owner_type::collector;
 	if (expected_type == item_owner_type::unknown)
 		return false;
 	if (!expected_id)

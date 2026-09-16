@@ -29,6 +29,7 @@
 #include "core/config.h"
 #include "combat/damage.h"
 #include "combat/guard.h"
+#include "economy/collector_presence.h"
 #include "world/map.h"
 #include "classes/necromancy.h"
 #include "item/objmisc.h"
@@ -3678,6 +3679,8 @@ bool resists_spell(P_char caster, P_char victim)
 		      IS_ALIVE(victim) ? "" : "Dead ", victim ? J_NAME(victim) : "Null");
 		return FALSE;
 	}
+	if (collector_presence_is_npc(victim))
+		return TRUE;
 
 	if (caster == victim || is_linked_to(caster, victim, LNK_CONSENT))
 	{

@@ -206,6 +206,8 @@ with tempfile.TemporaryDirectory(prefix="duris-world-codec-") as temp_dir:
             "-Isrc",
             str(source),
             rel("world_recovery_codec.c"),
+            rel("generated_npc_state.c"),
+            rel("pet_restore_state.c"),
             "-o",
             str(binary),
         ],

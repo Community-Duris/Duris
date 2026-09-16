@@ -354,7 +354,7 @@ make test-db
 `make test-all` covers maintained builds, generated world data, Python
 regressions, and native tests. `make test-db` additionally creates disposable
 MySQL containers for schema contracts, immutable migration checks, and the full
-historical 143-step legacy upgrade, replay, fresh-bootstrap equivalence, and
+historical 145-step legacy upgrade, replay, fresh-bootstrap equivalence, and
 runtime-compatibility test. It never targets the database configured in `.env`.
 
 During development, run the smallest relevant regression directly:
@@ -405,6 +405,9 @@ Project releases use Semantic Versioning. The canonical version is stored in
 the root [`VERSION`](VERSION) file.
 
 ## Documentation
+
+Browse the [project website and documentation library](https://community-duris.github.io/Duris/)
+for searchable guides with source links, code highlighting, and diagrams.
 
 | Guide | Covers |
 | --- | --- |

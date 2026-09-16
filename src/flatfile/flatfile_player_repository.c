@@ -856,9 +856,21 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				       flatfile_authority_operation_kind::write,
 				       death_filename(snapshot.pid, snapshot.revision),
 				       std::move(death_bytes) });
+		std::vector<uint64_t> custody_uids;
+		try
+		{
+			custody_uids.reserve(snapshot.death->custody.size());
+			for (const auto &row : snapshot.death->custody)
+				if (row.item.item_uid)
+					custody_uids.push_back(row.item.item_uid);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return { player_save_apply_outcome::retryable_failure, 0, ENOMEM };
+		}
 		flatfile_authority_operation quarantine;
 		const auto prepared = flatfile_item_repository_prepare_death_quarantine(
-			root, authority, snapshot.pid, &quarantine, error);
+			root, authority, snapshot.pid, custody_uids, &quarantine, error);
 		if (prepared == flatfile_item_repository_result::ok)
 			operations.push_back(std::move(quarantine));
 		else if (prepared != flatfile_item_repository_result::unchanged)

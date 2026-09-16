@@ -43,7 +43,7 @@ void aura_broken(struct char_link_data *cld)
 		bool has_other_auras = false;
 		for (struct affected_type *aff = ch->affected; aff; aff = aff->next)
 		{
-			if (aff->type >= FIRST_AURA && aura_type <= LAST_AURA)
+			if (aff != cld->affect && aff->type >= FIRST_AURA && aff->type <= LAST_AURA)
 				has_other_auras = true;
 		}
 
@@ -603,6 +603,8 @@ bool dread_blade_proc(P_char ch, P_char victim)
 		return false;
 
 	P_char vict = victim;
+	const uint64_t attacker_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
 
 	for (wpn = NULL, pos = 0; pos < MAX_WEAR; pos++)
 	{
@@ -635,8 +637,15 @@ bool dread_blade_proc(P_char ch, P_char victim)
 
 	spell_func(number(1, GET_LEVEL(ch)), ch, 0, 0, victim, 0);
 
-	return !is_char_in_room(ch, room) || !is_char_in_room(victim, room);
-	victim->specials.apply_saving_throw[SAVING_SPELL] = save;
+	P_char live_victim = find_character_by_runtime_id(victim_runtime_id);
+	const bool attacker_in_room = find_character_by_runtime_id(attacker_runtime_id) == ch &&
+				      is_char_in_room(ch, room);
+	const bool victim_in_room = live_victim == victim && is_char_in_room(victim, room);
+
+	if (live_victim == victim)
+		victim->specials.apply_saving_throw[SAVING_SPELL] = save;
+
+	return !attacker_in_room || !victim_in_room;
 }
 
 bool holy_weapon_proc(P_char ch, P_char victim)

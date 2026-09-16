@@ -102,7 +102,7 @@ def test_catalog_failure_is_latched_and_scores_are_boot_cached() -> None:
 
 
 def test_target_probes_have_one_request_budget_and_no_failed_state_mutation() -> None:
-    create = extract_function("world_quest.c", "bool createQuest(")
+    create = extract_function("world_quest.c", "bool createQuestForGiverVnum(")
     assert "target_probe_budget = WORLD_QUEST_MAX_TARGET_PROBES" in create
     assert "&target_probe_budget" in create
     assert create.index("const int rnum = real_mobile(quest_mob);") < create.index(

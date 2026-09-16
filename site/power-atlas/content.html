@@ -1,0 +1,631 @@
+<main id="main" class="atlas-content">
+  <div class="breadcrumb">
+    <a href="{{BASE}}#explore">Explore the project</a><span>/</span
+    ><span>Power Atlas</span>
+  </div>
+  <header class="mast">
+    <p class="eyebrow">
+      Combat model · source snapshot
+      <a
+        href="https://github.com/Community-Duris/Duris/tree/f3b66b07ffba8443f3f47f976fa920b46bd88384"
+        >f3b66b07f</a
+      >
+    </p>
+    <h1>Duris Power Atlas</h1>
+    <p class="lede">
+      Explore 192 race and class combinations, with 711 builds from level 31
+      and 56 Human and Orc multiclass builds, across 13 report levels and three
+      gear tiers. Compare the model’s one-on-one matchups, then see what drives
+      the differences.
+    </p>
+    <dl class="facts">
+      <div>
+        <dt id="facts-n-label">Combinations</dt>
+        <dd id="facts-n">192</dd>
+      </div>
+      <div>
+        <dt>Multiclass builds</dt>
+        <dd id="facts-multi">56</dd>
+      </div>
+      <div>
+        <dt>Report levels</dt>
+        <dd>13</dd>
+      </div>
+      <div>
+        <dt>Gear tiers</dt>
+        <dd>3</dd>
+      </div>
+      <div>
+        <dt>Reported engine checks</dt>
+        <dd>~37,000</dd>
+      </div>
+      <div>
+        <dt>Reported deviations &gt;1%</dt>
+        <dd>0</dd>
+      </div>
+    </dl>
+    <p class="snapshot-note">
+      Historical model snapshot · run
+      <span id="gen">2026-09-16 06:41:20</span> (timezone unspecified). These
+      results and reported engine checks belong to that source revision; they do
+      not track current game balance.
+    </p>
+    <div class="atlas-actions">
+      <a class="atlas-button" href="#atlas">Explore the atlas ↓</a
+      ><a href="#method">Method &amp; limits</a
+      ><a href="data.json" download="duris-power-atlas-data.json"
+        >Download data · 3.26 MiB</a
+      >
+    </div>
+  </header>
+  <nav class="atlas-nav" aria-label="Atlas sections">
+    <a href="#summary">Findings</a><a href="#atlas">Interactive atlas</a
+    ><a href="#standing">Rankings</a><a href="#specs">Specialisations</a
+    ><a href="#multi">Multiclass</a><a href="#gaps">Level gaps</a
+    ><a href="#factors">Racial factors</a><a href="#halfling">Case study</a
+    ><a href="#globes">Globe gear</a><a href="#pvp">PvP picks</a
+    ><a href="#method">Method</a>
+  </nav>
+  <p id="atlas-status" role="status">Loading the model snapshot…</p>
+  <noscript
+    ><p class="caveat">
+      Enable JavaScript to explore the interactive tables. The findings and
+      methodology remain readable, and the complete snapshot is available from
+      Download data above.
+    </p></noscript
+  >
+
+  <section id="summary" aria-labelledby="h-summary">
+    <header>
+      <p class="eyebrow">Findings</p>
+      <h2 id="h-summary">What the numbers say</h2>
+    </header>
+    <ul class="findings">
+      <li>
+        <b>Class decides; race multiplies.</b
+        ><span
+          >Class explains 80–91% of the spread in one-on-one strength at every
+          level from 11, race 11–27%. Within a class, race scales the result
+          rather than reordering the classes.</span
+        >
+      </li>
+      <li>
+        <b>One-on-one, casters out-damage melee from level 11.</b
+        ><span
+          >At level 56 in end-game gear a warrior lands about 2 damage per
+          second on a geared player. A sorcerer's best spell does 46, an
+          ethermancer's 59. Melee is cut three ways: the global −75%, armour
+          that keeps reducing damage down to −750, and about half of all swings
+          parried, blocked or dodged.</span
+        >
+      </li>
+      <li>
+        <b>Big bodies win.</b
+        ><span
+          >Troll, Ogre and Firbolg run 2–6× their class average from level 11
+          on, almost entirely through hit points, which grow with the square of
+          racial Constitution. Humans are the weakest race from level 36 and
+          sit in the bottom two of most classes (0.61–0.77× from level
+          31).</span
+        >
+      </li>
+      <li>
+        <b>The gaps open at three levels.</b
+        ><span
+          >Level 11 brings the first real attack spells, and the spread between
+          classes goes from 24× to 129×. Level 21 brings psionicist inflict pain
+          and druid earthquake. At level 51 end-game gear arrives, and stacked
+          globe and ward items block most circle 1–7 arcane spells.</span
+        >
+      </li>
+      <li>
+        <b>Pulse, shrug and innates matter less.</b
+        ><span
+          >Pulse moves a combination by about ±10%, mostly helping small-race
+          fighters. Shrug matters mainly at end-game, where it lifts the
+          shrugging races most. The only large innate is troll
+          regeneration.</span
+        >
+      </li>
+      <li>
+        <b>The halfling warrior is weak, but not the weakest.</b
+        ><span
+          >It ranks 13th to 19th of 21 warriors. At level 56 its hit points hold
+          it back (×0.66) and its size (×0.87), partly offset by faster pulse
+          (×1.17). Two warrior races rank below it. The warrior class as a whole
+          has the bigger problem in the late game.</span
+        >
+      </li>
+      <li>
+        <b>Specialisation can matter more than race.</b
+        ><span
+          >From level 31 every build is in the field and each race and class is
+          scored with its best one. Ethermancer edges Shaman at level 56
+          end-game (7.3 against 6.9). Healer clerics, end-game conjurers who
+          stay unspecialised and rogue–bard multiclasses are the weakest builds
+          of all. 22 specialisations never strictly beat the alternatives for
+          any race, level or gear, and 6 never even tie for best.</span
+        >
+      </li>
+      <li>
+        <b>Multiclassing pays in good gear, rarely at end-game.</b
+        ><span
+          >At level 46 in good gear 26 of the 56 Human and Orc pairs beat their
+          race's best single class; Orc Bard/Conjurer leads at 5.2 against 2.6.
+          At level 56 end-game only Orc Ethermancer/Shaman does (7.7 against
+          7.2). Most pairs beat their primary class alone (40 of 56 at level
+          56), and rogue pairings are the weakest builds in the game. Adding
+          them barely moves the single-class order (rank correlation
+          0.995–1.000).</span
+        >
+      </li>
+    </ul>
+    <p class="caveat">
+      <strong>Read the index as an order, not a margin.</strong> Every duel is
+      one continuous fight on full memorisation, with no fleeing and no
+      re-memorising, so running out of spell slots decides many caster fights
+      and the gaps (×100 and more) overstate real play. Ranking by plain share
+      of duels won gives almost the same order (rank correlation 0.95–0.99).
+      Openers such as backstab are left out of the duel, so rogues are
+      understated.
+    </p>
+  </section>
+
+  <section id="atlas" aria-labelledby="h-atlas">
+    <header>
+      <p class="eyebrow">The atlas</p>
+      <h2 id="h-atlas">Every combination, by level and gear</h2>
+      <div class="atlas-prose">
+        <p>
+          Each cell is one race and class, scored with its best single-class
+          build from level 31; multiclass builds have their own section below.
+          The <strong>duel index</strong> is the geometric mean, over every
+          opponent build (248 through report level 26, 767 from level 31,
+          multiclass builds included), of how much longer they take to kill you
+          than you take to kill them:
+          <strong>1 means even</strong>, 3 means a geometric mean time-to-kill
+          ratio of 3, not a threefold chance of winning. Blue is stronger than
+          even, red weaker. The last column is the race's strength relative to
+          others of the same class; the bottom row is each class's average.
+          Hover or focus a cell to preview its detail. Click, tap, or press
+          Enter on a cell to open its full breakdown. Scroll sideways to see all
+          classes; race labels stay in view.
+        </p>
+      </div>
+    </header>
+    <div class="controls" role="group" aria-label="Atlas controls">
+      <div class="ctl">
+        <span class="ctl-label">Level</span
+        ><span id="lvl-chips" class="ctl"></span>
+      </div>
+      <div class="ctl">
+        <span class="ctl-label">Gear</span
+        ><span id="tier-chips" class="ctl"></span>
+      </div>
+      <label class="toggle"
+        ><input type="checkbox" id="follow" checked /> Follow the usual gear for
+        each level</label
+      >
+      <div class="ctl">
+        <label class="ctl-label" for="metric">Measure</label
+        ><select id="metric"></select>
+      </div>
+      <div class="ctl">
+        <label class="ctl-label" for="spec-focus">Specialisation</label
+        ><select id="spec-focus">
+          <option value="">Model's pick</option>
+        </select>
+      </div>
+    </div>
+    <div class="atlas-actions">
+      <button class="chip" type="button" id="copy-view">
+        Copy atlas view link</button
+      ><span id="share-status" role="status"></span>
+    </div>
+    <div class="panel" id="atlas-panel">
+      <div class="panel-head">
+        <span class="caption" id="atlas-caption"></span>
+        <div class="legend-wrap" id="atlas-legend"></div>
+      </div>
+      <div class="scroll">
+        <table
+          class="heat"
+          id="atlas-table"
+          aria-labelledby="atlas-caption"
+        ></table>
+      </div>
+    </div>
+
+    <p class="note" id="atlas-note"></p>
+  </section>
+
+  <section id="standing" aria-labelledby="h-standing">
+    <header>
+      <p class="eyebrow">Standing by level</p>
+      <h2 id="h-standing">How classes and races rise and fall from 1 to 56</h2>
+      <div class="atlas-prose">
+        <p>
+          These follow the usual gear for each level: basic to 35, good from 36
+          to 50, end-game from 51. Classes show their average duel index; races
+          show their strength relative to the rest of each class they can take
+          (1 = typical for the class).
+        </p>
+      </div>
+    </header>
+    <div class="panel">
+      <div class="panel-head">
+        <span class="caption">Class average duel index</span>
+        <div class="legend-wrap" id="cls-legend"></div>
+      </div>
+      <div class="scroll"><table class="heat" id="cls-table"></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <span class="caption">Race strength within its classes (×)</span>
+        <div class="legend-wrap" id="race-legend"></div>
+      </div>
+      <div class="scroll"><table class="heat" id="race-table"></table></div>
+    </div>
+  </section>
+
+  <section id="specs" aria-labelledby="h-specs">
+    <header>
+      <p class="eyebrow">Specialisations</p>
+      <h2 id="h-specs">How much the specialisation matters</h2>
+      <div class="atlas-prose">
+        <p>
+          Specialisations open at level 30. From level 31
+          <strong
+            >every specialisation, and staying unspecialised, is its own
+            build</strong
+          >, scored against all 767 builds (711 single-class, 56 multiclass);
+          the headline uses each race and class's best build. Each figure is
+          the specialisation's average duel index over the races that can take
+          it, at three points on the usual gear path. To compare
+          specialisations race by race at any level, choose a class under
+          <em>Specialisation</em> in the atlas above.
+        </p>
+      </div>
+    </header>
+    <div class="panel scroll">
+      <table class="plain" id="spec-table"></table>
+    </div>
+    <p class="note" id="spec-note"></p>
+    <div class="panel scroll" id="builds-panel" hidden>
+      <div class="panel-head">
+        <span class="caption"
+          >Strongest and weakest builds (race, class and specialisation)</span
+        >
+      </div>
+      <table class="plain" id="builds-table"></table>
+    </div>
+  </section>
+
+  <section id="multi" aria-labelledby="h-multi" hidden>
+    <header>
+      <p class="eyebrow">Multiclass</p>
+      <h2 id="h-multi">What multiclassing buys</h2>
+      <div class="atlas-prose"><p id="multi-intro"></p></div>
+    </header>
+    <div class="panel scroll">
+      <table class="plain" id="multi-table"></table>
+    </div>
+    <p class="note" id="multi-note"></p>
+  </section>
+
+  <section id="gaps" aria-labelledby="h-gaps">
+    <header>
+      <p class="eyebrow">Tier levels</p>
+      <h2 id="h-gaps">Where the gaps open</h2>
+      <div class="atlas-prose">
+        <p>
+          Spell circles open at levels 1, 6, 11 … 56 (circle N at 5N − 4). The
+          steps below compare each report level with the one before, on the
+          usual gear. A combination is flagged when it moves 15 percentile
+          points or ×1.42 in index.
+        </p>
+      </div>
+    </header>
+    <div class="two">
+      <div class="panel scroll">
+        <table class="plain">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>What changes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="step">1 → 6</td>
+              <td>
+                First attack spells. Minotaur sorcerer ×3.5 (burning hands,
+                chill touch); druids fall.
+              </td>
+            </tr>
+            <tr>
+              <td class="step">6 → 11</td>
+              <td>
+                <strong>Casters overtake melee.</strong> Shamans get pythonsting
+                and scalding blast (ogre and firbolg shamans ×12); summoners get
+                shocking grasp. The class spread goes from 24× to 129×.
+              </td>
+            </tr>
+            <tr>
+              <td class="step">16 → 21</td>
+              <td>
+                Psionicist inflict pain (gith psionicists ×35–39); druid
+                earthquake (×7–9).
+              </td>
+            </tr>
+            <tr>
+              <td class="step">21 → 26</td>
+              <td>
+                Earthen maul for druids (×3.5); necromancer cone of cold,
+                enervation and minor globe (×2.3).
+              </td>
+            </tr>
+            <tr>
+              <td class="step">26 → 31</td>
+              <td>
+                Specialisations at 30: shock reaver (earth reaver for duergar)
+                lifts reavers ×4.5.
+              </td>
+            </tr>
+            <tr>
+              <td class="step">31 → 36</td>
+              <td>
+                Basic to good gear. Melee gains (drow rogues ×3.0, duergar
+                rogues ×2.0).
+              </td>
+            </tr>
+            <tr>
+              <td class="step">50 → 51</td>
+              <td>
+                <strong>End-game gear, the largest shift after level 16.</strong>
+                Stacked globe and spirit-ward items block most circle 1–7 arcane
+                spells: summoners ×0.22, while conjurers hold level (×1.1) by
+                switching from water to fire specialisation; ethermancer
+                2.6 → 8.4, blighter 2.2 → 6.8, druid 2.6 → 5.8.
+              </td>
+            </tr>
+            <tr>
+              <td class="step">51 → 56</td>
+              <td>
+                Conjurers hold level (×1.0). Paladins (×1.36) and reavers (×1.35)
+                gain most; berserkers (×0.74) and clerics (×0.77) lose most.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel" id="movers-panel">
+        <div class="panel-head">
+          <span class="caption">Largest movers</span
+          ><span class="ctl" id="step-chips"></span>
+        </div>
+        <div class="scroll"><table class="plain" id="movers"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="factors" aria-labelledby="h-factors">
+    <header>
+      <p class="eyebrow">Racial factors</p>
+      <h2 id="h-factors">What makes a race strong</h2>
+      <div class="atlas-prose">
+        <p>
+          Each racial term was switched off in turn, with gear held fixed, to
+          see how far it moves a combination's index.
+          <strong>Hit points are the dominant racial factor.</strong> Pulse,
+          shrug and innates are real but smaller, apart from troll regeneration.
+        </p>
+      </div>
+    </header>
+    <div class="panel scroll">
+      <table class="plain" id="factor-summary"></table>
+    </div>
+    <div class="controls">
+      <div class="ctl">
+        <span class="ctl-label">Level</span
+        ><span id="factor-chips" class="ctl"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <span class="caption" id="factor-caption"></span>
+        <div class="legend-wrap" id="factor-legend"></div>
+      </div>
+      <div class="scroll"><table class="heat" id="factor-table"></table></div>
+    </div>
+    <p class="note">
+      Each cell is the multiplier the race's own term applies to its index,
+      averaged over its classes. Above 1 the term helps the race; below 1 it
+      holds it back.
+    </p>
+  </section>
+
+  <section id="halfling" aria-labelledby="h-halfling">
+    <header>
+      <p class="eyebrow">Case study</p>
+      <h2 id="h-halfling">The halfling warrior</h2>
+      <div class="atlas-prose">
+        <p>
+          The halfling warrior is below average among warriors at most levels,
+          and the larger problem is the warrior class itself, which trails most
+          classes in the late game. On good gear it climbs to 13th of 21 as a
+          Guardian; at level 56 its best build is Swordsman. The table follows
+          its best build at each level.
+        </p>
+      </div>
+    </header>
+    <div style="display: grid; gap: 18px">
+      <div class="panel scroll">
+        <table class="plain" id="hw-table"></table>
+      </div>
+      <div
+        class="panel"
+        style="padding: 14px; display: grid; gap: 12px; align-content: start"
+      >
+        <div class="ctl">
+          <span class="ctl-label">Why, at level</span
+          ><span id="hw-chips" class="ctl"></span>
+        </div>
+        <div class="factor-pills" id="hw-factors"></div>
+        <p class="note" id="hw-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="globes" aria-labelledby="h-globes">
+    <header>
+      <p class="eyebrow">End-game</p>
+      <h2 id="h-globes">End-game turns on globe gear</h2>
+      <div class="atlas-prose">
+        <p>
+          Every end-game kit the model builds stacks permanent globe and ward
+          items, which zero the matching spells (<span class="mono"
+            >fight.c:4562–4584</span
+          >), almost every circle 1–7 arcane attack. Removing just those four
+          gear effects, with the same items and specialisations, moves every
+          caster's numbers but barely reorders the classes (rank correlation
+          0.95–0.96; only the top two swap).
+          <strong
+            >Globe items still decide which spells land at end-game, so how easy
+            they are to get is a major end-game balance lever.</strong
+          >
+        </p>
+      </div>
+    </header>
+    <div class="controls">
+      <div class="ctl">
+        <span class="ctl-label">Level</span
+        ><span id="globe-chips" class="ctl"></span>
+      </div>
+    </div>
+    <div class="panel scroll">
+      <table class="plain" id="globe-table"></table>
+    </div>
+  </section>
+
+  <section id="pvp" aria-labelledby="h-pvp">
+    <header>
+      <p class="eyebrow">Reality check</p>
+      <h2 id="h-pvp">Against real PvP picks</h2>
+      <div class="atlas-prose">
+        <p>
+          The public PvP log records 2,210 distinct level-50+ characters since
+          2017. Pick rates are normalised so 1 means a race is picked as often
+          as its side and number of legal classes would predict. The model
+          agrees with players most on races and weakly on classes: players
+          over-pick psionicists and necromancers and under-pick shamans and
+          ethermancers, which the model rates highest. Pick rates also reflect
+          group roles, history and fashion, so this is a sanity check, not
+          proof.
+        </p>
+      </div>
+    </header>
+    <div class="two">
+      <div class="panel scroll"><table class="plain" id="pvp-rho"></table></div>
+      <div class="panel" style="padding: 10px 12px">
+        <div class="panel-head" style="padding: 2px 2px 6px">
+          <span class="caption">Race pick rate against model strength</span
+          ><span class="ctl" id="pvp-chips"></span>
+        </div>
+        <div id="pvp-plot"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="method" aria-labelledby="h-method">
+    <header>
+      <p class="eyebrow">Method and limits</p>
+      <h2 id="h-method">How this was built</h2>
+    </header>
+    <ul class="method">
+      <li>
+        <strong>Source.</strong> Races, classes, skills, spells, melee and spell
+        formulas were transcribed from
+        <a
+          class="mono"
+          href="https://github.com/Community-Duris/Duris/tree/f3b66b07ffba8443f3f47f976fa920b46bd88384"
+          >master f3b66b07f</a
+        >, which includes the revised racial pulse (#333). The original report
+        references file and line citations in separate working files; those
+        files are not included in this snapshot.
+      </li>
+      <li>
+        <strong>Reported engine check.</strong> The original report states that
+        a harness compiled all 432 server files, loaded the live properties and
+        enumerated every random outcome. Against it, the model's round length,
+        cast time, HP, stats, to-hit and melee damage showed 0 deviations over
+        1% in about 37,000 checks. Spell resists, shrug and saves are exact. 16
+        of 1,334 spell-damage cases fell outside sampling tolerance, each
+        explained.
+      </li>
+      <li>
+        <strong>Gear.</strong> Three kits were built per combination from the
+        10,424 wearable items in booted zones, within the engine's caps: gear HP
+        ≤ 3 × level, hitroll ≤ 75, damroll ≤ 50 × the race multiplier, and stats
+        ≤ 100 plus racial-maximum gear. Basic uses typical level 20–35 items,
+        good uses upper-quartile level 40–50 items, and end-game uses the best
+        level 55+ items. Class and race restrictions were respected.
+      </li>
+      <li>
+        <strong>Duel.</strong> Time-to-kill both ways from melee, spells, pets,
+        control and healing, with skills at the maximum for each level, full
+        spell slots. Below level 30 the field is the 192 race and class
+        combinations; from level 31 it is all 711 builds (every specialisation
+        plus unspecialised), each counted once, and each race and class is
+        scored with its best build. The 56 multiclass builds join the field at
+        every level (248 builds through level 26, 767 from level 31). The index
+        is capped at 1/100–100 per matchup.
+      </li>
+      <li>
+        <strong>Multiclass.</strong> Only Humans and Orcs can multiclass, after
+        reaching level 50; the engine then restarts the character at level 1, so
+        the 56 allowed primary and secondary pairs are scored at every report
+        level. A multiclass build takes the better hit points, damage and to-hit
+        of its two classes and the faster combat speed, cannot specialise, and
+        has halved spell slots unless both classes are pure casters. Skills only
+        the secondary class has arrive five levels later at 95% of the normal
+        cap, and secondary spells the primary lacks count one circle higher.
+        Each pair wears its primary or secondary class's kit, whichever scores
+        better at that tier. A second harness mode built each pair the way the
+        engine does: hit points, round length and spell slots matched in all
+        2,184 multiclass records.
+      </li>
+      <li>
+        <strong>Not modelled.</strong> Openers (backstab and the like appear
+        only as a separate burst figure), bard songs, reaver weapon procs, spell
+        disables inside the duel, groups, fleeing and re-memorising, and
+        randomly generated gear.
+      </li>
+      <li>
+        <strong>Engine findings along the way.</strong> Normal melee and all
+        spell damage are multiplied by 0.25. Sanctuary only works against melee
+        for clerics and paladins. The spell-penetration cap is 60, because its
+        properties key is misspelt. Thri-Kreen and Barbarian levelling factors
+        fall back to 1.0 for the same kind of reason. Minotaur charge can't hit
+        Medium or Small races. Duergar battlerage haste lasts longer than its
+        cooldown.
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    <span
+      >Duris Power Atlas · model output, not live telemetry. Built from the
+      Community-Duris/Duris source, the booted area files and the public PvP
+      log.</span
+    >
+    <span id="foot-gen"></span>
+  </footer>
+  <div class="tip" id="tip" role="tooltip" hidden></div>
+  <dialog id="cell-details" aria-labelledby="cell-title">
+    <form method="dialog">
+      <button class="chip" aria-label="Close cell details">Close ×</button>
+    </form>
+    <div id="cell-detail-content"></div>
+  </dialog>
+</main>

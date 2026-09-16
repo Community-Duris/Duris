@@ -112,7 +112,7 @@ class DocumentationContractTest(unittest.TestCase):
             "make test-db",
             "./scripts/start_mud.sh --dev",
             "nc localhost 4000",
-            "historical 143-step legacy upgrade",
+            "historical 145-step legacy upgrade",
         ):
             self.assertIn(token, readme, token)
 

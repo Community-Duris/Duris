@@ -23,6 +23,7 @@ enum quest_creation_failure
 };
 
 bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure = nullptr);
+bool createQuestForGiverVnum(P_char ch, int giver_vnum, quest_creation_failure *failure = nullptr);
 void getQuestZoneList(P_char ch, vector<int> &);
 bool isInvalidQuestZone(int zoneID);
 

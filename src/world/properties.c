@@ -13,7 +13,9 @@
 #include "item/device_actions.h"
 #include "item/studio_abilities.h"
 #include "item/native_artifact_actions.h"
+#include "economy/collector_config.h"
 #include "world/difficulty.h"
+#include "telemetry/telemetry_config_reload.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/ws_handlers.h"
@@ -143,6 +145,7 @@ void apply_properties()
 	update_device_action_properties();
 	update_studio_ability_properties();
 	update_native_artifact_properties();
+	collector_config_reload();
 	// First, so the tables rebuilt below (the experience table) see the current dials.
 	update_difficulty_dials();
 	update_stat_data();
@@ -164,6 +167,8 @@ void apply_properties()
 	hitroll_cap = get_property("damage.hitrollCap", 75);
 	errand_notch = get_property("epic.errandStep", 500);
 	update_misfire_properties();
+	// Observe effective values only after all cached property consumers update.
+	telemetry_config_reload_notify();
 }
 
 int parse_property(struct property *property, char *buf)

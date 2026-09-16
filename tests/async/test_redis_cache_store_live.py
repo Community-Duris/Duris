@@ -113,6 +113,7 @@ int main(int argc, char **argv)
     reply = run(context, "EXISTS mud:cache:test");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
+
     health = redis_cache_store_health_copy();
     assert(health.connection_failures >= 1);
     assert(health.operations.calls >= 3);
@@ -121,6 +122,34 @@ int main(int argc, char **argv)
     assert(health.operations.consecutive_failures == 0);
     assert(health.operations.last_success_available);
     assert(health.operations.last_success_age_msec < 1000);
+
+    // Expired local entries must release capacity even when nobody reads those
+    // exact keys; an active entry must survive both reclamation paths.
+    assert(redis_cache_store_seed("mud:cache:active", "keep", 30));
+    for (int index = 0; index < 31; ++index)
+    {
+        const std::string key = "mud:cache:expire:set:" + std::to_string(index);
+        assert(redis_cache_store_set(key.c_str(), "set-expired", 1));
+    }
+    assert(redis_cache_store_drain(5000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+    assert(redis_cache_store_set("mud:cache:reclaimed:set", "set-live", 30));
+    local = redis_cache_store_get("mud:cache:active");
+    assert(local && !strcmp(local, "keep"));
+    free(local);
+
+    for (int index = 0; index < 30; ++index)
+    {
+        const std::string key = "mud:cache:expire:seed:" + std::to_string(index);
+        assert(redis_cache_store_set(key.c_str(), "seed-expired", 1));
+    }
+    assert(redis_cache_store_drain(5000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+    assert(redis_cache_store_seed("mud:cache:reclaimed:seed", "seed-live", 30));
+    local = redis_cache_store_get("mud:cache:active");
+    assert(local && !strcmp(local, "keep"));
+    free(local);
+
     redisFree(context);
     assert(redis_cache_store_shutdown(1000));
     redis_connection_settings_destroy(settings);

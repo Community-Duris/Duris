@@ -31,6 +31,8 @@ enum class currency_reason_type : uint16_t
 	operator_adjustment,
 	chaos_starter_reward,
 	coin_transfer,
+	collector_purchase,
+	corpse_lifecycle,
 };
 
 struct currency_vector

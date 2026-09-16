@@ -1413,6 +1413,9 @@ struct char_special_data
 	// Absolute pulse (ne_event_tick) by which a CharWait() gate must be gone.
 	//   Runtime only; never saved.  See CharWait() and the command gate in comm.c.
 	unsigned long long wait_until_pulse;
+	// Per-live-NPC anti-retry deadline for the optional divine order-refusal gate.
+	// Runtime only; extraction/recreation and restart deliberately reset it.
+	unsigned long long divine_refusal_until_pulse;
 	P_char arrest_by;
 	char undead_spell_slots[MAX_CIRCLE + 1];
 
@@ -1517,6 +1520,10 @@ struct char_data
 	struct char_obj_link_data *obj_linked;
 	unsigned int runtime_flags;
 	uint64_t runtime_id; /* process-local identity; changes whenever storage is reused */
+	/* Telemetry identity is runtime-only and intentionally not persisted. */
+	uint64_t telemetry_session_sequence;
+	uint64_t telemetry_session_producer_boot_id;
+	uint64_t telemetry_session_producer_process_id;
 };
 
 /* ======================================================================== */
@@ -1806,6 +1813,10 @@ struct descriptor_data
 	int chargen_hometown;
 	int chargen_hardcore;
 	int chargen_newbie;
+	/* Telemetry connection identity is runtime-only and zeroed on reuse. */
+	uint64_t telemetry_connection_sequence;
+	uint64_t telemetry_connection_producer_boot_id;
+	uint64_t telemetry_connection_producer_process_id;
 };
 
 /* Almost every construction of this type is a brace-initializer that lists only

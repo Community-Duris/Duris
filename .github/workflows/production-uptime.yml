@@ -1,0 +1,43 @@
+name: production uptime
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  public-health:
+    # Probe from outside the host so an offline server, tunnel, or DNS change
+    # still fails a run; GitHub then notifies the workflow's schedule owner.
+    if: github.repository == 'Community-Duris/Duris'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Require healthy website and MUD endpoints
+        env:
+          WEBSITE_HEALTH_URL: https://newduris.com/health
+          MUD_HEALTH_URL: https://mud.newduris.com/health
+        run: |
+          # Retry for up to three minutes so routine restarts do not alert.
+          probe() {
+            local name=$1 url=$2 filter=$3 body
+            if body=$(curl --fail --silent --show-error --connect-timeout 10 --max-time 15 \
+              --retry 8 --retry-delay 15 --retry-max-time 180 --retry-all-errors "$url") &&
+              jq -e "$filter" <<<"$body" >/dev/null; then
+              printf '%s healthy: %s\n' "$name" "$body"
+              return 0
+            fi
+            printf '::error title=%s is down::%s did not return a healthy response\n' "$name" "$url"
+            return 1
+          }
+          status=0
+          probe Website "$WEBSITE_HEALTH_URL" \
+            '.status == "ok" and .service == "durisweb-backend"' || status=1
+          probe MUD "$MUD_HEALTH_URL" '.status == "healthy" and .persistence == "ready"' || status=1
+          exit "$status"

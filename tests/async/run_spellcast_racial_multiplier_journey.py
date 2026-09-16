@@ -56,7 +56,7 @@ def create_mindflayer(client: journey.MudClient) -> None:
     client.send("y")
     client.expect("enter your password")
     client.send(journey.PASSWORD)
-    client.expect("verify your password")
+    client.expect("Please re-enter the same password to confirm:  ")
     client.send(journey.PASSWORD)
     client.expect("information correct?")
     client.send("y")

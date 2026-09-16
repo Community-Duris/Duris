@@ -291,10 +291,15 @@ ask targets are excluded. Dynamic aggression probes and completion-history
 checks each have a request-wide budget of 32. Previously completed targets are
 excluded from subsequent retries; a history-read error stops assignment.
 
-`createQuest()` distinguishes no eligible zone from no valid target, and the
-bartender refunds the fee on failure. Completion history still uses each
-backend's world-quest adapter. Reward selection uses the accepted quest level's
-cached pool, with the existing logged random-equipment fallback if unavailable.
+`createQuest()` distinguishes no eligible zone from no valid target. Bartender
+payments are admitted through the currency transaction coordinator; quest
+state changes happen only after the debit publishes, and a post-commit
+selection failure receives an asynchronous, rebasable refund. The deferred
+continuation stores the bartender's stable vnum rather than a live NPC pointer,
+so disconnect/reconnect cannot resume against stale room state. Completion
+history still uses each backend's world-quest adapter. Reward selection uses
+the accepted quest level's cached pool, with the existing logged random-
+equipment fallback if unavailable.
 `tests/async/run_world_quest_dual_backend.py` exercises real quest grant and
 persistence in disposable MariaDB and flat-file instances; focused
 `test_world_quest_*` tests cover policy and failure boundaries.

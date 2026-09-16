@@ -12,10 +12,14 @@ WS = (SRC / "ws_handlers.c").read_text()
 policy = "chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos"
 
 select_sex = NANNY[NANNY.index("void select_sex(") : NANNY.index("static void display_available_races", NANNY.index("void select_sex("))]
-select_hardcore = NANNY[NANNY.index("void select_hardcore(") : NANNY.index("void select_sex(")]
+hardcore_prompt = NANNY[NANNY.index("static void prompt_hardcore_or_class(") : NANNY.index("void select_sex(")]
+select_hardcore = NANNY[NANNY.index("void select_hardcore(") : NANNY.index("static void prompt_hardcore_or_class(")]
+select_race = NANNY[NANNY.index("void select_race(") : NANNY.index("void select_reroll(")]
 create_character = WS[WS.index("void ws_cmd_create_character(") :]
 
-assert policy in select_sex
+assert policy in hardcore_prompt
+assert "prompt_hardcore_or_class(d);" in select_sex
+assert "prompt_hardcore_or_class(d);" in select_race
 assert policy in select_hardcore
 assert policy in create_character
 assert '#include "combat/chaos_config.h"' in WS

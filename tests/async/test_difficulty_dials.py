@@ -176,17 +176,17 @@ def test_every_dial_reaches_its_hook() -> None:
         ("guild/artifact_guild_state.c", "int artifact_feed_seconds(",
          "seconds = difficulty_scale_int(seconds, "
          "difficulty_multiplier(DIFFICULTY_ARTIFACT_FEEDING));"),
-        ("world_quest.c", "bool createQuest(",
+        ("world_quest.c", "bool createQuestForGiverVnum(",
          "MIN(difficulty_scale_world_quest_kills(number(7, 9)), mob_index[rnum].number - 1);"),
     ]
     for name, signature, expression in hooks:
         assert _flat(expression) in _flat(_body(name, signature)), (name, expression)
 
-    # The bartender fee is scaled after it is priced and before it is taken or refunded.
+    # The bartender fee is scaled after it is priced and before its debit is submitted.
     bartender = _flat(source("specs.mobile.c").read_text())
     priced = bartender.index(_flat('get_property("world.quest.cost.per.level", 20.000)'))
     scaled = bartender.index(_flat("temp = difficulty_scale_world_quest_fee(temp);"), priced)
-    assert scaled < bartender.index(_flat("SUB_MONEY(pl, temp, 0);"), priced)
+    assert scaled < bartender.index(_flat("currency_transaction_submit_wallet_value("), priced)
 
     # Both backends' daily allowance takes the dial before today's quests are counted off.
     sql = _flat(source("sql/sql.c").read_text())
@@ -272,12 +272,12 @@ def test_breath_money_regen_and_corpse_hooks_are_complete() -> None:
 
 def test_command_is_registered() -> None:
     interp = source("cmd/interp.c").read_text()
-    assert '"difficulty",\n\t"itemmana",\n\t"pulse",\n\t"\\n" /* MAX_CMD = 862, MAX_CMD_LIST = 1000 */' in interp
+    assert '"difficulty",\n\t"itemmana",\n\t"pulse",\n\t"collector",\n\t"\\n" /* MAX_CMD = 863, MAX_CMD_LIST = 1000 */' in interp
     assert "CMD_GRT(CMD_DIFFICULTY, STAT_DEAD + POS_PRONE, do_difficulty, LESSER_G);" in interp
     assert "#define CMD_DIFFICULTY 859" in source("cmd/interp.h").read_text()
     # The command-name table is sized by MAX_CMD, which counts its terminating entry.
     headers = "".join(path.read_text() for path in (ROOT / "src").rglob("*.h"))
-    assert "#define MAX_CMD 862 " in headers
+    assert "#define MAX_CMD 863 " in headers
     assert "void do_difficulty(P_char, char *, int);" in source("core/prototypes.h").read_text()
     command = _body("world/difficulty.c", "void do_difficulty(")
     assert "GET_LEVEL(ch) < FORGER" in command

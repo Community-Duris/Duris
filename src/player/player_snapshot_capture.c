@@ -768,6 +768,10 @@ player_death_snapshot_capture(P_char ch, P_obj corpse, P_obj wallet_pile,
 					   false);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
+		std::unordered_set<uint64_t> captured_uids;
+		captured_uids.reserve(death.corpse.size());
+		for (const auto &item : death.corpse)
+			captured_uids.insert(item.object_uid);
 		std::unordered_map<uint64_t, item_ownership_runtime_entry> observations;
 		const item_owner_identity owners[] = {
 			{ item_owner_type::player, static_cast<uint64_t>(GET_PID(ch)), 0 },
@@ -802,7 +806,13 @@ player_death_snapshot_capture(P_char ch, P_obj corpse, P_obj wallet_pile,
 		}
 		for (const auto &[uid, row] : observations)
 		{
-			if (uid == corpse->obj_uid)
+			/*
+			 * The player-owner snapshot also sees items left on a pet, in an
+			 * NPC corpse, or on the room floor.  Those objects are not part of
+			 * this death's captured graph, so retaining their observations here
+			 * would make apply_death() quarantine a live world object.
+			 */
+			if (uid == corpse->obj_uid || !captured_uids.contains(uid))
 				continue;
 			if (!budget.add(sizeof(player_death_custody_snapshot), 1))
 				return player_snapshot_capture_result::limit_exceeded;

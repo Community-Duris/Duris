@@ -23,6 +23,8 @@ constexpr size_t TARGET_ROOT_OFFSET = 72;
 constexpr size_t TARGET_PARENT_OFFSET = 80;
 constexpr size_t TARGET_PARENT_REVISION_OFFSET = 88;
 constexpr uint32_t CORPSE_CONTEXT_VERSION = 1;
+constexpr uint32_t COLLECTOR_CONTEXT_VERSION = 1;
+constexpr uint64_t COLLECTOR_CATALOG_KEY = UINT64_MAX;
 constexpr size_t CORPSE_PID_VALUE_INDEX = 3;
 constexpr size_t CORPSE_RACEWAR_VALUE_INDEX = 5;
 constexpr size_t CORPSE_SAVE_ID_VALUE_INDEX = 6;
@@ -192,6 +194,112 @@ bool decode_corpse_context(const uint8_t *encoded, size_t size, item_corpse_meta
 	       offset == size;
 }
 
+bool encode_collector_context(const item_collector_death_enrollment &collector,
+			      std::vector<uint8_t> *encoded)
+{
+	if (!encoded)
+		return false;
+	encoded->clear();
+	if (!collector.present)
+		return true;
+	constexpr size_t fixed_size = sizeof(uint32_t) + CRITICAL_COMMAND_ID_BYTES +
+				      sizeof(uint32_t) + sizeof(uint64_t) * 6 + sizeof(uint32_t);
+	if (collector.eligible_item_uids.size() > UINT32_MAX ||
+	    collector.eligible_item_uids.size() >
+		    (CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - fixed_size) / sizeof(uint64_t))
+		return false;
+	try
+	{
+		encoded->assign(fixed_size + collector.eligible_item_uids.size() * sizeof(uint64_t),
+				0);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	size_t offset = 0;
+	put_u32(encoded->data() + offset, COLLECTOR_CONTEXT_VERSION);
+	offset += sizeof(uint32_t);
+	std::copy(collector.death_operation.bytes.begin(), collector.death_operation.bytes.end(),
+		  encoded->begin() + offset);
+	offset += CRITICAL_COMMAND_ID_BYTES;
+	put_u32(encoded->data() + offset, collector.beneficiary_pid);
+	offset += sizeof(uint32_t);
+	put_u64(encoded->data() + offset, collector.death_time);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.collection_delay);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.sale_delay);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.holding_duration);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.price_percent);
+	offset += sizeof(uint64_t);
+	put_u64(encoded->data() + offset, collector.policy.minimum_value);
+	offset += sizeof(uint64_t);
+	put_u32(encoded->data() + offset,
+		static_cast<uint32_t>(collector.eligible_item_uids.size()));
+	offset += sizeof(uint32_t);
+	for (uint64_t uid : collector.eligible_item_uids)
+	{
+		put_u64(encoded->data() + offset, uid);
+		offset += sizeof(uint64_t);
+	}
+	return offset == encoded->size();
+}
+
+bool decode_collector_context(const uint8_t *encoded, size_t size,
+			      item_collector_death_enrollment *collector)
+{
+	if (!collector || (!encoded && size))
+		return false;
+	*collector = {};
+	if (!size)
+		return true;
+	constexpr size_t fixed_size = sizeof(uint32_t) + CRITICAL_COMMAND_ID_BYTES +
+				      sizeof(uint32_t) + sizeof(uint64_t) * 6 + sizeof(uint32_t);
+	if (size < fixed_size || get_u32(encoded) != COLLECTOR_CONTEXT_VERSION)
+		return false;
+	size_t offset = sizeof(uint32_t);
+	std::copy_n(encoded + offset, collector->death_operation.bytes.size(),
+		    collector->death_operation.bytes.begin());
+	offset += collector->death_operation.bytes.size();
+	collector->beneficiary_pid = get_u32(encoded + offset);
+	offset += sizeof(uint32_t);
+	collector->death_time = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.collection_delay = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.sale_delay = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.holding_duration = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.price_percent = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	collector->policy.minimum_value = get_u64(encoded + offset);
+	offset += sizeof(uint64_t);
+	const uint32_t count = get_u32(encoded + offset);
+	offset += sizeof(uint32_t);
+	if (count > ITEM_TRANSFER_MAX_ITEMS ||
+	    size - offset != static_cast<size_t>(count) * sizeof(uint64_t))
+		return false;
+	try
+	{
+		collector->eligible_item_uids.reserve(count);
+		for (uint32_t index = 0; index < count; ++index)
+		{
+			collector->eligible_item_uids.push_back(get_u64(encoded + offset));
+			offset += sizeof(uint64_t);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	collector->present = true;
+	return offset == size;
+}
+
 void encode_owner(uint8_t *output, const item_owner_identity &owner)
 {
 	output[0] = static_cast<uint8_t>(owner.type);
@@ -222,6 +330,8 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 		return critical_entity_type::room;
 	case item_owner_type::shopkeeper:
 		return critical_entity_type::shopkeeper;
+	case item_owner_type::collector:
+		return critical_entity_type::collector;
 	default:
 		return critical_entity_type::system;
 	}
@@ -229,7 +339,34 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 
 bool valid_reason(item_transfer_reason reason)
 {
-	return reason > item_transfer_reason::unknown && reason <= item_transfer_reason::shop_sell;
+	switch (reason)
+	{
+	case item_transfer_reason::synthetic:
+	case item_transfer_reason::creation:
+	case item_transfer_reason::destruction:
+	case item_transfer_reason::operator_repair:
+	case item_transfer_reason::player_get:
+	case item_transfer_reason::player_drop:
+	case item_transfer_reason::player_put:
+	case item_transfer_reason::player_give:
+	case item_transfer_reason::corpse_create:
+	case item_transfer_reason::corpse_restore:
+	case item_transfer_reason::corpse_loot:
+	case item_transfer_reason::locker_deposit:
+	case item_transfer_reason::locker_withdraw:
+	case item_transfer_reason::auction_list:
+	case item_transfer_reason::auction_claim:
+	case item_transfer_reason::shop_buy:
+	case item_transfer_reason::shop_sell:
+	case item_transfer_reason::mobile_claim:
+		return true;
+	case item_transfer_reason::collector_collect:
+	case item_transfer_reason::collector_buyback:
+	case item_transfer_reason::collector_expire:
+	case item_transfer_reason::unknown:
+		return false;
+	}
+	return false;
 }
 
 const item_transfer_entry *find_payload_item(const item_transfer_payload &payload,
@@ -261,6 +398,33 @@ uint64_t selected_root_for(const item_transfer_payload &payload, uint64_t item_u
 	return 0;
 }
 
+bool valid_collector_context(const item_transfer_payload &payload, uint16_t payload_version)
+{
+	const item_collector_death_enrollment &collector = payload.collector;
+	if (!collector.present)
+		return collector.eligible_item_uids.empty();
+	if (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	    payload.reason != item_transfer_reason::corpse_create || !payload.corpse.present ||
+	    critical_operation_id_is_zero(collector.death_operation) ||
+	    !collector.beneficiary_pid || !collector.death_time ||
+	    collector.beneficiary_pid != static_cast<uint32_t>(payload.to_owner.id >> 32) ||
+	    collector.death_time != static_cast<uint32_t>(payload.to_owner.id) ||
+	    !collector.policy.collection_delay ||
+	    collector.policy.sale_delay < collector.policy.collection_delay ||
+	    !collector.policy.holding_duration || !collector.policy.price_percent ||
+	    !collector.policy.minimum_value ||
+	    collector.eligible_item_uids.size() > payload.item_count ||
+	    !std::is_sorted(collector.eligible_item_uids.begin(),
+			    collector.eligible_item_uids.end()) ||
+	    std::adjacent_find(collector.eligible_item_uids.begin(),
+			       collector.eligible_item_uids.end()) !=
+		    collector.eligible_item_uids.end())
+		return false;
+	return std::all_of(collector.eligible_item_uids.begin(), collector.eligible_item_uids.end(),
+			   [&](uint64_t uid)
+			   { return find_payload_item(payload, uid) != nullptr; });
+}
+
 bool target_topology_for(const item_transfer_payload &payload, uint64_t item_uid,
 			 uint64_t *root_item_uid, uint64_t *parent_item_uid)
 {
@@ -280,9 +444,12 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	if (!item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
 	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
-	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION &&
+	    (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
 	     payload.item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS) ||
-	    payload.item_blob_size > payload.item_blob.size())
+	    payload.item_blob_size > payload.item_blob.size() ||
+	    payload.from_owner.type == item_owner_type::collector ||
+	    payload.to_owner.type == item_owner_type::collector ||
+	    !valid_collector_context(payload, payload_version))
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
@@ -341,8 +508,8 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 					  payload.reason == item_transfer_reason::destruction;
 		const bool creation_batch = creation &&
 					    payload.reason == item_transfer_reason::creation;
-		if (payload_version != ITEM_TRANSFER_PAYLOAD_VERSION || payload.selected_item_uid ||
-		    (!creation_batch && !batch_reason) ||
+		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
+		    payload.selected_item_uid || (!creation_batch && !batch_reason) ||
 		    (creation_batch &&
 		     (payload.to_owner.type != item_owner_type::player ||
 		      payload.target_root_item_uid || payload.target_parent_item_uid)) ||
@@ -500,10 +667,12 @@ bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::collector)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::collector)
+		return owner.id != 0 && owner.context_id == 0;
 	return owner.id != 0;
 }
 
@@ -523,6 +692,11 @@ uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id)
 uint64_t item_shopkeeper_owner_id(uint32_t shop_id)
 {
 	return static_cast<uint64_t>(shop_id) + 1;
+}
+
+uint64_t item_collector_owner_id(uint64_t listing_id)
+{
+	return listing_id;
 }
 
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key)
@@ -579,6 +753,15 @@ bool populate_command_entities(critical_command *command, const item_transfer_pa
 		command->expected_revisions.push_back(
 			{ parent_key, payload.expected_target_parent_revision });
 	}
+	if (payload.collector.present)
+	{
+		const critical_entity_key catalog_key = { critical_entity_type::collector,
+							  COLLECTOR_CATALOG_KEY };
+		command->keys.push_back(catalog_key);
+		// The SQL repository takes the current catalog row lock before any item
+		// lock; zero is a serialization key, not an optimistic catalog fence.
+		command->expected_revisions.push_back({ catalog_key, 0 });
+	}
 	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
 	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
 			       critical_entity_key_equal) != command->keys.end())
@@ -595,13 +778,16 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 					  std::vector<uint8_t> *encoded)
 {
 	std::vector<uint8_t> corpse_context;
+	std::vector<uint8_t> collector_context;
 	if (!encoded || !validate_payload(payload, ITEM_TRANSFER_PAYLOAD_VERSION) ||
-	    !encode_corpse_context(payload.corpse, &corpse_context))
+	    !encode_corpse_context(payload.corpse, &corpse_context) ||
+	    !encode_collector_context(payload.collector, &collector_context))
 		return false;
 	const size_t item_section_size =
 		ITEM_TRANSFER_HEADER_BYTES + payload.item_count * ITEM_TRANSFER_ENTRY_BYTES;
 	const size_t payload_size = item_section_size + sizeof(uint32_t) + payload.item_blob_size +
-				    sizeof(uint32_t) + corpse_context.size();
+				    sizeof(uint32_t) + corpse_context.size() + sizeof(uint32_t) +
+				    collector_context.size();
 	if (payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return false;
 	encoded->assign(payload_size, 0);
@@ -644,6 +830,12 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 	put_u32(encoded->data() + corpse_size_offset, static_cast<uint32_t>(corpse_context.size()));
 	std::copy(corpse_context.begin(), corpse_context.end(),
 		  encoded->begin() + corpse_size_offset + sizeof(uint32_t));
+	const size_t collector_size_offset =
+		corpse_size_offset + sizeof(uint32_t) + corpse_context.size();
+	put_u32(encoded->data() + collector_size_offset,
+		static_cast<uint32_t>(collector_context.size()));
+	std::copy(collector_context.begin(), collector_context.end(),
+		  encoded->begin() + collector_size_offset + sizeof(uint32_t));
 	return true;
 }
 
@@ -652,6 +844,7 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 {
 	if (!payload || command.type != critical_command_type::item_transfer ||
 	    (command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
@@ -676,11 +869,11 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	payload->target_parent_item_uid = get_u64(command.payload.data() + TARGET_PARENT_OFFSET);
 	payload->expected_target_parent_revision =
 		get_u64(command.payload.data() + TARGET_PARENT_REVISION_OFFSET);
-	payload->multi_root = command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	payload->multi_root = command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
 			      payload->selected_item_uid == 0;
 	if (!payload->item_count || payload->item_count > ITEM_TRANSFER_MAX_ITEMS)
 		return false;
-	const bool variable_items = command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION;
+	const bool variable_items = command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;
 	if (!variable_items && payload->item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS)
 		return false;
 	const size_t encoded_item_count = variable_items ? payload->item_count :
@@ -729,12 +922,32 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 			if (command.payload.size() < item_end + sizeof(uint32_t))
 				return false;
 			const uint32_t corpse_size = get_u32(command.payload.data() + item_end);
+			const size_t corpse_end = item_end + sizeof(uint32_t) + corpse_size;
 			if (corpse_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
-			    command.payload.size() != item_end + sizeof(uint32_t) + corpse_size ||
+			    corpse_end > command.payload.size() ||
 			    !decode_corpse_context(command.payload.data() + item_end +
 							   sizeof(uint32_t),
 						   corpse_size, &payload->corpse))
 				return false;
+			if (command.payload_version < ITEM_TRANSFER_PAYLOAD_VERSION)
+			{
+				if (command.payload.size() != corpse_end)
+					return false;
+			}
+			else
+			{
+				if (command.payload.size() < corpse_end + sizeof(uint32_t))
+					return false;
+				const uint32_t collector_size =
+					get_u32(command.payload.data() + corpse_end);
+				if (collector_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+				    command.payload.size() !=
+					    corpse_end + sizeof(uint32_t) + collector_size ||
+				    !decode_collector_context(command.payload.data() + corpse_end +
+								      sizeof(uint32_t),
+							      collector_size, &payload->collector))
+					return false;
+			}
 		}
 	}
 	if (!validate_payload(*payload, command.payload_version) ||
@@ -772,6 +985,7 @@ bool item_transfer_command_encode_result(const item_transfer_result &result,
 	put_u64(encoded->data() + 24, result.to_owner_revision);
 	put_u64(encoded->data() + 32, result.max_item_revision);
 	put_u64(encoded->data() + 40, result.corpse_revision);
+	(*encoded)[10] = result.collector_catalog_changed ? 1 : 0;
 	return true;
 }
 
@@ -780,15 +994,16 @@ bool item_transfer_command_decode_result(const uint8_t *encoded, size_t size,
 {
 	if (!encoded ||
 	    (size != ITEM_TRANSFER_RESULT_BYTES && size != ITEM_TRANSFER_LEGACY_RESULT_BYTES) ||
-	    !result || encoded[10] || encoded[11] || encoded[12] || encoded[13] || encoded[14] ||
-	    encoded[15])
+	    !result || encoded[10] > 1 || encoded[11] || encoded[12] || encoded[13] ||
+	    encoded[14] || encoded[15])
 		return false;
 	*result = { get_u64(encoded),
 		    get_u16(encoded + 8),
 		    get_u64(encoded + 16),
 		    get_u64(encoded + 24),
 		    get_u64(encoded + 32),
-		    size == ITEM_TRANSFER_RESULT_BYTES ? get_u64(encoded + 40) : 0 };
+		    size == ITEM_TRANSFER_RESULT_BYTES ? get_u64(encoded + 40) : 0,
+		    encoded[10] != 0 };
 	return result->root_item_uid && result->item_count &&
 	       result->item_count <= ITEM_TRANSFER_MAX_ITEMS;
 }

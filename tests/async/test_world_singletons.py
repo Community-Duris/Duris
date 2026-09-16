@@ -24,7 +24,8 @@ with tempfile.TemporaryDirectory(prefix='world-singletons-', dir=build) as tmp:
                     '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie',
                     '-I', str(ROOT / 'src'), '-I/usr/include/mysql', '-I/usr/include/libxml2',
                     str(source), str(ROOT / 'src/world/world_singletons.c'),
-                    str(ROOT / 'src/world/world_recovery_codec.c'), '-lbsd', '-o', str(binary)], check=True)
+                    str(ROOT / 'src/world/generated_npc_runtime.c'),
+                    str(ROOT / 'src/world/world_recovery_codec.c'), str(ROOT / 'src/world/generated_npc_state.c'), str(ROOT / 'src/player/pet_restore_state.c'), '-lbsd', '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True, env={**os.environ, 'ASAN_OPTIONS': 'detect_leaks=1:halt_on_error=1'})
 
 comm = (ROOT / 'src/net/comm.c').read_text()
@@ -34,6 +35,9 @@ assert loop.index('redis_world_recovery_boot_clear();') < loop.index('initialize
 assert loop.index('copyover_recover(') < loop.index('reconcile_shopkeepers(')
 copyover = (ROOT / 'src/persistence/copyover.c').read_text()
 assert 'header.version != 12' in copyover
+durable_shopkeepers = copyover[copyover.index('bool copyover_has_durable_shopkeepers()'):copyover.index('int is_copyover_boot(void)')]
+assert 'header.version == 13' in durable_shopkeepers
+assert 'header.version == 12' not in durable_shopkeepers
 assert 'offsetof(copyover_mob, transport)' in copyover
 assert copyover.count('transport_capture(mob, &entry.transport);') == 2
 assert copyover.count('transport_restore(mob, mob_entry.transport);') == 2

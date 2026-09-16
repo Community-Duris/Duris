@@ -358,7 +358,9 @@ int main()
     pc.gcmd_arr = nullptr;
     pc.numb_gcmd = 0;
 
-    // Individually valid custody sets combine with status and live item rows.
+    // Runtime rows outside the captured death graph must not consume the death
+    // custody budget or make an otherwise valid capture fail. This models live
+    // pet/floor/NPC-corpse assets observed under the same player owner.
     for (uint64_t i = 0; i < PLAYER_SNAPSHOT_MAX_OBJECTS; ++i) {
         auto row = observation;
         row.item_uid = row.root_item_uid = 10000 + i;
@@ -370,7 +372,9 @@ int main()
             assert(item_ownership_runtime_hydrate(row));
         }
     }
-    reject();
+    assert(capture() == player_snapshot_capture_result::ok);
+    assert(output.pid == 42 && output.death->custody.size() == 3);
+    live_intact();
     item_ownership_runtime_reset();
     assert(item_ownership_runtime_hydrate(observation));
 

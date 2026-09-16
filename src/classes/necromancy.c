@@ -6,9 +6,12 @@
 #include "core/files.h"
 #include "core/utils.h"
 #include "classes/necromancy.h"
+#include "economy/collector_presence.h"
 #include "player/pet_restore_runtime.h"
+#include <cstdint>
 #include <ctime>
 #include <algorithm>
+#include <limits>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +26,7 @@
 extern P_room world;
 extern P_index mob_index;
 extern P_index obj_index;
+extern struct str_app_type str_app[];
 extern int spl_table[TOTALLVLS][MAX_CIRCLE];
 extern const struct race_names race_names_table[];
 extern const char *dirs[];
@@ -34,6 +38,17 @@ extern bool create_walls(int room, int exit, P_char ch, int level, int type, int
 P_obj get_object_from_char(P_char owner, int vnum);
 
 bool isCarved(P_obj corpse);
+
+/* Legacy raise paths do not have a corpse transaction to publish an NPC-side
+ * inventory. A player caster is the durable recipient, so keep recovered
+ * equipment with that player; coins retain their historical pet handling. */
+static void place_raised_item(P_obj object, P_char caster, P_char follower)
+{
+	if (object && caster && IS_PC(caster) && GET_ITEM_TYPE(object) != ITEM_MONEY)
+		obj_to_char(object, caster);
+	else
+		obj_to_char(object, follower);
+}
 
 static bool corpse_trace_enabled(void)
 {
@@ -196,6 +211,8 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	struct affected_type af;
 	P_obj globe;
 	string name;
+	if (collector_presence_is_npc(mob))
+		return -1;
 
 	memset(&af, 0, sizeof(af));
 	if (!IS_SET(flag, PET_NOORDER))
@@ -705,7 +722,7 @@ void raise_undead(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, undead);
+			place_raised_item(obj_in_corpse, ch, undead);
 		}
 	}
 
@@ -1165,7 +1182,7 @@ void spell_call_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 
@@ -1293,6 +1310,34 @@ void discard_nested_money(P_obj container)
 			discard_nested_money(item);
 	}
 }
+
+bool corpse_raise_exceeds_carry_capacity(P_char caster, P_obj corpse)
+{
+	if (!caster || !corpse)
+		return false;
+	int64_t incoming_weight = 0;
+	int64_t incoming_count = 0;
+	for (P_obj item = corpse->contains; item; item = item->next_content)
+	{
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+			continue;
+		const int64_t weight = GET_OBJ_WEIGHT(item);
+		if (incoming_weight > std::numeric_limits<int64_t>::max() - weight)
+			return true;
+		incoming_weight += weight;
+		if (incoming_count == std::numeric_limits<int64_t>::max())
+			return true;
+		++incoming_count;
+	}
+	return incoming_weight > std::numeric_limits<int64_t>::max() -
+					 static_cast<int64_t>(total_carried_weight(caster)) ||
+	       incoming_count > std::numeric_limits<int64_t>::max() -
+					static_cast<int64_t>(IS_CARRYING_N(caster)) ||
+	       static_cast<int64_t>(total_carried_weight(caster)) + incoming_weight >
+		       static_cast<int64_t>(CAN_CARRY_W(caster)) ||
+	       static_cast<int64_t>(IS_CARRYING_N(caster)) + incoming_count >
+		       static_cast<int64_t>(CAN_CARRY_N(caster));
+}
 } // namespace
 
 void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj corpse,
@@ -1338,6 +1383,20 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		logit(LOG_DEBUG,
 		      "corpse_trace dracolich_prepare corpse_vnum=%d corpse_level=%d remaining_minutes=%d caster_level=%d",
 		      OBJ_VNUM(corpse), corpse->value[CORPSE_LEVEL], timeToDecay, level);
+	// Remove currency before measuring the durable equipment that will be placed
+	// in player custody.  A raise cannot roll the committed transfer back merely
+	// because the player's live carry limits changed while it was in flight.
+	for (P_obj item = corpse->contains, next = nullptr; item; item = next)
+	{
+		next = item->next_content;
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		{
+			obj_from_obj(item);
+			extract_obj(item);
+		}
+		else
+			discard_nested_money(item);
+	}
 
 	bool hostile = false;
 	if (kind == corpse_raise_kind::titan || kind == corpse_raise_kind::avatar)
@@ -1346,6 +1405,21 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		hostile = IS_PC(caster) && !number(0, 12) && !globe;
 	else if (kind == corpse_raise_kind::greater_dracolich)
 		hostile = IS_PC(caster) && !number(0, 9) && !globe;
+	if (corpse_raise_exceeds_carry_capacity(caster, corpse))
+	{
+		send_to_char(
+			"The recovered equipment leaves you overburdened. Drop something before fighting or moving.\r\n",
+			caster);
+		// The committed rows must stay with the player, but an automatic raise
+		// should not turn that recovery edge into an immediate hostile attack.
+		if (hostile)
+		{
+			hostile = false;
+			send_to_char(
+				"The awakened spirit remains bound while you recover your footing.\r\n",
+				caster);
+		}
+	}
 
 	while (corpse->contains)
 	{
@@ -1359,10 +1433,12 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		else
 		{
 			discard_nested_money(item);
-			if (hostile)
-				obj_to_char_at_end(item, caster);
-			else
-				obj_to_char(item, follower);
+			// The corpse transaction has already moved these rows into the caster's
+			// durable player-custody domain. A live follower/NPC is not a durable
+			// item owner; putting the item there would let a later player save delete
+			// or duplicate the authoritative row. Keep recovered equipment with the
+			// caster until mobile-owned persistence exists.
+			obj_to_char_at_end(item, caster);
 		}
 	}
 
@@ -1662,7 +1738,7 @@ void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 
@@ -1927,7 +2003,7 @@ void create_golem(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 	int timeToDecay = 0;
@@ -2149,7 +2225,7 @@ void spell_call_avatar(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 	int timeToDecay = 0;
@@ -2400,7 +2476,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char * /*arg*/, [[mayb
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 	int timeToDecay = 0;

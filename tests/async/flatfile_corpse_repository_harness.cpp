@@ -1,11 +1,16 @@
+#include "core/defines.h"
 #include "persistence/corpse_lifecycle_command.h"
 #include "flatfile/flatfile_artifact_repository.h"
+#include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_collector_repository.h"
 #include "flatfile/flatfile_corpse_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_world_item_repository.h"
+#include "player/player_snapshot_codec.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <filesystem>
@@ -96,15 +101,107 @@ static player_item_snapshot release_item(uint64_t uid, int32_t parent, int32_t v
 	return value;
 }
 
+static void seed_collector_candidate(const std::string &root, const flatfile_corpse_record &corpse,
+				     uint8_t operation_seed, std::string *error)
+{
+	require(corpse.items.size() == 2 && corpse.items[0].object_uid == 900 &&
+			corpse.items[1].object_uid == 901,
+		"collector corpse fixture topology changed unexpectedly");
+	std::vector<player_item_snapshot> snapshots = corpse.items;
+	for (player_item_snapshot &snapshot : snapshots)
+	{
+		snapshot.type = ITEM_WEAPON;
+		snapshot.name = "eligible antique";
+		snapshot.short_description = "an eligible antique";
+		snapshot.description = "An eligible antique is here.";
+		snapshot.wear_flags = ITEM_TAKE;
+		snapshot.cost = 500;
+	}
+
+	item_transfer_payload death = {};
+	death.to_owner = { item_owner_type::corpse,
+			   item_corpse_owner_id(corpse.owner_pid, corpse.save_id), 0 };
+	death.reason = item_transfer_reason::corpse_create;
+	death.reason_id = corpse.save_id;
+	death.selected_item_uid = snapshots[0].object_uid;
+	death.target_root_item_uid = snapshots[0].object_uid;
+	death.item_count = static_cast<uint16_t>(snapshots.size());
+	for (size_t index = 0; index < snapshots.size(); ++index)
+	{
+		const uint64_t parent =
+			snapshots[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				UINT64_C(0) :
+				snapshots[static_cast<size_t>(snapshots[index].parent_index)]
+					.object_uid;
+		death.items[index] = {
+			snapshots[index].object_uid, snapshots[0].object_uid,	parent, 0,
+			snapshots[index].vnum,	     item_custody_state::active
+		};
+	}
+	std::vector<uint8_t> blob;
+	require(player_item_snapshot_list_encode(snapshots, &blob) ==
+				player_snapshot_codec_result::ok &&
+			!blob.empty() && blob.size() <= death.item_blob.size(),
+		"could not encode collector corpse fixture");
+	death.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), death.item_blob.begin());
+	death.collector.present = true;
+	death.collector.death_operation = operation(operation_seed);
+	death.collector.beneficiary_pid = corpse.owner_pid;
+	death.collector.death_time = 1000 + operation_seed;
+	death.collector.policy = { 10, 20, 30, 200, 100 };
+	death.collector.eligible_item_uids = { 900 };
+
+	item_transfer_result transfer = {};
+	transfer.root_item_uid = 900;
+	transfer.item_count = 2;
+	transfer.from_owner_revision = 1;
+	transfer.to_owner_revision = 1;
+	transfer.max_item_revision = 1;
+	transfer.corpse_revision = corpse.revision;
+	flatfile_authority_lock lock;
+	require(lock.acquire(root, error), "could not lock collector corpse fixture: " + *error);
+	flatfile_collector_enrollment_mutation mutation;
+	unsigned int result_code = 0;
+	const auto prepared = flatfile_collector_prepare_death_enrollment(
+		root, lock, death, transfer, &mutation, &result_code, error);
+	require(prepared == flatfile_collector_repository_result::ok && !result_code &&
+			mutation.enrolled == 1 && !mutation.after_image.bytes.empty(),
+		"could not seed collector corpse candidate: " + *error + " (result " +
+			std::to_string(static_cast<unsigned int>(prepared)) + ", code " +
+			std::to_string(result_code) + ")");
+	require(flatfile_authority_transaction_commit(root, lock, { mutation.after_image },
+						      error) ==
+			flatfile_authority_transaction_result::ok,
+		"could not commit collector corpse candidate: " + *error);
+}
+
+static void require_collector_listing(const std::string &root, collector::state status,
+				      collector::reason reason, uint64_t item_revision,
+				      uint64_t catalog_revision, std::string *error)
+{
+	collector_bootstrap_snapshot bootstrap;
+	require(flatfile_collector_repository_read_bootstrap(root, &bootstrap, error) ==
+				flatfile_collector_repository_result::ok &&
+			bootstrap.catalog.revision == catalog_revision &&
+			bootstrap.catalog.records.size() == 1,
+		"collector corpse catalog was not readable exactly: " + *error);
+	const collector::record &listing = bootstrap.catalog.records[0];
+	require(listing.listing == 1 && listing.uid == 900 && listing.status == status &&
+			listing.closed_reason == reason && listing.item_revision == item_revision &&
+			listing.revision ==
+				(status == collector::state::candidate ? UINT64_C(1) : UINT64_C(2)),
+		"collector corpse listing did not reach the expected durable state");
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
 	const fs::path root = fs::path(argv[1]) / "lifecycle";
 	prepare_root(root);
 	std::string error;
-	require(flatfile_world_item_establish(root.string(), {}, {}, &error) ==
-			flatfile_world_item_result::ok,
-		"could not establish empty world item authority: " + error);
+	require(!fs::exists(root / "domains/world_item_catalog"),
+		"first corpse fixture unexpectedly has a world catalog");
 	auto create_payload = upsert(0);
 	auto create = command(1, create_payload);
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
@@ -249,6 +346,7 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_establish(release_root.string(), { corpse_artifact }, &error) ==
 			flatfile_artifact_result::ok,
 		"could not establish releasable corpse artifact: " + error);
+	seed_collector_candidate(release_root.string(), released_corpse, 70, &error);
 	corpse_lifecycle_payload release_payload = {};
 	release_payload.action = corpse_lifecycle_action::release;
 	release_payload.owner_pid = 42;
@@ -275,8 +373,11 @@ int main(int argc, char **argv)
 			result.action == corpse_lifecycle_action::release &&
 			result.corpse_revision == 0 && result.catalog_revision == 2 &&
 			result.corpse_owner_revision == 2 && result.room_owner_revision == 1 &&
-			result.max_item_revision == 2 && result.item_count == 2,
+			result.max_item_revision == 2 && result.item_count == 2 &&
+			!result.collector_catalog_changed,
 		"corpse release result did not expose all durable revisions");
+	require_collector_listing(release_root.string(), collector::state::candidate,
+				  collector::reason::none, 1, 1, &error);
 	corpses.clear();
 	saved.clear();
 	require(flatfile_world_item_list(release_root.string(), &corpses, &saved, &error) ==
@@ -371,6 +472,7 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_establish(destruction_root.string(), { destructible_artifact },
 					    &error) == flatfile_artifact_result::ok,
 		"could not establish destructible corpse artifact: " + error);
+	seed_collector_candidate(destruction_root.string(), released_corpse, 71, &error);
 	corpse_lifecycle_payload destruction_payload = release_payload;
 	destruction_payload.action = corpse_lifecycle_action::destroy;
 	auto destruction_command = command(11, destruction_payload);
@@ -390,8 +492,11 @@ int main(int argc, char **argv)
 			result.action == corpse_lifecycle_action::destroy &&
 			result.corpse_revision == 0 && result.catalog_revision == 2 &&
 			result.corpse_owner_revision == 2 && result.room_owner_revision == 1 &&
-			result.max_item_revision == 2 && result.item_count == 2,
+			result.max_item_revision == 2 && result.item_count == 2 &&
+			result.collector_catalog_changed,
 		"corpse destruction result did not expose destruction revisions");
+	require_collector_listing(destruction_root.string(), collector::state::cancelled,
+				  collector::reason::destroyed, 2, 2, &error);
 	corpses.clear();
 	saved.clear();
 	require(flatfile_world_item_list(destruction_root.string(), &corpses, &saved, &error) ==
@@ -455,6 +560,7 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_establish(resurrection_root.string(), { resurrection_artifact },
 					    &error) == flatfile_artifact_result::ok,
 		"could not establish resurrectable corpse artifact: " + error);
+	seed_collector_candidate(resurrection_root.string(), resurrection_corpse, 72, &error);
 	corpse_lifecycle_payload resurrection_payload = {};
 	resurrection_payload.action = corpse_lifecycle_action::resurrect;
 	resurrection_payload.owner_pid = 42;
@@ -488,8 +594,11 @@ int main(int argc, char **argv)
 			result.catalog_revision == 2 && result.corpse_owner_revision == 2 &&
 			result.room_owner_revision == 1 && result.player_owner_revision == 2 &&
 			result.wallet_revision == 1 && result.max_item_revision == 2 &&
-			result.item_count == 2 && result.wallet == resurrection_corpse.money,
+			result.item_count == 2 && result.wallet == resurrection_corpse.money &&
+			result.collector_catalog_changed,
 		"corpse resurrection result did not expose all committed revisions");
+	require_collector_listing(resurrection_root.string(), collector::state::cancelled,
+				  collector::reason::claimed, 2, 2, &error);
 	corpses.clear();
 	saved.clear();
 	require(flatfile_world_item_list(resurrection_root.string(), &corpses, &saved, &error) ==
@@ -583,6 +692,7 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_establish(raise_root.string(), { raised_artifact }, &error) ==
 			flatfile_artifact_result::ok,
 		"could not establish raised corpse artifact: " + error);
+	seed_collector_candidate(raise_root.string(), raised_corpse, 73, &error);
 	corpse_lifecycle_payload raise_payload = {};
 	raise_payload.action = corpse_lifecycle_action::raise_follower;
 	raise_payload.owner_pid = 42;
@@ -613,8 +723,11 @@ int main(int argc, char **argv)
 			result.room_owner_revision == 0 && result.player_owner_revision == 2 &&
 			result.wallet_revision == 1 && result.max_item_revision == 2 &&
 			result.item_count == 2 &&
-			result.wallet == std::array<int32_t, 4>{ 45, 36, 27, 18 },
+			result.wallet == std::array<int32_t, 4>{ 45, 36, 27, 18 } &&
+			result.collector_catalog_changed,
 		"corpse raise result did not expose all committed revisions");
+	require_collector_listing(raise_root.string(), collector::state::cancelled,
+				  collector::reason::claimed, 2, 2, &error);
 	corpses.clear();
 	saved.clear();
 	require(flatfile_world_item_list(raise_root.string(), &corpses, &saved, &error) ==
@@ -708,6 +821,7 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_establish(nested_room_root.string(), { corpse_artifact },
 					    &error) == flatfile_artifact_result::ok,
 		"could not establish nested room artifact: " + error);
+	seed_collector_candidate(nested_room_root.string(), nested_room_corpse, 74, &error);
 	corpse_lifecycle_payload container_release = {};
 	container_release.action = corpse_lifecycle_action::release;
 	container_release.owner_pid = 88;
@@ -744,8 +858,11 @@ int main(int argc, char **argv)
 			corpse_lifecycle_command_decode_result(applied.result_payload.data(),
 							       applied.result_size, &result) &&
 			result.action == corpse_lifecycle_action::release_nested &&
-			result.room_owner_revision == 2 && result.item_count == 2,
+			result.room_owner_revision == 2 && result.item_count == 2 &&
+			!result.collector_catalog_changed,
 		"nested room release did not recover exactly");
+	require_collector_listing(nested_room_root.string(), collector::state::candidate,
+				  collector::reason::none, 1, 1, &error);
 	require(flatfile_world_item_list(nested_room_root.string(), &corpses, &saved, &error) ==
 				flatfile_world_item_result::ok &&
 			corpses.empty(),
@@ -802,6 +919,7 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_establish(nested_player_root.string(), { corpse_artifact },
 					    &error) == flatfile_artifact_result::ok,
 		"could not establish nested player artifact: " + error);
+	seed_collector_candidate(nested_player_root.string(), nested_player_corpse, 75, &error);
 	corpse_lifecycle_payload nested_player_payload = nested_room_payload;
 	nested_player_payload.expected_room_revision = 0;
 	nested_player_payload.destination_player_pid = 72;
@@ -827,8 +945,11 @@ int main(int argc, char **argv)
 							       applied.result_size, &result) &&
 			result.action == corpse_lifecycle_action::release_nested &&
 			result.player_owner_revision == 2 && result.wallet_revision == 1 &&
-			result.wallet == std::array<int32_t, 4>{ 9, 9, 9, 9 },
+			result.wallet == std::array<int32_t, 4>{ 9, 9, 9, 9 } &&
+			result.collector_catalog_changed,
 		"nested player release did not recover exactly");
+	require_collector_listing(nested_player_root.string(), collector::state::cancelled,
+				  collector::reason::claimed, 2, 2, &error);
 	uint64_t nested_player_revision = 0;
 	std::vector<flatfile_item_ownership_record> nested_player_items;
 	require(flatfile_item_repository_load_owner(

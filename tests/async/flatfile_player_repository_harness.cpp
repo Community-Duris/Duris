@@ -121,7 +121,7 @@ static player_snapshot make_full(player_revision_t revision)
 
 // The immutable record of a death whose corpse handoff the ledger refused: the
 // corpse identity and room, the wallet a rejected conversion never took, the
-// refused item payload and the disputed custody rows, none of them in inventory.
+// captured player items and the disputed custody rows, none of them in inventory.
 static player_snapshot make_death(player_revision_t revision)
 {
 	player_snapshot snapshot = make_full(revision);
@@ -156,9 +156,15 @@ static player_snapshot make_death(player_revision_t revision)
 
 	player_item_snapshot refused = {};
 	refused.parent_index = 0;
-	refused.object_uid = 201;
-	refused.vnum = 501;
+	refused.object_uid = 100;
+	refused.vnum = 500;
 	death.corpse.push_back(refused);
+
+	player_item_snapshot refused_child = {};
+	refused_child.parent_index = 1;
+	refused_child.object_uid = 101;
+	refused_child.vnum = 501;
+	death.corpse.push_back(refused_child);
 
 	player_item_snapshot wallet = {};
 	wallet.parent_index = 0;
@@ -171,7 +177,10 @@ static player_snapshot make_death(player_revision_t revision)
 
 	// The refused row is still attributed to the player; the wallet pile the
 	// conversion never committed has no ledger row at all.
-	death.custody.push_back({ { 201, 201, 0, 3, 501, item_custody_state::active },
+	death.custody.push_back({ { 100, 100, 0, 1, 500, item_custody_state::active },
+				  { item_owner_type::player, 42, 0 },
+				  5 });
+	death.custody.push_back({ { 101, 100, 100, 1, 501, item_custody_state::active },
 				  { item_owner_type::player, 42, 0 },
 				  5 });
 	death.custody.push_back(
@@ -908,15 +917,16 @@ int main(int argc, char **argv)
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 42, 0 }, &quarantine_revision,
 			&active_after_death, &error) == flatfile_item_repository_result::ok &&
-			active_after_death.empty(),
-		"death custody remained eligible for inventory loading");
+			active_after_death.size() == 1 && active_after_death[0].item_uid == 102 &&
+			active_after_death[0].state == item_custody_state::active,
+		"death quarantine changed custody outside the captured graph");
 	load_request.deadline_usec =
 		persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
 	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
 	require(load_result.outcome == player_load_outcome::applied &&
 			load_result.snapshot.items.empty() && load_result.snapshot.pets.empty() &&
-			!load_result.missing_payload_rows,
-		"normal player loading restored disputed assets");
+			load_result.missing_payload_rows == 1,
+		"normal player loading restored disputed assets or lost the live pet item");
 	player_snapshot disposition = {};
 	require(flatfile_player_snapshot_read_file(
 			flatfile_player_snapshot_file::death_directory(root.string()),
@@ -925,18 +935,20 @@ int main(int argc, char **argv)
 			disposition.death.has_value(),
 		"the death disposition was not published durably: " + error);
 	require(disposition.death->corpse_room_vnum == 1201 &&
-			disposition.death->corpse.size() == 3 &&
+			disposition.death->corpse.size() == 4 &&
 			disposition.death->corpse[0].object_uid == 200 &&
 			disposition.death->corpse[0].values[CORPSE_SAVEID] == 9001 &&
-			disposition.death->corpse[1].object_uid == 201 &&
-			disposition.death->corpse[2].object_uid == 202 &&
+			disposition.death->corpse[1].object_uid == 100 &&
+			disposition.death->corpse[2].object_uid == 101 &&
+			disposition.death->corpse[3].object_uid == 202 &&
 			disposition.death->wallet_before ==
 				std::array<int32_t, 4>{ 11, 12, 13, 14 } &&
 			disposition.death->wallet_pile_uid == 202 &&
-			disposition.death->custody.size() == 2 &&
-			disposition.death->custody[0].item.item_uid == 201 &&
+			disposition.death->custody.size() == 3 &&
+			disposition.death->custody[0].item.item_uid == 100 &&
 			disposition.death->custody[0].owner.type == item_owner_type::player &&
-			disposition.death->custody[1].item.expected_state ==
+			disposition.death->custody[1].item.item_uid == 101 &&
+			disposition.death->custody[2].item.expected_state ==
 				item_custody_state::absent,
 		"the death disposition lost corpse identity, wallet or custody evidence");
 	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
@@ -946,8 +958,10 @@ int main(int argc, char **argv)
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 42, 0 }, &replay_owner_revision,
 			&active_after_death, &error) == flatfile_item_repository_result::ok &&
-			replay_owner_revision == quarantine_revision && active_after_death.empty(),
-		"death replay repeated quarantine or changed active custody");
+			replay_owner_revision == quarantine_revision &&
+			active_after_death.size() == 1 && active_after_death[0].item_uid == 102 &&
+			active_after_death[0].state == item_custody_state::active,
+		"death replay repeated quarantine or changed live active custody");
 	require(flatfile_player_snapshot_apply(root.string(), make_full(14), &error).outcome ==
 				player_save_apply_outcome::applied &&
 			flatfile_player_snapshot_read_file(

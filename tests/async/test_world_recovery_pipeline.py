@@ -230,10 +230,12 @@ bool item_owner_identity_equal(const item_owner_identity &left,
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-    if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
+    if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::collector)
         return false;
     if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
         return owner.id == 0 && owner.context_id == 0;
+    if (owner.type == item_owner_type::collector)
+        return owner.id != 0 && owner.context_id == 0;
     return owner.id != 0;
 }
 
@@ -937,7 +939,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
-            rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"),
+            rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"), rel("generated_npc_state.c"), rel("generated_npc_runtime.c"), rel("pet_restore_state.c"),
             rel("redis_command_observability.c"),
             "-Wl,--gc-sections", "-lz", "-pthread",
             "-o", str(binary),

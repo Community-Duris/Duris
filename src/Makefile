@@ -128,6 +128,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actnew.o \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
+				 cmd/divine_refusal_policy.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
@@ -138,6 +139,8 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/alliances.o \
 				 mob/automatic_rules.o \
 				 magic/affects.o \
+				 world/falling.o \
+				 world/falling_policy.o \
 				 combat/arena.o \
 				 guild/artifact.o \
 				 guild/artifact_cache_codec.o \
@@ -149,9 +152,29 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_key_registry.o \
 				 redis/redis_namespace.o \
 				 world/world_recovery_codec.o \
+				 world/generated_npc_state.o \
+				 world/generated_npc_runtime.o \
 				 redis/redis_donation_worker.o \
 				 guild/assocs.o \
 				 economy/auction_houses.o \
+				 economy/auction_room_registry.o \
+				 economy/collector_command.o \
+				 economy/collector_codec.o \
+				 economy/collector_policy.o \
+				 economy/collector_config.o \
+				 economy/collector_death_enrollment.o \
+				 economy/collector_catalog_source.o \
+				 economy/collector_catalog_cache.o \
+				 economy/collector_maintenance.o \
+				 economy/collector_listing_pipeline.o \
+				 economy/collector_collection_preparation.o \
+				 economy/collector_purchase_preparation.o \
+				 economy/collector_expiry_preparation.o \
+				 economy/collector_runtime.o \
+				 economy/collector_presence.o \
+				 economy/collector_service.o \
+				 economy/collector_transaction.o \
+				 economy/collector_repository.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
          magic/blispells.o \
@@ -264,6 +287,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_player_snapshot_file.o \
 				 flatfile/flatfile_item_uid_allocator.o \
 				 flatfile/flatfile_item_repository.o \
+				 flatfile/flatfile_collector_repository.o \
 				 flatfile/flatfile_artifact_repository.o \
 				 flatfile/flatfile_corpse_repository.o \
 				 flatfile/flatfile_corpse_ownership.o \
@@ -293,6 +317,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_world_item_repository.o \
 				 flatfile/flatfile_world_quest_history.o \
 				 persistence/corpse_lifecycle_transaction.o \
+				 persistence/corpse_lifecycle_repository.o \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
@@ -498,7 +523,14 @@ OBJS =  $(SHIP_OBJS) \
 				 net/gmcp.o \
 				 net/ttype.o \
 				 account/wiz_newchar.o \
-				 world/zcheck.o
+				 world/zcheck.o \
+				 telemetry/telemetry_activity.o \
+				 telemetry/telemetry_config.o \
+				 telemetry/telemetry_repository.o \
+				 telemetry/telemetry_runtime.o \
+				 telemetry/telemetry_session.o \
+				 telemetry/telemetry_transport.o \
+				 telemetry/telemetry_queue.o
 
 
 # Name lists (no paths) for pfile-related objs

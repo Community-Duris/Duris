@@ -378,6 +378,7 @@ class IsolatedServer:
         if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
             environment["LD_LIBRARY_PATH"] = runtime_library_path
 
+        self.environment = environment
         self.output = self.output_path.open("w", encoding="utf-8")
         self.process = subprocess.Popen(
             [str(self.binary), "--minimal", "-s", "-d", str(self.run_root), str(self.plain_port)],
@@ -480,7 +481,7 @@ def create_account(client: MudClient, password: str) -> None:
     client.send("y")
     client.expect("enter your password")
     client.send(password)
-    client.expect("verify your password")
+    client.expect("Please re-enter the same password to confirm:  ")
     client.send(password)
     client.expect("information correct?")
     client.send("y")

@@ -2868,3 +2868,17 @@ PH 12 16 0 -1
 25 11 19 25d47+250 3d5+3
 6.2.6.1 22275
 8 8 1
+#1257
+collector antiquities antiquity~
+&+Ythe Collector of Antiquities&n~
+&+YThe Collector of Antiquities&n waits here beside a ledger of recovered heirlooms.
+~
+This quiet custodian keeps no physical stock.  The carefully indexed ledger
+before them records antiquities held safely beyond the reach of thieves and
+violence, awaiting only their rightful owners.
+~
+10 0 0 0 0 0 0 0 0 S
+PH 0 0 0 -1
+1 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0

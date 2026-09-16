@@ -89,7 +89,8 @@ ok &= check(
 )
 ok &= check(
     "missing stock roots adopt in place before one multi-root movement",
-    "get_item_source_owner(actor, roots.front(), container, &source)" in start_bulk
+    "bulk_get_source_for_roots(actor, container, roots, &source)" in start_bulk
+    and "get_item_source_owner(actor, roots.front(), container, source)" in ACTOBJ
     and "continue_bulk_get(actor, actor_pid);" in start_bulk
     and "item_ownership_runtime_lookup(root->obj_uid, &runtime)" in continue_bulk
     and "state.source, state.source" in continue_bulk
@@ -101,7 +102,7 @@ ok &= check(
     "failed adoption leaves the complete live batch at its source",
     "if (!committed)" in adoption_completion
     and "Nothing was taken" in adoption_completion
-    and "bulk_gets.erase(found)" in adoption_completion
+    and "fail_bulk_get(actor, context.actor_pid" in adoption_completion
     and "finish_bulk_get_after_commit" not in adoption_completion
     and "do_get_finalize" not in adoption_completion,
 )

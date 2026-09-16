@@ -22,7 +22,7 @@ void obj_to_obj(P_obj obj, P_obj container) {
 ''')
 completion_fixture = r'''
 #include "classes/necromancy.h"
-static unsigned corpse_writes, retry_wakes;
+static unsigned corpse_writes, retry_wakes, collector_refreshes, collector_enrollment_ends;
 struct corpse_transfer_context { uint64_t corpse_uid, item_uid, corpse_save_id; };
 P_obj corpse_live_item(uint64_t uid) {
     for (P_obj obj = object_list; obj; obj = obj->next) if (obj->obj_uid == uid) return obj;
@@ -32,6 +32,8 @@ void note_corpse_transfer_dispute(P_char ch) { ch->only.pc->death_custody_disput
 bool corpse_lifecycle_transaction_note_item_transfer(uint32_t, uint32_t, uint64_t) { return true; }
 bool submit_next_corpse_item(P_char, P_obj) { abort(); }
 void writeCorpse(P_obj corpse) { assert(corpse->contains); ++corpse_writes; }
+bool collector_catalog_cache_refresh(void) { ++collector_refreshes; return true; }
+void collector_death_enrollment_end(P_obj corpse) { assert(corpse); ++collector_enrollment_ends; }
 static void wake_death_extract_retry(P_char) { ++retry_wakes; }
 ''' + extract_function('fight.c', 'void corpse_item_completion(')
 
@@ -49,12 +51,16 @@ static void completed(P_char actor, bool committed, const item_transfer_result &
     assert(retry_wakes == corpse_writes);
     assert(actor->only.pc->death_custody_disputed == !committed);
     assert(committed == expected_commit);
+    assert(collector_refreshes == (committed ? 1u : 0u));
+    assert(collector_enrollment_ends == (committed ? 1u : 0u));
     assert(!item_movement_transaction_player_busy(actor));
     if (committed) assert(!actor->carrying);
 }
 static void run(int count, int scenario) {
     item_movement_transaction_reset_for_tests(); item_ownership_runtime_reset();
-    callbacks = corpse_writes = retry_wakes = 0; busy_coin_uid = 0; expected_commit = scenario != 1;
+    callbacks = corpse_writes = retry_wakes = collector_refreshes =
+        collector_enrollment_ends = 0;
+    busy_coin_uid = 0; expected_commit = scenario != 1;
     char_data actor{}; pc_only_data pc{}; actor.only.pc = &pc; pc.pid = 42;
     character_list = &actor; actor.in_room = 0;
     indexes[0].virtual_number = 100;
