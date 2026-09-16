@@ -326,6 +326,13 @@ def refused_the_piece(other: journey.MudClient, name: str) -> None:
     worn = plain(command(other, "equipment", ""))
     require(PIECE_SHORT not in worn, f"{name} is wearing Tyrus's piece:\n{worn}")
     require(PIECE_SHORT in inventory(), f"{name} no longer holds the piece after the refusal")
+    # `wear all` must not refuse it aloud: that call walks every carried item
+    # for every empty slot, so a spoken refusal would arrive once per slot per
+    # item. The piece stays in inventory either way.
+    spam = plain(command(other, "wear all", ""))
+    require("another's measure" not in spam,
+            f"`wear all` refused the piece aloud:\n{spam[-600:]}")
+    require(PIECE_SHORT in inventory(), f"{name} wore the piece through `wear all`")
     command(other, f"put {PIECE} {BASKET}", "")
     wait_for(inventory, lambda text: PIECE_SHORT not in text, f"{name} never put the piece back")
 

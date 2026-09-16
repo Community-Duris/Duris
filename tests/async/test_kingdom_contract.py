@@ -2373,26 +2373,34 @@ def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
     # gear to sell would get pages of it. That path asks silently; an explicit
     # `wear <item>` still says why.
     actobj = read("src/cmd/actobj.c")
-    # `wear all`'s inner loop, by its own markers. NOT by the CUR_MAX_WEAR loop
-    # header or the outer loop's end: there is more than one such loop, and the
-    # explicit-wear site -- which SHOULD speak -- sits inside a window anchored
-    # on the first of them.
+    # Anchored on CODE, not on the loop's comments: `equipment_pos_table[loop][2]`
+    # is the empty-slot test `wear all` walks. An earlier version of this pin read
+    # "// Inner Loop", and one before that the CUR_MAX_WEAR loop header -- which
+    # appears twice, so the window swallowed the explicit-wear site that SHOULD
+    # speak, and the pin failed while the code was right.
+    # Searched with ALL whitespace stripped, so clang-format is free to wrap the
+    # call however it likes. Earlier versions of this pin matched formatted text
+    # and broke three times while the code was right: a loop header that appears
+    # twice, then the loop's comments, then an argument list the formatter split
+    # after the opening parenthesis.
+    compact = re.sub(r"\s+", "", actobj)
+    silent = [m.start() for m in re.finditer(r"can_equip_soulbound_item\(ch,obj_object,false\)", compact)]
+    speaking = [m.start() for m in re.finditer(r"can_equip_soulbound_item\(ch,obj_object,true\)", compact)]
     check(
-        actobj.count("// Inner Loop") == 1 and actobj.count("// End Inner Loop") == 1,
-        "`wear all`'s inner loop is marked exactly once, so the check below reads the right lines",
-        f"{actobj.count('// Inner Loop')} start marker(s), "
-        f"{actobj.count('// End Inner Loop')} end marker(s)",
+        len(silent) == 1 and len(speaking) >= 1,
+        "exactly one equip check is silent -- the one `wear all` uses -- and the explicit wears "
+        "still speak",
+        f"{len(silent)} silent, {len(speaking)} speaking",
     )
-    inner_at = actobj.find("// Inner Loop")
-    inner_end = actobj.find("// End Inner Loop", inner_at) if inner_at >= 0 else -1
-    loop_window = actobj[inner_at:inner_end] if inner_at >= 0 and inner_end > inner_at else ""
+    slot_test = compact.rfind("equipment_pos_table[loop][2]", 0, silent[0]) if silent else -1
+    between = compact[slot_test : silent[0]] if slot_test != -1 and silent else ""
     check(
-        loop_window != ""
-        and "can_equip_soulbound_item(ch, obj_object, false)" in loop_window
-        and "can_equip_soulbound_item(ch, obj_object, true)" not in loop_window,
-        "the `wear all` loop asks the equip check silently, so a carried piece is not refused "
-        "once per empty slot",
-        f"inner loop {inner_at}, end {inner_end}",
+        slot_test != -1
+        and "can_equip_soulbound_item" not in between
+        and "CAN_WEAR(obj_object" in between,
+        "the silent check is the one `wear all` reaches for an empty slot, and it is asked only "
+        "after the item is known to fit that slot -- not once per item per slot",
+        f"slot test {slot_test}, silent call {silent[0] if silent else -1}",
     )
     remove = function_bodies(read("src/magic/magic.c"), r"\bvoid\s+remove_soulbind\s*\(")
     check(
