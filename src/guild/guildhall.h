@@ -403,6 +403,18 @@ struct WorkshopRoom : public GuildhallRoom
 		, prop_vnum(_prop_vnum)
 	{
 	}
+
+	/* ~Guildhall() clears its rooms without deinitialising them, so a hall
+	 * deleted outside Guildhall::remove() would leave this room's description
+	 * copy allocated and its prop standing. Deleting one deinitialises it.
+	 *
+	 * The paths that do deinitialise first -- Guildhall::reload(), and the
+	 * rollback in construct_workshop_room() -- then call it twice, which does
+	 * nothing the second time: each step is guarded (the proc only while it is
+	 * still ours, the prop only while it still stands there as itself, the
+	 * description only while ours is the one on the room) and each pointer is
+	 * cleared as it goes. */
+	~WorkshopRoom() override { deinit(); }
 };
 
 //

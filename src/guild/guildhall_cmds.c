@@ -1299,7 +1299,7 @@ bool construct_new_guildhall_room(int id, int from_vnum, int dir)
 	return gh->reload();
 }
 
-/* Put memory back exactly as it was before the new room existed, in all three
+/* Put memory back exactly as it was before the new room existed, in all four
  * places it reached:
  *
  *   - the hall's room list and the exit that leads to it. The room is taken
@@ -1307,17 +1307,30 @@ bool construct_new_guildhall_room(int id, int from_vnum, int dir)
  *     entry.
  *   - the live world's exits, so none outlives the room it leads to.
  *   - the ROOM_GUILD mark next_guildhall_room_vnum() put on the vnum.
+ *   - the pool room's NAME. GuildhallRoom::init() overwrites it with a
+ *     str_dup() of the hall's own name and neither frees nor remembers what
+ *     was there, so the caller keeps that pointer and hands it back here.
+ *     Without this a room returned to the pool would keep a guild's name, and
+ *     init()'s copy would be lost.
  *
  * A room that was brought live must be deinitialised BEFORE this is called:
  * this undoes the hall, not the room. */
 static void undo_workshop_room(Guildhall *gh, GuildhallRoom *from_room, GuildhallRoom *room,
-			       int dir, int vnum)
+			       int dir, int vnum, char *prior_name)
 {
+	const int rnum = real_room0(vnum);
+
 	from_room->exits[dir] = -1;
 	gh->rooms.erase(std::remove(gh->rooms.begin(), gh->rooms.end(), room), gh->rooms.end());
 	disconnect_rooms(from_room->vnum, vnum);
 	delete room;
-	REMOVE_BIT(world[real_room0(vnum)].room_flags, ROOM_GUILD);
+	REMOVE_BIT(world[rnum].room_flags, ROOM_GUILD);
+
+	if (world[rnum].name != prior_name)
+	{
+		str_free(world[rnum].name);
+		world[rnum].name = prior_name;
+	}
 }
 
 /* Build a kingdom workshop or the guild store: a NEW room of `type` off
@@ -1371,6 +1384,11 @@ bool construct_workshop_room(int id, int from_vnum, int dir, int type)
 		return FALSE;
 	}
 
+	/* The name the pool room came with. GuildhallRoom::init() replaces it with
+	 * a copy of the hall's own name and drops this pointer without freeing it,
+	 * so the rollback needs it to hand the room back as it was found. */
+	char *const prior_name = world[real_room0(vnum)].name;
+
 	GuildhallRoom *room = make_guildhall_room(type);
 	room->id = next_guildhall_room_id();
 	room->type = type;
@@ -1388,7 +1406,7 @@ bool construct_workshop_room(int id, int from_vnum, int dir, int type)
 		      "construct_workshop_room(): guildhall %d could not bring its new room %d "
 		      "live; nothing was saved and the room is undone",
 		      gh->id, vnum);
-		undo_workshop_room(gh, from_room, room, dir, vnum);
+		undo_workshop_room(gh, from_room, room, dir, vnum, prior_name);
 		return FALSE;
 	}
 
@@ -1406,7 +1424,7 @@ bool construct_workshop_room(int id, int from_vnum, int dir, int type)
 		logit(LOG_GUILDHALLS,
 		      "construct_workshop_room(): couldn't save guildhall %d; room undone", gh->id);
 		room->deinit();
-		undo_workshop_room(gh, from_room, room, dir, vnum);
+		undo_workshop_room(gh, from_room, room, dir, vnum, prior_name);
 		return FALSE;
 	}
 

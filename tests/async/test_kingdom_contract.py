@@ -2452,6 +2452,13 @@ def test_workshop_rollback_removes_the_room_by_identity() -> None:
         "the new room is brought live by itself, never by reloading the whole hall",
     )
     check("pop_back(" not in undo, "the rollback never trusts the new room to be the last")
+    # GuildhallRoom::init() overwrites the pool room's name with a copy of the
+    # hall's own and neither frees nor remembers what was there, so a room
+    # handed back would keep a guild's name and lose init()'s copy.
+    check(
+        "prior_name" in undo and "str_free(" in undo and "prior_name" in code,
+        "the rollback frees the name init() put on the room and hands the pool room its own back",
+    )
     check(
         re.search(
             r"std::remove\(\s*gh->rooms\.begin\(\)\s*,\s*gh->rooms\.end\(\)\s*,\s*room\s*\)", undo
@@ -2583,6 +2590,18 @@ def test_workshop_room_deinit_undoes_its_own_init() -> None:
         "str_free(" in code and "extract_obj(" in code and "guildhall_store_room" in code,
         "WorkshopRoom::deinit() frees its description copy, extracts its prop and unbinds "
         "the store proc",
+    )
+    # ~Guildhall() clears its rooms without deinitialising them, so a hall
+    # deleted outside Guildhall::remove() would leak the description copy and
+    # leave the prop standing.
+    check(
+        re.search(
+            r"~WorkshopRoom\s*\(\s*\)\s*override\s*\{\s*deinit\(\)\s*;\s*\}",
+            read("src/guild/guildhall.h"),
+        )
+        is not None,
+        "deleting a WorkshopRoom deinitialises it, so a hall cleared without deinit() leaks "
+        "nothing and leaves no prop behind",
     )
 
 
