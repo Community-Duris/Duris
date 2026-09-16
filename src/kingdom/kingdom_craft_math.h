@@ -109,19 +109,29 @@ constexpr long kingdom_craft_material_units(int weight_tenths, int level, int re
  * At W = 1 and the shipped scales: level-10 gear is worth 1,200 copper (1p 2g)
  * against 12p to buy, level-56 gear 5,800 (5p 8g) against 58p.
  *
- * A piece is never worth 0 unless the knob turns resale off altogether: a shop
- * refuses anything worth less than 1 (trade_with(), economy/shop.c), and gear
- * no shop will take is the very thing this ruling undoes.
+ * A piece is worth 0 when resale is switched off, and when the gear itself is
+ * free (price scale 0) -- otherwise free pieces could be vendored for the
+ * 1-copper floor over and over, which is a mint. Anything else is worth at
+ * least 1: a shop refuses what is worth less (trade_with(), economy/shop.c),
+ * and gear no shop will take is the very thing this ruling undoes.
  */
 constexpr long kingdom_craft_resale_copper(int weight_tenths, int level, int price_permille,
 					   int resale_permille)
 {
-	if (weight_tenths <= 0 || resale_permille <= 0)
+	/* Free gear is worth NOTHING. Without the price guard, a mud that set
+	 * kingdom.craft.price.permille = 0 would hand out pieces for no platinum
+	 * that a shop still paid the 1-copper floor for: a mint. */
+	if (weight_tenths <= 0 || price_permille <= 0 || resale_permille <= 0)
 		return 0;
-	const long l = kingdom_craft_item_level(level);
-	const long value =
-		((long)weight_tenths * (2 + l) * price_permille * resale_permille + 5000) / 10000;
-	return value < 1 ? 1 : value;
+	/* long long, not long: long is 32 bits on Windows and on 32-bit Linux,
+	 * and at the ceiling of every knob at once (W 2.0, level 56, both scales
+	 * 10000) this numerator reaches 116,000,005,000. What comes out of the
+	 * division is small enough to hand back as a long. */
+	const long long l = kingdom_craft_item_level(level);
+	const long long value =
+		((long long)weight_tenths * (2 + l) * price_permille * resale_permille + 5000) /
+		10000;
+	return value < 1 ? 1 : (long)value;
 }
 
 /*

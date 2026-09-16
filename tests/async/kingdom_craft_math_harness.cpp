@@ -1,8 +1,10 @@
 // Executes the guild store's arithmetic (src/kingdom/kingdom_craft_math.h)
 // against the worked examples in the approved design, so a change to a
 // formula that moves a published price fails here rather than in play. It
-// also executes the store's binding token (src/kingdom/kingdom_craft_bind.h),
-// the one thing that decides who may wear a store piece.
+// also executes the store's maker's mark (src/kingdom/kingdom_craft_bind.h),
+// which binds nobody: store gear is ordinary property, and the mark only tells
+// the engine a piece came from the store when its prototype cannot be
+// resolved.
 
 #include "kingdom/kingdom_craft_bind.h"
 #include "kingdom/kingdom_craft_math.h"
@@ -68,8 +70,8 @@ int main()
 	expect(kingdom_craft_price_platinum(10, 62, 1000), 58, "price W1 L62 is L56's");
 
 	// Resale value in copper: a tenth of the purchase price at the shipped
-	// scales (1 platinum = 1000 copper), and worth nothing only when the knob
-	// turns resale off.
+	// scales (1 platinum = 1000 copper). Worth nothing when resale is switched
+	// off, and when the gear itself is free.
 	expect(kingdom_craft_resale_copper(10, 56, 1000, 100), 5800, "resale W1 L56 = 5800 copper");
 	expect(kingdom_craft_resale_copper(10, 10, 1000, 100), 1200, "resale W1 L10 = 1200 copper");
 	expect(kingdom_craft_resale_copper(20, 56, 1000, 100), 11600, "resale W2 L56");
@@ -79,12 +81,20 @@ int main()
 	expect(kingdom_craft_resale_copper(8, 1, 1000, 100), 240, "resale W0.8 L1");
 	expect(kingdom_craft_resale_copper(10, 56, 1000, 10000), 580000,
 	       "resale at the permille cap");
+	// The heaviest piece at every ceiling at once: the numerator reaches
+	// 116,000,005,000, which is why the arithmetic is 64-bit.
+	expect(kingdom_craft_resale_copper(20, 56, 1000, 10000), 1160000,
+	       "resale W2 at the resale cap");
+	expect(kingdom_craft_resale_copper(20, 56, 10000, 10000), 11600000,
+	       "resale at every ceiling at once");
 	expect(kingdom_craft_resale_copper(10, 1, 1000, 1), 3,
 	       "the smallest scale still rounds rather than falling to the floor");
 	expect(kingdom_craft_resale_copper(10, 62, 1000, 100), 5800, "resale at L62 is L56's");
 	expect(kingdom_craft_resale_copper(10, 56, 1000, 0), 0, "resale off is worth nothing");
-	expect(kingdom_craft_resale_copper(10, 56, 0, 100), 1,
-	       "gear given away free still sells for a coin");
+	// Free gear is worth nothing: a piece bought for no platinum that a shop
+	// still paid a coin for would be a mint.
+	expect(kingdom_craft_resale_copper(10, 56, 0, 100), 0,
+	       "gear given away free is worth nothing");
 
 	// Stat lines: max(1, round(top x L / 56)); zero stays zero.
 	expect(kingdom_craft_scaled_stat(25, 56), 25, "AC 25 at L56");
