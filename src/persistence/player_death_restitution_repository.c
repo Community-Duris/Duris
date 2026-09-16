@@ -1409,10 +1409,6 @@ bool player_death_restitution_repository_execute(MYSQL *connection, const critic
 		*result_code = ENOTSUP;
 		return true;
 	}
-	struct timespec now = {};
-	if (clock_gettime(CLOCK_REALTIME, &now) != 0 || now.tv_sec < 0)
-		return false;
-	result->delivery_epoch = static_cast<uint64_t>(now.tv_sec);
 	uint64_t target_revision = 0;
 	if (!read_save_revision(connection, plan.recipient_pid, &target_revision, result_code))
 		return false;
@@ -1510,6 +1506,14 @@ bool player_death_restitution_repository_execute(MYSQL *connection, const critic
 		if (*result_code)
 			return true;
 	}
+	// The delivery epoch is the mutation boundary: all evidence and FOR UPDATE
+	// fences above have completed, but persistent receipt/projection writes have
+	// not started.  It is intentionally not a commit timestamp; the small,
+	// unavoidable mutation-to-COMMIT gap remains real elapsed lifetime.
+	struct timespec now = {};
+	if (clock_gettime(CLOCK_REALTIME, &now) != 0 || now.tv_sec < 0)
+		return false;
+	result->delivery_epoch = static_cast<uint64_t>(now.tv_sec);
 	if (!insert_receipt(connection, plan, result->candidate_count, result->delivered_count,
 			    result->unresolved_count))
 		return false;

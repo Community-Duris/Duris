@@ -5,12 +5,15 @@
 #include <openssl/sha.h>
 
 #include <array>
+#include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace
@@ -71,6 +74,26 @@ std::string scalar(MYSQL *connection, const std::string &sql)
 	std::string value = row && row[0] ? row[0] : "";
 	mysql_free_result(result);
 	return value;
+}
+
+MYSQL *connect_database()
+{
+	MYSQL *connection = mysql_init(nullptr);
+	require(connection != nullptr, "mysql_init");
+	const char *host = std::getenv("DB_HOST");
+	const char *port_text = std::getenv("DB_PORT");
+	const char *user = std::getenv("DB_USER");
+	const char *password = std::getenv("DB_PASSWD");
+	const char *database = std::getenv("DB_NAME");
+	const unsigned int port =
+		port_text ? static_cast<unsigned int>(std::strtoul(port_text, nullptr, 10)) : 3306;
+	require(mysql_real_connect(connection, host ? host : "127.0.0.1", user ? user : "root",
+				   password ? password : std::getenv("MYSQL_PWD"),
+				   database ? database : "duris_issue_331_test", port, nullptr,
+				   0) != nullptr,
+		std::string("mysql_real_connect: ") + mysql_error(connection));
+	query_or_fail(connection, "SET time_zone='+00:00'");
+	return connection;
 }
 
 void clear_database(MYSQL *connection)
@@ -351,6 +374,63 @@ uint64_t positive_delivery(MYSQL *connection, const critical_command &command)
 	return delivered_domain_timer;
 }
 
+struct delayed_apply
+{
+	critical_apply_result result = {};
+	std::atomic<bool> finished = false;
+};
+
+void run_lock_delayed_delivery_epoch(MYSQL *connection)
+{
+	const fixture value = make_fixture(0x35);
+	seed_database(connection, value);
+	const critical_command command = build_command(value);
+	MYSQL *locker = connect_database();
+	query_or_fail(locker, "START TRANSACTION");
+	require(scalar(locker,
+		       "SELECT save_revision FROM player_data WHERE pid=43 FOR UPDATE") == "1",
+		"lock-delay fixture did not hold the target validation row");
+
+	delayed_apply applied;
+	const auto started = std::chrono::steady_clock::now();
+	std::thread worker([&] {
+		MYSQL *apply_connection = connect_database();
+		applied.result = critical_command_repository_apply(apply_connection, command);
+		mysql_close(apply_connection);
+		applied.finished.store(true, std::memory_order_release);
+	});
+
+	// Keep the validation row locked long enough to cross multiple wall-clock
+	// epochs. The apply must still be waiting here, before any projection commit.
+	std::this_thread::sleep_for(std::chrono::milliseconds(2200));
+	require(!applied.finished.load(std::memory_order_acquire),
+		"apply bypassed the induced database lock delay");
+	const uint64_t release_epoch = std::stoull(scalar(
+		locker, "SELECT FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)))"));
+	query_or_fail(locker, "ROLLBACK");
+	worker.join();
+	mysql_close(locker);
+	const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::steady_clock::now() - started).count();
+	require(elapsed >= 2000,
+		"induced database lock delay was shorter than the test window");
+	require(applied.result.outcome == critical_apply_outcome::applied &&
+			applied.result.error_code == 0,
+		"lock-delay command did not apply");
+	player_death_restitution_result decoded = {};
+	require(applied.result.result_size > 0 &&
+			player_death_restitution_command_decode_result(
+				applied.result.result_payload.data(), applied.result.result_size, &decoded),
+		"lock-delay result payload was not decodable");
+	require(decoded.delivery_epoch >= release_epoch,
+		"delivery epoch was captured before the blocking validation lock released");
+	const uint64_t delivered_timer = std::stoull(scalar(
+		connection,
+		"SELECT artifact_delivered_timer_epoch FROM player_death_restitution_item WHERE item_uid=1004"));
+	require(delivered_timer == decoded.delivery_epoch + 456,
+		"lock-delay artifact lifetime was not based on post-lock delivery epoch");
+}
+
 void run_positive_and_replay(MYSQL *connection)
 {
 	const fixture value = make_fixture(0x30);
@@ -458,23 +538,11 @@ void run_atomic_rollback(MYSQL *connection)
 
 int main()
 {
-	MYSQL *connection = mysql_init(nullptr);
-	require(connection != nullptr, "mysql_init");
-	const char *host = std::getenv("DB_HOST");
-	const char *port_text = std::getenv("DB_PORT");
-	const char *user = std::getenv("DB_USER");
-	const char *password = std::getenv("DB_PASSWD");
-	const char *database = std::getenv("DB_NAME");
-	const unsigned int port =
-		port_text ? static_cast<unsigned int>(std::strtoul(port_text, nullptr, 10)) : 3306;
-	require(mysql_real_connect(connection, host ? host : "127.0.0.1", user ? user : "root",
-				   password ? password : std::getenv("MYSQL_PWD"),
-				   database ? database : "duris_issue_331_test", port, nullptr,
-				   0) != nullptr,
-		std::string("mysql_real_connect: ") + mysql_error(connection));
-	query_or_fail(connection, "SET time_zone='+00:00'");
+	MYSQL *connection = connect_database();
 	clear_database(connection);
 	run_positive_and_replay(connection);
+	clear_database(connection);
+	run_lock_delayed_delivery_epoch(connection);
 	clear_database(connection);
 	run_stale_owner(connection);
 	clear_database(connection);

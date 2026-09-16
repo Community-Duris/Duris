@@ -2289,8 +2289,6 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
     lines = [
         "SET autocommit=0;",
         "START TRANSACTION;",
-        # One integer epoch is shared by every artifact in this atomic delivery.
-        "SET @restitution_delivery_epoch=FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)));",
         "CREATE TEMPORARY TABLE restitution_apply_items ("
         "item_uid BIGINT UNSIGNED NOT NULL PRIMARY KEY,"
         "delivered_root_item_uid BIGINT UNSIGNED NOT NULL,"
@@ -2677,6 +2675,11 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "@description_rows_inserted=0,@owner_revision_updated=0,@owner_rows_updated=0,"
         "@artifact_domain_rows_updated=0,@artifact_domain_rows_inserted=0,"
         "@artifact_baseline_rows_inserted=0,@artifact_legacy_rows_updated=0;",
+        # Capture the delivery epoch only after every blocking validation/lock
+        # above and before the first persistent receipt/projection mutation. It
+        # anchors delivery, not admission or the later COMMIT; the small,
+        # unavoidable mutation-to-COMMIT gap remains real elapsed lifetime.
+        "SET @restitution_delivery_epoch=FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)));",
         "INSERT INTO player_death_restitution_receipt(restitution_id,source_pid,death_revision,recipient_pid,"
         "death_operation_id,evidence_digest,plan_digest,status,actor,reason,candidate_count,delivered_count,"
         "unresolved_count,applied_at) SELECT " + sql_blob(rid) + "," + str(source_pid) + "," +

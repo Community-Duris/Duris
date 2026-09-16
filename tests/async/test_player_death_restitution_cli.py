@@ -290,6 +290,11 @@ class RestitutionCliTests(unittest.TestCase):
         self.assertIn("FOR UPDATE", sql)
         self.assertIn("@owner_rows_updated=1", sql)
         self.assertIn("@restitution_decision", sql)
+        epoch_marker = "SET @restitution_delivery_epoch=FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)));"
+        self.assertEqual(sql.count(epoch_marker), 1)
+        epoch_position = sql.index(epoch_marker)
+        self.assertLess(sql.rfind("FOR UPDATE"), epoch_position)
+        self.assertLess(epoch_position, sql.index("INSERT INTO player_death_restitution_receipt"))
 
 
 if __name__ == "__main__":
