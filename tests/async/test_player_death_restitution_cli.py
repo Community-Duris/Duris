@@ -190,6 +190,46 @@ class RestitutionCliTests(unittest.TestCase):
         }
         self.assertEqual(cli.item_kind(unique, {}), "unique")
 
+    def test_artifact_timing_compensation_is_scoped_to_explicit_uids(self) -> None:
+        parsed = cli.parse_artifact_timing_compensation_specs([
+            "1004=456:ticket-1004",
+            "1005=789:ticket-1005",
+        ])
+        self.assertEqual(parsed, {
+            "1004": {"seconds": 456, "approval": "ticket-1004"},
+            "1005": {"seconds": 789, "approval": "ticket-1005"},
+        })
+        with self.assertRaises(cli.ToolError):
+            cli.parse_artifact_timing_compensation_specs(["1004=456:ticket", "1004=789:other"])
+        with self.assertRaises(cli.ToolError):
+            cli.parse_artifact_timing_compensation_specs(["456:global-approval"])
+
+    def test_timing_compensation_plan_map_must_match_eligible_artifacts(self) -> None:
+        plan = {
+            "artifact_timing_compensations": {
+                "1004": {"seconds": 456, "approval": "ticket-1004"},
+            },
+            "artifact_timing_compensation_count": 1,
+            "items": [{
+                "item_uid": 1004,
+                "eligible": True,
+                "kind": "artifact",
+                "artifact_timing": {
+                    "basis": "approved_compensation",
+                    "usable_lifetime_seconds": 456,
+                    "compensation_reference": "ticket-1004",
+                },
+            }],
+        }
+        cli.validate_artifact_timing_compensations(plan)
+        plan["artifact_timing_compensations"] = {
+            "1004": {"seconds": 456, "approval": "ticket-1004"},
+            "1005": {"seconds": 789, "approval": "ticket-1005"},
+        }
+        plan["artifact_timing_compensation_count"] = 2
+        with self.assertRaisesRegex(cli.ToolError, "UID map"):
+            cli.validate_artifact_timing_compensations(plan)
+
     def test_apply_sql_uses_only_dedicated_restitution_audit(self) -> None:
         metadata = {
             "object_uid": 100,
@@ -247,6 +287,9 @@ class RestitutionCliTests(unittest.TestCase):
         self.assertNotIn("item_ownership_ledger", sql)
         self.assertIn("player_death_restitution_receipt", sql)
         self.assertIn("@database_quiescent", sql)
+        self.assertIn("FOR UPDATE", sql)
+        self.assertIn("@owner_rows_updated=1", sql)
+        self.assertIn("@restitution_decision", sql)
 
 
 if __name__ == "__main__":

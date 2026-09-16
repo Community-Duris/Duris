@@ -1,4 +1,5 @@
 #include "player/player_snapshot_codec.h"
+#include "core/defines.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -150,8 +151,7 @@ void write_item(std::ostream &out, const player_item_snapshot &item, bool includ
 	json_array(out, item.timers, [](std::ostream &stream, int64_t value) { stream << value; });
 	out << ",\"wear_flags\":" << item.wear_flags;
 	out << ",\"extra_flags\":" << item.extra_flags;
-	const bool native_artifact_flag =
-		(static_cast<uint64_t>(item.extra_flags) & (uint64_t{ 1 } << 29)) != 0;
+	const bool native_artifact_flag = (item.extra_flags & ITEM_ARTIFACT) != 0;
 	const bool native_unique_name = has_name_token(item.name, "unique") &&
 					!has_name_token(item.name, "powerunique");
 	out << ",\"native_artifact_flag\":" << (native_artifact_flag ? "true" : "false");

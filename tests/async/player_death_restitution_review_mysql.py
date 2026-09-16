@@ -53,6 +53,7 @@ def main():
     db.run("INSERT INTO player_death_custody(pid,save_revision,item_uid,root_item_uid,"
            "parent_item_uid,item_revision,vnum,state,owner_type,owner_id,owner_context_id,owner_revision) "
            "VALUES(99,8,9004,9004,0,1,104,1,1,99,0,1)")
+    db.run("DELETE FROM player_items WHERE obj_uid=3000")
     try:
         artifacts = cli.fetch_artifacts(db, [104])
         assert any(r["item_uid"] == 9004 and r.get("source_table") == "player_death_custody"
@@ -63,14 +64,20 @@ def main():
                                   "--actor", "review-test", "--reason", "custody-only-competitor"],
                                  capture_output=True, text=True)
         assert attempt.returncode != 0 and "stale" in attempt.stderr.lower(), attempt.stderr
-        output = db.run(prepared_sql + "\nSELECT CONCAT('REVIEW_FENCE|',@artifact_ok,'|',@database_quiescent);")
-        assert any("REVIEW_FENCE|0|1" in cell for row in output for cell in row), output
+        output = db.run(prepared_sql)
+        assert any("DURIS_RESULT|0|" in cell for row in output for cell in row), output
         assert db.scalar("SELECT COUNT(*) FROM player_death_restitution_receipt") == "0"
         assert db.scalar("SELECT COUNT(*) FROM player_death_restitution_delivery") == "0"
         assert db.scalar("SELECT COUNT(*) FROM player_items WHERE obj_uid BETWEEN 1000 AND 1004") == "0"
         assert db.scalar("SELECT COUNT(*) FROM artifact_domain_state WHERE vnum=104") == "0"
     finally:
         db.run("DELETE FROM player_death_custody WHERE pid=99 AND save_revision=8 AND item_uid=9004")
+        db.run("INSERT INTO player_items(pid,vnum,equip_slot,container_id,quantity,weight,cost,timer,"
+               "extra_flags,wear_flags,item_type,value0,value1,value2,value3,value4,value5,value6,value7,"
+               "name,short_descr,description,action_descr,bitvector1,bitvector2,bitvector3,bitvector4,"
+               "bitvector5,item_material,obj_uid,item_condition) VALUES "
+               "(42,300,0,NULL,1,1,5,123,0,0,1,0,0,0,0,0,0,0,0,"
+               "'newer item','newer item','newer item','newer item',0,0,0,0,0,1,3000,99)")
     print("custody-only identity: inspection, stale-plan and real transaction refusal verified; zero recovery writes")
 
     # Empty PROCESSLIST is not proof of visibility. Require a verifiable direct

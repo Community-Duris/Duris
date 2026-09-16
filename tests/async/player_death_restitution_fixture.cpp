@@ -1,5 +1,6 @@
 #include "player/player_snapshot_codec.h"
 #include "core/files.h"
+#include "core/defines.h"
 #include "core/structs.h"
 #include "classes/necromancy.h"
 #include "world/vnum.obj.h"
@@ -113,7 +114,7 @@ player_snapshot death_snapshot(uint64_t revision, uint8_t operation_base, bool f
 	snapshot.death->corpse.push_back(item(1002, 102, 3, "child-C"));
 	snapshot.death->corpse.push_back(item(1003, 103, 2, "unique gloves"));
 	player_item_snapshot artifact = item(1004, 104, 0, "artifact blade");
-	artifact.extra_flags = UINT32_C(1) << 29;
+	artifact.extra_flags = ITEM_ARTIFACT;
 	artifact.timers = { 1700000100, 1700000101, 1700000102, 1700000103, 1700000104, 1700000105 };
 	artifact.parent_index = 2;
 	snapshot.death->corpse.push_back(artifact);

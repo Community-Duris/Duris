@@ -611,6 +611,8 @@ def fetch_custody(db: Mysql, pid: int, revision: int) -> list[dict[str, Any]]:
         if len(row) != 10:
             raise ToolError("death custody row has an unexpected shape")
         result.append({
+            "pid": pid,
+            "save_revision": revision,
             "item_uid": row_int(row, 0, "item UID", 1),
             "root_item_uid": row_int(row, 1, "root item UID", 1),
             "parent_item_uid": row_int(row, 2, "parent item UID", 0),
@@ -621,6 +623,54 @@ def fetch_custody(db: Mysql, pid: int, revision: int) -> list[dict[str, Any]]:
             "owner_id": row_int(row, 7, "owner ID", 0),
             "owner_context_id": row_int(row, 8, "owner context", 0),
             "owner_revision": row_int(row, 9, "owner revision", 0),
+        })
+    return result
+
+
+def fetch_custody_pairs(
+    db: Mysql, pairs: Iterable[tuple[int, int]]
+) -> dict[tuple[int, int], list[dict[str, Any]]]:
+    checked = sorted({
+        (
+            int_value(pid, "related custody pid", 1, 2**31 - 1),
+            int_value(revision, "related custody revision", 1, 2**64 - 1),
+        )
+        for pid, revision in pairs
+    })
+    if not checked:
+        return {}
+    clauses = [
+        "(pid=" + sql_num(pid, "related custody pid", 1, 2**31 - 1) +
+        " AND save_revision=" + sql_num(revision, "related custody revision", 1, 2**64 - 1) + ")"
+        for pid, revision in checked
+    ]
+    rows = db.run(
+        "SELECT pid,save_revision,item_uid,root_item_uid,COALESCE(parent_item_uid,0),"
+        "item_revision,vnum,state,owner_type,owner_id,owner_context_id,owner_revision "
+        "FROM player_death_custody WHERE " + " OR ".join(clauses) +
+        " ORDER BY pid,save_revision,item_uid"
+    )
+    result: dict[tuple[int, int], list[dict[str, Any]]] = {}
+    for row in rows:
+        if len(row) != 12:
+            raise ToolError("related death custody row has an unexpected shape")
+        pid = row_int(row, 0, "related custody pid", 1)
+        revision = row_int(row, 1, "related custody revision", 1)
+        if pid is None or revision is None:
+            raise ToolError("related death custody identity is missing")
+        result.setdefault((pid, revision), []).append({
+            "pid": pid,
+            "save_revision": revision,
+            "item_uid": row_int(row, 2, "related custody item UID", 1),
+            "root_item_uid": row_int(row, 3, "related custody root UID", 1),
+            "parent_item_uid": row_int(row, 4, "related custody parent UID", 0),
+            "expected_item_revision": row_int(row, 5, "related custody item revision", 0),
+            "vnum": row_int(row, 6, "related custody vnum", 1),
+            "expected_state": row_int(row, 7, "related custody state", 0),
+            "owner_type": row_int(row, 8, "related custody owner type", 0),
+            "owner_id": row_int(row, 9, "related custody owner ID", 0),
+            "owner_context_id": row_int(row, 10, "related custody context", 0),
+            "owner_revision": row_int(row, 11, "related custody owner revision", 0),
         })
     return result
 
@@ -921,30 +971,36 @@ def related_death_pairs(db: Mysql, source_pid: int, revision: int, uids: Iterabl
 def fetch_related_deaths(db: Mysql, source_pid: int, revision: int, uids: Iterable[int],
                          decode: Any) -> list[dict[str, Any]]:
     pairs = related_death_pairs(db, source_pid, revision, uids)
+    custody_by_pair = fetch_custody_pairs(db, pairs)
     clauses = [
         "(pid=" + sql_num(pid, "related death pid", 1, 2**31 - 1) +
         " AND save_revision=" + sql_num(rev, "related death revision", 1, 2**64 - 1) + ")"
         for pid, rev in pairs
     ]
     rows = db.run(
-        "SELECT pid,save_revision,HEX(operation_id),HEX(payload) FROM player_death_disposition WHERE " +
+        "SELECT pid,save_revision,HEX(operation_id),HEX(payload),"
+        "FLOOR(UNIX_TIMESTAMP(recorded_at)) FROM player_death_disposition WHERE " +
         " OR ".join(clauses) + " ORDER BY pid,save_revision"
     )
     result: list[dict[str, Any]] = []
     for row in rows:
-        if len(row) != 4:
+        if len(row) != 5:
             raise ToolError("related death row has an unexpected shape")
         pid = row_int(row, 0, "related death pid", 1)
         rev = row_int(row, 1, "related death revision", 1)
+        if pid is None or rev is None:
+            raise ToolError("related death identity is missing")
         operation_id_hex = (row_value(row, 2) or "").lower()
         payload_hex = row_value(row, 3)
         entry: dict[str, Any] = {
             "pid": pid,
             "save_revision": rev,
             "operation_id_hex": operation_id_hex,
+            "loss_epoch": row_int(row, 4, "related death recorded epoch", 1),
             "payload_uids": [],
             "payload_items": [],
             "payload_order": [],
+            "custody": custody_by_pair.get((pid, rev), []),
         }
         try:
             payload = hex_bytes(payload_hex, "related death payload")
@@ -1219,6 +1275,27 @@ def build_inspection(
     projections = fetch_player_projections(db, all_uids)
     recipient_uids = fetch_recipient_uids(db, recipient_pid)
     related = fetch_related_deaths(db, pid, revision, all_uids, decode_payload)
+    related_pairs = related_death_pairs(db, pid, revision, all_uids)
+    related_custody_by_pair = fetch_custody_pairs(db, related_pairs)
+    related_custody = [
+        row
+        for pair in sorted(related_custody_by_pair)
+        for row in related_custody_by_pair[pair]
+    ]
+    item_loss_epochs: dict[str, int] = {}
+    for item in payload_items[1:]:
+        item_loss_epochs[str(item["object_uid"])] = death["loss_epoch"]
+    for related_death in related:
+        related_loss_epoch = related_death.get("loss_epoch")
+        if related_loss_epoch is None:
+            continue
+        for item in related_death.get("payload_items", []):
+            uid_text = str(item["object_uid"])
+            prior_loss_epoch = item_loss_epochs.get(uid_text)
+            if prior_loss_epoch is not None and prior_loss_epoch != related_loss_epoch:
+                errors.append("same UID has conflicting death-loss timestamps")
+            else:
+                item_loss_epochs[uid_text] = related_loss_epoch
     vnums = {item["vnum"] for item in payload_items[1:]}
     for related_death in related:
         for item in related_death.get("payload_items", []):
@@ -1235,6 +1312,10 @@ def build_inspection(
             "death_revision": revision,
             "operation_id_hex": death["operation_id_hex"],
             "corpse_item_uid": death["corpse_item_uid"],
+            "corpse_room_vnum": death["corpse_room_vnum"],
+            "wallet_revision": death["wallet_revision"],
+            "wallet_before": death["wallet_before"],
+            "wallet_pile_uid": death["wallet_pile_uid"],
             "loss_epoch": death["loss_epoch"],
         },
         "recipient_pid": recipient_pid,
@@ -1246,6 +1327,8 @@ def build_inspection(
         "player_projections": projections,
         "recipient_existing_uids": sorted(set(recipient_uids)),
         "related_deaths": related,
+        "related_custody": related_custody,
+        "item_loss_epochs": item_loss_epochs,
         "deliveries": deliveries,
         "artifacts": artifacts,
         "consistency_errors": sorted(set(errors)),
@@ -1342,13 +1425,58 @@ def payload_item_maps(inspection: dict[str, Any]) -> tuple[dict[str, dict[str, A
     return item_by_uid, custody_by_uid, payload_parent, payload_root
 
 
+def normalize_artifact_timing_compensations(
+    value: Mapping[Any, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ToolError("artifact timing compensations must be a UID-keyed mapping")
+    result: dict[str, dict[str, Any]] = {}
+    for raw_uid, raw_compensation in value.items():
+        uid = int_value(raw_uid, "artifact compensation UID", 1, 2**64 - 1)
+        if not isinstance(raw_compensation, Mapping):
+            raise ToolError("artifact compensation must contain seconds and approval")
+        seconds = int_value(
+            raw_compensation.get("seconds"),
+            "artifact compensation lifetime",
+            1,
+            MAX_ARTIFACT_COMPENSATION_SECONDS,
+        )
+        approval = raw_compensation.get("approval")
+        if not isinstance(approval, str) or not re.fullmatch(
+            r"[A-Za-z0-9_.:/()\[\], -]{1,255}", approval.strip()
+        ):
+            raise ToolError("artifact timing compensation requires a non-secret approval reference")
+        uid_text = str(uid)
+        if uid_text in result:
+            raise ToolError("duplicate artifact timing compensation UID")
+        result[uid_text] = {"seconds": seconds, "approval": approval.strip()}
+    return result
+
+
+def parse_artifact_timing_compensation_specs(
+    specs: Iterable[str],
+) -> dict[str, dict[str, Any]]:
+    parsed: dict[str, dict[str, Any]] = {}
+    for spec in specs:
+        if not isinstance(spec, str) or "=" not in spec or ":" not in spec:
+            raise ToolError("artifact timing compensation must be UID=SECONDS:APPROVAL")
+        uid_text, remainder = spec.split("=", 1)
+        seconds_text, approval = remainder.split(":", 1)
+        uid = int_value(uid_text, "artifact compensation UID", 1, 2**64 - 1)
+        if str(uid) in parsed:
+            raise ToolError("duplicate artifact timing compensation UID")
+        parsed[str(uid)] = {"seconds": seconds_text, "approval": approval}
+    return normalize_artifact_timing_compensations(parsed)
+
+
 def plan_from_inspection(
     inspection: dict[str, Any], approve_artifact_reconciliation: bool = False,
     *, target_info: Mapping[str, Any] | None = None,
     backup_receipt: Mapping[str, Any] | None = None,
     approve_production: bool = False,
-    artifact_timing_compensation_seconds: int | None = None,
-    artifact_timing_approval: str | None = None,
+    artifact_timing_compensations: Mapping[Any, Any] | None = None,
 ) -> dict[str, Any]:
     inspection_target = inspection.get("target")
     target: dict[str, Any] | None = None
@@ -1362,20 +1490,7 @@ def plan_from_inspection(
     production = bool(target and target["production"])
     if approve_production and not production:
         raise ToolError("production approval requires a production-classified target")
-    if artifact_timing_compensation_seconds is not None:
-        artifact_timing_compensation_seconds = int_value(
-            artifact_timing_compensation_seconds,
-            "artifact compensation lifetime",
-            1,
-            MAX_ARTIFACT_COMPENSATION_SECONDS,
-        )
-        if not isinstance(artifact_timing_approval, str) or not re.fullmatch(
-            r"[A-Za-z0-9_.:/()\[\], -]{1,255}", artifact_timing_approval.strip()
-        ):
-            raise ToolError("artifact timing compensation requires a non-secret approval reference")
-        artifact_timing_approval = artifact_timing_approval.strip()
-    elif artifact_timing_approval is not None:
-        raise ToolError("artifact timing approval requires an explicit compensation lifetime")
+    timing_compensations = normalize_artifact_timing_compensations(artifact_timing_compensations)
     boundary: dict[str, str] | None = None
     if target_info is not None and target_info.get("maintenance_boundary") is not None:
         boundary = maintenance_record(
@@ -1439,6 +1554,7 @@ def plan_from_inspection(
     custody_only = sorted(set(custody_by_uid) - set(payload_order), key=int)
     ordered_uids = payload_order + custody_only
     plans: list[dict[str, Any]] = []
+    used_timing_compensations: set[str] = set()
     global_errors = list(inspection.get("consistency_errors", []))
     for uid_text in ordered_uids:
         item = item_by_uid.get(uid_text)
@@ -1456,6 +1572,12 @@ def plan_from_inspection(
             "delivered_root_item_uid": 0,
             "delivered_parent_item_uid": 0,
             "source_item_revision": 0,
+            "custody_expected_item_revision": 0,
+            "custody_expected_state": 0,
+            "custody_owner_type": 0,
+            "custody_owner_id": 0,
+            "custody_owner_context_id": 0,
+            "custody_owner_revision": 0,
             "expected_current": None,
             "note": "",
         }
@@ -1472,6 +1594,12 @@ def plan_from_inspection(
             plans.append(candidate)
             continue
         candidate["source_item_revision"] = custody["expected_item_revision"]
+        candidate["custody_expected_item_revision"] = custody["expected_item_revision"]
+        candidate["custody_expected_state"] = custody["expected_state"]
+        candidate["custody_owner_type"] = custody["owner_type"]
+        candidate["custody_owner_id"] = custody["owner_id"]
+        candidate["custody_owner_context_id"] = custody["owner_context_id"]
+        candidate["custody_owner_revision"] = custody["owner_revision"]
         candidate["source_root_item_uid"] = custody["root_item_uid"]
         candidate["source_parent_item_uid"] = custody["parent_item_uid"]
         if item is None:
@@ -1623,7 +1751,8 @@ def plan_from_inspection(
             )
         if candidate["kind"] == "artifact":
             reconciliation = artifact_reconciliation(
-                item, pid, artifacts, owner, inspection["source"].get("loss_epoch")
+                item, pid, artifacts, owner,
+                inspection.get("item_loss_epochs", {}).get(uid_text, inspection["source"].get("loss_epoch"))
             )
             if not reconciliation["ok"]:
                 candidate["classification"] = reconciliation["classification"]
@@ -1651,10 +1780,17 @@ def plan_from_inspection(
                     MAX_ARTIFACT_COMPENSATION_SECONDS,
                 )
                 compensation_reference = ""
-            elif artifact_timing_compensation_seconds is not None:
+            elif uid_text in timing_compensations:
+                compensation = timing_compensations[uid_text]
                 timing_basis = "approved_compensation"
-                usable_lifetime = artifact_timing_compensation_seconds
-                compensation_reference = artifact_timing_approval or ""
+                usable_lifetime = int_value(
+                    compensation["seconds"],
+                    "artifact compensation lifetime",
+                    1,
+                    MAX_ARTIFACT_COMPENSATION_SECONDS,
+                )
+                compensation_reference = compensation["approval"]
+                used_timing_compensations.add(uid_text)
             else:
                 classification = (
                     "artifact_timing_expired_at_loss"
@@ -1737,8 +1873,13 @@ def plan_from_inspection(
         row for row in plans
         if row.get("eligible") and row.get("artifact_timing", {}).get("basis") == "approved_compensation"
     ]
-    if artifact_timing_compensation_seconds is not None and not timing_compensation_items:
-        raise ToolError("artifact timing compensation was supplied but no artifact requires it")
+    used_timing_compensations = {str(row["item_uid"]) for row in timing_compensation_items}
+    unused_timing_compensations = set(timing_compensations) - used_timing_compensations
+    if unused_timing_compensations:
+        raise ToolError(
+            "artifact timing compensation supplied for a UID without missing/expired timing: " +
+            ",".join(sorted(unused_timing_compensations, key=int))
+        )
     body: dict[str, Any] = {
         "artifact_version": TOOL_VERSION,
         "kind": "death_restitution_plan",
@@ -1758,11 +1899,9 @@ def plan_from_inspection(
         "artifact_reconciliation_count": len(reconciliation_items),
         "artifact_reconciliation_approved": bool(approve_artifact_reconciliation),
         "artifact_timing_compensation_count": len(timing_compensation_items),
-        "artifact_timing_compensation_seconds": (
-            artifact_timing_compensation_seconds if timing_compensation_items else None
-        ),
-        "artifact_timing_compensation_approval": (
-            artifact_timing_approval if timing_compensation_items else None
+        "artifact_timing_compensations": (
+            {uid: timing_compensations[uid] for uid in sorted(used_timing_compensations, key=int)}
+            if timing_compensation_items else {}
         ),
         "artifact_timing_compensation_approved": bool(timing_compensation_items),
         "production_approval_required": production,
@@ -1774,6 +1913,10 @@ def plan_from_inspection(
         ),
         "consistency_errors": global_errors,
         "recipient_existing_uids": inspection.get("recipient_existing_uids", []),
+        "custody_evidence": inspection.get("custody_db", []),
+        "related_custody": inspection.get("related_custody", []),
+        "related_deaths": inspection.get("related_deaths", []),
+        "item_loss_epochs": inspection.get("item_loss_epochs", {}),
     }
     if target is not None:
         body["target"] = target
@@ -1823,6 +1966,7 @@ def load_plan(path: Path) -> dict[str, Any]:
     )
     if hashlib.sha256(material).digest()[:16].hex() != rid:
         raise ToolError("protected artifact restitution identity does not match its plan")
+    validate_artifact_timing_compensations(value)
     plan_target = value.get("target")
     if plan_target is not None:
         plan_target = target_record(plan_target, label="plan target")
@@ -1846,6 +1990,41 @@ def load_plan(path: Path) -> dict[str, Any]:
         elif value.get("production_approved") is True:
             raise ToolError("non-production plan cannot carry production approval")
     return value
+
+
+def validate_artifact_timing_compensations(plan: Mapping[str, Any]) -> None:
+    raw = plan.get("artifact_timing_compensations", {})
+    compensations = normalize_artifact_timing_compensations(raw)
+    count = int_value(plan.get("artifact_timing_compensation_count", 0),
+                      "artifact timing compensation count", 0)
+    if count != len(compensations):
+        raise ToolError("artifact timing compensation count does not match its UID map")
+    items = plan.get("items")
+    if not isinstance(items, list):
+        raise ToolError("plan has no item candidates")
+    approved_uids: set[str] = set()
+    for item in items:
+        if not isinstance(item, dict) or not item.get("eligible") or item.get("kind") != "artifact":
+            continue
+        uid = str(int_value(item.get("item_uid"), "planned artifact UID", 1, 2**64 - 1))
+        timing = item.get("artifact_timing")
+        if not isinstance(timing, dict):
+            continue
+        if timing.get("basis") != "approved_compensation":
+            continue
+        approved_uids.add(uid)
+        compensation = compensations.get(uid)
+        if compensation is None:
+            raise ToolError("approved artifact timing is missing its UID compensation")
+        if (
+            compensation["seconds"] != int_value(
+                timing.get("usable_lifetime_seconds"), "artifact usable lifetime", 1,
+                MAX_ARTIFACT_COMPENSATION_SECONDS,
+            ) or compensation["approval"] != timing.get("compensation_reference")
+        ):
+            raise ToolError("artifact timing compensation does not match the planned UID")
+    if approved_uids != set(compensations):
+        raise ToolError("artifact timing compensation UID map does not match planned artifacts")
 
 
 # ---------- quiescence and apply ----------
@@ -2037,6 +2216,7 @@ def check_quiescence(db: Mysql, proof_path: Path) -> None:
 
 
 def eligible_items(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    validate_artifact_timing_compensations(plan)
     rows = [row for row in plan.get("items", []) if row.get("eligible") is True]
     if not rows:
         raise ToolError("plan contains no exact-state recoverable items")
@@ -2091,6 +2271,21 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
     if not re.fullmatch(r"[A-Za-z0-9_.@:/()\[\], -]{1,255}", reason):
         raise ToolError("reason contains unsupported characters")
 
+    custody_evidence = plan.get("custody_evidence", [])
+    related_custody = plan.get("related_custody", [])
+    related_deaths = plan.get("related_deaths", [])
+    if not isinstance(custody_evidence, list) or not isinstance(related_custody, list) or not isinstance(related_deaths, list):
+        raise ToolError("plan is missing structured custody/death evidence")
+    if len(custody_evidence) > 3000 or len(related_custody) > 10000 or len(related_deaths) > 1000:
+        raise ToolError("plan exceeds the supported evidence bound")
+    expected_owner_revisions = {
+        int_value(row["expected_current"]["owner_revision"], "current owner revision", 0, 2**64 - 1)
+        for row in eligible
+    }
+    if len(expected_owner_revisions) != 1:
+        raise ToolError("eligible items do not share one source owner revision")
+    expected_owner_revision = next(iter(expected_owner_revisions))
+
     lines = [
         "SET autocommit=0;",
         "START TRANSACTION;",
@@ -2105,8 +2300,16 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "expected_item_revision BIGINT UNSIGNED NOT NULL,"
         "expected_owner_revision BIGINT UNSIGNED NOT NULL,"
         "expected_state TINYINT UNSIGNED NOT NULL,"
+        "custody_item_revision BIGINT UNSIGNED NOT NULL,"
+        "custody_state TINYINT UNSIGNED NOT NULL,"
+        "custody_owner_type TINYINT UNSIGNED NOT NULL,"
+        "custody_owner_id BIGINT UNSIGNED NOT NULL,"
+        "custody_owner_context_id BIGINT UNSIGNED NOT NULL,"
+        "custody_owner_revision BIGINT UNSIGNED NOT NULL,"
         "vnum INT NOT NULL,metadata_digest BINARY(32) NOT NULL,"
         "metadata_payload MEDIUMBLOB NOT NULL) ENGINE=InnoDB;",
+        "CREATE TEMPORARY TABLE restitution_existing_inventory ("
+        "item_uid BIGINT UNSIGNED NOT NULL PRIMARY KEY) ENGINE=InnoDB;",
     ]
     temp_values: list[str] = []
     for row in eligible:
@@ -2122,11 +2325,31 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
             sql_num(current["item_revision"], "current item revision", 0, 2**64 - 1),
             sql_num(current["owner_revision"], "current owner revision", 0, 2**64 - 1),
             sql_num(current["state"], "current item state", 0, 255),
+            sql_num(row.get("custody_expected_item_revision", current["item_revision"]), "custody item revision", 0, 2**64 - 1),
+            sql_num(row.get("custody_expected_state", current["state"]), "custody state", 0, 255),
+            sql_num(row.get("custody_owner_type", OWNER_PLAYER), "custody owner type", 0, 255),
+            sql_num(row.get("custody_owner_id", source_pid), "custody owner ID", 0, 2**64 - 1),
+            sql_num(row.get("custody_owner_context_id", 0), "custody owner context", 0, 2**64 - 1),
+            sql_num(row.get("custody_owner_revision", current["owner_revision"]), "custody owner revision", 0, 2**64 - 1),
             sql_num(row["vnum"], "item vnum", 1, 2**31 - 1),
             sql_blob(row["metadata_digest"], "metadata digest"),
             sql_blob(row["metadata_payload_hex"], "metadata payload"),
         ]) + ")")
-    lines.append("INSERT INTO restitution_apply_items VALUES " + ",".join(temp_values) + ";")
+    lines.append(
+        "INSERT INTO restitution_apply_items(item_uid,delivered_root_item_uid,delivered_parent_item_uid,"
+        "expected_root_item_uid,expected_parent_item_uid,expected_item_revision,expected_owner_revision,expected_state,"
+        "custody_item_revision,custody_state,custody_owner_type,custody_owner_id,custody_owner_context_id,"
+        "custody_owner_revision,vnum,metadata_digest,metadata_payload) VALUES " + ",".join(temp_values) + ";"
+    )
+    existing_uids = sorted({
+        int_value(uid, "existing recipient UID", 1, 2**64 - 1)
+        for uid in plan.get("recipient_existing_uids", [])
+    })
+    if existing_uids:
+        lines.append(
+            "INSERT INTO restitution_existing_inventory(item_uid) VALUES " +
+            ",".join("(" + sql_num(uid, "existing recipient UID", 1, 2**64 - 1) + ")" for uid in existing_uids) + ";"
+        )
     lines.append(
         f"SELECT GET_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION},0) INTO @restitution_lock;"
     )
@@ -2134,6 +2357,140 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         f"SET @restitution_owner=(IFNULL(IS_USED_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION}),0)=CONNECTION_ID());"
     )
     lines.append("SET @restitution_ok=(@restitution_lock=1 AND @restitution_owner=1);")
+    lines.append(
+        "SELECT pid,save_revision FROM player_death_disposition WHERE pid=" + str(source_pid) +
+        " AND save_revision=" + str(death_revision) + " FOR UPDATE;"
+    )
+    lines.append(
+        "SET @death_lock_ok=((SELECT COUNT(*) FROM player_death_disposition WHERE pid=" + str(source_pid) +
+        " AND save_revision=" + str(death_revision) + ")=1);"
+    )
+    lines.append(
+        "SELECT pid,save_revision,item_uid FROM player_death_custody WHERE pid=" + str(source_pid) +
+        " AND save_revision=" + str(death_revision) + " FOR UPDATE;"
+    )
+    lines.append(
+        "SET @source_custody_ok=((SELECT COUNT(*) FROM player_death_custody WHERE pid=" +
+        str(source_pid) + " AND save_revision=" + str(death_revision) + ")=" +
+        str(len(custody_evidence)) + ");"
+    )
+    for evidence in custody_evidence:
+        if not isinstance(evidence, dict):
+            raise ToolError("source custody evidence has an invalid row")
+        lines.append(
+            "SET @source_custody_ok=@source_custody_ok AND (SELECT COUNT(*) FROM player_death_custody WHERE "
+            "pid=" + sql_num(evidence["pid"], "custody pid", 1, 2**31 - 1) +
+            " AND save_revision=" + sql_num(evidence["save_revision"], "custody revision", 1, 2**64 - 1) +
+            " AND item_uid=" + sql_num(evidence["item_uid"], "custody UID", 1, 2**64 - 1) +
+            " AND root_item_uid=" + sql_num(evidence["root_item_uid"], "custody root", 1, 2**64 - 1) +
+            " AND parent_item_uid=" + sql_num(evidence.get("parent_item_uid", 0), "custody parent", 0, 2**64 - 1) +
+            " AND item_revision=" + sql_num(evidence["expected_item_revision"], "custody item revision", 0, 2**64 - 1) +
+            " AND vnum=" + sql_num(evidence["vnum"], "custody vnum", 1, 2**31 - 1) +
+            " AND state=" + sql_num(evidence["expected_state"], "custody state", 0, 255) +
+            " AND owner_type=" + sql_num(evidence["owner_type"], "custody owner type", 0, 255) +
+            " AND owner_id=" + sql_num(evidence["owner_id"], "custody owner ID", 0, 2**64 - 1) +
+            " AND owner_context_id=" + sql_num(evidence["owner_context_id"], "custody context", 0, 2**64 - 1) +
+            " AND owner_revision=" + sql_num(evidence["owner_revision"], "custody owner revision", 0, 2**64 - 1) + ")=1;"
+        )
+    related_pairs: set[tuple[int, int]] = {(source_pid, death_revision)}
+    for evidence in related_custody:
+        if not isinstance(evidence, dict):
+            raise ToolError("related custody evidence has an invalid row")
+        related_pairs.add((
+            int_value(evidence["pid"], "related custody pid", 1, 2**31 - 1),
+            int_value(evidence["save_revision"], "related custody revision", 1, 2**64 - 1),
+        ))
+    for evidence in related_deaths:
+        if not isinstance(evidence, dict):
+            raise ToolError("related death evidence has an invalid row")
+        related_pairs.add((
+            int_value(evidence["pid"], "related death pid", 1, 2**31 - 1),
+            int_value(evidence["save_revision"], "related death revision", 1, 2**64 - 1),
+        ))
+    related_pair_clauses = [
+        "(pid=" + sql_num(pid, "related custody pid", 1, 2**31 - 1) +
+        " AND save_revision=" + sql_num(revision, "related custody revision", 1, 2**64 - 1) + ")"
+        for pid, revision in sorted(related_pairs)
+    ]
+    lines.append(
+        "SELECT pid,save_revision,item_uid FROM player_death_custody WHERE " +
+        " OR ".join(related_pair_clauses) + " FOR UPDATE;"
+    )
+    unique_related_custody = {
+        (int(row["pid"]), int(row["save_revision"]), int(row["item_uid"]))
+        for row in related_custody
+    }
+    lines.append(
+        "SET @related_custody_ok=((SELECT COUNT(*) FROM player_death_custody WHERE " +
+        " OR ".join(related_pair_clauses) + ")=" + str(len(unique_related_custody)) + ");"
+    )
+    for evidence in related_custody:
+        lines.append(
+            "SET @related_custody_ok=@related_custody_ok AND (SELECT COUNT(*) FROM player_death_custody WHERE "
+            "pid=" + sql_num(evidence["pid"], "related custody pid", 1, 2**31 - 1) +
+            " AND save_revision=" + sql_num(evidence["save_revision"], "related custody revision", 1, 2**64 - 1) +
+            " AND item_uid=" + sql_num(evidence["item_uid"], "related custody UID", 1, 2**64 - 1) +
+            " AND root_item_uid=" + sql_num(evidence["root_item_uid"], "related custody root", 1, 2**64 - 1) +
+            " AND parent_item_uid=" + sql_num(evidence.get("parent_item_uid", 0), "related custody parent", 0, 2**64 - 1) +
+            " AND item_revision=" + sql_num(evidence["expected_item_revision"], "related custody item revision", 0, 2**64 - 1) +
+            " AND vnum=" + sql_num(evidence["vnum"], "related custody vnum", 1, 2**31 - 1) +
+            " AND state=" + sql_num(evidence["expected_state"], "related custody state", 0, 255) +
+            " AND owner_type=" + sql_num(evidence["owner_type"], "related custody owner type", 0, 255) +
+            " AND owner_id=" + sql_num(evidence["owner_id"], "related custody owner ID", 0, 2**64 - 1) +
+            " AND owner_context_id=" + sql_num(evidence["owner_context_id"], "related custody context", 0, 2**64 - 1) +
+            " AND owner_revision=" + sql_num(evidence["owner_revision"], "related custody owner revision", 0, 2**64 - 1) + ")=1;"
+        )
+    if related_deaths:
+        death_pair_clauses = []
+        for evidence in related_deaths:
+            if not isinstance(evidence, dict):
+                raise ToolError("related death evidence has an invalid row")
+            death_pair_clauses.append(
+                "(pid=" + sql_num(evidence["pid"], "related death pid", 1, 2**31 - 1) +
+                " AND save_revision=" + sql_num(evidence["save_revision"], "related death revision", 1, 2**64 - 1) + ")"
+            )
+        lines.append(
+            "SELECT pid,save_revision FROM player_death_disposition WHERE " +
+            " OR ".join(sorted(set(death_pair_clauses))) + " FOR UPDATE;"
+        )
+        lines.append("SET @related_death_ok=1;")
+        for evidence in related_deaths:
+            digest = evidence.get("payload_digest")
+            if not isinstance(digest, str):
+                raise ToolError("related death evidence has no payload digest")
+            lines.append(
+                "SET @related_death_ok=@related_death_ok AND (SELECT COUNT(*) FROM player_death_disposition WHERE "
+                "pid=" + sql_num(evidence["pid"], "related death pid", 1, 2**31 - 1) +
+                " AND save_revision=" + sql_num(evidence["save_revision"], "related death revision", 1, 2**64 - 1) +
+                " AND operation_id=" + sql_blob(evidence["operation_id_hex"], "related death operation") +
+                " AND SHA2(payload,256)=UPPER('" + digest.lower() + "') AND FLOOR(UNIX_TIMESTAMP(recorded_at))=" +
+                sql_num(evidence["loss_epoch"], "related death loss epoch", 1, 2**63 - 1) + ")=1;"
+            )
+    else:
+        lines.append("SET @related_death_ok=1;")
+    lines.append(
+        "SELECT item_uid FROM item_current_owner WHERE item_uid IN " +
+        sql_list([row["item_uid"] for row in eligible]) + " FOR UPDATE;"
+    )
+    lines.append(
+        "SELECT revision FROM item_owner_revision WHERE owner_type=1 AND owner_id=" + str(source_pid) +
+        " AND owner_context_id=0 FOR UPDATE;"
+    )
+    if existing_uids:
+        lines.append(
+            "SELECT pi.obj_uid FROM player_items pi JOIN restitution_existing_inventory e "
+            "ON e.item_uid=pi.obj_uid WHERE pi.pid=" + str(recipient_pid) + " FOR UPDATE;"
+        )
+        lines.append(
+            "SET @recipient_inventory_ok=((SELECT COUNT(*) FROM player_items pi JOIN restitution_existing_inventory e "
+            "ON e.item_uid=pi.obj_uid WHERE pi.pid=" + str(recipient_pid) + ")=" + str(len(existing_uids)) + ");"
+        )
+    else:
+        lines.append("SET @recipient_inventory_ok=1;")
+    lines.append(
+        "SELECT restitution_id FROM player_death_restitution_receipt WHERE restitution_id=" +
+        sql_blob(rid) + " FOR UPDATE;"
+    )
     lines.append("SET @restitution_completed=(SELECT COUNT(*) FROM player_death_restitution_receipt "
                  "WHERE restitution_id=" + sql_blob(rid) + " AND plan_digest=" + sql_blob(plan_digest) +
                  " AND evidence_digest=" + sql_blob(evidence_digest) + " AND status IN (2,3));")
@@ -2143,7 +2500,41 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "WHERE ID<>CONNECTION_ID())=0 AND (SELECT COUNT(*) FROM information_schema.innodb_trx "
         "WHERE trx_mysql_thread_id<>CONNECTION_ID())=0);"
     )
-    lines.append("SET @restitution_ok=@restitution_ok AND @database_quiescent;")
+    lines.append(
+        "SET @restitution_ok=@restitution_ok AND @database_quiescent AND @death_lock_ok="
+        "1 AND @source_custody_ok=1 AND @related_custody_ok=1 AND @related_death_ok=1 "
+        "AND @recipient_inventory_ok=1;"
+    )
+    artifact_vnums = sorted({
+        int_value(row["vnum"], "artifact vnum", 1, 2**31 - 1)
+        for row in eligible if row.get("kind") == "artifact"
+    })
+    for artifact_vnum in artifact_vnums:
+        vnum = sql_num(artifact_vnum, "artifact vnum", 1, 2**31 - 1)
+        # Lock every authority row, including the empty unique-key gap.  The
+        # subsequent predicates remain conditional fences for READ COMMITTED
+        # engines and make the expected row shape explicit.
+        artifact_tables = {"artifact_domain_state"}
+        for artifact_row in eligible:
+            if artifact_row.get("kind") != "artifact" or int_value(artifact_row["vnum"], "artifact vnum", 1) != artifact_vnum:
+                continue
+            artifact_decision = artifact_row.get("artifact_reconciliation") or {}
+            if artifact_row.get("artifact_reconciliation_required") or isinstance(
+                artifact_decision.get("baseline_before"), dict
+            ):
+                artifact_tables.add("artifact_domain_baseline")
+            if artifact_row.get("artifact_reconciliation_required") or isinstance(
+                artifact_row.get("artifact_bind_before"), dict
+            ):
+                artifact_tables.add("artifact_bind")
+            artifact_tables.update(
+                "artifacts_mortal" if name == "mortal" else "artifacts"
+                for name in artifact_row.get("artifact_legacy_before", {})
+            )
+        for table in sorted(artifact_tables):
+            lines.append("SELECT vnum FROM " + table + " WHERE vnum=" + vnum + " FOR UPDATE;")
+        lines.append("SELECT item_uid FROM item_current_owner WHERE vnum=" + vnum + " FOR UPDATE;")
+        lines.append("SELECT item_uid FROM player_death_custody WHERE vnum=" + vnum + " AND state<>2 FOR UPDATE;")
     lines.append("SET @artifact_ok=1;")
     for row in eligible:
         if row.get("kind") != "artifact":
@@ -2155,6 +2546,7 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         if not isinstance(reconciliation, dict):
             raise ToolError("eligible artifact has no reconciliation evidence")
         domain = row.get("artifact_before")
+        domain_fence = ""
         if isinstance(domain, dict):
             domain_uid = domain.get("item_uid")
             domain_uid_fence = "item_uid IS NULL" if domain_uid is None else (
@@ -2242,7 +2634,16 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "SET @restitution_ok=@restitution_ok AND @restitution_collision=0;",
         "SET @death_ok=(SELECT COUNT(*) FROM player_death_disposition WHERE pid=" + str(source_pid) +
         " AND save_revision=" + str(death_revision) + " AND operation_id=" + sql_blob(death_operation) +
-        " AND SHA2(payload,256)=UPPER('" + payload_digest.hex() + "'));",
+        " AND corpse_item_uid=" + sql_num(plan["source"].get("corpse_item_uid", 1), "corpse UID", 1, 2**64 - 1) +
+        " AND corpse_room_vnum=" + sql_num(plan["source"].get("corpse_room_vnum", 1), "corpse room", 1, 2**31 - 1) +
+        " AND wallet_revision=" + sql_num(plan["source"].get("wallet_revision", 1), "wallet revision", 1, 2**64 - 1) +
+        " AND wallet_pile_uid=" + sql_num(plan["source"].get("wallet_pile_uid", 0), "wallet UID", 0, 2**64 - 1) +
+        " AND wallet_copper=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[0], "wallet copper") +
+        " AND wallet_silver=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[1], "wallet silver") +
+        " AND wallet_gold=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[2], "wallet gold") +
+        " AND wallet_platinum=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[3], "wallet platinum") +
+        " AND SHA2(payload,256)=UPPER('" + payload_digest.hex() + "') AND FLOOR(UNIX_TIMESTAMP(recorded_at))=" +
+        sql_num(plan["source"].get("loss_epoch", 1), "source loss epoch", 1, 2**63 - 1) + ");",
         "SET @owner_ok=(SELECT COUNT(*) FROM item_current_owner own JOIN restitution_apply_items p "
         "ON p.item_uid=own.item_uid LEFT JOIN item_owner_revision r ON r.owner_type=own.owner_type "
         "AND r.owner_id=own.owner_id AND r.owner_context_id=own.owner_context_id WHERE "
@@ -2251,19 +2652,31 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "AND own.item_revision=p.expected_item_revision AND own.state=p.expected_state "
         "AND COALESCE(r.revision,0)=p.expected_owner_revision AND own.vnum=p.vnum);",
         "SET @parent_ok=(SELECT COUNT(*) FROM restitution_apply_items p WHERE p.delivered_parent_item_uid=0 OR "
-        "EXISTS(SELECT 1 FROM item_current_owner parent WHERE parent.item_uid=p.delivered_parent_item_uid "
+        "EXISTS(SELECT 1 FROM item_current_owner parent JOIN restitution_apply_items pp "
+        "ON pp.item_uid=p.delivered_parent_item_uid WHERE parent.item_uid=pp.item_uid "
         "AND parent.owner_type=1 AND parent.owner_id=" + str(source_pid) +
-        " AND parent.owner_context_id=0 AND parent.state=3));",
+        " AND parent.owner_context_id=0 AND parent.root_item_uid=pp.expected_root_item_uid "
+        "AND COALESCE(parent.parent_item_uid,0)=pp.expected_parent_item_uid "
+        "AND parent.item_revision=pp.expected_item_revision AND parent.state=pp.expected_state "
+        "AND pp.expected_state=3));",
         "SET @revision_ok=(SELECT COUNT(*) FROM item_owner_revision WHERE owner_type=1 AND owner_id=" +
-        str(source_pid) + " AND owner_context_id=0 AND revision=(SELECT MIN(expected_owner_revision) "
-        "FROM restitution_apply_items));",
+        str(source_pid) + " AND owner_context_id=0 AND revision=" + str(expected_owner_revision) + ");",
+        "SELECT d.item_uid FROM player_death_restitution_delivery d JOIN restitution_apply_items p "
+        "ON p.item_uid=d.item_uid FOR UPDATE;",
         "SET @delivery_ok=(SELECT COUNT(*) FROM player_death_restitution_delivery d JOIN restitution_apply_items p "
         "ON p.item_uid=d.item_uid);",
+        "SELECT pi.id,pi.obj_uid FROM player_items pi JOIN restitution_apply_items p "
+        "ON p.item_uid=pi.obj_uid FOR UPDATE;",
         "SET @projection_ok=(SELECT COUNT(*) FROM player_items pi JOIN restitution_apply_items p "
         "ON p.item_uid=pi.obj_uid);",
         "SET @restitution_ok=@restitution_ok AND @artifact_ok=1 AND (@restitution_completed=1 OR "
         "(@death_ok=1 AND @owner_ok=" + str(n) + " AND @parent_ok=" + str(n) +
         " AND @revision_ok=1 AND @delivery_ok=0 AND @projection_ok=0));",
+        "SET @receipt_inserted=0,@receipt_items_inserted=0,@player_rows_inserted=0,"
+        "@delivery_rows_inserted=0,@runtime_rows_inserted=0,@affect_rows_inserted=0,"
+        "@description_rows_inserted=0,@owner_revision_updated=0,@owner_rows_updated=0,"
+        "@artifact_domain_rows_updated=0,@artifact_domain_rows_inserted=0,"
+        "@artifact_baseline_rows_inserted=0,@artifact_legacy_rows_updated=0;",
         "INSERT INTO player_death_restitution_receipt(restitution_id,source_pid,death_revision,recipient_pid,"
         "death_operation_id,evidence_digest,plan_digest,status,actor,reason,candidate_count,delivered_count,"
         "unresolved_count,applied_at) SELECT " + sql_blob(rid) + "," + str(source_pid) + "," +
@@ -2271,6 +2684,7 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         sql_blob(evidence_digest) + "," + sql_blob(plan_digest) + ",2," + sql_text(actor, "actor") + "," +
         sql_text(reason, "reason") + "," + str(len(all_items)) + "," + str(n) + "," +
         str(len(all_items) - n) + ",CURRENT_TIMESTAMP(6) WHERE @restitution_ok=1 AND @restitution_completed=0;",
+        "SET @receipt_inserted=@receipt_inserted+ROW_COUNT();",
     ])
 
     for row in all_items:
@@ -2329,15 +2743,21 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
             artifact_delivered_timer + "," + artifact_basis + "," + artifact_compensation_reference +
             " WHERE @restitution_ok=1 AND @restitution_completed=0;"
         )
+        lines.append("SET @receipt_items_inserted=@receipt_items_inserted+ROW_COUNT();")
 
     lines.extend([
         "UPDATE item_owner_revision SET revision=revision+1 WHERE @restitution_ok=1 AND @restitution_completed=0 "
         "AND owner_type=1 AND owner_id=" + str(source_pid) + " AND owner_context_id=0 "
-        "AND revision=(SELECT MIN(expected_owner_revision) FROM restitution_apply_items);",
+        "AND revision=" + str(expected_owner_revision) + ";",
+        "SET @owner_revision_updated=ROW_COUNT();",
         "UPDATE item_current_owner own JOIN restitution_apply_items p ON p.item_uid=own.item_uid SET "
         "own.root_item_uid=p.delivered_root_item_uid,own.parent_item_uid=IF(p.delivered_parent_item_uid=0,NULL,p.delivered_parent_item_uid),"
         "own.owner_type=1,own.owner_id=" + str(recipient_pid) + ",own.owner_context_id=0,own.item_revision=own.item_revision+1,own.state=1 "
-        "WHERE @restitution_ok=1 AND @restitution_completed=0;",
+        "WHERE @restitution_ok=1 AND @restitution_completed=0 AND own.owner_type=1 AND own.owner_id=" + str(source_pid) +
+        " AND own.owner_context_id=0 AND own.root_item_uid=p.expected_root_item_uid "
+        "AND COALESCE(own.parent_item_uid,0)=p.expected_parent_item_uid AND own.item_revision=p.expected_item_revision "
+        "AND own.state=p.expected_state AND own.vnum=p.vnum;",
+        "SET @owner_rows_updated=ROW_COUNT();",
     ])
 
     variables: dict[int, str] = {}
@@ -2372,6 +2792,7 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
             "INSERT INTO player_items(" + columns + ") SELECT " + ",".join(row_values) +
             " WHERE @restitution_ok=1 AND @restitution_completed=0;"
         )
+        lines.append("SET @player_rows_inserted=@player_rows_inserted+ROW_COUNT();")
         lines.append("SET " + variables[uid] + "=LAST_INSERT_ID();")
         seen_affects: set[tuple[int, int]] = set()
         for affect in item["affects"]:
@@ -2384,6 +2805,7 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
                 "INSERT INTO player_item_affects(item_id,location,modifier) SELECT " + variables[uid] + "," +
                 str(pair[0]) + "," + str(pair[1]) + " WHERE @restitution_ok=1 AND @restitution_completed=0;"
             )
+            lines.append("SET @affect_rows_inserted=@affect_rows_inserted+ROW_COUNT();")
         seen_descriptions: set[tuple[bytes, bytes]] = set()
         for description in item["extra_descriptions"]:
             keyword = hex_bytes(description["keyword_hex"], "extra-description keyword")
@@ -2401,6 +2823,7 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
                 sql_blob(keyword, "extra-description keyword") + "," + sql_blob(text, "extra-description text") +
                 " WHERE @restitution_ok=1 AND @restitution_completed=0;"
             )
+            lines.append("SET @description_rows_inserted=@description_rows_inserted+ROW_COUNT();")
         payload = hex_bytes(item["item_payload_hex"], "item payload")
         metadata_digest = hex_bytes(row["metadata_digest"], "metadata digest")
         lines.append(
@@ -2412,11 +2835,13 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
                     "delivered item revision", 1, 2**64 - 1) + "," + variables[uid] + "," + sql_blob(metadata_digest) + "," +
             sql_blob(payload) + " WHERE @restitution_ok=1 AND @restitution_completed=0;"
         )
+        lines.append("SET @delivery_rows_inserted=@delivery_rows_inserted+ROW_COUNT();")
         lines.append(
             "INSERT INTO player_death_restitution_runtime(item_uid,recipient_pid,state_payload,state_digest) SELECT " +
             str(uid) + "," + str(recipient_pid) + "," + sql_blob(payload) + "," + sql_blob(metadata_digest) +
             " WHERE @restitution_ok=1 AND @restitution_completed=0;"
         )
+        lines.append("SET @runtime_rows_inserted=@runtime_rows_inserted+ROW_COUNT();")
         if row.get("kind") == "artifact":
             vnum = sql_num(item["vnum"], "artifact vnum", 1, 2**31 - 1)
             reconciliation = row["artifact_reconciliation"]
@@ -2442,8 +2867,9 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
                         sql_num(baseline_seed["opening_bind_owner_pid"], "artifact opening bind owner", -2**31, 2**31 - 1) + "," +
                         sql_num(baseline_seed["opening_bind_timer_epoch"], "artifact opening bind timer", -2**63, 2**63 - 1) + "," +
                         sql_num(baseline_seed["opening_revision"], "artifact opening revision", 0, 2**64 - 1) +
-                        " WHERE @restitution_ok=1 AND @restitution_completed=0;"
+                        " WHERE @restitution_ok=1 AND @restitution_completed=0 AND (SELECT COUNT(*) FROM artifact_domain_baseline WHERE vnum=" + vnum + ")=0;"
                     )
+                    lines.append("SET @artifact_baseline_rows_inserted=@artifact_baseline_rows_inserted+ROW_COUNT();")
                 lines.append(
                     "INSERT INTO artifact_domain_state(vnum,owned,loc_type,location,timer_epoch,artifact_type,"
                     "bind_owner_pid,bind_timer_epoch,item_uid,item_revision,revision) SELECT " + vnum +
@@ -2454,8 +2880,9 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
                     sql_num(seed["bind_timer_epoch"], "artifact bind timer", -2**63, 2**63 - 1) + "," +
                     str(uid) + "," + delivered_revision + "," +
                     str(int_value(seed.get("revision"), "artifact revision", 0, 2**64 - 2) + 1) +
-                    " WHERE @restitution_ok=1 AND @restitution_completed=0;"
+                    " WHERE @restitution_ok=1 AND @restitution_completed=0 AND (SELECT COUNT(*) FROM artifact_domain_state WHERE vnum=" + vnum + ")=0;"
                 )
+                lines.append("SET @artifact_domain_rows_inserted=@artifact_domain_rows_inserted+ROW_COUNT();")
             else:
                 if not isinstance(domain, dict):
                     raise ToolError("eligible artifact has no canonical state evidence")
@@ -2467,20 +2894,73 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
                     "UPDATE artifact_domain_state SET loc_type=3,location=" + str(recipient_pid) +
                     ",timer_epoch=" + artifact_timer_expr +
                     ",item_uid=" + str(uid) + ",item_revision=" + delivered_revision + ",revision=revision+1 WHERE @restitution_ok=1 "
-                    "AND @restitution_completed=0 AND vnum=" + vnum + " AND " + old_uid_fence +
-                    " AND owned=1 AND revision=" + sql_num(domain["revision"], "artifact revision", 0) + ";"
+                    "AND @restitution_completed=0 AND vnum=" + vnum + domain_fence + ";"
                 )
+                lines.append("SET @artifact_domain_rows_updated=@artifact_domain_rows_updated+ROW_COUNT();")
             for legacy_name in row.get("artifact_legacy_before", {}):
                 table = "artifacts_mortal" if legacy_name == "mortal" else "artifacts"
+                legacy = row["artifact_legacy_before"][legacy_name]
                 lines.append(
                     "UPDATE " + table + " SET locType=3,location=" + str(recipient_pid) +
-                    ",timer=FROM_UNIXTIME(" + artifact_timer_expr + "),lastUpdate=CURRENT_TIMESTAMP WHERE @restitution_ok=1 AND @restitution_completed=0 "
-                    "AND vnum=" + vnum + " AND owned='Y';"
+                    ",timer=FROM_UNIXTIME(" + artifact_timer_expr + "),lastUpdate=DATE_ADD(CURRENT_TIMESTAMP,INTERVAL 1 SECOND) WHERE @restitution_ok=1 AND @restitution_completed=0 "
+                    "AND vnum=" + vnum + " AND owned='Y' AND locType=" +
+                    sql_num(legacy["loc_type"], "legacy artifact location type", 0) +
+                    " AND location=" + sql_num(legacy["location"], "legacy artifact location", -2**31, 2**31 - 1) +
+                    " AND COALESCE(UNIX_TIMESTAMP(timer),0)=" + sql_num(legacy["timer"], "legacy artifact timer", 0) +
+                    " AND type=" + sql_num(legacy["artifact_type"], "legacy artifact type", 0) + ";"
                 )
+                lines.append("SET @artifact_legacy_rows_updated=@artifact_legacy_rows_updated+ROW_COUNT();")
+    expected_affects = 0
+    expected_descriptions = 0
+    for row in eligible:
+        item = row["metadata"]
+        expected_affects += len({
+            (int_value(affect[0], "affect location", -32768, 32767),
+             int_value(affect[1], "affect modifier", -32768, 32767))
+            for affect in item["affects"]
+            if (int_value(affect[0], "affect location", -32768, 32767),
+                int_value(affect[1], "affect modifier", -32768, 32767)) != (0, 0)
+        })
+        description_pairs: set[tuple[bytes, bytes]] = set()
+        for description in item["extra_descriptions"]:
+            keyword = hex_bytes(description["keyword_hex"], "extra-description keyword")
+            text = hex_bytes(description["description_hex"], "extra-description text")
+            if description.get("spellbook"):
+                keyword = b"SPELLBOOK"
+                text = ("[" + ",".join(str(int_value(value, "spell ID", -2**31, 2**31 - 1))
+                                            for value in description.get("spell_ids", [])) + "]").encode()
+            if keyword:
+                description_pairs.add((keyword, text))
+        expected_descriptions += len(description_pairs)
+    artifact_rows = [row for row in eligible if row.get("kind") == "artifact"]
+    expected_domain_inserts = sum(
+        1 for row in artifact_rows
+        if row.get("artifact_reconciliation_required") and not isinstance(row.get("artifact_before"), dict)
+    )
+    expected_domain_updates = len(artifact_rows) - expected_domain_inserts
+    expected_baseline_inserts = sum(
+        1 for row in artifact_rows
+        if row.get("artifact_reconciliation_required") and
+        not isinstance((row.get("artifact_reconciliation") or {}).get("baseline_before"), dict)
+    )
+    expected_legacy_updates = sum(len(row.get("artifact_legacy_before", {})) for row in artifact_rows)
     lines.extend([
         f"SET @restitution_owner=(IFNULL(IS_USED_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION}),0)=CONNECTION_ID());",
         "SET @restitution_ok=@restitution_ok AND @restitution_owner=1;",
-        "COMMIT;",
+        "SET @restitution_ok=@restitution_ok AND (@restitution_completed=1 OR ("
+        "@receipt_inserted=1 AND @receipt_items_inserted=" + str(len(all_items)) +
+        " AND @player_rows_inserted=" + str(n) + " AND @delivery_rows_inserted=" + str(n) +
+        " AND @runtime_rows_inserted=" + str(n) + " AND @affect_rows_inserted=" + str(expected_affects) +
+        " AND @description_rows_inserted=" + str(expected_descriptions) +
+        " AND @owner_revision_updated=1 AND @owner_rows_updated=" + str(n) +
+        " AND @artifact_domain_rows_inserted=" + str(expected_domain_inserts) +
+        " AND @artifact_domain_rows_updated=" + str(expected_domain_updates) +
+        " AND @artifact_baseline_rows_inserted=" + str(expected_baseline_inserts) +
+        " AND @artifact_legacy_rows_updated=" + str(expected_legacy_updates) + "));",
+        "SET @restitution_decision=IF(@restitution_ok=1,'COMMIT','ROLLBACK');",
+        "PREPARE restitution_decision_stmt FROM @restitution_decision;",
+        "EXECUTE restitution_decision_stmt;",
+        "DEALLOCATE PREPARE restitution_decision_stmt;",
         "SELECT CONCAT('DURIS_RESULT|',IFNULL(@restitution_ok,0),'|',IFNULL(@restitution_completed,0),'|',"
         "IFNULL(@restitution_lock,0),'|'," + str(n) + ");",
         f"DO RELEASE_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION});",
@@ -2496,6 +2976,7 @@ def apply_plan(
 ) -> str:
     if not plan.get("applyable"):
         raise ToolError("plan is not applyable; refused classifications or missing reconciliation approval remain")
+    validate_artifact_timing_compensations(plan)
     if policy is None:
         policy = getattr(db, "policy", None)
     plan_target = plan.get("target")
@@ -2561,8 +3042,7 @@ def apply_plan(
         ),
         backup_receipt=plan.get("backup_receipt"),
         approve_production=bool(plan.get("production_approved")),
-        artifact_timing_compensation_seconds=plan.get("artifact_timing_compensation_seconds"),
-        artifact_timing_approval=plan.get("artifact_timing_compensation_approval"),
+        artifact_timing_compensations=plan.get("artifact_timing_compensations"),
     )
     if fresh_plan["plan_digest"] != plan["plan_digest"] or fresh_plan["restitution_id_hex"] != plan["restitution_id_hex"]:
         raise ToolError("plan is stale: classification or selection changed")
@@ -2579,6 +3059,13 @@ def apply_plan(
         raise ToolError("database restitution lock could not be acquired")
     if not ok:
         raise ToolError("apply refused: current ownership or evidence fence did not match")
+    receipt_after = fetch_receipt(db, plan["restitution_id_hex"])
+    if receipt_after is None or receipt_after["status"] not in {RECEIPT_APPLIED, RECEIPT_VERIFIED}:
+        raise ToolError("apply transaction did not persist an applied restitution receipt")
+    if receipt_after["delivered_count"] != len(eligible_items(plan)):
+        raise ToolError("apply transaction receipt delivered count is inconsistent")
+    if len(fetch_delivery_rows(db, plan["restitution_id_hex"])) != len(eligible_items(plan)):
+        raise ToolError("apply transaction delivery rows are incomplete")
     if completed:
         return "already applied"
     return "applied"
@@ -2985,10 +3472,19 @@ def mark_verified(
         f"SELECT GET_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION},0) INTO @verify_lock; "
         f"SET @verify_owner=(IFNULL(IS_USED_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION}),0)=CONNECTION_ID()); "
         "SET @verify_ok=(@verify_lock=1 AND @verify_owner=1); "
+        "SET @verify_status=0; "
+        "SELECT status INTO @verify_status FROM player_death_restitution_receipt WHERE restitution_id=" + rid +
+        " FOR UPDATE; "
+        "SET @verify_ok=@verify_ok AND @verify_status IN (2,3); "
         "UPDATE player_death_restitution_receipt SET status=3,verified_at=CURRENT_TIMESTAMP(6) "
         "WHERE restitution_id=" + rid + " AND status=2 AND @verify_ok=1; "
+        "SET @verify_updated=ROW_COUNT(); "
         f"SET @verify_owner=(IFNULL(IS_USED_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION}),0)=CONNECTION_ID()); "
-        "SET @verify_ok=@verify_ok AND @verify_owner=1; COMMIT; "
+        "SET @verify_ok=@verify_ok AND @verify_owner=1 AND (@verify_updated=1 OR @verify_status=3); "
+        "SET @verify_decision=IF(@verify_ok=1,'COMMIT','ROLLBACK'); "
+        "PREPARE verify_decision_stmt FROM @verify_decision; "
+        "EXECUTE verify_decision_stmt; "
+        "DEALLOCATE PREPARE verify_decision_stmt; "
         "SELECT CONCAT('DURIS_GUARD_RESULT|',IFNULL(@verify_ok,0),'|',IFNULL(@verify_lock,0)); "
         f"DO RELEASE_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION});"
     )
@@ -3062,12 +3558,8 @@ def parser() -> argparse.ArgumentParser:
         help="explicitly approve evidence-backed canonical artifact identity reconciliation",
     )
     plan.add_argument(
-        "--artifact-timing-compensation-seconds", type=int,
-        help="approved remaining lifetime only when historical timing is unavailable",
-    )
-    plan.add_argument(
-        "--artifact-timing-approval",
-        help="non-secret approval reference required with timing compensation",
+        "--artifact-timing-compensation", action="append", default=[], metavar="UID=SECONDS:APPROVAL",
+        help="repeat per-artifact approved remaining lifetime when historical timing is unavailable",
     )
     plan.add_argument(
         "--target-info", required=False, type=Path,
@@ -3158,8 +3650,9 @@ def main(argv: list[str]) -> int:
             target_info=target_info,
             backup_receipt=backup_receipt,
             approve_production=args.approve_production,
-            artifact_timing_compensation_seconds=args.artifact_timing_compensation_seconds,
-            artifact_timing_approval=args.artifact_timing_approval,
+            artifact_timing_compensations=parse_artifact_timing_compensation_specs(
+                args.artifact_timing_compensation
+            ),
         )
         atomic_write_json(args.artifact, plan, args.overwrite)
         print("plan written: candidates=%d eligible=%d unresolved=%d applyable=%s plan_digest=%s" % (
