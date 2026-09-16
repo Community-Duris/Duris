@@ -771,6 +771,102 @@ bool decode_hex_payload(const char *text, std::vector<uint8_t> *payload)
 	return true;
 }
 
+bool decode_runtime_spellbook_json(const std::string &json, std::vector<int32_t> *spell_ids)
+{
+	if (!spell_ids)
+		return false;
+	spell_ids->clear();
+	std::array<bool, MAX_SKILLS> seen = {};
+	size_t position = 0;
+	auto skip_space = [&]()
+	{
+		while (position < json.size() && (json[position] == ' ' || json[position] == '	' ||
+						  json[position] == '\r' || json[position] == '\n'))
+			++position;
+	};
+	skip_space();
+	if (position >= json.size() || json[position++] != '[')
+		return false;
+	skip_space();
+	if (position < json.size() && json[position] == ']')
+	{
+		++position;
+		skip_space();
+		return position == json.size();
+	}
+	for (;;)
+	{
+		skip_space();
+		if (position >= json.size() || json[position] < '0' || json[position] > '9')
+			return false;
+		const size_t number_start = position;
+		uint64_t value = 0;
+		while (position < json.size() && json[position] >= '0' && json[position] <= '9')
+		{
+			const uint64_t digit = static_cast<unsigned int>(json[position++] - '0');
+			if (value > (static_cast<uint64_t>(MAX_SKILLS) - 1U - digit) / 10U)
+				return false;
+			value = value * 10U + digit;
+		}
+		if ((json[number_start] == '0' && position != number_start + 1) ||
+		    value >= static_cast<uint64_t>(MAX_SKILLS) || seen[value])
+			return false;
+		seen[value] = true;
+		spell_ids->push_back(static_cast<int32_t>(value));
+		skip_space();
+		if (position >= json.size())
+			return false;
+		if (json[position] == ']')
+		{
+			++position;
+			break;
+		}
+		if (json[position++] != ',')
+			return false;
+	}
+	skip_space();
+	return position == json.size();
+}
+
+bool decode_runtime_spellbook_bitmap(const std::vector<uint8_t> &bitmap,
+					      std::vector<int32_t> *spell_ids)
+{
+	if (!spell_ids)
+		return false;
+	constexpr size_t encoded_bytes = (MAX_SKILLS + 1) / 8 + 1;
+	const size_t valid_bytes = (MAX_SKILLS + 7) / 8;
+	if (bitmap.size() != encoded_bytes || valid_bytes == 0 || valid_bytes > bitmap.size())
+		return false;
+	if (MAX_SKILLS % 8 != 0)
+	{
+		const uint8_t valid_mask = static_cast<uint8_t>((1U << (MAX_SKILLS % 8)) - 1U);
+		if ((bitmap[valid_bytes - 1] & static_cast<uint8_t>(~valid_mask)) != 0)
+			return false;
+	}
+	for (size_t index = valid_bytes; index < bitmap.size(); ++index)
+		if (bitmap[index] != 0)
+			return false;
+	spell_ids->clear();
+	for (int spell = 0; spell < MAX_SKILLS; ++spell)
+		if ((bitmap[static_cast<size_t>(spell) / 8] &
+		     static_cast<uint8_t>(1U << (spell % 8))) != 0)
+			spell_ids->push_back(spell);
+	return true;
+}
+
+bool decode_runtime_spellbook(const std::string &keyword, const std::string &description,
+				      std::vector<int32_t> *spell_ids)
+{
+	if (sql_item_extra_descr_is_spellbook_marker(keyword.c_str()))
+	{
+		const std::vector<uint8_t> bitmap(description.begin(), description.end());
+		return decode_runtime_spellbook_bitmap(bitmap, spell_ids);
+	}
+	if (keyword == "SPELLBOOK")
+		return decode_runtime_spellbook_json(description, spell_ids);
+	return false;
+}
+
 bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t item_uid,
 					int64_t expected_vnum, player_item_snapshot *item)
 {
@@ -848,16 +944,23 @@ bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t i
 			};
 			std::string keyword = bytes_to_string(source.keyword);
 			std::string description = bytes_to_string(source.description);
-			// Keep the legacy raw marker compatible with the SQL loader's
-			// normalization path; native exports normally carry SPELLBOOK/JSON.
-			if (keyword.size() == 3 && keyword[0] == 3 && keyword[1] == 1 && keyword[2] == 3)
+			std::vector<int32_t> spell_ids;
+			const bool legacy_raw = sql_item_extra_descr_is_spellbook_marker(keyword.c_str());
+			const bool canonical = keyword == "SPELLBOOK";
+			if (legacy_raw || canonical)
 			{
+				// IST1 can carry either the captured native bitmap or the canonical
+				// JSON emitted from captured spell IDs. Decode both before publishing
+				// the snapshot; an incomplete bitmap or malformed JSON is unrecoverable
+				// and must not be turned into an empty spellbook.
+				if (!decode_runtime_spellbook(keyword, description, &spell_ids))
+					return false;
 				keyword = "SPELLBOOK";
-				description = "[]";
+				description.clear();
 			}
 			const bool spellbook = keyword == "SPELLBOOK";
 			converted.extra_descriptions.push_back(
-				{ std::move(keyword), std::move(description), spellbook, {} });
+				{ std::move(keyword), std::move(description), spellbook, std::move(spell_ids) });
 		}
 		*item = std::move(converted);
 	}
