@@ -4989,7 +4989,7 @@ static const char *tog_messages[][2] = {
 	  "You turn on the display of pet damage.\r\n" },
 	{ "You turn off the display of your guild name.\r\n",
 	  "You turn on the display of your guild name.\r\n" },
-	{ "&+WGMCP&N data streaming enabled.\r\n", "&+WGMCP&N data streaming disabled.\r\n" },
+	{ "&+WGMCP&N data streaming disabled.\r\n", "&+WGMCP&N data streaming enabled.\r\n" },
 	{ "Jchat channel: -=&+ROFF&n=-\r\n", "Jchat channel: -=&+GON&n=-\r\n" },
 	{ "Spell abort is disabled.\r\n", "Spell abort is enabled.\r\n" }
 };
@@ -5021,6 +5021,13 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 			var &= ~flag;
 	}
 	return res;
+}
+
+/* GMCP stores an opt-out bit, so return the effective enabled state for display. */
+static int gmcp_tog(unsigned int &flags, const char *arg)
+{
+	const int requested = plr_tog(flags, PLR3_NOGMCP, arg, 1);
+	return requested == -1 ? -1 : !(flags & PLR3_NOGMCP);
 }
 
 #define PLR_TOG(flag) plr_tog(PLR_FLAGS(ch), flag, arg)
@@ -5545,7 +5552,7 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		result = PLR3_TOG(PLR3_GUILDNAME);
 		break;
 	case 64: /* gmcp */
-		result = plr_tog(PLR3_FLAGS(ch), PLR3_NOGMCP, arg, 1);
+		result = gmcp_tog(PLR3_FLAGS(ch), arg);
 		break;
 	case 65: // jchat
 		result = plr_tog(PLR3_FLAGS(ch), PLR3_JESTROS, arg, 1);
