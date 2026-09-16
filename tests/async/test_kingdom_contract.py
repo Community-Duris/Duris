@@ -2136,6 +2136,13 @@ def test_store_gear_carries_no_effects_and_is_ordinary_property() -> None:
         "kingdom_craft_bind_token(GET_PID(buyer)" in body and "set_keywords(" in body,
         "every piece is stamped with its buyer's player-id mark, and still keyworded",
     )
+    # Gear circulates now, so the buyer's name as a keyword would answer to
+    # `get tyrus` or `sell tyrus` wherever the piece lay, ahead of any character
+    # or mob of that name.
+    check(
+        "GET_NAME(buyer)" not in body,
+        "the buyer's name is not a keyword on gear that can be given, looted and sold",
+    )
     # A shop refuses anything worth less than 1, so gear that is meant to sell
     # must carry a real cost -- and it comes from the arithmetic header, not a
     # number written out here.

@@ -20,9 +20,10 @@ and wood into the realm, then in the store lists and buys a pair of
 vambraces. It checks they were made at level 56 (Tyrus is above the cap) with
 the level-56 armour class and strength, that they are CRAFTED and STOREITEM
 but neither SOULBIND nor NOSELL, that they are worth 5,800 copper -- a tenth of
-the 58p they cost -- that their keywords carry the buyer's name but NOT the
-maker's mark (which lives in the action description, where no command reaches
-it), that the realm's stores fell by exactly the bill, and that Tyrus's
+the 58p they cost -- that their keywords carry neither the buyer's name nor the
+maker's mark (the mark lives in the action description, where no command
+reaches it, and a name there would answer to `get tyrus` wherever the piece
+lay), that the realm's stores fell by exactly the bill, and that Tyrus's
 platinum fell by the price while the treasury did not rise.
 
 Then who may wear it. Store gear binds to nobody (ruled 2026-09-16), so it is
@@ -540,7 +541,12 @@ def run(binary: pathlib.Path) -> None:
                 require(re.search(r"AC-apply:\s*10\b", stat) is not None, f"level-56 vambraces AC is not 10:\n{stat}")
                 require(re.search(r"Affects:\s*\S+\s+By\s+2\b", stat) is not None,
                         f"level-56 vambraces strength is not +2:\n{stat}")
-                require("tyrus" in stat.lower(), f"the keywords lack the buyer's name:\n{stat}")
+                # The buyer's name is not a keyword: gear circulates, so one
+                # would answer to `get tyrus` in front of Tyrus himself.
+                keywords_line = next((line for line in stat.splitlines() if "Keywords:" in line), "")
+                require(keywords_line != "", f"stat obj printed no keywords:\n{stat}")
+                require("tyrus" not in keywords_line.lower(),
+                        f"the buyer's name is still a keyword:\n{keywords_line}")
                 # The binding token is the piece's action description, which no
                 # command targets and `stat obj` does not print. What must be
                 # true here is that it is NOT among the keywords, where anyone

@@ -73,7 +73,14 @@ int main()
 	expect(kingdom_craft_resale_copper(10, 56, 1000, 100), 5800, "resale W1 L56 = 5800 copper");
 	expect(kingdom_craft_resale_copper(10, 10, 1000, 100), 1200, "resale W1 L10 = 1200 copper");
 	expect(kingdom_craft_resale_copper(20, 56, 1000, 100), 11600, "resale W2 L56");
-	expect(kingdom_craft_resale_copper(8, 56, 1000, 100), 4600, "resale W0.8 L56");
+	// Taken from the unrounded curve, so W0.8 at level 56 is 4,640 rather than
+	// a tenth of the rounded 46p.
+	expect(kingdom_craft_resale_copper(8, 56, 1000, 100), 4640, "resale W0.8 L56");
+	expect(kingdom_craft_resale_copper(8, 1, 1000, 100), 240, "resale W0.8 L1");
+	expect(kingdom_craft_resale_copper(10, 56, 1000, 10000), 580000,
+	       "resale at the permille cap");
+	expect(kingdom_craft_resale_copper(10, 1, 1000, 1), 3,
+	       "the smallest scale still rounds rather than falling to the floor");
 	expect(kingdom_craft_resale_copper(10, 62, 1000, 100), 5800, "resale at L62 is L56's");
 	expect(kingdom_craft_resale_copper(10, 56, 1000, 0), 0, "resale off is worth nothing");
 	expect(kingdom_craft_resale_copper(10, 56, 0, 100), 1,

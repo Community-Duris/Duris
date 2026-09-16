@@ -697,8 +697,12 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 	 * a weapon or jewellery -- only notes and corpses use it -- and it is
 	 * saved with the object on every path a piece can travel.
 	 *
-	 * The buyer's NAME is a keyword, so a piece answers to the character who
-	 * bought it and reads as theirs; it grants nothing. */
+	 * The buyer's NAME is NOT a keyword. It was one while a piece stayed with
+	 * the character who bought it, so the piece read as theirs. Now that gear
+	 * circulates -- given, looted, sold -- a keyword like that would answer to
+	 * `get tyrus`, `sell tyrus` or `junk tyrus` wherever the piece lay, ahead
+	 * of any character or mob of that name. The realm that made it is named in
+	 * its long description instead, where nothing targets it. */
 	char bind_token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
 
 	if (!kingdom_craft_bind_token(GET_PID(buyer), bind_token, sizeof(bind_token)))
@@ -706,8 +710,7 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 		extract_obj(obj, FALSE);
 		return NULL;
 	}
-	keywords += " kingdom ";
-	keywords += GET_NAME(buyer);
+	keywords += " kingdom";
 
 	std::string long_description = shown;
 

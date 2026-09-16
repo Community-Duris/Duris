@@ -91,10 +91,15 @@ constexpr long kingdom_craft_material_units(int weight_tenths, int level, int re
 /*
  * RESALE VALUE, in copper (1 platinum = 1000 copper)
  *
- *     value = price in platinum x resale scale, carried into copper
+ *     value = round( W x (2 + L) x price scale x resale scale ), in copper
  *
  *     scale  kingdom.craft.resale.permille / 1000, so the shipped 100 makes a
  *            piece worth a tenth of what it cost
+ *
+ * Taken from the price curve BEFORE it is rounded to whole platinum, so the
+ * value moves smoothly with weight and level. Scaling the rounded platinum
+ * price instead left cliffs: everything under half a platinum fell to the
+ * 1-copper floor while anything just over it jumped to 100.
  *
  * Store gear is ordinary property (ruled 2026-09-16): it is looted, given and
  * sold like anything else, and this is what it is worth in a shop's ledger. A
@@ -113,8 +118,9 @@ constexpr long kingdom_craft_resale_copper(int weight_tenths, int level, int pri
 {
 	if (weight_tenths <= 0 || resale_permille <= 0)
 		return 0;
-	const long value = kingdom_craft_price_platinum(weight_tenths, level, price_permille) *
-			   resale_permille;
+	const long l = kingdom_craft_item_level(level);
+	const long value =
+		((long)weight_tenths * (2 + l) * price_permille * resale_permille + 5000) / 10000;
 	return value < 1 ? 1 : value;
 }
 
