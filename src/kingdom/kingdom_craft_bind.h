@@ -66,6 +66,15 @@ inline bool kingdom_craft_bind_token(long pid, char *out, size_t out_len)
 	return true;
 }
 
+/* What ends a word in a binding: whitespace, or the end of the string. Not a
+ * space alone -- an action description that has been through anything that
+ * normalises line endings (a database export, an immortal's edit) can carry
+ * "\r\n" around the token, and the buyer must still be its owner. */
+inline bool kingdom_craft_bind_boundary(char c)
+{
+	return c == '\0' || c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
+
 /* True when `binding` -- the string the store writes the token into, which is
  * the piece's action description -- carries the token for `pid` as a WHOLE
  * word: that exact token, with the start of the string or a space before it
@@ -83,8 +92,8 @@ inline bool kingdom_craft_binding_is(const char *binding, long pid)
 
 	for (const char *at = std::strstr(binding, token); at; at = std::strstr(at + 1, token))
 	{
-		const bool starts = at == binding || at[-1] == ' ';
-		const bool ends = at[length] == '\0' || at[length] == ' ';
+		const bool starts = at == binding || kingdom_craft_bind_boundary(at[-1]);
+		const bool ends = kingdom_craft_bind_boundary(at[length]);
 
 		if (starts && ends)
 			return true;
@@ -104,7 +113,7 @@ inline bool kingdom_craft_binding_present(const char *binding)
 	for (const char *at = std::strstr(binding, KINGDOM_CRAFT_BIND_PREFIX); at;
 	     at = std::strstr(at + 1, KINGDOM_CRAFT_BIND_PREFIX))
 	{
-		if (at == binding || at[-1] == ' ')
+		if (at == binding || kingdom_craft_bind_boundary(at[-1]))
 			return true;
 	}
 	return false;

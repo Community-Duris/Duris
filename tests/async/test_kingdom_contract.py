@@ -2409,25 +2409,40 @@ def test_store_gear_is_made_of_real_material_with_no_material_floor() -> None:
 
 
 def test_workshop_rollback_removes_the_room_by_identity() -> None:
-    """When the hall cannot be saved, construct_workshop_room() puts memory
-    back to match storage: the new room removed by identity rather than by
-    trusting it is last, any live world exit between the two rooms taken down,
-    the hall's exit reset and the vnum's ROOM_GUILD mark cleared."""
-    body = function_bodies(
-        read("src/guild/guildhall_cmds.c"),
-        r"\bworkshop_build_result\s+construct_workshop_room\s*\(",
-    )
+    """construct_workshop_room() brings the new room live BEFORE it saves, and
+    puts memory back on either failure: the new room removed by identity rather
+    than by trusting it is last, any live world exit between the two rooms
+    taken down, the hall's exit reset and the vnum's ROOM_GUILD mark cleared."""
+    source = read("src/guild/guildhall_cmds.c")
+    body = function_bodies(source, r"\bbool\s+construct_workshop_room\s*\(")
     check(len(body) == 1, "construct_workshop_room is defined once", f"{len(body)}")
     if not body:
         return
     code = strip_comments(body[0])
-    undo = _block_after(code, "if (!gh->save())")
-    live = _block_after(code, "if (!room->init())")
+    undo_body = function_bodies(source, r"\bstatic\s+void\s+undo_workshop_room\s*\(")
+    undo = strip_comments(undo_body[0]) if undo_body else ""
+    init_at = code.find("room->init()")
+    save_at = code.find("gh->save()")
+    # Guildhall::init() refuses a WHOLE hall when any one of its rooms cannot be
+    # initialised, so a room saved before it was proven would fail the same way
+    # at every later boot and take the hall with it.
     check(
-        "return WORKSHOP_SAVED_NOT_LIVE;" in live
-        and "return TRUE" not in code
-        and "return FALSE" not in code,
-        "a room that saved but could not be brought live reports saved-not-live, never built",
+        -1 < init_at < save_at,
+        "the new room is brought live before the hall is saved, so a room that cannot be "
+        "initialised is never written to storage",
+        f"init {init_at}, save {save_at}",
+    )
+    live = _block_after(code, "if (!room->init())")
+    saved = _block_after(code, "if (!gh->save())")
+    check(
+        "undo_workshop_room(" in live and re.search(r"\breturn\s+FALSE\s*;", live) is not None,
+        "a room that cannot be brought live is undone and reported not built",
+    )
+    check(
+        "deinit()" in saved
+        and saved.find("deinit()") < saved.find("undo_workshop_room(")
+        and re.search(r"\breturn\s+FALSE\s*;", saved) is not None,
+        "a hall that cannot be saved takes the live room down again, then undoes memory",
     )
     # Guildhall::reload() deinitialises and clears EVERY room in the hall before
     # loading them again, so a failure part way through would tear the hall down
@@ -2436,8 +2451,7 @@ def test_workshop_rollback_removes_the_room_by_identity() -> None:
         "reload(" not in code and "room->init()" in code,
         "the new room is brought live by itself, never by reloading the whole hall",
     )
-    check("return WORKSHOP_NOT_BUILT;" in undo, "a failed save reports the room not built")
-    check("pop_back(" not in code, "the rollback never trusts the new room to be the last")
+    check("pop_back(" not in undo, "the rollback never trusts the new room to be the last")
     check(
         re.search(
             r"std::remove\(\s*gh->rooms\.begin\(\)\s*,\s*gh->rooms\.end\(\)\s*,\s*room\s*\)", undo
@@ -2586,17 +2600,7 @@ def test_kingdom_build_pays_first_and_credits_back_a_room_that_fails() -> None:
     gate = code.find("kingdom_actor_guild(")
     pay = code.find("kingdom_pay_from_treasury(")
     build = code.find("construct_workshop_room(")
-    failed = _block_after(code, "if (raised == WORKSHOP_NOT_BUILT)")
-    not_live = _block_after(code, "if (raised == WORKSHOP_SAVED_NOT_LIVE)")
-    check(
-        not_live != ""
-        and "send_to_char_f(" in not_live
-        and "add_copper(" not in not_live
-        and code.find("kingdom_persist_paid_change(guild, *realm, \"BUILD\")")
-        < code.find("if (raised == WORKSHOP_SAVED_NOT_LIVE)"),
-        "a room saved but not live keeps its charge, has the pair written, and gets its own "
-        "message instead of the one that says it stands",
-    )
+    failed = _block_after(code, "if (!construct_workshop_room(")
     end = code.find(failed) + len(failed) if failed else -1
     persist = code.find("kingdom_persist_paid_change(", end) if end >= 0 else -1
     check(

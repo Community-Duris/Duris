@@ -1299,38 +1299,61 @@ bool construct_new_guildhall_room(int id, int from_vnum, int dir)
 	return gh->reload();
 }
 
+/* Put memory back exactly as it was before the new room existed, in all three
+ * places it reached:
+ *
+ *   - the hall's room list and the exit that leads to it. The room is taken
+ *     out BY IDENTITY, not by position: nothing promises it is still the last
+ *     entry.
+ *   - the live world's exits, so none outlives the room it leads to.
+ *   - the ROOM_GUILD mark next_guildhall_room_vnum() put on the vnum.
+ *
+ * A room that was brought live must be deinitialised BEFORE this is called:
+ * this undoes the hall, not the room. */
+static void undo_workshop_room(Guildhall *gh, GuildhallRoom *from_room, GuildhallRoom *room,
+			       int dir, int vnum)
+{
+	from_room->exits[dir] = -1;
+	gh->rooms.erase(std::remove(gh->rooms.begin(), gh->rooms.end(), room), gh->rooms.end());
+	disconnect_rooms(from_room->vnum, vnum);
+	delete room;
+	REMOVE_BIT(world[real_room0(vnum)].room_flags, ROOM_GUILD);
+}
+
 /* Build a kingdom workshop or the guild store: a NEW room of `type` off
  * from_vnum in `dir`, the way construct_new_guildhall_room() builds a generic
- * one. Unlike that function it leaves nothing behind when it fails before the
- * room is durable -- no phantom room in the hall, no exit pointing at it, no
- * vnum left marked ROOM_GUILD -- because its one caller (`kingdom build`)
- * charges the treasury first and must be able to trust WORKSHOP_NOT_BUILT.
+ * one. Unlike that function it leaves nothing behind when it fails -- no
+ * phantom room in the hall, no exit pointing at it, no vnum left marked
+ * ROOM_GUILD, and nothing in storage -- because its one caller (`kingdom
+ * build`) charges the treasury first and must be able to trust a false.
  *
- * Once the hall is saved the room is durable. It is then brought live BY
- * ITSELF -- not through Guildhall::reload(), which deinitialises and clears
- * every room in the hall before loading them again, so a failure part way
- * through would leave the whole hall torn down around the players in it, to
- * add one room. Only the new room is initialised here, and only the doorway
- * between it and the room it opens off is wired.
+ * THE ORDER IS: build it in memory, BRING IT LIVE, then save.
  *
- * A room that cannot be brought live is REPORTED, as WORKSHOP_SAVED_NOT_LIVE:
- * it stands in storage, and in the world from the next reload or boot, but not
- * yet; the rest of the hall is untouched. The caller keeps the charge --
- * refunding a durable room would give it away -- and must not tell the builder
- * the room is open. */
-workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, int type)
+ *   - Live BEFORE saving, because Guildhall::init() refuses a whole hall when
+ *     any one of its rooms cannot be initialised. A room saved before it was
+ *     proven would fail the same way at every later boot, and take the hall
+ *     with it.
+ *   - Live BY ITSELF, not through Guildhall::reload(), which deinitialises and
+ *     clears every room in the hall before loading them again: a failure part
+ *     way through would tear the hall down around the players in it, to add
+ *     one room. Only the new room is initialised, and only the doorway between
+ *     it and the room it opens off is wired.
+ *
+ * Either failure puts memory back as it was and answers false, so no room
+ * stands half-built and nothing is charged for one. */
+bool construct_workshop_room(int id, int from_vnum, int dir, int type)
 {
 	if (!from_vnum || dir < 0 || dir >= NUM_EXITS || !real_room0(from_vnum) ||
 	    type <= GH_ROOM_TYPE_GENERIC || type >= GH_ROOM_NUM_TYPES)
 	{
-		return WORKSHOP_NOT_BUILT;
+		return FALSE;
 	}
 
 	Guildhall *gh = Guildhall::find_by_id(id);
 
 	if (!gh || !gh->can_add_room())
 	{
-		return WORKSHOP_NOT_BUILT;
+		return FALSE;
 	}
 
 	GuildhallRoom *from_room = gh->find_room_by_vnum(from_vnum);
@@ -1338,14 +1361,14 @@ workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, in
 	if (!from_room || from_room->has_exit(dir) ||
 	    world[real_room0(from_room->vnum)].dir_option[dir])
 	{
-		return WORKSHOP_NOT_BUILT;
+		return FALSE;
 	}
 
 	const int vnum = next_guildhall_room_vnum();
 
 	if (vnum < 0)
 	{
-		return WORKSHOP_NOT_BUILT;
+		return FALSE;
 	}
 
 	GuildhallRoom *room = make_guildhall_room(type);
@@ -1357,40 +1380,16 @@ workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, in
 
 	from_room->exits[dir] = room->vnum;
 
-	if (!gh->save())
-	{
-		/* Storage still holds the hall as it was, so put memory back to
-		 * match, in all three places the new room reached:
-		 *
-		 *   - the hall's own exit table and room list. The room is taken out
-		 *     BY IDENTITY, not by position: nothing promises it is still the
-		 *     last entry once save() has run.
-		 *   - the live world's exits. Nothing on this path connects them --
-		 *     that is GuildhallRoom::init()'s work at the reload a failed
-		 *     save never reaches -- but an exit left in world[] would outlive
-		 *     the room it leads to, so any between the two rooms comes down.
-		 *   - the ROOM_GUILD mark next_guildhall_room_vnum() put on the vnum.
-		 */
-		logit(LOG_GUILDHALLS,
-		      "construct_workshop_room(): couldn't save guildhall %d; room undone", gh->id);
-		from_room->exits[dir] = -1;
-		gh->rooms.erase(std::remove(gh->rooms.begin(), gh->rooms.end(), room),
-				gh->rooms.end());
-		disconnect_rooms(from_room->vnum, vnum);
-		delete room;
-		REMOVE_BIT(world[real_room0(vnum)].room_flags, ROOM_GUILD);
-		return WORKSHOP_NOT_BUILT;
-	}
-
 	/* add_room() already gave the room its hall, association and guild, which
 	 * is everything Guildhall::init() hands a room before initialising it. */
 	if (!room->init())
 	{
 		logit(LOG_GUILDHALLS,
-		      "construct_workshop_room(): guildhall %d saved its new room %d but could not "
-		      "bring it live; it opens at the next reload or boot",
+		      "construct_workshop_room(): guildhall %d could not bring its new room %d "
+		      "live; nothing was saved and the room is undone",
 		      gh->id, vnum);
-		return WORKSHOP_SAVED_NOT_LIVE;
+		undo_workshop_room(gh, from_room, room, dir, vnum);
+		return FALSE;
 	}
 
 	/* GuildhallRoom::init() wires the new room's own side of the doorway. The
@@ -1399,7 +1398,19 @@ workshop_build_result construct_workshop_room(int id, int from_vnum, int dir, in
 	 * missing. */
 	connect_rooms(from_room->vnum, room->vnum, dir, rev_dir[dir]);
 
-	return WORKSHOP_BUILT;
+	if (!gh->save())
+	{
+		/* Storage still holds the hall as it was, so the live room comes
+		 * down again -- its flags, exits, prop, proc and description copy --
+		 * before memory goes back to match. */
+		logit(LOG_GUILDHALLS,
+		      "construct_workshop_room(): couldn't save guildhall %d; room undone", gh->id);
+		room->deinit();
+		undo_workshop_room(gh, from_room, room, dir, vnum);
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 bool construct_golem(Guildhall *gh, int slot, int type)

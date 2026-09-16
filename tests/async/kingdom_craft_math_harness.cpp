@@ -143,6 +143,21 @@ int main()
 	       "the prefix glued to a word is not a token");
 	expect(kingdom_craft_binding_present(nullptr), 0, "no keywords carry no token");
 
+	// Any whitespace ends the word, not a space alone: an action description
+	// that has been through a tool which normalises line endings still binds.
+	expect(kingdom_craft_binding_is("kingdom-bound-1042\r\n", 1042), 1,
+	       "a token followed by CRLF binds");
+	expect(kingdom_craft_binding_is("\nkingdom-bound-1042\n", 1042), 1,
+	       "a token on a line of its own binds");
+	expect(kingdom_craft_binding_is("\tkingdom-bound-1042\t", 1042), 1,
+	       "a token between tabs binds");
+	expect(kingdom_craft_binding_is("kingdom-bound-1042x", 1042), 0,
+	       "a token glued to a letter still does not bind");
+	expect(kingdom_craft_binding_present("kingdom-bound-1042\r\n"), 1,
+	       "a token followed by CRLF is carried");
+	expect(kingdom_craft_binding_present("\nkingdom-bound-7"), 1,
+	       "a token after a newline is carried");
+
 	if (failures)
 	{
 		std::printf("%d kingdom craft arithmetic check(s) failed\n", failures);
