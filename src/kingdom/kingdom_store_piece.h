@@ -5,10 +5,11 @@
  *  What the rest of the engine asks about guild-store gear: is this object a
  *  store piece, and which purchase did it come from.
  *
- *  Store gear is ordinary property (ruled 2026-09-16) -- given, looted and
- *  sold like anything else -- so none of this decides who may wear a piece.
- *  Knowing a piece is store gear decides one thing: that apply_ac() must not
- *  put a material armour-class floor under armour whose class is scaled to the
+ *  Store gear circulates -- given, looted and sold like anything else (ruled
+ *  2026-09-16) -- but only the character whose purchase the mark names may
+ *  WEAR a piece (ruled 2026-09-17), and that is what these two answer for
+ *  cmd/actobj.c. Knowing a piece is store gear also tells apply_ac() not to put
+ *  a material armour-class floor under armour whose class is scaled to the
  *  level it was made at.
  *
  *  Both are INLINE on purpose. The files that ask -- cmd/actobj.c (wearing),

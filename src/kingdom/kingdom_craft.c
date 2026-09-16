@@ -20,9 +20,10 @@
  *  buy level-56 work and a level 56 still gets sound mid-level gear. It costs
  *  platinum, which is DESTROYED -- a money sink, credited to no treasury -- and
  *  realm material, drawn through kingdom_resource_spend(), the store's one way
- *  out. It is ORDINARY PROPERTY (ruled 2026-09-16) -- worn by anyone who can
- *  wear it, given, looted and sold, and worth a tenth of its price in a shop's
- *  ledger -- and it carries no effect flags and no procs: only armour, hit
+ *  out. Anyone may carry, loot or sell a piece, and it is worth a tenth of its
+ *  price in a shop's ledger (ruled 2026-09-16), but ONLY ITS BUYER MAY WEAR IT
+ *  (ruled 2026-09-17): gear made at one character's level must not dress
+ *  another. It carries no effect flags and no procs either: only armour, hit
  *  points, mana, attributes, hitroll and damroll.
  *
  *  The catalogue is ONE compiled table below so the numbers can be tuned in
@@ -785,8 +786,9 @@ static void kingdom_store_list(P_char ch, const kingdom_realm &realm, P_Guild gu
 	APPENDF(out,
 		"\r\n'&+Wbuy <item> [form]&n' buys one, as in '&+Wbuy ring health&n'. The "
 		"platinum is\r\n"
-		"destroyed; the material comes from the realm's stores. Store gear is yours to\r\n"
-		"keep, give or sell -- a shop pays a little for it -- and it carries no magical\r\n"
+		"destroyed; the material comes from the realm's stores. Only you can wear what\r\n"
+		"you buy -- each piece is made to your own level -- though anyone may carry or\r\n"
+		"sell it, and a shop pays a little for it. Store gear carries no magical\r\n"
 		"effects.\r\n");
 
 	send_to_char(out, ch);

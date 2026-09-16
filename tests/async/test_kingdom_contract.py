@@ -2283,15 +2283,15 @@ def test_store_writes_the_realm_after_a_sale_and_a_reversal() -> None:
 
 
 def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
-    """Store gear binds to nobody (ruled 2026-09-16), so nothing here decides
-    who may wear a piece. What it decides is that a store piece is never judged
-    by its NAME: its keywords are ordinary words, so the engine's legacy
-    soulbind test -- is the wearer's name one of the keywords? -- would let a
-    character called "Steel" or "Kingdom" claim one, and remove_soulbind() would
-    let one destroy every such piece. Those paths stay guarded by the maker's
-    mark, a token keyed to the buyer's player id that no name can equal, so they
-    remain correct if a store piece ever reaches them. Every other soulbound
-    item keeps the name test."""
+    """Ruled 2026-09-17: only the character who bought a store piece may WEAR
+    it, while anyone may carry, loot or sell it. That cannot be the engine's
+    ITEM2_SOULBIND flag, which also forbids giving and dropping (actobj.c:3297,
+    4651, 4923, 6009), so the wear gate is the maker's mark instead -- a token
+    keyed to the buyer's PLAYER ID that no name can equal. It is never a NAME
+    test: a piece's keywords are ordinary words, so the legacy soulbind test
+    would let a character called "Steel" or "Kingdom" claim one, and
+    remove_soulbind() would let one destroy every such piece. Every other
+    soulbound item keeps the name test."""
     bind = strip_comments(read("src/kingdom/kingdom_craft_bind.h"))
     check(
         '#define KINGDOM_CRAFT_BIND_PREFIX "kingdom-bound-"' in bind
@@ -2357,6 +2357,16 @@ def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
         routed is not None and -1 < routed.start() < legacy,
         "the wear check sends store pieces to the player-id test ahead of the legacy name test, "
         "which every other soulbound item still gets",
+    )
+    # Store gear carries no ITEM2_SOULBIND, so a gate placed after the flag
+    # test would never run: the piece would sail through and a level 1 could
+    # wear the level-56 work a level 56 bought and handed over.
+    flag_gate = wear_code.find("IS_OBJ_STAT2(object, ITEM2_SOULBIND)")
+    store_gate = wear_code.find("kingdom_store_bound(object) && !kingdom_store_piece_owner(actor, object)")
+    check(
+        -1 < store_gate < flag_gate,
+        "only the buyer may wear a store piece, and that is tested before the soulbind flag gate",
+        f"store gate {store_gate}, flag gate {flag_gate}",
     )
     remove = function_bodies(read("src/magic/magic.c"), r"\bvoid\s+remove_soulbind\s*\(")
     check(

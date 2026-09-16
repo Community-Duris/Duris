@@ -4,13 +4,20 @@
  *
  *  THE MAKER'S MARK on guild-store gear, and nothing else.
  *
- *  Store gear is ordinary property (ruled 2026-09-16): it can be given, looted
- *  and sold like anything else, so this token BINDS NOTHING. It records which
- *  purchase a piece came from, and it is how the engine knows a piece is store
- *  gear at all when its object index is unresolved -- which decides only one
- *  thing: that apply_ac() must not put a material armour-class floor under a
- *  piece whose armour class is scaled to its buyer's level
- *  (kingdom_store_piece.h).
+ *  Store gear can be given, looted and sold like anything else (ruled
+ *  2026-09-16), but only the character who BOUGHT a piece may wear it (ruled
+ *  2026-09-17) -- a piece is made at its buyer's level, and gear made for one
+ *  character must not dress another. This token is how that is known: it
+ *  records the purchase a piece came from, and can_equip_soulbound_item()
+ *  (cmd/actobj.c) refuses anyone else.
+ *
+ *  It is NOT the engine's soulbind flag, which store gear does not carry: that
+ *  flag forbids giving and dropping too (actobj.c), and this gear is meant to
+ *  circulate.
+ *
+ *  The token also tells apply_ac() that a piece is store gear when its object
+ *  index is unresolved, so no material armour-class floor lands under armour
+ *  scaled to the level it was made at (kingdom_store_piece.h).
  *
  *  THE TOKEN LIVES IN THE PIECE'S ACTION DESCRIPTION, not among its keywords.
  *  Keywords are what player commands target, so a token there would let

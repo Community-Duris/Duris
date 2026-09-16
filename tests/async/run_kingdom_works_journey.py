@@ -26,12 +26,12 @@ reaches it, and a name there would answer to `get tyrus` wherever the piece
 lay), that the realm's stores fell by exactly the bill, and that Tyrus's
 platinum fell by the price while the treasury did not rise.
 
-Then who may wear it. Store gear binds to nobody (ruled 2026-09-16), so it is
-ordinary property: Tyrus wears the piece, takes it off, puts it in a basket and
-leaves the basket for two characters on other accounts -- one NAMED
-"Vambraces", a word on the piece, and one with an ordinary name. Each sheds its
-starter kit (a new character starts over its carrying limit), takes the piece
-out of the basket and wears it.
+Then who may wear it. Anyone may carry, loot or sell store gear, but only its
+buyer may WEAR it (ruled 2026-09-17). Tyrus wears the piece, takes it off, puts
+it in a basket and leaves the basket for two characters on other accounts --
+one NAMED "Vambraces", a word on the piece, and one with an ordinary name. Each
+sheds its starter kit (a new character starts over its carrying limit), takes
+the piece out of the basket, is refused the wear, and puts it back.
 
 The journey's own copy of lib/kingdom.cfg sets the build costs to 1,000
 platinum and the material scale to a quarter, so the realm needs a minute of
@@ -280,13 +280,15 @@ def find_seat(client: journey.MudClient) -> int:
     raise AssertionError(f"no legal realm seat within {12 * 6} squares of {SURFACE_START}")
 
 
-def wore_the_piece(other: journey.MudClient, name: str) -> None:
-    """`name` takes Tyrus's piece out of the basket at their feet, wears it,
-    and puts it back.
+def refused_the_piece(other: journey.MudClient, name: str) -> None:
+    """`name` takes Tyrus's piece out of the basket at their feet, is refused
+    it when they try to wear it, and puts it back.
 
-    Store gear is ordinary property (ruled 2026-09-16): nothing binds it to the
-    character who bought it, so another character on another account may take
-    it and wear it.
+    Ruled 2026-09-17: anyone may carry, loot or sell store gear, but only the
+    character who bought it may WEAR it -- a piece is made at its buyer's own
+    level, so otherwise a level 56 could buy level-56 work and dress a level 1
+    in it. The piece carries no soulbind flag (that would forbid giving and
+    dropping too), so the refusal comes from its maker's mark.
 
     A new character starts over its carrying limit -- the starter kit is 28
     items against a limit of 11 -- and can pick up nothing until it sheds
@@ -316,16 +318,14 @@ def wore_the_piece(other: journey.MudClient, name: str) -> None:
     got = plain(command(other, f"get {PIECE} {BASKET}", ""))
     wait_for(inventory, lambda text: PIECE_SHORT in text,
              f"{name} never got the piece out of the {BASKET} (the get said: {got[-400:]!r})")
-    # Either the piece's own name, which a successful wear prints, or the
-    # soulbind refusal; the require then says which it was.
-    _, reply = command_any(other, f"wear {PIECE}", (PIECE_SHORT, "bound to someone"))
+    # Either the refusal or the piece's own name, which a successful wear
+    # would print; the require then says which it was.
+    _, reply = command_any(other, f"wear {PIECE}", ("another's measure", PIECE_SHORT))
     reply = plain(reply)
-    require("bound to someone" not in reply, f"{name} was refused Tyrus's piece:\n{reply}")
+    require("another's measure" in reply, f"{name} was not refused Tyrus's piece:\n{reply}")
     worn = plain(command(other, "equipment", ""))
-    require(PIECE_SHORT in worn, f"{name} could not wear Tyrus's piece:\n{worn}")
-    command(other, f"remove {PIECE}", "")
-    wait_for(inventory, lambda text: PIECE_SHORT in text,
-             f"{name} never took the piece off again")
+    require(PIECE_SHORT not in worn, f"{name} is wearing Tyrus's piece:\n{worn}")
+    require(PIECE_SHORT in inventory(), f"{name} no longer holds the piece after the refusal")
     command(other, f"put {PIECE} {BASKET}", "")
     wait_for(inventory, lambda text: PIECE_SHORT not in text, f"{name} never put the piece back")
 
@@ -582,9 +582,9 @@ def run(binary: pathlib.Path) -> None:
                 wait_for(lambda: plain(command(client, "inventory", "")),
                          lambda text: PIECE_SHORT in text, "the piece never came off")
 
-                # And so may anyone else, whatever they are called: nothing
-                # binds store gear. A container is the route a looter or a
-                # trade would take.
+                # Nobody else may wear it, whatever they are called, though
+                # they may carry it and sell it. A container is the route a
+                # looter or a trade would take.
                 command(client, "goto 58449", "")
                 command(client, f"load obj {BASKET_VNUM}", "")
                 command(client, f"put {PIECE} {BASKET}", "")
@@ -598,8 +598,8 @@ def run(binary: pathlib.Path) -> None:
                     create_account(other, account, email)
                     create_character(other, name)
                     command(client, f"transfer {name.lower()}", "")
-                    wore_the_piece(other, name)
-                    print(f"{name} wore Tyrus's piece", flush=True)
+                    refused_the_piece(other, name)
+                    print(f"{name} could carry but not wear Tyrus's piece", flush=True)
                 for other in others:
                     other.close()
                 others.clear()
@@ -614,8 +614,8 @@ def run(binary: pathlib.Path) -> None:
                 require("FATAL:" not in log and "assert:" not in log, "server logged a fatal or assertion")
                 print("[PASS] kingdom works journey: realm, builds and refusals (an unaffordable forge "
                       "among them), a purchase refused for material, harvest, list, buy, level-56 stats, "
-                      "flags and resale value, gear two other characters could wear, material "
-                      "draw, destroyed platinum", flush=True)
+                      "flags and resale value, gear two other characters could carry but not wear, "
+                      "material draw, destroyed platinum", flush=True)
             except Exception as error:
                 transcript = bytes(client.transcript).decode("utf-8", errors="replace") if client else ""
                 other_tail = ""
