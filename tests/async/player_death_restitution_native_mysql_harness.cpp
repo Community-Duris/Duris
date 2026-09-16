@@ -139,8 +139,11 @@ fixture make_fixture(uint8_t operation_seed)
 	value.plan.recipient_pid = 43;
 	value.plan.restitution_id = operation_id(operation_seed);
 	value.plan.death_operation_id = operation_id(0x20);
+	value.plan.evidence_digest.fill(static_cast<uint8_t>(operation_seed ^ 0xa5));
 	SHA256(value.death_payload.data(), value.death_payload.size(),
-	       value.plan.evidence_digest.data());
+	       value.plan.payload_digest.data());
+	require(value.plan.evidence_digest != value.plan.payload_digest,
+		"native fixture digests are not separated");
 	value.plan.plan_digest.fill(static_cast<uint8_t>(operation_seed ^ 0x5a));
 	value.plan.expected_recipient_save_revision = 1;
 	value.plan.expected_source_owner_revision = 6;

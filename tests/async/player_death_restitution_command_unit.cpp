@@ -72,6 +72,7 @@ player_death_restitution_plan make_plan()
 	plan.restitution_id = id(1);
 	plan.death_operation_id = id(33);
 	plan.evidence_digest.fill(0x11);
+	plan.payload_digest.fill(0x33);
 	plan.plan_digest.fill(0x22);
 	plan.expected_recipient_save_revision = 8;
 	plan.expected_source_owner_revision = 4;
@@ -113,6 +114,7 @@ int main()
 
 	player_death_restitution_plan plan = make_plan();
 	assert(player_death_restitution_plan_valid(plan));
+	assert(plan.evidence_digest != plan.payload_digest);
 	critical_command command = {};
 	assert(player_death_restitution_command_build(plan, &command));
 	assert(command.type == critical_command_type::player_death_restitution);
@@ -122,6 +124,9 @@ int main()
 	assert(player_death_restitution_command_decode_payload(command, &decoded_plan));
 	assert(decoded_plan.recipient_pid == plan.recipient_pid);
 	assert(decoded_plan.items[0].metadata_payload == plan.items[0].metadata_payload);
+	assert(decoded_plan.evidence_digest == plan.evidence_digest);
+	assert(decoded_plan.payload_digest == plan.payload_digest);
+	assert(decoded_plan.plan_digest == plan.plan_digest);
 	assert(decoded_plan.accepted_at_usec == command.accepted_at_usec);
 
 	critical_command tampered = command;

@@ -58,6 +58,7 @@ player_death_restitution_plan test_plan()
 	plan.restitution_id = test_id(1);
 	plan.death_operation_id = test_id(2);
 	plan.evidence_digest.fill(1);
+	plan.payload_digest.fill(3);
 	plan.plan_digest.fill(2);
 	plan.expected_recipient_save_revision = 7;
 	plan.expected_source_owner_revision = 3;
