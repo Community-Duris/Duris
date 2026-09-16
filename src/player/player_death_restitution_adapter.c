@@ -157,6 +157,23 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 	return result;
 }
 
+bool player_death_restitution_runtime_restore_replayed_command(
+	const critical_command &command, void *)
+{
+	if (command.type != critical_command_type::player_death_restitution)
+		return true;
+	player_death_restitution_runtime_submission *slot = find_free_submission();
+	if (!slot)
+		return false;
+	player_death_restitution_runtime_submission submission = {};
+	if (player_death_restitution_runtime_restore_replayed_command(
+			command, live_callbacks, nullptr, &submission) !=
+	    player_death_restitution_runtime_result::accepted)
+		return false;
+	*slot = submission;
+	return true;
+}
+
 void player_death_restitution_runtime_handle_completions(const critical_completion *completions,
 							 size_t count)
 {
@@ -172,12 +189,21 @@ void player_death_restitution_runtime_handle_completions(const critical_completi
 	}
 }
 
-void player_death_restitution_runtime_shutdown(void)
+void player_death_restitution_runtime_abort_all(void)
 {
 	for (auto &submission : live_submissions)
 		if (submission.target_save_login_fence_held)
 			player_death_restitution_runtime_abort(&submission, live_callbacks,
 							       nullptr);
+}
+
+void player_death_restitution_runtime_shutdown(void)
+{
+	// Do not release accepted submissions here.  A normal graceful drain has
+	// already delivered conclusive completions; if the coordinator is
+	// ambiguous, retaining this target fence is what makes the journal replay
+	// safe on the next process.  Pipeline teardown follows this call and is the
+	// final process-lifetime cleanup.  Failed initialization uses abort_all().
 }
 
 bool player_death_restitution_runtime_login_admit(int pid)

@@ -36,6 +36,12 @@ struct completed_state
 	size_t encoded_size;
 };
 
+struct replay_observer_context
+{
+	critical_replay_observer_fn observer;
+	void *context;
+};
+
 std::mutex coordinator_mutex;
 std::condition_variable work_available;
 std::condition_variable result_available;
@@ -212,7 +218,7 @@ void remember_completed(const std::string &identity, const critical_command &com
 	}
 }
 
-bool enqueue_replayed(critical_command command, void *)
+bool enqueue_replayed(critical_command command, void *context)
 {
 	std::vector<uint8_t> encoded;
 	if (!critical_command_valid(command) ||
@@ -249,6 +255,33 @@ bool enqueue_replayed(critical_command command, void *)
 		}
 		pending.erase(std::remove(pending.begin(), pending.end(), identity), pending.end());
 		return false;
+	}
+
+	const replay_observer_context *replay =
+		static_cast<const replay_observer_context *>(context);
+	if (replay && replay->observer)
+	{
+		bool observed = false;
+		try
+		{
+			observed = replay->observer(operations.at(identity)->command, replay->context);
+		}
+		catch (...)
+		{
+			observed = false;
+		}
+		if (!observed)
+		{
+			auto inserted = operations.find(identity);
+			if (inserted != operations.end())
+			{
+				remove_fences(identity, inserted->second->command);
+				operations.erase(inserted);
+			}
+			pending.erase(std::remove(pending.begin(), pending.end(), identity), pending.end());
+			update_depth();
+			return false;
+		}
 	}
 	update_depth();
 	return true;
@@ -380,7 +413,9 @@ void worker_main()
 } // namespace
 
 bool critical_command_coordinator_init(const char *journal_directory_path, critical_apply_fn apply,
-				       void *context, unsigned int worker_count)
+				       void *context, unsigned int worker_count,
+				       critical_replay_observer_fn replay_observer,
+				       void *replay_context)
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
@@ -404,7 +439,9 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	stop_requested = false;
 	uncertain_recovery_not_before_usec = 0;
 	uncertain_recovery_delay_usec = 1000000;
-	if (critical_command_journal_replay(enqueue_replayed, nullptr) !=
+	replay_observer_context replay = { replay_observer, replay_context };
+	if (critical_command_journal_replay(
+			enqueue_replayed, replay_observer ? &replay : nullptr) !=
 	    critical_command_journal_result::ok)
 	{
 		health = {};

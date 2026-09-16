@@ -106,6 +106,35 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 }
 
 player_death_restitution_runtime_result
+player_death_restitution_runtime_restore_replayed_command(
+	const critical_command &command,
+	const player_death_restitution_runtime_callbacks &callbacks, void *context,
+	player_death_restitution_runtime_submission *submission)
+{
+	if (!submission)
+		return player_death_restitution_runtime_result::invalid_plan;
+	clear_submission(submission);
+	if (!critical_command_valid(command) ||
+	    command.type != critical_command_type::player_death_restitution)
+		return player_death_restitution_runtime_result::invalid_plan;
+	player_death_restitution_plan plan = {};
+	if (!player_death_restitution_command_decode_payload(command, &plan))
+		return player_death_restitution_runtime_result::invalid_plan;
+	const player_death_restitution_runtime_result preflight =
+		player_death_restitution_runtime_preflight(plan, callbacks, context);
+	if (preflight != player_death_restitution_runtime_result::accepted)
+		return preflight;
+	if (!callbacks.acquire_target_save_login_fence(
+		    plan.recipient_pid, plan.expected_recipient_save_revision, context))
+		return player_death_restitution_runtime_result::fence_unavailable;
+	submission->operation_id = command.operation_id;
+	submission->recipient_pid = plan.recipient_pid;
+	submission->expected_save_revision = plan.expected_recipient_save_revision;
+	submission->target_save_login_fence_held = true;
+	return player_death_restitution_runtime_result::accepted;
+}
+
+player_death_restitution_runtime_result
 player_death_restitution_runtime_submit(const player_death_restitution_plan &plan,
 					const player_death_restitution_runtime_callbacks &callbacks,
 					void *context,

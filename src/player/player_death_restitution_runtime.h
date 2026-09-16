@@ -64,6 +64,15 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 	const player_death_restitution_runtime_callbacks &callbacks, void *context,
 	player_death_restitution_runtime_submission *submission);
 
+// Restore the target fence for a command read from the durable critical-command
+// journal.  This validates the actual replayed payload and acquires the fence
+// without submitting a duplicate operation.
+player_death_restitution_runtime_result
+player_death_restitution_runtime_restore_replayed_command(
+	const critical_command &command,
+	const player_death_restitution_runtime_callbacks &callbacks, void *context,
+	player_death_restitution_runtime_submission *submission);
+
 // Acquire only the recipient save/login fence, then submit one critical
 // command.  The fence remains held until complete() or abort() is called.
 player_death_restitution_runtime_result

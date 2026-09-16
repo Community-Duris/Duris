@@ -938,9 +938,12 @@ void run_the_game(int port, int sslport)
 #ifndef __NO_MYSQL__
 		!critical_outbox_ready ||
 #endif
-		!critical_command_coordinator_init(critical_journal_directory, critical_apply,
-						   NULL))
+		!critical_command_coordinator_init(
+			critical_journal_directory, critical_apply, NULL,
+			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+			player_death_restitution_runtime_restore_replayed_command, NULL))
 	{
+		player_death_restitution_runtime_abort_all();
 		critical_command_coordinator_shutdown();
 		critical_outbox_shutdown();
 		logit(LOG_STATUS,

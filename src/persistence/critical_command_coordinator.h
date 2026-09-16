@@ -96,10 +96,13 @@ struct critical_coordinator_health
 
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
+using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
 
 bool critical_command_coordinator_init(const char *journal_directory, critical_apply_fn apply,
 				       void *context,
-				       unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS);
+				       unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+				       critical_replay_observer_fn replay_observer = nullptr,
+				       void *replay_context = nullptr);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
 bool critical_command_coordinator_recover_uncertain(void);

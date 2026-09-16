@@ -174,6 +174,10 @@ int main()
 	assert(target_fence_held);
 	assert(!player_death_restitution_runtime_login_admit(20));
 	assert(release_calls == 0);
+	player_death_restitution_runtime_shutdown();
+	assert(target_fence_held);
+	assert(!player_death_restitution_runtime_login_admit(20));
+	assert(release_calls == 0);
 	const auto ambiguous_health = player_death_restitution_runtime_live_health_copy();
 	assert(ambiguous_health.pending_operations == 1 && ambiguous_health.fenced_targets == 1);
 
