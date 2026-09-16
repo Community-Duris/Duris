@@ -414,7 +414,8 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 			    !description->description)
 				return player_snapshot_capture_result::malformed_source;
 			for (int skill_id = 0; skill_id < MAX_SKILLS; ++skill_id)
-				if ((static_cast<unsigned char>(description->description[skill_id / 8]) &
+				if ((static_cast<unsigned char>(
+					     description->description[skill_id / 8]) &
 				     (1U << (skill_id % 8))) != 0)
 				{
 					if (!budget.add(sizeof(int32_t)))

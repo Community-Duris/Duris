@@ -79,7 +79,7 @@ int main()
 		require(sql_decode_stored_spellbook("SPELLBOOK", malformed, decoded,
 						    sizeof(decoded)) ==
 				sql_spellbook_decode_status::invalid,
-				"malformed spellbook JSON was accepted");
+			"malformed spellbook JSON was accepted");
 		for (char value : decoded)
 			require(value == 0, "malformed spellbook did not clear its output");
 	}

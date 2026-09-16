@@ -294,8 +294,7 @@ int SpellInThisSpellBook_p(struct extra_descr_data *tmp, int spl)
 {
 	if (!tmp || !tmp->description || spl < 0 || spl >= MAX_SKILLS)
 		return 0;
-	return (static_cast<unsigned char>(tmp->description[spl / 8]) &
-		(1U << (spl % 8))) != 0;
+	return (static_cast<unsigned char>(tmp->description[spl / 8]) & (1U << (spl % 8))) != 0;
 }
 
 int SpellInThisSpellBook(struct extra_descr_data *tmp, int spl)
@@ -2224,9 +2223,9 @@ int AddSpellToSpellBook(P_char ch, P_obj obj, int spl)
 		obj->value[0] = TONGUE_MAGIC;
 
 	/* not there, we've gotta add it */
-	tmp->description[spl / 8] = static_cast<char>(
-		static_cast<unsigned char>(tmp->description[spl / 8]) |
-		static_cast<unsigned char>(1U << (spl % 8)));
+	tmp->description[spl / 8] =
+		static_cast<char>(static_cast<unsigned char>(tmp->description[spl / 8]) |
+				  static_cast<unsigned char>(1U << (spl % 8)));
 
 	/*
 	   ok, we done, we happy campers.

@@ -111,8 +111,8 @@ static void add_spellbook_snapshot(cJSON *entry, const char *bits)
 	cJSON_AddStringToObject(entry, "description", json.c_str());
 }
 
-static bool append_extra_description_snapshot(P_obj obj,
-						       struct extra_descr_data ***tail, cJSON *entry)
+static bool append_extra_description_snapshot(P_obj obj, struct extra_descr_data ***tail,
+					      cJSON *entry)
 {
 	if (!obj || !tail || !entry || !cJSON_IsObject(entry))
 		return false;
@@ -124,8 +124,8 @@ static bool append_extra_description_snapshot(P_obj obj,
 		return false;
 
 	const bool keyword_is_string = cJSON_IsString(keyword) && keyword->valuestring;
-	const bool canonical_spellbook =
-		keyword_is_string && strcmp(keyword->valuestring, "SPELLBOOK") == 0;
+	const bool canonical_spellbook = keyword_is_string &&
+					 strcmp(keyword->valuestring, "SPELLBOOK") == 0;
 	const bool legacy_raw_spellbook =
 		keyword_is_string && sql_item_extra_descr_is_spellbook_marker(keyword->valuestring);
 	const size_t byte_count = (MAX_SKILLS + 1) / 8 + 1;
@@ -133,8 +133,8 @@ static bool append_extra_description_snapshot(P_obj obj,
 	if (canonical_spellbook)
 	{
 		if (!cJSON_IsString(description) || !description->valuestring ||
-		    sql_decode_stored_spellbook("SPELLBOOK", description->valuestring,
-							decoded_bits, sizeof(decoded_bits)) !=
+		    sql_decode_stored_spellbook("SPELLBOOK", description->valuestring, decoded_bits,
+						sizeof(decoded_bits)) !=
 			    sql_spellbook_decode_status::decoded)
 			return false;
 	}
@@ -162,9 +162,10 @@ static bool append_extra_description_snapshot(P_obj obj,
 	else
 	{
 		ed->keyword = cJSON_IsString(keyword) ? str_dup(keyword->valuestring) : NULL;
-		ed->description = cJSON_IsString(description) ?
-					  str_dup(description->valuestring ? description->valuestring : "") :
-					  NULL;
+		ed->description =
+			cJSON_IsString(description) ?
+				str_dup(description->valuestring ? description->valuestring : "") :
+				NULL;
 	}
 	if ((cJSON_IsString(keyword) && !ed->keyword) ||
 	    (cJSON_IsString(description) && !ed->description))

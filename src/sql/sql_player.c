@@ -2354,7 +2354,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 }
 
 static bool sql_merge_duplicate_spellbook(struct extra_descr_data *existing,
-						  struct extra_descr_data *candidate);
+					  struct extra_descr_data *candidate);
 
 static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const char *table)
 {
@@ -2388,11 +2388,12 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 				if (loaded_spellbook &&
 				    sql_merge_duplicate_spellbook(loaded_spellbook, ed))
 				{
-					persistence_alert(AVATAR, "item_extra_descr",
-							  table ? table : "unknown", "none", "none",
-							  "duplicate_spellbook_rows",
-							  "item_id=%d had duplicate native spellbook rows; merged their bitmaps",
-							  item_id);
+					persistence_alert(
+						AVATAR, "item_extra_descr",
+						table ? table : "unknown", "none", "none",
+						"duplicate_spellbook_rows",
+						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
+						item_id);
 					continue;
 				}
 				loaded_spellbook = ed;
@@ -2413,7 +2414,7 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 // only rows loaded from this table, so a native marker from the object
 // prototype is not accidentally merged into persisted state.
 static bool sql_merge_duplicate_spellbook(struct extra_descr_data *existing,
-						  struct extra_descr_data *candidate)
+					  struct extra_descr_data *candidate)
 {
 	if (!existing || !candidate ||
 	    !sql_item_extra_descr_is_spellbook_marker(existing->keyword) ||
@@ -2513,8 +2514,7 @@ static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 	const size_t spellbook_bytes = (MAX_SKILLS + 1) / 8 + 1;
 	char spellbook_bits[(MAX_SKILLS + 1) / 8 + 1] = {};
 	static const char spellbook_marker[] = { 3, 1, 3, 0 };
-	for (struct extra_descr_data *source = obj->ex_description; source;
-	     source = source->next)
+	for (struct extra_descr_data *source = obj->ex_description; source; source = source->next)
 	{
 		if (!sql_item_extra_descr_is_spellbook_marker(source->keyword) ||
 		    !source->description)
@@ -4582,12 +4582,14 @@ bool sql_load_player_items(P_char ch)
 			    sql_item_extra_descr_is_spellbook_marker(ed->keyword))
 			{
 				if (loaded_spellbooks[object_index] &&
-				    sql_merge_duplicate_spellbook(loaded_spellbooks[object_index], ed))
+				    sql_merge_duplicate_spellbook(loaded_spellbooks[object_index],
+								  ed))
 				{
-					persistence_alert(AVATAR, "item_extra_descr", "player_item", "none",
-							  "none", "duplicate_spellbook_rows",
-							  "item_id=%d had duplicate native spellbook rows; merged their bitmaps",
-							  db_id);
+					persistence_alert(
+						AVATAR, "item_extra_descr", "player_item", "none",
+						"none", "duplicate_spellbook_rows",
+						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
+						db_id);
 					continue;
 				}
 				loaded_spellbooks[object_index] = ed;

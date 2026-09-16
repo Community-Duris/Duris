@@ -62,7 +62,8 @@ bool decode_spellbook_json(const char *json, char *bits)
 
 	std::array<bool, MAX_SKILLS> seen{};
 	const char *cursor = json;
-	auto skip_whitespace = [&]() {
+	auto skip_whitespace = [&]()
+	{
 		while (*cursor == ' ' || *cursor == '\t' || *cursor == '\r' || *cursor == '\n')
 			++cursor;
 	};
@@ -100,9 +101,8 @@ bool decode_spellbook_json(const char *json, char *bits)
 		    spell >= static_cast<unsigned int>(MAX_SKILLS) || seen[spell])
 			return false;
 		seen[spell] = true;
-		bits[spell / 8] = static_cast<char>(
-			static_cast<unsigned char>(bits[spell / 8]) |
-			static_cast<unsigned char>(1U << (spell % 8)));
+		bits[spell / 8] = static_cast<char>(static_cast<unsigned char>(bits[spell / 8]) |
+						    static_cast<unsigned char>(1U << (spell % 8)));
 
 		skip_whitespace();
 		if (*cursor == ']')
@@ -161,7 +161,8 @@ bool sql_encode_item_extra_descr(const char *keyword, const char *description, c
 	if (native_spellbook)
 	{
 		*db_keyword = duplicate_string("SPELLBOOK");
-		*db_description = description ? spellbook_to_json(description) : duplicate_string("[]");
+		*db_description = description ? spellbook_to_json(description) :
+						duplicate_string("[]");
 	}
 	else
 	{

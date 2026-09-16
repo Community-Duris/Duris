@@ -1057,7 +1057,8 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 			struct extra_descr_data *ed = obj->ex_description;
 			while (ed)
 			{
-				if (ed->keyword && !sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+				if (ed->keyword &&
+				    !sql_item_extra_descr_is_spellbook_marker(ed->keyword))
 					nDescs++;
 				ed = ed->next;
 			}
@@ -1066,7 +1067,8 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 			ed = obj->ex_description;
 			while (ed)
 			{
-				if (ed->keyword && !sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+				if (ed->keyword &&
+				    !sql_item_extra_descr_is_spellbook_marker(ed->keyword))
 				{
 					ADD_STRING(ibuf, ed->keyword);
 					if (ed->description)
@@ -3570,13 +3572,16 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 							logit(LOG_DEBUG,
 							      "restoreObjects: oversized spellbook bitmap (%u); truncating to %u bytes",
 							      stored_bytes, bitmap_bytes);
-						for (unsigned int offset = 0; offset < stored_bytes; ++offset)
+						for (unsigned int offset = 0; offset < stored_bytes;
+						     ++offset)
 						{
 							const char stored_byte = GET_BYTE(buf);
 							if (offset < bitmap_bytes)
-								t_desc->description[offset] = stored_byte;
+								t_desc->description[offset] =
+									stored_byte;
 						}
-						for (unsigned int offset = stored_bytes; offset < bitmap_bytes; ++offset)
+						for (unsigned int offset = stored_bytes;
+						     offset < bitmap_bytes; ++offset)
 							t_desc->description[offset] = 0;
 					}
 				}
@@ -3588,7 +3593,8 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 				   */
 					const unsigned int stored_bytes =
 						static_cast<unsigned int>(GET_INTE(buf));
-					for (unsigned int offset = 0; offset < stored_bytes; ++offset)
+					for (unsigned int offset = 0; offset < stored_bytes;
+					     ++offset)
 					{
 						dummy_byte = GET_BYTE(buf);
 					}
@@ -3945,13 +3951,15 @@ P_obj read_one_object(char *read_buf)
 						logit(LOG_DEBUG,
 						      "read_one_object: oversized spellbook bitmap (%u); truncating to %u bytes",
 						      stored_bytes, bitmap_bytes);
-					for (unsigned int offset = 0; offset < stored_bytes; ++offset)
+					for (unsigned int offset = 0; offset < stored_bytes;
+					     ++offset)
 					{
 						const char stored_byte = GET_BYTE(buf);
 						if (offset < bitmap_bytes)
 							t_desc->description[offset] = stored_byte;
 					}
-					for (unsigned int offset = stored_bytes; offset < bitmap_bytes; ++offset)
+					for (unsigned int offset = stored_bytes;
+					     offset < bitmap_bytes; ++offset)
 						t_desc->description[offset] = 0;
 				}
 			}

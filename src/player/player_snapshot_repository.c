@@ -26,9 +26,9 @@ struct query_result
 	unsigned int error_code;
 };
 
-query_result canonicalize_snapshot_extra_description(
-	const player_item_extra_description_snapshot &description, std::string *keyword_out,
-	std::string *description_out)
+query_result
+canonicalize_snapshot_extra_description(const player_item_extra_description_snapshot &description,
+					std::string *keyword_out, std::string *description_out)
 {
 	if (!keyword_out || !description_out)
 		return { false, EINVAL };
@@ -51,7 +51,7 @@ query_result canonicalize_snapshot_extra_description(
 	if (!description.description.empty())
 	{
 		if (sql_decode_stored_spellbook("SPELLBOOK", description.description.c_str(),
-					       spell_bits.data(), spell_bits.size()) !=
+						spell_bits.data(), spell_bits.size()) !=
 		    sql_spellbook_decode_status::decoded)
 			return { false, EINVAL };
 	}
@@ -64,17 +64,16 @@ query_result canonicalize_snapshot_extra_description(
 				return { false, EINVAL };
 			seen[spell] = true;
 			const size_t byte = static_cast<size_t>(spell) / 8;
-			spell_bits[byte] = static_cast<char>(
-				static_cast<unsigned char>(spell_bits[byte]) |
-				static_cast<unsigned char>(1U << (spell % 8)));
+			spell_bits[byte] =
+				static_cast<char>(static_cast<unsigned char>(spell_bits[byte]) |
+						  static_cast<unsigned char>(1U << (spell % 8)));
 		}
 	}
 
 	const char marker[] = { 3, 1, 3, 0 };
 	char *db_keyword = nullptr;
 	char *db_description = nullptr;
-	if (!sql_encode_item_extra_descr(marker, spell_bits.data(), &db_keyword,
-					 &db_description))
+	if (!sql_encode_item_extra_descr(marker, spell_bits.data(), &db_keyword, &db_description))
 		return { false, ENOMEM };
 	if (!db_keyword || !db_description)
 	{
@@ -478,9 +477,9 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 				continue;
 			result = execute(connection,
 					 "INSERT INTO " +
-					 std::string(pet_items ?
-							     "player_pet_item_extra_descr" :
-							     "player_item_extra_descr") +
+						 std::string(pet_items ?
+								     "player_pet_item_extra_descr" :
+								     "player_item_extra_descr") +
 						 " (item_id,keyword,description) VALUES (" +
 						 std::to_string(item_id) + "," +
 						 quote(connection, encoded_keyword) + "," +
