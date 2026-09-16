@@ -898,6 +898,7 @@ extern unsigned int game_locked_level;
 #define CMD_ITEMMANA 860
 #define CMD_PULSE 861
 #define CMD_COLLECTOR 862
+#define CMD_RESTITUTION 863 // Submit an approved death-restitution command
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.
