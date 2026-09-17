@@ -883,8 +883,7 @@ constexpr bool telemetry_encounter_mode_is_valid(telemetry_encounter_mode mode) 
 	       mode == telemetry_encounter_mode::pvp || mode == telemetry_encounter_mode::mixed;
 }
 
-constexpr bool telemetry_encounter_event_kind_is_valid(
-	telemetry_encounter_event_kind kind) noexcept
+constexpr bool telemetry_encounter_event_kind_is_valid(telemetry_encounter_event_kind kind) noexcept
 {
 	return kind == telemetry_encounter_event_kind::start ||
 	       kind == telemetry_encounter_event_kind::participant_join ||
@@ -913,10 +912,12 @@ constexpr bool telemetry_encounter_id_is_valid(const telemetry_encounter_id &id)
 	return telemetry_producer_id_is_valid(id.producer) && id.sequence != 0U;
 }
 
-constexpr bool telemetry_encounter_source_is_valid(const telemetry_encounter_source &source) noexcept
+constexpr bool
+telemetry_encounter_source_is_valid(const telemetry_encounter_source &source) noexcept
 {
 	return source.environment_id != 0U && source.season_id != 0U && source.config_id != 0U &&
-	       source.classifier_version != 0U && source.policy_version != 0U && source.zone_vnum >= -1;
+	       source.classifier_version != 0U && source.policy_version != 0U &&
+	       source.zone_vnum >= -1;
 }
 
 constexpr bool telemetry_encounter_participant_is_valid(
@@ -1297,20 +1298,22 @@ constexpr bool telemetry_configuration_payload_is_valid(
 	return telemetry_config_is_valid(configuration.config);
 }
 
-constexpr bool telemetry_encounter_payload_is_valid(
-	const telemetry_encounter_payload &encounter) noexcept
+constexpr bool
+telemetry_encounter_payload_is_valid(const telemetry_encounter_payload &encounter) noexcept
 {
 	if (!telemetry_encounter_id_is_valid(encounter.encounter) ||
 	    !telemetry_encounter_event_kind_is_valid(encounter.kind) ||
 	    !telemetry_encounter_mode_is_valid(encounter.mode) ||
 	    !telemetry_encounter_outcome_is_valid(encounter.outcome) || encounter.reserved != 0U ||
 	    encounter.revision == 0U || !telemetry_encounter_source_is_valid(encounter.source) ||
-	    encounter.source.zone_vnum < -1 || !telemetry_quality_mask_is_valid(encounter.quality_flags) ||
+	    encounter.source.zone_vnum < -1 ||
+	    !telemetry_quality_mask_is_valid(encounter.quality_flags) ||
 	    encounter.at_monotonic_usec < encounter.start_monotonic_usec)
 		return false;
-	const bool participant_event = encounter.kind == telemetry_encounter_event_kind::participant_join ||
-					       encounter.kind == telemetry_encounter_event_kind::participant_leave ||
-					       encounter.kind == telemetry_encounter_event_kind::participant_summary;
+	const bool participant_event =
+		encounter.kind == telemetry_encounter_event_kind::participant_join ||
+		encounter.kind == telemetry_encounter_event_kind::participant_leave ||
+		encounter.kind == telemetry_encounter_event_kind::participant_summary;
 	if (participant_event != telemetry_encounter_participant_is_valid(encounter.participant))
 		return false;
 	if (encounter.kind == telemetry_encounter_event_kind::start &&
@@ -1326,7 +1329,8 @@ constexpr bool telemetry_encounter_payload_is_valid(
 	if (encounter.kind == telemetry_encounter_event_kind::close)
 	{
 		if (encounter.participant.subject_id != 0U || encounter.participant.pid != 0 ||
-		    encounter.elapsed_usec != encounter.at_monotonic_usec - encounter.start_monotonic_usec)
+		    encounter.elapsed_usec !=
+			    encounter.at_monotonic_usec - encounter.start_monotonic_usec)
 			return false;
 	}
 	else if (encounter.kind == telemetry_encounter_event_kind::start ||

@@ -80,16 +80,16 @@ void test_roster_effort_and_idempotent_close()
 		CHECK(result.outcome == telemetry_encounter_update_outcome::joined_existing);
 	}
 	CHECK(telemetry_encounter_leave(&state, participant(1),
-					telemetry_encounter_outcome::withdrawal,
-					1'800'000'000ULL, 2U, emit_event, &sink)
+					telemetry_encounter_outcome::withdrawal, 1'800'000'000ULL,
+					2U, emit_event, &sink)
 		      .outcome == telemetry_encounter_update_outcome::accepted);
 	CHECK(telemetry_encounter_begin(&state, id(producer, 12U), run_source,
 					telemetry_encounter_mode::pve, participant(11),
 					1'800'000'000ULL, 2U, emit_event, &sink)
 		      .outcome == telemetry_encounter_update_outcome::joined_existing);
-	const auto closed = telemetry_encounter_close(
-		&state, run, telemetry_encounter_outcome::success, 10U, 3'600'000'000ULL, 3U,
-		emit_event, &sink);
+	const auto closed = telemetry_encounter_close(&state, run,
+						      telemetry_encounter_outcome::success, 10U,
+						      3'600'000'000ULL, 3U, emit_event, &sink);
 	CHECK(closed.outcome == telemetry_encounter_update_outcome::accepted);
 	CHECK(count_kind(sink, telemetry_encounter_event_kind::close) == 1U);
 	CHECK(count_kind(sink, telemetry_encounter_event_kind::participant_summary) == 11U);
@@ -133,8 +133,8 @@ void test_terminal_outcomes_remain_observable()
 		sink_fixture sink{ {}, 0U, true };
 		const auto run = id(producer, static_cast<telemetry_sequence>(index + 1U));
 		CHECK(telemetry_encounter_begin(&state, run, source(1000U + index),
-					telemetry_encounter_mode::mixed, participant(50 + index),
-					10U, 1U, emit_event, &sink)
+						telemetry_encounter_mode::mixed,
+						participant(50 + index), 10U, 1U, emit_event, &sink)
 			      .outcome == telemetry_encounter_update_outcome::accepted);
 		CHECK(telemetry_encounter_close(&state, run, outcomes[index], 0U, 20U, 2U,
 						emit_event, &sink)
@@ -157,8 +157,9 @@ void test_bounded_state_and_quality()
 	{
 		const auto result = telemetry_encounter_begin(
 			&state, id(producer, index + 1U), source(2000U + index),
-			telemetry_encounter_mode::pve, participant(static_cast<telemetry_pid>(1000 + index)),
-			0U, 1U, emit_event, &sink);
+			telemetry_encounter_mode::pve,
+			participant(static_cast<telemetry_pid>(1000 + index)), 0U, 1U, emit_event,
+			&sink);
 		CHECK(result.outcome == telemetry_encounter_update_outcome::accepted);
 	}
 	CHECK(telemetry_encounter_begin(&state, id(producer, 1000U), source(9999U),
@@ -174,8 +175,8 @@ void test_bounded_state_and_quality()
 		      .outcome == telemetry_encounter_update_outcome::accepted);
 	for (telemetry_pid pid = 2; pid <= 64; ++pid)
 		CHECK(telemetry_encounter_begin(&participants, id(producer, 2000U + pid),
-					 source(3000U), telemetry_encounter_mode::pve, participant(pid),
-					 1U, 1U, emit_event, &sink)
+						source(3000U), telemetry_encounter_mode::pve,
+						participant(pid), 1U, 1U, emit_event, &sink)
 			      .outcome == telemetry_encounter_update_outcome::joined_existing);
 	CHECK(telemetry_encounter_begin(&participants, id(producer, 3000U), source(3000U),
 					telemetry_encounter_mode::pve, participant(65), 1U, 1U,
@@ -195,13 +196,16 @@ void test_bounded_state_and_quality()
 		      .outcome == telemetry_encounter_update_outcome::joined_existing);
 	for (unsigned index = 0U; index <= 126U; ++index)
 	{
-		const auto left = telemetry_encounter_leave(
-			&events, participant(1), telemetry_encounter_outcome::withdrawal,
-			2U + index * 2U, 1U, emit_event, &event_sink);
+		const auto left = telemetry_encounter_leave(&events, participant(1),
+							    telemetry_encounter_outcome::withdrawal,
+							    2U + index * 2U, 1U, emit_event,
+							    &event_sink);
 		CHECK(left.outcome == telemetry_encounter_update_outcome::accepted);
-		const auto joined = telemetry_encounter_begin(
-			&events, id(producer, 5000U + index), source(4000U), telemetry_encounter_mode::pve,
-			participant(1), 3U + index * 2U, 1U, emit_event, &event_sink);
+		const auto joined = telemetry_encounter_begin(&events, id(producer, 5000U + index),
+							      source(4000U),
+							      telemetry_encounter_mode::pve,
+							      participant(1), 3U + index * 2U, 1U,
+							      emit_event, &event_sink);
 		if (index == 126U)
 		{
 			CHECK((joined.quality_flags & TELEMETRY_QUALITY_QUEUE_DROP) != 0U);
@@ -213,9 +217,9 @@ void test_bounded_state_and_quality()
 	telemetry_encounter_state rejected{};
 	telemetry_encounter_state_init(&rejected);
 	sink_fixture rejected_sink{ {}, 0U, false };
-	const auto result = telemetry_encounter_begin(
-		&rejected, id(producer, 6000U), source(5000U), telemetry_encounter_mode::pvp,
-		participant(1), 0U, 1U, emit_event, &rejected_sink);
+	const auto result = telemetry_encounter_begin(&rejected, id(producer, 6000U), source(5000U),
+						      telemetry_encounter_mode::pvp, participant(1),
+						      0U, 1U, emit_event, &rejected_sink);
 	CHECK(result.outcome == telemetry_encounter_update_outcome::sink_rejected);
 	CHECK((result.quality_flags & TELEMETRY_QUALITY_QUEUE_DROP) != 0U);
 }

@@ -755,8 +755,7 @@ struct encounter_emit_context
 	telemetry_capture_result result{};
 };
 
-bool emit_encounter_event(void *raw_context,
-					 const telemetry_encounter_event &event) noexcept
+bool emit_encounter_event(void *raw_context, const telemetry_encounter_event &event) noexcept
 {
 	if (raw_context == nullptr)
 		return false;
@@ -784,7 +783,8 @@ bool emit_encounter_event(void *raw_context,
 	record.payload.encounter = event;
 	const telemetry_enqueue_result admission = telemetry_transport_enqueue(record);
 	const bool accepted = admission.admission == telemetry_queue_admission::accepted_detail ||
-				      admission.admission == telemetry_queue_admission::accepted_control_reserve;
+			      admission.admission ==
+				      telemetry_queue_admission::accepted_control_reserve;
 	if (!accepted)
 	{
 		result.outcome = telemetry_runtime_outcome::queue_full;
@@ -2222,8 +2222,8 @@ bool game_evidence_payload(const struct char_data *character,
 	return telemetry_runtime_evidence_is_valid(*evidence);
 }
 
-telemetry_encounter_participant game_encounter_participant(
-	const struct char_data *character) noexcept
+telemetry_encounter_participant
+game_encounter_participant(const struct char_data *character) noexcept
 {
 	telemetry_encounter_participant participant{};
 	if (character != nullptr && character->only.pc != nullptr && character->only.pc->pid > 0)
@@ -2236,33 +2236,33 @@ telemetry_encounter_participant game_encounter_participant(
 
 telemetry_id game_encounter_group_key(const struct char_data *character) noexcept
 {
-	if (character != nullptr && character->group != nullptr && character->group->ch != nullptr &&
-	    character->group->ch->only.pc != nullptr && character->group->ch->only.pc->pid > 0)
+	if (character != nullptr && character->group != nullptr &&
+	    character->group->ch != nullptr && character->group->ch->only.pc != nullptr &&
+	    character->group->ch->only.pc->pid > 0)
 		return static_cast<telemetry_id>(character->group->ch->only.pc->pid);
 	const auto participant = game_encounter_participant(character);
 	return participant.subject_id;
 }
 
 bool game_encounter_source(const struct char_data *character,
-				 telemetry_encounter_source *source) noexcept
+			   telemetry_encounter_source *source) noexcept
 {
 	if (character == nullptr || character->only.pc == nullptr || source == nullptr)
 		return false;
 	telemetry_dimensions dimensions{};
 	telemetry_quality_mask quality = TELEMETRY_QUALITY_NONE;
 	game_dimensions(character, &dimensions, &quality);
-	*source = { R.session_scope_environment_id,
-		    R.session_scope_season_id,
-		    R.config.config_id,
-		    R.config.classifier_version,
-		    R.config.policy_version,
-		    dimensions.zone_vnum,
-		    game_encounter_group_key(character) };
+	*source = {
+		R.session_scope_environment_id,	    R.session_scope_season_id, R.config.config_id,
+		R.config.classifier_version,	    R.config.policy_version,   dimensions.zone_vnum,
+		game_encounter_group_key(character)
+	};
 	return telemetry_encounter_source_is_valid(*source);
 }
 
-telemetry_capture_result encounter_capture_from_update(
-	const telemetry_encounter_update &update, const encounter_emit_context &emitter) noexcept
+telemetry_capture_result
+encounter_capture_from_update(const telemetry_encounter_update &update,
+			      const encounter_emit_context &emitter) noexcept
 {
 	telemetry_capture_result result = emitter.result;
 	result.quality_flags |= update.quality_flags;
@@ -2531,8 +2531,8 @@ telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *c
 }
 
 telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *character,
-								 struct descriptor_data *descriptor,
-								 telemetry_runtime_evidence_kind kind)
+							 struct descriptor_data *descriptor,
+							 telemetry_runtime_evidence_kind kind)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2542,9 +2542,8 @@ telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *chara
 	return telemetry_runtime_record_evidence(evidence);
 }
 
-telemetry_capture_result
-telemetry_runtime_game_encounter_begin(struct char_data *character,
-					       telemetry_encounter_mode mode)
+telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data *character,
+								telemetry_encounter_mode mode)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2562,9 +2561,9 @@ telemetry_runtime_game_encounter_begin(struct char_data *character,
 	if (!allocate_encounter_id(&encounter))
 		return game_capture_invalid();
 	encounter_emit_context emitter{};
-	const auto update = telemetry_encounter_begin(
-		&R.encounter, encounter, source, mode, participant, at, at_utc,
-		emit_encounter_event, &emitter);
+	const auto update = telemetry_encounter_begin(&R.encounter, encounter, source, mode,
+						      participant, at, at_utc, emit_encounter_event,
+						      &emitter);
 	telemetry_capture_result result = encounter_capture_from_update(update, emitter);
 	/* The combat edge is the first reliable run boundary. Once it admits the
 	 * run, attach the already-formed group roster so participant effort is not
@@ -2577,8 +2576,7 @@ telemetry_runtime_game_encounter_begin(struct char_data *character,
 	return result;
 }
 
-telemetry_capture_result telemetry_runtime_game_encounter_group_sync(
-	struct char_data *character)
+telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2586,14 +2584,18 @@ telemetry_capture_result telemetry_runtime_game_encounter_group_sync(
 		return game_capture_invalid();
 	if (character->group == nullptr)
 		return encounter_capture_from_update(
-			{ telemetry_encounter_update_outcome::not_found, 0U, 0U, 0U,
-			  TELEMETRY_QUALITY_NONE, {} },
+			{ telemetry_encounter_update_outcome::not_found,
+			  0U,
+			  0U,
+			  0U,
+			  TELEMETRY_QUALITY_NONE,
+			  {} },
 			encounter_emit_context{});
 	telemetry_capture_result aggregate{};
 	bool have_result = false;
 	std::uint16_t visited = 0U;
-	for (struct group_list *member = character->group; member != nullptr &&
-	     visited < GAME_GROUP_MAX_NODES; member = member->next, ++visited)
+	for (struct group_list *member = character->group;
+	     member != nullptr && visited < GAME_GROUP_MAX_NODES; member = member->next, ++visited)
 	{
 		P_char participant_character = member->ch;
 		if (participant_character == nullptr || participant_character->only.pc == nullptr)
@@ -2607,8 +2609,9 @@ telemetry_capture_result telemetry_runtime_game_encounter_group_sync(
 		    !game_time(&at, &at_utc))
 			continue;
 		encounter_emit_context emitter{};
-		const auto update = telemetry_encounter_join_group(
-			&R.encounter, source, participant, at, at_utc, emit_encounter_event, &emitter);
+		const auto update = telemetry_encounter_join_group(&R.encounter, source,
+								   participant, at, at_utc,
+								   emit_encounter_event, &emitter);
 		const auto captured = encounter_capture_from_update(update, emitter);
 		if (!have_result)
 		{
@@ -2621,8 +2624,7 @@ telemetry_capture_result telemetry_runtime_game_encounter_group_sync(
 	return have_result ? aggregate : game_capture_invalid();
 }
 
-telemetry_capture_result telemetry_runtime_game_encounter_observe(
-	struct char_data *character)
+telemetry_capture_result telemetry_runtime_game_encounter_observe(struct char_data *character)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2636,13 +2638,13 @@ telemetry_capture_result telemetry_runtime_game_encounter_observe(
 	    !game_encounter_source(character, &source) || !game_time(&at, &at_utc))
 		return game_capture_invalid();
 	encounter_emit_context emitter{};
-	const auto update = telemetry_encounter_observe(
-		&R.encounter, source, participant, at, at_utc, emit_encounter_event, &emitter);
+	const auto update = telemetry_encounter_observe(&R.encounter, source, participant, at,
+							at_utc, emit_encounter_event, &emitter);
 	return encounter_capture_from_update(update, emitter);
 }
 
-telemetry_capture_result telemetry_runtime_game_encounter_leave(
-	struct char_data *character, telemetry_encounter_outcome outcome)
+telemetry_capture_result telemetry_runtime_game_encounter_leave(struct char_data *character,
+								telemetry_encounter_outcome outcome)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2656,14 +2658,15 @@ telemetry_capture_result telemetry_runtime_game_encounter_leave(
 	if (!telemetry_encounter_participant_is_valid(participant) || !game_time(&at, &at_utc))
 		return game_capture_invalid();
 	encounter_emit_context emitter{};
-	const auto update = telemetry_encounter_leave(
-		&R.encounter, participant, outcome, at, at_utc, emit_encounter_event, &emitter);
+	const auto update = telemetry_encounter_leave(&R.encounter, participant, outcome, at,
+						      at_utc, emit_encounter_event, &emitter);
 	return encounter_capture_from_update(update, emitter);
 }
 
-telemetry_capture_result telemetry_runtime_game_encounter_complete(
-	struct char_data *character, telemetry_encounter_outcome outcome,
-	std::uint16_t expected_credit_count)
+telemetry_capture_result
+telemetry_runtime_game_encounter_complete(struct char_data *character,
+					  telemetry_encounter_outcome outcome,
+					  std::uint16_t expected_credit_count)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2683,8 +2686,7 @@ telemetry_capture_result telemetry_runtime_game_encounter_complete(
 	return encounter_capture_from_update(update, emitter);
 }
 
-telemetry_capture_result telemetry_runtime_encounter_close_all(
-	telemetry_encounter_outcome outcome)
+telemetry_capture_result telemetry_runtime_encounter_close_all(telemetry_encounter_outcome outcome)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2693,8 +2695,8 @@ telemetry_capture_result telemetry_runtime_encounter_close_all(
 	if (!game_time(&at, &at_utc))
 		return game_capture_invalid();
 	encounter_emit_context emitter{};
-	const auto update = telemetry_encounter_close_all(
-		&R.encounter, outcome, at, at_utc, emit_encounter_event, &emitter);
+	const auto update = telemetry_encounter_close_all(&R.encounter, outcome, at, at_utc,
+							  emit_encounter_event, &emitter);
 	return encounter_capture_from_update(update, emitter);
 }
 
