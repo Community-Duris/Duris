@@ -38,7 +38,9 @@
 #include "persistence/persistence_mode.h"
 #include "world/handler.h"
 #include "world/random.zone.h"
+#ifndef _PFILE_
 #include "world/zone_story_quest_runtime.h"
+#endif
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/item_extra_descr_codec.h"
@@ -2056,6 +2058,7 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 		remove_char_from_list(ch->desc->account, ch->player.name, false);
 #endif
 	delete_ship_runtime(GET_NAME(ch));
+#ifndef _PFILE_
 	std::string zone_story_error;
 	if (!zone_story_quest_runtime::erase_character(static_cast<uint32_t>(GET_PID(ch)),
 						       &zone_story_error))
@@ -2067,6 +2070,7 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 						 zone_story_error.c_str());
 		return character_delete_result::reconciliation_required;
 	}
+#endif
 	return character_delete_result::deleted;
 }
 

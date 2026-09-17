@@ -33,6 +33,13 @@ PRELUDE = r'''
 #include <map>
 #include <string>
 
+/* Extracted production bodies do not carry sparser.c's telemetry header or
+ * link the runtime object. Keep this focused gameplay fixture deterministic
+ * while preserving the production call sites under test. */
+void telemetry_runtime_game_combat_cast_attempt(P_char, int) {}
+void telemetry_runtime_game_combat_cast_complete(P_char) {}
+void telemetry_runtime_game_combat_cast_abort(P_char) {}
+
 static room_data rooms[2]{};
 P_room world = rooms;
 static index_data indexes[1]{};
