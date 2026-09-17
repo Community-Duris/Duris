@@ -1163,7 +1163,8 @@ const char *command[MAX_CMD] = {
 	"pulse",
 	"collector",
 	"restitution",
-	"\n" /* MAX_CMD = 864, MAX_CMD_LIST = 1000 */
+	"dummy",
+	"\n" /* MAX_CMD = 865, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -3330,6 +3331,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_ITEMMANA, STAT_RESTING + POS_PRONE, do_itemmana, 0, FALSE);
 	CMD_GRT(CMD_PULSE, STAT_DEAD + POS_PRONE, do_pulse, LESSER_G);
 	CMD_Y(CMD_COLLECTOR, STAT_NORMAL + POS_STANDING, collector_service_command, 0, FALSE);
+	CMD_Y(CMD_DUMMY, STAT_DEAD + POS_PRONE, do_training_dummy, 0, FALSE);
 	CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 	CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 

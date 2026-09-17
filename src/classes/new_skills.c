@@ -21,6 +21,7 @@
 #include "combat/damage.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "world/weather.h"
@@ -55,6 +56,13 @@ int CanDoFightMove(P_char ch, P_char victim)
 {
 	if (!ch || !victim)
 		return FALSE;
+	if (training_dummy_is(ch))
+		return FALSE;
+	if (!training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return FALSE;
+	}
 
 	if (victim == ch)
 	{
@@ -90,7 +98,7 @@ int CanDoFightMove(P_char ch, P_char victim)
 		return FALSE;
 	}
 
-	if (CHAR_IN_SAFE_ROOM(ch))
+	if (CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim))
 	{
 		send_to_char(
 			"You feel ashamed trying to disrupt the tranquility of this place.\r\n",
@@ -3032,6 +3040,11 @@ void capture(P_char ch, P_char victim)
 	if (!victim)
 	{
 		send_to_char("Capture who?\r\n", ch);
+		return;
+	}
+	if (!training_dummy_capture_target_allowed(victim))
+	{
+		send_to_char("The training dummy cannot be captured.\r\n", ch);
 		return;
 	}
 	if (IS_NPC(victim))

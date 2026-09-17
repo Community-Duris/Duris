@@ -203,6 +203,8 @@ DEATH_HARNESS = r"""
 #include <cstring>
 #include <iostream>
 
+bool training_dummy_capture_target_allowed(P_char) { return true; }
+
 index_data indexes[3] = {};
 P_index obj_index = indexes;
 index_data mob_indexes[2] = {};

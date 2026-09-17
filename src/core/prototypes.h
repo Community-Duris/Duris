@@ -650,6 +650,7 @@ void do_snoop(P_char, char *, int);
 void do_start(P_char, int);
 void do_start_deferred_newbie_kit(P_char, int);
 void do_stat(P_char, char *, int);
+void do_training_dummy(P_char, char *, int);
 void do_switch(P_char, char *, int);
 void do_teleport(P_char, char *, int);
 void do_text_reload(P_char, char *, int);
@@ -1182,6 +1183,11 @@ void checkFragList(P_char ch);
 /* random.mob.c */
 P_char create_random_mob(int theme, int mob_level);
 void do_namedreport(P_char ch, char *argument, int cmd);
+
+/* training_dummy.c */
+void training_dummy_bootstrap();
+bool training_dummy_is(P_char ch);
+void training_dummy_record_damage(P_char ch, int damage);
 
 /* random.zone.c */
 void display_random_zones(P_char ch);

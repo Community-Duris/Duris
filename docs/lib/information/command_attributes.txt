@@ -323,8 +323,6 @@ GET_C_LUK(vi
 GET_C_POW(ch
 GET_C_POW(vi
 ~
-restitution
-~
 rearkick
 GET_C_STR(ch
 GET_C_LUK(ch
@@ -880,6 +878,8 @@ dropkick
 duck
 ~
 duh
+~
+dummy
 ~
 east
 GET_C_INT(ch
@@ -1581,6 +1581,8 @@ resetarti
 resetspec
 ~
 rest
+~
+restitution
 ~
 restore
 ~

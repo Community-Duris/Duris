@@ -786,9 +786,8 @@ bool insert_receipt_item(MYSQL *connection, const player_death_restitution_plan 
 	unsigned long compensation_length = strlen(compensation);
 	uint32_t artifact_vnum = item.artifact_vnum;
 	uint32_t vnum = item.vnum;
+	mysql_null_indicator metadata_null = item.metadata_payload.empty();
 	MYSQL_BIND parameters[21] = {};
-	using mysql_is_null_type = std::remove_pointer_t<decltype(parameters[12].is_null)>;
-	mysql_is_null_type metadata_null = item.metadata_payload.empty();
 	bind_blob(&parameters[0], const_cast<uint8_t *>(plan.restitution_id.bytes.data()),
 		  &rid_length);
 	bind_int(&parameters[1], MYSQL_TYPE_LONGLONG, const_cast<uint64_t *>(&item.item_uid), true);

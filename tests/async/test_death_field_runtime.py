@@ -39,6 +39,13 @@ PRELUDE = r'''
 void telemetry_runtime_game_combat_cast_attempt(P_char, int) {}
 void telemetry_runtime_game_combat_cast_complete(P_char) {}
 void telemetry_runtime_game_combat_cast_abort(P_char) {}
+/* fight.c and sparser.c are lifted without the production training-dummy
+ * translation unit. Keep this harness focused on death-field behavior by
+ * providing the ordinary-world predicate stubs it needs. */
+bool training_dummy_is(P_char) { return false; }
+bool training_dummy_target_allowed(P_char, P_char) { return true; }
+void training_dummy_retarget_nonpet(P_char, P_char) {}
+bool safe_room_spell_target_allowed(P_char, int, P_char) { return true; }
 
 static room_data rooms[2]{};
 P_room world = rooms;

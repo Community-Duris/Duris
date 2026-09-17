@@ -22,6 +22,7 @@
 #include "net/gmcp.h"
 #include "world/graph.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "world/map.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -3410,6 +3411,12 @@ void do_follow(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
+	if (training_dummy_is(ch) || training_dummy_is(leader))
+	{
+		send_to_char("The training dummy cannot follow or be followed.\r\n", ch);
+		return;
+	}
+
 	if (IS_NPC(leader) && !IS_TRUSTED(ch) &&
 	    (IS_PC(ch) || IS_MORPH(ch) || (ch->following && IS_PC(ch->following))))
 	{
@@ -3560,6 +3567,13 @@ void do_drag(P_char ch, char *argument, int /*cmd*/)
 		if (ch == tch)
 		{
 			send_to_char("That would be quite a feat, my friend.\n", ch);
+			return;
+		}
+
+		if (training_dummy_is(tch))
+		{
+			send_to_char("The training dummy is anchored and cannot be dragged.\r\n",
+				     ch);
 			return;
 		}
 

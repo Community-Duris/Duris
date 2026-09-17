@@ -38,7 +38,7 @@ struct char_data {
 #define MAX_STRING_LENGTH 1024
 #define GET_NAME(ch) ((ch)->name)
 #define IS_NPC(ch) false
-#define IS_PC(ch) (!IS_NPC(ch))
+#define IS_PC(ch) (!(IS_NPC(ch)))
 #define PLR2_BACK_RANK 1
 #define REMOVE_BIT(bits, flag) ((bits) &= ~(flag))
 #define IS_SET(bits, flag) ((bits) & (flag))
@@ -72,11 +72,8 @@ void mm_release(int, group_list *node) { released.push_back(node); delete node; 
 void send_to_char(const char *msg, P_char ch) { ch->messages.emplace_back(msg); }
 void update_groupies(P_char ch, bool = false) { ++ch->updates; }
 void telemetry_runtime_game_context(P_char ch, void *) { ++ch->telemetry; }
-enum class telemetry_encounter_outcome { withdrawal };
-int telemetry_runtime_game_encounter_leave(P_char ch, telemetry_encounter_outcome) {
-    ++ch->telemetry;
-    return 0;
-}
+enum class telemetry_encounter_outcome { withdrawal = 5 };
+void telemetry_runtime_game_encounter_leave(P_char, telemetry_encounter_outcome) {}
 void telemetry_group_context_changed(group_list *gl) {
     for (; gl; gl = gl->next) ++gl->ch->telemetry;
 }
@@ -134,7 +131,7 @@ void test_group_remove(int index, int size) {
     auto expected_head = index == 0 ? head->next : head;
     assert(group_remove_member(removed));
     assert(!removed->group && removed->specials.act2 == 2 && removed->purges == 1);
-    assert(removed->updates == 1 && removed->telemetry == 2 && group_logs == 0);
+    assert(removed->updates == 1 && removed->telemetry == 1 && group_logs == 0);
     if (size <= 2) {
         assert(released.size() == static_cast<size_t>(size));
         for (auto ch : members) assert(!ch->group);
