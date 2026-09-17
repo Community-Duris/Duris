@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 198;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 200;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -56,7 +56,7 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_items',"
 	"'shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items',"
 	"'statistics','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_interval',"
-	"'telemetry_player_day','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
+	"'telemetry_player_day','telemetry_reward_projection','telemetry_reward_projection_state','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
@@ -69,15 +69,16 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * migration 0019, restitution receipt/runtime stores introduced by migration
  * 0020, identity-stable Collector notification receipt/outbox state introduced
  * by migration 0021, and additive progression fields introduced by migration
- * 0022. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0022_telemetry_progression";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 22;
+ * 0022, and committed reward projection/reconciliation state introduced by
+ * migration 0023. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0023_telemetry_reward_projection";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 23;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"aee8d6811142df8c89a7b7f8d990f449e63af053755ffd682c87822c76a32fb6";
+	"e847046f0aaf5c2cbcc9c4a559282f79b05b7c3ce55348d2d91581e49d9dda85";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4";
+	"98c185812fe3d3bc0b68ebb15e78b434dda450b91a197e8482808f1be636c436";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"2cd4a1442c91785bb95c24c14cc17195aff38595fd45d04edd64072c04d0f0b4";
+	"2fb7985f84f9616c7e0eec008e559b29214a061fd3681106f632545ad5120e52";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

@@ -1849,6 +1849,7 @@ CREATE TABLE `epic_ledger` (
   PRIMARY KEY (`operation_id`),
   UNIQUE KEY `uq_epic_ledger_pid_revision` (`pid`,`epic_revision`),
   KEY `idx_epic_ledger_pid_created` (`pid`,`created_at`),
+  KEY `idx_epic_created_operation` (`created_at`,`operation_id`),
   KEY `idx_epic_ledger_reason_created` (`reason_type`,`created_at`),
   CONSTRAINT `epic_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1902,6 +1903,7 @@ CREATE TABLE `currency_ledger` (
   UNIQUE KEY `uq_currency_wallet_revision` (`pid`,`wallet_revision`),
   UNIQUE KEY `uq_currency_bank_revision` (`bank_id`,`bank_revision`),
   KEY `idx_currency_pid_created` (`pid`,`created_at`),
+  KEY `idx_currency_created_operation` (`created_at`,`operation_id`),
   KEY `idx_currency_bank_created` (`bank_id`,`created_at`),
   KEY `idx_currency_reason_created` (`reason_type`,`created_at`),
   CONSTRAINT `currency_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
@@ -2103,6 +2105,7 @@ CREATE TABLE `combat_outcome` (
   `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
   UNIQUE KEY `uq_combat_pkill_event` (`pkill_event_id`),
   KEY `idx_combat_victim_created` (`victim_pid`,`created_at`),
+  KEY `idx_combat_outcome_created_operation` (`created_at`,`operation_id`),
   CONSTRAINT `combat_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `combat_outcome_participant` (
@@ -2124,6 +2127,7 @@ CREATE TABLE `combat_frag_ledger` (
   PRIMARY KEY (`operation_id`,`participant_index`),
   UNIQUE KEY `uq_combat_frag_pid_revision` (`pid`,`frag_revision`),
   KEY `idx_combat_frag_pid_created` (`pid`,`created_at`),
+  KEY `idx_combat_frag_created_operation` (`created_at`,`operation_id`,`participant_index`,`pid`),
   CONSTRAINT `combat_frag_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `combat_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2194,6 +2198,7 @@ CREATE TABLE `boon_reward_outcome` (
   `entry_count` smallint unsigned NOT NULL,
   `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`operation_id`), KEY `idx_boon_reward_player_created` (`pid`,`created_at`),
+  KEY `idx_boon_reward_created_operation` (`created_at`,`operation_id`),
   CONSTRAINT `boon_reward_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `boon_reward_outcome_entry` (
@@ -2212,6 +2217,7 @@ CREATE TABLE `zone_touch_outcome` (
   `alignment_delta` smallint NOT NULL, `reset_requested` tinyint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`operation_id`), KEY `idx_zone_touch_outcome_zone_created` (`zone_number`,`created_at`),
+  KEY `idx_zone_touch_outcome_created_operation` (`created_at`,`operation_id`),
   CONSTRAINT `zone_touch_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `zone_touch_outcome_participant` (
@@ -2518,6 +2524,79 @@ CREATE TABLE IF NOT EXISTS `telemetry_cohort_member` (
   PRIMARY KEY (`definition_version`,`generation`,`environment_id`,`season_id`,`utc_day`,`level_band`,`class_id`,`race_id`,`faction_id`,`zone_vnum`,`config_id`,`category`,`subject_id`,`session_boot_id`,`session_process_id`,`session_seq`),
   CONSTRAINT `chk_telemetry_cohort_member_kind` CHECK ((`membership_kind` = 1 AND `session_boot_id` = 0 AND `session_process_id` = 0 AND `session_seq` = 0) OR (`membership_kind` = 2 AND `session_boot_id` <> 0 AND `session_process_id` <> 0 AND `session_seq` <> 0)),
   CONSTRAINT `chk_telemetry_cohort_member_subject` CHECK (`subject_id` <> 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Replay-safe committed reward projection.  Source ledgers remain authority;
+-- outcome rows are context and are never added to reward totals here.
+CREATE TABLE IF NOT EXISTS `telemetry_reward_projection` (
+  `source_kind` tinyint unsigned NOT NULL,
+  `operation_id` binary(16) NOT NULL,
+  `entry_index` smallint unsigned NOT NULL,
+  `participant_pid` int unsigned NOT NULL,
+  `source_table` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `source_created_at` timestamp(6) NOT NULL,
+  `authority_kind` tinyint unsigned NOT NULL,
+  `reward_kind` tinyint unsigned NOT NULL DEFAULT '0',
+  `gross_amount` bigint DEFAULT NULL,
+  `net_amount` bigint DEFAULT NULL,
+  `transfer_amount` bigint DEFAULT NULL,
+  `parent_operation_id` binary(16) DEFAULT NULL,
+  `economic_operation_id` binary(16) NOT NULL,
+  `reason_type` smallint unsigned NOT NULL DEFAULT '0',
+  `reason_id` bigint NOT NULL DEFAULT '0',
+  `source_site` smallint unsigned NOT NULL DEFAULT '0',
+  `is_transfer` tinyint unsigned NOT NULL DEFAULT '0',
+  `is_creation` tinyint unsigned NOT NULL DEFAULT '0',
+  `context_complete` tinyint unsigned NOT NULL DEFAULT '1',
+  `status` tinyint unsigned NOT NULL,
+  `quality_flags` int unsigned NOT NULL DEFAULT '0',
+  `source_payload_digest` binary(32) NOT NULL,
+  `cycle_id` bigint unsigned NOT NULL,
+  `projected_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`source_kind`,`operation_id`,`entry_index`,`participant_pid`),
+  KEY `idx_reward_projection_scan` (`source_kind`,`source_created_at`,`operation_id`,`entry_index`,`participant_pid`),
+  KEY `idx_reward_projection_participant` (`participant_pid`,`source_created_at`,`source_kind`),
+  KEY `idx_reward_projection_economic` (`economic_operation_id`,`reward_kind`,`source_kind`),
+  KEY `idx_reward_projection_status` (`source_kind`,`status`,`source_created_at`),
+  CONSTRAINT `chk_reward_projection_source_kind` CHECK (`source_kind` between 1 and 10),
+  CONSTRAINT `chk_reward_projection_authority` CHECK (`authority_kind` between 0 and 2),
+  CONSTRAINT `chk_reward_projection_reward` CHECK (`reward_kind` between 0 and 3),
+  CONSTRAINT `chk_reward_projection_status` CHECK (`status` between 1 and 5),
+  CONSTRAINT `chk_reward_projection_transfer` CHECK (`is_transfer` between 0 and 1),
+  CONSTRAINT `chk_reward_projection_creation` CHECK (`is_creation` between 0 and 1),
+  CONSTRAINT `chk_reward_projection_context_complete` CHECK (`context_complete` between 0 and 1),
+  CONSTRAINT `chk_reward_projection_authoritative_amount` CHECK ((`authority_kind` <> 1) or (`reward_kind` <> 0 and `gross_amount` is not null and `net_amount` is not null)),
+  CONSTRAINT `chk_reward_projection_context_amount` CHECK ((`authority_kind` <> 2) or (`gross_amount` is null and `net_amount` is null and `transfer_amount` is null)),
+  CONSTRAINT `chk_reward_projection_transfer_creation` CHECK ((`is_transfer` = 0) or (`is_creation` = 0)),
+  CONSTRAINT `chk_reward_projection_transfer_amount` CHECK ((`transfer_amount` is null) or (`is_transfer` = 1 and `transfer_amount` >= 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `telemetry_reward_projection_state` (
+  `source_kind` tinyint unsigned NOT NULL,
+  `cycle_id` bigint unsigned NOT NULL DEFAULT '0',
+  `fast_cursor_created_at` timestamp(6) NULL DEFAULT NULL,
+  `fast_cursor_operation_id` binary(16) NOT NULL,
+  `fast_cursor_entry_index` smallint unsigned NOT NULL DEFAULT '0',
+  `fast_cursor_participant_pid` int unsigned NOT NULL DEFAULT '0',
+  `reconcile_cursor_created_at` timestamp(6) NULL DEFAULT NULL,
+  `reconcile_cursor_operation_id` binary(16) NOT NULL,
+  `reconcile_cursor_entry_index` smallint unsigned NOT NULL DEFAULT '0',
+  `reconcile_cursor_participant_pid` int unsigned NOT NULL DEFAULT '0',
+  `cycle_high_water` timestamp(6) NULL DEFAULT NULL,
+  `retention_floor` timestamp(6) NULL DEFAULT NULL,
+  `acknowledged_through` timestamp(6) NULL DEFAULT NULL,
+  `backlog_rows` bigint unsigned NOT NULL DEFAULT '0',
+  `quality_flags` int unsigned NOT NULL DEFAULT '0',
+  `provisional` tinyint unsigned NOT NULL DEFAULT '1',
+  `last_fast_started_at` timestamp(6) NULL DEFAULT NULL,
+  `last_fast_completed_at` timestamp(6) NULL DEFAULT NULL,
+  `last_reconcile_started_at` timestamp(6) NULL DEFAULT NULL,
+  `last_reconcile_completed_at` timestamp(6) NULL DEFAULT NULL,
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`source_kind`),
+  KEY `idx_reward_projection_state_reconcile` (`provisional`,`acknowledged_through`,`retention_floor`),
+  CONSTRAINT `chk_reward_projection_state_source_kind` CHECK (`source_kind` between 1 and 10),
+  CONSTRAINT `chk_reward_projection_state_provisional` CHECK (`provisional` between 0 and 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `player_death_restitution_receipt` (

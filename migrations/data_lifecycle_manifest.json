@@ -6287,6 +6287,76 @@
       "dependencies": []
     },
     {
+      "id": "database:telemetry_reward_projection",
+      "kind": "database_table",
+      "locator": "telemetry_reward_projection",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "source_identity_and_participant_pid",
+      "technical_purpose": "Derived committed reward projection with identity-stable replay, conflict quarantine, and bounded source reconciliation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "projection_retained_source_horizon_and_controller_policy",
+      "archive_retention": "projection_retained_source_horizon_and_controller_policy",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:currency_ledger",
+        "database:epic_ledger",
+        "database:zone_touch_outcome",
+        "database:zone_touch_outcome_participant",
+        "database:combat_outcome",
+        "database:combat_outcome_participant",
+        "database:combat_frag_ledger",
+        "database:boon_reward_outcome",
+        "database:boon_reward_outcome_entry"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_projection_state",
+      "kind": "database_table",
+      "locator": "telemetry_reward_projection_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "source_kind_and_reconciliation_cycle",
+      "technical_purpose": "Bounded reward projection cursors, retention acknowledgment, backlog, freshness, and provisional completeness state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "aggregate",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "projection_retained_source_horizon_and_controller_policy",
+      "archive_retention": "projection_retained_source_horizon_and_controller_policy",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_projection"
+      ]
+    },
+    {
       "id": "database:artifact_mana",
       "kind": "database_table",
       "locator": "artifact_mana",
