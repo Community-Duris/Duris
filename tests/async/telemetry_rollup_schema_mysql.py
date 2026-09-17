@@ -35,7 +35,7 @@ RUNTIME_VERIFY = ROOT / "migrations/verify_runtime_compatibility.sh"
 VALIDATOR = ROOT / "scripts/validate_runtime_compatibility.py"
 
 BOOTSTRAP_TABLE_COUNT = 179
-RUNTIME_TABLE_COUNT = 193
+RUNTIME_TABLE_COUNT = 198
 
 NEW_TABLES = ("telemetry_cohort_member", "telemetry_rollup_session")
 SESSION_TABLE = "telemetry_rollup_session"

@@ -139,7 +139,7 @@ def main():
         print("SQL repository harness compile: PASS", flush=True)
         if args.sql_fixture:
             subprocess.run([str(sql), str(ROOT / "migrations/immutable/0014_telemetry_storage.sql"),
-                            str(ROOT / "migrations/immutable/0020_telemetry_progression.sql")],
+                            str(ROOT / "migrations/immutable/0022_telemetry_progression.sql")],
                            check=True, timeout=120)
         else:
             print("SQL runtime: SKIPPED (use --sql-fixture with disposable fixture acknowledgement)")
