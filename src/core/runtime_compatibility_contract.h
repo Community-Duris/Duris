@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 198;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 200;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -56,28 +56,30 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_items',"
 	"'shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items',"
 	"'statistics','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_interval',"
-	"'telemetry_player_day','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
+	"'telemetry_player_day','telemetry_reward_projection','telemetry_reward_projection_state','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"48e95fc94f4ef39b1748616ef3113799c88724a99036961722bf02ba3999544a";
+	"97e0a1d46a3800b99897bc9cae1f35036290a7f795a07b2cc136d301160c89a2";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"b916f61b719cac3cf39be135cb270f50af62823ab6b198381880b0b64c5b0adc";
+	"f8811cb2ddda40bad945e6281c301e371f69d7860a8194256e705690036e456a";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
  * migration 0019, restitution receipt/runtime stores introduced by migration
  * 0020, identity-stable Collector notification receipt/outbox state introduced
  * by migration 0021, and additive progression fields introduced by migration
- * 0022. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0022_telemetry_progression";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 22;
+ * 0022, committed reward projection/reconciliation state introduced by
+ * migration 0023, and bounded encounter lifecycle facts introduced by
+ * migration 0024. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0024_telemetry_encounters";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 24;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"aee8d6811142df8c89a7b7f8d990f449e63af053755ffd682c87822c76a32fb6";
+	"69e4b3bb194c1abc1f61b1d64b074f051978495633a1350d7b0c91e1db6189d4";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4";
+	"3c29a3c6794261dfcbd7ad1b0520452c8401e8734a689a68e8c57e6374fcf798";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"2cd4a1442c91785bb95c24c14cc17195aff38595fd45d04edd64072c04d0f0b4";
+	"fd34e9d6d8b1e2a78683ead11a6d0f9bbacc27496a7b454bcd25d5282e4cf6d3";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

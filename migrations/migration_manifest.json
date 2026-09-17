@@ -398,6 +398,26 @@
       "verify": "immutable/0022_telemetry_progression.sh",
       "verify_checksum": "9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0023_telemetry_reward_projection",
+      "sequence": 23,
+      "description": "Add committed reward projection and bounded reconciliation state",
+      "apply": "immutable/0023_telemetry_reward_projection.sql",
+      "apply_checksum": "e847046f0aaf5c2cbcc9c4a559282f79b05b7c3ce55348d2d91581e49d9dda85",
+      "verify": "immutable/0023_telemetry_reward_projection.sh",
+      "verify_checksum": "db4a738c4e8295cfcbff3bcc5addab6ff325758c24fcce3d9e52df6608154b8c",
+      "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0024_telemetry_encounters",
+      "sequence": 24,
+      "description": "Add bounded encounter lifecycle and participant effort facts",
+      "apply": "immutable/0024_telemetry_encounters.sql",
+      "apply_checksum": "69e4b3bb194c1abc1f61b1d64b074f051978495633a1350d7b0c91e1db6189d4",
+      "verify": "immutable/0024_telemetry_encounters.sh",
+      "verify_checksum": "3c29a3c6794261dfcbd7ad1b0520452c8401e8734a689a68e8c57e6374fcf798",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

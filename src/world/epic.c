@@ -37,6 +37,7 @@ using namespace std;
 #include "sql/sql.h"
 #include "world/timers.h"
 #include "item/trophy.h"
+#include "telemetry/telemetry_runtime.h"
 
 extern long boot_time;
 extern P_room world;
@@ -1307,6 +1308,10 @@ void epic_publish_zone_touch(const zone_touch_result &result)
 {
 	epic_zone_completions.push_back(epic_zone_completion(
 		static_cast<int>(result.zone_number), result.touched_at, result.alignment_delta));
+	if (P_char toucher = find_player_by_pid(static_cast<int>(result.toucher_pid)))
+		(void)telemetry_runtime_game_encounter_complete(
+			toucher, telemetry_encounter_outcome::success,
+			static_cast<std::uint16_t>(result.group_size));
 	if (result.reset_requested)
 	{
 		int zone = real_zone(static_cast<int>(result.zone_number));

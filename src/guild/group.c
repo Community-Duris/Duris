@@ -59,6 +59,14 @@ static bool do_group_add(P_char ch, P_char victim);
  * bounded adapter owns dimensions/classification; no gameplay state is changed. */
 static void telemetry_group_context_changed(struct group_list *group)
 {
+	for (struct group_list *member = group; member; member = member->next)
+	{
+		if (member->ch && IS_PC(member->ch))
+		{
+			(void)telemetry_runtime_game_encounter_group_sync(member->ch);
+			break;
+		}
+	}
 	unsigned visited = 0U;
 	for (struct group_list *member = group; member && visited < 256U;
 	     member = member->next, ++visited)
@@ -1027,6 +1035,10 @@ bool group_remove_member(P_char ch)
 		}
 	}
 
+	if (IS_PC(ch))
+		(void)telemetry_runtime_game_encounter_leave(ch,
+			telemetry_encounter_outcome::withdrawal);
+
 	purge_linked_auras(ch);
 
 	/* okay.. 2 possible special conditions:
@@ -1068,6 +1080,9 @@ bool group_remove_member(P_char ch)
 	if (gl && !gl->next)
 	{ /* only 1 person in the group */
 		/* silently disband it */
+		if (gl->ch && IS_PC(gl->ch))
+			(void)telemetry_runtime_game_encounter_leave(
+				gl->ch, telemetry_encounter_outcome::withdrawal);
 		if (in_command_aura(gl->ch))
 			remove_aura_message(gl->ch, gl->ch);
 		gl->ch->group = NULL;

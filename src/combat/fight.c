@@ -2891,6 +2891,8 @@ void die(P_char ch, P_char killer)
 
 	if (!killer)
 		return;
+	if (IS_PC(ch))
+		(void)telemetry_runtime_game_encounter_leave(ch, telemetry_encounter_outcome::death);
 
 	// Upon death, we want to kill followers.
 	if (IS_PC(ch) && ch->followers)
@@ -8356,6 +8358,8 @@ void set_fighting(P_char ch, P_char vict)
 	ch->specials.next_fighting = combat_list;
 	combat_list = ch;
 	telemetry_combat_context_changed(ch);
+	(void)telemetry_runtime_game_encounter_begin(
+		ch, IS_PC(victim) ? telemetry_encounter_mode::pvp : telemetry_encounter_mode::pve);
 
 	if (ch->in_room >= 0)
 		gmcp_mark_room_dirty(ch->in_room);
