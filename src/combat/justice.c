@@ -10,6 +10,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -407,6 +408,9 @@ void justice_delete_guard(P_char ch)
 void justice_action_invader(P_char ch)
 {
 	struct zone_data *zone_struct;
+
+	if (training_dummy_is(ch))
+		return;
 
 	if (IS_TRUSTED(ch))
 		return;

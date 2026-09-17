@@ -2882,6 +2882,12 @@ void die(P_char ch, P_char killer)
 		logit(LOG_EXIT, "die called in fight.c with no ch");
 		return;
 	}
+	if (training_dummy_is(ch))
+	{
+		GET_HIT(ch) = GET_MAX_HIT(ch);
+		SET_POS(ch, POS_STANDING + STAT_NORMAL);
+		return;
+	}
 
 	if (!killer)
 		return;
@@ -4530,6 +4536,11 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	if (messages == NULL)
 	{
@@ -4636,7 +4647,7 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// end of globes check
 
 	/* check for deflectable spells - basically all but shields damage and already deflected spells */
-	if ((ch != victim) && !IS_SET(flags, SPLDAM_NODEFLECT))
+	if ((ch != victim) && !training_dummy_is(victim) && !IS_SET(flags, SPLDAM_NODEFLECT))
 	{
 		/* deflection */
 		if (IS_AFFECTED4(victim, AFF4_DEFLECT) && IS_ALIVE(ch))
@@ -4994,6 +5005,9 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 int check_shields(P_char ch, P_char victim, int dam, int flags)
 {
+	if (training_dummy_is(victim))
+		return DAM_NONEDEAD;
+
 	int result = DAM_NONEDEAD;
 	double soulshielddam = get_property("damage.shield.soulshield", 0.400);
 	double negshielddam = get_property("damage.shield.negativeshield", 0.450);
@@ -5087,6 +5101,11 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 		return 0;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	// Reject all other faiths MWD25
 	if (IS_AFFECTED5(ch, AFF5_JUDICIUM_FIDEI))
@@ -6060,6 +6079,11 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	if (ch && victim) // Just making sure.
 	{
@@ -6085,7 +6109,7 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 
 		if (victim != ch)
 		{
-			if (CHAR_IN_SAFE_ROOM(ch))
+			if (CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim))
 				return DAM_NONEDEAD;
 
 			if (should_not_kill(ch, victim))
@@ -6156,12 +6180,11 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 			const int recorded_damage = static_cast<int>(dam);
 			training_dummy_note_attacker(victim, ch);
 			training_dummy_record_damage(victim, recorded_damage);
-			if (IS_NPC(ch) && !IS_PC_PET(ch))
-				training_dummy_retarget_nonpet(ch, victim);
 			if (damAccumulator)
 				*damAccumulator += recorded_damage;
 			if (IS_PC(ch) && ch->desc)
-				send_to_char_f(ch, "The training dummy absorbs %d damage.\r\n", recorded_damage);
+				send_to_char_f(ch, "The training dummy absorbs %d damage.\r\n",
+					       recorded_damage);
 			return DAM_NONEDEAD;
 		}
 

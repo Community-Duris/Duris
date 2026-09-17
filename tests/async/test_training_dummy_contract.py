@@ -20,11 +20,52 @@ def test_training_dummy_is_registered_as_a_player_command():
 def test_training_dummy_has_fixed_and_custom_profiles():
     dummy = source("src/combat/training_dummy.c")
 
-    assert 'training_dummy_create(room, home, 56, RACE_GREY, CLASS_CLERIC' in dummy
+    assert 'avail_hometowns[home][race] != 1 || !creation_race_enabled(race)' in dummy
+    assert 'creation_class_align(race, class_index) == 5' in dummy
+    assert 'candidate = guild_locations[home][0];' in dummy
+    assert 'training_dummy_create(room, home, 56, race,' in dummy
+    assert 'training_dummy_default_race_for_room(ch->in_room)' in dummy
     assert 'dummy spawn [level] [race] [class] [min|mid|max]' in dummy
     assert 'training_dummy_gear_ac' in dummy
     assert 'training_dummy_gear_save' in dummy
     assert 'dummy->only.npc->training_dummy_fixed = fixed;' in dummy
+
+
+def test_dummy_appearance_tracks_its_profile():
+    dummy = source("src/combat/training_dummy.c")
+
+    assert 'training_dummy_refresh_description(dummy);' in dummy
+    assert 'race_names_table[race].ansi' in dummy
+    assert 'class_names_table[class_index].ansi' in dummy
+    assert 'GET_LEVEL(dummy)' in dummy
+    assert 'TRAINING_DUMMY_GEAR_MIN:' in dummy
+    assert 'TRAINING_DUMMY_GEAR_MID' in dummy
+    assert 'TRAINING_DUMMY_GEAR_MAX:' in dummy
+    assert 'dummy->player.size = race_size(race);' in dummy
+
+
+def test_spawn_rooms_keep_the_dummy_without_triggering_justice_or_unsafe_combat():
+    handler = source("src/world/handler.c")
+    justice = source("src/combat/justice.c")
+    fight_move = source("src/classes/new_skills.c")
+    fight = source("src/combat/fight.c")
+    spells = source("src/net/sparser.c")
+
+    assert 'if (!training_dummy_is(ch) && IS_INVADER(ch))' in handler
+    assert '(GET_MASTER(ch) == NULL) && !training_dummy_is(ch)' in handler
+    assert 'if (training_dummy_is(ch))\n\t\treturn;' in justice
+    assert 'CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim)' in fight_move
+    assert 'CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim)' in fight
+    assert 'safe_room_spell_target_allowed(ch, spl, target_data->t_char)' in spells
+    assert 'safe_room_spell_target_allowed(ch, arg->spell, tar_char)' in spells
+
+
+def test_nonpet_damage_and_reflective_shields_cannot_turn_dummy_into_a_tank():
+    fight = source("src/combat/fight.c")
+
+    assert fight.count('training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim)') >= 3
+    assert 'if (training_dummy_is(victim))\n\t\treturn DAM_NONEDEAD;' in fight
+    assert 'if (training_dummy_is(ch))\n\t\treturn;' in fight
 
 
 def test_training_dummy_is_non_hostile_and_records_damage_without_hp_loss():

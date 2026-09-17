@@ -1617,7 +1617,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	/*
 	 * justice hook
 	 */
-	if (IS_INVADER(ch))
+	if (!training_dummy_is(ch) && IS_INVADER(ch))
 	{
 		justice_action_invader(ch);
 		if (!IS_ALIVE(ch))
@@ -1630,7 +1630,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	if (IS_ROOM(room, ROOM_SAFE))
 	{
 		// Do not purge pets...
-		if (IS_NPC(ch) && (GET_MASTER(ch) == NULL))
+		if (IS_NPC(ch) && (GET_MASTER(ch) == NULL) && !training_dummy_is(ch))
 		{
 			// Attempt to have them leave the room first.
 			if (leave_safe_room(ch))
@@ -2174,8 +2174,8 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 	}
 	if (training_dummy_is(ch))
 	{
-		logit(LOG_DEBUG, "equip_char: training dummy %s refused object vnum %d",
-		      J_NAME(ch), OBJ_VNUM(obj));
+		logit(LOG_DEBUG, "equip_char: training dummy %s refused object vnum %d", J_NAME(ch),
+		      OBJ_VNUM(obj));
 		if (OBJ_NOWHERE(obj) && ch->in_room != NOWHERE)
 			obj_to_room(obj, ch->in_room);
 		return;

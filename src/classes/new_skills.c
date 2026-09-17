@@ -91,7 +91,7 @@ int CanDoFightMove(P_char ch, P_char victim)
 		return FALSE;
 	}
 
-	if (CHAR_IN_SAFE_ROOM(ch))
+	if (CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim))
 	{
 		send_to_char(
 			"You feel ashamed trying to disrupt the tranquility of this place.\r\n",

@@ -51,6 +51,7 @@
 #include "combat/guard.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "economy/collector_presence.h"
 #include "item/item_actions.h"
 #include "item/objmisc.h"
@@ -1722,6 +1723,10 @@ void do_kill(P_char ch, char *argument, int /*cmd*/)
 		else if (IS_TRUSTED(victim))
 		{
 			send_to_char("Not a chance...\n", ch);
+		}
+		else if (training_dummy_is(victim))
+		{
+			do_hit(ch, argument, CMD_HIT);
 		}
 		else
 		{
