@@ -829,7 +829,7 @@ bool decode_runtime_spellbook_json(const std::string &json, std::vector<int32_t>
 }
 
 bool decode_runtime_spellbook_bitmap(const std::vector<uint8_t> &bitmap,
-					      std::vector<int32_t> *spell_ids)
+				     std::vector<int32_t> *spell_ids)
 {
 	if (!spell_ids)
 		return false;
@@ -855,7 +855,7 @@ bool decode_runtime_spellbook_bitmap(const std::vector<uint8_t> &bitmap,
 }
 
 bool decode_runtime_spellbook(const std::string &keyword, const std::string &description,
-				      std::vector<int32_t> *spell_ids)
+			      std::vector<int32_t> *spell_ids)
 {
 	if (sql_item_extra_descr_is_spellbook_marker(keyword.c_str()))
 	{
@@ -868,7 +868,7 @@ bool decode_runtime_spellbook(const std::string &keyword, const std::string &des
 }
 
 bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t item_uid,
-					int64_t expected_vnum, player_item_snapshot *item)
+				 int64_t expected_vnum, player_item_snapshot *item)
 {
 	if (!item || payload.size() < sizeof(uint32_t))
 		return false;
@@ -882,8 +882,9 @@ bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t i
 					  payload[2] == 'T' && payload[3] == '1';
 		if (!native_state)
 		{
-			if (player_item_snapshot_list_decode(payload.data(), payload.size(), &snapshots) !=
-				player_snapshot_codec_result::ok ||
+			if (player_item_snapshot_list_decode(payload.data(), payload.size(),
+							     &snapshots) !=
+				    player_snapshot_codec_result::ok ||
 			    snapshots.size() != 1 || snapshots[0].object_uid != item_uid ||
 			    snapshots[0].vnum != expected_vnum)
 				return false;
@@ -892,7 +893,8 @@ bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t i
 		}
 
 		player_death_restitution_item_state state = {};
-		if (!player_death_restitution_item_state_decode(payload.data(), payload.size(), &state) ||
+		if (!player_death_restitution_item_state_decode(payload.data(), payload.size(),
+								&state) ||
 		    state.item_uid != item_uid || state.vnum > INT32_MAX ||
 		    static_cast<int64_t>(state.vnum) != expected_vnum || state.quantity != 1 ||
 		    state.extra_flags > UINT32_MAX || state.wear_flags < 0 ||
@@ -918,7 +920,9 @@ bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t i
 		converted.bitvectors = state.bitvectors;
 		constexpr std::array<uint8_t, 4> string_masks = { 1, 4, 2, 8 };
 		std::array<std::string *, 4> strings = {
-			&converted.name, &converted.short_description, &converted.description,
+			&converted.name,
+			&converted.short_description,
+			&converted.description,
 			&converted.action_description,
 		};
 		for (size_t index = 0; index < strings.size(); ++index)
@@ -928,24 +932,27 @@ bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t i
 				if (state.strings[index].empty())
 					strings[index]->clear();
 				else
-					strings[index]->assign(
-						reinterpret_cast<const char *>(state.strings[index].data()),
-						state.strings[index].size());
+					strings[index]->assign(reinterpret_cast<const char *>(
+								       state.strings[index].data()),
+							       state.strings[index].size());
 			}
 		for (size_t index = 0; index < state.affects.size(); ++index)
-			converted.affects[index] =
-				{ state.affects[index].location, state.affects[index].modifier };
+			converted.affects[index] = { state.affects[index].location,
+						     state.affects[index].modifier };
 		for (const auto &source : state.extra_descriptions)
 		{
 			const auto bytes_to_string = [](const std::vector<uint8_t> &bytes)
 			{
-				return bytes.empty() ? std::string() : std::string(
-					reinterpret_cast<const char *>(bytes.data()), bytes.size());
+				return bytes.empty() ? std::string() :
+						       std::string(reinterpret_cast<const char *>(
+									   bytes.data()),
+								   bytes.size());
 			};
 			std::string keyword = bytes_to_string(source.keyword);
 			std::string description = bytes_to_string(source.description);
 			std::vector<int32_t> spell_ids;
-			const bool legacy_raw = sql_item_extra_descr_is_spellbook_marker(keyword.c_str());
+			const bool legacy_raw =
+				sql_item_extra_descr_is_spellbook_marker(keyword.c_str());
 			const bool canonical = keyword == "SPELLBOOK";
 			if (legacy_raw || canonical)
 			{
@@ -959,8 +966,9 @@ bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t i
 				description.clear();
 			}
 			const bool spellbook = keyword == "SPELLBOOK";
-			converted.extra_descriptions.push_back(
-				{ std::move(keyword), std::move(description), spellbook, std::move(spell_ids) });
+			converted.extra_descriptions.push_back({ std::move(keyword),
+								 std::move(description), spellbook,
+								 std::move(spell_ids) });
 		}
 		*item = std::move(converted);
 	}
@@ -1060,8 +1068,9 @@ bool load_restitution_runtime_state(MYSQL *connection, player_load_result *resul
 			       std::vector<uint8_t> payload;
 			       player_item_snapshot decoded = {};
 			       if (!decode_hex_payload(row[3], &payload) ||
-			           !decode_runtime_item_payload(payload, item_uid, custody_vnum, &decoded))
-			       return false;
+				   !decode_runtime_item_payload(payload, item_uid, custody_vnum,
+								&decoded))
+				       return false;
 			       player_item_snapshot &item = result->snapshot.items[found->second];
 			       const int32_t parent_index = item.parent_index;
 			       const int16_t equipment_slot = item.equipment_slot;

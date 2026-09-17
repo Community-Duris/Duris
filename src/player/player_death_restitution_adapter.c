@@ -157,8 +157,8 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 	return result;
 }
 
-bool player_death_restitution_runtime_restore_replayed_command(
-	const critical_command &command, void *)
+bool player_death_restitution_runtime_restore_replayed_command(const critical_command &command,
+							       void *)
 {
 	if (command.type != critical_command_type::player_death_restitution)
 		return true;
@@ -166,8 +166,8 @@ bool player_death_restitution_runtime_restore_replayed_command(
 	if (!slot)
 		return false;
 	player_death_restitution_runtime_submission submission = {};
-	if (player_death_restitution_runtime_restore_replayed_command(
-			command, live_callbacks, nullptr, &submission) !=
+	if (player_death_restitution_runtime_restore_replayed_command(command, live_callbacks,
+								      nullptr, &submission) !=
 	    player_death_restitution_runtime_result::accepted)
 		return false;
 	*slot = submission;

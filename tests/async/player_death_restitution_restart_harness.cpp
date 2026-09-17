@@ -164,7 +164,7 @@ bool player_save_pipeline_save_admitted(int pid)
 
 namespace
 {
-	template <typename Predicate> void wait_until(Predicate predicate)
+template <typename Predicate> void wait_until(Predicate predicate)
 {
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
 	while (!predicate())
@@ -210,12 +210,13 @@ void run_restart_stage(const std::string &directory)
 	assert(critical_command_coordinator_health_copy().fenced_keys == 1);
 
 	critical_completion completions[8] = {};
-	wait_until([&]
-	{
-		const size_t count = critical_command_coordinator_pulse(completions, 8);
-		player_death_restitution_runtime_handle_completions(completions, count);
-		return critical_command_coordinator_health_copy().retries == 1;
-	});
+	wait_until(
+		[&]
+		{
+			const size_t count = critical_command_coordinator_pulse(completions, 8);
+			player_death_restitution_runtime_handle_completions(completions, count);
+			return critical_command_coordinator_health_copy().retries == 1;
+		});
 	// An ambiguous commit is retried, not treated as terminal: the target
 	// pipeline fence remains held while the database outcome is unknown.
 	assert(target_fence_held);
@@ -226,12 +227,13 @@ void run_restart_stage(const std::string &directory)
 		allow_second_restart_apply = true;
 	}
 	apply_changed.notify_all();
-	wait_until([&]
-	{
-		const size_t count = critical_command_coordinator_pulse(completions, 8);
-		player_death_restitution_runtime_handle_completions(completions, count);
-		return critical_command_coordinator_health_copy().completed == 1;
-	});
+	wait_until(
+		[&]
+		{
+			const size_t count = critical_command_coordinator_pulse(completions, 8);
+			player_death_restitution_runtime_handle_completions(completions, count);
+			return critical_command_coordinator_health_copy().completed == 1;
+		});
 	assert(!target_fence_held);
 	assert(player_death_restitution_runtime_login_admit(RECIPIENT_PID));
 	assert(release_calls == 1);
