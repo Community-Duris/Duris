@@ -3549,24 +3549,23 @@ bool send_to_pid_offline_deduplicated(const char *msg, int pid, const unsigned c
 	// a pending receipt, so a crash between enqueue/dequeue and restart cannot
 	// lose a notification. The primary key, not an advisory lock or message
 	// text, owns identity and concurrent retries.
-	std::string query =
-		"START TRANSACTION;"
-		"INSERT INTO offline_message_receipts "
-		"(pid,message_id,message,status) VALUES (";
+	std::string query = "START TRANSACTION;"
+			    "INSERT INTO offline_message_receipts "
+			    "(pid,message_id,message,status) VALUES (";
 	query += std::to_string(pid);
 	query += ",UNHEX('";
 	query += message_id_hex;
 	query += "'),'";
 	query += escaped_message;
 	query += "',0) ON DUPLICATE KEY UPDATE message=message;"
-		"INSERT IGNORE INTO offline_messages (date,pid,message,message_id) "
-		"SELECT UTC_TIMESTAMP(6),pid,message,message_id "
-		"FROM offline_message_receipts WHERE pid=";
+		 "INSERT IGNORE INTO offline_messages (date,pid,message,message_id) "
+		 "SELECT UTC_TIMESTAMP(6),pid,message,message_id "
+		 "FROM offline_message_receipts WHERE pid=";
 	query += std::to_string(pid);
 	query += " AND message_id=UNHEX('";
 	query += message_id_hex;
 	query += "') AND status IN (0,1);"
-		"COMMIT;";
+		 "COMMIT;";
 
 	if (sql_run_multi_query(query.c_str()))
 		return true;
@@ -3648,14 +3647,16 @@ void send_offline_messages(P_char ch)
 			    mysql_affected_rows(DB) != 1)
 			{
 				persistence_alert(AVATAR, "offline_message", "player", "unknown",
-						  "acknowledge", "database_write_failed", "pid=%d", pid);
+						  "acknowledge", "database_write_failed", "pid=%d",
+						  pid);
 				break;
 			}
 			// The receipt remains as the durable acknowledgement. Failure to
 			// remove this physical row is harmless because delivered receipts
 			// are excluded from the next delivery scan.
 			(void)qry("DELETE FROM offline_messages WHERE pid='%d' "
-				  "AND message_id=UNHEX('%s')", pid, delivery.message_id.c_str());
+				  "AND message_id=UNHEX('%s')",
+				  pid, delivery.message_id.c_str());
 			continue;
 		}
 
