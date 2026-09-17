@@ -1725,41 +1725,31 @@ static bool bulk_get_source_matches(const bulk_get_state &state, P_obj container
 }
 
 /*
- * A pet can leave a player-owned item on the floor without publishing a room
- * transfer.  When that item is selected together with ordinary room stock,
- * the first object in the list must not make the batch's source authoritative
- * by accident.  Prefer one owner already recorded by the runtime catalog and
- * reject a genuinely mixed-owner batch; unregistered stock can then be adopted
- * into that same source before the atomic player transfer.
+ * Resolve every selected root through the same source policy as single-item
+ * get.  A pet can leave a player-owned item on the floor without publishing a
+ * room transfer, so trusting only the first runtime row would let a stale
+ * player owner authorize a bulk pickup.  The shared policy validates each
+ * physical placement and preserves explicit virtual authorities such as a
+ * locker; a genuinely mixed-owner batch is rejected before submission.
  */
 static bool bulk_get_source_for_roots(P_char actor, P_obj container,
 				      const std::vector<P_obj> &roots, item_owner_identity *source)
 {
 	if (!actor || !source || roots.empty())
 		return false;
-	item_owner_identity runtime_source = {};
-	bool has_runtime_source = false;
+	item_owner_identity resolved_source = {};
 	for (P_obj root : roots)
 	{
-		if (!root)
+		item_owner_identity root_source = {};
+		if (!root || !get_item_source_owner(actor, root, container, &root_source))
 			return false;
-		item_ownership_runtime_entry runtime = {};
-		if (!item_ownership_runtime_lookup(root->obj_uid, &runtime))
-			continue;
-		if (!has_runtime_source)
-		{
-			runtime_source = runtime.owner;
-			has_runtime_source = true;
-		}
-		else if (!item_owner_identity_equal(runtime_source, runtime.owner))
+		if (!item_owner_identity_valid(resolved_source))
+			resolved_source = root_source;
+		else if (!item_owner_identity_equal(resolved_source, root_source))
 			return false;
 	}
-	if (has_runtime_source)
-	{
-		*source = runtime_source;
-		return item_owner_identity_valid(*source);
-	}
-	return get_item_source_owner(actor, roots.front(), container, source);
+	*source = resolved_source;
+	return item_owner_identity_valid(*source);
 }
 
 static bool bulk_get_source_available(P_char actor, const bulk_get_state &state, P_obj container)
