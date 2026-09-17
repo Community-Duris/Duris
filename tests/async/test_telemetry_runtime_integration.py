@@ -58,6 +58,7 @@ def main(*, exhaustion: bool = False) -> None:
                         "telemetry_activity.c",
                         "telemetry_config.c",
                         "telemetry_queue.c",
+                        "telemetry_progression.c",
                         "telemetry_runtime.c",
                         "telemetry_session.c",
                         "telemetry_transport.c",
