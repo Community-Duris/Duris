@@ -101,7 +101,7 @@ std::string lower_name(std::string_view name)
 {
 	std::string lowered(name);
 	std::transform(lowered.begin(), lowered.end(), lowered.begin(),
-			       [](unsigned char value) { return static_cast<char>(std::tolower(value)); });
+		       [](unsigned char value) { return static_cast<char>(std::tolower(value)); });
 	return lowered;
 }
 
@@ -198,19 +198,21 @@ std::string serialize_observation(const telemetry_observation &observation)
 	return hex_encode(observation.observation_id) + ":" +
 	       hex_encode(observation.quest_definition_id) + ":" +
 	       std::to_string(observation.content_revision) + ":" +
-	       std::to_string(observation.observed_at) + ":" + std::to_string(observation.pid) + ":" +
-	       std::to_string(observation.level) + ":" + std::to_string(observation.racewar) + ":" +
-	       std::to_string(observation.credit_mask) + ":" + std::to_string(observation.party_size) +
-	       ":" + std::to_string(observation.strongest_party_level) + ":" +
-	       std::to_string(observation.duration_seconds) + ":" + outcome_name(observation.outcome) +
-	       ":" + (observation.accessible ? "1" : "0");
+	       std::to_string(observation.observed_at) + ":" + std::to_string(observation.pid) +
+	       ":" + std::to_string(observation.level) + ":" + std::to_string(observation.racewar) +
+	       ":" + std::to_string(observation.credit_mask) + ":" +
+	       std::to_string(observation.party_size) + ":" +
+	       std::to_string(observation.strongest_party_level) + ":" +
+	       std::to_string(observation.duration_seconds) + ":" +
+	       outcome_name(observation.outcome) + ":" + (observation.accessible ? "1" : "0");
 }
 
 bool deserialize_observation(std::string_view encoded, telemetry_observation *observation)
 {
 	if (!observation)
 		return false;
-	const std::vector<std::string_view> fields = [&]() {
+	const std::vector<std::string_view> fields = [&]()
+	{
 		std::vector<std::string_view> result;
 		size_t begin = 0;
 		while (begin <= encoded.size())
@@ -255,8 +257,8 @@ bool same_score(const leaderboard_entry &left, const leaderboard_entry &right)
 /* Compare non-negative fractions without multiplying the operands.  The
  * continued-fraction form is exact even if a future catalog grows beyond the
  * range where numerator*denominator fits in a machine integer. */
-int compare_fractions(uint64_t left_numerator, uint64_t left_denominator,
-			      uint64_t right_numerator, uint64_t right_denominator)
+int compare_fractions(uint64_t left_numerator, uint64_t left_denominator, uint64_t right_numerator,
+		      uint64_t right_denominator)
 {
 	if (left_denominator == 0 || right_denominator == 0)
 		return left_denominator == right_denominator ? 0 : left_denominator == 0 ? -1 : 1;
@@ -275,7 +277,8 @@ int compare_fractions(uint64_t left_numerator, uint64_t left_denominator,
 		if (left_numerator == 0 || right_numerator == 0)
 		{
 			const int result = left_numerator == right_numerator ? 0 :
-					   left_numerator == 0 ? -1 : 1;
+					   left_numerator == 0		     ? -1 :
+									       1;
 			return reverse ? -result : result;
 		}
 		std::swap(left_numerator, left_denominator);
@@ -292,8 +295,8 @@ bool better_score(const leaderboard_entry &left, const leaderboard_entry &right)
 		return true;
 	if (left.total != 0 && right.total != 0)
 	{
-		const int ratio = compare_fractions(left.completed, left.total, right.completed,
-								    right.total);
+		const int ratio =
+			compare_fractions(left.completed, left.total, right.completed, right.total);
 		if (ratio != 0)
 			return ratio > 0;
 	}
@@ -309,7 +312,7 @@ bool better_score(const leaderboard_entry &left, const leaderboard_entry &right)
 }
 
 bool contains_pid(const zone_story_quest_tracking::completion_transaction &transaction,
-			  uint32_t pid)
+		  uint32_t pid)
 {
 	return std::find(transaction.credited_pids.begin(), transaction.credited_pids.end(), pid) !=
 	       transaction.credited_pids.end();
@@ -335,7 +338,8 @@ bool service::set_catalog(zone_story_quest_catalog::catalog catalog, std::string
 		if (error)
 		{
 			*error = diagnostics.empty() ? "invalid zone-story quest catalog" :
-					 diagnostics.front().code + ": " + diagnostics.front().message;
+						       diagnostics.front().code + ": " +
+							       diagnostics.front().message;
 		}
 		return false;
 	}
@@ -376,8 +380,8 @@ const service::character_state *service::find_state(uint32_t season_id, uint32_t
 	return found == characters_.end() ? nullptr : &found->second;
 }
 
-const zone_story_quest_tracking::quest_definition *service::find_definition(
-	std::string_view definition_id) const
+const zone_story_quest_tracking::quest_definition *
+service::find_definition(std::string_view definition_id) const
 {
 	for (const auto &definition : catalog_.definitions)
 		if (definition.definition_id == definition_id)
@@ -386,7 +390,8 @@ const zone_story_quest_tracking::quest_definition *service::find_definition(
 }
 
 bool service::eligible_for_current_catalog(
-	const zone_story_quest_tracking::completion_transaction &transaction, std::string *error) const
+	const zone_story_quest_tracking::completion_transaction &transaction,
+	std::string *error) const
 {
 	const auto *definition = find_definition(transaction.quest_definition_id);
 	if (!definition)
@@ -401,17 +406,18 @@ bool service::eligible_for_current_catalog(
 	return true;
 }
 
-void service::award_daily_for(
-	const zone_story_quest_tracking::completion_transaction &transaction)
+void service::award_daily_for(const zone_story_quest_tracking::completion_transaction &transaction)
 {
 	if (!daily_policy_.enabled)
 		return;
 	for (uint32_t pid : transaction.credited_pids)
 	{
-		if (deleted_characters_.find({ transaction.season_id, pid }) != deleted_characters_.end())
+		if (deleted_characters_.find({ transaction.season_id, pid }) !=
+		    deleted_characters_.end())
 			continue;
 		auto &state = state_for(transaction.season_id, pid);
-		const int64_t period = period_for(transaction.completed_at, daily_policy_.period_seconds);
+		const int64_t period =
+			period_for(transaction.completed_at, daily_policy_.period_seconds);
 		auto assignment = state.daily_assignments.find(period);
 		if (assignment == state.daily_assignments.end())
 			continue;
@@ -433,9 +439,10 @@ void service::award_daily_for(
 	}
 }
 
-result service::apply_transaction(
-	const zone_story_quest_tracking::completion_transaction &transaction,
-	std::string_view character_name, bool allow_stale, bool award_daily, std::string *error)
+result
+service::apply_transaction(const zone_story_quest_tracking::completion_transaction &transaction,
+			   std::string_view character_name, bool allow_stale, bool award_daily,
+			   std::string *error)
 {
 	std::string encoded;
 	encoded = zone_story_quest_tracking::serialize_transaction(transaction, error);
@@ -458,7 +465,7 @@ result service::apply_transaction(
 	}
 
 	transactions_.emplace(transaction.transaction_id,
-					 stored_transaction{ transaction, encoded });
+			      stored_transaction{ transaction, encoded });
 	for (uint32_t pid : transaction.credited_pids)
 	{
 		if (deleted_characters_.find({ transaction.season_id, pid }) !=
@@ -480,15 +487,17 @@ result service::record_completion(const completion_event &event, std::string *er
 {
 	if (event.outcome != telemetry_outcome::success)
 		return fail(error, "completion event outcome must be success"), result::invalid;
-	if (deleted_characters_.find({ event.transaction.season_id,
-						       event.transaction.direct_completer_pid }) !=
+	if (deleted_characters_.find(
+		    { event.transaction.season_id, event.transaction.direct_completer_pid }) !=
 	    deleted_characters_.end())
-		return fail(error, "direct completer is deleted and must re-identify before earning credit"),
+		return fail(error,
+			    "direct completer is deleted and must re-identify before earning credit"),
 		       result::rejected;
 	const std::string before = serialize_state();
-	const result recorded = apply_transaction(event.transaction, event.character_name, false, true,
-						  error);
-	if (recorded == result::invalid || recorded == result::conflict || recorded == result::rejected)
+	const result recorded =
+		apply_transaction(event.transaction, event.character_name, false, true, error);
+	if (recorded == result::invalid || recorded == result::conflict ||
+	    recorded == result::rejected)
 		return recorded;
 
 	if (event.attempt_observed)
@@ -523,8 +532,8 @@ result service::record_completion(const completion_event &event, std::string *er
 result service::record_telemetry(const telemetry_observation &observation, std::string *error)
 {
 	if (observation.observation_id.empty() || observation.quest_definition_id.empty() ||
-	    observation.content_revision == 0 || observation.observed_at <= 0 || observation.pid == 0 ||
-	    observation.level < 0 || observation.party_size > 1000 ||
+	    observation.content_revision == 0 || observation.observed_at <= 0 ||
+	    observation.pid == 0 || observation.level < 0 || observation.party_size > 1000 ||
 	    observation.strongest_party_level < 0 || observation.duration_seconds < 0)
 		return fail(error, "invalid quest telemetry observation"), result::invalid;
 	const std::string encoded = serialize_observation(observation);
@@ -532,7 +541,8 @@ result service::record_telemetry(const telemetry_observation &observation, std::
 	if (found != telemetry_.end())
 	{
 		if (serialize_observation(found->second) != encoded)
-			return fail(error, "telemetry observation ID was reused with different data"),
+			return fail(error,
+				    "telemetry observation ID was reused with different data"),
 			       result::conflict;
 		return result::already_applied;
 	}
@@ -606,7 +616,7 @@ bool service::erase_character_all_seasons(uint32_t pid, uint32_t current_season_
 }
 
 zone_progress service::progress_for_zone(uint32_t season_id, uint32_t pid,
-						 int32_t zone_number) const
+					 int32_t zone_number) const
 {
 	zone_progress progress;
 	progress.zone_number = zone_number;
@@ -618,7 +628,8 @@ zone_progress service::progress_for_zone(uint32_t season_id, uint32_t pid,
 		    definition.zone_number != zone_number)
 			continue;
 		progress.total++;
-		if (state && state->credit_masks.find(definition.definition_id) != state->credit_masks.end())
+		if (state &&
+		    state->credit_masks.find(definition.definition_id) != state->credit_masks.end())
 			progress.completed++;
 	}
 	progress.available = progress.total > 0;
@@ -630,14 +641,15 @@ zone_progress service::progress_for_zone(uint32_t season_id, uint32_t pid,
 }
 
 personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
-					       std::string_view fallback_name) const
+				      std::string_view fallback_name) const
 {
 	personal_summary summary;
 	summary.season_id = season_id;
 	summary.pid = pid;
 	const auto *state = find_state(season_id, pid);
-	summary.character_name = state && !state->character_name.empty() ? state->character_name :
-						 std::string(fallback_name);
+	summary.character_name = state && !state->character_name.empty() ?
+					 state->character_name :
+					 std::string(fallback_name);
 	std::set<std::string> completed_ids;
 	for (const auto &definition : catalog_.definitions)
 	{
@@ -645,7 +657,8 @@ personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
 		    definition.content_revision != catalog_.content_revision)
 			continue;
 		++summary.total;
-		if (state && state->credit_masks.find(definition.definition_id) != state->credit_masks.end())
+		if (state &&
+		    state->credit_masks.find(definition.definition_id) != state->credit_masks.end())
 			completed_ids.insert(definition.definition_id);
 	}
 	summary.completed = completed_ids.size();
@@ -667,20 +680,24 @@ personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
 }
 
 std::vector<leaderboard_entry> service::sorted_leaderboard(uint32_t season_id,
-									   int32_t zone_number) const
+							   int32_t zone_number) const
 {
 	std::vector<leaderboard_entry> entries;
 	for (const auto &[key, state] : characters_)
 	{
 		if (key.first != season_id)
 			continue;
-		const personal_summary summary = summary_for(season_id, key.second, state.character_name);
+		const personal_summary summary =
+			summary_for(season_id, key.second, state.character_name);
 		leaderboard_entry entry{ .pid = key.second,
-						 .character_name = summary.character_name.empty() ?
-									  "PID " + std::to_string(key.second) : summary.character_name };
+					 .character_name =
+						 summary.character_name.empty() ?
+							 "PID " + std::to_string(key.second) :
+							 summary.character_name };
 		if (zone_number > 0)
 		{
-			const zone_progress zone = progress_for_zone(season_id, key.second, zone_number);
+			const zone_progress zone =
+				progress_for_zone(season_id, key.second, zone_number);
 			entry.completed = zone.completed;
 			entry.total = zone.total;
 			entry.full_zones = zone.available && zone.completed == zone.total ? 1 : 0;
@@ -693,9 +710,8 @@ std::vector<leaderboard_entry> service::sorted_leaderboard(uint32_t season_id,
 		}
 		entries.push_back(std::move(entry));
 	}
-	std::sort(entries.begin(), entries.end(), [](const auto &left, const auto &right) {
-		return better_score(left, right);
-	});
+	std::sort(entries.begin(), entries.end(),
+		  [](const auto &left, const auto &right) { return better_score(left, right); });
 	uint64_t rank = 0;
 	for (size_t index = 0; index < entries.size(); ++index)
 	{
@@ -707,7 +723,7 @@ std::vector<leaderboard_entry> service::sorted_leaderboard(uint32_t season_id,
 }
 
 leaderboard_page service::leaderboard(uint32_t season_id, int32_t zone_number, uint64_t page,
-						uint64_t page_size, uint32_t viewer_pid) const
+				      uint64_t page_size, uint32_t viewer_pid) const
 {
 	leaderboard_page output;
 	if (page_size == 0)
@@ -718,7 +734,8 @@ leaderboard_page service::leaderboard(uint32_t season_id, int32_t zone_number, u
 		if (entry.pid == viewer_pid)
 			output.own_rank = entry.rank;
 	const uint64_t begin = page > std::numeric_limits<uint64_t>::max() / page_size ?
-				       std::numeric_limits<uint64_t>::max() : page * page_size;
+				       std::numeric_limits<uint64_t>::max() :
+				       page * page_size;
 	if (begin >= entries.size())
 		return output;
 	const uint64_t end = std::min<uint64_t>(entries.size(), begin + page_size);
@@ -727,7 +744,7 @@ leaderboard_page service::leaderboard(uint32_t season_id, int32_t zone_number, u
 }
 
 evidence_summary service::evidence_for(std::string_view quest_definition_id,
-						uint32_t content_revision) const
+				       uint32_t content_revision) const
 {
 	evidence_summary summary;
 	summary.quest_definition_id = quest_definition_id;
@@ -746,8 +763,8 @@ evidence_summary service::evidence_for(std::string_view quest_definition_id,
 		if (observation.party_size == 0 || observation.strongest_party_level == 0)
 			++summary.unknown_party_context_attempts;
 		else if (daily_policy_.maximum_party_level_delta >= 0 &&
-			 observation.strongest_party_level > observation.level +
-				 daily_policy_.maximum_party_level_delta)
+			 observation.strongest_party_level >
+				 observation.level + daily_policy_.maximum_party_level_delta)
 			++summary.carried_attempts;
 		switch (observation.outcome)
 		{
@@ -784,8 +801,10 @@ evidence_summary service::evidence_for(std::string_view quest_definition_id,
 		}
 		else
 		{
-			summary.minimum_racewar = std::min(summary.minimum_racewar, observation.racewar);
-			summary.maximum_racewar = std::max(summary.maximum_racewar, observation.racewar);
+			summary.minimum_racewar =
+				std::min(summary.minimum_racewar, observation.racewar);
+			summary.maximum_racewar =
+				std::max(summary.maximum_racewar, observation.racewar);
 		}
 	}
 	summary.distinct_pids = pids.size();
@@ -797,43 +816,44 @@ evidence_summary service::evidence_for(std::string_view quest_definition_id,
 		return summary;
 	}
 	const bool level_ok = summary.has_level_range &&
-				      summary.minimum_level >= daily_policy_.minimum_level &&
-				      (daily_policy_.maximum_level == 0 ||
-				       summary.maximum_level <= daily_policy_.maximum_level);
-	const bool racewar_ok =
-		!summary.has_racewar_range ||
-		((daily_policy_.minimum_racewar == 0 ||
-		  summary.minimum_racewar >= daily_policy_.minimum_racewar) &&
-		 (daily_policy_.maximum_racewar == 0 ||
-		  summary.maximum_racewar <= daily_policy_.maximum_racewar));
+			      summary.minimum_level >= daily_policy_.minimum_level &&
+			      (daily_policy_.maximum_level == 0 ||
+			       summary.maximum_level <= daily_policy_.maximum_level);
+	const bool racewar_ok = !summary.has_racewar_range ||
+				((daily_policy_.minimum_racewar == 0 ||
+				  summary.minimum_racewar >= daily_policy_.minimum_racewar) &&
+				 (daily_policy_.maximum_racewar == 0 ||
+				  summary.maximum_racewar <= daily_policy_.maximum_racewar));
 	const bool accessible_ok = !daily_policy_.require_accessible_evidence ||
-					   summary.all_observed_accessible;
+				   summary.all_observed_accessible;
 	const bool party_context_ok = summary.unknown_party_context_attempts == 0 &&
-					      summary.carried_attempts == 0 &&
-					      (!daily_policy_.require_known_party_context ||
-					       summary.unknown_party_context_attempts == 0);
+				      summary.carried_attempts == 0 &&
+				      (!daily_policy_.require_known_party_context ||
+				       summary.unknown_party_context_attempts == 0);
 	summary.suitable = summary.observed_attempts >= daily_policy_.minimum_attempts &&
-				   summary.distinct_pids >= daily_policy_.minimum_distinct_pids &&
-				   summary.successful_attempts >= daily_policy_.minimum_successes && level_ok &&
-				   racewar_ok && accessible_ok && party_context_ok &&
-				   summary.inaccessible_attempts == 0 &&
-				   summary.stale_revision_attempts == 0;
-		if (summary.suitable)
-			summary.explanation = "evidence meets the configured attempts, player, level, and access policy";
-		else
-		{
-			std::ostringstream reason;
-			reason << "observed " << summary.observed_attempts << " attempts from "
-				<< summary.distinct_pids << " PIDs; policy requires "
-				<< daily_policy_.minimum_attempts << "/" << daily_policy_.minimum_distinct_pids;
+			   summary.distinct_pids >= daily_policy_.minimum_distinct_pids &&
+			   summary.successful_attempts >= daily_policy_.minimum_successes &&
+			   level_ok && racewar_ok && accessible_ok && party_context_ok &&
+			   summary.inaccessible_attempts == 0 &&
+			   summary.stale_revision_attempts == 0;
+	if (summary.suitable)
+		summary.explanation =
+			"evidence meets the configured attempts, player, level, and access policy";
+	else
+	{
+		std::ostringstream reason;
+		reason << "observed " << summary.observed_attempts << " attempts from "
+		       << summary.distinct_pids << " PIDs; policy requires "
+		       << daily_policy_.minimum_attempts << "/"
+		       << daily_policy_.minimum_distinct_pids;
 		if (!accessible_ok)
-				reason << "; inaccessible observations are present";
-			if (!party_context_ok)
-				reason << "; party context is missing or shows a stronger-party carry";
-			if (!level_ok)
-				reason << "; level range is outside policy";
-			summary.explanation = reason.str();
-		}
+			reason << "; inaccessible observations are present";
+		if (!party_context_ok)
+			reason << "; party context is missing or shows a stronger-party carry";
+		if (!level_ok)
+			reason << "; level range is outside policy";
+		summary.explanation = reason.str();
+	}
 	return summary;
 }
 
@@ -845,12 +865,13 @@ int64_t service::period_for(int64_t timestamp, int64_t period_seconds)
 }
 
 daily_assignment service::assign_daily(uint32_t season_id, uint32_t pid, int level, int racewar,
-						int64_t now, std::string *error)
+				       int64_t now, std::string *error)
 {
 	daily_assignment empty;
 	empty.season_id = season_id;
 	empty.pid = pid;
-	if (!season_id || !pid || now <= 0 || level < 0 || !valid_period(daily_policy_.period_seconds))
+	if (!season_id || !pid || now <= 0 || level < 0 ||
+	    !valid_period(daily_policy_.period_seconds))
 	{
 		fail(error, "invalid daily assignment context");
 		return empty;
@@ -870,7 +891,7 @@ daily_assignment service::assign_daily(uint32_t season_id, uint32_t pid, int lev
 			return existing->second;
 	}
 	assignment.status = daily_policy_.enabled ? daily_status::no_eligible_candidate :
-						      daily_status::disabled;
+						    daily_status::disabled;
 	if (!daily_policy_.enabled)
 		return assignment;
 	auto &state = state_for(season_id, pid);
@@ -880,11 +901,12 @@ daily_assignment service::assign_daily(uint32_t season_id, uint32_t pid, int lev
 		if (!definition.active || !definition.eligible_for_zone_completion ||
 		    definition.content_revision != catalog_.content_revision)
 			continue;
-		const evidence_summary evidence = evidence_for(definition.definition_id,
-									       definition.content_revision);
+		const evidence_summary evidence =
+			evidence_for(definition.definition_id, definition.content_revision);
 		if (!evidence.suitable || (level < daily_policy_.minimum_level) ||
 		    (daily_policy_.maximum_level > 0 && level > daily_policy_.maximum_level) ||
-		    (daily_policy_.minimum_racewar > 0 && racewar < daily_policy_.minimum_racewar) ||
+		    (daily_policy_.minimum_racewar > 0 &&
+		     racewar < daily_policy_.minimum_racewar) ||
 		    (daily_policy_.maximum_racewar > 0 && racewar > daily_policy_.maximum_racewar))
 			continue;
 		if (evidence.has_level_range &&
@@ -900,8 +922,8 @@ daily_assignment service::assign_daily(uint32_t season_id, uint32_t pid, int lev
 	{
 		/* Stable, deterministic selection is intentional: there is no reroll path. */
 		uint64_t hash = 1469598103934665603ULL;
-		const std::string seed = std::to_string(season_id) + ":" + std::to_string(pid) + ":" +
-					 std::to_string(period);
+		const std::string seed = std::to_string(season_id) + ":" + std::to_string(pid) +
+					 ":" + std::to_string(period);
 		for (unsigned char value : seed)
 		{
 			hash ^= value;
@@ -915,9 +937,8 @@ daily_assignment service::assign_daily(uint32_t season_id, uint32_t pid, int lev
 	return assignment;
 }
 
-result service::complete_daily(uint32_t season_id, uint32_t pid,
-				       std::string_view transaction_id, int64_t now,
-				       std::string *error)
+result service::complete_daily(uint32_t season_id, uint32_t pid, std::string_view transaction_id,
+			       int64_t now, std::string *error)
 {
 	if (!daily_policy_.enabled)
 		return fail(error, "daily quests are disabled"), result::disabled;
@@ -932,21 +953,26 @@ result service::complete_daily(uint32_t season_id, uint32_t pid,
 		return fail(error, "daily assignment was not found"), result::not_found;
 	if (assignment->second.status == daily_status::completed)
 		return result::already_applied;
-	if (assignment->second.status != daily_status::assigned || now >= assignment->second.expires_at)
+	if (assignment->second.status != daily_status::assigned ||
+	    now >= assignment->second.expires_at)
 		return fail(error, "daily assignment is not active"), result::rejected;
 	const auto transaction = transactions_.find(std::string(transaction_id));
 	if (transaction == transactions_.end())
-		return fail(error, "authoritative completion transaction was not found"), result::not_found;
+		return fail(error, "authoritative completion transaction was not found"),
+		       result::not_found;
 	if (transaction->second.transaction.season_id != season_id ||
-	    transaction->second.transaction.quest_definition_id != assignment->second.quest_definition_id ||
-	    transaction->second.transaction.content_revision != assignment->second.content_revision ||
+	    transaction->second.transaction.quest_definition_id !=
+		    assignment->second.quest_definition_id ||
+	    transaction->second.transaction.content_revision !=
+		    assignment->second.content_revision ||
 	    transaction->second.transaction.completed_at < assignment->second.assigned_at ||
 	    transaction->second.transaction.completed_at >= assignment->second.expires_at ||
 	    !contains_pid(transaction->second.transaction, pid))
-		return fail(error, "completion does not satisfy the assigned daily quest"), result::rejected;
+		return fail(error, "completion does not satisfy the assigned daily quest"),
+		       result::rejected;
 	auto &mutable_state = state_for(season_id, pid);
 	const std::string reward_key = std::to_string(season_id) + ":" + std::to_string(pid) + ":" +
-					       std::to_string(period);
+				       std::to_string(period);
 	if (!mutable_state.reward_keys.emplace(reward_key, std::string(transaction_id)).second)
 		return result::already_applied;
 	mutable_state.daily_assignments[period].status = daily_status::completed;
@@ -961,17 +987,20 @@ daily_assignment service::daily_for(uint32_t season_id, uint32_t pid, int64_t pe
 	if (!state)
 		return {};
 	const auto assignment = state->daily_assignments.find(period);
-	return assignment == state->daily_assignments.end() ? daily_assignment{} : assignment->second;
+	return assignment == state->daily_assignments.end() ? daily_assignment{} :
+							      assignment->second;
 }
 
 std::string service::render_zone(uint32_t season_id, uint32_t pid, int32_t zone_number,
-					 std::string_view fallback_name, bool colors) const
+				 std::string_view fallback_name, bool colors) const
 {
 	const zone_progress progress = progress_for_zone(season_id, pid, zone_number);
 	const personal_summary summary = summary_for(season_id, pid, fallback_name);
 	std::ostringstream output;
-	output << "\r\n" << color(colors, "&+L") << "Zone " << zone_number << " completion for "
-	       << (summary.character_name.empty() ? "PID " + std::to_string(pid) : summary.character_name)
+	output << "\r\n"
+	       << color(colors, "&+L") << "Zone " << zone_number << " completion for "
+	       << (summary.character_name.empty() ? "PID " + std::to_string(pid) :
+						    summary.character_name)
 	       << color(colors, "&n") << "\r\n";
 	if (!progress.available)
 	{
@@ -981,8 +1010,10 @@ std::string service::render_zone(uint32_t season_id, uint32_t pid, int32_t zone_
 	const uint64_t percent = progress.total ? progress.completed * 100 / progress.total : 0;
 	output << "  Completed: " << progress.completed << "/" << progress.total << " (" << percent
 	       << "%, exact numerator/denominator)\r\n";
-	const char *bar_color = progress.milestone_100 ? "&+G" : progress.milestone_75 ? "&+g" :
-					 progress.milestone_50 ? "&+y" : "&+w";
+	const char *bar_color = progress.milestone_100 ? "&+G" :
+				progress.milestone_75  ? "&+g" :
+				progress.milestone_50  ? "&+y" :
+							 "&+w";
 	output << "  " << color(colors, bar_color) << "[";
 	const uint64_t filled = std::min<uint64_t>(20, progress.completed * 20 / progress.total);
 	for (uint64_t index = 0; index < 20; ++index)
@@ -992,39 +1023,46 @@ std::string service::render_zone(uint32_t season_id, uint32_t pid, int32_t zone_
 	       << (progress.milestone_50 ? "50 " : "") << (progress.milestone_75 ? "75 " : "")
 	       << (progress.milestone_100 ? "100" : "")
 	       << (progress.milestone_25 || progress.milestone_50 || progress.milestone_75 ||
-		   progress.milestone_100 ? "% reached" : "none")
+				   progress.milestone_100 ?
+			   "% reached" :
+			   "none")
 	       << "\r\n";
 	return output.str();
 }
 
 std::string service::render_summary(uint32_t season_id, uint32_t pid,
-					    std::string_view fallback_name, bool colors) const
+				    std::string_view fallback_name, bool colors) const
 {
 	const personal_summary summary = summary_for(season_id, pid, fallback_name);
 	std::ostringstream output;
-	output << "\r\n" << color(colors, "&+L") << "Zone-story achievements for "
-	       << (summary.character_name.empty() ? "PID " + std::to_string(pid) : summary.character_name)
+	output << "\r\n"
+	       << color(colors, "&+L") << "Zone-story achievements for "
+	       << (summary.character_name.empty() ? "PID " + std::to_string(pid) :
+						    summary.character_name)
 	       << color(colors, "&n") << "\r\n";
 	if (summary.total == 0)
 	{
 		output << "  N/A: the current production catalog contains no eligible quests.\r\n";
 		return output.str();
 	}
-	output << "  Overall: " << summary.completed << "/" << summary.total << " (exact distinct completions)\r\n";
+	output << "  Overall: " << summary.completed << "/" << summary.total
+	       << " (exact distinct completions)\r\n";
 	output << "  Fully completed zones: " << summary.full_zones << "\r\n";
 	output << "  Daily renown: " << summary.renown << "\r\n";
 	for (const auto &zone : summary.zones)
-		output << "  Zone " << zone.zone_number << ": " << zone.completed << "/" << zone.total
-		       << (zone.milestone_100 ? " [100%]" : "") << "\r\n";
+		output << "  Zone " << zone.zone_number << ": " << zone.completed << "/"
+		       << zone.total << (zone.milestone_100 ? " [100%]" : "") << "\r\n";
 	return output.str();
 }
 
 std::string service::render_leaderboard(uint32_t season_id, int32_t zone_number, uint64_t page,
-						uint64_t page_size, uint32_t viewer_pid, bool colors) const
+					uint64_t page_size, uint32_t viewer_pid, bool colors) const
 {
-	const leaderboard_page board = leaderboard(season_id, zone_number, page, page_size, viewer_pid);
+	const leaderboard_page board =
+		leaderboard(season_id, zone_number, page, page_size, viewer_pid);
 	std::ostringstream output;
-	output << "\r\n" << color(colors, "&+L")
+	output << "\r\n"
+	       << color(colors, "&+L")
 	       << (zone_number > 0 ? "Zone " + std::to_string(zone_number) : "Overall")
 	       << " quest completion leaderboard" << color(colors, "&n") << "\r\n";
 	if (!board.total_entries)
@@ -1052,12 +1090,12 @@ std::string service::render_leaderboard(uint32_t season_id, int32_t zone_number,
 }
 
 std::string service::render_daily(uint32_t season_id, uint32_t pid, int level, int racewar,
-					  int64_t now, bool colors)
+				  int64_t now, bool colors)
 {
 	const daily_assignment assignment = assign_daily(season_id, pid, level, racewar, now);
 	std::ostringstream output;
-	output << "\r\n" << color(colors, "&+L") << "Daily zone-story quest" << color(colors, "&n")
-	       << "\r\n";
+	output << "\r\n"
+	       << color(colors, "&+L") << "Daily zone-story quest" << color(colors, "&n") << "\r\n";
 	const personal_summary summary = summary_for(season_id, pid);
 	output << "  Renown: " << summary.renown << "\r\n";
 	if (!daily_policy_.enabled)
@@ -1073,10 +1111,12 @@ std::string service::render_daily(uint32_t season_id, uint32_t pid, int level, i
 		output << "  Assignment: " << assignment.quest_definition_id << " (revision "
 		       << assignment.content_revision << ")\r\n";
 		if (definition)
-			output << "  Zone: " << definition->zone_number << "; giver VNUM: "
-			       << definition->giver_vnum << "; objective: complete the static quest turn-in ("
+			output << "  Zone: " << definition->zone_number
+			       << "; giver VNUM: " << definition->giver_vnum
+			       << "; objective: complete the static quest turn-in ("
 			       << definition->completion_key << ")\r\n";
-		output << "  Reward: 1 renown\r\n  Expires: " << assignment.expires_at << " UTC\r\n";
+		output << "  Reward: 1 renown\r\n  Expires: " << assignment.expires_at
+		       << " UTC\r\n";
 		break;
 	}
 	case daily_status::completed:
@@ -1112,7 +1152,8 @@ std::string service::serialize_state(std::string *error) const
 				break;
 			}
 		if (!includes_deleted_pid)
-			output << "T|" << hex_encode(id) << "|" << hex_encode(stored.encoded) << "\n";
+			output << "T|" << hex_encode(id) << "|" << hex_encode(stored.encoded)
+			       << "\n";
 	}
 	for (const auto &[key, state] : characters_)
 	{
@@ -1125,14 +1166,16 @@ std::string service::serialize_state(std::string *error) const
 			output << "C|" << state.season_id << "|" << state.pid << "|"
 			       << hex_encode(definition_id) << "|" << credit_mask << "\n";
 		for (const auto &[period, assignment] : state.daily_assignments)
-			output << "D|" << state.season_id << "|" << state.pid << "|" << period << "|"
-			       << hex_encode(assignment.quest_definition_id) << "|" << assignment.content_revision
-			       << "|" << assignment.assigned_at << "|" << assignment.expires_at << "|"
-			       << status_name(assignment.status) << "|" << assignment.reward_amount << "|"
-			       << hex_encode(assignment.completion_transaction_id) << "\n";
+			output << "D|" << state.season_id << "|" << state.pid << "|" << period
+			       << "|" << hex_encode(assignment.quest_definition_id) << "|"
+			       << assignment.content_revision << "|" << assignment.assigned_at
+			       << "|" << assignment.expires_at << "|"
+			       << status_name(assignment.status) << "|" << assignment.reward_amount
+			       << "|" << hex_encode(assignment.completion_transaction_id) << "\n";
 		for (const auto &[reward_key, transaction_id] : state.reward_keys)
-			output << "R|" << state.season_id << "|" << state.pid << "|" << hex_encode(reward_key)
-			       << "|" << hex_encode(transaction_id) << "\n";
+			output << "R|" << state.season_id << "|" << state.pid << "|"
+			       << hex_encode(reward_key) << "|" << hex_encode(transaction_id)
+			       << "\n";
 	}
 	for (const auto &[season, pid] : deleted_characters_)
 		output << "X|" << season << "|" << pid << "\n";
@@ -1167,7 +1210,8 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 	{
 		const size_t end = encoded.find('\n', begin);
 		const std::string_view line = encoded.substr(begin, end == std::string_view::npos ?
-									 encoded.size() - begin : end - begin);
+									    encoded.size() - begin :
+									    end - begin);
 		begin = end == std::string_view::npos ? encoded.size() : end + 1;
 		if (line.empty())
 			continue;
@@ -1185,8 +1229,8 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 			if (!hex_decode(fields[2], &transaction_encoded))
 				return fail(error, "invalid serialized completion transaction");
 			zone_story_quest_tracking::completion_transaction transaction;
-			if (!zone_story_quest_tracking::deserialize_transaction(transaction_encoded, &transaction,
-										  error))
+			if (!zone_story_quest_tracking::deserialize_transaction(
+				    transaction_encoded, &transaction, error))
 				return false;
 			transactions.push_back(std::move(transaction));
 		}
@@ -1197,15 +1241,16 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
 			    !hex_decode(fields[3], &name) || !season || !pid)
 				return fail(error, "invalid character name record");
-			 names.emplace_back(season, pid, std::move(name));
+			names.emplace_back(season, pid, std::move(name));
 		}
 		else if (fields[0] == "C" && fields.size() == 5)
 		{
 			uint32_t season = 0, pid = 0, credit_mask = 0;
 			std::string definition_id;
 			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
-			    !hex_decode(fields[3], &definition_id) || !parse_integer(fields[4], &credit_mask) ||
-			    !season || !pid || definition_id.empty() || !credit_mask)
+			    !hex_decode(fields[3], &definition_id) ||
+			    !parse_integer(fields[4], &credit_mask) || !season || !pid ||
+			    definition_id.empty() || !credit_mask)
 				return fail(error, "invalid character credit record");
 			credits.emplace_back(season, pid, std::move(definition_id), credit_mask);
 		}
@@ -1231,10 +1276,11 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 			uint32_t season = 0, pid = 0;
 			std::string reward_key, transaction_id;
 			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
-			    !hex_decode(fields[3], &reward_key) || !hex_decode(fields[4], &transaction_id) ||
-			    !season || !pid)
+			    !hex_decode(fields[3], &reward_key) ||
+			    !hex_decode(fields[4], &transaction_id) || !season || !pid)
 				return fail(error, "invalid daily reward record");
-			rewards.emplace_back(season, pid, std::move(reward_key), std::move(transaction_id));
+			rewards.emplace_back(season, pid, std::move(reward_key),
+					     std::move(transaction_id));
 		}
 		else if (fields[0] == "E" && fields.size() == 3)
 		{
@@ -1249,8 +1295,8 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 		else if (fields[0] == "X" && fields.size() == 3)
 		{
 			uint32_t season = 0, pid = 0;
-			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) || !season ||
-			    !pid)
+			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
+			    !season || !pid)
 				return fail(error, "invalid deleted character record");
 			deleted.emplace_back(season, pid);
 		}
@@ -1274,8 +1320,8 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 	for (const auto &assignment : assignments)
 		if (deleted_characters_.find({ assignment.season_id, assignment.pid }) ==
 		    deleted_characters_.end())
-			state_for(assignment.season_id, assignment.pid).daily_assignments[assignment.period] =
-				assignment;
+			state_for(assignment.season_id, assignment.pid)
+				.daily_assignments[assignment.period] = assignment;
 	for (const auto &[season, pid, reward_key, transaction_id] : rewards)
 		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
 			state_for(season, pid).reward_keys[reward_key] = transaction_id;

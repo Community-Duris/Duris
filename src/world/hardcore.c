@@ -326,8 +326,9 @@ void displayLeader(P_char ch, char *arg, int /*cmd*/)
 		zone_story_quest_feature::service *tracker = zone_story_quest_runtime::service();
 		if (!tracker)
 		{
-			send_to_char("Quest completion leaderboard is unavailable until the production catalog and persistence state are ready.\r\n",
-				     ch);
+			send_to_char(
+				"Quest completion leaderboard is unavailable until the production catalog and persistence state are ready.\r\n",
+				ch);
 			return;
 		}
 		zone_story_quest_runtime::remember_character(ch);
@@ -348,10 +349,10 @@ void displayLeader(P_char ch, char *arg, int /*cmd*/)
 				page = static_cast<uint64_t>(requested_page);
 		}
 		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
-					    ch->desc->term_type != TERM_SKIP_ANSI;
+				    ch->desc->term_type != TERM_SKIP_ANSI;
 		std::string output = tracker->render_leaderboard(
-			zone_story_quest_runtime::current_season_id(), zone, page - 1, MAX_LEADERBOARD_SIZE,
-			static_cast<uint32_t>(GET_PID(ch)), colors);
+			zone_story_quest_runtime::current_season_id(), zone, page - 1,
+			MAX_LEADERBOARD_SIZE, static_cast<uint32_t>(GET_PID(ch)), colors);
 		page_string(ch->desc, output.data(), 1);
 		return;
 	}

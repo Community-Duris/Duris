@@ -13,8 +13,9 @@
 #include <mysql.h>
 #endif
 
-sql_zone_story_quest_state_result sql_zone_story_quest_state_load(
-	uint32_t expected_catalog_revision, std::string *state, std::string *error)
+sql_zone_story_quest_state_result
+sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string *state,
+				std::string *error)
 {
 	if (!expected_catalog_revision || !state)
 	{
@@ -27,9 +28,8 @@ sql_zone_story_quest_state_result sql_zone_story_quest_state_load(
 		*error = "SQL state repository is unavailable in a flat-file build";
 	return sql_zone_story_quest_state_result::io_error;
 #else
-	MYSQL_RES *result = db_query(
-		"SELECT state_version,catalog_revision,state_blob "
-		"FROM zone_story_quest_state WHERE state_id=1 LIMIT 1");
+	MYSQL_RES *result = db_query("SELECT state_version,catalog_revision,state_blob "
+				     "FROM zone_story_quest_state WHERE state_id=1 LIMIT 1");
 	if (!result)
 	{
 		if (error)
@@ -59,9 +59,9 @@ sql_zone_story_quest_state_result sql_zone_story_quest_state_load(
 	const unsigned long revision = std::strtoul(row[1], &revision_end, 10);
 	const int revision_errno = errno;
 	if (version_errno || revision_errno || version_end == row[0] || revision_end == row[1] ||
-		*version_end || *revision_end || version != 1 ||
-		revision != expected_catalog_revision ||
-		revision > std::numeric_limits<uint32_t>::max())
+	    *version_end || *revision_end || version != 1 ||
+	    revision != expected_catalog_revision ||
+	    revision > std::numeric_limits<uint32_t>::max())
 	{
 		mysql_free_result(result);
 		if (error)
@@ -74,8 +74,9 @@ sql_zone_story_quest_state_result sql_zone_story_quest_state_load(
 #endif
 }
 
-sql_zone_story_quest_state_result sql_zone_story_quest_state_save(
-	uint32_t catalog_revision, const std::string &state, std::string *error)
+sql_zone_story_quest_state_result sql_zone_story_quest_state_save(uint32_t catalog_revision,
+								  const std::string &state,
+								  std::string *error)
 {
 	/* MEDIUMTEXT is capped at 16 MiB; reject larger blobs before issuing SQL. */
 	if (!catalog_revision || state.size() > 16U * 1024U * 1024U)

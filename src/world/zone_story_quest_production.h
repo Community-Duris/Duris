@@ -15,7 +15,7 @@ constexpr uint32_t ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION = 1;
 /* Build the catalog from the booted static quest index.  The catalog is
  * intentionally separate from bartender/random world quest assignment. */
 zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revision,
-								std::string *error = nullptr);
+							std::string *error = nullptr);
 
 /* Publish the boot-time catalog and bind each Q completion block to its stable
  * definition identity for the authoritative completion hook. */

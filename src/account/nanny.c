@@ -1228,7 +1228,7 @@ void enter_game(P_desc d)
 			logit(LOG_DEBUG, "[enter_game] zone-story identity save failed for %s: %s",
 			      ch && GET_NAME(ch) ? GET_NAME(ch) : "<unknown>",
 			      zone_story_error.empty() ? "unspecified persistence failure" :
-												 zone_story_error.c_str());
+							 zone_story_error.c_str());
 	}
 
 	logit(LOG_FILE, "[enter_game] name=%s level=%d rtype=%d", ch ? GET_NAME(ch) : "(null)",

@@ -1030,8 +1030,8 @@ bool group_remove_member(P_char ch)
 	}
 
 	if (IS_PC(ch))
-		(void)telemetry_runtime_game_encounter_leave(ch,
-			telemetry_encounter_outcome::withdrawal);
+		(void)telemetry_runtime_game_encounter_leave(
+			ch, telemetry_encounter_outcome::withdrawal);
 
 	purge_linked_auras(ch);
 

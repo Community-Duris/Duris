@@ -14,7 +14,7 @@ bool same_id(const telemetry_encounter_id &a, const telemetry_encounter_id &b) n
 }
 
 bool same_participant(const telemetry_encounter_participant &a,
-			     const telemetry_encounter_participant &b) noexcept
+		      const telemetry_encounter_participant &b) noexcept
 {
 	return a.subject_id == b.subject_id && a.pid == b.pid;
 }
@@ -33,12 +33,13 @@ telemetry_encounter_update empty_update() noexcept
 }
 
 void set_identity(telemetry_encounter_update &result,
-			  const telemetry_encounter_id &encounter) noexcept
+		  const telemetry_encounter_id &encounter) noexcept
 {
 	result.encounter = encounter;
 }
 
-int find_slot(const telemetry_encounter_state &state, const telemetry_encounter_id &encounter) noexcept
+int find_slot(const telemetry_encounter_state &state,
+	      const telemetry_encounter_id &encounter) noexcept
 {
 	for (std::size_t index = 0U; index < TELEMETRY_ENCOUNTER_MAX_ACTIVE; ++index)
 		if (state.slots[index].occupied && same_id(state.slots[index].encounter, encounter))
@@ -47,11 +48,9 @@ int find_slot(const telemetry_encounter_state &state, const telemetry_encounter_
 }
 
 int find_participant(const telemetry_encounter_state &state,
-			    const telemetry_encounter_participant &participant,
-			    bool active_only) noexcept
+		     const telemetry_encounter_participant &participant, bool active_only) noexcept
 {
-	for (std::size_t slot_index = 0U; slot_index < TELEMETRY_ENCOUNTER_MAX_ACTIVE;
-	     ++slot_index)
+	for (std::size_t slot_index = 0U; slot_index < TELEMETRY_ENCOUNTER_MAX_ACTIVE; ++slot_index)
 	{
 		const auto &slot = state.slots[slot_index];
 		if (!slot.occupied || slot.terminal)
@@ -69,7 +68,7 @@ int find_participant(const telemetry_encounter_state &state,
 }
 
 int find_group_slot(const telemetry_encounter_state &state,
-			    const telemetry_encounter_source &source) noexcept
+		    const telemetry_encounter_source &source) noexcept
 {
 	if (source.group_key == 0U)
 		return -1;
@@ -96,8 +95,9 @@ int find_free_participant(telemetry_encounter_slot &slot) noexcept
 	return -1;
 }
 
-telemetry_encounter_participant_state *participant_state(
-	telemetry_encounter_slot &slot, const telemetry_encounter_participant &participant) noexcept
+telemetry_encounter_participant_state *
+participant_state(telemetry_encounter_slot &slot,
+		  const telemetry_encounter_participant &participant) noexcept
 {
 	for (auto &entry : slot.participants)
 		if (entry.occupied && same_participant(entry.participant, participant))
@@ -126,8 +126,8 @@ void mark_bounded_overflow(telemetry_encounter_slot &slot) noexcept
 }
 
 bool emit_event(telemetry_encounter_slot &slot, telemetry_encounter_event event,
-		       telemetry_encounter_event_sink sink, void *sink_context,
-		       telemetry_encounter_update &result) noexcept
+		telemetry_encounter_event_sink sink, void *sink_context,
+		telemetry_encounter_update &result) noexcept
 {
 	event.quality_flags |= slot.quality_flags;
 	if (slot.event_count == std::numeric_limits<std::uint16_t>::max() ||
@@ -153,8 +153,8 @@ bool emit_event(telemetry_encounter_slot &slot, telemetry_encounter_event event,
 	return accepted;
 }
 
-void add_elapsed(telemetry_encounter_participant_state &entry,
-		 telemetry_monotonic_usec at, telemetry_quality_mask &quality) noexcept
+void add_elapsed(telemetry_encounter_participant_state &entry, telemetry_monotonic_usec at,
+		 telemetry_quality_mask &quality) noexcept
 {
 	if (!entry.active)
 		return;
@@ -178,7 +178,8 @@ std::uint16_t active_count(const telemetry_encounter_slot &slot) noexcept
 {
 	std::uint16_t count = 0U;
 	for (const auto &entry : slot.participants)
-		if (entry.occupied && entry.active && count != std::numeric_limits<std::uint16_t>::max())
+		if (entry.occupied && entry.active &&
+		    count != std::numeric_limits<std::uint16_t>::max())
 			++count;
 	return count;
 }
@@ -193,10 +194,10 @@ std::uint16_t participant_count(const telemetry_encounter_slot &slot) noexcept
 }
 
 telemetry_encounter_event base_event(const telemetry_encounter_slot &slot,
-					     telemetry_encounter_event_kind kind,
-					     telemetry_encounter_outcome outcome,
-					     std::uint16_t revision, telemetry_monotonic_usec at,
-					     telemetry_utc_usec at_utc) noexcept
+				     telemetry_encounter_event_kind kind,
+				     telemetry_encounter_outcome outcome, std::uint16_t revision,
+				     telemetry_monotonic_usec at,
+				     telemetry_utc_usec at_utc) noexcept
 {
 	telemetry_encounter_event event{};
 	event.encounter = slot.encounter;
@@ -216,19 +217,19 @@ telemetry_encounter_event base_event(const telemetry_encounter_slot &slot,
 }
 
 void remember_terminal(telemetry_encounter_state &state,
-			       const telemetry_encounter_slot &slot) noexcept
+		       const telemetry_encounter_slot &slot) noexcept
 {
 	const std::size_t index = state.terminal_next % TELEMETRY_ENCOUNTER_TERMINAL_CACHE;
 	state.terminal[index] = {};
 	state.terminal[index].occupied = 1U;
 	state.terminal[index].encounter = slot.encounter;
 	state.terminal[index].outcome = slot.outcome;
-	state.terminal_next = static_cast<std::uint16_t>(
-		(state.terminal_next + 1U) % TELEMETRY_ENCOUNTER_TERMINAL_CACHE);
+	state.terminal_next = static_cast<std::uint16_t>((state.terminal_next + 1U) %
+							 TELEMETRY_ENCOUNTER_TERMINAL_CACHE);
 }
 
 int terminal_index(const telemetry_encounter_state &state,
-			   const telemetry_encounter_id &encounter) noexcept
+		   const telemetry_encounter_id &encounter) noexcept
 {
 	for (std::size_t index = 0U; index < TELEMETRY_ENCOUNTER_TERMINAL_CACHE; ++index)
 		if (state.terminal[index].occupied &&
@@ -237,12 +238,11 @@ int terminal_index(const telemetry_encounter_state &state,
 	return -1;
 }
 
-telemetry_encounter_update add_participant(
-		telemetry_encounter_slot &slot,
-		telemetry_encounter_participant participant, telemetry_monotonic_usec at,
-		telemetry_utc_usec at_utc, telemetry_encounter_event_kind event_kind,
-		telemetry_encounter_outcome outcome, telemetry_encounter_event_sink sink,
-		void *sink_context) noexcept
+telemetry_encounter_update
+add_participant(telemetry_encounter_slot &slot, telemetry_encounter_participant participant,
+		telemetry_monotonic_usec at, telemetry_utc_usec at_utc,
+		telemetry_encounter_event_kind event_kind, telemetry_encounter_outcome outcome,
+		telemetry_encounter_event_sink sink, void *sink_context) noexcept
 {
 	telemetry_encounter_update result{};
 	result.outcome = telemetry_encounter_update_outcome::accepted;
@@ -264,9 +264,9 @@ telemetry_encounter_update add_participant(
 		existing->active = 1U;
 		existing->segment_start_usec = at;
 		existing->last_observed_usec = at;
-		telemetry_encounter_event event = base_event(slot, event_kind, outcome,
-									  static_cast<std::uint16_t>(slot.event_count + 1U),
-									  at, at_utc);
+		telemetry_encounter_event event =
+			base_event(slot, event_kind, outcome,
+				   static_cast<std::uint16_t>(slot.event_count + 1U), at, at_utc);
 		event.participant = participant;
 		const bool accepted = emit_event(slot, event, sink, sink_context, result);
 		if (!accepted)
@@ -290,9 +290,9 @@ telemetry_encounter_update add_participant(
 	entry.segment_start_usec = at;
 	entry.last_observed_usec = at;
 	++slot.participant_count;
-	telemetry_encounter_event event = base_event(slot, event_kind, outcome,
-									  static_cast<std::uint16_t>(slot.event_count + 1U),
-									  at, at_utc);
+	telemetry_encounter_event event =
+		base_event(slot, event_kind, outcome,
+			   static_cast<std::uint16_t>(slot.event_count + 1U), at, at_utc);
 	event.participant = participant;
 	const bool accepted = emit_event(slot, event, sink, sink_context, result);
 	if (!accepted)
@@ -301,19 +301,20 @@ telemetry_encounter_update add_participant(
 	return result;
 }
 
-telemetry_encounter_update close_slot(
-	telemetry_encounter_state &state, telemetry_encounter_slot &slot,
-		telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
-		telemetry_monotonic_usec at, telemetry_utc_usec at_utc,
-		telemetry_encounter_event_sink sink, void *sink_context) noexcept
+telemetry_encounter_update
+close_slot(telemetry_encounter_state &state, telemetry_encounter_slot &slot,
+	   telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
+	   telemetry_monotonic_usec at, telemetry_utc_usec at_utc,
+	   telemetry_encounter_event_sink sink, void *sink_context) noexcept
 {
 	telemetry_encounter_update result{};
 	result.outcome = telemetry_encounter_update_outcome::accepted;
 	set_identity(result, slot.encounter);
 	if (slot.terminal)
 	{
-		result.outcome = slot.outcome == outcome ? telemetry_encounter_update_outcome::idempotent :
-									 telemetry_encounter_update_outcome::duplicate_conflict;
+		result.outcome = slot.outcome == outcome ?
+					 telemetry_encounter_update_outcome::idempotent :
+					 telemetry_encounter_update_outcome::duplicate_conflict;
 		return result;
 	}
 	if (!telemetry_encounter_outcome_is_valid(outcome) ||
@@ -328,9 +329,9 @@ telemetry_encounter_update close_slot(
 	for (auto &entry : slot.participants)
 		if (entry.occupied && entry.active)
 			add_elapsed(entry, at, slot.quality_flags);
-	telemetry_encounter_event close = base_event(
-		slot, telemetry_encounter_event_kind::close, outcome,
-		static_cast<std::uint16_t>(slot.event_count + 1U), at, at_utc);
+	telemetry_encounter_event close =
+		base_event(slot, telemetry_encounter_event_kind::close, outcome,
+			   static_cast<std::uint16_t>(slot.event_count + 1U), at, at_utc);
 	close.elapsed_usec = at - slot.start_monotonic_usec;
 	close.participant_count = participant_count(slot);
 	close.expected_credit_count = expected_credit_count;
@@ -341,8 +342,8 @@ telemetry_encounter_update close_slot(
 		if (!entry.occupied)
 			continue;
 		telemetry_encounter_event summary = base_event(
-				slot, telemetry_encounter_event_kind::participant_summary, outcome,
-				static_cast<std::uint16_t>(slot.event_count + 1U), at, at_utc);
+			slot, telemetry_encounter_event_kind::participant_summary, outcome,
+			static_cast<std::uint16_t>(slot.event_count + 1U), at, at_utc);
 		summary.participant = entry.participant;
 		summary.participant_usec = entry.participant_usec;
 		if (!emit_event(slot, summary, sink, sink_context, result) &&
@@ -368,16 +369,19 @@ void telemetry_encounter_state_init(telemetry_encounter_state *state) noexcept
 		*state = {};
 }
 
-telemetry_encounter_update telemetry_encounter_begin(
-	telemetry_encounter_state *state, telemetry_encounter_id encounter,
-	telemetry_encounter_source source, telemetry_encounter_mode mode,
-	telemetry_encounter_participant participant, telemetry_monotonic_usec at_monotonic_usec,
-	telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept
+telemetry_encounter_update
+telemetry_encounter_begin(telemetry_encounter_state *state, telemetry_encounter_id encounter,
+			  telemetry_encounter_source source, telemetry_encounter_mode mode,
+			  telemetry_encounter_participant participant,
+			  telemetry_monotonic_usec at_monotonic_usec,
+			  telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink,
+			  void *sink_context) noexcept
 {
 	telemetry_encounter_update result = empty_update();
 	set_identity(result, encounter);
 	if (state == nullptr || !telemetry_encounter_id_is_valid(encounter) ||
-	    !telemetry_encounter_source_is_valid(source) || !telemetry_encounter_mode_is_valid(mode) ||
+	    !telemetry_encounter_source_is_valid(source) ||
+	    !telemetry_encounter_mode_is_valid(mode) ||
 	    !telemetry_encounter_participant_is_valid(participant))
 		return result;
 	result.outcome = telemetry_encounter_update_outcome::accepted;
@@ -387,8 +391,8 @@ telemetry_encounter_update telemetry_encounter_begin(
 		auto &slot = state->slots[static_cast<std::size_t>(existing_participant)];
 		merge_mode(slot.mode, mode);
 		return add_participant(slot, participant, at_monotonic_usec, at_utc_usec,
-					       telemetry_encounter_event_kind::participant_join,
-					       telemetry_encounter_outcome::unknown, sink, sink_context);
+				       telemetry_encounter_event_kind::participant_join,
+				       telemetry_encounter_outcome::unknown, sink, sink_context);
 	}
 	const int existing_group = find_group_slot(*state, source);
 	if (existing_group >= 0)
@@ -398,10 +402,11 @@ telemetry_encounter_update telemetry_encounter_begin(
 		{
 			telemetry_encounter_update joined = add_participant(
 				slot, participant, at_monotonic_usec, at_utc_usec,
-					       telemetry_encounter_event_kind::participant_join,
-					       telemetry_encounter_outcome::unknown, sink, sink_context);
+				telemetry_encounter_event_kind::participant_join,
+				telemetry_encounter_outcome::unknown, sink, sink_context);
 			if (joined.outcome == telemetry_encounter_update_outcome::accepted)
-				joined.outcome = telemetry_encounter_update_outcome::joined_existing;
+				joined.outcome =
+					telemetry_encounter_update_outcome::joined_existing;
 			return joined;
 		}
 	}
@@ -422,20 +427,21 @@ telemetry_encounter_update telemetry_encounter_begin(
 	slot.source = source;
 	slot.start_monotonic_usec = at_monotonic_usec;
 	slot.start_utc_usec = at_utc_usec;
-	telemetry_encounter_event start = base_event(
-		slot, telemetry_encounter_event_kind::start, telemetry_encounter_outcome::unknown, 1U,
-		at_monotonic_usec, at_utc_usec);
+	telemetry_encounter_event start = base_event(slot, telemetry_encounter_event_kind::start,
+						     telemetry_encounter_outcome::unknown, 1U,
+						     at_monotonic_usec, at_utc_usec);
 	if (!emit_event(slot, start, sink, sink_context, result))
 		result.outcome = telemetry_encounter_update_outcome::sink_rejected;
 	const auto joined = add_participant(slot, participant, at_monotonic_usec, at_utc_usec,
 					    telemetry_encounter_event_kind::participant_join,
-					    telemetry_encounter_outcome::unknown, sink, sink_context);
-	result.events_attempted = static_cast<std::uint8_t>(
-		std::min<unsigned>(std::numeric_limits<std::uint8_t>::max(),
-				   static_cast<unsigned>(result.events_attempted) + joined.events_attempted));
-	result.events_accepted = static_cast<std::uint8_t>(
-		std::min<unsigned>(std::numeric_limits<std::uint8_t>::max(),
-				   static_cast<unsigned>(result.events_accepted) + joined.events_accepted));
+					    telemetry_encounter_outcome::unknown, sink,
+					    sink_context);
+	result.events_attempted = static_cast<std::uint8_t>(std::min<unsigned>(
+		std::numeric_limits<std::uint8_t>::max(),
+		static_cast<unsigned>(result.events_attempted) + joined.events_attempted));
+	result.events_accepted = static_cast<std::uint8_t>(std::min<unsigned>(
+		std::numeric_limits<std::uint8_t>::max(),
+		static_cast<unsigned>(result.events_accepted) + joined.events_accepted));
 	result.quality_flags |= joined.quality_flags;
 	result.participants_active = joined.participants_active;
 	if (result.outcome == telemetry_encounter_update_outcome::accepted &&
@@ -444,10 +450,12 @@ telemetry_encounter_update telemetry_encounter_begin(
 	return result;
 }
 
-telemetry_encounter_update telemetry_encounter_join_group(
-	telemetry_encounter_state *state, telemetry_encounter_source source,
-	telemetry_encounter_participant participant, telemetry_monotonic_usec at_monotonic_usec,
-	telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept
+telemetry_encounter_update
+telemetry_encounter_join_group(telemetry_encounter_state *state, telemetry_encounter_source source,
+			       telemetry_encounter_participant participant,
+			       telemetry_monotonic_usec at_monotonic_usec,
+			       telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink,
+			       void *sink_context) noexcept
 {
 	telemetry_encounter_update result = empty_update();
 	if (state == nullptr || !telemetry_encounter_source_is_valid(source) ||
@@ -460,15 +468,18 @@ telemetry_encounter_update telemetry_encounter_join_group(
 		return result;
 	}
 	return add_participant(state->slots[static_cast<std::size_t>(existing)], participant,
-				       at_monotonic_usec, at_utc_usec,
-				       telemetry_encounter_event_kind::participant_join,
-				       telemetry_encounter_outcome::unknown, sink, sink_context);
+			       at_monotonic_usec, at_utc_usec,
+			       telemetry_encounter_event_kind::participant_join,
+			       telemetry_encounter_outcome::unknown, sink, sink_context);
 }
 
-telemetry_encounter_update telemetry_encounter_observe(
-	telemetry_encounter_state *state, telemetry_encounter_source source,
-	telemetry_encounter_participant participant, telemetry_monotonic_usec at_monotonic_usec,
-	telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept
+telemetry_encounter_update telemetry_encounter_observe(telemetry_encounter_state *state,
+						       telemetry_encounter_source source,
+						       telemetry_encounter_participant participant,
+						       telemetry_monotonic_usec at_monotonic_usec,
+						       telemetry_utc_usec at_utc_usec,
+						       telemetry_encounter_event_sink sink,
+						       void *sink_context) noexcept
 {
 	telemetry_encounter_update result = empty_update();
 	if (state == nullptr || !telemetry_encounter_source_is_valid(source) ||
@@ -489,18 +500,23 @@ telemetry_encounter_update telemetry_encounter_observe(
 		result.participants_active = active_count(slot);
 		return result;
 	}
-	return telemetry_encounter_leave(state, participant, telemetry_encounter_outcome::withdrawal,
-					 at_monotonic_usec, at_utc_usec, sink, sink_context);
+	return telemetry_encounter_leave(state, participant,
+					 telemetry_encounter_outcome::withdrawal, at_monotonic_usec,
+					 at_utc_usec, sink, sink_context);
 }
 
-telemetry_encounter_update telemetry_encounter_leave(
-	telemetry_encounter_state *state, telemetry_encounter_participant participant,
-		telemetry_encounter_outcome outcome, telemetry_monotonic_usec at_monotonic_usec,
-		telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept
+telemetry_encounter_update telemetry_encounter_leave(telemetry_encounter_state *state,
+						     telemetry_encounter_participant participant,
+						     telemetry_encounter_outcome outcome,
+						     telemetry_monotonic_usec at_monotonic_usec,
+						     telemetry_utc_usec at_utc_usec,
+						     telemetry_encounter_event_sink sink,
+						     void *sink_context) noexcept
 {
 	telemetry_encounter_update result = empty_update();
 	if (state == nullptr || !telemetry_encounter_participant_is_valid(participant) ||
-	    !telemetry_encounter_outcome_is_valid(outcome) || outcome == telemetry_encounter_outcome::unknown)
+	    !telemetry_encounter_outcome_is_valid(outcome) ||
+	    outcome == telemetry_encounter_outcome::unknown)
 		return result;
 	const int existing = find_participant(*state, participant, true);
 	if (existing < 0)
@@ -526,14 +542,14 @@ telemetry_encounter_update telemetry_encounter_leave(
 	result.participants_active = active_count(slot);
 	if (result.participants_active == 0U)
 	{
-		const auto closed = close_slot(*state, slot, outcome, 0U, at_monotonic_usec, at_utc_usec,
-					       sink, sink_context);
-		result.events_attempted = static_cast<std::uint8_t>(
-			std::min<unsigned>(std::numeric_limits<std::uint8_t>::max(),
-					   static_cast<unsigned>(result.events_attempted) + closed.events_attempted));
-		result.events_accepted = static_cast<std::uint8_t>(
-			std::min<unsigned>(std::numeric_limits<std::uint8_t>::max(),
-					   static_cast<unsigned>(result.events_accepted) + closed.events_accepted));
+		const auto closed = close_slot(*state, slot, outcome, 0U, at_monotonic_usec,
+					       at_utc_usec, sink, sink_context);
+		result.events_attempted = static_cast<std::uint8_t>(std::min<unsigned>(
+			std::numeric_limits<std::uint8_t>::max(),
+			static_cast<unsigned>(result.events_attempted) + closed.events_attempted));
+		result.events_accepted = static_cast<std::uint8_t>(std::min<unsigned>(
+			std::numeric_limits<std::uint8_t>::max(),
+			static_cast<unsigned>(result.events_accepted) + closed.events_accepted));
 		result.quality_flags |= closed.quality_flags;
 		if (result.outcome == telemetry_encounter_update_outcome::accepted &&
 		    closed.outcome != telemetry_encounter_update_outcome::accepted)
@@ -542,11 +558,12 @@ telemetry_encounter_update telemetry_encounter_leave(
 	return result;
 }
 
-telemetry_encounter_update telemetry_encounter_close(
-	telemetry_encounter_state *state, telemetry_encounter_id encounter,
-		telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
-		telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
-		telemetry_encounter_event_sink sink, void *sink_context) noexcept
+telemetry_encounter_update
+telemetry_encounter_close(telemetry_encounter_state *state, telemetry_encounter_id encounter,
+			  telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
+			  telemetry_monotonic_usec at_monotonic_usec,
+			  telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink,
+			  void *sink_context) noexcept
 {
 	telemetry_encounter_update result = empty_update();
 	set_identity(result, encounter);
@@ -557,11 +574,13 @@ telemetry_encounter_update telemetry_encounter_close(
 	const int existing = find_slot(*state, encounter);
 	if (existing >= 0)
 		return close_slot(*state, state->slots[static_cast<std::size_t>(existing)], outcome,
-				  expected_credit_count, at_monotonic_usec, at_utc_usec, sink, sink_context);
+				  expected_credit_count, at_monotonic_usec, at_utc_usec, sink,
+				  sink_context);
 	const int terminal = terminal_index(*state, encounter);
 	if (terminal >= 0)
 	{
-		result.outcome = state->terminal[static_cast<std::size_t>(terminal)].outcome == outcome ?
+		result.outcome = state->terminal[static_cast<std::size_t>(terminal)].outcome ==
+						 outcome ?
 					 telemetry_encounter_update_outcome::idempotent :
 					 telemetry_encounter_update_outcome::duplicate_conflict;
 		return result;
@@ -572,9 +591,9 @@ telemetry_encounter_update telemetry_encounter_close(
 
 telemetry_encounter_update telemetry_encounter_close_for_participant(
 	telemetry_encounter_state *state, telemetry_encounter_participant participant,
-		telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
-		telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
-		telemetry_encounter_event_sink sink, void *sink_context) noexcept
+	telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
+	telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
+	telemetry_encounter_event_sink sink, void *sink_context) noexcept
 {
 	telemetry_encounter_update result = empty_update();
 	if (state == nullptr || !telemetry_encounter_participant_is_valid(participant))
@@ -586,19 +605,23 @@ telemetry_encounter_update telemetry_encounter_close_for_participant(
 			if (state->slots[index].occupied && !state->slots[index].terminal &&
 			    state->slots[index].source.group_key ==
 				    static_cast<telemetry_id>(participant.pid))
-				return close_slot(*state, state->slots[index], outcome, expected_credit_count,
-						 at_monotonic_usec, at_utc_usec, sink, sink_context);
+				return close_slot(*state, state->slots[index], outcome,
+						  expected_credit_count, at_monotonic_usec,
+						  at_utc_usec, sink, sink_context);
 		result.outcome = telemetry_encounter_update_outcome::not_found;
 		return result;
 	}
 	return close_slot(*state, state->slots[static_cast<std::size_t>(existing)], outcome,
-				  expected_credit_count, at_monotonic_usec, at_utc_usec, sink, sink_context);
+			  expected_credit_count, at_monotonic_usec, at_utc_usec, sink,
+			  sink_context);
 }
 
-telemetry_encounter_update telemetry_encounter_close_all(
-	telemetry_encounter_state *state, telemetry_encounter_outcome outcome,
-		telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
-		telemetry_encounter_event_sink sink, void *sink_context) noexcept
+telemetry_encounter_update telemetry_encounter_close_all(telemetry_encounter_state *state,
+							 telemetry_encounter_outcome outcome,
+							 telemetry_monotonic_usec at_monotonic_usec,
+							 telemetry_utc_usec at_utc_usec,
+							 telemetry_encounter_event_sink sink,
+							 void *sink_context) noexcept
 {
 	telemetry_encounter_update result = empty_update();
 	result.outcome = telemetry_encounter_update_outcome::accepted;
@@ -614,12 +637,12 @@ telemetry_encounter_update telemetry_encounter_close_all(
 			continue;
 		const auto closed = close_slot(*state, state->slots[index], outcome, 0U,
 					       at_monotonic_usec, at_utc_usec, sink, sink_context);
-		result.events_attempted = static_cast<std::uint8_t>(
-			std::min<unsigned>(std::numeric_limits<std::uint8_t>::max(),
-					   static_cast<unsigned>(result.events_attempted) + closed.events_attempted));
-		result.events_accepted = static_cast<std::uint8_t>(
-			std::min<unsigned>(std::numeric_limits<std::uint8_t>::max(),
-					   static_cast<unsigned>(result.events_accepted) + closed.events_accepted));
+		result.events_attempted = static_cast<std::uint8_t>(std::min<unsigned>(
+			std::numeric_limits<std::uint8_t>::max(),
+			static_cast<unsigned>(result.events_attempted) + closed.events_attempted));
+		result.events_accepted = static_cast<std::uint8_t>(std::min<unsigned>(
+			std::numeric_limits<std::uint8_t>::max(),
+			static_cast<unsigned>(result.events_accepted) + closed.events_accepted));
 		result.quality_flags |= closed.quality_flags;
 		if (result.encounter.sequence == 0U)
 			result.encounter = closed.encounter;

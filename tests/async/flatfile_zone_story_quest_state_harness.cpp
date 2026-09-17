@@ -25,19 +25,22 @@ int main()
 	std::filesystem::remove_all(root);
 	std::filesystem::create_directories(root / "domains");
 	std::filesystem::permissions(root, std::filesystem::perms::owner_all,
-					 std::filesystem::perm_options::replace);
+				     std::filesystem::perm_options::replace);
 	std::filesystem::permissions(root / "domains", std::filesystem::perms::owner_all,
-					 std::filesystem::perm_options::replace);
+				     std::filesystem::perm_options::replace);
 	std::string error;
 	const std::string state = "ZSQF|1\nT|74657374|76616c7565\n";
 	require(flatfile_zone_story_quest_state_save(root.string().c_str(), 7, state, &error) ==
 			flatfile_zone_story_quest_result::ok,
 		"flat-file state did not save");
 	std::string recovered;
-	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 7, &recovered, &error) ==
-			flatfile_zone_story_quest_result::ok && recovered == state,
+	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 7, &recovered,
+						     &error) ==
+				flatfile_zone_story_quest_result::ok &&
+			recovered == state,
 		"flat-file state did not round-trip");
-	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 8, &recovered, &error) ==
+	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 8, &recovered,
+						     &error) ==
 			flatfile_zone_story_quest_result::corrupt,
 		"flat-file state accepted a stale catalog revision");
 
@@ -50,7 +53,8 @@ int main()
 	value ^= 1;
 	file.write(&value, 1);
 	file.close();
-	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 7, &recovered, &error) ==
+	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 7, &recovered,
+						     &error) ==
 			flatfile_zone_story_quest_result::corrupt,
 		"flat-file checksum corruption was not detected");
 	std::filesystem::remove_all(root);

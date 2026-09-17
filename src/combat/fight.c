@@ -2885,7 +2885,8 @@ void die(P_char ch, P_char killer)
 	if (!killer)
 		return;
 	if (IS_PC(ch))
-		(void)telemetry_runtime_game_encounter_leave(ch, telemetry_encounter_outcome::death);
+		(void)telemetry_runtime_game_encounter_leave(ch,
+							     telemetry_encounter_outcome::death);
 
 	// Upon death, we want to kill followers.
 	if (IS_PC(ch) && ch->followers)

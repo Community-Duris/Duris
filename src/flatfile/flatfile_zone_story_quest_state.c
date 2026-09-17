@@ -16,7 +16,7 @@ constexpr std::array<uint8_t, 8> state_magic = { 'D', 'U', 'R', 'Z', 'Q', 'S', '
 constexpr uint32_t state_version = 1;
 constexpr size_t state_digest_size = SHA256_DIGEST_LENGTH;
 constexpr size_t state_header_size = state_magic.size() + sizeof(uint32_t) + sizeof(uint32_t) +
-					      sizeof(uint64_t) + state_digest_size;
+				     sizeof(uint64_t) + state_digest_size;
 constexpr size_t state_maximum_bytes = 64U * 1024U * 1024U;
 
 void append_u32(std::vector<uint8_t> *bytes, uint32_t value)
@@ -59,8 +59,9 @@ std::string state_directory(const char *root)
 }
 }
 
-flatfile_zone_story_quest_result flatfile_zone_story_quest_state_load(
-	const char *root, uint32_t expected_catalog_revision, std::string *state, std::string *error)
+flatfile_zone_story_quest_result
+flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog_revision,
+				     std::string *state, std::string *error)
 {
 	if (!root || !*root || !expected_catalog_revision || !state)
 	{
@@ -70,13 +71,13 @@ flatfile_zone_story_quest_result flatfile_zone_story_quest_state_load(
 	}
 	std::vector<uint8_t> bytes;
 	const auto loaded = flatfile_read(state_directory(root), "zone-story-quests.state",
-						 state_maximum_bytes, &bytes, error);
+					  state_maximum_bytes, &bytes, error);
 	if (loaded == flatfile_read_result::not_found)
 		return flatfile_zone_story_quest_result::not_found;
 	if (loaded != flatfile_read_result::ok)
 		return loaded == flatfile_read_result::invalid ?
-				flatfile_zone_story_quest_result::invalid :
-				flatfile_zone_story_quest_result::io_error;
+			       flatfile_zone_story_quest_result::invalid :
+			       flatfile_zone_story_quest_result::io_error;
 	if (bytes.size() < state_header_size ||
 	    !std::equal(state_magic.begin(), state_magic.end(), bytes.begin()) ||
 	    read_u32(bytes.data() + state_magic.size()) != state_version)
@@ -102,8 +103,8 @@ flatfile_zone_story_quest_result flatfile_zone_story_quest_state_load(
 			*error = "zone-story flat-file state length is corrupt";
 		return flatfile_zone_story_quest_result::corrupt;
 	}
-	const uint8_t *expected_digest =
-		bytes.data() + state_magic.size() + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t);
+	const uint8_t *expected_digest = bytes.data() + state_magic.size() + sizeof(uint32_t) +
+					 sizeof(uint32_t) + sizeof(uint64_t);
 	const uint8_t *payload = bytes.data() + state_header_size;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
 	SHA256(payload, static_cast<size_t>(payload_size), digest.data());
@@ -117,10 +118,13 @@ flatfile_zone_story_quest_result flatfile_zone_story_quest_state_load(
 	return flatfile_zone_story_quest_result::ok;
 }
 
-flatfile_zone_story_quest_result flatfile_zone_story_quest_state_save(
-	const char *root, uint32_t catalog_revision, const std::string &state, std::string *error)
+flatfile_zone_story_quest_result flatfile_zone_story_quest_state_save(const char *root,
+								      uint32_t catalog_revision,
+								      const std::string &state,
+								      std::string *error)
 {
-	if (!root || !*root || !catalog_revision || state.size() > state_maximum_bytes - state_header_size)
+	if (!root || !*root || !catalog_revision ||
+	    state.size() > state_maximum_bytes - state_header_size)
 	{
 		if (error)
 			*error = "invalid or oversized zone-story flat-file state";
@@ -140,8 +144,9 @@ flatfile_zone_story_quest_result flatfile_zone_story_quest_state_save(
 	append_u64(&bytes, static_cast<uint64_t>(state.size()));
 	bytes.insert(bytes.end(), digest.begin(), digest.end());
 	bytes.insert(bytes.end(), state.begin(), state.end());
-	const bool saved = flatfile_atomic_write(directory, "zone-story-quests.state", bytes, error);
+	const bool saved =
+		flatfile_atomic_write(directory, "zone-story-quests.state", bytes, error);
 	flatfile_lock_release(lock_fd);
 	return saved ? flatfile_zone_story_quest_result::ok :
-			flatfile_zone_story_quest_result::io_error;
+		       flatfile_zone_story_quest_result::io_error;
 }

@@ -2058,12 +2058,13 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 	delete_ship_runtime(GET_NAME(ch));
 	std::string zone_story_error;
 	if (!zone_story_quest_runtime::erase_character(static_cast<uint32_t>(GET_PID(ch)),
-								 &zone_story_error))
+						       &zone_story_error))
 	{
 		logit(LOG_DEBUG,
 		      "deleteCharacter(): zone-story state cleanup requires reconciliation pid=%d: %s",
-		      GET_PID(ch), zone_story_error.empty() ? "unspecified persistence failure" :
-													zone_story_error.c_str());
+		      GET_PID(ch),
+		      zone_story_error.empty() ? "unspecified persistence failure" :
+						 zone_story_error.c_str());
 		return character_delete_result::reconciliation_required;
 	}
 	return character_delete_result::deleted;

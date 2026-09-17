@@ -88,7 +88,7 @@ std::string canonical_completion_key(const quest_complete_data &completion)
 }
 
 zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revision,
-								std::string *error)
+							std::string *error)
 {
 	zone_story_quest_catalog::catalog result;
 	result.content_revision = content_revision;
@@ -123,9 +123,10 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 				continue;
 			const std::string encoded_key = hex_encode(key);
 			zone_story_quest_tracking::quest_definition definition;
-			definition.definition_id = "zone-story:qst:" + std::to_string(giver_vnum) + ":" +
-						  encoded_key;
-			definition.source_system = zone_story_quest_tracking::ZONE_STORY_QUEST_SOURCE_SYSTEM;
+			definition.definition_id =
+				"zone-story:qst:" + std::to_string(giver_vnum) + ":" + encoded_key;
+			definition.source_system =
+				zone_story_quest_tracking::ZONE_STORY_QUEST_SOURCE_SYSTEM;
 			definition.zone_number = zone_number;
 			definition.source_area = "runtime-qst";
 			definition.giver_vnum = giver_vnum;
@@ -142,7 +143,8 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 		  { return left.definition_id < right.definition_id; });
 	std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
 	if (!zone_story_quest_catalog::validate(result, &diagnostics) && error)
-		*error = diagnostics.empty() ? "runtime zone-story catalog is invalid" :
+		*error = diagnostics.empty() ?
+				 "runtime zone-story catalog is invalid" :
 				 diagnostics.front().code + ": " + diagnostics.front().message;
 	return result;
 }
@@ -150,14 +152,16 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 bool bootstrap(uint32_t content_revision, std::string *error)
 {
 	std::string build_error;
-	zone_story_quest_catalog::catalog candidate = build_runtime_catalog(content_revision, &build_error);
+	zone_story_quest_catalog::catalog candidate =
+		build_runtime_catalog(content_revision, &build_error);
 	std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
 	if (!zone_story_quest_catalog::validate(candidate, &diagnostics))
 	{
 		catalog_ready = false;
 		if (error)
 			*error = diagnostics.empty() ? build_error :
-					 diagnostics.front().code + ": " + diagnostics.front().message;
+						       diagnostics.front().code + ": " +
+							       diagnostics.front().message;
 		return false;
 	}
 	completion_bindings.clear();
@@ -172,7 +176,8 @@ bool bootstrap(uint32_t content_revision, std::string *error)
 		{
 			const std::string key = canonical_completion_key(*completion);
 			const std::string definition_id =
-				"zone-story:qst:" + std::to_string(giver_vnum) + ":" + hex_encode(key);
+				"zone-story:qst:" + std::to_string(giver_vnum) + ":" +
+				hex_encode(key);
 			completion_bindings.emplace(completion, definition_id);
 		}
 	}

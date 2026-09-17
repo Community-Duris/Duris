@@ -28,13 +28,14 @@ void do_achievements(P_char ch, char *arg, int /*cmd*/)
 		zone_story_quest_feature::service *tracker = zone_story_quest_runtime::service();
 		if (!tracker)
 		{
-			send_to_char("Zone-story achievements are unavailable until the production catalog and persistence state are ready.\r\n",
-				     ch);
+			send_to_char(
+				"Zone-story achievements are unavailable until the production catalog and persistence state are ready.\r\n",
+				ch);
 			return;
 		}
 		zone_story_quest_runtime::remember_character(ch);
 		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
-					    ch->desc->term_type != TERM_SKIP_ANSI;
+				    ch->desc->term_type != TERM_SKIP_ANSI;
 		const uint32_t season = zone_story_quest_runtime::current_season_id();
 		const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
 		std::string output;

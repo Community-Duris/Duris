@@ -6594,13 +6594,14 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		if (zone_story_quest_runtime::service())
 		{
 			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
-						    ch->desc->term_type != TERM_SKIP_ANSI;
+					    ch->desc->term_type != TERM_SKIP_ANSI;
 			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
 			send_to_char(daily.c_str(), ch);
 		}
 		else
-			send_to_char("\r\nDaily zone-story quest: unavailable until catalog/persistence boot completes.\r\n",
-				     ch);
+			send_to_char(
+				"\r\nDaily zone-story quest: unavailable until catalog/persistence boot completes.\r\n",
+				ch);
 	}
 
 	if (IS_PC(ch))
