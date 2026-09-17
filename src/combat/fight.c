@@ -35,6 +35,7 @@
 #include "world/achievements.h"
 #include "combat/arena.h"
 #include "combat/arenadef.h"
+#include "combat/attack_continuation.h"
 #include "economy/boon.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
@@ -4111,15 +4112,15 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 	if (!char_in_list(ch) || !char_in_list(victim) || !IS_ALIVE(victim) || !IS_ALIVE(ch))
 		return FALSE;
 
-	const uint64_t actor_id = ch->runtime_id, target_id = victim->runtime_id;
-	const int original_room = ch->in_room, original_height = ch->specials.z_cord;
+	const attack_continuation participants = begin_attack_continuation(ch, victim);
 	const auto participants_valid = [&]()
 	{
-		return find_character_by_runtime_id(actor_id) == ch &&
-		       find_character_by_runtime_id(target_id) == victim && IS_ALIVE(ch) &&
-		       IS_ALIVE(victim) && ch->in_room == original_room &&
-		       victim->in_room == original_room && ch->specials.z_cord == original_height &&
-		       victim->specials.z_cord == original_height;
+		const attack_continuation_result checked = check_attack_continuation(participants);
+		if (!checked.can_continue())
+			return false;
+		ch = checked.actor;
+		victim = checked.target;
+		return true;
 	};
 	if (!participants_valid())
 		return FALSE;
@@ -4135,11 +4136,16 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 		    TRUE, ch, 0, victim, TO_CHAR);
 
 		P_obj secondary = ch->equipment[SECONDARY_WEAPON];
-		const uint64_t secondary_uid = secondary ? secondary->obj_uid : 0;
+		const attack_continuation secondary_continuation =
+			begin_attack_continuation(ch, victim, secondary, SECONDARY_WEAPON);
 		hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-		if (participants_valid() && ch->equipment[SECONDARY_WEAPON] == secondary &&
-		    (!secondary || secondary->obj_uid == secondary_uid))
-			hit(ch, victim, secondary);
+		if (participants_valid())
+		{
+			const attack_continuation_result checked =
+				check_attack_continuation(secondary_continuation);
+			if (checked.can_continue())
+				hit(checked.actor, checked.target, checked.weapon);
+		}
 		return TRUE;
 	}
 
@@ -4215,13 +4221,17 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 	else if (ch->equipment[SECONDARY_WEAPON] && !number(0, 2))
 		weapon_slot = SECONDARY_WEAPON;
 	wpn = ch->equipment[weapon_slot];
-	const uint64_t weapon_uid = wpn ? wpn->obj_uid : 0;
+	const attack_continuation continuation =
+		begin_attack_continuation(ch, victim, wpn, weapon_slot);
 	const auto continuation_valid = [&]()
 	{
-		// Check the live slot before reading a possibly extracted weapon. UIDs
-		// also reject a different object reusing the same pooled address.
-		return participants_valid() && ch->equipment[weapon_slot] == wpn &&
-		       (!wpn || wpn->obj_uid == weapon_uid);
+		const attack_continuation_result checked = check_attack_continuation(continuation);
+		if (!checked.can_continue())
+			return false;
+		ch = checked.actor;
+		victim = checked.target;
+		wpn = checked.weapon;
+		return true;
 	};
 
 	if (expertriposte > number(1, 500) && GET_OPPONENT(ch) == victim)
@@ -7667,11 +7677,18 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			act("$n slips beneath your guard, dealing you a vicious attack!", TRUE, ch,
 			    0, victim, TO_VICT);
 
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, victim, weapon);
 			vicious_hit = TRUE;
 			hit(ch, victim, weapon);
 			vicious_hit = FALSE;
-			if (!(is_char_in_room(ch, room) && is_char_in_room(victim, room)))
+			const attack_continuation_result checked =
+				check_attack_continuation(continuation);
+			if (!checked.can_continue())
 				return FALSE;
+			ch = checked.actor;
+			victim = checked.target;
+			weapon = checked.weapon;
 		}
 	}
 

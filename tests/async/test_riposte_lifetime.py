@@ -15,6 +15,7 @@ PREFIX = r'''
 #include "magic/spells.h"
 #include "net/comm.h"
 #include "combat/damage.h"
+#include "combat/attack_continuation.h"
 #include <cassert>
 #include <cstdio>
 
@@ -29,6 +30,7 @@ static bool actor_listed = true, target_listed = true, mutate_damage = false;
 static char_data actor = {}, target = {};
 static pc_only_data actor_pc = {}, target_pc = {};
 static obj_data weapon = {}, secondary = {};
+P_obj object_list = nullptr;
 
 int number(int low, int) { return low; }
 bool innate_two_daggers(P_char) { return path == riposte_branch::innate; }
@@ -105,6 +107,8 @@ static void reset(riposte_branch next, mutation effect = mutation::none, int on_
     SET_POS(&target, STAT_NORMAL + POS_STANDING);
     actor.specials.fighting = &target;
     weapon.obj_uid = 100; secondary.obj_uid = 200;
+    weapon.next = &secondary; secondary.next = nullptr;
+    object_list = &weapon;
     actor.equipment[PRIMARY_WEAPON] = &weapon;
     path = next; change = effect; trigger = on_hit;
     hits = damages = melees = skill_reads = 0;
@@ -169,5 +173,7 @@ with tempfile.TemporaryDirectory(prefix='duris-riposte-lifetime-') as temporary:
     subprocess.run(['g++', '-std=c++20', '-g', '-Og', '-D__NO_MYSQL__',
                     '-Isrc', '-Isrc/no_mysql', '-I/usr/include/libxml2',
                     '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
-                    '-fno-pie', '-no-pie', str(source), '-o', str(binary)], cwd=ROOT, check=True)
+                    '-fno-pie', '-no-pie', str(source),
+                    str(ROOT / 'src' / 'combat' / 'attack_continuation.c'),
+                    '-o', str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True, timeout=30)
