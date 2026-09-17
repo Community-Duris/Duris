@@ -208,14 +208,14 @@ int main(int argc, char **argv)
     critical_command b = make_command(
         2, {{critical_entity_type::player, 2}, {critical_entity_type::item, 10}});
     critical_command c = make_command(3, {{critical_entity_type::player, 3}});
-    assert(critical_command_coordinator_submit(a) == critical_submit_result::accepted);
+    assert(critical_command_coordinator_submit(a) == critical_submit_result::awaiting_durability);
     assert(critical_command_coordinator_submit(a) == critical_submit_result::attached);
     critical_command mismatch = a;
     mismatch.payload = {99};
     assert(critical_command_coordinator_submit(mismatch) ==
            critical_submit_result::identity_conflict);
-    assert(critical_command_coordinator_submit(b) == critical_submit_result::accepted);
-    assert(critical_command_coordinator_submit(c) == critical_submit_result::accepted);
+    assert(critical_command_coordinator_submit(b) == critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit(c) == critical_submit_result::awaiting_durability);
     {
         std::unique_lock<std::mutex> lock(state.mutex);
         state.changed.wait(lock, [&] { return state.a_running && state.c_started; });
@@ -251,9 +251,9 @@ int main(int argc, char **argv)
     critical_command multi = make_command(
         6, {{critical_entity_type::account, 50}, {critical_entity_type::item, 60}});
     critical_command late = make_command(7, {{critical_entity_type::item, 60}});
-    assert(critical_command_coordinator_submit(gate) == critical_submit_result::accepted);
-    assert(critical_command_coordinator_submit(multi) == critical_submit_result::accepted);
-    assert(critical_command_coordinator_submit(late) == critical_submit_result::accepted);
+    assert(critical_command_coordinator_submit(gate) == critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit(multi) == critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit(late) == critical_submit_result::awaiting_durability);
     {
         std::unique_lock<std::mutex> lock(state.mutex);
         state.changed.wait(lock, [&] { return state.gate_running; });
@@ -272,8 +272,8 @@ int main(int argc, char **argv)
 
     critical_command one = make_command(8, {{critical_entity_type::player, 80}});
     critical_command two = make_command(9, {{critical_entity_type::player, 90}});
-    assert(critical_command_coordinator_submit(one) == critical_submit_result::accepted);
-    assert(critical_command_coordinator_submit(two) == critical_submit_result::accepted);
+    assert(critical_command_coordinator_submit(one) == critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit(two) == critical_submit_result::awaiting_durability);
     wait_until([&] {
         std::lock_guard<std::mutex> lock(state.mutex);
         return state.attempts[8] == 1 && state.attempts[9] == 1;
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
     assert(critical_command_coordinator_health_copy().completed == 8);
 
     critical_command d = make_command(4, {{critical_entity_type::guild, 4}});
-    assert(critical_command_coordinator_submit(d) == critical_submit_result::accepted);
+    assert(critical_command_coordinator_submit(d) == critical_submit_result::awaiting_durability);
     wait_until([&] {
         critical_command_coordinator_pulse(completions, 16);
         return critical_command_coordinator_health_copy().completed == 9;
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
     {
         critical_command command = make_command(
             11, {{critical_entity_type::player, 10000 + index}});
-        assert(critical_command_coordinator_submit(command) == critical_submit_result::accepted);
+        assert(critical_command_coordinator_submit(command) == critical_submit_result::awaiting_durability);
     }
     critical_command overflow = make_command(11, {{critical_entity_type::player, 999999}});
     assert(critical_command_coordinator_submit(overflow) == critical_submit_result::overloaded);
@@ -376,9 +376,12 @@ for forbidden in ("P_char", "P_obj", "MYSQL", "redis", "sql_"):
     assert forbidden not in COORDINATOR
 assert "getrandom(" in COMMAND and "rand(" not in COMMAND
 assert "fsync(fd)" in JOURNAL and "crc32(" in JOURNAL and "O_NOFOLLOW" in JOURNAL
-assert COORDINATOR.index("critical_command_journal_append(command)") < COORDINATOR.index(
-    "work_available.notify_all();\n\treturn critical_submit_result::accepted"
-)
+submit_start = COORDINATOR.index("critical_submit_result critical_command_coordinator_submit")
+submit_end = COORDINATOR.index("bool critical_command_coordinator_recover_uncertain")
+SUBMIT = COORDINATOR[submit_start:submit_end]
+assert "critical_command_journal_append" not in SUBMIT
+assert "pending_admission" in SUBMIT
+assert "critical_submit_result::awaiting_durability" in SUBMIT
 
 MAKEFILE = (SRC / "Makefile").read_text()
 COMM = (SRC / "comm.c").read_text()
