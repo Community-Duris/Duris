@@ -34,7 +34,8 @@ def source_contract() -> None:
     assert "progression_reason_for_type(type)" in gain
     assert "static_cast<std::int64_t>(before_exp)" in gain
     assert "static_cast<std::int64_t>(after_exp)" in gain
-    assert "lose_level_impl(ch, static_cast<std::uint64_t>(new_exp_table[GET_LEVEL(ch)])," in gain
+    assert "lose_level_impl(ch," in gain
+    assert "static_cast<std::uint64_t>(new_exp_table[GET_LEVEL(ch)])" in gain
     assert "progression_source_for_type(type), progression_reason_for_type(type)" in gain
 
     level = limits[limits.index("static void advance_level_impl") : limits.index("void clear_title")]

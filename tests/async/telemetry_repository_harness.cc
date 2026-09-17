@@ -259,7 +259,7 @@ static telemetry_record interval_record()
 	return {};
 }
 static telemetry_record checkpoint_record(unsigned int revision, unsigned long long total,
-							 unsigned long long sequence)
+					  unsigned long long sequence)
 {
 	const auto interval = interval_record();
 	telemetry_record record{};
@@ -885,7 +885,7 @@ int main(int argc, char **argv)
 				schema += line + "\n";
 		std::size_t start = 0;
 		for (std::size_t end = schema.find(';'); end != std::string::npos;
-			 end = schema.find(';', start))
+		     end = schema.find(';', start))
 		{
 			execute_migration_statement(schema.substr(start, end - start));
 			start = end + 1;

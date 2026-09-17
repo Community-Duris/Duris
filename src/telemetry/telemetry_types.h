@@ -325,14 +325,11 @@ inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_FINAL_CAP = 1U << 
 inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_RACE = 1U << 7;
 inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_VICTIM = 1U << 8;
 inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_KNOWN =
-	TELEMETRY_PROGRESSION_MODIFIER_RESTED |
-	TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED |
+	TELEMETRY_PROGRESSION_MODIFIER_RESTED | TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED |
 	TELEMETRY_PROGRESSION_MODIFIER_OVER_LEVEL_CAP |
 	TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_EARNED |
-	TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_DEATH |
-	TELEMETRY_PROGRESSION_MODIFIER_PVP |
-	TELEMETRY_PROGRESSION_MODIFIER_FINAL_CAP |
-	TELEMETRY_PROGRESSION_MODIFIER_RACE |
+	TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_DEATH | TELEMETRY_PROGRESSION_MODIFIER_PVP |
+	TELEMETRY_PROGRESSION_MODIFIER_FINAL_CAP | TELEMETRY_PROGRESSION_MODIFIER_RACE |
 	TELEMETRY_PROGRESSION_MODIFIER_VICTIM;
 
 /*
@@ -764,8 +761,7 @@ constexpr bool telemetry_progression_observation_status_is_valid(
 	       status == telemetry_progression_observation_status::durable_reconciled;
 }
 
-constexpr bool telemetry_progression_modifier_flags_are_valid(
-	std::uint32_t flags) noexcept
+constexpr bool telemetry_progression_modifier_flags_are_valid(std::uint32_t flags) noexcept
 {
 	return (flags & ~TELEMETRY_PROGRESSION_MODIFIER_KNOWN) == 0U;
 }
@@ -1092,20 +1088,19 @@ constexpr bool telemetry_session_checkpoint_payload_is_valid(
 
 /* Compare a signed storage delta without ever overflowing signed arithmetic. */
 constexpr bool telemetry_signed_delta_is_valid(std::int64_t before, std::int64_t after,
-						       std::int64_t applied) noexcept
+					       std::int64_t applied) noexcept
 {
 	if (after >= before)
-		return applied >= 0 &&
-		       static_cast<std::uint64_t>(applied) ==
-			       static_cast<std::uint64_t>(after) -
-				       static_cast<std::uint64_t>(before);
+		return applied >= 0 && static_cast<std::uint64_t>(applied) ==
+					       static_cast<std::uint64_t>(after) -
+						       static_cast<std::uint64_t>(before);
 	return applied < 0 &&
 	       static_cast<std::uint64_t>(0U) - static_cast<std::uint64_t>(applied) ==
-	       static_cast<std::uint64_t>(before) - static_cast<std::uint64_t>(after);
+		       static_cast<std::uint64_t>(before) - static_cast<std::uint64_t>(after);
 }
 
-constexpr bool telemetry_progression_payload_is_valid(
-	const telemetry_progression_payload &progression) noexcept
+constexpr bool
+telemetry_progression_payload_is_valid(const telemetry_progression_payload &progression) noexcept
 {
 	if (!telemetry_session_ref_is_valid(progression.session) ||
 	    !telemetry_connection_reference_is_valid(progression.connection) ||
@@ -1125,8 +1120,8 @@ constexpr bool telemetry_progression_payload_is_valid(
 		    progression.threshold_xp != 0U)
 			return false;
 		/* The storage-boundary delta is the only authoritative observed change. */
-		return telemetry_signed_delta_is_valid(progression.before_exp, progression.after_exp,
-						       progression.applied_xp);
+		return telemetry_signed_delta_is_valid(
+			progression.before_exp, progression.after_exp, progression.applied_xp);
 	}
 	if (progression.before_level == progression.after_level || progression.applied_xp != 0U ||
 	    progression.requested_xp != 0 || progression.computed_xp != 0 ||

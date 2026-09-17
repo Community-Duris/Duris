@@ -636,18 +636,17 @@ static telemetry_progression_reason progression_reason_for_type(int type)
 		return telemetry_progression_reason::death_loss;
 	if (type == EXP_RESURRECT)
 		return telemetry_progression_reason::resurrection;
-	if (type == EXP_DAMAGE || type == EXP_HEALING || type == EXP_KILL ||
-	    type == EXP_QUEST || type == EXP_MELEE || type == EXP_WORLD_QUEST ||
-	    type == EXP_TANKING || type == EXP_BOON)
+	if (type == EXP_DAMAGE || type == EXP_HEALING || type == EXP_KILL || type == EXP_QUEST ||
+	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING || type == EXP_BOON)
 		return telemetry_progression_reason::earned;
 	return telemetry_progression_reason::unknown;
 }
 
 static void advance_level_impl(P_char ch, bool notify_player, bool process_boons,
-				       std::uint64_t threshold_xp);
+			       std::uint64_t threshold_xp);
 static void lose_level_impl(P_char ch, std::uint64_t threshold_xp,
-				 telemetry_progression_source source,
-				 telemetry_progression_reason reason);
+			    telemetry_progression_source source,
+			    telemetry_progression_reason reason);
 
 static void notify_level_advancement(P_char ch, int previous_level)
 {
@@ -685,7 +684,7 @@ void illithid_advance_level(P_char ch)
 }
 
 static void advance_level_impl(P_char ch, bool notify_player, bool process_boons,
-				       std::uint64_t threshold_xp)
+			       std::uint64_t threshold_xp)
 {
 	/*  struct time_info_data playing_time;*/
 	int i;
@@ -831,8 +830,8 @@ void advance_to_level(P_char ch, int target_level)
  */
 
 static void lose_level_impl(P_char ch, std::uint64_t threshold_xp,
-				 telemetry_progression_source source,
-				 telemetry_progression_reason reason)
+			    telemetry_progression_source source,
+			    telemetry_progression_reason reason)
 {
 	int i;
 
@@ -1625,8 +1624,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			       J_NAME(ch), GET_EXP(ch), GET_EXP(ch) + new_exp_table[GET_LEVEL(ch)],
 			       new_exp_table[GET_LEVEL(ch)]);
 			GET_EXP(ch) += new_exp_table[GET_LEVEL(ch)];
-			lose_level_impl(ch, static_cast<std::uint64_t>(new_exp_table[GET_LEVEL(ch)]),
-					 progression_source_for_type(type), progression_reason_for_type(type));
+			lose_level_impl(ch,
+					static_cast<std::uint64_t>(new_exp_table[GET_LEVEL(ch)]),
+					progression_source_for_type(type),
+					progression_reason_for_type(type));
 		}
 	}
 

@@ -706,7 +706,8 @@ capture_from_progression(const telemetry_progression_result &source) noexcept
 	telemetry_capture_result result{};
 	result.outcome = telemetry_runtime_outcome::invalid;
 	result.admission = telemetry_queue_admission::rejected_invalid;
-	result.records_emitted = source.outcome == telemetry_progression_outcome::accepted ? 1U : 0U;
+	result.records_emitted = source.outcome == telemetry_progression_outcome::accepted ? 1U :
+											     0U;
 	result.records_dropped =
 		(source.outcome == telemetry_progression_outcome::sink_rejected ||
 		 source.outcome == telemetry_progression_outcome::allocator_exhausted) ?
@@ -1750,7 +1751,7 @@ telemetry_runtime_outcome telemetry_runtime_shutdown(telemetry_shutdown_request 
 		R.last_health = fallback_health();
 		R.has_last_health = true;
 		(void)telemetry_config_reload_unregister(reload_observer,
-								 telemetry_config_global_state());
+							 telemetry_config_global_state());
 		telemetry_config_global_reset();
 		telemetry_progression_state_reset(&R.progression);
 		telemetry_activity_state_reset(&R.activity);
@@ -2382,8 +2383,8 @@ telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *c
 }
 
 telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *character,
-								 struct descriptor_data *descriptor,
-								 telemetry_runtime_evidence_kind kind)
+							 struct descriptor_data *descriptor,
+							 telemetry_runtime_evidence_kind kind)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -2393,15 +2394,14 @@ telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *chara
 	return telemetry_runtime_record_evidence(evidence);
 }
 
-telemetry_capture_result telemetry_runtime_game_progression(
-	struct char_data *character, struct descriptor_data *descriptor,
-	telemetry_progression_observation observation)
+telemetry_capture_result
+telemetry_runtime_game_progression(struct char_data *character, struct descriptor_data *descriptor,
+				   telemetry_progression_observation observation)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
 	if (character == nullptr || character->only.pc == nullptr ||
-	    !telemetry_progression_observation_is_valid(observation) ||
-	    !ensure_current_config())
+	    !telemetry_progression_observation_is_valid(observation) || !ensure_current_config())
 		return game_capture_invalid();
 	telemetry_session_ref session{};
 	if (!game_session_ref(character, &session))
