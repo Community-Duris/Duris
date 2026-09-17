@@ -1,53 +1,18 @@
 #ifndef CRITICAL_COMMAND_COORDINATOR_H
 #define CRITICAL_COMMAND_COORDINATOR_H
 
-#include "persistence/critical_command.h"
+#include "persistence/critical_command_completion.h"
 #include "persistence/critical_command_journal.h"
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
 
 constexpr size_t CRITICAL_COORDINATOR_MAX_OPERATIONS = 1024;
 constexpr size_t CRITICAL_COORDINATOR_MAX_BYTES = 64 * 1024 * 1024;
-constexpr size_t CRITICAL_COORDINATOR_MAX_RESULTS = 2048;
 constexpr size_t CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX = 256;
 constexpr size_t CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES = 8 * 1024 * 1024;
 constexpr unsigned int CRITICAL_COORDINATOR_MAX_RETRIES = 8;
 constexpr unsigned int CRITICAL_COORDINATOR_DEFAULT_WORKERS = 2;
-constexpr size_t CRITICAL_COMPLETION_RESULT_MAX_BYTES = 2048;
-
-enum class critical_apply_outcome : uint8_t
-{
-	applied,
-	already_applied,
-	retryable_failure,
-	ambiguous_commit,
-	terminal_failure,
-};
-
-struct critical_apply_result
-{
-	critical_apply_outcome outcome;
-	uint64_t durable_revision;
-	unsigned int error_code;
-	uint16_t result_size = 0;
-	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
-};
-
-struct critical_completion
-{
-	critical_operation_id operation_id;
-	critical_apply_outcome outcome;
-	uint64_t durable_revision;
-	unsigned int error_code;
-	unsigned int attempt;
-	uint64_t queued_at_usec;
-	uint64_t started_at_usec;
-	uint64_t completed_at_usec;
-	uint16_t result_size = 0;
-	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
-};
 
 enum class critical_submit_result : uint8_t
 {

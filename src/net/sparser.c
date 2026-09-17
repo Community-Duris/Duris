@@ -8,6 +8,7 @@
 */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -1192,6 +1193,7 @@ void show_abort_casting(P_char ch)
 
 	if (IS_SET(ch->specials.affected_by2, AFF2_CASTING))
 	{
+		telemetry_runtime_game_combat_cast_abort(ch);
 		if (meming_class(ch))
 		{
 			send_to_char("&+rYou abort your spell before it's done!\n", ch);
@@ -2206,6 +2208,7 @@ void do_will(P_char ch, char *argument, int /*cmd*/)
 	tmp_spl.timeleft -= dura;
 	DelayCommune(ch, dura);
 	SET_BIT(ch->specials.affected_by2, AFF2_CASTING);
+	telemetry_runtime_game_combat_cast_attempt(ch, tmp_spl.spell);
 	if (!schedule_spellcast(ch, common_target_data.t_char, BOUNDED(1, dura, 4), &tmp_spl))
 		return;
 	if (common_target_data.t_char)
@@ -2449,6 +2452,7 @@ void do_cast(P_char ch, char *argument, int cmd)
 	{
 		SpellCastShow(ch, spl);
 		SET_BIT(ch->specials.affected_by2, AFF2_CASTING);
+		telemetry_runtime_game_combat_cast_attempt(ch, spl);
 		event_spellcast(ch, common_target_data.t_char, common_target_data.t_obj, &tmp_spl);
 		return;
 	}
@@ -2459,6 +2463,7 @@ void do_cast(P_char ch, char *argument, int cmd)
 		    GET_CHAR_SKILL(ch, SKILL_SPELLWEAVE) > number(0, 100))
 		{
 			SET_BIT(ch->specials.affected_by2, AFF2_CASTING);
+			telemetry_runtime_game_combat_cast_attempt(ch, tmp_spl.spell);
 			event_spellcast(ch, tar_char, 0, &tmp_spl);
 		}
 		else
@@ -2580,6 +2585,7 @@ void do_cast(P_char ch, char *argument, int cmd)
 	}
 
 	SET_BIT(ch->specials.affected_by2, AFF2_CASTING);
+	telemetry_runtime_game_combat_cast_attempt(ch, tmp_spl.spell);
 	if (!schedule_spellcast(ch, common_target_data.t_char, BOUNDED(1, dura, 4), &tmp_spl))
 		return;
 
@@ -2790,6 +2796,7 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 		weave_effect.duration = GET_LEVEL(ch) / 10; // 3 mins at 30, 5 mins max at lvl 50+
 		affect_to_char(ch, &weave_effect);
 		send_to_char("You finish weaving a spell.\n", ch);
+		telemetry_runtime_game_combat_cast_complete(ch);
 		return;
 	}
 
@@ -3037,6 +3044,7 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 	}
 	if (!safe_room_spell_target_allowed(ch, arg->spell, tar_char))
 		return;
+	telemetry_runtime_game_combat_cast_complete(ch);
 	((*skills[arg->spell].spell_pointer)((int)GET_LEVEL(ch), ch, args, SPELL_TYPE_SPELL,
 					     tar_char, tar_obj));
 

@@ -68,6 +68,7 @@ enum class telemetry_record_kind : std::uint8_t
 	configuration = 5,
 	progression = 6,
 	encounter = 7,
+	combat_summary = 8,
 };
 
 /* Progression facts keep XP arithmetic separate from level-threshold use. */
@@ -150,6 +151,15 @@ enum class telemetry_encounter_outcome : std::uint8_t
 	copyover = 8,
 	shutdown = 9,
 	unknown_close = 10,
+};
+
+/* Combat rows retain actor identity without retaining a game pointer. */
+enum class telemetry_combat_actor_kind : std::uint8_t
+{
+	unknown = 0,
+	player = 1,
+	pet = 2,
+	npc = 3,
 };
 
 /* Lifecycle records describe a logical session or an explicit socket edge. */
@@ -348,6 +358,26 @@ inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_DISABLED = 1U << 5;
 inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_UNCLOSED_TAIL = 1U << 6;
 inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_CLOCK_DISCONTINUITY = 1U << 7;
 inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_LATE = 1U << 8;
+inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_CARDINALITY_OVERFLOW = 1U << 9;
+
+/* Compact combat context; values are intentionally not an open-ended map. */
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_NONE = 0U;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_SPELL = 1U << 0;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_MELEE = 1U << 1;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_PVP = 1U << 2;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_PET = 1U << 3;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_NPC = 1U << 4;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_CONTROL = 1U << 5;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_TANKING = 1U << 6;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_SELF = 1U << 7;
+inline constexpr std::uint32_t TELEMETRY_COMBAT_MODIFIER_KNOWN =
+	TELEMETRY_COMBAT_MODIFIER_SPELL | TELEMETRY_COMBAT_MODIFIER_MELEE |
+	TELEMETRY_COMBAT_MODIFIER_PVP | TELEMETRY_COMBAT_MODIFIER_PET |
+	TELEMETRY_COMBAT_MODIFIER_NPC | TELEMETRY_COMBAT_MODIFIER_CONTROL |
+	TELEMETRY_COMBAT_MODIFIER_TANKING | TELEMETRY_COMBAT_MODIFIER_SELF;
+
+inline constexpr std::uint16_t TELEMETRY_COMBAT_SUMMARY_MAX_PARTICIPANTS = 64U;
+inline constexpr std::uint16_t TELEMETRY_COMBAT_SUMMARY_MAX_UNIQUE_PLAYERS = 64U;
 
 /* These flags describe bounded modifier paths, not arbitrary property maps. */
 inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_NONE = 0U;
@@ -665,6 +695,44 @@ struct telemetry_encounter_payload
 	telemetry_quality_mask quality_flags;
 };
 
+/* One bounded contribution row is emitted per retained actor at close. */
+struct telemetry_combat_summary_payload
+{
+	telemetry_encounter_id encounter;
+	telemetry_encounter_source source;
+	telemetry_encounter_mode mode;
+	telemetry_encounter_outcome outcome;
+	telemetry_combat_actor_kind actor_kind;
+	std::uint8_t reserved;
+	std::uint16_t revision;
+	telemetry_id actor_id;
+	telemetry_pid actor_pid;
+	telemetry_subject_id owner_subject_id;
+	std::uint16_t unique_player_count;
+	std::uint16_t participant_count;
+	std::uint16_t dropped_participant_count;
+	std::uint16_t power_band;
+	std::uint16_t opponent_power_band;
+	std::uint16_t opponent_count;
+	std::uint32_t modifier_flags;
+	telemetry_monotonic_usec start_monotonic_usec;
+	telemetry_monotonic_usec end_monotonic_usec;
+	telemetry_utc_usec start_utc_usec;
+	telemetry_utc_usec end_utc_usec;
+	telemetry_duration_usec damage_dealt;
+	telemetry_duration_usec damage_taken;
+	telemetry_duration_usec healing_attempted;
+	telemetry_duration_usec effective_healing;
+	telemetry_duration_usec overhealing;
+	std::uint64_t control_applications;
+	std::uint64_t casting_attempts;
+	std::uint64_t casting_completions;
+	std::uint64_t casting_aborts;
+	telemetry_duration_usec casting_elapsed_usec;
+	telemetry_duration_usec tanking_usec;
+	telemetry_quality_mask quality_flags;
+};
+
 union telemetry_record_payload
 {
 	telemetry_interval_payload interval;
@@ -674,6 +742,7 @@ union telemetry_record_payload
 	telemetry_configuration_payload configuration;
 	telemetry_progression_payload progression;
 	telemetry_encounter_payload encounter;
+	telemetry_combat_summary_payload combat_summary;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -723,7 +792,8 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::coverage_gap ||
 	       kind == telemetry_record_kind::configuration ||
 	       kind == telemetry_record_kind::progression ||
-	       kind == telemetry_record_kind::encounter;
+	       kind == telemetry_record_kind::encounter ||
+	       kind == telemetry_record_kind::combat_summary;
 }
 
 constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noexcept
@@ -732,7 +802,8 @@ constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noex
 	       kind == telemetry_record_kind::session_checkpoint ||
 	       kind == telemetry_record_kind::coverage_gap ||
 	       kind == telemetry_record_kind::configuration ||
-	       kind == telemetry_record_kind::encounter;
+	       kind == telemetry_record_kind::encounter ||
+	       kind == telemetry_record_kind::combat_summary;
 }
 
 constexpr bool telemetry_lifecycle_kind_is_valid(telemetry_lifecycle_kind kind) noexcept
@@ -860,7 +931,7 @@ inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_KNOWN =
 	TELEMETRY_QUALITY_DIMENSION_UNKNOWN | TELEMETRY_QUALITY_SEQUENCE_GAP |
 	TELEMETRY_QUALITY_QUEUE_DROP | TELEMETRY_QUALITY_DISABLED |
 	TELEMETRY_QUALITY_UNCLOSED_TAIL | TELEMETRY_QUALITY_CLOCK_DISCONTINUITY |
-	TELEMETRY_QUALITY_LATE;
+	TELEMETRY_QUALITY_LATE | TELEMETRY_QUALITY_CARDINALITY_OVERFLOW;
 
 constexpr bool telemetry_quality_mask_is_valid(telemetry_quality_mask quality) noexcept
 {
@@ -905,6 +976,17 @@ constexpr bool telemetry_encounter_outcome_is_valid(telemetry_encounter_outcome 
 	       outcome == telemetry_encounter_outcome::copyover ||
 	       outcome == telemetry_encounter_outcome::shutdown ||
 	       outcome == telemetry_encounter_outcome::unknown_close;
+}
+
+constexpr bool telemetry_combat_actor_kind_is_valid(telemetry_combat_actor_kind kind) noexcept
+{
+	return kind == telemetry_combat_actor_kind::player ||
+	       kind == telemetry_combat_actor_kind::pet || kind == telemetry_combat_actor_kind::npc;
+}
+
+constexpr bool telemetry_combat_modifier_flags_are_valid(std::uint32_t flags) noexcept
+{
+	return (flags & ~TELEMETRY_COMBAT_MODIFIER_KNOWN) == 0U;
 }
 
 constexpr bool telemetry_encounter_id_is_valid(const telemetry_encounter_id &id) noexcept
@@ -1342,6 +1424,34 @@ telemetry_encounter_payload_is_valid(const telemetry_encounter_payload &encounte
 	return true;
 }
 
+constexpr bool
+telemetry_combat_summary_payload_is_valid(const telemetry_combat_summary_payload &summary) noexcept
+{
+	if (!telemetry_encounter_id_is_valid(summary.encounter) ||
+	    !telemetry_encounter_source_is_valid(summary.source) ||
+	    !telemetry_encounter_mode_is_valid(summary.mode) ||
+	    summary.mode == telemetry_encounter_mode::unknown ||
+	    !telemetry_encounter_outcome_is_valid(summary.outcome) ||
+	    summary.outcome == telemetry_encounter_outcome::unknown ||
+	    !telemetry_combat_actor_kind_is_valid(summary.actor_kind) || summary.reserved != 0U ||
+	    summary.revision == 0U || summary.actor_id == TELEMETRY_UNKNOWN_ID ||
+	    !telemetry_combat_modifier_flags_are_valid(summary.modifier_flags) ||
+	    !telemetry_quality_mask_is_valid(summary.quality_flags) ||
+	    summary.source.zone_vnum < -1 ||
+	    summary.end_monotonic_usec < summary.start_monotonic_usec ||
+	    summary.unique_player_count > TELEMETRY_COMBAT_SUMMARY_MAX_UNIQUE_PLAYERS ||
+	    summary.participant_count > TELEMETRY_COMBAT_SUMMARY_MAX_PARTICIPANTS ||
+	    summary.effective_healing > summary.healing_attempted ||
+	    summary.casting_completions > summary.casting_attempts ||
+	    summary.casting_aborts > summary.casting_attempts - summary.casting_completions)
+		return false;
+	if (summary.actor_kind == telemetry_combat_actor_kind::player)
+		return summary.actor_pid > 0 && summary.owner_subject_id == summary.actor_id;
+	if (summary.actor_kind == telemetry_combat_actor_kind::pet)
+		return summary.actor_pid == TELEMETRY_UNKNOWN_PID && summary.owner_subject_id != 0U;
+	return summary.actor_pid == TELEMETRY_UNKNOWN_PID && summary.owner_subject_id == 0U;
+}
+
 /* The switch reads only the union member selected by header.kind. */
 constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcept
 {
@@ -1363,6 +1473,8 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 		return telemetry_progression_payload_is_valid(record.payload.progression);
 	case telemetry_record_kind::encounter:
 		return telemetry_encounter_payload_is_valid(record.payload.encounter);
+	case telemetry_record_kind::combat_summary:
+		return telemetry_combat_summary_payload_is_valid(record.payload.combat_summary);
 	case telemetry_record_kind::invalid:
 		break;
 	}
@@ -1382,6 +1494,9 @@ static_assert(sizeof(telemetry_progression_payload) <= TELEMETRY_RECORD_MAX_BYTE
 static_assert(std::is_trivially_copyable_v<telemetry_encounter_payload>);
 static_assert(std::is_standard_layout_v<telemetry_encounter_payload>);
 static_assert(sizeof(telemetry_encounter_payload) <= TELEMETRY_RECORD_MAX_BYTES);
+static_assert(std::is_trivially_copyable_v<telemetry_combat_summary_payload>);
+static_assert(std::is_standard_layout_v<telemetry_combat_summary_payload>);
+static_assert(sizeof(telemetry_combat_summary_payload) <= TELEMETRY_RECORD_MAX_BYTES);
 static_assert(sizeof(telemetry_record) <= TELEMETRY_RECORD_MAX_BYTES,
 	      "telemetry_record must remain within the fixed queue record bound");
 

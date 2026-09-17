@@ -192,6 +192,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
 
     def test_unresolved_publication_is_explicit_and_operator_visible(self):
         header = (SRC / "economy/currency_transaction.h").read_text()
+        publication = (SRC / "economy/currency_publication.h").read_text()
         transaction = (SRC / "economy/currency_transaction.c").read_text()
         world_status = (SRC / "cmd/actinf.c").read_text()
         for state in (
@@ -200,7 +201,11 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "retrying_callback",
             "blocked_receipt",
         ):
-            self.assertIn(state, transaction)
+            self.assertIn(state, publication)
+        self.assertIn("currency_publication_state_is_ready", publication)
+        self.assertIn("currency_publication_state_is_live_pending", publication)
+        self.assertIn("currency_publication_state_is_blocked", publication)
+        self.assertIn("stage_publication_receipt", transaction)
         self.assertIn("currency_transaction_can_submit_nonrebasable", header)
         self.assertNotIn("currency_transaction_can_submit(P_char", header)
         for metric in (

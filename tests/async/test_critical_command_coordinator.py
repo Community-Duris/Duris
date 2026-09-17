@@ -12,6 +12,8 @@ COMMAND = (SRC / "critical_command.c").read_text()
 JOURNAL = (SRC / "critical_command_journal.c").read_text()
 COORDINATOR = (SRC / "critical_command_coordinator.c").read_text()
 HEADER = (SRC / "critical_command_coordinator.h").read_text()
+COMPLETION = (SRC / "persistence/critical_command_completion.h").read_text()
+PIPELINE = (ROOT / "docs/persistence/CRITICAL_COMMAND_PIPELINE.md").read_text()
 
 
 HARNESS = r'''
@@ -372,8 +374,37 @@ for contract in (
     "critical_command_coordinator_get_completed",
 ):
     assert contract in HEADER
+for contract in (
+    "CRITICAL_COORDINATOR_MAX_RESULTS = 2048",
+    "critical_completion_delivery",
+    "critical_completion_channel::execution",
+    "critical_completion_channel::admission_failure",
+):
+    assert contract in COMPLETION or contract in COORDINATOR
+for phase in (
+    "critical_operation_phase::awaiting_durability",
+    "critical_operation_phase::queued",
+    "critical_operation_phase::executing",
+    "critical_operation_phase::uncertain_admission",
+    "critical_operation_phase::blocked",
+    "critical_operation_phase::admission_failed",
+):
+    assert phase in COORDINATOR
+assert "struct critical_completion" in COMPLETION
+assert "struct critical_completion" not in HEADER
+for displaced_flag in (
+    "state->inflight",
+    "state->completed",
+    "state->blocked",
+    "state->admission_uncertain",
+    "state->awaiting_durability",
+    "state->admission_failed",
+):
+    assert displaced_flag not in COORDINATOR
 for forbidden in ("P_char", "P_obj", "MYSQL", "redis", "sql_"):
     assert forbidden not in COORDINATOR
+assert "raw_results" not in COORDINATOR
+assert "critical_completion_delivery completion_delivery" in COORDINATOR
 assert "getrandom(" in COMMAND and "rand(" not in COMMAND
 assert "fsync(fd)" in JOURNAL and "crc32(" in JOURNAL and "O_NOFOLLOW" in JOURNAL
 submit_start = COORDINATOR.index("critical_submit_result critical_command_coordinator_submit")
@@ -415,5 +446,19 @@ assert "command.payload" not in ACTINF and "operation_id" not in ACTINF
 assert "critical_command_equal" in COORDINATOR and "identity_conflict" in COORDINATOR
 assert "keys_available" in COORDINATOR and "acquire_keys" in COORDINATOR
 assert "found->second->attempt != completion.attempt" in COORDINATOR
+for state in (
+    "Admitted / awaiting durability",
+    "Durable admission",
+    "Executing",
+    "Retry pending",
+    "Uncertain admission",
+    "Final notification retained",
+    "Admission failed",
+    "Currency publication ready",
+    "Currency waiting / retrying / blocked",
+    "Snapshot pending and outbox pending",
+):
+    assert state in PIPELINE
+assert "There is no second generic lifecycle framework" in PIPELINE
 
 print("critical command identity, journal, ordering, replay, fence, and bound contracts passed")

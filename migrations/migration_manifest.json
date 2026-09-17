@@ -418,6 +418,16 @@
       "verify": "immutable/0024_telemetry_encounters.sh",
       "verify_checksum": "3c29a3c6794261dfcbd7ad1b0520452c8401e8734a689a68e8c57e6374fcf798",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0025_telemetry_combat_summaries",
+      "sequence": 25,
+      "description": "Add bounded combat contribution and casting summaries",
+      "apply": "immutable/0025_telemetry_combat_summaries.sql",
+      "apply_checksum": "a91143dcd1de6c3843d86217f4a558b4477e66c03e68cd77d0efe047ecaab4bc",
+      "verify": "immutable/0025_telemetry_combat_summaries.sh",
+      "verify_checksum": "0a39c7fa6e73512f65bad485cf54b9400b700b97aa0f4d304d2ff16d51675354",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

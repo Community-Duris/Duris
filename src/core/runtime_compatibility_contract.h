@@ -60,9 +60,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"97e0a1d46a3800b99897bc9cae1f35036290a7f795a07b2cc136d301160c89a2";
+	"3a15bbb97901b2c2ec23d402589101546384d46d25ec59663834f97dd92082cf";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"f8811cb2ddda40bad945e6281c301e371f69d7860a8194256e705690036e456a";
+	"5105d24060085c74646cbd6695ab270cf2f5856634c9311b31c5f5c2baf5d9bf";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -70,16 +70,17 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * 0020, identity-stable Collector notification receipt/outbox state introduced
  * by migration 0021, and additive progression fields introduced by migration
  * 0022, committed reward projection/reconciliation state introduced by
- * migration 0023, and bounded encounter lifecycle facts introduced by
- * migration 0024. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0024_telemetry_encounters";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 24;
+ * migration 0023, bounded encounter lifecycle facts introduced by migration
+ * 0024, and bounded combat contribution/casting summaries introduced by
+ * migration 0025. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0025_telemetry_combat_summaries";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 25;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"69e4b3bb194c1abc1f61b1d64b074f051978495633a1350d7b0c91e1db6189d4";
+	"a91143dcd1de6c3843d86217f4a558b4477e66c03e68cd77d0efe047ecaab4bc";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"3c29a3c6794261dfcbd7ad1b0520452c8401e8734a689a68e8c57e6374fcf798";
+	"0a39c7fa6e73512f65bad485cf54b9400b700b97aa0f4d304d2ff16d51675354";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"fd34e9d6d8b1e2a78683ead11a6d0f9bbacc27496a7b454bcd25d5282e4cf6d3";
+	"f08f34306be4df353b5515dfd078664feb457bac253ca7c0a0f9789e19ab95e2";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

@@ -32,7 +32,7 @@ template <typename F> void wait_for(F condition) {
 }
 static size_t result_depth() {
     std::lock_guard<std::mutex> lock(coordinator_mutex);
-    return raw_results.size();
+    return completion_delivery.size(critical_completion_channel::execution);
 }
 static critical_command command(unsigned int tag) {
     critical_command result = {};
