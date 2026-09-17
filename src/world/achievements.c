@@ -3,6 +3,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "world/achievements.h"
+#include "world/zone_story_quest_runtime.h"
 #include "combat/chaos_config.h"
 #include <string.h>
 #include "world/epic.h"
@@ -18,8 +19,42 @@ int get_frags(P_char ch)
 	return ch->only.pc->frags;
 }
 
-void do_achievements(P_char ch, char * /*arg*/, int /*cmd*/)
+void do_achievements(P_char ch, char *arg, int /*cmd*/)
 {
+	char section[MAX_INPUT_LENGTH], value[MAX_INPUT_LENGTH];
+	char *remaining = one_argument(arg ? arg : (char *)"", section);
+	if (*section && (is_abbrev(section, "zones") || is_abbrev(section, "zone")))
+	{
+		zone_story_quest_feature::service *tracker = zone_story_quest_runtime::service();
+		if (!tracker)
+		{
+			send_to_char(
+				"Zone-story achievements are unavailable until the production catalog and persistence state are ready.\r\n",
+				ch);
+			return;
+		}
+		zone_story_quest_runtime::remember_character(ch);
+		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+				    ch->desc->term_type != TERM_SKIP_ANSI;
+		const uint32_t season = zone_story_quest_runtime::current_season_id();
+		const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
+		std::string output;
+		if (is_abbrev(section, "zone"))
+		{
+			one_argument(remaining, value);
+			const int zone = atoi(value);
+			if (zone <= 0)
+			{
+				send_to_char("Usage: achievements zone <zone-number>\r\n", ch);
+				return;
+			}
+			output = tracker->render_zone(season, pid, zone, GET_NAME(ch), colors);
+		}
+		else
+			output = tracker->render_summary(season, pid, GET_NAME(ch), colors);
+		page_string(ch->desc, output.data(), 1);
+		return;
+	}
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], buf3[MAX_STRING_LENGTH];
 	struct affected_type *paf = get_spell_from_char(ch, AIP_LEVELACHIEVEMENT);
 	int lvlachi = paf ? paf->modifier : 0;

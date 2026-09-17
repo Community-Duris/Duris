@@ -1,6 +1,7 @@
 #include "world/world_recovery_pipeline.h"
 
 #include "persistence/copyover.h"
+#include "combat/training_dummy.h"
 #include "world/generated_npc_state.h"
 #include "world/db.h"
 #include "item/item_ownership_runtime.h"
@@ -38,6 +39,13 @@ extern bool sql_persistence_reconcile_world_recovery_items(
 	item_ownership_runtime_entry *authoritative, size_t authoritative_capacity);
 namespace
 {
+/* Recovery fixtures are intentionally linkable without the gameplay module;
+ * inspect the persisted runtime marker locally at this low-level boundary. */
+bool recovery_training_dummy_is(P_char ch)
+{
+	return ch && IS_NPC(ch) && ch->only.npc && ch->only.npc->training_dummy;
+}
+
 enum class capture_stage : uint8_t
 {
 	idle,
@@ -383,7 +391,7 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 
 int write_mob_record(P_char mob, char *buffer, size_t maximum)
 {
-	if (!mob || !buffer || maximum < sizeof(copyover_mob))
+	if (!mob || recovery_training_dummy_is(mob) || !buffer || maximum < sizeof(copyover_mob))
 		return -1;
 	copyover_mob entry = {};
 	const int mob_rnum = GET_RNUM(mob);
@@ -543,8 +551,10 @@ bool capture_one_record()
 		{
 			P_char ch = active_capture.next_character;
 			active_capture.next_character = ch->next;
+			// Dummies are deterministic boot fixtures, not durable world NPCs.
+			// Replaying the prototype would drop their safety marker/profile.
 			if (!IS_NPC(ch) || ch->in_room < 0 || GET_MASTER(ch) ||
-			    ch->only.npc->summoned_instance)
+			    ch->only.npc->summoned_instance || recovery_training_dummy_is(ch))
 				return true;
 			const int size = write_mob_record(
 				ch, reinterpret_cast<char *>(capture_buffer.data()),

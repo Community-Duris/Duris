@@ -41,6 +41,7 @@
 #include "core/mm.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
+#include "combat/training_dummy.h"
 
 extern P_desc descriptor_list;
 extern const struct race_names race_names_table[];
@@ -58,6 +59,14 @@ static bool do_group_add(P_char ch, P_char victim);
  * bounded adapter owns dimensions/classification; no gameplay state is changed. */
 static void telemetry_group_context_changed(struct group_list *group)
 {
+	for (struct group_list *member = group; member; member = member->next)
+	{
+		if (member->ch && IS_PC(member->ch))
+		{
+			(void)telemetry_runtime_game_encounter_group_sync(member->ch);
+			break;
+		}
+	}
 	unsigned visited = 0U;
 	for (struct group_list *member = group; member && visited < 256U;
 	     member = member->next, ++visited)
@@ -818,6 +827,11 @@ void do_group(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 	}
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy cannot join or lead a group.\r\n", ch);
+		return;
+	}
 	if (victim == ch)
 	{
 		if (!ch->group)
@@ -1021,6 +1035,10 @@ bool group_remove_member(P_char ch)
 		}
 	}
 
+	if (IS_PC(ch))
+		(void)telemetry_runtime_game_encounter_leave(
+			ch, telemetry_encounter_outcome::withdrawal);
+
 	purge_linked_auras(ch);
 
 	/* okay.. 2 possible special conditions:
@@ -1062,6 +1080,9 @@ bool group_remove_member(P_char ch)
 	if (gl && !gl->next)
 	{ /* only 1 person in the group */
 		/* silently disband it */
+		if (gl->ch && IS_PC(gl->ch))
+			(void)telemetry_runtime_game_encounter_leave(
+				gl->ch, telemetry_encounter_outcome::withdrawal);
 		if (in_command_aura(gl->ch))
 			remove_aura_message(gl->ch, gl->ch);
 		gl->ch->group = NULL;
@@ -1197,6 +1218,14 @@ bool group_add_member(P_char leader, P_char member)
 
 	if (!leader || !member || !IS_ALIVE(leader) || !IS_ALIVE(member))
 		return FALSE;
+
+	if (training_dummy_is(leader) || training_dummy_is(member))
+	{
+		P_char player = training_dummy_is(leader) ? member : leader;
+		if (player && IS_PC(player))
+			send_to_char("The training dummy cannot join or lead a group.\r\n", player);
+		return FALSE;
+	}
 
 	if (member->group)
 	{

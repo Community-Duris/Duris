@@ -102,6 +102,8 @@ GET_C_STR(ch
 ~
 circle
 ~
+collector
+~
 conjure
 GET_C_CHA(ch
 GET_C_CHA(ch
@@ -877,6 +879,8 @@ duck
 ~
 duh
 ~
+dummy
+~
 east
 GET_C_INT(ch
 ~
@@ -1577,6 +1581,8 @@ resetarti
 resetspec
 ~
 rest
+~
+restitution
 ~
 restore
 ~

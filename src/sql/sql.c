@@ -25,6 +25,7 @@
 #include "core/utils.h"
 #include "sql/sql.h"
 #include "sql/sql_telemetry_connection.h"
+#include "sql/sql_exclusion_guard.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
@@ -394,17 +395,25 @@ bool qry_at(struct persistence_query_site site, const char *format, ...)
 	(void)format;
 	return FALSE;
 }
-static void enqueue_flat_offline_message(const char *message, int pid)
+static bool enqueue_flat_offline_message(const char *message, int pid,
+					 const unsigned char *message_id = nullptr)
 {
 	const char *root = persistence_mode_flatfile_root();
 	critical_operation_id operation_id = {};
+	if (message_id)
+		memcpy(operation_id.bytes.data(), message_id, operation_id.bytes.size());
+	else if (!critical_operation_id_generate(&operation_id))
+		return false;
 	std::string error;
-	if (!root || !message || pid <= 0 || !critical_operation_id_generate(&operation_id) ||
-	    flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid), operation_id.bytes,
-					     message,
-					     &error) != flatfile_offline_message_result::ok)
+	const bool success = root && message && pid > 0 &&
+			     flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid),
+							      operation_id.bytes, message,
+							      &error) ==
+				     flatfile_offline_message_result::ok;
+	if (!success)
 		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
 				  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
+	return success;
 }
 void send_to_char_offline(const char *message, int pid)
 {
@@ -413,6 +422,10 @@ void send_to_char_offline(const char *message, int pid)
 void send_to_pid_offline(const char *message, int pid)
 {
 	enqueue_flat_offline_message(message, pid);
+}
+bool send_to_pid_offline_deduplicated(const char *message, int pid, const unsigned char *message_id)
+{
+	return message_id && enqueue_flat_offline_message(message, pid, message_id);
 }
 void send_offline_messages(P_char ch)
 {
@@ -1107,6 +1120,12 @@ static MYSQL *sql_open_verified_connection(unsigned long client_flags, const cha
 			      "Database connection rejected: transport or session contract failed");
 			return NULL;
 		}
+		if (!duris_sql_exclusion_guard_allows(conn))
+		{
+			logit(LOG_STATUS,
+			      "Database connection rejected: runtime exclusion guard is not owned");
+			return NULL;
+		}
 		return owned.release();
 	}
 	catch (...)
@@ -1419,6 +1438,14 @@ int initialize_mysql()
 	{
 		return -1;
 	}
+	if (!duris_sql_exclusion_guard_acquire(DB))
+	{
+		logit(LOG_STATUS,
+		      "FATAL: database runtime exclusion guard is held by another session; aborting boot");
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
 
 	logit(LOG_STATUS, "Connection established.");
 
@@ -1430,6 +1457,7 @@ int initialize_mysql()
 		      "FATAL: required database connection/schema check failed, aborting boot");
 		if (DB)
 		{
+			duris_sql_exclusion_guard_release();
 			mysql_close(DB);
 			DB = NULL;
 		}
@@ -1439,6 +1467,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: season reset state is missing, invalid, or not active; recovery is required");
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 		return -1;
@@ -1447,6 +1476,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: COMPAT-E007 lookup dataset publication failed or commit outcome is ambiguous");
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 		return -1;
@@ -1455,6 +1485,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: could not reserve a collision-free item UID range at boot");
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 		return -1;
@@ -1482,6 +1513,7 @@ void shutdown_mysql(void)
 	}
 	if (DB)
 	{
+		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
 	}
@@ -3479,38 +3511,158 @@ void send_to_pid_offline(const char *msg, int pid)
 	    buff);
 }
 
+static bool sql_escape_offline_message(const char *message, std::string *escaped)
+{
+	if (!DB || !message || !escaped)
+		return false;
+	const size_t message_length = strnlen(message, MAX_STRING_LENGTH);
+	if (message_length >= MAX_STRING_LENGTH)
+		return false;
+	escaped->resize(message_length * 2 + 1);
+	const unsigned long escaped_length = mysql_real_escape_string(
+		DB, &(*escaped)[0], message, static_cast<unsigned long>(message_length));
+	escaped->resize(escaped_length);
+	return true;
+}
+
+bool send_to_pid_offline_deduplicated(const char *msg, int pid, const unsigned char *message_id)
+{
+	if (!DB || !msg || pid <= 0 || !message_id)
+		return false;
+	critical_operation_id operation_id = {};
+	memcpy(operation_id.bytes.data(), message_id, operation_id.bytes.size());
+	if (critical_operation_id_is_zero(operation_id))
+		return false;
+	char message_id_hex[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+	if (!critical_operation_id_to_hex(operation_id, message_id_hex, sizeof(message_id_hex)))
+		return false;
+
+	std::string escaped_message;
+	if (!sql_escape_offline_message(msg, &escaped_message))
+	{
+		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
+				  "message_too_large", "pid=%d", pid);
+		return false;
+	}
+
+	// The receipt is the durable outbox. The physical queue row is rebuilt from
+	// a pending receipt, so a crash between enqueue/dequeue and restart cannot
+	// lose a notification. The primary key, not an advisory lock or message
+	// text, owns identity and concurrent retries.
+	std::string query = "START TRANSACTION;"
+			    "INSERT INTO offline_message_receipts "
+			    "(pid,message_id,message,status) VALUES (";
+	query += std::to_string(pid);
+	query += ",UNHEX('";
+	query += message_id_hex;
+	query += "'),'";
+	query += escaped_message;
+	query += "',0) ON DUPLICATE KEY UPDATE message=message;"
+		 "INSERT IGNORE INTO offline_messages (date,pid,message,message_id) "
+		 "SELECT UTC_TIMESTAMP(6),pid,message,message_id "
+		 "FROM offline_message_receipts WHERE pid=";
+	query += std::to_string(pid);
+	query += " AND message_id=UNHEX('";
+	query += message_id_hex;
+	query += "') AND status IN (0,1);"
+		 "COMMIT;";
+
+	if (sql_run_multi_query(query.c_str()))
+		return true;
+	(void)sql_run_multi_query("ROLLBACK;");
+	return false;
+}
+
+struct sql_offline_delivery
+{
+	bool durable = false;
+	int queue_id = 0;
+	std::string message_id;
+	std::string message;
+};
+
 void send_offline_messages(P_char ch)
 {
 	if (!ch)
 		return;
+	const int pid = GET_PID(ch);
 
-	if (!qry("SELECT id, message FROM offline_messages WHERE pid = '%d' ORDER BY date ASC",
-		 GET_PID(ch)))
+	// A claimed receipt is retried only after its short lease expires. This
+	// makes a process restart recover an in-flight delivery without a 5-second
+	// advisory lock held by the game loop.
+	if (!qry("UPDATE offline_message_receipts SET status=0 "
+		 "WHERE pid='%d' AND status=1 AND (last_attempt_at IS NULL OR "
+		 "last_attempt_at < UTC_TIMESTAMP(6) - INTERVAL 30 SECOND)",
+		 pid))
+	{
+		return;
+	}
+	if (!qry("SELECT 'R' AS delivery_kind, 0 AS queue_id, LOWER(HEX(r.message_id)) AS message_id, "
+		 "r.message, r.created_at AS created_at FROM offline_message_receipts r "
+		 "WHERE r.pid='%d' AND r.status=0 "
+		 "UNION ALL "
+		 "SELECT 'L', m.id, '', m.message, m.date FROM offline_messages m "
+		 "WHERE m.pid='%d' AND m.message_id IS NULL "
+		 "ORDER BY created_at ASC, delivery_kind ASC, queue_id ASC",
+		 pid, pid))
 	{
 		return;
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
+	if (!res)
 		return;
-	}
-
-	std::vector<int> delete_ids;
+	std::vector<sql_offline_delivery> deliveries;
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
 	{
-		send_to_char(row[1], ch);
-		delete_ids.push_back(atoi(row[0]));
+		sql_offline_delivery delivery;
+		delivery.durable = row[0] && row[0][0] == 'R';
+		delivery.queue_id = row[1] ? atoi(row[1]) : 0;
+		if (row[2])
+			delivery.message_id = row[2];
+		if (row[3])
+			delivery.message = row[3];
+		deliveries.push_back(std::move(delivery));
 	}
-
 	mysql_free_result(res);
 
-	for (int id : delete_ids)
+	for (const sql_offline_delivery &delivery : deliveries)
 	{
-		qry("DELETE FROM offline_messages WHERE id = '%d'", id);
+		if (delivery.durable)
+		{
+			if (delivery.message_id.empty() ||
+			    !qry("UPDATE offline_message_receipts SET status=1, "
+				 "attempt_count=attempt_count+1,last_attempt_at=UTC_TIMESTAMP(6) "
+				 "WHERE pid='%d' AND message_id=UNHEX('%s') AND status=0",
+				 pid, delivery.message_id.c_str()) ||
+			    mysql_affected_rows(DB) != 1)
+				continue;
+
+			send_to_char(delivery.message.c_str(), ch);
+			if (!qry("UPDATE offline_message_receipts SET status=2, "
+				 "delivered_at=UTC_TIMESTAMP(6) WHERE pid='%d' "
+				 "AND message_id=UNHEX('%s') AND status=1",
+				 pid, delivery.message_id.c_str()) ||
+			    mysql_affected_rows(DB) != 1)
+			{
+				persistence_alert(AVATAR, "offline_message", "player", "unknown",
+						  "acknowledge", "database_write_failed", "pid=%d",
+						  pid);
+				break;
+			}
+			// The receipt remains as the durable acknowledgement. Failure to
+			// remove this physical row is harmless because delivered receipts
+			// are excluded from the next delivery scan.
+			(void)qry("DELETE FROM offline_messages WHERE pid='%d' "
+				  "AND message_id=UNHEX('%s')",
+				  pid, delivery.message_id.c_str());
+			continue;
+		}
+
+		send_to_char(delivery.message.c_str(), ch);
+		if (!qry("DELETE FROM offline_messages WHERE id='%d'", delivery.queue_id))
+			break;
 	}
 }
 
@@ -5463,6 +5615,8 @@ bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
 		expected_type = item_owner_type::auction;
 	else if (!strcmp(owner_type, "shopkeeper"))
 		expected_type = item_owner_type::shopkeeper;
+	else if (!strcmp(owner_type, "collector"))
+		expected_type = item_owner_type::collector;
 	if (expected_type == item_owner_type::unknown)
 		return false;
 	if (!expected_id)

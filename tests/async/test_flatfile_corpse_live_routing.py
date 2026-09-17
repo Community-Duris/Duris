@@ -10,7 +10,8 @@ FILES = (SRC / "files.c").read_text()
 COMM = (SRC / "comm.c").read_text()
 FIGHT = (SRC / "fight.c").read_text()
 ACTOBJ = (SRC / "actobj.c").read_text()
-HANDLER = (SRC / "handler.c").read_text()
+HANDLER = (SRC / "world/handler.c").read_text()
+ACCOUNT = (SRC / "account/account.c").read_text()
 MOBILE_SPECS = (SRC / "specs.mobile.c").read_text()
 UNDERMOUNTAIN_SPECS = (SRC / "specs.undermountain.c").read_text()
 VERZANAN_SPECS = (SRC / "specs.verzanan.c").read_text()
@@ -44,6 +45,8 @@ deferred_destruction = body(HANDLER, "bool persistence_defer_corpse_destruction(
                             "void Decay(P_obj obj)")
 deferred_compaction = body(HANDLER, "bool persistence_defer_corpse_compaction(",
                            "bool persistence_defer_corpse_destruction(")
+durable_lifecycle = body(HANDLER, "bool durable_corpse_lifecycle_enabled()",
+                         "} // namespace")
 get_item = body(ACTOBJ, "void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
                 "int fight_in_room")
 put_item = body(ACTOBJ, "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
@@ -102,7 +105,9 @@ assert "corpse_lifecycle_transaction_note_item_transfer" in ACTOBJ
 assert "persistence_defer_corpse_room_release(obj)" in decay
 assert decay.index("persistence_defer_corpse_room_release(obj)") < decay.index(
     "if (OBJ_ROOM(obj))")
-assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in deferred_release
+assert "PERSISTENCE_MODE_MARIADB_PRIMARY" in durable_lifecycle
+assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in durable_lifecycle
+assert "durable_corpse_lifecycle_enabled()" in deferred_release
 assert "corpse_lifecycle_transaction_busy" in deferred_release
 busy_check = deferred_release.index("corpse_lifecycle_transaction_busy")
 busy_return = deferred_release.index("return true;", busy_check)
@@ -134,7 +139,7 @@ assert "corpse_lifecycle_transaction_destroy" in HANDLER
 assert "item_ownership_runtime_apply_corpse_destruction" in destruction_publication
 assert destruction_publication.index("item_ownership_runtime_apply_corpse_destruction") < \
        destruction_publication.index("extract_obj(corpse, TRUE)")
-assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in deferred_destruction
+assert "durable_corpse_lifecycle_enabled()" in deferred_destruction
 assert "submit_corpse_destruction(corpse)" in deferred_destruction
 assert "persistence_defer_corpse_destruction(corpse)" in very_angry
 assert very_angry.index("persistence_defer_corpse_destruction(corpse)") < \
@@ -193,13 +198,34 @@ assert "item_ownership_runtime_apply_corpse_raise" in raise_publication
 assert "caster->in_room != corpse_room" not in raise_publication
 assert raise_publication.index("item_ownership_runtime_apply_corpse_raise") < \
        raise_publication.index("complete_corpse_raise_after_commit")
+assert "recover_committed_corpse_raise" in HANDLER
+assert "extract_obj(corpse, FALSE)" in HANDLER
 assert "(!payload.destination_player_pid && world[room].number != payload.room_vnum)" in \
        nested_publication
 assert "publish_corpse_wallet" in raise_publication
 assert "publish_corpse_wallet" in resurrection_publication
 assert "publish_corpse_wallet" in nested_publication
 assert "discard_nested_money" in raise_completion
+assert "corpse_raise_exceeds_carry_capacity" in raise_completion
+assert "The recovered equipment leaves you overburdened" in raise_completion
+assert "obj_to_char_at_end(item, caster)" in raise_completion
 assert "writeCharacter(caster, RENT_CRASH" in raise_completion
+assert "source_items_valid" in raise_publication
+assert "recover_corpse_raise_items" in HANDLER
+assert "CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE" in HANDLER
+assert "recover_committed_corpse_raise(key, corpse, follower, source_items_valid, false" in \
+       raise_publication
+assert "corpse_raise_player_save_fenced" in FILES
+assert "corpse_raise_player_ready" in HANDLER
+assert "collector_transaction_player_ready(character);" in ACCOUNT
+assert "collector_service_player_ready(character, false);" in ACCOUNT
+assert "corpse_raise_player_ready(character, false);" in ACCOUNT
+assert "collector_service_player_save_fenced(character)" in ACCOUNT
+assert "corpse_raise_player_save_fenced(character)" in ACCOUNT
+assert "extract_char_after_terminal_save(character);" in ACCOUNT
+assert ACCOUNT.index("collector_service_player_save_fenced(character)") < ACCOUNT.index(
+    "collector_transaction_player_ready(character);")
+assert "prepare_account_reconnect(ch, d)" in ACCOUNT
 
 for release_caller, first_mutation in (
         (devour, "obj_from_obj(temp)"),

@@ -132,6 +132,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
+				 cmd/player_death_restitution.o \
 				 net/ansi.o net/chat_presentation.o \
 				 net/output_style.o \
 				 net/output_profiles.o \
@@ -157,6 +158,25 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_donation_worker.o \
 				 guild/assocs.o \
 				 economy/auction_houses.o \
+				 economy/auction_room_registry.o \
+				 economy/collector_command.o \
+				 economy/collector_codec.o \
+				 economy/collector_policy.o \
+				 economy/collector_config.o \
+				 economy/collector_death_enrollment.o \
+				 economy/collector_catalog_source.o \
+				 economy/collector_catalog_cache.o \
+				 economy/collector_maintenance.o \
+				 economy/collector_listing_pipeline.o \
+				 economy/collector_collection_preparation.o \
+				 economy/collector_purchase_preparation.o \
+				 economy/collector_expiry_preparation.o \
+				 economy/collector_runtime.o \
+				 economy/collector_presence.o \
+				 economy/collector_service.o \
+				 economy/collector_notification.o \
+				 economy/collector_transaction.o \
+				 economy/collector_repository.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
          magic/blispells.o \
@@ -205,6 +225,8 @@ OBJS =  $(SHIP_OBJS) \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
+				 combat/training_dummy.o \
+				 combat/attack_continuation.o \
 				 combat/fight.o \
 				 core/files.o \
 				 combat/fraglist.o \
@@ -269,6 +291,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_player_snapshot_file.o \
 				 flatfile/flatfile_item_uid_allocator.o \
 				 flatfile/flatfile_item_repository.o \
+				 flatfile/flatfile_collector_repository.o \
 				 flatfile/flatfile_artifact_repository.o \
 				 flatfile/flatfile_corpse_repository.o \
 				 flatfile/flatfile_corpse_ownership.o \
@@ -298,10 +321,13 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_world_item_repository.o \
 				 flatfile/flatfile_world_quest_history.o \
 				 persistence/corpse_lifecycle_transaction.o \
+				 persistence/corpse_lifecycle_repository.o \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
 				 persistence/critical_command_repository.o \
+				 persistence/player_death_restitution_command.o \
+				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
 				 item/item_ownership_runtime.o \
@@ -335,6 +361,11 @@ OBJS =  $(SHIP_OBJS) \
 				 world/zone_story_quest_tracking.o \
 				 world/zone_story_quest_catalog.o \
 				 world/zone_story_quest_repository.o \
+				 world/zone_story_quest_feature.o \
+				 world/zone_story_quest_production.o \
+				 world/zone_story_quest_runtime.o \
+				 flatfile/flatfile_zone_story_quest_state.o \
+				 sql/zone_story_quest_state_repository.o \
 				 world/zone_touch_command.o \
 				 world/zone_touch_repository.o \
 				 world/zone_touch_transaction.o \
@@ -372,6 +403,9 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
 				 player/player_save_pipeline.o \
+				 player/player_death_restitution_runtime.o \
+				 player/player_death_restitution_adapter.o \
+				 player/player_death_restitution_staff.o \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
@@ -507,8 +541,11 @@ OBJS =  $(SHIP_OBJS) \
 				 world/zcheck.o \
 				 telemetry/telemetry_activity.o \
 				 telemetry/telemetry_config.o \
+				 telemetry/telemetry_encounter.o \
+				 telemetry/telemetry_combat_summary.o \
 				 telemetry/telemetry_repository.o \
 				 telemetry/telemetry_runtime.o \
+				 telemetry/telemetry_progression.o \
 				 telemetry/telemetry_session.o \
 				 telemetry/telemetry_transport.o \
 				 telemetry/telemetry_queue.o
@@ -615,5 +652,9 @@ valgrind: $(PROGS)
 # Auto-generated dependency files alongside objects
 DEPFILES := $(DMS_OBJS:.o=.d) $(PFILE_OBJS:.o=.d) $(SHARED_PFILE_OBJS:.o=.d)
 -include $(DEPFILES)
+
+# Scoped first-slice native restitution tests; no server or database is started.
+test-player-death-restitution-native:
+	../tests/async/build_player_death_restitution_native.sh
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.

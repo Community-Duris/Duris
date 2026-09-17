@@ -1,0 +1,533 @@
+#include "economy/collector_transaction.h"
+
+#include "economy/collector_collection_preparation.h"
+#include "economy/collector_catalog_cache.h"
+#include "economy/collector_runtime.h"
+#include "economy/currency_transaction.h"
+#include "item/item_ownership_runtime.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
+
+#include <algorithm>
+#include <array>
+#include <cerrno>
+#include <mutex>
+#include <memory>
+#include <new>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+extern P_obj object_list;
+
+namespace
+{
+struct pending_collector
+{
+	uint32_t actor_pid = 0;
+	std::unique_ptr<collector_command_payload> payload;
+	collector_completion_fn completion = nullptr;
+	bool completion_ready = false;
+	critical_completion completed = {};
+};
+
+struct completed_player_recovery
+{
+	uint32_t actor_pid = 0;
+	std::unique_ptr<collector_command_payload> payload;
+	collector_command_result result = {};
+	collector_completion_fn completion = nullptr;
+};
+
+std::unordered_map<std::string, pending_collector> pending;
+// A committed purchase must not remain in `pending`: that map is the live
+// admission fence for listings and players.  Keep a bounded, non-blocking
+// recovery handoff for a buyer that disappeared before the game-thread
+// callback.  The durable purchase row remains the source of truth if this
+// process restarts before the player returns.
+std::unordered_map<std::string, completed_player_recovery> player_recoveries;
+constexpr size_t COLLECTOR_PLAYER_RECOVERY_MAX = 128;
+
+enum class outbox_publication_state : uint8_t
+{
+	queued,
+	publishing,
+	published,
+};
+
+struct pending_outbox_publication
+{
+	critical_operation_id operation_id = {};
+	collector_command_result result = {};
+	outbox_publication_state state = outbox_publication_state::queued;
+};
+
+struct outbox_publication_work
+{
+	uint64_t outbox_id = 0;
+	critical_operation_id operation_id = {};
+	collector_command_result result = {};
+};
+
+std::mutex outbox_mutex;
+std::unordered_map<uint64_t, pending_outbox_publication> outbox_publications;
+constexpr size_t COLLECTOR_OUTBOX_PENDING_MAX = 1024;
+
+std::string operation_key(const critical_operation_id &operation_id)
+{
+	return std::string(reinterpret_cast<const char *>(operation_id.bytes.data()),
+			   operation_id.bytes.size());
+}
+
+bool player_recovery_item_loaded(const completed_player_recovery &recovery, P_char character)
+{
+	if (!character || !recovery.payload || !recovery.result.entry.uid)
+		return false;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		if (object->obj_uid != recovery.result.entry.uid)
+			continue;
+		P_obj outer = object;
+		size_t depth = 0;
+		while (outer && OBJ_INSIDE(outer) && outer->loc.inside && depth++ < 4096)
+			outer = outer->loc.inside;
+		if (outer && depth < 4096 &&
+		    (OBJ_CARRIED_BY(outer, character) || OBJ_WORN_BY(outer, character)))
+			return true;
+	}
+	return false;
+}
+
+bool player_pending(uint32_t pid)
+{
+	return std::any_of(pending.begin(), pending.end(),
+			   [pid](const auto &entry) { return entry.second.actor_pid == pid; });
+}
+
+bool listing_pending(uint64_t listing)
+{
+	return listing && std::any_of(pending.begin(), pending.end(),
+				      [listing](const auto &entry) {
+					      return entry.second.payload &&
+						     entry.second.payload->listing == listing;
+				      });
+}
+
+bool publishes_authority(const collector_command_payload &payload)
+{
+	return payload.action == collector_action::collect ||
+	       payload.action == collector_action::purchase ||
+	       payload.action == collector_action::expire ||
+	       (payload.action == collector_action::cancel && payload.item_count);
+}
+
+bool publish(std::unordered_map<std::string, pending_collector>::iterator found, P_char character)
+{
+	pending_collector &entry = found->second;
+	if (!entry.payload)
+	{
+		pending.erase(found);
+		return false;
+	}
+	const collector_command_payload &submitted_payload = *entry.payload;
+	collector_command_result result = {};
+	const bool decoded = collector_command_decode_result(entry.completed.result_payload.data(),
+							     entry.completed.result_size, &result);
+	const bool durable_commit = entry.completed.outcome == critical_apply_outcome::applied ||
+				    entry.completed.outcome ==
+					    critical_apply_outcome::already_applied;
+	const bool committed = decoded && durable_commit;
+	bool published = decoded;
+	unsigned int publication_error = entry.completed.error_code;
+	if (!decoded)
+		publication_error = entry.completed.error_code ? entry.completed.error_code :
+								 EBADMSG;
+	if (published && committed &&
+	    (!result.record_present || result.action != submitted_payload.action))
+	{
+		published = false;
+		publication_error = EBADMSG;
+	}
+	P_obj collected_item = nullptr;
+	if (published && committed && submitted_payload.action == collector_action::collect &&
+	    !collector_collection_live_matches(submitted_payload, &collected_item))
+	{
+		published = false;
+		publication_error = ESTALE;
+	}
+	if (published && committed && publishes_authority(submitted_payload) &&
+	    !item_ownership_runtime_apply_collector(submitted_payload, result))
+	{
+		published = false;
+		publication_error = ESTALE;
+	}
+	if (published && committed && submitted_payload.action == collector_action::collect &&
+	    !collector_collection_detach_live(collected_item))
+	{
+		published = false;
+		publication_error = ESTALE;
+	}
+	if (published && committed && submitted_payload.action == collector_action::purchase &&
+	    character &&
+	    !currency_transaction_publish_balances(
+		    character, submitted_payload.account_name.data(), submitted_payload.racewar,
+		    result.wallet, result.bank, result.wallet_revision, result.bank_revision))
+	{
+		published = false;
+		publication_error = ESTALE;
+	}
+	// The repository has already durably applied the wallet and item rows.  A
+	// purchase may therefore be published without a live character: custody and
+	// catalog state must stop fencing the listing, while the player's in-memory
+	// wallet and notification are naturally refreshed on the next login.  The
+	// completion callback intentionally accepts nullptr for this recovery path.
+	if (published && committed && !collector_runtime_publish(result))
+	{
+		published = false;
+		publication_error = ESTALE;
+	}
+
+	const auto completion = entry.completion;
+	std::unique_ptr<collector_command_payload> payload = std::move(entry.payload);
+	bool completion_deferred = false;
+	if (committed && decoded && submitted_payload.action == collector_action::purchase &&
+	    !character && completion && player_recoveries.size() < COLLECTOR_PLAYER_RECOVERY_MAX)
+	{
+		// Retain the payload until the buyer is ready.  This closes the reconnect
+		// gap where a live body is reused without a fresh player-item load.
+		try
+		{
+			auto recovery_payload =
+				std::make_unique<collector_command_payload>(*payload);
+			const std::string key = operation_key(entry.completed.operation_id);
+			const auto inserted = player_recoveries.emplace(
+				key, completed_player_recovery{ submitted_payload.actor_pid,
+								std::move(recovery_payload), result,
+								completion });
+			completion_deferred = inserted.second;
+		}
+		catch (const std::bad_alloc &)
+		{
+			// The callback below still reports the durable commit.  A subsequent
+			// normal login can recover the item from the authoritative row.
+		}
+	}
+	pending.erase(found);
+	if (completion && !completion_deferred)
+		completion(character, durable_commit, decoded ? result : collector_command_result{},
+			   publication_error, *payload);
+	return committed && published;
+}
+
+bool submit(P_char character, const critical_operation_id &operation_id,
+	    const collector_command_payload &payload, collector_completion_fn completion,
+	    critical_source_site source, critical_deadline_class deadline)
+{
+	if (pending.size() >= COLLECTOR_PENDING_MAX || listing_pending(payload.listing) ||
+	    critical_operation_id_is_zero(operation_id) ||
+	    (payload.actor_pid && (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
+				   static_cast<uint32_t>(GET_PID(character)) != payload.actor_pid ||
+				   player_pending(payload.actor_pid))))
+		return false;
+	critical_command command = {};
+	if (!collector_command_build(&command, operation_id, payload, source, deadline))
+		return false;
+	std::string key;
+	try
+	{
+		key = operation_key(operation_id);
+		auto payload_copy = std::make_unique<collector_command_payload>(payload);
+		const auto inserted =
+			pending.emplace(key, pending_collector{ payload.actor_pid,
+								std::move(payload_copy),
+								completion,
+								false,
+								{} });
+		if (!inserted.second)
+			return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	const critical_submit_result submitted =
+		critical_command_coordinator_submit(std::move(command));
+	if (!critical_submit_result_keeps_operation(submitted))
+	{
+		pending.erase(key);
+		return false;
+	}
+	return true;
+}
+}
+
+bool collector_transaction_submit(P_char character, const collector_command_payload &payload,
+				  collector_completion_fn completion,
+				  critical_deadline_class deadline)
+{
+	critical_operation_id operation_id = {};
+	return critical_operation_id_generate(&operation_id) &&
+	       collector_transaction_submit_identified(character, operation_id, payload, completion,
+						       deadline);
+}
+
+bool collector_transaction_submit_identified(P_char character,
+					     const critical_operation_id &operation_id,
+					     const collector_command_payload &payload,
+					     collector_completion_fn completion,
+					     critical_deadline_class deadline)
+{
+	return payload.actor_pid && submit(character, operation_id, payload, completion,
+					   critical_source_site::command, deadline);
+}
+
+bool collector_transaction_submit_background(const collector_command_payload &payload,
+					     collector_completion_fn completion)
+{
+	critical_operation_id operation_id = {};
+	return critical_operation_id_generate(&operation_id) &&
+	       collector_transaction_submit_background_identified(operation_id, payload,
+								  completion);
+}
+
+bool collector_transaction_submit_background_identified(const critical_operation_id &operation_id,
+							const collector_command_payload &payload,
+							collector_completion_fn completion)
+{
+	return !payload.actor_pid &&
+	       submit(nullptr, operation_id, payload, completion, critical_source_site::zone_event,
+		      critical_deadline_class::background);
+}
+
+void collector_transaction_handle_completions(const critical_completion *completions, size_t count)
+{
+	if (count && !completions)
+		return;
+	for (size_t index = 0; index < count; ++index)
+	{
+		std::string key;
+		try
+		{
+			key = operation_key(completions[index].operation_id);
+		}
+		catch (const std::bad_alloc &)
+		{
+			continue;
+		}
+		auto found = pending.find(key);
+		if (found == pending.end())
+			continue;
+		found->second.completed = completions[index];
+		found->second.completion_ready = true;
+		P_char character = found->second.actor_pid ?
+					   find_player_by_pid(found->second.actor_pid) :
+					   nullptr;
+		// Durable completion may race with a disconnect.  Publish the durable
+		// custody/catalog transition immediately even when the character is no
+		// longer live; the in-memory wallet and player-facing callback are guarded
+		// by `character` inside publish() and will be recovered by the next login.
+		publish(found, character);
+	}
+}
+
+void collector_transaction_player_ready(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return;
+	for (auto found = pending.begin(); found != pending.end();)
+	{
+		auto current = found++;
+		if (current->second.actor_pid == static_cast<uint32_t>(GET_PID(character)) &&
+		    current->second.completion_ready)
+			publish(current, character);
+	}
+	for (auto found = player_recoveries.begin(); found != player_recoveries.end();)
+	{
+		auto current = found++;
+		if (current->second.actor_pid != static_cast<uint32_t>(GET_PID(character)))
+			continue;
+		// enter_game hydrates player_items before this hook.  If the committed
+		// UID is already attached to this player's live graph, the durable row is
+		// the cold-login recovery; replaying the callback would attempt to
+		// materialize a second copy.
+		if (player_recovery_item_loaded(current->second, character))
+		{
+			player_recoveries.erase(current);
+			continue;
+		}
+		completed_player_recovery recovery = std::move(current->second);
+		player_recoveries.erase(current);
+		if (recovery.completion && recovery.payload)
+			recovery.completion(character, true, recovery.result, 0, *recovery.payload);
+	}
+}
+
+bool collector_transaction_player_busy(P_char character)
+{
+	return character && !IS_NPC(character) && GET_PID(character) > 0 &&
+	       player_pending(static_cast<uint32_t>(GET_PID(character)));
+}
+
+bool collector_transaction_listing_busy(uint64_t listing)
+{
+	return listing_pending(listing);
+}
+
+bool collector_transaction_item_busy(uint64_t item_uid)
+{
+	if (!item_uid)
+		return false;
+	return std::any_of(pending.begin(), pending.end(),
+			   [item_uid](const auto &entry)
+			   {
+				   if (!entry.second.payload ||
+				       entry.second.payload->action != collector_action::collect)
+					   return false;
+				   const collector_command_payload &payload = *entry.second.payload;
+				   return std::any_of(payload.items.begin(),
+						      payload.items.begin() + payload.item_count,
+						      [item_uid](const item_transfer_entry &item)
+						      { return item.item_uid == item_uid; });
+			   });
+}
+
+critical_outbox_delivery_result
+collector_transaction_outbox_delivery(const critical_outbox_record &record, void *context)
+{
+	if (record.destination != COLLECTOR_OUTBOX_DESTINATION)
+		return critical_outbox_test_destination(record, context);
+	collector_command_result result = {};
+	if (record.event_type != COLLECTOR_OUTBOX_EVENT_MUTATED ||
+	    critical_operation_id_is_zero(record.operation_id) ||
+	    (record.payload_version != COLLECTOR_COMMAND_RESULT_VERSION &&
+	     record.payload_version != COLLECTOR_COMMAND_PREVIOUS_RESULT_VERSION) ||
+	    !collector_command_decode_result(record.payload.data(), record.payload.size(),
+					     &result) ||
+	    !result.record_present)
+		return critical_outbox_delivery_result::terminal_failure;
+	std::lock_guard<std::mutex> lock(outbox_mutex);
+	auto found = outbox_publications.find(record.outbox_id);
+	if (found != outbox_publications.end())
+	{
+		if (found->second.state == outbox_publication_state::published)
+		{
+			outbox_publications.erase(found);
+			return critical_outbox_delivery_result::delivered;
+		}
+		return critical_outbox_delivery_result::retryable_failure;
+	}
+	try
+	{
+		if (!record.outbox_id || outbox_publications.size() >= COLLECTOR_OUTBOX_PENDING_MAX)
+			return critical_outbox_delivery_result::retryable_failure;
+		outbox_publications.emplace(
+			record.outbox_id,
+			pending_outbox_publication{ record.operation_id, result,
+						    outbox_publication_state::queued });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return critical_outbox_delivery_result::retryable_failure;
+	}
+	return critical_outbox_delivery_result::retryable_failure;
+}
+
+void collector_transaction_publish_outbox(void)
+{
+	std::vector<outbox_publication_work> work;
+	{
+		std::lock_guard<std::mutex> lock(outbox_mutex);
+		try
+		{
+			work.reserve(std::min<size_t>(64, outbox_publications.size()));
+			for (auto &[outbox_id, publication] : outbox_publications)
+			{
+				if (work.size() >= 64)
+					break;
+				if (publication.state == outbox_publication_state::queued)
+				{
+					publication.state = outbox_publication_state::publishing;
+					work.push_back({ outbox_id, publication.operation_id,
+							 publication.result });
+				}
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			for (auto &[outbox_id, publication] : outbox_publications)
+			{
+				(void)outbox_id;
+				if (publication.state == outbox_publication_state::publishing)
+					publication.state = outbox_publication_state::queued;
+			}
+			return;
+		}
+	}
+	bool published_any = false;
+	for (const outbox_publication_work &entry : work)
+	{
+		bool published = false;
+		std::string key;
+		try
+		{
+			key = operation_key(entry.operation_id);
+		}
+		catch (const std::bad_alloc &)
+		{
+			key.clear();
+		}
+		auto pending_found = key.empty() ? pending.end() : pending.find(key);
+		if (pending_found != pending.end())
+		{
+			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
+			if (collector_command_encode_result(entry.result, &encoded))
+			{
+				pending_found->second.completed = {};
+				pending_found->second.completed.operation_id = entry.operation_id;
+				pending_found->second.completed.outcome =
+					critical_apply_outcome::already_applied;
+				pending_found->second.completed.result_size = encoded.size();
+				std::copy(encoded.begin(), encoded.end(),
+					  pending_found->second.completed.result_payload.begin());
+				pending_found->second.completion_ready = true;
+				P_char character =
+					pending_found->second.actor_pid ?
+						find_player_by_pid(
+							pending_found->second.actor_pid) :
+						nullptr;
+				// The durable purchase result is sufficient to converge custody and
+				// catalog state after a disconnect.  `publish()` skips live-wallet
+				// synchronization when character is null and the next login reloads
+				// that already-committed balance/item state.
+				published = publish(pending_found, character);
+			}
+		}
+		else
+		{
+			published =
+				collector_publish_committed_event(entry.result, entry.outbox_id);
+			if (published)
+				// A restarted process has no retained item payload.  The durable
+				// catalog and held-item projection are the recovery source of truth;
+				// force the cache to reconcile them before exposing the next command.
+				collector_catalog_cache_invalidate();
+		}
+		std::lock_guard<std::mutex> lock(outbox_mutex);
+		auto found = outbox_publications.find(entry.outbox_id);
+		if (found != outbox_publications.end())
+			found->second.state = published ? outbox_publication_state::published :
+							  outbox_publication_state::queued;
+		published_any = published_any || published;
+	}
+	if (published_any)
+		critical_outbox_resume();
+}
+
+void collector_transaction_reset_for_tests(void)
+{
+	pending.clear();
+	player_recoveries.clear();
+	std::lock_guard<std::mutex> lock(outbox_mutex);
+	outbox_publications.clear();
+}

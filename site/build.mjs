@@ -277,7 +277,7 @@ await writeFile(
   path.join(out, "power-atlas/index.html"),
   layout(
     "Power Atlas",
-    "Compare 192 Duris race and class combinations and 711 builds across 13 report levels and three gear tiers in an interactive combat model snapshot.",
+    "Compare 192 Duris race and class combinations, 711 builds and 56 Human and Orc multiclass builds across 13 report levels and three gear tiers in an interactive combat model snapshot.",
     atlasRoute,
     atlasContent,
     false,
@@ -327,6 +327,7 @@ await writeFile(
       sourceRevision: "f3b66b07ffba8443f3f47f976fa920b46bd88384",
       combinations: 192,
       builds: 711,
+      multiclassBuilds: 56,
     },
   }),
 );

@@ -1005,7 +1005,7 @@ int race_size(int race);
 /* terminal stuff */
 #define TERM_GENERIC 1
 #define TERM_ANSI 2
-#define TERM_MSP 3 /* mud sound protocol */
+#define TERM_MSP 3 /* legacy MSP-style presentation markup; no sound/music triggers */
 #define TERM_SKIP_ANSI 9
 #define TERM_HELP 254
 #define TERM_UNDEFINED 255

@@ -200,6 +200,79 @@ void dimension_fields(fields &values, const telemetry_dimensions &dimensions)
 	FIELD(values, dimensions, group_size);
 }
 
+void encounter_fields(fields &values, const telemetry_encounter_payload &encounter)
+{
+	number(values, "encounter_boot_id", encounter.encounter.producer.boot_id);
+	number(values, "encounter_process_id", encounter.encounter.producer.process_id);
+	number(values, "encounter_seq", encounter.encounter.sequence);
+	number(values, "encounter_event", encounter.kind);
+	number(values, "encounter_mode", encounter.mode);
+	number(values, "encounter_outcome", encounter.outcome);
+	number(values, "encounter_revision", encounter.revision);
+	number(values, "encounter_environment_id", encounter.source.environment_id);
+	number(values, "encounter_season_id", encounter.source.season_id);
+	number(values, "encounter_config_id", encounter.source.config_id);
+	number(values, "encounter_classifier_version", encounter.source.classifier_version);
+	number(values, "encounter_policy_version", encounter.source.policy_version);
+	number(values, "encounter_zone_vnum", encounter.source.zone_vnum);
+	number(values, "encounter_group_key", encounter.source.group_key);
+	number(values, "encounter_participant_subject_id", encounter.participant.subject_id);
+	number(values, "encounter_participant_pid", encounter.participant.pid);
+	FIELD(values, encounter, at_monotonic_usec);
+	FIELD(values, encounter, at_utc_usec);
+	FIELD(values, encounter, start_monotonic_usec);
+	FIELD(values, encounter, start_utc_usec);
+	FIELD(values, encounter, elapsed_usec);
+	FIELD(values, encounter, participant_usec);
+	FIELD(values, encounter, participant_count);
+	FIELD(values, encounter, expected_credit_count);
+	FIELD(values, encounter, quality_flags);
+}
+
+void combat_summary_fields(fields &values, const telemetry_combat_summary_payload &summary)
+{
+	number(values, "combat_encounter_boot_id", summary.encounter.producer.boot_id);
+	number(values, "combat_encounter_process_id", summary.encounter.producer.process_id);
+	number(values, "combat_encounter_seq", summary.encounter.sequence);
+	number(values, "combat_mode", summary.mode);
+	number(values, "combat_outcome", summary.outcome);
+	number(values, "combat_revision", summary.revision);
+	number(values, "combat_environment_id", summary.source.environment_id);
+	number(values, "combat_season_id", summary.source.season_id);
+	number(values, "combat_config_id", summary.source.config_id);
+	number(values, "combat_classifier_version", summary.source.classifier_version);
+	number(values, "combat_policy_version", summary.source.policy_version);
+	number(values, "combat_zone_vnum", summary.source.zone_vnum);
+	number(values, "combat_group_key", summary.source.group_key);
+	number(values, "combat_actor_id", summary.actor_id);
+	number(values, "combat_actor_pid", summary.actor_pid);
+	number(values, "combat_owner_subject_id", summary.owner_subject_id);
+	number(values, "combat_actor_kind", summary.actor_kind);
+	number(values, "combat_unique_player_count", summary.unique_player_count);
+	number(values, "combat_participant_count", summary.participant_count);
+	number(values, "combat_dropped_participant_count", summary.dropped_participant_count);
+	number(values, "combat_power_band", summary.power_band);
+	number(values, "combat_opponent_power_band", summary.opponent_power_band);
+	number(values, "combat_opponent_count", summary.opponent_count);
+	number(values, "combat_modifier_flags", summary.modifier_flags);
+	FIELD(values, summary, start_monotonic_usec);
+	FIELD(values, summary, end_monotonic_usec);
+	FIELD(values, summary, start_utc_usec);
+	FIELD(values, summary, end_utc_usec);
+	FIELD(values, summary, damage_dealt);
+	FIELD(values, summary, damage_taken);
+	FIELD(values, summary, healing_attempted);
+	FIELD(values, summary, effective_healing);
+	FIELD(values, summary, overhealing);
+	FIELD(values, summary, control_applications);
+	FIELD(values, summary, casting_attempts);
+	FIELD(values, summary, casting_completions);
+	FIELD(values, summary, casting_aborts);
+	FIELD(values, summary, casting_elapsed_usec);
+	FIELD(values, summary, tanking_usec);
+	FIELD(values, summary, quality_flags);
+}
+
 fields counter_fields(const telemetry_cumulative_counters &counters)
 {
 	fields values;
@@ -328,6 +401,39 @@ fields record_fields(const telemetry_record &record)
 		FIELD(values, p, quality_flags);
 		break;
 	}
+	case telemetry_record_kind::progression:
+	{
+		const auto &p = record.payload.progression;
+		session_fields(values, p.session);
+		connection_fields(values, p.connection);
+		FIELD(values, p, at_monotonic_usec);
+		FIELD(values, p, at_utc_usec);
+		FIELD(values, p, kind);
+		FIELD(values, p, source);
+		FIELD(values, p, reason);
+		FIELD(values, p, observation_status);
+		FIELD(values, p, modifier_flags);
+		FIELD(values, p, requested_xp);
+		FIELD(values, p, computed_xp);
+		FIELD(values, p, applied_xp);
+		FIELD(values, p, before_exp);
+		FIELD(values, p, after_exp);
+		FIELD(values, p, before_level);
+		FIELD(values, p, after_level);
+		FIELD(values, p, threshold_xp);
+		dimension_fields(values, p.dimensions);
+		FIELD(values, p, config_id);
+		FIELD(values, p, classifier_version);
+		FIELD(values, p, policy_version);
+		FIELD(values, p, quality_flags);
+		break;
+	}
+	case telemetry_record_kind::encounter:
+		encounter_fields(values, record.payload.encounter);
+		break;
+	case telemetry_record_kind::combat_summary:
+		combat_summary_fields(values, record.payload.combat_summary);
+		break;
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -443,6 +549,15 @@ std::string signature(const telemetry_record &record)
 		for (auto byte : record.payload.gap.reserved)
 			value += ':' + std::to_string(byte);
 		break;
+	case telemetry_record_kind::progression:
+		value += ':' + std::to_string(record.payload.progression.reserved);
+		break;
+	case telemetry_record_kind::encounter:
+		value += ':' + std::to_string(record.payload.encounter.reserved);
+		break;
+	case telemetry_record_kind::combat_summary:
+		value += ':' + std::to_string(record.payload.combat_summary.reserved);
+		break;
 	case telemetry_record_kind::configuration:
 		value += ':' + std::to_string(record.payload.configuration.config.reserved);
 		value += ':' + std::to_string(record.payload.configuration.config.schema_version);
@@ -465,6 +580,8 @@ const telemetry_session_ref *session_of(const telemetry_record &record)
 		return &record.payload.checkpoint.session;
 	case telemetry_record_kind::coverage_gap:
 		return &record.payload.gap.session;
+	case telemetry_record_kind::progression:
+		return &record.payload.progression.session;
 	default:
 		return nullptr;
 	}
@@ -535,6 +652,36 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		else
 			insert("telemetry_config", columns);
 	}
+	if (record.header.kind == telemetry_record_kind::encounter)
+	{
+		const auto &p = record.payload.encounter;
+		fields expected;
+		number(expected, "season_id", p.source.season_id);
+		number(expected, "classifier_version", p.source.classifier_version);
+		number(expected, "policy_version", p.source.policy_version);
+		auto config = query("SELECT " + names(expected, true) +
+				    " FROM telemetry_config WHERE environment_id=" +
+				    std::to_string(p.source.environment_id) +
+				    " AND config_id=" + std::to_string(p.source.config_id));
+		auto row = mysql_fetch_row(config.get());
+		if (!row || !equal_row(row, expected))
+			return telemetry_apply_outcome::rejected_invalid;
+	}
+	if (record.header.kind == telemetry_record_kind::combat_summary)
+	{
+		const auto &p = record.payload.combat_summary;
+		fields expected;
+		number(expected, "season_id", p.source.season_id);
+		number(expected, "classifier_version", p.source.classifier_version);
+		number(expected, "policy_version", p.source.policy_version);
+		auto config = query("SELECT " + names(expected, true) +
+				    " FROM telemetry_config WHERE environment_id=" +
+				    std::to_string(p.source.environment_id) +
+				    " AND config_id=" + std::to_string(p.source.config_id));
+		auto row = mysql_fetch_row(config.get());
+		if (!row || !equal_row(row, expected))
+			return telemetry_apply_outcome::rejected_invalid;
+	}
 
 	const auto *session = session_of(record);
 	const bool scoped = session && !telemetry_session_ref_is_zero(*session);
@@ -553,6 +700,13 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		else if (record.header.kind == telemetry_record_kind::session_lifecycle)
 		{
 			const auto &p = record.payload.lifecycle;
+			config_id = p.config_id;
+			number(expected, "classifier_version", p.classifier_version);
+			number(expected, "policy_version", p.policy_version);
+		}
+		else if (record.header.kind == telemetry_record_kind::progression)
+		{
+			const auto &p = record.payload.progression;
 			config_id = p.config_id;
 			number(expected, "classifier_version", p.classifier_version);
 			number(expected, "policy_version", p.policy_version);
@@ -645,6 +799,8 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		}
 		else if (record.header.kind == telemetry_record_kind::interval)
 			quality |= record.payload.interval.quality_flags;
+		else if (record.header.kind == telemetry_record_kind::progression)
+			quality |= record.payload.progression.quality_flags;
 		else
 			quality |= record.payload.gap.quality_flags |
 				   TELEMETRY_QUALITY_SEQUENCE_GAP;

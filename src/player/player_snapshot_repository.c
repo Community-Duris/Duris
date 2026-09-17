@@ -1,18 +1,23 @@
 #include "player/player_snapshot_repository.h"
 
+#include "core/defines.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_codec.h"
+#include "sql/item_extra_descr_codec.h"
 #include "sql/sql_pool.h"
 
 #include <mysql/mysql.h>
 
 #include <array>
+#include <algorithm>
 #include <cerrno>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <limits>
 #include <sstream>
 #include <string>
+#include <strings.h>
 #include <unordered_set>
 #include <vector>
 
@@ -23,6 +28,68 @@ struct query_result
 	bool ok;
 	unsigned int error_code;
 };
+
+query_result
+canonicalize_snapshot_extra_description(const player_item_extra_description_snapshot &description,
+					std::string *keyword_out, std::string *description_out)
+{
+	if (!keyword_out || !description_out)
+		return { false, EINVAL };
+	if (description.spellbook != (description.keyword == "SPELLBOOK"))
+		return { false, EINVAL };
+	if (description.spellbook && !description.description.empty() &&
+	    !description.spell_ids.empty())
+		return { false, EINVAL };
+
+	*keyword_out = description.keyword;
+	*description_out = description.description;
+	if (!description.spellbook)
+	{
+		if (!description.spell_ids.empty())
+			return { false, EINVAL };
+		return { true, 0 };
+	}
+
+	std::array<char, (MAX_SKILLS + 1) / 8 + 1> spell_bits = {};
+	if (!description.description.empty())
+	{
+		if (sql_decode_stored_spellbook("SPELLBOOK", description.description.c_str(),
+						spell_bits.data(), spell_bits.size()) !=
+		    sql_spellbook_decode_status::decoded)
+			return { false, EINVAL };
+	}
+	else
+	{
+		std::array<bool, MAX_SKILLS> seen = {};
+		for (int32_t spell : description.spell_ids)
+		{
+			if (spell < 0 || spell >= MAX_SKILLS || seen[spell])
+				return { false, EINVAL };
+			seen[spell] = true;
+			const size_t byte = static_cast<size_t>(spell) / 8;
+			spell_bits[byte] =
+				static_cast<char>(static_cast<unsigned char>(spell_bits[byte]) |
+						  static_cast<unsigned char>(1U << (spell % 8)));
+		}
+	}
+
+	const char marker[] = { 3, 1, 3, 0 };
+	char *db_keyword = nullptr;
+	char *db_description = nullptr;
+	if (!sql_encode_item_extra_descr(marker, spell_bits.data(), &db_keyword, &db_description))
+		return { false, ENOMEM };
+	if (!db_keyword || !db_description)
+	{
+		std::free(db_keyword);
+		std::free(db_description);
+		return { false, ENOMEM };
+	}
+	*keyword_out = db_keyword;
+	*description_out = db_description;
+	std::free(db_keyword);
+	std::free(db_description);
+	return { true, 0 };
+}
 
 query_result execute(MYSQL *connection, const std::string &sql)
 {
@@ -395,20 +462,18 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		for (const auto &description : row.extra_descriptions)
 		{
 			if (description.keyword.empty())
-				continue;
-			std::string encoded_description = description.description;
-			if (description.spellbook)
 			{
-				std::ostringstream encoded;
-				encoded << '[';
-				for (size_t spell_index = 0;
-				     spell_index < description.spell_ids.size(); ++spell_index)
-					encoded << (spell_index ? "," : "")
-						<< description.spell_ids[spell_index];
-				encoded << ']';
-				encoded_description = encoded.str();
+				if (description.spellbook || !description.spell_ids.empty())
+					return { false, EINVAL };
+				continue;
 			}
-			std::string description_key = description.keyword;
+			std::string encoded_keyword;
+			std::string encoded_description;
+			const query_result canonical = canonicalize_snapshot_extra_description(
+				description, &encoded_keyword, &encoded_description);
+			if (!canonical.ok)
+				return canonical;
+			std::string description_key = encoded_keyword;
 			description_key.push_back('\0');
 			description_key += encoded_description;
 			if (!description_keys.insert(std::move(description_key)).second)
@@ -420,11 +485,203 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 								     "player_item_extra_descr") +
 						 " (item_id,keyword,description) VALUES (" +
 						 std::to_string(item_id) + "," +
-						 quote(connection, description.keyword) + "," +
+						 quote(connection, encoded_keyword) + "," +
 						 quote(connection, encoded_description) + ")");
 			if (!result.ok)
 				return result;
 		}
+	}
+	return { true, 0 };
+}
+
+query_result sync_restitution_runtime_state(MYSQL *connection,
+					    const std::vector<player_item_snapshot> &items,
+					    int owner_id)
+{
+	if (!connection)
+		return { false, EINVAL };
+
+	MYSQL_RES *availability = nullptr;
+	query_result available = execute(
+		connection,
+		"SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_name IN ('player_death_restitution_delivery',"
+		"'player_death_restitution_runtime') ORDER BY table_name");
+	if (!available.ok)
+		return available;
+	availability = mysql_store_result(connection);
+	if (!availability)
+		return { false, mysql_errno(connection) };
+	bool delivery_present = false;
+	bool runtime_present = false;
+	MYSQL_ROW availability_row;
+	while ((availability_row = mysql_fetch_row(availability)) != nullptr)
+	{
+		if (!availability_row[0])
+		{
+			mysql_free_result(availability);
+			return { false, EINVAL };
+		}
+		if (!std::strcmp(availability_row[0], "player_death_restitution_delivery"))
+			delivery_present = true;
+		else if (!std::strcmp(availability_row[0], "player_death_restitution_runtime"))
+			runtime_present = true;
+	}
+	mysql_free_result(availability);
+	if (!delivery_present)
+		return { true, 0 };
+
+	const std::string owner_filter =
+		"own.owner_type=1 AND own.owner_id=" + std::to_string(owner_id) +
+		" AND own.owner_context_id=0 AND own.state=1";
+	std::unordered_set<uint64_t> requested;
+	std::ostringstream uid_list;
+	try
+	{
+		requested.reserve(items.size());
+		bool first = true;
+		for (const player_item_snapshot &item : items)
+			if (item.object_uid && requested.insert(item.object_uid).second)
+			{
+				uid_list << (first ? "" : ",") << item.object_uid;
+				first = false;
+			}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { false, ENOMEM };
+	}
+
+	// Include both sides of the custody/projection comparison. The requested
+	// predicate keeps a delivered UID visible when its current-owner row is
+	// missing or foreign; the owner predicate finds an active delivery that the
+	// snapshot omitted. Either case must roll back instead of being treated as
+	// an empty scoped result.
+	const std::string requested_filter =
+		requested.empty() ? "0" : "d.item_uid IN (" + uid_list.str() + ")";
+	const std::string runtime_select =
+		runtime_present ? ",HEX(runtime.state_digest),SHA2(runtime.state_payload,256)" : "";
+	const std::string runtime_join =
+		runtime_present ?
+			" LEFT JOIN player_death_restitution_runtime runtime ON runtime.item_uid=d.item_uid" :
+			"";
+	const std::string scoped_sql =
+		"SELECT d.item_uid,ri.vnum,own.item_uid,own.owner_type,own.owner_id,"
+		"own.owner_context_id,own.vnum,own.state" +
+		runtime_select +
+		" FROM player_death_restitution_delivery d "
+		"JOIN player_death_restitution_item ri ON ri.restitution_id=d.restitution_id "
+		"AND ri.item_uid=d.item_uid LEFT JOIN item_current_owner own ON "
+		"own.item_uid=d.item_uid" +
+		runtime_join + " WHERE (" + requested_filter + " OR (" + owner_filter +
+		")) ORDER BY d.item_uid FOR UPDATE";
+	query_result scoped_query = execute(connection, scoped_sql);
+	if (!scoped_query.ok)
+		return scoped_query;
+	MYSQL_RES *scoped = mysql_store_result(connection);
+	if (!scoped)
+		return { false, mysql_errno(connection) };
+	std::unordered_set<uint64_t> restored;
+	try
+	{
+		restored.reserve(requested.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		mysql_free_result(scoped);
+		return { false, ENOMEM };
+	}
+	MYSQL_ROW row;
+	size_t scoped_delivery_count = 0;
+	const std::string player_owner_type =
+		std::to_string(static_cast<unsigned>(item_owner_type::player));
+	const std::string expected_owner_id = std::to_string(owner_id);
+	while ((row = mysql_fetch_row(scoped)) != nullptr)
+	{
+		uint64_t item_uid = 0;
+		if (!row[0])
+		{
+			mysql_free_result(scoped);
+			return { false, EINVAL };
+		}
+		char *end = nullptr;
+		errno = 0;
+		const unsigned long long parsed_uid = std::strtoull(row[0], &end, 10);
+		item_uid = static_cast<uint64_t>(parsed_uid);
+		if (errno || end == row[0] || *end || !item_uid || !row[1] || !row[2] ||
+		    std::strcmp(row[0], row[2]) != 0 || !row[3] || !row[4] || !row[5] || !row[6] ||
+		    !row[7] || player_owner_type != row[3] || expected_owner_id != row[4] ||
+		    std::strcmp(row[5], "0") != 0 || std::strcmp(row[7], "1") != 0 ||
+		    requested.find(item_uid) == requested.end())
+		{
+			mysql_free_result(scoped);
+			return { false, ENOENT };
+		}
+		++scoped_delivery_count;
+		if (!runtime_present)
+		{
+			mysql_free_result(scoped);
+			return { false, ENOENT };
+		}
+		if (!row[8] || !row[9] || strcasecmp(row[8], row[9]) != 0)
+		{
+			mysql_free_result(scoped);
+			return { false, ENOENT };
+		}
+		const auto source = std::find_if(items.begin(), items.end(),
+						 [item_uid](const player_item_snapshot &candidate)
+						 { return candidate.object_uid == item_uid; });
+		if (source == items.end() || std::to_string(source->vnum) != row[1] ||
+		    std::to_string(source->vnum) != row[6])
+		{
+			mysql_free_result(scoped);
+			return { false, EINVAL };
+		}
+		try
+		{
+			restored.insert(item_uid);
+		}
+		catch (const std::bad_alloc &)
+		{
+			mysql_free_result(scoped);
+			return { false, ENOMEM };
+		}
+	}
+	mysql_free_result(scoped);
+	// Every active delivery owned by this player must be represented exactly
+	// once in the requested snapshot.
+	if (restored.size() != scoped_delivery_count)
+		return { false, ENOENT };
+
+	for (const player_item_snapshot &source : items)
+	{
+		if (!restored.count(source.object_uid))
+			continue;
+		player_item_snapshot standalone = source;
+		standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		standalone.equipment_slot = -1;
+		std::vector<player_item_snapshot> one = { standalone };
+		std::vector<uint8_t> encoded;
+		if (player_item_snapshot_list_encode(one, &encoded) !=
+		    player_snapshot_codec_result::ok)
+			return { false, EINVAL };
+		const std::string payload(encoded.begin(), encoded.end());
+		const std::string payload_sql = quote(connection, payload);
+		const query_result result = execute(
+			connection,
+			"UPDATE player_death_restitution_runtime runtime JOIN "
+			"player_death_restitution_delivery delivery ON delivery.item_uid=runtime.item_uid "
+			"JOIN player_death_restitution_item restitution ON "
+			"restitution.restitution_id=delivery.restitution_id AND "
+			"restitution.item_uid=delivery.item_uid JOIN item_current_owner own ON "
+			"own.item_uid=runtime.item_uid SET runtime.state_payload=" +
+				payload_sql + ",runtime.state_digest=UNHEX(SHA2(" + payload_sql +
+				",256)) WHERE runtime.item_uid=" +
+				std::to_string(source.object_uid) + " AND " + owner_filter +
+				" AND own.vnum=" + std::to_string(source.vnum) +
+				" AND restitution.vnum=" + std::to_string(source.vnum));
+		if (!result.ok)
+			return result;
 	}
 	return { true, 0 };
 }
@@ -437,8 +694,12 @@ query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 	if (equipment != inventory)
 		deletion += equipment ? " AND equip_slot>0" : " AND equip_slot=0";
 	query_result result = execute(connection, deletion);
-	return result.ok ? insert_item_rows(connection, snapshot.items, snapshot.pid, false) :
-			   result;
+	if (!result.ok)
+		return result;
+	result = insert_item_rows(connection, snapshot.items, snapshot.pid, false);
+	if (!result.ok)
+		return result;
+	return sync_restitution_runtime_state(connection, snapshot.items, snapshot.pid);
 }
 
 query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)

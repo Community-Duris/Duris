@@ -86,7 +86,9 @@ all_ok &= check("assign_command_pointers registers CMD_ABORT",
                 "CMD_Y(CMD_ABORT, STAT_RESTING + POS_PRONE, do_abort, 0, TRUE);" in interp_c)
 
 # 5. Verify comm.c keeps the selective casting queue active for the complete
-#    AFF2_CASTING lifetime, including after PLR2_WAIT clears.
+#    AFF2_CASTING lifetime, including after PLR2_WAIT clears.  The game-loop
+#    refactor makes select_session_input() the single session-input boundary,
+#    so keep these checks scoped to that helper rather than to its caller.
 comm_c = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
 casting_predicate = re.search(
     r"static bool casting_input_for_descriptor\(P_desc descriptor, P_char character\)\s*\{(.*?)\n\}",
@@ -102,13 +104,21 @@ if casting_predicate:
                     "descriptor->connected == CON_PLAYING" in body and
                     "!descriptor->showstr_count" in body and
                     "!descriptor->str" in body)
-all_ok &= check("comm.c assigns casting_input from the casting-state predicate",
-                "casting_input = casting_input_for_descriptor(point, t_ch);" in comm_c)
-all_ok &= check("comm.c still admits the casting path when CAN_ACT is true",
-                "(CAN_ACT(t_ch) || casting_input)" in comm_c)
-all_ok &= check("comm.c only reads a casting character's queue through the character-aware casting path",
-                re.search(r"casting_input\s*\? get_casting_cmd_from_q\(t_ch, &point->input, comm\)",
-                          comm_c) is not None)
+session_selector = re.search(
+    r"static session_input_route select_session_input\(P_desc descriptor, P_char character, char \*input\)\s*\{(.*?)\n\}",
+    comm_c,
+    re.S,
+)
+all_ok &= check("comm.c defines the centralized session-input selector", session_selector is not None)
+if session_selector:
+    body = session_selector.group(1)
+    all_ok &= check("session-input selector derives casting_input from the casting-state predicate",
+                    "const bool casting_input = casting_input_for_descriptor(descriptor, character);" in body)
+    all_ok &= check("session-input selector admits the casting path when CAN_ACT is true",
+                    "(!CAN_ACT(character) && !casting_input)" in body)
+    all_ok &= check("session-input selector reads a casting character's queue through the character-aware path",
+                    re.search(r"casting_input\s*\?\s*\n?\s*get_casting_cmd_from_q\(character, &descriptor->input, input\)",
+                              body) is not None)
 # Type-ahead must survive: only a command the casting gate will actually run is
 # dequeued, so everything else stays queued instead of being drained and rejected.
 q = re.search(r"int get_casting_cmd_from_q\(P_char ch, struct txt_q \*queue, char \*dest\)\s*\{(.*?)\n\}", comm_c, re.S)

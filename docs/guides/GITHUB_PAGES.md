@@ -42,9 +42,10 @@ scripts; their full-size pages retain the original document behavior.
 The [Power Atlas](https://community-duris.github.io/Duris/power-atlas/) publishes
 the supplied combat-model report as an interactive page. `site/power-atlas/`
 contains its report content, styles, interaction code, and unchanged JSON snapshot.
-The snapshot covers 192 race/class combinations, 711 builds, 13 report levels,
-and three gear tiers. Its model source revision is `f3b66b07f`; publishing the
-website does not regenerate the model or repeat its reported engine checks.
+The snapshot covers 192 race/class combinations, 711 single-class builds, 56
+Human and Orc multiclass builds, 13 report levels, and three gear tiers. Its
+model source revision is `f3b66b07f`; publishing the website does not regenerate
+the model or repeat its reported engine checks.
 
 Level, gear, metric, and specialisation settings are stored in the page URL.
 **Copy atlas view link** shares those settings. Original `#L=…&tier=…` links
@@ -57,8 +58,8 @@ The artifact tests pin the imported snapshot's SHA-256 and verify its dimensions
 route, source revision, and local assets. A future model refresh must update the
 snapshot, report, source revision, and matching tests together. Do not edit model
 values while changing presentation. Browser checks should cover all report
-levels, gear selection, metric and specialisation views, shared URLs, cell details,
-clipboard behavior, mobile scrolling, and a failed snapshot download.
+levels, gear selection, metric, specialisation and multiclass views, shared URLs,
+cell details, clipboard behavior, mobile scrolling, and a failed snapshot download.
 
 ## Build and verify locally
 

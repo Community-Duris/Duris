@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 187;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 201;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -20,8 +20,10 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'auction_item_pickups','auction_ledger','auction_money_pickups','auction_reconciliation_quarantine',"
 	"'auctions','boon_reward_outcome','boon_reward_outcome_entry','boons',"
 	"'boons_progress','boons_shop','categories','changes',"
-	"'classes','combat_frag_baseline','combat_frag_ledger','combat_outcome',"
-	"'combat_outcome_participant','corpse_item_affects','corpse_item_extra_descr','corpse_items',"
+	"'classes','collector_catalog_state','collector_deaths','collector_ledger',"
+	"'collector_listings','collector_reconciliation_quarantine','combat_frag_baseline','combat_frag_ledger',"
+	"'combat_outcome','combat_outcome_participant','corpse_catalog_state','corpse_item_affects',"
+	"'corpse_item_extra_descr','corpse_items',"
 	"'corpses','critical_operation_inbox','critical_outbox','critical_outbox_delivery_dedupe',"
 	"'critical_test_state','ctf_data','currency_bank_baseline','currency_ledger',"
 	"'currency_wallet_baseline','epic_balance_baseline','epic_bonus','epic_gain',"
@@ -36,10 +38,11 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'locker_kickouts','locker_session_state','lockers','log_entries',"
 	"'lookup_dataset_state','mud_info','mud_schema_baselines','mud_schema_history',"
 	"'mud_schema_migration_state','mud_schema_migrations','multiplay_whitelist','nexus_stones',"
-	"'offline_messages','outposts','pages','persistence_item_events',"
+	"'offline_message_receipts','offline_messages','outposts','pages','persistence_item_events',"
 	"'persistence_scalar_events','personal_data_export_audit','personal_data_export_requests','personal_data_export_sections',"
 	"'ping','pkill_event','pkill_info','player_affects',"
-	"'player_data','player_death_custody','player_death_disposition','player_forged_items',"
+	"'player_data','player_death_custody','player_death_disposition','player_death_restitution_delivery',"
+	"'player_death_restitution_item','player_death_restitution_receipt','player_death_restitution_runtime','player_forged_items',"
 	"'player_granted_cmds','player_intros','player_item_affects','player_item_extra_descr',"
 	"'player_items','player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges',"
@@ -53,24 +56,31 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_items',"
 	"'shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items',"
 	"'statistics','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_interval',"
-	"'telemetry_player_day','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
-	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
+	"'telemetry_player_day','telemetry_reward_projection','telemetry_reward_projection_state','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
+	"'zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"d510994ece950142af8af048d8351a792bd6fb8a076d796611cf23a45a96e083";
+	"a6d688c624f746d005c768f66ea7458557927428331b2e20090478576de97866";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"edd78e5ef64c0f6ec86e3d9675a213263aad68219d61b6024c42546472212eea";
-/* Includes the six telemetry stores introduced by migration 0014 and the two
- * rollup support stores introduced by migration 0017. Metadata fingerprints are
- * measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0017_telemetry_rollup_support";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 17;
+	"83d5a6a1c68fa4e5411fe07437e4d4d2395bd0524b43ec40e532c41b68b10927";
+/* Includes the six telemetry stores introduced by migration 0014, the two
+ * rollup stores introduced by migration 0017, the five Collector authority
+ * stores introduced by migration 0018, corpse catalog authority introduced by
+ * migration 0019, restitution receipt/runtime stores introduced by migration
+ * 0020, identity-stable Collector notification receipt/outbox state introduced
+ * by migration 0021, additive progression fields introduced by migration
+ * 0022, committed reward projection/reconciliation state introduced by
+ * migration 0023, bounded encounter lifecycle facts introduced by migration
+ * 0024, and the durable zone-story quest state introduced by migration 0026.
+ * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0026_zone_story_quest_state";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 26;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"63205926b00ecadc1fe4044e90f9889ad71b36b6b52cb130d84e93b59083ebd6";
+	"992fd6bd7cdaeee7f1870bb8dad28f6c3c77793a771447dbba996ed1ed088a16";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"02fd34c8c728e9411fcc5fc3c0a93b716a9cdbbf1c584c5a430d4ed9ed3401c0";
+	"5893fffec2d51fa40c0baaaa8407c694fc2a730af2caad278ecf085340d9c8a4";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"45ecdb402dc59ecb4248d7a8e4d9c8e534b4b8b89b17aeb62e79f5fea46176c5";
+	"7ce778720d8e435253971bd535ea5ddabcb57ec0b5f2b98c72efbac00847fc53";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

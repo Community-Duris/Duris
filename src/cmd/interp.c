@@ -30,6 +30,7 @@
 #include "guild/alliances.h"
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
+#include "economy/collector_service.h"
 #include "classes/avengers.h"
 #include "economy/boon.h"
 #include "world/buildings.h"
@@ -1160,7 +1161,10 @@ const char *command[MAX_CMD] = {
 	"difficulty",
 	"itemmana",
 	"pulse",
-	"\n" /* MAX_CMD = 862, MAX_CMD_LIST = 1000 */
+	"collector",
+	"restitution",
+	"dummy",
+	"\n" /* MAX_CMD = 865, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -1340,6 +1344,7 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_SELL:
 	case CMD_EQUIPMENT:
 	case CMD_INVENTORY:
+	case CMD_COLLECTOR:
 		return true;
 	default:
 		return false;
@@ -1366,6 +1371,7 @@ bool cmd_depends_on_currency_transaction(int cmd)
 	case CMD_GIVE:
 	case CMD_DEPOSIT:
 	case CMD_WITHDRAW:
+	case CMD_COLLECTOR:
 	case CMD_ASK:
 	case CMD_BUY:
 	case CMD_SELL:
@@ -2895,6 +2901,7 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_WHERE, STAT_DEAD + POS_PRONE, do_where, IMMORTAL);
 	CMD_GRT(CMD_WHICH, STAT_DEAD + POS_PRONE, do_which, IMMORTAL);
 	CMD_GRT(CMD_EQRATE, STAT_DEAD + POS_PRONE, do_eqrate, IMMORTAL);
+	CMD_GRT(CMD_RESTITUTION, STAT_DEAD + POS_PRONE, do_restitution, FORGER);
 	CMD_GRT(CMD_WIZLOCK, STAT_DEAD + POS_PRONE, do_wizlock, FORGER);
 	CMD_GRT(CMD_WIZCONNECT, STAT_DEAD + POS_PRONE, do_wizhost, GREATER_G);
 	CMD_GRT(CMD_ZRESET, STAT_DEAD + POS_PRONE, do_zreset, GREATER_G);
@@ -3323,6 +3330,8 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_DIFFICULTY, STAT_DEAD + POS_PRONE, do_difficulty, LESSER_G);
 	CMD_Y(CMD_ITEMMANA, STAT_RESTING + POS_PRONE, do_itemmana, 0, FALSE);
 	CMD_GRT(CMD_PULSE, STAT_DEAD + POS_PRONE, do_pulse, LESSER_G);
+	CMD_Y(CMD_COLLECTOR, STAT_NORMAL + POS_STANDING, collector_service_command, 0, FALSE);
+	CMD_Y(CMD_DUMMY, STAT_DEAD + POS_PRONE, do_training_dummy, 0, FALSE);
 	CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 	CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 

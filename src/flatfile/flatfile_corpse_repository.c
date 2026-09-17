@@ -3,6 +3,7 @@
 #include "persistence/corpse_lifecycle_command.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_collector_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
@@ -367,6 +368,9 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	flatfile_artifact_transfer_mutation release_artifacts;
 	flatfile_wallet_mutation resurrection_wallet;
 	flatfile_shop_trade_materialization_mutation resurrection_materialization;
+	flatfile_collector_enrollment_mutation collector_mutation;
+	unsigned int collector_result_code = 0;
+	bool include_collector_mutation = false;
 	const bool releases_custody = payload.action == corpse_lifecycle_action::release;
 	const bool destroys_custody = payload.action == corpse_lifecycle_action::destroy;
 	const bool resurrects_custody = payload.action == corpse_lifecycle_action::resurrect;
@@ -435,6 +439,25 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 						 EIO :
 						 EILSEQ) };
 		include_release_artifacts = artifact_prepared == flatfile_artifact_result::ok;
+		const auto collector_prepared = flatfile_collector_prepare_corpse_boundary(
+			root, authority, payload, release_items.collector_items,
+			&collector_mutation, &collector_result_code, &error);
+		if (collector_prepared != flatfile_collector_repository_result::ok &&
+		    collector_prepared != flatfile_collector_repository_result::unchanged)
+			return { collector_prepared ==
+						 flatfile_collector_repository_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 collector_prepared ==
+							 flatfile_collector_repository_result::
+								 io_error ?
+						 EIO :
+						 EILSEQ) };
+		include_collector_mutation = collector_prepared ==
+						     flatfile_collector_repository_result::ok &&
+					     !collector_mutation.after_image.bytes.empty();
 	}
 	bool include_resurrection_wallet = false;
 	bool include_resurrection_materialization = false;
@@ -496,7 +519,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	corpse_operation operation = {};
 	operation.operation_id = command.operation_id;
 	operation.command_digest = digest;
-	operation.result_code = prepared == flatfile_world_item_result::ok ? 0 :
+	operation.result_code = prepared == flatfile_world_item_result::ok ? collector_result_code :
 									     result_code(prepared);
 	operation.durable_revision =
 		prepared == flatfile_world_item_result::ok ?
@@ -519,6 +542,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 			result.wallet_revision = resurrection_wallet.wallet_revision;
 			result.max_item_revision = release_items.max_item_revision;
 			result.item_count = static_cast<uint32_t>(release_items.item_count);
+			result.collector_catalog_changed = include_collector_mutation;
 			if (resurrects_custody || raises_follower || nested_player)
 				for (size_t index = 0; index < result.wallet.size(); ++index)
 					result.wallet[index] = static_cast<int32_t>(
@@ -558,6 +582,8 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 				if (include_resurrection_materialization)
 					images.push_back(std::move(
 						resurrection_materialization.after_image));
+				if (include_collector_mutation)
+					images.push_back(std::move(collector_mutation.after_image));
 			}
 			else
 				images.push_back(std::move(mutation.after_image));

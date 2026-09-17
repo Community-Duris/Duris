@@ -9,6 +9,7 @@
 #include <limits>
 #include <mysql.h>
 #include <new>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -594,7 +595,228 @@ bool update_coin_payload(MYSQL *connection, const item_transfer_payload &payload
 	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
 					       mysql_stmt_execute(statement) == 0);
 }
+
+bool update_runtime_payload(MYSQL *connection, uint64_t item_uid,
+			    const std::vector<uint8_t> &payload)
+{
+	static const char UPDATE_SQL[] =
+		"UPDATE player_death_restitution_runtime SET state_payload=?,"
+		"state_digest=UNHEX(SHA2(?,256)) WHERE item_uid=?";
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, UPDATE_SQL))
+		return false;
+	MYSQL_BIND bindings[3] = {};
+	unsigned long length = static_cast<unsigned long>(payload.size());
+	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[0].buffer = const_cast<uint8_t *>(payload.data());
+	bindings[0].buffer_length = length;
+	bindings[0].length = &length;
+	bindings[1].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[1].buffer = const_cast<uint8_t *>(payload.data());
+	bindings[1].buffer_length = length;
+	bindings[1].length = &length;
+	bindings[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[2].buffer = &item_uid;
+	bindings[2].is_unsigned = true;
+	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
+					       mysql_stmt_execute(statement) == 0);
+}
+
+bool sync_restitution_runtime_payload(MYSQL *connection, const item_transfer_payload &payload)
+{
+	if (!connection)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	MYSQL_RES *tables = nullptr;
+	static const char TABLES_SQL[] =
+		"SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_name IN ('player_death_restitution_delivery',"
+		"'player_death_restitution_runtime')";
+	if (mysql_real_query(connection, TABLES_SQL, strlen(TABLES_SQL)) != 0 ||
+	    !(tables = mysql_store_result(connection)))
+	{
+		errno = mysql_errno(connection);
+		return false;
+	}
+	bool delivery_present = false;
+	bool runtime_present = false;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(tables)) != nullptr)
+	{
+		if (!row[0])
+		{
+			mysql_free_result(tables);
+			errno = EINVAL;
+			return false;
+		}
+		if (!strcmp(row[0], "player_death_restitution_delivery"))
+			delivery_present = true;
+		else if (!strcmp(row[0], "player_death_restitution_runtime"))
+			runtime_present = true;
+	}
+	mysql_free_result(tables);
+	if (!delivery_present || !payload.item_count)
+		return true;
+
+	std::ostringstream uid_list;
+	for (size_t index = 0; index < payload.item_count; ++index)
+		uid_list << (index ? "," : "") << payload.items[index].item_uid;
+	const std::string delivery_sql =
+		"SELECT item_uid FROM player_death_restitution_delivery WHERE item_uid IN (" +
+		uid_list.str() + ") ORDER BY item_uid FOR UPDATE";
+	if (mysql_real_query(connection, delivery_sql.data(), delivery_sql.size()) != 0 ||
+	    !(tables = mysql_store_result(connection)))
+	{
+		errno = mysql_errno(connection);
+		return false;
+	}
+	std::vector<uint64_t> delivered_uids;
+	while ((row = mysql_fetch_row(tables)) != nullptr)
+	{
+		if (!row[0])
+		{
+			mysql_free_result(tables);
+			errno = EINVAL;
+			return false;
+		}
+		char *end = nullptr;
+		errno = 0;
+		const unsigned long long parsed = std::strtoull(row[0], &end, 10);
+		if (errno || end == row[0] || *end || parsed == 0)
+		{
+			mysql_free_result(tables);
+			errno = EINVAL;
+			return false;
+		}
+		delivered_uids.push_back(static_cast<uint64_t>(parsed));
+	}
+	mysql_free_result(tables);
+	if (delivered_uids.empty())
+		return true;
+	if (!runtime_present)
+	{
+		errno = ENOENT;
+		return false;
+	}
+
+	const std::string runtime_sql =
+		"SELECT item_uid FROM player_death_restitution_runtime WHERE item_uid IN (" +
+		uid_list.str() + ") ORDER BY item_uid FOR UPDATE";
+	if (mysql_real_query(connection, runtime_sql.data(), runtime_sql.size()) != 0 ||
+	    !(tables = mysql_store_result(connection)))
+	{
+		errno = mysql_errno(connection);
+		return false;
+	}
+	std::vector<uint64_t> runtime_uids;
+	while ((row = mysql_fetch_row(tables)) != nullptr)
+	{
+		uint64_t item_uid = 0;
+		if (!row[0])
+		{
+			mysql_free_result(tables);
+			errno = EINVAL;
+			return false;
+		}
+		char *end = nullptr;
+		errno = 0;
+		const unsigned long long parsed = std::strtoull(row[0], &end, 10);
+		if (errno || end == row[0] || *end || parsed == 0 || parsed > UINT64_MAX)
+		{
+			mysql_free_result(tables);
+			errno = EINVAL;
+			return false;
+		}
+		item_uid = static_cast<uint64_t>(parsed);
+		runtime_uids.push_back(item_uid);
+	}
+	mysql_free_result(tables);
+	for (const uint64_t item_uid : delivered_uids)
+		if (std::find(runtime_uids.begin(), runtime_uids.end(), item_uid) ==
+		    runtime_uids.end())
+		{
+			errno = ENOENT;
+			return false;
+		}
+
+	if (!payload.item_blob_size)
+	{
+		errno = EBADMSG;
+		return false;
+	}
+	std::vector<player_item_snapshot> snapshots;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &snapshots) != player_snapshot_codec_result::ok)
+	{
+		errno = EBADMSG;
+		return false;
+	}
+	for (const uint64_t item_uid : delivered_uids)
+	{
+		const auto entry = std::find_if(payload.items.begin(),
+						payload.items.begin() + payload.item_count,
+						[item_uid](const item_transfer_entry &candidate)
+						{ return candidate.item_uid == item_uid; });
+		const auto source = std::find_if(snapshots.begin(), snapshots.end(),
+						 [item_uid](const player_item_snapshot &candidate)
+						 { return candidate.object_uid == item_uid; });
+		if (entry == payload.items.begin() + payload.item_count ||
+		    source == snapshots.end() || source->vnum != entry->vnum)
+		{
+			errno = EBADMSG;
+			return false;
+		}
+		player_item_snapshot standalone = *source;
+		standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		standalone.equipment_slot = -1;
+		std::vector<player_item_snapshot> one = { standalone };
+		std::vector<uint8_t> encoded;
+		if (player_item_snapshot_list_encode(one, &encoded) !=
+			    player_snapshot_codec_result::ok ||
+		    !update_runtime_payload(connection, item_uid, encoded))
+		{
+			if (!errno)
+				errno = EBADMSG;
+			return false;
+		}
+	}
+	return true;
+}
 } // namespace
+
+bool item_transfer_repository_ensure_owner(MYSQL *connection, const item_owner_identity &owner)
+{
+	if (!connection || !item_owner_identity_valid(owner))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	return ensure_owner(connection, owner);
+}
+
+bool item_transfer_repository_lock_owner(MYSQL *connection, const item_owner_identity &owner,
+					 uint64_t *revision)
+{
+	if (!connection || !revision || !item_owner_identity_valid(owner))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	return lock_owner(connection, owner, revision);
+}
+
+bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_identity &owner,
+					    uint64_t prior_revision)
+{
+	if (!connection || !item_owner_identity_valid(owner) || prior_revision == UINT64_MAX)
+	{
+		errno = prior_revision == UINT64_MAX ? ERANGE : EINVAL;
+		return false;
+	}
+	return update_owner_revision(connection, owner, prior_revision);
+}
 
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
 				      item_transfer_result *result, unsigned int *result_code,
@@ -840,6 +1062,8 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		    !update_coin_payload(connection, payload, result->max_item_revision))
 			return false;
 	}
+	if (!sync_restitution_runtime_payload(connection, payload))
+		return false;
 	*mutation_applied = true;
 	return true;
 }

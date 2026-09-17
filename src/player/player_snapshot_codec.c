@@ -355,7 +355,7 @@ bool valid_death(const player_snapshot &snapshot)
 		if (!row.item.item_uid || !observed.insert(row.item.item_uid).second ||
 		    row.item.vnum <= 0 ||
 		    row.item.expected_state > item_custody_state::quarantined ||
-		    row.owner.type > item_owner_type::shopkeeper)
+		    row.owner.type > item_owner_type::collector)
 			return false;
 		if (row.item.expected_state == item_custody_state::absent)
 		{

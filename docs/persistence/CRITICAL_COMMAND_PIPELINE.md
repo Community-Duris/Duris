@@ -14,11 +14,42 @@ verified critical-command schema; failure leaves critical gameplay stopped.
 
 ## Acceptance and execution
 
-The coordinator validates and normalizes an envelope before acceptance. Entity keys
-are sorted and duplicates are rejected. It reserves bounded memory, appends and
-`fsync`s an independent checksummed journal record, then publishes the command to the
-worker queue. A successful append is the acceptance boundary; records are never
-coalesced or replaced by a newer command.
+The coordinator validates and normalizes an envelope before admission. Entity keys
+are sorted and duplicates are rejected. It reserves bounded memory and queues the
+encoded command on a serialized admission lane. `submit()` returns
+`awaiting_durability` while that lane owns the independent checksummed journal append
+and `fsync`; a RAM enqueue is not durable evidence and never publishes the command to
+the execution queue. Only the worker's successful append acknowledgement crosses the
+durability boundary. Records are never coalesced or replaced by a newer command.
+
+The admission lane is bounded by the same 1,024-operation/64 MiB coordinator limits
+as execution, and its queue plus one in-flight append are exposed as byte-counted
+health fields. The coordinator mutex is not held while the worker waits on journal
+I/O. A definitive append failure retains a terminal failure notification without
+executing the command; an uncertain append retains the operation and fence until
+replay/sync reconciliation either proves the record durable or produces a terminal
+failure. The operation ID, sorted-key fences, exact acknowledgement, and original
+command bytes are retained throughout.
+
+The state and transition table is deliberately split between the coordinator's
+durable-command lifecycle and a domain's live-publication lifecycle. The
+`critical_completion_delivery` boundary owns bounded completion retention and
+queue operations; the coordinator still owns retry, fencing, and terminal
+transitions. There is no second generic lifecycle framework hidden behind the
+domain adapters.
+
+| State | Owner | Durable evidence and allowed transition |
+| --- | --- | --- |
+| Admitted / awaiting durability | Coordinator admission lane | The operation is reserved in bounded memory and its original bytes are queued; `awaiting_durability` is not success. A synced journal append leads to `Durable admission`; definitive failure leads to `Admission failed`; append uncertainty leads to `Uncertain admission`. |
+| Durable admission | Coordinator admission worker | The journal frame was appended and `fsync` completed for this operation ID. The execution lane may now enter `Executing`; no gameplay or live-publication success is implied. |
+| Executing | Coordinator execution worker plus typed domain adapter | The command is fenced and runs only after all affected keys are available. A domain transaction/flat-file authority and its inbox/result/checkpoint are the domain's durable evidence; the coordinator receives an exact revisioned completion. |
+| Retry pending | Coordinator retry transition | Retryable failure requeues the same immutable operation ID and journal record after releasing only the execution slot. The key fence remains, the attempt increases, and the bounded retry count is observable; exhaustion becomes `Blocked uncertainty` with a final notification. |
+| Uncertain admission | Coordinator recovery lane | The original command and fence remain retained while replay and journal sync determine whether the append exists. An exact replay permits `Durable admission`; a definitive failure becomes `Admission failed`; uncertainty never returns a false success. |
+| Final notification retained | `critical_completion_delivery` plus coordinator pulse | The exact operation ID, attempt, outcome, and durable revision remain queued (or retained in the operation state for an admission failure) until the simulation-thread consumer supplies capacity. Consumer backpressure cannot cause a final result to be discarded; publication then releases or preserves the appropriate fence. |
+| Admission failed | Coordinator admission-failure state | The command never executes. Its terminal error is retained and delivered once; only delivery retires the operation and removes its fences. |
+| Currency publication ready | Game-thread currency adapter | The adapter stages the coordinator receipt under the same operation ID, then publishes the committed wallet/bank revision. Database completion may therefore precede live publication without a replacement operation. |
+| Currency waiting / retrying / blocked | Game-thread currency adapter | An offline player waits, a transient callback retries within its bound, and an unresolved receipt remains blocked with its original continuation and ID. These are not coordinator retries and never become an automatic rejection or refund. |
+| Snapshot pending and outbox pending | Snapshot and outbox subsystems | Snapshot capture/replay and outbox delivery have their own owners, records, and recovery rules. They do not coalesce critical commands, acknowledge journal admission, or substitute for live currency publication. |
 
 Conflicting commands are admitted in acceptance order for every affected key. A
 command may execute only when it is first for all its keys, which avoids deadlock while
@@ -47,24 +78,28 @@ bytes for one operation ID are corruption. Replay retains the original operation
 
 Default bounds are 1,024 active operations, 64 MiB of command memory, 2,048 pending
 completion records, 4,096 journal records, a 256 MiB journal, eight retries, and a
-256-operation/8 MiB recent-completion cache.
+256-operation/8 MiB recent-completion cache. The admission queue counts against the
+active-operation and command-memory bounds; accepted work is never dropped merely
+because the worker is behind.
 
 ## Lifecycle and diagnostics
 
 Copyover and ordinary shutdown quiesce admission and require a three-second drain
-before later persistence gates. Any failed transition resumes admission and leaves the
-live server running. The game loop drains typed completions every two pulses.
-Ordinary result delivery is in-memory, but journal admission and uncertain-journal
-recovery still perform synchronous filesystem work at this baseline. Moving those
-operations off the simulation thread is tracked in
-[issue #341](https://github.com/Community-Duris/Duris/issues/341); helper extraction
-alone does not establish a nonblocking pulse path.
+before later persistence gates. The drain covers admission, execution, retry, and
+retained terminal notifications. Any failed transition resumes admission and leaves
+the live server running. The game loop drains typed completions every two pulses.
+Normal submission, pulse, and uncertain-recovery signaling perform no journal file
+I/O; journal append, `fsync`, replay, and reconciliation are owned by the admission
+worker. Shutdown joins that worker after the admission lane has drained, so no
+detached append can outlive the coordinator or its journal lock.
 
-`world persistence` exposes one metadata-only `critical_commands` line: state, queue,
-in-flight and blocked counts, retained bytes, fences, recent completions, high-water
-marks, accepts, attachments, outcomes, retries, ambiguous results, stale completions,
-overloads, oldest age, and journal counts/bytes/status. It never prints command payloads
-or entity identities.
+`world persistence` exposes one metadata-only `critical_commands` line: state,
+awaiting-durability and admission-queue bytes, admission-worker and append-in-flight
+status, durable admissions, admission failures and uncertain admissions, execution queue
+and in-flight counts, blocked count, retained bytes, fences, recent completions,
+high-water marks, accepts, attachments, outcomes, retries, ambiguous results, stale
+completions, overloads, oldest age, and journal counts/bytes/status. It never prints
+command payloads or entity identities.
 
 The database inbox stores the canonical command/key hashes and authoritative result.
 An identical duplicate returns that result; different bytes under the same operation ID
@@ -89,7 +124,10 @@ Treat `blocked>0`, growing oldest age, `journal=corrupt`, `journal=io_failure`, 
 Restore the underlying storage or destination, preserve the journal, and investigate
 before restarting. Never delete or edit the journal to clear a fence.
 
-Focused validation is `python3 tests/async/test_critical_command_coordinator.py`,
+Focused validation is `python3 tests/async/test_critical_command_admission.py`,
+`python3 tests/async/test_critical_command_coordinator.py`,
+`python3 tests/async/test_critical_command_journal_uncertain.py`,
+`python3 tests/async/test_critical_completion_capacity.py`,
 `python3 tests/async/test_critical_transaction_contract.py`, and, on an explicitly
 guarded local development database, `tests/async/run_critical_command_schema_mysql.sh`.
 

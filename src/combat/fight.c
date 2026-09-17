@@ -35,10 +35,12 @@
 #include "world/achievements.h"
 #include "combat/arena.h"
 #include "combat/arenadef.h"
+#include "combat/attack_continuation.h"
 #include "economy/boon.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "combat/dam_mods.h"
+#include "combat/training_dummy.h"
 #include "classes/disguise.h"
 #include "classes/dreadlord.h"
 #include "world/epic.h"
@@ -66,6 +68,9 @@
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_catalog_cache.h"
+#include "economy/collector_death_enrollment.h"
+#include "economy/collector_presence.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "item/item_movement_transaction.h"
@@ -624,7 +629,11 @@ void heal(P_char ch, P_char healer, int hits, int cap)
 	//send_to_char("&+Rdamage output halved\r\n", ch);
 	}
 	*/
+	const int attempted_hits = MAX(0, hits);
 	hits = vamp(ch, hits, cap);
+	telemetry_runtime_game_combat_healing(healer, ch,
+					      static_cast<std::uint64_t>(attempted_hits),
+					      static_cast<std::uint64_t>(MAX(0, hits)), 0U);
 	update_achievements(healer, ch, hits, 1);
 
 	if (hits > 1 && healer != ch && ch->in_room == healer->in_room &&
@@ -1560,6 +1569,8 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 	else
 	{
 		writeCorpse(corpse);
+		(void)collector_catalog_cache_refresh();
+		collector_death_enrollment_end(corpse);
 		wake_death_extract_retry(character);
 	}
 }
@@ -1589,7 +1600,22 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 	if (roots.empty())
 	{
 		writeCorpse(corpse);
+		collector_death_enrollment_end(corpse);
 		return true;
+	}
+	const collector_death_enrollment_resume_result collector_resume =
+		collector_death_enrollment_resume(character, corpse);
+	if (collector_resume == collector_death_enrollment_resume_result::invalid)
+	{
+		note_corpse_transfer_dispute(character);
+		return false;
+	}
+	if (collector_resume == collector_death_enrollment_resume_result::unavailable)
+	{
+		persistence_report(persistence_severity::info, AVATAR, "collector", "death", "none",
+				   "none", "death_enrollment_waiting_for_catalog", "save_id=%d",
+				   corpse->value[CORPSE_SAVEID]);
+		return false;
 	}
 	const item_owner_identity destination = {
 		item_owner_type::corpse,
@@ -1874,6 +1900,7 @@ P_obj make_corpse(P_char ch, int loss)
 	}
 	if (corpse && IS_PC(ch))
 	{
+		collector_death_enrollment_begin(ch, corpse);
 		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
 								  PLAYER_COMPONENT_EQUIPMENT |
 								  PLAYER_COMPONENT_INVENTORY);
@@ -2806,6 +2833,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 			return;
 		}
 		clear_corpse_transfer_dispute(ch);
+		collector_death_enrollment_end(corpse);
 		release_after_terminal_death(ch, "death_disposition_completed");
 		return;
 	}
@@ -2831,6 +2859,8 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
+	// Terminal publication must release intake even when no corpse-item handoff ever ran.
+	collector_death_enrollment_end(corpse);
 	release_after_terminal_death(ch, "death_recovery_completed");
 }
 
@@ -2856,9 +2886,18 @@ void die(P_char ch, P_char killer)
 		logit(LOG_EXIT, "die called in fight.c with no ch");
 		return;
 	}
+	if (training_dummy_is(ch))
+	{
+		GET_HIT(ch) = GET_MAX_HIT(ch);
+		SET_POS(ch, POS_STANDING + STAT_NORMAL);
+		return;
+	}
 
 	if (!killer)
 		return;
+	if (IS_PC(ch))
+		(void)telemetry_runtime_game_encounter_leave(ch,
+							     telemetry_encounter_outcome::death);
 
 	// Upon death, we want to kill followers.
 	if (IS_PC(ch) && ch->followers)
@@ -3459,6 +3498,8 @@ void die(P_char ch, P_char killer)
 						     DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
+		if (!CHAR_IN_ARENA(ch))
+			collector_death_enrollment_end(death_corpse);
 		GET_HIT(ch) = 1;
 		ch->only.pc->pc_timer[1] = 0; // reset flee timer
 	}
@@ -4085,15 +4126,15 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 	if (!char_in_list(ch) || !char_in_list(victim) || !IS_ALIVE(victim) || !IS_ALIVE(ch))
 		return FALSE;
 
-	const uint64_t actor_id = ch->runtime_id, target_id = victim->runtime_id;
-	const int original_room = ch->in_room, original_height = ch->specials.z_cord;
+	const attack_continuation participants = begin_attack_continuation(ch, victim);
 	const auto participants_valid = [&]()
 	{
-		return find_character_by_runtime_id(actor_id) == ch &&
-		       find_character_by_runtime_id(target_id) == victim && IS_ALIVE(ch) &&
-		       IS_ALIVE(victim) && ch->in_room == original_room &&
-		       victim->in_room == original_room && ch->specials.z_cord == original_height &&
-		       victim->specials.z_cord == original_height;
+		const attack_continuation_result checked = check_attack_continuation(participants);
+		if (!checked.can_continue())
+			return false;
+		ch = checked.actor;
+		victim = checked.target;
+		return true;
 	};
 	if (!participants_valid())
 		return FALSE;
@@ -4109,11 +4150,16 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 		    TRUE, ch, 0, victim, TO_CHAR);
 
 		P_obj secondary = ch->equipment[SECONDARY_WEAPON];
-		const uint64_t secondary_uid = secondary ? secondary->obj_uid : 0;
+		const attack_continuation secondary_continuation =
+			begin_attack_continuation(ch, victim, secondary, SECONDARY_WEAPON);
 		hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-		if (participants_valid() && ch->equipment[SECONDARY_WEAPON] == secondary &&
-		    (!secondary || secondary->obj_uid == secondary_uid))
-			hit(ch, victim, secondary);
+		if (participants_valid())
+		{
+			const attack_continuation_result checked =
+				check_attack_continuation(secondary_continuation);
+			if (checked.can_continue())
+				hit(checked.actor, checked.target, checked.weapon);
+		}
 		return TRUE;
 	}
 
@@ -4189,13 +4235,17 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 	else if (ch->equipment[SECONDARY_WEAPON] && !number(0, 2))
 		weapon_slot = SECONDARY_WEAPON;
 	wpn = ch->equipment[weapon_slot];
-	const uint64_t weapon_uid = wpn ? wpn->obj_uid : 0;
+	const attack_continuation continuation =
+		begin_attack_continuation(ch, victim, wpn, weapon_slot);
 	const auto continuation_valid = [&]()
 	{
-		// Check the live slot before reading a possibly extracted weapon. UIDs
-		// also reject a different object reusing the same pooled address.
-		return participants_valid() && ch->equipment[weapon_slot] == wpn &&
-		       (!wpn || wpn->obj_uid == weapon_uid);
+		const attack_continuation_result checked = check_attack_continuation(continuation);
+		if (!checked.can_continue())
+			return false;
+		ch = checked.actor;
+		victim = checked.target;
+		wpn = checked.weapon;
+		return true;
 	};
 
 	if (expertriposte > number(1, 500) && GET_OPPONENT(ch) == victim)
@@ -4316,6 +4366,13 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
  */
 int attack_back(P_char ch, P_char victim, int physical)
 {
+	if (training_dummy_is(ch) || training_dummy_is(victim))
+	{
+		if (victim && IS_NPC(ch) && !IS_PC_PET(ch) && training_dummy_is(victim))
+			training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
+
 	if (!IS_ALIVE(ch))
 	{
 		if (!IS_ALIVE(victim))
@@ -4484,6 +4541,15 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Just making sure.
 	if (!ch || !victim)
 		return DAM_NONEDEAD;
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	if (messages == NULL)
 	{
@@ -4538,10 +4604,11 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Aggro Handling (these should come after the above special conditions)
 	///////
 
-	// victim remembers attacker
-	remember(victim, ch);
+	// Training dummies are deliberately non-hostile and never remember attackers.
+	if (!training_dummy_is(victim))
+		remember(victim, ch);
 
-	if (IS_PC_PET(ch) && GET_MASTER(ch)->in_room == ch->in_room &&
+	if (!training_dummy_is(victim) && IS_PC_PET(ch) && GET_MASTER(ch)->in_room == ch->in_room &&
 	    CAN_SEE(victim, GET_MASTER(ch)))
 	{
 		remember(victim, GET_MASTER(ch));
@@ -4589,7 +4656,7 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// end of globes check
 
 	/* check for deflectable spells - basically all but shields damage and already deflected spells */
-	if ((ch != victim) && !IS_SET(flags, SPLDAM_NODEFLECT))
+	if ((ch != victim) && !training_dummy_is(victim) && !IS_SET(flags, SPLDAM_NODEFLECT))
 	{
 		/* deflection */
 		if (IS_AFFECTED4(victim, AFF4_DEFLECT) && IS_ALIVE(ch))
@@ -4947,6 +5014,9 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 int check_shields(P_char ch, P_char victim, int dam, int flags)
 {
+	if (training_dummy_is(victim))
+		return DAM_NONEDEAD;
+
 	int result = DAM_NONEDEAD;
 	double soulshielddam = get_property("damage.shield.soulshield", 0.400);
 	double negshielddam = get_property("damage.shield.negativeshield", 0.450);
@@ -5038,6 +5108,15 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	// Reject all other faiths MWD25
 	if (IS_AFFECTED5(ch, AFF5_JUDICIUM_FIDEI))
@@ -5344,6 +5423,8 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
 
 	if (messages == NULL)
 	{
@@ -6004,9 +6085,18 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		logit(LOG_EXIT, "raw_damage in fight.c called without ch");
 		return DAM_NONEDEAD;
 	}
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
 
 	if (!victim)
 		return DAM_NONEDEAD;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	if (ch && victim) // Just making sure.
 	{
@@ -6032,7 +6122,7 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 
 		if (victim != ch)
 		{
-			if (CHAR_IN_SAFE_ROOM(ch))
+			if (CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim))
 				return DAM_NONEDEAD;
 
 			if (should_not_kill(ch, victim))
@@ -6098,6 +6188,19 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 
 		dam = BOUNDED(1, (int)dam, 32766);
 
+		if (training_dummy_is(victim))
+		{
+			const int recorded_damage = static_cast<int>(dam);
+			training_dummy_note_attacker(victim, ch);
+			training_dummy_record_damage(victim, recorded_damage);
+			if (damAccumulator)
+				*damAccumulator += recorded_damage;
+			if (IS_PC(ch) && ch->desc)
+				send_to_char_f(ch, "The training dummy absorbs %d damage.\r\n",
+					       recorded_damage);
+			return DAM_NONEDEAD;
+		}
+
 		check_blood_alliance(victim, (int)dam);
 
 		if (IS_AFFECTED5(victim, AFF5_IMPRISON) && (flags & RAWDAM_IMPRISON) &&
@@ -6158,6 +6261,8 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 				dam = GET_HIT(victim) + 11;
 			}
 			GET_HIT(victim) -= dam;
+			telemetry_runtime_game_combat_damage(
+				ch, victim, dam > 0.0 ? static_cast<std::uint64_t>(dam) : 0U, 0U);
 
 			/* Send GMCP updates for combat */
 			gmcp_char_vitals(victim); /* Update victim's vitals */
@@ -7633,11 +7738,18 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			act("$n slips beneath your guard, dealing you a vicious attack!", TRUE, ch,
 			    0, victim, TO_VICT);
 
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, victim, weapon);
 			vicious_hit = TRUE;
 			hit(ch, victim, weapon);
 			vicious_hit = FALSE;
-			if (!(is_char_in_room(ch, room) && is_char_in_room(victim, room)))
+			const attack_continuation_result checked =
+				check_attack_continuation(continuation);
+			if (!checked.can_continue())
 				return FALSE;
+			ch = checked.actor;
+			victim = checked.target;
+			weapon = checked.weapon;
 		}
 	}
 
@@ -8132,9 +8244,11 @@ void StopMercifulAttackers(P_char ch)
 
 static void telemetry_combat_context_changed(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !ch->desc || ch->desc->connected != CON_PLAYING)
+	if (!ch)
 		return;
-	(void)telemetry_runtime_game_context(ch, ch->desc);
+	if (IS_PC(ch) && ch->desc && ch->desc->connected == CON_PLAYING)
+		(void)telemetry_runtime_game_context(ch, ch->desc);
+	telemetry_runtime_game_combat_context(ch);
 }
 
 /* start one char fighting another (yes, it is horrible, I know... ) */
@@ -8142,10 +8256,19 @@ void set_fighting(P_char ch, P_char vict)
 {
 	P_char victim = vict;
 	char Gbuf[10];
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return;
 
 	if ((ch == victim) || !SanityCheck(ch, "set_fighting - ch") ||
 	    !SanityCheck(victim, "set_fighting - victim"))
 	{
+		return;
+	}
+	if (training_dummy_is(ch))
+		return;
+	if (!training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
 		return;
 	}
 
@@ -8244,6 +8367,8 @@ void set_fighting(P_char ch, P_char vict)
 	ch->specials.next_fighting = combat_list;
 	combat_list = ch;
 	telemetry_combat_context_changed(ch);
+	(void)telemetry_runtime_game_encounter_begin(
+		ch, IS_PC(victim) ? telemetry_encounter_mode::pvp : telemetry_encounter_mode::pve);
 
 	if (ch->in_room >= 0)
 		gmcp_mark_room_dirty(ch->in_room);

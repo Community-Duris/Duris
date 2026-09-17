@@ -44,7 +44,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=143
+TOTAL=145
 FAILED=0
 
 run_sql() {
@@ -2966,6 +2966,8 @@ run_sql_file "apply critical command inbox and outbox" "$SCRIPT_DIR/critical_com
 run_check "verify critical command inbox and outbox" "$SCRIPT_DIR/verify_critical_command_schema.sh"
 run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
 run_sql_file "permit shopkeeper item custody" "$SCRIPT_DIR/shopkeeper_item_owner.sql"
+run_sql_file "permit collector item custody" "$SCRIPT_DIR/collector_item_owner.sql"
+run_check "verify collector item custody" "$SCRIPT_DIR/verify_collector_item_owner.sh"
 run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "apply epic ledger and balance schema" "$SCRIPT_DIR/epic_ledger_balance.sql"
 run_check "verify epic ledger and balance schema" "$SCRIPT_DIR/verify_epic_ledger_schema.sh"

@@ -49,11 +49,17 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes both death recovery tables, verified on both supported engines.
-        self.assertEqual(report["current_table_count"], 187)
+        self.assertEqual(report["current_table_count"], 201)
         for table in ("player_death_disposition", "player_death_custody"):
             self.assertIn("'" + table + "'", self.header)
+        for table in ("collector_catalog_state", "collector_deaths",
+                      "collector_listings", "collector_ledger",
+                      "collector_reconciliation_quarantine", "offline_message_receipts"):
+            self.assertIn("'" + table + "'", self.header)
+        self.assertIn("'corpse_catalog_state'", self.header)
+        self.assertIn("'zone_story_quest_state'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0017_telemetry_rollup_support")
+                         "0026_zone_story_quest_state")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -100,7 +106,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                          "critical_command_coordinator_init", "game_loop(port, sslport)"):
             self.assertIn(boundary, game)
 
-        game_loop = self.comm[self.comm.index("void game_loop(int port, int sslport)"):
+        game_loop = self.comm[self.comm.index("static bool run_connection_phase"):
                               self.comm.index("bool runtime_listener_address")]
         self.assertIn("redis_load_world_state", game_loop)
         self.assertIn("drain_new_connections", game_loop)

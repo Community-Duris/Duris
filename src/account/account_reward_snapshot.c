@@ -5,6 +5,7 @@
 #include "magic/spells.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "sql/item_extra_descr_codec.h"
 
 #include <cjson/cJSON.h>
 #include <errno.h>
@@ -13,6 +14,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <string>
 
 static void add_u64(cJSON *root, const char *name, uint64_t value)
 {
@@ -87,6 +90,99 @@ static void clear_extra_descriptions(P_obj obj)
 		ed = next;
 	}
 	obj->ex_description = NULL;
+	REMOVE_BIT(obj->str_mask, STRUNG_EDESC);
+}
+
+static void add_spellbook_snapshot(cJSON *entry, const char *bits)
+{
+	std::string json = "[";
+	bool first = true;
+	for (int spell = 0; bits && spell < MAX_SKILLS; ++spell)
+	{
+		if ((static_cast<unsigned char>(bits[spell / 8]) & (1U << (spell % 8))) == 0)
+			continue;
+		if (!first)
+			json += ',';
+		json += std::to_string(spell);
+		first = false;
+	}
+	json += ']';
+	cJSON_AddStringToObject(entry, "keyword", "SPELLBOOK");
+	cJSON_AddStringToObject(entry, "description", json.c_str());
+}
+
+static bool append_extra_description_snapshot(P_obj obj, struct extra_descr_data ***tail,
+					      cJSON *entry)
+{
+	if (!obj || !tail || !entry || !cJSON_IsObject(entry))
+		return false;
+
+	cJSON *keyword = cJSON_GetObjectItemCaseSensitive(entry, "keyword");
+	cJSON *description = cJSON_GetObjectItemCaseSensitive(entry, "description");
+	if ((!cJSON_IsString(keyword) && !cJSON_IsNull(keyword)) ||
+	    (!cJSON_IsString(description) && !cJSON_IsNull(description)))
+		return false;
+
+	const bool keyword_is_string = cJSON_IsString(keyword) && keyword->valuestring;
+	const bool canonical_spellbook = keyword_is_string &&
+					 strcmp(keyword->valuestring, "SPELLBOOK") == 0;
+	const bool legacy_raw_spellbook =
+		keyword_is_string && sql_item_extra_descr_is_spellbook_marker(keyword->valuestring);
+	const size_t byte_count = (MAX_SKILLS + 1) / 8 + 1;
+	char decoded_bits[(MAX_SKILLS + 1) / 8 + 1] = {};
+	if (canonical_spellbook)
+	{
+		if (!cJSON_IsString(description) || !description->valuestring ||
+		    sql_decode_stored_spellbook("SPELLBOOK", description->valuestring, decoded_bits,
+						sizeof(decoded_bits)) !=
+			    sql_spellbook_decode_status::decoded)
+			return false;
+	}
+
+	struct extra_descr_data *ed;
+	CREATE(ed, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
+	memset(ed, 0, sizeof(*ed));
+	if (canonical_spellbook || legacy_raw_spellbook)
+	{
+		const char marker[] = { 3, 1, 3, 0 };
+		ed->keyword = str_dup(marker);
+		CREATE(ed->description, char, byte_count, MEM_TAG_STRING);
+		if (canonical_spellbook)
+			memcpy(ed->description, decoded_bits, byte_count);
+		else
+		{
+			// Older reward snapshots passed the native marker through cJSON and
+			// therefore lost the bitmap at the first embedded NUL. Keep loading
+			// safe and explicit; those already-truncated spells are unrecoverable.
+			logit(LOG_DEBUG,
+			      "account_reward_snapshot_apply: legacy raw spellbook marker normalized to empty bitmap");
+			memset(ed->description, 0, byte_count);
+		}
+	}
+	else
+	{
+		ed->keyword = cJSON_IsString(keyword) ? str_dup(keyword->valuestring) : NULL;
+		ed->description =
+			cJSON_IsString(description) ?
+				str_dup(description->valuestring ? description->valuestring : "") :
+				NULL;
+	}
+	if ((cJSON_IsString(keyword) && !ed->keyword) ||
+	    (cJSON_IsString(description) && !ed->description))
+	{
+		if (ed->keyword)
+			str_free(ed->keyword);
+		if (ed->description)
+			str_free(ed->description);
+		FREE(ed);
+		return false;
+	}
+
+	ed->next = NULL;
+	**tail = ed;
+	*tail = &ed->next;
+	SET_BIT(obj->str_mask, STRUNG_EDESC);
+	return true;
 }
 
 char *account_reward_snapshot_serialize(P_obj obj)
@@ -163,8 +259,13 @@ char *account_reward_snapshot_serialize(P_obj obj)
 	for (struct extra_descr_data *ed = obj->ex_description; ed; ed = ed->next)
 	{
 		cJSON *entry = cJSON_CreateObject();
-		add_nullable_string(entry, "keyword", ed->keyword);
-		add_nullable_string(entry, "description", ed->description);
+		if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+			add_spellbook_snapshot(entry, ed->description);
+		else
+		{
+			add_nullable_string(entry, "keyword", ed->keyword);
+			add_nullable_string(entry, "description", ed->description);
+		}
 		cJSON_AddItemToArray(descriptions, entry);
 	}
 
@@ -311,22 +412,8 @@ bool account_reward_snapshot_apply(P_obj obj, const char *json, int template_ver
 		struct extra_descr_data **tail = &obj->ex_description;
 		cJSON_ArrayForEach(entry, array)
 		{
-			cJSON *keyword = cJSON_GetObjectItemCaseSensitive(entry, "keyword"),
-			      *description = cJSON_GetObjectItemCaseSensitive(entry, "description");
-			struct extra_descr_data *ed;
-			if (!cJSON_IsObject(entry) ||
-			    (!cJSON_IsString(keyword) && !cJSON_IsNull(keyword)) ||
-			    (!cJSON_IsString(description) && !cJSON_IsNull(description)))
+			if (!append_extra_description_snapshot(obj, &tail, entry))
 				goto fail;
-			CREATE(ed, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
-			ed->keyword = cJSON_IsString(keyword) ? str_dup(keyword->valuestring) :
-								NULL;
-			ed->description = cJSON_IsString(description) ?
-						  str_dup(description->valuestring) :
-						  NULL;
-			ed->next = NULL;
-			*tail = ed;
-			tail = &ed->next;
 		}
 	}
 	cJSON_Delete(root);

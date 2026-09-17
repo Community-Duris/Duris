@@ -43,6 +43,7 @@ using namespace std;
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
 #include "world/map.h"
+#include "world/zone_story_quest_runtime.h"
 #include "economy/nexus_stones.h"
 #include "economy/currency_transaction.h"
 #include "item/objmisc.h"
@@ -58,6 +59,7 @@ using namespace std;
 #include "player/player_save_journal.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_adapter.h"
 #include "persistence/maintenance_scheduler.h"
 #include "world/world_recovery_pipeline.h"
 #include "redis/redis_cache_store.h"
@@ -4153,6 +4155,8 @@ static void show_world_persistence(P_char ch)
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
 	const player_load_pipeline_health player_loads = player_load_pipeline_health_copy();
+	const player_death_restitution_runtime_live_health restitution =
+		player_death_restitution_runtime_live_health_copy();
 	const critical_coordinator_health critical = critical_command_coordinator_health_copy();
 	const critical_command_journal_health critical_journal =
 		critical_command_journal_health_copy();
@@ -4353,6 +4357,12 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)player_loads.last_completion_latency_usec,
 		 (unsigned long long)player_loads.max_completion_latency_usec);
 	send_to_char(line, ch);
+	snprintf(line, sizeof(line),
+		 "player_death_restitution state=%s pending_operations=%llu fenced_targets=%llu\n",
+		 restitution.pending_operations ? "pending" : "ready",
+		 (unsigned long long)restitution.pending_operations,
+		 (unsigned long long)restitution.fenced_targets);
+	send_to_char(line, ch);
 
 	const size_t rendered_sites = query.count < top_site_limit ? query.count : top_site_limit;
 	for (size_t site_index = 0; site_index < rendered_sites; ++site_index)
@@ -4478,16 +4488,28 @@ static void show_world_persistence(P_char ch)
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
-		 "critical_commands state=%s queued=%llu inflight=%llu blocked=%llu bytes=%llu "
+		 "critical_commands state=%s awaiting=%llu admission_queue_bytes=%llu "
+		 "admission_worker=%d append_inflight=%d durable_admissions=%llu "
+		 "admission_failures=%llu admission_uncertain=%llu queued=%llu inflight=%llu "
+		 "blocked=%llu bytes=%llu "
 		 "fences=%llu completed_cache=%llu high_water=%llu/%llu accepted=%llu "
 		 "attached=%llu completed=%llu retries=%llu ambiguous=%llu terminal=%llu "
 		 "stale=%llu overloads=%llu oldest_age_ms=%llu journal=%s "
 		 "journal_records=%llu journal_bytes=%llu journal_corrupt=%llu journal_io=%llu "
 		 "journal_quota=%d\n",
-		 !critical.initialized		      ? "stopped" :
-		 critical.blocked		      ? "blocked" :
-		 critical.queued || critical.inflight ? "pending" :
-							"ready",
+		 !critical.initialized	      ? "stopped" :
+		 critical.blocked	      ? "blocked" :
+		 critical.admission_uncertain ? "uncertain" :
+		 critical.awaiting_durability || critical.append_inflight || critical.queued ||
+				 critical.inflight ?
+						"pending" :
+						"ready",
+		 (unsigned long long)critical.awaiting_durability,
+		 (unsigned long long)critical.admission_queue_bytes,
+		 critical.admission_worker_running ? 1 : 0, critical.append_inflight ? 1 : 0,
+		 (unsigned long long)critical.durable_admissions,
+		 (unsigned long long)critical.admission_failures,
+		 (unsigned long long)critical.admission_uncertain,
 		 (unsigned long long)critical.queued, (unsigned long long)critical.inflight,
 		 (unsigned long long)critical.blocked, (unsigned long long)critical.retained_bytes,
 		 (unsigned long long)critical.fenced_keys,
@@ -6565,6 +6587,21 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		snprintf(buf, MAX_STRING_LENGTH, "&+yBartender Quests Remaining:&n %d\n",
 			 RemainingBartenderQuests);
 		send_to_char(buf, ch);
+	}
+
+	if (IS_PC(ch))
+	{
+		if (zone_story_quest_runtime::service())
+		{
+			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+					    ch->desc->term_type != TERM_SKIP_ANSI;
+			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
+			send_to_char(daily.c_str(), ch);
+		}
+		else
+			send_to_char(
+				"\r\nDaily zone-story quest: unavailable until catalog/persistence boot completes.\r\n",
+				ch);
 	}
 
 	if (IS_PC(ch))

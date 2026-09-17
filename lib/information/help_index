@@ -11743,6 +11743,39 @@ changing the form of the quest.
 ===========================================================================
 
 #
+ACHIEVEMENTS (General Information)
+===========================================================================
+Syntax: achievements zones
+        achievements zone <zone-number>
+
+The zone-story achievement view shows the current character's distinct
+completion count against every eligible static zone/story/lore quest in the
+active catalog. It displays per-zone 25%, 50%, 75% and 100% milestones. Use
+the zone form to inspect one zone. A zone with no eligible tracked quests is
+shown as N/A; it is never treated as a free 100% completion.
+
+This view is per character PID. Bartender and random world quests are not
+included. The feature is durable across logout and restart, and repeatable
+turn-ins do not inflate the distinct completion numerator.
+===========================================================================
+See also: QUEST, SCORE, LEADERBOARD
+
+#
+LEADERBOARD (General Information)
+===========================================================================
+Syntax: leaderboard quests [zone-number] [page]
+
+The quest leaderboard ranks individual character PIDs by exact completed /
+eligible totals, with deterministic ties and stable character-name ordering.
+It has an overall view and a per-zone view. Offline names remain in the
+ranking; a row temporarily uses PID <number> until that character's current
+name is refreshed. The command also reports the viewing character's own rank
+when it is outside the selected page. Characters are never combined by
+account.
+===========================================================================
+See also: ACHIEVEMENTS, QUEST, SCORE
+
+#
 "QUICK CHANT" (Skill)
 ===========================================================================
 The better you are at quickly chanting, the faster you can cast a spell. 

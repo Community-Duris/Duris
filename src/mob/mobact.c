@@ -24,12 +24,15 @@
 #include "world/buildings.h"
 #include "world/graph.h"
 #include "combat/grapple.h"
+#include "combat/training_dummy.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/map.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "economy/collector_presence.h"
 #include "economy/nexus_stones.h"
+#include "item/item_ownership_runtime.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "core/profile.h"
@@ -44,6 +47,7 @@
 
 extern Skill skills[];
 extern P_char character_list;
+extern P_obj object_list;
 extern P_desc descriptor_list;
 extern P_index mob_index;
 extern P_index obj_index;
@@ -251,6 +255,9 @@ int char_deserves_helping(const P_char ch, const P_char candidate, int check_lea
 	struct follow_type *k;
 
 	if (!IS_ALIVE(candidate) || !IS_ALIVE(ch))
+		return FALSE;
+
+	if (!training_dummy_spellup_target_allowed(ch, candidate))
 		return FALSE;
 
 	if (candidate == ch)
@@ -6216,6 +6223,20 @@ void MobCombat(P_char ch)
 		return;
 	}
 
+	if (training_dummy_is(ch))
+	{
+		if (GET_OPPONENT(ch))
+			stop_fighting(ch);
+		return;
+	}
+
+	if (GET_OPPONENT(ch) && !training_dummy_target_allowed(ch, GET_OPPONENT(ch)))
+	{
+		training_dummy_retarget_nonpet(ch, GET_OPPONENT(ch));
+		if (!GET_OPPONENT(ch))
+			return;
+	}
+
 	if (!CAN_ACT(ch) || IS_IMMOBILE(ch) || IS_CASTING(ch))
 	{
 		return;
@@ -6650,7 +6671,9 @@ P_char PickTarget(P_char ch)
 		return NULL;
 	}
 
-	if ((af = get_spell_from_char(ch, SKILL_TAUNT)) != NULL && CAN_SEE(ch, (P_char)af->context))
+	if ((af = get_spell_from_char(ch, SKILL_TAUNT)) != NULL &&
+	    training_dummy_target_allowed(ch, (P_char)af->context) &&
+	    CAN_SEE(ch, (P_char)af->context))
 	{
 		return (P_char)af->context;
 	}
@@ -6749,6 +6772,15 @@ void MobStartFight(P_char ch, P_char vict)
 		logit(LOG_EXIT, "MobStartFight called in mobact.c with no ch");
 		return;
 	}
+	if (training_dummy_is(ch))
+		return;
+	if (!training_dummy_target_allowed(ch, vict))
+	{
+		training_dummy_retarget_nonpet(ch, vict);
+		return;
+	}
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(vict))
+		return;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(vict))
 	{
@@ -7077,6 +7109,9 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 
 	if (obj_index[obj->R_num].virtual_number == 101) /* Dont wear the helm of ooc! */
 		return;
+	item_ownership_runtime_entry ownership = {};
+	const bool authoritative = obj->obj_uid &&
+				   item_ownership_runtime_lookup(obj->obj_uid, &ownership);
 
 	/*
 	 * Keep containers around, for our mobs 'collections'..
@@ -7084,6 +7119,11 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 	 */
 	if (obj->type == ITEM_CONTAINER)
 	{
+		// The mobile-claim commit records this object as a detached root. Do not
+		// immediately reparent other authoritative inventory beneath it without a
+		// second transaction; equipping below is topology-neutral and remains safe.
+		if (authoritative)
+			return;
 		/*
 		 * Just for sake of .. fun .., mobs archive stuff in containers.
 		 */
@@ -7109,6 +7149,8 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 	}
 	if (IsBetterObject(ch, obj, 0))
 		return;
+	if (authoritative)
+		return;
 
 	for (ob = ch->carrying; ob; ob = ob2)
 	{
@@ -7119,6 +7161,15 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 				         * problem solved, item in bag.
 				         */
 	}
+}
+
+/** Re-resolve a scavenged pointer after get(), which may extract the object. */
+static P_obj find_scavenged_object(P_obj expected, uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object == expected && object->obj_uid == uid)
+			return object;
+	return NULL;
 }
 
 int ItemsIn(P_obj obj)
@@ -7481,6 +7532,17 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 
 	if (!IS_ALIVE(ch) || IS_PC(ch))
 	{
+		return;
+	}
+
+	/* Training dummies are inert practice targets.  Combat already protects
+	 * them, but the periodic mundane event also owns NPC spell-up, commune,
+	 * tracking, and other autonomous actions; a caster-profile dummy must not
+	 * perform any of those actions on itself or anyone else. */
+	if (training_dummy_is(ch))
+	{
+		if (GET_OPPONENT(ch))
+			stop_fighting(ch);
 		return;
 	}
 
@@ -8043,14 +8105,18 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 					}
 					else
 					{
+						P_obj expected = obj;
+						const uint64_t expected_uid = obj->obj_uid;
 						get(ch, obj, best_obj, FALSE);
-						if (!OBJ_CARRIED_BY(obj, ch))
+						P_obj received = find_scavenged_object(
+							expected, expected_uid);
+						if (!received || !OBJ_CARRIED_BY(received, ch))
 							continue; // obj is notake, or too heavy
 						act("$n gets some stuff from $p.", FALSE, ch,
 						    best_obj, 0, TO_ROOM);
 						if (!IS_ANIMAL(ch) && !IS_DRAGON(ch) &&
 						    !IS_UNDEAD(ch))
-							CheckEqWorthUsing(ch, obj);
+							CheckEqWorthUsing(ch, received);
 					}
 				}
 				goto normal;
@@ -8060,17 +8126,19 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 				 !IS_SET(best_obj->extra_flags, ITEM_NOSHOW) &&
 				 CAN_WEAR(best_obj, ITEM_TAKE))
 			{
-				if (OBJ_ROOM(best_obj))
-					obj_from_room(best_obj);
-				else
+				if (!OBJ_ROOM(best_obj))
 				{
 					logit(LOG_DEBUG, "best_obj not in room for mob scav");
 					goto normal;
 				}
-
-				obj_to_char(best_obj, ch);
-				act("$n gets $p.", FALSE, ch, best_obj, 0, TO_ROOM);
-				CheckEqWorthUsing(ch, best_obj);
+				P_obj expected = best_obj;
+				const uint64_t expected_uid = best_obj->obj_uid;
+				get(ch, best_obj, NULL, FALSE);
+				// Unowned transient objects still publish synchronously. Authoritative
+				// objects are evaluated by item_get_completion after their claim commits.
+				P_obj received = find_scavenged_object(expected, expected_uid);
+				if (received && OBJ_CARRIED_BY(received, ch))
+					CheckEqWorthUsing(ch, received);
 				goto normal;
 			}
 		}
@@ -10309,6 +10377,12 @@ void clearMemory(P_char ch)
 void event_agg_attack(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int door;
+
+	if (ch && victim && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return;
+	}
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || victim->in_room == NOWHERE ||
 	    ch->in_room == NOWHERE || !IS_AWAKE(ch) || !MIN_POS(ch, POS_STANDING + STAT_RESTING) ||

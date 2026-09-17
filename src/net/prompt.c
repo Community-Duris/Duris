@@ -103,7 +103,10 @@ void make_prompt(P_desc point)
 	}
 
 	if (!t_ch_p)
+	{
+		point->prompt_mode = FALSE;
 		return;
+	}
 
 	if (IS_SET(t_ch_p, PROMPT_WARD))
 	{

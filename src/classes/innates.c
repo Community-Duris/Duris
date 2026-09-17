@@ -29,6 +29,8 @@
 #include "core/config.h"
 #include "combat/damage.h"
 #include "combat/guard.h"
+#include "combat/training_dummy.h"
+#include "economy/collector_presence.h"
 #include "world/map.h"
 #include "classes/necromancy.h"
 #include "item/objmisc.h"
@@ -1761,7 +1763,8 @@ void bite(P_char ch, P_char victim)
 			    FALSE, ch, 0, victim, TO_NOTVICT);
 			dead = damage(ch, victim, GET_LEVEL(ch) * 4, TYPE_UNDEFINED);
 			GET_HIT(ch) += GET_LEVEL(ch) * 2;
-			if (!dead && IS_NPC(victim) && GET_LEVEL(victim) <= GET_LEVEL(ch) - 20 &&
+			if (!dead && IS_NPC(victim) && !training_dummy_is(victim) &&
+			    GET_LEVEL(victim) <= GET_LEVEL(ch) - 20 &&
 			    !StatSave(victim, APPLY_POW, POW_DIFF(ch, victim)))
 			{
 				struct follow_type *followers;
@@ -3678,6 +3681,8 @@ bool resists_spell(P_char caster, P_char victim)
 		      IS_ALIVE(victim) ? "" : "Dead ", victim ? J_NAME(victim) : "Null");
 		return FALSE;
 	}
+	if (collector_presence_is_npc(victim))
+		return TRUE;
 
 	if (caster == victim || is_linked_to(caster, victim, LNK_CONSENT))
 	{

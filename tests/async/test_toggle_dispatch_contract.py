@@ -122,7 +122,11 @@ class ToggleDispatchContractTest(unittest.TestCase):
             index: name for index, (name, _) in expected.items()
         })
         for index, (_, flag) in expected.items():
-            self.assertIn(flag, self.cases[index], f"toggle index {index}")
+            if index == 64:
+                self.assertIn("gmcp_tog(PLR3_FLAGS(ch), arg)", self.cases[index])
+                self.assertIn(flag, self.source.split("static int gmcp_tog(", 1)[1])
+            else:
+                self.assertIn(flag, self.cases[index], f"toggle index {index}")
 
         for inactive_index in range(42, 47):
             self.assertNotIn(inactive_index, self.cases)

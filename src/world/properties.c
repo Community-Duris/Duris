@@ -13,6 +13,7 @@
 #include "item/device_actions.h"
 #include "item/studio_abilities.h"
 #include "item/native_artifact_actions.h"
+#include "economy/collector_config.h"
 #include "world/difficulty.h"
 #include "telemetry/telemetry_config_reload.h"
 #include "core/structs.h"
@@ -144,6 +145,7 @@ void apply_properties()
 	update_device_action_properties();
 	update_studio_ability_properties();
 	update_native_artifact_properties();
+	collector_config_reload();
 	// First, so the tables rebuilt below (the experience table) see the current dials.
 	update_difficulty_dials();
 	update_stat_data();

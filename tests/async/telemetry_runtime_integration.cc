@@ -20,6 +20,10 @@ P_room world = nullptr;
 struct zone_data *zone_table = nullptr;
 int top_of_zone_table = -1;
 int top_of_world = -1;
+P_char get_linked_char(P_char, ush_int)
+{
+	return nullptr;
+}
 
 float environment_observe = 0.0F;
 float environment_max_payout_factor = 10.0F;
@@ -764,11 +768,16 @@ void check_copyover_durability_barrier(bool blocked, bool rejected, bool unavail
 	telemetry_utc_usec utc = 0;
 	assert(telemetry_runtime_now(&now, &utc));
 	const auto start = std::chrono::steady_clock::now();
-	const auto first = telemetry_runtime_flush_for_copyover(now + 40'000U);
+	// Keep the intentionally blocked case short, but allow the worker its
+	// documented 250ms bound in the ordinary case. The full integration suite
+	// runs many journey processes concurrently, so a 40ms scheduling window is
+	// not a reliable assertion that the ordinary worker had a chance to drain.
+	const auto first_deadline = now + (blocked ? 40'000U : 250'000U);
+	const auto first = telemetry_runtime_flush_for_copyover(first_deadline);
 	const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
 				     std::chrono::steady_clock::now() - start)
 				     .count();
-	assert(elapsed < 130);
+	assert(elapsed < (blocked ? 130 : 350));
 	assert(first == (blocked || rejected || unavailable ?
 				 telemetry_runtime_outcome::queue_full :
 				 telemetry_runtime_outcome::accepted));

@@ -30,6 +30,7 @@
 #include "guild/assocs.h"
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_presence.h"
 #include "persistence/deferred_save_policy.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
@@ -2242,6 +2243,8 @@ bool do_save_silent(P_char ch, int type)
 
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
 		return false;
+	if (GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return false;
 
 	if (IS_HARDCORE(ch) && hardcore_config_get()->death_hall_of_fame)
 	{
@@ -3262,6 +3265,13 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	{
 		send_to_char("Steal what from who?\r\n", ch);
 		// CharWait(ch, PULSE_VIOLENCE);
+		return;
+	}
+	if (collector_presence_is_npc(victim))
+	{
+		send_to_char("The collector and the antiquity ledger are beyond your "
+			     "reach.\r\n",
+			     ch);
 		return;
 	}
 
@@ -4670,7 +4680,7 @@ static const char *term_name(P_char ch)
 	case 2:
 		return "ANSI";
 	case 3:
-		return "MSP";
+		return "MSP markup";
 	default:
 		return "GEN";
 	}
@@ -4981,7 +4991,7 @@ static const char *tog_messages[][2] = {
 	  "You turn on the display of pet damage.\r\n" },
 	{ "You turn off the display of your guild name.\r\n",
 	  "You turn on the display of your guild name.\r\n" },
-	{ "&+WGMCP&N data streaming enabled.\r\n", "&+WGMCP&N data streaming disabled.\r\n" },
+	{ "&+WGMCP&N data streaming disabled.\r\n", "&+WGMCP&N data streaming enabled.\r\n" },
 	{ "Jchat channel: -=&+ROFF&n=-\r\n", "Jchat channel: -=&+GON&n=-\r\n" },
 	{ "Spell abort is disabled.\r\n", "Spell abort is enabled.\r\n" }
 };
@@ -5013,6 +5023,13 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 			var &= ~flag;
 	}
 	return res;
+}
+
+/* GMCP stores an opt-out bit, so return the effective enabled state for display. */
+static int gmcp_tog(unsigned int &flags, const char *arg)
+{
+	const int requested = plr_tog(flags, PLR3_NOGMCP, arg, 1);
+	return requested == -1 ? -1 : !(flags & PLR3_NOGMCP);
 }
 
 #define PLR_TOG(flag) plr_tog(PLR_FLAGS(ch), flag, arg)
@@ -5270,7 +5287,7 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 			send_ch->desc->term_type = 1;
 		else
 		{
-			send_to_char("USAGE: TOGGLE terminal [ansi|msp]\r\n", send_ch);
+			send_to_char("USAGE: TOGGLE terminal [ansi|gen|msp]\r\n", send_ch);
 			return;
 		}
 		strcpy(Gbuf3, term_name(send_ch));
@@ -5537,7 +5554,7 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		result = PLR3_TOG(PLR3_GUILDNAME);
 		break;
 	case 64: /* gmcp */
-		result = plr_tog(PLR3_FLAGS(ch), PLR3_NOGMCP, arg, 1);
+		result = gmcp_tog(PLR3_FLAGS(ch), arg);
 		break;
 	case 65: // jchat
 		result = plr_tog(PLR3_FLAGS(ch), PLR3_JESTROS, arg, 1);

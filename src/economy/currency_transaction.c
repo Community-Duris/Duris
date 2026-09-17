@@ -1,4 +1,5 @@
 #include "economy/currency_transaction.h"
+#include "economy/currency_publication.h"
 
 #include "net/gmcp.h"
 #include "core/prototypes.h"
@@ -19,15 +20,6 @@
 
 namespace
 {
-enum class currency_publication_state : uint8_t
-{
-	awaiting_completion,
-	ready,
-	waiting_for_player,
-	retrying_callback,
-	blocked_receipt,
-};
-
 struct pending_currency
 {
 	uint32_t pid;
@@ -65,7 +57,7 @@ bool same_publication_receipt(const critical_completion &left, const critical_co
 
 bool retain_unresolved_publication(pending_currency &entry, const char *reason, bool malformed)
 {
-	if (entry.publication_state != currency_publication_state::blocked_receipt)
+	if (!currency_publication_state_is_blocked(entry.publication_state))
 	{
 		entry.publication_state = currency_publication_state::blocked_receipt;
 		++health.publication_blocked;
@@ -228,6 +220,18 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 	return true;
 }
 
+bool stage_publication_receipt(pending_currency &entry, const critical_completion &completion,
+			       bool retry_same_blocked_receipt)
+{
+	if (!retry_same_blocked_receipt &&
+	    currency_publication_state_is_blocked(entry.publication_state) &&
+	    same_publication_receipt(entry.completed, completion))
+		return false;
+	entry.completed = completion;
+	entry.publication_state = currency_publication_state::ready;
+	return true;
+}
+
 bool publish_completed_if_available(const std::string &key,
 				    const critical_operation_id &operation_id, P_char character)
 {
@@ -237,8 +241,7 @@ bool publish_completed_if_available(const std::string &key,
 	auto found = pending.find(key);
 	if (found == pending.end())
 		return false;
-	found->second.completed = completion;
-	found->second.publication_state = currency_publication_state::ready;
+	stage_publication_receipt(found->second, completion, true);
 	publish(found, character);
 	return true;
 }
@@ -254,7 +257,7 @@ void update_retained_health()
 		(void)key;
 		if (entry.publication_state == currency_publication_state::waiting_for_player)
 			++health.retained_offline;
-		else if (entry.publication_state == currency_publication_state::blocked_receipt)
+		else if (currency_publication_state_is_blocked(entry.publication_state))
 			++health.publication_blocked;
 		else if (entry.publication_state == currency_publication_state::retrying_callback)
 			++health.publication_retrying;
@@ -417,8 +420,8 @@ static bool currency_transaction_publication_blocked(P_char character)
 	return std::any_of(pending.begin(), pending.end(),
 			   [pid, racewar, account_known, account_name](const auto &item)
 			   {
-				   return item.second.publication_state ==
-						  currency_publication_state::blocked_receipt &&
+				   return currency_publication_state_is_blocked(
+						  item.second.publication_state) &&
 					  pending_affects_character(item.second, pid, racewar,
 								    account_known, account_name);
 			   });
@@ -835,20 +838,15 @@ void currency_transaction_handle_completions(const critical_completion *completi
 		auto found = pending.find(operation_key(completions[index].operation_id));
 		if (found == pending.end())
 			continue;
-		if (found->second.publication_state ==
-			    currency_publication_state::blocked_receipt &&
-		    same_publication_receipt(found->second.completed, completions[index]))
+		if (!stage_publication_receipt(found->second, completions[index], false))
 			continue;
-		found->second.completed = completions[index];
-		found->second.publication_state = currency_publication_state::ready;
 	}
 	// Callbacks may submit the next bulk operation, so do not retain map iterators
 	// across them. Coin publication retries once per ordinary coordinator pulse.
 	std::array<critical_operation_id, CURRENCY_PENDING_MAX> ready;
 	size_t ready_count = 0;
 	for (const auto &[key, entry] : pending)
-		if ((entry.publication_state == currency_publication_state::ready ||
-		     entry.publication_state == currency_publication_state::retrying_callback) &&
+		if (currency_publication_state_is_ready(entry.publication_state) &&
 		    ready_count < ready.size())
 			memcpy(ready[ready_count++].bytes.data(), key.data(), key.size());
 	for (size_t index = 0; index < ready_count; ++index)
@@ -874,9 +872,7 @@ void currency_transaction_player_ready(P_char character)
 	size_t ready_count = 0;
 	for (const auto &[key, entry] : pending)
 		if (entry.pid == static_cast<uint32_t>(GET_PID(character)) &&
-		    (entry.publication_state == currency_publication_state::ready ||
-		     entry.publication_state == currency_publication_state::waiting_for_player ||
-		     entry.publication_state == currency_publication_state::retrying_callback) &&
+		    currency_publication_state_is_live_pending(entry.publication_state) &&
 		    ready_count < ready.size())
 			memcpy(ready[ready_count++].bytes.data(), key.data(), key.size());
 	for (size_t index = 0; index < ready_count; ++index)

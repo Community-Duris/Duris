@@ -23,6 +23,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("P_obj", pending)
         self.assertNotIn("P_char", pending)
         self.assertIn("critical_command_coordinator_submit", movement)
+        self.assertIn("critical_command_coordinator_is_fenced", movement)
         self.assertIn("item_ownership_runtime_apply", movement)
         batch = extract_function(
             "item_movement_transaction.c", "bool item_movement_transaction_submit_batch("

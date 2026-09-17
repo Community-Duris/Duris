@@ -236,6 +236,18 @@ checks.append((
              "extract_char_after_terminal_save(ch);") and
     contains(retry, "persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
+checks.append((
+    "successful recovery retires collector intake before releasing the player",
+    retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") <
+    retry.rindex("collector_death_enrollment_end(corpse);") <
+    retry.index('release_after_terminal_death(ch, "death_recovery_completed");')
+))
+checks.append((
+    "the immediate death path also retires collector intake before extraction",
+    die.index("persistence_save_character_terminal(ch, RENT_DEATH)") <
+    die.index("collector_death_enrollment_end(death_corpse);") <
+    die.index("extract_char_after_terminal_save(ch);")
+))
 
 suicide = body(actoth, "void do_suicide(P_char ch, char * /*argument*/, int /*cmd*/)")
 checks.append((

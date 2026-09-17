@@ -32,12 +32,18 @@
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "economy/collector_service.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
+#include "world/handler.h"
 #include "world/random.zone.h"
+#ifndef _PFILE_
+#include "world/zone_story_quest_runtime.h"
+#endif
 #include "ships/ships.h"
 #include "magic/spells.h"
+#include "sql/item_extra_descr_codec.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "item/storage_lockers.h"
@@ -698,13 +704,28 @@ int countEquip(P_char ch)
  * bit flag value.  JAB
  */
 
+static bool has_serializable_extra_description(P_obj obj)
+{
+	if (!obj)
+		return false;
+
+	for (struct extra_descr_data *ed = obj->ex_description; ed; ed = ed->next)
+	{
+		// Native spellbook bitmaps are written by O_F_SPELLBOOK below. They are
+		// binary data and must never pass through ADD_STRING/GET_STRING.
+		if (ed->keyword && !sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+			return true;
+	}
+	return false;
+}
+
 ulong ObjUniqueFlags(P_obj obj, P_obj control)
 {
 	// mask the flag to ONLY see the O_U_ flags which corrospond directly to STRUNG_* bits
 	ulong flag = (ulong)(obj->str_mask & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
 	int i;
 
-	if (obj->str_mask & STRUNG_EDESC)
+	if ((obj->str_mask & STRUNG_EDESC) && has_serializable_extra_description(obj))
 		flag |= O_U_EDESC;
 
 	for (i = 0; i < 4; i++)
@@ -1039,7 +1060,8 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 			struct extra_descr_data *ed = obj->ex_description;
 			while (ed)
 			{
-				if (ed->keyword)
+				if (ed->keyword &&
+				    !sql_item_extra_descr_is_spellbook_marker(ed->keyword))
 					nDescs++;
 				ed = ed->next;
 			}
@@ -1048,7 +1070,8 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 			ed = obj->ex_description;
 			while (ed)
 			{
-				if (ed->keyword)
+				if (ed->keyword &&
+				    !sql_item_extra_descr_is_spellbook_marker(ed->keyword))
 				{
 					ADD_STRING(ibuf, ed->keyword);
 					if (ed->description)
@@ -1687,6 +1710,19 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
+	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return 0;
+	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
+	const bool collector_save_pending = !collector_service_recover_player(ch);
+	if (!is_locker_char && GET_PID(ch) > 0 &&
+	    (corpse_raise_save_pending || collector_save_pending))
+	{
+		persistence_alert(AVATAR, corpse_raise_save_pending ? "corpse" : "collector",
+				  "player", "redacted",
+				  corpse_raise_save_pending ? "durable_raise" : "purchase_publish",
+				  "save_deferred", "live_materialization_pending=1");
+		return 0;
+	}
 
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -2022,6 +2058,19 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 		remove_char_from_list(ch->desc->account, ch->player.name, false);
 #endif
 	delete_ship_runtime(GET_NAME(ch));
+#ifndef _PFILE_
+	std::string zone_story_error;
+	if (!zone_story_quest_runtime::erase_character(static_cast<uint32_t>(GET_PID(ch)),
+						       &zone_story_error))
+	{
+		logit(LOG_DEBUG,
+		      "deleteCharacter(): zone-story state cleanup requires reconciliation pid=%d: %s",
+		      GET_PID(ch),
+		      zone_story_error.empty() ? "unspecified persistence failure" :
+						 zone_story_error.c_str());
+		return character_delete_result::reconciliation_required;
+	}
+#endif
 	return character_delete_result::deleted;
 }
 
@@ -2127,8 +2176,12 @@ char *getString(char **buf)
 	else
 	{
 		CREATE(s, char, (unsigned)(len + 1), MEM_TAG_STRING);
-
-		strcpy(s, *buf);
+		// ADD_STRING stores a length and exactly that many bytes; it does not
+		// append a terminator. Copy the framed payload rather than relying on an
+		// unrelated zero byte after it (which is especially unsafe for old binary
+		// spellbook markers that passed through the text-extra-description path).
+		memcpy(s, *buf, (size_t)len);
+		s[len] = '\0';
 		*buf += len;
 	}
 	return s;
@@ -3395,6 +3448,20 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 					ed->next = NULL;
 					ed->keyword = GET_STRING(buf);
 					ed->description = GET_STRING(buf);
+					if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+					{
+						// Old flatfiles could put the binary native marker through
+						// ADD_STRING. Discard that unsafe/truncated copy; O_F_SPELLBOOK
+						// carries the authoritative bitmap when one is available.
+						logit(LOG_DEBUG,
+						      "restoreObjects: ignored legacy flatfile spellbook marker in O_U_EDESC");
+						if (ed->keyword)
+							str_free(ed->keyword);
+						if (ed->description)
+							str_free(ed->description);
+						FREE(ed);
+						continue;
+					}
 					*lastOne = ed;
 					lastOne = &(ed->next);
 				}
@@ -3499,9 +3566,12 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 			{
 				if (obj->type == ITEM_SPELLBOOK)
 				{
-					tmp = GET_INTE(buf);
+					const unsigned int stored_bytes =
+						static_cast<unsigned int>(GET_INTE(buf));
+					const unsigned int bitmap_bytes =
+						static_cast<unsigned int>((MAX_SKILLS / 8) + 1);
 
-					if (tmp)
+					if (stored_bytes)
 					{ /*
 					   * create fake spell description
 					   * thing
@@ -3514,11 +3584,23 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 						t_desc->keyword = str_dup("\03\01\03");
 						CREATE(t_desc->description, char,
 						       ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
+						SET_BIT(obj->str_mask, STRUNG_EDESC);
 
-						for (i = 0; i < tmp; i++)
-							t_desc->description[i] = GET_BYTE(buf);
-						for (i = tmp; i < (MAX_SKILLS / 8 + 1); i++)
-							t_desc->description[i] = 0;
+						if (stored_bytes > bitmap_bytes)
+							logit(LOG_DEBUG,
+							      "restoreObjects: oversized spellbook bitmap (%u); truncating to %u bytes",
+							      stored_bytes, bitmap_bytes);
+						for (unsigned int offset = 0; offset < stored_bytes;
+						     ++offset)
+						{
+							const char stored_byte = GET_BYTE(buf);
+							if (offset < bitmap_bytes)
+								t_desc->description[offset] =
+									stored_byte;
+						}
+						for (unsigned int offset = stored_bytes;
+						     offset < bitmap_bytes; ++offset)
+							t_desc->description[offset] = 0;
 					}
 				}
 				else
@@ -3527,8 +3609,10 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 				   * but now fixed: if item _was_ spellbook
 				   * and had desc, will have no longer.
 				   */
-					tmp = GET_BYTE(buf);
-					for (i = 0; i < tmp; i++)
+					const unsigned int stored_bytes =
+						static_cast<unsigned int>(GET_INTE(buf));
+					for (unsigned int offset = 0; offset < stored_bytes;
+					     ++offset)
 					{
 						dummy_byte = GET_BYTE(buf);
 					}
@@ -3744,6 +3828,20 @@ P_obj read_one_object(char *read_buf)
 				ed->next = NULL;
 				ed->keyword = GET_STRING(buf);
 				ed->description = GET_STRING(buf);
+				if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+				{
+					// Old flatfiles could put the binary native marker through
+					// ADD_STRING. Discard that unsafe/truncated copy; O_F_SPELLBOOK
+					// carries the authoritative bitmap when one is available.
+					logit(LOG_DEBUG,
+					      "read_one_object: ignored legacy flatfile spellbook marker in O_U_EDESC");
+					if (ed->keyword)
+						str_free(ed->keyword);
+					if (ed->description)
+						str_free(ed->description);
+					FREE(ed);
+					continue;
+				}
 				*lastOne = ed;
 				lastOne = &(ed->next);
 			}
@@ -3848,9 +3946,12 @@ P_obj read_one_object(char *read_buf)
 		{
 			if (obj->type == ITEM_SPELLBOOK)
 			{
-				tmp = GET_INTE(buf);
+				const unsigned int stored_bytes =
+					static_cast<unsigned int>(GET_INTE(buf));
+				const unsigned int bitmap_bytes =
+					static_cast<unsigned int>((MAX_SKILLS / 8) + 1);
 
-				if (tmp)
+				if (stored_bytes)
 				{ /*
 				   * create fake spell description
 				   * thing
@@ -3862,11 +3963,22 @@ P_obj read_one_object(char *read_buf)
 					t_desc->keyword = str_dup("\03\01\03");
 					CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1),
 					       MEM_TAG_STRING);
+					SET_BIT(obj->str_mask, STRUNG_EDESC);
 
-					for (int i = 0; i < tmp; i++)
-						t_desc->description[i] = GET_BYTE(buf);
-					for (int i = tmp; i < (MAX_SKILLS / 8 + 1); i++)
-						t_desc->description[i] = 0;
+					if (stored_bytes > bitmap_bytes)
+						logit(LOG_DEBUG,
+						      "read_one_object: oversized spellbook bitmap (%u); truncating to %u bytes",
+						      stored_bytes, bitmap_bytes);
+					for (unsigned int offset = 0; offset < stored_bytes;
+					     ++offset)
+					{
+						const char stored_byte = GET_BYTE(buf);
+						if (offset < bitmap_bytes)
+							t_desc->description[offset] = stored_byte;
+					}
+					for (unsigned int offset = stored_bytes;
+					     offset < bitmap_bytes; ++offset)
+						t_desc->description[offset] = 0;
 				}
 			}
 			else
@@ -3875,8 +3987,9 @@ P_obj read_one_object(char *read_buf)
 			   * but now fixed: if item _was_ spellbook
 			   * and had desc, will have no longer.
 			   */
-				tmp = GET_BYTE(buf);
-				for (int i = 0; i < tmp; i++)
+				const unsigned int stored_bytes =
+					static_cast<unsigned int>(GET_INTE(buf));
+				for (unsigned int offset = 0; offset < stored_bytes; ++offset)
 				{
 					dummy_byte = GET_BYTE(buf);
 				}

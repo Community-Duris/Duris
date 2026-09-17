@@ -338,7 +338,11 @@ const mcname multiclass_names[] = {
 };
 
 extern const char valid_term_list[];
-const char valid_term_list[] = "01) Generic\r\n02) Ansi\r\n";
+const char valid_term_list[] =
+	"01) Generic\r\n"
+	"02) ANSI\r\n"
+	"03) MSP presentation markup (prompt/map/group; no sound/music triggers)\r\n"
+	"09) Quick ANSI\r\n";
 
 const struct shapechange_struct shapechange_name_list[] = {
 	{ "bird", 40, ANIMAL_TYPE_BIRD },   { "fish", 41, ANIMAL_TYPE_REPTILE },

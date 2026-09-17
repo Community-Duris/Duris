@@ -33,6 +33,20 @@ PRELUDE = r'''
 #include <map>
 #include <string>
 
+/* Extracted production bodies do not carry sparser.c's telemetry header or
+ * link the runtime object. Keep this focused gameplay fixture deterministic
+ * while preserving the production call sites under test. */
+void telemetry_runtime_game_combat_cast_attempt(P_char, int) {}
+void telemetry_runtime_game_combat_cast_complete(P_char) {}
+void telemetry_runtime_game_combat_cast_abort(P_char) {}
+/* fight.c and sparser.c are lifted without the production training-dummy
+ * translation unit. Keep this harness focused on death-field behavior by
+ * providing the ordinary-world predicate stubs it needs. */
+bool training_dummy_is(P_char) { return false; }
+bool training_dummy_target_allowed(P_char, P_char) { return true; }
+void training_dummy_retarget_nonpet(P_char, P_char) {}
+bool safe_room_spell_target_allowed(P_char, int, P_char) { return true; }
+
 static room_data rooms[2]{};
 P_room world = rooms;
 static index_data indexes[1]{};
@@ -90,6 +104,7 @@ int IS_MORPH(P_char) { return 0; }
 // The difficulty module is not linked; neutral dials leave spell damage untouched.
 double difficulty_multiplier(difficulty_dial) { return 1.0; }
 bool difficulty_world_npc(P_char) { return false; }
+bool collector_presence_is_npc(P_char) { return false; }
 bool ac_can_see(P_char, P_char, bool) { return true; }
 void send_to_char(const char *s, P_char ch) { transcript[ch] += s; }
 void send_to_char(const char *s, P_char ch, int) { transcript[ch] += s; }

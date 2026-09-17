@@ -54,6 +54,8 @@ bool player_load_pipeline_cancel(uint64_t request_id);
 size_t player_load_pipeline_pulse(player_load_result *results_out, size_t capacity);
 bool player_load_pipeline_wait(player_load_request request, player_load_result *result_out,
 			       uint64_t timeout_msec);
+bool player_load_pipeline_pid_pending(int pid);
+bool player_load_pipeline_login_admit(int pid);
 player_load_pipeline_health player_load_pipeline_health_copy(void);
 void player_load_pipeline_note_stale(void);
 void player_load_pipeline_reset_for_tests(void);
