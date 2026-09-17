@@ -37,7 +37,8 @@ bool item_command_container_is_valid(P_obj container)
 bool item_command_resolve_put_destination(P_char actor, P_obj container,
 					  item_put_destination *destination)
 {
-	if (!actor || !container || !destination || !container->obj_uid)
+	if (!actor || !container || !destination || !container->obj_uid ||
+	    !item_command_container_is_valid(container))
 		return false;
 
 	*destination = {};

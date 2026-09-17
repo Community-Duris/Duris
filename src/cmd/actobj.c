@@ -4964,9 +4964,7 @@ bool bulk_put_destination_available(P_char actor, P_obj container)
 	    (!OBJ_CARRIED_BY(container, actor) && !OBJ_WORN_BY(container, actor) &&
 	     (!OBJ_ROOM(container) || container->loc.room != actor->in_room)))
 		return false;
-	const int type = GET_ITEM_TYPE(container);
-	return (type == ITEM_QUIVER || type == ITEM_CONTAINER || type == ITEM_STORAGE ||
-		type == ITEM_CORPSE) &&
+	return item_command_container_is_valid(container) &&
 	       !IS_SET(container->value[1], CONT_CLOSED);
 }
 
