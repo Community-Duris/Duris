@@ -778,8 +778,9 @@ int main()
         assert(!std::strcmp(gear->short_description, gloves.short_description));
         assert(!std::strcmp(gear->name, gloves.name));
         assert(!std::strcmp(gear->description, gloves.description));
-        assert(gear->wear_flags == gloves.wear_flags && do_get_obj_is_takeable(&mortal, gear));
-        assert(!do_get_obj_is_takeable(&mortal, restored_fixed));
+        assert(gear->wear_flags == gloves.wear_flags &&
+               item_command_object_is_takeable(&mortal, gear));
+        assert(!item_command_object_is_takeable(&mortal, restored_fixed));
         assert(gear->extra_flags == gloves.extra_flags && gear->anti_flags == 7 && gear->anti2_flags == 9);
         assert(gear->extra2_flags == 11 && gear->material == 3 && gear->cost == 1234);
         assert(gear->condition == 42 && gear->craftsmanship == 17 && gear->weight == 3);
@@ -912,7 +913,11 @@ HARNESS = HARNESS.replace("int main()", FALLBACK_SUPPORT + "\nint main()", 1)
 
 
 COPYOVER_HELPERS = section(COPYOVER, "int copyover_write_obj_to_buffer", "int copyover_write_door_to_buffer") + section(COPYOVER, "P_obj copyover_restore_obj_from_buffer", "int copyover_restore_door_from_buffer") + section(COPYOVER, "static int write_obj_entry", "// raw write to socket fd")
-TAKEABILITY = section((SRC / "actobj.c").read_text(), "static bool do_get_obj_is_takeable", "static bool do_get_container_item_is_takeable")
+TAKEABILITY = section(
+    (SRC / "item/item_command_policy.c").read_text(),
+    "bool item_command_object_is_takeable",
+    "bool item_command_container_is_valid",
+)
 SELECTOR = section(HANDLER, "P_obj get_obj_in_list_vis", "/*\n * search the entire world for an object")
 SELECTOR_STUBS = r'''
 bool ac_can_see_obj(P_char, P_obj, int) { return true; }

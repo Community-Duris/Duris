@@ -78,10 +78,10 @@ bool do_get_finalize_container_item_or_reject(P_char, P_char, P_obj, P_obj obj,
     int &, bool &, bool, int, int, int, const char *, const char *, bool &fail)
 { if (!obj->takeable) { fail = true; return false; } ++finalized; return true; }
 bool isname(const char *filter, const char *name) { return !strcmp(filter, name); }
-bool do_get_obj_is_takeable(P_char, P_obj obj) { return obj->takeable; }
+bool item_command_object_is_takeable(P_char, P_obj obj) { return obj->takeable; }
 bool account_bound_reward_owner(P_char, P_obj) { return true; }
 bool checkgetput(P_char, P_obj) { return false; }
-bool uses_generic_item_ownership(P_obj obj) { return obj->type != ITEM_MONEY; }
+bool item_command_uses_durable_ownership(P_obj obj) { return obj->type != ITEM_MONEY; }
 void reject_bulk_get_object(bulk_get_state &state, P_obj, const char *) { state.failed = true; }
 '''
 
