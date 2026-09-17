@@ -535,6 +535,7 @@ OBJS =  $(SHIP_OBJS) \
 				 telemetry/telemetry_activity.o \
 				 telemetry/telemetry_config.o \
 				 telemetry/telemetry_encounter.o \
+				 telemetry/telemetry_combat_summary.o \
 				 telemetry/telemetry_repository.o \
 				 telemetry/telemetry_runtime.o \
 				 telemetry/telemetry_progression.o \
