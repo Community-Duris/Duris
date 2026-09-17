@@ -277,13 +277,18 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 #define GET_PID(ch) ((ch)->pid)
 #define LOG_STATUS 0
 struct terminal_fence { int pid; player_revision_t revision; bool journaled; bool acknowledged; };
+struct target_save_login_fence { int pid; player_revision_t expected_revision; };
 terminal_fence fence = {};
+target_save_login_fence target_fence = {};
 std::mutex pipeline_mutex;
 player_save_pipeline_health health = {};
 int captured_intent = 1, captured_room = 0;
 player_revision_t captured_revision = 0;
 bool database_ready = true, journal_ready = false;
 terminal_fence *find_terminal_fence_locked(int pid) { return fence.pid == pid ? &fence : nullptr; }
+target_save_login_fence *find_target_save_login_fence_locked(int pid) {
+    return target_fence.pid == pid ? &target_fence : nullptr;
+}
 terminal_fence *allocate_terminal_fence_locked(int pid) { if (fence.pid && fence.pid != pid) return nullptr; fence.pid = pid; return &fence; }
 bool trace_player_saves() { return true; }
 bool snapshot_is_journaled_locked(const player_revision_snapshot &) { return true; }

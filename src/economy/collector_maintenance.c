@@ -5,6 +5,7 @@
 #include "economy/collector_config.h"
 #include "economy/collector_expiry_preparation.h"
 #include "economy/collector_listing_pipeline.h"
+#include "economy/collector_notification.h"
 #include "economy/collector_runtime.h"
 #include "economy/collector_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -42,7 +43,7 @@ size_t scan_limit(size_t batch_limit)
 	return std::min(maximum, batch_limit * RECONCILE_SCAN_MULTIPLIER);
 }
 
-void transition_completed(P_char, bool committed, const collector_command_result &,
+void transition_completed(P_char, bool committed, const collector_command_result &result,
 			  unsigned int error_code, const collector_command_payload &)
 {
 	++health.completions;
@@ -52,6 +53,8 @@ void transition_completed(P_char, bool committed, const collector_command_result
 		return;
 	}
 	++health.committed;
+	if (!error_code && result.action == collector_action::activate && result.record_present)
+		collector_notification_on_available(result.entry);
 	if (!error_code)
 		return;
 	++health.publication_failures;

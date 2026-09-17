@@ -2661,7 +2661,8 @@ void event_scribe(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void
 	if ((GET_STAT(ch) != STAT_RESTING) ||
 	    ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING)) ||
 	    (!s_data || !(s_data->book)) || !scribing_implement(ch, ITEM_SPELLBOOK, s_data->book) ||
-	    !scribing_implement(ch, ITEM_PEN))
+	    !scribing_implement(ch, ITEM_PEN) ||
+	    (s_data && s_data->flag == 2 && !s_data->source.obj))
 	{
 		disarm_char_nevents(ch, event_scribe);
 		send_to_char("So much for that scribing effort!\n", ch);

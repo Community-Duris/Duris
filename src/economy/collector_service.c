@@ -7,6 +7,7 @@
 #include "economy/auction_room_registry.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
+#include "economy/collector_notification.h"
 #include "economy/collector_presence.h"
 #include "economy/collector_purchase_preparation.h"
 #include "economy/collector_runtime.h"
@@ -823,6 +824,7 @@ void collector_service_pulse(void)
 		collector_listing_consumer::player, results, COLLECTOR_LISTING_MAX_COMPLETIONS);
 	for (size_t index = 0; index < count; ++index)
 		handle_detail_result(std::move(results[index]));
+	collector_notification_pulse();
 }
 
 bool collector_service_player_busy(P_char character)
@@ -849,6 +851,7 @@ void collector_service_reset_for_tests(void)
 	}
 	pending_details.clear();
 	purchase_recoveries.clear();
+	collector_notification_reset_for_tests();
 	for (pending_purchase_recovery &recovery : purchase_fallback_recoveries)
 		clear_purchase_recovery_slot(recovery);
 	health = {};
@@ -862,6 +865,7 @@ void collector_service_player_ready(P_char character, bool inventory_reloaded)
 	// load.  The per-character reload bit covers only the case where even the
 	// bounded payload paths could not retain a recovery.
 	(void)recover_purchase_for_player(character);
+	collector_notification_player_ready();
 	// A cold login has just hydrated the authoritative player_items snapshot.
 	// A reconnect only reuses the existing graph, so clearing the fence there
 	// would re-open the exact save race this guard is meant to prevent.

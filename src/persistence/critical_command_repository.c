@@ -23,6 +23,7 @@
 #include "account/session_audit_command.h"
 #include "account/session_audit_repository.h"
 #include "item/item_transfer_repository.h"
+#include "persistence/player_death_restitution_repository.h"
 #include "sql/sql_pool.h"
 
 #include <algorithm>
@@ -990,6 +991,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	session_audit_payload audit_payload = {};
 	coin_transfer_payload coin_payload = {};
 	corpse_lifecycle_payload corpse_payload = {};
+	player_death_restitution_plan restitution_plan = {};
 	const bool test_command = command.type == critical_command_type::test &&
 				  command.payload.size() == 8;
 	const bool epic_command = epic_command_decode_payload(command, &epic_payload);
@@ -997,6 +999,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool coin_command = coin_transfer_command_decode_payload(command, &coin_payload);
 	const bool corpse_command =
 		corpse_lifecycle_command_decode_payload(command, &corpse_payload);
+	const bool restitution_command =
+		player_death_restitution_command_decode_payload(command, &restitution_plan);
 	const bool item_command = item_transfer_command_decode_payload(command, &item_payload);
 	const bool auction_command = auction_command_decode_payload(command, &auction_payload);
 	const bool collector_command =
@@ -1009,9 +1013,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool audit_command = session_audit_command_decode_payload(command, &audit_payload);
 	if (!connection ||
 	    (!test_command && !epic_command && !currency_command && !coin_command &&
-	     !corpse_command && !item_command && !auction_command && !collector_command &&
-	     !combat_command && !artifact_guild_command && !boon_command && !zone_command &&
-	     !audit_command) ||
+	     !corpse_command && !restitution_command && !item_command && !auction_command &&
+	     !collector_command && !combat_command && !artifact_guild_command && !boon_command &&
+	     !zone_command && !audit_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -1046,6 +1050,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		rollback(connection);
 		return failure(error);
 	}
+	if (restitution_command)
+		return player_death_restitution_repository_apply_in_transaction(connection,
+										command);
 	if (coin_command)
 	{
 		// Keep the parent inbox row on a rejected conversion, but roll back every
@@ -1999,4 +2006,24 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 	return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
 						  critical_apply_outcome::already_applied,
 			     stored);
+}
+
+// Public narrow wrappers used by command-specific repositories while the
+// critical repository owns the transaction and inbox lifecycle.
+bool critical_command_repository_insert_outbox_event(MYSQL *connection,
+						     const critical_operation_id &operation_id,
+						     uint16_t event_index, uint16_t destination,
+						     uint16_t event_type, uint16_t payload_version,
+						     const uint8_t *payload, size_t payload_size)
+{
+	return insert_outbox_event(connection, operation_id, event_index, destination, event_type,
+				   payload_version, payload, payload_size);
+}
+
+bool critical_command_repository_finish_inbox(MYSQL *connection, const critical_command &command,
+					      uint64_t durable_revision, unsigned int result_code,
+					      const uint8_t *payload, size_t payload_size)
+{
+	return finish_inbox(connection, command, durable_revision, result_code, payload,
+			    payload_size);
 }

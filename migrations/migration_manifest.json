@@ -368,6 +368,26 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "8ac72d8fa55b2c676f0f3c6e51f640292ffa7a3cb932f598e3a35922c9d343d5",
       "verify_checksum": "17a3c0f826c8048f34e02cd5856e2ade5d748b262557e5a9a7536039dbb3b82b"
+    },
+    {
+      "id": "0020_player_death_restitution",
+      "sequence": 20,
+      "description": "Add durable player death restitution receipts and runtime fencing",
+      "apply": "immutable/0020_player_death_restitution.sql",
+      "verify": "immutable/0020_player_death_restitution.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "1e9127ea00b008938948b496a12244ce742a133690f58a48f26edce9cd8c6724",
+      "verify_checksum": "f43423923db249fcf3dda17039d876283728287eebe99a872c03d1adc1d9df6e"
+    },
+    {
+      "id": "0021_collector_notification_identity",
+      "sequence": 21,
+      "description": "Add identity-stable Collector notification receipts and outbox recovery",
+      "apply": "immutable/0021_collector_notification_identity.sql",
+      "verify": "immutable/0021_collector_notification_identity.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "602c481fdab8e7ca0a28a35c285cd4e045834147ad8570f83c9fa2864b2e7924",
+      "verify_checksum": "a2c22d6d3edacf9493f095114d73b2ca0d3c75cbccd3283eda7f81c9674e1e0d"
     }
   ]
 }

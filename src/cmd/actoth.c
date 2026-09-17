@@ -2243,6 +2243,8 @@ bool do_save_silent(P_char ch, int type)
 
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
 		return false;
+	if (GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return false;
 
 	if (IS_HARDCORE(ch) && hardcore_config_get()->death_hall_of_fame)
 	{
@@ -4678,7 +4680,7 @@ static const char *term_name(P_char ch)
 	case 2:
 		return "ANSI";
 	case 3:
-		return "MSP";
+		return "MSP markup";
 	default:
 		return "GEN";
 	}
@@ -5278,7 +5280,7 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 			send_ch->desc->term_type = 1;
 		else
 		{
-			send_to_char("USAGE: TOGGLE terminal [ansi|msp]\r\n", send_ch);
+			send_to_char("USAGE: TOGGLE terminal [ansi|gen|msp]\r\n", send_ch);
 			return;
 		}
 		strcpy(Gbuf3, term_name(send_ch));

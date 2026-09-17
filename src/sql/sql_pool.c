@@ -16,6 +16,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "sql/sql.h"
+#include "sql/sql_exclusion_guard.h"
 #include "sql/sql_pool.h"
 
 #include <pthread.h>
@@ -201,6 +202,11 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 				pool[i].in_use = 1;
 				conn = pool[i].conn;
 				pthread_mutex_unlock(&pool_mutex);
+				if (!duris_sql_exclusion_guard_allows(conn))
+				{
+					sql_pool_release(conn);
+					return NULL;
+				}
 				return conn;
 			}
 		}

@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 193;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 198;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -38,10 +38,11 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'locker_kickouts','locker_session_state','lockers','log_entries',"
 	"'lookup_dataset_state','mud_info','mud_schema_baselines','mud_schema_history',"
 	"'mud_schema_migration_state','mud_schema_migrations','multiplay_whitelist','nexus_stones',"
-	"'offline_messages','outposts','pages','persistence_item_events',"
+	"'offline_message_receipts','offline_messages','outposts','pages','persistence_item_events',"
 	"'persistence_scalar_events','personal_data_export_audit','personal_data_export_requests','personal_data_export_sections',"
 	"'ping','pkill_event','pkill_info','player_affects',"
-	"'player_data','player_death_custody','player_death_disposition','player_forged_items',"
+	"'player_data','player_death_custody','player_death_disposition','player_death_restitution_delivery',"
+	"'player_death_restitution_item','player_death_restitution_receipt','player_death_restitution_runtime','player_forged_items',"
 	"'player_granted_cmds','player_intros','player_item_affects','player_item_extra_descr',"
 	"'player_items','player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges',"
@@ -59,21 +60,24 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"d6065ed328c8fafa112da047a68774975ebd03300bd35ba36b893cd81471548d";
+	"5bf48841c2119651ec94af1c98aab2671844657c0184daff41b23a185a3e96d9";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"ec94ee3203d24b1d587cd9c24611eadcb782dae6ea302db76df633fe2d5ab788";
+	"b0a3e15753e954488f47923b42c81bad35e69232301f8c4a3d6050dd58d4d6aa";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
- * stores introduced by migration 0018, and corpse catalog authority introduced
- * by migration 0019. Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0019_corpse_lifecycle_authority";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 19;
+ * stores introduced by migration 0018, corpse catalog authority introduced
+ * by migration 0019, restitution receipt/runtime stores introduced by
+ * migration 0020, and identity-stable Collector notification receipt/outbox
+ * state introduced by migration 0021. Fingerprints are measured on MySQL 8
+ * and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0021_collector_notification_identity";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 21;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"8ac72d8fa55b2c676f0f3c6e51f640292ffa7a3cb932f598e3a35922c9d343d5";
+	"602c481fdab8e7ca0a28a35c285cd4e045834147ad8570f83c9fa2864b2e7924";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"17a3c0f826c8048f34e02cd5856e2ade5d748b262557e5a9a7536039dbb3b82b";
+	"a2c22d6d3edacf9493f095114d73b2ca0d3c75cbccd3283eda7f81c9674e1e0d";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"b0cec04964766a91f7a14dd24ea1871ba61f364a6da0b722bd101e15d86e6ce5";
+	"675ad9112d9180f25f45e7e0e2a936c80de471f25997af6f1d0043f97632c42a";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

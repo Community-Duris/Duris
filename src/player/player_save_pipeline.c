@@ -20,6 +20,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <deque>
+#include <limits>
 #include <mutex>
 #include <new>
 #include <thread>
@@ -54,6 +55,7 @@ size_t retained_bytes = 0;
 bool stop_requested = false;
 bool accepting = false;
 bool append_inflight = false;
+int append_inflight_pid = 0;
 
 player_save_apply_fn selected_snapshot_apply()
 {
@@ -74,6 +76,17 @@ struct terminal_fence
 
 std::array<terminal_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> terminal_fences = {};
 
+struct target_save_login_fence
+{
+	int pid = 0;
+	player_revision_t expected_revision = 0;
+};
+
+std::array<target_save_login_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>
+	target_save_login_fences = {};
+
+target_save_login_fence *find_target_save_login_fence_locked(int pid);
+
 /** Find a player durability fence; the caller must hold pipeline_mutex. */
 terminal_fence *find_terminal_fence_locked(int pid)
 {
@@ -85,6 +98,8 @@ terminal_fence *find_terminal_fence_locked(int pid)
 
 terminal_fence *allocate_terminal_fence_locked(int pid)
 {
+	if (find_target_save_login_fence_locked(pid))
+		return nullptr;
 	if (terminal_fence *existing = find_terminal_fence_locked(pid))
 		return existing;
 	for (terminal_fence &fence : terminal_fences)
@@ -92,6 +107,30 @@ terminal_fence *allocate_terminal_fence_locked(int pid)
 		{
 			fence.pid = pid;
 			++health.terminal_fences;
+			return &fence;
+		}
+	return nullptr;
+}
+
+/** Find a recipient-only save/login fence; the caller must hold pipeline_mutex. */
+target_save_login_fence *find_target_save_login_fence_locked(int pid)
+{
+	for (target_save_login_fence &fence : target_save_login_fences)
+		if (fence.pid == pid)
+			return &fence;
+	return nullptr;
+}
+
+target_save_login_fence *
+allocate_target_save_login_fence_locked(int pid, player_revision_t expected_revision)
+{
+	if (find_target_save_login_fence_locked(pid))
+		return nullptr;
+	for (target_save_login_fence &fence : target_save_login_fences)
+		if (!fence.pid)
+		{
+			fence.pid = pid;
+			fence.expected_revision = expected_revision;
 			return &fence;
 		}
 	return nullptr;
@@ -144,6 +183,7 @@ void dispatcher_main()
 			snapshot = std::move(pending_append.front());
 			pending_append.pop_front();
 			append_inflight = true;
+			append_inflight_pid = snapshot.pid;
 			update_depth_locked();
 		}
 
@@ -182,6 +222,7 @@ void dispatcher_main()
 				}
 			}
 			append_inflight = false;
+			append_inflight_pid = 0;
 			update_depth_locked();
 		}
 		if (appended != player_save_journal_result::ok)
@@ -207,11 +248,24 @@ bool snapshot_is_retained_locked(int pid, player_revision_t revision)
 	return false;
 }
 
+/** Check retained queues for any snapshot belonging to a player. */
+bool any_snapshot_is_retained_locked(int pid)
+{
+	for (const player_snapshot &snapshot : pending_append)
+		if (snapshot.pid == pid)
+			return true;
+	for (const player_snapshot &snapshot : durable_ready)
+		if (snapshot.pid == pid)
+			return true;
+	return false;
+}
+
 /** Admit or coalesce a snapshot within queue and byte limits before notifying the dispatcher. */
 player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 {
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	if (!health.initialized || stop_requested)
+	if (!health.initialized || stop_requested ||
+	    find_target_save_login_fence_locked(snapshot.pid))
 		return player_save_pipeline_result::unavailable;
 	for (player_snapshot &queued : pending_append)
 	{
@@ -287,6 +341,7 @@ bool player_save_pipeline_init(const char *journal_directory)
 		stop_requested = false;
 		accepting = true;
 		append_inflight = false;
+		append_inflight_pid = 0;
 	}
 	try
 	{
@@ -319,9 +374,11 @@ void player_save_pipeline_shutdown(void)
 	pending_append.clear();
 	durable_ready.clear();
 	terminal_fences.fill({});
+	target_save_login_fences.fill({});
 	retained_bytes = 0;
 	accepting = false;
 	append_inflight = false;
+	append_inflight_pid = 0;
 	health.initialized = false;
 	update_depth_locked();
 }
@@ -333,19 +390,20 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 	if (components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY))
 		components |= PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
 #endif
-	bool fenced = false;
-	{
-		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (!accepting)
-			return false;
-		fenced = find_terminal_fence_locked(pid) != nullptr;
-	}
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (!accepting)
+		return false;
+	if (find_target_save_login_fence_locked(pid))
+		return false;
+	const bool fenced = find_terminal_fence_locked(pid) != nullptr;
 	player_revision_t revision = 0;
+	// Keep admission and the revision transition under the same pipeline lock
+	// as target-fence acquisition. Otherwise a save could mark dirty between
+	// the offline preflight and the recipient-only fence.
 	if (!player_revision_mark(pid, components, &revision))
 		return false;
 	if (fenced)
 	{
-		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (terminal_fence *fence = find_terminal_fence_locked(pid))
 		{
 			fence->revision = revision;
@@ -353,7 +411,6 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 			fence->acknowledged = false;
 		}
 	}
-	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	++health.marked;
 	return true;
 }
@@ -364,6 +421,11 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (find_target_save_login_fence_locked(GET_PID(ch)))
+			return player_save_pipeline_result::unavailable;
+	}
 	player_revision_snapshot revision = {};
 	if (!player_revision_snapshot_copy(GET_PID(ch), &revision))
 		return player_save_pipeline_result::unavailable;
@@ -415,7 +477,7 @@ bool begin_terminal_fence(int pid, player_revision_t *revision)
 {
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (!health.initialized)
+		if (!health.initialized || find_target_save_login_fence_locked(pid))
 			return false;
 		if (!allocate_terminal_fence_locked(pid))
 			return false;
@@ -725,6 +787,99 @@ bool player_save_pipeline_is_nonterminal_type(int save_intent)
 	       save_intent != RENT_FIGHTARTI;
 }
 
+bool player_save_pipeline_target_save_pending(int pid)
+{
+	if (pid <= 0)
+		return true;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    find_terminal_fence_locked(pid) || append_inflight_pid == pid ||
+		    any_snapshot_is_retained_locked(pid))
+			return true;
+	}
+	if (player_save_worker_pid_pending(pid))
+		return true;
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(pid, &revision))
+		return false;
+	return revision.overflowed || revision.dirty_components ||
+	       revision.unacknowledged_components || revision.queued_components ||
+	       revision.inflight_components ||
+	       revision.current_revision != revision.acknowledged_revision;
+}
+
+bool player_save_pipeline_acquire_target_save_login_fence(int pid,
+							  player_revision_t expected_revision)
+{
+	if (pid <= 0 || expected_revision == std::numeric_limits<player_revision_t>::max())
+		return false;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    find_terminal_fence_locked(pid) || find_target_save_login_fence_locked(pid) ||
+		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid) ||
+		    !allocate_target_save_login_fence_locked(pid, expected_revision))
+			return false;
+	}
+
+	// Reserve before checking the worker/revision state. New marks are rejected
+	// while reserved, so the final check cannot race a newly admitted save.
+	if (player_save_worker_pid_pending(pid))
+	{
+		player_save_pipeline_release_target_save_login_fence(pid, expected_revision);
+		return false;
+	}
+	player_revision_snapshot revision = {};
+	if (player_revision_snapshot_copy(pid, &revision) &&
+	    (revision.overflowed || revision.dirty_components ||
+	     revision.unacknowledged_components || revision.queued_components ||
+	     revision.inflight_components || revision.current_revision != expected_revision ||
+	     revision.acknowledged_revision != expected_revision))
+	{
+		player_save_pipeline_release_target_save_login_fence(pid, expected_revision);
+		return false;
+	}
+
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	target_save_login_fence *fence = find_target_save_login_fence_locked(pid);
+	if (!fence || fence->expected_revision != expected_revision || append_inflight_pid == pid ||
+	    any_snapshot_is_retained_locked(pid))
+	{
+		if (fence && fence->expected_revision == expected_revision)
+			*fence = {};
+		return false;
+	}
+	return true;
+}
+
+void player_save_pipeline_release_target_save_login_fence(int pid,
+							  player_revision_t expected_revision)
+{
+	if (pid <= 0)
+		return;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (target_save_login_fence *fence = find_target_save_login_fence_locked(pid))
+		if (fence->expected_revision == expected_revision)
+			*fence = {};
+}
+
+bool player_save_pipeline_target_save_login_fenced(int pid)
+{
+	if (pid <= 0)
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	return find_target_save_login_fence_locked(pid) != nullptr;
+}
+
+bool player_save_pipeline_save_admitted(int pid)
+{
+	if (pid <= 0)
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	return find_target_save_login_fence_locked(pid) == nullptr;
+}
+
 /** Stop the pipeline and clear worker, revision, and health state for an isolated test. */
 void player_save_pipeline_reset_for_tests(void)
 {
@@ -736,4 +891,6 @@ void player_save_pipeline_reset_for_tests(void)
 	stop_requested = false;
 	accepting = false;
 	append_inflight = false;
+	append_inflight_pid = 0;
+	target_save_login_fences.fill({});
 }
