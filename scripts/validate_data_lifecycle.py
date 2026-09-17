@@ -30,6 +30,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0017_telemetry_rollup_support.sql",
     ROOT / "migrations" / "immutable" / "0018_collector_catalog.sql",
     ROOT / "migrations" / "immutable" / "0019_corpse_lifecycle_authority.sql",
+    ROOT / "migrations" / "immutable" / "0023_zone_story_quest_state.sql",
 )
 
 ROOT_FIELDS = {
@@ -77,6 +78,9 @@ REQUIRED_NON_DATABASE_STORES = {
         "quarantine", "legacy persistence fallback quarantine",
     ),
     "file:player-deaths": ("recovery_state", "FLATFILE_ROOT/player-deaths/*.death"),
+    "file:zone-story-quests": (
+        "recovery_state", "FLATFILE_ROOT/domains/zone-story-quests.state",
+    ),
     "file:artifact-mana": ("recovery_state", "FLATFILE_ROOT/domains/artifact-mana-*"),
     "file:runtime_pfiles": ("runtime_file", "lib/players"),
     "file:runtime_accounts": ("runtime_file", "lib/accounts"),

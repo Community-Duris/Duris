@@ -31,6 +31,7 @@
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "world/weather.h"
+#include "world/zone_story_quest_runtime.h"
 
 /*
  * external variables
@@ -316,8 +317,44 @@ long getLeaderBoardPts(P_char ch)
 	return getLeaderBoardPtsWithShipFrags(ch, calculate_shipfrags(ch));
 }
 
-void displayLeader(P_char ch, char * /*arg*/, int /*cmd*/)
+void displayLeader(P_char ch, char *arg, int /*cmd*/)
 {
+	char section[MAX_INPUT_LENGTH], value[MAX_INPUT_LENGTH];
+	char *remaining = one_argument(arg ? arg : (char *)"", section);
+	if (*section && (is_abbrev(section, "quests") || is_abbrev(section, "quest")))
+	{
+		zone_story_quest_feature::service *tracker = zone_story_quest_runtime::service();
+		if (!tracker)
+		{
+			send_to_char("Quest completion leaderboard is unavailable until the production catalog and persistence state are ready.\r\n",
+				     ch);
+			return;
+		}
+		zone_story_quest_runtime::remember_character(ch);
+		int zone = 0;
+		uint64_t page = 1;
+		remaining = one_argument(remaining, value);
+		if (*value)
+		{
+			zone = atoi(value);
+			if (zone < 0)
+				zone = 0;
+		}
+		remaining = one_argument(remaining, value);
+		if (*value)
+		{
+			const int requested_page = atoi(value);
+			if (requested_page > 0)
+				page = static_cast<uint64_t>(requested_page);
+		}
+		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+					    ch->desc->term_type != TERM_SKIP_ANSI;
+		std::string output = tracker->render_leaderboard(
+			zone_story_quest_runtime::current_season_id(), zone, page - 1, MAX_LEADERBOARD_SIZE,
+			static_cast<uint32_t>(GET_PID(ch)), colors);
+		page_string(ch->desc, output.data(), 1);
+		return;
+	}
 	char name[MAX_STRING_LENGTH], buf[65536], buf2[2048];
 	float pts = 0;
 	MYSQL_RES *res;

@@ -398,6 +398,16 @@
       "verify": "immutable/0022_telemetry_progression.sh",
       "verify_checksum": "9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0023_zone_story_quest_state",
+      "sequence": 23,
+      "description": "Add durable zone-story quest completion and daily state",
+      "apply": "immutable/0023_zone_story_quest_state.sql",
+      "apply_checksum": "992fd6bd7cdaeee7f1870bb8dad28f6c3c77793a771447dbba996ed1ed088a16",
+      "verify": "immutable/0023_zone_story_quest_state.sh",
+      "verify_checksum": "5893fffec2d51fa40c0baaaa8407c694fc2a730af2caad278ecf085340d9c8a4",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

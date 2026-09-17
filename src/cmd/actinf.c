@@ -43,6 +43,7 @@ using namespace std;
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
 #include "world/map.h"
+#include "world/zone_story_quest_runtime.h"
 #include "economy/nexus_stones.h"
 #include "economy/currency_transaction.h"
 #include "item/objmisc.h"
@@ -6574,6 +6575,20 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		snprintf(buf, MAX_STRING_LENGTH, "&+yBartender Quests Remaining:&n %d\n",
 			 RemainingBartenderQuests);
 		send_to_char(buf, ch);
+	}
+
+	if (IS_PC(ch))
+	{
+		if (zone_story_quest_runtime::service())
+		{
+			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+						    ch->desc->term_type != TERM_SKIP_ANSI;
+			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
+			send_to_char(daily.c_str(), ch);
+		}
+		else
+			send_to_char("\r\nDaily zone-story quest: unavailable until catalog/persistence boot completes.\r\n",
+				     ch);
 	}
 
 	if (IS_PC(ch))

@@ -48,6 +48,7 @@
 #include "net/gmcp.h"
 #include "guild/guildhall.h"
 #include "world/hardcore_config.h"
+#include "world/zone_story_quest_runtime.h"
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "account/multiplay_whitelist.h"
@@ -1220,6 +1221,15 @@ void enter_game(P_desc d)
 	P_desc i;
 	P_nevent evp;
 	P_Guild guild;
+	if (zone_story_quest_runtime::ready())
+	{
+		std::string zone_story_error;
+		if (!zone_story_quest_runtime::remember_character(ch, &zone_story_error))
+			logit(LOG_DEBUG, "[enter_game] zone-story identity save failed for %s: %s",
+			      ch && GET_NAME(ch) ? GET_NAME(ch) : "<unknown>",
+			      zone_story_error.empty() ? "unspecified persistence failure" :
+												 zone_story_error.c_str());
+	}
 
 	logit(LOG_FILE, "[enter_game] name=%s level=%d rtype=%d", ch ? GET_NAME(ch) : "(null)",
 	      ch ? GET_LEVEL(ch) : -1, d ? d->rtype : -1);

@@ -38,6 +38,7 @@
 #include "persistence/persistence_mode.h"
 #include "world/handler.h"
 #include "world/random.zone.h"
+#include "world/zone_story_quest_runtime.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/item_extra_descr_codec.h"
@@ -2055,6 +2056,16 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 		remove_char_from_list(ch->desc->account, ch->player.name, false);
 #endif
 	delete_ship_runtime(GET_NAME(ch));
+	std::string zone_story_error;
+	if (!zone_story_quest_runtime::erase_character(static_cast<uint32_t>(GET_PID(ch)),
+								 &zone_story_error))
+	{
+		logit(LOG_DEBUG,
+		      "deleteCharacter(): zone-story state cleanup requires reconciliation pid=%d: %s",
+		      GET_PID(ch), zone_story_error.empty() ? "unspecified persistence failure" :
+													zone_story_error.c_str());
+		return character_delete_result::reconciliation_required;
+	}
 	return character_delete_result::deleted;
 }
 
