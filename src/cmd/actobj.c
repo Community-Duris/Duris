@@ -40,6 +40,8 @@
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "item/item_command_parser.h"
+#include "item/item_command_policy.h"
 #include "item/item_get_policy.h"
 #include "item/storage_lockers.h"
 #include "player/player_snapshot_capture.h"
@@ -136,24 +138,6 @@ static bool get_trace_enabled(void)
 	}
 
 	return cached != 0;
-}
-
-/**
- * Return whether an object's topology changes must use generic ownership.
- *
- * Active transient objects participate when their authoritative runtime row exists;
- * unowned transient objects retain synchronous behavior.
- */
-static bool uses_generic_item_ownership(P_obj object)
-{
-	if (!object || object->obj_uid == 0 || object->type == ITEM_MONEY ||
-	    (object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE)))
-		return false;
-	if (!IS_SET(object->extra_flags, ITEM_TRANSIENT))
-		return true;
-	item_ownership_runtime_entry ownership = {};
-	return item_ownership_runtime_lookup(object->obj_uid, &ownership) &&
-	       ownership.state == item_custody_state::active;
 }
 
 /** Authorize soulbound equipment by account marker or legacy character-name binding. */
@@ -267,13 +251,6 @@ struct put_movement_context
 	uint64_t container_uid;
 	int32_t showit;
 };
-
-/** Keep command-layer call sites independent of the source-resolution policy. */
-static bool get_item_source_owner(P_char actor, P_obj object, P_obj container,
-				  item_owner_identity *source)
-{
-	return item_get_source_owner(actor, object, container, source);
-}
 
 enum class coin_debit_action : uint8_t
 {
@@ -676,39 +653,14 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 {
 	item_put_deferred = false;
-	if (item_put_ack_publication || !IS_PC(actor) || !uses_generic_item_ownership(object) ||
-	    !container->obj_uid)
+	if (item_put_ack_publication || !IS_PC(actor) ||
+	    !item_command_uses_durable_ownership(object) || !container->obj_uid)
 		return false;
-	item_ownership_runtime_entry item_runtime = {}, container_runtime = {};
+	item_ownership_runtime_entry item_runtime = {};
 	const bool item_known = item_ownership_runtime_lookup(object->obj_uid, &item_runtime);
-	item_owner_identity locker_destination = {};
 	item_movement_reject reject = item_movement_reject::none;
-	if (locker_owner_for_container(actor, container, &locker_destination))
-	{
-		const item_owner_identity source =
-			item_known ?
-				item_runtime.owner :
-				item_owner_identity{ item_owner_type::player,
-						     static_cast<uint64_t>(GET_PID(actor)), 0 };
-		/*
-		 * A locker chest is an owner, not a parent: its contents are ledger roots
-		 * owned by the chest.  An item already owned by this chest therefore has
-		 * nothing to record, so the live move is complete on its own.
-		 */
-		if (item_owner_identity_equal(source, locker_destination))
-			return false;
-		const put_movement_context context = { object->obj_uid, container->obj_uid,
-						       showit };
-		if (!item_movement_transaction_submit(
-			    actor, object, NULL, source, locker_destination,
-			    item_transfer_reason::locker_deposit, locker_destination.context_id,
-			    item_put_completion, &context, sizeof(context), NULL, &reject))
-			report_movement_reject(actor, reject, "put", object);
-		else
-			item_put_deferred = true;
-		return true;
-	}
-	if (!item_ownership_runtime_lookup(container->obj_uid, &container_runtime))
+	item_put_destination destination = {};
+	if (!item_command_resolve_put_destination(actor, container, &destination))
 	{
 		send_to_char("That container lacks authoritative ownership.\r\n", actor);
 		return true;
@@ -717,12 +669,19 @@ bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 		item_known ? item_runtime.owner :
 			     item_owner_identity{ item_owner_type::player,
 						  static_cast<uint64_t>(GET_PID(actor)), 0 };
-	const item_owner_identity destination = container_runtime.owner;
+	/*
+	 * A locker chest is an owner, not a parent: its contents are ledger roots
+	 * owned by the chest.  An item already owned by this chest therefore has
+	 * nothing to record, so the live move is complete on its own.
+	 */
+	if (destination.reason == item_transfer_reason::locker_deposit &&
+	    item_owner_identity_equal(source, destination.owner))
+		return false;
 	const put_movement_context context = { object->obj_uid, container->obj_uid, showit };
-	if (!item_movement_transaction_submit(actor, object, container, source, destination,
-					      item_transfer_reason::player_put, container->obj_uid,
-					      item_put_completion, &context, sizeof(context), NULL,
-					      &reject))
+	if (!item_movement_transaction_submit(actor, object, destination.target_container, source,
+					      destination.owner, destination.reason,
+					      destination.reason_id, item_put_completion, &context,
+					      sizeof(context), NULL, &reject))
 		report_movement_reject(actor, reject, "put", object);
 	else
 		item_put_deferred = true;
@@ -737,18 +696,21 @@ bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 {
 	const item_owner_identity source = { item_owner_type::player,
 					     static_cast<uint64_t>(GET_PID(ch)), 0 };
-	item_owner_identity destination = { item_owner_type::room,
-					    static_cast<uint64_t>(world[ch->in_room].number), 0 };
-	const bool locker_deposit = locker_owner_for_room(ch, &destination);
+	item_owner_identity destination = {};
+	item_transfer_reason reason = item_transfer_reason::unknown;
+	int64_t reason_id = 0;
+	if (!item_command_resolve_drop_destination(ch, &destination, &reason, &reason_id))
+	{
+		if (reject)
+			*reject = item_movement_reject::invalid_request;
+		return false;
+	}
 	const drop_movement_context context = { object->obj_uid, ch->in_room,
-						locker_deposit ? 0 : 1, 0 };
-	return item_movement_transaction_submit(ch, object, NULL, source, destination,
-						locker_deposit ?
-							item_transfer_reason::locker_deposit :
-							item_transfer_reason::player_drop,
-						locker_deposit ? 0 : world[ch->in_room].number,
-						item_drop_completion, &context, sizeof(context),
-						NULL, reject);
+						reason == item_transfer_reason::player_drop ? 1 : 0,
+						0 };
+	return item_movement_transaction_submit(ch, object, NULL, source, destination, reason,
+						reason_id, item_drop_completion, &context,
+						sizeof(context), NULL, reject);
 }
 }
 
@@ -869,7 +831,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		    TO_CHAR);
 		return;
 	}
-	if (uses_generic_item_ownership(o_obj) && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+	if (item_command_uses_durable_ownership(o_obj) && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 	    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 	{
 		send_to_char("&+LYou cannot take that.&n\n\r", ch);
@@ -898,7 +860,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (s_obj && IS_OBJ_STAT(s_obj, ITEM_NOSHOW))
 		showit = TRUE;
 
-	if (IS_PC(ch) && uses_generic_item_ownership(o_obj))
+	if (IS_PC(ch) && item_command_uses_durable_ownership(o_obj))
 	{
 		item_owner_identity source = {};
 		const item_owner_identity destination = { item_owner_type::player,
@@ -907,7 +869,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 						       s_obj ? NOWHERE : o_obj->loc.room, showit };
 		// An unresolvable source owner is itself an authority gap, not a submission
 		// failure, so name it rather than reporting the submit's untouched reason.
-		if (!get_item_source_owner(ch, o_obj, s_obj, &source))
+		if (!item_get_source_owner(ch, o_obj, s_obj, &source))
 		{
 			report_movement_reject(ch, item_movement_reject::owner_mismatch, "get",
 					       o_obj);
@@ -929,7 +891,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		item_get_deferred = true;
 		return;
 	}
-	if (IS_NPC(ch) && uses_generic_item_ownership(o_obj))
+	if (IS_NPC(ch) && item_command_uses_durable_ownership(o_obj))
 	{
 		// Mob and pet inventories do not have a persistent owner aggregate. Keep
 		// the item's existing room/corpse authority, but commit an explicit claim
@@ -943,7 +905,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 							       s_obj ? s_obj->obj_uid : 0,
 							       s_obj ? NOWHERE : o_obj->loc.room,
 							       showit };
-			if (!get_item_source_owner(ch, o_obj, s_obj, &source))
+			if (!item_get_source_owner(ch, o_obj, s_obj, &source))
 			{
 				report_movement_reject(ch, item_movement_reject::owner_mismatch,
 						       "mobile_get", o_obj);
@@ -1339,8 +1301,6 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag);
 }
 
-static bool do_get_container_target_is_valid(P_obj s_obj);
-
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
 {
 	if (IS_ARTIFACT(o_obj))
@@ -1394,19 +1354,19 @@ static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carrie
 	P_obj worn_obj = do_get_obj_in_equipment_vis(ch, arg2);
 	P_obj room_obj = get_obj_in_list_vis(ch, arg2, world[ch->in_room].contents);
 
-	if (carried_obj && do_get_container_target_is_valid(carried_obj))
+	if (carried_obj && item_command_container_is_valid(carried_obj))
 	{
 		carried = TRUE;
 		return carried_obj;
 	}
 
-	if (worn_obj && do_get_container_target_is_valid(worn_obj))
+	if (worn_obj && item_command_container_is_valid(worn_obj))
 	{
 		carried = TRUE;
 		return worn_obj;
 	}
 
-	if (room_obj && do_get_container_target_is_valid(room_obj))
+	if (room_obj && item_command_container_is_valid(room_obj))
 	{
 		carried = FALSE;
 		return room_obj;
@@ -1434,24 +1394,13 @@ static P_obj do_get_resolve_container_target(P_char ch, char *arg2, bool &carrie
 	return NULL;
 }
 
-static bool do_get_container_target_is_valid(P_obj s_obj)
-{
-	return (GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER) || (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE) ||
-	       (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER) || (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE);
-}
-
-static bool do_get_obj_is_takeable(P_char ch, P_obj o_obj)
-{
-	return CAN_WEAR(o_obj, ITEM_TAKE) || ((GET_LEVEL(ch) >= 60) && !IS_NPC(ch));
-}
-
 static bool do_get_container_item_is_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
 					      bool source_is_local)
 {
 	const bool carried = source_is_local;
 	const bool worn = s_obj && OBJ_WORN(s_obj);
 	const bool actual_local = s_obj && (OBJ_CARRIED(s_obj) || OBJ_WORN(s_obj));
-	const bool takeable = source_is_local ? TRUE : do_get_obj_is_takeable(ch, o_obj);
+	const bool takeable = source_is_local ? TRUE : item_command_object_is_takeable(ch, o_obj);
 
 	GETDBG_LOG(
 		"GETDBG[container-item-takeable]: ch=%s room=%d obj=%s [%d] container=%s [%d] carried=%d worn=%d source_local=%d actual_local=%d takeable=%d",
@@ -1711,12 +1660,6 @@ static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &
 		do_get_log_room_artifact_pickup(ch, o_obj);
 }
 
-static void do_get_mark_alldot(char *arg1, bool &alldot)
-{
-	snprintf(arg1, MAX_INPUT_LENGTH, "all");
-	alldot = TRUE;
-}
-
 namespace
 {
 static bool bulk_get_source_matches(const bulk_get_state &state, P_obj container, P_obj object)
@@ -1742,7 +1685,7 @@ static bool bulk_get_source_for_roots(P_char actor, P_obj container,
 	for (P_obj root : roots)
 	{
 		item_owner_identity root_source = {};
-		if (!root || !get_item_source_owner(actor, root, container, &root_source))
+		if (!root || !item_get_source_owner(actor, root, container, &root_source))
 			return false;
 		if (!item_owner_identity_valid(resolved_source))
 			resolved_source = root_source;
@@ -2176,7 +2119,7 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 		stop = container != NULL;
 		return false;
 	}
-	if (!container_local && !do_get_obj_is_takeable(actor, object))
+	if (!container_local && !item_command_object_is_takeable(actor, object))
 	{
 		reject_bulk_get_object(state, object, "isn't takeable.");
 		return false;
@@ -2210,7 +2153,7 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 		state.failed = true;
 		return false;
 	}
-	if (uses_generic_item_ownership(object) && !scrap)
+	if (item_command_uses_durable_ownership(object) && !scrap)
 		state.durable_items.push_back(object->obj_uid);
 	else
 	{
@@ -2302,7 +2245,7 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 			if (!selected.coin_amount_valid || !selected.object)
 				continue;
 			item_owner_identity source = {};
-			if (get_item_source_owner(actor, selected.object, container, &source))
+			if (item_get_source_owner(actor, selected.object, container, &source))
 			{
 				state.source = source;
 				state.reason = source.type == item_owner_type::locker ?
@@ -2439,7 +2382,13 @@ void do_get(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	argument_interpreter(argument, arg1, arg2);
+	item_get_command parsed = {};
+	item_get_command_parse(argument, &parsed);
+	snprintf(arg1, sizeof(arg1), "%s", parsed.object);
+	snprintf(arg2, sizeof(arg2), "%s", parsed.container);
+	snprintf(Gbuf2, sizeof(Gbuf2), "%s", parsed.filter);
+	alldot = parsed.alldot;
+	type = static_cast<int>(parsed.kind);
 	GETDBG_LOG(
 		"GETDBG[do_get parse]: ch=%s room=%d raw='%s' arg1='%s' arg2='%s' cmd=%d fighting=%d front_line=%d carry_n=%d carry_w=%d",
 		GET_NAME(ch), world[ch->in_room].number, argument ? argument : "(null)", arg1, arg2,
@@ -2453,51 +2402,6 @@ void do_get(P_char ch, char *argument, int cmd)
 	else
 	{
 		hood = ch;
-	}
-
-	/* get type */
-	if (!*arg1) /* no args, error  */
-		type = 0;
-
-	if (*arg1 && !*arg2)
-	{ /* only 1 arg, so assumes (from room) */
-		alldot = FALSE;
-		Gbuf2[0] = '\0';
-		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
-		{
-			do_get_mark_alldot(arg1, alldot);
-		}
-		if (!str_cmp(arg1, "all"))
-		{
-			type = 1; /* get all.(*) (from room) */
-		}
-		else
-		{
-			type = 2; /* get <object> (from room) */
-		}
-	}
-	else if (*arg1 && *arg2)
-	{ /* 2 args, get something(s) from a container */
-		alldot = FALSE;
-		Gbuf2[0] = '\0';
-		if (!strn_cmp(arg1, "all", 3) && (sscanf(arg1, "all.%s", Gbuf2) > 0))
-		{
-			do_get_mark_alldot(arg1, alldot);
-		}
-		if (!str_cmp(arg1, "all"))
-		{
-			if (!str_cmp(arg2, "all"))
-				type = 3;
-			else
-				type = 4;
-		}
-		else
-		{
-			if (!str_cmp(arg2, "all"))
-				type = 5;
-			else
-				type = 6;
-		}
 	}
 
 	GETDBG_LOG(
@@ -2533,7 +2437,7 @@ void do_get(P_char ch, char *argument, int cmd)
 				o_obj->short_description ? o_obj->short_description : "(null)",
 				OBJ_VNUM(o_obj), GET_ITEM_TYPE(o_obj), GET_OBJ_WEIGHT(o_obj),
 				IS_CARRYING_N(ch), total_carried_weight(ch),
-				do_get_obj_is_takeable(ch, o_obj) ? 1 : 0,
+				item_command_object_is_takeable(ch, o_obj) ? 1 : 0,
 				((GET_LEVEL(ch) >= 60) && !IS_NPC(ch)) ? 1 : 0, alldot ? 1 : 0,
 				Gbuf2);
 
@@ -2562,7 +2466,7 @@ void do_get(P_char ch, char *argument, int cmd)
 					if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <=
 					    CAN_CARRY_W(ch))
 					{
-						if (do_get_obj_is_takeable(ch, o_obj))
+						if (item_command_object_is_takeable(ch, o_obj))
 						{
 							do_get_finalize_room_item(ch, o_obj, found,
 										  total);
@@ -2646,7 +2550,7 @@ void do_get(P_char ch, char *argument, int cmd)
 				if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <=
 				    CAN_CARRY_W(ch))
 				{
-					if (do_get_obj_is_takeable(ch, o_obj))
+					if (item_command_object_is_takeable(ch, o_obj))
 					{
 						if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) &&
 						    IS_SET(o_obj->value[1], PC_CORPSE))
@@ -2780,7 +2684,7 @@ void do_get(P_char ch, char *argument, int cmd)
 
 		if (s_obj)
 		{
-			if (do_get_container_target_is_valid(s_obj))
+			if (item_command_container_is_valid(s_obj))
 			{
 				GETDBG_LOG(
 					"GETDBG[get-container-start]: ch=%s room=%d container=%s [%d] uid=%lu type=%d wear=0x%x extra=0x%x corpse_flag=%d arg1='%s' arg2='%s'",
@@ -2939,7 +2843,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		s_obj = do_get_resolve_container_target(ch, arg2, carried);
 		if (s_obj)
 		{
-			if (do_get_container_target_is_valid(s_obj))
+			if (item_command_container_is_valid(s_obj))
 			{
 				if (!do_get_container_preflight(ch, s_obj, corpse_flag, FALSE, arg1,
 								arg2, fail))
@@ -3369,7 +3273,7 @@ void finish_bulk_drop_after_commit(P_char actor, bulk_drop_state &state)
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
-		if (uses_generic_item_ownership(object) ||
+		if (item_command_uses_durable_ownership(object) ||
 		    (state.filter.size() &&
 		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
 		    !bulk_drop_permitted(actor, object, state))
@@ -3460,17 +3364,26 @@ void start_bulk_drop(P_char actor, const char *filter, bool alldot)
 		return;
 	}
 
-	item_owner_identity destination = { item_owner_type::room,
-					    static_cast<uint64_t>(world[actor->in_room].number),
-					    0 };
-	const bool locker_deposit = locker_owner_for_room(actor, &destination);
-	bulk_drop_state state = { actor->in_room, filter ? filter : "", {}, 0, false,
-				  alldot,	  !locker_deposit };
+	item_owner_identity destination = {};
+	item_transfer_reason reason = item_transfer_reason::unknown;
+	int64_t reason_id = 0;
+	if (!item_command_resolve_drop_destination(actor, &destination, &reason, &reason_id))
+	{
+		send_to_char("You can't drop anything here.\r\n", actor);
+		return;
+	}
+	bulk_drop_state state = { actor->in_room,
+				  filter ? filter : "",
+				  {},
+				  0,
+				  false,
+				  alldot,
+				  reason == item_transfer_reason::player_drop };
 	std::vector<P_obj> roots;
 	try
 	{
 		for (P_obj object = actor->carrying; object; object = object->next_content)
-			if (uses_generic_item_ownership(object) &&
+			if (item_command_uses_durable_ownership(object) &&
 			    (state.filter.empty() ||
 			     (object->name && isname(state.filter.c_str(), object->name))) &&
 			    bulk_drop_permitted(actor, object, state))
@@ -3500,11 +3413,8 @@ void start_bulk_drop(P_char actor, const char *filter, bool alldot)
 	const bulk_movement_context context = { actor_pid };
 	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit_batch(
-		    actor, roots.data(), roots.size(), NULL, source, destination,
-		    locker_deposit ? item_transfer_reason::locker_deposit :
-				     item_transfer_reason::player_drop,
-		    locker_deposit ? 0 : world[actor->in_room].number, bulk_drop_completion,
-		    &context, sizeof(context), NULL, &reject))
+		    actor, roots.data(), roots.size(), NULL, source, destination, reason, reason_id,
+		    bulk_drop_completion, &context, sizeof(context), NULL, &reject))
 	{
 		report_batch_movement_reject(actor, reject, "drop", "Nothing was dropped.\r\n");
 		bulk_drops.erase(found);
@@ -4223,7 +4133,7 @@ static void coin_admission_completion(P_char actor, bool committed, const item_t
 	bool source_matches = outer_matches && container_matches;
 	if (source_matches)
 	{
-		if (get_item_source_owner(actor, money, container, &source))
+		if (item_get_source_owner(actor, money, container, &source))
 			source_matches = item_owner_identity_equal(source, context.source);
 		else
 			source_matches = stable_corpse &&
@@ -4259,7 +4169,7 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 	const bool requested_source = options && item_owner_identity_valid(options->source);
 	if (requested_source)
 		source = options->source;
-	else if (!get_item_source_owner(actor, money, container, &source))
+	else if (!item_get_source_owner(actor, money, container, &source))
 		return false;
 	item_ownership_runtime_entry current;
 	if (!item_ownership_runtime_lookup(money->obj_uid, &current))
@@ -4861,7 +4771,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 						      world[ch->in_room].number);
 					}
 					obj_to_room(tmp_object, ch->in_room);
-					if (IS_PC(ch) && uses_generic_item_ownership(tmp_object))
+					if (IS_PC(ch) &&
+					    item_command_uses_durable_ownership(tmp_object))
 						redis_log_floor_drop(tmp_object,
 								     world[ch->in_room].number);
 					dropped_any = true;
@@ -4913,7 +4824,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				else if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) ||
 					 IS_TRUSTED(ch))
 				{
-					if (IS_PC(ch) && uses_generic_item_ownership(tmp_object))
+					if (IS_PC(ch) &&
+					    item_command_uses_durable_ownership(tmp_object))
 					{
 						item_movement_reject reject =
 							item_movement_reject::none;
@@ -5265,7 +5177,7 @@ void start_bulk_put(P_char actor, P_obj container, const char *filter, bool alld
 					isname(state.filter.c_str(), object->name) == FALSE)))
 				continue;
 			state.attempted = true;
-			if (uses_generic_item_ownership(object) &&
+			if (item_command_uses_durable_ownership(object) &&
 			    bulk_put_permitted(actor, object, container, weight, space,
 					       quiver_count))
 			{
@@ -5293,35 +5205,21 @@ void start_bulk_put(P_char actor, P_obj container, const char *filter, bool alld
 	}
 	const item_owner_identity source = { item_owner_type::player,
 					     static_cast<uint64_t>(GET_PID(actor)), 0 };
-	item_owner_identity destination = {};
-	P_obj ownership_target = container;
-	item_transfer_reason reason = item_transfer_reason::player_put;
-	int64_t reason_id = container->obj_uid;
-	if (locker_owner_for_container(actor, container, &destination))
+	item_put_destination destination = {};
+	if (!item_command_resolve_put_destination(actor, container, &destination))
 	{
-		ownership_target = NULL;
-		reason = item_transfer_reason::locker_deposit;
-		reason_id = destination.context_id;
-	}
-	else
-	{
-		item_ownership_runtime_entry container_runtime = {};
-		if (!item_ownership_runtime_lookup(container->obj_uid, &container_runtime))
-		{
-			send_to_char(
-				"Nothing was put away; the container lacks authoritative ownership.\r\n",
-				actor);
-			bulk_puts.erase(found);
-			return;
-		}
-		destination = container_runtime.owner;
+		send_to_char(
+			"Nothing was put away; the container lacks authoritative ownership.\r\n",
+			actor);
+		bulk_puts.erase(found);
+		return;
 	}
 	const bulk_movement_context context = { actor_pid };
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_movement_transaction_submit_batch(actor, roots.data(), roots.size(),
-						    ownership_target, source, destination, reason,
-						    reason_id, bulk_put_completion, &context,
-						    sizeof(context), NULL, &reject))
+	if (!item_movement_transaction_submit_batch(
+		    actor, roots.data(), roots.size(), destination.target_container, source,
+		    destination.owner, destination.reason, destination.reason_id,
+		    bulk_put_completion, &context, sizeof(context), NULL, &reject))
 	{
 		report_batch_movement_reject(actor, reject, "put", "Nothing was put away.\r\n");
 		bulk_puts.erase(found);
@@ -6076,7 +5974,8 @@ void do_give(P_char ch, char *argument, int cmd)
 	 * their existing consume/sink behavior until those paths get an explicit
 	 * durable boundary of their own.
 	 */
-	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) && uses_generic_item_ownership(obj))
+	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) &&
+	    item_command_uses_durable_ownership(obj))
 	{
 		send_to_char(
 			"That item cannot be given to a pet or mob because its custody cannot be saved yet.\r\n",
@@ -6086,7 +5985,7 @@ void do_give(P_char ch, char *argument, int cmd)
 		      J_NAME(ch), (unsigned long long)obj->obj_uid, OBJ_VNUM(obj));
 		return;
 	}
-	if (IS_PC(ch) && IS_PC(vict) && ch != vict && uses_generic_item_ownership(obj))
+	if (IS_PC(ch) && IS_PC(vict) && ch != vict && item_command_uses_durable_ownership(obj))
 	{
 		const item_owner_identity source = { item_owner_type::player,
 						     static_cast<uint64_t>(GET_PID(ch)), 0 };

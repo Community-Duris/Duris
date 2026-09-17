@@ -332,6 +332,8 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_transfer_command.o \
 				 item/item_ownership_runtime.o \
 				 item/item_get_policy.o \
+				 item/item_command_policy.o \
+				 item/item_command_parser.o \
 				 item/item_movement_transaction.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
