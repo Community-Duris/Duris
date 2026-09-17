@@ -70,19 +70,23 @@ bool live_placement_owner(P_char actor, P_obj object, P_obj container, item_owne
 	return false;
 }
 
-bool owner_requires_live_placement(item_owner_type type)
+bool owner_is_virtual_source(item_owner_type type)
 {
-	return type == item_owner_type::player || type == item_owner_type::room ||
-	       type == item_owner_type::corpse;
+	return type == item_owner_type::locker || type == item_owner_type::auction ||
+	       type == item_owner_type::shopkeeper || type == item_owner_type::collector;
 }
 
 bool runtime_owner_matches_live_placement(P_char actor, P_obj object, P_obj container,
 					  const item_owner_identity &runtime_owner)
 {
-	if (!owner_requires_live_placement(runtime_owner.type))
+	if (owner_is_virtual_source(runtime_owner.type))
 		/* Locker/auction/shopkeeper/collector authorities are explicit virtual
 		 * boundaries and are intentionally not reduced to room ownership. */
 		return true;
+	if (runtime_owner.type != item_owner_type::player &&
+	    runtime_owner.type != item_owner_type::room &&
+	    runtime_owner.type != item_owner_type::corpse)
+		return false;
 
 	item_owner_identity live_owner = {};
 	return live_placement_owner(actor, object, container, &live_owner) &&
