@@ -60,9 +60,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"553ea9048edf4523bbb81d92031a3f75164293245bc63d2d5b08794588a9d3ee";
+	"4edd5d298a3d60183db7ba7baccf8acada3bb508e4b0ff1423e0f26e119d4f66";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"2e7e1ee5a272d1e7f8f82a3ca2ef7b5f724179119ee4fb034a56c9e688535737";
+	"f76591e791518bbd23b1ebe99e16ff8d4d01484656991b6238dac36b2c51e979";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
