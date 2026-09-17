@@ -225,6 +225,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
+				 combat/attack_continuation.o \
 				 combat/fight.o \
 				 core/files.o \
 				 combat/fraglist.o \
