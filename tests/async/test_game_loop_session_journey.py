@@ -87,15 +87,17 @@ def run_journey(binary: pathlib.Path) -> None:
             # Two complete lines are sent before either prompt is consumed.
             # The session-input phase must preserve command FIFO, while the
             # output phase must render each prompt once and frame it for the
-            # line-buffered client.
+            # line-buffered client.  The default gameplay prompt is two-line:
+            # the status line is followed by the final <> prompt line, which
+            # is the line that must be followed by Telnet GA.
             client.send("score")
             client.send("look")
             score = client.expect("Pos: standing >", timeout=15)
             require(CHARACTER in score, "score output was lost or reordered")
-            require_prompt_framed(client, "Pos: standing >")
+            require_prompt_framed(client, "<>")
             look = client.expect("Pos: standing >", timeout=15)
             require(look.strip(), "look output was empty")
-            require_prompt_framed(client, "Pos: standing >")
+            require_prompt_framed(client, "<>")
 
             client.send("save")
             client.expect(f"Save complete for {CHARACTER}.", timeout=20)
