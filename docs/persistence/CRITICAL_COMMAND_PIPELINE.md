@@ -83,11 +83,13 @@ I/O; journal append, `fsync`, replay, and reconciliation are owned by the admiss
 worker. Shutdown joins that worker after the admission lane has drained, so no
 detached append can outlive the coordinator or its journal lock.
 
-`world persistence` exposes one metadata-only `critical_commands` line: state, queue,
-in-flight and blocked counts, retained bytes, fences, recent completions, high-water
-marks, accepts, attachments, outcomes, retries, ambiguous results, stale completions,
-overloads, oldest age, and journal counts/bytes/status. It never prints command payloads
-or entity identities.
+`world persistence` exposes one metadata-only `critical_commands` line: state,
+awaiting-durability and admission-queue bytes, admission-worker and append-in-flight
+status, durable admissions, admission failures and uncertain admissions, execution queue
+and in-flight counts, blocked count, retained bytes, fences, recent completions,
+high-water marks, accepts, attachments, outcomes, retries, ambiguous results, stale
+completions, overloads, oldest age, and journal counts/bytes/status. It never prints
+command payloads or entity identities.
 
 The database inbox stores the canonical command/key hashes and authoritative result.
 An identical duplicate returns that result; different bytes under the same operation ID

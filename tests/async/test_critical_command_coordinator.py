@@ -407,6 +407,10 @@ assert (
     "\tplayer_save_pipeline_resume();"
 ) in COPYOVER
 assert '\"critical_commands state=%s' in ACTINF
+assert "awaiting=%llu" in ACTINF
+assert "admission_queue_bytes=%llu" in ACTINF
+assert "durable_admissions=%llu" in ACTINF
+assert "admission_uncertain=%llu" in ACTINF
 assert "command.payload" not in ACTINF and "operation_id" not in ACTINF
 assert "critical_command_equal" in COORDINATOR and "identity_conflict" in COORDINATOR
 assert "keys_available" in COORDINATOR and "acquire_keys" in COORDINATOR
