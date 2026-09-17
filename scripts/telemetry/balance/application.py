@@ -202,7 +202,7 @@ def _parse_approval(raw_approval: Any, *, policy_version: str, now: datetime) ->
     }
 
 
-def _parse_history(raw_history: Any) -> list[dict[str, Any]]:
+def _parse_history(raw_history: Any, *, expected_policy_version: str) -> list[dict[str, Any]]:
     if not isinstance(raw_history, list) or len(raw_history) > MAX_HISTORY:
         raise ApplicationInputError(f"history must be a list of at most {MAX_HISTORY} records")
     normalized: list[dict[str, Any]] = []
@@ -216,6 +216,18 @@ def _parse_history(raw_history: Any) -> list[dict[str, Any]]:
         status = _string(_required(record, "status"), f"history[{index}].status", max_length=32)
         if status not in ACTION_STATUSES:
             raise ApplicationInputError(f"history[{index}].status is not a recognized action status")
+        parameter = _string(
+            _required(record, "parameter"), f"history[{index}].parameter", max_length=128
+        )
+        if parameter != TARGET_PARAMETER:
+            raise ApplicationInputError(f"history[{index}].parameter is outside the owned target")
+        policy_version = _string(
+            _required(record, "policy_version"),
+            f"history[{index}].policy_version",
+            max_length=64,
+        )
+        if policy_version != expected_policy_version:
+            raise ApplicationInputError(f"history[{index}].policy_version does not match the proposal")
         normalized.append(
             {
                 "action_id": action_id,
@@ -227,9 +239,7 @@ def _parse_history(raw_history: Any) -> list[dict[str, Any]]:
                     _required(record, "operation"), f"history[{index}].operation", max_length=16
                 ),
                 "status": status,
-                "parameter": _string(
-                    _required(record, "parameter"), f"history[{index}].parameter", max_length=128
-                ),
+                "parameter": parameter,
                 "previous_value_milli": _integer(
                     _required(record, "previous_value_milli"),
                     f"history[{index}].previous_value_milli",
@@ -251,11 +261,7 @@ def _parse_history(raw_history: Any) -> list[dict[str, Any]]:
                     f"history[{index}].config_revision",
                     minimum=0,
                 ),
-                "policy_version": _string(
-                    _required(record, "policy_version"),
-                    f"history[{index}].policy_version",
-                    max_length=64,
-                ),
+                "policy_version": policy_version,
                 "report_generation": _integer(
                     _required(record, "report_generation"),
                     f"history[{index}].report_generation",
@@ -367,7 +373,9 @@ def evaluate_command(payload: Mapping[str, Any]) -> dict[str, Any]:
     approval = _parse_approval(
         _required(payload, "approval"), policy_version=proposal["policy_version"], now=now
     )
-    history = _parse_history(_required(payload, "history"))
+    history = _parse_history(
+        _required(payload, "history"), expected_policy_version=proposal["policy_version"]
+    )
     controls = _mapping(_required(payload, "controls"), "controls")
     kill_switch = _boolean(_required(controls, "kill_switch"), "controls.kill_switch")
     application_enabled = _boolean(
@@ -457,8 +465,17 @@ def evaluate_command(payload: Mapping[str, Any]) -> dict[str, Any]:
         )
         if source_record is None:
             reasons.append("rollback_source_missing")
-        elif source_record["applied_value_milli"] != expected_config["value_milli"]:
-            reasons.append("rollback_source_not_current")
+        else:
+            if source_record["applied_value_milli"] != expected_config["value_milli"]:
+                reasons.append("rollback_source_not_current")
+            if source_record["recommendation_id"] != proposal["recommendation_id"]:
+                reasons.append("rollback_proposal_mismatch")
+            if source_record["policy_version"] != proposal["policy_version"]:
+                reasons.append("rollback_policy_mismatch")
+            if source_record["config_generation"] != expected_config["generation"]:
+                reasons.append("rollback_config_generation_mismatch")
+            if source_record["config_revision"] != expected_config["revision"]:
+                reasons.append("rollback_source_revision_mismatch")
 
     result = _result_base(
         status="rejected" if reasons else "accepted_for_safe_boundary",

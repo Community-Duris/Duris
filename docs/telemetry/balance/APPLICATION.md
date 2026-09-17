@@ -66,10 +66,12 @@ rollback source. Replaying the same action ID and fingerprint returns
 action ID for a different proposal/config returns `action_id_conflict`.
 
 Rollback requires a new approved action and a `rollback_of_action_id` that
-refers to an accepted apply audit record. The current config must still hold
-the applied value from that record. The result restores the recorded previous
-value at the next revision and emits a rollback audit record. Missing or
-non-current sources reject with `rollback_source_missing` or
+refers to an accepted apply audit record for the same target, policy,
+recommendation, config generation, and current revision. The current config
+must still hold the applied value from that record. The result restores the
+recorded previous value at the next revision and emits a rollback audit
+record. Missing, mismatched, or non-current sources reject with
+`rollback_source_missing`, `rollback_proposal_mismatch`, or
 `rollback_source_not_current`; an unrelated concurrent edit is never
 overwritten.
 

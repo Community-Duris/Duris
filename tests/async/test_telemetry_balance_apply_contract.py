@@ -116,6 +116,24 @@ class BalanceApplicationContractTest(unittest.TestCase):
         self.assertEqual(result["status"], "rejected")
         self.assertIn("rollback_source_missing", result["reason_codes"])
 
+    def test_rollback_must_reference_the_same_proposal_and_policy(self):
+        applied = evaluate_command(apply_command())
+        rollback = copy_command()
+        rollback["operation"] = "rollback"
+        rollback["now_utc"] = "2026-02-03T00:00:00Z"
+        rollback["approval"]["action_id"] = "action-rollback-mismatch"
+        rollback["approval"]["approved_at_utc"] = "2026-02-02T12:00:00Z"
+        rollback["rollback_of_action_id"] = applied["audit_record"]["action_id"]
+        rollback["current_config"] = applied["next_config"]
+        rollback["expected_config"] = applied["next_config"]
+        rollback["history"] = [applied["audit_record"]]
+        rollback["proposal"]["recommendation_id"] = "shadow-different-proposal"
+
+        result = evaluate_command(rollback)
+
+        self.assertEqual(result["status"], "rejected")
+        self.assertIn("rollback_proposal_mismatch", result["reason_codes"])
+
     def test_raw_identity_is_rejected(self):
         payload = copy_command()
         payload["approval"]["account_id"] = 7
