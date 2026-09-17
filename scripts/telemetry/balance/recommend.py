@@ -299,7 +299,11 @@ def _parse_report(
     )
 
 
-def _parse_target(raw_target: Any) -> tuple[dict[str, Any], list[str]]:
+def _parse_target(
+    raw_target: Any,
+    *,
+    expected_config_generation: str,
+) -> tuple[dict[str, Any], list[str]]:
     target = _mapping(raw_target, "target")
     reasons: list[str] = []
     parameter = target.get("parameter")
@@ -313,6 +317,8 @@ def _parse_target(raw_target: Any) -> tuple[dict[str, Any], list[str]]:
         reasons.append("target_maximum_mismatch")
     if target.get("step_milli") != TARGET_STEP_MILLI:
         reasons.append("target_step_mismatch")
+    if target.get("config_generation") != expected_config_generation:
+        reasons.append("target_config_generation_mismatch")
     current_value = target.get("current_value_milli")
     if (
         isinstance(current_value, bool)
@@ -325,6 +331,7 @@ def _parse_target(raw_target: Any) -> tuple[dict[str, Any], list[str]]:
         {
             "parameter": TARGET_PARAMETER,
             "unit": TARGET_UNIT,
+            "config_generation": expected_config_generation,
             "current_value_milli": current_value,
             "current_value": _format_milli(current_value),
             "bounds_milli": {"min": TARGET_MIN_MILLI, "max": TARGET_MAX_MILLI},
@@ -581,7 +588,10 @@ def build_recommendation(payload: Mapping[str, Any]) -> dict[str, Any]:
     policy_reasons = [] if policy_version == POLICY_VERSION else ["unsupported_policy_version"]
     as_of = _parse_utc(_required(payload, "as_of_utc"), "as_of_utc")
     report, report_reasons = _parse_report(_required(payload, "report"), as_of=as_of)
-    target, target_reasons = _parse_target(_required(payload, "target"))
+    target, target_reasons = _parse_target(
+        _required(payload, "target"),
+        expected_config_generation=report["config_generation"],
+    )
     history, history_reasons = _parse_history(_required(payload, "history"), as_of=as_of)
     rows, invalid_rows = _parse_rows(
         _required(payload, "rows"),

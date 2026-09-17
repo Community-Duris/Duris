@@ -12,6 +12,11 @@ generation, and policy version. The adapter that produces that export is
 responsible for using the approved report interface; the evaluator never opens
 SQL or a game connection.
 
+`balance_shadow_outcome_v1` is the versioned adapter contract proposed by this
+engineering slice. Its name does not claim that a live endpoint or production
+report already exists. Deployment must separately approve and publish the
+report before a real export can qualify.
+
 ## Policy identity and target
 
 The policy version is `balance-shadow-v1`. It owns exactly one target:
@@ -49,6 +54,8 @@ The export contains:
 - report coverage start/end, `published`, `complete`, quality flags, and an
   expiry timestamp;
 - the fixed target identity/current value/bounds/step;
+- the target's config generation, which must exactly match the report config
+  generation;
 - redacted rows with unique `event_token`, `subject_token`,
   `repeat_group_token`, source generation/config generation, cohort,
   adjustment context, eligibility, reward success/amount, and quality flags;

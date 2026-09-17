@@ -52,6 +52,7 @@ def shadow_export() -> dict:
         "target": {
             "parameter": "payout.epic.zone.alignmentMod",
             "unit": "fraction",
+            "config_generation": "cfg-v1",
             "current_value_milli": 200,
             "min_value_milli": 0,
             "max_value_milli": 1000,

@@ -98,6 +98,14 @@ class BalanceShadowRecommendationTest(unittest.TestCase):
         self.assertEqual(result["target"]["proposed_value_milli"], 1000)
         self.assertIn("target_bound_reached", result["decision"]["reason_codes"])
 
+    def test_target_value_must_reference_the_report_config_generation(self):
+        payload = copy_export()
+        payload["target"]["config_generation"] = "cfg-v2"
+        result = build_recommendation(payload)
+
+        self.assertEqual(result["status"], "abstain")
+        self.assertIn("target_config_generation_mismatch", result["abstention_reasons"])
+
     def test_cooldown_and_hysteresis_prevent_churn(self):
         cooldown_payload = copy_export()
         cooldown_payload["history"]["last_recommendation"] = {
