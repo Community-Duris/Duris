@@ -43,6 +43,7 @@
 #include "player/player_load_pipeline.h"
 #include "player/player_revision_state.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_death_restitution_adapter.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/locker_async.h"
@@ -247,6 +248,14 @@ bool prepare_account_reconnect(P_char character, P_desc descriptor)
 {
 	if (!character || !descriptor)
 		return false;
+	if (GET_PID(character) > 0 &&
+	    !player_death_restitution_runtime_login_admit(GET_PID(character)))
+	{
+		SEND_TO_Q(
+			"That character is temporarily unavailable; please try again shortly.\r\n",
+			descriptor);
+		return false;
+	}
 
 	const auto save_fenced = [character]()
 	{
@@ -1374,6 +1383,15 @@ void account_select_char(P_desc d, char *arg)
 		return;
 	}
 
+	if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
+	{
+		SEND_TO_Q(
+			"That character is temporarily unavailable; please try again shortly.\r\n",
+			d);
+		display_character_list(d);
+		return;
+	}
+
 	if (is_char_in_game(c, d))
 	{
 		return;
@@ -1494,6 +1512,21 @@ void account_confirm_char(P_desc d, char *arg)
 					d);
 			}
 
+			if (d->selected_char_name)
+			{
+				str_free(d->selected_char_name);
+				d->selected_char_name = NULL;
+			}
+			display_character_list(d);
+			STATE(d) = CON_ACCT_SELECT_CHAR;
+			return;
+		}
+
+		if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
+		{
+			SEND_TO_Q(
+				"That character is temporarily unavailable; please try again shortly.\r\n",
+				d);
 			if (d->selected_char_name)
 			{
 				str_free(d->selected_char_name);
@@ -2182,6 +2215,13 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 		    !strcasecmp(GET_NAME(k->character), c->charname))
 		{
 			// ok, same character, take over the descriptor
+			if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
+			{
+				SEND_TO_Q(
+					"That character is temporarily unavailable; please try again shortly.\r\n",
+					d);
+				return 1;
+			}
 			d->character = k->character;
 			d->character->desc = d;
 			close_socket(k);
@@ -2194,6 +2234,13 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 		if (IS_PC(ch) && !ch->desc && GET_NAME(ch) &&
 		    !strcasecmp(GET_NAME(ch), c->charname))
 		{
+			if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
+			{
+				SEND_TO_Q(
+					"That character is temporarily unavailable; please try again shortly.\r\n",
+					d);
+				return 1;
+			}
 			echo_on(d);
 			SEND_TO_Q("Reconnecting...\r\n", d);
 			if (!prepare_account_reconnect(ch, d))
@@ -2259,6 +2306,8 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	player_load_result loaded = {};
 	if (!c || !d || c->pid <= 0 || !d->account || !d->account->acct_name)
 		return NULL;
+	if (!player_death_restitution_runtime_login_admit(c->pid))
+		return NULL;
 	if (!d->player_load_request_id)
 	{
 		player_load_request request = {};
@@ -2273,11 +2322,15 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		}
 		request.deadline_usec =
 			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		d->player_load_pid = c->pid;
 		if (STATE(d) == CON_ACCT_CONFIRM_CHAR)
 		{
 			if (player_load_pipeline_submit(request) !=
 			    player_load_submit_outcome::accepted)
+			{
+				d->player_load_pid = 0;
 				return NULL;
+			}
 			d->player_load_request_id = request.request_id;
 			d->player_load_pid = c->pid;
 			d->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT;
@@ -2287,8 +2340,12 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		}
 		player_load_result blocking = {};
 		if (!player_load_pipeline_wait(request, &blocking, PLAYER_LOAD_TIMEOUT_USEC / 1000))
+		{
+			d->player_load_pid = 0;
 			return NULL;
+		}
 		loaded = std::move(blocking);
+		d->player_load_pid = 0;
 		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 	}
 	else
@@ -2300,6 +2357,11 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		ready_player_loads.erase(ready);
 		d->player_load_request_id = 0;
 		d->player_load_pid = 0;
+	}
+	if (!player_death_restitution_runtime_login_admit(c->pid))
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		return NULL;
 	}
 
 	player = (P_char)mm_get(dead_mob_pool);
@@ -2352,6 +2414,19 @@ void account_player_load_complete(P_desc d, player_load_result result)
 		player_load_pipeline_note_stale();
 		result.pid = d->player_load_pid;
 		result.outcome = player_load_outcome::stale;
+	}
+	if (d->player_load_pid <= 0 ||
+	    !player_death_restitution_runtime_login_admit(d->player_load_pid))
+	{
+		d->player_load_request_id = 0;
+		d->player_load_pid = 0;
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		SEND_TO_Q(
+			"That character is temporarily unavailable; please try again shortly.\r\n",
+			d);
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		display_character_list(d);
+		return;
 	}
 	const uint64_t completed_request_id = result.request_id;
 	try

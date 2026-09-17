@@ -1,6 +1,7 @@
 #include "player/player_load_repository.h"
 
 #include "persistence/persistence_observability.h"
+#include "persistence/player_death_restitution_command.h"
 #include "player/player_snapshot_codec.h"
 #include "sql/item_extra_descr_codec.h"
 #include "world/vnum.obj.h"
@@ -733,6 +734,349 @@ bool append_loaded_extra_description(
 	return true;
 }
 
+bool decode_hex_payload(const char *text, std::vector<uint8_t> *payload)
+{
+	if (!text || !payload)
+		return false;
+	const size_t length = strlen(text);
+	if ((length & 1U) || length > 2 * ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES)
+		return false;
+	try
+	{
+		payload->clear();
+		payload->reserve(length / 2);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	auto nibble = [](char value) -> int
+	{
+		if (value >= '0' && value <= '9')
+			return value - '0';
+		if (value >= 'a' && value <= 'f')
+			return value - 'a' + 10;
+		if (value >= 'A' && value <= 'F')
+			return value - 'A' + 10;
+		return -1;
+	};
+	for (size_t index = 0; index < length; index += 2)
+	{
+		const int high = nibble(text[index]);
+		const int low = nibble(text[index + 1]);
+		if (high < 0 || low < 0)
+			return false;
+		payload->push_back(static_cast<uint8_t>((high << 4) | low));
+	}
+	return true;
+}
+
+bool decode_runtime_spellbook_json(const std::string &json, std::vector<int32_t> *spell_ids)
+{
+	if (!spell_ids)
+		return false;
+	spell_ids->clear();
+	std::array<bool, MAX_SKILLS> seen = {};
+	size_t position = 0;
+	auto skip_space = [&]()
+	{
+		while (position < json.size() && (json[position] == ' ' || json[position] == '	' ||
+						  json[position] == '\r' || json[position] == '\n'))
+			++position;
+	};
+	skip_space();
+	if (position >= json.size() || json[position++] != '[')
+		return false;
+	skip_space();
+	if (position < json.size() && json[position] == ']')
+	{
+		++position;
+		skip_space();
+		return position == json.size();
+	}
+	for (;;)
+	{
+		skip_space();
+		if (position >= json.size() || json[position] < '0' || json[position] > '9')
+			return false;
+		const size_t number_start = position;
+		uint64_t value = 0;
+		while (position < json.size() && json[position] >= '0' && json[position] <= '9')
+		{
+			const uint64_t digit = static_cast<unsigned int>(json[position++] - '0');
+			if (value > (static_cast<uint64_t>(MAX_SKILLS) - 1U - digit) / 10U)
+				return false;
+			value = value * 10U + digit;
+		}
+		if ((json[number_start] == '0' && position != number_start + 1) ||
+		    value >= static_cast<uint64_t>(MAX_SKILLS) || seen[value])
+			return false;
+		seen[value] = true;
+		spell_ids->push_back(static_cast<int32_t>(value));
+		skip_space();
+		if (position >= json.size())
+			return false;
+		if (json[position] == ']')
+		{
+			++position;
+			break;
+		}
+		if (json[position++] != ',')
+			return false;
+	}
+	skip_space();
+	return position == json.size();
+}
+
+bool decode_runtime_spellbook_bitmap(const std::vector<uint8_t> &bitmap,
+					      std::vector<int32_t> *spell_ids)
+{
+	if (!spell_ids)
+		return false;
+	constexpr size_t encoded_bytes = (MAX_SKILLS + 1) / 8 + 1;
+	const size_t valid_bytes = (MAX_SKILLS + 7) / 8;
+	if (bitmap.size() != encoded_bytes || valid_bytes == 0 || valid_bytes > bitmap.size())
+		return false;
+	if (MAX_SKILLS % 8 != 0)
+	{
+		const uint8_t valid_mask = static_cast<uint8_t>((1U << (MAX_SKILLS % 8)) - 1U);
+		if ((bitmap[valid_bytes - 1] & static_cast<uint8_t>(~valid_mask)) != 0)
+			return false;
+	}
+	for (size_t index = valid_bytes; index < bitmap.size(); ++index)
+		if (bitmap[index] != 0)
+			return false;
+	spell_ids->clear();
+	for (int spell = 0; spell < MAX_SKILLS; ++spell)
+		if ((bitmap[static_cast<size_t>(spell) / 8] &
+		     static_cast<uint8_t>(1U << (spell % 8))) != 0)
+			spell_ids->push_back(spell);
+	return true;
+}
+
+bool decode_runtime_spellbook(const std::string &keyword, const std::string &description,
+				      std::vector<int32_t> *spell_ids)
+{
+	if (sql_item_extra_descr_is_spellbook_marker(keyword.c_str()))
+	{
+		const std::vector<uint8_t> bitmap(description.begin(), description.end());
+		return decode_runtime_spellbook_bitmap(bitmap, spell_ids);
+	}
+	if (keyword == "SPELLBOOK")
+		return decode_runtime_spellbook_json(description, spell_ids);
+	return false;
+}
+
+bool decode_runtime_item_payload(const std::vector<uint8_t> &payload, uint64_t item_uid,
+					int64_t expected_vnum, player_item_snapshot *item)
+{
+	if (!item || payload.size() < sizeof(uint32_t))
+		return false;
+	try
+	{
+		// A snapshot-list payload is the format written after a successful player
+		// save.  A restitution commit writes the smaller IST1 item-state payload
+		// before that first save; both are valid sidecar states.
+		std::vector<player_item_snapshot> snapshots;
+		const bool native_state = payload[0] == 'I' && payload[1] == 'S' &&
+					  payload[2] == 'T' && payload[3] == '1';
+		if (!native_state)
+		{
+			if (player_item_snapshot_list_decode(payload.data(), payload.size(), &snapshots) !=
+				player_snapshot_codec_result::ok ||
+			    snapshots.size() != 1 || snapshots[0].object_uid != item_uid ||
+			    snapshots[0].vnum != expected_vnum)
+				return false;
+			*item = std::move(snapshots[0]);
+			return true;
+		}
+
+		player_death_restitution_item_state state = {};
+		if (!player_death_restitution_item_state_decode(payload.data(), payload.size(), &state) ||
+		    state.item_uid != item_uid || state.vnum > INT32_MAX ||
+		    static_cast<int64_t>(state.vnum) != expected_vnum || state.quantity != 1 ||
+		    state.extra_flags > UINT32_MAX || state.wear_flags < 0 ||
+		    state.affects.size() > item->affects.size() ||
+		    state.extra_descriptions.size() > PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
+			return false;
+
+		player_item_snapshot converted = {};
+		converted.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		converted.equipment_slot = state.equip_slot;
+		converted.object_uid = state.item_uid;
+		converted.vnum = static_cast<int32_t>(state.vnum);
+		converted.type = state.item_type;
+		converted.timers.fill(0);
+		converted.timers[0] = state.timer;
+		converted.extra_flags = static_cast<uint32_t>(state.extra_flags);
+		converted.wear_flags = static_cast<uint32_t>(state.wear_flags);
+		converted.weight = state.weight;
+		converted.cost = state.cost;
+		converted.material = state.material;
+		converted.condition = state.condition;
+		converted.values = state.values;
+		converted.bitvectors = state.bitvectors;
+		constexpr std::array<uint8_t, 4> string_masks = { 1, 4, 2, 8 };
+		std::array<std::string *, 4> strings = {
+			&converted.name, &converted.short_description, &converted.description,
+			&converted.action_description,
+		};
+		for (size_t index = 0; index < strings.size(); ++index)
+			if (state.string_present[index])
+			{
+				converted.string_mask |= string_masks[index];
+				if (state.strings[index].empty())
+					strings[index]->clear();
+				else
+					strings[index]->assign(
+						reinterpret_cast<const char *>(state.strings[index].data()),
+						state.strings[index].size());
+			}
+		for (size_t index = 0; index < state.affects.size(); ++index)
+			converted.affects[index] =
+				{ state.affects[index].location, state.affects[index].modifier };
+		for (const auto &source : state.extra_descriptions)
+		{
+			const auto bytes_to_string = [](const std::vector<uint8_t> &bytes)
+			{
+				return bytes.empty() ? std::string() : std::string(
+					reinterpret_cast<const char *>(bytes.data()), bytes.size());
+			};
+			std::string keyword = bytes_to_string(source.keyword);
+			std::string description = bytes_to_string(source.description);
+			std::vector<int32_t> spell_ids;
+			const bool legacy_raw = sql_item_extra_descr_is_spellbook_marker(keyword.c_str());
+			const bool canonical = keyword == "SPELLBOOK";
+			if (legacy_raw || canonical)
+			{
+				// IST1 can carry either the captured native bitmap or the canonical
+				// JSON emitted from captured spell IDs. Decode both before publishing
+				// the snapshot; an incomplete bitmap or malformed JSON is unrecoverable
+				// and must not be turned into an empty spellbook.
+				if (!decode_runtime_spellbook(keyword, description, &spell_ids))
+					return false;
+				keyword = "SPELLBOOK";
+				description.clear();
+			}
+			const bool spellbook = keyword == "SPELLBOOK";
+			converted.extra_descriptions.push_back(
+				{ std::move(keyword), std::move(description), spellbook, std::move(spell_ids) });
+		}
+		*item = std::move(converted);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool load_restitution_runtime_state(MYSQL *connection, player_load_result *result,
+				    const std::unordered_map<uint64_t, size_t> &item_by_uid)
+{
+	if (!connection || !result)
+		return false;
+
+	// Delivery recipient is immutable evidence, not current ownership. Discover both
+	// sidecar tables before touching them so a pre-migration database keeps ordinary
+	// inventories loadable while a database with delivered UIDs fails closed.
+	MYSQL_RES *availability = query(
+		connection,
+		"SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_name IN ('player_death_restitution_delivery',"
+		"'player_death_restitution_runtime') ORDER BY table_name",
+		result);
+	if (!availability)
+		return false;
+	bool delivery_present = false;
+	bool runtime_present = false;
+	MYSQL_ROW availability_row;
+	while ((availability_row = mysql_fetch_row(availability)) != nullptr)
+	{
+		if (!availability_row[0])
+		{
+			mysql_free_result(availability);
+			return false;
+		}
+		if (!strcmp(availability_row[0], "player_death_restitution_delivery"))
+			delivery_present = true;
+		else if (!strcmp(availability_row[0], "player_death_restitution_runtime"))
+			runtime_present = true;
+	}
+	mysql_free_result(availability);
+	if (!delivery_present)
+		return true;
+
+	// An active delivery is committed custody. It must remain visible to this
+	// check even when its player_items projection is missing; otherwise the
+	// loader can silently accept an incomplete projection and skip validation.
+	const std::string owner_filter =
+		"own.owner_type=1 AND own.owner_id=" + std::to_string(result->pid) +
+		" AND own.owner_context_id=0 AND own.state=1";
+	if (!runtime_present)
+	{
+		MYSQL_RES *delivered = query(
+			connection,
+			"SELECT d.item_uid FROM player_death_restitution_delivery d JOIN item_current_owner own "
+			"ON own.item_uid=d.item_uid WHERE " +
+				owner_filter + " LIMIT 1",
+			result);
+		if (!delivered)
+			return false;
+		const bool missing_runtime = mysql_fetch_row(delivered) != nullptr;
+		mysql_free_result(delivered);
+		// No current delivery means this is still a normal pre-sidecar save/load. Any
+		// current delivered UID without its companion table is unrecoverable state.
+		return !missing_runtime;
+	}
+
+	const std::string sql =
+		"SELECT d.item_uid,ri.vnum,own.vnum,HEX(runtime.state_payload),"
+		"HEX(runtime.state_digest),SHA2(runtime.state_payload,256) "
+		"FROM player_death_restitution_delivery d "
+		"JOIN player_death_restitution_item ri ON ri.restitution_id=d.restitution_id "
+		"AND ri.item_uid=d.item_uid JOIN item_current_owner own ON own.item_uid=d.item_uid "
+		"LEFT JOIN player_death_restitution_runtime runtime ON runtime.item_uid=d.item_uid "
+		"WHERE " +
+		owner_filter + " ORDER BY d.item_uid";
+	if (!load_rows(connection, sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       uint64_t item_uid = 0;
+			       int64_t custody_vnum = 0;
+			       int64_t owner_vnum = 0;
+			       if (!parse_unsigned(row[0], UINT64_MAX, &item_uid) || !row[1] ||
+				   !row[2] ||
+				   !parse_signed(row[1], INT32_MIN, INT32_MAX, &custody_vnum) ||
+				   !parse_signed(row[2], INT32_MIN, INT32_MAX, &owner_vnum) ||
+				   !row[3] || !row[4] || !row[5] || strcasecmp(row[4], row[5]) != 0)
+				       return false;
+			       const auto found = item_by_uid.find(item_uid);
+			       // A delivery with no current player projection must not be silently
+			       // omitted and must never be recreated from the sidecar payload.
+			       if (found == item_by_uid.end() || custody_vnum != owner_vnum ||
+				   custody_vnum != result->snapshot.items[found->second].vnum)
+				       return false;
+			       std::vector<uint8_t> payload;
+			       player_item_snapshot decoded = {};
+			       if (!decode_hex_payload(row[3], &payload) ||
+			           !decode_runtime_item_payload(payload, item_uid, custody_vnum, &decoded))
+			       return false;
+			       player_item_snapshot &item = result->snapshot.items[found->second];
+			       const int32_t parent_index = item.parent_index;
+			       const int16_t equipment_slot = item.equipment_slot;
+			       item = std::move(decoded);
+			       // The ownership ledger, not the death payload, owns the live
+			       // placement and UID identity after restitution.
+			       item.parent_index = parent_index;
+			       item.equipment_slot = equipment_slot;
+			       item.object_uid = item_uid;
+			       return true;
+		       }))
+		return false;
+	return true;
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
@@ -1023,6 +1367,8 @@ bool load_items(MYSQL *connection, player_load_result *result)
 			    return append_loaded_extra_description(item.extra_descriptions, row[5],
 								   row[6], result);
 		    }))
+		return false;
+	if (!load_restitution_runtime_state(connection, result, item_by_uid))
 		return false;
 	return result->snapshot.items.size() == result->item_identities.size();
 }

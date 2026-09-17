@@ -533,6 +533,16 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 	return consumed;
 }
 
+bool player_save_worker_pid_pending(int pid)
+{
+	if (pid <= 0)
+		return true;
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	const auto found = slots.find(pid);
+	return found != slots.end() &&
+	       (found->second.active != nullptr || found->second.pending != nullptr);
+}
+
 player_save_worker_health player_save_worker_health_copy(void)
 {
 	std::lock_guard<std::mutex> lock(worker_mutex);

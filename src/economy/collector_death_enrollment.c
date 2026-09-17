@@ -6,6 +6,7 @@
 #include "core/utils.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_config.h"
+#include "economy/collector_notification.h"
 #include "economy/collector_runtime.h"
 
 #include <algorithm>
@@ -205,6 +206,7 @@ void collector_death_enrollment_note_committed(P_obj corpse, const item_transfer
 		return;
 	if (critical_operation_id_is_zero(found->second.death_operation))
 		found->second.death_operation = payload.collector.death_operation;
+	collector_notification_death_enrolled();
 }
 
 void collector_death_enrollment_reset_for_tests(void)

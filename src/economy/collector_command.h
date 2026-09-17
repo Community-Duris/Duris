@@ -30,6 +30,10 @@ enum class collector_action : uint8_t
 	cancel,
 	pause,
 	resume,
+	// Claim and acknowledge the durable first-availability hint. These metadata
+	// actions never transfer an item or change a listing's price/eligibility.
+	hint,
+	hint_ack,
 };
 
 // Collection carries every row in the selected item's current source root. The

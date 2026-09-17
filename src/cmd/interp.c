@@ -1162,7 +1162,8 @@ const char *command[MAX_CMD] = {
 	"itemmana",
 	"pulse",
 	"collector",
-	"\n" /* MAX_CMD = 863, MAX_CMD_LIST = 1000 */
+	"restitution",
+	"\n" /* MAX_CMD = 864, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -2899,6 +2900,7 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_WHERE, STAT_DEAD + POS_PRONE, do_where, IMMORTAL);
 	CMD_GRT(CMD_WHICH, STAT_DEAD + POS_PRONE, do_which, IMMORTAL);
 	CMD_GRT(CMD_EQRATE, STAT_DEAD + POS_PRONE, do_eqrate, IMMORTAL);
+	CMD_GRT(CMD_RESTITUTION, STAT_DEAD + POS_PRONE, do_restitution, FORGER);
 	CMD_GRT(CMD_WIZLOCK, STAT_DEAD + POS_PRONE, do_wizlock, FORGER);
 	CMD_GRT(CMD_WIZCONNECT, STAT_DEAD + POS_PRONE, do_wizhost, GREATER_G);
 	CMD_GRT(CMD_ZRESET, STAT_DEAD + POS_PRONE, do_zreset, GREATER_G);

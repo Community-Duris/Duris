@@ -3,6 +3,7 @@
 
 #include "flatfile/flatfile_player_repository.h"
 #include "persistence/persistence_observability.h"
+#include "player/player_save_pipeline.h"
 #include "sql/sql_pool.h"
 
 #ifndef __NO_MYSQL__
@@ -43,6 +44,7 @@ player_load_execute_fn execute_callback = nullptr;
 void *execute_context = nullptr;
 player_load_pipeline_health health = {};
 uint64_t inflight_id = 0;
+int inflight_pid = 0;
 bool stop_requested = false;
 std::atomic<uint64_t> next_request_id = 1;
 
@@ -182,6 +184,7 @@ void worker_main()
 			job = std::move(jobs.front());
 			jobs.pop_front();
 			inflight_id = job.request.request_id;
+			inflight_pid = job.request.pid;
 			refresh_health_locked();
 		}
 		player_load_result result = {};
@@ -226,6 +229,7 @@ void worker_main()
 			if (cancelled_ids.erase(job.request.request_id))
 				result.outcome = player_load_outcome::cancelled;
 			inflight_id = 0;
+			inflight_pid = 0;
 			record_result_locked(result);
 			completions.push_back(std::move(result));
 			refresh_health_locked();
@@ -291,6 +295,7 @@ void player_load_pipeline_shutdown(void)
 	cancelled_ids.clear();
 	submitted_at.clear();
 	inflight_id = 0;
+	inflight_pid = 0;
 	health.running = false;
 	health.stop_pending = false;
 	execute_callback = nullptr;
@@ -304,8 +309,11 @@ player_load_submit_outcome player_load_pipeline_submit(player_load_request reque
 	const uint64_t request_id = request.request_id;
 	if (!player_load_request_valid(request, now))
 		return player_load_submit_outcome::invalid;
+	if (request.pid > 0 && !player_save_pipeline_save_admitted(request.pid))
+		return player_load_submit_outcome::unavailable;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	if (!health.running || stop_requested || !execute_callback)
+	if (!health.running || stop_requested || !execute_callback ||
+	    (request.pid > 0 && !player_save_pipeline_save_admitted(request.pid)))
 		return player_load_submit_outcome::unavailable;
 	if (active_ids.count(request.request_id))
 		return player_load_submit_outcome::duplicate;
@@ -401,6 +409,27 @@ bool player_load_pipeline_wait(player_load_request request, player_load_result *
 			return false;
 		}
 	}
+}
+
+bool player_load_pipeline_pid_pending(int pid)
+{
+	if (pid <= 0)
+		return true;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (inflight_pid == pid)
+		return true;
+	for (const queued_load &job : jobs)
+		if (job.request.pid == pid)
+			return true;
+	for (const player_load_result &result : completions)
+		if (result.pid == pid)
+			return true;
+	return false;
+}
+
+bool player_load_pipeline_login_admit(int pid)
+{
+	return pid > 0 && player_save_pipeline_save_admitted(pid);
 }
 
 player_load_pipeline_health player_load_pipeline_health_copy(void)
