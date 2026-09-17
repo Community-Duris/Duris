@@ -628,7 +628,11 @@ void heal(P_char ch, P_char healer, int hits, int cap)
 	//send_to_char("&+Rdamage output halved\r\n", ch);
 	}
 	*/
+	const int attempted_hits = MAX(0, hits);
 	hits = vamp(ch, hits, cap);
+	telemetry_runtime_game_combat_healing(healer, ch,
+					      static_cast<std::uint64_t>(attempted_hits),
+					      static_cast<std::uint64_t>(MAX(0, hits)), 0U);
 	update_achievements(healer, ch, hits, 1);
 
 	if (hits > 1 && healer != ch && ch->in_room == healer->in_room &&
@@ -6204,6 +6208,8 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 				dam = GET_HIT(victim) + 11;
 			}
 			GET_HIT(victim) -= dam;
+			telemetry_runtime_game_combat_damage(
+				ch, victim, dam > 0.0 ? static_cast<std::uint64_t>(dam) : 0U, 0U);
 
 			/* Send GMCP updates for combat */
 			gmcp_char_vitals(victim); /* Update victim's vitals */
@@ -8185,9 +8191,11 @@ void StopMercifulAttackers(P_char ch)
 
 static void telemetry_combat_context_changed(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !ch->desc || ch->desc->connected != CON_PLAYING)
+	if (!ch)
 		return;
-	(void)telemetry_runtime_game_context(ch, ch->desc);
+	if (IS_PC(ch) && ch->desc && ch->desc->connected == CON_PLAYING)
+		(void)telemetry_runtime_game_context(ch, ch->desc);
+	telemetry_runtime_game_combat_context(ch);
 }
 
 /* start one char fighting another (yes, it is horrible, I know... ) */
