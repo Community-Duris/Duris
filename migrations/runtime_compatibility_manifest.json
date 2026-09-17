@@ -13,8 +13,8 @@
     "id": "0023_telemetry_reward_projection",
     "sequence": 23,
     "apply_checksum": "e847046f0aaf5c2cbcc9c4a559282f79b05b7c3ce55348d2d91581e49d9dda85",
-    "verify_checksum": "98c185812fe3d3bc0b68ebb15e78b434dda450b91a197e8482808f1be636c436",
-    "history_checksum": "2fb7985f84f9616c7e0eec008e559b29214a061fd3681106f632545ad5120e52"
+    "verify_checksum": "db4a738c4e8295cfcbff3bcc5addab6ff325758c24fcce3d9e52df6608154b8c",
+    "history_checksum": "92cc3e737071a6059a21ce38411afb936c192115034c588d90a1b495de03bf61"
   },
   "connection": {
     "character_set": "utf8mb4",

@@ -406,7 +406,7 @@
       "apply": "immutable/0023_telemetry_reward_projection.sql",
       "apply_checksum": "e847046f0aaf5c2cbcc9c4a559282f79b05b7c3ce55348d2d91581e49d9dda85",
       "verify": "immutable/0023_telemetry_reward_projection.sh",
-      "verify_checksum": "98c185812fe3d3bc0b68ebb15e78b434dda450b91a197e8482808f1be636c436",
+      "verify_checksum": "db4a738c4e8295cfcbff3bcc5addab6ff325758c24fcce3d9e52df6608154b8c",
       "compatibility": "mysql8-mariadb10"
     }
   ]
