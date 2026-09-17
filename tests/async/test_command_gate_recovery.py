@@ -69,8 +69,9 @@ checks.append((
 
 checks.append((
     "comm.c self-heals a stuck command gate before reading input",
-    contains(comm, "!get_scheduled(t_ch, event_wait) || ne_event_tick > t_ch->specials.wait_until_pulse") and
-    contains(comm, "REMOVE_BIT(t_ch->specials.act2, PLR2_WAIT);")
+    contains(comm, "static void repair_session_command_gate(P_char character)") and
+    contains(comm, "!character || CAN_ACT(character)") and
+    contains(comm, "REMOVE_BIT(character->specials.act2, PLR2_WAIT);")
 ))
 checks.append((
     "comm.c logs the stuck gate so the cause can be traced",
@@ -81,10 +82,8 @@ checks.append((
     contains(comm, "extern void event_wait(P_char, P_char, P_obj, void *);")
 ))
 
-self_heal = comm.find("/* Self-heal a stuck command gate:")
-input_gate = comm.find(
-    "!creation_grant_input && (CAN_ACT(t_ch) || casting_input)", self_heal
-)
+self_heal = comm.find("repair_session_command_gate(t_ch);")
+input_gate = comm.find("select_session_input(point, t_ch, comm);", self_heal)
 checks.append((
     "self-heal runs before the CAN_ACT input gate",
     self_heal >= 0 and input_gate > self_heal

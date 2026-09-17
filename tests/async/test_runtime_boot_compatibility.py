@@ -106,7 +106,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                          "critical_command_coordinator_init", "game_loop(port, sslport)"):
             self.assertIn(boundary, game)
 
-        game_loop = self.comm[self.comm.index("void game_loop(int port, int sslport)"):
+        game_loop = self.comm[self.comm.index("static bool run_connection_phase"):
                               self.comm.index("bool runtime_listener_address")]
         self.assertIn("redis_load_world_state", game_loop)
         self.assertIn("drain_new_connections", game_loop)

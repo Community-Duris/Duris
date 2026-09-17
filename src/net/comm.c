@@ -16,6 +16,7 @@
 #include "core/structs.h"
 #include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
+#include "net/session_input.h"
 #include "net/output_style.h"
 #include "net/chat_presentation.h"
 #include "net/output_profiles.h"
@@ -1238,17 +1239,1009 @@ static void dispatch_playing_command(P_char character, char *input)
 		command_interpreter(character, input);
 }
 
-/** Run the server pulse loop, including selective input-queue dispatch. */
-/** Run network and simulation pulses, including persistence deadlines independent of world-event debt. */
+struct game_loop_pulse_context
+{
+	int telnet_listener;
+	int ssl_listener;
+	int websocket_listener;
+	char *network_buffer;
+	char *command_buffer;
+	struct host_answer *host_answer;
+	unsigned long *accept_debug_pulse;
+	long *last_desc_per_hour_reset;
+	struct timeval *opt_time;
+	struct timeval *last_time;
+	struct timeval *null_time;
+	struct timeval *timeout;
+	sigset_t *signal_mask;
+	sigset_t *old_signal_mask;
+	bool accept_debug;
+	uint64_t loop_time_begin_us;
+	uint64_t loop_tick;
+	uint64_t loop_start_mono_us;
+	command_latency_tracker command_latency = {};
+	uint64_t connections_us = 0;
+	uint64_t command_sweep_us = 0;
+	uint64_t prompts_us = 0;
+	uint64_t ne_events_us = 0;
+	uint64_t activities_us = 0;
+	uint64_t combat_us = 0;
+	uint64_t affect_us = 0;
+	uint64_t point_us = 0;
+	uint64_t loop_us = 0;
+};
+
+static bool session_input_authentication_pending(P_desc descriptor)
+{
+	return password_async_pulse(descriptor) || account_login_password_pulse(descriptor);
+}
+
+static void repair_session_command_gate(P_char character)
+{
+	if (!character || CAN_ACT(character) ||
+	    (get_scheduled(character, event_wait) &&
+	     ne_event_tick <= character->specials.wait_until_pulse))
+		return;
+	logit(LOG_DEBUG,
+	      "command gate: clearing stuck PLR2_WAIT on %s (event_wait scheduled: %s, pulse %llu, deadline %llu).",
+	      J_NAME(character), get_scheduled(character, event_wait) ? "yes" : "no", ne_event_tick,
+	      character->specials.wait_until_pulse);
+	REMOVE_BIT(character->specials.act2, PLR2_WAIT);
+	if (character->in_room != NOWHERE)
+		update_pos(character);
+}
+
+static session_input_route select_session_input(P_desc descriptor, P_char character, char *input)
+{
+	if (!descriptor || !input)
+		return session_input_route::none;
+	const bool casting_input = casting_input_for_descriptor(descriptor, character);
+	const bool creation_grant_input = descriptor->connected == CON_PLAYING && character &&
+					  item_creation_grant_blocks_commands(character);
+	if (character &&
+	    (creation_grant_input || (!CAN_ACT(character) && !casting_input) ||
+	     (IS_SET(character->specials.affected_by, AFF_CHARM) && !descriptor->original)))
+		return session_input_route::none;
+	const bool dequeued = casting_input ?
+				      get_casting_cmd_from_q(character, &descriptor->input, input) :
+			      descriptor->connected == CON_PLAYING && !descriptor->showstr_count &&
+					      !descriptor->str ?
+				      get_playing_cmd_from_q(character, &descriptor->input, input) :
+				      get_from_q(&descriptor->input, input);
+	if (!dequeued)
+		return session_input_route::none;
+	if (descriptor->showstr_count)
+		return session_input_route::pager;
+	if (descriptor->str)
+		return session_input_route::editor;
+	return descriptor->connected == CON_PLAYING ? session_input_route::playing :
+						      session_input_route::nanny;
+}
+
+static void dispatch_session_input(P_desc descriptor, P_char character, char *input,
+				   session_input_route route, command_latency_tracker *latency)
+{
+	if (!session_input_route_dispatches(route))
+		return;
+	if (character)
+		character->specials.timer = 0;
+	descriptor->prompt_mode = TRUE;
+	command_latency_event event = {};
+	const command_latency_kind kind =
+		route == session_input_route::pager   ? COMMAND_LATENCY_PAGER :
+		route == session_input_route::editor  ? COMMAND_LATENCY_EDITOR :
+		route == session_input_route::playing ? COMMAND_LATENCY_PLAYING :
+							COMMAND_LATENCY_NANNY;
+	prepare_descriptor_latency_event(&event, kind, descriptor,
+					 route == session_input_route::playing ? input : NULL);
+	const uint64_t started_us = loop_monotonic_us();
+	switch (route)
+	{
+	case session_input_route::pager:
+		show_string(descriptor, input);
+		break;
+	case session_input_route::editor:
+		string_add(descriptor, input);
+		break;
+	case session_input_route::playing:
+		dispatch_playing_command(character, input);
+		break;
+	case session_input_route::nanny:
+		descriptor->wait = 0;
+		nanny(descriptor, input);
+		break;
+	case session_input_route::none:
+	case session_input_route::authentication_pending:
+		return;
+	}
+	command_latency_record(latency, &event,
+			       latency_trace_elapsed_us(started_us, loop_monotonic_us()));
+}
+
+/*
+ * The pulse phase order is a compatibility boundary.  Each helper owns one
+ * stage, but all helpers execute on the game thread in the order documented
+ * in docs/network/GAME_LOOP_PHASES.md.  In particular, output drains before
+ * ne_events() closes the current tick's scheduling window, and two-pulse
+ * durable completions remain after that event phase.
+ */
+
+static bool run_connection_phase(game_loop_pulse_context &ctx)
+{
+	const int s = ctx.telnet_listener;
+	const int S = ctx.ssl_listener;
+	const int WS = ctx.websocket_listener;
+	char *buf = ctx.network_buffer;
+	struct host_answer &host_ans_buf = *ctx.host_answer;
+	unsigned long &accept_debug_pulse = *ctx.accept_debug_pulse;
+	long &last_desc_per_hour_reset = *ctx.last_desc_per_hour_reset;
+	struct timeval &null_time = *ctx.null_time;
+	sigset_t &mask = *ctx.signal_mask;
+	sigset_t &oldset = *ctx.old_signal_mask;
+	const bool accept_debug = ctx.accept_debug;
+	const uint64_t loop_tick = ctx.loop_tick;
+	command_latency_tracker &command_latency = ctx.command_latency;
+	P_desc point, next_point;
+
+	// check for signal-initiated shutdown (from launcher)
+	//PROFILE_START(process_signal_shutdown_pending);
+	if (signal_shutdown_pending)
+	{
+		int type = signal_shutdown_pending;
+		signal_shutdown_pending = 0;
+		request_shutdown(type, "Launcher", "signal from launcher");
+	}
+	//PROFILE_END(process_signal_shutdown_pending);
+	persistence_log_poll();
+	checkpointing();
+
+	if ((last_desc_per_hour_reset + 3600) <= time(0))
+	{
+		max_descs_this_hour = used_descs;
+		last_desc_per_hour_reset = time(0);
+	}
+	/*
+	    struct host_answer host_ans_buf;
+	*/
+	bzero(&host_ans_buf, sizeof(host_ans_buf));
+	/* Check for answers to hostname queuries */
+	/* just ignore errors (hope they are all "no message" errors) */
+#if 0
+    if (msgrcv(ipc_id, (struct msgbuf *) &host_ans_buf,
+               sizeof(struct host_answer) - sizeof(long),
+               MSG_HOST_ANS, IPC_NOWAIT) == -1)
+      host_ans_buf.desc = s;    /* so nothing happens  */
+#endif
+	/* Check what's happening out there */
+	FD_ZERO(&input_set);
+	FD_ZERO(&output_set);
+	FD_ZERO(&exc_set);
+
+	/* Get the file descriptors for asynchrnonous IO */
+
+#ifdef USE_ASYNCHRONOUS_IO
+	input_set = io_readfds;
+	output_set = io_writefds;
+	exc_set = io_exceptfds;
+#endif
+
+	/* Continue with original code */
+	PROFILE_START(connections);
+	const uint64_t connections_begin_us = loop_monotonic_us();
+	FD_SET(s, &input_set);
+	FD_SET(S, &input_set);
+	if (WS >= 0)
+		FD_SET(WS, &input_set); /* WebSocket listener */
+	for (point = descriptor_list; point; point = point->next)
+	{
+		/*
+		 * while we are looping through descriptors, it would be a
+		 * good time to see if the message answer we checked for
+		 * before matches
+		 */
+
+		if ((point->descriptor == host_ans_buf.desc) &&
+		    !strncmp(host_ans_buf.addr, point->host /*+ 3 */, strlen(host_ans_buf.addr)))
+		{
+			/* we have a match! */
+			strlcpy(point->host, host_ans_buf.name, sizeof point->host);
+
+			/* site ban code, skip if address is junk */
+			snprintf(buf, MAX_STRING_LENGTH, "%s\r\n", point->host);
+			SEND_TO_Q(buf, point);
+			if (bannedsite(point->host, 0) || bannedsite(host_ans_buf.addr, 0))
+			{
+				write_to_descriptor(
+					point,
+					"Your site has been banned from being able to connect to Duris.\r\n"
+					"You were banned because someone at your site has flagrantly violated\r\n"
+					"the rules to a point where banning your site was necessary.  If you\r\n"
+					"feel this is in error, please e-mail multiplay@newduris.com\r\n");
+				banlog(56, "Reject Connect from %s, banned site.", point->host);
+				logit(LOG_STATUS, "Rejected Connect from %s, banned site.",
+				      point->host);
+				close_socket(point);
+				continue;
+			}
+			else
+			{
+				/* good connection, send them on their way :) */
+				SEND_TO_Q(
+					"Please enter your term type (<CR> for ANSI, '1' for Generic, '3' for MSP markup, '9' for Quick, '?' for help): ",
+					point);
+				point->connected = CON_GET_TERM;
+				point->wait = 1;
+			}
+		}
+		FD_SET(point->descriptor, &input_set);
+		FD_SET(point->descriptor, &exc_set);
+		FD_SET(point->descriptor, &output_set);
+	}
+
+	sigprocmask(SIG_SETMASK, &mask, &oldset);
+
+	int select_result = select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time);
+	if (accept_debug && ((++accept_debug_pulse % 20) == 0 || FD_ISSET(s, &input_set)))
+	{
+		logit(LOG_STATUS,
+		      "ACCEPT DEBUG: pulse=%lu listener=%d select_result=%d listener_ready=%d descriptors=%d",
+		      accept_debug_pulse, s, select_result, FD_ISSET(s, &input_set) ? 1 : 0,
+		      used_descs);
+	}
+	if (select_result < 0)
+	{
+		perror("Select poll");
+		// bad file descriptor - find and nuke it so we dont loop forever
+		if (errno == EBADF)
+		{
+			struct descriptor_data *d, *next_d;
+			for (d = descriptor_list; d; d = next_d)
+			{
+				next_d = d->next;
+				if (fcntl(d->descriptor, F_GETFD) == -1 && errno == EBADF)
+				{
+					logit(LOG_STATUS,
+					      "ebadf: closing bad descriptor %d, host=%s, ws=%d, state=%d",
+					      d->descriptor, *d->host ? d->host : "null",
+					      d->websocket, d->connected);
+					close_socket(d);
+				}
+			}
+		}
+		sigprocmask(SIG_SETMASK, &oldset, 0);
+		return false;
+	}
+	sigprocmask(SIG_SETMASK, &oldset, 0);
+
+	/*
+	 ** Handle the asynchronous IO first.
+	 **
+	 ** Note that it is IMPORTANT that asynchronous is done before
+	 ** anything else.  Reason:  if we process something else, it
+	 ** is conceivable for the user to type in another command,
+	 ** i.e. "rent", then "kill receptionist", which will mean
+	 ** that the player will start attacking receptionist, but
+	 ** then he would have RENTED!!!!!!
+	 */
+
+#ifdef USE_ASYNCHRONOUS_IO
+	(void)io_processFDS(&input_set, &output_set, &exc_set);
+#endif
+
+	/* Respond to whatever might be happening */
+
+	/* Nonblocking accept is the authoritative readiness check. */
+	drain_new_connections(s, 0, "Telnet");
+	drain_new_connections(S, 1, "SSL");
+	if (WS >= 0)
+		drain_new_connections(WS, 2, "WebSocket");
+
+	/* kick out the freaky folks */
+	for (point = descriptor_list; point; point = next_point)
+	{
+		next_point = point->next;
+		if (FD_ISSET(point->descriptor, &exc_set))
+		{
+			logit(LOG_COMM, "Closing socket with exception.  FIXME!");
+			close_socket(point);
+		}
+		else if (FD_ISSET(point->descriptor, &input_set))
+		{
+			int input_result = 0;
+			if (point->connected != CON_SSLNEGO)
+				input_result = process_input(point);
+			if (input_result < 0)
+			{
+				if (point->websocket && point->ws_state == WS_STATE_OPEN)
+				{
+					int close_code = point->ws_error_code ?
+								 point->ws_error_code :
+								 WS_CLOSE_PROTOCOL_ERROR;
+					const char *reason =
+						close_code == WS_CLOSE_MESSAGE_TOO_BIG ?
+							"Message too big" :
+							(close_code == WS_CLOSE_INVALID_DATA ?
+								 "Invalid data" :
+								 (close_code == WS_CLOSE_INTERNAL_ERROR ?
+									  "Internal error" :
+									  "Protocol error"));
+					websocket_close(point, close_code, reason);
+				}
+				else
+				{
+					close_socket(point);
+				}
+			}
+		}
+	}
+	/* TLS negotiation belongs to the connection/readiness phase.  A session
+	 * that is still negotiating must not consume a command in this pulse. */
+	for (point = descriptor_list; point; point = next_point)
+	{
+		next_point = point->next;
+		if (point->connected != CON_SSLNEGO)
+			continue;
+		command_latency_event ssl_event = {};
+		prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL, point, NULL);
+		const uint64_t ssl_started_us = loop_monotonic_us();
+		const int ssl_result = ssl_negotiate(point->sslses);
+		command_latency_record(&command_latency, &ssl_event,
+				       latency_trace_elapsed_us(ssl_started_us,
+								loop_monotonic_us()));
+		switch (ssl_result)
+		{
+		case 0:
+			greet(point);
+			break;
+		default:
+			close_socket(point);
+		case 1:
+			continue;
+		}
+	}
+	PROFILE_END(connections);
+	const uint64_t connections_us =
+		latency_trace_elapsed_us(connections_begin_us, loop_monotonic_us());
+	latency_trace_record("connections", connections_us, loop_tick);
+
+#if 0
+    if (debug_mode)
+      loop_debug();
+#endif
+
+	ctx.connections_us = connections_us;
+	return true;
+}
+
+static void run_session_input_phase(game_loop_pulse_context &ctx)
+{
+	const uint64_t loop_tick = ctx.loop_tick;
+	const uint64_t loop_start_mono_us = ctx.loop_start_mono_us;
+	char *comm = ctx.command_buffer;
+	P_desc point;
+	P_char t_ch;
+	int player_count;
+	command_latency_tracker &command_latency = ctx.command_latency;
+
+	/* process_commands */
+	PROFILE_START(commands);
+	const uint64_t command_sweep_started_us = loop_monotonic_us();
+	for (point = descriptor_list, player_count = 0; point; point = next_to_process)
+	{
+		next_to_process = point->next;
+		t_ch = point->character;
+		const bool authenticated_service = websocket_is_authenticated_service(point);
+
+		if (point->connected == CON_SSLNEGO)
+			continue;
+
+		command_latency_event descriptor_event = {};
+		prepare_descriptor_latency_event(&descriptor_event, COMMAND_LATENCY_DESCRIPTOR,
+						 point, NULL);
+		scoped_command_latency descriptor_latency(&command_latency, &descriptor_event);
+
+		/* update max_users_playing for "who" information */
+		if ((point->connected) == CON_PLAYING)
+		{
+			player_count++;
+			if (player_count > max_users_playing)
+				max_users_playing = player_count;
+		}
+
+		/* WebSocket handshake timeout is independent of connected state. */
+		if (point->websocket && !point->ws_handshake_done &&
+		    point->ws_handshake_started > 0)
+		{
+			time_t now = time(0);
+			if (now - point->ws_handshake_started >= WS_HANDSHAKE_TIMEOUT)
+			{
+				statuslog(56, "WebSocket: Closing incomplete handshake from %s",
+					  point->host);
+				close_socket(point);
+				continue;
+			}
+		}
+
+		/* WebSocket ping/pong dead connection detection */
+		if (point->websocket && point->ws_state == WS_STATE_OPEN)
+		{
+			time_t now = time(0);
+
+			/* Check for ping timeout (no pong received) */
+			if (point->ws_last_ping > 0 && point->ws_ping_outstanding &&
+			    !point->ws_pong_received &&
+			    (now - point->ws_last_ping) > WS_PING_TIMEOUT)
+			{
+				statuslog(
+					56,
+					"WebSocket: Closing dead connection from %s (ping timeout)",
+					point->host);
+				websocket_close(point, WS_CLOSE_GOING_AWAY, "Ping timeout");
+				if (point->ws_state == WS_STATE_CLOSING)
+					continue;
+				close_socket(point);
+				continue;
+			}
+
+			/* Send one periodic ping at a time.  A queued ping becomes outstanding only after control output drains. */
+			if (!point->ws_ping_queued && !point->ws_ping_outstanding &&
+			    (point->ws_last_ping == 0 ||
+			     (now - point->ws_last_ping) >= WS_PING_INTERVAL))
+			{
+				if (websocket_send_ping(point) == 0)
+				{
+					if (point->ws_control_output_len == 0)
+					{
+						point->ws_last_ping = now;
+						point->ws_pong_received = 0;
+						point->ws_ping_outstanding = 1;
+					}
+					else
+					{
+						point->ws_ping_queued = 1;
+					}
+				}
+			}
+		}
+
+		/* new timeout for non-playing sockets */
+
+		if (point->connected && !authenticated_service)
+		{
+			point->wait++;
+
+			switch (point->connected)
+			{
+				/* short protocol/login transitions retain a 60 second timeout */
+			case CON_FLUSH:
+			case CON_GET_TERM:
+				if (point->wait > 240)
+				{
+					write_to_descriptor(point, "Idle Timeout\n");
+					close_socket(point);
+					continue;
+				}
+				break;
+
+				/* slightly more involved, 10 minute timeout */
+			case CON_ALIGN:
+			case CON_BONUS1:
+			case CON_BONUS2:
+			case CON_BONUS3:
+			case CON_HOMETOWN:
+			case CON_NAME:
+			case CON_PWD_CONF:
+			case CON_PWD_D_CONF:
+			case CON_PWD_GET:
+			case CON_PWD_NO_CONF:
+			case CON_PWD_NEW:
+			case CON_PWD_GET_NEW:
+			case CON_PWD_NORM:
+			case CON_GET_CLASS:
+			case CON_GET_RACE:
+			case CON_REROLL:
+			case CON_APPROPRIATE_NAME:
+			case CON_NAME_CONF:
+			case CON_GET_SEX:
+				if (point->wait > 2400)
+				{
+					write_to_descriptor(point, "Idle Timeout\n");
+					close_socket(point);
+					continue;
+				}
+				break;
+				/*
+					 * for remaining states, 15 minutes, same as idle
+					 * timeout in game
+					 */
+			default:
+				if (point->wait > 3600)
+				{
+					write_to_descriptor(point, "Idle Timeout\n");
+					close_socket(point);
+					continue;
+				}
+				break;
+			}
+		}
+		else if (!authenticated_service && t_ch && IS_AFFECTED2(t_ch, AFF2_SLOW) &&
+			 (pulse % 2) && !GET_CLASS(t_ch, CLASS_MONK))
+			continue;
+		else if (!authenticated_service && t_ch && affected_by_spell(t_ch, TAG_CTF) &&
+			 (pulse % (int)get_property("ctf.slowness", 3)))
+			continue;
+
+		/* Keep type-ahead queued until the worker's result has been applied
+		 * on this thread. Completion never retains a descriptor pointer. */
+		if (session_input_authentication_pending(point))
+			continue;
+		descriptor_latency.finish();
+		repair_session_command_gate(t_ch);
+		const session_input_route route = select_session_input(point, t_ch, comm);
+		dispatch_session_input(point, t_ch, comm, route, &command_latency);
+	}
+	const uint64_t command_sweep_us =
+		latency_trace_elapsed_us(command_sweep_started_us, loop_monotonic_us());
+	PROFILE_END(commands);
+	latency_trace_record("commands", command_sweep_us, loop_tick);
+	command_latency_log_buffer command_report;
+	command_report.length = 0;
+	command_latency_report_throttled(&command_report_state, &command_latency, command_sweep_us,
+					 latency_trace_boot_id(), loop_tick, loop_start_mono_us,
+					 collect_command_latency_log, &command_report);
+	if (command_report.length)
+		logit(LOG_STATUS, "%s", command_report.text);
+
+	ctx.command_sweep_us = command_sweep_us;
+}
+
+static void run_output_phase(game_loop_pulse_context &ctx)
+{
+	const uint64_t loop_tick = ctx.loop_tick;
+	P_desc point, next_point;
+
+	PROFILE_START(prompts);
+	const uint64_t prompts_begin_us = loop_monotonic_us();
+	for (point = descriptor_list; point; point = next_point)
+	{
+		next_point = point->next;
+
+		// this code tries to skip players who have too much pending text.
+		// But, we currently boot them anyway...
+		if (!FD_ISSET(point->descriptor, &output_set))
+			continue;
+
+		// skip ssl connections still negotiating
+		if (point->connected == CON_SSLNEGO)
+			continue;
+
+		if (!point->websocket && point->telnet_output_len)
+		{
+			if (telnet_flush_output(point) < 0)
+			{
+				close_socket(point);
+				continue;
+			}
+			if (point->telnet_output_len)
+				continue;
+		}
+
+		/* Drain WebSocket bytes retained after a partial write/EAGAIN before
+		 * framing additional application output for this descriptor. */
+		if (point->websocket && point->ws_output_offset < point->ws_output_len)
+		{
+			if (websocket_flush_output(point) < 0)
+			{
+				point->write_failed = 1;
+				close_socket(point);
+				continue;
+			}
+			if (point->ws_output_offset < point->ws_output_len)
+				continue;
+		}
+
+		if (process_output(point) < 0)
+		{
+			close_socket(point);
+			continue;
+		}
+		if (point->websocket && websocket_flush_output(point) < 0)
+		{
+			close_socket(point);
+			continue;
+		}
+		/* Logout must finish without requiring another command from the client. */
+		if (point->connected == CON_FLUSH && !point->output.head &&
+		    point->telnet_output_len == 0 && point->ws_output_len == 0 &&
+		    point->ws_control_output_len == 0)
+		{
+			close_socket(point);
+			continue;
+		}
+		if (point->websocket && point->ws_state == WS_STATE_OPEN && point->ws_ping_queued &&
+		    point->ws_control_output_len == 0)
+		{
+			point->ws_ping_queued = 0;
+			point->ws_ping_outstanding = 1;
+			point->ws_pong_received = 0;
+			point->ws_last_ping = time(0);
+		}
+		if (point->websocket && point->ws_state == WS_STATE_CLOSING &&
+		    point->ws_output_len == 0 && point->ws_control_output_len == 0)
+		{
+			close_socket(point);
+			continue;
+		}
+	}
+
+	PROFILE_END(prompts);
+	const uint64_t prompts_us = latency_trace_elapsed_us(prompts_begin_us, loop_monotonic_us());
+	latency_trace_record("prompts", prompts_us, loop_tick);
+
+	ctx.prompts_us = prompts_us;
+}
+
+static void run_event_phase(game_loop_pulse_context &ctx)
+{
+	const uint64_t loop_tick = ctx.loop_tick;
+
+	/* handle heartbeat stuff */
+	/* ne_events() closes the current tick's pre-event scheduling phase. */
+	const uint64_t ne_events_begin_us = loop_monotonic_us();
+	ne_events();
+	const uint64_t ne_events_us =
+		latency_trace_elapsed_us(ne_events_begin_us, loop_monotonic_us());
+	latency_trace_record("ne_events", ne_events_us, loop_tick);
+	telemetry_monotonic_usec telemetry_pulse_now = 0U;
+	telemetry_utc_usec telemetry_pulse_utc = TELEMETRY_UTC_UNKNOWN;
+	if (telemetry_runtime_now(&telemetry_pulse_now, &telemetry_pulse_utc))
+	{
+		const std::uint16_t telemetry_slots = telemetry_runtime_pulse_slot_count();
+		telemetry_pulse_request telemetry_request{};
+		telemetry_request.now_monotonic_usec = telemetry_pulse_now;
+		telemetry_request.occurrence_utc_usec = telemetry_pulse_utc;
+		telemetry_request.slot = static_cast<std::uint16_t>(
+			static_cast<unsigned int>(pulse) % telemetry_slots);
+		(void)telemetry_runtime_pulse(telemetry_request);
+	}
+
+	item_creation_grant_prepare_pulse();
+	artifact_mana_pulse();
+	device_actions_pulse();
+
+	ctx.ne_events_us = ne_events_us;
+}
+
+static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
+{
+	const uint64_t loop_tick = ctx.loop_tick;
+
+	/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
+	if (!(pulse % 2))
+	{
+		const uint64_t gmcp_begin_us = loop_monotonic_us();
+		gmcp_flush_dirty_rooms();
+		gmcp_flush_dirty_ship_contacts();
+		gmcp_flush_dirty_ship_info();
+		flush_pending_ship_saves();
+		locker_async_pulse();
+		corpse_lifecycle_transaction_pulse();
+		critical_completion critical_completions[64] = {};
+		const size_t critical_completion_count =
+			critical_command_coordinator_pulse(critical_completions, 64);
+		critical_gameplay_handle_completions(critical_completions,
+						     critical_completion_count);
+		auction_transaction_publish_outbox();
+		corpse_lifecycle_transaction_publish_outbox();
+		collector_transaction_publish_outbox();
+		combat_outcome_transaction_publish_outbox();
+		artifact_guild_transaction_publish_outbox();
+		for (size_t index = 0; index < critical_completion_count; ++index)
+			if (critical_completions[index].outcome ==
+			    critical_apply_outcome::terminal_failure)
+				persistence_alert(AVATAR, "critical_command", "completion", "none",
+						  "none", "integrity_failure",
+						  "operation metadata redacted");
+		player_save_pipeline_pulse();
+		persistence_pulse_character_saves();
+		death_extract_retry_pulse();
+		player_load_result load_completions[32] = {};
+		const size_t load_completion_count =
+			player_load_pipeline_pulse(load_completions, 32);
+		for (size_t index = 0; index < load_completion_count; ++index)
+		{
+			bool delivered = false;
+			for (P_desc descriptor = descriptor_list; descriptor;
+			     descriptor = descriptor->next)
+				if (descriptor->player_load_request_id ==
+				    load_completions[index].request_id)
+				{
+					if (descriptor->player_load_mode == PLAYER_LOAD_MODE_LEGACY)
+						nanny_player_load_complete(
+							descriptor,
+							std::move(load_completions[index]));
+					else
+						account_player_load_complete(
+							descriptor,
+							std::move(load_completions[index]));
+					delivered = true;
+					break;
+				}
+			if (!delivered)
+				player_load_pipeline_note_stale();
+		}
+		information_cache_pulse();
+		help_cache_pulse();
+		collector_catalog_cache_pulse();
+		collector_maintenance_pulse();
+		collector_presence_pulse();
+		collector_service_pulse();
+		account_recovery_pulse();
+		redis_world_recovery_pulse();
+		latency_trace_record("gmcp_flush",
+				     latency_trace_elapsed_us(gmcp_begin_us, loop_monotonic_us()),
+				     loop_tick);
+	}
+	maintenance_result maintenance_results[MAINTENANCE_COMPLETION_MAX] = {};
+	const size_t maintenance_count = maintenance_scheduler_pulse(
+		ne_event_tick, maintenance_results, MAINTENANCE_COMPLETION_MAX);
+	maintenance_handle_completions(maintenance_results, maintenance_count);
+}
+
+static void run_activity_phase(game_loop_pulse_context &ctx)
+{
+	const uint64_t loop_tick = ctx.loop_tick;
+
+	PROFILE_START(activities);
+	const uint64_t activities_begin_us = loop_monotonic_us();
+	if (maintenance_activity_due(ne_event_tick, WAIT_SEC, 1))
+		ship_activity();
+
+	if (!no_ferries && maintenance_activity_due(ne_event_tick, WAIT_SEC, 2))
+		ferry_activity();
+
+	if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 120, 3))
+		spawn_random_mapmob();
+
+	//    if (!(pulse % WAIT_SEC))
+	//      arena_activity();
+
+	if (maintenance_activity_due(ne_event_tick, SHORT_AFFECT, 4))
+		short_affect_update();
+
+	if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 300, 5))
+		wimps_in_approve_queue();
+
+	PROFILE_END(activities);
+	const uint64_t activities_us =
+		latency_trace_elapsed_us(activities_begin_us, loop_monotonic_us());
+	latency_trace_record("activities", activities_us, loop_tick);
+
+	ctx.activities_us = activities_us;
+}
+
+static void run_combat_phase(game_loop_pulse_context &ctx)
+{
+	const uint64_t loop_tick = ctx.loop_tick;
+	P_desc point;
+	P_char t_ch;
+
+	PROFILE_START(combat);
+	const uint64_t combat_begin_us = loop_monotonic_us();
+	perform_violence();
+
+	/* for action_delays[] related to combat --TAM 04/19/94 */
+	for (point = descriptor_list; point; point = point->next)
+	{
+		if (point->character && point->connected == CON_PLAYING)
+		{
+			t_ch = point->character;
+
+			if (!pulse)
+			{
+				if (IS_SET(t_ch->specials.act2, PLR2_HINT_CHANNEL))
+				{
+					tossHint(t_ch);
+				}
+			}
+			if (t_ch->desc && t_ch->desc->last_map_update)
+			{
+				// For ship passengers: GMCP only (handler.c already filters to GMCP-enabled only)
+				if (IS_SHIP_ROOM(t_ch->in_room))
+				{
+					if (GMCP_ENABLED(t_ch))
+					{
+						P_ship ship = get_ship_from_char(t_ch);
+						if (ship && IS_MAP_ROOM(ship->location))
+						{
+							int n = map_view_distance(t_ch,
+										  ship->location);
+							if (n > 1)
+							{
+								// Render map and send via GMCP only (skip text by using websocket flag temporarily)
+								bool was_websocket =
+									t_ch->desc->websocket;
+								t_ch->desc->websocket =
+									1; // Force skip_text_output in display_map_room
+								display_map_room(t_ch,
+										 ship->location, n,
+										 MAP_AUTOMAP, 0);
+								t_ch->desc->websocket =
+									was_websocket;
+							}
+						}
+					}
+				}
+				else
+				{
+					map_look(t_ch, MAP_AUTOMAP);
+				}
+				t_ch->desc->last_map_update = 0;
+			}
+			if (t_ch->desc && t_ch->desc->last_group_update)
+			{
+				/* For GMCP clients, send structured data to group panel */
+				if (GMCP_ENABLED(t_ch))
+				{
+					gmcp_send_group_status(t_ch);
+				}
+				/* For MSP clients, display text group output */
+				if (t_ch->desc->term_type == TERM_MSP)
+				{
+					do_group(t_ch, writable_arg(""), 0);
+				}
+				t_ch->desc->last_group_update = 0;
+			}
+			if (t_ch->points.delay_move > 0)
+				t_ch->points.delay_move -= BOUNDED(
+					0,
+					!IS_MAP_ROOM(t_ch->in_room) ? move_regen(t_ch, FALSE) :
+								      move_regen(t_ch, FALSE) / 2,
+					t_ch->points.delay_move);
+		}
+	}
+	//      }
+	PROFILE_END(combat);
+	const uint64_t combat_us = latency_trace_elapsed_us(combat_begin_us, loop_monotonic_us());
+	latency_trace_record("combat", combat_us, loop_tick);
+
+	ctx.combat_us = combat_us;
+}
+
+static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
+{
+	const uint64_t loop_time_begin_us = ctx.loop_time_begin_us;
+	const uint64_t loop_tick = ctx.loop_tick;
+	const uint64_t loop_start_mono_us = ctx.loop_start_mono_us;
+	struct timeval &opt_time = *ctx.opt_time;
+	struct timeval &last_time = *ctx.last_time;
+	struct timeval &timeout = *ctx.timeout;
+	sigset_t &mask = *ctx.signal_mask;
+	sigset_t &oldset = *ctx.old_signal_mask;
+	const uint64_t connections_us = ctx.connections_us;
+	const uint64_t command_sweep_us = ctx.command_sweep_us;
+	const uint64_t prompts_us = ctx.prompts_us;
+	const uint64_t ne_events_us = ctx.ne_events_us;
+	const uint64_t activities_us = ctx.activities_us;
+	const uint64_t combat_us = ctx.combat_us;
+
+	PROFILE_START(pulse_reset);
+	// tics since last checkpoint signal
+	tics = tics + 1;
+	if (tics > static_cast<sig_atomic_t>(BIT_30))
+	{
+		tics = 1;
+		debug("Huge value for tics, resetting to 1.");
+		logit(LOG_SYS, "Huge value for tics, resetting to 1.");
+	}
+	nevent_advance_tick();
+	const uint64_t affect_and_points_begin_us = loop_monotonic_us();
+	uint64_t affect_us = 0;
+	uint64_t point_us = 0;
+	if (!pulse)
+	{
+		affect_update();
+		const uint64_t affect_end_us = loop_monotonic_us();
+		point_update();
+		const uint64_t point_end_us = loop_monotonic_us();
+		affect_us = latency_trace_elapsed_us(affect_and_points_begin_us, affect_end_us);
+		point_us = latency_trace_elapsed_us(affect_end_us, point_end_us);
+	}
+	const uint64_t affect_and_points_us =
+		latency_trace_elapsed_us(affect_and_points_begin_us, loop_monotonic_us());
+	latency_trace_record("affect_and_points", affect_and_points_us, loop_tick);
+	latency_trace_record("affect_update", affect_us, loop_tick);
+	latency_trace_record("point_update", point_us, loop_tick);
+	/* check out the time */
+	const uint64_t loop_us = latency_trace_elapsed_us(loop_time_begin_us, loop_monotonic_us());
+	if (loop_us != LATENCY_TRACE_DURATION_INVALID && loop_us >= 250000) // 4 ticks a sec
+	{
+		char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		char duration_buffers[9][LATENCY_TRACE_TICK_STRING_LENGTH];
+		statuslog(
+			56,
+			"MUD TICK TOOK TOO LONG - loop time - %f: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
+			" connections_us=%s"
+			" activities_us=%s"
+			" combat_us=%s"
+			" commands_us=%s"
+			" ne_events_us=%s"
+			" prompts_us=%s"
+			" affect_and_points_us=%s"
+			" affect_update_us=%s"
+			" point_update_us=%s",
+			(double)loop_us / 1000000.0, latency_trace_boot_id(),
+			latency_trace_format_tick(loop_tick, tick_buffer), loop_start_mono_us,
+			latency_trace_format_duration(connections_us, duration_buffers[0]),
+			latency_trace_format_duration(activities_us, duration_buffers[1]),
+			latency_trace_format_duration(combat_us, duration_buffers[2]),
+			latency_trace_format_duration(command_sweep_us, duration_buffers[3]),
+			latency_trace_format_duration(ne_events_us, duration_buffers[4]),
+			latency_trace_format_duration(prompts_us, duration_buffers[5]),
+			latency_trace_format_duration(affect_and_points_us, duration_buffers[6]),
+			latency_trace_format_duration(affect_us, duration_buffers[7]),
+			latency_trace_format_duration(point_us, duration_buffers[8]));
+	}
+	latency_trace_record("total_tick", loop_us, loop_tick);
+	if (!(tics % 300))
+	{
+		latency_trace_snapshot snapshot = {};
+		latency_trace_snapshot_take_and_reset(&snapshot);
+		FILE *_ltf = fopen("logs/latency_trace.log", "a");
+		if (_ltf)
+		{
+			latency_trace_snapshot_dump(_ltf, &snapshot);
+			fclose(_ltf);
+		}
+		else
+			statuslog(56,
+				  "LATENCY TRACE: could not open logs/latency_trace.log: errno=%d",
+				  errno);
+		latency_trace_snapshot_dump(stderr, &snapshot);
+		fflush(stderr);
+	}
+	memcpy(&timeout, &opt_time, sizeof(timeout));
+	const suseconds_t usec_spent = (suseconds_t)MIN(
+		loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us, (uint64_t)timeout.tv_usec);
+	timeout.tv_usec = MAX(0, timeout.tv_usec - usec_spent);
+
+	if (timeout.tv_sec || timeout.tv_usec)
+	{
+		/*
+		 * This keeps game from being a total processor hog by putting
+		 * it to sleep for the part of each 1/4 second that is not
+		 * used for game processing.
+		 */
+
+		sigprocmask(SIG_SETMASK, &mask, &oldset);
+
+		if (select(0, (fd_set *)0, (fd_set *)0, (fd_set *)0, &timeout) < 0)
+		{
+			sigprocmask(SIG_SETMASK, &oldset, 0);
+			if (errno == EINTR)
+				return; // interrupted by signal; the next pulse retries
+			perror("Select sleep");
+			return;
+		}
+		sigprocmask(SIG_SETMASK, &oldset, 0);
+	}
+	gettimeofday(&last_time, (struct timezone *)0); /* end of pulse reset */
+	PROFILE_END(pulse_reset);
+
+	ctx.affect_us = affect_us;
+	ctx.point_us = point_us;
+	ctx.loop_us = loop_us;
+}
+
+/**
+ * Run network and simulation pulses, including persistence deadlines
+ * independent of world-event debt.
+ */
 void game_loop(int port, int sslport)
 {
-	P_char t_ch = NULL;
-	bool casting_input = FALSE;
-	bool creation_grant_input = FALSE;
-	P_desc point, next_point;
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
-	int player_count;
+	P_desc point;
 	static struct timeval opt_time;
 	struct timeval last_time, timeout, null_time;
 	struct host_answer host_ans_buf;
@@ -1402,894 +2395,36 @@ resume_game_loop:
 		const uint64_t loop_tick = (uint64_t)ne_event_tick;
 		const uint64_t loop_start_mono_us = loop_time_begin_us;
 		latency_trace_begin_pulse(loop_tick, loop_start_mono_us);
-		// check for signal-initiated shutdown (from launcher)
-		//PROFILE_START(process_signal_shutdown_pending);
-		if (signal_shutdown_pending)
-		{
-			int type = signal_shutdown_pending;
-			signal_shutdown_pending = 0;
-			request_shutdown(type, "Launcher", "signal from launcher");
-		}
-		//PROFILE_END(process_signal_shutdown_pending);
-		persistence_log_poll();
-		checkpointing();
 
-		if ((last_desc_per_hour_reset + 3600) <= time(0))
-		{
-			max_descs_this_hour = used_descs;
-			last_desc_per_hour_reset = time(0);
-		}
-		/*
-		    struct host_answer host_ans_buf;
-		*/
-		bzero(&host_ans_buf, sizeof(host_ans_buf));
-		/* Check for answers to hostname queuries */
-		/* just ignore errors (hope they are all "no message" errors) */
-#if 0
-    if (msgrcv(ipc_id, (struct msgbuf *) &host_ans_buf,
-               sizeof(struct host_answer) - sizeof(long),
-               MSG_HOST_ANS, IPC_NOWAIT) == -1)
-      host_ans_buf.desc = s;    /* so nothing happens  */
-#endif
-		/* Check what's happening out there */
-		FD_ZERO(&input_set);
-		FD_ZERO(&output_set);
-		FD_ZERO(&exc_set);
+		game_loop_pulse_context context{};
+		context.telnet_listener = s;
+		context.ssl_listener = S;
+		context.websocket_listener = WS;
+		context.network_buffer = buf;
+		context.command_buffer = comm;
+		context.host_answer = &host_ans_buf;
+		context.accept_debug_pulse = &accept_debug_pulse;
+		context.last_desc_per_hour_reset = &last_desc_per_hour_reset;
+		context.opt_time = &opt_time;
+		context.last_time = &last_time;
+		context.null_time = &null_time;
+		context.timeout = &timeout;
+		context.signal_mask = &mask;
+		context.old_signal_mask = &oldset;
+		context.accept_debug = accept_debug;
+		context.loop_time_begin_us = loop_time_begin_us;
+		context.loop_tick = loop_tick;
+		context.loop_start_mono_us = loop_start_mono_us;
 
-		/* Get the file descriptors for asynchrnonous IO */
-
-#ifdef USE_ASYNCHRONOUS_IO
-		input_set = io_readfds;
-		output_set = io_writefds;
-		exc_set = io_exceptfds;
-#endif
-
-		/* Continue with original code */
-		PROFILE_START(connections);
-		const uint64_t connections_begin_us = loop_monotonic_us();
-		FD_SET(s, &input_set);
-		FD_SET(S, &input_set);
-		if (WS >= 0)
-			FD_SET(WS, &input_set); /* WebSocket listener */
-		for (point = descriptor_list; point; point = point->next)
-		{
-			/*
-			 * while we are looping through descriptors, it would be a
-			 * good time to see if the message answer we checked for
-			 * before matches
-			 */
-
-			if ((point->descriptor == host_ans_buf.desc) &&
-			    !strncmp(host_ans_buf.addr, point->host /*+ 3 */,
-				     strlen(host_ans_buf.addr)))
-			{
-				/* we have a match! */
-				strlcpy(point->host, host_ans_buf.name, sizeof point->host);
-
-				/* site ban code, skip if address is junk */
-				snprintf(buf, MAX_STRING_LENGTH, "%s\r\n", point->host);
-				SEND_TO_Q(buf, point);
-				if (bannedsite(point->host, 0) || bannedsite(host_ans_buf.addr, 0))
-				{
-					write_to_descriptor(
-						point,
-						"Your site has been banned from being able to connect to Duris.\r\n"
-						"You were banned because someone at your site has flagrantly violated\r\n"
-						"the rules to a point where banning your site was necessary.  If you\r\n"
-						"feel this is in error, please e-mail multiplay@newduris.com\r\n");
-					banlog(56, "Reject Connect from %s, banned site.",
-					       point->host);
-					logit(LOG_STATUS, "Rejected Connect from %s, banned site.",
-					      point->host);
-					close_socket(point);
-					continue;
-				}
-				else
-				{
-					/* good connection, send them on their way :) */
-					SEND_TO_Q(
-						"Please enter your term type (<CR> for ANSI, '1' for Generic, '3' for MSP markup, '9' for Quick, '?' for help): ",
-						point);
-					point->connected = CON_GET_TERM;
-					point->wait = 1;
-				}
-			}
-			FD_SET(point->descriptor, &input_set);
-			FD_SET(point->descriptor, &exc_set);
-			FD_SET(point->descriptor, &output_set);
-		}
-
-		sigprocmask(SIG_SETMASK, &mask, &oldset);
-
-		int select_result =
-			select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time);
-		if (accept_debug && ((++accept_debug_pulse % 20) == 0 || FD_ISSET(s, &input_set)))
-		{
-			logit(LOG_STATUS,
-			      "ACCEPT DEBUG: pulse=%lu listener=%d select_result=%d listener_ready=%d descriptors=%d",
-			      accept_debug_pulse, s, select_result, FD_ISSET(s, &input_set) ? 1 : 0,
-			      used_descs);
-		}
-		if (select_result < 0)
-		{
-			perror("Select poll");
-			// bad file descriptor - find and nuke it so we dont loop forever
-			if (errno == EBADF)
-			{
-				struct descriptor_data *d, *next_d;
-				for (d = descriptor_list; d; d = next_d)
-				{
-					next_d = d->next;
-					if (fcntl(d->descriptor, F_GETFD) == -1 && errno == EBADF)
-					{
-						logit(LOG_STATUS,
-						      "ebadf: closing bad descriptor %d, host=%s, ws=%d, state=%d",
-						      d->descriptor, *d->host ? d->host : "null",
-						      d->websocket, d->connected);
-						close_socket(d);
-					}
-				}
-			}
-			sigprocmask(SIG_SETMASK, &oldset, 0);
+		if (!run_connection_phase(context))
 			continue;
-		}
-		sigprocmask(SIG_SETMASK, &oldset, 0);
-
-		/*
-		 ** Handle the asynchronous IO first.
-		 **
-		 ** Note that it is IMPORTANT that asynchronous is done before
-		 ** anything else.  Reason:  if we process something else, it
-		 ** is conceivable for the user to type in another command,
-		 ** i.e. "rent", then "kill receptionist", which will mean
-		 ** that the player will start attacking receptionist, but
-		 ** then he would have RENTED!!!!!!
-		 */
-
-#ifdef USE_ASYNCHRONOUS_IO
-		(void)io_processFDS(&input_set, &output_set, &exc_set);
-#endif
-
-		/* Respond to whatever might be happening */
-
-		/* Nonblocking accept is the authoritative readiness check. */
-		drain_new_connections(s, 0, "Telnet");
-		drain_new_connections(S, 1, "SSL");
-		if (WS >= 0)
-			drain_new_connections(WS, 2, "WebSocket");
-
-		/* kick out the freaky folks */
-		for (point = descriptor_list; point; point = next_point)
-		{
-			next_point = point->next;
-			if (FD_ISSET(point->descriptor, &exc_set))
-			{
-				logit(LOG_COMM, "Closing socket with exception.  FIXME!");
-				close_socket(point);
-			}
-			else if (FD_ISSET(point->descriptor, &input_set))
-			{
-				int input_result = 0;
-				if (point->connected != CON_SSLNEGO)
-					input_result = process_input(point);
-				if (input_result < 0)
-				{
-					if (point->websocket && point->ws_state == WS_STATE_OPEN)
-					{
-						int close_code = point->ws_error_code ?
-									 point->ws_error_code :
-									 WS_CLOSE_PROTOCOL_ERROR;
-						const char *reason =
-							close_code == WS_CLOSE_MESSAGE_TOO_BIG ?
-								"Message too big" :
-								(close_code == WS_CLOSE_INVALID_DATA ?
-									 "Invalid data" :
-									 (close_code == WS_CLOSE_INTERNAL_ERROR ?
-										  "Internal error" :
-										  "Protocol error"));
-						websocket_close(point, close_code, reason);
-					}
-					else
-					{
-						close_socket(point);
-					}
-				}
-			}
-		}
-		PROFILE_END(connections);
-		const uint64_t connections_us =
-			latency_trace_elapsed_us(connections_begin_us, loop_monotonic_us());
-		latency_trace_record("connections", connections_us, loop_tick);
-
-#if 0
-    if (debug_mode)
-      loop_debug();
-#endif
-
-		/* process_commands */
-		PROFILE_START(commands);
-		const uint64_t command_sweep_started_us = loop_monotonic_us();
-		command_latency_tracker command_latency = {};
-		for (point = descriptor_list, player_count = 0; point; point = next_to_process)
-		{
-			next_to_process = point->next;
-			t_ch = point->character;
-			const bool authenticated_service =
-				websocket_is_authenticated_service(point);
-
-			if (point->connected == CON_SSLNEGO)
-			{
-				command_latency_event ssl_event = {};
-				prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL,
-								 point, NULL);
-				const uint64_t ssl_started_us = loop_monotonic_us();
-				const int ssl_result = ssl_negotiate(point->sslses);
-				command_latency_record(
-					&command_latency, &ssl_event,
-					latency_trace_elapsed_us(ssl_started_us,
-								 loop_monotonic_us()));
-				switch (ssl_result)
-				{
-				case 0:
-					greet(point);
-					break;
-				default:
-					close_socket(point);
-				case 1:
-					continue;
-				}
-			}
-
-			command_latency_event descriptor_event = {};
-			prepare_descriptor_latency_event(&descriptor_event,
-							 COMMAND_LATENCY_DESCRIPTOR, point, NULL);
-			scoped_command_latency descriptor_latency(&command_latency,
-								  &descriptor_event);
-
-			/* update max_users_playing for "who" information */
-			if ((point->connected) == CON_PLAYING)
-			{
-				player_count++;
-				if (player_count > max_users_playing)
-					max_users_playing = player_count;
-			}
-
-			/* WebSocket handshake timeout is independent of connected state. */
-			if (point->websocket && !point->ws_handshake_done &&
-			    point->ws_handshake_started > 0)
-			{
-				time_t now = time(0);
-				if (now - point->ws_handshake_started >= WS_HANDSHAKE_TIMEOUT)
-				{
-					statuslog(56,
-						  "WebSocket: Closing incomplete handshake from %s",
-						  point->host);
-					close_socket(point);
-					continue;
-				}
-			}
-
-			/* WebSocket ping/pong dead connection detection */
-			if (point->websocket && point->ws_state == WS_STATE_OPEN)
-			{
-				time_t now = time(0);
-
-				/* Check for ping timeout (no pong received) */
-				if (point->ws_last_ping > 0 && point->ws_ping_outstanding &&
-				    !point->ws_pong_received &&
-				    (now - point->ws_last_ping) > WS_PING_TIMEOUT)
-				{
-					statuslog(
-						56,
-						"WebSocket: Closing dead connection from %s (ping timeout)",
-						point->host);
-					websocket_close(point, WS_CLOSE_GOING_AWAY, "Ping timeout");
-					if (point->ws_state == WS_STATE_CLOSING)
-						continue;
-					close_socket(point);
-					continue;
-				}
-
-				/* Send one periodic ping at a time.  A queued ping becomes outstanding only after control output drains. */
-				if (!point->ws_ping_queued && !point->ws_ping_outstanding &&
-				    (point->ws_last_ping == 0 ||
-				     (now - point->ws_last_ping) >= WS_PING_INTERVAL))
-				{
-					if (websocket_send_ping(point) == 0)
-					{
-						if (point->ws_control_output_len == 0)
-						{
-							point->ws_last_ping = now;
-							point->ws_pong_received = 0;
-							point->ws_ping_outstanding = 1;
-						}
-						else
-						{
-							point->ws_ping_queued = 1;
-						}
-					}
-				}
-			}
-
-			/* new timeout for non-playing sockets */
-
-			if (point->connected && !authenticated_service)
-			{
-				point->wait++;
-
-				switch (point->connected)
-				{
-					/* short protocol/login transitions retain a 60 second timeout */
-				case CON_FLUSH:
-				case CON_GET_TERM:
-					if (point->wait > 240)
-					{
-						write_to_descriptor(point, "Idle Timeout\n");
-						close_socket(point);
-						continue;
-					}
-					break;
-
-					/* slightly more involved, 10 minute timeout */
-				case CON_ALIGN:
-				case CON_BONUS1:
-				case CON_BONUS2:
-				case CON_BONUS3:
-				case CON_HOMETOWN:
-				case CON_NAME:
-				case CON_PWD_CONF:
-				case CON_PWD_D_CONF:
-				case CON_PWD_GET:
-				case CON_PWD_NO_CONF:
-				case CON_PWD_NEW:
-				case CON_PWD_GET_NEW:
-				case CON_PWD_NORM:
-				case CON_GET_CLASS:
-				case CON_GET_RACE:
-				case CON_REROLL:
-				case CON_APPROPRIATE_NAME:
-				case CON_NAME_CONF:
-				case CON_GET_SEX:
-					if (point->wait > 2400)
-					{
-						write_to_descriptor(point, "Idle Timeout\n");
-						close_socket(point);
-						continue;
-					}
-					break;
-					/*
-						 * for remaining states, 15 minutes, same as idle
-						 * timeout in game
-						 */
-				default:
-					if (point->wait > 3600)
-					{
-						write_to_descriptor(point, "Idle Timeout\n");
-						close_socket(point);
-						continue;
-					}
-					break;
-				}
-			}
-			else if (!authenticated_service && t_ch && IS_AFFECTED2(t_ch, AFF2_SLOW) &&
-				 (pulse % 2) && !GET_CLASS(t_ch, CLASS_MONK))
-				continue;
-			else if (!authenticated_service && t_ch &&
-				 affected_by_spell(t_ch, TAG_CTF) &&
-				 (pulse % (int)get_property("ctf.slowness", 3)))
-				continue;
-
-			/* Keep type-ahead queued until the worker's result has been applied
-			 * on this thread. Completion never retains a descriptor pointer. */
-			if (password_async_pulse(point) || account_login_password_pulse(point))
-				continue;
-			descriptor_latency.finish();
-
-			/* check for hella long wait time here..  bandaid solution but it should (sort of) work */
-
-			/* Self-heal a stuck command gate: PLR2_WAIT is only ever cleared by
-			 * event_wait, so a wait whose event never got scheduled would silently
-			 * swallow every command the player types for the rest of the session. */
-			if (t_ch && !CAN_ACT(t_ch) &&
-			    (!get_scheduled(t_ch, event_wait) ||
-			     ne_event_tick > t_ch->specials.wait_until_pulse))
-			{
-				logit(LOG_DEBUG,
-				      "command gate: clearing stuck PLR2_WAIT on %s (event_wait scheduled: %s, pulse %llu, deadline %llu).",
-				      J_NAME(t_ch), get_scheduled(t_ch, event_wait) ? "yes" : "no",
-				      ne_event_tick, t_ch->specials.wait_until_pulse);
-				REMOVE_BIT(t_ch->specials.act2, PLR2_WAIT);
-				if (t_ch->in_room != NOWHERE)
-				{
-					update_pos(t_ch);
-				}
-			}
-
-			/* Keep ordinary type-ahead queued for the complete chant.  The
-			 * separate PLR2_WAIT/event_wait deadline may expire before the
-			 * spell continuation does, and trusted characters intentionally
-			 * bypass PLR2_WAIT entirely.  Only commands accepted by the
-			 * casting interpreter gate are selectively removed. */
-			casting_input = casting_input_for_descriptor(point, t_ch);
-			// Pre-entry input must still advance through RMOTD/enter_game;
-			// only playing commands wait for the complete durable kit.
-			creation_grant_input = point->connected == CON_PLAYING && t_ch &&
-					       item_creation_grant_blocks_commands(t_ch);
-
-			if ((!t_ch ||
-			     (t_ch && !creation_grant_input && (CAN_ACT(t_ch) || casting_input) &&
-			      (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
-			       point->original))) &&
-			    (casting_input ? get_casting_cmd_from_q(t_ch, &point->input, comm) :
-			     point->connected == CON_PLAYING && !point->showstr_count &&
-					     !point->str ?
-					     get_playing_cmd_from_q(t_ch, &point->input, comm) :
-					     get_from_q(&point->input, comm)))
-			{
-				if (t_ch)
-				{
-					t_ch->specials.timer = 0;
-				}
-				point->prompt_mode = TRUE;
-
-				if (point->showstr_count) /* pager for text */
-				{
-					command_latency_event pager_event = {};
-					prepare_descriptor_latency_event(
-						&pager_event, COMMAND_LATENCY_PAGER, point, NULL);
-					const uint64_t pager_started_us = loop_monotonic_us();
-					show_string(point, comm);
-					command_latency_record(
-						&command_latency, &pager_event,
-						latency_trace_elapsed_us(pager_started_us,
-									 loop_monotonic_us()));
-				}
-				else if (point->str) /* mail, boards */
-				{
-					command_latency_event editor_event = {};
-					prepare_descriptor_latency_event(
-						&editor_event, COMMAND_LATENCY_EDITOR, point, NULL);
-					const uint64_t editor_started_us = loop_monotonic_us();
-					string_add(point, comm);
-					command_latency_record(
-						&command_latency, &editor_event,
-						latency_trace_elapsed_us(editor_started_us,
-									 loop_monotonic_us()));
-				}
-				else if (point->connected == CON_PLAYING)
-				{
-					command_latency_event playing_event = {};
-					prepare_descriptor_latency_event(&playing_event,
-									 COMMAND_LATENCY_PLAYING,
-									 point, comm);
-					const uint64_t playing_started_us = loop_monotonic_us();
-					dispatch_playing_command(t_ch, comm);
-					command_latency_record(
-						&command_latency, &playing_event,
-						latency_trace_elapsed_us(playing_started_us,
-									 loop_monotonic_us()));
-				}
-				else
-				{
-					command_latency_event nanny_event = {};
-					prepare_descriptor_latency_event(
-						&nanny_event, COMMAND_LATENCY_NANNY, point, NULL);
-					const uint64_t nanny_started_us = loop_monotonic_us();
-					point->wait = 0;
-					nanny(point, comm);
-					command_latency_record(
-						&command_latency, &nanny_event,
-						latency_trace_elapsed_us(nanny_started_us,
-									 loop_monotonic_us()));
-				}
-			}
-		}
-		const uint64_t command_sweep_us =
-			latency_trace_elapsed_us(command_sweep_started_us, loop_monotonic_us());
-		PROFILE_END(commands);
-		latency_trace_record("commands", command_sweep_us, loop_tick);
-		command_latency_log_buffer command_report;
-		command_report.length = 0;
-		command_latency_report_throttled(&command_report_state, &command_latency,
-						 command_sweep_us, latency_trace_boot_id(),
-						 loop_tick, loop_start_mono_us,
-						 collect_command_latency_log, &command_report);
-		if (command_report.length)
-			logit(LOG_STATUS, "%s", command_report.text);
-
-		PROFILE_START(prompts);
-		const uint64_t prompts_begin_us = loop_monotonic_us();
-		for (point = descriptor_list; point; point = next_point)
-		{
-			next_point = point->next;
-
-			// this code tries to skip players who have too much pending text.
-			// But, we currently boot them anyway...
-			if (!FD_ISSET(point->descriptor, &output_set))
-				continue;
-
-			// skip ssl connections still negotiating
-			if (point->connected == CON_SSLNEGO)
-				continue;
-
-			if (!point->websocket && point->telnet_output_len)
-			{
-				if (telnet_flush_output(point) < 0)
-				{
-					close_socket(point);
-					continue;
-				}
-				if (point->telnet_output_len)
-					continue;
-			}
-
-			/* Drain WebSocket bytes retained after a partial write/EAGAIN before
-			 * framing additional application output for this descriptor. */
-			if (point->websocket && point->ws_output_offset < point->ws_output_len)
-			{
-				if (websocket_flush_output(point) < 0)
-				{
-					point->write_failed = 1;
-					close_socket(point);
-					continue;
-				}
-				if (point->ws_output_offset < point->ws_output_len)
-					continue;
-			}
-
-			if (process_output(point) < 0)
-			{
-				close_socket(point);
-				continue;
-			}
-			if (point->websocket && websocket_flush_output(point) < 0)
-			{
-				close_socket(point);
-				continue;
-			}
-			/* Logout must finish without requiring another command from the client. */
-			if (point->connected == CON_FLUSH && !point->output.head &&
-			    point->telnet_output_len == 0 && point->ws_output_len == 0 &&
-			    point->ws_control_output_len == 0)
-			{
-				close_socket(point);
-				continue;
-			}
-			if (point->websocket && point->ws_state == WS_STATE_OPEN &&
-			    point->ws_ping_queued && point->ws_control_output_len == 0)
-			{
-				point->ws_ping_queued = 0;
-				point->ws_ping_outstanding = 1;
-				point->ws_pong_received = 0;
-				point->ws_last_ping = time(0);
-			}
-			if (point->websocket && point->ws_state == WS_STATE_CLOSING &&
-			    point->ws_output_len == 0 && point->ws_control_output_len == 0)
-			{
-				close_socket(point);
-				continue;
-			}
-		}
-
-		PROFILE_END(prompts);
-		const uint64_t prompts_us =
-			latency_trace_elapsed_us(prompts_begin_us, loop_monotonic_us());
-		latency_trace_record("prompts", prompts_us, loop_tick);
-
-		/* handle heartbeat stuff */
-		/* ne_events() closes the current tick's pre-event scheduling phase. */
-		const uint64_t ne_events_begin_us = loop_monotonic_us();
-		ne_events();
-		const uint64_t ne_events_us =
-			latency_trace_elapsed_us(ne_events_begin_us, loop_monotonic_us());
-		latency_trace_record("ne_events", ne_events_us, loop_tick);
-		telemetry_monotonic_usec telemetry_pulse_now = 0U;
-		telemetry_utc_usec telemetry_pulse_utc = TELEMETRY_UTC_UNKNOWN;
-		if (telemetry_runtime_now(&telemetry_pulse_now, &telemetry_pulse_utc))
-		{
-			const std::uint16_t telemetry_slots = telemetry_runtime_pulse_slot_count();
-			telemetry_pulse_request telemetry_request{};
-			telemetry_request.now_monotonic_usec = telemetry_pulse_now;
-			telemetry_request.occurrence_utc_usec = telemetry_pulse_utc;
-			telemetry_request.slot = static_cast<std::uint16_t>(
-				static_cast<unsigned int>(pulse) % telemetry_slots);
-			(void)telemetry_runtime_pulse(telemetry_request);
-		}
-
-		item_creation_grant_prepare_pulse();
-		artifact_mana_pulse();
-		device_actions_pulse();
-
-		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
-		if (!(pulse % 2))
-		{
-			const uint64_t gmcp_begin_us = loop_monotonic_us();
-			gmcp_flush_dirty_rooms();
-			gmcp_flush_dirty_ship_contacts();
-			gmcp_flush_dirty_ship_info();
-			flush_pending_ship_saves();
-			locker_async_pulse();
-			corpse_lifecycle_transaction_pulse();
-			critical_completion critical_completions[64] = {};
-			const size_t critical_completion_count =
-				critical_command_coordinator_pulse(critical_completions, 64);
-			critical_gameplay_handle_completions(critical_completions,
-							     critical_completion_count);
-			auction_transaction_publish_outbox();
-			corpse_lifecycle_transaction_publish_outbox();
-			collector_transaction_publish_outbox();
-			combat_outcome_transaction_publish_outbox();
-			artifact_guild_transaction_publish_outbox();
-			for (size_t index = 0; index < critical_completion_count; ++index)
-				if (critical_completions[index].outcome ==
-				    critical_apply_outcome::terminal_failure)
-					persistence_alert(AVATAR, "critical_command", "completion",
-							  "none", "none", "integrity_failure",
-							  "operation metadata redacted");
-			player_save_pipeline_pulse();
-			persistence_pulse_character_saves();
-			death_extract_retry_pulse();
-			player_load_result load_completions[32] = {};
-			const size_t load_completion_count =
-				player_load_pipeline_pulse(load_completions, 32);
-			for (size_t index = 0; index < load_completion_count; ++index)
-			{
-				bool delivered = false;
-				for (P_desc descriptor = descriptor_list; descriptor;
-				     descriptor = descriptor->next)
-					if (descriptor->player_load_request_id ==
-					    load_completions[index].request_id)
-					{
-						if (descriptor->player_load_mode ==
-						    PLAYER_LOAD_MODE_LEGACY)
-							nanny_player_load_complete(
-								descriptor,
-								std::move(load_completions[index]));
-						else
-							account_player_load_complete(
-								descriptor,
-								std::move(load_completions[index]));
-						delivered = true;
-						break;
-					}
-				if (!delivered)
-					player_load_pipeline_note_stale();
-			}
-			information_cache_pulse();
-			help_cache_pulse();
-			collector_catalog_cache_pulse();
-			collector_maintenance_pulse();
-			collector_presence_pulse();
-			collector_service_pulse();
-			account_recovery_pulse();
-			redis_world_recovery_pulse();
-			latency_trace_record("gmcp_flush",
-					     latency_trace_elapsed_us(gmcp_begin_us,
-								      loop_monotonic_us()),
-					     loop_tick);
-		}
-		maintenance_result maintenance_results[MAINTENANCE_COMPLETION_MAX] = {};
-		const size_t maintenance_count = maintenance_scheduler_pulse(
-			ne_event_tick, maintenance_results, MAINTENANCE_COMPLETION_MAX);
-		maintenance_handle_completions(maintenance_results, maintenance_count);
-
-		PROFILE_START(activities);
-		const uint64_t activities_begin_us = loop_monotonic_us();
-		if (maintenance_activity_due(ne_event_tick, WAIT_SEC, 1))
-			ship_activity();
-
-		if (!no_ferries && maintenance_activity_due(ne_event_tick, WAIT_SEC, 2))
-			ferry_activity();
-
-		if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 120, 3))
-			spawn_random_mapmob();
-
-		//    if (!(pulse % WAIT_SEC))
-		//      arena_activity();
-
-		if (maintenance_activity_due(ne_event_tick, SHORT_AFFECT, 4))
-			short_affect_update();
-
-		if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 300, 5))
-			wimps_in_approve_queue();
-
-		PROFILE_END(activities);
-		const uint64_t activities_us =
-			latency_trace_elapsed_us(activities_begin_us, loop_monotonic_us());
-		latency_trace_record("activities", activities_us, loop_tick);
-
-		PROFILE_START(combat);
-		const uint64_t combat_begin_us = loop_monotonic_us();
-		perform_violence();
-
-		/* for action_delays[] related to combat --TAM 04/19/94 */
-		for (point = descriptor_list; point; point = point->next)
-		{
-			if (point->character && point->connected == CON_PLAYING)
-			{
-				t_ch = point->character;
-
-				if (!pulse)
-				{
-					if (IS_SET(t_ch->specials.act2, PLR2_HINT_CHANNEL))
-					{
-						tossHint(t_ch);
-					}
-				}
-				if (t_ch->desc && t_ch->desc->last_map_update)
-				{
-					// For ship passengers: GMCP only (handler.c already filters to GMCP-enabled only)
-					if (IS_SHIP_ROOM(t_ch->in_room))
-					{
-						if (GMCP_ENABLED(t_ch))
-						{
-							P_ship ship = get_ship_from_char(t_ch);
-							if (ship && IS_MAP_ROOM(ship->location))
-							{
-								int n = map_view_distance(
-									t_ch, ship->location);
-								if (n > 1)
-								{
-									// Render map and send via GMCP only (skip text by using websocket flag temporarily)
-									bool was_websocket =
-										t_ch->desc
-											->websocket;
-									t_ch->desc->websocket =
-										1; // Force skip_text_output in display_map_room
-									display_map_room(
-										t_ch,
-										ship->location, n,
-										MAP_AUTOMAP, 0);
-									t_ch->desc->websocket =
-										was_websocket;
-								}
-							}
-						}
-					}
-					else
-					{
-						map_look(t_ch, MAP_AUTOMAP);
-					}
-					t_ch->desc->last_map_update = 0;
-				}
-				if (t_ch->desc && t_ch->desc->last_group_update)
-				{
-					/* For GMCP clients, send structured data to group panel */
-					if (GMCP_ENABLED(t_ch))
-					{
-						gmcp_send_group_status(t_ch);
-					}
-					/* For MSP clients, display text group output */
-					if (t_ch->desc->term_type == TERM_MSP)
-					{
-						do_group(t_ch, writable_arg(""), 0);
-					}
-					t_ch->desc->last_group_update = 0;
-				}
-				if (t_ch->points.delay_move > 0)
-					t_ch->points.delay_move -=
-						BOUNDED(0,
-							!IS_MAP_ROOM(t_ch->in_room) ?
-								move_regen(t_ch, FALSE) :
-								move_regen(t_ch, FALSE) / 2,
-							t_ch->points.delay_move);
-			}
-		}
-		//      }
-		PROFILE_END(combat);
-		const uint64_t combat_us =
-			latency_trace_elapsed_us(combat_begin_us, loop_monotonic_us());
-		latency_trace_record("combat", combat_us, loop_tick);
-
-		PROFILE_START(pulse_reset);
-		// tics since last checkpoint signal
-		tics = tics + 1;
-		if (tics > static_cast<sig_atomic_t>(BIT_30))
-		{
-			tics = 1;
-			debug("Huge value for tics, resetting to 1.");
-			logit(LOG_SYS, "Huge value for tics, resetting to 1.");
-		}
-		nevent_advance_tick();
-		const uint64_t affect_and_points_begin_us = loop_monotonic_us();
-		uint64_t affect_us = 0;
-		uint64_t point_us = 0;
-		if (!pulse)
-		{
-			affect_update();
-			const uint64_t affect_end_us = loop_monotonic_us();
-			point_update();
-			const uint64_t point_end_us = loop_monotonic_us();
-			affect_us =
-				latency_trace_elapsed_us(affect_and_points_begin_us, affect_end_us);
-			point_us = latency_trace_elapsed_us(affect_end_us, point_end_us);
-		}
-		const uint64_t affect_and_points_us =
-			latency_trace_elapsed_us(affect_and_points_begin_us, loop_monotonic_us());
-		latency_trace_record("affect_and_points", affect_and_points_us, loop_tick);
-		latency_trace_record("affect_update", affect_us, loop_tick);
-		latency_trace_record("point_update", point_us, loop_tick);
-		/* check out the time */
-		const uint64_t loop_us =
-			latency_trace_elapsed_us(loop_time_begin_us, loop_monotonic_us());
-		if (loop_us != LATENCY_TRACE_DURATION_INVALID && loop_us >= 250000) // 4 ticks a sec
-		{
-			char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
-			char duration_buffers[9][LATENCY_TRACE_TICK_STRING_LENGTH];
-			statuslog(
-				56,
-				"MUD TICK TOOK TOO LONG - loop time - %f: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
-				" connections_us=%s"
-				" activities_us=%s"
-				" combat_us=%s"
-				" commands_us=%s"
-				" ne_events_us=%s"
-				" prompts_us=%s"
-				" affect_and_points_us=%s"
-				" affect_update_us=%s"
-				" point_update_us=%s",
-				(double)loop_us / 1000000.0, latency_trace_boot_id(),
-				latency_trace_format_tick(loop_tick, tick_buffer),
-				loop_start_mono_us,
-				latency_trace_format_duration(connections_us, duration_buffers[0]),
-				latency_trace_format_duration(activities_us, duration_buffers[1]),
-				latency_trace_format_duration(combat_us, duration_buffers[2]),
-				latency_trace_format_duration(command_sweep_us,
-							      duration_buffers[3]),
-				latency_trace_format_duration(ne_events_us, duration_buffers[4]),
-				latency_trace_format_duration(prompts_us, duration_buffers[5]),
-				latency_trace_format_duration(affect_and_points_us,
-							      duration_buffers[6]),
-				latency_trace_format_duration(affect_us, duration_buffers[7]),
-				latency_trace_format_duration(point_us, duration_buffers[8]));
-		}
-		latency_trace_record("total_tick", loop_us, loop_tick);
-		if (!(tics % 300))
-		{
-			latency_trace_snapshot snapshot = {};
-			latency_trace_snapshot_take_and_reset(&snapshot);
-			FILE *_ltf = fopen("logs/latency_trace.log", "a");
-			if (_ltf)
-			{
-				latency_trace_snapshot_dump(_ltf, &snapshot);
-				fclose(_ltf);
-			}
-			else
-				statuslog(
-					56,
-					"LATENCY TRACE: could not open logs/latency_trace.log: errno=%d",
-					errno);
-			latency_trace_snapshot_dump(stderr, &snapshot);
-			fflush(stderr);
-		}
-		memcpy(&timeout, &opt_time, sizeof(timeout));
-		const suseconds_t usec_spent =
-			(suseconds_t)MIN(loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us,
-					 (uint64_t)timeout.tv_usec);
-		timeout.tv_usec = MAX(0, timeout.tv_usec - usec_spent);
-
-		if (timeout.tv_sec || timeout.tv_usec)
-		{
-			/*
-			 * This keeps game from being a total processor hog by putting
-			 * it to sleep for the part of each 1/4 second that is not
-			 * used for game processing.
-			 */
-
-			sigprocmask(SIG_SETMASK, &mask, &oldset);
-
-			if (select(0, (fd_set *)0, (fd_set *)0, (fd_set *)0, &timeout) < 0)
-			{
-				sigprocmask(SIG_SETMASK, &oldset, 0);
-				if (errno == EINTR)
-					continue; // interrupted by signal, just retry
-				perror("Select sleep");
-				continue;
-			}
-			sigprocmask(SIG_SETMASK, &oldset, 0);
-		}
-		gettimeofday(&last_time, (struct timezone *)0); /* end of pulse reset */
-		PROFILE_END(pulse_reset);
+		run_session_input_phase(context);
+		run_output_phase(context);
+		run_event_phase(context);
+		run_recurring_persistence_phase(context);
+		run_activity_phase(context);
+		run_combat_phase(context);
+		run_pulse_reset_phase(context);
 	}
 
 	if (_copyover)
