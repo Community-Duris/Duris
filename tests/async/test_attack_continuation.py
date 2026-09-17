@@ -19,16 +19,11 @@ static char_data actor = {}, target = {};
 static pc_only_data actor_pc = {}, target_pc = {};
 static obj_data weapon = {}, replacement = {};
 static bool actor_listed = true, target_listed = true;
+P_obj object_list = nullptr;
 
 P_char find_character_by_runtime_id(uint64_t id) {
     if (actor_listed && actor.runtime_id == id) return &actor;
     if (target_listed && target.runtime_id == id) return &target;
-    return nullptr;
-}
-
-P_obj find_live_object(P_obj expected, uint64_t uid) {
-    if (expected == &weapon && weapon.obj_uid == uid) return &weapon;
-    if (expected == &replacement && replacement.obj_uid == uid) return &replacement;
     return nullptr;
 }
 
@@ -47,6 +42,9 @@ static void reset() {
     SET_POS(&target, STAT_NORMAL + POS_STANDING);
     weapon.obj_uid = 100;
     replacement.obj_uid = 200;
+    weapon.next = &replacement;
+    replacement.next = nullptr;
+    object_list = &weapon;
     actor.equipment[PRIMARY_WEAPON] = &weapon;
     actor_listed = target_listed = true;
 }
@@ -68,12 +66,21 @@ static void expect(attack_continuation guard, attack_continuation_outcome outcom
 
 SUFFIX = r'''
 int main() {
+    expect(begin_attack_continuation(nullptr, &target),
+           attack_continuation_outcome::cancelled);
+    expect(begin_attack_continuation(&actor, nullptr),
+           attack_continuation_outcome::cancelled);
     reset();
     expect(guard(), attack_continuation_outcome::continue_attack);
 
     auto captured = guard();
     actor_listed = false;
     expect(captured, attack_continuation_outcome::actor_gone);
+    reset();
+    captured = guard();
+    captured.weapon_slot = MAX_WEAR;
+    expect(captured, attack_continuation_outcome::cancelled);
+
     reset();
     captured = guard();
     SET_POS(&actor, STAT_DEAD);

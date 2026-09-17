@@ -3,6 +3,8 @@
 #include "core/prototypes.h"
 #include "core/utils.h"
 
+extern P_obj object_list;
+
 namespace
 {
 int locate_weapon_slot(P_char actor, P_obj weapon)
@@ -21,6 +23,16 @@ P_char resolve_character(P_char expected, uint64_t runtime_id)
 		return nullptr;
 	P_char live = find_character_by_runtime_id(runtime_id);
 	return live == expected ? live : nullptr;
+}
+
+P_obj resolve_live_object(P_obj expected, uint64_t uid) noexcept
+{
+	if (!expected)
+		return nullptr;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object == expected && object->obj_uid == uid)
+			return object;
+	return nullptr;
 }
 
 attack_continuation_result rejected(attack_continuation_outcome outcome)
@@ -53,6 +65,10 @@ attack_continuation begin_attack_continuation(P_char actor, P_char target, P_obj
 attack_continuation_result
 check_attack_continuation(const attack_continuation &continuation) noexcept
 {
+	if (!continuation.actor || !continuation.target || !continuation.actor_runtime_id ||
+	    !continuation.target_runtime_id)
+		return rejected(attack_continuation_outcome::cancelled);
+
 	P_char actor = resolve_character(continuation.actor, continuation.actor_runtime_id);
 	if (!actor || !IS_ALIVE(actor))
 		return rejected(attack_continuation_outcome::actor_gone);
@@ -75,12 +91,12 @@ check_attack_continuation(const attack_continuation &continuation) noexcept
 		P_obj selected = actor->equipment[continuation.weapon_slot];
 		if (selected != continuation.weapon)
 			return rejected(attack_continuation_outcome::weapon_changed);
-		if (selected && find_live_object(selected, continuation.weapon_uid) != selected)
+		if (selected && resolve_live_object(selected, continuation.weapon_uid) != selected)
 			return rejected(attack_continuation_outcome::weapon_changed);
 		weapon = selected;
 	}
 	else if (continuation.weapon &&
-		 find_live_object(continuation.weapon, continuation.weapon_uid) !=
+		 resolve_live_object(continuation.weapon, continuation.weapon_uid) !=
 			 continuation.weapon)
 	{
 		return rejected(attack_continuation_outcome::weapon_changed);
