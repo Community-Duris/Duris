@@ -1725,8 +1725,7 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 	/* Keep this predicate self-contained: world-singletons extracts this
 	 * serializer into a persistence-only harness without the file-local
 	 * helper above. */
-	if (!mob ||
-	    (IS_NPC(mob) && mob->only.npc && mob->only.npc->training_dummy) ||
+	if (!mob || (IS_NPC(mob) && mob->only.npc && mob->only.npc->training_dummy) ||
 	    max_len < sizeof(entry))
 		return -1;
 
