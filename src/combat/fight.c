@@ -4534,6 +4534,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Just making sure.
 	if (!ch || !victim)
 		return DAM_NONEDEAD;
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
 	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
@@ -5099,6 +5101,8 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
 	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
@@ -6074,6 +6078,8 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		logit(LOG_EXIT, "raw_damage in fight.c called without ch");
 		return DAM_NONEDEAD;
 	}
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
 
 	if (!victim)
 		return DAM_NONEDEAD;

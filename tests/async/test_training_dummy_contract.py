@@ -62,8 +62,12 @@ def test_spawn_rooms_keep_the_dummy_without_triggering_justice_or_unsafe_combat(
 
 def test_nonpet_damage_and_reflective_shields_cannot_turn_dummy_into_a_tank():
     fight = source("src/combat/fight.c")
+    fight_move = source("src/classes/new_skills.c")
 
     assert fight.count('training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim)') >= 3
+    assert fight.count('if (training_dummy_is(ch))\n\t\treturn DAM_NONEDEAD;') >= 3
+    assert 'if (!training_dummy_target_allowed(ch, victim))' in fight_move
+    assert 'training_dummy_retarget_nonpet(ch, victim);' in fight_move
     assert 'if (training_dummy_is(victim))\n\t\treturn DAM_NONEDEAD;' in fight
     assert 'if (training_dummy_is(ch))\n\t\treturn;' in fight
 

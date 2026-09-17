@@ -56,6 +56,13 @@ int CanDoFightMove(P_char ch, P_char victim)
 {
 	if (!ch || !victim)
 		return FALSE;
+	if (training_dummy_is(ch))
+		return FALSE;
+	if (!training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return FALSE;
+	}
 
 	if (victim == ch)
 	{
