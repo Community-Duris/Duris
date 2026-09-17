@@ -24,11 +24,6 @@ P_char get_linked_char(P_char, ush_int)
 	return nullptr;
 }
 
-P_char get_linked_char(P_char, ush_int)
-{
-	return nullptr;
-}
-
 namespace
 {
 struct fake_repository
