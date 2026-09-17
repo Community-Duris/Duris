@@ -2688,7 +2688,7 @@ void event_scribe(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void
 
 			REMOVE_BIT(s_data->source.teacher->specials.affected_by2, AFF2_SCRIBING);
 		}
-		if (s_data->flag == 2)
+		if (s_data->flag == 2 && s_data->source.obj)
 		{
 			j = 0;
 			for (i = 1; i < 4; i++)

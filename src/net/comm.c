@@ -135,6 +135,7 @@
 #include "world/vnum.mob.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_adapter.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "core/test_async.h"
 #endif
@@ -276,6 +277,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	boon_reward_transaction_handle_completions(completions, count);
 	boon_shop_transaction_handle_completions(completions, count);
 	zone_touch_transaction_handle_completions(completions, count);
+	player_death_restitution_runtime_handle_completions(completions, count);
 }
 
 #ifndef __NO_MYSQL__
@@ -936,9 +938,12 @@ void run_the_game(int port, int sslport)
 #ifndef __NO_MYSQL__
 		!critical_outbox_ready ||
 #endif
-		!critical_command_coordinator_init(critical_journal_directory, critical_apply,
-						   NULL))
+		!critical_command_coordinator_init(
+			critical_journal_directory, critical_apply, NULL,
+			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+			player_death_restitution_runtime_restore_replayed_command, NULL))
 	{
+		player_death_restitution_runtime_abort_all();
 		critical_command_coordinator_shutdown();
 		critical_outbox_shutdown();
 		logit(LOG_STATUS,
@@ -1008,6 +1013,7 @@ void run_the_game(int port, int sslport)
 	help_cache_shutdown();
 	account_recovery_shutdown();
 	password_login_shutdown();
+	player_death_restitution_runtime_shutdown();
 	critical_command_coordinator_shutdown();
 	locker_identify_shutdown();
 	critical_outbox_shutdown();
@@ -1482,7 +1488,7 @@ resume_game_loop:
 				{
 					/* good connection, send them on their way :) */
 					SEND_TO_Q(
-						"Please enter your term type (<CR> ansi, '3' MSP, '?' help): ",
+						"Please enter your term type (<CR> for ANSI, '1' for Generic, '3' for MSP markup, '9' for Quick, '?' for help): ",
 						point);
 					point->connected = CON_GET_TERM;
 					point->wait = 1;

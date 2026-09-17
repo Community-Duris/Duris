@@ -634,6 +634,7 @@ void do_reinitphys(P_char, char *, int);
 void do_release(P_char, char *, int);
 void do_reroll(P_char, char *, int);
 void do_restore(P_char, char *, int);
+void do_restitution(P_char, char *, int);
 void do_return(P_char, char *, int);
 void do_revoke(P_char, char *, int);
 /*void do_revoketitle(P_char, char *, int);*/
@@ -3189,13 +3190,6 @@ bool can_obj_damage(P_obj, P_char);
 int is_slaying(P_obj, P_char, P_char);
 void return_home(P_char, P_char, P_obj, void *);
 void do_cover(P_char, char *, int);
-
-/* sound.c */
-void play_sound(const char *, P_char, int, int);
-void sound_to_char(const char *, P_char);
-void sound_to_room(const char *, int);
-void sound_to_all(const char *);
-void sound_to_zone(const char *, int);
 
 void do_specialize(P_char, char *, int);
 

@@ -26,7 +26,10 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'C', 'O', 'L', 'L', 0 };
-constexpr uint32_t catalog_version = 1;
+// Version 2 adds the durable per-death hint state. Decoder compatibility with
+// version 1 lets the first post-upgrade authority write migrate old catalogs
+// without a separate schema step.
+constexpr uint32_t catalog_version = 2;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t catalog_maximum_operations = 1048576;
 constexpr const char *catalog_filename = "collector_catalog";
@@ -37,6 +40,8 @@ struct death_state
 	uint32_t beneficiary = 0;
 	uint64_t death_time = 0;
 	collector::rules policy = {};
+	uint8_t hint_state = COLLECTOR_HINT_NONE;
+	uint64_t hint_revision = 0;
 };
 
 struct listing_state
@@ -273,6 +278,14 @@ const death_state *find_death(const collector_catalog &catalog,
 											   nullptr;
 }
 
+death_state *find_death_mutable(collector_catalog *catalog,
+				const collector::death_operation_id &operation)
+{
+	if (!catalog)
+		return nullptr;
+	return const_cast<death_state *>(find_death(*catalog, operation));
+}
+
 listing_state *find_listing(collector_catalog *catalog, uint64_t listing)
 {
 	if (!catalog)
@@ -326,6 +339,9 @@ bool valid_catalog(const collector_catalog &catalog)
 		const death_state &death = catalog.deaths[index];
 		if (!death.beneficiary || !death.death_time || !death.policy.enabled ||
 		    !collector::valid_rules(death.policy) ||
+		    death.hint_state > COLLECTOR_HINT_DELIVERED ||
+		    (death.hint_state == COLLECTOR_HINT_NONE && death.hint_revision) ||
+		    (death.hint_state != COLLECTOR_HINT_NONE && !death.hint_revision) ||
 		    (index && death_equal(catalog.deaths[index - 1].operation, death.operation)))
 			return false;
 	}
@@ -393,6 +409,8 @@ bool encode_catalog(const collector_catalog &catalog, std::vector<uint8_t> *byte
 		payload.number(death.beneficiary);
 		payload.number(death.death_time);
 		encode_rules(&payload, death.policy);
+		payload.number(death.hint_state);
+		payload.number(death.hint_revision);
 	}
 	payload.number<uint32_t>(catalog.listings.size());
 	for (const listing_state &listing : catalog.listings)
@@ -443,8 +461,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, collector_catalog *catalo
 	uint32_t version = 0, payload_size = 0;
 	uint64_t file_revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&file_revision) || version != catalog_version || !file_revision ||
-	    payload_size != bytes.size() - header_size)
+	    !header.number(&file_revision) || (version != 1 && version != catalog_version) ||
+	    !file_revision || payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -465,7 +483,9 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, collector_catalog *catalo
 			if (!decode_operation_id(&payload, &death.operation) ||
 			    !payload.number(&death.beneficiary) ||
 			    !payload.number(&death.death_time) ||
-			    !decode_rules(&payload, &death.policy))
+			    !decode_rules(&payload, &death.policy) ||
+			    (version == catalog_version && !payload.number(&death.hint_state)) ||
+			    (version == catalog_version && !payload.number(&death.hint_revision)))
 				return false;
 		if (!payload.number(&listing_count) ||
 		    listing_count > collector::catalog_max_records)
@@ -617,6 +637,8 @@ flatfile_collector_repository_result flatfile_collector_repository_read_bootstra
 			snapshot_death.beneficiary_pid = death.beneficiary;
 			snapshot_death.death_time = death.death_time;
 			snapshot_death.policy = death.policy;
+			snapshot_death.hint_state = death.hint_state;
+			snapshot_death.hint_revision = death.hint_revision;
 			candidate.deaths.push_back(snapshot_death);
 		}
 		candidate.catalog.records.reserve(stored.listings.size());
@@ -1237,7 +1259,8 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 	listing_state *listing = find_listing(&candidate, payload.listing);
 	if (!listing)
 		result_code = ENOENT;
-	else if (listing->entry.revision != payload.expected_listing_revision)
+	else if (payload.action != collector_action::hint_ack &&
+		 listing->entry.revision != payload.expected_listing_revision)
 		result_code = ESTALE;
 
 	flatfile_wallet_mutation wallet_read;
@@ -1274,7 +1297,37 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 
 	collector::record updated = listing ? listing->entry : collector::record{};
 	collector::outcome policy = collector::outcome::invalid;
-	if (!result_code)
+	const bool hint_action = payload.action == collector_action::hint ||
+				 payload.action == collector_action::hint_ack;
+	if (!result_code && hint_action)
+	{
+		death_state *death = find_death_mutable(&candidate, updated.death_operation);
+		if (!death || death->beneficiary != updated.beneficiary ||
+		    death->death_time != updated.death_time)
+			result_code = EBADMSG;
+		else if (payload.action == collector_action::hint)
+		{
+			if (updated.status != collector::state::available ||
+			    updated.holding_paused || payload.observed_at < updated.available_at ||
+			    payload.observed_at >= updated.expires_at)
+				result_code = ESTALE;
+			else if (death->hint_state != COLLECTOR_HINT_NONE)
+				result_code = EALREADY;
+			else
+			{
+				death->hint_state = COLLECTOR_HINT_PENDING;
+				death->hint_revision = updated.revision;
+			}
+		}
+		else if (death->hint_state == COLLECTOR_HINT_DELIVERED)
+			result_code = EALREADY;
+		else if (death->hint_state != COLLECTOR_HINT_PENDING ||
+			 death->hint_revision != payload.expected_listing_revision)
+			result_code = ESTALE;
+		else
+			death->hint_state = COLLECTOR_HINT_DELIVERED;
+	}
+	if (!result_code && !hint_action)
 	{
 		if (payload.action == collector_action::collect)
 		{

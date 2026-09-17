@@ -58,6 +58,7 @@ using namespace std;
 #include "player/player_save_journal.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_adapter.h"
 #include "persistence/maintenance_scheduler.h"
 #include "world/world_recovery_pipeline.h"
 #include "redis/redis_cache_store.h"
@@ -4153,6 +4154,8 @@ static void show_world_persistence(P_char ch)
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
 	const player_load_pipeline_health player_loads = player_load_pipeline_health_copy();
+	const player_death_restitution_runtime_live_health restitution =
+		player_death_restitution_runtime_live_health_copy();
 	const critical_coordinator_health critical = critical_command_coordinator_health_copy();
 	const critical_command_journal_health critical_journal =
 		critical_command_journal_health_copy();
@@ -4352,6 +4355,12 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)player_loads.last_transaction_usec,
 		 (unsigned long long)player_loads.last_completion_latency_usec,
 		 (unsigned long long)player_loads.max_completion_latency_usec);
+	send_to_char(line, ch);
+	snprintf(line, sizeof(line),
+		 "player_death_restitution state=%s pending_operations=%llu fenced_targets=%llu\n",
+		 restitution.pending_operations ? "pending" : "ready",
+		 (unsigned long long)restitution.pending_operations,
+		 (unsigned long long)restitution.fenced_targets);
 	send_to_char(line, ch);
 
 	const size_t rendered_sites = query.count < top_site_limit ? query.count : top_site_limit;

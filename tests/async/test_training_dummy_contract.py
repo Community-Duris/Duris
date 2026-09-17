@@ -12,7 +12,7 @@ def test_training_dummy_is_registered_as_a_player_command():
     interp = source("src/cmd/interp.c")
     header = source("src/cmd/interp.h")
 
-    assert '#define CMD_DUMMY 863' in header
+    assert '#define CMD_DUMMY 864' in header
     assert '"dummy",' in interp
     assert 'CMD_Y(CMD_DUMMY, STAT_DEAD + POS_PRONE, do_training_dummy, 0, FALSE);' in interp
 

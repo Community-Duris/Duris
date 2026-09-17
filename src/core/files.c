@@ -1707,6 +1707,8 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
+	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return 0;
 	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
 	const bool collector_save_pending = !collector_service_recover_player(ch);
 	if (!is_locker_char && GET_PID(ch) > 0 &&

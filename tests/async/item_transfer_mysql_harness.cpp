@@ -1,7 +1,10 @@
 #include "persistence/critical_command_repository.h"
 #include "item/item_transfer_command.h"
 #include "item/item_uid_allocator.h"
+#include "player/player_snapshot.h"
+#include "player/player_snapshot_codec.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cerrno>
 #include <cstdio>
@@ -10,6 +13,7 @@
 #include <limits>
 #include <mysql.h>
 #include <string>
+#include <vector>
 
 extern "C" MYSQL *sql_pool_acquire(void)
 {
@@ -47,6 +51,20 @@ std::string operation_hex(uint8_t value)
 void execute(MYSQL *connection, const char *sql)
 {
 	assert(mysql_real_query(connection, sql, strlen(sql)) == 0);
+}
+
+void execute(MYSQL *connection, const std::string &sql)
+{
+	execute(connection, sql.c_str());
+}
+
+void ensure_collector_boundary_fixture(MYSQL *connection)
+{
+	execute(connection,
+		"CREATE TABLE IF NOT EXISTS collector_listings("
+		"listing_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,"
+		"item_uid BIGINT UNSIGNED NOT NULL,status TINYINT UNSIGNED NOT NULL,"
+		"KEY idx_collector_item_history(item_uid,status,listing_id)) ENGINE=InnoDB");
 }
 
 uint64_t scalar(MYSQL *connection, const char *sql)
@@ -144,6 +162,191 @@ critical_apply_result apply(MYSQL *connection, uint8_t id, const item_transfer_p
 	command.accepted_at_usec = 1;
 	return critical_command_repository_apply(connection, command);
 }
+
+player_item_snapshot runtime_item(uint64_t uid, int64_t generated_key, int64_t timer)
+{
+	player_item_snapshot item = {};
+	item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	item.equipment_slot = -1;
+	item.object_uid = uid;
+	item.generated_key = generated_key;
+	item.vnum = 1901;
+	item.type = 1;
+	item.string_mask = 0x0f;
+	item.name = "restitution item";
+	item.short_description = "restitution short";
+	item.description = "restitution description";
+	item.action_description = "restitution action";
+	item.values = { 11, 12, 13, 14, 15, 16, 17, 18 };
+	item.timers = { timer, timer + 1, timer + 2, timer + 3, timer + 4, timer + 5 };
+	item.wear_flags = 0x10203040;
+	item.extra_flags = 0x50607080;
+	item.anti_flags = 0x11223344;
+	item.anti2_flags = 0x55667788;
+	item.extra2_flags = 0x99aabbcc;
+	item.weight = 27;
+	item.material = 3;
+	item.cost = 4567;
+	item.condition = 89;
+	item.craftsmanship = 31;
+	item.bitvectors = { 21, 22, 23, 24, 25 };
+	for (size_t index = 0; index < item.affects.size(); ++index)
+		item.affects[index] = { static_cast<int16_t>(index + 1),
+					static_cast<int16_t>(index + 11) };
+	item.dynamic_affects.push_back({ 7, 41, 42 });
+	item.extra_descriptions.push_back({ "SPELLBOOK", "", true, { 4, 9, 15 } });
+	return item;
+}
+
+std::vector<uint8_t> encode_runtime_item(const player_item_snapshot &item)
+{
+	std::vector<uint8_t> encoded;
+	assert(player_item_snapshot_list_encode({ item }, &encoded) ==
+	       player_snapshot_codec_result::ok);
+	return encoded;
+}
+
+std::vector<uint8_t> read_blob(MYSQL *connection, const char *sql)
+{
+	execute(connection, sql);
+	MYSQL_RES *rows = mysql_store_result(connection);
+	assert(rows);
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	assert(row && row[0]);
+	const unsigned long *lengths = mysql_fetch_lengths(rows);
+	assert(lengths);
+	std::vector<uint8_t> blob(reinterpret_cast<const uint8_t *>(row[0]),
+				  reinterpret_cast<const uint8_t *>(row[0]) + lengths[0]);
+	mysql_free_result(rows);
+	return blob;
+}
+
+void prepare_restitution_runtime_fixture(MYSQL *connection, uint64_t uid,
+					 const std::vector<uint8_t> &initial_payload)
+{
+	execute(connection, "CREATE TABLE IF NOT EXISTS player_death_restitution_receipt ("
+			    "restitution_id BINARY(16) NOT NULL PRIMARY KEY) ENGINE=InnoDB");
+	execute(connection,
+		"CREATE TABLE IF NOT EXISTS player_death_restitution_item ("
+		"restitution_id BINARY(16) NOT NULL,item_uid BIGINT UNSIGNED NOT NULL,"
+		"vnum INT NOT NULL,PRIMARY KEY(restitution_id,item_uid),"
+		"FOREIGN KEY(restitution_id) REFERENCES player_death_restitution_receipt(restitution_id))"
+		" ENGINE=InnoDB");
+	execute(connection,
+		"CREATE TABLE IF NOT EXISTS player_death_restitution_delivery ("
+		"item_uid BIGINT UNSIGNED NOT NULL PRIMARY KEY,restitution_id BINARY(16) NOT NULL,"
+		"source_pid INT NOT NULL,death_revision BIGINT UNSIGNED NOT NULL,recipient_pid INT NOT NULL,"
+		"source_item_revision BIGINT UNSIGNED NOT NULL,delivered_item_revision BIGINT UNSIGNED NOT NULL,"
+		"delivered_item_id INT UNSIGNED NOT NULL,metadata_digest BINARY(32) NOT NULL,"
+		"original_payload MEDIUMBLOB NOT NULL,"
+		"FOREIGN KEY(restitution_id,item_uid) REFERENCES player_death_restitution_item(restitution_id,item_uid))"
+		" ENGINE=InnoDB");
+	execute(connection,
+		"CREATE TABLE IF NOT EXISTS player_death_restitution_runtime ("
+		"item_uid BIGINT UNSIGNED NOT NULL PRIMARY KEY,recipient_pid INT NOT NULL,"
+		"state_payload MEDIUMBLOB NOT NULL,state_digest BINARY(32) NOT NULL,"
+		"FOREIGN KEY(item_uid) REFERENCES player_death_restitution_delivery(item_uid))"
+		" ENGINE=InnoDB");
+	const std::string payload_hex = [&]
+	{
+		static const char digits[] = "0123456789abcdef";
+		std::string result;
+		result.reserve(initial_payload.size() * 2);
+		for (uint8_t byte : initial_payload)
+		{
+			result.push_back(digits[byte >> 4]);
+			result.push_back(digits[byte & 0x0f]);
+		}
+		return result;
+	}();
+	const std::string id = "UNHEX(REPEAT('a1',16))";
+	execute(connection,
+		"INSERT INTO player_death_restitution_receipt(restitution_id) VALUES (" + id + ")");
+	execute(connection,
+		"INSERT INTO player_death_restitution_item(restitution_id,item_uid,vnum) VALUES (" +
+			id + "," + std::to_string(uid) + ",1901)");
+	execute(connection,
+		"INSERT INTO player_death_restitution_delivery(item_uid,restitution_id,source_pid,"
+		"death_revision,recipient_pid,source_item_revision,delivered_item_revision,"
+		"delivered_item_id,metadata_digest,original_payload) VALUES (" +
+			std::to_string(uid) + "," + id +
+			",99,1,41,1,1,1901,REPEAT(0x11,32),UNHEX('" + payload_hex + "'))");
+	execute(connection,
+		"INSERT INTO player_death_restitution_runtime(item_uid,recipient_pid,state_payload,"
+		"state_digest) VALUES (" +
+			std::to_string(uid) + ",41,UNHEX('" + payload_hex +
+			"'),UNHEX(SHA2(UNHEX('" + payload_hex + "'),256)))");
+}
+
+void check_restitution_runtime_transfer(MYSQL *connection)
+{
+	const uint64_t uid = 9000001;
+	const item_owner_identity source = { item_owner_type::player, 41, 0 };
+	const item_owner_identity target = { item_owner_type::player, 42, 0 };
+	const player_item_snapshot initial = runtime_item(uid, 7, 1700000000);
+	const player_item_snapshot mutated = runtime_item(uid, 7007, 1900000000);
+	const std::vector<uint8_t> initial_payload = encode_runtime_item(initial);
+	const std::vector<uint8_t> mutated_payload = encode_runtime_item(mutated);
+	prepare_restitution_runtime_fixture(connection, uid, initial_payload);
+	execute(connection,
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
+		"owner_id,owner_context_id,item_revision,vnum,state) VALUES (9000001,9000001,NULL,1,41,0,1,1901,1)");
+	const uint64_t source_revision = owner_revision(connection, source);
+	const uint64_t target_revision = owner_revision(connection, target);
+	item_transfer_payload transfer = {};
+	transfer.from_owner = source;
+	transfer.to_owner = target;
+	transfer.reason = item_transfer_reason::player_give;
+	transfer.reason_id = 9001;
+	transfer.expected_from_revision = source_revision;
+	transfer.expected_to_revision = target_revision;
+	transfer.selected_item_uid = uid;
+	transfer.target_root_item_uid = uid;
+	transfer.item_count = 1;
+	transfer.items[0] = { uid, uid, 0, 1, 1901, item_custody_state::active };
+	transfer.item_blob_size = static_cast<uint32_t>(mutated_payload.size());
+	std::copy(mutated_payload.begin(), mutated_payload.end(), transfer.item_blob.begin());
+	const critical_apply_result moved = apply(connection, 15, transfer);
+	assert(moved.outcome == critical_apply_outcome::applied && moved.error_code == 0);
+	const std::vector<uint8_t> stored_payload = read_blob(
+		connection,
+		"SELECT state_payload FROM player_death_restitution_runtime WHERE item_uid=9000001");
+	std::vector<player_item_snapshot> stored;
+	assert(player_item_snapshot_list_decode(stored_payload.data(), stored_payload.size(),
+						&stored) == player_snapshot_codec_result::ok &&
+	       stored.size() == 1);
+	const player_item_snapshot &actual = stored[0];
+	assert(actual.parent_index == PLAYER_SNAPSHOT_NO_PARENT && actual.equipment_slot == -1);
+	assert(actual.object_uid == mutated.object_uid &&
+	       actual.generated_key == mutated.generated_key && actual.vnum == mutated.vnum &&
+	       actual.type == mutated.type && actual.string_mask == mutated.string_mask &&
+	       actual.name == mutated.name &&
+	       actual.short_description == mutated.short_description &&
+	       actual.description == mutated.description &&
+	       actual.action_description == mutated.action_description &&
+	       actual.values == mutated.values && actual.timers == mutated.timers &&
+	       actual.wear_flags == mutated.wear_flags &&
+	       actual.extra_flags == mutated.extra_flags &&
+	       actual.anti_flags == mutated.anti_flags &&
+	       actual.anti2_flags == mutated.anti2_flags &&
+	       actual.extra2_flags == mutated.extra2_flags && actual.weight == mutated.weight &&
+	       actual.material == mutated.material && actual.cost == mutated.cost &&
+	       actual.condition == mutated.condition &&
+	       actual.craftsmanship == mutated.craftsmanship &&
+	       actual.bitvectors == mutated.bitvectors && actual.affects == mutated.affects);
+	assert(actual.dynamic_affects.size() == mutated.dynamic_affects.size() &&
+	       actual.dynamic_affects[0].type == mutated.dynamic_affects[0].type &&
+	       actual.dynamic_affects[0].data == mutated.dynamic_affects[0].data &&
+	       actual.dynamic_affects[0].extra2 == mutated.dynamic_affects[0].extra2 &&
+	       actual.extra_descriptions.size() == mutated.extra_descriptions.size() &&
+	       actual.extra_descriptions[0].keyword == mutated.extra_descriptions[0].keyword &&
+	       actual.extra_descriptions[0].description ==
+		       mutated.extra_descriptions[0].description &&
+	       actual.extra_descriptions[0].spellbook == mutated.extra_descriptions[0].spellbook &&
+	       actual.extra_descriptions[0].spell_ids == mutated.extra_descriptions[0].spell_ids);
+	assert(scalar(connection,
+		      "SELECT owner_id FROM item_current_owner WHERE item_uid=9000001") == 42);
+}
 } // namespace
 
 int main()
@@ -154,6 +357,7 @@ int main()
 		connection, getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWD"),
 		getenv("ITEM_TRANSFER_TEST_DB_NAME"),
 		static_cast<unsigned int>(strtoul(getenv("DB_PORT"), nullptr, 10)), nullptr, 0));
+	ensure_collector_boundary_fixture(connection);
 	assert(critical_operation_id_generate(&run_operation));
 	const uint64_t allocator_start =
 		scalar(connection, "SELECT next_uid FROM item_uid_allocator WHERE allocator_id=1");
@@ -409,11 +613,13 @@ int main()
 				   std::to_string(child_uid) + " AND parent_item_uid IS NULL")
 					  .c_str()) == 1);
 
+	check_restitution_runtime_transfer(connection);
+
 	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(connection, 2));
 	assert(item_uid_allocator_next() == allocator_start + 9);
 	assert(item_uid_allocator_next() == allocator_start + 10);
-	for (uint8_t id = 1; id <= 14; ++id)
+	for (uint8_t id = 1; id <= 15; ++id)
 	{
 		const std::string hex = operation_hex(id);
 		execute(connection,

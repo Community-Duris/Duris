@@ -132,6 +132,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
+				 cmd/player_death_restitution.o \
 				 net/ansi.o net/chat_presentation.o \
 				 net/output_style.o \
 				 net/output_profiles.o \
@@ -173,6 +174,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_runtime.o \
 				 economy/collector_presence.o \
 				 economy/collector_service.o \
+				 economy/collector_notification.o \
 				 economy/collector_transaction.o \
 				 economy/collector_repository.o \
 				 classes/bard.o \
@@ -224,6 +226,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
+				 combat/attack_continuation.o \
 				 combat/fight.o \
 				 core/files.o \
 				 combat/fraglist.o \
@@ -323,6 +326,8 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
 				 persistence/critical_command_repository.o \
+				 persistence/player_death_restitution_command.o \
+				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
 				 item/item_ownership_runtime.o \
@@ -393,6 +398,9 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
 				 player/player_save_pipeline.o \
+				 player/player_death_restitution_runtime.o \
+				 player/player_death_restitution_adapter.o \
+				 player/player_death_restitution_staff.o \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
@@ -635,5 +643,9 @@ valgrind: $(PROGS)
 # Auto-generated dependency files alongside objects
 DEPFILES := $(DMS_OBJS:.o=.d) $(PFILE_OBJS:.o=.d) $(SHARED_PFILE_OBJS:.o=.d)
 -include $(DEPFILES)
+
+# Scoped first-slice native restitution tests; no server or database is started.
+test-player-death-restitution-native:
+	../tests/async/build_player_death_restitution_native.sh
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.

@@ -359,6 +359,7 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::shop_buy:
 	case item_transfer_reason::shop_sell:
 	case item_transfer_reason::mobile_claim:
+	case item_transfer_reason::death_restitution:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
