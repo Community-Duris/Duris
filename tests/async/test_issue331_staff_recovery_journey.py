@@ -9,6 +9,7 @@ owned by the runner's fresh MariaDB/game containers.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shlex
@@ -47,7 +48,74 @@ OBSERVER_ACCOUNT = "Journalscout"
 OBSERVER_NAME = "Korvyn"
 PASSWORD = "Qz7!mN4@"
 DEATH_REVISION = 77
+RECOVERED_UIDS = (51000, 51001, 51002, 51003, 51005)
 
+# These are fixture/prototype contracts, not a snapshot of the post-save SQL
+# rows.  The item fixture supplies the identity, strings, values, materials,
+# costs, and condition.  Runtime object loading supplies the prototype-derived
+# values called out below (notably the aggregate bag weight and affects).
+EXPECTED_RUNTIME_ITEMS = {
+    51000: {
+        "vnum": 391, "equip_slot": 0, "quantity": 1, "weight": 5,
+        "cost": 25, "timer": 0, "extra_flags": 0, "wear_flags": 1,
+        "type": 15, "values": (50, 1, 0, 100, 0, 0, 0, 0), "material": 13,
+        "condition": 100, "name": b"qabag recovered bag leather",
+        "short_description": b"a recovered leather bag",
+    },
+    51001: {
+        "vnum": 15, "equip_slot": 0, "quantity": 1, "weight": 1,
+        "cost": 25, "timer": 0, "extra_flags": 0, "wear_flags": 1,
+        "type": 19, "values": (10, 1, 1, 0, 0, 0, 0, 0), "material": 48,
+        "condition": 100, "name": b"qabanana recovered banana",
+        "short_description": b"a recovered banana",
+    },
+    51002: {
+        "vnum": 677, "equip_slot": 0, "quantity": 1, "weight": 1,
+        "cost": 25, "timer": 0, "extra_flags": 0, "wear_flags": 8193,
+        "type": 5, "values": (6, 1, 6, 7, 0, 0, 0, 0), "material": 6,
+        "condition": 100, "name": b"qamace recovered mace wooden",
+        "short_description": b"a recovered wooden mace",
+    },
+    51003: {
+        "vnum": 67259, "equip_slot": 0, "quantity": 1, "weight": 1,
+        "cost": 1000, "timer": 0, "extra_flags": 268435456, "wear_flags": 129,
+        "type": 9, "values": (3, 2, 10, 0, 0, 0, 0, 0), "material": 2,
+        "condition": 100, "name": b"qagloves unique recovered gloves",
+        "short_description": b"a unique pair of recovered gloves",
+    },
+    51005: {
+        "vnum": 7, "equip_slot": 0, "quantity": 1, "weight": 1,
+        "cost": 25, "timer": 0, "extra_flags": 0, "wear_flags": 1,
+        "type": 33, "values": (27, 1, 0, 0, 0, 0, 0, 0), "material": 7,
+        "condition": 100, "name": b"qaspellbook recovered spellbook",
+        "short_description": b"a recovered spellbook",
+    },
+}
+for _item in EXPECTED_RUNTIME_ITEMS.values():
+    _short = _item["short_description"]
+    _item.update({
+        "description": _short + b" rests in the recovered custody tree.",
+        "action_description": b"Recovered by the issue331 player journey.",
+        "bitvectors": (0, 0, 0, 0, 0),
+    })
+
+EXPECTED_RUNTIME_AFFECTS = {
+    51000: set(),
+    51001: {(19, -10)},  # areas_mini/mini.obj prototype #15
+    51002: set(),
+    51003: {(13, 25), (20, -2)},  # areas/obj/unique.obj prototype #67259
+    51005: set(),
+}
+EXPECTED_RECOVERED_DESCRIPTION = (b"recovered", b"issue331 custody payload")
+EXPECTED_MASTER_DESCRIPTION = (
+    b"book spell spellbook master tome",
+    b"Every spell a spellbook class can learn is already scribed here.  The pages\r\n"
+    b"turn themselves to whichever incantation you are looking for.\r\n",
+)
+# src/world/db.c calls FillMasterSpellBook() for prototype #7.  Its raw bitmap
+# is projected by the SQL extra-description codec into this canonical list;
+# pin the source-defined result without copying a mutable player row.
+MASTER_SPELLBOOK_MARKER_SHA256 = "255f1df2d437d08d3c155b62146c9c92238e891270cba744f3101cdf519be16f"
 
 
 class JourneyFailure(RuntimeError):
@@ -469,6 +537,313 @@ SELECT CONCAT(
     return state, (timers[0], observed_at)
 
 
+def immutable_receipt_fingerprint(wrapper: Path, restitution_id_hex: str) -> str:
+    """Fingerprint receipt/delivery evidence without using production verify."""
+    rid = restitution_id_hex.lower()
+    if len(rid) != 32 or any(char not in "0123456789abcdef" for char in rid):
+        raise JourneyFailure("restitution ID is not a canonical 16-byte hex value")
+    receipt = sql_one(wrapper, f"""
+SELECT CONCAT_WS('|', LOWER(HEX(restitution_id)), source_pid, death_revision,
+       recipient_pid, LOWER(HEX(death_operation_id)),
+       COALESCE(LOWER(HEX(evidence_digest)), '<NULL>'),
+       COALESCE(LOWER(HEX(plan_digest)), '<NULL>'), status,
+       candidate_count, delivered_count, unresolved_count,
+       COALESCE(LOWER(HEX(actor)), '<NULL>'), COALESCE(LOWER(HEX(reason)), '<NULL>'))
+FROM player_death_restitution_receipt
+WHERE restitution_id=UNHEX('{rid}')
+""")
+    if not receipt:
+        raise JourneyFailure("immutable receipt fingerprint found no receipt")
+    deliveries = sql(wrapper, f"""
+SELECT CONCAT_WS('|', item_uid, source_pid, death_revision, recipient_pid,
+       source_item_revision, delivered_item_revision, delivered_item_id,
+       COALESCE(LOWER(HEX(metadata_digest)), '<NULL>'),
+       COALESCE(LOWER(HEX(original_payload)), '<NULL>'))
+FROM player_death_restitution_delivery
+WHERE restitution_id=UNHEX('{rid}') ORDER BY item_uid
+""").splitlines()
+    if len(deliveries) != len(RECOVERED_UIDS):
+        raise JourneyFailure(
+            f"immutable delivery fingerprint expected {len(RECOVERED_UIDS)} rows, got {len(deliveries)}"
+        )
+    delivery_uids = []
+    for line in deliveries:
+        fields = line.split('|')
+        if len(fields) != 9:
+            raise JourneyFailure(f"immutable delivery fingerprint row shape mismatch: {line!r}")
+        delivery_uids.append(int(fields[0]))
+    if tuple(delivery_uids) != RECOVERED_UIDS:
+        raise JourneyFailure(f"immutable delivery UID set changed: {delivery_uids!r}")
+    receipt_items = sql(wrapper, f"""
+SELECT CONCAT_WS('|', item_uid,
+       COALESCE(artifact_vnum, '<NULL>'), COALESCE(artifact_loss_epoch, '<NULL>'),
+       COALESCE(artifact_source_timer_epoch, '<NULL>'),
+       COALESCE(artifact_usable_lifetime_seconds, '<NULL>'),
+       COALESCE(artifact_delivered_timer_epoch, '<NULL>'),
+       COALESCE(LOWER(HEX(artifact_timing_basis)), '<NULL>'),
+       COALESCE(LOWER(HEX(artifact_compensation_reference)), '<NULL>'))
+FROM player_death_restitution_item
+WHERE restitution_id=UNHEX('{rid}') ORDER BY item_uid
+""").splitlines()
+    canonical = "\n".join([
+        "receipt=" + receipt,
+        "delivery=" + "\n".join(deliveries),
+        "receipt_item=" + "\n".join(receipt_items),
+    ]).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _sql_hex_bytes(value: str, field: str) -> bytes:
+    if value in ("", "\\N"):
+        return b""
+    try:
+        return bytes.fromhex(value)
+    except ValueError as exc:
+        raise JourneyFailure(f"{field} is not hexadecimal: {value!r}") from exc
+
+
+def _post_runtime_items(wrapper: Path, pid: int) -> dict[int, dict[str, object]]:
+    rows = sql(wrapper, f"""
+SELECT id,pid,vnum,equip_slot,COALESCE(container_id,0),quantity,weight,cost,timer,
+       extra_flags,wear_flags,item_type,value0,value1,value2,value3,value4,value5,value6,value7,
+       HEX(name),HEX(short_descr),HEX(description),HEX(action_descr),
+       bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,item_material,item_condition,obj_uid
+FROM player_items WHERE pid={pid} AND obj_uid IN ({','.join(str(uid) for uid in RECOVERED_UIDS)})
+ORDER BY obj_uid
+""").splitlines()
+    items: dict[int, dict[str, object]] = {}
+    for line in rows:
+        fields = line.split('\t')
+        if len(fields) != 32:
+            raise JourneyFailure(f"post-runtime item row shape mismatch: {line!r}")
+        uid = int(fields[31])
+        if uid in items:
+            raise JourneyFailure(f"duplicate post-runtime player item UID {uid}")
+        items[uid] = {
+            "id": int(fields[0]), "pid": int(fields[1]), "vnum": int(fields[2]),
+            "equip_slot": int(fields[3]), "container_id": int(fields[4]), "quantity": int(fields[5]),
+            "weight": int(fields[6]), "cost": int(fields[7]), "timer": int(fields[8]),
+            "extra_flags": int(fields[9]), "wear_flags": int(fields[10]), "type": int(fields[11]),
+            "values": tuple(int(value) for value in fields[12:20]),
+            "name": _sql_hex_bytes(fields[20], "item name"),
+            "short_description": _sql_hex_bytes(fields[21], "item short description"),
+            "description": _sql_hex_bytes(fields[22], "item description"),
+            "action_description": _sql_hex_bytes(fields[23], "item action description"),
+            "bitvectors": tuple(int(value) for value in fields[24:29]),
+            "material": int(fields[29]), "condition": int(fields[30]),
+        }
+    if set(items) != set(RECOVERED_UIDS):
+        raise JourneyFailure(f"post-runtime item UID set mismatch: {sorted(items)}")
+    duplicate_rows = sql(wrapper, f"""
+SELECT obj_uid,COUNT(*) FROM player_items
+WHERE pid={pid} AND obj_uid IN ({','.join(str(uid) for uid in RECOVERED_UIDS)})
+GROUP BY obj_uid HAVING COUNT(*) <> 1
+""").splitlines()
+    if duplicate_rows:
+        raise JourneyFailure(f"post-runtime duplicate player rows: {duplicate_rows!r}")
+    return items
+
+
+def _check_post_runtime_semantics(wrapper: Path, pid: int,
+                                  items: dict[int, dict[str, object]]) -> None:
+    for uid, expected in EXPECTED_RUNTIME_ITEMS.items():
+        actual = items[uid]
+        if actual["pid"] != pid:
+            raise JourneyFailure(f"post-runtime item {uid} has wrong owner pid: {actual['pid']}")
+        for field, expected_value in expected.items():
+            if actual[field] != expected_value:
+                raise JourneyFailure(
+                    f"post-runtime item {uid} {field} differs: "
+                    f"{actual[field]!r} expected {expected_value!r}"
+                )
+    expected_bag_row_id = int(items[51000]["id"])
+    for uid, actual in items.items():
+        expected_container = expected_bag_row_id if uid == 51001 else 0
+        if actual["container_id"] != expected_container:
+            raise JourneyFailure(
+                f"post-runtime item {uid} container differs: "
+                f"{actual['container_id']} expected {expected_container}"
+            )
+
+    affect_rows = sql(wrapper, f"""
+SELECT pi.obj_uid,ia.location,ia.modifier
+FROM player_item_affects ia JOIN player_items pi ON pi.id=ia.item_id
+WHERE pi.pid={pid} AND pi.obj_uid IN ({','.join(str(uid) for uid in RECOVERED_UIDS)})
+ORDER BY pi.obj_uid,ia.id
+""").splitlines()
+    affects = {uid: set() for uid in RECOVERED_UIDS}
+    for line in affect_rows:
+        fields = line.split('\t')
+        if len(fields) != 3:
+            raise JourneyFailure(f"post-runtime affect row shape mismatch: {line!r}")
+        affects[int(fields[0])].add((int(fields[1]), int(fields[2])))
+    if affects != EXPECTED_RUNTIME_AFFECTS:
+        raise JourneyFailure(f"post-runtime prototype affects differ: {affects!r}")
+
+    description_rows = sql(wrapper, f"""
+SELECT pi.obj_uid,HEX(ed.keyword),HEX(ed.description)
+FROM player_item_extra_descr ed JOIN player_items pi ON pi.id=ed.item_id
+WHERE pi.pid={pid} AND pi.obj_uid IN ({','.join(str(uid) for uid in RECOVERED_UIDS)})
+ORDER BY pi.obj_uid,ed.id
+""").splitlines()
+    descriptions = {uid: set() for uid in RECOVERED_UIDS}
+    for line in description_rows:
+        fields = line.split('\t')
+        if len(fields) != 3:
+            raise JourneyFailure(f"post-runtime description row shape mismatch: {line!r}")
+        descriptions[int(fields[0])].add(
+            (_sql_hex_bytes(fields[1], "description keyword"), _sql_hex_bytes(fields[2], "description text"))
+        )
+    for uid in RECOVERED_UIDS:
+        expected = {EXPECTED_RECOVERED_DESCRIPTION}
+        if uid != 51005 and descriptions[uid] != expected:
+            raise JourneyFailure(
+                f"post-runtime descriptions for UID {uid} differ: {descriptions[uid]!r} expected {expected!r}"
+            )
+    spellbook = descriptions[51005]
+    master_markers = {
+        text for keyword, text in spellbook
+        if keyword == b"SPELLBOOK" and text != b"[601,602]"
+    }
+    if len(master_markers) != 1:
+        raise JourneyFailure(
+            f"post-runtime spellbook prototype normalization count differs: {master_markers!r}"
+        )
+    master_marker = next(iter(master_markers))
+    if hashlib.sha256(master_marker).hexdigest() != MASTER_SPELLBOOK_MARKER_SHA256:
+        raise JourneyFailure("post-runtime master spellbook marker differs from FillMasterSpellBook source output")
+    try:
+        spell_ids = json.loads(master_marker.decode("ascii"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise JourneyFailure("post-runtime master spellbook marker is not canonical JSON") from exc
+    if (not isinstance(spell_ids, list) or
+            any(not isinstance(value, int) for value in spell_ids) or
+            spell_ids != sorted(set(spell_ids))):
+        raise JourneyFailure("post-runtime master spellbook marker is not a sorted unique spell list")
+    expected_spellbook = {
+        EXPECTED_RECOVERED_DESCRIPTION,
+        (b"SPELLBOOK", b"[601,602]"),
+        EXPECTED_MASTER_DESCRIPTION,
+        (b"SPELLBOOK", master_marker),
+    }
+    if spellbook != expected_spellbook:
+        raise JourneyFailure(
+            f"post-runtime spellbook descriptions differ: {spellbook!r} expected {expected_spellbook!r}"
+        )
+
+
+def _check_post_runtime_graph(wrapper: Path, pid: int, restitution_id_hex: str,
+                              items: dict[int, dict[str, object]]) -> None:
+    expected_graph = {
+        51000: (51000, 0), 51001: (51000, 51000), 51002: (51002, 0),
+        51003: (51003, 0), 51005: (51005, 0),
+    }
+    delivery_rows = sql(wrapper, f"""
+SELECT item_uid,delivered_item_revision,delivered_item_id
+FROM player_death_restitution_delivery
+WHERE restitution_id=UNHEX('{restitution_id_hex.lower()}') ORDER BY item_uid
+""").splitlines()
+    deliveries = {}
+    for line in delivery_rows:
+        fields = line.split('\t')
+        if len(fields) != 3:
+            raise JourneyFailure(f"post-runtime delivery identity row shape mismatch: {line!r}")
+        deliveries[int(fields[0])] = (int(fields[1]), int(fields[2]))
+    if set(deliveries) != set(RECOVERED_UIDS):
+        raise JourneyFailure(f"post-runtime delivery identity UID set differs: {sorted(deliveries)}")
+
+    owner_rows = sql(wrapper, f"""
+SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,
+       owner_context_id,item_revision,vnum,state
+FROM item_current_owner WHERE owner_type=1 AND owner_id={pid}
+  AND item_uid IN ({','.join(str(uid) for uid in RECOVERED_UIDS)}) ORDER BY item_uid
+""").splitlines()
+    owners = {}
+    for line in owner_rows:
+        fields = line.split('\t')
+        if len(fields) != 9:
+            raise JourneyFailure(f"post-runtime owner row shape mismatch: {line!r}")
+        uid = int(fields[0])
+        if uid in owners:
+            raise JourneyFailure(f"duplicate post-runtime ownership UID {uid}")
+        owners[uid] = tuple(int(value) for value in fields[1:])
+    if set(owners) != set(RECOVERED_UIDS):
+        raise JourneyFailure(f"post-runtime owner UID set differs: {sorted(owners)}")
+    for uid, (root_uid, parent_uid) in expected_graph.items():
+        owner = owners[uid]
+        expected_revision, expected_delivery_row_id = deliveries[uid]
+        if expected_delivery_row_id <= 0:
+            raise JourneyFailure(f"post-runtime delivery identity for UID {uid} has no delivered row ID")
+        # The delivery row is immutable evidence.  Runtime save may
+        # rematerialize player_items with a new mutable row ID; ownership is
+        # therefore checked by UID/revision rather than equating that ID.
+        expected = (root_uid, parent_uid, 1, pid, 0, expected_revision,
+                    EXPECTED_RUNTIME_ITEMS[uid]["vnum"], 1)
+        if owner != expected:
+            raise JourneyFailure(f"post-runtime owner graph for UID {uid} differs: {owner!r} expected {expected!r}")
+
+
+def assert_native_runtime_tamper_negatives(wrapper: Path, plan_path: Path) -> None:
+    """Prove strict verify rejects a changed field and a truncated IST1 payload."""
+    uid = 51002
+    original_hex = sql_one(wrapper, f"""
+SELECT LOWER(HEX(state_payload)) FROM player_death_restitution_runtime WHERE item_uid={uid}
+""")
+    if not original_hex:
+        raise JourneyFailure("native tamper regression found no runtime payload")
+    original = bytes.fromhex(original_hex)
+    if len(original) <= 24 or original[:6] != b"IST1\x01\x00":
+        raise JourneyFailure("native tamper regression did not find an IST1 payload with a stable header")
+    changed = bytearray(original)
+    changed[24] ^= 1  # native item weight; magic/version/flags remain unchanged
+    truncated = original[:-1]
+    mutations = ("changed-field", bytes(changed), "truncated", truncated)
+    try:
+        for label, payload in ((mutations[0], mutations[1]), (mutations[2], mutations[3])):
+            if payload[:6] != original[:6]:
+                raise JourneyFailure(f"{label} tamper changed the IST1 header")
+            encoded = payload.hex()
+            sql(wrapper, f"""
+UPDATE player_death_restitution_runtime
+SET state_payload=UNHEX('{encoded}'),
+    state_digest=UNHEX(SHA2(UNHEX('{encoded}'),256))
+WHERE item_uid={uid}
+""")
+            result = base.cli(wrapper, ["verify", "--plan", str(plan_path)], timeout=180, check=False)
+            output = ((result.stdout or "") + (result.stderr or "")).lower()
+            if result.returncode == 0 or "exact runtime metadata payload differs" not in output:
+                raise JourneyFailure(
+                    f"strict native verify accepted {label} tamper: "
+                    f"returncode={result.returncode} output={output[-1000:]}"
+                )
+    finally:
+        sql(wrapper, f"""
+UPDATE player_death_restitution_runtime
+SET state_payload=UNHEX('{original_hex}'),
+    state_digest=UNHEX(SHA2(UNHEX('{original_hex}'),256))
+WHERE item_uid={uid}
+""")
+    if sql_one(wrapper, f"SELECT LOWER(HEX(state_payload)) FROM player_death_restitution_runtime WHERE item_uid={uid}") != original_hex:
+        raise JourneyFailure("native tamper regression did not restore the original payload")
+
+
+def post_runtime_acceptance(wrapper: Path, pid: int, source_timer: int, plan: dict,
+                            restitution_id_hex: str, pre_login_fingerprint: str,
+                            timer_reference: tuple[int, int]) -> tuple[str, str]:
+    """Accept materialized runtime state without weakening production verify."""
+    after_fingerprint = immutable_receipt_fingerprint(wrapper, restitution_id_hex)
+    if after_fingerprint != pre_login_fingerprint:
+        raise JourneyFailure(
+            "immutable receipt/original-payload/delivery fingerprint changed across login/save/replay: "
+            f"before={pre_login_fingerprint} after={after_fingerprint}"
+        )
+    items = _post_runtime_items(wrapper, pid)
+    _check_post_runtime_semantics(wrapper, pid, items)
+    _check_post_runtime_graph(wrapper, pid, restitution_id_hex, items)
+    state, timer = assert_recovered(wrapper, pid, source_timer, plan, timer_reference)
+    return state, after_fingerprint
+
+
 def player_view(journey, wrapper: Path, account: str, character: str, pid: int,
                 *, expect_notification: bool = False) -> str:
     client = login_player(journey, account, character)
@@ -673,6 +1048,10 @@ def main() -> int:
         # change container weights or add prototype-derived metadata.
         base.cli(wrapper, ["verify", "--plan", str(plan_path)], timeout=180)
         evidence.append("strict pre-login delivery metadata/ownership verification: passed")
+        assert_native_runtime_tamper_negatives(wrapper, plan_path)
+        evidence.append("strict native tamper negatives: changed field and truncated IST1 payload rejected")
+        immutable_before_login = immutable_receipt_fingerprint(wrapper, plan["restitution_id_hex"])
+        evidence.append(f"immutable receipt/original-payload/delivery fingerprint before login: {immutable_before_login}")
         recovered_plan = plan
         recovered_state, timer_reference = assert_recovered(wrapper, recipient_pid, source_timer, recovered_plan)
         evidence.append(f"native SQL recovery readback graph/spellbook/artifact timer: verified ({recovered_state})")
@@ -724,22 +1103,19 @@ def main() -> int:
         replay_text = (replay.stdout + replay.stderr).lower()
         if "already applied" not in replay_text:
             raise JourneyFailure(f"replay was not idempotent: {replay.stdout[-1000:]} {replay.stderr[-1000:]}")
-        base.cli(wrapper, ["verify", "--plan", str(plan_path)], timeout=180)
-        final_counts = sql_one(wrapper, f"""
-SELECT CONCAT(
- (SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={recipient_pid} AND death_revision={DEATH_REVISION}), '|',
- (SELECT COUNT(*) FROM player_items WHERE pid={recipient_pid} AND obj_uid IN (51000,51001,51002,51003,51005)), '|',
- (SELECT COUNT(*) FROM player_item_extra_descr descr
-    JOIN player_items item ON item.id=descr.item_id
-    WHERE item.pid={recipient_pid} AND item.obj_uid=51005 AND descr.keyword='SPELLBOOK'
-      AND descr.description='[601,602]'), '|',
- (SELECT COUNT(*) FROM artifact_domain_state WHERE vnum={ARTIFACT_VNUM} AND location={recipient_pid} AND loc_type=3), '|',
- (SELECT COUNT(*) FROM artifacts_mortal WHERE vnum={ARTIFACT_VNUM} AND location={recipient_pid} AND locType=3), '|',
- (SELECT COUNT(*) FROM artifacts WHERE vnum={ARTIFACT_VNUM} AND location={recipient_pid} AND locType=3)
-)""")
-        if final_counts != "5|5|1|1|1|1":
-            raise JourneyFailure(f"replay changed durable counts: {final_counts}")
-        evidence.append(f"offline canonical replay/verify without duplication: verified ({final_counts})")
+        post_state, immutable_after_replay = post_runtime_acceptance(
+            wrapper, recipient_pid, source_timer, plan, plan["restitution_id_hex"],
+            immutable_before_login, timer_reference,
+        )
+        evidence.append(
+            "post-save acceptance (immutable fingerprint, fixture/prototype normalization, "
+            f"UID graph, artifact timer, no duplicate): verified ({post_state})"
+        )
+        evidence.append(f"immutable receipt/original-payload/delivery fingerprint after replay: {immutable_after_replay}")
+        evidence.append(
+            "post-save strict CLI verify intentionally not used: production strict verification is bounded "
+            "to immediate delivery before login/materialization; runtime normalization is checked explicitly"
+        )
         report(evidence)
         print("ISSUE331_STAFF_RECOVERY_JOURNEY_OK")
         for line in evidence[1:]:

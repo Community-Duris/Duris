@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import hashlib
 import os
 from pathlib import Path
 import tempfile
@@ -189,6 +190,108 @@ class RestitutionCliTests(unittest.TestCase):
             "name_hex": b"unique gloves".hex(),
         }
         self.assertEqual(cli.item_kind(unique, {}), "unique")
+
+    def test_strict_native_comparison_rejects_changed_or_truncated_ist1(self) -> None:
+        metadata = {
+            "object_uid": 100,
+            "vnum": 677,
+            "type": 5,
+            "string_mask": 0,
+            "name_hex": "",
+            "short_description_hex": "",
+            "description_hex": "",
+            "action_description_hex": "",
+            "values": [0] * 8,
+            "bitvectors": [0] * 5,
+            "weight": 1,
+            "cost": 1,
+            "timers": [0],
+            "extra_flags": 0,
+            "wear_flags": 0,
+            "material": 1,
+            "condition": 100,
+            "affects": [],
+            "extra_descriptions": [],
+            "item_payload_hex": "00",
+        }
+        native = cli._native_item_state_payload(metadata, 100, 0)
+        self.assertEqual(native[:6], b"IST1\x01\x00")
+        metadata_digest = hashlib.sha256(b"\x00").hexdigest()
+        row = {
+            "item_uid": 100,
+            "eligible": True,
+            "kind": "normal",
+            "vnum": 677,
+            "metadata": metadata,
+            "metadata_digest": metadata_digest,
+            "metadata_payload_hex": "00",
+            "source_root_item_uid": 100,
+            "source_parent_item_uid": 0,
+            "source_item_revision": 11,
+            "delivered_root_item_uid": 100,
+            "delivered_parent_item_uid": 0,
+            "equipment_slot": 0,
+        }
+        plan = {
+            "source": {"pid": 42, "death_revision": 7, "operation_id_hex": "aa" * 16},
+            "recipient_pid": 42,
+            "restitution_id_hex": "bb" * 16,
+            "evidence_digest": "cc" * 32,
+            "plan_digest": "dd" * 32,
+            "items": [row],
+            "recipient_existing_uids": [],
+        }
+        receipt = {
+            "source_pid": 42, "death_revision": 7, "recipient_pid": 42,
+            "death_operation_id_hex": "aa" * 16, "evidence_digest": "cc" * 32,
+            "plan_digest": "dd" * 32, "candidate_count": 1,
+            "delivered_count": 1, "status": cli.RECEIPT_APPLIED,
+        }
+        delivery = [{
+            "item_uid": 100, "metadata_digest": metadata_digest,
+            "original_payload_hex": "00", "delivered_item_id": 900,
+        }]
+        player = {
+            "id": 900, "pid": 42, "vnum": 677, "equip_slot": 0,
+            "container_id": 0, "quantity": 1, "weight": 1, "cost": 1,
+            "timer": 0, "extra_flags": 0, "wear_flags": 0, "type": 5,
+            "values": [0] * 8, "name_hex": None, "short_description_hex": None,
+            "description_hex": None, "action_description_hex": None,
+            "bitvectors": [0] * 5, "object_uid": 100, "condition": 100,
+        }
+        owner = {
+            "item_uid": 100, "root_item_uid": 100, "parent_item_uid": 0,
+            "owner_type": cli.OWNER_PLAYER, "owner_id": 42,
+            "owner_context_id": 0, "item_revision": 11, "vnum": 677,
+            "state": cli.STATE_ACTIVE,
+        }
+        db = mock.Mock()
+        db.policy = None
+        db.scalar.return_value = "0"
+        common = {
+            "fetch_receipt": mock.Mock(return_value=receipt),
+            "fetch_delivery_rows": mock.Mock(return_value=delivery),
+            "fetch_restitution_item_rows": mock.Mock(return_value={}),
+            "fetch_player_rows": mock.Mock(return_value={"100": player}),
+            "fetch_current_owners": mock.Mock(return_value={"100": owner}),
+            "fetch_item_metadata": mock.Mock(return_value=({}, {})),
+            "fetch_runtime_state": mock.Mock(return_value={"100": native.hex()}),
+            "fetch_recipient_uids": mock.Mock(return_value=[100]),
+        }
+        with mock.patch.multiple(cli, **common):
+            ok, _, failures = cli.verify_plan(
+                db, plan, policy=None,
+            )
+            self.assertTrue(ok, failures)
+            changed = bytearray(native)
+            changed[24] ^= 1
+            for label, payload in (("changed-field", bytes(changed)), ("truncated", native[:-1])):
+                with self.subTest(label=label):
+                    self.assertEqual(payload[:6], native[:6])
+                    with mock.patch.object(cli, "fetch_runtime_state", return_value={"100": payload.hex()}):
+                        ok, _, failures = cli.verify_plan(db, plan, policy=None)
+                    self.assertFalse(ok)
+                    self.assertIn("exact runtime metadata payload differs", failures)
 
     def test_artifact_timing_compensation_is_scoped_to_explicit_uids(self) -> None:
         parsed = cli.parse_artifact_timing_compensation_specs([
