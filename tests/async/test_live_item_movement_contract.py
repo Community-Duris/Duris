@@ -70,14 +70,17 @@ class LiveItemMovementContractTests(unittest.TestCase):
 
     def test_pc_corpse_roots_bypass_generic_ownership_transfers(self):
         actobj = (SRC / "actobj.c").read_text()
-        helper = actobj[actobj.index("static bool uses_generic_item_ownership") :]
-        helper = helper[: helper.index("#define GETDBG_LOG")]
-        self.assertIn("ITEM_CORPSE", helper)
-        self.assertIn("PC_CORPSE", helper)
-        self.assertGreaterEqual(actobj.count("uses_generic_item_ownership("), 10)
+        policy = (SRC / "item/item_command_policy.c").read_text()
+        self.assertIn("ITEM_CORPSE", policy)
+        self.assertIn("PC_CORPSE", policy)
+        self.assertGreaterEqual(
+            actobj.count("item_command_uses_durable_ownership("), 10
+        )
         get_body = actobj[actobj.index("void get(P_char ch") :]
         get_body = get_body[: get_body.index("int fight_in_room")]
-        self.assertIn("IS_PC(ch) && uses_generic_item_ownership(o_obj)", get_body)
+        self.assertIn(
+            "IS_PC(ch) && item_command_uses_durable_ownership(o_obj)", get_body
+        )
 
     def test_death_items_are_chained_after_ack_and_failure_is_preserved(self):
         fight = (SRC / "fight.c").read_text()

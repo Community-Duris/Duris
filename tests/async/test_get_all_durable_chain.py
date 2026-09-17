@@ -90,7 +90,7 @@ ok &= check(
 ok &= check(
     "missing stock roots adopt in place before one multi-root movement",
     "bulk_get_source_for_roots(actor, container, roots, &source)" in start_bulk
-    and "get_item_source_owner(actor, roots.front(), container, source)" in ACTOBJ
+    and "item_get_source_owner(actor, root, container, &root_source)" in ACTOBJ
     and "continue_bulk_get(actor, actor_pid);" in start_bulk
     and "item_ownership_runtime_lookup(root->obj_uid, &runtime)" in continue_bulk
     and "state.source, state.source" in continue_bulk
@@ -146,7 +146,7 @@ ok &= check(
 )
 ok &= check(
     "single durable get rejects no-loot before ownership submission",
-    single_get.index("uses_generic_item_ownership(o_obj) &&")
+    single_get.index("item_command_uses_durable_ownership(o_obj) &&")
     < single_get.index("item_movement_transaction_submit(ch, o_obj"),
 )
 ok &= check(

@@ -94,27 +94,25 @@ class DurableContainerPutContractTests(unittest.TestCase):
         self.assertIn("bool defer_durable_put(", actobj)
         self.assertNotIn("defer_cross_owner_put", actobj)
         body = function_body(actobj, "bool defer_durable_put(", "\nbool submit_player_drop(")
-        # The locker branch keeps its same-owner shortcut: a chest is an owner,
-        # not a parent, so an item already owned by the chest records nothing.
-        locker = body[:body.index("if (!item_ownership_runtime_lookup(container->obj_uid")]
-        container = body[body.index("if (!item_ownership_runtime_lookup(container->obj_uid"):]
-        self.assertIn("item_owner_identity_equal(source, locker_destination)", locker)
-        # The container branch must not short-circuit on a matching owner; the
-        # parent linkage still has to reach the ledger.
-        self.assertNotIn("item_owner_identity_equal(source, container_runtime.owner)",
-                         container)
-        self.assertIn("item_transfer_reason::player_put", container)
-        # The container itself is the ownership target, which is what carries
-        # target_parent_item_uid / target_root_item_uid into the payload.
-        submit = container[container.index("item_movement_transaction_submit("):]
-        self.assertIn("actor, object, container, source, destination", submit)
+        # The shared resolver keeps the locker same-owner shortcut while
+        # retaining the ordinary container as the topology parent.
+        self.assertIn(
+            "item_command_resolve_put_destination(actor, container, &destination)",
+            body,
+        )
+        self.assertIn("destination.reason == item_transfer_reason::locker_deposit", body)
+        self.assertIn("item_owner_identity_equal(source, destination.owner)", body)
+        self.assertNotIn("container_runtime.owner", body)
+        self.assertIn("destination.target_container", body)
+        self.assertIn("destination.owner", body)
 
     def test_uid_bearing_container_without_runtime_authority_is_rejected(self):
         actobj = (SRC / "actobj.c").read_text()
         body = function_body(actobj, "bool defer_durable_put(",
                              "\nbool submit_player_drop(")
         failure_start = body.index(
-            "if (!item_ownership_runtime_lookup(container->obj_uid")
+            "if (!item_command_resolve_put_destination(actor, container, &destination)"
+        )
         failure = body[failure_start:body.index(
             "const item_owner_identity source =", failure_start)]
         self.assertNotIn("OBJ_CARRIED_BY(container, actor)", failure)
@@ -125,7 +123,8 @@ class DurableContainerPutContractTests(unittest.TestCase):
         actobj = (SRC / "actobj.c").read_text()
         movement = (SRC / "item_movement_transaction.c").read_text()
         bulk = function_body(actobj, "void start_bulk_put(", "\nvoid do_put(")
-        self.assertIn("P_obj ownership_target = container;", bulk)
+        self.assertIn("item_put_destination destination = {};", bulk)
+        self.assertIn("destination.target_container", bulk)
         # Both paths hand the container to the same payload field.
         self.assertIn(".target_parent_item_uid = target_container ? target_container->obj_uid : 0,",
                       movement)
@@ -192,8 +191,7 @@ class DurableContainerPutContractTests(unittest.TestCase):
         consent_end = give.index("if (IS_ARTIFACT(obj)", consent_start)
         consent_gate = give[consent_start:consent_end]
         durable_start = give.index(
-            "if (IS_PC(ch) && IS_PC(vict) && ch != vict && "
-            "uses_generic_item_ownership(obj))")
+            "if (IS_PC(ch) && IS_PC(vict) && ch != vict")
         durable_give = give[durable_start:give.index("\n\tobj_from_char(obj);", durable_start)]
         self.assertIn("!is_linked_to(ch, vict, LNK_CONSENT)", consent_gate)
         self.assertIn("return;", consent_gate)
