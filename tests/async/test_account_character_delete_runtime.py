@@ -52,6 +52,7 @@ prelude = r'''
 #include <cstring>
 #include <strings.h>
 #include <cctype>
+#include <cstdint>
 #include <string>
 #define TRUE 1
 #define FALSE 0
@@ -106,6 +107,9 @@ static Guild fixture_guild;
 constexpr int PERSISTENCE_MODE_FLATFILE_PRIMARY=1;
 int persistence_mode_get() { return mode; }
 const char *persistence_mode_flatfile_root() { return "fixture"; }
+namespace zone_story_quest_runtime {
+bool erase_character(uint32_t, std::string *) { return true; }
+}
 enum class flatfile_character_delete_result { ok, already_deleted, io_error };
 flatfile_character_delete_result flatfile_character_delete(const std::string&, int, const std::string&, std::string*) {
     ++backend_calls;

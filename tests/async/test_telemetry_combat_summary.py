@@ -100,7 +100,8 @@ def schema_contract() -> None:
         assert column in verifier
 
     manifest = json.loads((ROOT / "migrations" / "migration_manifest.json").read_text())
-    head = manifest["migrations"][-1]
+    head = next(item for item in manifest["migrations"]
+                if item["id"] == "0025_telemetry_combat_summaries")
     assert head["id"] == "0025_telemetry_combat_summaries"
     assert head["sequence"] == 25
     assert head["apply"] == "immutable/0025_telemetry_combat_summaries.sql"

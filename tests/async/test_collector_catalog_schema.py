@@ -67,9 +67,9 @@ class CollectorCatalogSchemaTest(unittest.TestCase):
                       "collector_reconciliation_quarantine", "offline_message_receipts"):
             self.assertIn(f"'{table}'", runtime["runtime_table_sql_list"])
             self.assertIn(f"database:{table}", lifecycle_ids)
-        self.assertEqual(runtime["current_table_count"], 200)
+        self.assertEqual(runtime["current_table_count"], 201)
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0025_telemetry_combat_summaries")
+                         "0026_zone_story_quest_state")
 
 
 if __name__ == "__main__":
