@@ -1580,6 +1580,8 @@ resetspec
 ~
 rest
 ~
+restitution
+~
 restore
 ~
 return

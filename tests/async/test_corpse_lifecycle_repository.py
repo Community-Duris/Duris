@@ -22,7 +22,10 @@ HARNESS = ROOT / "tests/async/corpse_lifecycle_repository_mysql_harness.cpp"
 class CorpseLifecycleRepositoryTest(unittest.TestCase):
     def test_authority_migration_is_sealed_registered_and_in_bootstrap(self) -> None:
         manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
-        step = manifest["migrations"][-1]
+        step = next(
+            migration for migration in manifest["migrations"]
+            if migration["id"] == "0019_corpse_lifecycle_authority"
+        )
         self.assertEqual((step["id"], step["sequence"]),
                          ("0019_corpse_lifecycle_authority", 19))
         self.assertEqual(step["apply_checksum"],
@@ -44,11 +47,14 @@ class CorpseLifecycleRepositoryTest(unittest.TestCase):
         lifecycle = json.loads(
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()
         )
+        migration_manifest = json.loads(
+            (ROOT / "migrations/migration_manifest.json").read_text()
+        )
         lifecycle_entries = {entry["id"]: entry for entry in lifecycle["entries"]}
-        self.assertEqual(runtime["current_table_count"], 193)
+        self.assertEqual(runtime["current_table_count"], 198)
         self.assertIn("'corpse_catalog_state'", runtime["runtime_table_sql_list"])
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0019_corpse_lifecycle_authority")
+                         migration_manifest["migrations"][-1]["id"])
         entry = lifecycle_entries["database:corpse_catalog_state"]
         self.assertEqual(entry["data_category"], "reconciliation_or_replay_record")
         self.assertEqual(entry["export_rule"]["disposition"], "exclude")
