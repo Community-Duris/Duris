@@ -4,6 +4,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <deque>
+#include <cerrno>
 #include <memory>
 #include <mutex>
 #include <new>
@@ -27,6 +28,10 @@ struct operation_state
 	bool completed;
 	bool blocked;
 	bool admission_uncertain;
+	bool awaiting_durability;
+	bool admission_failed;
+	bool admission_failure_queued;
+	critical_completion admission_failure_completion;
 };
 
 struct completed_state
@@ -45,20 +50,27 @@ struct replay_observer_context
 std::mutex coordinator_mutex;
 std::condition_variable work_available;
 std::condition_variable result_available;
+std::condition_variable admission_available;
 std::unordered_map<std::string, std::unique_ptr<operation_state>> operations;
 std::deque<std::string> pending;
+std::deque<std::string> pending_admission;
+std::deque<critical_completion> admission_failures;
 std::deque<critical_completion> raw_results;
 std::unordered_map<std::string, std::string> active_keys;
 std::unordered_map<std::string, std::deque<std::string>> fences;
 std::unordered_map<std::string, completed_state> completed_cache;
 std::deque<std::string> completed_order;
 size_t completed_cache_bytes = 0;
+size_t pending_admission_bytes = 0;
+size_t admission_inflight_bytes = 0;
 std::vector<std::thread> workers;
+std::thread admission_worker;
 critical_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
 critical_drain_observer_fn drain_observer = nullptr;
 critical_coordinator_health health = {};
 bool stop_requested = false;
+bool recovery_requested = false;
 uint64_t uncertain_recovery_not_before_usec = 0;
 uint64_t uncertain_recovery_delay_usec = 1000000;
 
@@ -78,6 +90,7 @@ uint64_t wall_now_usec()
 
 void defer_uncertain_recovery()
 {
+	recovery_requested = true;
 	const uint64_t now = now_usec();
 	uncertain_recovery_not_before_usec = now + uncertain_recovery_delay_usec;
 	uncertain_recovery_delay_usec =
@@ -157,6 +170,7 @@ void update_depth()
 	health.inflight = 0;
 	health.blocked = 0;
 	health.retained_bytes = 0;
+	health.awaiting_durability = 0;
 	uint64_t oldest = 0;
 	const uint64_t now = now_usec();
 	for (const auto &[identity, state] : operations)
@@ -164,21 +178,26 @@ void update_depth()
 		(void)identity;
 		if (state->completed)
 			continue;
-		if (state->blocked)
+		if (state->blocked || state->admission_failed)
 			++health.blocked;
 		else if (state->inflight)
 			++health.inflight;
 		else
 			++health.queued;
+		if (state->awaiting_durability)
+			++health.awaiting_durability;
 		health.retained_bytes += state->retained_bytes;
 		if (!oldest || state->queued_at_usec < oldest)
 			oldest = state->queued_at_usec;
 	}
 	health.oldest_age_msec = oldest && now > oldest ? (now - oldest) / 1000 : 0;
-	health.high_water_operations =
-		std::max(health.high_water_operations, health.queued + health.inflight);
+	health.high_water_operations = std::max(health.high_water_operations,
+						health.queued + health.inflight + health.blocked);
 	health.high_water_bytes = std::max(health.high_water_bytes, health.retained_bytes);
 	health.completed_cache = completed_cache.size();
+	health.admission_queue_bytes = pending_admission_bytes + admission_inflight_bytes;
+	health.admission_worker_running = admission_worker.joinable() && !stop_requested;
+	health.append_inflight = admission_inflight_bytes != 0;
 }
 
 void remember_completed(const std::string &identity, const critical_command &command,
@@ -241,6 +260,9 @@ bool enqueue_replayed(critical_command command, void *context)
 		state->completed = false;
 		state->blocked = false;
 		state->admission_uncertain = false;
+		state->awaiting_durability = false;
+		state->admission_failed = false;
+		state->admission_failure_queued = false;
 		operations.emplace(identity, std::move(state));
 		pending.push_back(identity);
 		add_fences(identity, operations.at(identity)->command);
@@ -303,6 +325,321 @@ bool collect_replayed_identity(critical_command command, void *context)
 		return false;
 	}
 	return true;
+}
+
+unsigned int journal_failure_error(critical_command_journal_result result)
+{
+	switch (result)
+	{
+	case critical_command_journal_result::quota_exceeded:
+		return ENOSPC;
+	case critical_command_journal_result::unsafe_permissions:
+		return EACCES;
+	case critical_command_journal_result::corrupt_data:
+		return EBADMSG;
+	case critical_command_journal_result::not_initialized:
+		return EPIPE;
+	case critical_command_journal_result::invalid:
+		return EINVAL;
+	case critical_command_journal_result::io_failure:
+	case critical_command_journal_result::replay_blocked:
+	case critical_command_journal_result::append_uncertain:
+	case critical_command_journal_result::ok:
+		return EIO;
+	}
+	return EIO;
+}
+
+void retain_admission_failure_locked(operation_state &state, unsigned int error_code)
+{
+	state.awaiting_durability = false;
+	state.blocked = true;
+	state.admission_uncertain = false;
+	state.admission_failed = true;
+	state.admission_failure_completion = { .operation_id = state.command.operation_id,
+					       .outcome = critical_apply_outcome::terminal_failure,
+					       .durable_revision = 0,
+					       .error_code = error_code,
+					       .attempt = state.attempt,
+					       .queued_at_usec = state.queued_at_usec,
+					       .started_at_usec = 0,
+					       .completed_at_usec = now_usec(),
+					       .result_size = 0,
+					       .result_payload = {} };
+	if (!state.admission_failure_queued)
+	{
+		try
+		{
+			admission_failures.push_back(state.admission_failure_completion);
+			state.admission_failure_queued = true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			// The completion remains in the operation state.  pulse() retries
+			// queueing it before considering the operation for retirement.
+		}
+	}
+	++health.admission_failures;
+}
+
+bool recovery_due_locked()
+{
+	return recovery_requested && (!uncertain_recovery_not_before_usec ||
+				      now_usec() >= uncertain_recovery_not_before_usec);
+}
+
+bool recover_uncertain_on_worker()
+{
+	std::vector<std::pair<std::string, critical_command>> candidates;
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		if (!health.initialized || stop_requested)
+			return false;
+		for (const auto &[identity, state] : operations)
+			if (state->admission_uncertain)
+				candidates.emplace_back(identity, state->command);
+	}
+	catch (const std::bad_alloc &)
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		defer_uncertain_recovery();
+		return false;
+	}
+
+	if (candidates.empty())
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		recovery_requested = false;
+		uncertain_recovery_not_before_usec = 0;
+		uncertain_recovery_delay_usec = 1000000;
+		update_depth();
+		return true;
+	}
+
+	std::unordered_set<std::string> journal_identities;
+	if (critical_command_journal_replay(collect_replayed_identity, &journal_identities) !=
+	    critical_command_journal_result::ok)
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		defer_uncertain_recovery();
+		return false;
+	}
+	if (critical_command_journal_sync() != critical_command_journal_result::ok)
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		defer_uncertain_recovery();
+		return false;
+	}
+
+	bool recovered = true;
+	bool woke_worker = false;
+	for (const auto &[identity, command] : candidates)
+	{
+		const bool journaled = journal_identities.find(identity) !=
+				       journal_identities.end();
+		const critical_command_journal_result result =
+			journaled ? critical_command_journal_result::ok :
+				    critical_command_journal_append(command);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || !found->second->admission_uncertain)
+			continue;
+		if (result == critical_command_journal_result::ok)
+		{
+			try
+			{
+				if (std::find(pending.begin(), pending.end(), identity) ==
+				    pending.end())
+					pending.push_back(identity);
+			}
+			catch (const std::bad_alloc &)
+			{
+				recovered = false;
+				continue;
+			}
+			found->second->admission_uncertain = false;
+			found->second->blocked = false;
+			found->second->awaiting_durability = false;
+			woke_worker = true;
+		}
+		else if (result == critical_command_journal_result::append_uncertain)
+		{
+			recovered = false;
+		}
+		else
+		{
+			retain_admission_failure_locked(*found->second,
+							journal_failure_error(result));
+			recovered = false;
+		}
+	}
+
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		bool uncertain = false;
+		for (const auto &[identity, state] : operations)
+		{
+			(void)identity;
+			uncertain = uncertain || state->admission_uncertain;
+		}
+		if (!uncertain)
+		{
+			recovery_requested = false;
+			uncertain_recovery_not_before_usec = 0;
+			uncertain_recovery_delay_usec = 1000000;
+		}
+		else
+			defer_uncertain_recovery();
+		update_depth();
+	}
+	if (woke_worker)
+		work_available.notify_all();
+	return recovered;
+}
+
+void finish_admission(const std::string &identity, critical_command_journal_result result)
+{
+	bool wake_worker = false;
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end())
+			return;
+		operation_state &state = *found->second;
+		admission_inflight_bytes = 0;
+		if (result == critical_command_journal_result::ok)
+		{
+			try
+			{
+				pending.push_back(identity);
+				state.awaiting_durability = false;
+				state.admission_uncertain = false;
+				state.admission_failed = false;
+				state.blocked = false;
+				++health.durable_admissions;
+				wake_worker = true;
+			}
+			catch (const std::bad_alloc &)
+			{
+				// The journal is durable. Keep the identity fenced and ask the
+				// recovery worker to retry the in-memory ready handoff.
+				state.awaiting_durability = false;
+				state.blocked = true;
+				state.admission_uncertain = true;
+				++health.admission_uncertain;
+				defer_uncertain_recovery();
+			}
+		}
+		else if (result == critical_command_journal_result::append_uncertain)
+		{
+			state.awaiting_durability = false;
+			state.blocked = true;
+			state.admission_uncertain = true;
+			++health.ambiguous;
+			++health.admission_uncertain;
+			defer_uncertain_recovery();
+		}
+		else
+		{
+			retain_admission_failure_locked(state, journal_failure_error(result));
+			++health.terminal_failures;
+		}
+		update_depth();
+	}
+	if (wake_worker)
+		work_available.notify_all();
+}
+
+void admission_worker_main()
+{
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		health.admission_worker_running = true;
+		update_depth();
+	}
+	for (;;)
+	{
+		std::string identity;
+		critical_command command;
+		bool recover = false;
+		{
+			std::unique_lock<std::mutex> lock(coordinator_mutex);
+			for (;;)
+			{
+				if (stop_requested || !pending_admission.empty())
+					break;
+				if (recovery_due_locked())
+				{
+					recover = true;
+					break;
+				}
+				if (!recovery_requested)
+				{
+					admission_available.wait(
+						lock,
+						[] {
+							return stop_requested ||
+							       !pending_admission.empty() ||
+							       recovery_requested;
+						});
+					continue;
+				}
+				const uint64_t now = now_usec();
+				const uint64_t wait_usec =
+					uncertain_recovery_not_before_usec > now ?
+						uncertain_recovery_not_before_usec - now :
+						0;
+				admission_available.wait_for(lock,
+							     std::chrono::microseconds(wait_usec));
+			}
+			if (stop_requested && pending_admission.empty())
+				break;
+			if (!pending_admission.empty())
+			{
+				identity = pending_admission.front();
+				pending_admission.pop_front();
+				auto found = operations.find(identity);
+				if (found == operations.end() ||
+				    !found->second->awaiting_durability)
+				{
+					update_depth();
+					continue;
+				}
+				pending_admission_bytes -= found->second->retained_bytes;
+				admission_inflight_bytes = found->second->retained_bytes;
+				try
+				{
+					command = found->second->command;
+				}
+				catch (const std::bad_alloc &)
+				{
+					admission_inflight_bytes = 0;
+					retain_admission_failure_locked(*found->second, ENOMEM);
+					++health.terminal_failures;
+					update_depth();
+					continue;
+				}
+				update_depth();
+			}
+			else if (!recover)
+			{
+				continue;
+			}
+		}
+		if (recover)
+		{
+			(void)recover_uncertain_on_worker();
+			continue;
+		}
+		finish_admission(identity, critical_command_journal_append(command));
+	}
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		health.admission_worker_running = false;
+		admission_inflight_bytes = 0;
+		update_depth();
+	}
 }
 
 void worker_main()
@@ -426,12 +763,16 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 		return false;
 	operations.clear();
 	pending.clear();
+	pending_admission.clear();
+	admission_failures.clear();
 	raw_results.clear();
 	active_keys.clear();
 	fences.clear();
 	completed_cache.clear();
 	completed_order.clear();
 	completed_cache_bytes = 0;
+	pending_admission_bytes = 0;
+	admission_inflight_bytes = 0;
 	health = {};
 	health.initialized = true;
 	health.accepting = true;
@@ -439,6 +780,7 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	apply_callback = apply;
 	apply_context = context;
 	stop_requested = false;
+	recovery_requested = false;
 	uncertain_recovery_not_before_usec = 0;
 	uncertain_recovery_delay_usec = 1000000;
 	replay_observer_context replay = { replay_observer, replay_context };
@@ -452,6 +794,7 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	}
 	try
 	{
+		admission_worker = std::thread(admission_worker_main);
 		for (unsigned int index = 0; index < worker_count; ++index)
 			workers.emplace_back(worker_main);
 	}
@@ -459,12 +802,16 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	{
 		stop_requested = true;
 		work_available.notify_all();
+		admission_available.notify_all();
 		lock.unlock();
+		if (admission_worker.joinable())
+			admission_worker.join();
 		for (std::thread &worker : workers)
 			if (worker.joinable())
 				worker.join();
 		lock.lock();
 		workers.clear();
+		admission_worker = {};
 		health = {};
 		critical_command_journal_shutdown();
 		return false;
@@ -481,7 +828,10 @@ void critical_command_coordinator_shutdown(void)
 		health.accepting = false;
 		work_available.notify_all();
 		result_available.notify_all();
+		admission_available.notify_all();
 	}
+	if (admission_worker.joinable())
+		admission_worker.join();
 	for (std::thread &worker : workers)
 		if (worker.joinable())
 			worker.join();
@@ -489,15 +839,20 @@ void critical_command_coordinator_shutdown(void)
 	workers.clear();
 	operations.clear();
 	pending.clear();
+	pending_admission.clear();
+	admission_failures.clear();
 	raw_results.clear();
 	active_keys.clear();
 	fences.clear();
 	completed_cache.clear();
 	completed_order.clear();
 	completed_cache_bytes = 0;
+	pending_admission_bytes = 0;
+	admission_inflight_bytes = 0;
 	health = {};
 	apply_callback = nullptr;
 	apply_context = nullptr;
+	recovery_requested = false;
 	uncertain_recovery_not_before_usec = 0;
 	uncertain_recovery_delay_usec = 1000000;
 	critical_command_journal_shutdown();
@@ -544,6 +899,7 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 		++health.overloads;
 		return critical_submit_result::overloaded;
 	}
+	bool admission_queued = false;
 	try
 	{
 		auto state = std::make_unique<operation_state>();
@@ -556,8 +912,13 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 		state->completed = false;
 		state->blocked = false;
 		state->admission_uncertain = false;
+		state->awaiting_durability = true;
+		state->admission_failed = false;
+		state->admission_failure_queued = false;
 		operations.emplace(identity, std::move(state));
-		pending.push_back(identity);
+		pending_admission.push_back(identity);
+		pending_admission_bytes += encoded.size();
+		admission_queued = true;
 		add_fences(identity, operations.at(identity)->command);
 	}
 	catch (const std::bad_alloc &)
@@ -568,131 +929,82 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 			remove_fences(identity, inserted->second->command);
 			operations.erase(inserted);
 		}
-		pending.erase(std::remove(pending.begin(), pending.end(), identity), pending.end());
+		pending_admission.erase(std::remove(pending_admission.begin(),
+						    pending_admission.end(), identity),
+					pending_admission.end());
+		if (admission_queued)
+			pending_admission_bytes -= encoded.size();
 		++health.overloads;
 		return critical_submit_result::overloaded;
 	}
-	const critical_command_journal_result journal_result =
-		critical_command_journal_append(command);
-	if (journal_result != critical_command_journal_result::ok)
-	{
-		if (journal_result == critical_command_journal_result::append_uncertain)
-		{
-			operations.at(identity)->blocked = true;
-			operations.at(identity)->admission_uncertain = true;
-			pending.erase(std::remove(pending.begin(), pending.end(), identity),
-				      pending.end());
-			++health.ambiguous;
-			defer_uncertain_recovery();
-			update_depth();
-			return critical_submit_result::journal_uncertain;
-		}
-		remove_fences(identity, operations.at(identity)->command);
-		operations.erase(identity);
-		pending.erase(std::remove(pending.begin(), pending.end(), identity), pending.end());
-		update_depth();
-		return critical_submit_result::journal_failure;
-	}
 	++health.accepted;
 	update_depth();
-	work_available.notify_all();
-	return critical_submit_result::accepted;
+	// The operation and its per-key fence are now retained, but the journal
+	// worker must acknowledge fsync before it is moved to the execution queue.
+	admission_available.notify_one();
+	return critical_submit_result::awaiting_durability;
+}
+
+critical_command_durability
+critical_command_coordinator_durability(const critical_operation_id &operation_id)
+{
+	if (critical_operation_id_is_zero(operation_id))
+		return critical_command_durability::unknown;
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const std::string identity = operation_key(operation_id);
+	if (completed_cache.find(identity) != completed_cache.end())
+		return critical_command_durability::durable;
+	auto found = operations.find(identity);
+	if (found == operations.end())
+		return critical_command_durability::unknown;
+	if (found->second->admission_failed)
+		return critical_command_durability::failed;
+	if (found->second->admission_uncertain)
+		return critical_command_durability::uncertain;
+	if (found->second->awaiting_durability)
+		return critical_command_durability::awaiting_durability;
+	return critical_command_durability::durable;
 }
 
 bool critical_command_coordinator_recover_uncertain(void)
 {
-	std::vector<std::pair<std::string, critical_command>> candidates;
-	try
-	{
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
-		if (!health.initialized || stop_requested)
-			return false;
-		for (const auto &[identity, state] : operations)
-			if (state->admission_uncertain)
-				candidates.emplace_back(identity, state->command);
-	}
-	catch (const std::bad_alloc &)
-	{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (!health.initialized || stop_requested)
 		return false;
-	}
-	if (candidates.empty())
+	bool uncertain = false;
+	for (const auto &[identity, state] : operations)
 	{
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		(void)identity;
+		uncertain = uncertain || state->admission_uncertain;
+	}
+	if (!uncertain)
+	{
+		recovery_requested = false;
 		uncertain_recovery_not_before_usec = 0;
 		uncertain_recovery_delay_usec = 1000000;
 		return true;
 	}
-
-	std::unordered_set<std::string> journal_identities;
-	if (critical_command_journal_replay(collect_replayed_identity, &journal_identities) !=
-	    critical_command_journal_result::ok)
-	{
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
-		defer_uncertain_recovery();
-		return false;
-	}
-	if (critical_command_journal_sync() != critical_command_journal_result::ok)
-	{
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
-		defer_uncertain_recovery();
-		return false;
-	}
-
-	bool recovered = true;
-	bool woke_worker = false;
-	{
-		std::lock_guard<std::mutex> lock(coordinator_mutex);
-		for (const auto &[identity, command] : candidates)
-		{
-			auto found = operations.find(identity);
-			if (found == operations.end() || !found->second->admission_uncertain)
-				continue;
-			const bool journaled = journal_identities.find(identity) !=
-					       journal_identities.end();
-			const critical_command_journal_result result =
-				journaled ? critical_command_journal_result::ok :
-					    critical_command_journal_append(command);
-			if (result != critical_command_journal_result::ok)
-			{
-				recovered = false;
-				continue;
-			}
-			if (std::find(pending.begin(), pending.end(), identity) == pending.end())
-			{
-				try
-				{
-					pending.push_back(identity);
-				}
-				catch (const std::bad_alloc &)
-				{
-					recovered = false;
-					continue;
-				}
-			}
-			found->second->admission_uncertain = false;
-			found->second->blocked = false;
-			woke_worker = true;
-		}
-		if (recovered)
-		{
-			uncertain_recovery_not_before_usec = 0;
-			uncertain_recovery_delay_usec = 1000000;
-		}
-		else
-			defer_uncertain_recovery();
-		update_depth();
-	}
-	if (woke_worker)
-		work_available.notify_all();
-	return recovered;
+	recovery_requested = true;
+	uncertain_recovery_not_before_usec = 0;
+	admission_available.notify_one();
+	return true;
 }
 
 bool recovery_due()
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	return health.initialized && !stop_requested &&
-	       (!uncertain_recovery_not_before_usec ||
-		now_usec() >= uncertain_recovery_not_before_usec);
+	if (!health.initialized || stop_requested)
+		return false;
+	bool uncertain = false;
+	for (const auto &[identity, state] : operations)
+	{
+		(void)identity;
+		uncertain = uncertain || state->admission_uncertain;
+	}
+	if (!uncertain || !recovery_due_locked())
+		return false;
+	recovery_requested = true;
+	return true;
 }
 
 bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
@@ -708,13 +1020,33 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &ope
 	return true;
 }
 
+void queue_unqueued_admission_failures_locked()
+{
+	for (const auto &[identity, state] : operations)
+	{
+		(void)identity;
+		if (!state->admission_failed || state->admission_failure_queued)
+			continue;
+		try
+		{
+			admission_failures.push_back(state->admission_failure_completion);
+			state->admission_failure_queued = true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return;
+		}
+	}
+}
+
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity)
 {
 	if (capacity && !completions)
 		return 0;
 	if (recovery_due())
-		(void)critical_command_coordinator_recover_uncertain();
+		admission_available.notify_one();
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	queue_unqueued_admission_failures_locked();
 	size_t published = 0;
 	while (!raw_results.empty())
 	{
@@ -772,6 +1104,45 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 			completions[published++] = completion;
 		operations.erase(found);
 	}
+	while (!admission_failures.empty())
+	{
+		const critical_completion completion = admission_failures.front();
+		const std::string identity = operation_key(completion.operation_id);
+		auto found = operations.find(identity);
+		if (found == operations.end() || !found->second->admission_failed ||
+		    found->second->attempt != completion.attempt)
+		{
+			admission_failures.pop_front();
+			++health.stale_completions;
+			continue;
+		}
+		if (published >= capacity)
+			break;
+		admission_failures.pop_front();
+		operation_state &state = *found->second;
+		state.admission_failure_queued = false;
+		release_keys(identity, state.command);
+		remove_fences(identity, state.command);
+		completions[published++] = completion;
+		operations.erase(found);
+	}
+	if (published < capacity)
+	{
+		for (auto found = operations.begin(); found != operations.end(); ++found)
+		{
+			if (!found->second->admission_failed ||
+			    found->second->admission_failure_queued)
+				continue;
+			const std::string identity = found->first;
+			const critical_completion completion =
+				found->second->admission_failure_completion;
+			release_keys(identity, found->second->command);
+			remove_fences(identity, found->second->command);
+			completions[published++] = completion;
+			operations.erase(found);
+			break;
+		}
+	}
 	update_depth();
 	work_available.notify_all();
 	return published;
@@ -824,7 +1195,9 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 			observer(completions, completed);
 		const critical_coordinator_health snapshot =
 			critical_command_coordinator_health_copy();
-		if (!snapshot.queued && !snapshot.inflight && !snapshot.blocked)
+		if (!snapshot.queued && !snapshot.inflight && !snapshot.blocked &&
+		    !snapshot.awaiting_durability && !snapshot.admission_queue_bytes &&
+		    !snapshot.append_inflight)
 			return true;
 		if (std::chrono::steady_clock::now() >= deadline)
 			return false;
