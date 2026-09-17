@@ -1259,6 +1259,7 @@ struct game_loop_pulse_context
 	uint64_t loop_time_begin_us;
 	uint64_t loop_tick;
 	uint64_t loop_start_mono_us;
+	command_latency_tracker command_latency = {};
 	uint64_t connections_us = 0;
 	uint64_t command_sweep_us = 0;
 	uint64_t prompts_us = 0;
@@ -1379,6 +1380,7 @@ static bool run_connection_phase(game_loop_pulse_context &ctx)
 	sigset_t &oldset = *ctx.old_signal_mask;
 	const bool accept_debug = ctx.accept_debug;
 	const uint64_t loop_tick = ctx.loop_tick;
+	command_latency_tracker &command_latency = ctx.command_latency;
 	P_desc point, next_point;
 
 	// check for signal-initiated shutdown (from launcher)
@@ -1572,6 +1574,31 @@ static bool run_connection_phase(game_loop_pulse_context &ctx)
 			}
 		}
 	}
+	/* TLS negotiation belongs to the connection/readiness phase.  A session
+	 * that is still negotiating must not consume a command in this pulse. */
+	for (point = descriptor_list; point; point = next_point)
+	{
+		next_point = point->next;
+		if (point->connected != CON_SSLNEGO)
+			continue;
+		command_latency_event ssl_event = {};
+		prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL, point, NULL);
+		const uint64_t ssl_started_us = loop_monotonic_us();
+		const int ssl_result = ssl_negotiate(point->sslses);
+		command_latency_record(&command_latency, &ssl_event,
+				       latency_trace_elapsed_us(ssl_started_us,
+								loop_monotonic_us()));
+		switch (ssl_result)
+		{
+		case 0:
+			greet(point);
+			break;
+		default:
+			close_socket(point);
+		case 1:
+			continue;
+		}
+	}
 	PROFILE_END(connections);
 	const uint64_t connections_us =
 		latency_trace_elapsed_us(connections_begin_us, loop_monotonic_us());
@@ -1594,11 +1621,11 @@ static void run_session_input_phase(game_loop_pulse_context &ctx)
 	P_desc point;
 	P_char t_ch;
 	int player_count;
+	command_latency_tracker &command_latency = ctx.command_latency;
 
 	/* process_commands */
 	PROFILE_START(commands);
 	const uint64_t command_sweep_started_us = loop_monotonic_us();
-	command_latency_tracker command_latency = {};
 	for (point = descriptor_list, player_count = 0; point; point = next_to_process)
 	{
 		next_to_process = point->next;
@@ -1606,26 +1633,7 @@ static void run_session_input_phase(game_loop_pulse_context &ctx)
 		const bool authenticated_service = websocket_is_authenticated_service(point);
 
 		if (point->connected == CON_SSLNEGO)
-		{
-			command_latency_event ssl_event = {};
-			prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL, point,
-							 NULL);
-			const uint64_t ssl_started_us = loop_monotonic_us();
-			const int ssl_result = ssl_negotiate(point->sslses);
-			command_latency_record(&command_latency, &ssl_event,
-					       latency_trace_elapsed_us(ssl_started_us,
-									loop_monotonic_us()));
-			switch (ssl_result)
-			{
-			case 0:
-				greet(point);
-				break;
-			default:
-				close_socket(point);
-			case 1:
-				continue;
-			}
-		}
+			continue;
 
 		command_latency_event descriptor_event = {};
 		prepare_descriptor_latency_event(&descriptor_event, COMMAND_LATENCY_DESCRIPTOR,

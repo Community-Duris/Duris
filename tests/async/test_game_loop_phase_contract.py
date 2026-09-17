@@ -43,7 +43,8 @@ combat = function_region("static void run_combat_phase", "static void run_pulse_
 reset = function_region("static void run_pulse_reset_phase", "/**\n * Run network and simulation pulses")
 
 for needle in ("persistence_log_poll();", "checkpointing();", "select(",
-               "drain_new_connections(s, 0, \"Telnet\");", "process_input(point);"):
+               "drain_new_connections(s, 0, \"Telnet\");", "process_input(point);",
+               "ssl_negotiate(point->sslses);"):
     assert contains(connection, needle)
 assert contains(connection, "return false;")
 assert not contains(connection, "critical_command_coordinator_pulse")
@@ -53,6 +54,7 @@ for needle in ("session_input_authentication_pending(point)",
                "select_session_input(point, t_ch, comm);",
                "dispatch_session_input(point, t_ch, comm, route, &command_latency)"):
     assert contains(session, needle)
+assert not contains(session, "ssl_negotiate(point->sslses);")
 assert index(session, "descriptor_latency.finish();") < index(session, "repair_session_command_gate")
 
 for needle in ("telnet_flush_output(point)", "process_output(point)",
