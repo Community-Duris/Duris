@@ -46,6 +46,7 @@ runner_spec.loader.exec_module(runner)
 expected_resource_intensive = {
     "test_account_recovery_journey.py",
     "test_creation_prompt_journey.py",
+    "test_game_loop_session_journey.py",
     "test_area_coin_pickup.py",
     "test_flatfile_auction_coin_put_journey.py",
     "test_flatfile_boot_preflight.py",
@@ -64,6 +65,8 @@ assert runner.MANUAL_ONLY_TEST_NAMES == {
     "test_mysql_playtime_journey.py",
     "test_pet_restart_journey.py",
     "test_playtime_mysql_repository.py",
+    "test_issue331_player_journey.py",
+    "test_issue331_staff_recovery_journey.py",
 }
 discovered = {path.name for path in runner.discover_tests(None)}
 assert not (runner.MANUAL_ONLY_TEST_NAMES & discovered)

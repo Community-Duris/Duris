@@ -786,7 +786,7 @@ bool insert_receipt_item(MYSQL *connection, const player_death_restitution_plan 
 	unsigned long compensation_length = strlen(compensation);
 	uint32_t artifact_vnum = item.artifact_vnum;
 	uint32_t vnum = item.vnum;
-	bool metadata_null = item.metadata_payload.empty();
+	mysql_null_indicator metadata_null = item.metadata_payload.empty();
 	MYSQL_BIND parameters[21] = {};
 	bind_blob(&parameters[0], const_cast<uint8_t *>(plan.restitution_id.bytes.data()),
 		  &rid_length);
@@ -809,11 +809,11 @@ bool insert_receipt_item(MYSQL *connection, const player_death_restitution_plan 
 	bind_blob(&parameters[12],
 		  metadata_null ? nullptr : const_cast<uint8_t *>(item.metadata_digest.data()),
 		  &metadata_digest_length);
-	parameters[12].is_null = reinterpret_cast<mysql_null_indicator *>(&metadata_null);
+	parameters[12].is_null = &metadata_null;
 	bind_blob(&parameters[13],
 		  metadata_null ? nullptr : const_cast<uint8_t *>(item.metadata_payload.data()),
 		  &metadata_length);
-	parameters[13].is_null = reinterpret_cast<mysql_null_indicator *>(&metadata_null);
+	parameters[13].is_null = &metadata_null;
 	bind_string(&parameters[14], const_cast<char *>(item.note.data()), &note_length);
 	bind_int(&parameters[15], MYSQL_TYPE_LONGLONG,
 		 const_cast<uint64_t *>(&item.artifact_loss_epoch), true);

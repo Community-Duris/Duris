@@ -43,6 +43,7 @@ using namespace std;
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
 #include "world/map.h"
+#include "world/zone_story_quest_runtime.h"
 #include "economy/nexus_stones.h"
 #include "economy/currency_transaction.h"
 #include "item/objmisc.h"
@@ -4487,16 +4488,28 @@ static void show_world_persistence(P_char ch)
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
-		 "critical_commands state=%s queued=%llu inflight=%llu blocked=%llu bytes=%llu "
+		 "critical_commands state=%s awaiting=%llu admission_queue_bytes=%llu "
+		 "admission_worker=%d append_inflight=%d durable_admissions=%llu "
+		 "admission_failures=%llu admission_uncertain=%llu queued=%llu inflight=%llu "
+		 "blocked=%llu bytes=%llu "
 		 "fences=%llu completed_cache=%llu high_water=%llu/%llu accepted=%llu "
 		 "attached=%llu completed=%llu retries=%llu ambiguous=%llu terminal=%llu "
 		 "stale=%llu overloads=%llu oldest_age_ms=%llu journal=%s "
 		 "journal_records=%llu journal_bytes=%llu journal_corrupt=%llu journal_io=%llu "
 		 "journal_quota=%d\n",
-		 !critical.initialized		      ? "stopped" :
-		 critical.blocked		      ? "blocked" :
-		 critical.queued || critical.inflight ? "pending" :
-							"ready",
+		 !critical.initialized	      ? "stopped" :
+		 critical.blocked	      ? "blocked" :
+		 critical.admission_uncertain ? "uncertain" :
+		 critical.awaiting_durability || critical.append_inflight || critical.queued ||
+				 critical.inflight ?
+						"pending" :
+						"ready",
+		 (unsigned long long)critical.awaiting_durability,
+		 (unsigned long long)critical.admission_queue_bytes,
+		 critical.admission_worker_running ? 1 : 0, critical.append_inflight ? 1 : 0,
+		 (unsigned long long)critical.durable_admissions,
+		 (unsigned long long)critical.admission_failures,
+		 (unsigned long long)critical.admission_uncertain,
 		 (unsigned long long)critical.queued, (unsigned long long)critical.inflight,
 		 (unsigned long long)critical.blocked, (unsigned long long)critical.retained_bytes,
 		 (unsigned long long)critical.fenced_keys,
@@ -6574,6 +6587,21 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		snprintf(buf, MAX_STRING_LENGTH, "&+yBartender Quests Remaining:&n %d\n",
 			 RemainingBartenderQuests);
 		send_to_char(buf, ch);
+	}
+
+	if (IS_PC(ch))
+	{
+		if (zone_story_quest_runtime::service())
+		{
+			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+					    ch->desc->term_type != TERM_SKIP_ANSI;
+			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
+			send_to_char(daily.c_str(), ch);
+		}
+		else
+			send_to_char(
+				"\r\nDaily zone-story quest: unavailable until catalog/persistence boot completes.\r\n",
+				ch);
 	}
 
 	if (IS_PC(ch))

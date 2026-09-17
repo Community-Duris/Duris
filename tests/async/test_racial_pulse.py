@@ -82,9 +82,9 @@ int main() {
 def test_command_is_registered() -> None:
     assert "#define CMD_PULSE 861" in source("cmd/interp.h").read_text()
     interp = source("cmd/interp.c").read_text()
-    assert '\t"pulse",\n\t"collector",\n\t"\\n" /* MAX_CMD = 863' in interp
+    assert '\t"pulse",\n\t"collector",\n\t"restitution",\n\t"dummy",\n\t"\\n" /* MAX_CMD = 865' in interp
     assert "CMD_GRT(CMD_PULSE, STAT_DEAD + POS_PRONE, do_pulse, LESSER_G);" in interp
-    assert re.search(r"#define MAX_CMD 863\b", source("core/config.h").read_text())
+    assert re.search(r"#define MAX_CMD 865\b", source("core/config.h").read_text())
     assert "void do_pulse(P_char, char *, int);" in source("core/prototypes.h").read_text()
     assert "world/racial_pulse.o" in (ROOT / "src" / "Makefile").read_text()
     attributes = (ROOT / "docs/lib/information/command_attributes.txt").read_text()

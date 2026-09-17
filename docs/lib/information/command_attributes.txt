@@ -879,6 +879,8 @@ duck
 ~
 duh
 ~
+dummy
+~
 east
 GET_C_INT(ch
 ~

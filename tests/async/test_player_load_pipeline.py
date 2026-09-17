@@ -22,7 +22,6 @@ DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 HARNESS = r'''
 #include "player/player_load_pipeline.h"
-#include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "sql/sql_pool.h"
 
@@ -32,9 +31,10 @@ HARNESS = r'''
 #include <mutex>
 #include <thread>
 
+bool player_save_pipeline_save_admitted(int) { return true; }
+
 extern "C" MYSQL *sql_pool_acquire(void) { return nullptr; }
 extern "C" void sql_pool_release(MYSQL *) {}
-bool player_save_pipeline_save_admitted(int) { return true; }
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now)
 {

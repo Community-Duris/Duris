@@ -47,6 +47,7 @@ using namespace std;
 #include "world/world_quest.h"
 #include "world/world_quest_policy.h"
 #include "world/world_quest_policy_math.h"
+#include "world/zone_story_quest_runtime.h"
 
 /* * external variables */
 
@@ -445,6 +446,32 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 		return;
 	}
 
+	half_chop(args, name, who);
+	if (*name && isname(name, "daily"))
+	{
+		if (zone_story_quest_runtime::service())
+		{
+			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+					    ch->desc->term_type != TERM_SKIP_ANSI;
+			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
+			send_to_char(daily.c_str(), ch);
+		}
+		else
+			send_to_char(
+				"Daily zone-story quests are unavailable until catalog/persistence boot completes.\r\n",
+				ch);
+		return;
+	}
+	/* Keep the daily section visible even when the bartender has no active
+	 * assignment and the legacy path returns early below. */
+	if (zone_story_quest_runtime::service())
+	{
+		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+				    ch->desc->term_type != TERM_SKIP_ANSI;
+		std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
+		send_to_char(daily.c_str(), ch);
+	}
+
 	// Allow Illithids to do bartender quests.
 	/* if( IS_ILLITHID(ch) )
 	 {
@@ -452,7 +479,6 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 	   return;
 	 }*/
 
-	half_chop(args, name, who);
 	if (*name)
 	{
 		if (isname(name, "reset") && IS_TRUSTED(ch))

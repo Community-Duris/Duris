@@ -26,8 +26,11 @@ def main() -> None:
                 str(ROOT / "src/telemetry" / name)
                 for name in (
                     "telemetry_activity.c",
+                    "telemetry_combat_summary.c",
                     "telemetry_config.c",
+                    "telemetry_encounter.c",
                     "telemetry_queue.c",
+                    "telemetry_progression.c",
                     "telemetry_repository.c",
                     "telemetry_runtime.c",
                     "telemetry_session.c",

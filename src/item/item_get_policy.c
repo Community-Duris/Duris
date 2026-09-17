@@ -58,6 +58,8 @@ bool live_placement_owner(P_char actor, P_obj object, P_obj container, item_owne
 	P_obj outer = NULL;
 	if (!live_placement_outer(actor, object, container, &outer))
 		return false;
+	if (!live_placement_is_accessible(actor, outer))
+		return false;
 
 	if (outer->type == ITEM_CORPSE && IS_SET(outer->value[CORPSE_FLAGS], PC_CORPSE) &&
 	    outer->value[CORPSE_PID] > 0 && outer->value[CORPSE_SAVEID] > 0)

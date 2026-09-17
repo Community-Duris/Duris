@@ -15,6 +15,8 @@ player_death_restitution_runtime_result map_submit_result(critical_submit_result
 	{
 	case critical_submit_result::accepted:
 		return player_death_restitution_runtime_result::accepted;
+	case critical_submit_result::awaiting_durability:
+		return player_death_restitution_runtime_result::awaiting_durability;
 	case critical_submit_result::attached:
 		return player_death_restitution_runtime_result::attached;
 	case critical_submit_result::invalid:

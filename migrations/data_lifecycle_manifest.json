@@ -6287,6 +6287,105 @@
       "dependencies": []
     },
     {
+      "id": "database:telemetry_reward_projection",
+      "kind": "database_table",
+      "locator": "telemetry_reward_projection",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "source_identity_and_participant_pid",
+      "technical_purpose": "Derived committed reward projection with identity-stable replay, conflict quarantine, and bounded source reconciliation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "projection_retained_source_horizon_and_controller_policy",
+      "archive_retention": "projection_retained_source_horizon_and_controller_policy",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:currency_ledger",
+        "database:epic_ledger",
+        "database:zone_touch_outcome",
+        "database:zone_touch_outcome_participant",
+        "database:combat_outcome",
+        "database:combat_outcome_participant",
+        "database:combat_frag_ledger",
+        "database:boon_reward_outcome",
+        "database:boon_reward_outcome_entry"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_projection_state",
+      "kind": "database_table",
+      "locator": "telemetry_reward_projection_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "source_kind_and_reconciliation_cycle",
+      "technical_purpose": "Bounded reward projection cursors, retention acknowledgment, backlog, freshness, and provisional completeness state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "aggregate",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "projection_retained_source_horizon_and_controller_policy",
+      "archive_retention": "projection_retained_source_horizon_and_controller_policy",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_projection"
+      ]
+    },
+    {
+      "id": "database:zone_story_quest_state",
+      "kind": "database_table",
+      "locator": "zone_story_quest_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "season_id_and_pid",
+      "technical_purpose": "Durable zone-story quest completion facts, character identity projections, deletion tombstones, telemetry evidence, and exactly-once daily reward state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:artifact_mana",
       "kind": "database_table",
       "locator": "artifact_mana",
@@ -6322,6 +6421,35 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "player_id",
       "technical_purpose": "physical item mana authority and version fence in flat-file primary mode",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:zone-story-quests",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/domains/zone-story-quests.state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "season_id_and_pid",
+      "technical_purpose": "Durable zone-story quest completion facts, identity projections, deletion tombstones, telemetry evidence, and exactly-once daily reward state in flat-file primary mode",
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"

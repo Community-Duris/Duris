@@ -42,6 +42,7 @@ using namespace std;
 #include "world/graph.h"
 #include "combat/grapple.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "world/map.h"
 #include "core/mm.h"
 #include "persistence/persistence_queue.h"
@@ -3851,6 +3852,8 @@ bool is_aggr_to(P_char ch, P_char target)
 	{
 		return FALSE;
 	}
+	if (IS_NPC(ch) && !IS_PC_PET(ch) && training_dummy_is(target))
+		return FALSE;
 	// 99.9% calls will leave here
 	if (IS_NPC(ch) && IS_NPC(target) && (!target->following || IS_NPC(target->following)) &&
 	    !IS_MORPH(target))

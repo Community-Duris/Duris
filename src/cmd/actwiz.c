@@ -31,6 +31,7 @@
 #include "core/utils.h"
 #include "world/achievements.h"
 #include "combat/damage.h"
+#include "combat/training_dummy.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
 #include "core/files.h"
@@ -8439,6 +8440,11 @@ void do_clone(P_char ch, char *argument, int /*cmd*/)
 		if ((mob = get_char_room_vis(ch, name)) == 0)
 		{
 			send_to_char("Can't find any such mobile!\n", ch);
+			return;
+		}
+		if (!training_dummy_clone_target_allowed(mob))
+		{
+			send_to_char("You can't clone a training dummy.\n", ch);
 			return;
 		}
 		if (IS_PC(mob))

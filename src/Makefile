@@ -225,6 +225,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
+				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
 				 combat/fight.o \
 				 core/files.o \
@@ -361,6 +362,11 @@ OBJS =  $(SHIP_OBJS) \
 				 world/zone_story_quest_tracking.o \
 				 world/zone_story_quest_catalog.o \
 				 world/zone_story_quest_repository.o \
+				 world/zone_story_quest_feature.o \
+				 world/zone_story_quest_production.o \
+				 world/zone_story_quest_runtime.o \
+				 flatfile/flatfile_zone_story_quest_state.o \
+				 sql/zone_story_quest_state_repository.o \
 				 world/zone_touch_command.o \
 				 world/zone_touch_repository.o \
 				 world/zone_touch_transaction.o \
@@ -535,8 +541,11 @@ OBJS =  $(SHIP_OBJS) \
 				 world/zcheck.o \
 				 telemetry/telemetry_activity.o \
 				 telemetry/telemetry_config.o \
+				 telemetry/telemetry_encounter.o \
+				 telemetry/telemetry_combat_summary.o \
 				 telemetry/telemetry_repository.o \
 				 telemetry/telemetry_runtime.o \
+				 telemetry/telemetry_progression.o \
 				 telemetry/telemetry_session.o \
 				 telemetry/telemetry_transport.o \
 				 telemetry/telemetry_queue.o

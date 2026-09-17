@@ -107,8 +107,11 @@ struct ship_hull_purchase_context
 	bool owned;
 	bool quickbuild;
 	bool free_tattoo_hull;
-	char name[32];
+	// 20 visible characters, each with a color code and UTF-8, plus reset/NUL.
+	char name[192];
 };
+
+static_assert(sizeof(ship_hull_purchase_context) <= EPIC_PENDING_CONTEXT_MAX_BYTES);
 
 /*
  * Give back the epic points a hull purchase charged, when the purchase could
@@ -2791,7 +2794,10 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 		{
 			return TRUE;
 		}
-		if (strlen(arg2) >= sizeof(ship_hull_purchase_context{}.name))
+		char normalized_name[MAX_STRING_LENGTH];
+		AnsiString(arg2).ansi(normalized_name);
+		const size_t name_bytes = strlen(normalized_name);
+		if (name_bytes >= sizeof(ship_hull_purchase_context{}.name))
 		{
 			send_to_char("That ship name is too long for a pending purchase.\n", ch);
 			return TRUE;
@@ -2843,7 +2849,7 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 			.free_tattoo_hull = free_tattoo_hull,
 			.name = {}
 		};
-		snprintf(context.name, sizeof(context.name), "%s", arg2);
+		memcpy(context.name, normalized_name, name_bytes + 1);
 		submit_ship_hull_purchase(ch, context);
 		return TRUE;
 

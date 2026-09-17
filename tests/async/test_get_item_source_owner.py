@@ -93,6 +93,38 @@ int main()
     assert(item_get_source_owner(&actor, &item, containers, &owner));
     assert(owner.type == item_owner_type::player && owner.id == 42);
 
+    // A PC corpse is accessible from the actor's room or inventory.
+    obj_data corpse = {};
+    corpse.type = ITEM_CORPSE;
+    corpse.value[CORPSE_FLAGS] = PC_CORPSE;
+    corpse.value[CORPSE_PID] = 42;
+    corpse.value[CORPSE_SAVEID] = 7;
+    item.obj_uid = 0;
+    item.loc_p = LOC_INSIDE;
+    item.loc.inside = &corpse;
+    corpse.loc_p = LOC_ROOM;
+    corpse.loc.room = 0;
+    runtime_found = false;
+    assert(item_get_source_owner(&actor, &item, &corpse, &owner));
+    assert(owner.type == item_owner_type::corpse &&
+           owner.id == item_corpse_owner_id(42, 7) && owner.context_id == 0);
+    corpse.loc_p = LOC_CARRIED;
+    corpse.loc.carrying = &actor;
+    assert(item_get_source_owner(&actor, &item, &corpse, &owner));
+    assert(owner.type == item_owner_type::corpse &&
+           owner.id == item_corpse_owner_id(42, 7) && owner.context_id == 0);
+
+    // A PC corpse held by an NPC or in another room is not accessible.
+    char_data npc = {};
+    corpse.loc_p = LOC_CARRIED;
+    corpse.loc.carrying = &npc;
+    assert(!item_get_source_owner(&actor, &item, &corpse, &owner));
+    assert(!item_owner_identity_valid(owner));
+    corpse.loc_p = LOC_ROOM;
+    corpse.loc.room = 1;
+    assert(!item_get_source_owner(&actor, &item, &corpse, &owner));
+    assert(!item_owner_identity_valid(owner));
+
     // A recorded player owner must agree with the live floor placement.
     item.obj_uid = 77;
     item.loc_p = LOC_ROOM;
@@ -124,7 +156,6 @@ int main()
     assert(owner.type == item_owner_type::locker && owner.id == 9 && owner.context_id == 10);
 
     // NPC custody has no durable source; stale player ownership fails closed.
-    char_data npc = {};
     item.loc_p = LOC_CARRIED;
     item.loc.carrying = &npc;
     runtime_entry.owner = { item_owner_type::player, 42, 0 };

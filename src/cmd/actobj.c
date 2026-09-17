@@ -36,6 +36,7 @@
 #include "economy/collector_presence.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
+#include "combat/training_dummy.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -2072,6 +2073,15 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 			      "Nothing was taken; the source is no longer available.\r\n");
 		return;
 	}
+	// Custody can change while stock adoption is pending; revalidate both
+	// the container and every root through the selection policy.
+	item_owner_identity current_source = {};
+	if (container && (!get_item_source_owner(actor, container, NULL, &current_source) ||
+			  !item_owner_identity_equal(current_source, state.source)))
+	{
+		reject_bulk_get_admission(actor, actor_pid, item_movement_reject::owner_mismatch);
+		return;
+	}
 	std::vector<P_obj> roots;
 	try
 	{
@@ -2084,6 +2094,13 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 				fail_bulk_get(
 					actor, actor_pid,
 					"Nothing was taken; an item is no longer in the source.\r\n");
+				return;
+			}
+			if (!get_item_source_owner(actor, root, container, &current_source) ||
+			    !item_owner_identity_equal(current_source, state.source))
+			{
+				reject_bulk_get_admission(actor, actor_pid,
+							  item_movement_reject::owner_mismatch);
 				return;
 			}
 			roots.push_back(root);
@@ -5935,6 +5952,13 @@ void do_give(P_char ch, char *argument, int cmd)
 			send_to_char("To who?\r\n", ch);
 			return;
 		}
+		if (training_dummy_is(vict))
+		{
+			send_to_char(
+				"The training dummy refuses coins and all other offerings.\r\n",
+				ch);
+			return;
+		}
 		if (collector_presence_is_npc(vict))
 		{
 			send_to_char("The collector accepts payment only through an antiquity "
@@ -6005,6 +6029,11 @@ void do_give(P_char ch, char *argument, int cmd)
 	if (!(vict = get_char_room_vis(ch, vict_name)))
 	{
 		send_to_char("No one by that name around here.\r\n", ch);
+		return;
+	}
+	if (training_dummy_is(vict))
+	{
+		send_to_char("The training dummy refuses every item.\r\n", ch);
 		return;
 	}
 	if (collector_presence_is_npc(vict))

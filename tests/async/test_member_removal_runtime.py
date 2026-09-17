@@ -38,6 +38,7 @@ struct char_data {
 #define MAX_STRING_LENGTH 1024
 #define GET_NAME(ch) ((ch)->name)
 #define IS_NPC(ch) false
+#define IS_PC(ch) (!(IS_NPC(ch)))
 #define PLR2_BACK_RANK 1
 #define REMOVE_BIT(bits, flag) ((bits) &= ~(flag))
 #define IS_SET(bits, flag) ((bits) & (flag))
@@ -71,6 +72,8 @@ void mm_release(int, group_list *node) { released.push_back(node); delete node; 
 void send_to_char(const char *msg, P_char ch) { ch->messages.emplace_back(msg); }
 void update_groupies(P_char ch, bool = false) { ++ch->updates; }
 void telemetry_runtime_game_context(P_char ch, void *) { ++ch->telemetry; }
+enum class telemetry_encounter_outcome { withdrawal = 5 };
+void telemetry_runtime_game_encounter_leave(P_char, telemetry_encounter_outcome) {}
 void telemetry_group_context_changed(group_list *gl) {
     for (; gl; gl = gl->next) ++gl->ch->telemetry;
 }

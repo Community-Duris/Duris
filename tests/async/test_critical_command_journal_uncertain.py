@@ -13,9 +13,11 @@ HARNESS = r'''
 
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <thread>
 #include <unistd.h>
 
 static int close_fault = 0;
@@ -57,6 +59,16 @@ static critical_apply_result apply(const critical_command &, void *)
     return {critical_apply_outcome::applied, 1, 0};
 }
 
+template <typename F> static void wait_for(F condition)
+{
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (!condition())
+    {
+        assert(std::chrono::steady_clock::now() < deadline);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
+
 int main(int argc, char **argv)
 {
     assert(argc == 2);
@@ -65,7 +77,11 @@ int main(int argc, char **argv)
     const critical_command command = make_command();
     close_fault = 2; // append close + rollback close: rollback outcome is uncertain
     assert(critical_command_coordinator_submit(command) ==
-           critical_submit_result::journal_uncertain);
+           critical_submit_result::awaiting_durability);
+    wait_for([&] {
+        return critical_command_coordinator_durability(command.operation_id) ==
+               critical_command_durability::uncertain;
+    });
     const auto health = critical_command_coordinator_health_copy();
     assert(health.blocked == 1 && health.fenced_keys == 1 && health.ambiguous == 1);
     critical_operation_id fenced = {};

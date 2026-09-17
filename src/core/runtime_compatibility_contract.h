@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 198;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 201;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -56,28 +56,31 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_items',"
 	"'shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items',"
 	"'statistics','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_interval',"
-	"'telemetry_player_day','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
-	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
+	"'telemetry_player_day','telemetry_reward_projection','telemetry_reward_projection_state','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
+	"'zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"5bf48841c2119651ec94af1c98aab2671844657c0184daff41b23a185a3e96d9";
+	"a6d688c624f746d005c768f66ea7458557927428331b2e20090478576de97866";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"b0a3e15753e954488f47923b42c81bad35e69232301f8c4a3d6050dd58d4d6aa";
+	"83d5a6a1c68fa4e5411fe07437e4d4d2395bd0524b43ec40e532c41b68b10927";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
- * stores introduced by migration 0018, corpse catalog authority introduced
- * by migration 0019, restitution receipt/runtime stores introduced by
- * migration 0020, and identity-stable Collector notification receipt/outbox
- * state introduced by migration 0021. Fingerprints are measured on MySQL 8
- * and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0021_collector_notification_identity";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 21;
+ * stores introduced by migration 0018, corpse catalog authority introduced by
+ * migration 0019, restitution receipt/runtime stores introduced by migration
+ * 0020, identity-stable Collector notification receipt/outbox state introduced
+ * by migration 0021, additive progression fields introduced by migration
+ * 0022, committed reward projection/reconciliation state introduced by
+ * migration 0023, bounded encounter lifecycle facts introduced by migration
+ * 0024, and the durable zone-story quest state introduced by migration 0026.
+ * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0026_zone_story_quest_state";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 26;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"602c481fdab8e7ca0a28a35c285cd4e045834147ad8570f83c9fa2864b2e7924";
+	"992fd6bd7cdaeee7f1870bb8dad28f6c3c77793a771447dbba996ed1ed088a16";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"a2c22d6d3edacf9493f095114d73b2ca0d3c75cbccd3283eda7f81c9674e1e0d";
+	"5893fffec2d51fa40c0baaaa8407c694fc2a730af2caad278ecf085340d9c8a4";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"675ad9112d9180f25f45e7e0e2a936c80de471f25997af6f1d0043f97632c42a";
+	"7ce778720d8e435253971bd535ea5ddabcb57ec0b5f2b98c72efbac00847fc53";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
