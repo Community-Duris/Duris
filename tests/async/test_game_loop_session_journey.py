@@ -104,7 +104,8 @@ def run_journey(binary: pathlib.Path) -> None:
             client.expect(f"Save complete for {CHARACTER}.", timeout=20)
 
             client.send("quit")
-            client.expect("ACCOUNT MENU", timeout=20)
+            # Normal quit camps first (TAG_CAMP: roughly 140 seconds).
+            client.expect("ACCOUNT MENU", timeout=240)
             client.expect("Please select an option", timeout=10)
             client.send("0")
             client.close()
@@ -113,7 +114,8 @@ def run_journey(binary: pathlib.Path) -> None:
             client = MudClient(server.plain_port)
             reconnect_character(client)
             client.send("quit")
-            client.expect("ACCOUNT MENU", timeout=20)
+            # Normal quit camps first (TAG_CAMP: roughly 140 seconds).
+            client.expect("ACCOUNT MENU", timeout=240)
             client.expect("Please select an option", timeout=10)
             client.send("0")
             client.close()
