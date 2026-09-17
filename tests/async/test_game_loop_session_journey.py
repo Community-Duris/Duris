@@ -97,6 +97,9 @@ def run_journey(binary: pathlib.Path) -> None:
             require(look.strip(), "look output was empty")
             require_prompt_framed(client, "Pos: standing >")
 
+            client.send("save")
+            client.expect(f"Save complete for {CHARACTER}.", timeout=20)
+
             client.send("quit")
             client.expect("ACCOUNT MENU", timeout=20)
             client.expect("Please select an option", timeout=10)
