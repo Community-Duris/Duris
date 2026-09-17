@@ -361,6 +361,11 @@ OBJS =  $(SHIP_OBJS) \
 				 world/zone_story_quest_tracking.o \
 				 world/zone_story_quest_catalog.o \
 				 world/zone_story_quest_repository.o \
+				 world/zone_story_quest_feature.o \
+				 world/zone_story_quest_production.o \
+				 world/zone_story_quest_runtime.o \
+				 flatfile/flatfile_zone_story_quest_state.o \
+				 sql/zone_story_quest_state_repository.o \
 				 world/zone_touch_command.o \
 				 world/zone_touch_repository.o \
 				 world/zone_touch_transaction.o \

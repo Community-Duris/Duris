@@ -880,6 +880,12 @@ def report(lines: list[str]) -> None:
 
 
 def main() -> int:
+    if not base.issue331_environment_available():
+        print(
+            "ISSUE331_STAFF_RECOVERY_JOURNEY_SKIPPED: run the disposable MySQL "
+            "shell runner to provide the task-owned environment"
+        )
+        return 0
     if not ARTIFACT.is_file() or not os.access(ARTIFACT, os.X_OK):
         raise JourneyFailure(f"verified server artifact is unavailable: {ARTIFACT}")
     PLAN_DIR.mkdir(parents=True, exist_ok=True)

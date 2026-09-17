@@ -53,6 +53,13 @@ PRELUDE = r'''
 #include <cstring>
 #include <string>
 #include <vector>
+
+/* The extracted production spell helpers retain telemetry hooks but this
+ * standalone fixture intentionally does not link the telemetry runtime. */
+void telemetry_runtime_game_combat_cast_attempt(P_char, int) {}
+void telemetry_runtime_game_combat_cast_complete(P_char) {}
+void telemetry_runtime_game_combat_cast_abort(P_char) {}
+
 static nevent_schedule_status injected;
 static int message_count, frees, meditation_stops;
 static std::string last_message;
@@ -63,7 +70,6 @@ static event_func submitted;
 static int submitted_delay;
 static bool room_link, world_link;
 void event_spellcast(P_char, P_char, P_obj, void *) {}
-void telemetry_runtime_game_combat_cast_abort(P_char) {}
 bool abort_item_action(P_char) { return false; }
 void event_abort_spell(P_char, P_char, P_obj, void *) {}
 void event_wait(P_char, P_char, P_obj, void *) {}
