@@ -289,8 +289,7 @@ void assert_unchanged_after_rejection(MYSQL *connection, uint32_t expected_owner
 		"rejection changed legacy artifact projection");
 }
 
-uint64_t positive_delivery(MYSQL *connection, const fixture &value,
-			   const critical_command &command)
+uint64_t positive_delivery(MYSQL *connection, const fixture &value, const critical_command &command)
 {
 	const critical_apply_result applied =
 		critical_command_repository_apply(connection, command);
@@ -306,22 +305,20 @@ uint64_t positive_delivery(MYSQL *connection, const fixture &value,
 		"positive result payload was not decodable");
 	require(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=1004") == "1",
 		"artifact player item was not projected");
-	const std::string delivery_digest = scalar(
-		connection,
-		"SELECT LOWER(HEX(metadata_digest)) FROM player_death_restitution_delivery "
-		"WHERE item_uid=1004");
+	const std::string delivery_digest =
+		scalar(connection,
+		       "SELECT LOWER(HEX(metadata_digest)) FROM player_death_restitution_delivery "
+		       "WHERE item_uid=1004");
 	const std::string original_payload_digest = scalar(
 		connection,
 		"SELECT LOWER(SHA2(original_payload,256)) FROM player_death_restitution_delivery "
 		"WHERE item_uid=1004");
 	const std::string native_ist1_digest = scalar(
-		connection,
-		"SELECT LOWER(HEX(metadata_digest)) FROM player_death_restitution_item "
-		"WHERE item_uid=1004");
-	require(scalar(
-			connection,
-			"SELECT LEFT(HEX(metadata_payload),8) FROM player_death_restitution_item "
-			"WHERE item_uid=1004") == "49535431",
+		connection, "SELECT LOWER(HEX(metadata_digest)) FROM player_death_restitution_item "
+			    "WHERE item_uid=1004");
+	require(scalar(connection,
+		       "SELECT LEFT(HEX(metadata_payload),8) FROM player_death_restitution_item "
+		       "WHERE item_uid=1004") == "49535431",
 		"receipt item metadata payload is not native IST1");
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> expected_original_digest = {};
 	SHA256(value.plan.items[0].original_payload.data(),
@@ -339,10 +336,9 @@ uint64_t positive_delivery(MYSQL *connection, const fixture &value,
 		"delivery metadata digest does not authenticate immutable original_payload");
 	require(delivery_digest != native_ist1_digest,
 		"delivery metadata digest reused the native IST1 metadata digest");
-	require(scalar(
-			connection,
-			"SELECT LOWER(HEX(metadata_digest))=LOWER(SHA2(metadata_payload,256)) "
-			"FROM player_death_restitution_item WHERE item_uid=1004") == "1",
+	require(scalar(connection,
+		       "SELECT LOWER(HEX(metadata_digest))=LOWER(SHA2(metadata_payload,256)) "
+		       "FROM player_death_restitution_item WHERE item_uid=1004") == "1",
 		"receipt item metadata digest no longer authenticates IST1 metadata_payload");
 	require(scalar(connection, "SELECT pid FROM player_items WHERE obj_uid=1004") == "43",
 		"artifact projected to wrong player");
@@ -429,40 +425,43 @@ void run_lock_delayed_delivery_epoch(MYSQL *connection)
 	const critical_command command = build_command(value);
 	MYSQL *locker = connect_database();
 	query_or_fail(locker, "START TRANSACTION");
-	require(scalar(locker,
-		       "SELECT save_revision FROM player_data WHERE pid=43 FOR UPDATE") == "1",
+	require(scalar(locker, "SELECT save_revision FROM player_data WHERE pid=43 FOR UPDATE") ==
+			"1",
 		"lock-delay fixture did not hold the target validation row");
 
 	delayed_apply applied;
 	const auto started = std::chrono::steady_clock::now();
-	std::thread worker([&] {
-		MYSQL *apply_connection = connect_database();
-		applied.result = critical_command_repository_apply(apply_connection, command);
-		mysql_close(apply_connection);
-		applied.finished.store(true, std::memory_order_release);
-	});
+	std::thread worker(
+		[&]
+		{
+			MYSQL *apply_connection = connect_database();
+			applied.result =
+				critical_command_repository_apply(apply_connection, command);
+			mysql_close(apply_connection);
+			applied.finished.store(true, std::memory_order_release);
+		});
 
 	// Keep the validation row locked long enough to cross multiple wall-clock
 	// epochs. The apply must still be waiting here, before any projection commit.
 	std::this_thread::sleep_for(std::chrono::milliseconds(2200));
 	require(!applied.finished.load(std::memory_order_acquire),
 		"apply bypassed the induced database lock delay");
-	const uint64_t release_epoch = std::stoull(scalar(
-		locker, "SELECT FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)))"));
+	const uint64_t release_epoch =
+		std::stoull(scalar(locker, "SELECT FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)))"));
 	query_or_fail(locker, "ROLLBACK");
 	worker.join();
 	mysql_close(locker);
 	const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-		std::chrono::steady_clock::now() - started).count();
-	require(elapsed >= 2000,
-		"induced database lock delay was shorter than the test window");
+				     std::chrono::steady_clock::now() - started)
+				     .count();
+	require(elapsed >= 2000, "induced database lock delay was shorter than the test window");
 	require(applied.result.outcome == critical_apply_outcome::applied &&
 			applied.result.error_code == 0,
 		"lock-delay command did not apply");
 	player_death_restitution_result decoded = {};
-	require(applied.result.result_size > 0 &&
-			player_death_restitution_command_decode_result(
-				applied.result.result_payload.data(), applied.result.result_size, &decoded),
+	require(applied.result.result_size > 0 && player_death_restitution_command_decode_result(
+							  applied.result.result_payload.data(),
+							  applied.result.result_size, &decoded),
 		"lock-delay result payload was not decodable");
 	require(decoded.delivery_epoch >= release_epoch,
 		"delivery epoch was captured before the blocking validation lock released");

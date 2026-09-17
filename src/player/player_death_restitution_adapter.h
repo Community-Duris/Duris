@@ -29,8 +29,8 @@ void player_death_restitution_runtime_handle_completions(const critical_completi
 							 size_t count);
 // Coordinator replay hook.  The coordinator calls this with each actual
 // journal command before it starts workers or accepts logins.
-bool player_death_restitution_runtime_restore_replayed_command(
-	const critical_command &command, void *context);
+bool player_death_restitution_runtime_restore_replayed_command(const critical_command &command,
+							       void *context);
 // Initialization-failure cleanup only; accepted operations are not aborted by
 // normal shutdown because an ambiguous operation must remain fenced/replayable.
 void player_death_restitution_runtime_abort_all(void);

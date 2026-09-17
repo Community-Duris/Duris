@@ -34,6 +34,9 @@ RUNTIME_MANIFEST = ROOT / "migrations/runtime_compatibility_manifest.json"
 RUNTIME_VERIFY = ROOT / "migrations/verify_runtime_compatibility.sh"
 VALIDATOR = ROOT / "scripts/validate_runtime_compatibility.py"
 
+BOOTSTRAP_TABLE_COUNT = 184
+RUNTIME_TABLE_COUNT = 198
+
 NEW_TABLES = ("telemetry_cohort_member", "telemetry_rollup_session")
 SESSION_TABLE = "telemetry_rollup_session"
 COHORT_TABLE = "telemetry_cohort_member"
@@ -778,10 +781,10 @@ def setup_full_schema(engine: Engine, manifest: object) -> dict[str, object]:
         "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
         "AND table_type='BASE TABLE' ORDER BY table_name;", database=engine.database
     ).splitlines())
-    if bootstrap_table_count != 173:
+    if bootstrap_table_count != BOOTSTRAP_TABLE_COUNT:
         raise SchemaTestFailure(
-            f"{engine.label} fresh bootstrap did not produce 173 pre-immutable tables "
-            f"(found {bootstrap_table_count})"
+            f"{engine.label} fresh bootstrap did not produce {BOOTSTRAP_TABLE_COUNT} "
+            f"pre-immutable tables (found {bootstrap_table_count})"
         )
 
     # Make the new table creation observable: bootstrap supplies the reference
@@ -827,9 +830,9 @@ def setup_full_schema(engine: Engine, manifest: object) -> dict[str, object]:
         "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
         "AND table_type='BASE TABLE' ORDER BY table_name;", database=engine.database
     ).splitlines())
-    if full_table_count != 187:
+    if full_table_count != RUNTIME_TABLE_COUNT:
         raise SchemaTestFailure(
-            f"{engine.label} full immutable setup did not produce 187 tables "
+            f"{engine.label} full immutable setup did not produce {RUNTIME_TABLE_COUNT} tables "
             f"(found {full_table_count})"
         )
     return {

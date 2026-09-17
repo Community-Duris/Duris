@@ -11,8 +11,8 @@ NANNY = source("nanny.c").read_text(encoding="utf-8", errors="replace")
 LIMITS = source("limits.c").read_text(encoding="utf-8", errors="replace")
 
 
-def function_body(signature: str) -> str:
-    start = LIMITS.index(signature)
+def function_body(signature: str, start_at: int = 0) -> str:
+    start = LIMITS.index(signature, start_at)
     opening = LIMITS.index("{", start)
     depth = 0
     for position in range(opening, len(LIMITS)):
@@ -26,7 +26,7 @@ def function_body(signature: str) -> str:
 
 
 ADVANCE_IMPL = function_body(
-    "static void advance_level_impl(P_char ch, bool notify_player, bool process_boons)\n{"
+    "static void advance_level_impl", LIMITS.index("void illithid_advance_level")
 )
 ILLITHID_ADVANCE = function_body("void illithid_advance_level(P_char ch)\n{")
 ADVANCE_LEVEL = function_body("void advance_level(P_char ch)\n{")
@@ -112,11 +112,14 @@ assert "if (!ch || !chaos_starter_bonuses_enabled())" in NANNY
 # Bulk level catch-up must not enqueue one optional boon transaction per level;
 # ordinary single-level advancement and XP/Illithid catch-up retain the hook.
 assert "if (process_boons)\n\t\tcheck_boon_completion(ch, NULL, 0, BOPT_LEVEL);" in ADVANCE_IMPL
-assert ADVANCE_LEVEL.count("advance_level_impl(ch, true, true);") == 1
-assert ILLITHID_ADVANCE.count("advance_level_impl(ch, false, true);") == 1
-assert ADVANCE_TO_LEVEL.count("advance_level_impl(ch, false, false);") == 1
-assert "advance_level_impl(ch, false, true);" not in ADVANCE_TO_LEVEL
-assert GAIN_EXP.count("advance_level_impl(ch, false, true);") == 2
+assert ADVANCE_LEVEL.count("advance_level_impl(ch, true, true, 0U);") == 1
+assert (
+    "advance_level_impl(ch, false, true, static_cast<std::uint64_t>(new_exp_table[i]));"
+    in ILLITHID_ADVANCE
+)
+assert ADVANCE_TO_LEVEL.count("advance_level_impl(ch, false, false, 0U);") == 1
+assert "advance_level_impl(ch, false, true," not in ADVANCE_TO_LEVEL
+assert GAIN_EXP.count("advance_level_impl(ch, false, true,") == 2
 
 assert "epic_transaction_submit_identified(ch,operation_id,20000" in NANNY_COMPACT
 assert "bank_delta.amount[3]=1000000;" in NANNY_COMPACT

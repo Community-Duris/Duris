@@ -601,7 +601,52 @@ void githyanki_weapon(P_char ch)
  * Gain in various points
  */
 
-static void advance_level_impl(P_char ch, bool notify_player, bool process_boons);
+static telemetry_progression_source progression_source_for_type(int type)
+{
+	switch (type)
+	{
+	case EXP_DAMAGE:
+		return telemetry_progression_source::damage;
+	case EXP_HEALING:
+		return telemetry_progression_source::healing;
+	case EXP_KILL:
+		return telemetry_progression_source::kill;
+	case EXP_DEATH:
+		return telemetry_progression_source::death;
+	case EXP_QUEST:
+		return telemetry_progression_source::quest;
+	case EXP_RESURRECT:
+		return telemetry_progression_source::resurrect;
+	case EXP_MELEE:
+		return telemetry_progression_source::melee;
+	case EXP_WORLD_QUEST:
+		return telemetry_progression_source::world_quest;
+	case EXP_TANKING:
+		return telemetry_progression_source::tanking;
+	case EXP_BOON:
+		return telemetry_progression_source::boon;
+	default:
+		return telemetry_progression_source::unknown;
+	}
+}
+
+static telemetry_progression_reason progression_reason_for_type(int type)
+{
+	if (type == EXP_DEATH)
+		return telemetry_progression_reason::death_loss;
+	if (type == EXP_RESURRECT)
+		return telemetry_progression_reason::resurrection;
+	if (type == EXP_DAMAGE || type == EXP_HEALING || type == EXP_KILL || type == EXP_QUEST ||
+	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING || type == EXP_BOON)
+		return telemetry_progression_reason::earned;
+	return telemetry_progression_reason::unknown;
+}
+
+static void advance_level_impl(P_char ch, bool notify_player, bool process_boons,
+			       std::uint64_t threshold_xp);
+static void lose_level_impl(P_char ch, std::uint64_t threshold_xp,
+			    telemetry_progression_source source,
+			    telemetry_progression_reason reason);
 
 static void notify_level_advancement(P_char ch, int previous_level)
 {
@@ -633,12 +678,13 @@ void illithid_advance_level(P_char ch)
 	for (i = GET_LEVEL(ch) + 1; i > minlvl && (new_exp_table[i] <= GET_EXP(ch)); i++)
 	{
 		GET_EXP(ch) -= new_exp_table[i];
-		advance_level_impl(ch, false, true);
+		advance_level_impl(ch, false, true, static_cast<std::uint64_t>(new_exp_table[i]));
 	}
 	notify_level_advancement(ch, previous_level);
 }
 
-static void advance_level_impl(P_char ch, bool notify_player, bool process_boons)
+static void advance_level_impl(P_char ch, bool notify_player, bool process_boons,
+			       std::uint64_t threshold_xp)
 {
 	/*  struct time_info_data playing_time;*/
 	int i;
@@ -647,8 +693,19 @@ static void advance_level_impl(P_char ch, bool notify_player, bool process_boons
 	 *
    ///TODO CODE THIS PIECE OF MASTER    */
 
+	const int previous_level = GET_LEVEL(ch);
 	ch->player.level++;
 	sql_update_level(ch);
+	(void)telemetry_runtime_game_progression(
+		ch, ch->desc,
+		telemetry_progression_make_level_transition(
+			telemetry_progression_kind::level_advanced,
+			telemetry_progression_source::system,
+			threshold_xp != 0U ? telemetry_progression_reason::level_threshold :
+					     telemetry_progression_reason::system_adjustment,
+			static_cast<std::uint16_t>(previous_level),
+			static_cast<std::uint16_t>(GET_LEVEL(ch)), threshold_xp,
+			TELEMETRY_PROGRESSION_MODIFIER_NONE, TELEMETRY_QUALITY_NONE));
 
 	if (GET_LEVEL(ch) > 1)
 	{
@@ -756,7 +813,7 @@ static void advance_level_impl(P_char ch, bool notify_player, bool process_boons
 
 void advance_level(P_char ch)
 {
-	advance_level_impl(ch, true, true);
+	advance_level_impl(ch, true, true, 0U);
 }
 
 void advance_to_level(P_char ch, int target_level)
@@ -764,7 +821,7 @@ void advance_to_level(P_char ch, int target_level)
 	const int previous_level = GET_LEVEL(ch);
 
 	while (GET_LEVEL(ch) < target_level)
-		advance_level_impl(ch, false, false);
+		advance_level_impl(ch, false, false, 0U);
 	notify_level_advancement(ch, previous_level);
 }
 
@@ -772,7 +829,9 @@ void advance_to_level(P_char ch, int target_level)
  * lose in various points
  */
 
-void lose_level(P_char ch)
+static void lose_level_impl(P_char ch, std::uint64_t threshold_xp,
+			    telemetry_progression_source source,
+			    telemetry_progression_reason reason)
 {
 	int i;
 
@@ -796,8 +855,16 @@ void lose_level(P_char ch)
 		ch->points.base_mana = MAX(0, (ch->points.base_mana - 3));
 	}
 
+	const int previous_level = GET_LEVEL(ch);
 	ch->player.level = MAX(1, ch->player.level - 1);
 	sql_update_level(ch);
+	(void)telemetry_runtime_game_progression(
+		ch, ch->desc,
+		telemetry_progression_make_level_transition(
+			telemetry_progression_kind::level_lost, source, reason,
+			static_cast<std::uint16_t>(previous_level),
+			static_cast<std::uint16_t>(GET_LEVEL(ch)), threshold_xp,
+			TELEMETRY_PROGRESSION_MODIFIER_NONE, TELEMETRY_QUALITY_NONE));
 
 	update_skills(ch);
 
@@ -809,6 +876,12 @@ void lose_level(P_char ch)
 
 	// Send GMCP update for level change
 	gmcp_char_status(ch);
+}
+
+void lose_level(P_char ch)
+{
+	lose_level_impl(ch, 0U, telemetry_progression_source::system,
+			telemetry_progression_reason::system_adjustment);
 }
 
 void clear_title(P_char ch)
@@ -1087,6 +1160,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	int levelcap = sql_level_cap(GET_RACEWAR(ch));
 	bool pvp = FALSE;
 	float XP = MAX(1, value);
+	std::uint32_t progression_modifier_flags = TELEMETRY_PROGRESSION_MODIFIER_NONE;
 	P_char master;
 
 	if (ch && IS_PC(ch))
@@ -1117,7 +1191,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		// If they're ready to level and capped by the levelcap, then only give 2/3 exp.
 		if ((levelcap < 56) && (GET_LEVEL(ch) >= levelcap) &&
 		    (new_exp_table[GET_LEVEL(ch) + 1] <= GET_EXP(ch)))
+		{
+			progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_OVER_LEVEL_CAP;
 			XP *= exp_mods[EXPMOD_OVER_LEVEL_CAP];
+		}
 	}
 
 	if (ch && victim && IS_PC(ch) && IS_PC(victim))
@@ -1132,6 +1209,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			pvp = TRUE;
 		}
 	}
+	if (pvp)
+		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_PVP;
+	if (victim != nullptr)
+		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_VICTIM;
 
 	if (type == EXP_RESURRECT)
 	{
@@ -1139,12 +1220,16 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	}
 	else if (affected_by_spell(ch, TAG_WELLRESTED))
 	{
+		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED;
 		XP *= 2;
 	}
 	else if (affected_by_spell(ch, TAG_RESTED))
 	{
+		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_RESTED;
 		XP *= 1.5;
 	}
+	if (progression_reason_for_type(type) == telemetry_progression_reason::earned)
+		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_RACE;
 
 	if (type == EXP_RESURRECT)
 	{
@@ -1325,6 +1410,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		if (exp_mods[EXPMOD_GLOBAL] < .5)
 			XP *= 2 * exp_mods[EXPMOD_GLOBAL];
 		XP *= difficulty_multiplier(DIFFICULTY_DEATH_PENALTY);
+		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_DEATH;
 		// debug("death 1 exp gain (%d)", (int)XP);
 	}
 	else if (type == EXP_KILL)
@@ -1442,9 +1528,13 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 
 	// Server-wide experience dial on everything earned outside PvP.
 	if (XP > 0 && !pvp && type != EXP_RESURRECT)
+	{
+		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_EARNED;
 		XP *= difficulty_multiplier(DIFFICULTY_EXP_EARNED);
+	}
 
-	int XP_final = (int)XP;
+	const int computed_xp = (int)XP;
+	int XP_final = computed_xp;
 	// debug("check 3 xp (%d)", XP_final);
 	// Resses from Gods may restore more than 1/3 level (ie for liches).
 	if (type != EXP_RESURRECT)
@@ -1452,6 +1542,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		int range = new_exp_table[GET_LEVEL(ch) + 1] / 3;
 		// debug("check 4 xp (%d)", XP_final);
 		XP_final = BOUNDED(-range, XP_final, range);
+		if (XP_final != computed_xp)
+			progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_FINAL_CAP;
 	}
 
 	// if(XP_final > 0 &&
@@ -1462,6 +1554,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	// }
 
 	// increase exp only to some limit (cumulative exp for mortals)
+	const int before_exp = GET_EXP(ch);
 	if (GET_LEVEL(ch) < MINLVLIMMORTAL &&
 	    (XP_final < 0 || ((GET_EXP(ch) < global_exp_limit) &&
 			      GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1]))))
@@ -1472,6 +1565,15 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			components |= PLAYER_COMPONENT_TROPHIES;
 		mark_player_dirty_components(GET_PID(ch), components);
 	}
+	const int after_exp = GET_EXP(ch);
+	(void)telemetry_runtime_game_progression(
+		ch, ch->desc,
+		telemetry_progression_make_experience(
+			progression_source_for_type(type), progression_reason_for_type(type),
+			static_cast<std::int64_t>(value), static_cast<std::int64_t>(computed_xp),
+			static_cast<std::int64_t>(before_exp), static_cast<std::int64_t>(after_exp),
+			static_cast<std::uint16_t>(GET_LEVEL(ch)), progression_modifier_flags,
+			TELEMETRY_QUALITY_NONE));
 	display_gain(ch, (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
 	{
@@ -1494,7 +1596,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (a)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
-				advance_level_impl(ch, false, true);
+				advance_level_impl(ch, false, true,
+						   static_cast<std::uint64_t>(new_exp_table[i]));
 			}
 		}
 		else
@@ -1507,7 +1610,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (b)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
-				advance_level_impl(ch, false, true);
+				advance_level_impl(ch, false, true,
+						   static_cast<std::uint64_t>(new_exp_table[i]));
 			}
 		}
 		notify_level_advancement(ch, previous_level);
@@ -1520,7 +1624,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			       J_NAME(ch), GET_EXP(ch), GET_EXP(ch) + new_exp_table[GET_LEVEL(ch)],
 			       new_exp_table[GET_LEVEL(ch)]);
 			GET_EXP(ch) += new_exp_table[GET_LEVEL(ch)];
-			lose_level(ch);
+			lose_level_impl(ch,
+					static_cast<std::uint64_t>(new_exp_table[GET_LEVEL(ch)]),
+					progression_source_for_type(type),
+					progression_reason_for_type(type));
 		}
 	}
 

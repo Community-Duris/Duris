@@ -3,6 +3,7 @@
 
 #include "telemetry/telemetry_config.h"
 #include "telemetry/telemetry_config_private.h"
+#include "telemetry/telemetry_progression.h"
 #include "telemetry/telemetry_types.h"
 
 #include <cstdint>
@@ -366,6 +367,11 @@ telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *c
 telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *character,
 							 struct descriptor_data *descriptor,
 							 telemetry_runtime_evidence_kind kind);
+/* Captures an XP storage or level transition snapshot with current session,
+ * connection, dimensions and effective config copied by the runtime. */
+telemetry_capture_result
+telemetry_runtime_game_progression(struct char_data *character, struct descriptor_data *descriptor,
+				   telemetry_progression_observation observation);
 std::uint16_t telemetry_runtime_pulse_slot_count(void) noexcept;
 telemetry_capture_result telemetry_runtime_session_enter(telemetry_session_enter enter);
 /* Copyover owner only, after capturing its complete handoff batch while normal
