@@ -589,12 +589,43 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::applied &&
 			collector_result(applied).entry.status == collector::state::available,
 		"first listing did not activate");
+	const collector::record first_available = collector_result(applied).entry;
+	const collector_command_payload hint =
+		metadata(collector_action::hint, first_available, 1020);
+	applied = flatfile_collector_repository_apply(root_path, collector_command(hint, 11));
+	require(applied.outcome == critical_apply_outcome::applied &&
+			collector_result(applied).entry.status == collector::state::available,
+		"first available listing did not claim its recovery hint");
+	require(flatfile_collector_repository_read_bootstrap(root_path, &bootstrap, &error) ==
+				flatfile_collector_repository_result::ok &&
+			bootstrap.deaths.size() == 2 &&
+			bootstrap.deaths[0].hint_state == COLLECTOR_HINT_PENDING &&
+			bootstrap.deaths[0].hint_revision == first_available.revision,
+		"collector hint claim was not durable per death");
 	second = listing(root_path, 2, &error);
 	applied = flatfile_collector_repository_apply(
 		root_path,
 		collector_command(metadata(collector_action::activate, second.entry, 1020), 6));
 	require(applied.outcome == critical_apply_outcome::applied,
 		"second listing did not activate");
+	collector_command_payload competing_hint =
+		metadata(collector_action::hint, collector_result(applied).entry, 1020);
+	applied = flatfile_collector_repository_apply(root_path,
+						      collector_command(competing_hint, 12));
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EALREADY,
+		"second listing bypassed the per-death first-hint gate");
+	collector_command_payload acknowledgement =
+		metadata(collector_action::hint_ack, first_available, 1020);
+	acknowledgement.expected_listing_revision = first_available.revision;
+	applied = flatfile_collector_repository_apply(root_path,
+						      collector_command(acknowledgement, 13));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"collector hint acknowledgement was not durable");
+	require(flatfile_collector_repository_read_bootstrap(root_path, &bootstrap, &error) ==
+				flatfile_collector_repository_result::ok &&
+			bootstrap.deaths[0].hint_state == COLLECTOR_HINT_DELIVERED,
+		"collector hint acknowledgement did not survive a bootstrap read");
 	second = listing(root_path, 2, &error);
 	applied = flatfile_collector_repository_apply(
 		root_path,
@@ -646,7 +677,7 @@ int main(int argc, char **argv)
 
 	require(flatfile_collector_repository_read_bootstrap(root_path, &bootstrap, &error) ==
 				flatfile_collector_repository_result::ok &&
-			bootstrap.catalog.revision == 12 && bootstrap.catalog.records.size() == 4 &&
+			bootstrap.catalog.revision == 14 && bootstrap.catalog.records.size() == 4 &&
 			bootstrap.held_items.empty(),
 		"terminal collector catalog did not reconcile exact held custody: " + error);
 	std::vector<flatfile_item_ownership_record> player_items;

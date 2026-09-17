@@ -61,6 +61,8 @@ enum class critical_command_type : uint16_t
 	corpse_lifecycle,
 	coin_transfer,
 	collector,
+	// Appended so existing durable command type numbers stay unchanged.
+	player_death_restitution,
 };
 
 enum class critical_source_site : uint16_t

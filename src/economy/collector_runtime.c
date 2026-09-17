@@ -1,5 +1,7 @@
 #include "economy/collector_runtime.h"
 
+#include "persistence/critical_command.h"
+
 #include <algorithm>
 #include <array>
 #include <limits>
@@ -43,6 +45,11 @@ bool action_matches(const collector_command_result &result)
 	case collector_action::resume:
 		return result.entry.status == collector::state::available &&
 		       !result.entry.holding_paused;
+	case collector_action::hint:
+		return result.entry.status == collector::state::available &&
+		       !result.entry.holding_paused;
+	case collector_action::hint_ack:
+		return collector::valid_record(result.entry);
 	case collector_action::unknown:
 		return false;
 	}
@@ -55,6 +62,30 @@ bool same_record(const collector::record &left, const collector::record &right)
 	return collector::record_encode(left, &left_bytes) == collector::codec_result::ok &&
 	       collector::record_encode(right, &right_bytes) == collector::codec_result::ok &&
 	       left_bytes == right_bytes;
+}
+
+bool operation_matches(const critical_operation_id &operation,
+		       const collector::death_operation_id &encoded)
+{
+	constexpr char digits[] = "0123456789abcdef";
+	for (size_t index = 0; index < operation.bytes.size(); ++index)
+	{
+		if (encoded[index * 2] != digits[operation.bytes[index] >> 4] ||
+		    encoded[index * 2 + 1] != digits[operation.bytes[index] & 0xf])
+			return false;
+	}
+	return encoded[collector::death_operation_hex_size] == '\0';
+}
+
+collector_death_snapshot *death_for_record(const collector::record &entry)
+{
+	for (auto &[identity, death] : deaths_by_identity)
+	{
+		(void)identity;
+		if (operation_matches(death.operation_id, entry.death_operation))
+			return &death;
+	}
+	return nullptr;
 }
 
 struct catalog_projection
@@ -200,6 +231,12 @@ bool collector_runtime_publish(const collector_command_result &result)
 	    !collector::valid_record(result.entry) ||
 	    result.entry.listing == std::numeric_limits<uint64_t>::max())
 		return false;
+	if (result.action == collector_action::hint)
+		collector_runtime_publish_hint(result.entry, COLLECTOR_HINT_PENDING,
+					       result.entry.revision);
+	else if (result.action == collector_action::hint_ack)
+		collector_runtime_publish_hint(result.entry, COLLECTOR_HINT_DELIVERED,
+					       result.entry.revision);
 	auto found = records.find(result.entry.listing);
 	if (found != records.end())
 	{
@@ -271,6 +308,62 @@ bool collector_runtime_find_death(uint32_t beneficiary_pid, uint64_t death_time,
 		return false;
 	*death = found->second;
 	return true;
+}
+
+bool collector_runtime_hint_candidates(uint64_t after_listing, size_t scan_limit,
+				       size_t result_limit, uint64_t now,
+				       std::vector<collector::record> *entries,
+				       uint64_t *next_after_listing, bool *reached_end)
+{
+	if (!scan_limit || !result_limit || !now || !entries || !next_after_listing || !reached_end)
+		return false;
+	std::vector<collector::record> candidate;
+	auto current = after_listing ? records.upper_bound(after_listing) : records.begin();
+	size_t scanned = 0;
+	uint64_t cursor = after_listing;
+	try
+	{
+		candidate.reserve(result_limit);
+		while (current != records.end() && scanned < scan_limit &&
+		       candidate.size() < result_limit)
+		{
+			cursor = current->first;
+			const collector::record &entry = current->second;
+			++current;
+			++scanned;
+			if (!available(entry) || entry.available_at > now ||
+			    entry.expires_at <= now)
+				continue;
+			const collector_death_snapshot *death = death_for_record(entry);
+			if (death && death->hint_state < COLLECTOR_HINT_DELIVERED)
+				candidate.push_back(entry);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	*reached_end = current == records.end();
+	*next_after_listing = *reached_end ? 0 : cursor;
+	*entries = std::move(candidate);
+	return true;
+}
+
+void collector_runtime_publish_hint(const collector::record &entry, uint8_t state,
+				    uint64_t hint_revision)
+{
+	if (!state || state > COLLECTOR_HINT_DELIVERED || !collector::valid_record(entry))
+		return;
+	collector_death_snapshot *death = death_for_record(entry);
+	if (!death || death->hint_state > state)
+		return;
+	if (death->hint_state < state)
+	{
+		death->hint_state = state;
+		death->hint_revision = hint_revision;
+	}
+	else if (!death->hint_revision && hint_revision)
+		death->hint_revision = hint_revision;
 }
 
 bool collector_runtime_snapshot(collector::catalog *catalog)

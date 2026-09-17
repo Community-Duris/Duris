@@ -64,12 +64,12 @@ class CollectorCatalogSchemaTest(unittest.TestCase):
         lifecycle_ids = {entry["id"] for entry in lifecycle["entries"]}
         for table in ("collector_catalog_state", "collector_deaths",
                       "collector_listings", "collector_ledger",
-                      "collector_reconciliation_quarantine"):
+                      "collector_reconciliation_quarantine", "offline_message_receipts"):
             self.assertIn(f"'{table}'", runtime["runtime_table_sql_list"])
             self.assertIn(f"database:{table}", lifecycle_ids)
-        self.assertEqual(runtime["current_table_count"], 193)
+        self.assertEqual(runtime["current_table_count"], 198)
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0019_corpse_lifecycle_authority")
+                         "0021_collector_notification_identity")
 
 
 if __name__ == "__main__":

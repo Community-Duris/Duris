@@ -21,6 +21,10 @@
 #include <string>
 #include <vector>
 
+void collector_notification_pulse(void) {}
+void collector_notification_player_ready(void) {}
+void collector_notification_reset_for_tests(void) {}
+
 namespace
 {
 char_data character = {};

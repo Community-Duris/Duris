@@ -32,7 +32,8 @@ mkdir -p "$ROOT/bin/tests"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
-    "${MYSQL_CFLAGS[@]}" tests/async/player_load_repository_mysql_harness.cpp \
+    "${MYSQL_CFLAGS[@]}" -ffunction-sections -fdata-sections tests/async/player_load_repository_mysql_harness.cpp \
     src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_snapshot_codec.c src/persistence/persistence_observability.c \
-    "${MYSQL_LIBS[@]}" -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
+    src/persistence/player_death_restitution_command.c \
+    -Wl,--gc-sections "${MYSQL_LIBS[@]}" -lcrypto -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
 "$ROOT/bin/tests/player_load_repository_mysql_harness"

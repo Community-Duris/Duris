@@ -11,6 +11,8 @@
 #include <cstdlib>
 #include <vector>
 
+void collector_notification_death_enrolled(void) {}
+
 namespace
 {
 collector_feature_config config;

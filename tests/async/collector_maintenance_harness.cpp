@@ -16,6 +16,8 @@
 #include <set>
 #include <vector>
 
+void collector_notification_on_available(const collector::record &) {}
+
 namespace
 {
 collector_feature_config config;

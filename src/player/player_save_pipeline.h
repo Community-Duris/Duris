@@ -91,6 +91,15 @@ bool player_save_pipeline_drain(uint64_t timeout_msec);
 player_save_pipeline_health player_save_pipeline_health_copy(void);
 size_t player_save_pipeline_dirty_count(void);
 bool player_save_pipeline_is_nonterminal_type(int save_intent);
+// Exact-PID save/login barrier used by offline critical commands.  A target
+// fence rejects new saves for that PID without quiescing unrelated players.
+bool player_save_pipeline_target_save_pending(int pid);
+bool player_save_pipeline_acquire_target_save_login_fence(int pid,
+							  player_revision_t expected_revision);
+void player_save_pipeline_release_target_save_login_fence(int pid,
+							  player_revision_t expected_revision);
+bool player_save_pipeline_target_save_login_fenced(int pid);
+bool player_save_pipeline_save_admitted(int pid);
 void player_save_pipeline_reset_for_tests(void);
 
 #endif

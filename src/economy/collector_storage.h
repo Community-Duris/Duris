@@ -7,6 +7,10 @@
 #include <cstdint>
 #include <vector>
 
+constexpr uint8_t COLLECTOR_HINT_NONE = 0;
+constexpr uint8_t COLLECTOR_HINT_PENDING = 1;
+constexpr uint8_t COLLECTOR_HINT_DELIVERED = 2;
+
 // Immutable values transferred from persistence workers to the game thread.
 // They deliberately contain no live game pointers.
 struct collector_death_snapshot
