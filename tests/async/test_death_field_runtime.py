@@ -40,6 +40,7 @@ bool training_dummy_is(P_char) { return false; }
 bool training_dummy_target_allowed(P_char, P_char) { return true; }
 void training_dummy_retarget_nonpet(P_char, P_char) {}
 bool safe_room_spell_target_allowed(P_char, int, P_char) { return true; }
+void telemetry_runtime_game_combat_cast_complete(P_char) {}
 
 static room_data rooms[2]{};
 P_room world = rooms;
