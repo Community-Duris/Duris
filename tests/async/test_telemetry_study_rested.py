@@ -105,6 +105,13 @@ class RestedBonusStudyTest(unittest.TestCase):
         with self.assertRaisesRegex(StudyInputError, "forbidden raw field"):
             build_report(payload)
 
+    def test_unapproved_source_interface_is_rejected(self):
+        payload = copy_export()
+        payload["source"]["interfaces"] = ["telemetry.return.v1", "unreviewed.v1"]
+
+        with self.assertRaisesRegex(StudyInputError, "unapproved interface"):
+            build_report(payload)
+
     def test_censoring_abstains_only_the_small_return_window(self):
         payload = copy_export()
         payload["rows"][0]["censored"] = True

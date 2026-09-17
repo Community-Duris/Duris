@@ -40,6 +40,13 @@ MICROSECONDS_PER_HOUR = 3_600_000_000
 
 PARTICIPATION_COHORTS = ("solo", "group", "pvp", "group_pvp")
 RESTED_TIERS = ("unrested", "rested", "well_rested")
+APPROVED_SOURCE_INTERFACES = frozenset(
+    {
+        "telemetry.return.v1",
+        "telemetry.playtime.v1",
+        "telemetry.progression.v1",
+    }
+)
 RETURN_WINDOWS = (
     ("under_1h", 0, 3_600_000_000),
     ("1_4h", 3_600_000_000, 14_400_000_000),
@@ -310,9 +317,16 @@ def _validate_source(source: Mapping[str, Any]) -> dict[str, Any]:
     normalized_interfaces = [
         _string(interface, "source.interfaces[]", max_length=128) for interface in interfaces
     ]
+    if any(interface not in APPROVED_SOURCE_INTERFACES for interface in normalized_interfaces):
+        raise StudyInputError("source.interfaces contains an unapproved interface")
+    if (
+        len(normalized_interfaces) != len(APPROVED_SOURCE_INTERFACES)
+        or set(normalized_interfaces) != APPROVED_SOURCE_INTERFACES
+    ):
+        raise StudyInputError("source.interfaces must include exactly the reviewed study interfaces")
     return {
         "kind": kind,
-        "interfaces": normalized_interfaces,
+        "interfaces": sorted(APPROVED_SOURCE_INTERFACES),
         "redacted": _boolean(_required(source, "redacted"), "source.redacted"),
         "synthetic_fixture": _boolean(
             _required(source, "synthetic_fixture"), "source.synthetic_fixture"

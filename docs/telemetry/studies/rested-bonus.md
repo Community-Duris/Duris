@@ -11,6 +11,11 @@ interfaces. The deployment/report adapter owns the mapping from published
 report rows to the study export. The evaluator never opens SQL, reads raw
 facts, or reaches live game state.
 
+The source interface manifest is fixed to `telemetry.return.v1`,
+`telemetry.playtime.v1`, and `telemetry.progression.v1`. These are reviewed
+study-contract identifiers for the adapter boundary, not new SQL endpoints or
+permission to read raw facts.
+
 ## Question and claim boundary
 
 The study describes how observed return timing, activity exposure, and XP
@@ -44,6 +49,12 @@ cell and carries:
 - `return_window`: `under_1h`, `1_4h`, `4_24h`, `1_3d`, or `3d_plus`;
 - `returned`, `censored`, `mode_qualified`, and empty `quality_flags`;
 - stable redacted `subject_token` and `repeat_group_token`.
+
+The adapter must emit at most one row per subject/cohort/rested-tier/config
+cell. If the underlying source has repeated episodes, it must pre-aggregate
+them under the approved report contract before producing this study export;
+the evaluator rejects duplicate subject/cell rows rather than treating
+repeated observations as independent subjects.
 
 The evaluator reports total and subject-rate XP per active hour, connected and
 active exposure, return successes and Wilson 95% intervals for each return
