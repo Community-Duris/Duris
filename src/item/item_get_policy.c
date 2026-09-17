@@ -18,11 +18,10 @@ bool actor_room_is_valid(P_char actor)
 	return actor && actor->in_room > NOWHERE && actor->in_room <= top_of_world;
 }
 
-bool live_placement_owner(P_char actor, P_obj object, P_obj container, item_owner_identity *owner)
+bool live_placement_outer(P_char actor, P_obj object, P_obj container, P_obj *outer_out)
 {
-	if (!actor || !object || !owner || !actor_room_is_valid(actor))
+	if (!actor || !object || !outer_out || !actor_room_is_valid(actor))
 		return false;
-	*owner = {};
 
 	P_obj outer = container ? container : object;
 	if (container && (!OBJ_INSIDE(object) || object->loc.inside != container))
@@ -39,6 +38,25 @@ bool live_placement_owner(P_char actor, P_obj object, P_obj container, item_owne
 		outer = outer->loc.inside;
 	}
 	if (!outer)
+		return false;
+	*outer_out = outer;
+	return true;
+}
+
+bool live_placement_is_accessible(P_char actor, P_obj outer)
+{
+	return actor && outer &&
+	       ((OBJ_ROOM(outer) && outer->loc.room == actor->in_room) ||
+		(OBJ_CARRIED_BY(outer, actor) || OBJ_WORN_BY(outer, actor)));
+}
+
+bool live_placement_owner(P_char actor, P_obj object, P_obj container, item_owner_identity *owner)
+{
+	if (!owner)
+		return false;
+	*owner = {};
+	P_obj outer = NULL;
+	if (!live_placement_outer(actor, object, container, &outer))
 		return false;
 
 	if (outer->type == ITEM_CORPSE && IS_SET(outer->value[CORPSE_FLAGS], PC_CORPSE) &&
@@ -79,6 +97,10 @@ bool owner_is_virtual_source(item_owner_type type)
 bool runtime_owner_matches_live_placement(P_char actor, P_obj object, P_obj container,
 					  const item_owner_identity &runtime_owner)
 {
+	P_obj outer = NULL;
+	if (!live_placement_outer(actor, object, container, &outer) ||
+	    !live_placement_is_accessible(actor, outer))
+		return false;
 	if (owner_is_virtual_source(runtime_owner.type))
 		/* Locker/auction/shopkeeper/collector authorities are explicit virtual
 		 * boundaries and are intentionally not reduced to room ownership. */
