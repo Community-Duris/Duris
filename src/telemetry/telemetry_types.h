@@ -66,6 +66,54 @@ enum class telemetry_record_kind : std::uint8_t
 	session_checkpoint = 3,
 	coverage_gap = 4,
 	configuration = 5,
+	progression = 6,
+};
+
+/* Progression facts keep XP arithmetic separate from level-threshold use. */
+enum class telemetry_progression_kind : std::uint8_t
+{
+	unknown = 0,
+	experience_observed = 1,
+	level_advanced = 2,
+	level_lost = 3,
+};
+
+/* Values 1-10 mirror the existing gain_exp source constants. */
+enum class telemetry_progression_source : std::uint8_t
+{
+	unknown = 0,
+	damage = 1,
+	healing = 2,
+	kill = 3,
+	death = 4,
+	quest = 5,
+	resurrect = 6,
+	melee = 7,
+	world_quest = 8,
+	tanking = 9,
+	boon = 10,
+	administration = 11,
+	system = 12,
+};
+
+enum class telemetry_progression_reason : std::uint8_t
+{
+	unknown = 0,
+	earned = 1,
+	death_loss = 2,
+	resurrection = 3,
+	level_threshold = 4,
+	administration = 5,
+	system_adjustment = 6,
+};
+
+/* H emits observed_mutable. Later recovery/ledger work may promote facts. */
+enum class telemetry_progression_observation_status : std::uint8_t
+{
+	unknown = 0,
+	observed_mutable = 1,
+	recovered_checkpoint = 2,
+	durable_reconciled = 3,
 };
 
 /* Lifecycle records describe a logical session or an explicit socket edge. */
@@ -265,6 +313,28 @@ inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_UNCLOSED_TAIL = 1U << 
 inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_CLOCK_DISCONTINUITY = 1U << 7;
 inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_LATE = 1U << 8;
 
+/* These flags describe bounded modifier paths, not arbitrary property maps. */
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_NONE = 0U;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_RESTED = 1U << 0;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED = 1U << 1;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_OVER_LEVEL_CAP = 1U << 2;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_EARNED = 1U << 3;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_DEATH = 1U << 4;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_PVP = 1U << 5;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_FINAL_CAP = 1U << 6;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_RACE = 1U << 7;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_VICTIM = 1U << 8;
+inline constexpr std::uint32_t TELEMETRY_PROGRESSION_MODIFIER_KNOWN =
+	TELEMETRY_PROGRESSION_MODIFIER_RESTED |
+	TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED |
+	TELEMETRY_PROGRESSION_MODIFIER_OVER_LEVEL_CAP |
+	TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_EARNED |
+	TELEMETRY_PROGRESSION_MODIFIER_DIFFICULTY_DEATH |
+	TELEMETRY_PROGRESSION_MODIFIER_PVP |
+	TELEMETRY_PROGRESSION_MODIFIER_FINAL_CAP |
+	TELEMETRY_PROGRESSION_MODIFIER_RACE |
+	TELEMETRY_PROGRESSION_MODIFIER_VICTIM;
+
 /*
  * A producer identity is allocated once for a boot/process incarnation.  An
  * OS PID alone is not sufficient because it can be reused after a restart.
@@ -452,6 +522,39 @@ struct telemetry_session_checkpoint_payload
 };
 
 /*
+ * Progression is an immutable observed fact, not an XP authority.  XP fields
+ * are signed and record the requested input, post-modifier integer candidate,
+ * and actual change at the storage boundary.  Level threshold use has its own
+ * kind and threshold field, so reports never infer a reward/loss from it.
+ */
+struct telemetry_progression_payload
+{
+	telemetry_session_ref session;
+	telemetry_connection_id connection;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_utc_usec at_utc_usec;
+	telemetry_progression_kind kind;
+	telemetry_progression_source source;
+	telemetry_progression_reason reason;
+	telemetry_progression_observation_status observation_status;
+	std::uint32_t modifier_flags;
+	std::int64_t requested_xp;
+	std::int64_t computed_xp;
+	std::int64_t applied_xp;
+	std::int64_t before_exp;
+	std::int64_t after_exp;
+	std::uint16_t before_level;
+	std::uint16_t after_level;
+	std::uint32_t reserved;
+	std::uint64_t threshold_xp;
+	telemetry_dimensions dimensions;
+	telemetry_config_id config_id;
+	std::uint32_t classifier_version;
+	std::uint32_t policy_version;
+	telemetry_quality_mask quality_flags;
+};
+
+/*
  * Gap/disabled records are control records.  A zero session reference denotes
  * a process-wide gap.  Missing sequence bounds are zero when only duration or
  * disabled status is known.
@@ -486,6 +589,7 @@ union telemetry_record_payload
 	telemetry_session_checkpoint_payload checkpoint;
 	telemetry_coverage_gap_payload gap;
 	telemetry_configuration_payload configuration;
+	telemetry_progression_payload progression;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -533,7 +637,8 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::session_lifecycle ||
 	       kind == telemetry_record_kind::session_checkpoint ||
 	       kind == telemetry_record_kind::coverage_gap ||
-	       kind == telemetry_record_kind::configuration;
+	       kind == telemetry_record_kind::configuration ||
+	       kind == telemetry_record_kind::progression;
 }
 
 constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noexcept
@@ -614,6 +719,55 @@ constexpr bool telemetry_storage_backend_is_valid(telemetry_storage_backend back
 {
 	return backend == telemetry_storage_backend::sql ||
 	       backend == telemetry_storage_backend::flatfile_disabled;
+}
+
+constexpr bool telemetry_progression_kind_is_valid(telemetry_progression_kind kind) noexcept
+{
+	return kind == telemetry_progression_kind::experience_observed ||
+	       kind == telemetry_progression_kind::level_advanced ||
+	       kind == telemetry_progression_kind::level_lost;
+}
+
+constexpr bool telemetry_progression_source_is_valid(telemetry_progression_source source) noexcept
+{
+	return source == telemetry_progression_source::unknown ||
+	       source == telemetry_progression_source::damage ||
+	       source == telemetry_progression_source::healing ||
+	       source == telemetry_progression_source::kill ||
+	       source == telemetry_progression_source::death ||
+	       source == telemetry_progression_source::quest ||
+	       source == telemetry_progression_source::resurrect ||
+	       source == telemetry_progression_source::melee ||
+	       source == telemetry_progression_source::world_quest ||
+	       source == telemetry_progression_source::tanking ||
+	       source == telemetry_progression_source::boon ||
+	       source == telemetry_progression_source::administration ||
+	       source == telemetry_progression_source::system;
+}
+
+constexpr bool telemetry_progression_reason_is_valid(telemetry_progression_reason reason) noexcept
+{
+	return reason == telemetry_progression_reason::unknown ||
+	       reason == telemetry_progression_reason::earned ||
+	       reason == telemetry_progression_reason::death_loss ||
+	       reason == telemetry_progression_reason::resurrection ||
+	       reason == telemetry_progression_reason::level_threshold ||
+	       reason == telemetry_progression_reason::administration ||
+	       reason == telemetry_progression_reason::system_adjustment;
+}
+
+constexpr bool telemetry_progression_observation_status_is_valid(
+	telemetry_progression_observation_status status) noexcept
+{
+	return status == telemetry_progression_observation_status::observed_mutable ||
+	       status == telemetry_progression_observation_status::recovered_checkpoint ||
+	       status == telemetry_progression_observation_status::durable_reconciled;
+}
+
+constexpr bool telemetry_progression_modifier_flags_are_valid(
+	std::uint32_t flags) noexcept
+{
+	return (flags & ~TELEMETRY_PROGRESSION_MODIFIER_KNOWN) == 0U;
 }
 
 inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_KNOWN =
@@ -936,6 +1090,54 @@ constexpr bool telemetry_session_checkpoint_payload_is_valid(
 	       telemetry_quality_mask_is_valid(checkpoint.quality_flags);
 }
 
+/* Compare a signed storage delta without ever overflowing signed arithmetic. */
+constexpr bool telemetry_signed_delta_is_valid(std::int64_t before, std::int64_t after,
+						       std::int64_t applied) noexcept
+{
+	if (after >= before)
+		return applied >= 0 &&
+		       static_cast<std::uint64_t>(applied) ==
+			       static_cast<std::uint64_t>(after) -
+				       static_cast<std::uint64_t>(before);
+	return applied < 0 &&
+	       static_cast<std::uint64_t>(0U) - static_cast<std::uint64_t>(applied) ==
+	       static_cast<std::uint64_t>(before) - static_cast<std::uint64_t>(after);
+}
+
+constexpr bool telemetry_progression_payload_is_valid(
+	const telemetry_progression_payload &progression) noexcept
+{
+	if (!telemetry_session_ref_is_valid(progression.session) ||
+	    !telemetry_connection_reference_is_valid(progression.connection) ||
+	    !telemetry_progression_kind_is_valid(progression.kind) ||
+	    !telemetry_progression_source_is_valid(progression.source) ||
+	    !telemetry_progression_reason_is_valid(progression.reason) ||
+	    !telemetry_progression_observation_status_is_valid(progression.observation_status) ||
+	    !telemetry_progression_modifier_flags_are_valid(progression.modifier_flags) ||
+	    progression.reserved != 0U || !telemetry_dimensions_are_valid(progression.dimensions) ||
+	    progression.config_id == TELEMETRY_UNKNOWN_ID || progression.classifier_version == 0U ||
+	    progression.policy_version == 0U ||
+	    !telemetry_quality_mask_is_valid(progression.quality_flags))
+		return false;
+	if (progression.kind == telemetry_progression_kind::experience_observed)
+	{
+		if (progression.before_level != progression.after_level ||
+		    progression.threshold_xp != 0U)
+			return false;
+		/* The storage-boundary delta is the only authoritative observed change. */
+		return telemetry_signed_delta_is_valid(progression.before_exp, progression.after_exp,
+						       progression.applied_xp);
+	}
+	if (progression.before_level == progression.after_level || progression.applied_xp != 0U ||
+	    progression.requested_xp != 0 || progression.computed_xp != 0 ||
+	    progression.before_exp != 0 || progression.after_exp != 0)
+		return false;
+	if (progression.kind == telemetry_progression_kind::level_advanced)
+		return progression.after_level > progression.before_level;
+	return progression.kind == telemetry_progression_kind::level_lost &&
+	       progression.after_level < progression.before_level;
+}
+
 constexpr bool
 telemetry_coverage_gap_payload_is_valid(const telemetry_coverage_gap_payload &gap) noexcept
 {
@@ -980,6 +1182,8 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 		return telemetry_coverage_gap_payload_is_valid(record.payload.gap);
 	case telemetry_record_kind::configuration:
 		return telemetry_configuration_payload_is_valid(record.payload.configuration);
+	case telemetry_record_kind::progression:
+		return telemetry_progression_payload_is_valid(record.payload.progression);
 	case telemetry_record_kind::invalid:
 		break;
 	}
@@ -993,6 +1197,9 @@ static_assert(std::is_standard_layout_v<telemetry_config_snapshot>);
 static_assert(sizeof(telemetry_config_snapshot) <= TELEMETRY_RECORD_MAX_BYTES);
 static_assert(std::is_trivially_copyable_v<telemetry_connection_transition>);
 static_assert(std::is_trivially_copyable_v<telemetry_health_snapshot>);
+static_assert(std::is_trivially_copyable_v<telemetry_progression_payload>);
+static_assert(std::is_standard_layout_v<telemetry_progression_payload>);
+static_assert(sizeof(telemetry_progression_payload) <= TELEMETRY_RECORD_MAX_BYTES);
 static_assert(sizeof(telemetry_record) <= TELEMETRY_RECORD_MAX_BYTES,
 	      "telemetry_record must remain within the fixed queue record bound");
 

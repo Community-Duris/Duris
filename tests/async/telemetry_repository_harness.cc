@@ -160,6 +160,15 @@ static void execute(const std::string &sql)
 		std::exit(1);
 	}
 }
+static void execute_migration_statement(const std::string &sql)
+{
+	execute(sql);
+	if (sql.find("EXECUTE ") != std::string::npos)
+	{
+		if (auto *result = mysql_store_result(observer))
+			mysql_free_result(result);
+	}
+}
 static unsigned long long scalar(const char *sql)
 {
 	execute(sql);
@@ -250,7 +259,7 @@ static telemetry_record interval_record()
 	return {};
 }
 static telemetry_record checkpoint_record(unsigned int revision, unsigned long long total,
-					  unsigned long long sequence)
+							 unsigned long long sequence)
 {
 	const auto interval = interval_record();
 	telemetry_record record{};
@@ -265,6 +274,40 @@ static telemetry_record checkpoint_record(unsigned int revision, unsigned long l
 	checkpoint.at_utc_usec = interval.header.occurrence_utc_usec;
 	checkpoint.cumulative = { total, total, 0, 0, total, 0 };
 	checkpoint.config_id = interval.payload.interval.config_id;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+static telemetry_record progression_record(unsigned long long sequence, long long applied_xp)
+{
+	const auto interval = interval_record();
+	telemetry_record record{};
+	record.header = interval.header;
+	record.header.kind = telemetry_record_kind::progression;
+	record.header.key.record_seq = sequence;
+	auto &progression = record.payload.progression;
+	progression.session = interval.payload.interval.session;
+	progression.connection = interval.payload.interval.connection;
+	progression.at_monotonic_usec = 1200;
+	progression.at_utc_usec = interval.header.occurrence_utc_usec + 1200;
+	progression.kind = telemetry_progression_kind::experience_observed;
+	progression.source = telemetry_progression_source::quest;
+	progression.reason = telemetry_progression_reason::earned;
+	progression.observation_status = telemetry_progression_observation_status::observed_mutable;
+	progression.modifier_flags = TELEMETRY_PROGRESSION_MODIFIER_NONE;
+	progression.requested_xp = applied_xp;
+	progression.computed_xp = applied_xp;
+	progression.applied_xp = applied_xp;
+	progression.before_exp = 100;
+	progression.after_exp = 100 + applied_xp;
+	progression.before_level = 10;
+	progression.after_level = 10;
+	progression.reserved = 0;
+	progression.threshold_xp = 0;
+	progression.dimensions = interval.payload.interval.dimensions;
+	progression.config_id = interval.payload.interval.config_id;
+	progression.classifier_version = interval.payload.interval.classifier_version;
+	progression.policy_version = interval.payload.interval.policy_version;
+	progression.quality_flags = TELEMETRY_QUALITY_NONE;
 	CHECK(telemetry_record_is_valid(record));
 	return record;
 }
@@ -311,6 +354,21 @@ static void replay_and_isolation_tests()
 	CHECK(result.results[1].outcome == telemetry_apply_outcome::rejected_invalid);
 	CHECK(result.results[2].outcome == telemetry_apply_outcome::applied);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 3U);
+}
+
+static void progression_replay_tests()
+{
+	case_name = "progression replay is idempotent and conflicts are visible";
+	reset_fixture();
+	seed_config();
+	auto original = progression_record(20, 25);
+	expect_one(original, telemetry_apply_outcome::applied);
+	expect_one(original, telemetry_apply_outcome::duplicate_identical);
+	auto conflict = original;
+	conflict.payload.progression.applied_xp++;
+	conflict.payload.progression.after_exp++;
+	expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=6") == 1U);
 }
 
 static void config_and_scope_tests()
@@ -796,7 +854,7 @@ static void bounds_and_lifecycle_tests()
 
 int main(int argc, char **argv)
 {
-	CHECK(argc == 2);
+	CHECK(argc >= 2);
 	const char *ack = std::getenv("TELEMETRY_REPOSITORY_DISPOSABLE");
 	CHECK(ack && std::strcmp(ack, "1") == 0);
 	const char *port = std::getenv("TELEMETRY_REPOSITORY_PORT");
@@ -817,23 +875,27 @@ int main(int argc, char **argv)
 	execute("DROP DATABASE IF EXISTS duris_telemetry_test");
 	execute("CREATE DATABASE duris_telemetry_test");
 	CHECK(mysql_select_db(observer, "duris_telemetry_test") == 0);
-	std::ifstream migration(argv[1]);
-	CHECK(migration.good());
-	std::string schema;
-	for (std::string line; std::getline(migration, line);)
-		if (line.rfind("--", 0) != 0)
-			schema += line + "\n";
-	std::size_t start = 0;
-	for (std::size_t end = schema.find(';'); end != std::string::npos;
-	     end = schema.find(';', start))
+	for (int migration_index = 1; migration_index < argc; ++migration_index)
 	{
-		execute(schema.substr(start, end - start));
-		start = end + 1;
+		std::ifstream migration(argv[migration_index]);
+		CHECK(migration.good());
+		std::string schema;
+		for (std::string line; std::getline(migration, line);)
+			if (line.rfind("--", 0) != 0)
+				schema += line + "\n";
+		std::size_t start = 0;
+		for (std::size_t end = schema.find(';'); end != std::string::npos;
+			 end = schema.find(';', start))
+		{
+			execute_migration_statement(schema.substr(start, end - start));
+			start = end + 1;
+		}
 	}
 	initialization_stop_tests();
 	allocation_failure_tests();
 	golden_tests();
 	replay_and_isolation_tests();
+	progression_replay_tests();
 	config_and_scope_tests();
 	global_scope_tests();
 	checkpoint_tests();

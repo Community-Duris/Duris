@@ -10,11 +10,11 @@
     "mariadb10_11": "b0a3e15753e954488f47923b42c81bad35e69232301f8c4a3d6050dd58d4d6aa"
   },
   "migration_head": {
-    "id": "0021_collector_notification_identity",
-    "sequence": 21,
-    "apply_checksum": "602c481fdab8e7ca0a28a35c285cd4e045834147ad8570f83c9fa2864b2e7924",
-    "verify_checksum": "a2c22d6d3edacf9493f095114d73b2ca0d3c75cbccd3283eda7f81c9674e1e0d",
-    "history_checksum": "675ad9112d9180f25f45e7e0e2a936c80de471f25997af6f1d0043f97632c42a"
+    "id": "0022_telemetry_progression",
+    "sequence": 22,
+    "apply_checksum": "aee8d6811142df8c89a7b7f8d990f449e63af053755ffd682c87822c76a32fb6",
+    "verify_checksum": "b20ecae9696e40e90f095bafccf13442a2239d587ab65ad0296c4a1045e0d822",
+    "history_checksum": "d1e14020e29951300541376f64ee8d97dcfddbbbc4b048d6afc32092ca93353e"
   },
   "connection": {
     "character_set": "utf8mb4",

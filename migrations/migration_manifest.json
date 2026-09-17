@@ -388,6 +388,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "602c481fdab8e7ca0a28a35c285cd4e045834147ad8570f83c9fa2864b2e7924",
       "verify_checksum": "a2c22d6d3edacf9493f095114d73b2ca0d3c75cbccd3283eda7f81c9674e1e0d"
+    },
+    {
+      "id": "0022_telemetry_progression",
+      "sequence": 22,
+      "description": "Add observed XP and level transition facts to telemetry",
+      "apply": "immutable/0022_telemetry_progression.sql",
+      "apply_checksum": "aee8d6811142df8c89a7b7f8d990f449e63af053755ffd682c87822c76a32fb6",
+      "verify": "immutable/0022_telemetry_progression.sh",
+      "verify_checksum": "b20ecae9696e40e90f095bafccf13442a2239d587ab65ad0296c4a1045e0d822",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }
