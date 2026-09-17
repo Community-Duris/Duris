@@ -1722,7 +1722,12 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 	P_obj obj;
 	size_t offset = 0;
 
-	if (!mob || copyover_training_dummy_is(mob) || max_len < sizeof(entry))
+	/* Keep this predicate self-contained: world-singletons extracts this
+	 * serializer into a persistence-only harness without the file-local
+	 * helper above. */
+	if (!mob ||
+	    (IS_NPC(mob) && mob->only.npc && mob->only.npc->training_dummy) ||
+	    max_len < sizeof(entry))
 		return -1;
 
 	int mob_rnum = GET_RNUM(mob);

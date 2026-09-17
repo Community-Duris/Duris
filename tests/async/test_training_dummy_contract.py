@@ -211,6 +211,7 @@ def test_dummy_snapshots_are_skipped_and_recreated_by_bootstrap():
     recovery = source("src/world/world_recovery_pipeline.c")
 
     assert 'copyover_training_dummy_is(ch)' in copyover
+    assert '(IS_NPC(mob) && mob->only.npc && mob->only.npc->training_dummy)' in copyover
     assert 'recovery_training_dummy_is(ch)' in recovery
     assert 'ch->only.npc->summoned_instance || recovery_training_dummy_is(ch)' in recovery
     assert 'recovery_training_dummy_is(mob)' in recovery
