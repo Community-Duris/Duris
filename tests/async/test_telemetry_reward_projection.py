@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from scripts.telemetry.reward_projection import (  # noqa: E402
+    AmbiguousCommit,
     SOURCE_ADAPTERS,
     RewardProjectionStore,
     build_source_page_query,
@@ -321,6 +322,12 @@ class _FakeConnection:
         pass
 
 
+class _AmbiguousCommitConnection(_FakeConnection):
+    def commit(self):
+        self.commits += 1
+        raise OSError("commit acknowledgement lost")
+
+
 class _FakeFactory:
     def __init__(self, connection: _FakeConnection) -> None:
         self.connection = connection
@@ -335,6 +342,26 @@ class _FakeFactory:
 
 
 class RewardProjectionStoreTest(unittest.TestCase):
+    def test_ambiguous_commit_discards_connection_for_state_reread(self) -> None:
+        connection = _AmbiguousCommitConnection([
+            {
+                "operation_id": operation(40), "participant_pid": 5,
+                "created_at": datetime.fromtimestamp(2, timezone.utc),
+                "net_amount": 17, "gross_amount": 17, "transfer_amount": 0,
+                "is_transfer": 0, "is_creation": 1,
+                "reason_type": 1, "reason_id": 2, "source_site": 3,
+            },
+        ])
+        factory = _FakeFactory(connection)
+        store = RewardProjectionStore(factory, page_size=10)
+        with self.assertRaises(AmbiguousCommit):
+            store.process_page(
+                SOURCE_ADAPTERS[0], ProjectionState(SourceKind.CURRENCY_LEDGER),
+                high_water_usec=3_000_000, reconciliation=False,
+            )
+        self.assertEqual(connection.commits, 1)
+        self.assertEqual(store.connection_count, 0)
+
     def test_store_uses_one_connection_and_one_bulk_projection_write(self) -> None:
         connection = _FakeConnection([
             {
