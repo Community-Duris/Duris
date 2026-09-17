@@ -76,6 +76,9 @@ telemetry_capture_result telemetry_runtime_game_context(char_data *ch, descripto
     observed.push_back(ch->specials.fighting != nullptr);
     return {};
 }
+telemetry_capture_result telemetry_runtime_game_encounter_begin(char_data *, telemetry_encounter_mode) {
+    return {};
+}
 ''' + helper + '\nvoid accepted_start(P_char ch, P_char victim) {\n' + block + '\n}\n' + stop + r'''
 int main() {
     char_data player{}, target{};

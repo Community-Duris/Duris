@@ -33,6 +33,7 @@ HARNESS = r'''
 
 extern "C" MYSQL *sql_pool_acquire(void) { return nullptr; }
 extern "C" void sql_pool_release(MYSQL *) {}
+bool player_save_pipeline_save_admitted(int) { return true; }
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now)
 {
