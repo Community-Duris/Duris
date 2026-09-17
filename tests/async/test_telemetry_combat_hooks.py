@@ -72,6 +72,8 @@ void gmcp_mark_room_dirty(int) {}
 void gmcp_combat_end(P_char) {}
 void update_pos(P_char) {}
 std::vector<bool> observed;
+telemetry_capture_result telemetry_runtime_game_encounter_begin(
+    P_char, telemetry_encounter_mode) { return {}; }
 telemetry_capture_result telemetry_runtime_game_context(char_data *ch, descriptor_data *) {
     observed.push_back(ch->specials.fighting != nullptr);
     return {};
