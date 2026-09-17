@@ -396,7 +396,7 @@
       "apply": "immutable/0022_telemetry_progression.sql",
       "apply_checksum": "aee8d6811142df8c89a7b7f8d990f449e63af053755ffd682c87822c76a32fb6",
       "verify": "immutable/0022_telemetry_progression.sh",
-      "verify_checksum": "b20ecae9696e40e90f095bafccf13442a2239d587ab65ad0296c4a1045e0d822",
+      "verify_checksum": "9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4",
       "compatibility": "mysql8-mariadb10"
     }
   ]

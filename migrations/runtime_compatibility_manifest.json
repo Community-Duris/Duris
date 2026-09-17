@@ -13,8 +13,8 @@
     "id": "0022_telemetry_progression",
     "sequence": 22,
     "apply_checksum": "aee8d6811142df8c89a7b7f8d990f449e63af053755ffd682c87822c76a32fb6",
-    "verify_checksum": "b20ecae9696e40e90f095bafccf13442a2239d587ab65ad0296c4a1045e0d822",
-    "history_checksum": "d1e14020e29951300541376f64ee8d97dcfddbbbc4b048d6afc32092ca93353e"
+    "verify_checksum": "9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4",
+    "history_checksum": "aad54070765f4f15bbe29dba050d81c6320707bcd551bc1da2f8d7ff2d244676"
   },
   "connection": {
     "character_set": "utf8mb4",
