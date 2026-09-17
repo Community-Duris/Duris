@@ -39,6 +39,7 @@
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "combat/dam_mods.h"
+#include "combat/training_dummy.h"
 #include "classes/disguise.h"
 #include "classes/dreadlord.h"
 #include "world/epic.h"
@@ -4342,6 +4343,9 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
  */
 int attack_back(P_char ch, P_char victim, int physical)
 {
+	if (training_dummy_is(ch) || training_dummy_is(victim))
+		return DAM_NONEDEAD;
+
 	if (!IS_ALIVE(ch))
 	{
 		if (!IS_ALIVE(victim))
@@ -4566,10 +4570,11 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Aggro Handling (these should come after the above special conditions)
 	///////
 
-	// victim remembers attacker
-	remember(victim, ch);
+	// Training dummies are deliberately non-hostile and never remember attackers.
+	if (!training_dummy_is(victim))
+		remember(victim, ch);
 
-	if (IS_PC_PET(ch) && GET_MASTER(ch)->in_room == ch->in_room &&
+	if (!training_dummy_is(victim) && IS_PC_PET(ch) && GET_MASTER(ch)->in_room == ch->in_room &&
 	    CAN_SEE(victim, GET_MASTER(ch)))
 	{
 		remember(victim, GET_MASTER(ch));
@@ -6131,6 +6136,17 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		//       damProf.moreMod);
 
 		dam = BOUNDED(1, (int)dam, 32766);
+
+		if (training_dummy_is(victim))
+		{
+			const int recorded_damage = static_cast<int>(dam);
+			training_dummy_record_damage(victim, recorded_damage);
+			if (damAccumulator)
+				*damAccumulator += recorded_damage;
+			if (IS_PC(ch) && ch->desc)
+				send_to_char_f(ch, "The training dummy absorbs %d damage.\r\n", recorded_damage);
+			return DAM_NONEDEAD;
+		}
 
 		check_blood_alliance(victim, (int)dam);
 
