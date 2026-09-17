@@ -30,6 +30,7 @@
 #include "economy/collector_presence.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "core/mm.h"
 #include "core/profile.h"
 #include "ships/ships.h"
@@ -720,6 +721,15 @@ void add_follower(P_char ch, P_char leader)
 		return;
 	}
 
+	if (training_dummy_is(ch) || training_dummy_is(leader))
+	{
+		P_char player = training_dummy_is(leader) ? ch : leader;
+		if (player && IS_PC(player))
+			send_to_char("The training dummy cannot follow or be followed.\r\n",
+				     player);
+		return;
+	}
+
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	if (ctf_carrying_flag(ch) == CTF_PRIMARY)
 	{
@@ -1316,11 +1326,6 @@ bool cast_common_generic(P_char ch, int spl)
 		return FALSE;
 	}
 
-	if (CHAR_IN_SAFE_ROOM(ch) && IS_AGG_SPELL(spl))
-	{
-		send_to_char("You may not cast harmful magic here!\n", ch);
-		return FALSE;
-	}
 	/*
 	   change, all spells were either POSITION_STANDING or POSITION_FIGHTING so I
 
@@ -1387,6 +1392,21 @@ bool cast_common_generic(P_char ch, int spl)
 		}
 	}
 	return TRUE;
+}
+
+/* A spawn-room dummy is a single-target practice exception, never a way to
+ * cast area or ranged hostile magic from a safe room. Check again at release
+ * because misfires, guards and spellweaving can change the resolved target. */
+bool safe_room_spell_target_allowed(P_char ch, int spl, P_char target)
+{
+	if (!CHAR_IN_SAFE_ROOM(ch) || !IS_AGG_SPELL(spl))
+		return true;
+	if (target && training_dummy_is(target) && target->in_room == ch->in_room &&
+	    IS_SET(skills[spl].targets, TAR_CHAR_ROOM) &&
+	    !IS_SET(skills[spl].targets, TAR_AREA | TAR_IGNORE | TAR_OFFAREA | TAR_CHAR_RANGE))
+		return true;
+	send_to_char("You may not cast harmful magic here!\n", ch);
+	return false;
 }
 
 bool parse_spell_arguments(P_char ch, struct spell_target_data *data, char *argument)
@@ -1899,6 +1919,8 @@ bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_dat
 	argument += qend + 1; /* Point to the last '  */
 
 	if (cmd != CMD_SPELLWEAVE && !parse_spell_arguments(ch, target_data, argument))
+		return FALSE;
+	if (!safe_room_spell_target_allowed(ch, spl, target_data->t_char))
 		return FALSE;
 
 	return true;
@@ -2879,6 +2901,11 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 		appear(ch);
 		tar_char = guard_check(ch, tar_char);
 	}
+	if (!safe_room_spell_target_allowed(ch, arg->spell, tar_char))
+	{
+		StopCasting(ch);
+		return;
+	}
 
 	/*
 	   if (tar_char && ch->desc && tar_char->desc && !IS_TRUSTED(ch) &&
@@ -3015,6 +3042,8 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 			}
 		}
 	}
+	if (!safe_room_spell_target_allowed(ch, arg->spell, tar_char))
+		return;
 	telemetry_runtime_game_combat_cast_complete(ch);
 	((*skills[arg->spell].spell_pointer)((int)GET_LEVEL(ch), ch, args, SPELL_TYPE_SPELL,
 					     tar_char, tar_obj));

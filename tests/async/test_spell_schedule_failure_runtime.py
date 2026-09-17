@@ -63,6 +63,7 @@ static event_func submitted;
 static int submitted_delay;
 static bool room_link, world_link;
 void event_spellcast(P_char, P_char, P_obj, void *) {}
+void telemetry_runtime_game_combat_cast_abort(P_char) {}
 bool abort_item_action(P_char) { return false; }
 void event_abort_spell(P_char, P_char, P_obj, void *) {}
 void event_wait(P_char, P_char, P_obj, void *) {}

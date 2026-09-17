@@ -786,7 +786,7 @@ bool insert_receipt_item(MYSQL *connection, const player_death_restitution_plan 
 	unsigned long compensation_length = strlen(compensation);
 	uint32_t artifact_vnum = item.artifact_vnum;
 	uint32_t vnum = item.vnum;
-	bool metadata_null = item.metadata_payload.empty();
+	mysql_null_indicator metadata_null = item.metadata_payload.empty();
 	MYSQL_BIND parameters[21] = {};
 	bind_blob(&parameters[0], const_cast<uint8_t *>(plan.restitution_id.bytes.data()),
 		  &rid_length);

@@ -31,6 +31,7 @@
 #include "item/enhance.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
@@ -759,6 +760,7 @@ void boot_db(int mini_mode)
 
 	fprintf(stderr, "-- Continents\n");
 	assign_continents();
+	training_dummy_bootstrap();
 
 	//  logit(LOG_STATUS, "Setting up god object procedures.");
 	//  loadGodProcs();

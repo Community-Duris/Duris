@@ -41,6 +41,7 @@
 #include "core/mm.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
+#include "combat/training_dummy.h"
 
 extern P_desc descriptor_list;
 extern const struct race_names race_names_table[];
@@ -826,6 +827,11 @@ void do_group(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 	}
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy cannot join or lead a group.\r\n", ch);
+		return;
+	}
 	if (victim == ch)
 	{
 		if (!ch->group)
@@ -1030,8 +1036,8 @@ bool group_remove_member(P_char ch)
 	}
 
 	if (IS_PC(ch))
-		(void)telemetry_runtime_game_encounter_leave(ch,
-			telemetry_encounter_outcome::withdrawal);
+		(void)telemetry_runtime_game_encounter_leave(
+			ch, telemetry_encounter_outcome::withdrawal);
 
 	purge_linked_auras(ch);
 
@@ -1212,6 +1218,14 @@ bool group_add_member(P_char leader, P_char member)
 
 	if (!leader || !member || !IS_ALIVE(leader) || !IS_ALIVE(member))
 		return FALSE;
+
+	if (training_dummy_is(leader) || training_dummy_is(member))
+	{
+		P_char player = training_dummy_is(leader) ? member : leader;
+		if (player && IS_PC(player))
+			send_to_char("The training dummy cannot join or lead a group.\r\n", player);
+		return FALSE;
+	}
 
 	if (member->group)
 	{

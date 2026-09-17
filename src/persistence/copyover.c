@@ -11,6 +11,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "persistence/copyover.h"
+#include "combat/training_dummy.h"
 #include "world/generated_npc_state.h"
 #include "item/item_movement_transaction.h"
 #include "sql/sql_player.h"
@@ -86,6 +87,15 @@ const char *copyover_state_file()
 
 namespace
 {
+/* Copyover is also compiled by small persistence-only fixtures that do not
+ * link the gameplay training-dummy module.  The marker is the persistence
+ * boundary we need here, so keep this predicate local instead of introducing
+ * a gameplay-link dependency into the serializer. */
+bool copyover_training_dummy_is(P_char ch)
+{
+	return ch && IS_NPC(ch) && ch->only.npc && ch->only.npc->training_dummy;
+}
+
 struct copyover_worker_resume_guard
 {
 	bool armed = true;
@@ -689,11 +699,14 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 		}
 	}
 
-	// count living mobs (skip linked pets; player-owned pets are saved per descriptor)
+	// Count living mobs (skip linked pets; player-owned pets are saved per descriptor).
+	// Training dummies are bootstrapped from the current creation-room table;
+	// replaying their prototype would lose the dummy marker and make them
+	// ordinary attackable NPCs after copyover.
 	for (ch = character_list; ch; ch = ch->next)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
-		    !ch->only.npc->summoned_instance)
+		    !ch->only.npc->summoned_instance && !copyover_training_dummy_is(ch))
 		{
 			(*num_mobs)++;
 		}
@@ -931,11 +944,12 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		return false;
 	}
 
-	// write mobs (skip linked pets; player-owned pets are saved per descriptor)
+	// Write mobs (skip linked pets; player-owned pets are saved per descriptor).
+	// Training dummies are recreated by training_dummy_bootstrap() during boot.
 	for (ch = character_list; ch; ch = ch->next)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
-		    !ch->only.npc->summoned_instance)
+		    !ch->only.npc->summoned_instance && !copyover_training_dummy_is(ch))
 		{
 			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) ||
 			    !write_mob_inventory(fp, ch) || !write_generated_npc_state(fp, ch))
@@ -1668,7 +1682,7 @@ void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 	for (ch = character_list; ch; ch = ch->next)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
-		    !ch->only.npc->summoned_instance)
+		    !ch->only.npc->summoned_instance && !copyover_training_dummy_is(ch))
 		{
 			(*num_mobs)++;
 		}
@@ -1708,7 +1722,11 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 	P_obj obj;
 	size_t offset = 0;
 
-	if (max_len < sizeof(entry))
+	/* Keep this predicate self-contained: world-singletons extracts this
+	 * serializer into a persistence-only harness without the file-local
+	 * helper above. */
+	if (!mob || (IS_NPC(mob) && mob->only.npc && mob->only.npc->training_dummy) ||
+	    max_len < sizeof(entry))
 		return -1;
 
 	int mob_rnum = GET_RNUM(mob);

@@ -36,6 +36,7 @@
 #include "economy/collector_presence.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
+#include "combat/training_dummy.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -5988,6 +5989,13 @@ void do_give(P_char ch, char *argument, int cmd)
 			send_to_char("To who?\r\n", ch);
 			return;
 		}
+		if (training_dummy_is(vict))
+		{
+			send_to_char(
+				"The training dummy refuses coins and all other offerings.\r\n",
+				ch);
+			return;
+		}
 		if (collector_presence_is_npc(vict))
 		{
 			send_to_char("The collector accepts payment only through an antiquity "
@@ -6058,6 +6066,11 @@ void do_give(P_char ch, char *argument, int cmd)
 	if (!(vict = get_char_room_vis(ch, vict_name)))
 	{
 		send_to_char("No one by that name around here.\r\n", ch);
+		return;
+	}
+	if (training_dummy_is(vict))
+	{
+		send_to_char("The training dummy refuses every item.\r\n", ch);
 		return;
 	}
 	if (collector_presence_is_npc(vict))

@@ -40,6 +40,7 @@
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "combat/dam_mods.h"
+#include "combat/training_dummy.h"
 #include "classes/disguise.h"
 #include "classes/dreadlord.h"
 #include "world/epic.h"
@@ -2885,11 +2886,18 @@ void die(P_char ch, P_char killer)
 		logit(LOG_EXIT, "die called in fight.c with no ch");
 		return;
 	}
+	if (training_dummy_is(ch))
+	{
+		GET_HIT(ch) = GET_MAX_HIT(ch);
+		SET_POS(ch, POS_STANDING + STAT_NORMAL);
+		return;
+	}
 
 	if (!killer)
 		return;
 	if (IS_PC(ch))
-		(void)telemetry_runtime_game_encounter_leave(ch, telemetry_encounter_outcome::death);
+		(void)telemetry_runtime_game_encounter_leave(ch,
+							     telemetry_encounter_outcome::death);
 
 	// Upon death, we want to kill followers.
 	if (IS_PC(ch) && ch->followers)
@@ -4358,6 +4366,13 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
  */
 int attack_back(P_char ch, P_char victim, int physical)
 {
+	if (training_dummy_is(ch) || training_dummy_is(victim))
+	{
+		if (victim && IS_NPC(ch) && !IS_PC_PET(ch) && training_dummy_is(victim))
+			training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
+
 	if (!IS_ALIVE(ch))
 	{
 		if (!IS_ALIVE(victim))
@@ -4526,8 +4541,15 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Just making sure.
 	if (!ch || !victim)
 		return DAM_NONEDEAD;
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	if (messages == NULL)
 	{
@@ -4582,10 +4604,11 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Aggro Handling (these should come after the above special conditions)
 	///////
 
-	// victim remembers attacker
-	remember(victim, ch);
+	// Training dummies are deliberately non-hostile and never remember attackers.
+	if (!training_dummy_is(victim))
+		remember(victim, ch);
 
-	if (IS_PC_PET(ch) && GET_MASTER(ch)->in_room == ch->in_room &&
+	if (!training_dummy_is(victim) && IS_PC_PET(ch) && GET_MASTER(ch)->in_room == ch->in_room &&
 	    CAN_SEE(victim, GET_MASTER(ch)))
 	{
 		remember(victim, GET_MASTER(ch));
@@ -4633,7 +4656,7 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// end of globes check
 
 	/* check for deflectable spells - basically all but shields damage and already deflected spells */
-	if ((ch != victim) && !IS_SET(flags, SPLDAM_NODEFLECT))
+	if ((ch != victim) && !training_dummy_is(victim) && !IS_SET(flags, SPLDAM_NODEFLECT))
 	{
 		/* deflection */
 		if (IS_AFFECTED4(victim, AFF4_DEFLECT) && IS_ALIVE(ch))
@@ -4991,6 +5014,9 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 int check_shields(P_char ch, P_char victim, int dam, int flags)
 {
+	if (training_dummy_is(victim))
+		return DAM_NONEDEAD;
+
 	int result = DAM_NONEDEAD;
 	double soulshielddam = get_property("damage.shield.soulshield", 0.400);
 	double negshielddam = get_property("damage.shield.negativeshield", 0.450);
@@ -5082,8 +5108,15 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	// Reject all other faiths MWD25
 	if (IS_AFFECTED5(ch, AFF5_JUDICIUM_FIDEI))
@@ -6052,11 +6085,18 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		logit(LOG_EXIT, "raw_damage in fight.c called without ch");
 		return DAM_NONEDEAD;
 	}
+	if (training_dummy_is(ch))
+		return DAM_NONEDEAD;
 
 	if (!victim)
 		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
+	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return DAM_NONEDEAD;
+	}
 
 	if (ch && victim) // Just making sure.
 	{
@@ -6082,7 +6122,7 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 
 		if (victim != ch)
 		{
-			if (CHAR_IN_SAFE_ROOM(ch))
+			if (CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim))
 				return DAM_NONEDEAD;
 
 			if (should_not_kill(ch, victim))
@@ -6147,6 +6187,19 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		//       damProf.moreMod);
 
 		dam = BOUNDED(1, (int)dam, 32766);
+
+		if (training_dummy_is(victim))
+		{
+			const int recorded_damage = static_cast<int>(dam);
+			training_dummy_note_attacker(victim, ch);
+			training_dummy_record_damage(victim, recorded_damage);
+			if (damAccumulator)
+				*damAccumulator += recorded_damage;
+			if (IS_PC(ch) && ch->desc)
+				send_to_char_f(ch, "The training dummy absorbs %d damage.\r\n",
+					       recorded_damage);
+			return DAM_NONEDEAD;
+		}
 
 		check_blood_alliance(victim, (int)dam);
 
@@ -8209,6 +8262,13 @@ void set_fighting(P_char ch, P_char vict)
 	if ((ch == victim) || !SanityCheck(ch, "set_fighting - ch") ||
 	    !SanityCheck(victim, "set_fighting - victim"))
 	{
+		return;
+	}
+	if (training_dummy_is(ch))
+		return;
+	if (!training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
 		return;
 	}
 

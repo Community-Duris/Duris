@@ -33,6 +33,7 @@
 #include "world/hardcore_config.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "world/map.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
@@ -1662,6 +1663,9 @@ void spell_mirror_image(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 // Utility function...  This is not a spell.  -- Dalreth
 P_char make_mirror(P_char ch)
 {
+	if (training_dummy_is(ch))
+		return NULL;
+
 	char Gbuf1[512];
 	P_char image = NULL;
 
@@ -8463,6 +8467,9 @@ int Summonable(P_char ch)
 	if (!ch)
 		return FALSE;
 
+	if (training_dummy_is(ch))
+		return FALSE;
+
 	if (IS_NPC(ch) && (IS_SET(ch->specials.act, ACT_NO_SUMMON) || IS_SHOPKEEPER(ch)))
 		return FALSE;
 
@@ -8634,6 +8641,12 @@ void charm_generic(int level, P_char ch, P_char victim)
 
 	if (GET_STAT(ch) == STAT_DEAD)
 		return;
+
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy has no mind to charm.\r\n", ch);
+		return;
+	}
 
 	if (resists_spell(ch, victim))
 		return;
@@ -12869,6 +12882,11 @@ void spell_command_undead(int level, P_char ch, char * /*arg*/, int /*type*/, P_
 {
 	if (!victim)
 	{
+		return;
+	}
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy cannot be commanded.\r\n", ch);
 		return;
 	}
 	if (/*(GET_CLASS(ch) != CLASS_NECROMANCER) || */ resists_spell(ch, victim))

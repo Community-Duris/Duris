@@ -34,6 +34,7 @@
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
 #include "combat/damage.h"
+#include "combat/training_dummy.h"
 #include "net/gmcp.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_movement_transaction.h"
@@ -1098,6 +1099,13 @@ void char_from_room(P_char ch)
 		return;
 	}
 
+	if (!training_dummy_can_leave_room(ch))
+	{
+		logit(LOG_DEBUG, "char_from_room: refusing to move anchored training dummy %s",
+		      J_NAME(ch));
+		return;
+	}
+
 	if (ch->in_room == NOWHERE)
 	{
 		return;
@@ -1199,6 +1207,13 @@ bool char_to_room(P_char ch, int room, int dir)
 	bool was_in_arena;
 	struct zone_data *zone = 0;
 	P_room rm = 0;
+
+	if (!training_dummy_can_enter_room(ch))
+	{
+		logit(LOG_DEBUG, "char_to_room: refusing to move anchored training dummy %s",
+		      J_NAME(ch));
+		return FALSE;
+	}
 
 	if (!IS_ALIVE(ch))
 	{
@@ -1602,7 +1617,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	/*
 	 * justice hook
 	 */
-	if (IS_INVADER(ch))
+	if (!training_dummy_is(ch) && IS_INVADER(ch))
 	{
 		justice_action_invader(ch);
 		if (!IS_ALIVE(ch))
@@ -1615,7 +1630,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	if (IS_ROOM(room, ROOM_SAFE))
 	{
 		// Do not purge pets...
-		if (IS_NPC(ch) && (GET_MASTER(ch) == NULL))
+		if (IS_NPC(ch) && (GET_MASTER(ch) == NULL) && !training_dummy_is(ch))
 		{
 			// Attempt to have them leave the room first.
 			if (leave_safe_room(ch))
@@ -1826,6 +1841,15 @@ void obj_to_char(P_obj object, P_char ch)
 		{
 			logit(LOG_OBJ, "obj_to_char: no obj: player (%s).", GET_NAME(ch));
 		}
+		return;
+	}
+
+	if (training_dummy_is(ch))
+	{
+		logit(LOG_DEBUG, "obj_to_char: training dummy %s refused object vnum %d",
+		      J_NAME(ch), OBJ_VNUM(object));
+		if (OBJ_NOWHERE(object) && ch->in_room != NOWHERE)
+			obj_to_room(object, ch->in_room);
 		return;
 	}
 
@@ -2146,6 +2170,14 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 		      IS_NPC(ch)    ? GET_VNUM(ch) :
 				      GET_PID(ch),
 		      (!obj) ? "NULL" : OBJ_SHORT(obj), (!obj) ? -1 : OBJ_VNUM(obj), pos);
+		return;
+	}
+	if (training_dummy_is(ch))
+	{
+		logit(LOG_DEBUG, "equip_char: training dummy %s refused object vnum %d", J_NAME(ch),
+		      OBJ_VNUM(obj));
+		if (OBJ_NOWHERE(obj) && ch->in_room != NOWHERE)
+			obj_to_room(obj, ch->in_room);
 		return;
 	}
 	if (!OBJ_NOWHERE(obj))
@@ -2947,6 +2979,16 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 {
 	P_obj o;
 	char buf[MAX_STRING_LENGTH];
+	P_char dummy_owner = training_dummy_item_owner(obj_to);
+
+	if (dummy_owner)
+	{
+		logit(LOG_DEBUG, "obj_to_obj: training dummy %s refused nested object vnum %d",
+		      J_NAME(dummy_owner), obj ? OBJ_VNUM(obj) : -1);
+		if (obj && OBJ_NOWHERE(obj) && dummy_owner->in_room != NOWHERE)
+			obj_to_room(obj, dummy_owner->in_room);
+		return;
+	}
 
 	if (!obj_can_nest(obj, obj_to))
 	{
@@ -3039,6 +3081,17 @@ static void append_obj_to_list(P_obj *head, P_obj obj)
 void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 {
 	char buf[MAX_STRING_LENGTH];
+	P_char dummy_owner = training_dummy_item_owner(obj_to);
+
+	if (dummy_owner)
+	{
+		logit(LOG_DEBUG,
+		      "obj_to_obj_at_end: training dummy %s refused nested object vnum %d",
+		      J_NAME(dummy_owner), obj ? OBJ_VNUM(obj) : -1);
+		if (obj && OBJ_NOWHERE(obj) && dummy_owner->in_room != NOWHERE)
+			obj_to_room(obj, dummy_owner->in_room);
+		return;
+	}
 
 	if (!obj_can_nest(obj, obj_to))
 	{
@@ -3085,6 +3138,15 @@ void obj_to_char_at_end(P_obj object, P_char ch)
 			logit(LOG_OBJ, "obj_to_char_at_end: no obj: mob (%d).", GET_VNUM(ch));
 		else
 			logit(LOG_OBJ, "obj_to_char_at_end: no obj: player (%s).", GET_NAME(ch));
+		return;
+	}
+
+	if (training_dummy_is(ch))
+	{
+		logit(LOG_DEBUG, "obj_to_char_at_end: training dummy %s refused object vnum %d",
+		      J_NAME(ch), OBJ_VNUM(object));
+		if (OBJ_NOWHERE(object) && ch->in_room != NOWHERE)
+			obj_to_room(object, ch->in_room);
 		return;
 	}
 
@@ -5226,7 +5288,9 @@ void extract_char(P_char ch)
 		}
 	}
 
+	training_dummy_begin_removal(ch);
 	char_from_room(ch);
+	training_dummy_end_removal(ch);
 
 	// Pull the char from the list
 	// If at the head..

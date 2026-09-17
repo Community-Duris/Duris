@@ -367,24 +367,21 @@ telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *c
 							     struct descriptor_data *descriptor,
 							     telemetry_session_end_reason reason);
 telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *character,
-								 struct descriptor_data *descriptor,
-								 telemetry_runtime_evidence_kind kind);
+							 struct descriptor_data *descriptor,
+							 telemetry_runtime_evidence_kind kind);
 /* Encounter adapters observe bounded run/roster facts. They are best-effort
  * telemetry and never gate combat, movement, grouping, rewards, or teardown. */
-telemetry_capture_result
-telemetry_runtime_game_encounter_begin(struct char_data *character,
-							 telemetry_encounter_mode mode);
-telemetry_capture_result
-telemetry_runtime_game_encounter_group_sync(struct char_data *character);
-telemetry_capture_result
-telemetry_runtime_game_encounter_observe(struct char_data *character);
+telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data *character,
+								telemetry_encounter_mode mode);
+telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character);
+telemetry_capture_result telemetry_runtime_game_encounter_observe(struct char_data *character);
 telemetry_capture_result
 telemetry_runtime_game_encounter_leave(struct char_data *character,
-							telemetry_encounter_outcome outcome);
+				       telemetry_encounter_outcome outcome);
 telemetry_capture_result
 telemetry_runtime_game_encounter_complete(struct char_data *character,
-							 telemetry_encounter_outcome outcome,
-							 std::uint16_t expected_credit_count);
+					  telemetry_encounter_outcome outcome,
+					  std::uint16_t expected_credit_count);
 telemetry_capture_result telemetry_runtime_encounter_close_all(telemetry_encounter_outcome outcome);
 /* Combat analytics are best-effort, value-only observations.  They never
  * gate damage, healing, casting, combat state, or gameplay teardown. */

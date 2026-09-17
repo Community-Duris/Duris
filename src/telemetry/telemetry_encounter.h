@@ -35,7 +35,7 @@ enum class telemetry_encounter_update_outcome : std::uint8_t
 using telemetry_encounter_event = telemetry_encounter_payload;
 
 using telemetry_encounter_event_sink = bool (*)(void *context,
-							const telemetry_encounter_event &event) noexcept;
+						const telemetry_encounter_event &event) noexcept;
 
 struct telemetry_encounter_participant_state
 {
@@ -94,43 +94,56 @@ struct telemetry_encounter_update
 
 void telemetry_encounter_state_init(telemetry_encounter_state *state) noexcept;
 
-telemetry_encounter_update telemetry_encounter_begin(
-	telemetry_encounter_state *state, telemetry_encounter_id encounter,
-		telemetry_encounter_source source, telemetry_encounter_mode mode,
-		telemetry_encounter_participant participant, telemetry_monotonic_usec at_monotonic_usec,
-		telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept;
+telemetry_encounter_update
+telemetry_encounter_begin(telemetry_encounter_state *state, telemetry_encounter_id encounter,
+			  telemetry_encounter_source source, telemetry_encounter_mode mode,
+			  telemetry_encounter_participant participant,
+			  telemetry_monotonic_usec at_monotonic_usec,
+			  telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink,
+			  void *sink_context) noexcept;
 
-telemetry_encounter_update telemetry_encounter_join_group(
-	telemetry_encounter_state *state, telemetry_encounter_source source,
-		telemetry_encounter_participant participant, telemetry_monotonic_usec at_monotonic_usec,
-		telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept;
+telemetry_encounter_update
+telemetry_encounter_join_group(telemetry_encounter_state *state, telemetry_encounter_source source,
+			       telemetry_encounter_participant participant,
+			       telemetry_monotonic_usec at_monotonic_usec,
+			       telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink,
+			       void *sink_context) noexcept;
 
-telemetry_encounter_update telemetry_encounter_observe(
-	telemetry_encounter_state *state, telemetry_encounter_source source,
-		telemetry_encounter_participant participant, telemetry_monotonic_usec at_monotonic_usec,
-		telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept;
+telemetry_encounter_update telemetry_encounter_observe(telemetry_encounter_state *state,
+						       telemetry_encounter_source source,
+						       telemetry_encounter_participant participant,
+						       telemetry_monotonic_usec at_monotonic_usec,
+						       telemetry_utc_usec at_utc_usec,
+						       telemetry_encounter_event_sink sink,
+						       void *sink_context) noexcept;
 
-telemetry_encounter_update telemetry_encounter_leave(
-	telemetry_encounter_state *state, telemetry_encounter_participant participant,
-		telemetry_encounter_outcome outcome, telemetry_monotonic_usec at_monotonic_usec,
-		telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink, void *sink_context) noexcept;
+telemetry_encounter_update telemetry_encounter_leave(telemetry_encounter_state *state,
+						     telemetry_encounter_participant participant,
+						     telemetry_encounter_outcome outcome,
+						     telemetry_monotonic_usec at_monotonic_usec,
+						     telemetry_utc_usec at_utc_usec,
+						     telemetry_encounter_event_sink sink,
+						     void *sink_context) noexcept;
 
-telemetry_encounter_update telemetry_encounter_close(
-	telemetry_encounter_state *state, telemetry_encounter_id encounter,
-		telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
-		telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
-		telemetry_encounter_event_sink sink, void *sink_context) noexcept;
+telemetry_encounter_update
+telemetry_encounter_close(telemetry_encounter_state *state, telemetry_encounter_id encounter,
+			  telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
+			  telemetry_monotonic_usec at_monotonic_usec,
+			  telemetry_utc_usec at_utc_usec, telemetry_encounter_event_sink sink,
+			  void *sink_context) noexcept;
 
 telemetry_encounter_update telemetry_encounter_close_for_participant(
 	telemetry_encounter_state *state, telemetry_encounter_participant participant,
-		telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
-		telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
-		telemetry_encounter_event_sink sink, void *sink_context) noexcept;
+	telemetry_encounter_outcome outcome, std::uint16_t expected_credit_count,
+	telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
+	telemetry_encounter_event_sink sink, void *sink_context) noexcept;
 
-telemetry_encounter_update telemetry_encounter_close_all(
-	telemetry_encounter_state *state, telemetry_encounter_outcome outcome,
-		telemetry_monotonic_usec at_monotonic_usec, telemetry_utc_usec at_utc_usec,
-		telemetry_encounter_event_sink sink, void *sink_context) noexcept;
+telemetry_encounter_update telemetry_encounter_close_all(telemetry_encounter_state *state,
+							 telemetry_encounter_outcome outcome,
+							 telemetry_monotonic_usec at_monotonic_usec,
+							 telemetry_utc_usec at_utc_usec,
+							 telemetry_encounter_event_sink sink,
+							 void *sink_context) noexcept;
 
 static_assert(std::is_trivially_copyable_v<telemetry_encounter_event>);
 static_assert(std::is_standard_layout_v<telemetry_encounter_event>);

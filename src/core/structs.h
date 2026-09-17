@@ -1366,6 +1366,12 @@ struct npc_only_data
 	P_char orig_char; /* used instead of memory ptr to keep
 	                      track of who is controlling the mob */
 	int lowest_hit; /* lowest hitpoints this mob ever reached */
+	/* Runtime-only state for non-hostile PvP balance targets. */
+	bool training_dummy;
+	bool training_dummy_fixed;
+	int training_dummy_gear;
+	uint64_t training_dummy_damage;
+	uint64_t training_dummy_last_attacker_runtime_id;
 	//  P_mprog_list mpact;
 	//  int mpactnum;
 };
