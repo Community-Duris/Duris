@@ -12,12 +12,14 @@
 #include <mysql.h>
 #include <openssl/sha.h>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace
 {
 constexpr uint8_t ITEM_OWNER_PLAYER = 1;
 thread_local unsigned int last_statement_error = 0;
+using mysql_null_indicator = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
 
 struct owner_row
 {
@@ -117,7 +119,7 @@ void bind_blob(MYSQL_BIND *binding, void *value, unsigned long *length)
 }
 
 void bind_string(MYSQL_BIND *binding, void *value, unsigned long *length,
-		 my_bool *is_null = nullptr)
+		 mysql_null_indicator *is_null = nullptr)
 {
 	*binding = {};
 	binding->buffer_type = MYSQL_TYPE_STRING;
@@ -416,7 +418,7 @@ bool lock_artifact_domain(MYSQL *connection, const player_death_restitution_item
 	int32_t location = 0, bind_owner = 0;
 	int64_t timer_epoch = 0, bind_timer_epoch = 0;
 	uint64_t item_uid = 0, item_revision = 0, revision = 0;
-	my_bool item_uid_null = 0;
+	mysql_null_indicator item_uid_null = 0;
 	MYSQL_BIND results[10] = {};
 	bind_int(&results[0], MYSQL_TYPE_TINY, &owned, true);
 	bind_int(&results[1], MYSQL_TYPE_TINY, &loc_type, true);
@@ -807,11 +809,11 @@ bool insert_receipt_item(MYSQL *connection, const player_death_restitution_plan 
 	bind_blob(&parameters[12],
 		  metadata_null ? nullptr : const_cast<uint8_t *>(item.metadata_digest.data()),
 		  &metadata_digest_length);
-	parameters[12].is_null = reinterpret_cast<my_bool *>(&metadata_null);
+	parameters[12].is_null = &metadata_null;
 	bind_blob(&parameters[13],
 		  metadata_null ? nullptr : const_cast<uint8_t *>(item.metadata_payload.data()),
 		  &metadata_length);
-	parameters[13].is_null = reinterpret_cast<my_bool *>(&metadata_null);
+	parameters[13].is_null = &metadata_null;
 	bind_string(&parameters[14], const_cast<char *>(item.note.data()), &note_length);
 	bind_int(&parameters[15], MYSQL_TYPE_LONGLONG,
 		 const_cast<uint64_t *>(&item.artifact_loss_epoch), true);
@@ -857,7 +859,7 @@ bool insert_player_item(MYSQL *connection, uint32_t recipient_pid,
 	bind_int(&parameters[0], MYSQL_TYPE_LONG, &recipient_pid, true);
 	bind_int(&parameters[1], MYSQL_TYPE_LONG, &vnum, false);
 	bind_int(&parameters[2], MYSQL_TYPE_SHORT, &equip_slot, false);
-	my_bool container_null = parent_id == 0;
+	mysql_null_indicator container_null = parent_id == 0;
 	bind_int(&parameters[3], MYSQL_TYPE_LONG, &container, true);
 	parameters[3].is_null = &container_null;
 	bind_int(&parameters[4], MYSQL_TYPE_SHORT, &quantity, true);
@@ -870,7 +872,7 @@ bool insert_player_item(MYSQL *connection, uint32_t recipient_pid,
 	for (size_t i = 0; i < state.values.size(); ++i)
 		bind_int(&parameters[11 + i], MYSQL_TYPE_LONG, &state.values[i], false);
 	std::array<unsigned long, 4> lengths = {};
-	std::array<my_bool, 4> nulls = {};
+	std::array<mysql_null_indicator, 4> nulls = {};
 	for (size_t i = 0; i < state.strings.size(); ++i)
 	{
 		lengths[i] = state.strings[i].size();
@@ -881,7 +883,7 @@ bool insert_player_item(MYSQL *connection, uint32_t recipient_pid,
 				    const_cast<uint8_t *>(state.strings[i].data()),
 			    &lengths[i], &nulls[i]);
 	}
-	std::array<my_bool, 5> bit_nulls = {};
+	std::array<mysql_null_indicator, 5> bit_nulls = {};
 	for (size_t i = 0; i < state.bitvectors.size(); ++i)
 	{
 		bit_nulls[i] = !state.bitvector_present[i];
@@ -1084,7 +1086,7 @@ bool update_owner(MYSQL *connection, const player_death_restitution_plan &plan,
 	MYSQL_BIND parameters[11] = {};
 	bind_int(&parameters[0], MYSQL_TYPE_LONGLONG,
 		 const_cast<uint64_t *>(&item.delivered_root_item_uid), true);
-	my_bool parent_null = item.delivered_parent_item_uid == 0;
+	mysql_null_indicator parent_null = item.delivered_parent_item_uid == 0;
 	bind_int(&parameters[1], MYSQL_TYPE_LONGLONG,
 		 const_cast<uint64_t *>(&item.delivered_parent_item_uid), true);
 	parameters[1].is_null = &parent_null;
@@ -1339,7 +1341,7 @@ bool insert_ownership_ledger(MYSQL *connection, const critical_command &command,
 	bind_int(&parameters[2], MYSQL_TYPE_LONGLONG, const_cast<uint64_t *>(&item.item_uid), true);
 	bind_int(&parameters[3], MYSQL_TYPE_LONGLONG,
 		 const_cast<uint64_t *>(&item.delivered_root_item_uid), true);
-	my_bool parent_null = item.delivered_parent_item_uid == 0;
+	mysql_null_indicator parent_null = item.delivered_parent_item_uid == 0;
 	bind_int(&parameters[4], MYSQL_TYPE_LONGLONG,
 		 const_cast<uint64_t *>(&item.delivered_parent_item_uid), true);
 	parameters[4].is_null = &parent_null;
