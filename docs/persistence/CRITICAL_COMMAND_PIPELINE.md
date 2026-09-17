@@ -31,15 +31,25 @@ replay/sync reconciliation either proves the record durable or produces a termin
 failure. The operation ID, sorted-key fences, exact acknowledgement, and original
 command bytes are retained throughout.
 
-The relevant states are explicit:
+The state and transition table is deliberately split between the coordinator's
+durable-command lifecycle and a domain's live-publication lifecycle. The
+`critical_completion_delivery` boundary owns bounded completion retention and
+queue operations; the coordinator still owns retry, fencing, and terminal
+transitions. There is no second generic lifecycle framework hidden behind the
+domain adapters.
 
-| State | Owner and next transition |
-| --- | --- |
-| Awaiting journal durability | Admission worker appends and syncs; then `Executing`, `Uncertain`, or `Admission failed` |
-| Durable admission | Execution worker applies the command; then `Final notification retained` or retry/blocked |
-| Uncertain admission | Admission worker replays/syncs and retries the original ID; then durable or terminal failure |
-| Admission failed | Coordinator retains a terminal failure until the simulation thread delivers it |
-| Final notification retained | Simulation-thread pulse delivers the exact completion, then releases the fence |
+| State | Owner | Durable evidence and allowed transition |
+| --- | --- | --- |
+| Admitted / awaiting durability | Coordinator admission lane | The operation is reserved in bounded memory and its original bytes are queued; `awaiting_durability` is not success. A synced journal append leads to `Durable admission`; definitive failure leads to `Admission failed`; append uncertainty leads to `Uncertain admission`. |
+| Durable admission | Coordinator admission worker | The journal frame was appended and `fsync` completed for this operation ID. The execution lane may now enter `Executing`; no gameplay or live-publication success is implied. |
+| Executing | Coordinator execution worker plus typed domain adapter | The command is fenced and runs only after all affected keys are available. A domain transaction/flat-file authority and its inbox/result/checkpoint are the domain's durable evidence; the coordinator receives an exact revisioned completion. |
+| Retry pending | Coordinator retry transition | Retryable failure requeues the same immutable operation ID and journal record after releasing only the execution slot. The key fence remains, the attempt increases, and the bounded retry count is observable; exhaustion becomes `Blocked uncertainty` with a final notification. |
+| Uncertain admission | Coordinator recovery lane | The original command and fence remain retained while replay and journal sync determine whether the append exists. An exact replay permits `Durable admission`; a definitive failure becomes `Admission failed`; uncertainty never returns a false success. |
+| Final notification retained | `critical_completion_delivery` plus coordinator pulse | The exact operation ID, attempt, outcome, and durable revision remain queued (or retained in the operation state for an admission failure) until the simulation-thread consumer supplies capacity. Consumer backpressure cannot cause a final result to be discarded; publication then releases or preserves the appropriate fence. |
+| Admission failed | Coordinator admission-failure state | The command never executes. Its terminal error is retained and delivered once; only delivery retires the operation and removes its fences. |
+| Currency publication ready | Game-thread currency adapter | The adapter stages the coordinator receipt under the same operation ID, then publishes the committed wallet/bank revision. Database completion may therefore precede live publication without a replacement operation. |
+| Currency waiting / retrying / blocked | Game-thread currency adapter | An offline player waits, a transient callback retries within its bound, and an unresolved receipt remains blocked with its original continuation and ID. These are not coordinator retries and never become an automatic rejection or refund. |
+| Snapshot pending and outbox pending | Snapshot and outbox subsystems | Snapshot capture/replay and outbox delivery have their own owners, records, and recovery rules. They do not coalesce critical commands, acknowledge journal admission, or substitute for live currency publication. |
 
 Conflicting commands are admitted in acceptance order for every affected key. A
 command may execute only when it is first for all its keys, which avoids deadlock while
