@@ -45,7 +45,7 @@ for command in (
 ):
     assert command in DEPENDS
 
-assert "get_playing_cmd_from_q(t_ch, &point->input, comm)" in COMM
+assert "get_playing_cmd_from_q(character, &descriptor->input, input)" in COMM
 assert "int get_item_movement_cmd_from_q(struct txt_q *, char *);" in PROTOTYPES
 
 SEARCH = extract(INTERP_PATH, "int old_search_block(const char *argument")
