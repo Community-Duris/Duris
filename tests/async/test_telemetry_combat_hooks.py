@@ -29,6 +29,7 @@ def main():
     helper = function(source, 'static void telemetry_combat_context_changed(')
     start = function(source, 'void set_fighting(P_char ch, P_char vict)')
     stop = function(source, 'void stop_fighting(P_char ch)')
+    sparser = (ROOT / 'src/net/sparser.c').read_text()
     assert start.count('telemetry_combat_context_changed(ch)') == 1
     assert start.index('can_hit_target(ch, victim)') < start.index('GET_OPPONENT(ch) = victim;')
     assert start.index('IS_IMMOBILE(ch)') < start.index('GET_OPPONENT(ch) = victim;')
@@ -36,6 +37,11 @@ def main():
     assert stop.count('telemetry_combat_context_changed(ch)') == 1
     assert stop.index('GET_OPPONENT(ch) = NULL;') < stop.index('telemetry_combat_context_changed(ch)')
     assert 'game_evidence' not in helper  # automatic combat is not human activity
+    will = function(sparser, 'void do_will(P_char ch, char *argument, int /*cmd*/)')
+    assert will.index('SET_BIT(ch->specials.affected_by2, AFF2_CASTING)') < \
+        will.index('telemetry_runtime_game_combat_cast_attempt(ch, tmp_spl.spell)')
+    assert will.index('telemetry_runtime_game_combat_cast_attempt(ch, tmp_spl.spell)') < \
+        will.index('schedule_spellcast(ch, common_target_data.t_char')
     block = start[start.index('GET_OPPONENT(ch) = victim;'):start.index('if (ch->in_room >= 0)')]
     harness = r'''
 #include "telemetry/telemetry_runtime.h"
@@ -76,6 +82,7 @@ telemetry_capture_result telemetry_runtime_game_context(char_data *ch, descripto
     observed.push_back(ch->specials.fighting != nullptr);
     return {};
 }
+void telemetry_runtime_game_combat_context(char_data *) noexcept {}
 telemetry_capture_result telemetry_runtime_game_encounter_begin(char_data *, telemetry_encounter_mode) {
     return {};
 }

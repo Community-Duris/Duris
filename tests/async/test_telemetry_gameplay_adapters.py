@@ -27,6 +27,7 @@ def main() -> None:
                 for name in (
                     "telemetry_activity.c",
                     "telemetry_config.c",
+                    "telemetry_combat_summary.c",
                     "telemetry_encounter.c",
                     "telemetry_queue.c",
                     "telemetry_progression.c",

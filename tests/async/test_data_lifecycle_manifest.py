@@ -32,7 +32,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0017_telemetry_rollup_support.sql",
     ROOT / "migrations" / "immutable" / "0018_collector_catalog.sql",
     ROOT / "migrations" / "immutable" / "0019_corpse_lifecycle_authority.sql",
-    ROOT / "migrations" / "immutable" / "0025_zone_story_quest_state.sql",
+    ROOT / "migrations" / "immutable" / "0026_zone_story_quest_state.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)

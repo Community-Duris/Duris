@@ -9,8 +9,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MIGRATION = ROOT / "migrations/immutable/0025_zone_story_quest_state.sql"
-VERIFIER = ROOT / "migrations/immutable/0025_zone_story_quest_state.sh"
+MIGRATION = ROOT / "migrations/immutable/0026_zone_story_quest_state.sql"
+VERIFIER = ROOT / "migrations/immutable/0026_zone_story_quest_state.sh"
 
 
 def main() -> None:
@@ -42,8 +42,8 @@ def main() -> None:
 
     manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
     step = manifest["migrations"][-1]
-    assert step["id"] == "0025_zone_story_quest_state"
-    assert step["sequence"] == 25
+    assert step["id"] == "0026_zone_story_quest_state"
+    assert step["sequence"] == 26
     assert step["apply_checksum"] == hashlib.sha256(MIGRATION.read_bytes()).hexdigest()
     assert step["verify_checksum"] == hashlib.sha256(VERIFIER.read_bytes()).hexdigest()
 

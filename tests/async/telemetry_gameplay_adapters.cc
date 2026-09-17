@@ -20,6 +20,11 @@ struct zone_data *zone_table = nullptr;
 int top_of_zone_table = -1;
 int top_of_world = -1;
 
+P_char get_linked_char(P_char, ush_int)
+{
+	return nullptr;
+}
+
 namespace
 {
 struct fake_repository

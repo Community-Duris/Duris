@@ -229,6 +229,50 @@ void encounter_fields(fields &values, const telemetry_encounter_payload &encount
 	FIELD(values, encounter, quality_flags);
 }
 
+void combat_summary_fields(fields &values, const telemetry_combat_summary_payload &summary)
+{
+	number(values, "combat_encounter_boot_id", summary.encounter.producer.boot_id);
+	number(values, "combat_encounter_process_id", summary.encounter.producer.process_id);
+	number(values, "combat_encounter_seq", summary.encounter.sequence);
+	number(values, "combat_mode", summary.mode);
+	number(values, "combat_outcome", summary.outcome);
+	number(values, "combat_revision", summary.revision);
+	number(values, "combat_environment_id", summary.source.environment_id);
+	number(values, "combat_season_id", summary.source.season_id);
+	number(values, "combat_config_id", summary.source.config_id);
+	number(values, "combat_classifier_version", summary.source.classifier_version);
+	number(values, "combat_policy_version", summary.source.policy_version);
+	number(values, "combat_zone_vnum", summary.source.zone_vnum);
+	number(values, "combat_group_key", summary.source.group_key);
+	number(values, "combat_actor_id", summary.actor_id);
+	number(values, "combat_actor_pid", summary.actor_pid);
+	number(values, "combat_owner_subject_id", summary.owner_subject_id);
+	number(values, "combat_actor_kind", summary.actor_kind);
+	number(values, "combat_unique_player_count", summary.unique_player_count);
+	number(values, "combat_participant_count", summary.participant_count);
+	number(values, "combat_dropped_participant_count", summary.dropped_participant_count);
+	number(values, "combat_power_band", summary.power_band);
+	number(values, "combat_opponent_power_band", summary.opponent_power_band);
+	number(values, "combat_opponent_count", summary.opponent_count);
+	number(values, "combat_modifier_flags", summary.modifier_flags);
+	FIELD(values, summary, start_monotonic_usec);
+	FIELD(values, summary, end_monotonic_usec);
+	FIELD(values, summary, start_utc_usec);
+	FIELD(values, summary, end_utc_usec);
+	FIELD(values, summary, damage_dealt);
+	FIELD(values, summary, damage_taken);
+	FIELD(values, summary, healing_attempted);
+	FIELD(values, summary, effective_healing);
+	FIELD(values, summary, overhealing);
+	FIELD(values, summary, control_applications);
+	FIELD(values, summary, casting_attempts);
+	FIELD(values, summary, casting_completions);
+	FIELD(values, summary, casting_aborts);
+	FIELD(values, summary, casting_elapsed_usec);
+	FIELD(values, summary, tanking_usec);
+	FIELD(values, summary, quality_flags);
+}
+
 fields counter_fields(const telemetry_cumulative_counters &counters)
 {
 	fields values;
@@ -387,6 +431,9 @@ fields record_fields(const telemetry_record &record)
 	case telemetry_record_kind::encounter:
 		encounter_fields(values, record.payload.encounter);
 		break;
+	case telemetry_record_kind::combat_summary:
+		combat_summary_fields(values, record.payload.combat_summary);
+		break;
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -508,6 +555,9 @@ std::string signature(const telemetry_record &record)
 	case telemetry_record_kind::encounter:
 		value += ':' + std::to_string(record.payload.encounter.reserved);
 		break;
+	case telemetry_record_kind::combat_summary:
+		value += ':' + std::to_string(record.payload.combat_summary.reserved);
+		break;
 	case telemetry_record_kind::configuration:
 		value += ':' + std::to_string(record.payload.configuration.config.reserved);
 		value += ':' + std::to_string(record.payload.configuration.config.schema_version);
@@ -605,6 +655,21 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	if (record.header.kind == telemetry_record_kind::encounter)
 	{
 		const auto &p = record.payload.encounter;
+		fields expected;
+		number(expected, "season_id", p.source.season_id);
+		number(expected, "classifier_version", p.source.classifier_version);
+		number(expected, "policy_version", p.source.policy_version);
+		auto config = query("SELECT " + names(expected, true) +
+				    " FROM telemetry_config WHERE environment_id=" +
+				    std::to_string(p.source.environment_id) +
+				    " AND config_id=" + std::to_string(p.source.config_id));
+		auto row = mysql_fetch_row(config.get());
+		if (!row || !equal_row(row, expected))
+			return telemetry_apply_outcome::rejected_invalid;
+	}
+	if (record.header.kind == telemetry_record_kind::combat_summary)
+	{
+		const auto &p = record.payload.combat_summary;
 		fields expected;
 		number(expected, "season_id", p.source.season_id);
 		number(expected, "classifier_version", p.source.classifier_version);
