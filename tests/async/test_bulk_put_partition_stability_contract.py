@@ -1,6 +1,6 @@
 """The bulk put split must be decided once, not re-derived after the commit.
 
-`uses_generic_item_ownership()` is not stable for a transient object: it reads the
+`item_command_uses_durable_ownership()` is not stable for a transient object: it reads the
 runtime ownership row, which becomes active asynchronously.  `start_bulk_put()` uses
 it to choose the durable batch, and that batch commits asynchronously.  If
 `finish_bulk_put_after_commit()` re-tested the same predicate, an item that became
