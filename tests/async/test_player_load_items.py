@@ -26,6 +26,8 @@ HARNESS = r'''
 #include "core/structs.h"
 #include "core/utils.h"
 
+bool training_dummy_capture_target_allowed(P_char) { return true; }
+
 #include <cassert>
 #include <cstdarg>
 #include <cstdlib>

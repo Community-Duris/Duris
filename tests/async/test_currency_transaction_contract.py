@@ -153,6 +153,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "nexus_stones.c",           # NPC construction
             "guildhall_rooms.c",       # NPC construction
             "specs.mobile.c",           # NPC vendor/undead balances
+            "training_dummy.c",          # training NPC construction
         }
         generated_npc_restoration = {
             "GET_COPPER(pet) = wallet[0];",

@@ -61,6 +61,7 @@ constexpr int LNK_CONSENT = 0;
 #define IS_RACEWAR_GOOD(c) true
 #define GET_NAME(c) ((c)->name)
 #define REMOVE_BIT(v,b) ((v) &= ~(b))
+bool training_dummy_is(P_char) { return false; }
 void purge_linked_auras(P_char) {}
 bool in_command_aura(P_char) { return false; }
 void remove_aura_message(P_char, P_char) {}
