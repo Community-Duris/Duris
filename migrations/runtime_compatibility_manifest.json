@@ -14,7 +14,7 @@
     "sequence": 22,
     "apply_checksum": "aee8d6811142df8c89a7b7f8d990f449e63af053755ffd682c87822c76a32fb6",
     "verify_checksum": "9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4",
-    "history_checksum": "aad54070765f4f15bbe29dba050d81c6320707bcd551bc1da2f8d7ff2d244676"
+    "history_checksum": "2cd4a1442c91785bb95c24c14cc17195aff38595fd45d04edd64072c04d0f0b4"
   },
   "connection": {
     "character_set": "utf8mb4",

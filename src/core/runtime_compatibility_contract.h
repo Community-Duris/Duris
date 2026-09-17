@@ -77,7 +77,7 @@ constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
 	"9749a26e9835fa21dab893c2424168bf0e8b0f09d0f71ac11d88fed5c97f46c4";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"aad54070765f4f15bbe29dba050d81c6320707bcd551bc1da2f8d7ff2d244676";
+	"2cd4a1442c91785bb95c24c14cc17195aff38595fd45d04edd64072c04d0f0b4";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
