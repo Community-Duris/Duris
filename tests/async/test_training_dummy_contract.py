@@ -170,6 +170,8 @@ def test_npc_spellups_skip_the_dummy_without_blocking_explicit_affects():
     assert 'void spell_globe' in magic
     assert 'void spell_fireshield' in magic
     assert 'training_dummy_spellup_target_allowed' not in magic
+    assert 'if (training_dummy_is(ch))' in mobact
+    assert 'periodic mundane event' in mobact
 
 
 def test_dummy_cannot_be_used_as_a_shape_clone_disguise_or_capture_source():

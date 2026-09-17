@@ -7535,6 +7535,17 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 		return;
 	}
 
+	/* Training dummies are inert practice targets.  Combat already protects
+	 * them, but the periodic mundane event also owns NPC spell-up, commune,
+	 * tracking, and other autonomous actions; a caster-profile dummy must not
+	 * perform any of those actions on itself or anyone else. */
+	if (training_dummy_is(ch))
+	{
+		if (GET_OPPONENT(ch))
+			stop_fighting(ch);
+		return;
+	}
+
 	if (TRUSTED_NPC(ch))
 	{
 		goto normal; // 0%
