@@ -1488,7 +1488,7 @@ resume_game_loop:
 				{
 					/* good connection, send them on their way :) */
 					SEND_TO_Q(
-						"Please enter your term type (<CR> ansi, '3' MSP, '?' help): ",
+						"Please enter your term type (<CR> for ANSI, '1' for Generic, '3' for MSP markup, '9' for Quick, '?' for help): ",
 						point);
 					point->connected = CON_GET_TERM;
 					point->wait = 1;

@@ -2013,13 +2013,13 @@ void select_terminal(P_desc d, const char *arg)
 	case TERM_HELP:
 		SEND_TO_Q(valid_term_list, d);
 		SEND_TO_Q(
-			"Please enter term type (<CR> for ANSI, '1' for Generic, '9' for Quick): ",
+			"Please enter term type (<CR> for ANSI, '1' for Generic, '3' for MSP markup, '9' for Quick): ",
 			d);
 		return;
 	default:
 		SEND_TO_Q("Unknown terminal type!\r\n", d);
 		SEND_TO_Q(
-			"Please re-enter term type (<CR> for ANSI, '1' for Generic, '9' for Quick): ",
+			"Please re-enter term type (<CR> for ANSI, '1' for Generic, '3' for MSP markup, '9' for Quick): ",
 			d);
 		return;
 	}
@@ -5128,7 +5128,7 @@ void nanny(P_desc d, char *arg)
 
 	case CON_HOST_LOOKUP:
 		SEND_TO_Q(
-			"Please enter term type (<CR> for ANSI, '1' for Generic, '9' for Quick): ",
+			"Please enter term type (<CR> for ANSI, '1' for Generic, '3' for MSP markup, '9' for Quick): ",
 			d);
 		STATE(d) = CON_GET_TERM;
 		break;
