@@ -1,5 +1,6 @@
 #include "player/pet_restore_runtime.h"
 
+#include "combat/training_dummy.h"
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
@@ -12,7 +13,7 @@
 
 void summoned_pet_mark(P_char pet, summoned_pet_kind kind)
 {
-	if (!pet || !IS_NPC(pet))
+	if (!pet || !IS_NPC(pet) || !training_dummy_capture_target_allowed(pet))
 		return;
 	auto &npc = *pet->only.npc;
 	npc.summoned_instance = true;
@@ -26,7 +27,7 @@ void summoned_pet_mark(P_char pet, summoned_pet_kind kind)
 
 bool summoned_pet_capture(P_char pet, std::string *encoded)
 {
-	if (!pet || !IS_NPC(pet) || !encoded)
+	if (!pet || !IS_NPC(pet) || !training_dummy_capture_target_allowed(pet) || !encoded)
 		return false;
 	encoded->clear();
 	if (!pet->only.npc->summon_kind)

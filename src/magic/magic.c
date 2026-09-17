@@ -33,6 +33,7 @@
 #include "world/hardcore_config.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "world/map.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
@@ -8634,6 +8635,12 @@ void charm_generic(int level, P_char ch, P_char victim)
 
 	if (GET_STAT(ch) == STAT_DEAD)
 		return;
+
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy has no mind to charm.\r\n", ch);
+		return;
+	}
 
 	if (resists_spell(ch, victim))
 		return;

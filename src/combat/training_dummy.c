@@ -14,12 +14,17 @@
 
 extern P_room world;
 extern int top_of_world;
+extern int top_of_objt;
+extern P_char character_list;
 extern const int guild_locations[][CLASS_COUNT + 1];
 extern const struct race_names race_names_table[];
 extern const struct class_names class_names_table[];
 
 namespace
 {
+P_char placement_override = nullptr;
+P_char removal_override = nullptr;
+
 enum TrainingDummyGear
 {
 	TRAINING_DUMMY_GEAR_MIN = 0,
@@ -99,6 +104,44 @@ void training_dummy_replace_string(P_char dummy, char **field, const char *value
 void training_dummy_apply_profile(P_char dummy, int room, int home, int level, int race,
 					  unsigned int class_bit, int gear, bool fixed)
 {
+	/* A prototype mob may carry equipment.  A training dummy is never allowed
+	 * to publish, retain, or expose any of that state. */
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+	{
+		if (dummy->equipment[slot])
+		{
+			P_obj object = unequip_char(dummy, slot);
+			if (object)
+				extract_obj(object);
+		}
+	}
+	for (P_obj object = dummy->carrying; object;)
+	{
+		P_obj next = object->next_content;
+		obj_from_char(object);
+		extract_obj(object);
+		object = next;
+	}
+	GET_PLATINUM(dummy) = 0;
+	GET_GOLD(dummy) = 0;
+	GET_SILVER(dummy) = 0;
+	GET_COPPER(dummy) = 0;
+
+	/* A reused or malformed mob must not retain any social state from its
+	 * prototype or an earlier lifecycle. */
+	if (dummy->following)
+		stop_follower(dummy);
+	while (dummy->followers)
+	{
+		P_char follower = dummy->followers->follower;
+		if (!follower)
+			break;
+		stop_follower(follower);
+	}
+	if (dummy->group)
+		group_remove_member(dummy);
+	clear_all_links(dummy);
+
 	disarm_char_nevents(dummy, nullptr);
 	clearMemory(dummy);
 
@@ -156,6 +199,7 @@ void training_dummy_apply_profile(P_char dummy, int room, int home, int level, i
 	dummy->only.npc->training_dummy_fixed = fixed;
 	dummy->only.npc->training_dummy_gear = gear;
 	dummy->only.npc->training_dummy_damage = 0;
+	dummy->only.npc->training_dummy_last_attacker_runtime_id = 0;
 	dummy->only.npc->lowest_hit = hit_points;
 
 	training_dummy_replace_string(dummy, &dummy->player.name, "training dummy dummy",
@@ -189,7 +233,10 @@ P_char training_dummy_create(int room, int home, int level, int race, unsigned i
 	}
 
 	training_dummy_apply_profile(dummy, room, home, level, race, class_bit, gear, fixed);
-	if (!char_to_room(dummy, room, 0))
+	training_dummy_begin_placement(dummy);
+	const bool placed = char_to_room(dummy, room, 0);
+	training_dummy_end_placement(dummy);
+	if (!placed)
 	{
 		extract_char(dummy);
 		return nullptr;
@@ -265,6 +312,8 @@ void training_dummy_send_help(P_char ch)
 		"  dummy report       show AC, saves, and accumulated damage\r\n"
 		"  dummy reset        clear the accumulated damage\r\n"
 		"  dummy help         show this help\r\n"
+		"The dummy is anchored, accepts no items or coins, cannot be charmed,\r\n"
+		"followed, or grouped, and never retaliates.\r\n"
 		"Immortal-only:\r\n"
 		"  dummy spawn [level] [race] [class] [min|mid|max]\r\n"
 		"  dummy despawn\r\n",
@@ -291,7 +340,7 @@ void training_dummy_send_report(P_char ch, P_char dummy)
 			       "Profile: level %d %s %s\r\n"
 			       "Gear: %s (AC %d; saves para %d, rod %d, fear %d, breath %d, spell %d)\r\n"
 			       "Damage recorded: %llu\r\n"
-			       "The dummy remains at full health and will not retaliate.\r\n",
+		       "The dummy remains at full health, is anchored, accepts no items, and will not retaliate.\r\n",
 			       GET_LEVEL(dummy), race_names_table[GET_RACE(dummy)].normal,
 			       class_names_table[class_index].normal,
 			       training_dummy_gear_name(dummy->only.npc->training_dummy_gear), ac, para_save,
@@ -309,6 +358,194 @@ P_char training_dummy_from_command_room(P_char ch)
 bool training_dummy_is(P_char ch)
 {
 	return ch && IS_NPC(ch) && ch->only.npc && ch->only.npc->training_dummy;
+}
+
+bool training_dummy_target_allowed(P_char attacker, P_char victim)
+{
+	if (!training_dummy_is(victim))
+		return true;
+
+	/* Players can attack the dummy for balance testing.  The explicit pet
+	 * exception keeps player-controlled pet testing possible while ordinary
+	 * area NPCs can never be used to tank for a player. */
+	return attacker && (!IS_NPC(attacker) || IS_PC_PET(attacker));
+}
+
+bool training_dummy_spellup_target_allowed(P_char caster, P_char target)
+{
+	if (!training_dummy_is(target))
+		return true;
+
+	/*
+	 * This is deliberately an AI target-selection guard, not a spell-effect
+	 * guard.  An explicit/admin/system effect can still apply a chosen affect
+	 * later; autonomous NPC maintenance simply does not select the dummy.
+	 */
+	return !caster || !IS_NPC(caster);
+}
+
+bool training_dummy_shape_target_allowed(P_char target)
+{
+	return !training_dummy_is(target);
+}
+
+bool training_dummy_clone_target_allowed(P_char target)
+{
+	return !training_dummy_is(target);
+}
+
+bool training_dummy_disguise_target_allowed(P_char target)
+{
+	return !training_dummy_is(target);
+}
+
+bool training_dummy_capture_target_allowed(P_char target)
+{
+	return !training_dummy_is(target);
+}
+
+P_char training_dummy_item_owner(P_obj object)
+{
+	int remaining = top_of_objt + 1;
+	while (object && OBJ_INSIDE(object) && remaining-- > 0)
+		object = object->loc.inside;
+
+	if (!object)
+		return nullptr;
+	if (OBJ_CARRIED(object) && training_dummy_is(object->loc.carrying))
+		return object->loc.carrying;
+	if (OBJ_WORN(object) && training_dummy_is(object->loc.wearing))
+		return object->loc.wearing;
+	return nullptr;
+}
+
+void training_dummy_note_attacker(P_char dummy, P_char attacker)
+{
+	if (!training_dummy_is(dummy) || !attacker || !char_in_list(attacker))
+		return;
+
+	/* A normal NPC hitting the dummy is not a useful fallback target.  Keep
+	 * the player/pet that caused the test interaction instead. */
+	if (IS_NPC(attacker) && !IS_PC_PET(attacker))
+		return;
+	dummy->only.npc->training_dummy_last_attacker_runtime_id = attacker->runtime_id;
+}
+
+namespace
+{
+P_char training_dummy_find_runtime_character(uint64_t runtime_id)
+{
+	if (!runtime_id)
+		return nullptr;
+	for (P_char character = character_list; character; character = character->next)
+		if (character->runtime_id == runtime_id && char_in_list(character))
+			return character;
+	return nullptr;
+}
+
+bool training_dummy_fallback_candidate(P_char npc, P_char candidate, P_char rejected)
+{
+	if (!npc || !candidate || candidate == npc || candidate == rejected ||
+		training_dummy_is(candidate) || !char_in_list(candidate) || !IS_ALIVE(candidate) ||
+		candidate->in_room != npc->in_room ||
+		candidate->specials.z_cord != npc->specials.z_cord || !CAN_SEE(npc, candidate))
+		return false;
+	return training_dummy_target_allowed(npc, candidate);
+}
+
+int training_dummy_fallback_score(P_char npc, P_char candidate, P_char previous,
+					 P_char recent, P_char rejected)
+{
+	if (candidate == recent)
+		return 1000;
+	if (GET_OPPONENT(candidate) == npc)
+		return 900;
+	if (candidate->specials.was_fighting == npc)
+		return 800;
+	if (candidate == previous)
+		return 700;
+	if (aggressive_to(npc, candidate))
+		return 500;
+	if (IS_FIGHTING(candidate) && GET_OPPONENT(candidate) != rejected)
+		return 100;
+	return 0;
+}
+} // namespace
+
+void training_dummy_retarget_nonpet(P_char npc, P_char rejected)
+{
+	if (!npc || !IS_NPC(npc) || IS_PC_PET(npc) || training_dummy_is(npc) ||
+		(rejected && !training_dummy_is(rejected)))
+		return;
+
+	P_char previous = GET_OPPONENT(npc);
+	/* A player/pet that just damaged the rejected dummy is the strongest
+	 * signal that this NPC should be fighting someone else in the room. */
+	P_char recent = training_dummy_is(rejected) ?
+		training_dummy_find_runtime_character(
+			rejected->only.npc->training_dummy_last_attacker_runtime_id) : nullptr;
+
+	if (IS_FIGHTING(npc))
+		stop_fighting(npc);
+
+	P_char best = nullptr;
+	int best_score = 0;
+	if (training_dummy_fallback_candidate(npc, recent, rejected))
+		best = recent;
+
+	if (!best && npc->in_room != NOWHERE && npc->in_room >= 0 && npc->in_room <= top_of_world)
+	{
+		for (P_char candidate = world[npc->in_room].people; candidate;
+		     candidate = candidate->next_in_room)
+		{
+			if (!training_dummy_fallback_candidate(npc, candidate, rejected))
+				continue;
+			const int score = training_dummy_fallback_score(npc, candidate, previous, recent,
+									 rejected);
+			if (score > best_score)
+			{
+				best = candidate;
+				best_score = score;
+			}
+		}
+	}
+
+	if (best)
+		MobStartFight(npc, best);
+}
+
+bool training_dummy_can_enter_room(P_char ch)
+{
+	return !training_dummy_is(ch) || placement_override == ch;
+}
+
+bool training_dummy_can_leave_room(P_char ch)
+{
+	return !training_dummy_is(ch) || removal_override == ch;
+}
+
+void training_dummy_begin_placement(P_char ch)
+{
+	if (training_dummy_is(ch))
+		placement_override = ch;
+}
+
+void training_dummy_end_placement(P_char ch)
+{
+	if (placement_override == ch)
+		placement_override = nullptr;
+}
+
+void training_dummy_begin_removal(P_char ch)
+{
+	if (training_dummy_is(ch))
+		removal_override = ch;
+}
+
+void training_dummy_end_removal(P_char ch)
+{
+	if (removal_override == ch)
+		removal_override = nullptr;
 }
 
 void training_dummy_record_damage(P_char ch, int damage)
@@ -385,6 +622,7 @@ ACMD(do_training_dummy)
 			return;
 		}
 		dummy->only.npc->training_dummy_damage = 0;
+		dummy->only.npc->training_dummy_last_attacker_runtime_id = 0;
 		send_to_char("The training dummy's damage meter is reset.\r\n", ch);
 		return;
 	}

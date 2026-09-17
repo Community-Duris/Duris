@@ -1371,6 +1371,7 @@ struct npc_only_data
 	bool training_dummy_fixed;
 	int training_dummy_gear;
 	uint64_t training_dummy_damage;
+	uint64_t training_dummy_last_attacker_runtime_id;
 	//  P_mprog_list mpact;
 	//  int mpactnum;
 };

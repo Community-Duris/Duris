@@ -21,6 +21,7 @@
 #include "combat/damage.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "world/weather.h"
@@ -3032,6 +3033,11 @@ void capture(P_char ch, P_char victim)
 	if (!victim)
 	{
 		send_to_char("Capture who?\r\n", ch);
+		return;
+	}
+	if (!training_dummy_capture_target_allowed(victim))
+	{
+		send_to_char("The training dummy cannot be captured.\r\n", ch);
 		return;
 	}
 	if (IS_NPC(victim))

@@ -4344,7 +4344,11 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 int attack_back(P_char ch, P_char victim, int physical)
 {
 	if (training_dummy_is(ch) || training_dummy_is(victim))
+	{
+		if (victim && IS_NPC(ch) && !IS_PC_PET(ch) && training_dummy_is(victim))
+			training_dummy_retarget_nonpet(ch, victim);
 		return DAM_NONEDEAD;
+	}
 
 	if (!IS_ALIVE(ch))
 	{
@@ -6140,7 +6144,10 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		if (training_dummy_is(victim))
 		{
 			const int recorded_damage = static_cast<int>(dam);
+			training_dummy_note_attacker(victim, ch);
 			training_dummy_record_damage(victim, recorded_damage);
+			if (IS_NPC(ch) && !IS_PC_PET(ch))
+				training_dummy_retarget_nonpet(ch, victim);
 			if (damAccumulator)
 				*damAccumulator += recorded_damage;
 			if (IS_PC(ch) && ch->desc)
@@ -8198,6 +8205,13 @@ void set_fighting(P_char ch, P_char vict)
 	if ((ch == victim) || !SanityCheck(ch, "set_fighting - ch") ||
 	    !SanityCheck(victim, "set_fighting - victim"))
 	{
+		return;
+	}
+	if (training_dummy_is(ch))
+		return;
+	if (!training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
 		return;
 	}
 

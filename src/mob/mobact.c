@@ -24,6 +24,7 @@
 #include "world/buildings.h"
 #include "world/graph.h"
 #include "combat/grapple.h"
+#include "combat/training_dummy.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/map.h"
@@ -254,6 +255,9 @@ int char_deserves_helping(const P_char ch, const P_char candidate, int check_lea
 	struct follow_type *k;
 
 	if (!IS_ALIVE(candidate) || !IS_ALIVE(ch))
+		return FALSE;
+
+	if (!training_dummy_spellup_target_allowed(ch, candidate))
 		return FALSE;
 
 	if (candidate == ch)
@@ -6219,6 +6223,20 @@ void MobCombat(P_char ch)
 		return;
 	}
 
+	if (training_dummy_is(ch))
+	{
+		if (GET_OPPONENT(ch))
+			stop_fighting(ch);
+		return;
+	}
+
+	if (GET_OPPONENT(ch) && !training_dummy_target_allowed(ch, GET_OPPONENT(ch)))
+	{
+		training_dummy_retarget_nonpet(ch, GET_OPPONENT(ch));
+		if (!GET_OPPONENT(ch))
+			return;
+	}
+
 	if (!CAN_ACT(ch) || IS_IMMOBILE(ch) || IS_CASTING(ch))
 	{
 		return;
@@ -6653,7 +6671,9 @@ P_char PickTarget(P_char ch)
 		return NULL;
 	}
 
-	if ((af = get_spell_from_char(ch, SKILL_TAUNT)) != NULL && CAN_SEE(ch, (P_char)af->context))
+	if ((af = get_spell_from_char(ch, SKILL_TAUNT)) != NULL &&
+	    training_dummy_target_allowed(ch, (P_char)af->context) &&
+	    CAN_SEE(ch, (P_char)af->context))
 	{
 		return (P_char)af->context;
 	}
@@ -6750,6 +6770,13 @@ void MobStartFight(P_char ch, P_char vict)
 	if (!ch)
 	{
 		logit(LOG_EXIT, "MobStartFight called in mobact.c with no ch");
+		return;
+	}
+	if (training_dummy_is(ch))
+		return;
+	if (!training_dummy_target_allowed(ch, vict))
+	{
+		training_dummy_retarget_nonpet(ch, vict);
 		return;
 	}
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(vict))
@@ -10339,6 +10366,12 @@ void clearMemory(P_char ch)
 void event_agg_attack(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int door;
+
+	if (ch && victim && !training_dummy_target_allowed(ch, victim))
+	{
+		training_dummy_retarget_nonpet(ch, victim);
+		return;
+	}
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || victim->in_room == NOWHERE ||
 	    ch->in_room == NOWHERE || !IS_AWAKE(ch) || !MIN_POS(ch, POS_STANDING + STAT_RESTING) ||

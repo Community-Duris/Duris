@@ -29,6 +29,7 @@
 #include "economy/collector_presence.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "core/mm.h"
 #include "core/profile.h"
 #include "ships/ships.h"
@@ -716,6 +717,14 @@ void add_follower(P_char ch, P_char leader)
 	if (!(ch && leader))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
+		return;
+	}
+
+	if (training_dummy_is(ch) || training_dummy_is(leader))
+	{
+		P_char player = training_dummy_is(leader) ? ch : leader;
+		if (player && IS_PC(player))
+			send_to_char("The training dummy cannot follow or be followed.\r\n", player);
 		return;
 	}
 
