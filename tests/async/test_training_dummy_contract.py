@@ -25,6 +25,7 @@ def test_training_dummy_has_fixed_and_custom_profiles():
     assert 'candidate = guild_locations[home][0];' in dummy
     assert 'training_dummy_create(room, home, 56, race,' in dummy
     assert 'training_dummy_default_race_for_room(ch->in_room)' in dummy
+    assert 'No player-creation race starts in this room; specify a race explicitly.' in dummy
     assert 'dummy spawn [level] [race] [class] [min|mid|max]' in dummy
     assert 'training_dummy_gear_ac' in dummy
     assert 'training_dummy_gear_save' in dummy
@@ -190,3 +191,13 @@ def test_bootstrap_runs_after_world_continents_are_ready():
     db = source("src/world/db.c")
 
     assert 'assign_continents();\n\ttraining_dummy_bootstrap();' in db
+
+
+def test_dummy_snapshots_are_skipped_and_recreated_by_bootstrap():
+    copyover = source("src/persistence/copyover.c")
+    recovery = source("src/world/world_recovery_pipeline.c")
+
+    assert '&& !training_dummy_is(ch)' in copyover
+    assert 'training_dummy_is(mob)' in copyover
+    assert 'ch->only.npc->summoned_instance || training_dummy_is(ch)' in recovery
+    assert 'training_dummy_is(mob)' in recovery

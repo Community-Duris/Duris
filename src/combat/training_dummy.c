@@ -657,7 +657,9 @@ int training_dummy_default_race_for_room(int room)
 					return race;
 			}
 		}
-	return RACE_GREY;
+	/* A default profile must describe a race that can actually start here.
+	 * Immortals can still use any valid race explicitly in another room. */
+	return -1;
 }
 
 ACMD(do_training_dummy)
@@ -751,10 +753,17 @@ ACMD(do_training_dummy)
 	}
 
 	const int level = *level_token ? training_dummy_parse_level(level_token) : 56;
-	const int race = *race_token ? training_dummy_parse_race(race_token) :
-				       training_dummy_default_race_for_room(ch->in_room);
+	const int default_race = training_dummy_default_race_for_room(ch->in_room);
+	const int race = *race_token ? training_dummy_parse_race(race_token) : default_race;
 	const int class_bit = *class_token ? training_dummy_parse_class(class_token) : CLASS_CLERIC;
 	const int gear = training_dummy_parse_gear(gear_token);
+	if (!*race_token && default_race < 1)
+	{
+		send_to_char(
+			"No player-creation race starts in this room; specify a race explicitly.\r\n",
+			ch);
+		return;
+	}
 	if (level < 1 || race < 1 || class_bit == 0 || gear < 0)
 	{
 		send_to_char(
