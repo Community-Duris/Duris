@@ -264,7 +264,8 @@ bool enqueue_replayed(critical_command command, void *context)
 		bool observed = false;
 		try
 		{
-			observed = replay->observer(operations.at(identity)->command, replay->context);
+			observed =
+				replay->observer(operations.at(identity)->command, replay->context);
 		}
 		catch (...)
 		{
@@ -278,7 +279,8 @@ bool enqueue_replayed(critical_command command, void *context)
 				remove_fences(identity, inserted->second->command);
 				operations.erase(inserted);
 			}
-			pending.erase(std::remove(pending.begin(), pending.end(), identity), pending.end());
+			pending.erase(std::remove(pending.begin(), pending.end(), identity),
+				      pending.end());
 			update_depth();
 			return false;
 		}
@@ -440,8 +442,8 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	uncertain_recovery_not_before_usec = 0;
 	uncertain_recovery_delay_usec = 1000000;
 	replay_observer_context replay = { replay_observer, replay_context };
-	if (critical_command_journal_replay(
-			enqueue_replayed, replay_observer ? &replay : nullptr) !=
+	if (critical_command_journal_replay(enqueue_replayed,
+					    replay_observer ? &replay : nullptr) !=
 	    critical_command_journal_result::ok)
 	{
 		health = {};

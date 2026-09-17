@@ -105,8 +105,7 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 	return submit_command_internal(command, plan, callbacks, context, submission);
 }
 
-player_death_restitution_runtime_result
-player_death_restitution_runtime_restore_replayed_command(
+player_death_restitution_runtime_result player_death_restitution_runtime_restore_replayed_command(
 	const critical_command &command,
 	const player_death_restitution_runtime_callbacks &callbacks, void *context,
 	player_death_restitution_runtime_submission *submission)

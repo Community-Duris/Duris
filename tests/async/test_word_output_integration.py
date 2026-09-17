@@ -34,13 +34,13 @@ for filename, signatures in [
                   "void show_exits_to_char(", "void display_room_auras("]),
     ("weather.c", ["void send_to_weather_sector("]),
     ("fight.c", ["void dam_message("]),
-    ("prompt.c", ["void make_prompt("])
+    ("prompt.c", ["void make_prompt("]),
+    ("json_utils.c", ["char *json_build_comm_channel("]),
+    ("gmcp.c", ["void gmcp_broadcast_channel("])
 ]:
     functions.extend(extract_function(filename, signature) for signature in signatures)
 
 benchmark = os.environ.get("OUTPUT_BENCHMARK") == "1"
-if benchmark:
-    functions.append(extract_function("json_utils.c", "char *json_build_comm_channel("))
 
 flags = ["-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie"] if os.environ.get("SANITIZE") == "1" else []
 if benchmark:

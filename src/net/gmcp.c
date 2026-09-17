@@ -1117,7 +1117,7 @@ void gmcp_broadcast_channel(const char *channel, const char *sender, const char 
 	for (d = descriptor_list; d; d = d->next)
 	{
 		if (d->character && d->character != exclude && STATE(d) == CON_PLAYING &&
-		    d->gmcp_enabled)
+		    GMCP_ENABLED(d->character))
 		{
 			gmcp_send(d, GMCP_PKG_COMM_CHANNEL, json);
 		}

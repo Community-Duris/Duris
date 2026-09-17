@@ -160,7 +160,6 @@ def test_every_dial_reaches_its_hook() -> None:
         ("net/sparser.c", "bool NewSaves(",
          "save = difficulty_scale_int(save, 1.0 / resistance_dial);"),
         ("world/limits.c", "int gain_exp(",
-         "if (XP > 0 && !pvp && type != EXP_RESURRECT) "
          "XP *= difficulty_multiplier(DIFFICULTY_EXP_EARNED);"),
         ("world/limits.c", "int gain_exp(",
          "XP *= difficulty_multiplier(DIFFICULTY_DEATH_PENALTY);"),

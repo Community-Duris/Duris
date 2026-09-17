@@ -3,6 +3,7 @@
 #include "core/structs.h"
 #include "telemetry/telemetry_config_private.h"
 #include "telemetry/telemetry_config_reload.h"
+#include "telemetry/telemetry_progression.h"
 #include "telemetry/telemetry_repository.h"
 #include "telemetry/telemetry_session.h"
 #include "telemetry/telemetry_transport.h"
@@ -228,6 +229,7 @@ struct runtime_state
 	telemetry_session_sequence next_session_sequence = 1U;
 	telemetry_session_state session{};
 	telemetry_activity_state activity{};
+	telemetry_progression_state progression{};
 	std::thread worker{};
 	std::atomic<bool> worker_stop{ false };
 	std::atomic<bool> worker_done{ false };
@@ -695,6 +697,40 @@ telemetry_capture_result capture_from_session(const telemetry_session_state_resu
 		result.outcome = telemetry_runtime_outcome::accepted;
 	else
 		result.outcome = telemetry_runtime_outcome::invalid;
+	return result;
+}
+
+telemetry_capture_result
+capture_from_progression(const telemetry_progression_result &source) noexcept
+{
+	telemetry_capture_result result{};
+	result.outcome = telemetry_runtime_outcome::invalid;
+	result.admission = telemetry_queue_admission::rejected_invalid;
+	result.records_emitted = source.outcome == telemetry_progression_outcome::accepted ? 1U :
+											     0U;
+	result.records_dropped =
+		(source.outcome == telemetry_progression_outcome::sink_rejected ||
+		 source.outcome == telemetry_progression_outcome::allocator_exhausted) ?
+			1U :
+			0U;
+	result.first_record = source.record;
+	result.last_record = source.record;
+	result.quality_flags = source.quality_flags;
+	if (source.outcome == telemetry_progression_outcome::accepted)
+	{
+		result.outcome = telemetry_runtime_outcome::accepted;
+		result.admission = telemetry_queue_admission::accepted_detail;
+	}
+	else if (source.outcome == telemetry_progression_outcome::sink_rejected)
+	{
+		result.outcome = telemetry_runtime_outcome::queue_full;
+		result.admission = telemetry_queue_admission::rejected_detail_full;
+	}
+	else if (source.outcome == telemetry_progression_outcome::allocator_exhausted)
+	{
+		result.outcome = telemetry_runtime_outcome::queue_full;
+		result.admission = telemetry_queue_admission::rejected_detail_full;
+	}
 	return result;
 }
 
@@ -1285,6 +1321,19 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 		return telemetry_runtime_outcome::invalid;
 	}
 
+	const telemetry_progression_state_config progression_config = {
+		R.producer,
+		{ enqueue_record, nullptr },
+		{ allocate_record_key, nullptr },
+	};
+	if (telemetry_progression_state_init(&R.progression, &progression_config) !=
+	    telemetry_progression_outcome::accepted)
+	{
+		telemetry_activity_state_reset(&R.activity);
+		telemetry_session_state_reset(&R.session);
+		return telemetry_runtime_outcome::invalid;
+	}
+
 	const telemetry_config_state_config config_state_config = {
 		{ enqueue_record, nullptr },
 		{ allocate_record_key, nullptr },
@@ -1292,6 +1341,7 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 	if (telemetry_config_global_init(&config_state_config) !=
 	    telemetry_config_state_outcome::accepted)
 	{
+		telemetry_progression_state_reset(&R.progression);
 		telemetry_activity_state_reset(&R.activity);
 		telemetry_session_state_reset(&R.session);
 		return telemetry_runtime_outcome::invalid;
@@ -1300,6 +1350,7 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 	    telemetry_config_state_outcome::accepted)
 	{
 		telemetry_config_global_reset();
+		telemetry_progression_state_reset(&R.progression);
 		telemetry_activity_state_reset(&R.activity);
 		telemetry_session_state_reset(&R.session);
 		return telemetry_runtime_outcome::invalid;
@@ -1314,6 +1365,7 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 		if (transport != telemetry_transport_outcome::started)
 		{
 			telemetry_config_global_reset();
+			telemetry_progression_state_reset(&R.progression);
 			telemetry_activity_state_reset(&R.activity);
 			telemetry_session_state_reset(&R.session);
 			return transport == telemetry_transport_outcome::flatfile_disabled ?
@@ -1344,6 +1396,7 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 			telemetry_transport_repository_shutdown_for_owner();
 			telemetry_transport_shutdown();
 			telemetry_config_global_reset();
+			telemetry_progression_state_reset(&R.progression);
 			telemetry_activity_state_reset(&R.activity);
 			telemetry_session_state_reset(&R.session);
 			R.enabled = false;
@@ -1700,6 +1753,7 @@ telemetry_runtime_outcome telemetry_runtime_shutdown(telemetry_shutdown_request 
 		(void)telemetry_config_reload_unregister(reload_observer,
 							 telemetry_config_global_state());
 		telemetry_config_global_reset();
+		telemetry_progression_state_reset(&R.progression);
 		telemetry_activity_state_reset(&R.activity);
 		telemetry_session_state_reset(&R.session);
 		R.initialized = false;
@@ -1743,6 +1797,7 @@ telemetry_runtime_outcome telemetry_runtime_final_reap(void)
 	R.has_last_health = true;
 	(void)telemetry_config_reload_unregister(reload_observer, telemetry_config_global_state());
 	telemetry_config_global_reset();
+	telemetry_progression_state_reset(&R.progression);
 	telemetry_activity_state_reset(&R.activity);
 	telemetry_session_state_reset(&R.session);
 	R.initialized = false;
@@ -2337,6 +2392,35 @@ telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *chara
 	if (!game_evidence_payload(character, descriptor, kind, &evidence))
 		return game_capture_invalid();
 	return telemetry_runtime_record_evidence(evidence);
+}
+
+telemetry_capture_result
+telemetry_runtime_game_progression(struct char_data *character, struct descriptor_data *descriptor,
+				   telemetry_progression_observation observation)
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending)
+		return game_capture_not_ready();
+	if (character == nullptr || character->only.pc == nullptr ||
+	    !telemetry_progression_observation_is_valid(observation) || !ensure_current_config())
+		return game_capture_invalid();
+	telemetry_session_ref session{};
+	if (!game_session_ref(character, &session))
+		return game_capture_invalid();
+	telemetry_connection_id connection{};
+	if (descriptor != nullptr && !game_connection_id(descriptor, &connection))
+		return game_capture_invalid();
+	telemetry_monotonic_usec at_monotonic_usec = 0U;
+	telemetry_utc_usec at_utc_usec = TELEMETRY_UTC_UNKNOWN;
+	if (!game_time(&at_monotonic_usec, &at_utc_usec))
+		return game_capture_invalid();
+	telemetry_dimensions dimensions{};
+	telemetry_quality_mask dimension_quality = TELEMETRY_QUALITY_NONE;
+	game_dimensions(character, &dimensions, &dimension_quality);
+	observation.quality_flags |= dimension_quality;
+	return capture_from_progression(telemetry_progression_state_record(
+		&R.progression, session, connection, at_monotonic_usec, at_utc_usec, dimensions,
+		R.config.config_id, R.config.classifier_version, R.config.policy_version,
+		observation));
 }
 
 std::uint16_t telemetry_runtime_pulse_slot_count(void) noexcept
