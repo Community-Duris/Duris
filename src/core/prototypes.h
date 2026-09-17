@@ -852,6 +852,7 @@ void boot_zones(int);
 void clear_char(P_char);
 uint64_t allocate_character_runtime_id();
 P_char find_character_by_runtime_id(uint64_t);
+P_obj find_live_object(P_obj expected, uint64_t uid);
 void clear_object(P_obj);
 void ensure_pconly_pool(void);
 void free_char(P_char);

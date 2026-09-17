@@ -15,6 +15,7 @@ PREFIX = r'''
 #include "magic/spells.h"
 #include "net/comm.h"
 #include "combat/damage.h"
+#include "combat/attack_continuation.h"
 #include <cassert>
 #include <cstdio>
 
@@ -55,6 +56,11 @@ int char_in_list(const P_char ch) {
 P_char find_character_by_runtime_id(uint64_t id) {
     if (actor_listed && actor.runtime_id == id) return &actor;
     if (target_listed && target.runtime_id == id) return &target;
+    return nullptr;
+}
+P_obj find_live_object(P_obj expected, uint64_t uid) {
+    if (expected == &weapon && weapon.obj_uid == uid) return &weapon;
+    if (expected == &secondary && secondary.obj_uid == uid) return &secondary;
     return nullptr;
 }
 bool affected_by_spell(P_char, int) { return path == riposte_branch::berserker; }
@@ -169,5 +175,7 @@ with tempfile.TemporaryDirectory(prefix='duris-riposte-lifetime-') as temporary:
     subprocess.run(['g++', '-std=c++20', '-g', '-Og', '-D__NO_MYSQL__',
                     '-Isrc', '-Isrc/no_mysql', '-I/usr/include/libxml2',
                     '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
-                    '-fno-pie', '-no-pie', str(source), '-o', str(binary)], cwd=ROOT, check=True)
+                    '-fno-pie', '-no-pie', str(source),
+                    str(ROOT / 'src' / 'combat' / 'attack_continuation.c'),
+                    '-o', str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True, timeout=30)
