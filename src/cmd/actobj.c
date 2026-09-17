@@ -39,6 +39,7 @@
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "item/item_get_policy.h"
 #include "item/storage_lockers.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
@@ -266,55 +267,11 @@ struct put_movement_context
 	int32_t showit;
 };
 
-/** Resolve the authority that currently contains one live pickup candidate. */
+/** Keep command-layer call sites independent of the source-resolution policy. */
 static bool get_item_source_owner(P_char actor, P_obj object, P_obj container,
 				  item_owner_identity *source)
 {
-	if (!actor || !object || !source)
-		return false;
-	*source = {};
-	item_ownership_runtime_entry runtime = {};
-	if (item_ownership_runtime_lookup(object->obj_uid, &runtime))
-		*source = runtime.owner;
-	else if (container)
-	{
-		if (container->type == ITEM_CORPSE &&
-		    IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE) &&
-		    container->value[CORPSE_PID] > 0 && container->value[CORPSE_SAVEID] > 0)
-			*source = { item_owner_type::corpse,
-				    item_corpse_owner_id(
-					    static_cast<uint32_t>(container->value[CORPSE_PID]),
-					    static_cast<uint32_t>(container->value[CORPSE_SAVEID])),
-				    0 };
-		else if (item_ownership_runtime_lookup(container->obj_uid, &runtime))
-			*source = runtime.owner;
-		else
-		{
-			P_obj outer = container;
-			int safety = top_of_objt + 1;
-			while (OBJ_INSIDE(outer) && outer->loc.inside)
-			{
-				if (safety-- <= 0)
-				{
-					send_to_char("That container has a malformed item.\r\n",
-						     actor);
-					return false;
-				}
-				outer = outer->loc.inside;
-			}
-			if (OBJ_ROOM(outer) && outer->loc.room == actor->in_room)
-				*source = { item_owner_type::room,
-					    static_cast<uint64_t>(world[actor->in_room].number),
-					    0 };
-			else if (OBJ_CARRIED_BY(outer, actor) || OBJ_WORN_BY(outer, actor))
-				*source = { item_owner_type::player,
-					    static_cast<uint64_t>(GET_PID(actor)), 0 };
-		}
-	}
-	else if (OBJ_ROOM(object) && object->loc.room == actor->in_room)
-		*source = { item_owner_type::room,
-			    static_cast<uint64_t>(world[actor->in_room].number), 0 };
-	return item_owner_identity_valid(*source);
+	return item_get_source_owner(actor, object, container, source);
 }
 
 enum class coin_debit_action : uint8_t
