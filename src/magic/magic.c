@@ -8467,6 +8467,9 @@ int Summonable(P_char ch)
 	if (!ch)
 		return FALSE;
 
+	if (training_dummy_is(ch))
+		return FALSE;
+
 	if (IS_NPC(ch) && (IS_SET(ch->specials.act, ACT_NO_SUMMON) || IS_SHOPKEEPER(ch)))
 		return FALSE;
 
@@ -12879,6 +12882,11 @@ void spell_command_undead(int level, P_char ch, char * /*arg*/, int /*type*/, P_
 {
 	if (!victim)
 	{
+		return;
+	}
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy cannot be commanded.\r\n", ch);
 		return;
 	}
 	if (/*(GET_CLASS(ch) != CLASS_NECROMANCER) || */ resists_spell(ch, victim))

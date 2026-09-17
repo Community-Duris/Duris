@@ -121,6 +121,7 @@ def test_training_dummy_cannot_be_charmed_or_converted_to_a_pet():
     bard = source("src/classes/bard.c")
     necromancy = source("src/classes/necromancy.c")
     magic = source("src/magic/magic.c")
+    psionics = source("src/classes/psionics.c")
     dummy = source("src/combat/training_dummy.c")
 
     assert 'if (training_dummy_is(victim))' in bard
@@ -128,7 +129,19 @@ def test_training_dummy_cannot_be_charmed_or_converted_to_a_pet():
     assert '!training_dummy_capture_target_allowed(mob)' in necromancy
     assert '!training_dummy_capture_target_allowed(ch)' in necromancy
     assert 'The training dummy has no mind to charm.' in magic
+    assert 'The training dummy cannot be commanded.' in magic
+    assert 'if (training_dummy_is(ch))\n\t\treturn FALSE;' in magic
+    assert 'The training dummy has no mind to awe.' in psionics
+    assert 'The training dummy has no mind to dominate.' in psionics
     assert 'cannot be charmed' in dummy
+
+
+def test_training_dummy_cannot_be_summoned_or_ridden():
+    magic = source("src/magic/magic.c")
+    mount = source("src/classes/mount.c")
+
+    assert 'if (training_dummy_is(ch))\n\t\treturn FALSE;' in magic
+    assert 'The training dummy is anchored and cannot be ridden.' in mount
 
 
 def test_nonpet_npcs_cannot_use_the_dummy_as_a_tank():
@@ -197,7 +210,7 @@ def test_dummy_snapshots_are_skipped_and_recreated_by_bootstrap():
     copyover = source("src/persistence/copyover.c")
     recovery = source("src/world/world_recovery_pipeline.c")
 
-    assert '&& !training_dummy_is(ch)' in copyover
-    assert 'training_dummy_is(mob)' in copyover
-    assert 'ch->only.npc->summoned_instance || training_dummy_is(ch)' in recovery
-    assert 'training_dummy_is(mob)' in recovery
+    assert 'copyover_training_dummy_is(ch)' in copyover
+    assert 'recovery_training_dummy_is(ch)' in recovery
+    assert 'ch->only.npc->summoned_instance || recovery_training_dummy_is(ch)' in recovery
+    assert 'recovery_training_dummy_is(mob)' in recovery
