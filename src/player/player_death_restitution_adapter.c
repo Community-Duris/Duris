@@ -109,6 +109,7 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 	const player_death_restitution_runtime_result result =
 		player_death_restitution_runtime_submit(plan, live_callbacks, nullptr, &submission);
 	if (result == player_death_restitution_runtime_result::accepted ||
+	    result == player_death_restitution_runtime_result::awaiting_durability ||
 	    result == player_death_restitution_runtime_result::attached ||
 	    result == player_death_restitution_runtime_result::journal_uncertain)
 	{
@@ -147,6 +148,7 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 		player_death_restitution_runtime_submit_command(approved_command, live_callbacks,
 								nullptr, &submission);
 	if (result == player_death_restitution_runtime_result::accepted ||
+	    result == player_death_restitution_runtime_result::awaiting_durability ||
 	    result == player_death_restitution_runtime_result::attached ||
 	    result == player_death_restitution_runtime_result::journal_uncertain)
 	{

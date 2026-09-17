@@ -67,6 +67,7 @@ enum class telemetry_record_kind : std::uint8_t
 	coverage_gap = 4,
 	configuration = 5,
 	progression = 6,
+	encounter = 7,
 };
 
 /* Progression facts keep XP arithmetic separate from level-threshold use. */
@@ -114,6 +115,41 @@ enum class telemetry_progression_observation_status : std::uint8_t
 	observed_mutable = 1,
 	recovered_checkpoint = 2,
 	durable_reconciled = 3,
+};
+
+/* Encounter facts are append-only lifecycle/roster observations.  A run's
+ * terminal outcome is distinct from expected reward credit and from each
+ * participant's observed time. */
+enum class telemetry_encounter_mode : std::uint8_t
+{
+	unknown = 0,
+	pve = 1,
+	pvp = 2,
+	mixed = 3,
+};
+
+enum class telemetry_encounter_event_kind : std::uint8_t
+{
+	start = 1,
+	participant_join = 2,
+	participant_leave = 3,
+	close = 4,
+	participant_summary = 5,
+};
+
+enum class telemetry_encounter_outcome : std::uint8_t
+{
+	unknown = 0,
+	success = 1,
+	failure = 2,
+	death = 3,
+	flee = 4,
+	withdrawal = 5,
+	abandonment = 6,
+	timeout = 7,
+	copyover = 8,
+	shutdown = 9,
+	unknown_close = 10,
 };
 
 /* Lifecycle records describe a logical session or an explicit socket edge. */
@@ -340,6 +376,29 @@ struct telemetry_producer_id
 {
 	telemetry_id boot_id;
 	telemetry_id process_id;
+};
+
+struct telemetry_encounter_id
+{
+	telemetry_producer_id producer;
+	telemetry_sequence sequence;
+};
+
+struct telemetry_encounter_source
+{
+	telemetry_environment_id environment_id;
+	telemetry_season_id season_id;
+	telemetry_config_id config_id;
+	std::uint32_t classifier_version;
+	std::uint32_t policy_version;
+	std::int32_t zone_vnum;
+	telemetry_id group_key;
+};
+
+struct telemetry_encounter_participant
+{
+	telemetry_subject_id subject_id;
+	telemetry_pid pid;
 };
 
 /* Stable replay identity: (producer_id, record_seq).  Retries keep both. */
@@ -579,6 +638,33 @@ struct telemetry_configuration_payload
 	telemetry_config_snapshot config;
 };
 
+/*
+ * Encounter facts share the tagged interval stream.  A close row carries the
+ * run elapsed duration and each participant_summary row carries one player's
+ * observed contribution; expected reward-credit membership is a separate
+ * count and is never used as the participation denominator.
+ */
+struct telemetry_encounter_payload
+{
+	telemetry_encounter_id encounter;
+	telemetry_encounter_event_kind kind;
+	telemetry_encounter_mode mode;
+	telemetry_encounter_outcome outcome;
+	std::uint8_t reserved;
+	std::uint16_t revision;
+	telemetry_encounter_source source;
+	telemetry_encounter_participant participant;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_utc_usec at_utc_usec;
+	telemetry_monotonic_usec start_monotonic_usec;
+	telemetry_utc_usec start_utc_usec;
+	telemetry_duration_usec elapsed_usec;
+	telemetry_duration_usec participant_usec;
+	std::uint16_t participant_count;
+	std::uint16_t expected_credit_count;
+	telemetry_quality_mask quality_flags;
+};
+
 union telemetry_record_payload
 {
 	telemetry_interval_payload interval;
@@ -587,6 +673,7 @@ union telemetry_record_payload
 	telemetry_coverage_gap_payload gap;
 	telemetry_configuration_payload configuration;
 	telemetry_progression_payload progression;
+	telemetry_encounter_payload encounter;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -635,7 +722,8 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::session_checkpoint ||
 	       kind == telemetry_record_kind::coverage_gap ||
 	       kind == telemetry_record_kind::configuration ||
-	       kind == telemetry_record_kind::progression;
+	       kind == telemetry_record_kind::progression ||
+	       kind == telemetry_record_kind::encounter;
 }
 
 constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noexcept
@@ -643,7 +731,8 @@ constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noex
 	return kind == telemetry_record_kind::session_lifecycle ||
 	       kind == telemetry_record_kind::session_checkpoint ||
 	       kind == telemetry_record_kind::coverage_gap ||
-	       kind == telemetry_record_kind::configuration;
+	       kind == telemetry_record_kind::configuration ||
+	       kind == telemetry_record_kind::encounter;
 }
 
 constexpr bool telemetry_lifecycle_kind_is_valid(telemetry_lifecycle_kind kind) noexcept
@@ -786,6 +875,54 @@ constexpr bool telemetry_producer_id_is_zero(const telemetry_producer_id &id) no
 constexpr bool telemetry_producer_id_is_valid(const telemetry_producer_id &id) noexcept
 {
 	return id.boot_id != TELEMETRY_UNKNOWN_ID && id.process_id != TELEMETRY_UNKNOWN_ID;
+}
+
+constexpr bool telemetry_encounter_mode_is_valid(telemetry_encounter_mode mode) noexcept
+{
+	return mode == telemetry_encounter_mode::unknown || mode == telemetry_encounter_mode::pve ||
+	       mode == telemetry_encounter_mode::pvp || mode == telemetry_encounter_mode::mixed;
+}
+
+constexpr bool telemetry_encounter_event_kind_is_valid(
+	telemetry_encounter_event_kind kind) noexcept
+{
+	return kind == telemetry_encounter_event_kind::start ||
+	       kind == telemetry_encounter_event_kind::participant_join ||
+	       kind == telemetry_encounter_event_kind::participant_leave ||
+	       kind == telemetry_encounter_event_kind::close ||
+	       kind == telemetry_encounter_event_kind::participant_summary;
+}
+
+constexpr bool telemetry_encounter_outcome_is_valid(telemetry_encounter_outcome outcome) noexcept
+{
+	return outcome == telemetry_encounter_outcome::unknown ||
+	       outcome == telemetry_encounter_outcome::success ||
+	       outcome == telemetry_encounter_outcome::failure ||
+	       outcome == telemetry_encounter_outcome::death ||
+	       outcome == telemetry_encounter_outcome::flee ||
+	       outcome == telemetry_encounter_outcome::withdrawal ||
+	       outcome == telemetry_encounter_outcome::abandonment ||
+	       outcome == telemetry_encounter_outcome::timeout ||
+	       outcome == telemetry_encounter_outcome::copyover ||
+	       outcome == telemetry_encounter_outcome::shutdown ||
+	       outcome == telemetry_encounter_outcome::unknown_close;
+}
+
+constexpr bool telemetry_encounter_id_is_valid(const telemetry_encounter_id &id) noexcept
+{
+	return telemetry_producer_id_is_valid(id.producer) && id.sequence != 0U;
+}
+
+constexpr bool telemetry_encounter_source_is_valid(const telemetry_encounter_source &source) noexcept
+{
+	return source.environment_id != 0U && source.season_id != 0U && source.config_id != 0U &&
+	       source.classifier_version != 0U && source.policy_version != 0U && source.zone_vnum >= -1;
+}
+
+constexpr bool telemetry_encounter_participant_is_valid(
+	const telemetry_encounter_participant &participant) noexcept
+{
+	return participant.subject_id != 0U && participant.pid > 0;
 }
 
 constexpr bool telemetry_record_key_is_valid(const telemetry_record_key &key) noexcept
@@ -1160,6 +1297,47 @@ constexpr bool telemetry_configuration_payload_is_valid(
 	return telemetry_config_is_valid(configuration.config);
 }
 
+constexpr bool telemetry_encounter_payload_is_valid(
+	const telemetry_encounter_payload &encounter) noexcept
+{
+	if (!telemetry_encounter_id_is_valid(encounter.encounter) ||
+	    !telemetry_encounter_event_kind_is_valid(encounter.kind) ||
+	    !telemetry_encounter_mode_is_valid(encounter.mode) ||
+	    !telemetry_encounter_outcome_is_valid(encounter.outcome) || encounter.reserved != 0U ||
+	    encounter.revision == 0U || !telemetry_encounter_source_is_valid(encounter.source) ||
+	    encounter.source.zone_vnum < -1 || !telemetry_quality_mask_is_valid(encounter.quality_flags) ||
+	    encounter.at_monotonic_usec < encounter.start_monotonic_usec)
+		return false;
+	const bool participant_event = encounter.kind == telemetry_encounter_event_kind::participant_join ||
+					       encounter.kind == telemetry_encounter_event_kind::participant_leave ||
+					       encounter.kind == telemetry_encounter_event_kind::participant_summary;
+	if (participant_event != telemetry_encounter_participant_is_valid(encounter.participant))
+		return false;
+	if (encounter.kind == telemetry_encounter_event_kind::start &&
+	    encounter.outcome != telemetry_encounter_outcome::unknown)
+		return false;
+	if (encounter.kind == telemetry_encounter_event_kind::participant_leave &&
+	    encounter.outcome == telemetry_encounter_outcome::unknown)
+		return false;
+	if ((encounter.kind == telemetry_encounter_event_kind::close ||
+	     encounter.kind == telemetry_encounter_event_kind::participant_summary) &&
+	    encounter.outcome == telemetry_encounter_outcome::unknown)
+		return false;
+	if (encounter.kind == telemetry_encounter_event_kind::close)
+	{
+		if (encounter.participant.subject_id != 0U || encounter.participant.pid != 0 ||
+		    encounter.elapsed_usec != encounter.at_monotonic_usec - encounter.start_monotonic_usec)
+			return false;
+	}
+	else if (encounter.kind == telemetry_encounter_event_kind::start ||
+		 encounter.kind == telemetry_encounter_event_kind::participant_join)
+	{
+		if (encounter.elapsed_usec != 0U || encounter.participant_usec != 0U)
+			return false;
+	}
+	return true;
+}
+
 /* The switch reads only the union member selected by header.kind. */
 constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcept
 {
@@ -1179,6 +1357,8 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 		return telemetry_configuration_payload_is_valid(record.payload.configuration);
 	case telemetry_record_kind::progression:
 		return telemetry_progression_payload_is_valid(record.payload.progression);
+	case telemetry_record_kind::encounter:
+		return telemetry_encounter_payload_is_valid(record.payload.encounter);
 	case telemetry_record_kind::invalid:
 		break;
 	}
@@ -1195,6 +1375,9 @@ static_assert(std::is_trivially_copyable_v<telemetry_health_snapshot>);
 static_assert(std::is_trivially_copyable_v<telemetry_progression_payload>);
 static_assert(std::is_standard_layout_v<telemetry_progression_payload>);
 static_assert(sizeof(telemetry_progression_payload) <= TELEMETRY_RECORD_MAX_BYTES);
+static_assert(std::is_trivially_copyable_v<telemetry_encounter_payload>);
+static_assert(std::is_standard_layout_v<telemetry_encounter_payload>);
+static_assert(sizeof(telemetry_encounter_payload) <= TELEMETRY_RECORD_MAX_BYTES);
 static_assert(sizeof(telemetry_record) <= TELEMETRY_RECORD_MAX_BYTES,
 	      "telemetry_record must remain within the fixed queue record bound");
 

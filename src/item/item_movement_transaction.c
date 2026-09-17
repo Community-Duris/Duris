@@ -135,6 +135,7 @@ item_movement_reject coordinator_reject_reason(critical_submit_result result)
 	case critical_submit_result::journal_uncertain:
 		return item_movement_reject::coordinator_journal_uncertain;
 	case critical_submit_result::accepted:
+	case critical_submit_result::awaiting_durability:
 	case critical_submit_result::attached:
 		break;
 	}
@@ -1389,6 +1390,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		return true;
 	}
 	if (submitted != critical_submit_result::accepted &&
+	    submitted != critical_submit_result::awaiting_durability &&
 	    submitted != critical_submit_result::attached)
 	{
 		pending.erase(key);
@@ -1596,6 +1598,7 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		return true;
 	}
 	if (submitted != critical_submit_result::accepted &&
+	    submitted != critical_submit_result::awaiting_durability &&
 	    submitted != critical_submit_result::attached)
 	{
 		pending.erase(key);

@@ -4488,16 +4488,28 @@ static void show_world_persistence(P_char ch)
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
-		 "critical_commands state=%s queued=%llu inflight=%llu blocked=%llu bytes=%llu "
+		 "critical_commands state=%s awaiting=%llu admission_queue_bytes=%llu "
+		 "admission_worker=%d append_inflight=%d durable_admissions=%llu "
+		 "admission_failures=%llu admission_uncertain=%llu queued=%llu inflight=%llu "
+		 "blocked=%llu bytes=%llu "
 		 "fences=%llu completed_cache=%llu high_water=%llu/%llu accepted=%llu "
 		 "attached=%llu completed=%llu retries=%llu ambiguous=%llu terminal=%llu "
 		 "stale=%llu overloads=%llu oldest_age_ms=%llu journal=%s "
 		 "journal_records=%llu journal_bytes=%llu journal_corrupt=%llu journal_io=%llu "
 		 "journal_quota=%d\n",
-		 !critical.initialized		      ? "stopped" :
-		 critical.blocked		      ? "blocked" :
-		 critical.queued || critical.inflight ? "pending" :
-							"ready",
+		 !critical.initialized	      ? "stopped" :
+		 critical.blocked	      ? "blocked" :
+		 critical.admission_uncertain ? "uncertain" :
+		 critical.awaiting_durability || critical.append_inflight || critical.queued ||
+				 critical.inflight ?
+						"pending" :
+						"ready",
+		 (unsigned long long)critical.awaiting_durability,
+		 (unsigned long long)critical.admission_queue_bytes,
+		 critical.admission_worker_running ? 1 : 0, critical.append_inflight ? 1 : 0,
+		 (unsigned long long)critical.durable_admissions,
+		 (unsigned long long)critical.admission_failures,
+		 (unsigned long long)critical.admission_uncertain,
 		 (unsigned long long)critical.queued, (unsigned long long)critical.inflight,
 		 (unsigned long long)critical.blocked, (unsigned long long)critical.retained_bytes,
 		 (unsigned long long)critical.fenced_keys,

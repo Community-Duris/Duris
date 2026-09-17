@@ -29,6 +29,9 @@ struct player_death_restitution_runtime_callbacks
 enum class player_death_restitution_runtime_result : uint8_t
 {
 	accepted = 1,
+	// The operation is retained, but its critical-command journal append is
+	// still owned by the coordinator's admission worker.
+	awaiting_durability,
 	attached,
 	invalid_plan,
 	unauthorized,

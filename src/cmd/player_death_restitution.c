@@ -33,19 +33,26 @@ void send_restitution_result(P_char ch, player_death_restitution_runtime_result 
 	switch (result)
 	{
 	case player_death_restitution_runtime_result::accepted:
+	case player_death_restitution_runtime_result::awaiting_durability:
 	case player_death_restitution_runtime_result::attached:
 		if (have_operation)
 		{
 			char message[MAX_STRING_LENGTH] = {};
 			std::snprintf(
 				message, sizeof(message),
-				"Restitution submission accepted for operation %s; the recipient remains fenced until completion.\r\n",
+				result == player_death_restitution_runtime_result::
+							awaiting_durability ?
+					"Restitution submission queued for durability for operation %s; the recipient remains fenced until completion.\r\n" :
+					"Restitution submission accepted for operation %s; the recipient remains fenced until completion.\r\n",
 				operation);
 			send_to_char(message, ch);
 		}
 		else
 			send_to_char(
-				"Restitution submission accepted; the recipient remains fenced until completion.\r\n",
+				result == player_death_restitution_runtime_result::
+							awaiting_durability ?
+					"Restitution submission queued for durability; the recipient remains fenced until completion.\r\n" :
+					"Restitution submission accepted; the recipient remains fenced until completion.\r\n",
 				ch);
 		return;
 	case player_death_restitution_runtime_result::journal_uncertain:

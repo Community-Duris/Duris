@@ -78,6 +78,7 @@ def schema_contract() -> None:
     manifest = json.loads((ROOT / "migrations" / "migration_manifest.json").read_text())
     head = next(item for item in manifest["migrations"]
                 if item["id"] == "0022_telemetry_progression")
+    assert head["id"] == "0022_telemetry_progression"
     assert head["sequence"] == 22
     assert head["apply"] == "immutable/0022_telemetry_progression.sql"
     assert head["verify"] == "immutable/0022_telemetry_progression.sh"

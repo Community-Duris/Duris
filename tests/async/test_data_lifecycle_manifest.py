@@ -32,6 +32,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0017_telemetry_rollup_support.sql",
     ROOT / "migrations" / "immutable" / "0018_collector_catalog.sql",
     ROOT / "migrations" / "immutable" / "0019_corpse_lifecycle_authority.sql",
+    ROOT / "migrations" / "immutable" / "0025_zone_story_quest_state.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -93,8 +94,8 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 193)
-        self.assertEqual(report["non_database_stores"], 23)
+        self.assertEqual(report["database_tables"], 201)
+        self.assertEqual(report["non_database_stores"], 24)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 

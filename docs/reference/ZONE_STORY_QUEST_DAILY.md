@@ -51,7 +51,7 @@ reward key is `season:pid:period`, so replaying the completion, restarting,
 copying over, or reconnecting cannot award a second renown. A repeat completion
 may remain in history, but it never increments the zone numerator again.
 
-SQL-primary deployments apply immutable migration `0023_zone_story_quest_state`
+SQL-primary deployments apply immutable migration `0025_zone_story_quest_state`
 and must pass its verifier. Flat-file-primary deployments use
 `<FLATFILE_ROOT>/domains/zone-story-quests.state`; the atomic file includes a
 catalog revision and SHA-256 payload digest. Both backends fail closed on a

@@ -400,12 +400,32 @@
       "compatibility": "mysql8-mariadb10"
     },
     {
-      "id": "0023_zone_story_quest_state",
+      "id": "0023_telemetry_reward_projection",
       "sequence": 23,
+      "description": "Add committed reward projection and bounded reconciliation state",
+      "apply": "immutable/0023_telemetry_reward_projection.sql",
+      "apply_checksum": "e847046f0aaf5c2cbcc9c4a559282f79b05b7c3ce55348d2d91581e49d9dda85",
+      "verify": "immutable/0023_telemetry_reward_projection.sh",
+      "verify_checksum": "db4a738c4e8295cfcbff3bcc5addab6ff325758c24fcce3d9e52df6608154b8c",
+      "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0024_telemetry_encounters",
+      "sequence": 24,
+      "description": "Add bounded encounter lifecycle and participant effort facts",
+      "apply": "immutable/0024_telemetry_encounters.sql",
+      "apply_checksum": "69e4b3bb194c1abc1f61b1d64b074f051978495633a1350d7b0c91e1db6189d4",
+      "verify": "immutable/0024_telemetry_encounters.sh",
+      "verify_checksum": "3c29a3c6794261dfcbd7ad1b0520452c8401e8734a689a68e8c57e6374fcf798",
+      "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0025_zone_story_quest_state",
+      "sequence": 25,
       "description": "Add durable zone-story quest completion and daily state",
-      "apply": "immutable/0023_zone_story_quest_state.sql",
+      "apply": "immutable/0025_zone_story_quest_state.sql",
       "apply_checksum": "992fd6bd7cdaeee7f1870bb8dad28f6c3c77793a771447dbba996ed1ed088a16",
-      "verify": "immutable/0023_zone_story_quest_state.sh",
+      "verify": "immutable/0025_zone_story_quest_state.sh",
       "verify_checksum": "5893fffec2d51fa40c0baaaa8407c694fc2a730af2caad278ecf085340d9c8a4",
       "compatibility": "mysql8-mariadb10"
     }

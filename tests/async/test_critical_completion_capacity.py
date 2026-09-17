@@ -63,7 +63,7 @@ static void capacity_case(const std::string &directory, size_t capacity,
     exhausted_outcome = outcome;
     assert(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 2));
     const auto failed = command(2);
-    assert(critical_command_coordinator_submit(failed) == critical_submit_result::accepted);
+    assert(critical_command_coordinator_submit(failed) == critical_submit_result::awaiting_durability);
     // A retry that can still run needs no output slot, even with a null buffer.
     for (unsigned int n = 0; n < CRITICAL_COORDINATOR_MAX_RETRIES; ++n) {
         wait_for([] { return result_depth() == 1; });
@@ -78,7 +78,7 @@ static void capacity_case(const std::string &directory, size_t capacity,
         const auto other = command(10 + i);
         expected.emplace(operation_key(other.operation_id), i % 2 ?
                          critical_apply_outcome::terminal_failure : critical_apply_outcome::applied);
-        assert(critical_command_coordinator_submit(other) == critical_submit_result::accepted);
+        assert(critical_command_coordinator_submit(other) == critical_submit_result::awaiting_durability);
     }
     wait_for([&] { return result_depth() == capacity; });
     release_last = true;

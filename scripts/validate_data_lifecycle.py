@@ -30,7 +30,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0017_telemetry_rollup_support.sql",
     ROOT / "migrations" / "immutable" / "0018_collector_catalog.sql",
     ROOT / "migrations" / "immutable" / "0019_corpse_lifecycle_authority.sql",
-    ROOT / "migrations" / "immutable" / "0023_zone_story_quest_state.sql",
+    ROOT / "migrations" / "immutable" / "0025_zone_story_quest_state.sql",
 )
 
 ROOT_FIELDS = {
