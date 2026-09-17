@@ -129,6 +129,8 @@ int main()
     item.loc.carrying = &npc;
     runtime_entry.owner = { item_owner_type::player, 42, 0 };
     assert(!item_get_source_owner(&actor, &item, nullptr, &owner));
+    runtime_entry.owner = { item_owner_type::locker, 9, 10 };
+    assert(!item_get_source_owner(&actor, &item, nullptr, &owner));
 
     // A tracked parent is also checked against the live outer placement.
     item.obj_uid = 0;
