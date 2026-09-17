@@ -130,6 +130,19 @@ int main()
     runtime_entry.owner = { item_owner_type::player, 42, 0 };
     assert(!item_get_source_owner(&actor, &item, nullptr, &owner));
 
+    // A tracked parent is also checked against the live outer placement.
+    item.obj_uid = 0;
+    item.loc_p = LOC_INSIDE;
+    item.loc.inside = &containers[0];
+    containers[0].obj_uid = 88;
+    containers[0].loc_p = LOC_CARRIED;
+    containers[0].loc.carrying = &actor;
+    runtime_entry.item_uid = containers[0].obj_uid;
+    runtime_entry.owner = { item_owner_type::player, 42, 0 };
+    assert(item_get_source_owner(&actor, &item, &containers[0], &owner));
+    runtime_entry.owner = { item_owner_type::room, 100, 0 };
+    assert(!item_get_source_owner(&actor, &item, &containers[0], &owner));
+
     assert(!item_get_source_owner(nullptr, &item, containers, &owner));
     return 0;
 }
