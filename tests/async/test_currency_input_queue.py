@@ -384,7 +384,7 @@ char *coins_to_string(int, int, int, int, const char *)
 }
 void writeCorpse(P_obj) {}
 void mark_player_dirty_components(int, player_component_mask_t) {}
-bool get_item_source_owner(P_char, P_obj money, P_obj container, item_owner_identity *owner)
+bool item_get_source_owner(P_char, P_obj money, P_obj container, item_owner_identity *owner)
 {
     item_ownership_runtime_entry row;
     if (!item_ownership_runtime_lookup(money->obj_uid, &row)) {

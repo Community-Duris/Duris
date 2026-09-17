@@ -20,7 +20,7 @@ give = index(body, "obj_from_char(obj);")
 
 checks = [
     ("regular PC-to-NPC gives inspect the command boundary", contains(
-        body[guard:guard + 700], "uses_generic_item_ownership(obj)")),
+        body[guard:guard + 700], "item_command_uses_durable_ownership(obj)")),
     ("regular PC-to-NPC gives are refused before detaching the item", guard < give),
     ("the refusal explains that NPC custody is not durable", contains(
         body[guard:guard + 700], "custody cannot be saved yet")),

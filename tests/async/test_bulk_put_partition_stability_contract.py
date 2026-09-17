@@ -35,9 +35,9 @@ def body(name: str) -> str:
 
 put_finish = body("finish_bulk_put_after_commit")
 
-assert "uses_generic_item_ownership" not in put_finish, (
+assert "item_command_uses_durable_ownership" not in put_finish, (
     "finish_bulk_put_after_commit() re-derives the durable split from "
-    "uses_generic_item_ownership(); an item whose ownership row activates during the "
+    "item_command_uses_durable_ownership(); an item whose ownership row activates during the "
     "commit would then be dropped by both passes"
 )
 assert "bulk_put_batch_claimed(state, object)" in put_finish, (
@@ -84,7 +84,7 @@ assert "item_put_deferred = true" in defer and "report_movement_reject" in defer
 
 # start_bulk_put() remains the single place the durable batch is chosen.
 start = body("start_bulk_put")
-assert "uses_generic_item_ownership(object)" in start, (
+assert "item_command_uses_durable_ownership(object)" in start, (
     "start_bulk_put() must classify the durable batch"
 )
 assert "state.durable_items.push_back(object->obj_uid)" in start, (
@@ -94,7 +94,7 @@ assert "state.durable_items.push_back(object->obj_uid)" in start, (
 # The drop path moves synchronously without an ownership transaction, so it must keep
 # refusing any object that is generic-owned at publication time.
 drop_finish = body("finish_bulk_drop_after_commit")
-assert "uses_generic_item_ownership(object)" in drop_finish, (
+assert "item_command_uses_durable_ownership(object)" in drop_finish, (
     "finish_bulk_drop_after_commit() must keep refusing generic-owned objects; "
     "drop_transient_object() moves them without an ownership transaction"
 )

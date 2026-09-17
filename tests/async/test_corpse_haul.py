@@ -135,11 +135,11 @@ static bool item_movement_transaction_submit_batch(P_char,P_obj *,size_t,P_obj,i
 }
 static bool isname(const char *a,const char *b) { return !strcmp(a,b); }
 static bool account_bound_reward_owner(P_char,P_obj) { return false; }
-static bool do_get_obj_is_takeable(P_char,P_obj o) { return o->weight>=0; }
+static bool item_command_object_is_takeable(P_char,P_obj o) { return o->weight>=0; }
 static bool checkgetput(P_char,P_obj) { return false; }
-static bool uses_generic_item_ownership(P_obj o) { return o->type!=ITEM_MONEY; }
+static bool item_command_uses_durable_ownership(P_obj o) { return o->type!=ITEM_MONEY; }
 static int64_t total_carried_weight(P_char) { return 0; }
-static bool get_item_source_owner(P_char,P_obj,P_obj,item_owner_identity *o) { *o={}; return true; }
+static bool item_get_source_owner(P_char,P_obj,P_obj,item_owner_identity *o) { *o={}; return true; }
 static void checked_snprintf(char *b,size_t n,const char *f,...) { va_list a; va_start(a,f); vsnprintf(b,n,f,a); va_end(a); }
 static int scrap_attempts=0;
 static void MakeScrap(P_char,P_obj) { ++scrap_attempts; }

@@ -52,16 +52,6 @@ using P_obj = obj_data *;
 static std::unordered_map<uint64_t, item_ownership_runtime_entry> runtime_catalog;
 static bool fallback_called = false;
 
-static bool item_ownership_runtime_lookup(
-    uint64_t uid, item_ownership_runtime_entry *entry)
-{
-    const auto found = runtime_catalog.find(uid);
-    if (found == runtime_catalog.end())
-        return false;
-    *entry = found->second;
-    return true;
-}
-
 static bool item_owner_identity_equal(const item_owner_identity &left,
                                       const item_owner_identity &right)
 {
@@ -74,8 +64,14 @@ static bool item_owner_identity_valid(const item_owner_identity &owner)
     return owner.type != item_owner_type::unknown && owner.id != 0;
 }
 
-static bool get_item_source_owner(P_char, P_obj, P_obj, item_owner_identity *source)
+static bool item_get_source_owner(P_char, P_obj object, P_obj, item_owner_identity *source)
 {
+    const auto found = runtime_catalog.find(object->obj_uid);
+    if (found != runtime_catalog.end())
+    {
+        *source = found->second.owner;
+        return true;
+    }
     fallback_called = true;
     *source = { item_owner_type::room, 9001, 0 };
     return true;
@@ -90,8 +86,11 @@ int main()
     obj_data pet_dropped_item{ 2 };
     item_owner_identity source = {};
 
-    // The ordinary room object is first, but the selected durable item is
-    // still authoritative for the player who dropped it through a pet.
+    // Both selected durable roots are still authoritative for the player,
+    // even though the ordinary room object is first in scan order.
+    runtime_catalog.emplace(
+        ordinary_room_item.obj_uid,
+        item_ownership_runtime_entry{ { item_owner_type::player, actor.pid, 0 } });
     runtime_catalog.emplace(
         pet_dropped_item.obj_uid,
         item_ownership_runtime_entry{ { item_owner_type::player, actor.pid, 0 } });

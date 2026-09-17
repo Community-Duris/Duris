@@ -11,7 +11,7 @@ actobj = (SRC / "actobj.c").read_text(encoding="utf-8")
 bulk_source_start = actobj.index("static bool bulk_get_source_for_roots(")
 bulk_source_end = actobj.index("\nstatic bool bulk_get_source_available(", bulk_source_start)
 bulk_source = actobj[bulk_source_start:bulk_source_end]
-assert "get_item_source_owner(actor, root, container, &root_source)" in bulk_source
+assert "item_get_source_owner(actor, root, container, &root_source)" in bulk_source
 assert "item_ownership_runtime_lookup(root->obj_uid" not in bulk_source
 
 harness = r'''
