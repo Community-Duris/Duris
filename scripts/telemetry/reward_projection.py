@@ -315,6 +315,10 @@ SOURCE_ADAPTERS: tuple[SourceAdapter, ...] = (
             "Committed wallet and bank denomination deltas. Positive net value is "
             "creation, zero-net movement is transfer, and negative net value is sink."
         ),
+        key_created_sql="l.created_at",
+        key_operation_sql="l.operation_id",
+        key_entry_sql="0+0",
+        key_participant_sql="l.pid",
     ),
     SourceAdapter(
         name="epic_ledger",
@@ -329,6 +333,10 @@ SOURCE_ADAPTERS: tuple[SourceAdapter, ...] = (
         row_factory=_epic_observation,
         context_only=False,
         description="Committed epic delta ledger; outcomes are context only.",
+        key_created_sql="l.created_at",
+        key_operation_sql="l.operation_id",
+        key_entry_sql="0+0",
+        key_participant_sql="l.pid",
     ),
     SourceAdapter(
         name="combat_frag_ledger",
@@ -342,6 +350,10 @@ SOURCE_ADAPTERS: tuple[SourceAdapter, ...] = (
         row_factory=_frag_observation,
         context_only=False,
         description="Committed PvP frag delta ledger; outcome rows are context only.",
+        key_created_sql="l.created_at",
+        key_operation_sql="l.operation_id",
+        key_entry_sql="l.participant_index",
+        key_participant_sql="l.pid",
     ),
     SourceAdapter(
         name="zone_touch_outcome",
@@ -356,6 +368,10 @@ SOURCE_ADAPTERS: tuple[SourceAdapter, ...] = (
         row_factory=_zone_parent_observation,
         context_only=True,
         description="Zone parent outcome context; never an authority amount.",
+        key_created_sql="o.created_at",
+        key_operation_sql="o.operation_id",
+        key_entry_sql="0+0",
+        key_participant_sql="o.toucher_pid",
     ),
     SourceAdapter(
         name="zone_touch_outcome_participant",
@@ -388,6 +404,10 @@ SOURCE_ADAPTERS: tuple[SourceAdapter, ...] = (
         row_factory=_pvp_parent_observation,
         context_only=True,
         description="PvP outcome parent context; committed epic/currency/frag ledgers are authority.",
+        key_created_sql="o.created_at",
+        key_operation_sql="o.operation_id",
+        key_entry_sql="0+0",
+        key_participant_sql="o.victim_pid",
     ),
     SourceAdapter(
         name="combat_outcome_participant",
@@ -419,6 +439,10 @@ SOURCE_ADAPTERS: tuple[SourceAdapter, ...] = (
         row_factory=_boon_parent_observation,
         context_only=True,
         description="Boon outcome parent context; numeric reward values need ledger linkage.",
+        key_created_sql="o.created_at",
+        key_operation_sql="o.operation_id",
+        key_entry_sql="0+0",
+        key_participant_sql="o.pid",
     ),
     SourceAdapter(
         name="boon_reward_outcome_entry",

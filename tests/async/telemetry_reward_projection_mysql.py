@@ -242,58 +242,60 @@ class RewardProjectionMySQLTest(unittest.TestCase):
         )
 
         store = RewardProjectionStore(self.factory, page_size=16)
-        initial = ProjectionState(
-            SourceKind.EPIC_LEDGER,
-            cycle_id=1,
-            fast_cursor=SourceCursor(floor_usec, ZERO_OPERATION_ID),
-            cycle_high_water_usec=high_water_usec,
-        )
-        batch, forward = store.process_page(
-            adapter,
-            initial,
-            high_water_usec=high_water_usec,
-            reconciliation=False,
-        )
-        self.assertEqual([row.operation_id for row in batch.records], [operation_high])
+        try:
+            initial = ProjectionState(
+                SourceKind.EPIC_LEDGER,
+                cycle_id=1,
+                fast_cursor=SourceCursor(floor_usec, ZERO_OPERATION_ID),
+                cycle_high_water_usec=high_water_usec,
+            )
+            batch, forward = store.process_page(
+                adapter,
+                initial,
+                high_water_usec=high_water_usec,
+                reconciliation=False,
+            )
+            self.assertEqual([row.operation_id for row in batch.records], [operation_high])
 
-        # Commit a lower-sorting operation after the forward cursor has passed
-        # the shared timestamp.  The fast keyset must miss it; reconciliation
-        # must recover it from the retained floor.
-        self._insert_epic_source(
-            operation_low, created_at, pid=pid, delta=3, revision=2
-        )
-        missed, forward_after_delay = store.process_page(
-            adapter,
-            forward,
-            high_water_usec=high_water_usec,
-            reconciliation=False,
-        )
-        self.assertEqual(missed.records, ())
-        self.assertEqual(forward_after_delay.fast_cursor.operation_id, operation_high)
+            # Commit a lower-sorting operation after the forward cursor has passed
+            # the shared timestamp.  The fast keyset must miss it; reconciliation
+            # must recover it from the retained floor.
+            self._insert_epic_source(
+                operation_low, created_at, pid=pid, delta=3, revision=2
+            )
+            missed, forward_after_delay = store.process_page(
+                adapter,
+                forward,
+                high_water_usec=high_water_usec,
+                reconciliation=False,
+            )
+            self.assertEqual(missed.records, ())
+            self.assertEqual(forward_after_delay.fast_cursor.operation_id, operation_high)
 
-        reconciliation = forward_after_delay.start_reconciliation(
-            cycle_id=2,
-            retention_floor_usec=floor_usec,
-            high_water_usec=high_water_usec,
-        )
-        recovered, completed = store.process_page(
-            adapter,
-            reconciliation,
-            high_water_usec=high_water_usec,
-            reconciliation=True,
-        )
-        self.assertEqual(
-            {row.operation_id for row in recovered.records},
-            {operation_high, operation_low},
-        )
-        self.assertEqual(recovered.gross_total, 10)
-        self.assertFalse(completed.provisional)
-        self.assertEqual(completed.acknowledged_through_usec, high_water_usec)
-        self.assertEqual(
-            self._scalar("SELECT COUNT(*) FROM telemetry_reward_projection"), 2
-        )
-        self.assertEqual(store.connection_count, 1)
-        store.close()
+            reconciliation = forward_after_delay.start_reconciliation(
+                cycle_id=2,
+                retention_floor_usec=floor_usec,
+                high_water_usec=high_water_usec,
+            )
+            recovered, completed = store.process_page(
+                adapter,
+                reconciliation,
+                high_water_usec=high_water_usec,
+                reconciliation=True,
+            )
+            self.assertEqual(
+                {row.operation_id for row in recovered.records},
+                {operation_high, operation_low},
+            )
+            self.assertEqual(recovered.gross_total, 10)
+            self.assertFalse(completed.provisional)
+            self.assertEqual(completed.acknowledged_through_usec, high_water_usec)
+            self.assertEqual(
+                self._scalar("SELECT COUNT(*) FROM telemetry_reward_projection"), 2
+            )
+            self.assertEqual(store.connection_count, 1)
+        finally:
+            store.close()
 
         query, parameters = build_source_page_query(
             adapter,
@@ -328,43 +330,45 @@ class RewardProjectionMySQLTest(unittest.TestCase):
             is_creation=True,
         )
         store = RewardProjectionStore(self.factory, page_size=16)
-        self._write_batch(store, [first, first], cycle_id=3)
-        self._write_batch(store, [first], cycle_id=3)
-        self.assertEqual(
-            self._scalar(
-                "SELECT COUNT(*) FROM telemetry_reward_projection "
-                "WHERE source_kind=%s AND operation_id=%s",
-                (int(SourceKind.EPIC_LEDGER), operation_id),
-            ),
-            1,
-        )
-        conflicting = replace(first, net_amount=51, gross_amount=51)
-        self._write_batch(store, [first, conflicting], cycle_id=4)
-        row = self._row(
-            "SELECT status,gross_amount,net_amount,quality_flags "
-            "FROM telemetry_reward_projection WHERE operation_id=%s",
-            (operation_id,),
-        )
-        self.assertEqual(row["status"], int(ProjectionStatus.CONFLICT))
-        self.assertIsNone(row["gross_amount"])
-        self.assertIsNone(row["net_amount"])
-        self.assertTrue(row["quality_flags"] & 2)
+        try:
+            self._write_batch(store, [first, first], cycle_id=3)
+            self._write_batch(store, [first], cycle_id=3)
+            self.assertEqual(
+                self._scalar(
+                    "SELECT COUNT(*) FROM telemetry_reward_projection "
+                    "WHERE source_kind=%s AND operation_id=%s",
+                    (int(SourceKind.EPIC_LEDGER), operation_id),
+                ),
+                1,
+            )
+            conflicting = replace(first, net_amount=51, gross_amount=51)
+            self._write_batch(store, [first, conflicting], cycle_id=4)
+            row = self._row(
+                "SELECT status,gross_amount,net_amount,quality_flags "
+                "FROM telemetry_reward_projection WHERE operation_id=%s",
+                (operation_id,),
+            )
+            self.assertEqual(row["status"], int(ProjectionStatus.CONFLICT))
+            self.assertIsNone(row["gross_amount"])
+            self.assertIsNone(row["net_amount"])
+            self.assertTrue(row["quality_flags"] & 2)
 
-        rolled_back = replace(
-            first, operation_id=self._operation(0x43, os.getpid())
-        )
-        store._begin()
-        store.upsert_projection(project_observations([rolled_back]), cycle_id=5)
-        store._rollback()
-        self.assertEqual(
-            self._scalar(
-                "SELECT COUNT(*) FROM telemetry_reward_projection "
-                "WHERE operation_id=%s",
-                (rolled_back.operation_id,),
-            ),
-            0,
-        )
-        store.close()
+            rolled_back = replace(
+                first, operation_id=self._operation(0x43, os.getpid())
+            )
+            store._begin()
+            store.upsert_projection(project_observations([rolled_back]), cycle_id=5)
+            store._rollback()
+            self.assertEqual(
+                self._scalar(
+                    "SELECT COUNT(*) FROM telemetry_reward_projection "
+                    "WHERE operation_id=%s",
+                    (rolled_back.operation_id,),
+                ),
+                0,
+            )
+        finally:
+            store.close()
 
     def test_state_and_report_expose_coverage_without_source_mutation(self) -> None:
         before = self._scalar("SELECT COUNT(*) FROM epic_ledger")
@@ -383,29 +387,31 @@ class RewardProjectionMySQLTest(unittest.TestCase):
             is_creation=True,
         )
         store = RewardProjectionStore(self.factory, page_size=16)
-        state = ProjectionState(SourceKind.EPIC_LEDGER).start_reconciliation(
-            cycle_id=9,
-            retention_floor_usec=1_899_999_000_000_000,
-            high_water_usec=1_900_001_000_000_000,
-        )
-        store._begin()
         try:
-            store.upsert_projection(project_observations([observation]), cycle_id=9)
-            store.upsert_state(state)
-            store._commit()
-        except Exception:
-            store._rollback()
-            raise
-        report = store.read_report(
-            start_usec=1_899_999_000_000_000,
-            end_usec=1_900_001_000_000_000,
-            max_rows=16,
-        )
-        self.assertEqual(report["definition"]["name"], "committed_reward_projection")
-        self.assertTrue(report["rows"])
-        self.assertTrue(report["projection_state"])
-        self.assertEqual(store.statement_count, 2)
-        store.close()
+            state = ProjectionState(SourceKind.EPIC_LEDGER).start_reconciliation(
+                cycle_id=9,
+                retention_floor_usec=1_899_999_000_000_000,
+                high_water_usec=1_900_001_000_000_000,
+            )
+            store._begin()
+            try:
+                store.upsert_projection(project_observations([observation]), cycle_id=9)
+                store.upsert_state(state)
+                store._commit()
+            except Exception:
+                store._rollback()
+                raise
+            report = store.read_report(
+                start_usec=1_899_999_000_000_000,
+                end_usec=1_900_001_000_000_000,
+                max_rows=16,
+            )
+            self.assertEqual(report["definition"]["name"], "committed_reward_projection")
+            self.assertTrue(report["rows"])
+            self.assertTrue(report["projection_state"])
+            self.assertEqual(store.statement_count, 2)
+        finally:
+            store.close()
         self.assertEqual(self._scalar("SELECT COUNT(*) FROM epic_ledger"), before)
 
     @classmethod

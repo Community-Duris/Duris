@@ -213,6 +213,50 @@ class RewardProjectionPureTest(unittest.TestCase):
 
 
 class RewardProjectionQueryTest(unittest.TestCase):
+    def test_source_keyset_uses_physical_columns_not_select_aliases(self) -> None:
+        expected_keys = {
+            "currency_ledger": ("L.CREATED_AT", "L.OPERATION_ID", "0+0", "L.PID"),
+            "epic_ledger": ("L.CREATED_AT", "L.OPERATION_ID", "0+0", "L.PID"),
+            "combat_frag_ledger": (
+                "L.CREATED_AT", "L.OPERATION_ID", "L.PARTICIPANT_INDEX", "L.PID"
+            ),
+            "zone_touch_outcome": ("O.CREATED_AT", "O.OPERATION_ID", "0+0", "O.TOUCHER_PID"),
+            "zone_touch_outcome_participant": (
+                "O.CREATED_AT", "P.OPERATION_ID", "P.PARTICIPANT_INDEX", "P.PID"
+            ),
+            "combat_outcome": ("O.CREATED_AT", "O.OPERATION_ID", "0+0", "O.VICTIM_PID"),
+            "combat_outcome_participant": (
+                "O.CREATED_AT", "P.OPERATION_ID", "P.PARTICIPANT_INDEX", "P.PID"
+            ),
+            "boon_reward_outcome": ("O.CREATED_AT", "O.OPERATION_ID", "0+0", "O.PID"),
+            "boon_reward_outcome_entry": (
+                "O.CREATED_AT", "E.OPERATION_ID", "E.ENTRY_INDEX", "O.PID"
+            ),
+        }
+        for adapter in SOURCE_ADAPTERS:
+            if not adapter.supported:
+                continue
+            query, _ = build_source_page_query(
+                adapter,
+                cursor=SourceCursor(1_000_000, operation(99)),
+                high_water_usec=2_000_000,
+                page_size=37,
+            )
+            normalized = " ".join(query.upper().split())
+            self.assertEqual(
+                (
+                    adapter.key_created_sql.upper(),
+                    adapter.key_operation_sql.upper(),
+                    adapter.key_entry_sql.upper(),
+                    adapter.key_participant_sql.upper(),
+                ),
+                expected_keys[adapter.name],
+            )
+            self.assertIn(adapter.key_created_sql.upper(), normalized)
+            self.assertIn(adapter.key_operation_sql.upper(), normalized)
+            self.assertIn(adapter.key_entry_sql.upper(), normalized)
+            self.assertIn(adapter.key_participant_sql.upper(), normalized)
+
     def test_all_supported_adapters_are_explicit_bounded_read_only_queries(self) -> None:
         for adapter in SOURCE_ADAPTERS:
             if not adapter.supported:
