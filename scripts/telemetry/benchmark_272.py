@@ -292,6 +292,8 @@ def python_stage_measure(
         "cpu_ns": total_cpu_finished - total_cpu_started,
         "cpu_p99_ns": percentile(cpu_samples, 99),
         "peak_python_alloc_bytes": peak_alloc,
+        "allocation_bytes": peak_alloc,
+        "memory_bytes": peak_alloc,
         "database_calls": 0,
         "database_fixture": "in_memory_synthetic",
     }

@@ -56,6 +56,7 @@ struct benchmark_result
 	std::uint64_t queue_reserved_bytes = 0U;
 	std::uint64_t queue_capacity = TELEMETRY_QUEUE_CAPACITY_PROPOSAL;
 	std::uint64_t control_reserve = TELEMETRY_CONTROL_RESERVE_PROPOSAL;
+	std::uint64_t producer_allocation_bytes = 0U;
 	std::uint64_t checksum = 0U;
 };
 
@@ -337,7 +338,8 @@ void print_json(mode selected, std::uint32_t records, std::uint32_t repetitions,
 		    "\"admitted\":%llu,\"dropped\":%llu,\"repository_calls\":%llu,"
 		    "\"repository_records\":%llu,\"queue_peak\":%llu,"
 		    "\"queue_reserved_bytes\":%llu,\"queue_capacity\":%llu,"
-		    "\"control_reserve\":%llu,\"checksum\":%llu}\n",
+		    "\"control_reserve\":%llu,\"producer_allocation_bytes\":%llu,"
+		    "\"checksum\":%llu}\n",
 		    mode_name(selected), records, repetitions,
 		    static_cast<unsigned long long>(result.sample_count),
 		    static_cast<unsigned long long>(result.wall_ns),
@@ -357,6 +359,7 @@ void print_json(mode selected, std::uint32_t records, std::uint32_t repetitions,
 		    static_cast<unsigned long long>(result.queue_reserved_bytes),
 		    static_cast<unsigned long long>(result.queue_capacity),
 		    static_cast<unsigned long long>(result.control_reserve),
+		    static_cast<unsigned long long>(result.producer_allocation_bytes),
 		    static_cast<unsigned long long>(result.checksum));
 }
 

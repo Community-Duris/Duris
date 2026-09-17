@@ -47,8 +47,9 @@ semantics and response shaping without opening a database.
 Every C++ stage reports p50, p95, p99, and p99.9 sample latency, wall time,
 CPU time, admitted/dropped records, repository calls, and checksum. The
 capture/write stage also reports worker-batch latency, queue high-water, and
-the fixed queue storage footprint. The Python stages report the same latency
-percentiles, CPU time, peak `tracemalloc` bytes, and an explicit
+the fixed queue storage footprint plus `producer_allocation_bytes: 0`. The
+Python stages report the same latency percentiles, CPU time,
+`allocation_bytes`/`memory_bytes` from peak `tracemalloc`, and an explicit
 `database_calls: 0` marker.
 
 The source contract checked by the runner verifies that the producer/transport

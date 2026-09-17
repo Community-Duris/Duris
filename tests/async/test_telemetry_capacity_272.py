@@ -33,6 +33,9 @@ def main() -> int:
         for mode in workload["modes"].values():
             for field in ("p50_ns", "p95_ns", "p99_ns", "p999_ns"):
                 assert field in mode
+        assert workload["modes"]["capture_write"]["producer_allocation_bytes"] == 0
+        assert workload["rollup"]["allocation_bytes"] == workload["rollup"]["peak_python_alloc_bytes"]
+        assert workload["report"]["memory_bytes"] == workload["report"]["peak_python_alloc_bytes"]
         assert workload["rollup"]["database_calls"] == 0
         assert workload["report"]["database_calls"] == 0
     print(
