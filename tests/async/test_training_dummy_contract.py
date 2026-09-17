@@ -163,6 +163,8 @@ def test_dummy_cannot_be_used_as_a_shape_clone_disguise_or_capture_source():
     header = source("src/combat/training_dummy.h")
     shapechange = source("src/cmd/actnew.c")
     clone = source("src/cmd/actwiz.c")
+    clone_spell = source("src/classes/sillusionist.c")
+    magic = source("src/magic/magic.c")
     disguise = source("src/classes/disguise.c")
     capture = source("src/classes/new_skills.c")
     pets = source("src/classes/necromancy.c")
@@ -174,6 +176,9 @@ def test_dummy_cannot_be_used_as_a_shape_clone_disguise_or_capture_source():
     assert 'bool training_dummy_capture_target_allowed(P_char target);' in header
     assert 'The training dummy cannot be used as a shapechange form.' in shapechange
     assert 'if (!training_dummy_clone_target_allowed(mob))' in clone
+    assert 'if (!training_dummy_clone_target_allowed(target))' in clone_spell
+    assert 'The training dummy cannot be used as a clone form.' in clone_spell
+    assert 'P_char make_mirror(P_char ch)\n{\n\tif (training_dummy_is(ch))' in magic
     assert 'if (!training_dummy_disguise_target_allowed(target))' in disguise
     assert 'The training dummy cannot be captured.' in capture
     assert '!training_dummy_capture_target_allowed(mob)' in pets

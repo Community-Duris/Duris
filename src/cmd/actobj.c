@@ -5991,7 +5991,9 @@ void do_give(P_char ch, char *argument, int cmd)
 		}
 		if (training_dummy_is(vict))
 		{
-			send_to_char("The training dummy refuses coins and all other offerings.\r\n", ch);
+			send_to_char(
+				"The training dummy refuses coins and all other offerings.\r\n",
+				ch);
 			return;
 		}
 		if (collector_presence_is_npc(vict))

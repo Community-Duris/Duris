@@ -3572,7 +3572,8 @@ void do_drag(P_char ch, char *argument, int /*cmd*/)
 
 		if (training_dummy_is(tch))
 		{
-			send_to_char("The training dummy is anchored and cannot be dragged.\r\n", ch);
+			send_to_char("The training dummy is anchored and cannot be dragged.\r\n",
+				     ch);
 			return;
 		}
 

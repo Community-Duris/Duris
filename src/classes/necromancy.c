@@ -213,7 +213,7 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	P_obj globe;
 	string name;
 	if (collector_presence_is_npc(mob) || !training_dummy_capture_target_allowed(mob) ||
-		!training_dummy_capture_target_allowed(ch))
+	    !training_dummy_capture_target_allowed(ch))
 		return -1;
 
 	memset(&af, 0, sizeof(af));

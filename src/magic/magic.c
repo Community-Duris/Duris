@@ -1663,6 +1663,9 @@ void spell_mirror_image(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 // Utility function...  This is not a spell.  -- Dalreth
 P_char make_mirror(P_char ch)
 {
+	if (training_dummy_is(ch))
+		return NULL;
+
 	char Gbuf1[512];
 	P_char image = NULL;
 
