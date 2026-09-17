@@ -4678,7 +4678,7 @@ static const char *term_name(P_char ch)
 	case 2:
 		return "ANSI";
 	case 3:
-		return "MSP";
+		return "MSP markup";
 	default:
 		return "GEN";
 	}
@@ -5278,7 +5278,7 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 			send_ch->desc->term_type = 1;
 		else
 		{
-			send_to_char("USAGE: TOGGLE terminal [ansi|msp]\r\n", send_ch);
+			send_to_char("USAGE: TOGGLE terminal [ansi|gen|msp]\r\n", send_ch);
 			return;
 		}
 		strcpy(Gbuf3, term_name(send_ch));
