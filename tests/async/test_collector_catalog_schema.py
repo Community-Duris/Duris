@@ -69,7 +69,7 @@ class CollectorCatalogSchemaTest(unittest.TestCase):
             self.assertIn(f"database:{table}", lifecycle_ids)
         self.assertEqual(runtime["current_table_count"], 200)
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0023_telemetry_reward_projection")
+                         "0024_telemetry_encounters")
 
 
 if __name__ == "__main__":

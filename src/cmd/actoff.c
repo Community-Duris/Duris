@@ -42,6 +42,7 @@
 #include "cmd/interp.h"
 #include "cmd/divine_refusal_policy.h"
 #include "core/utils.h"
+#include "telemetry/telemetry_runtime.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -2721,6 +2722,9 @@ void do_flee(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
+		if (IS_PC(ch))
+			(void)telemetry_runtime_game_encounter_leave(
+				ch, telemetry_encounter_outcome::flee);
 		if (IS_PC(ch) && !GET_CLASS(ch, CLASS_ROGUE) &&
 		    !has_innate(ch, INNATE_IMPROVED_FLEE))
 		{
@@ -7958,6 +7962,9 @@ void do_retreat(P_char ch, char *arg, int /*cmd*/)
 			act(Gbuf1, TRUE, ch, 0, 0, TO_ROOM);
 		}
 		do_simple_move(ch, dir, 0);
+		if (IS_PC(ch))
+			(void)telemetry_runtime_game_encounter_leave(
+				ch, telemetry_encounter_outcome::withdrawal);
 	}
 	else
 	{ // Failure!

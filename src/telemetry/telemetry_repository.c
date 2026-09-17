@@ -200,6 +200,35 @@ void dimension_fields(fields &values, const telemetry_dimensions &dimensions)
 	FIELD(values, dimensions, group_size);
 }
 
+void encounter_fields(fields &values, const telemetry_encounter_payload &encounter)
+{
+	number(values, "encounter_boot_id", encounter.encounter.producer.boot_id);
+	number(values, "encounter_process_id", encounter.encounter.producer.process_id);
+	number(values, "encounter_seq", encounter.encounter.sequence);
+	number(values, "encounter_event", encounter.kind);
+	number(values, "encounter_mode", encounter.mode);
+	number(values, "encounter_outcome", encounter.outcome);
+	number(values, "encounter_revision", encounter.revision);
+	number(values, "encounter_environment_id", encounter.source.environment_id);
+	number(values, "encounter_season_id", encounter.source.season_id);
+	number(values, "encounter_config_id", encounter.source.config_id);
+	number(values, "encounter_classifier_version", encounter.source.classifier_version);
+	number(values, "encounter_policy_version", encounter.source.policy_version);
+	number(values, "encounter_zone_vnum", encounter.source.zone_vnum);
+	number(values, "encounter_group_key", encounter.source.group_key);
+	number(values, "encounter_participant_subject_id", encounter.participant.subject_id);
+	number(values, "encounter_participant_pid", encounter.participant.pid);
+	FIELD(values, encounter, at_monotonic_usec);
+	FIELD(values, encounter, at_utc_usec);
+	FIELD(values, encounter, start_monotonic_usec);
+	FIELD(values, encounter, start_utc_usec);
+	FIELD(values, encounter, elapsed_usec);
+	FIELD(values, encounter, participant_usec);
+	FIELD(values, encounter, participant_count);
+	FIELD(values, encounter, expected_credit_count);
+	FIELD(values, encounter, quality_flags);
+}
+
 fields counter_fields(const telemetry_cumulative_counters &counters)
 {
 	fields values;
@@ -355,6 +384,9 @@ fields record_fields(const telemetry_record &record)
 		FIELD(values, p, quality_flags);
 		break;
 	}
+	case telemetry_record_kind::encounter:
+		encounter_fields(values, record.payload.encounter);
+		break;
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -473,6 +505,9 @@ std::string signature(const telemetry_record &record)
 	case telemetry_record_kind::progression:
 		value += ':' + std::to_string(record.payload.progression.reserved);
 		break;
+	case telemetry_record_kind::encounter:
+		value += ':' + std::to_string(record.payload.encounter.reserved);
+		break;
 	case telemetry_record_kind::configuration:
 		value += ':' + std::to_string(record.payload.configuration.config.reserved);
 		value += ':' + std::to_string(record.payload.configuration.config.schema_version);
@@ -566,6 +601,21 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		}
 		else
 			insert("telemetry_config", columns);
+	}
+	if (record.header.kind == telemetry_record_kind::encounter)
+	{
+		const auto &p = record.payload.encounter;
+		fields expected;
+		number(expected, "season_id", p.source.season_id);
+		number(expected, "classifier_version", p.source.classifier_version);
+		number(expected, "policy_version", p.source.policy_version);
+		auto config = query("SELECT " + names(expected, true) +
+				    " FROM telemetry_config WHERE environment_id=" +
+				    std::to_string(p.source.environment_id) +
+				    " AND config_id=" + std::to_string(p.source.config_id));
+		auto row = mysql_fetch_row(config.get());
+		if (!row || !equal_row(row, expected))
+			return telemetry_apply_outcome::rejected_invalid;
 	}
 
 	const auto *session = session_of(record);

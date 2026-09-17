@@ -58,7 +58,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
             self.assertIn("'" + table + "'", self.header)
         self.assertIn("'corpse_catalog_state'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0023_telemetry_reward_projection")
+                         "0024_telemetry_encounters")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
