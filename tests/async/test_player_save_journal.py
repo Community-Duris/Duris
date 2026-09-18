@@ -257,6 +257,11 @@ int main(int argc, char **argv)
         assert(decoded.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION && decoded.output_preferences.empty());
         assert(decoded.death->corpse[2].values[0] == 123);
     }
+    auto wire6_death = death_bytes;
+    wire6_death[0] = 6;
+    assert(player_snapshot_decode(wire6_death.data(), wire6_death.size(), &decoded) == player_snapshot_codec_result::ok);
+    assert(decoded.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION &&
+           decoded.death->corpse[2].values[0] == 123);
     auto bad_death = death;
     bad_death.items.push_back(bag); // Cannot also restore these assets to active inventory.
     assert(player_snapshot_encode(bad_death, &encoded) == player_snapshot_codec_result::invalid_value);

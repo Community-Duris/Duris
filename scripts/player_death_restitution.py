@@ -80,11 +80,17 @@ NATIVE_ARTIFACT_LEGACY_GOD = 1 << 0
 NATIVE_ARTIFACT_LEGACY_MORTAL = 1 << 1
 
 TOOL_VERSION = 3
-DEATH_SCHEMA_VERSION = 6
-# All supported death encodings carry the same exact item representation.
-# Wire 3/4 added pet restoration fields; wire 5/6 added output preferences.
-# Let the native codec validate the bytes, then require a death schema.
-DEATH_WIRE_VERSIONS = {2, 4, 6}
+# The bridge reports the first uint32 as the raw wire version and the decoder's
+# post-compatibility value separately as schema_version.  Death schema 8 is the
+# normalized in-memory contract; wire 8 is also the current writer's encoding.
+# Historical death records use wire 2, 4, or 6.  Keep this allow-list explicit:
+# the native decoder remains responsible for byte-level validation, while this
+# gate rejects a valid non-death snapshot or an unknown future encoding.
+DEATH_NORMALIZED_SCHEMA_VERSION = 8
+# Compatibility alias for callers that imported the old name; the normalized
+# label is authoritative and must not be confused with raw wire_version.
+DEATH_SCHEMA_VERSION = DEATH_NORMALIZED_SCHEMA_VERSION
+DEATH_WIRE_VERSIONS = frozenset({2, 4, 6, 8})
 ITEM_MONEY = 20
 VOBJ_COINS = 3
 ITEM_ARTIFACT = REAL_ARTIFACT_FLAG
@@ -297,7 +303,7 @@ def validate_target(
     *, confirm_production_target: str | None = None,
     expected_fingerprint: str | None = None,
     maintenance_kind: str | None = None,
-    maintenance_id: str | None = None,
+    maintenance_id: str | None = None, maintenance_owner: str | None = None,
 ) -> TargetPolicy:
     """Build the target policy used by every database-facing command."""
     try:
@@ -307,6 +313,7 @@ def validate_target(
             expected_fingerprint=expected_fingerprint,
             maintenance_kind=maintenance_kind,
             maintenance_id=maintenance_id,
+            maintenance_owner=maintenance_owner,
         )
     except TargetError as exc:
         raise ToolError(str(exc)) from exc
@@ -445,13 +452,19 @@ def policy_for_command(
 
     maintenance_kind = getattr(args, "maintenance_kind", None)
     maintenance_id = getattr(args, "maintenance_id", None)
+    maintenance_owner = getattr(args, "maintenance_owner", None)
     if (maintenance_kind is None) != (maintenance_id is None):
         raise ToolError("maintenance kind and immutable maintenance identity must be supplied together")
+    if maintenance_kind == "systemd-user" and maintenance_owner is None:
+        raise ToolError("user-systemd maintenance requires --maintenance-owner")
+    if maintenance_kind != "systemd-user" and maintenance_owner is not None:
+        raise ToolError("--maintenance-owner is only valid with --maintenance-kind systemd-user")
     policy = validate_target(
         confirm_production_target=getattr(args, "confirm_production_target", None),
         expected_fingerprint=supplied_fingerprint,
         maintenance_kind=maintenance_kind,
         maintenance_id=maintenance_id,
+        maintenance_owner=maintenance_owner,
     )
     current_fields = {
         "host": policy.host,
@@ -1121,8 +1134,11 @@ def decode_payload(payload: bytes) -> dict[str, Any]:
         raise ToolError("codec bridge returned invalid structured output") from exc
     if not isinstance(decoded, dict):
         raise ToolError("codec bridge returned an invalid death object")
-    if decoded.get("wire_version") not in DEATH_WIRE_VERSIONS or decoded.get("schema_version") != DEATH_SCHEMA_VERSION:
-        raise ToolError("death payload is not a supported schema-6 death encoding")
+    if (decoded.get("wire_version") not in DEATH_WIRE_VERSIONS
+            or decoded.get("schema_version") != DEATH_NORMALIZED_SCHEMA_VERSION):
+        raise ToolError(
+            "death payload is not a supported raw-wire death encoding normalized to schema-8"
+        )
     return decoded
 
 
@@ -4235,10 +4251,14 @@ def add_policy_arguments(
         help="pin the actual database server fingerprint",
     )
     if maintenance:
-        command.add_argument("--maintenance-kind", choices=("docker", "systemd"))
+        command.add_argument("--maintenance-kind", choices=("docker", "systemd", "systemd-user"))
         command.add_argument(
             "--maintenance-id",
             help="complete immutable container ID or duris-mud-production.service",
+        )
+        command.add_argument(
+            "--maintenance-owner",
+            help="numeric UID owning the user-systemd manager (required for systemd-user)",
         )
 
 

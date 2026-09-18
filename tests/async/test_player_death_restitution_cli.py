@@ -8,6 +8,7 @@ import json
 import hashlib
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -95,21 +96,31 @@ class RestitutionCliTests(unittest.TestCase):
 
     @mock.patch.object(cli, "ensure_codec", return_value=Path("/unused-codec"))
     @mock.patch.object(cli.subprocess, "run")
-    def test_normalized_native_codec_death_versions(self, run: mock.Mock, _codec: mock.Mock) -> None:
+    def test_native_raw_wire_and_normalized_death_schema_contract(
+        self, run: mock.Mock, _codec: mock.Mock
+    ) -> None:
         # This tests the Python acceptance boundary, not native byte decoding.
-        # Native wire-2 decoding is separately exercised on retained evidence.
-        for wire in (2, 4, 6):
+        # The native codec bridge emits both values: historical raw wires 2/4/6
+        # and the current writer's raw wire 8 all normalize to death schema 8.
+        self.assertEqual(cli.DEATH_NORMALIZED_SCHEMA_VERSION, 8)
+        self.assertEqual(cli.DEATH_SCHEMA_VERSION, 8)
+        for wire in (2, 4, 6, 8):
             with self.subTest(wire=wire):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
-                    "wire_version": wire, "schema_version": 6,
+                    "wire_version": wire, "schema_version": 8,
                 }).encode())
-                self.assertEqual(cli.decode_payload(b"fixture")["wire_version"], wire)
-        for wire, schema in ((1, 5), (3, 5), (5, 5), (2, 5), (99, 6)):
+                decoded = cli.decode_payload(b"fixture")
+                self.assertEqual(decoded["wire_version"], wire)
+                self.assertEqual(decoded["schema_version"], 8)
+        for wire, schema in (
+            (1, 8), (3, 8), (5, 8), (7, 8), (99, 8),
+            (2, 7), (6, 7), (8, 7),
+        ):
             with self.subTest(wire=wire, schema=schema):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
                     "wire_version": wire, "schema_version": schema,
                 }).encode())
-                with self.assertRaises(cli.ToolError):
+                with self.assertRaisesRegex(cli.ToolError, "raw-wire.*schema-8"):
                     cli.decode_payload(b"fixture")
 
     def test_normalized_related_payload_is_reused_and_deduplicated(self) -> None:
@@ -131,6 +142,57 @@ class RestitutionCliTests(unittest.TestCase):
         self.assertEqual(items["100"]["root_item_uid"], 100)
         self.assertEqual(parents["100"], 0)
         self.assertEqual(roots["100"], 100)
+
+    def test_current_native_writer_reaches_python_inspection_gate(self) -> None:
+        # Compile the tracked native fixture and the actual bridge in a private
+        # temporary directory.  This catches the production mismatch where the
+        # bridge returned raw wire 8 / normalized schema 8 but Python still
+        # required the retired schema-6 label.
+        fixture_source = ROOT / "tests" / "async" / "player_death_restitution_fixture.cpp"
+        codec_source = ROOT / "src" / "player" / "player_snapshot_codec.c"
+        bridge_source = ROOT / "scripts" / "player_death_restitution_codec.cpp"
+        with tempfile.TemporaryDirectory(prefix="duris-504-codec-") as directory:
+            fixture = Path(directory) / "fixture"
+            bridge = Path(directory) / "bridge"
+            for output, sources in (
+                (fixture, (fixture_source, codec_source)),
+                (bridge, (bridge_source, codec_source)),
+            ):
+                subprocess.run(
+                    ["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                     "-Isrc", "-I.", *(str(source) for source in sources), "-o", str(output)],
+                    cwd=ROOT, check=True, capture_output=True, text=True,
+                )
+            fixture_output = subprocess.run(
+                [str(fixture)], capture_output=True, check=True,
+            ).stdout.decode("ascii")
+            payloads = [bytes.fromhex(line) for line in fixture_output.splitlines()]
+            self.assertEqual(len(payloads), 2)
+            with mock.patch.object(cli, "ensure_codec", return_value=bridge):
+                for payload in payloads:
+                    decoded = cli.decode_payload(payload)
+                    self.assertEqual(int.from_bytes(payload[:4], "little"), 8)
+                    self.assertEqual(decoded["wire_version"], 8)
+                    self.assertEqual(decoded["schema_version"], 8)
+                    self.assertIsInstance(decoded["death"], dict)
+            for bad_wire in (7, 99):
+                corrupted = bytearray(payloads[0])
+                corrupted[:4] = bad_wire.to_bytes(4, "little")
+                rejected = subprocess.run(
+                    [str(bridge), "decode-death"], input=bytes(corrupted),
+                    capture_output=True, check=False,
+                )
+                self.assertNotEqual(rejected.returncode, 0)
+
+    def test_native_export_is_not_gated_by_offline_sql_boundary(self) -> None:
+        args = cli.parser().parse_args([
+            "export", "--plan", "plan.json", "--inspect", "inspect.json",
+            "--artifact", "staff.json", "--approve", "--actor", "staff",
+            "--reason", "death-evidence",
+        ])
+        self.assertEqual(args.command, "export")
+        self.assertFalse(hasattr(args, "offline_proof"))
+        self.assertFalse(hasattr(args, "maintenance_kind"))
 
     def test_conflicting_normalized_related_payload_refuses_uid(self) -> None:
         selected = [payload_item(900, -1)]

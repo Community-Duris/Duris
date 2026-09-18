@@ -703,6 +703,64 @@ the exact backup, and run the player materializer plus item-ownership, currency,
 and FK reconciliation on the clone. Rollback is the inverse UID update to the exact payload
 row and is safe only before the repaired player is loaded or saved again.
 
+### Player death restitution: offline SQL and native live modes
+
+The audited restitution tool is evidence recovery, not an automatic reimbursement
+command. It reads the immutable `0020_player_death_restitution` contract and
+accepts only normalized death schema 8 after the native bridge has validated the
+raw wire version. Raw death wires 2, 4, 6, and the current writer's 8 are distinct
+inputs; an unknown or corrupt wire is refused.
+
+The production target probe is read-only. Use the installed system manager when
+the production unit is root-managed:
+
+```bash
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  target-info --confirm-production-target <exact-db-name> \
+  --maintenance-kind systemd --maintenance-id duris-mud-production.service \
+  --artifact /secure/restitution-target-info.json
+```
+
+For the `.sbs` deployment, which is user-manager managed, run the probe as the
+service owner and bind the exact manager explicitly. The tool checks the owner
+UID, `user@UID.service` manager, manager/unit state and PIDs, the owner runtime
+socket, the real cgroup hierarchy, and visible cgroup processes. It does not
+stop or mask the unit; prepare that state through the approved service operation
+before probing, and treat any mismatch as a refusal:
+
+```bash
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  target-info --confirm-production-target <exact-db-name> \
+  --maintenance-kind systemd-user \
+  --maintenance-id duris-mud-production.service \
+  --maintenance-owner "$(id -u)" \
+  --artifact /secure/restitution-target-info.json
+```
+
+Do not substitute `--user` for `--system`, omit the owner, accept an active
+unit, or create an offline-proof file as a lifecycle attestation. The target
+fingerprint and maintenance record are carried into the backup, plan, apply,
+and verification artifacts; a changed manager, owner, unit, PID, cgroup, or
+SQL target makes the artifact stale.
+
+There are two intentionally separate execution modes:
+
+- The native live-runtime handoff uses `inspect`, `plan`, and `export`. `export`
+  requires the exact SQL-derived evidence lineage, explicit staff approval,
+  actor/reason, and native revision fences, but does **not** require
+  `--offline-proof` or a server-wide stop. Submit the protected native payload
+  through the existing authorized staff command and wait for its durable native
+  receipt/readback; admission or queued output is not delivery proof.
+- Direct SQL `apply` is offline-only. It additionally requires the pinned target,
+  backup receipt, explicit approval, owner-only v3 offline context, process and
+  SQL-writer quiescence checks, and the existing advisory-lock/custody,
+  authorization, ownership, artifact, revision, and idempotency fences. The tool
+  never stops or masks a service automatically.
+
+Use the dedicated restitution runbook for the complete inspect/plan/export or
+backup/apply/verify command sequence:
+[`PLAYER_DEATH_RESTITUTION.md`](../persistence/PLAYER_DEATH_RESTITUTION.md).
+
 ### Maintenance, lifecycle, export, and erasure
 
 The maintenance scheduler is bounded and persistent. Use `world persistence` to

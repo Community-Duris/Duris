@@ -1,7 +1,7 @@
 # Audited player death restitution
 
 `player_death_restitution.py` is the SQL-only first slice for issue #331. It
-restores only original item UIDs whose schema-6 death payload and retained
+restores only original item UIDs whose normalized schema-8 death payload and retained
 custody row agree. It never mints an item from a vnum, clears a corpse, refunds
 currency, or rewrites artifact authority without either an identity-bound
 canonical row or the separately approved exact-evidence reconciliation path.
@@ -9,10 +9,12 @@ canonical row or the separately approved exact-evidence reconciliation path.
 ## Supported boundary
 
 - Backend: MySQL 8 or MariaDB 10 with the ownership/death schema and immutable
-  migration `0017_player_death_restitution` applied. File/flat-file authority
-  is refused. The native codec accepts schema-6 death data in wire versions
-  2, 4, and 6; historical wire version 2 is not rejected just because the
-  current encoder emits version 6. Exact item encoding is shared by these versions.
+  migration `0020_player_death_restitution` applied. File/flat-file authority
+  is refused. The native bridge exposes the raw wire version separately from
+  the normalized schema: death schema 8 is accepted for historical wire
+  versions 2, 4, and 6, and for the current writer's wire version 8. Exact
+  item encoding is validated by the native codec; unknown or corrupt encodings
+  are refused rather than relabeled.
 - Target: `ENVIRONMENT=test`, `dev`, `development`, or `local` remains the
   default non-production path. A production-classified target (including the
   legacy database name `duris` or a name containing `prod`, `production`, or
@@ -20,8 +22,12 @@ canonical row or the separately approved exact-evidence reconciliation path.
   loopback DB address, exact database-name confirmation, a protected target-info
   probe containing the actual server fingerprint, an explicit stopped
   maintenance boundary, and a native backup receipt bound to that target and
-  boundary. The production service boundary is the installed system unit
-  `duris-mud-production.service`, not a guessed user unit.
+  boundary. The supported service boundaries are the installed system-manager
+  unit (`--maintenance-kind systemd`) and the explicitly owner-bound user
+  manager used by `.sbs` deployments (`--maintenance-kind systemd-user` with
+  `--maintenance-owner <UID>`). The latter verifies the user manager identity,
+  unit identity/state, PIDs, runtime socket, cgroup, and visible process set;
+  it is not a `--system`/`--user` substitution or a fabricated proof.
 - Recipient: this first slice requires the explicit recipient PID to equal the
   death PID. It delivers to ordinary player inventory (`equip_slot=0`) and
   rebuilds nested containers in captured payload order.
@@ -110,6 +116,22 @@ python3 scripts/player_death_restitution.py \
   --confirm-production-target <exact-production-db-name> \
   --maintenance-kind systemd \
   --maintenance-id duris-mud-production.service \
+  --artifact /secure/restitution-target-info.json
+```
+
+For a `.sbs` deployment managed by the owner’s user manager, use the same
+read-only probe with the explicit numeric UID. The owner must run the command
+inside that user manager’s session; the tool refuses a different UID, missing
+runtime socket, active unit, non-empty service cgroup, or incomplete process
+visibility:
+
+```sh
+python3 scripts/player_death_restitution.py \
+  target-info \
+  --confirm-production-target <exact-production-db-name> \
+  --maintenance-kind systemd-user \
+  --maintenance-id duris-mud-production.service \
+  --maintenance-owner "$(id -u)" \
   --artifact /secure/restitution-target-info.json
 ```
 
@@ -350,4 +372,4 @@ checks disagree. A formerly unbound or missing-domain artifact is recoverable
 only with the explicit reconciliation approval and all evidence gates above;
 otherwise the tool records a refusal without changing artifact authority.
 
-A production target is accepted only through the target-pinned production-policy workflow; no command stops or masks a runtime automatically.
+A production target is accepted only through the target-pinned production-policy workflow; no command stops or masks a runtime automatically. The native live-runtime handoff is distinct from offline SQL apply: `export` requires the exact SQL-derived plan, staff approval, actor, reason, and native revision fences, but does not require `--offline-proof` or a server-wide stop. Direct SQL `apply` remains offline-only and retains every backup, quiescence, custody, authorization, ownership, artifact, and idempotency gate.
