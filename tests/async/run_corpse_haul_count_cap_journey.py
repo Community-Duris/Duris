@@ -79,6 +79,10 @@ def run(binary, backend):
 
         sql("CREATE DATABASE " + database, False)
     else:
+        (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+        subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
+                        "--build-inspector", str(journey.INSPECTOR)],
+                       cwd=ROOT, check=True, timeout=180)
         state = tempfile.TemporaryDirectory(prefix="haul-cap-state-")
         state_root = Path(state.name)
         (state_root / "domains").mkdir(mode=0o700)
