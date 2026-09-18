@@ -46,9 +46,9 @@ prelude = r'''
 #define HIGHEST_MAT_VNUM 2000
 #define ITEM2_ACCOUNT_BOUND 1
 #define ITEM2_NOLOOT 2
-#define GET_PID(ch) ((ch)->pid)
+#define GET_PID(ch) (assert(!(ch)->npc), (ch)->pid)
 #define GET_ITEM_TYPE(obj) ((obj)->type)
-#define IS_PC(ch) true
+#define IS_PC(ch) (!(ch)->npc)
 #define IS_SET(a,b) ((a)&(b))
 #define OBJ_ROOM(o) ((o)->location == 1)
 #define OBJ_INSIDE(o) ((o)->location == 2)
@@ -68,7 +68,7 @@ prelude = r'''
 #define CAP(text) ((text)[0] = toupper((text)[0]))
 #define PLAYER_COMPONENT_STATUS 1
 #define PLAYER_COMPONENT_INVENTORY 2
-struct char_data { int pid=42; int in_room=1; int count_limit=3; int weight_limit=10; };
+struct char_data { int pid=42; bool npc=false; int in_room=1; int count_limit=3; int weight_limit=10; };
 using P_char = char_data *;
 struct obj_data {
  uint64_t obj_uid=0; int type=0, location=0; int value[8]={};
@@ -300,7 +300,17 @@ int main() {
  assert(coin_get_completion(&actor,false,{}, {},0,(const uint8_t*)&context,sizeof(context)));
  assert(output.find("  a dagger")!=std::string::npos && output.find("  0p 7g 0s 0c")!=std::string::npos);
  assert(output.find("sorting")<output.find("did not commit") && bulk_gets.empty());
- puts("corpse haul: held transfer/adoption/coins, movement, rejection, stale source and disconnect passed");
+ // The helper is PC-only. The strict PID macro above aborts for a real NPC,
+ // so this also protects every container/coin/artifact publication caller.
+ reset(); char_data scavenger; scavenger.npc=true; obj_data npc_bag,npc_loot;
+ setup(&scavenger,&npc_bag,&npc_loot,nullptr);
+ assert(corpse_bulk_get(nullptr,npc_bag.obj_uid)==nullptr);
+ assert(corpse_bulk_get(&scavenger,npc_bag.obj_uid)==nullptr);
+ item_get_ack_publication=true;
+ publish_container_get(&scavenger,&npc_loot,&npc_bag,TRUE,false);
+ item_get_ack_publication=false;
+ assert(OBJ_CARRIED_BY(&npc_loot,&scavenger) && bulk_gets.empty());
+ puts("corpse haul: held transfer/adoption/coins, movement, rejection, stale source, disconnect and strict NPC publication passed");
 }
 '''
 
