@@ -23,6 +23,13 @@ deleting its equipment. A fresh authoritative login is needed before normal
 saving resumes after a committed raise whose live publication failed. Repeated
 loads and saves must retain one pet record and one copy of each UID.
 
+When a stable raised pet is dismissed or dies, its pet-owned live equipment and
+inventory are removed before corpse or floor publication. Its committed pet
+row and item graph stay in custody; the next save marks the row
+`custody_pending`. These held items do not appear in the room or on a newly
+loaded follower. Staff must reconcile the held graph through an explicit
+custody transfer before releasing it.
+
 ## Rollback and recovery
 
 Do not restore the old owner type checks or drop `pet_uid` while type 11 rows

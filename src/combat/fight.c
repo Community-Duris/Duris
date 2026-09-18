@@ -1717,6 +1717,7 @@ P_obj make_corpse(P_char ch, int loss)
 	 * have to change the 'loc.carrying' pointers to 'loc.inside' pointers
 	 * for the whole object list, else ugly problems occur later.
 	 */
+	hold_durable_pet_items(ch);
 	unequip_all(ch);
 	if (IS_NPC(ch))
 	{

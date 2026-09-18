@@ -407,6 +407,44 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                         assert int(sql("SELECT charm_duration FROM player_pets "
                                        f"WHERE owner_pid={pid}")) > 0
                         assert time.time() < charm_deadline < death_deadline
+                    if "--dismiss-probe" in sys.argv[2:]:
+                        assert pet_probe
+                        client.pending.clear()
+                        client.send("dismiss dracolich")
+                        client.expect("Pos: standing >", timeout=20)
+                        client.send("look")
+                        dismissed_room = client.expect("Pos: standing >", timeout=20)
+                        assert "dracolich" not in dismissed_room.lower(), dismissed_room
+                        assert "fixture backpack" not in dismissed_room, dismissed_room
+                        client.send("save")
+                        client.expect(f"Save complete for {journey.CHARACTER}.",
+                                      timeout=30)
+                        assert sql("SELECT hold_reason FROM player_pets WHERE "
+                                   f"owner_pid={pid}") == "6"
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
+                                   f"pet_id IN (SELECT id FROM player_pets WHERE "
+                                   f"owner_pid={pid})") == "5"
+                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                   "owner_type=11 AND "
+                                   f"owner_context_id={pid} AND state=1") == "5"
+                        client.close()
+                        client = None
+                        process.terminate()
+                        assert process.wait(timeout=30) == 0
+                        process, game_port = start(True)
+                        client = journey.reconnect_character(game_port,
+                                                             expected_room=None)
+                        client.pending.clear()
+                        client.send("look")
+                        restarted_room = client.expect("Pos: standing >", timeout=20)
+                        assert "dracolich" not in restarted_room.lower(), restarted_room
+                        assert "fixture backpack" not in restarted_room, restarted_room
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
+                                   f"obj_uid IN ({UIDS[0]},{UIDS[1]},"
+                                   f"{GIVE_UIDS[0]},{GIVE_UIDS[1]},{PROC_UID})") == "5"
+                        print("dismiss/restart: no room gear or follower; five UIDs "
+                              "held exactly once under pet custody", flush=True)
+                        return True
                     if fixture_probe:
                         if restart_before_save:
                             save_revision_at_crash = int(sql(

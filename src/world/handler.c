@@ -5100,6 +5100,35 @@ void extract_char_after_terminal_save(P_char ch)
 	extract_char(ch);
 }
 
+// A stable raised pet's ledger remains authoritative after its live body leaves.
+// Do not publish those items into a corpse or room; the next player save marks
+// the existing pet row held, and an explicit custody transfer can recover it.
+void hold_durable_pet_items(P_char ch)
+{
+	if (!ch || !IS_NPC(ch) || !ch->durable_pet_uid)
+		return;
+	const auto pet_item = [ch](P_obj obj)
+	{
+		if (!obj || !obj->obj_uid)
+			return false;
+		item_ownership_runtime_entry entry = {};
+		return item_ownership_runtime_lookup(obj->obj_uid, &entry) &&
+		       entry.state == item_custody_state::active &&
+		       entry.owner.type == item_owner_type::pet &&
+		       entry.owner.id == ch->durable_pet_uid;
+	};
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (pet_item(ch->equipment[slot]))
+			extract_obj(ch->equipment[slot]);
+	for (P_obj obj = ch->carrying; obj;)
+	{
+		P_obj next = obj->next_content;
+		if (pet_item(obj))
+			extract_obj(obj);
+		obj = next;
+	}
+}
+
 void extract_char(P_char ch)
 {
 	P_obj obj;
@@ -5161,6 +5190,7 @@ void extract_char(P_char ch)
 		if (owner && IS_PC(owner))
 			mark_player_dirty_components(GET_PID(owner), PLAYER_COMPONENT_PETS);
 	}
+	hold_durable_pet_items(ch);
 
 	if (ch->followers || ch->following)
 	{
