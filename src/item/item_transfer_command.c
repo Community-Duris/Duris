@@ -363,6 +363,8 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::mobile_claim:
 	case item_transfer_reason::death_restitution:
 	case item_transfer_reason::corpse_raise_pet:
+	case item_transfer_reason::pet_give:
+	case item_transfer_reason::pet_return:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -458,6 +460,23 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
 	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
+	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
+	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
+	// Other commands do not update the pet's physical item projection.
+	if ((payload.from_owner.type == item_owner_type::pet ||
+	     payload.to_owner.type == item_owner_type::pet) &&
+	    !pet_give && !pet_return && !corpse_raise_pet)
+		return false;
+	if ((pet_give && (payload.from_owner.type != item_owner_type::player ||
+			  payload.to_owner.type != item_owner_type::pet ||
+			  payload.from_owner.id != payload.to_owner.context_id ||
+			  payload.reason_id != static_cast<int64_t>(payload.to_owner.id))) ||
+	    (pet_return && (payload.from_owner.type != item_owner_type::pet ||
+			    payload.to_owner.type != item_owner_type::player ||
+			    payload.from_owner.context_id != payload.to_owner.id ||
+			    payload.reason_id != static_cast<int64_t>(payload.from_owner.id))) ||
+	    ((pet_give || pet_return) && (payload.multi_root || payload.target_parent_item_uid)))
+		return false;
 	const bool corpse_context_required = payload_version >=
 						     ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
 					     (corpse_create || corpse_loot || corpse_raise_pet);

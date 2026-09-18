@@ -12,6 +12,8 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace
@@ -30,6 +32,228 @@ struct current_item
 	int32_t vnum;
 	uint8_t state;
 };
+
+bool run_sql(MYSQL *connection, const std::string &sql)
+{
+	if (mysql_real_query(connection, sql.data(), sql.size()) == 0)
+		return true;
+	errno = static_cast<int>(mysql_errno(connection));
+	return false;
+}
+
+bool one_row(MYSQL *connection, const std::string &sql, std::vector<uint64_t> *values)
+{
+	if (!run_sql(connection, sql))
+		return false;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+	{
+		errno = static_cast<int>(mysql_errno(connection));
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	const bool found = row && mysql_num_rows(rows) == 1;
+	if (found)
+	{
+		values->clear();
+		for (unsigned int column = 0; column < mysql_num_fields(rows); ++column)
+		{
+			if (!row[column])
+			{
+				mysql_free_result(rows);
+				errno = EILSEQ;
+				return false;
+			}
+			char *end = nullptr;
+			const unsigned long long value = std::strtoull(row[column], &end, 10);
+			if (!end || *end)
+			{
+				mysql_free_result(rows);
+				errno = EILSEQ;
+				return false;
+			}
+			values->push_back(value);
+		}
+	}
+	mysql_free_result(rows);
+	if (!found)
+		errno = EILSEQ;
+	return found;
+}
+
+bool move_pet_physical_items(MYSQL *connection, const item_transfer_payload &payload)
+{
+	const bool give = payload.reason == item_transfer_reason::pet_give;
+	const bool take = payload.reason == item_transfer_reason::pet_return;
+	if (!give && !take)
+		return true;
+	const uint64_t player_pid = give ? payload.from_owner.id : payload.to_owner.id;
+	const uint64_t pet_uid = give ? payload.to_owner.id : payload.from_owner.id;
+	std::vector<uint64_t> pet_row;
+	if (!one_row(connection,
+		     "SELECT id,hold_reason FROM player_pets WHERE owner_pid=" +
+			     std::to_string(player_pid) +
+			     " AND pet_uid=" + std::to_string(pet_uid) + " FOR UPDATE",
+		     &pet_row) ||
+	    pet_row[1] != 0 || payload.target_parent_item_uid || !payload.selected_item_uid)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	const std::string source = give ? "player_items" : "player_pet_items";
+	const std::string target = give ? "player_pet_items" : "player_items";
+	const std::string source_owner = give ? "pid" : "pet_id";
+	const std::string target_owner = give ? "pet_id" : "pid";
+	const uint64_t source_owner_id = give ? player_pid : pet_row[0];
+	const uint64_t target_owner_id = give ? pet_row[0] : player_pid;
+	struct physical_row
+	{
+		uint64_t id;
+		uint64_t parent_id;
+		int32_t vnum;
+	};
+	std::unordered_map<uint64_t, physical_row> source_rows;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &item = payload.items[index];
+		std::vector<uint64_t> row;
+		if (!one_row(connection,
+			     "SELECT id,COALESCE(container_id,0),vnum FROM " + source + " WHERE " +
+				     source_owner + "=" + std::to_string(source_owner_id) +
+				     " AND obj_uid=" + std::to_string(item.item_uid) +
+				     " FOR UPDATE",
+			     &row) ||
+		    row[2] != static_cast<uint64_t>(item.vnum) ||
+		    !source_rows.emplace(item.item_uid, physical_row{ row[0], row[1], item.vnum })
+			     .second)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		if (!run_sql(connection, "SELECT id FROM " + target + " WHERE obj_uid=" +
+						 std::to_string(item.item_uid) + " FOR UPDATE"))
+			return false;
+		MYSQL_RES *duplicate = mysql_store_result(connection);
+		if (!duplicate)
+			return false;
+		const bool exists = mysql_num_rows(duplicate) != 0;
+		mysql_free_result(duplicate);
+		if (exists)
+		{
+			errno = EEXIST;
+			return false;
+		}
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &item = payload.items[index];
+		const auto parent = source_rows.find(item.parent_item_uid);
+		if (item.parent_item_uid && parent == source_rows.end())
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		const uint64_t expected_parent = item.parent_item_uid ? parent->second.id : 0;
+		if (source_rows.at(item.item_uid).parent_id != expected_parent)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		if (!run_sql(connection, "SELECT obj_uid FROM " + source + " WHERE container_id=" +
+						 std::to_string(source_rows.at(item.item_uid).id) +
+						 " FOR UPDATE"))
+			return false;
+		MYSQL_RES *children = mysql_store_result(connection);
+		if (!children)
+			return false;
+		size_t found_children = 0;
+		bool valid_children = true;
+		while (MYSQL_ROW row = mysql_fetch_row(children))
+		{
+			++found_children;
+			const uint64_t child_uid = row[0] ? std::strtoull(row[0], nullptr, 10) : 0;
+			const auto child = source_rows.find(child_uid);
+			if (child == source_rows.end() ||
+			    child->second.parent_id != source_rows.at(item.item_uid).id)
+				valid_children = false;
+		}
+		mysql_free_result(children);
+		size_t expected_children = 0;
+		for (size_t child = 0; child < payload.item_count; ++child)
+			expected_children += payload.items[child].parent_item_uid == item.item_uid;
+		if (!valid_children || found_children != expected_children)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+	}
+	static const std::string fields =
+		"vnum,weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
+		"value2,value3,value4,value5,value6,value7,name,short_descr,description,"
+		"action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
+		"obj_uid,item_condition,item_material";
+	std::unordered_map<uint64_t, uint64_t> copied;
+	while (copied.size() < payload.item_count)
+	{
+		bool advanced = false;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &item = payload.items[index];
+			if (copied.contains(item.item_uid))
+				continue;
+			uint64_t parent_id = 0;
+			if (item.parent_item_uid)
+			{
+				const auto parent = copied.find(item.parent_item_uid);
+				if (parent == copied.end())
+					continue;
+				parent_id = parent->second;
+			}
+			const std::string parent = parent_id ? std::to_string(parent_id) : "NULL";
+			if (!run_sql(connection,
+				     "INSERT INTO " + target + "(" + target_owner +
+					     ",equip_slot,container_id," + fields + ") SELECT " +
+					     std::to_string(target_owner_id) + ",0," + parent +
+					     "," + fields + " FROM " + source + " WHERE id=" +
+					     std::to_string(source_rows.at(item.item_uid).id)) ||
+			    mysql_affected_rows(connection) != 1)
+				return false;
+			const uint64_t new_id = mysql_insert_id(connection);
+			if (!new_id)
+				return false;
+			const std::string old_id = std::to_string(source_rows.at(item.item_uid).id);
+			for (const auto &metadata :
+			     { std::pair{ "affects", "location,modifier" },
+			       std::pair{ "extra_descr", "keyword,description" } })
+			{
+				const std::string source_meta =
+					(give ? "player_item_" : "player_pet_item_") +
+					std::string(metadata.first);
+				const std::string target_meta =
+					(give ? "player_pet_item_" : "player_item_") +
+					std::string(metadata.first);
+				if (!run_sql(connection,
+					     "INSERT INTO " + target_meta + "(item_id," +
+						     metadata.second + ") SELECT " +
+						     std::to_string(new_id) + "," +
+						     metadata.second + " FROM " + source_meta +
+						     " WHERE item_id=" + old_id))
+					return false;
+			}
+			copied.emplace(item.item_uid, new_id);
+			advanced = true;
+		}
+		if (!advanced)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+	}
+	return run_sql(connection,
+		       "DELETE FROM " + source + " WHERE id=" +
+			       std::to_string(source_rows.at(payload.selected_item_uid).id)) &&
+	       mysql_affected_rows(connection) == 1;
+}
 
 bool prepare(MYSQL_STMT **statement, MYSQL *connection, const char *sql)
 {
@@ -1052,6 +1276,8 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 				   same_owner ? from_revision + 1 : to_revision + 1))
 			return false;
 	}
+	if (!move_pet_physical_items(connection, payload))
+		return false;
 	if (!update_owner_revision(connection, payload.from_owner, from_revision) ||
 	    (!same_owner && !update_owner_revision(connection, payload.to_owner, to_revision)))
 		return false;

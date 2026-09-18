@@ -214,10 +214,44 @@ int main()
 	uint64_t target_root = 0, target_parent = 1;
 	assert(item_transfer_target_topology(decoded, 200, &target_root, &target_parent));
 	assert(target_root == 200 && target_parent == 0);
+	auto batch_command = command;
+
+	item_transfer_payload pet = {};
+	pet.from_owner = { item_owner_type::player, 42, 0 };
+	pet.to_owner = { item_owner_type::pet, 1000, 42 };
+	pet.reason = item_transfer_reason::pet_give;
+	pet.reason_id = 1000;
+	pet.selected_item_uid = 100;
+	pet.item_count = 1;
+	pet.items[0] = { 100, 100, 0, 5, 500, item_custody_state::active };
+	assert(item_transfer_command_build(&command, operation(), pet,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.reason == item_transfer_reason::pet_give &&
+	       item_owner_identity_equal(decoded.to_owner, pet.to_owner));
+	pet.reason = item_transfer_reason::player_put;
+	assert(!item_transfer_command_build(&command, operation(), pet,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	pet.reason = item_transfer_reason::pet_give;
+	pet.reason_id = 1001;
+	assert(!item_transfer_command_build(&command, operation(), pet,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	pet.reason_id = 1000;
+	pet.from_owner = { item_owner_type::pet, 1000, 42 };
+	pet.to_owner = { item_owner_type::player, 42, 0 };
+	pet.reason = item_transfer_reason::pet_return;
+	assert(item_transfer_command_build(&command, operation(), pet,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.reason == item_transfer_reason::pet_return);
 
 	// Version 6 batch commands remain replayable: v7 adds one trailing collector
 	// context length, which is absent from the older wire contract.
-	auto version_six = command;
+	auto version_six = batch_command;
 	version_six.payload_version = ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;
 	version_six.payload.resize(version_six.payload.size() - sizeof(uint32_t));
 	assert(item_transfer_command_decode_payload(version_six, &decoded));

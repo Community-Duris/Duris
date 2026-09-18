@@ -574,9 +574,20 @@ bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t p
 	const bool mobile_claim = payload.reason == item_transfer_reason::mobile_claim &&
 				  item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
 				  !payload.multi_root && !payload.target_parent_item_uid;
+	const bool pet_give = payload.reason == item_transfer_reason::pet_give &&
+			      payload.from_owner.type == item_owner_type::player &&
+			      payload.to_owner.type == item_owner_type::pet &&
+			      payload.from_owner.id == payload.to_owner.context_id &&
+			      !payload.multi_root && !payload.target_parent_item_uid;
+	const bool pet_return = payload.reason == item_transfer_reason::pet_return &&
+				payload.from_owner.type == item_owner_type::pet &&
+				payload.to_owner.type == item_owner_type::player &&
+				payload.from_owner.context_id == payload.to_owner.id &&
+				!payload.multi_root && !payload.target_parent_item_uid;
 	return (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
-	       mobile_claim || locker_transfer(payload) || corpse_loot_transfer(payload) ||
+	       mobile_claim || pet_give || pet_return || locker_transfer(payload) ||
+	       corpse_loot_transfer(payload) ||
 	       (payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION && room_transfer(payload)) ||
 	       (payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
 		corpse_create_transfer(payload));

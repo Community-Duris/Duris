@@ -53,7 +53,7 @@ bool item_command_resolve_put_destination(P_char actor, P_obj container,
 	item_ownership_runtime_entry runtime = {};
 	if (!item_ownership_runtime_lookup(container->obj_uid, &runtime) ||
 	    runtime.state != item_custody_state::active ||
-	    !item_owner_identity_valid(runtime.owner))
+	    !item_owner_identity_valid(runtime.owner) || runtime.owner.type == item_owner_type::pet)
 		return false;
 
 	destination->target_container = container;

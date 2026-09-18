@@ -245,6 +245,16 @@ struct give_movement_context
 	int32_t room;
 };
 
+struct pet_give_movement_context
+{
+	uint64_t item_uid;
+	uint64_t pet_uid;
+	uint64_t pet_runtime_id;
+	uint32_t owner_pid;
+	int32_t room;
+	bool returning;
+};
+
 struct put_movement_context
 {
 	uint64_t item_uid;
@@ -603,6 +613,56 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 	room_light(actor->in_room, REAL);
 	nq_action_check(actor, recipient, NULL);
 	studioproc_give(recipient, object, actor);
+}
+
+void pet_give_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			 const uint8_t *encoded, size_t encoded_size)
+{
+	pet_give_movement_context context = {};
+	if (encoded && encoded_size == sizeof(context))
+		memcpy(&context, encoded, sizeof(context));
+	if (!actor || !committed || encoded_size != sizeof(context))
+	{
+		if (actor)
+			send_to_char(
+				"The pet transfer did not commit; the item stayed where it was.\r\n",
+				actor);
+		return;
+	}
+	P_char pet = find_character_by_runtime_id(context.pet_runtime_id);
+	P_obj object = find_live_item_uid(context.item_uid);
+	P_char source = context.returning ? pet : actor;
+	P_char destination = context.returning ? actor : pet;
+	if (!pet || !object || !IS_NPC(pet) || pet->durable_pet_uid != context.pet_uid ||
+	    GET_MASTER(pet) != actor || !IS_AFFECTED(pet, AFF_CHARM) ||
+	    GET_PID(actor) != static_cast<int>(context.owner_pid) ||
+	    actor->in_room != context.room || pet->in_room != context.room ||
+	    !OBJ_CARRIED_BY(object, source))
+	{
+		persistence_alert(AVATAR, "item_movement", "pet_give_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu pet_uid=%llu",
+				  (unsigned long long)context.item_uid,
+				  (unsigned long long)context.pet_uid);
+		// The commit already moved authority and its physical item graph. A
+		// stale live copy must not be offered from the former owner or floor.
+		if (object)
+			extract_obj(object);
+		send_to_char("The transfer committed; reconnect to recover the item view.\r\n",
+			     actor);
+		return;
+	}
+	obj_from_char(object);
+	act("$n gives $p to $N.", TRUE, source, object, destination, TO_NOTVICT);
+	act("$n gives you $p.", FALSE, source, object, destination, TO_VICT);
+	send_to_char("Ok.\r\n", source);
+	obj_to_char(object, destination);
+	mark_player_dirty_components(context.owner_pid,
+				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+					     PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_PETS);
+	char_light(source);
+	room_light(context.room, REAL);
+	nq_action_check(source, destination, NULL);
+	studioproc_give(destination, object, source);
 }
 
 /**
@@ -3660,7 +3720,8 @@ bool coin_put_destination_custody(P_char actor, P_obj container, item_owner_iden
 	}
 	item_ownership_runtime_entry runtime = {};
 	if (!item_ownership_runtime_lookup(container->obj_uid, &runtime) ||
-	    runtime.state != item_custody_state::active)
+	    runtime.state != item_custody_state::active ||
+	    runtime.owner.type == item_owner_type::pet)
 		return false;
 	*owner = runtime.owner;
 	*ownership_parent = container;
@@ -5963,24 +6024,56 @@ void do_give(P_char ch, char *argument, int cmd)
 		       vict->player.name);
 		return;
 	}
-	/*
-	 * NPC and pet inventories do not have a durable custody owner.  A normal
-	 * player command must not move a ledger-owned item into that live-only
-	 * graph: dismissal, charm expiry, purge, and NPC death would otherwise
-	 * leave the player row pointing at an object the authority never moved.
-	 * Internal quest/spec procedures use their private command values and keep
-	 * their existing consume/sink behavior until those paths get an explicit
-	 * durable boundary of their own.
-	 */
+	if (cmd == CMD_GIVE && item_command_uses_durable_ownership(obj) &&
+	    ((IS_PC(ch) && IS_NPC(vict)) || (IS_NPC(ch) && ch->durable_pet_uid && IS_PC(vict))))
+	{
+		const bool returning = IS_NPC(ch);
+		P_char owner = returning ? vict : ch;
+		P_char pet = returning ? ch : vict;
+		const bool controlled = IS_PC(owner) && IS_NPC(pet) && pet->durable_pet_uid &&
+					GET_MASTER(pet) == owner && IS_AFFECTED(pet, AFF_CHARM) &&
+					pet->in_room == owner->in_room;
+		if (!controlled)
+		{
+			send_to_char("That pet cannot accept a durable item from you.\r\n", ch);
+			return;
+		}
+		const item_owner_identity player_owner = { item_owner_type::player,
+							   static_cast<uint64_t>(GET_PID(owner)),
+							   0 };
+		const item_owner_identity pet_owner = { item_owner_type::pet, pet->durable_pet_uid,
+							static_cast<uint64_t>(GET_PID(owner)) };
+		const item_owner_identity source = returning ? pet_owner : player_owner;
+		const item_owner_identity destination = returning ? player_owner : pet_owner;
+		item_ownership_runtime_entry current = {};
+		if (!item_ownership_runtime_lookup(obj->obj_uid, &current) ||
+		    !item_owner_identity_equal(current.owner, source))
+		{
+			report_movement_reject(owner, item_movement_reject::owner_mismatch, "give",
+					       obj);
+			return;
+		}
+		const pet_give_movement_context context = {
+			obj->obj_uid,	 pet->durable_pet_uid,
+			pet->runtime_id, static_cast<uint32_t>(GET_PID(owner)),
+			owner->in_room,	 returning
+		};
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(owner, obj, NULL, source, destination,
+						      returning ? item_transfer_reason::pet_return :
+								  item_transfer_reason::pet_give,
+						      static_cast<int64_t>(pet->durable_pet_uid),
+						      pet_give_completion, &context,
+						      sizeof(context), NULL, &reject))
+			report_movement_reject(owner, reject, "give", obj);
+		return;
+	}
 	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) &&
 	    item_command_uses_durable_ownership(obj))
 	{
 		send_to_char(
 			"That item cannot be given to a pet or mob because its custody cannot be saved yet.\r\n",
 			ch);
-		logit(LOG_FILE,
-		      "item_movement: command=give outcome=npc_custody_unsupported actor=%s uid=%llu vnum=%d",
-		      J_NAME(ch), (unsigned long long)obj->obj_uid, OBJ_VNUM(obj));
 		return;
 	}
 	if (IS_PC(ch) && IS_PC(vict) && ch != vict && item_command_uses_durable_ownership(obj))

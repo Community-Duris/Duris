@@ -812,6 +812,95 @@ int main(int argc, char **argv)
 				stale_raise_snapshot.pets[0].items.size() == 2,
 			"repeat pet materialization duplicated the follower or its equipment");
 	}
+	const auto pet_transfer = [&](uint8_t seed, bool returning, uint64_t from_revision,
+				      uint64_t to_revision, uint64_t item_revision,
+				      const std::vector<player_item_snapshot> &items)
+	{
+		item_transfer_payload payload = {};
+		payload.from_owner = returning ? raised_pet_owner : raising_player_owner;
+		payload.to_owner = returning ? raising_player_owner : raised_pet_owner;
+		payload.reason = returning ? item_transfer_reason::pet_return :
+					     item_transfer_reason::pet_give;
+		payload.reason_id = static_cast<int64_t>(raise_payload.pet_uid);
+		payload.expected_from_revision = from_revision;
+		payload.expected_to_revision = to_revision;
+		payload.selected_item_uid = 900;
+		payload.target_root_item_uid = 900;
+		payload.item_count = 2;
+		payload.items[0] = { 900, 900, 0, item_revision, 1900, item_custody_state::active };
+		payload.items[1] = {
+			901, 900, 900, item_revision, 1901, item_custody_state::active
+		};
+		std::vector<uint8_t> bytes;
+		require(player_item_snapshot_list_encode(items, &bytes) ==
+					player_snapshot_codec_result::ok &&
+				!bytes.empty() && bytes.size() <= payload.item_blob.size(),
+			"could not encode nested pet transfer");
+		payload.item_blob_size = static_cast<uint32_t>(bytes.size());
+		std::copy(bytes.begin(), bytes.end(), payload.item_blob.begin());
+		critical_command transfer = {};
+		require(item_transfer_command_build(&transfer, operation(seed), payload,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"could not build nested pet transfer");
+		transfer.accepted_at_usec = static_cast<uint64_t>(seed) * 1000;
+		return transfer;
+	};
+	const auto return_command =
+		pet_transfer(90, true, 1, 1, 2, stale_raise_snapshot.pets[0].items);
+	auto pet_move = flatfile_item_repository_apply(raise_root.string(), return_command);
+	require(pet_move.outcome == critical_apply_outcome::applied && !pet_move.error_code,
+		"nested pet return did not commit: " + std::to_string(pet_move.error_code));
+	require(flatfile_item_repository_apply(raise_root.string(), return_command).outcome ==
+			critical_apply_outcome::already_applied,
+		"nested pet return did not replay exactly once");
+	require(flatfile_item_repository_load_owner(
+			raise_root.string(), raising_player_owner, &raising_player_revision,
+			&raising_player_items, &error) == flatfile_item_repository_result::ok &&
+			raising_player_revision == 2 && raising_player_items.size() == 3,
+		"nested pet return did not assign both UIDs to player custody");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(raise_root.string(), &error),
+			"could not lock pet return reconciliation: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				raise_root.string(), lock, 71, raising_player_items,
+				&stale_raise_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_raise_snapshot.items.size() == 2 &&
+				stale_raise_snapshot.items[0].object_uid == 900 &&
+				stale_raise_snapshot.items[1].parent_index == 0 &&
+				stale_raise_snapshot.pets[0].items.empty(),
+			"pet return did not reconcile nested graph to player exactly once: " +
+				error);
+	}
+	const auto give_command = pet_transfer(91, false, 2, 2, 3, stale_raise_snapshot.items);
+	pet_move = flatfile_item_repository_apply(raise_root.string(), give_command);
+	require(pet_move.outcome == critical_apply_outcome::applied && !pet_move.error_code,
+		"nested pet give did not commit: " + std::to_string(pet_move.error_code));
+	require(flatfile_item_repository_apply(raise_root.string(), give_command).outcome ==
+			critical_apply_outcome::already_applied,
+		"nested pet give did not replay exactly once");
+	require(flatfile_item_repository_load_owner(
+			raise_root.string(), raising_player_owner, &raising_player_revision,
+			&raising_player_items, &error) == flatfile_item_repository_result::ok &&
+			raising_player_revision == 3 && raising_player_items.size() == 1,
+		"nested pet give did not retire player custody");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(raise_root.string(), &error),
+			"could not lock pet give reconciliation: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				raise_root.string(), lock, 71, raising_player_items,
+				&stale_raise_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_raise_snapshot.items.empty() &&
+				stale_raise_snapshot.pets[0].items.size() == 2 &&
+				stale_raise_snapshot.pets[0].items[0].object_uid == 900 &&
+				stale_raise_snapshot.pets[0].items[1].parent_index == 0,
+			"pet give did not reconcile nested graph to follower exactly once: " +
+				error);
+	}
 
 	const fs::path nested_room_root = fs::path(argv[1]) / "nested-room";
 	prepare_root(nested_room_root);

@@ -27,6 +27,7 @@ constexpr size_t catalog_maximum_events = 262144;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr const char *catalog_filename = "shop_trade_materializations";
 constexpr shop_trade_action pet_raise_action = static_cast<shop_trade_action>(6);
+constexpr shop_trade_action pet_receive_action = static_cast<shop_trade_action>(7);
 constexpr std::array<uint8_t, 4> pet_blob_magic = { 'P', 'E', 'T', '1' };
 
 struct materialization_event
@@ -140,7 +141,8 @@ std::string domains_directory(const std::string &root)
 bool inbound(shop_trade_action action)
 {
 	return action == shop_trade_action::buy_existing ||
-	       action == shop_trade_action::buy_produced || action == pet_raise_action;
+	       action == shop_trade_action::buy_produced || action == pet_raise_action ||
+	       action == pet_receive_action;
 }
 
 bool valid_action(shop_trade_action action)
@@ -691,6 +693,13 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	};
 	const bool from_player = payload.from_owner.type == item_owner_type::player;
 	const bool to_player = payload.to_owner.type == item_owner_type::player;
+	const bool from_pet = payload.from_owner.type == item_owner_type::pet;
+	const bool to_pet = payload.to_owner.type == item_owner_type::pet;
+	if ((from_pet || to_pet) &&
+	    (payload.from_owner.context_id != payload.to_owner.context_id &&
+	     !(from_player && payload.from_owner.id == payload.to_owner.context_id) &&
+	     !(to_player && payload.to_owner.id == payload.from_owner.context_id)))
+		return flatfile_shop_trade_materialization_result::invalid;
 	if (from_player && to_player && payload.from_owner.id == payload.to_owner.id)
 	{
 		if (!add(payload.to_owner.id, shop_trade_action::buy_existing))
@@ -702,6 +711,8 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 			return flatfile_shop_trade_materialization_result::io_error;
 		if (to_player && !add(payload.to_owner.id, shop_trade_action::buy_existing))
 			return flatfile_shop_trade_materialization_result::io_error;
+		if (to_pet && !add(payload.to_owner.context_id, pet_receive_action))
+			return flatfile_shop_trade_materialization_result::io_error;
 	}
 	if (additions.empty())
 		return flatfile_shop_trade_materialization_result::unchanged;
@@ -709,6 +720,25 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	const auto loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_shop_trade_materialization_result::ok)
 		return loaded;
+	if (from_pet || to_pet)
+	{
+		const uint64_t pet_uid = from_pet ? payload.from_owner.id : payload.to_owner.id;
+		const uint32_t owner_pid = static_cast<uint32_t>(
+			from_pet ? payload.from_owner.context_id : payload.to_owner.context_id);
+		bool established = false;
+		for (const auto &event : catalog.events)
+		{
+			if (event.action != pet_raise_action || event.player_pid != owner_pid)
+				continue;
+			player_pet_snapshot pet = {};
+			std::vector<player_item_snapshot> raised_items;
+			if (!decode_pet_event(event, &pet, &raised_items))
+				return flatfile_shop_trade_materialization_result::invalid;
+			established |= pet.pet_uid == pet_uid;
+		}
+		if (!established)
+			return flatfile_shop_trade_materialization_result::invalid;
+	}
 	if (std::any_of(
 		    catalog.events.begin(), catalog.events.end(), [&](const auto &existing)
 		    { return critical_operation_id_equal(existing.operation_id, operation_id); }) ||
@@ -841,6 +871,9 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 	std::unordered_map<uint64_t, player_item_snapshot> latest_inbound;
 	std::map<uint64_t, player_pet_snapshot> raised_pets;
 	std::unordered_set<uint64_t> existing;
+	std::unordered_set<uint64_t> existing_player;
+	std::unordered_set<uint64_t> existing_legacy_pets;
+	std::unordered_map<uint64_t, std::unordered_set<uint64_t>> existing_pets;
 	try
 	{
 		owner_records.reserve(owned.size());
@@ -926,11 +959,16 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 		if (mentioned.empty() && raised_pets.empty())
 			return flatfile_shop_trade_materialization_result::ok;
 		for (const auto &item : snapshot->items)
-			if (!existing.insert(item.object_uid).second)
+			if (!existing.insert(item.object_uid).second ||
+			    !existing_player.insert(item.object_uid).second)
 				return flatfile_shop_trade_materialization_result::invalid;
 		for (const auto &pet : snapshot->pets)
 			for (const auto &item : pet.items)
-				if (!existing.insert(item.object_uid).second)
+				if (!existing.insert(item.object_uid).second ||
+				    !(pet.pet_uid ? existing_pets[pet.pet_uid] :
+						    existing_legacy_pets)
+					     .insert(item.object_uid)
+					     .second)
 					return flatfile_shop_trade_materialization_result::invalid;
 	}
 	catch (const std::bad_alloc &)
@@ -944,19 +982,32 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 		for (uint64_t uid : mentioned)
 		{
 			const auto owner = owner_records.find(uid);
-			if (owner != owner_records.end() && !existing.contains(uid))
+			if (owner != owner_records.end())
 			{
 				const auto source = latest_inbound.find(uid);
-				if (source == latest_inbound.end())
-					return flatfile_shop_trade_materialization_result::invalid;
 				if (owner->second.owner.type == item_owner_type::player &&
 				    owner->second.owner.id == player_pid)
+				{
+					if (existing_player.contains(uid) ||
+					    existing_legacy_pets.contains(uid))
+						continue;
+					if (source == latest_inbound.end())
+						return flatfile_shop_trade_materialization_result::
+							invalid;
 					additions.push_back(source->second);
+				}
 				else if (owner->second.owner.type == item_owner_type::pet &&
 					 owner->second.owner.context_id == player_pid &&
 					 raised_pets.contains(owner->second.owner.id))
+				{
+					if (existing_pets[owner->second.owner.id].contains(uid))
+						continue;
+					if (source == latest_inbound.end())
+						return flatfile_shop_trade_materialization_result::
+							invalid;
 					pet_additions[owner->second.owner.id].push_back(
 						source->second);
+				}
 				else
 					return flatfile_shop_trade_materialization_result::invalid;
 			}
