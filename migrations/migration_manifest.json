@@ -438,6 +438,16 @@
       "verify": "immutable/0026_zone_story_quest_state.sh",
       "verify_checksum": "5893fffec2d51fa40c0baaaa8407c694fc2a730af2caad278ecf085340d9c8a4",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0027_saved_item_recovery_handoff",
+      "sequence": 27,
+      "description": "Add durable saved-item recovery handoff and nested item-key lookup",
+      "apply": "immutable/0027_saved_item_recovery_handoff.sql",
+      "apply_checksum": "e11716690ee50cb39e4543a08a845a2146be54079c69bc227a83763c9f4bba58",
+      "verify": "immutable/0027_saved_item_recovery_handoff.sh",
+      "verify_checksum": "6e52d6bb46c2ab660b6b43071dadfc5a3bc9885aa88f760fe9517a85c4d0896d",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }
