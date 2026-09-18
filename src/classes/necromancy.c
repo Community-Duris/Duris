@@ -1387,6 +1387,7 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 	if (!caster || !follower || !corpse || caster->in_room <= NOWHERE)
 		return;
 	follower->durable_pet_uid = pet_uid;
+	follower->durable_pet_owner_pid = pet_uid && IS_PC(caster) ? GET_PID(caster) : 0;
 
 	const char *raise_name = nullptr;
 	switch (kind)

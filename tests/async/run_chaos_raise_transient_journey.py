@@ -407,8 +407,64 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                         assert int(sql("SELECT charm_duration FROM player_pets "
                                        f"WHERE owner_pid={pid}")) > 0
                         assert time.time() < charm_deadline < death_deadline
+                    if "--live-death-probe" in sys.argv[2:]:
+                        assert pet_probe
+                        expiring_state = bytearray.fromhex(state_hex)
+                        now = int(time.time())
+                        struct.pack_into("<qq", expiring_state, 8, now + 45, now + 55)
+                        client.close()
+                        client = None
+                        process.terminate()
+                        assert process.wait(timeout=30) == 0
+                        sql("UPDATE player_pets SET restore_state='" +
+                            expiring_state.hex() + "' WHERE owner_pid=" + str(pid))
+                        process, game_port = start(True)
+                        client = journey.reconnect_character(game_port,
+                                                             expected_room=None)
+                        deadline = time.monotonic() + 75
+                        saw_follower = False
+                        while True:
+                            client.pending.clear()
+                            client.send("look")
+                            client.expect("Adrift in the Plane of Life", timeout=20)
+                            visible = client.expect("Pos: standing >", timeout=20)
+                            if "dracolich" not in visible.lower():
+                                assert saw_follower, visible
+                                for item_name in ("fixture backpack", "empty satchel",
+                                                  "ordinary trinket"):
+                                    assert item_name not in visible, visible
+                                break
+                            saw_follower = True
+                            assert time.monotonic() < deadline, "pet did not die"
+                            time.sleep(1)
+                        client.send("save")
+                        client.expect(f"Save complete for {journey.CHARACTER}.",
+                                      timeout=30)
+                        assert sql("SELECT hold_reason FROM player_pets WHERE "
+                                   f"owner_pid={pid}") == "6"
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
+                                   f"pet_id IN (SELECT id FROM player_pets WHERE "
+                                   f"owner_pid={pid})") == "5"
+                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                   "owner_type=11 AND "
+                                   f"owner_context_id={pid} AND state=1") == "5"
+                        print("live charm expiry and pet death: no room gear; five "
+                              "UIDs held exactly once", flush=True)
+                        return True
                     if "--dismiss-probe" in sys.argv[2:]:
                         assert pet_probe
+                        if "--dismiss-after-restore" in sys.argv[2:]:
+                            client.close()
+                            client = None
+                            process.terminate()
+                            assert process.wait(timeout=30) == 0
+                            process, game_port = start(True)
+                            client = journey.reconnect_character(game_port,
+                                                                 expected_room=None)
+                            client.pending.clear()
+                            client.send("look")
+                            active_room = client.expect("Pos: standing >", timeout=20)
+                            assert active_room.lower().count("dracolich") == 1, active_room
                         client.pending.clear()
                         client.send("dismiss dracolich")
                         client.expect("Pos: standing >", timeout=20)

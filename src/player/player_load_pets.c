@@ -161,6 +161,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 				    player_load_pet_materialize_outcome::allocation_failure);
 		}
 		pet->durable_pet_uid = identity.pet_uid;
+		pet->durable_pet_owner_pid = identity.pet_uid ? result.pid : 0;
 		try
 		{
 			pets->push_back(pet);

@@ -1527,6 +1527,7 @@ struct char_data
 	unsigned int runtime_flags;
 	uint64_t runtime_id; /* process-local identity; changes whenever storage is reused */
 	uint64_t durable_pet_uid; /* stable corpse-derived follower custody identity */
+	uint32_t durable_pet_owner_pid; /* survives loss of the live master link */
 	/* Telemetry identity is runtime-only and intentionally not persisted. */
 	uint64_t telemetry_session_sequence;
 	uint64_t telemetry_session_producer_boot_id;

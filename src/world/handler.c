@@ -5101,29 +5101,38 @@ void extract_char_after_terminal_save(P_char ch)
 }
 
 // A stable raised pet's ledger remains authoritative after its live body leaves.
-// Do not publish those items into a corpse or room; the next player save marks
-// the existing pet row held, and an explicit custody transfer can recover it.
+// A completed return can also be player-owned before its live callback runs.
+// Do not publish either domain into a corpse or room on pet teardown.
 void hold_durable_pet_items(P_char ch)
 {
 	if (!ch || !IS_NPC(ch) || !ch->durable_pet_uid)
 		return;
-	const auto pet_item = [ch](P_obj obj)
+	const P_char master = GET_MASTER(ch);
+	uint32_t owner_pid = ch->durable_pet_owner_pid;
+	if (master && IS_PC(master))
+	{
+		const uint32_t master_pid = GET_PID(master);
+		owner_pid = !owner_pid || owner_pid == master_pid ? master_pid : 0;
+	}
+	const auto held_item = [ch, owner_pid](P_obj obj)
 	{
 		if (!obj || !obj->obj_uid)
 			return false;
 		item_ownership_runtime_entry entry = {};
 		return item_ownership_runtime_lookup(obj->obj_uid, &entry) &&
 		       entry.state == item_custody_state::active &&
-		       entry.owner.type == item_owner_type::pet &&
-		       entry.owner.id == ch->durable_pet_uid;
+		       ((entry.owner.type == item_owner_type::pet &&
+			 entry.owner.id == ch->durable_pet_uid) ||
+			(owner_pid && entry.owner.type == item_owner_type::player &&
+			 entry.owner.id == owner_pid));
 	};
 	for (int slot = 0; slot < MAX_WEAR; ++slot)
-		if (pet_item(ch->equipment[slot]))
+		if (held_item(ch->equipment[slot]))
 			extract_obj(ch->equipment[slot]);
 	for (P_obj obj = ch->carrying; obj;)
 	{
 		P_obj next = obj->next_content;
-		if (pet_item(obj))
+		if (held_item(obj))
 			extract_obj(obj);
 		obj = next;
 	}
@@ -5183,8 +5192,11 @@ void extract_char(P_char ch)
 			StopCasting(ch);
 	}
 
-	// mark owner dirty when extracting a pc pet (must be before die_follower clears the link)
-	if (IS_PC_PET(ch))
+	// Mark the stable owner even if charm already cleared the live master link.
+	// This runs before die_follower removes any remaining follower relation.
+	if (ch->in_room != NOWHERE && ch->durable_pet_uid && ch->durable_pet_owner_pid)
+		mark_player_dirty_components(ch->durable_pet_owner_pid, PLAYER_COMPONENT_PETS);
+	else if (IS_PC_PET(ch))
 	{
 		P_char owner = GET_MASTER(ch);
 		if (owner && IS_PC(owner))
