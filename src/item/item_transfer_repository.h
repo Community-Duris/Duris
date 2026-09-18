@@ -8,6 +8,12 @@
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
 				      item_transfer_result *result, unsigned int *result_code,
 				      bool *mutation_applied);
+// Compound commands may use one inbox operation for consecutive transfer
+// segments. The offset keeps their item-ledger event indexes disjoint.
+bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critical_command &command,
+						uint16_t event_index_base,
+						item_transfer_result *result,
+						unsigned int *result_code, bool *mutation_applied);
 // Called only inside the enclosing coin transaction; never commits independently.
 bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_command &command,
 					   const std::array<int32_t, 4> &before,

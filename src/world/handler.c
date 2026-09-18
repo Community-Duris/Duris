@@ -3587,6 +3587,17 @@ bool validate_corpse_release_items(P_obj corpse, const corpse_lifecycle_result &
 	return count == result.item_count;
 }
 
+void collect_corpse_transient_uids(P_obj container, std::vector<uint64_t> *uids)
+{
+	for (P_obj item = container ? container->contains : nullptr; item;
+	     item = item->next_content)
+	{
+		if (IS_SET(item->extra_flags, ITEM_TRANSIENT) && item->obj_uid)
+			uids->push_back(item->obj_uid);
+		collect_corpse_transient_uids(item, uids);
+	}
+}
+
 P_char corpse_release_carrier(P_obj corpse)
 {
 	P_obj outer = corpse;
@@ -3887,7 +3898,7 @@ bool recover_corpse_raise_items(P_obj corpse, P_char caster)
 	{
 		P_obj item = corpse->contains;
 		obj_from_obj(item);
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 			extract_obj(item);
 		else
 		{
@@ -3959,7 +3970,12 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	const bool source_items_valid = corpse && validate_corpse_release_items(corpse, result);
 	const bool source_valid = source_items_valid && corpse_release_room(corpse, &corpse_room) &&
 				  world[corpse_room].number == payload.room_vnum;
-	if (!item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
+	std::vector<uint64_t> transient_uids;
+	if (corpse)
+		collect_corpse_transient_uids(corpse, &transient_uids);
+	if (!item_ownership_runtime_apply_corpse_discarded(payload.owner_pid, payload.save_id,
+							   transient_uids, result) ||
+	    !item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
 						       payload.destination_player_pid, result))
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
@@ -4222,7 +4238,7 @@ void discard_corpse_release_money(P_obj container)
 	     item = next)
 	{
 		next = item->next_content;
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 		{
 			obj_from_obj(item);
 			extract_obj(item);

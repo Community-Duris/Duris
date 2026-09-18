@@ -250,13 +250,23 @@ int main()
 	corpse_lifecycle_result raise_result = resurrect_result;
 	raise_result.action = corpse_lifecycle_action::raise_follower;
 	raise_result.room_owner_revision = 0;
+	raise_result.discarded_item_count = 1;
+	raise_result.max_discarded_item_revision = 6;
+	raise_result.destruction_owner_revision = 4;
 	assert(corpse_lifecycle_command_encode_result(raise_result, &encoded_result));
 	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
 					      &decoded_result));
 	assert(decoded_result.action == corpse_lifecycle_action::raise_follower &&
 	       decoded_result.room_owner_revision == 0 &&
 	       decoded_result.player_owner_revision == 10 && decoded_result.wallet[0] == 1 &&
-	       decoded_result.collector_catalog_changed);
+	       decoded_result.collector_catalog_changed &&
+	       decoded_result.discarded_item_count == 1 &&
+	       decoded_result.max_discarded_item_revision == 6 &&
+	       decoded_result.destruction_owner_revision == 4);
+	assert(corpse_lifecycle_command_decode_result(
+		encoded_result.data(), CORPSE_LIFECYCLE_BANK_RESULT_BYTES, &decoded_result));
+	assert(decoded_result.discarded_item_count == 0 &&
+	       decoded_result.destruction_owner_revision == 0);
 	corpse_lifecycle_payload nested = release;
 	nested.action = corpse_lifecycle_action::release_nested;
 	nested.target_root_item_uid = 100;
