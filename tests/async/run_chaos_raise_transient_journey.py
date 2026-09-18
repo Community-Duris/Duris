@@ -145,12 +145,28 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                         "owner_context_id,item_revision,vnum,state)"
                         f" VALUES({npc_uid},{npc_uid},3,{ROOM},0,1,2,1);"
                         "INSERT INTO saved_items"
-                        "(item_key,room_vnum,vnum,item_type,obj_uid,value1,value2,"
+                        "(item_key,room_vnum,vnum,item_type,obj_uid,timer,value1,value2,"
                         "name,short_descr,description)"
-                        f" VALUES('ordinary_npc_corpse',{ROOM},2,24,{npc_uid},4,56,"
+                        f" VALUES('ordinary_npc_corpse',{ROOM},2,24,{npc_uid},1000000,4,56,"
                         "'ordinary beast corpse _npcorpse_',"
                         "'the corpse of an ordinary beast',"
                         "'The corpse of an ordinary beast is lying here.')")
+                    if "--npc-gear-probe" in sys.argv[2:]:
+                        sql("SET @corpse_row=(SELECT id FROM saved_items WHERE "
+                            f"obj_uid={npc_uid});"
+                            "INSERT INTO saved_items(item_key,room_vnum,vnum,"
+                            "container_id,obj_uid,weight,wear_flags,name,short_descr)"
+                            f" VALUES('ordinary_npc_corpse',{ROOM},5,@corpse_row,"
+                            f"{GIVE_UIDS[0]},1,1,'ordinary trinket','an ordinary trinket');"
+                            "INSERT INTO saved_items(item_key,room_vnum,vnum,"
+                            "container_id,obj_uid,weight,extra_flags,wear_flags,name,short_descr)"
+                            f" VALUES('ordinary_npc_corpse',{ROOM},5,@corpse_row,"
+                            f"{PROC_UID},1,2050,0,'probe token','a probe token');"
+                            "INSERT INTO item_current_owner(item_uid,root_item_uid,"
+                            "parent_item_uid,owner_type,owner_id,owner_context_id,"
+                            "item_revision,vnum,state) VALUES"
+                            f"({GIVE_UIDS[0]},{npc_uid},{npc_uid},3,{ROOM},0,1,5,1),"
+                            f"({PROC_UID},{npc_uid},{npc_uid},3,{ROOM},0,1,5,1)")
                     process, game_port = start(True)
                     client = journey.reconnect_character(game_port,
                                                          expected_room=None)
@@ -161,12 +177,79 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     client.send("cast 'create greater dracolich' corpse")
                     outcome, transcript = client.expect_any(
                         ("The corpse summons a greater",
+                         "The equipped corpse cannot be raised safely.",
+                         "You abort your spell before it's done!",
                          "You can't animate", "This spell requires"), timeout=120)
+                    if outcome.startswith("You abort your spell"):
+                        return False
+                    if "--npc-gear-probe" in sys.argv[2:]:
+                        assert outcome == "The equipped corpse cannot be raised safely.", transcript
+                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                   f"item_uid IN ({npc_uid},{GIVE_UIDS[0]},{PROC_UID}) "
+                                   f"AND owner_type=3 AND owner_id={ROOM} AND state=1") == "3"
+                        assert sql("SELECT COUNT(*) FROM player_items WHERE obj_uid IN "
+                                   f"({GIVE_UIDS[0]},{PROC_UID})") == "0"
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid IN "
+                                   f"({GIVE_UIDS[0]},{PROC_UID})") == "0"
+                        assert sql("SELECT COUNT(*) FROM player_pets WHERE "
+                                   f"owner_pid={pid}") == "0"
+                        assert sql("SELECT COUNT(*) FROM critical_operation_inbox "
+                                   "WHERE command_type=16") == "0"
+                        client.pending.clear()
+                        client.send("look")
+                        room = client.expect("Pos: standing >", timeout=20)
+                        assert "corpse of an ordinary beast" in room, room
+                        assert "dracolich" not in room.lower(), room
+                        client.send("save")
+                        client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
+                        client.close()
+                        client = None
+                        process.terminate()
+                        assert process.wait(timeout=30) == 0
+                        process, game_port = start(True)
+                        client = journey.reconnect_character(game_port,
+                                                             expected_room=None)
+                        client.pending.clear()
+                        client.send("look")
+                        room = client.expect("Pos: standing >", timeout=20)
+                        if "corpse of an ordinary beast" not in room:
+                            client.pending.clear()
+                            client.send("look")
+                            room = client.expect("Pos: standing >", timeout=20)
+                        if "corpse of an ordinary beast" not in room:
+                            print("restart source rows:", sql("SELECT COUNT(*) FROM "
+                                  "saved_items WHERE item_key='ordinary_npc_corpse'"),
+                                  "destination rows:", sql("SELECT COUNT(*) FROM "
+                                  f"saved_items WHERE item_key='item.uid.{npc_uid}'"),
+                                  "handoffs:", sql("SELECT COUNT(*) FROM "
+                                  "saved_item_recovery_handoff"),
+                                  "authority rows:", sql("SELECT COUNT(*) FROM "
+                                  "item_current_owner WHERE "
+                                  f"item_uid IN ({npc_uid},{GIVE_UIDS[0]},{PROC_UID}) "
+                                  f"AND owner_type=3 AND owner_id={ROOM} AND state=1"),
+                                  flush=True)
+                        assert "corpse of an ordinary beast" in room, room
+                        assert "dracolich" not in room.lower(), room
+                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                   f"item_uid IN ({npc_uid},{GIVE_UIDS[0]},{PROC_UID}) "
+                                   f"AND owner_type=3 AND owner_id={ROOM} AND state=1") == "3"
+                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                   f"item_uid IN ({GIVE_UIDS[0]},{PROC_UID}) AND "
+                                   f"root_item_uid={npc_uid} AND "
+                                   f"parent_item_uid={npc_uid}") == "2"
+                        assert sql("SELECT COUNT(*) FROM saved_items WHERE "
+                                   f"item_key='item.uid.{npc_uid}'") == "3"
+                        assert sql("SELECT COUNT(*) FROM saved_item_recovery_handoff "
+                                   f"WHERE source_uid={npc_uid} AND retired_at IS NOT NULL") == "1"
+                        print("equipped NPC corpse refusal: original room custody "
+                              "and full graph retained across save/restart", flush=True)
+                        return True
                     assert outcome.startswith("The corpse summons"), transcript
                     assert sql("SELECT COUNT(*) FROM critical_operation_inbox "
                                "WHERE command_type=16") == "0"
                     client.pending.clear()
                     client.send("look")
+                    client.expect("Adrift in the Plane of Life", timeout=20)
                     raised_room = client.expect("Pos: standing >", timeout=20)
                     assert raised_room.lower().count("dracolich") == 1, raised_room
                     assert "corpse of an ordinary beast" not in raised_room

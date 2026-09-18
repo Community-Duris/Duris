@@ -4481,6 +4481,23 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 				    corpse_raise_kind kind, int level, int variant, bool globe,
 				    const char *message)
 {
+	// Legacy NPC corpse raises have no transaction that transfers their item graph
+	// into pet custody. Refuse an equipped corpse before the old caster route can
+	// grant even hidden or non-take objects to the player. Money keeps its
+	// historical follower path.
+	if (durable_corpse_lifecycle_enabled() && corpse && caster && follower && IS_PC(caster) &&
+	    IS_NPC(follower) && corpse->type == ITEM_CORPSE &&
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+	{
+		for (P_obj item = corpse->contains; item; item = item->next_content)
+		{
+			if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+				continue;
+			send_to_char("The equipped corpse cannot be raised safely.\r\n", caster);
+			extract_char(follower);
+			return true;
+		}
+	}
 	if (!durable_corpse_lifecycle_enabled() || !corpse || !caster || !follower ||
 	    IS_NPC(caster) || !caster->only.pc || !IS_NPC(follower) ||
 	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
