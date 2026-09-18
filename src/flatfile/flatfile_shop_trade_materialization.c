@@ -872,6 +872,7 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 	std::map<uint64_t, player_pet_snapshot> raised_pets;
 	std::unordered_set<uint64_t> existing;
 	std::unordered_set<uint64_t> existing_player;
+	std::unordered_set<uint64_t> existing_legacy_pets;
 	std::unordered_map<uint64_t, std::unordered_set<uint64_t>> existing_pets;
 	try
 	{
@@ -964,7 +965,10 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 		for (const auto &pet : snapshot->pets)
 			for (const auto &item : pet.items)
 				if (!existing.insert(item.object_uid).second ||
-				    !existing_pets[pet.pet_uid].insert(item.object_uid).second)
+				    !(pet.pet_uid ? existing_pets[pet.pet_uid] :
+						    existing_legacy_pets)
+					     .insert(item.object_uid)
+					     .second)
 					return flatfile_shop_trade_materialization_result::invalid;
 	}
 	catch (const std::bad_alloc &)
@@ -984,7 +988,8 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 				if (owner->second.owner.type == item_owner_type::player &&
 				    owner->second.owner.id == player_pid)
 				{
-					if (existing_player.contains(uid))
+					if (existing_player.contains(uid) ||
+					    existing_legacy_pets.contains(uid))
 						continue;
 					if (source == latest_inbound.end())
 						return flatfile_shop_trade_materialization_result::
