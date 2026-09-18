@@ -54,6 +54,7 @@ struct synchronous_item { uint64_t uid; P_obj object; bool scrap;
 struct bulk_get_state {
     std::vector<std::string> rejections;
     bool failed = false;
+    bool count_limit_reported = false;
     std::vector<uint64_t> durable_items;
     std::vector<synchronous_item> synchronous_items;
 };
@@ -119,10 +120,17 @@ int main()
                         filter, local, carried, weight, state, stop);
                     assert(accepted == (!filter && count < actor.cap));
                     assert(!stop);
+                    if (!filter && count >= actor.cap) {
+                        assert(!select_bulk_get_item(&actor, &bag, &ordinary,
+                            filter, local, carried, weight, state, stop));
+                        assert(state.rejections.size() == 1);
+                    }
                     const int before_coins = carried;
                     assert(select_bulk_get_item(&actor, &bag, &money, filter,
                         local, carried, weight, state, stop));
                     assert(carried == before_coins);
+                    if (filter)
+                        assert(state.rejections.empty());
                     assert(state.synchronous_items.size() == 1);
                     assert(state.durable_items.size() == (accepted ? 1u : 0u));
                 }
