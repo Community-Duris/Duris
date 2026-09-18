@@ -16,6 +16,7 @@
 - Build with `make -C src`; the executable is `bin/server/dms_new`. All compiled artifacts belong under `bin/` and must not be committed.
 - Run `make -C src` after C/C++ changes, and run the smallest relevant test directly, for example `python3 tests/async/test_<feature>.py` or its `run_<feature>.sh` wrapper.
 - Add or update a focused regression test when behavior changes. Report any validation that could not be run.
+- Use local builds, focused executable tests, and applicable gameplay/persistence journeys as verification. Do not require or wait for CI results to finish or merge repository work; do not bypass other review or branch protection requirements.
 - NEVER add co-authors, NEVER add attributions, NEVER add `Claude-Session`, NEVER add signed-off-by lines.
 
 ## Safety
