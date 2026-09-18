@@ -570,8 +570,7 @@ void test_raise_follower()
 void test_coinless_raise_follower()
 {
 	constexpr uint32_t PLAYER = 2147000610U;
-	constexpr uint64_t ROOT_UID = 840000011, CHILD_UID = 840000012,
-			   TRANSIENT_UID = 840000013;
+	constexpr uint64_t ROOT_UID = 840000011, CHILD_UID = 840000012, TRANSIENT_UID = 840000013;
 	const std::array<int32_t, 4> wallet = {};
 	seed_player(PLAYER, "CoinlessRaisedHarness", "corpse_raise_coinless", wallet);
 	seed_owner({ item_owner_type::player, PLAYER, 0 }, 1);
@@ -772,7 +771,7 @@ int main()
 	test_stale_wallet_rolls_back();
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=" +
 		      std::to_string(static_cast<unsigned int>(
-		      critical_command_type::corpse_lifecycle))) == 8);
+			      critical_command_type::corpse_lifecycle))) == 8);
 	mysql_close(database);
 	return 0;
 }
