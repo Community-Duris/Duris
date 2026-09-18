@@ -21,6 +21,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 SQL_C = str(source("sql.c"))
 BOOTSTRAP_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_multithread_safe.sql")
 DURIS_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_legacy_baseline.sql")
+HANDOFF_SQL = os.path.join(REPO_ROOT, "migrations", "immutable", "0027_saved_item_recovery_handoff.sql")
 LIFECYCLE_MANIFEST = os.path.join(
     REPO_ROOT, "migrations", "data_lifecycle_manifest.json"
 )
@@ -83,7 +84,7 @@ def extract_bootstrap_tables():
         r'(CREATE|DROP)\s+TABLE\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?[`"]?(\w+)[`"]?',
         re.IGNORECASE,
     )
-    for sql_file in [BOOTSTRAP_SQL, DURIS_SQL]:
+    for sql_file in [BOOTSTRAP_SQL, DURIS_SQL, HANDOFF_SQL]:
         if not os.path.exists(sql_file):
             continue
         with open(sql_file, "r") as f:

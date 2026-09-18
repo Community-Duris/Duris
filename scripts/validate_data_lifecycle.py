@@ -31,6 +31,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0018_collector_catalog.sql",
     ROOT / "migrations" / "immutable" / "0019_corpse_lifecycle_authority.sql",
     ROOT / "migrations" / "immutable" / "0026_zone_story_quest_state.sql",
+    ROOT / "migrations" / "immutable" / "0027_saved_item_recovery_handoff.sql",
 )
 
 ROOT_FIELDS = {

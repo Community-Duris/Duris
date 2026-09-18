@@ -30,7 +30,12 @@ checks.append(("only sql.c constructs raw MySQL connections", "mysql_real_connec
 checks.append(("sql_save_account wraps account/ips/characters in a transaction", "bool own_txn = false;" in sql_player_c and "sql_save_account: component=characters outcome=failure" in sql_player_c and "if (own_txn && !sql_commit())" in sql_player_c))
 checks.append(("sql_save_account_characters fails hard on insert errors", "sql_save_account_characters" in sql_player_c and "if (!ok)" in sql_player_c and "sql_rollback();" in sql_player_c))
 checks.append(("write_unique_ip logs failed ip saves", "write_unique_ip: account IP save failed" in account_c and "if (!sql_save_account_ips" in account_c))
-checks.append(("sql_restore_saved_items rewrites roots if final delete fails", "attempting to rewrite loaded items" in sql_player_c and "component=rewrite outcome=failure" in sql_player_c and "struct restored_saved_item" in sql_player_c))
+checks.append(("sql_restore_saved_items durably acknowledges before retiring roots",
+               "saved_item_recovery_handoff" in sql_player_c and
+               "source_id_digest" in sql_player_c and
+               "sql_acknowledge_saved_item_handoff" in sql_player_c and
+               "sql_retire_saved_item_source" in sql_player_c and
+               "sql_saved_item_source_rows_match" in sql_player_c))
 checks.append(("sql_save_saved_item wraps delete+reinsert in a transaction", "bool own_txn = false;" in sql_player_c and "sql_save_saved_item_recursive(item_key, room_vnum, item, 0) > 0;" in sql_player_c and "sql_commit()" in sql_player_c and "sql_rollback();" in sql_player_c))
 
 release_fn = re.search(r"void sql_pool_release\(MYSQL \*conn\)\n\{.*?\n\}", sql_pool_c, re.S)
