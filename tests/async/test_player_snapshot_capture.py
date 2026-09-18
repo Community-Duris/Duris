@@ -28,7 +28,7 @@ int main()
 {
     static_assert(std::is_move_constructible_v<player_snapshot>);
     static_assert(std::is_move_assignable_v<player_snapshot>);
-    static_assert(PLAYER_SNAPSHOT_SCHEMA_VERSION == 5);
+    static_assert(PLAYER_SNAPSHOT_SCHEMA_VERSION == 7);
     static_assert(PLAYER_SNAPSHOT_MAX_BYTES == 4 * 1024 * 1024);
     static_assert(PLAYER_SNAPSHOT_MAX_OBJECTS < PLAYER_SNAPSHOT_MAX_ROWS);
     static_assert(PLAYER_SNAPSHOT_MAX_DEPTH > 0);

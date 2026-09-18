@@ -33,6 +33,7 @@ enum class critical_entity_type : uint8_t
 	zone,
 	shopkeeper,
 	collector,
+	pet,
 };
 
 struct critical_entity_key

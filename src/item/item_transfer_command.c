@@ -332,6 +332,8 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 		return critical_entity_type::shopkeeper;
 	case item_owner_type::collector:
 		return critical_entity_type::collector;
+	case item_owner_type::pet:
+		return critical_entity_type::pet;
 	default:
 		return critical_entity_type::system;
 	}
@@ -360,6 +362,7 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::shop_sell:
 	case item_transfer_reason::mobile_claim:
 	case item_transfer_reason::death_restitution:
+	case item_transfer_reason::corpse_raise_pet:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -454,14 +457,17 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
+	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
 	const bool corpse_context_required = payload_version >=
 						     ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
-					     (corpse_create || corpse_loot);
+					     (corpse_create || corpse_loot || corpse_raise_pet);
 	if (corpse_context_required != payload.corpse.present ||
 	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
 			       payload.to_owner.type != item_owner_type::corpse)) ||
 	    (corpse_loot && (payload.from_owner.type != item_owner_type::corpse ||
-			     payload.to_owner.type != item_owner_type::player)))
+			     payload.to_owner.type != item_owner_type::player)) ||
+	    (corpse_raise_pet && (payload.from_owner.type != item_owner_type::corpse ||
+				  payload.to_owner.type != item_owner_type::pet)))
 		return false;
 	if (payload.corpse.present)
 	{
@@ -505,6 +511,8 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 					  payload.reason == item_transfer_reason::locker_deposit ||
 					  payload.reason == item_transfer_reason::locker_withdraw ||
 					  payload.reason == item_transfer_reason::corpse_loot ||
+					  payload.reason ==
+						  item_transfer_reason::corpse_raise_pet ||
 					  payload.reason == item_transfer_reason::corpse_create ||
 					  payload.reason == item_transfer_reason::destruction;
 		const bool creation_batch = creation &&
@@ -668,12 +676,14 @@ bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::collector)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::pet)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
 	if (owner.type == item_owner_type::collector)
 		return owner.id != 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::pet)
+		return owner.id != 0 && owner.context_id != 0 && owner.context_id <= INT32_MAX;
 	return owner.id != 0;
 }
 

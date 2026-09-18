@@ -704,6 +704,15 @@ int main(int argc, char **argv)
 	raise_payload.room_vnum = 500;
 	raise_payload.money = { 5, 6, 7, 8 };
 	raise_payload.owner_name = "Hero";
+	raise_payload.pet_uid = item_corpse_owner_id(42, 20);
+	raise_payload.pet_mob_vnum = 701;
+	raise_payload.pet_hit = 20;
+	raise_payload.pet_max_hit = 20;
+	raise_payload.pet_mana = 10;
+	raise_payload.pet_max_mana = 10;
+	raise_payload.pet_vitality = 5;
+	raise_payload.pet_max_vitality = 5;
+	raise_payload.pet_charm_duration = -1;
 	auto raise_command = command(15, raise_payload);
 	raise_command.accepted_at_usec = 15000000;
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "3", 1);
@@ -720,9 +729,9 @@ int main(int argc, char **argv)
 						       applied.result_size, &result) &&
 			result.action == corpse_lifecycle_action::raise_follower &&
 			result.catalog_revision == 2 && result.corpse_owner_revision == 2 &&
-			result.room_owner_revision == 0 && result.player_owner_revision == 2 &&
-			result.wallet_revision == 1 && result.max_item_revision == 2 &&
-			result.item_count == 2 &&
+			result.room_owner_revision == 0 && result.player_owner_revision == 0 &&
+			result.pet_owner_revision == 1 && result.wallet_revision == 1 &&
+			result.max_item_revision == 2 && result.item_count == 2 &&
 			result.wallet == std::array<int32_t, 4>{ 45, 36, 27, 18 } &&
 			result.collector_catalog_changed,
 		"corpse raise result did not expose all committed revisions");
@@ -744,11 +753,21 @@ int main(int argc, char **argv)
 	require(flatfile_item_repository_load_owner(
 			raise_root.string(), raising_player_owner, &raising_player_revision,
 			&raising_player_items, &error) == flatfile_item_repository_result::ok &&
-			raising_player_revision == 2 && raising_player_items.size() == 3 &&
-			raising_player_items[1].item_uid == 900 &&
-			raising_player_items[1].item_revision == 2 &&
-			raising_player_items[2].parent_item_uid == 900,
-		"recovered corpse raise did not transfer player item custody");
+			raising_player_revision == 1 && raising_player_items.size() == 1 &&
+			raising_player_items[0].item_uid == 810,
+		"recovered corpse raise changed player item custody");
+	const item_owner_identity raised_pet_owner = { item_owner_type::pet, raise_payload.pet_uid,
+						       71 };
+	uint64_t raised_pet_revision = 0;
+	std::vector<flatfile_item_ownership_record> raised_pet_items;
+	require(flatfile_item_repository_load_owner(
+			raise_root.string(), raised_pet_owner, &raised_pet_revision,
+			&raised_pet_items, &error) == flatfile_item_repository_result::ok &&
+			raised_pet_revision == 1 && raised_pet_items.size() == 2 &&
+			raised_pet_items[0].item_uid == 900 &&
+			raised_pet_items[0].item_revision == 2 &&
+			raised_pet_items[1].parent_item_uid == 900,
+		"recovered corpse raise did not transfer nested pet item custody");
 	flatfile_player_domain_record loaded_raising_player;
 	require(flatfile_player_domain_load(raise_root.string(), 71, "raising-account", 1,
 					    &loaded_raising_player,
@@ -778,10 +797,20 @@ int main(int argc, char **argv)
 				raise_root.string(), reconciliation_lock, 71, raising_player_items,
 				&stale_raise_snapshot,
 				&error) == flatfile_shop_trade_materialization_result::ok &&
-				stale_raise_snapshot.items.size() == 2 &&
-				stale_raise_snapshot.items[0].object_uid == 900 &&
-				stale_raise_snapshot.items[1].parent_index == 0,
+				stale_raise_snapshot.items.empty() &&
+				stale_raise_snapshot.pets.size() == 1 &&
+				stale_raise_snapshot.pets[0].pet_uid == raise_payload.pet_uid &&
+				stale_raise_snapshot.pets[0].items.size() == 2 &&
+				stale_raise_snapshot.pets[0].items[0].object_uid == 900 &&
+				stale_raise_snapshot.pets[0].items[1].parent_index == 0,
 			"restart reconciliation did not materialize raised corpse items: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				raise_root.string(), reconciliation_lock, 71, raising_player_items,
+				&stale_raise_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_raise_snapshot.pets.size() == 1 &&
+				stale_raise_snapshot.pets[0].items.size() == 2,
+			"repeat pet materialization duplicated the follower or its equipment");
 	}
 
 	const fs::path nested_room_root = fs::path(argv[1]) / "nested-room";

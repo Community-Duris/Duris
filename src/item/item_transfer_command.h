@@ -42,6 +42,7 @@ enum class item_owner_type : uint8_t
 	destruction,
 	shopkeeper,
 	collector,
+	pet,
 };
 
 enum class item_transfer_reason : uint16_t
@@ -69,6 +70,7 @@ enum class item_transfer_reason : uint16_t
 	collector_buyback,
 	collector_expire,
 	death_restitution,
+	corpse_raise_pet,
 };
 
 enum class item_custody_state : uint8_t

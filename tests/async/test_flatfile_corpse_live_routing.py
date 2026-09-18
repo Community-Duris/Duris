@@ -208,7 +208,7 @@ assert "publish_corpse_wallet" in nested_publication
 assert "discard_nested_money" in raise_completion
 assert "corpse_raise_exceeds_carry_capacity" in raise_completion
 assert "The recovered equipment leaves you overburdened" in raise_completion
-assert "obj_to_char_at_end(item, caster)" in raise_completion
+assert "obj_to_char_at_end(item, pet_uid ? follower : caster)" in raise_completion
 assert "writeCharacter(caster, RENT_CRASH" in raise_completion
 assert "source_items_valid" in raise_publication
 assert "recover_corpse_raise_items" in HANDLER

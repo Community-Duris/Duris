@@ -31,6 +31,7 @@
 #include "economy/collector_catalog_cache.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/pet_restore_runtime.h"
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
 #include "combat/damage.h"
@@ -3458,7 +3459,7 @@ struct corpse_raise_context
 	corpse_raise_kind kind = corpse_raise_kind::undead;
 	int level = 0;
 	int variant = 0;
-	bool globe = false;
+	bool hostile = false;
 	const char *message = nullptr;
 };
 
@@ -3910,7 +3911,8 @@ bool recover_corpse_raise_items(P_obj corpse, P_char caster)
 }
 
 void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
-				    bool transfer_live_items, bool fence_save, const char *reason)
+				    bool transfer_live_items, bool fence_save, bool pet_custody,
+				    const char *reason)
 {
 	auto found = corpse_raises.find(key);
 	if (found == corpse_raises.end())
@@ -3919,7 +3921,7 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 	corpse_raises.erase(found);
 	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
 	corpse_release_side_effect_guard guard;
-	const bool live_items_recovered = transfer_live_items && caster &&
+	const bool live_items_recovered = !pet_custody && transfer_live_items && caster &&
 					  recover_corpse_raise_items(corpse, caster);
 	// The durable transaction has already moved the item rows to the caster.
 	// Never leave a stale live corpse behind for a later loot/raise attempt.  A
@@ -3929,7 +3931,7 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 		extract_obj(corpse, FALSE);
 	if (follower)
 		extract_char(follower);
-	if (caster && (fence_save || !live_items_recovered))
+	if (caster && (fence_save || pet_custody || !live_items_recovered))
 		SET_BIT(caster->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
 	persistence_alert(AVATAR, "corpse", "durable_raise", "none", "none",
 			  reason ? reason : "committed_live_recovery", "corpse_key=%llu", key);
@@ -3938,6 +3940,8 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 		const bool save_fenced =
 			IS_SET(caster->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
 		send_to_char(
+			pet_custody ?
+				"The raising committed, but its live effects needed recovery. The equipment is retained with the durable pet record; saving is paused until a fresh login verifies it.\r\n" :
 			save_fenced ?
 				"The raising committed, but its live effects needed recovery. The corpse and minion were removed; saving is paused until a fresh login verifies the recovered equipment.\r\n" :
 			live_items_recovered ?
@@ -3976,35 +3980,38 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	if (!item_ownership_runtime_apply_corpse_discarded(payload.owner_pid, payload.save_id,
 							   transient_uids, result) ||
 	    !item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
-						       payload.destination_player_pid, result))
+						       payload.destination_player_pid,
+						       payload.pet_uid, result))
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
-					       "raise_runtime_recovery");
+					       payload.pet_uid != 0, "raise_runtime_recovery");
 		return;
 	}
 	if (!source_valid)
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
-					       "raise_live_topology_stale");
+					       payload.pet_uid != 0, "raise_live_topology_stale");
 		return;
 	}
 	if (!caster || !follower || caster->in_room <= NOWHERE || caster->in_room > top_of_world ||
 	    world[caster->in_room].number != payload.room_vnum || follower->in_room != NOWHERE)
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
-					       "raise_live_topology_stale");
+					       payload.pet_uid != 0, "raise_live_topology_stale");
 		return;
 	}
 	if (!publish_corpse_wallet(caster, result))
 	{
 		recover_committed_corpse_raise(key, corpse, follower, source_items_valid, false,
-					       "raise_wallet_invalid");
+					       payload.pet_uid != 0, "raise_wallet_invalid");
 		return;
 	}
 	corpse_raises.erase(found);
 	corpse_release_side_effect_guard guard;
 	complete_corpse_raise_after_commit(caster, follower, corpse, context.kind, context.level,
-					   context.variant, context.globe, context.message);
+					   context.variant, context.message, payload.pet_uid,
+					   context.hostile, payload.pet_charm_duration,
+					   payload.pet_restore_state);
 }
 
 P_obj find_resurrection_item(P_char target, const item_owner_identity &owner)
@@ -4507,12 +4514,20 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 		extract_char(follower);
 		return true;
 	}
+	// Resolve the existing hostility roll before the durable custody decision.
+	// A hostile summon is not a follower and keeps the old caster-owned route.
+	const bool hostile =
+		(kind == corpse_raise_kind::titan || kind == corpse_raise_kind::avatar) ?
+			!number(0, 12) :
+		(kind == corpse_raise_kind::dracolich)	       ? !globe && !number(0, 12) :
+		(kind == corpse_raise_kind::greater_dracolich) ? !globe && !number(0, 9) :
+								 false;
 	try
 	{
 		corpse_raises.emplace(key,
 				      corpse_raise_context{ caster, caster->runtime_id, follower,
 							    follower->runtime_id, kind, level,
-							    variant, globe, message });
+							    variant, hostile, message });
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -4531,6 +4546,24 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 	payload.money = { GET_COPPER(caster), GET_SILVER(caster), GET_GOLD(caster),
 			  GET_PLATINUM(caster) };
 	payload.owner_name = corpse->action_description;
+	if (!hostile)
+	{
+		payload.pet_uid = key;
+		payload.pet_mob_vnum = GET_VNUM(follower);
+		payload.pet_hit = GET_HIT(follower);
+		payload.pet_max_hit = GET_MAX_HIT(follower);
+		payload.pet_mana = GET_MANA(follower);
+		payload.pet_max_mana = GET_MAX_MANA(follower);
+		payload.pet_vitality = GET_VITALITY(follower);
+		payload.pet_max_vitality = GET_MAX_VITALITY(follower);
+		if (!prepare_corpse_raise_pet_state(corpse, caster, follower, kind, globe,
+						    &payload.pet_charm_duration,
+						    &payload.pet_restore_state))
+		{
+			fail_corpse_raise(key, "raise_pet_state_invalid");
+			return true;
+		}
+	}
 	if (!corpse_lifecycle_transaction_raise_follower(payload, publish_corpse_raise))
 		fail_corpse_raise(key, "raise_submission_failed");
 	return true;

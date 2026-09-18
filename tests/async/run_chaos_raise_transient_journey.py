@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import tempfile
 import time
@@ -13,10 +14,12 @@ import test_flatfile_combat_journey as journey
 ROOT = Path(__file__).resolve().parents[2]
 TRANSIENT = 524288
 UIDS = (880000000001, 880000000002, 880000000003)
+GIVE_UIDS = (880000000004, 880000000005)
+PROC_UID = 880000000006
 OWNER_PID, SAVE_ID, ROOM = 880001, 1004, 22800
 
 
-def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
+def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
     host = os.environ.get("TEST_DB_HOST", "127.0.0.1")
     port = os.environ.get("TEST_DB_PORT", "3307")
     assert host in ("127.0.0.1", "localhost", "::1")
@@ -43,7 +46,12 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
             if "Entering game loop." in output_path.read_text(errors="replace"):
                 return
             time.sleep(.1)
-        raise AssertionError(output_path.read_text(errors="replace")[-2500:])
+        schema = subprocess.run(
+            ["bash", "migrations/verify_runtime_compatibility.sh"], cwd=ROOT,
+            env=env, capture_output=True, text=True)
+        raise AssertionError(output_path.read_text(errors="replace")[-2500:] +
+                             journey.runtime_logs(game)[-4500:] +
+                             schema.stderr[-1800:])
 
     sql("CREATE DATABASE " + database, False)
     try:
@@ -51,6 +59,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
         for args in (("adopt", "--kind", "fresh_bootstrap"), ("run",)):
             subprocess.run(["python3", "scripts/migration_runner.py", *args],
                            cwd=ROOT, env=env, check=True, capture_output=True)
+        sql((ROOT / "migrations/immutable/0028_pet_custody.sql").read_text())
         with tempfile.TemporaryDirectory(prefix="chaos-raise-") as temporary:
             game = Path(temporary)
             (game / "logs/log").mkdir(parents=True)
@@ -140,7 +149,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                     assert "corpse of an ordinary beast" not in raised_room
                     print("ordinary NPC corpse: one live follower, no player-corpse "
                           "durable command", flush=True)
-                    return
+                    return True
 
                 corpse_owner = (OWNER_PID << 32) | SAVE_ID
                 coin_row = ("INSERT INTO corpse_items"
@@ -148,6 +157,9 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                             "value0,value1,value2,value3,name,short_descr)"
                             " VALUES(@corpse_id,3,20,@root_id,2,1,2,3,4,"
                             "'coins','some coins')") if with_coins else ""
+                give_probe = "--give-probe" in sys.argv[2:]
+                pet_probe = "--pet-probe" in sys.argv[2:]
+                fixture_probe = give_probe or pet_probe
                 sql("INSERT INTO corpses"
                     "(player_name,save_id,corpse_revision,room_vnum,short_descr,"
                     "description,name,weight,value2,value3,value5)"
@@ -174,7 +186,24 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                     "obj_uid,name,short_descr,description)"
                     f" VALUES(@corpse_id,5,@root_id,1,150,{TRANSIENT},"
                     f"{UIDS[2]},'fixture fading note','a fixture fading note',"
-                    "'A fixture fading note lies here.');" + coin_row)
+                    "'A fixture fading note lies here.');" +
+                    ("INSERT INTO corpse_items"
+                     "(corpse_id,vnum,weight,cost,obj_uid,name,short_descr,description)"
+                     f" VALUES(@corpse_id,48,1,215,{GIVE_UIDS[0]},"
+                     "'empty satchel','an empty satchel',"
+                     "'An empty satchel lies here.');"
+                     "INSERT INTO corpse_items"
+                     "(corpse_id,vnum,weight,cost,wear_flags,obj_uid,name,"
+                     "short_descr,description)"
+                     f" VALUES(@corpse_id,5,1,150,3,{GIVE_UIDS[1]},"
+                     "'ordinary trinket','an ordinary trinket',"
+                     "'An ordinary trinket lies here.');"
+                     "INSERT INTO corpse_items"
+                     "(corpse_id,vnum,weight,cost,extra_flags,wear_flags,obj_uid,"
+                     "name,short_descr,description)"
+                     f" VALUES(@corpse_id,5,1,150,2050,0,{PROC_UID},"
+                     "'hidden proc token','a hidden proc token',"
+                     "'A hidden proc token lies here.');" if fixture_probe else "") + coin_row)
                 sql("INSERT INTO item_owner_revision"
                     "(owner_type,owner_id,owner_context_id,revision)"
                     f" VALUES(4,{corpse_owner},0,1)")
@@ -186,6 +215,13 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                         "owner_id,owner_context_id,item_revision,vnum,state)"
                         f" VALUES({uid},{UIDS[0]},{parent},4,"
                         f"{corpse_owner},0,5,{vnum},1)")
+                if fixture_probe:
+                    for uid, vnum in ((GIVE_UIDS[0], 48), (GIVE_UIDS[1], 5),
+                                      (PROC_UID, 5)):
+                        sql("INSERT INTO item_current_owner"
+                            "(item_uid,root_item_uid,owner_type,owner_id,"
+                            "owner_context_id,item_revision,vnum,state)"
+                            f" VALUES({uid},{uid},4,{corpse_owner},0,5,{vnum},1)")
 
                 process, game_port = start("--chaos-off" not in sys.argv[2:])
                 client = journey.reconnect_character(game_port, expected_room=None)
@@ -198,17 +234,32 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                 wallet_before = tuple(map(int, sql(
                     f"SELECT copper,silver,gold,platinum FROM player_data WHERE pid={pid}"
                 ).split("\t")))
+                save_revision_before = int(sql(
+                    f"SELECT save_revision FROM player_data WHERE pid={pid}"))
+                stale_player = "--stale-player" in sys.argv[2:]
+                if stale_player:
+                    sql("UPDATE item_owner_revision SET revision=revision+1 "
+                        f"WHERE owner_type=1 AND owner_id={pid} AND "
+                        "owner_context_id=0")
                 client.pending.clear()
                 client.send("cast 'create greater dracolich' corpse")
                 outcome, transcript = client.expect_any(
                     ("The corpse resists the raising and remains intact.",
                      "The corpse summons a greater",
                      "The raising committed, but its live effects needed recovery.",
+                     "You abort your spell before it's done!",
                      "You cannot control any more greater dracoliches!",
                      "This spell requires the corpse of a more powerful being!",
                      "You do not know that spell",
                      "You don't have that spell memorized."),
                     timeout=120)
+                if outcome.startswith("You abort your spell"):
+                    assert sql("SELECT COUNT(*) FROM corpses") == "1"
+                    assert sql("SELECT COUNT(*) FROM player_pets WHERE "
+                               f"owner_pid={pid}") == "0"
+                    print("interrupted cast: corpse retained; retrying a fresh "
+                          "fixture", flush=True)
+                    return False
                 assert "You cannot control" not in outcome and \
                        "requires the corpse" not in outcome and \
                        "do not know" not in outcome and \
@@ -216,17 +267,19 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                 receipt = sql("SELECT result_code FROM critical_operation_inbox "
                               "WHERE command_type=16 ORDER BY created_at DESC LIMIT 1")
                 print("cast outcome:", outcome, "receipt:", receipt, flush=True)
-                if expect_refusal:
+                if expect_refusal or stale_player:
                     assert outcome.startswith("The corpse resists"), transcript
                     assert receipt == "116", receipt
                     assert sql("SELECT COUNT(*) FROM corpses") == "1"
-                    assert sql("SELECT COUNT(*) FROM corpse_items") == (
-                        "4" if with_coins else "3")
+                    assert sql("SELECT COUNT(*) FROM corpse_items") == str(
+                        (4 if with_coins else 3) + (3 if fixture_probe else 0))
                     assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
                                f"item_uid IN {UIDS} AND owner_type=4") == "3"
                     assert tuple(map(int, sql(
                         f"SELECT copper,silver,gold,platinum FROM player_data WHERE pid={pid}"
                     ).split("\t"))) == wallet_before
+                    assert sql("SELECT COUNT(*) FROM player_pets WHERE "
+                               f"owner_pid={pid}") == "0"
                     print("baseline chaos cast: ESTALE refusal retained full corpse graph",
                           flush=True)
                 else:
@@ -234,8 +287,54 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                     assert receipt == "0", receipt
                     assert sql("SELECT COUNT(*) FROM corpses") == "0"
                     assert sql("SELECT COUNT(*) FROM corpse_items") == "0"
-                    assert sql("SELECT COUNT(*) FROM player_items WHERE "
+                    if pet_probe and sql("SELECT COUNT(*) FROM player_pets WHERE "
+                                         f"owner_pid={pid}") == "0":
+                        assert sql("SELECT COUNT(*) FROM player_items WHERE "
+                                   f"obj_uid IN ({UIDS[0]},{UIDS[1]})") == "2"
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
+                                   f"obj_uid IN ({UIDS[0]},{UIDS[1]})") == "0"
+                        assert sql("SELECT CONCAT(owner_type,':',owner_id) FROM "
+                                   "item_current_owner WHERE "
+                                   f"item_uid={UIDS[0]}") == f"1:{pid}"
+                        assert sql("SELECT COUNT(*) FROM player_pets WHERE "
+                                   f"owner_pid={pid}") == "0"
+                        assert sql("SELECT CONCAT(owner_type,':',state) FROM "
+                                   "item_current_owner WHERE "
+                                   f"item_uid={UIDS[2]}") == "8:2"
+                        wallet_after_hostile = tuple(map(int, sql(
+                            "SELECT copper,silver,gold,platinum FROM player_data "
+                            f"WHERE pid={pid}").split("\t")))
+                        money = (1, 2, 3, 4) if with_coins else (0, 0, 0, 0)
+                        assert wallet_after_hostile == tuple(
+                            before + delta for before, delta in
+                            zip(wallet_before, money))
+                        print("hostile raise: committed graph belongs to caster; "
+                              "no durable follower record", flush=True)
+                        return "--expect-hostile" in sys.argv[2:]
+                    if pet_probe and "--expect-hostile" in sys.argv[2:]:
+                        print("follower raise; retrying for hostile outcome", flush=True)
+                        return False
+                    item_table = "player_pet_items" if pet_probe else "player_items"
+                    assert sql(f"SELECT COUNT(*) FROM {item_table} WHERE "
                                f"obj_uid IN ({UIDS[0]},{UIDS[1]})") == "2"
+                    if pet_probe:
+                        assert sql("SELECT COUNT(*) FROM player_items WHERE "
+                                   f"obj_uid IN ({UIDS[0]},{UIDS[1]})") == "0"
+                        assert sql("SELECT CONCAT(owner_type,':',owner_id,':',"
+                                   "owner_context_id) FROM item_current_owner WHERE "
+                                   f"item_uid={UIDS[0]}") == f"11:{corpse_owner}:{pid}"
+                        assert sql("SELECT CONCAT(root_item_uid,':',"
+                                   "parent_item_uid,':',owner_type,':',owner_id) "
+                                   "FROM item_current_owner WHERE "
+                                   f"item_uid={UIDS[1]}") == \
+                                   f"{UIDS[0]}:{UIDS[0]}:11:{corpse_owner}"
+                        assert sql("SELECT CONCAT(child.container_id,':',root.id) "
+                                   "FROM player_pet_items child JOIN "
+                                   "player_pet_items root ON root.obj_uid="
+                                   f"{UIDS[0]} WHERE child.obj_uid={UIDS[1]}") == \
+                                   sql("SELECT CONCAT(id,':',id) FROM "
+                                       "player_pet_items WHERE "
+                                       f"obj_uid={UIDS[0]}")
                     assert sql("SELECT CONCAT(owner_type,':',state) FROM "
                                f"item_current_owner WHERE item_uid={UIDS[2]}") == "8:2"
                     assert sql("SELECT COUNT(*) FROM player_items WHERE "
@@ -251,25 +350,183 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
                     raised_room = client.expect("Pos: standing >", timeout=20)
                     assert raised_room.lower().count("dracolich") == 1, raised_room
                     assert raised_room.count("(minion)") == 1, raised_room
-                    client.send("save")
-                    client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
+                    equip_probe = "--equip-probe" in sys.argv[2:]
+                    if equip_probe:
+                        assert pet_probe
+                        client.pending.clear()
+                        client.send("order dracolich wear trinket")
+                        client.expect("Pos: standing >", timeout=20)
+                        client.send("save")
+                        client.expect(f"Save complete for {journey.CHARACTER}.",
+                                      timeout=30)
+                        assert int(sql("SELECT equip_slot FROM player_pet_items "
+                                       f"WHERE obj_uid={GIVE_UIDS[1]}")) > 0
+                    if "--give-probe" in sys.argv[2:]:
+                        client.pending.clear()
+                        client.send("give backpack dracolich")
+                        refusal = client.expect(
+                            "That item cannot be given to a pet or mob because its "
+                            "custody cannot be saved yet.", timeout=20)
+                        assert "custody cannot be saved yet" in refusal
+                        assert sql("SELECT COUNT(*) FROM player_items WHERE "
+                                   f"pid={pid} AND obj_uid={UIDS[0]}") == "1"
+                        assert sql("SELECT CONCAT(owner_type,':',owner_id,':',state) "
+                                   "FROM item_current_owner WHERE "
+                                   f"item_uid={UIDS[0]}") == f"1:{pid}:1"
+                        print("give backpack dracolich: first leg refused; "
+                              "full graph stayed with player", flush=True)
+                        client.send("give satchel dracolich")
+                        client.expect("custody cannot be saved yet.", timeout=20)
+                        print("give satchel dracolich (empty): refused", flush=True)
+                        client.send("give trinket dracolich")
+                        client.expect("custody cannot be saved yet.", timeout=20)
+                        print("give trinket dracolich: refused", flush=True)
+                        client.pending.clear()
+                        client.send(f"order dracolich give backpack {journey.CHARACTER}")
+                        ordered = client.expect("Pos: standing >", timeout=20)
+                        print("order dracolich give backpack:",
+                              ordered.strip()[-180:], flush=True)
+                        assert sql("SELECT COUNT(*) FROM player_items WHERE "
+                                   f"pid={pid} AND obj_uid IN ({UIDS[0]},{UIDS[1]})") == "2"
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
+                                   f"obj_uid IN ({UIDS[0]},{UIDS[1]})") == "0"
+                    restart_before_save = "--restart-before-save" in sys.argv[2:]
+                    if equip_probe and restart_before_save:
+                        raise AssertionError("equipment save and pre-save restart are separate journeys")
+                    if not restart_before_save and not equip_probe:
+                        client.send("save")
+                        client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
                     assert sql("SELECT COUNT(*) FROM player_pets WHERE "
                                f"owner_pid={pid}") == "1"
+                    if pet_probe:
+                        state_hex = sql("SELECT restore_state FROM player_pets "
+                                        f"WHERE owner_pid={pid}")
+                        state = bytes.fromhex(state_hex)
+                        charm_deadline, death_deadline = struct.unpack_from(
+                            "<qq", state, 8)
+                        assert int(sql("SELECT charm_duration FROM player_pets "
+                                       f"WHERE owner_pid={pid}")) > 0
+                        assert time.time() < charm_deadline < death_deadline
+                    if fixture_probe:
+                        if restart_before_save:
+                            save_revision_at_crash = int(sql(
+                                "SELECT save_revision FROM player_data WHERE "
+                                f"pid={pid}"))
+                            print("player save revisions before cast / at crash:",
+                                  save_revision_before, save_revision_at_crash,
+                                  flush=True)
+                        expire_before_restart = "--expire-before-restart" in sys.argv[2:]
+                        if expire_before_restart:
+                            assert pet_probe
+                            expired_state = bytearray.fromhex(state_hex)
+                            expired_at = int(time.time()) - 1
+                            struct.pack_into("<qq", expired_state, 8,
+                                             expired_at, expired_at)
+                            sql("UPDATE player_pets SET restore_state='" +
+                                expired_state.hex() + "' WHERE owner_pid=" +
+                                str(pid))
+                        if restart_before_save:
+                            process.kill()
+                            assert process.wait(timeout=30) != 0
+                        client.close()
+                        client = None
+                        if not restart_before_save:
+                            process.terminate()
+                            assert process.wait(timeout=30) == 0
+                        if expire_before_restart:
+                            assert sql("SELECT restore_state FROM player_pets "
+                                       f"WHERE owner_pid={pid}") == \
+                                       expired_state.hex()
+                        process, game_port = start(True)
+                        client = journey.reconnect_character(game_port,
+                                                             expected_room=None)
+                        client.pending.clear()
+                        client.send("look")
+                        restored = client.expect("Pos: standing >", timeout=20)
+                        if expire_before_restart:
+                            assert "dracolich" not in restored.lower(), restored
+                            client.send("save")
+                            client.expect(
+                                f"Save complete for {journey.CHARACTER}.",
+                                timeout=30)
+                            assert sql("SELECT hold_reason FROM player_pets "
+                                       f"WHERE owner_pid={pid}") == "3"
+                            assert sql("SELECT COUNT(*) FROM player_pet_items "
+                                       f"WHERE pet_id IN (SELECT id FROM player_pets "
+                                       f"WHERE owner_pid={pid})") == "5"
+                            assert sql("SELECT COUNT(*) FROM item_current_owner "
+                                       "WHERE owner_type=11 AND "
+                                       f"owner_context_id={pid} AND state=1") == "5"
+                            print("expired follower held: no live pet; all five "
+                                  "UIDs retained under pet custody", flush=True)
+                            return True
+                        assert restored.lower().count("dracolich") == 1, restored
+                        if restart_before_save:
+                            client.send("save")
+                            client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
+                        tracked = f"({UIDS[0]},{UIDS[1]},{GIVE_UIDS[0]},{GIVE_UIDS[1]},{PROC_UID})"
+                        if pet_probe:
+                            assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
+                                       f"obj_uid IN {tracked}") == "5"
+                            assert sql("SELECT COUNT(DISTINCT obj_uid) FROM "
+                                       f"player_pet_items WHERE obj_uid IN {tracked}") == "5"
+                            assert sql("SELECT COUNT(*) FROM player_items WHERE "
+                                       f"obj_uid IN {tracked}") == "0"
+                            restored_state = bytes.fromhex(sql(
+                                "SELECT restore_state FROM player_pets "
+                                f"WHERE owner_pid={pid}"))
+                            assert struct.unpack_from("<qq", restored_state, 8) == \
+                                   (charm_deadline, death_deadline)
+                            assert sql("SELECT CONCAT(root_item_uid,':',"
+                                       "parent_item_uid,':',owner_type,':',owner_id) "
+                                       "FROM item_current_owner WHERE "
+                                       f"item_uid={UIDS[1]}") == \
+                                       f"{UIDS[0]}:{UIDS[0]}:11:{corpse_owner}"
+                            assert sql("SELECT CONCAT(pi.extra_flags,':',pi.wear_flags,':',"
+                                       "own.owner_type,':',own.owner_id) FROM "
+                                       "player_pet_items pi JOIN item_current_owner own "
+                                       "ON own.item_uid=pi.obj_uid "
+                                       f"WHERE pi.obj_uid={PROC_UID}") == \
+                                       f"2050:0:11:{corpse_owner}"
+                            if equip_probe:
+                                assert int(sql("SELECT equip_slot FROM player_pet_items "
+                                               f"WHERE obj_uid={GIVE_UIDS[1]}")) > 0
+                            print("restart: follower and all five UIDs restored "
+                                  "under pet custody", flush=True)
+                        else:
+                            assert sql("SELECT COUNT(*) FROM player_items WHERE "
+                                       f"obj_uid IN {tracked}") == "5"
+                            assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
+                                       f"obj_uid IN {tracked}") == "0"
+                            assert sql("SELECT CONCAT(pi.extra_flags,':',pi.wear_flags,':',"
+                                       "own.owner_type,':',own.owner_id) FROM player_items pi "
+                                       "JOIN item_current_owner own ON own.item_uid=pi.obj_uid "
+                                       f"WHERE pi.obj_uid={PROC_UID}") == f"2050:0:1:{pid}"
+                            print("restart: no-show/proc-flag/no-take fixture was "
+                                  "player-owned; all refused UIDs remain with player",
+                                  flush=True)
                     mode = "chaos-off" if "--chaos-off" in sys.argv[2:] else "chaos-on"
                     print(f"fixed {mode} cast: one follower, legitimate nested graph,"
                           " transient UID destroyed", flush=True)
                 print("commands: look; stand; cast 'create greater dracolich' corpse",
                       flush=True)
                 print("result:", outcome, "receipt:", receipt, flush=True)
+                return True
             except Exception:
                 print("diagnostic logs:", "\n".join(
                     line for line in journey.runtime_logs(game).splitlines()
                     if any(term in line.lower() for term in
-                           ("durable_raise", "corpse_lifecycle", "raise_submission",
+                           ("durable_raise", "corpse_lifecycle", "corpse_trace",
+                            "raise_submission",
                             "critical_command", "mysql")))[-6000:], flush=True)
                 print("server tail:", output_path.read_text(errors="replace")[-2500:],
                       flush=True)
-                print("logs tail:", journey.runtime_logs(game)[-2500:], flush=True)
+                runtime_log = journey.runtime_logs(game)
+                print("load diagnostics:", "\n".join(
+                    line for line in runtime_log.splitlines()
+                    if "player_load" in line or "PERSISTENCE:" in line)[-5000:],
+                    flush=True)
+                print("logs tail:", runtime_log[-2500:], flush=True)
                 if client:
                     print("game tail:", client.transcript.decode(errors="replace")[-2000:],
                           flush=True)
@@ -285,5 +542,11 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> None:
 
 
 if __name__ == "__main__":
-    run(Path(sys.argv[1]).resolve(), "--expect-refusal" in sys.argv[2:],
-        "--coinless" not in sys.argv[2:])
+    attempts = 20 if "--expect-hostile" in sys.argv[2:] else 5
+    for attempt in range(attempts):
+        if run(Path(sys.argv[1]).resolve(), "--expect-refusal" in sys.argv[2:],
+               "--coinless" not in sys.argv[2:]):
+            break
+        print(f"retrying a fresh cast after outcome {attempt + 1}", flush=True)
+    else:
+        raise AssertionError("desired pet or hostile outcome did not occur")

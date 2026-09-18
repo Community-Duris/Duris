@@ -448,6 +448,16 @@
       "verify": "immutable/0027_saved_item_recovery_handoff.sh",
       "verify_checksum": "6e52d6bb46c2ab660b6b43071dadfc5a3bc9885aa88f760fe9517a85c4d0896d",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0028_pet_custody",
+      "sequence": 28,
+      "description": "Add stable raised-pet custody identity and owner type",
+      "apply": "immutable/0028_pet_custody.sql",
+      "apply_checksum": "0a72bb83e3a8a4880ea37306269b71042d0f6a775f31c74f396512bcbaf29c8a",
+      "verify": "immutable/0028_pet_custody.sh",
+      "verify_checksum": "4605ed2ed58c4854dc0572ca166857b87bb5c120839ff76a70d9e03e64df7124",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

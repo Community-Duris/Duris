@@ -7,7 +7,8 @@
 #include <cstdint>
 #include <string>
 
-constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 5;
+constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 6;
+constexpr uint16_t CORPSE_LIFECYCLE_NESTED_PAYLOAD_VERSION = 5;
 constexpr uint16_t CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION = 4;
 constexpr uint16_t CORPSE_LIFECYCLE_INTERMEDIATE_PAYLOAD_VERSION = 3;
 constexpr uint16_t CORPSE_LIFECYCLE_RELEASE_PAYLOAD_VERSION = 2;
@@ -20,7 +21,8 @@ constexpr size_t CORPSE_LIFECYCLE_LEGACY_RESULT_BYTES = 32;
 constexpr size_t CORPSE_LIFECYCLE_PREVIOUS_RESULT_BYTES = 64;
 constexpr size_t CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES = 96;
 constexpr size_t CORPSE_LIFECYCLE_BANK_RESULT_BYTES = 104;
-constexpr size_t CORPSE_LIFECYCLE_RESULT_BYTES = 128;
+constexpr size_t CORPSE_LIFECYCLE_PREVIOUS_RESULT_BYTES_WITH_DISCARD = 128;
+constexpr size_t CORPSE_LIFECYCLE_RESULT_BYTES = 136;
 constexpr uint16_t CORPSE_LIFECYCLE_RESULT_VERSION = 1;
 constexpr uint16_t CORPSE_LIFECYCLE_OUTBOX_DESTINATION = 12;
 constexpr uint16_t CORPSE_LIFECYCLE_OUTBOX_EVENT_MUTATED = 1;
@@ -58,6 +60,16 @@ struct corpse_lifecycle_payload
 	std::string short_description;
 	std::string description;
 	std::string keywords;
+	uint64_t pet_uid = 0;
+	int32_t pet_mob_vnum = 0;
+	int32_t pet_hit = 0;
+	int32_t pet_max_hit = 0;
+	int32_t pet_mana = 0;
+	int32_t pet_max_mana = 0;
+	int32_t pet_vitality = 0;
+	int32_t pet_max_vitality = 0;
+	int32_t pet_charm_duration = -1;
+	std::string pet_restore_state;
 };
 
 struct corpse_lifecycle_result
@@ -70,6 +82,7 @@ struct corpse_lifecycle_result
 	uint64_t corpse_owner_revision = 0;
 	uint64_t room_owner_revision = 0;
 	uint64_t player_owner_revision = 0;
+	uint64_t pet_owner_revision = 0;
 	uint64_t wallet_revision = 0;
 	uint64_t bank_revision = 0;
 	uint64_t max_item_revision = 0;
