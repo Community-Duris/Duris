@@ -10203,8 +10203,8 @@ void sql_restore_saved_items(void)
 	{
 		struct restored_saved_item *next = entry->next;
 		if (entry->item_key)
-			free(entry->item_key);
-		free(entry);
+			str_free(entry->item_key);
+		FREE(entry);
 		entry = next;
 	}
 
