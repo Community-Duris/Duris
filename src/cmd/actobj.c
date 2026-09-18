@@ -321,7 +321,7 @@ std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
 
 static bulk_get_state *corpse_bulk_get(P_char actor, uint64_t container_uid)
 {
-	if (!actor)
+	if (!actor || !IS_PC(actor))
 		return NULL;
 	auto found = bulk_gets.find(static_cast<uint32_t>(GET_PID(actor)));
 	return found != bulk_gets.end() && found->second.container_uid == container_uid &&

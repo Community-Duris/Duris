@@ -294,6 +294,10 @@ static void inspect_authority(const std::string &root, int32_t pid)
 				  << ",\"parent\":" << item.parent_item_uid << '}';
 		}
 		std::cout << ']';
+		std::cout
+			<< (owner.type == item_owner_type::player ? ",\"player_owner_revision\":" :
+								    ",\"room_owner_revision\":")
+			<< revision;
 	}
 	std::cout << ",\"deaths\":[";
 	bool first_death = true;
