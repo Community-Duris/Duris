@@ -96,7 +96,7 @@ std::string new_transaction_id(uint32_t season_id, uint32_t pid, std::string_vie
 	const uint64_t sequence = ++transaction_sequence;
 	return "zone-story:" + std::to_string(season_id) + ":" + std::to_string(pid) + ":" +
 	       std::string(definition_id) + ":" + std::to_string(completed_at) + ":" +
-		std::to_string(sequence);
+	       std::to_string(sequence);
 }
 
 std::string render_daily_surface(P_char player, bool colors, bool score, std::string *error)
@@ -116,15 +116,14 @@ std::string render_daily_surface(P_char player, bool colors, bool score, std::st
 	tracker.remember_character(current_season_id(), static_cast<uint32_t>(GET_PID(player)),
 				   GET_NAME(player));
 	const int64_t now = static_cast<int64_t>(time(NULL));
-	std::string output = score ?
-				     tracker.render_daily_score(current_season_id(),
-							 static_cast<uint32_t>(GET_PID(player)),
-							 GET_LEVEL(player), GET_RACEWAR(player), now,
-							 colors) :
-				     tracker.render_daily(current_season_id(),
-							  static_cast<uint32_t>(GET_PID(player)),
-							  GET_LEVEL(player), GET_RACEWAR(player), now,
-							  colors);
+	std::string output =
+		score ? tracker.render_daily_score(current_season_id(),
+						   static_cast<uint32_t>(GET_PID(player)),
+						   GET_LEVEL(player), GET_RACEWAR(player), now,
+						   colors) :
+			tracker.render_daily(current_season_id(),
+					     static_cast<uint32_t>(GET_PID(player)),
+					     GET_LEVEL(player), GET_RACEWAR(player), now, colors);
 	if (save_persisted_state(error))
 		return output;
 	std::string restore_error;

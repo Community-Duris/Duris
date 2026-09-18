@@ -217,7 +217,7 @@ class service
 	std::string render_daily(uint32_t season_id, uint32_t pid, int level, int racewar,
 				 int64_t now, bool colors = true);
 	std::string render_daily_score(uint32_t season_id, uint32_t pid, int level, int racewar,
-				      int64_t now, bool colors = true);
+				       int64_t now, bool colors = true);
 
 	std::string serialize_state(std::string *error = nullptr) const;
 	bool deserialize_state(std::string_view encoded, std::string *error = nullptr);

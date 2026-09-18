@@ -17,21 +17,22 @@ void require(bool condition, const char *message)
 
 zone_story_quest_tracking::quest_definition definition(const char *id, int zone)
 {
-	return { .definition_id = id,
-		 .source_system = "zone_story",
-		 .zone_number = zone,
-		 .source_area = "production-qst",
-		 .giver_vnum = zone * 100 + 1,
-		 .completion_key = id,
-		 .active = true,
-		 .eligible_for_zone_completion = true,
-		 .repeatable = true,
-		 .content_revision = 7,
-		 .display_name = zone == 900 ? "Recover the harbor sigil" : "Carry the dusk message",
-		 .giver_name = zone == 900 ? "the harbor master" : "the dusk archivist",
-		 .zone_name = zone == 900 ? "The Ember Coast" : "The Dusk Archive",
-		 .objective = zone == 900 ? "Bring the lost sigil back to the harbor master."
-					 : "Deliver the sealed message to the dusk archivist.",
+	return {
+		.definition_id = id,
+		.source_system = "zone_story",
+		.zone_number = zone,
+		.source_area = "production-qst",
+		.giver_vnum = zone * 100 + 1,
+		.completion_key = id,
+		.active = true,
+		.eligible_for_zone_completion = true,
+		.repeatable = true,
+		.content_revision = 7,
+		.display_name = zone == 900 ? "Recover the harbor sigil" : "Carry the dusk message",
+		.giver_name = zone == 900 ? "the harbor master" : "the dusk archivist",
+		.zone_name = zone == 900 ? "The Ember Coast" : "The Dusk Archive",
+		.objective = zone == 900 ? "Bring the lost sigil back to the harbor master." :
+					   "Deliver the sealed message to the dusk archivist.",
 	};
 }
 
@@ -138,7 +139,8 @@ int main()
 		"equal exact values did not share a rank");
 	const std::string leaderboard_output = tracker.render_leaderboard(7, 0, 0, 10, 42, true);
 	const std::string plain_leaderboard = tracker.render_leaderboard(7, 0, 0, 10, 42, false);
-	const std::string hidden_zone_leaderboard = tracker.render_leaderboard(7, 900, 0, 10, 42, false);
+	const std::string hidden_zone_leaderboard =
+		tracker.render_leaderboard(7, 900, 0, 10, 42, false);
 	require(leaderboard_output.find("&+Y* ") != std::string::npos &&
 			leaderboard_output.find("50%") != std::string::npos &&
 			leaderboard_output.find("PID") == std::string::npos &&

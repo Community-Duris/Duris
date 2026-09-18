@@ -106,8 +106,7 @@ std::string compact_player_text(const char *value)
 
 bool is_system_quest_message(const char *keywords)
 {
-	return keywords && (!std::strncmp(keywords, "qc_", 3) ||
-				   !std::strncmp(keywords, "QC_", 3));
+	return keywords && (!std::strncmp(keywords, "qc_", 3) || !std::strncmp(keywords, "QC_", 3));
 }
 
 std::string zone_name_for_number(int zone_number)
@@ -136,7 +135,8 @@ std::string objective_for_quest(const quest_data &quest, std::string_view giver_
 {
 	for (const quest_msg_data *message = quest.quest_message; message; message = message->next)
 	{
-		if (!message->message || !*message->message || is_system_quest_message(message->key_words))
+		if (!message->message || !*message->message ||
+		    is_system_quest_message(message->key_words))
 			continue;
 		const std::string text = compact_player_text(message->message);
 		if (!text.empty())
@@ -216,7 +216,8 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			definition.display_name = definition.giver_name.empty() ?
 							  "Daily quest" :
 							  "A request from " + definition.giver_name;
-			definition.objective = objective_for_quest(quest_index[quest], definition.giver_name);
+			definition.objective =
+				objective_for_quest(quest_index[quest], definition.giver_name);
 			definition.active = true;
 			definition.eligible_for_zone_completion = true;
 			definition.repeatable = true;

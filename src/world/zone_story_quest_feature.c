@@ -728,10 +728,9 @@ std::vector<leaderboard_entry> service::sorted_leaderboard(uint32_t season_id,
 		const personal_summary summary =
 			summary_for(season_id, key.second, state.character_name);
 		leaderboard_entry entry{ .pid = key.second,
-					 .character_name =
-						 summary.character_name.empty() ?
-							 "Unknown adventurer" :
-							 summary.character_name };
+					 .character_name = summary.character_name.empty() ?
+								   "Unknown adventurer" :
+								   summary.character_name };
 		entry.completed = summary.completed;
 		entry.total = summary.total;
 		entry.full_zones = summary.full_zones;
@@ -1027,8 +1026,7 @@ std::string service::render_zone(uint32_t season_id, uint32_t pid, int32_t zone_
 	std::ostringstream output;
 	output << "\r\n"
 	       << color(colors, "&+L") << display_zone_name(progress) << " completion for "
-	       << display_character_name(summary)
-	       << color(colors, "&n") << "\r\n";
+	       << display_character_name(summary) << color(colors, "&n") << "\r\n";
 	if (!progress.available)
 	{
 		output << "  N/A: this zone has no active zone-story quests in the current catalog.\r\n";
@@ -1064,14 +1062,14 @@ std::string service::render_summary(uint32_t season_id, uint32_t pid,
 	std::ostringstream output;
 	output << "\r\n"
 	       << color(colors, "&+L") << "Zone-story achievements for "
-	       << display_character_name(summary)
-	       << color(colors, "&n") << "\r\n";
+	       << display_character_name(summary) << color(colors, "&n") << "\r\n";
 	if (summary.total == 0)
 	{
 		output << "  N/A: the current production catalog contains no eligible quests.\r\n";
 		return output.str();
 	}
-	const uint64_t overall_percent = summary.total ? summary.completed * 100 / summary.total : 0;
+	const uint64_t overall_percent = summary.total ? summary.completed * 100 / summary.total :
+							 0;
 	output << "  Overall: " << summary.completed << "/" << summary.total << " ("
 	       << overall_percent << "%, exact distinct completions)\r\n";
 	output << "  Fully completed zones: " << summary.full_zones << "\r\n";
@@ -1119,15 +1117,15 @@ std::string service::render_daily(uint32_t season_id, uint32_t pid, int level, i
 	if (!daily_policy_.enabled)
 		return {};
 	const daily_assignment assignment = assign_daily(season_id, pid, level, racewar, now);
-	if (assignment.status != daily_status::assigned && assignment.status != daily_status::completed &&
+	if (assignment.status != daily_status::assigned &&
+	    assignment.status != daily_status::completed &&
 	    assignment.status != daily_status::expired)
 		return {};
 	const auto *definition = find_definition(assignment.quest_definition_id);
 	if (!definition)
 		return {};
 	std::ostringstream output;
-	output << "\r\n"
-	       << color(colors, "&+L") << "Daily Quest" << color(colors, "&n") << "\r\n";
+	output << "\r\n" << color(colors, "&+L") << "Daily Quest" << color(colors, "&n") << "\r\n";
 	const personal_summary summary = summary_for(season_id, pid);
 	output << "  Renown: " << summary.renown << "\r\n";
 	output << "  Quest: " << display_quest_name(definition) << "\r\n";
@@ -1142,7 +1140,8 @@ std::string service::render_daily(uint32_t season_id, uint32_t pid, int level, i
 	{
 	case daily_status::assigned:
 		output << "  Status: Ready to complete\r\n"
-		       << "  Resets in: " << display_remaining(assignment.expires_at - now) << "\r\n";
+		       << "  Resets in: " << display_remaining(assignment.expires_at - now)
+		       << "\r\n";
 		break;
 	case daily_status::completed:
 		output << "  Status: Completed; reward claimed\r\n";
