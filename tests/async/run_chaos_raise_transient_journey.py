@@ -100,7 +100,17 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                 pid = int(sql("SELECT pid FROM player_data WHERE name='" +
                               journey.CHARACTER + "'"))
                 assert pid > 0
+                if any(flag in sys.argv[2:] for flag in
+                       ("--pet-give-probe", "--pet-give-stale-return",
+                        "--pet-give-stale-player")):
+                    # New characters begin with more carried starter objects than
+                    # their ordinary item limit. Clear this disposable inventory
+                    # so the give path tests custody instead of capacity refusal.
+                    sql(f"DELETE FROM player_items WHERE pid={pid};"
+                        "DELETE FROM item_current_owner WHERE owner_type=1 "
+                        f"AND owner_id={pid} AND owner_context_id=0;")
                 sql(f"UPDATE player_data SET level=56,highest_level=56,"
+                    f"base_dex=90,base_str=90,"
                     f"exp=999999999 WHERE pid={pid};"
                     f"DELETE FROM player_skills WHERE pid={pid} AND skill_id=380;"
                     f"INSERT INTO player_skills(pid,skill_id,learned,taught)"
@@ -114,6 +124,19 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
 
                 if "--npc-corpse" in sys.argv[2:]:
                     npc_uid = UIDS[0]
+                    if "--npc-charmed-give-control" in sys.argv[2:]:
+                        sql("INSERT INTO item_owner_revision"
+                            "(owner_type,owner_id,owner_context_id,revision)"
+                            f" VALUES(1,{pid},0,1) ON DUPLICATE KEY UPDATE "
+                            "revision=GREATEST(revision,1);"
+                            "INSERT INTO player_items"
+                            "(pid,vnum,weight,wear_flags,obj_uid,name,short_descr)"
+                            f" VALUES({pid},5,1,1,{GIVE_UIDS[1]},"
+                            "'control trinket','a control trinket');"
+                            "INSERT INTO item_current_owner"
+                            "(item_uid,root_item_uid,owner_type,owner_id,"
+                            "owner_context_id,item_revision,vnum,state)"
+                            f" VALUES({GIVE_UIDS[1]},{GIVE_UIDS[1]},1,{pid},0,1,5,1)")
                     sql("INSERT INTO item_owner_revision"
                         "(owner_type,owner_id,owner_context_id,revision)"
                         f" VALUES(3,{ROOM},0,1);"
@@ -147,6 +170,17 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     raised_room = client.expect("Pos: standing >", timeout=20)
                     assert raised_room.lower().count("dracolich") == 1, raised_room
                     assert "corpse of an ordinary beast" not in raised_room
+                    if "--npc-charmed-give-control" in sys.argv[2:]:
+                        client.pending.clear()
+                        client.send("give trinket dracolich")
+                        refusal = client.expect("That pet cannot accept a durable item",
+                                                timeout=20)
+                        assert "cannot accept a durable item" in refusal
+                        assert sql("SELECT CONCAT(owner_type,':',owner_id,':',state) "
+                                   "FROM item_current_owner WHERE item_uid=" +
+                                   str(GIVE_UIDS[1])) == f"1:{pid}:1"
+                        print("ordinary NPC-corpse charmed follower: durable give "
+                              "refused; player retained original UID", flush=True)
                     print("ordinary NPC corpse: one live follower, no player-corpse "
                           "durable command", flush=True)
                     return True
@@ -158,7 +192,10 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                             " VALUES(@corpse_id,3,20,@root_id,2,1,2,3,4,"
                             "'coins','some coins')") if with_coins else ""
                 give_probe = "--give-probe" in sys.argv[2:]
-                pet_probe = "--pet-probe" in sys.argv[2:]
+                pet_give_probe = any(flag in sys.argv[2:] for flag in
+                                     ("--pet-give-probe", "--pet-give-stale-return",
+                                      "--pet-give-stale-player"))
+                pet_probe = "--pet-probe" in sys.argv[2:] or pet_give_probe
                 fixture_probe = give_probe or pet_probe
                 sql("INSERT INTO corpses"
                     "(player_name,save_id,corpse_revision,room_vnum,short_descr,"
@@ -170,8 +207,8 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     f"{OWNER_PID},0);"
                     "SET @corpse_id=LAST_INSERT_ID();"
                     "INSERT INTO corpse_items"
-                    "(corpse_id,vnum,weight,cost,obj_uid,name,short_descr,description)"
-                    f" VALUES(@corpse_id,48,10,215,{UIDS[0]},"
+                    "(corpse_id,vnum,weight,cost,wear_flags,obj_uid,name,short_descr,description)"
+                    f" VALUES(@corpse_id,48,10,215,1,{UIDS[0]},"
                     "'fixture backpack','a fixture backpack',"
                     "'A fixture backpack lies here.');"
                     "SET @root_id=LAST_INSERT_ID();"
@@ -181,6 +218,11 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     f" VALUES(@corpse_id,5,@root_id,2,150,{UIDS[1]},"
                     "'fixture note','a fixture note',"
                     "'A fixture note lies here.');"
+                    "SET @note_id=LAST_INSERT_ID();"
+                    "INSERT INTO corpse_item_affects(item_id,location,modifier)"
+                    " VALUES(@note_id,1,7);"
+                    "INSERT INTO corpse_item_extra_descr(item_id,keyword,description)"
+                    " VALUES(@root_id,'fixture-mark','The maker marked this bag.');"
                     "INSERT INTO corpse_items"
                     "(corpse_id,vnum,container_id,weight,cost,extra_flags,"
                     "obj_uid,name,short_descr,description)"
@@ -188,8 +230,8 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     f"{UIDS[2]},'fixture fading note','a fixture fading note',"
                     "'A fixture fading note lies here.');" +
                     ("INSERT INTO corpse_items"
-                     "(corpse_id,vnum,weight,cost,obj_uid,name,short_descr,description)"
-                     f" VALUES(@corpse_id,48,1,215,{GIVE_UIDS[0]},"
+                     "(corpse_id,vnum,weight,cost,wear_flags,obj_uid,name,short_descr,description)"
+                     f" VALUES(@corpse_id,48,1,215,1,{GIVE_UIDS[0]},"
                      "'empty satchel','an empty satchel',"
                      "'An empty satchel lies here.');"
                      "INSERT INTO corpse_items"
@@ -390,6 +432,94 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                    f"pid={pid} AND obj_uid IN ({UIDS[0]},{UIDS[1]})") == "2"
                         assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
                                    f"obj_uid IN ({UIDS[0]},{UIDS[1]})") == "0"
+                    if pet_give_probe:
+                        def custody(uid: int, owner_type: int, owner_id: int,
+                                    table: str) -> None:
+                            other = "player_items" if table == "player_pet_items" \
+                                else "player_pet_items"
+                            assert sql("SELECT CONCAT(owner_type,':',owner_id,':',"
+                                       "state) FROM item_current_owner WHERE "
+                                       f"item_uid={uid}") == \
+                                   f"{owner_type}:{owner_id}:1"
+                            assert sql(f"SELECT COUNT(*) FROM {table} WHERE "
+                                       f"obj_uid={uid}") == "1"
+                            assert sql(f"SELECT COUNT(*) FROM {other} WHERE "
+                                       f"obj_uid={uid}") == "0"
+                            if uid == UIDS[0]:
+                                suffix = "player_pet_item_extra_descr" if \
+                                    table == "player_pet_items" else \
+                                    "player_item_extra_descr"
+                                assert sql(f"SELECT CONCAT(ed.keyword,':',ed.description) "
+                                           f"FROM {suffix} ed JOIN {table} item "
+                                           f"ON item.id=ed.item_id WHERE item.obj_uid={uid}") \
+                                       == "fixture-mark:The maker marked this bag."
+                            if uid == UIDS[1]:
+                                suffix = "player_pet_item_affects" if \
+                                    table == "player_pet_items" else \
+                                    "player_item_affects"
+                                assert sql(f"SELECT CONCAT(af.location,':',af.modifier) "
+                                           f"FROM {suffix} af JOIN {table} item "
+                                           f"ON item.id=af.item_id WHERE item.obj_uid={uid}") \
+                                       == "1:7"
+
+                        def command(text: str, receipt: str) -> None:
+                            client.pending.clear()
+                            client.send(text)
+                            result = client.expect(receipt, timeout=40)
+                            print(text, ":", result.strip()[-160:], flush=True)
+
+                        if "--pet-give-stale-return" in sys.argv[2:]:
+                            sql("UPDATE item_owner_revision SET revision=revision+1 "
+                                f"WHERE owner_type=11 AND owner_id={corpse_owner} "
+                                f"AND owner_context_id={pid}")
+                            command(f"order dracolich give backpack "
+                                    f"{journey.CHARACTER}",
+                                    "The pet transfer did not commit")
+                            for uid in (UIDS[0], UIDS[1]):
+                                custody(uid, 11, corpse_owner, "player_pet_items")
+                            print("stale pet revision: rejected return retained "
+                                  "nested pet graph", flush=True)
+                            return True
+                        command(f"order dracolich give backpack {journey.CHARACTER}",
+                                "gives you a fixture backpack")
+                        for uid in (UIDS[0], UIDS[1]):
+                            custody(uid, 1, pid, "player_items")
+                        assert sql("SELECT CONCAT(child.container_id,':',root.id) "
+                                   "FROM player_items child JOIN player_items root "
+                                   f"ON root.obj_uid={UIDS[0]} WHERE child.obj_uid="
+                                   f"{UIDS[1]}") == \
+                                   sql("SELECT CONCAT(id,':',id) FROM player_items "
+                                       f"WHERE obj_uid={UIDS[0]}")
+                        if "--pet-give-stale-player" in sys.argv[2:]:
+                            sql("UPDATE item_owner_revision SET revision=revision+1 "
+                                f"WHERE owner_type=1 AND owner_id={pid} "
+                                "AND owner_context_id=0")
+                            command("give backpack dracolich",
+                                    "The pet transfer did not commit")
+                            for uid in (UIDS[0], UIDS[1]):
+                                custody(uid, 1, pid, "player_items")
+                            print("stale player revision: rejected give retained "
+                                  "nested player graph", flush=True)
+                            return True
+                        command("give backpack dracolich", "Ok.")
+                        for uid in (UIDS[0], UIDS[1]):
+                            custody(uid, 11, corpse_owner, "player_pet_items")
+
+                        for keyword, uid in (("satchel", GIVE_UIDS[0]),
+                                             ("trinket", GIVE_UIDS[1])):
+                            command(f"order dracolich give {keyword} "
+                                    f"{journey.CHARACTER}", "gives you")
+                            custody(uid, 1, pid, "player_items")
+                            command(f"give {keyword} dracolich", "Ok.")
+                            custody(uid, 11, corpse_owner, "player_pet_items")
+                        command("order dracolich wear trinket", "Pos: standing >")
+                        client.send("save")
+                        client.expect(f"Save complete for {journey.CHARACTER}.",
+                                      timeout=30)
+                        assert int(sql("SELECT equip_slot FROM player_pet_items "
+                                       f"WHERE obj_uid={GIVE_UIDS[1]}")) > 0
+                        print("full and empty backpack, ordinary item, and auto-equip "
+                              "completed round trips with one UID each", flush=True)
                     restart_before_save = "--restart-before-save" in sys.argv[2:]
                     if equip_probe and restart_before_save:
                         raise AssertionError("equipment save and pre-save restart are separate journeys")
@@ -582,7 +712,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                        "ON own.item_uid=pi.obj_uid "
                                        f"WHERE pi.obj_uid={PROC_UID}") == \
                                        f"2050:0:11:{corpse_owner}"
-                            if equip_probe:
+                            if equip_probe or pet_give_probe:
                                 assert int(sql("SELECT equip_slot FROM player_pet_items "
                                                f"WHERE obj_uid={GIVE_UIDS[1]}")) > 0
                             print("restart: follower and all five UIDs restored "
@@ -612,7 +742,8 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     if any(term in line.lower() for term in
                            ("durable_raise", "corpse_lifecycle", "corpse_trace",
                             "raise_submission",
-                            "critical_command", "mysql")))[-6000:], flush=True)
+                            "critical_command", "pet_transfer", "item_movement",
+                            "mysql")))[-6000:], flush=True)
                 print("server tail:", output_path.read_text(errors="replace")[-2500:],
                       flush=True)
                 runtime_log = journey.runtime_logs(game)

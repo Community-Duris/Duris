@@ -71,6 +71,8 @@ enum class item_transfer_reason : uint16_t
 	collector_expire,
 	death_restitution,
 	corpse_raise_pet,
+	pet_give,
+	pet_return,
 };
 
 enum class item_custody_state : uint8_t
