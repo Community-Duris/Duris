@@ -2,7 +2,7 @@
 
 | Issue | Root cause | Branch | Validation | Merge |
 | --- | --- | --- | --- | --- |
-| [#499](https://github.com/Community-Duris/Duris/issues/499) | `select_bulk_get_item` appended the same count-cap rejection for every rejected direct child while correctly continuing the container scan for money. | `codex/issue-499-corpse-haul`, [PR #502](https://github.com/Community-Duris/Duris/pull/502) | Sanitizer-backed production-function regressions; disposable MariaDB and flatfile game journeys below. | The PR and issue record the merge commit. |
+| [#499](https://github.com/Community-Duris/Duris/issues/499) | `select_bulk_get_item` appended the same count-cap rejection for every rejected direct child while correctly continuing the container scan for money. | `codex/issue-499-corpse-haul`, [PR #502](https://github.com/Community-Duris/Duris/pull/502) | Sanitizer-backed production-function regressions; disposable MariaDB and flatfile game journeys below. | [cb69396c](https://github.com/Community-Duris/Duris/commit/cb69396c273e2e46efab2fbd77da6b7527d86739) |
 
 ## Redacted command/result evidence
 
