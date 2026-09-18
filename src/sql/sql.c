@@ -4438,6 +4438,7 @@ bool sql_verify_pwipe_manifest(void)
 					      "racewar_stat_mods",
 					      "saved_item_affects",
 					      "saved_item_extra_descr",
+					      "saved_item_recovery_handoff",
 					      "saved_items",
 					      "season_reset_state",
 					      "ship_armor",
@@ -5082,7 +5083,8 @@ bool sql_pwipe(int code_verify)
 		/* -- Season-reset manifest: saved item graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing saved item data... .. .");
 		send_to_all("Clearing saved item data... .. .");
-		if (qry("DELETE FROM saved_item_affects") &&
+		if (qry("DELETE FROM saved_item_recovery_handoff") &&
+		    qry("DELETE FROM saved_item_affects") &&
 		    qry("DELETE FROM saved_item_extra_descr") && qry("DELETE FROM saved_items"))
 		{
 			logit(LOG_DEBUG, "  success!");

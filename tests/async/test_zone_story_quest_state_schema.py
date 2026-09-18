@@ -41,7 +41,8 @@ def main() -> None:
         assert token in verifier, token
 
     manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
-    step = manifest["migrations"][-1]
+    step = next(item for item in manifest["migrations"]
+                if item["id"] == "0026_zone_story_quest_state")
     assert step["id"] == "0026_zone_story_quest_state"
     assert step["sequence"] == 26
     assert step["apply_checksum"] == hashlib.sha256(MIGRATION.read_bytes()).hexdigest()
@@ -50,9 +51,9 @@ def main() -> None:
     runtime = json.loads(
         (ROOT / "migrations/runtime_compatibility_manifest.json").read_text()
     )
-    assert runtime["current_table_count"] == 201
+    assert runtime["current_table_count"] == 202
     assert "'zone_story_quest_state'" in runtime["runtime_table_sql_list"]
-    assert runtime["migration_head"]["id"] == step["id"]
+    assert runtime["migration_head"]["sequence"] >= step["sequence"]
 
     lifecycle = json.loads((ROOT / "migrations/data_lifecycle_manifest.json").read_text())
     entry = next(item for item in lifecycle["entries"]
