@@ -8565,6 +8565,187 @@ cleanup:
 
 extern struct shop_data *shop_index;
 extern int number_of_shops;
+extern int top_of_mobt;
+
+namespace
+{
+enum class shopkeeper_save_reason
+{
+	ok,
+	database_unavailable,
+	null_keeper,
+	invalid_shop,
+	invalid_keeper,
+	invalid_shop_room,
+	keeper_not_npc,
+	keeper_rnum_mismatch,
+	keeper_room_invalid,
+	keeper_room_mismatch,
+	keeper_not_found,
+	keeper_ambiguous,
+	keeper_not_shopkeeper,
+	save_failed,
+};
+
+const char *shopkeeper_save_reason_name(shopkeeper_save_reason reason)
+{
+	switch (reason)
+	{
+	case shopkeeper_save_reason::ok:
+		return "ok";
+	case shopkeeper_save_reason::database_unavailable:
+		return "database_unavailable";
+	case shopkeeper_save_reason::null_keeper:
+		return "null_keeper";
+	case shopkeeper_save_reason::invalid_shop:
+		return "invalid_shop";
+	case shopkeeper_save_reason::invalid_keeper:
+		return "invalid_keeper";
+	case shopkeeper_save_reason::invalid_shop_room:
+		return "invalid_shop_room";
+	case shopkeeper_save_reason::keeper_not_npc:
+		return "keeper_not_npc";
+	case shopkeeper_save_reason::keeper_rnum_mismatch:
+		return "keeper_rnum_mismatch";
+	case shopkeeper_save_reason::keeper_room_invalid:
+		return "keeper_room_invalid";
+	case shopkeeper_save_reason::keeper_room_mismatch:
+		return "keeper_room_mismatch";
+	case shopkeeper_save_reason::keeper_not_found:
+		return "keeper_not_found";
+	case shopkeeper_save_reason::keeper_ambiguous:
+		return "keeper_ambiguous";
+	case shopkeeper_save_reason::keeper_not_shopkeeper:
+		return "keeper_not_shopkeeper";
+	case shopkeeper_save_reason::save_failed:
+		return "save_failed";
+	}
+	return "unknown";
+}
+
+int shopkeeper_expected_room_rnum(int shop_nr)
+{
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return NOWHERE;
+	return real_room(shop_index[shop_nr].in_room);
+}
+
+bool shopkeeper_save_matches_room(P_char ch, int shop_nr)
+{
+	const int room = shopkeeper_expected_room_rnum(shop_nr);
+	if (ch->in_room != room && !shop_index[shop_nr].shop_is_roaming)
+		return false;
+	// A roaming template shared with another shop has no durable instance ID.
+	// Never use a sibling's sole live keeper to overwrite the missing shop.
+	for (int i = 0; i < number_of_shops; ++i)
+		if (i != shop_nr && shop_index[i].keeper == shop_index[shop_nr].keeper &&
+		    (ch->in_room != room || shop_index[i].in_room == shop_index[shop_nr].in_room))
+			return false;
+	return true;
+}
+
+shopkeeper_save_reason validate_shopkeeper_save(P_char ch, int shop_nr)
+{
+	if (!DB)
+		return shopkeeper_save_reason::database_unavailable;
+	if (!ch)
+		return shopkeeper_save_reason::null_keeper;
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return shopkeeper_save_reason::invalid_shop;
+	if (shop_index[shop_nr].keeper < 0 || shop_index[shop_nr].keeper > top_of_mobt)
+		return shopkeeper_save_reason::invalid_keeper;
+	const int shop_room = shopkeeper_expected_room_rnum(shop_nr);
+	if (shop_room < 0 || shop_room > top_of_world)
+		return shopkeeper_save_reason::invalid_shop_room;
+	if (!IS_NPC(ch) || GET_MASTER(ch))
+		return shopkeeper_save_reason::keeper_not_npc;
+	if (GET_RNUM(ch) != shop_index[shop_nr].keeper)
+		return shopkeeper_save_reason::keeper_rnum_mismatch;
+	if (ch->in_room < 0 || ch->in_room > top_of_world)
+		return shopkeeper_save_reason::keeper_room_invalid;
+	if (!shopkeeper_save_matches_room(ch, shop_nr))
+		return shopkeeper_save_reason::keeper_room_mismatch;
+	if (!IS_SHOPKEEPER(ch))
+		return shopkeeper_save_reason::keeper_not_shopkeeper;
+	return shopkeeper_save_reason::ok;
+}
+
+shopkeeper_save_reason find_shopkeeper_for_dirty_save(int shop_nr, P_char *keeper_out)
+{
+	if (keeper_out)
+		*keeper_out = NULL;
+	if (!DB)
+		return shopkeeper_save_reason::database_unavailable;
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return shopkeeper_save_reason::invalid_shop;
+	if (shop_index[shop_nr].keeper < 0 || shop_index[shop_nr].keeper > top_of_mobt)
+		return shopkeeper_save_reason::invalid_keeper;
+	const int shop_room = shopkeeper_expected_room_rnum(shop_nr);
+	if (shop_room < 0 || shop_room > top_of_world)
+		return shopkeeper_save_reason::invalid_shop_room;
+
+	const int expected_rnum = shop_index[shop_nr].keeper;
+	P_char candidate = NULL;
+	int same_rnum = 0;
+	int candidates = 0;
+	for (P_char ch = character_list; ch; ch = ch->next)
+	{
+		if (!IS_NPC(ch) || GET_MASTER(ch) || GET_RNUM(ch) != expected_rnum)
+			continue;
+		++same_rnum;
+		if (ch->in_room < 0 || ch->in_room > top_of_world)
+			continue;
+		if (!shopkeeper_save_matches_room(ch, shop_nr))
+			continue;
+		candidate = ch;
+		++candidates;
+	}
+
+	if (candidates == 0)
+		return same_rnum > 0 ? shopkeeper_save_reason::keeper_room_mismatch :
+				       shopkeeper_save_reason::keeper_not_found;
+	if (candidates > 1)
+		return shopkeeper_save_reason::keeper_ambiguous;
+	if (keeper_out)
+		*keeper_out = candidate;
+	return validate_shopkeeper_save(candidate, shop_nr);
+}
+
+void log_shopkeeper_save_guard(P_char ch, int shop_nr, shopkeeper_save_reason reason)
+{
+	int expected_rnum = -1;
+	int expected_room = NOWHERE;
+	if (shop_index && shop_nr >= 0 && shop_nr < number_of_shops)
+	{
+		expected_rnum = shop_index[shop_nr].keeper;
+		expected_room = shopkeeper_expected_room_rnum(shop_nr);
+	}
+	const int actual_rnum = ch && IS_NPC(ch) ? GET_RNUM(ch) : -1;
+	const int actual_room = ch ? ch->in_room : NOWHERE;
+	logit(LOG_DEBUG,
+	      "sql_save_shopkeeper: phase=pretransaction outcome=retry shop=%d reason=%s "
+	      "expected_keeper_rnum=%d actual_keeper_rnum=%d expected_room_rnum=%d actual_room_rnum=%d",
+	      shop_nr, shopkeeper_save_reason_name(reason), expected_rnum, actual_rnum,
+	      expected_room, actual_room);
+}
+
+void log_shopkeeper_dirty_retry(int shop_nr, shopkeeper_save_reason reason, P_char keeper,
+				time_t now, bool force)
+{
+	const int expected_rnum = shop_index[shop_nr].keeper;
+	const int expected_room = shopkeeper_expected_room_rnum(shop_nr);
+	const int actual_rnum = keeper && IS_NPC(keeper) ? GET_RNUM(keeper) : -1;
+	const int actual_room = keeper ? keeper->in_room : NOWHERE;
+	const shopkeeper_save_retry_state &retry = shop_index[shop_nr].dirty_save_retry;
+	logit(LOG_DEBUG,
+	      "sql_save_dirty_shopkeepers: shop=%d outcome=retry reason=%s leaving_dirty=1 "
+	      "attempt=%u next_retry=%lld now=%lld force=%d expected_keeper_rnum=%d "
+	      "actual_keeper_rnum=%d expected_room_rnum=%d actual_room_rnum=%d",
+	      shop_nr, shopkeeper_save_reason_name(reason), retry.failure_count,
+	      static_cast<long long>(retry.next_retry_at), static_cast<long long>(now),
+	      force ? 1 : 0, expected_rnum, actual_rnum, expected_room, actual_room);
+}
+}
 
 static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
 {
@@ -8739,11 +8920,12 @@ static bool sql_save_shopkeeper_affects(int shopkeeper_id, P_char ch)
 
 bool sql_save_shopkeeper(P_char ch, int shop_nr)
 {
-	if (!ch || !DB || shop_nr < 0)
+	const shopkeeper_save_reason guard = validate_shopkeeper_save(ch, shop_nr);
+	if (guard != shopkeeper_save_reason::ok)
+	{
+		log_shopkeeper_save_guard(ch, shop_nr, guard);
 		return false;
-
-	if (IS_PC(ch) || !IS_SHOPKEEPER(ch))
-		return false;
+	}
 
 	// start transaction
 	if (!sql_begin_transaction())
@@ -9766,13 +9948,14 @@ void sql_restore_shopkeepers(void)
 				}
 			}
 			shop_index[shop_idx].dirty = 1;
+			shopkeeper_save_retry_reset(&shop_index[shop_idx].dirty_save_retry);
 		}
 		loaded++;
 	}
 
-	// query 5: delete all shopkeepers in one go
-	if (!sql_run_query("DELETE FROM shopkeepers"))
-		logit(LOG_DEBUG, "sql_restore_shopkeepers: failed to delete old shopkeepers");
+	// Keep the durable snapshot through restore and failed dirty retries.
+	// sql_save_shopkeeper replaces only this shop, inside its transaction.
+	// Invalid/unloaded rows require operator reconciliation, never a blanket delete.
 
 	// free keeper temp structs
 	struct shopkeeper_temp *tk = keepers;
@@ -9786,63 +9969,37 @@ void sql_restore_shopkeepers(void)
 	logit(LOG_DEBUG, "sql_restore_shopkeepers: loaded %d shopkeepers", loaded);
 }
 
-void sql_save_dirty_shopkeepers(void)
+void sql_save_dirty_shopkeepers(bool force)
 {
 	if (!DB)
 		return;
 
+	const time_t now = time(NULL);
 	int saved = 0;
 	for (int i = 0; i < number_of_shops; i++)
 	{
 		if (!shop_index[i].dirty)
+		{
+			shopkeeper_save_retry_reset(&shop_index[i].dirty_save_retry);
+			continue;
+		}
+		shopkeeper_save_retry_state *retry = &shop_index[i].dirty_save_retry;
+		if (!shopkeeper_save_retry_due(retry, now, force))
 			continue;
 
-		int keeper_rnum = shop_index[i].keeper;
-		if (keeper_rnum < 0)
+		P_char keeper = NULL;
+		shopkeeper_save_reason reason = find_shopkeeper_for_dirty_save(i, &keeper);
+		if (reason == shopkeeper_save_reason::ok && sql_save_shopkeeper(keeper, i))
 		{
 			shop_index[i].dirty = 0;
+			shopkeeper_save_retry_reset(retry);
+			saved++;
 			continue;
 		}
-
-		// find the shopkeeper mob in the shop's defined room
-		int shop_room = real_room(shop_index[i].in_room);
-		P_char keeper = NULL;
-
-		if (shop_room >= 0 && shop_room <= top_of_world)
-		{
-			for (P_char ch = world[shop_room].people; ch; ch = ch->next_in_room)
-			{
-				if (IS_NPC(ch) && GET_RNUM(ch) == keeper_rnum)
-				{
-					keeper = ch;
-					break;
-				}
-			}
-		}
-
-		if (keeper)
-		{
-			// sql_save_shopkeeper already does DELETE before INSERT
-			if (sql_save_shopkeeper(keeper, i))
-			{
-				shop_index[i].dirty = 0;
-				saved++;
-			}
-			else
-			{
-				logit(LOG_DEBUG,
-				      "sql_save_dirty_shopkeepers: failed to save shopkeeper for shop %d",
-				      i);
-			}
-		}
-		else
-		{
-			// keeper not found; keep dirty so a later flush can retry when the
-			// NPC is present again.
-			logit(LOG_DEBUG,
-			      "sql_save_dirty_shopkeepers: keeper not found for shop %d; leaving dirty",
-			      i);
-		}
+		if (reason == shopkeeper_save_reason::ok)
+			reason = shopkeeper_save_reason::save_failed;
+		shopkeeper_save_retry_record_failure(retry, now);
+		log_shopkeeper_dirty_retry(i, reason, keeper, now, force);
 	}
 
 	if (saved > 0)

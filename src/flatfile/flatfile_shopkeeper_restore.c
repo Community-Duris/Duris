@@ -168,6 +168,9 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 		existing = next;
 	}
 	for (const auto &record : records)
+	{
 		shop_index[record.shop_id].dirty = 1;
+		shopkeeper_save_retry_reset(&shop_index[record.shop_id].dirty_save_retry);
+	}
 	return flatfile_shopkeeper_restore_result::ok;
 }

@@ -33,6 +33,7 @@
 #include "net/ansi.h"
 #include "net/output_channel.h"
 #include "net/output_preference_state.h"
+#include "economy/shopkeeper_save_policy.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -190,6 +191,7 @@ struct shop_data
 	::byte temper1; /* * How does keeper react if no money       */
 	::byte temper2; /* * How does keeper react when attacked     */
 	::byte dirty; /* needs save to db                          */
+	struct shopkeeper_save_retry_state dirty_save_retry;
 	shop_proc_type func; /* * Secondary spec_proc for shopkeeper      */
 };
 

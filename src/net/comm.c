@@ -2541,7 +2541,7 @@ resume_game_loop:
 	// Don't want to save stuff just after we wiped all the tables in SQL.
 	if (!_pwipe)
 	{
-		save_dirty_shopkeepers();
+		save_dirty_shopkeepers(true);
 		flush_pending_ship_saves();
 		locker_async_drain(2000);
 

@@ -230,7 +230,7 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr);
 bool sql_delete_shopkeeper(int shop_nr);
 P_char sql_restore_shopkeeper(int shop_nr);
 void sql_restore_shopkeepers(void);
-void sql_save_dirty_shopkeepers(void);
+void sql_save_dirty_shopkeepers(bool force = false);
 
 // saved items
 bool sql_save_saved_item(P_obj item, const char *item_key);

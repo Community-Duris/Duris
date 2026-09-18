@@ -14,7 +14,7 @@ helper = "" if helper_start < 0 else db[helper_start:db.index("/* force_item_rep
 reset_start = db.index("case 'M': /* read a mobile */", db.index("void reset_zone("))
 reset = db[reset_start:db.index("case 'O':", reset_start)]
 restore_start = sql.index("// temp struct for batched shopkeeper loading")
-restore = sql[restore_start:sql.index("void sql_save_dirty_shopkeepers(void)", restore_start)]
+restore = sql[restore_start:sql.index("void sql_save_dirty_shopkeepers(bool force)", restore_start)]
 harness = (ROOT / "tests/async/shopkeeper_population_harness.cpp").read_text()
 harness = harness.replace("// PRODUCTION_HELPER", helper)
 harness = harness.replace("// PRODUCTION_RESET", reset)
@@ -29,6 +29,7 @@ with tempfile.TemporaryDirectory(prefix="shopkeeper-population-", dir=build_root
     subprocess.run([
         "g++", "-std=c++20", "-g", "-Wall", "-Wextra", "-Werror",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+        "-I", str(ROOT / "src"),
         str(source), "-o", str(binary),
     ], check=True)
     for scenario in ("reset", "shared", "duplicate", "invalid"):

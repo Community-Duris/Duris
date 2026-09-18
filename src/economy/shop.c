@@ -1208,6 +1208,7 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 		obj_to_char(temp1, keeper);
 	}
 
+	// A new sale does not forgive an outstanding persistence failure/backoff.
 	shop_index[shop_nr].dirty = 1;
 	return;
 }
@@ -1999,6 +2000,7 @@ void boot_the_shops(void)
 			if (number_of_shops == 0)
 			{
 				CREATE(shop_index, shop_data, 1, MEM_TAG_SHOPDAT);
+				bzero(&shop_index[0], sizeof(struct shop_data));
 			}
 			else
 			{

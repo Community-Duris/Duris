@@ -77,6 +77,7 @@ bool snapshot_shopkeepers_for_copyover()
 		if (!saved.insert(shop).second || !sql_save_shopkeeper(keeper, shop))
 			return false;
 		shop_index[shop].dirty = 0;
+		shopkeeper_save_retry_reset(&shop_index[shop].dirty_save_retry);
 	}
 	return true;
 }
@@ -149,6 +150,7 @@ void reconcile_shopkeepers(bool recovered_inventory)
 					obj_to_char(object, keeper);
 		}
 		shop_index[shop].dirty = 1;
+		shopkeeper_save_retry_reset(&shop_index[shop].dirty_save_retry);
 		if (candidates.size() > 1)
 			logit(LOG_STATUS, "world singleton: shop=%d retained=%ld removed=%zu", shop,
 			      static_cast<long>(GET_IDNUM(keeper)), candidates.size() - 1);

@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "economy/shopkeeper_save_policy.h"
+
 constexpr int MAX_WEAR = 4, MAX_OBJ_AFFECT = 4, NOWHERE = -1;
 constexpr int VIRTUAL = 0, REAL = 1, LOG_DEBUG = 0, LOG_MOB = 1;
 constexpr int LOC_CARRIED = 1, LOC_INSIDE = 2;
@@ -56,6 +58,7 @@ struct
 struct
 {
 	int keeper = 0, dirty = 0, number_items_produced = 0, producing[4] = {};
+	shopkeeper_save_retry_state dirty_save_retry = {};
 } shop_index[4];
 int number_of_shops = 4, top_of_world = 2;
 P_char character_list = nullptr;
@@ -192,7 +195,8 @@ void mysql_free_result(MYSQL_RES *result)
 }
 bool sql_run_query(const char *)
 {
-	return true;
+	assert(false && "restore must not delete the durable snapshots");
+	return false;
 }
 
 // PRODUCTION_RESTORE

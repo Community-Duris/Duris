@@ -70,6 +70,7 @@ static int short_size = sizeof(short);
 static int stat_vers, obj_vers, skill_vers;
 [[maybe_unused]] static int aff_vers, witness_vers;
 extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 // flag to skip corpse saves during boot (loading from db)
 int skip_corpse_save = 0;
@@ -4885,14 +4886,45 @@ int writeShopKeeper(P_char ch)
 	if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
 		return 0;
 
-	if (IS_NPC(ch) && !IS_SHOPKEEPER(ch))
+	if (!shop_index || number_of_shops <= 0)
 		return 0;
 
-	int shop_nr;
-	for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(ch); shop_nr++)
-		;
+	// A template can own several shops; never save into its first matching slot.
+	int shop_nr = -1;
+	for (int i = 0; i < number_of_shops; ++i)
+	{
+		if (shop_index[i].keeper != GET_RNUM(ch) ||
+		    real_room(shop_index[i].in_room) != ch->in_room)
+			continue;
+		if (shop_nr >= 0)
+			return 0; // ambiguous configuration, not authority to overwrite either stock
+		shop_nr = i;
+	}
+	if (shop_nr < 0)
+	{
+		// Away from home, only a uniquely configured roaming template is safe.
+		for (int i = 0; i < number_of_shops; ++i)
+			if (shop_index[i].keeper == GET_RNUM(ch))
+			{
+				if (shop_nr >= 0 || !shop_index[i].shop_is_roaming)
+					return 0;
+				shop_nr = i;
+			}
+	}
+	if (shop_nr < 0)
+		return 0;
 
-	return sql_save_shopkeeper(ch, shop_nr) ? 1 : 0;
+	if (sql_save_shopkeeper(ch, shop_nr))
+	{
+		shop_index[shop_nr].dirty = 0;
+		shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+		return 1;
+	}
+
+	shop_index[shop_nr].dirty = 1;
+	shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+	logit(LOG_DEBUG, "writeShopKeeper: shop=%d outcome=retry leaving_dirty=1", shop_nr);
+	return 0;
 }
 
 int deleteShopKeeper(int id)
@@ -4932,10 +4964,11 @@ void restore_shopkeepers(void)
 #endif
 }
 
-void save_dirty_shopkeepers(void)
+void save_dirty_shopkeepers(bool force)
 {
+	(void)force;
 #ifndef __NO_MYSQL__
-	sql_save_dirty_shopkeepers();
+	sql_save_dirty_shopkeepers(force);
 #endif
 }
 

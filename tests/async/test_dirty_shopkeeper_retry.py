@@ -1,32 +1,62 @@
 #!/usr/bin/env python3
+"""Regression contracts for shopkeeper identity guards and dirty retries."""
+
 from _paths import SRC
 from pathlib import Path
-import sys
 
-text = (SRC / "sql_player.c").read_text()
+sql = (SRC / "sql_player.c").read_text()
+files = (SRC / "core/files.c").read_text()
+comm = (SRC / "net/comm.c").read_text()
 
-flush = text.find('void sql_save_dirty_shopkeepers(void)')
-keeper_found = text.find('if (keeper)', flush)
-keeper_saved = text.find('if (sql_save_shopkeeper(keeper, i))', keeper_found)
-keeper_missing = text.find('keeper not found; keep dirty', flush)
-keep_dirty = text.find('leaving dirty', keeper_missing)
-clear_dirty = text.find('shop_index[i].dirty = 0;', keeper_missing)
+flush_start = sql.index("void sql_save_dirty_shopkeepers(bool force)")
+flush_end = sql.index("static P_obj sql_load_saved_item_contents", flush_start)
+flush = sql[flush_start:flush_end]
 
-checks = [
-    ('flush function exists', flush != -1),
-    ('keeper path still saves and clears dirty on success', keeper_found != -1 and keeper_saved != -1),
-    ('missing keeper path now logs retry instead of clearing dirty', keeper_missing != -1 and keep_dirty != -1),
-    ('missing keeper path no longer clears dirty', clear_dirty == -1),
-]
+save_start = sql.rindex("bool sql_save_shopkeeper(P_char ch, int shop_nr)")
+save_end = sql.index("bool sql_delete_shopkeeper", save_start)
+save = sql[save_start:save_end]
 
-failed = [name for name, ok in checks if not ok]
-for name, ok in checks:
-    print(f"[{'PASS' if ok else 'FAIL'}] {name}")
+checks = {
+    "dirty flush has a forced mode": "bool force" in flush,
+    "retry policy gates periodic attempts": "shopkeeper_save_retry_due(retry, now, force)" in flush,
+    "failed attempts record bounded retry state": "shopkeeper_save_retry_record_failure(retry, now)" in flush,
+    "failed attempts retain dirty state": "leaving_dirty=1" in sql,
+    "successful attempts clear and reset state": (
+        "shop_index[i].dirty = 0;" in flush
+        and "shopkeeper_save_retry_reset(retry);" in flush
+    ),
+    "invalid keeper is not silently cleared": (
+        "shopkeeper_save_reason::invalid_keeper" in sql
+        and "shopkeeper_save_retry_record_failure(retry, now)" in flush
+    ),
+    "identity scan includes live character list": "for (P_char ch = character_list" in sql,
+    "identity scan distinguishes roaming shops": "shop_index[shop_nr].shop_is_roaming" in sql,
+    "pretransaction guard logs its exact reason": (
+        "validate_shopkeeper_save(ch, shop_nr)" in save
+        and "phase=pretransaction" in sql
+        and "shopkeeper_save_reason_name(reason)" in sql
+    ),
+    "pretransaction guard checks configured keeper identity": (
+        "GET_RNUM(ch) != shop_index[shop_nr].keeper" in sql
+        and "!IS_SHOPKEEPER(ch)" in sql
+    ),
+    "shutdown bypasses retry backoff": "save_dirty_shopkeepers(true);" in comm,
+    "direct keeper lookup is bounds-checked": "i < number_of_shops" in files,
+    "direct save failure re-dirties the shop": (
+        "shop_index[shop_nr].dirty = 1;" in files
+        and "writeShopKeeper: shop=%d outcome=retry leaving_dirty=1" in files
+    ),
+    "direct save success clears retry state": (
+        "shop_index[shop_nr].dirty = 0;" in files
+        and "shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);" in files
+    ),
+    "retry state is initialized when shop storage is allocated": (
+        "bzero(&shop_index[0], sizeof(struct shop_data));" in (SRC / "economy/shop.c").read_text()
+    ),
+}
 
-if failed:
-    print('\nFailed checks:')
-    for name in failed:
-        print(f'- {name}')
-    sys.exit(1)
+for label, passed in checks.items():
+    print(f"[{'PASS' if passed else 'FAIL'}] {label}")
 
-print('\nDirty shopkeeper retry semantics look correct.')
+assert all(checks.values())
+print("shopkeeper dirty-save identity and retry contracts passed")
