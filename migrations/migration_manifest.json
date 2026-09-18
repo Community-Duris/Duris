@@ -458,6 +458,16 @@
       "verify": "immutable/0028_pet_custody.sh",
       "verify_checksum": "4605ed2ed58c4854dc0572ca166857b87bb5c120839ff76a70d9e03e64df7124",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0029_artifact_control",
+      "sequence": 29,
+      "description": "Add revisioned artifact control catalog holder policy and publish request authority",
+      "apply": "immutable/0029_artifact_control.sql",
+      "apply_checksum": "65ff84d83ae9697dd65149c058a1b6b57ee0d519544901a64093c48ab4e5ad84",
+      "verify": "immutable/0029_artifact_control.sh",
+      "verify_checksum": "5e12f2a92aaf4bb0e7f7e4f8de07c918fff88f8b8ae4766ab50dc65854971ab2",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

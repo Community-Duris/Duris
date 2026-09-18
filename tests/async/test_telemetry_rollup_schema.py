@@ -201,7 +201,7 @@ class TelemetryRollupSchemaTest(unittest.TestCase):
         self.assertEqual(len(expected_tables), runtime["current_table_count"])
         self.assertEqual(runtime_tables, sorted(expected_tables))
         self.assertTrue(TABLES <= expected_tables)
-        self.assertEqual(runtime["current_table_count"], 202)
+        self.assertEqual(runtime["current_table_count"], 211)
         head = migration["migrations"][-1]
         self.assertEqual(runtime["migration_head"]["id"], head["id"])
         self.assertEqual(runtime["migration_head"]["sequence"], head["sequence"])

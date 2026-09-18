@@ -1,4 +1,5 @@
 #include "item/native_artifact_actions.h"
+#include "artifact/artifact_control.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "item/artifact_mana.h"
@@ -79,6 +80,34 @@ bool native_artifact_owns(int vnum)
 		return false;
 	const auto found = native_configs.find(vnum);
 	return found != native_configs.end() && (!found->second.valid || found->second.enabled);
+}
+
+bool native_artifact_control_enabled(int vnum)
+{
+	return artifact_control::control_enabled(vnum);
+}
+
+bool native_artifact_variant_enabled(int vnum, P_char actor, const char *variant_id)
+{
+	using artifact_control::holder_kind;
+	if (!actor)
+		return false;
+	holder_kind holder = holder_kind::wild_npc;
+	if (IS_PC(actor))
+		holder = holder_kind::player;
+	else if (IS_PC_PET(actor) || (IS_NPC(actor) && GET_MASTER(actor)))
+		holder = holder_kind::controlled_npc;
+	return artifact_control::control_allows_variant(vnum, holder, variant_id);
+}
+
+bool native_artifact_power_enabled(int vnum, const char *power_id)
+{
+	return artifact_control::control_power_enabled(vnum, power_id);
+}
+
+int native_artifact_power_level(int vnum, const char *power_id, int fallback)
+{
+	return artifact_control::control_power_level(vnum, power_id, fallback);
 }
 
 native_artifact_config native_artifact_settings(int vnum)

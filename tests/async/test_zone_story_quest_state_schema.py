@@ -51,7 +51,7 @@ def main() -> None:
     runtime = json.loads(
         (ROOT / "migrations/runtime_compatibility_manifest.json").read_text()
     )
-    assert runtime["current_table_count"] == 202
+    assert runtime["current_table_count"] == 211
     assert "'zone_story_quest_state'" in runtime["runtime_table_sql_list"]
     assert runtime["migration_head"]["sequence"] >= step["sequence"]
 

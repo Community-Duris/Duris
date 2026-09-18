@@ -95,6 +95,12 @@ SWORD_SPELL(spell_group_stone_skin,SPELL_GROUP_STONE_SKIN)
 SWORD_SPELL(spell_group_stornog,-20) // Native helper has no registered spell ID.
 #define time native_test_time
 #include "item/native_artifact_actions.c"
+namespace artifact_control {
+bool control_enabled(int) { return true; }
+bool control_allows_variant(int, holder_kind, const char *) { return true; }
+bool control_power_enabled(int, const char *) { return true; }
+int control_power_level(int, const char *, int fallback) { return fallback; }
+}
 #include "item/sword_actions.c"
 // INSERT_CALLBACKS
 #undef time

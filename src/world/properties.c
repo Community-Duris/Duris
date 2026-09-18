@@ -13,6 +13,7 @@
 #include "item/device_actions.h"
 #include "item/studio_abilities.h"
 #include "item/native_artifact_actions.h"
+#include "artifact/artifact_control.h"
 #include "economy/collector_config.h"
 #include "world/difficulty.h"
 #include "telemetry/telemetry_config_reload.h"
@@ -389,6 +390,10 @@ void initialize_properties()
 	item_actions_reload();
 	properties_count = load_properties(duris_properties);
 	qsort(duris_properties, properties_count, sizeof(struct property), property_comp);
+	std::string artifact_error;
+	if (!artifact_control::control_initialize(nullptr, &artifact_error))
+		logit(LOG_STATUS, "Artifact control catalog unavailable: %s",
+		      artifact_error.c_str());
 	apply_properties();
 }
 

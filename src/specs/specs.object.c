@@ -2817,12 +2817,14 @@ int living_necroplasm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 
 	if (!obj || cmd != CMD_PERIODIC)
 		return FALSE;
-	const bool modern = native_artifact_owns(67243);
-
 	if (OBJ_WORN(obj))
 		ch = obj->loc.wearing;
 	else if (OBJ_CARRIED(obj))
 		ch = obj->loc.carrying;
+	if (!native_artifact_control_enabled(67243))
+		return TRUE;
+	const bool modern = native_artifact_owns(67243) &&
+			    native_artifact_variant_enabled(67243, ch, "telegraphic");
 
 	// recurse self
 	if (!IS_SET(obj->extra_flags, ITEM_NODROP))
@@ -3852,8 +3854,9 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		bIsGood = TRUE;
 	else
 		return FALSE;
-	const bool modern = native_artifact_owns(OBJ_VNUM(obj));
 	const bool combat_event = cmd == CMD_MELEE_HIT || cmd == CMD_GOTHIT || cmd == CMD_GOTNUKED;
+	if (!native_artifact_control_enabled(OBJ_VNUM(obj)))
+		return TRUE;
 
 	// wield - if we might be wielding the sword, configure it
 	// as required and then return FALSE (acting like we didn't do anything)
@@ -3939,6 +3942,9 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		const uint64_t actor_id = ch->runtime_id, source_uid = obj->obj_uid;
 		obj_from_char(obj);
 		equip_char(ch, obj, PRIMARY_WEAPON, 0);
+		const bool modern =
+			native_artifact_owns(OBJ_VNUM(obj)) &&
+			native_artifact_variant_enabled(OBJ_VNUM(obj), ch, "telegraphic");
 		if (modern)
 		{
 			ch = find_character_by_runtime_id(actor_id);
@@ -3952,6 +3958,8 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		return FALSE;
 	}
+	const bool modern = native_artifact_owns(OBJ_VNUM(obj)) &&
+			    native_artifact_variant_enabled(OBJ_VNUM(obj), ch, "telegraphic");
 	if (modern)
 	{
 		const int result = advance_sword_artifact(obj, ch, cmd, arg);

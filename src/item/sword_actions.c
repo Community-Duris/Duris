@@ -38,6 +38,14 @@ struct sword_selection
 	int choice = 0;
 	int multiplier = 1;
 };
+
+const char *sword_power_id(const sword_selection &selection)
+{
+	if (selection.stage != sword_stage::combat)
+		return nullptr;
+	return selection.choice == 14 ? "nova" : "combat";
+}
+
 using sword_spell = void (*)(int, P_char, char *, int, P_char, P_obj);
 
 bool sword_enemy(P_char actor, P_char target, int vnum)
@@ -282,6 +290,9 @@ class sword_adapter final : public item_action_adapter
 	{
 		const auto &power = selected[effect.auxiliary];
 		const uint64_t self = c.identity.actor_id, target = c.identity.target_id;
+		const char *power_id = sword_power_id(power);
+		const int configured_level =
+			power_id ? native_artifact_power_level(vnum, power_id, 60) : 60;
 		switch (power.stage)
 		{
 		case sword_stage::shield:
@@ -364,13 +375,16 @@ class sword_adapter final : public item_action_adapter
 			case 0:
 				return; // Legacy dazzle is a paid visual-only result.
 			case 1:
-				invoke(c, spell_blindness, 60, target, SPELL_TYPE_SPELL, true);
+				invoke(c, spell_blindness, configured_level, target,
+				       SPELL_TYPE_SPELL, true);
 				return;
 			case 2:
-				invoke(c, spell_curse, 60, target, SPELL_TYPE_SPELL, true);
+				invoke(c, spell_curse, configured_level, target, SPELL_TYPE_SPELL,
+				       true);
 				return;
 			case 3:
-				invoke(c, spell_bigbys_crushing_hand, 60, target, SPELL_TYPE_SPELL);
+				invoke(c, spell_bigbys_crushing_hand, configured_level, target,
+				       SPELL_TYPE_SPELL);
 				return;
 			case 4:
 			case 9:
@@ -382,10 +396,11 @@ class sword_adapter final : public item_action_adapter
 					invoke(c, spell_heal, 20, self);
 				return;
 			case 6:
-				invoke(c, spell_bigbys_clenched_fist, 60, target, SPELL_TYPE_SPELL);
+				invoke(c, spell_bigbys_clenched_fist, configured_level, target,
+				       SPELL_TYPE_SPELL);
 				return;
 			case 7:
-				invoke(c, spell_immolate, 60, target);
+				invoke(c, spell_immolate, configured_level, target);
 				return;
 			case 8:
 				invoke(c, spell_earthquake, 60, 0, SPELL_TYPE_SPELL);
@@ -397,8 +412,8 @@ class sword_adapter final : public item_action_adapter
 				invoke(c, spell_poison, 30, target, SPELL_TYPE_SPELL, true);
 				return;
 			case 12:
-				invoke(c, vnum == 22 ? spell_holy_word : spell_unholy_word, 60,
-				       target);
+				invoke(c, vnum == 22 ? spell_holy_word : spell_unholy_word,
+				       configured_level, target);
 				return;
 			case 14:
 				resolve_nova(c.actor);
@@ -430,6 +445,17 @@ void start_sword(P_obj source, P_char actor, P_char target, std::array<sword_sel
 	if (!count)
 		return;
 	const int vnum = OBJ_VNUM(source);
+	std::array<sword_selection, 3> active{};
+	size_t active_count = 0;
+	for (size_t i = 0; i < count; ++i)
+	{
+		const char *power = sword_power_id(selected[i]);
+		if (power && !native_artifact_power_enabled(vnum, power))
+			continue;
+		active[active_count++] = selected[i];
+	}
+	if (!active_count)
+		return;
 	const auto settings = native_artifact_settings(vnum);
 	if (!native_artifact_prepare(vnum, settings))
 		return;
@@ -437,8 +463,8 @@ void start_sword(P_obj source, P_char actor, P_char target, std::array<sword_sel
 	definition.id = native_artifact_ability(vnum, 1);
 	definition.revision = settings.revision;
 	definition.windup_pulses = settings.windup;
-	for (size_t i = 0; i < count; ++i)
-		if (selected[i].stage == sword_stage::combat && selected[i].choice == 14)
+	for (size_t i = 0; i < active_count; ++i)
+		if (active[i].stage == sword_stage::combat && active[i].choice == 14)
 		{
 			// The global cap must not shorten nova's native minimum preparation.
 			if (get_property("itemActions.maxPulses", 120.0, false) <
@@ -447,15 +473,15 @@ void start_sword(P_obj source, P_char actor, P_char target, std::array<sword_sel
 			definition.windup_pulses = std::max(settings.windup, PULSE_VIOLENCE * 2);
 		}
 	definition.progress_pulses = definition.windup_pulses / 2;
-	definition.effect_count = count;
-	for (size_t i = 0; i < count; ++i)
-		definition.effects[i] = { static_cast<uint32_t>(selected[i].stage), 0,
+	definition.effect_count = active_count;
+	for (size_t i = 0; i < active_count; ++i)
+		definition.effects[i] = { static_cast<uint32_t>(active[i].stage), 0,
 					  item_action_call::spell,
 					  item_action_effect_target::original,
 					  static_cast<int>(i) };
 	start_item_action_instance(
 		definition,
-		std::make_unique<sword_adapter>(vnum, settings, selected, count, time(nullptr),
+		std::make_unique<sword_adapter>(vnum, settings, active, active_count, time(nullptr),
 						std::clamp(source->value[6], 0, 14)),
 		actor, target, source);
 }
@@ -466,6 +492,10 @@ int advance_sword_artifact(P_obj source, P_char actor, int command, char *argume
 	if (!source || !IS_ALIVE(actor) || actor->equipment[PRIMARY_WEAPON] != source)
 		return FALSE;
 	const int vnum = OBJ_VNUM(source);
+	if (!native_artifact_control_enabled(vnum))
+		return TRUE;
+	if (!native_artifact_variant_enabled(vnum, actor, "telegraphic"))
+		return FALSE;
 	if (command == CMD_LOOK && arguments && isname(arguments, source->name))
 	{
 		const auto settings = native_artifact_settings(vnum);

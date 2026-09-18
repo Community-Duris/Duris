@@ -94,6 +94,8 @@ SHIP_SRCS = \
 SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
+				 artifact/artifact_control.o \
+				 artifact/artifact_admin.o \
 				 item/item_actions.o \
 				 item/native_artifact_actions.o \
 				 item/tsunami_actions.o \

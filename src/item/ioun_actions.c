@@ -69,6 +69,11 @@ class mirrored_ioun_adapter final : public item_action_adapter
 
 bool intercept_mirrored_ioun(P_obj source, P_char defender, const proc_data &incoming)
 {
+	if (!native_artifact_control_enabled(MIRRORED_IOUN) ||
+	    !native_artifact_variant_enabled(MIRRORED_IOUN, defender, "telegraphic"))
+		return false;
+	if (!native_artifact_power_enabled(MIRRORED_IOUN, "intercept"))
+		return false;
 	const auto config = native_artifact_settings(MIRRORED_IOUN);
 	if (!source || !native_artifact_actor(defender) || !IS_ALIVE(incoming.victim) ||
 	    incoming.victim == defender || incoming.dam <= 0 ||
