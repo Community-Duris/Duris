@@ -1303,7 +1303,7 @@ void discard_nested_money(P_obj container)
 	     item = next)
 	{
 		next = item->next_content;
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 		{
 			obj_from_obj(item);
 			extract_obj(item);
@@ -1321,7 +1321,7 @@ bool corpse_raise_exceeds_carry_capacity(P_char caster, P_obj corpse)
 	int64_t incoming_count = 0;
 	for (P_obj item = corpse->contains; item; item = item->next_content)
 	{
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 			continue;
 		const int64_t weight = GET_OBJ_WEIGHT(item);
 		if (incoming_weight > std::numeric_limits<int64_t>::max() - weight)
@@ -1391,7 +1391,7 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 	for (P_obj item = corpse->contains, next = nullptr; item; item = next)
 	{
 		next = item->next_content;
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 		{
 			obj_from_obj(item);
 			extract_obj(item);
@@ -1430,7 +1430,7 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 			logit(LOG_CORPSE, "%s raised with eq: [%d] %s", corpse->short_description,
 			      obj_index[item->R_num].virtual_number, item->name);
 		obj_from_obj(item);
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 			extract_obj(item);
 		else
 		{

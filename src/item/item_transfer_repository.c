@@ -479,8 +479,8 @@ bool update_owner_revision(MYSQL *connection, const item_owner_identity &owner,
 }
 
 bool insert_ledger(MYSQL *connection, const critical_command &command,
-		   const item_transfer_payload &payload, size_t index, uint64_t item_revision,
-		   uint64_t from_revision, uint64_t to_revision)
+		   const item_transfer_payload &payload, size_t index, uint16_t event_index_base,
+		   uint64_t item_revision, uint64_t from_revision, uint64_t to_revision)
 {
 	static const char SQL[] =
 		"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,"
@@ -494,7 +494,7 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 	MYSQL_STMT *statement = nullptr;
 	if (!prepare(&statement, connection, SQL))
 		return false;
-	uint16_t event_index = static_cast<uint16_t>(index);
+	uint16_t event_index = static_cast<uint16_t>(event_index_base + index);
 	uint8_t from_type = static_cast<uint8_t>(payload.from_owner.type);
 	uint8_t to_type = static_cast<uint8_t>(payload.to_owner.type);
 	uint16_t reason = static_cast<uint16_t>(payload.reason);
@@ -818,9 +818,10 @@ bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_
 	return update_owner_revision(connection, owner, prior_revision);
 }
 
-bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
-				      item_transfer_result *result, unsigned int *result_code,
-				      bool *mutation_applied)
+bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critical_command &command,
+						uint16_t event_index_base,
+						item_transfer_result *result,
+						unsigned int *result_code, bool *mutation_applied)
 {
 	item_transfer_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
@@ -832,6 +833,11 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 	*result = { item_transfer_result_root(payload), payload.item_count, 0, 0, 0, 0 };
 	*result_code = 0;
 	*mutation_applied = false;
+	if (static_cast<size_t>(event_index_base) + payload.item_count > UINT16_MAX)
+	{
+		*result_code = E2BIG;
+		return true;
+	}
 	uint64_t from_revision = 0, to_revision = 0;
 	const bool same_owner = item_owner_identity_equal(payload.from_owner, payload.to_owner);
 	if (same_owner)
@@ -1041,8 +1047,8 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 			return false;
 		const uint64_t item_revision = prior_revision + 1;
 		result->max_item_revision = std::max(result->max_item_revision, item_revision);
-		if (!insert_ledger(connection, command, payload, index, item_revision,
-				   from_revision + 1,
+		if (!insert_ledger(connection, command, payload, index, event_index_base,
+				   item_revision, from_revision + 1,
 				   same_owner ? from_revision + 1 : to_revision + 1))
 			return false;
 	}
@@ -1066,6 +1072,14 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		return false;
 	*mutation_applied = true;
 	return true;
+}
+
+bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
+				      item_transfer_result *result, unsigned int *result_code,
+				      bool *mutation_applied)
+{
+	return item_transfer_repository_execute_at_offset(connection, command, 0, result,
+							  result_code, mutation_applied);
 }
 
 bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_command &command,

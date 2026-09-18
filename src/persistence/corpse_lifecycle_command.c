@@ -201,6 +201,13 @@ bool valid_result(const corpse_lifecycle_result &result)
 {
 	if (!result.owner_pid || !result.save_id || !result.catalog_revision)
 		return false;
+	if ((!result.discarded_item_count &&
+	     (result.destruction_owner_revision || result.max_discarded_item_revision)) ||
+	    (result.discarded_item_count &&
+	     (!result.destruction_owner_revision || !result.max_discarded_item_revision)) ||
+	    (result.action != corpse_lifecycle_action::raise_follower &&
+	     result.discarded_item_count))
+		return false;
 	if (result.action == corpse_lifecycle_action::upsert)
 		return !result.collector_catalog_changed && result.corpse_revision &&
 		       !result.corpse_owner_revision && !result.room_owner_revision &&
@@ -429,6 +436,9 @@ bool corpse_lifecycle_command_encode_result(
 		put_number<int32_t>(encoded->data() + 80 + index * sizeof(int32_t),
 				    result.wallet[index]);
 	put_number<uint64_t>(encoded->data() + 96, result.bank_revision);
+	put_number<uint64_t>(encoded->data() + 104, result.destruction_owner_revision);
+	put_number<uint64_t>(encoded->data() + 112, result.max_discarded_item_revision);
+	put_number<uint32_t>(encoded->data() + 120, result.discarded_item_count);
 	return true;
 }
 
@@ -437,6 +447,7 @@ bool corpse_lifecycle_command_decode_result(const uint8_t *encoded, size_t encod
 {
 	if (!encoded || !result ||
 	    (encoded_size != CORPSE_LIFECYCLE_RESULT_BYTES &&
+	     encoded_size != CORPSE_LIFECYCLE_BANK_RESULT_BYTES &&
 	     encoded_size != CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES &&
 	     encoded_size != CORPSE_LIFECYCLE_PREVIOUS_RESULT_BYTES &&
 	     encoded_size != CORPSE_LIFECYCLE_LEGACY_RESULT_BYTES))
@@ -475,8 +486,17 @@ bool corpse_lifecycle_command_decode_result(const uint8_t *encoded, size_t encod
 		for (size_t index = 0; index < result->wallet.size(); ++index)
 			result->wallet[index] =
 				get_number<int32_t>(encoded + 80 + index * sizeof(int32_t));
-	if (encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES)
+	if (encoded_size >= CORPSE_LIFECYCLE_BANK_RESULT_BYTES)
 		result->bank_revision = get_number<uint64_t>(encoded + 96);
+	if (encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES)
+	{
+		for (size_t index = 124; index < CORPSE_LIFECYCLE_RESULT_BYTES; ++index)
+			if (encoded[index])
+				return false;
+		result->destruction_owner_revision = get_number<uint64_t>(encoded + 104);
+		result->max_discarded_item_revision = get_number<uint64_t>(encoded + 112);
+		result->discarded_item_count = get_number<uint32_t>(encoded + 120);
+	}
 	return valid_result(*result);
 }
 

@@ -1022,6 +1022,84 @@ bool item_ownership_runtime_apply_corpse_raise(uint32_t owner_pid, uint32_t save
 	return true;
 }
 
+bool item_ownership_runtime_apply_corpse_discarded(uint32_t owner_pid, uint32_t save_id,
+						   const std::vector<uint64_t> &item_uids,
+						   const corpse_lifecycle_result &result)
+{
+	if (result.action != corpse_lifecycle_action::raise_follower ||
+	    result.owner_pid != owner_pid || result.save_id != save_id ||
+	    item_uids.size() != result.discarded_item_count)
+		return false;
+	if (item_uids.empty())
+		return !result.destruction_owner_revision && !result.max_discarded_item_revision;
+	if (!owner_pid || !save_id || result.corpse_owner_revision < 2 ||
+	    !result.destruction_owner_revision || !result.max_discarded_item_revision)
+		return false;
+	const item_owner_identity corpse = { item_owner_type::corpse,
+					     item_corpse_owner_id(owner_pid, save_id), 0 };
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	const auto source = owner_revisions.find(corpse);
+	const auto destination = owner_revisions.find(destruction);
+	if ((source == owner_revisions.end() ? 0 : source->second) !=
+		    result.corpse_owner_revision - 2 ||
+	    (destination != owner_revisions.end() &&
+	     destination->second != result.destruction_owner_revision - 1))
+		return false;
+	std::unordered_set<uint64_t> selected;
+	std::vector<uint64_t> target_roots;
+	uint64_t max_revision = 0;
+	try
+	{
+		selected.reserve(item_uids.size());
+		target_roots.reserve(item_uids.size());
+		for (uint64_t uid : item_uids)
+		{
+			const auto found = entries.find(uid);
+			if (!uid || !selected.insert(uid).second || found == entries.end() ||
+			    !item_owner_identity_equal(found->second.owner, corpse) ||
+			    found->second.state != item_custody_state::active ||
+			    found->second.item_revision == UINT64_MAX)
+				return false;
+			max_revision = std::max(max_revision, found->second.item_revision + 1);
+		}
+		for (uint64_t uid : item_uids)
+		{
+			uint64_t root = uid;
+			uint64_t parent = entries.find(uid)->second.parent_item_uid;
+			size_t depth = 0;
+			while (selected.contains(parent) && depth++ < selected.size())
+			{
+				root = parent;
+				parent = entries.find(parent)->second.parent_item_uid;
+			}
+			if (selected.contains(parent))
+				return false;
+			target_roots.push_back(root);
+		}
+		owner_revisions.reserve(owner_revisions.size() + 2);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (max_revision != result.max_discarded_item_revision)
+		return false;
+	for (size_t index = 0; index < item_uids.size(); ++index)
+	{
+		auto &entry = entries.find(item_uids[index])->second;
+		entry.root_item_uid = target_roots[index];
+		if (!selected.contains(entry.parent_item_uid))
+			entry.parent_item_uid = 0;
+		++entry.item_revision;
+		entry.owner = destruction;
+		entry.owner_revision = result.destruction_owner_revision;
+		entry.state = item_custody_state::destroyed;
+	}
+	owner_revisions.insert_or_assign(corpse, result.corpse_owner_revision - 1);
+	owner_revisions.insert_or_assign(destruction, result.destruction_owner_revision);
+	return true;
+}
+
 void item_ownership_runtime_forget(uint64_t item_uid)
 {
 	if (item_uid)

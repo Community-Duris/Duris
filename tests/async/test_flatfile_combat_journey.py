@@ -364,7 +364,8 @@ def runtime_logs(run_root: pathlib.Path) -> str:
 
 def create_character(client: MudClient, expected_room: str | None = "The Regression Arena",
                      class_name: str = "w", *, account: str = ACCOUNT,
-                     character: str = CHARACTER, email: str = EMAIL) -> None:
+                     character: str = CHARACTER, email: str = EMAIL,
+                     hometown: str | None = None) -> None:
     entry, _ = client.expect_any(("term type", "account name"))
     if entry == "term type":
         client.send("9")
@@ -400,10 +401,14 @@ def create_character(client: MudClient, expected_room: str | None = "The Regress
     client.send("n")
     client.expect("Class Selection")
     client.send(class_name)
-    client.expect("Alignment only affects")
-    client.send("g")
-    client.expect("Your selection")
-    client.send("p")
+    if hometown is not None:
+        client.expect("Hometown Selection")
+        client.send(hometown)
+    else:
+        client.expect("Alignment only affects")
+        client.send("g")
+        client.expect("Your selection")
+        client.send("p")
     client.expect("Press return to continue")
     client.send("")
     for label in ("first bonus", "second bonus", "third bonus", "fourth bonus"):

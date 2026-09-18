@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 struct item_ownership_runtime_entry
 {
@@ -50,6 +51,9 @@ bool item_ownership_runtime_apply_corpse_resurrection(uint32_t owner_pid, uint32
 bool item_ownership_runtime_apply_corpse_raise(uint32_t owner_pid, uint32_t save_id,
 					       uint32_t player_pid,
 					       const corpse_lifecycle_result &result);
+bool item_ownership_runtime_apply_corpse_discarded(uint32_t owner_pid, uint32_t save_id,
+						   const std::vector<uint64_t> &item_uids,
+						   const corpse_lifecycle_result &result);
 bool item_ownership_runtime_apply_corpse_nested_release(uint32_t owner_pid, uint32_t save_id,
 							const item_owner_identity &destination,
 							uint64_t target_root_item_uid,

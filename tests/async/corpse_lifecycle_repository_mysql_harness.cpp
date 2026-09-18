@@ -520,12 +520,17 @@ void test_raise_follower()
 {
 	constexpr uint32_t PLAYER = 2147000603U;
 	constexpr int32_t ROOM = 4105;
-	constexpr uint64_t LISTING = 9104, ROOT_UID = 840000001, CHILD_UID = 840000002;
+	constexpr uint64_t LISTING = 9104, ROOT_UID = 840000001, CHILD_UID = 840000002,
+			   TRANSIENT_UID = 840000003;
 	const std::array<int32_t, 4> wallet = { 5, 6, 7, 8 };
 	seed_player(PLAYER, "RaisedHarness", "corpse_raise", wallet);
 	seed_owner({ item_owner_type::player, PLAYER, 0 }, 1);
 	const corpse_fixture fixture =
 		seed_corpse(1004, ROOM, 1831, ROOT_UID, CHILD_UID, 1, false, true);
+	execute("UPDATE corpse_items SET obj_uid=" + std::to_string(TRANSIENT_UID) +
+		" WHERE corpse_id=" + std::to_string(fixture.corpse_id) + " AND vnum=1833");
+	seed_authority(TRANSIENT_UID, ROOT_UID, ROOT_UID, 1833,
+		       { item_owner_type::corpse, fixture.owner_id, 0 }, INITIAL_ITEM_REVISION);
 	seed_candidate(LISTING, CHILD_UID, INITIAL_ITEM_REVISION);
 
 	corpse_lifecycle_payload payload =
@@ -535,6 +540,11 @@ void test_raise_follower()
 	payload.money = wallet;
 	const critical_command command = command_for(payload);
 	const applied_corpse applied = apply_success(command);
+	assert(applied.result.corpse_owner_revision == 3 &&
+	       applied.result.discarded_item_count == 1 &&
+	       applied.result.destruction_owner_revision ==
+		       owner_revision({ item_owner_type::destruction, 0, 0 }) &&
+	       applied.result.max_discarded_item_revision == 6);
 	assert(applied.result.player_owner_revision == 2 && applied.result.wallet_revision == 1 &&
 	       applied.result.bank_revision == 1 && applied.result.wallet[0] == 6 &&
 	       applied.result.wallet[1] == 8 && applied.result.wallet[2] == 10 &&
@@ -549,7 +559,48 @@ void test_raise_follower()
 	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + std::to_string(PLAYER) +
 		      " AND obj_uid IN (" + std::to_string(ROOT_UID) + "," +
 		      std::to_string(CHILD_UID) + ")") == 2);
+	assert(scalar("SELECT COUNT(*) FROM player_items WHERE obj_uid=" +
+		      std::to_string(TRANSIENT_UID)) == 0);
+	assert(text("SELECT CONCAT(owner_type,':',item_revision,':',state) "
+		    "FROM item_current_owner WHERE item_uid=" +
+		    std::to_string(TRANSIENT_UID)) == "8:6:2");
 	assert_outbox(command, true);
+}
+
+void test_coinless_raise_follower()
+{
+	constexpr uint32_t PLAYER = 2147000610U;
+	constexpr uint64_t ROOT_UID = 840000011, CHILD_UID = 840000012, TRANSIENT_UID = 840000013;
+	const std::array<int32_t, 4> wallet = {};
+	seed_player(PLAYER, "CoinlessRaisedHarness", "corpse_raise_coinless", wallet);
+	seed_owner({ item_owner_type::player, PLAYER, 0 }, 1);
+	const corpse_fixture fixture =
+		seed_corpse(1008, 4108, 1871, ROOT_UID, CHILD_UID, 1, false, true);
+	execute("DELETE FROM corpse_items WHERE corpse_id=" + std::to_string(fixture.corpse_id) +
+		" AND vnum=3");
+	execute("UPDATE corpse_items SET obj_uid=" + std::to_string(TRANSIENT_UID) +
+		" WHERE corpse_id=" + std::to_string(fixture.corpse_id) + " AND vnum=1873");
+	seed_authority(TRANSIENT_UID, ROOT_UID, ROOT_UID, 1873,
+		       { item_owner_type::corpse, fixture.owner_id, 0 }, INITIAL_ITEM_REVISION);
+
+	corpse_lifecycle_payload payload =
+		payload_for(fixture, corpse_lifecycle_action::raise_follower);
+	payload.destination_player_pid = PLAYER;
+	payload.expected_player_revision = 1;
+	payload.money = wallet;
+	const critical_command command = command_for(payload);
+	const applied_corpse applied = apply_success(command);
+	assert(applied.result.item_count == 2 && applied.result.discarded_item_count == 1);
+	assert(applied.result.wallet == wallet && applied.result.wallet_revision == 1 &&
+	       applied.result.bank_revision == 1);
+	assert(text("SELECT CONCAT(copper,':',silver,':',gold,':',platinum,':',wallet_revision) "
+		    "FROM player_data WHERE pid=" +
+		    std::to_string(PLAYER)) == "0:0:0:0:1");
+	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(command.operation_id) + "')") == 1);
+	assert(text("SELECT CONCAT(owner_type,':',state) FROM item_current_owner WHERE item_uid=" +
+		    std::to_string(TRANSIENT_UID)) == "8:2");
+	assert_exact_replay(command, applied);
 }
 
 void test_nested_room_release()
@@ -714,12 +765,13 @@ int main()
 	test_destruction();
 	test_resurrection();
 	test_raise_follower();
+	test_coinless_raise_follower();
 	test_nested_room_release();
 	test_nested_player_release();
 	test_stale_wallet_rolls_back();
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=" +
 		      std::to_string(static_cast<unsigned int>(
-			      critical_command_type::corpse_lifecycle))) == 7);
+			      critical_command_type::corpse_lifecycle))) == 8);
 	mysql_close(database);
 	return 0;
 }
