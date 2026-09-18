@@ -200,6 +200,7 @@ struct bulk_get_state
 	/* True for either NPC or player corpses.  `corpse` remains the player
 	 * corpse lifecycle flag used by the persistence protocol. */
 	bool corpse_source = false;
+	bool count_limit_reported = false;
 };
 
 /* A selected corpse coin pile may cross an asynchronous item admission and
@@ -2165,8 +2166,13 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 	if (carried_count >= CAN_CARRY_N(actor) && !material_exception &&
 	    GET_ITEM_TYPE(object) != ITEM_MONEY)
 	{
-		state.rejections.emplace_back(container ? "You can't carry any more.\r\n" :
-							  "You can't carry anything more.\r\n");
+		if (!state.count_limit_reported)
+		{
+			state.rejections.emplace_back(container ?
+							      "You can't carry any more.\r\n" :
+							      "You can't carry anything more.\r\n");
+			state.count_limit_reported = true;
+		}
 		state.failed = true;
 		// Keep scanning containers for money even when an ordinary item cannot fit.
 		stop = container == NULL;
