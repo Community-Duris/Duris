@@ -1717,6 +1717,7 @@ P_obj make_corpse(P_char ch, int loss)
 	 * have to change the 'loc.carrying' pointers to 'loc.inside' pointers
 	 * for the whole object list, else ugly problems occur later.
 	 */
+	hold_durable_pet_items(ch);
 	unequip_all(ch);
 	if (IS_NPC(ch))
 	{
@@ -3234,6 +3235,9 @@ void die(P_char ch, P_char killer)
 
 		studioproc_kill(killer,
 				ch); /* before the ACT_SPEC_DIE block, which can return early */
+		// Special death handlers can drop equipment before make_corpse runs.
+		// Retain committed raised-pet gear under its durable owner first.
+		hold_durable_pet_items(ch);
 
 		if (IS_NPC(ch) && (ch->specials.act & ACT_SPEC_DIE) &&
 		    (ch->specials.act & ACT_SPEC))

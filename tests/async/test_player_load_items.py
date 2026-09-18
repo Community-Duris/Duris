@@ -107,7 +107,9 @@ void add_pet(player_load_result &result, uint64_t database_id, int vnum, int ord
     pet.charm_duration = 12;
     pet.room_vnum = result.snapshot.room_vnum;
     result.snapshot.pets.push_back(pet);
-    result.pet_identities.push_back({ database_id, {} });
+    player_load_pet_identity identity = {};
+    identity.database_id = database_id;
+    result.pet_identities.push_back(identity);
 }
 
 void add_pet_item(player_load_result &result, size_t pet_index, uint64_t database_id,

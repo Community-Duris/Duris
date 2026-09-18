@@ -22,7 +22,7 @@ subprocess.run(
 )
 
 for contract in (
-    "FROM player_pets WHERE owner_pid=",
+    "FROM player_pets pp LEFT JOIN item_owner_revision rev",
     "FROM player_pet_items ppi",
     "player_pet_item_affects",
     "player_pet_item_extra_descr",
@@ -35,7 +35,7 @@ assert REPOSITORY.count("load_pets(connection") == 1
 for contract in (
     "player_load_pets_stage",
     "player_load_pets_discard",
-    "item_ownership_runtime_hydrate_batch",
+    "item_ownership_runtime_hydrate_many_atomic",
     "player_load_pets_commit",
 ):
     assert contract in MATERIALIZE

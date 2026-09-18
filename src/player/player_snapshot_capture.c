@@ -518,6 +518,7 @@ player_snapshot_capture_result capture_pets(P_char ch, int save_intent, player_s
 		if (!budget.add(sizeof(player_pet_snapshot), 1))
 			return player_snapshot_capture_result::limit_exceeded;
 		player_pet_snapshot row = {};
+		row.pet_uid = pet->durable_pet_uid;
 		row.mob_vnum = mob_index[rnum].virtual_number;
 		row.order = order++;
 		row.hit = GET_HIT(pet);

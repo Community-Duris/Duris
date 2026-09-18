@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 from _paths import SRC, rel
+import os
 import pathlib
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+SANITIZE_FLAGS = (["-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+                   "-fno-pie", "-no-pie"] if os.environ.get("SANITIZE") == "1" else [])
 DISPATCHER = (SRC / "flatfile_item_repository.c").read_text()
 for token in (
     "command.type == critical_command_type::corpse_lifecycle",
@@ -26,6 +29,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             "-Wextra",
             "-Wpedantic",
             "-Werror",
+            *SANITIZE_FLAGS,
             "-D__NO_MYSQL__",
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
@@ -78,6 +82,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
     run_result = subprocess.run(
         [str(binary), str(temporary_path / "state")],
         cwd=ROOT,
+        env=dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+                 UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"),
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,

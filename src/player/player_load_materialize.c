@@ -113,7 +113,9 @@ bool valid_snapshot(const player_load_result &result)
 	if (result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS &&
 	    (result.snapshot.items.size() != result.item_identities.size() ||
 	     result.snapshot.pets.size() != result.pet_identities.size() ||
-	     result.authoritative_item_count > PLAYER_LOAD_ITEM_MAX))
+	     result.authoritative_item_count > PLAYER_LOAD_ITEM_MAX ||
+	     result.authoritative_pet_item_count >
+		     PLAYER_LOAD_ITEM_MAX - result.authoritative_item_count))
 		return false;
 	// Skipping is only ever the lesser evil in small numbers: the next full save rewrites
 	// player_items from the snapshot, so past this many rows the tolerant path would
@@ -633,7 +635,8 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		std::vector<item_ownership_runtime_entry> ownership;
 		try
 		{
-			ownership.reserve(result.authoritative_item_count);
+			ownership.reserve(result.authoritative_item_count +
+					  result.authoritative_pet_item_count);
 			auto append = [&](const std::vector<player_item_snapshot> &items,
 					  const std::vector<player_load_item_identity> &identities)
 			{
@@ -664,28 +667,45 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		}
 		const item_owner_identity owner = { item_owner_type::player,
 						    static_cast<uint64_t>(result.pid), 0 };
-		if (ownership.size() != result.authoritative_item_count)
+		if (ownership.size() !=
+		    result.authoritative_item_count + result.authoritative_pet_item_count)
 		{
 			logit(LOG_DEBUG,
 			      "player_load_materialize: component=ownership pid=%d outcome=count_mismatch "
 			      "entries=%zu authoritative=%zu",
-			      result.pid, ownership.size(), result.authoritative_item_count);
+			      result.pid, ownership.size(),
+			      result.authoritative_item_count +
+				      result.authoritative_pet_item_count);
 			player_load_items_discard(ch);
 			player_load_pets_discard(&pets);
 			return false;
 		}
-		const bool ownership_applied =
+		bool ownership_applied =
 			ownership.empty() ?
 				item_ownership_runtime_hydrate_owner(owner,
 								     result.item_owner_revision) :
-				item_ownership_runtime_hydrate_batch(ownership.data(),
-								     ownership.size());
+				item_ownership_runtime_hydrate_many_atomic(ownership.data(),
+									   ownership.size());
+		if (ownership_applied && result.authoritative_item_count == 0)
+			ownership_applied = item_ownership_runtime_hydrate_owner(
+				owner, result.item_owner_revision);
+		for (size_t index = 0; ownership_applied && index < result.pet_identities.size();
+		     ++index)
+		{
+			const player_load_pet_identity &pet = result.pet_identities[index];
+			if (pet.pet_uid && pet.item_identities.empty())
+				ownership_applied = item_ownership_runtime_hydrate_owner(
+					{ item_owner_type::pet, pet.pet_uid,
+					  static_cast<uint64_t>(result.pid) },
+					pet.owner_revision);
+		}
 		if (!ownership_applied)
 		{
 			logit(LOG_DEBUG,
 			      "player_load_materialize: component=ownership pid=%d outcome=hydrate_failure "
 			      "entries=%zu",
 			      result.pid, ownership.size());
+			item_ownership_runtime_forget_player_domain(result.pid);
 			player_load_items_discard(ch);
 			player_load_pets_discard(&pets);
 			return false;

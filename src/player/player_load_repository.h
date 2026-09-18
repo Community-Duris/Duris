@@ -16,8 +16,10 @@ constexpr size_t PLAYER_LOAD_NAME_MAX = 32;
 constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 // Fixed-cost restitution table discovery and exact-state overlay, not per-item queries.
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
-constexpr size_t PLAYER_LOAD_QUERY_MAX =
-	PLAYER_LOAD_BASE_QUERY_MAX + PLAYER_LOAD_RESTITUTION_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_QUERY_MAX = PLAYER_LOAD_BASE_QUERY_MAX +
+					 PLAYER_LOAD_RESTITUTION_QUERY_MAX +
+					 PLAYER_LOAD_PET_CUSTODY_QUERY_MAX;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 // A payload row the ownership ledger no longer backs is skipped rather than refusing the
@@ -88,6 +90,8 @@ struct player_load_item_identity
 struct player_load_pet_identity
 {
 	uint64_t database_id = 0;
+	uint64_t pet_uid = 0;
+	uint64_t owner_revision = 0;
 	std::vector<player_load_item_identity> item_identities;
 };
 
@@ -148,6 +152,7 @@ struct player_load_result
 	player_load_domain_state domains = {};
 	uint64_t item_owner_revision = 0;
 	size_t authoritative_item_count = 0;
+	size_t authoritative_pet_item_count = 0;
 	size_t stale_item_rows = 0;
 	// Authoritative custody rows for this player whose payload row is gone. The item
 	// cannot be rebuilt, but one such row must not make the character unloadable.

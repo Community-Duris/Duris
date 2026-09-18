@@ -1342,12 +1342,52 @@ bool corpse_raise_exceeds_carry_capacity(P_char caster, P_obj corpse)
 }
 } // namespace
 
+bool prepare_corpse_raise_pet_state(P_obj corpse, P_char caster, P_char follower,
+				    corpse_raise_kind kind, bool globe, int32_t *charm_duration,
+				    std::string *restore_state)
+{
+	if (!corpse || !caster || !follower || !charm_duration || !restore_state)
+		return false;
+	int time_to_decay = 0;
+	if (struct obj_affect *decay = get_obj_affect(corpse, TAG_OBJ_DECAY))
+		time_to_decay = obj_affect_time(corpse, decay) / (60 * WAIT_SEC);
+	int duration = kind == corpse_raise_kind::undead ?
+			       MAX(4, time_to_decay) :
+			       time_to_decay / 2 + 6000 / STAT_INDEX(GET_C_INT(follower));
+	if (globe || has_innate(caster, INNATE_UNHOLY_ALLIANCE))
+		duration = -1;
+	*charm_duration = duration;
+	if (!summoned_pet_capture(follower, restore_state))
+		return false;
+	if (restore_state->empty())
+		return true;
+	pet_restore_state state;
+	if (!pet_restore_state_decode(*restore_state, &state))
+		return false;
+	if (duration >= 0)
+	{
+		const int64_t now = time(nullptr);
+		const int extra = kind == corpse_raise_kind::greater_dracolich ||
+						  kind == corpse_raise_kind::dracolich ?
+					  1 :
+					  number(1, 10) + 1;
+		state.charm_expires_at = now + static_cast<int64_t>(duration) * 60;
+		state.death_expires_at = now + (static_cast<int64_t>(duration) + extra) * 60;
+	}
+	else
+		state.charm_expires_at = state.death_expires_at = 0;
+	return pet_restore_state_encode(state, restore_state);
+}
+
 void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj corpse,
-					corpse_raise_kind kind, int level, int variant, bool globe,
-					const char *message)
+					corpse_raise_kind kind, int level, int variant,
+					const char *message, uint64_t pet_uid, bool hostile,
+					int32_t prepared_duration, const std::string &restore_state)
 {
 	if (!caster || !follower || !corpse || caster->in_room <= NOWHERE)
 		return;
+	follower->durable_pet_uid = pet_uid;
+	follower->durable_pet_owner_pid = pet_uid && IS_PC(caster) ? GET_PID(caster) : 0;
 
 	const char *raise_name = nullptr;
 	switch (kind)
@@ -1400,14 +1440,7 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 			discard_nested_money(item);
 	}
 
-	bool hostile = false;
-	if (kind == corpse_raise_kind::titan || kind == corpse_raise_kind::avatar)
-		hostile = IS_PC(caster) && !number(0, 12);
-	else if (kind == corpse_raise_kind::dracolich)
-		hostile = IS_PC(caster) && !number(0, 12) && !globe;
-	else if (kind == corpse_raise_kind::greater_dracolich)
-		hostile = IS_PC(caster) && !number(0, 9) && !globe;
-	if (corpse_raise_exceeds_carry_capacity(caster, corpse))
+	if (!pet_uid && corpse_raise_exceeds_carry_capacity(caster, corpse))
 	{
 		send_to_char(
 			"The recovered equipment leaves you overburdened. Drop something before fighting or moving.\r\n",
@@ -1435,12 +1468,7 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		else
 		{
 			discard_nested_money(item);
-			// The corpse transaction has already moved these rows into the caster's
-			// durable player-custody domain. A live follower/NPC is not a durable
-			// item owner; putting the item there would let a later player save delete
-			// or duplicate the authoritative row. Keep recovered equipment with the
-			// caster until mobile-owned persistence exists.
-			obj_to_char_at_end(item, caster);
+			obj_to_char_at_end(item, pet_uid ? follower : caster);
 		}
 	}
 
@@ -1485,13 +1513,16 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 	}
 	else if (kind == corpse_raise_kind::undead)
 	{
-		duration = setup_pet(follower, caster, MAX(4, timeToDecay), PET_NOCASH);
+		duration = setup_pet(follower, caster,
+				     pet_uid ? prepared_duration : MAX(4, timeToDecay), PET_NOCASH);
 		add_follower(follower, caster);
 	}
 	else if (kind == corpse_raise_kind::golem)
 	{
 		duration = setup_pet(follower, caster,
-				     (timeToDecay / 2) + (6000 / STAT_INDEX(GET_C_INT(follower))),
+				     pet_uid ? prepared_duration :
+					       (timeToDecay / 2) +
+						       (6000 / STAT_INDEX(GET_C_INT(follower))),
 				     PET_NOCASH);
 		act("&+LDark shadows engulf the &+bcorpse &+Las you weave a spell of &+Wreanimation&+L,\r\n"
 		    "&+Ltransforming the corpse into an &+wundead &+rminion&+L.",
@@ -1518,7 +1549,9 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		else if (kind == corpse_raise_kind::greater_dracolich)
 			GET_AC(follower) -= level * 4;
 		duration = setup_pet(follower, caster,
-				     timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(follower))),
+				     pet_uid ? prepared_duration :
+					       timeToDecay / 2 +
+						       (6000 / STAT_INDEX(GET_C_INT(follower))),
 				     PET_NOCASH);
 		if (kind == corpse_raise_kind::dracolich && corpse_trace_enabled())
 			logit(LOG_DEBUG,
@@ -1529,8 +1562,20 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 
 	if (duration >= 0)
 	{
-		if (kind == corpse_raise_kind::greater_dracolich ||
-		    kind == corpse_raise_kind::dracolich)
+		pet_restore_state state;
+		if (pet_uid && pet_restore_state_decode(restore_state, &state) &&
+		    state.death_expires_at > 0)
+		{
+			follower->only.npc->pet_charm_expires_at = state.charm_expires_at;
+			const int64_t remaining =
+				std::max<int64_t>(1, state.death_expires_at - time(nullptr));
+			const int seconds =
+				static_cast<int>(std::min<int64_t>(remaining, INT_MAX / WAIT_SEC));
+			schedule_pet_death(follower, seconds * WAIT_SEC);
+			follower->only.npc->pet_death_expires_at = state.death_expires_at;
+		}
+		else if (kind == corpse_raise_kind::greater_dracolich ||
+			 kind == corpse_raise_kind::dracolich)
 			schedule_pet_death(follower, (duration + 1) * 60 * WAIT_SEC);
 		else
 		{

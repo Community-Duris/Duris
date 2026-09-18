@@ -60,9 +60,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"2626615a3a11290e450b8df79f10949301dbd67b164d6ec9d86bcaf232c7fd10";
+	"55205509d4b8e9c8c5ef88aa9ec701570c4dab798ed7cfff0a428834b38d16b0";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"87af64d3b927320c43f578f7f1a5723f8f2c8d645c9eab633b28238fbc0165a7";
+	"545a4cf7595b66fb20f761071601eeb737d43b6d995a25ec2849368fbcc8ad05";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -74,14 +74,14 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * 0024, the durable zone-story quest state introduced by migration 0026, and
  * the saved-item recovery receipt introduced by migration 0027.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0027_saved_item_recovery_handoff";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 27;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0028_pet_custody";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 28;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"e11716690ee50cb39e4543a08a845a2146be54079c69bc227a83763c9f4bba58";
+	"0a72bb83e3a8a4880ea37306269b71042d0f6a775f31c74f396512bcbaf29c8a";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"6e52d6bb46c2ab660b6b43071dadfc5a3bc9885aa88f760fe9517a85c4d0896d";
+	"4605ed2ed58c4854dc0572ca166857b87bb5c120839ff76a70d9e03e64df7124";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"0d6ab54d4f07fcecfbcc52cab579ee04ef6a1a28f698304761277ff0595bafb0";
+	"825e4b29610331dad84f76668d5e4376a743108bd9fe2ace181bd67863bcae70";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

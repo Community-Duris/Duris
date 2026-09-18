@@ -160,6 +160,8 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 			return fail(metrics,
 				    player_load_pet_materialize_outcome::allocation_failure);
 		}
+		pet->durable_pet_uid = identity.pet_uid;
+		pet->durable_pet_owner_pid = identity.pet_uid ? result.pid : 0;
 		try
 		{
 			pets->push_back(pet);
@@ -179,9 +181,16 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		}
 		if (has_state)
 			affect_total(pet, FALSE);
-		if (!player_load_item_graph_materialize(
-			    pet, snapshot.items, identity.item_identities, result.pid,
-			    result.item_owner_revision, false, &item_metrics))
+		const item_owner_identity owner_identity =
+			identity.pet_uid ?
+				item_owner_identity{ item_owner_type::pet, identity.pet_uid,
+						     static_cast<uint64_t>(result.pid) } :
+				item_owner_identity{ item_owner_type::player,
+						     static_cast<uint64_t>(result.pid), 0 };
+		if (!player_load_item_graph_materialize_for_owner(
+			    pet, snapshot.items, identity.item_identities, owner_identity,
+			    identity.pet_uid ? identity.owner_revision : result.item_owner_revision,
+			    identity.pet_uid != 0, false, &item_metrics))
 		{
 			player_load_pets_discard(pets);
 			return fail(metrics, player_load_pet_materialize_outcome::item_failure);

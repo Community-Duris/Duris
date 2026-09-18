@@ -8,6 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "player/pet_restore_state.h"
 #include "player/player_snapshot_codec.h"
+#include <algorithm>
+#include <array>
 #include <cassert>
 #include <iostream>
 
@@ -58,6 +60,7 @@ int main()
     snapshot.pid = 42; snapshot.revision = 1; snapshot.components = PLAYER_COMPONENT_PETS;
     snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
     player_pet_snapshot pet = {};
+    pet.pet_uid = UINT64_C(0x123456789abcdef0);
     pet.mob_vnum = 1201; pet.max_hit = pet.hit = 50;
     pet.restore_state = encoded; pet.hold_reason = pet_hold_reason::over_capacity;
     snapshot.pets.push_back(pet);
@@ -66,9 +69,18 @@ int main()
     player_snapshot restored;
     assert(player_snapshot_decode(bytes.data(), bytes.size(), &restored) == player_snapshot_codec_result::ok);
     assert(restored.pets[0].restore_state == encoded);
+    assert(restored.pets[0].pet_uid == pet.pet_uid);
     assert(restored.pets[0].hold_reason == pet_hold_reason::over_capacity);
     snapshot.pets[0].restore_state.clear(); snapshot.pets[0].hold_reason = pet_hold_reason::none;
     assert(player_snapshot_encode(snapshot, &bytes) == player_snapshot_codec_result::ok);
+    // v7 added a stable pet UID before the pet's prototype. Remove it when
+    // constructing the legacy v1 checkpoint below.
+    constexpr std::array<uint8_t, 8> uid_bytes =
+        {0xf0, 0xde, 0xbc, 0x9a, 0x78, 0x56, 0x34, 0x12};
+    const auto uid_at = std::search(bytes.begin(), bytes.end(),
+                                    uid_bytes.begin(), uid_bytes.end());
+    assert(uid_at != bytes.end());
+    bytes.erase(uid_at, uid_at + uid_bytes.size());
     // v5 adds a trailing empty preferences string. Remove it to recover v3 first.
     bytes.resize(bytes.size() - 4);
     // v1 ended each pet immediately after its item vector; the trailing shapes,
@@ -78,6 +90,7 @@ int main()
     assert(player_snapshot_decode(bytes.data(), bytes.size(), &restored) == player_snapshot_codec_result::ok);
     assert(restored.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION);
     assert(restored.pets[0].restore_state.empty());
+    assert(restored.pets[0].pet_uid == 0);
     assert(restored.pets[0].hold_reason == pet_hold_reason::none);
     std::cout << "pet-state identity/stats/deadlines, malformed input, subtype costs and v1 checkpoint compatibility passed\n";
 }

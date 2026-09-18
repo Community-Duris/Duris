@@ -26,6 +26,7 @@ enum class pet_hold_reason : uint32_t
 	expired = 3,
 	over_capacity = 4,
 	missing_prototype = 5,
+	custody_pending = 6,
 };
 
 constexpr size_t PET_RESTORE_STATE_MAX_BYTES = 32768;
