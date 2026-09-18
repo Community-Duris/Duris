@@ -332,15 +332,7 @@ void displayLeader(P_char ch, char *arg, int /*cmd*/)
 			return;
 		}
 		zone_story_quest_runtime::remember_character(ch);
-		int zone = 0;
 		uint64_t page = 1;
-		remaining = one_argument(remaining, value);
-		if (*value)
-		{
-			zone = atoi(value);
-			if (zone < 0)
-				zone = 0;
-		}
 		remaining = one_argument(remaining, value);
 		if (*value)
 		{
@@ -351,7 +343,7 @@ void displayLeader(P_char ch, char *arg, int /*cmd*/)
 		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
 				    ch->desc->term_type != TERM_SKIP_ANSI;
 		std::string output = tracker->render_leaderboard(
-			zone_story_quest_runtime::current_season_id(), zone, page - 1,
+			zone_story_quest_runtime::current_season_id(), 0, page - 1,
 			MAX_LEADERBOARD_SIZE, static_cast<uint32_t>(GET_PID(ch)), colors);
 		page_string(ch->desc, output.data(), 1);
 		return;

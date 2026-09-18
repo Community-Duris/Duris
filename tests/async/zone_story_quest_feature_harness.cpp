@@ -26,7 +26,13 @@ zone_story_quest_tracking::quest_definition definition(const char *id, int zone)
 		 .active = true,
 		 .eligible_for_zone_completion = true,
 		 .repeatable = true,
-		 .content_revision = 7 };
+		 .content_revision = 7,
+		 .display_name = zone == 900 ? "Recover the harbor sigil" : "Carry the dusk message",
+		 .giver_name = zone == 900 ? "the harbor master" : "the dusk archivist",
+		 .zone_name = zone == 900 ? "The Ember Coast" : "The Dusk Archive",
+		 .objective = zone == 900 ? "Bring the lost sigil back to the harbor master."
+					 : "Deliver the sealed message to the dusk archivist.",
+	};
 }
 
 zone_story_quest_feature::completion_event completion(const char *txid, const char *quest, int zone,
@@ -132,17 +138,29 @@ int main()
 		"equal exact values did not share a rank");
 	const std::string leaderboard_output = tracker.render_leaderboard(7, 0, 0, 10, 42, true);
 	const std::string plain_leaderboard = tracker.render_leaderboard(7, 0, 0, 10, 42, false);
+	const std::string hidden_zone_leaderboard = tracker.render_leaderboard(7, 900, 0, 10, 42, false);
 	require(leaderboard_output.find("&+Y* ") != std::string::npos &&
-			leaderboard_output.find("(50%, exact)") != std::string::npos &&
+			leaderboard_output.find("50%") != std::string::npos &&
+			leaderboard_output.find("PID") == std::string::npos &&
+			leaderboard_output.find("900") == std::string::npos &&
 			plain_leaderboard.find("* #1") != std::string::npos &&
+			plain_leaderboard.find("full zones") == std::string::npos &&
+			hidden_zone_leaderboard == plain_leaderboard &&
 			plain_leaderboard.find('&') == std::string::npos,
-		"leaderboard output did not render highlight, percentage, or plain mode");
+		"leaderboard output did not enforce the worldwide player-facing format");
 
 	const std::string color_output = tracker.render_zone(7, 42, 900, "Alice", true);
 	const std::string plain_output = tracker.render_zone(7, 42, 900, "Alice", false);
 	require(color_output.find("&+") != std::string::npos &&
+			plain_output.find("The Ember Coast") != std::string::npos &&
+			plain_output.find("Zone 900") == std::string::npos &&
 			plain_output.find('&') == std::string::npos,
 		"achievement renderer did not honor color preference");
+	const std::string summary_output = tracker.render_summary(7, 42, "Alice", false);
+	require(summary_output.find("The Ember Coast") != std::string::npos &&
+			summary_output.find("The Dusk Archive") != std::string::npos &&
+			summary_output.find("Zone 900") == std::string::npos,
+		"personal achievement summary did not use proper area names");
 
 	daily_policy policy;
 	policy.enabled = true;
@@ -178,6 +196,17 @@ int main()
 	require(tracker.assign_daily(7, 42, 10, 1, daily_now, &error).quest_definition_id ==
 			assignment.quest_definition_id,
 		"daily assignment rerolled within a fixed period");
+	const std::string daily_score = tracker.render_daily_score(7, 42, 10, 1, daily_now, false);
+	require(daily_score.find("quest available") != std::string::npos &&
+			daily_score.find("Objective") == std::string::npos &&
+			daily_score.find("The Dusk Archive") == std::string::npos,
+		"score exposed more than the minimum daily reminder");
+	const std::string daily_detail = tracker.render_daily(7, 42, 10, 1, daily_now, false);
+	require(daily_detail.find("Carry the dusk message") != std::string::npos &&
+			daily_detail.find("The Dusk Archive") != std::string::npos &&
+			daily_detail.find("dusk archivist") != std::string::npos &&
+			daily_detail.find("completion_key") == std::string::npos,
+		"daily quest detail was not player-facing");
 
 	completion_event daily_completion = completion("tx-daily", "zone-story:901:002", 901, 42,
 						       assignment.assigned_at + 100, { 42 });
@@ -243,9 +272,9 @@ int main()
 	service disabled(catalog);
 	require(disabled.get_daily_policy().enabled == false,
 		"daily quests were not disabled by default");
-	require(disabled.render_daily(7, 42, 10, 1, daily_now, false).find("Disabled") !=
-			std::string::npos,
-		"disabled daily output was not explicit");
+	require(disabled.render_daily(7, 42, 10, 1, daily_now, false).empty() &&
+			disabled.render_daily_score(7, 42, 10, 1, daily_now, false).empty(),
+		"disabled daily output exposed the feature");
 	require(disabled.daily_for(7, 42, service::period_for(daily_now)).status ==
 			daily_status::none,
 		"disabled daily rendering created durable assignment state");

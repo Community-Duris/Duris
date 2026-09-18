@@ -3,6 +3,8 @@
 #include "core/structs.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <map>
 #include <set>
 #include <sstream>
@@ -12,6 +14,8 @@
 extern P_index mob_index;
 extern int number_of_quests;
 extern struct quest_data quest_index[];
+extern struct zone_data *zone_table;
+extern int top_of_zone_table;
 
 namespace zone_story_quest_production
 {
@@ -73,6 +77,82 @@ std::string goals_string(const std::vector<std::pair<char, int>> &goals)
 	}
 	return output.str();
 }
+
+std::string compact_player_text(const char *value)
+{
+	if (!value || !*value)
+		return {};
+	std::string output;
+	bool pending_space = false;
+	for (const unsigned char character : std::string_view(value))
+	{
+		if (std::isspace(character))
+		{
+			if (!output.empty())
+				pending_space = true;
+			continue;
+		}
+		if (pending_space && !output.empty())
+			output.push_back(' ');
+		pending_space = false;
+		output.push_back(static_cast<char>(character));
+	}
+	if (output.size() >= 2 && output.front() == '"' && output.back() == '"')
+		output = output.substr(1, output.size() - 2);
+	if (output.size() > 240)
+		output.resize(237), output += "...";
+	return output;
+}
+
+bool is_system_quest_message(const char *keywords)
+{
+	return keywords && (!std::strncmp(keywords, "qc_", 3) ||
+				   !std::strncmp(keywords, "QC_", 3));
+}
+
+std::string zone_name_for_number(int zone_number)
+{
+	if (!zone_table || top_of_zone_table < 0)
+		return {};
+	for (int index = 0; index <= top_of_zone_table; ++index)
+	{
+		if (zone_table[index].number == zone_number && zone_table[index].name)
+			return compact_player_text(zone_table[index].name);
+	}
+	return {};
+}
+
+std::string giver_name_for_index(int quester_rnum)
+{
+	if (quester_rnum < 0 || !mob_index)
+		return {};
+	const char *name = mob_index[quester_rnum].desc2;
+	if (!name || !*name)
+		name = mob_index[quester_rnum].keys;
+	return compact_player_text(name);
+}
+
+std::string objective_for_quest(const quest_data &quest, std::string_view giver_name)
+{
+	for (const quest_msg_data *message = quest.quest_message; message; message = message->next)
+	{
+		if (!message->message || !*message->message || is_system_quest_message(message->key_words))
+			continue;
+		const std::string text = compact_player_text(message->message);
+		if (!text.empty())
+			return text;
+	}
+	for (const quest_complete_data *completion = quest.quest_complete; completion;
+	     completion = completion->next)
+	{
+		const std::string text = compact_player_text(completion->message);
+		if (!text.empty())
+			return text;
+	}
+	if (!giver_name.empty())
+		return "Complete the request from " + std::string(giver_name) + ".";
+	return "Complete the assigned quest.";
+}
 } // namespace
 
 int zone_for_giver_vnum(int giver_vnum)
@@ -131,6 +211,12 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			definition.source_area = "runtime-qst";
 			definition.giver_vnum = giver_vnum;
 			definition.completion_key = encoded_key;
+			definition.giver_name = giver_name_for_index(quester_rnum);
+			definition.zone_name = zone_name_for_number(zone_number);
+			definition.display_name = definition.giver_name.empty() ?
+							  "Daily quest" :
+							  "A request from " + definition.giver_name;
+			definition.objective = objective_for_quest(quest_index[quest], definition.giver_name);
 			definition.active = true;
 			definition.eligible_for_zone_completion = true;
 			definition.repeatable = true;

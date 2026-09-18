@@ -2,9 +2,10 @@
 
 Daily zone-story quests are shipped disabled. The production default is
 `ZONE_STORY_DAILY_ENABLED` unset or false, so ordinary quest completion never
-awards daily renown and the player-facing daily section says that the feature
-is disabled. Activation is an explicit isolated-server configuration change
-after telemetry review; it is not a live rollout switch to enable casually.
+awards daily renown and ordinary players do not see a daily heading, disabled
+notice, or empty assignment. Activation is an explicit isolated-server
+configuration change after telemetry review; it is not a live rollout switch
+to enable casually.
 
 ## Evidence and policy
 
@@ -59,17 +60,25 @@ corrupt or stale state document.
 
 ## Player surfaces
 
-The daily section is separate from bartender/random quests and is visible from
-`quest daily`, the score output, and the quest help path. It includes the
-current renown total, assignment zone/giver/objective metadata, reward, and
-expiry. It is also shown when
-the legacy bartender quest command takes an early return. Player completion
-surfaces are:
+Daily output is separate from bartender/random quests and is rendered only
+when the feature is enabled and the character has a real assignment or
+committed renown. With the shipped default, `score`, `quest`, and `quest daily`
+are silent about the feature. When an assignment is present, `score` contains
+only a short reminder and the renown balance (when it is above zero); `quest`
+or `quest daily` contains the player-facing quest name, area name, giver name,
+objective, status, reset countdown, and `Reward: 1 renown`. Definition IDs,
+content revisions, completion keys, VNUMs, and numeric zone identifiers are
+never shown to players.
+
+Player completion surfaces are:
 
 * `achievements zones` for the overall personal summary;
-* `achievements zone <zone>` for a per-zone 25/50/75/100% milestone view;
-* `leaderboard quests [zone] [page]` for exact per-PID completion rankings;
+* `achievements zone <area>` for a private per-area 25/50/75/100% milestone view;
+* `leaderboard quests [page]` for the worldwide completion ranking;
 * `quest daily` for the assignment/status/reward section.
 
-Names are remembered by PID and offline rows render as `PID <number>` until a
-login or other authoritative identity refresh supplies the current name.
+The public leaderboard shows only top character names and their total
+worldwide quest-completion percentage. It has no area or quest breakdown.
+Area names and per-area totals appear only in the current character's private
+achievement view. Character names are remembered by PID for durable personal
+progress; an unknown name is displayed as `Unknown adventurer`, never as a PID.

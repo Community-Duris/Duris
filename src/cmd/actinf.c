@@ -6595,13 +6595,10 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		{
 			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
 					    ch->desc->term_type != TERM_SKIP_ANSI;
-			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
-			send_to_char(daily.c_str(), ch);
+			std::string daily = zone_story_quest_runtime::render_daily_score(ch, colors);
+			if (!daily.empty())
+				send_to_char(daily.c_str(), ch);
 		}
-		else
-			send_to_char(
-				"\r\nDaily zone-story quest: unavailable until catalog/persistence boot completes.\r\n",
-				ch);
 	}
 
 	if (IS_PC(ch))
