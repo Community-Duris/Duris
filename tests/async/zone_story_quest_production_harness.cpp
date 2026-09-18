@@ -8,6 +8,8 @@
 P_index mob_index;
 int number_of_quests = 0;
 struct quest_data quest_index[1];
+struct zone_data *zone_table = nullptr;
+int top_of_zone_table = -1;
 
 namespace
 {
@@ -26,6 +28,14 @@ int main()
 	index_data mobs[1] = {};
 	mob_index = mobs;
 	mobs[0].virtual_number = 17;
+	char mob_name[] = "the archivist";
+	mobs[0].desc2 = mob_name;
+	zone_data zones[1] = {};
+	char area_name[] = "The First Heavens";
+	zones[0].number = 1;
+	zones[0].name = area_name;
+	zone_table = zones;
+	top_of_zone_table = 0;
 
 	goal_data give{ .goal_type = QUEST_GOAL_ITEM, .number = 24402, .next = nullptr };
 	goal_data second_give{ .goal_type = QUEST_GOAL_ITEM, .number = 24404, .next = nullptr };
@@ -51,6 +61,11 @@ int main()
 		"runtime production catalog did not deduplicate identical Q blocks");
 	require(catalog.definitions[0].zone_number == 1 && catalog.definitions[0].giver_vnum == 17,
 		"low-vnum quester was not assigned to its valid zone");
+	require(catalog.definitions[0].giver_name == "the archivist" &&
+			catalog.definitions[0].zone_name == "The First Heavens" &&
+			!catalog.definitions[0].display_name.empty() &&
+			!catalog.definitions[0].objective.empty(),
+		"runtime catalog did not populate player-facing quest metadata");
 	require(zone_story_quest_production::bootstrap(1, &error),
 		"runtime production catalog failed to bootstrap");
 	require(zone_story_quest_production::ready(),

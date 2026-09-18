@@ -132,6 +132,7 @@ struct daily_assignment
 struct zone_progress
 {
 	int32_t zone_number = 0;
+	std::string zone_name;
 	uint64_t completed = 0;
 	uint64_t total = 0;
 	bool available = false;
@@ -215,6 +216,8 @@ class service
 				       bool colors = true) const;
 	std::string render_daily(uint32_t season_id, uint32_t pid, int level, int racewar,
 				 int64_t now, bool colors = true);
+	std::string render_daily_score(uint32_t season_id, uint32_t pid, int level, int racewar,
+				       int64_t now, bool colors = true);
 
 	std::string serialize_state(std::string *error = nullptr) const;
 	bool deserialize_state(std::string_view encoded, std::string *error = nullptr);
