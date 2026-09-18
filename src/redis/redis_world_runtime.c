@@ -18,6 +18,8 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#include <future>
 #include <new>
 #include <string>
 #include <strings.h>
@@ -57,6 +59,21 @@ uint64_t clean_shutdown_sequence = 0;
 uint64_t world_sequence_floor = 0;
 
 #ifndef __NO_REDIS__
+constexpr uint64_t WORLD_WRITER_LEASE_MSEC = 10 * 60 * 1000;
+constexpr std::array<unsigned int, 7> WORLD_WRITER_RETRY_SECONDS = { 1, 2, 4, 8, 16, 30, 60 };
+constexpr auto WORLD_DEGRADED_LOG_INTERVAL = std::chrono::seconds(60);
+bool world_writer_retryable = false;
+std::future<bool> world_writer_retry_future;
+std::string world_writer_retry_token;
+uint64_t world_writer_retry_epoch = 0;
+unsigned int world_writer_retry_failures = 0;
+std::chrono::steady_clock::time_point world_writer_retry_after;
+std::chrono::steady_clock::time_point world_degraded_log_after;
+const char *world_degraded_reason = "none";
+int64_t world_last_ack_time = 0;
+
+auto redis_world_recovery_ensure_initialized() -> bool;
+
 void redis_clear_world_authentication_secrets()
 {
 	std::fill(world_authentication_secret.begin(), world_authentication_secret.end(), '\0');
@@ -202,17 +219,17 @@ bool redis_reconnect()
 	return true;
 }
 
-bool redis_world_writer_token_create()
+bool redis_world_writer_token_create(std::string *token)
 {
 	unsigned char random[16] = {};
 	if (RAND_bytes(random, sizeof random) != 1)
 		return false;
 	static const char hex[] = "0123456789abcdef";
-	world_writer_token.resize(sizeof random * 2);
+	token->resize(sizeof random * 2);
 	for (size_t index = 0; index < sizeof random; ++index)
 	{
-		world_writer_token[index * 2] = hex[random[index] >> 4];
-		world_writer_token[index * 2 + 1] = hex[random[index] & 0x0f];
+		(*token)[index * 2] = hex[random[index] >> 4];
+		(*token)[index * 2 + 1] = hex[random[index] & 0x0f];
 	}
 	return true;
 }
@@ -226,12 +243,12 @@ bool redis_world_writer_fence_claim()
 						     world_writer_lease_msec);
 	}
 	world_writer_epoch = world_runtime_epoch;
-	if (!world_writer_epoch || !redis_world_writer_token_create())
+	if (!world_writer_epoch || !redis_world_writer_token_create(&world_writer_token))
 	{
 		world_writer_epoch = 0;
 		return false;
 	}
-	world_writer_lease_msec = 10 * 60 * 1000;
+	world_writer_lease_msec = WORLD_WRITER_LEASE_MSEC;
 	const redis_world_store_config config = redis_world_store_config_copy();
 	if (redis_world_store_claim_fence(&config, world_writer_token.c_str(),
 					  world_writer_lease_msec))
@@ -240,6 +257,123 @@ bool redis_world_writer_fence_claim()
 	world_writer_lease_msec = 0;
 	world_writer_epoch = 0;
 	return false;
+}
+
+void redis_world_writer_retry_schedule(const char *reason)
+{
+	world_writer_retryable = true;
+	world_degraded_reason = reason;
+	const size_t index = std::min<size_t>(world_writer_retry_failures,
+					      WORLD_WRITER_RETRY_SECONDS.size() - 1);
+	const unsigned int delay = WORLD_WRITER_RETRY_SECONDS[index];
+	if (world_writer_retry_failures < WORLD_WRITER_RETRY_SECONDS.size())
+		++world_writer_retry_failures;
+	world_writer_retry_after = std::chrono::steady_clock::now() + std::chrono::seconds(delay);
+	logit(LOG_SYS, "redis: world writer unavailable reason=%s retry_in=%us attempt=%u", reason,
+	      delay, world_writer_retry_failures);
+}
+
+void redis_world_writer_retry_cancel()
+{
+	world_writer_retryable = false;
+	if (world_writer_retry_future.valid())
+	{
+		const bool claimed = world_writer_retry_future.get();
+		if (claimed && !world_writer_retry_token.empty())
+		{
+			const redis_world_store_config config = redis_world_store_config_copy();
+			redis_world_store_release_fence(&config, world_writer_retry_token.c_str());
+			if (world_writer_token == world_writer_retry_token)
+			{
+				world_writer_token.clear();
+				world_writer_lease_msec = 0;
+				world_writer_epoch = 0;
+			}
+		}
+	}
+	world_writer_retry_token.clear();
+	world_writer_retry_epoch = 0;
+}
+
+void redis_world_writer_retry_pulse()
+{
+	if (!world_enabled || !world_writer_retryable || world_recovery_quiesced)
+		return;
+	if (world_writer_retry_future.valid())
+	{
+		if (world_writer_retry_future.wait_for(std::chrono::seconds(0)) !=
+		    std::future_status::ready)
+			return;
+		const bool claimed = world_writer_retry_future.get();
+		if (!claimed)
+		{
+			if (world_writer_token == world_writer_retry_token)
+			{
+				world_writer_token.clear();
+				world_writer_lease_msec = 0;
+				world_writer_epoch = 0;
+			}
+			world_writer_retry_token.clear();
+			world_writer_retry_epoch = 0;
+			redis_world_writer_retry_schedule("lease_contention_or_redis_unavailable");
+			return;
+		}
+		world_writer_token = std::move(world_writer_retry_token);
+		world_writer_epoch = world_writer_retry_epoch;
+		world_writer_lease_msec = WORLD_WRITER_LEASE_MSEC;
+		world_writer_retry_epoch = 0;
+		if ((!world_context || world_context->err) && !redis_reconnect())
+		{
+			redis_world_writer_retry_schedule("world_context_unavailable");
+			return;
+		}
+		world_writer_retryable = false;
+		if (!redis_world_recovery_ensure_initialized())
+		{
+			redis_world_writer_retry_schedule("pipeline_initialization_failed");
+			return;
+		}
+		world_writer_retry_failures = 0;
+		world_degraded_reason = "none";
+		redis_floor_runtime_set_quiesced(false);
+		logit(LOG_SYS,
+		      "redis: world writer lease recovered epoch=%llu; floor and world publication resumed",
+		      (unsigned long long)world_writer_epoch);
+		return;
+	}
+	if (std::chrono::steady_clock::now() < world_writer_retry_after)
+		return;
+	const bool renewing = !world_writer_token.empty();
+	if (renewing)
+		world_writer_retry_token = world_writer_token;
+	else if (!redis_world_writer_token_create(&world_writer_retry_token))
+	{
+		redis_world_writer_retry_schedule("token_generation_failed");
+		return;
+	}
+	world_writer_retry_epoch = world_runtime_epoch;
+	const redis_world_store_config config = redis_world_store_config_copy();
+	const std::string token = world_writer_retry_token;
+	try
+	{
+		world_writer_retry_future =
+			std::async(std::launch::async,
+				   [config, token, renewing]()
+				   {
+					   return renewing ? redis_world_store_renew_fence(
+								     &config, token.c_str(),
+								     WORLD_WRITER_LEASE_MSEC) :
+							     redis_world_store_claim_fence(
+								     &config, token.c_str(),
+								     WORLD_WRITER_LEASE_MSEC);
+				   });
+	}
+	catch (const std::exception &)
+	{
+		world_writer_retry_token.clear();
+		world_writer_retry_epoch = 0;
+		redis_world_writer_retry_schedule("retry_dispatch_failed");
+	}
 }
 
 bool redis_publish_world_generation(const unsigned char *data, size_t size,
@@ -257,7 +391,7 @@ bool redis_publish_world_generation(const unsigned char *data, size_t size,
 
 bool redis_world_recovery_ensure_initialized()
 {
-	if (world_recovery_quiesced)
+	if (world_recovery_quiesced || world_writer_retryable)
 		return false;
 	if (world_recovery_pipeline_health_copy().initialized)
 		return true;
@@ -559,6 +693,13 @@ bool redis_world_runtime_start(const redis_world_runtime_config *config)
 	world_floor_handoff_active = false;
 	clean_shutdown_sequence = 0;
 	world_sequence_floor = 0;
+	world_writer_retryable = false;
+	world_writer_retry_token.clear();
+	world_writer_retry_epoch = 0;
+	world_writer_retry_failures = 0;
+	world_degraded_log_after = std::chrono::steady_clock::time_point();
+	world_degraded_reason = "none";
+	world_last_ack_time = 0;
 	redis_clear_world_authentication_secrets();
 
 	world_context = redis_connection_open(world_connection);
@@ -623,16 +764,14 @@ bool redis_world_runtime_start(const redis_world_runtime_config *config)
 	{
 		if (world_enabled && !redis_world_writer_fence_claim())
 		{
-			world_recovery_quiesced = true;
 			redis_floor_runtime_set_quiesced(true);
-			logit(LOG_SYS,
-			      "redis: world publisher disabled; writer lease unavailable at boot");
+			redis_world_writer_retry_schedule("writer_lease_unavailable_at_boot");
 		}
 	}
 	else if (world_enabled)
 	{
-		world_recovery_quiesced = true;
 		redis_floor_runtime_set_quiesced(true);
+		redis_world_writer_retry_schedule("redis_unavailable_at_boot");
 	}
 	return true;
 #endif
@@ -641,6 +780,7 @@ bool redis_world_runtime_start(const redis_world_runtime_config *config)
 void redis_world_runtime_shutdown(bool pwipe)
 {
 #ifndef __NO_REDIS__
+	redis_world_writer_retry_cancel();
 	bool recovery_drained = true;
 	redis_floor_runtime_set_enabled(false);
 	redis_floor_runtime_set_quiesced(true);
@@ -730,7 +870,17 @@ bool redis_save_world_state(void)
 		return false;
 	if (!redis_world_recovery_ensure_initialized())
 	{
-		logit(LOG_SYS, "redis: world recovery worker unavailable");
+		const auto now = std::chrono::steady_clock::now();
+		if (now >= world_degraded_log_after)
+		{
+			const world_recovery_health health = world_recovery_pipeline_health_copy();
+			logit(LOG_SYS,
+			      "redis: world recovery worker unavailable reason=%s retry_attempts=%u last_ack_sequence=%llu last_ack_time=%lld",
+			      world_degraded_reason, world_writer_retry_failures,
+			      (unsigned long long)health.last_acknowledged_sequence,
+			      (long long)world_last_ack_time);
+			world_degraded_log_after = now + WORLD_DEGRADED_LOG_INTERVAL;
+		}
 		return false;
 	}
 	redis_world_recovery_pulse();
@@ -747,6 +897,7 @@ bool redis_save_world_state(void)
 void redis_world_recovery_pulse(void)
 {
 #ifndef __NO_REDIS__
+	redis_world_writer_retry_pulse();
 	if (!world_enabled || !world_recovery_pipeline_health_copy().initialized)
 		return;
 	bool barrier_succeeded = false;
@@ -776,9 +927,12 @@ void redis_world_recovery_pulse(void)
 		const world_recovery_health recovery = world_recovery_pipeline_health_copy();
 		if (completion.published &&
 		    completion.sequence == recovery.last_acknowledged_sequence)
+		{
+			world_last_ack_time = time(NULL);
 			logit(LOG_SYS,
 			      "redis: world recovery generation and floor handoff acknowledged sequence=%llu attempts=%u",
 			      (unsigned long long)completion.sequence, completion.attempts);
+		}
 		else if (!completion.published)
 			logit(LOG_SYS,
 			      "redis: world recovery generation publish failed sequence=%llu attempts=%u",
@@ -820,6 +974,7 @@ bool redis_world_recovery_quiesce(void)
 	return true;
 #else
 	world_recovery_quiesced = true;
+	redis_world_writer_retry_cancel();
 	redis_floor_runtime_set_quiesced(true);
 	redis_floor_store_cancel();
 	world_floor_barrier_waiting = false;
