@@ -96,6 +96,7 @@ bool flatfile_shopkeeper_save_dirty(const std::string &root, int64_t saved_at, s
 			continue;
 		}
 		shop_index[shop_id].dirty = 0;
+		shopkeeper_save_retry_reset(&shop_index[shop_id].dirty_save_retry);
 	}
 	return complete;
 }

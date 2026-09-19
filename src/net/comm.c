@@ -2537,6 +2537,27 @@ resume_game_loop:
 		_autoboot = 0;
 		goto resume_game_loop;
 	}
+	if (!_pwipe && !save_dirty_shopkeepers(true))
+	{
+		/* Dirty shopkeeper state is authoritative inventory.  Do not extract
+		 * characters or tear down services while a forced save is unresolved. */
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		player_save_pipeline_resume();
+		persistence_alert(AVATAR, "shopkeeper_save", "shutdown", "none", "none",
+				  "dirty_save_failed", "shutdown_cancelled=1");
+		shutdownData.eShutdownType = TimedShutdownData::NONE;
+		for (P_desc pending_desc = descriptor_list; pending_desc;
+		     pending_desc = pending_desc->next)
+			if (pending_desc->descriptor > 0 && pending_desc->connected == CON_PLAYING)
+				write_to_descriptor(
+					pending_desc,
+					"\r\nShutdown cancelled because shopkeeper inventory could not be saved.\r\n");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
 
 	PROFILES(SAVE);
 #ifdef DO_PROFILE
@@ -2546,7 +2567,6 @@ resume_game_loop:
 	// Don't want to save stuff just after we wiped all the tables in SQL.
 	if (!_pwipe)
 	{
-		save_dirty_shopkeepers();
 		flush_pending_ship_saves();
 		locker_async_drain(2000);
 

@@ -1976,6 +1976,7 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	}
 
 	bzero(mob->only.npc, sizeof(npc_only_data));
+	mob->only.npc->shopkeeper_shop_id = -1;
 
 	/* insert in list */
 	mob->next = character_list;

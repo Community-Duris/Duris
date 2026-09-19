@@ -34,6 +34,8 @@
 #include "player/pet_restore_runtime.h"
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
+#include "redis/redis_world_runtime.h"
+#include "persistence/copyover.h"
 #include "combat/damage.h"
 #include "combat/training_dummy.h"
 #include "net/gmcp.h"
@@ -1604,7 +1606,10 @@ bool char_to_room(P_char ch, int room, int dir)
 			}
 	/* too much money in your hands? Didn't have it in a bag? shame...  */
 	total_coins = GET_COPPER(ch) + GET_SILVER(ch) + GET_GOLD(ch) + GET_PLATINUM(ch);
-	if (total_coins > 200 && !IS_TRUSTED(ch))
+	// Recovery placement is not movement: spilling freshly generated NPC cash
+	// here creates new coin piles before the captured floor ledger is restored.
+	if (!is_copyover_boot() && !redis_world_recovery_boot_active() && total_coins > 200 &&
+	    !IS_TRUSTED(ch))
 	{
 		do
 		{
