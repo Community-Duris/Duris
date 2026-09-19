@@ -178,6 +178,8 @@ test-db:
 	tests/async/run_lookup_dataset_mysql.sh
 	tests/async/run_runtime_compatibility_mysql.sh
 	tests/async/run_legacy_migration_mysql.sh
+	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mysql:8.0
+	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mariadb:11.4
 
 clean:
 	+$(MAKE) -C src clean
