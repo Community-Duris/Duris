@@ -316,6 +316,12 @@ class Guild
 	/* Change-making debit in copper. Prefer this for any charge whose size is
 	 * computed rather than authored -- sub_money() cannot make change. */
 	bool sub_copper(long amount);
+	/* Put back exactly what a sub_copper() of the same amount took, when the
+	 * thing it paid for could not be done (kingdom build). Like sub_copper()
+	 * it does NOT save -- the caller persists the guild with the rest of its
+	 * change -- and it ledgers the credit as one line. False, changing
+	 * nothing, if a coin counter would wrap. */
+	bool add_copper(long amount);
 
 	void challenge(P_char member, P_char victim);
 	void deposit(P_char member, int p, int g, int s, int c);

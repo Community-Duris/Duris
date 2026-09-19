@@ -285,6 +285,24 @@ struct kingdom_config
 	 * hunt for a legal seat. */
 	int min_hometown_distance = 5;
 	int min_entrance_distance = 5;
+	/* What `kingdom build` charges the TREASURY, in copper, for one workshop
+	 * (the forge, the loom or the jeweller) and for the guild store. Ruled
+	 * 2026-09-15: 20,000 platinum each, the room included, paid from the
+	 * treasury like every other kingdom purchase and never from a purse. */
+	long station_cost = 20000000;
+	long store_cost = 20000000;
+	/* The guild store's two scales on the approved curve, PER MILLE: 1000 is
+	 * the curve as designed, 2000 doubles it, 0 makes it free. The formulas
+	 * themselves, and what the scales multiply, are written out in
+	 * kingdom_craft_math.h. */
+	int craft_price_permille = 1000;
+	int craft_resource_permille = 1000;
+	/* What a store piece is worth in a shop's ledger, PER MILLE of its
+	 * purchase price: the shipped 100 is a tenth of what it cost. Store gear
+	 * is ordinary property (ruled 2026-09-16) -- given, looted and sold like
+	 * anything else -- and 0 makes it worthless, as it was while it was
+	 * soulbound. */
+	int craft_resale_permille = 100;
 };
 extern kingdom_config kingdom_cfg;
 void kingdom_config_load(void);
@@ -365,6 +383,13 @@ long kingdom_ring_cost(int ring);
 bool kingdom_convert_guild(struct char_data *ch);
 bool kingdom_claim_next(struct char_data *ch);
 bool kingdom_abandon_last(struct char_data *ch);
+/* Write a realm whose record changed while no TREASURY moved: an abandon, or
+ * a guild-store purchase or its reversal, whose platinum comes from a
+ * member's purse and goes nowhere. Keeps the pending rule -- a realm with a
+ * paired payment still pending is left dirty for kingdom_upkeep_retry_pending()
+ * and never published alone. True when the record is on disk; false has been
+ * logged and leaves the realm dirty for the next flush. */
+bool kingdom_persist_realm(kingdom_realm &realm);
 
 /* --- kingdom_upkeep.c : the periodic charge and the arrears ladder --- */
 long kingdom_upkeep_due(const kingdom_realm &realm);
@@ -460,6 +485,28 @@ void kingdom_roster_champion(struct char_data *ch, char *rest);
  * 2026-09-05). Levels never move: promotion stays one-way. */
 void kingdom_roster_respec(struct char_data *ch, char *rest);
 void kingdom_roster_champion_respec(struct char_data *ch, char *rest);
+
+/* --- kingdom_craft.c : the works -- forge, loom, jeweller, guild store --- *
+ * Each work IS a guildhall room of its own type in the realm's MAIN hall
+ * (GH_ROOM_TYPE_FORGE .. GH_ROOM_TYPE_GUILDSTORE, guild/guildhall.h), and
+ * nothing else records that it exists. */
+#define KINGDOM_WORKS_COUNT 4
+/* The word for a work's room type ("forge", "loom", "jeweller", "store"). */
+const char *kingdom_works_name(int type);
+/* The room type a player's word names, or 0. Prefixes count. */
+int kingdom_works_type_by_name(const char *word);
+/* True for the three workshops, false for the store. */
+bool kingdom_works_is_workshop(int type);
+/* True when `hall` holds a room of `type`. */
+bool kingdom_works_hall_has(const Guildhall *hall, int type);
+/* The works standing in the guild's main hall, as a mask of (1u << type). */
+unsigned kingdom_works_built(int assoc_id);
+/* "forge, loom and store" for a mask from kingdom_works_built(); "" for none. */
+void kingdom_works_describe(unsigned built, char *out, size_t out_len);
+/* `kingdom build <work> <direction>`. Lives in kingdom_claim.c with the other
+ * leader-only verbs that spend the treasury and persist the guild and the
+ * realm as one paired write. */
+void kingdom_build_work(struct char_data *ch, char *rest);
 
 /* --- kingdom_harvest.c : world harvest nodes and the realm resource store --- */
 bool kingdom_nodes_dormant(const kingdom_realm &realm);
