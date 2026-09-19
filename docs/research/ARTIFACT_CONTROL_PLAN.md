@@ -210,8 +210,8 @@ Keep safety and computational limits outside unrestricted content control. Rejec
   "placementRefs": ["poseidon-tsunami"],
   "behaviorPolicy": {
     "player": "legacy",
-    "wildNpc": "telegraphic",
-    "playerControlledNpc": "player-policy",
+    "wildNpc": "legacy",
+    "playerControlledNpc": "legacy",
     "onHolderChange": "cancel-and-resolve"
   },
   "variants": {
@@ -221,6 +221,11 @@ Keep safety and computational limits outside unrestricted content control. Rejec
   "resourceProfile": "tsunami-shared-v1"
 }
 ```
+
+The initial rollout keeps every holder policy on `legacy`, including controlled
+NPCs. A later telegraphic experiment must change one explicit artifact and
+holder policy in a reviewed draft; registering a telegraphic adapter does not
+activate it by itself.
 
 The named profiles must be defined and validated; this example intentionally supplies no unapproved production mana budget. A variant can share an engine with another variant when only configuration differs. Where a semantic retune exists, such as sword drain or lawful ioun redirection, expose that distinction explicitly instead of claiming all modes differ only in their messages.
 
@@ -278,7 +283,11 @@ Provide read-only builder access, balance editing rights, placement/lifecycle ri
 | 6. Admin authoring | Stage/preview/validate/publish, effective view, history, role controls; extend the Studio contract for supported data. | Atomic publication and restart persistence; exact operator-visible change reports; private editor work verified separately. |
 | 7. Controlled expansion | Qualify pilot families, then migrate remaining callbacks individually. | Complete effect contract, measurement, and recovery evidence for each added family. Placeholder tokens gain no invented powers. |
 
-Do not block the first useful delivery on all 169 templates. Start with Tsunami for active powers and holder policy, Avernus for passive compatibility, mirrored ioun for interception, then necroplasm/swords for stateful cleanup. Complete one end-to-end path before expanding the catalog's scope.
+Do not block the first useful delivery on all 169 templates. Keep the shipped
+catalog legacy-only, then start an explicit telegraphic canary with Tsunami for
+active powers and holder policy, Avernus for passive compatibility, mirrored
+ioun for interception, and then necroplasm/swords for stateful cleanup.
+Complete one end-to-end path before expanding the catalog's scope.
 
 ### Required verification for implementation
 

@@ -14,6 +14,12 @@ Necroplasm (67243). The source inventory and compatibility report remain in
 legacy callbacks until an adapter is explicitly registered; they are not
 silently assigned a modern implementation.
 
+The shipped catalog revision keeps every player, wild-NPC, and controlled-NPC
+holder on `legacy`. Telegraphic adapters are available for explicit canary
+testing, but no pilot selects them by default. A telegraphic rollout therefore
+requires a deliberate `setmode` draft, preview, review, and publish for the
+specific artifact and holder class being tested.
+
 ## Runtime administration
 
 After boot, a Forger or higher can use the existing `artifact` command with the
@@ -75,6 +81,7 @@ python3 scripts/artifactctl.py --catalog lib/artifacts/catalog.json validate
 python3 scripts/artifactctl.py --catalog lib/artifacts/catalog.json status
 python3 scripts/artifactctl.py --catalog lib/artifacts/catalog.json list tsunami
 python3 scripts/artifactctl.py --catalog lib/artifacts/catalog.json inspect 31514
+# Explicit canary opt-in; the shipped catalog remains legacy for every holder.
 python3 scripts/artifactctl.py --catalog lib/artifacts/catalog.json set-mode 31514 player telegraphic
 python3 scripts/artifactctl.py --catalog lib/artifacts/catalog.json publish
 ```
@@ -102,8 +109,9 @@ rolled-back request/result smoke test.
 3. In-game, stage the same change and use `preview`; or import the reviewed
    CLI draft. Record the reason and the expected revision in the change review.
 4. Publish once. Confirm `artifact control status` reports the new revision and
-   hash, then exercise one legacy and one telegraphic holder path where both
-   are enabled.
+   hash. The baseline path is legacy for every holder; exercise a telegraphic
+   holder path only when the draft explicitly opts that artifact and holder
+   into the canary.
 5. If the candidate is wrong, restore the previous values in a new draft and
    publish a new revision. Do not edit an old revision in place and do not
    reset artifact bind data as part of a mode change.

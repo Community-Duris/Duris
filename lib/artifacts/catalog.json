@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1,
-  "hash": "5966e6ca0f6018d3",
+  "revision": 2,
+  "hash": "6ffca26e302fedc9",
   "definitions": [
     {
       "id": "mayhem",
@@ -104,7 +104,7 @@
       "loadMob": 32420,
       "loadSlot": -1,
       "enabled": true,
-      "holderPolicy": {"player": "telegraphic", "wildNpc": "legacy", "controlledNpc": "telegraphic"},
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
       "variants": {
         "legacy": {"adapter": "native.avernus"},
         "telegraphic": {"adapter": "item.weapon_actions.avernus"}
@@ -132,7 +132,7 @@
       "loadMob": 31528,
       "loadSlot": 17,
       "enabled": true,
-      "holderPolicy": {"player": "legacy", "wildNpc": "telegraphic", "controlledNpc": "legacy"},
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
       "variants": {
         "legacy": {"adapter": "native.SeaKingdom_Tsunami"},
         "telegraphic": {"adapter": "item.tsunami_actions"}
@@ -188,7 +188,7 @@
       "loadMob": 26642,
       "loadSlot": -1,
       "enabled": true,
-      "holderPolicy": {"player": "telegraphic", "wildNpc": "legacy", "controlledNpc": "telegraphic"},
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
       "variants": {
         "legacy": {"adapter": "native.living_necroplasm"},
         "telegraphic": {"adapter": "item.necroplasm_actions"}

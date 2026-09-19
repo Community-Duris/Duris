@@ -12,23 +12,28 @@ int main(int argc, char **argv)
 	assert(artifact_control::catalog_load_file(argv[1], &loaded, &diagnostics));
 	assert(loaded.definitions.size() == 7);
 	assert(loaded.hash == artifact_control::catalog_hash(loaded));
+	assert(loaded.revision == 2);
 
 	std::string error;
 	assert(artifact_control::control_initialize(argv[1], &error));
-	assert(artifact_control::control_status().active_revision == 1);
+	assert(artifact_control::control_status().active_revision == 2);
 	assert(artifact_control::control_set_variant(31514, artifact_control::holder_kind::player,
 						     "telegraphic", &error) ==
 	       artifact_control::control_result::ok);
 	assert(artifact_control::control_status().dirty);
 	const auto *active_before_publish =
 		artifact_control::catalog_find(artifact_control::control_catalog(), 31514);
-	assert(active_before_publish && active_before_publish->player_variant == "legacy");
+	assert(active_before_publish && active_before_publish->player_variant == "legacy" &&
+	       active_before_publish->wild_npc_variant == "legacy" &&
+	       active_before_publish->controlled_npc_variant == "legacy");
 	assert(artifact_control::control_publish(&error));
 	assert(!artifact_control::control_status().dirty);
-	assert(artifact_control::control_status().active_revision == 2);
+	assert(artifact_control::control_status().active_revision == 3);
 	const auto *active_after_publish =
 		artifact_control::catalog_find(artifact_control::control_catalog(), 31514);
-	assert(active_after_publish && active_after_publish->player_variant == "telegraphic");
+	assert(active_after_publish && active_after_publish->player_variant == "telegraphic" &&
+	       active_after_publish->wild_npc_variant == "legacy" &&
+	       active_after_publish->controlled_npc_variant == "legacy");
 
 	assert(artifact_control::control_set_enabled(31514, false, &error) ==
 	       artifact_control::control_result::ok);

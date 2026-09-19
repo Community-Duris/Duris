@@ -2,6 +2,11 @@
 
 Proposed behavior, not currently available commands. Implements R03–R07 and R09–R10 in [the specification](ARTIFACT_CONTROL_SPEC.md). All examples use fictional revisions/request IDs and must be tested on disposable game state before operational use.
 
+The shipped pilot catalog is legacy-only by default for every player, wild-NPC,
+and controlled-NPC holder. The telegraphic examples below describe explicit
+canary drafts and do not imply that the modern adapter is active in the baseline
+revision.
+
 ## 1. Permissions and common behavior
 
 Default permissions map to existing ranks: `LESSER_G` (59) can inspect definitions/status and view nonsecret diagnostics; `GREATER_G` (60) can create/edit/validate drafts; `FORGER` (61) can publish/rollback, spawn, pin instance modes, and perform typed lifecycle repairs. A greater-god's existing `artifact timer` right is retained through the compatibility command bridge. Account/character checks must reject NPC impersonation, untrusted script invocation, and authority lost while a menu is open. Recheck permission on every mutation and asynchronous commit; draft creation does not permanently grant publish rights.
@@ -37,9 +42,9 @@ Requirements:
 ARTIFACT CONTROL                         Applied r42 | SQL healthy
 Search: [all]                            169 definitions | page 1/15
  VNUM   Name                     Type     Player       Wild NPC
- 31514  Tsunami                   unique   legacy       telegraphic
- 19730  Avernus                   major    telegraphic  legacy
-   922  Mirrored ioun             ioun     reworked     reworked
+ 31514  Tsunami                   unique   legacy       legacy
+ 19730  Avernus                   major    legacy       legacy
+   922  Mirrored ioun             ioun     legacy       legacy
 
 [1] Browse/search    [2] My drafts       [3] Publications
 [4] Live instances   [5] Health/audit    [6] Import baseline
@@ -53,7 +58,7 @@ Mode labels come from actual supported variant IDs. Mirrored ioun's revised mode
 ```text
 ARTIFACT / Tsunami #31514                 LIVE r42
 Category: unique       Family: tsunami    World limit: 1
-Player: legacy         Wild NPC: telegraphic
+Player: legacy         Wild NPC: legacy
 Source: seakngdm.obj    Powers: 2 migrated, native hum retained
 Placement: Poseidon #31528 -> room #31722, equipped slot 17
 Chance: 50% effective   Reset: boot only   Existing item: UID 851002

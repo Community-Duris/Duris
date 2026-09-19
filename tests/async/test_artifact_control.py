@@ -29,7 +29,14 @@ def main() -> int:
     assert result.returncode == 0, result.stderr
     source = json.loads(CATALOG.read_text(encoding="utf-8"))
     assert len(source["definitions"]) == 7
-    assert artifactctl.catalog_hash(source) == "5966e6ca0f6018d3"
+    assert source["revision"] == 2
+    assert artifactctl.catalog_hash(source) == "6ffca26e302fedc9"
+    for definition in source["definitions"]:
+        assert definition["holderPolicy"] == {
+            "player": "legacy",
+            "wildNpc": "legacy",
+            "controlledNpc": "legacy",
+        }
 
     with tempfile.TemporaryDirectory(prefix="artifact-control-") as directory:
         root = Path(directory)
@@ -50,7 +57,7 @@ def main() -> int:
         published = run("--catalog", str(active), "publish")
         assert published.returncode == 0, published.stderr
         active_value = artifactctl.load(active)
-        assert active_value["revision"] == 2
+        assert active_value["revision"] == 3
         assert active_value["definitions"][4]["holderPolicy"]["player"] == "telegraphic"
         assert active_value["hash"] == artifactctl.catalog_hash(active_value)
 

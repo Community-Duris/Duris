@@ -59,7 +59,9 @@ reset evidence so later migrations can be reviewed individually.
   Avernus, and wand of wonder. Disabling a catalog definition suppresses both
   modes. A `legacy` holder returns to the existing callback; a `telegraphic`
   holder reaches the compiled adapter. A failed modern admission does not spend
-  another random roll by falling through to legacy.
+  another random roll by falling through to legacy. The shipped revision keeps
+  every player, wild-NPC, and controlled-NPC policy on `legacy`; telegraphic is
+  an explicit per-artifact/per-holder canary choice.
 * Named power enablement is enforced at the adapter boundary. `powerLevel`
   currently feeds the necroplasm transformation, wand-of-wonder selection,
   Avernus drain cap, and sword combat selection. Chance, cooldown, windup, and
@@ -72,9 +74,10 @@ reset evidence so later migrations can be reviewed individually.
 
 1. Run the CLI validator against the exact catalog intended for a staging boot.
    In-game, inspect the same vnums and holder policies before publishing.
-2. Confirm the properties required by the modern pilot are valid and enabled for
-   the staging holder. Exercise one legacy player/NPC path and one telegraphic
-   path for each supported adapter, including transfer, cancellation, and power
+2. Confirm the properties required by the modern pilot are valid while every
+   holder remains on the shipped legacy baseline. Select one artifact and one
+   holder class for an explicit telegraphic canary, then exercise that path
+   alongside the legacy path, including transfer, cancellation, and power
    suppression.
 3. Publish one small revision at a time. Record the revision/hash and retain the
    previous catalog for a new-revision rollback. A variant edit does not recall
