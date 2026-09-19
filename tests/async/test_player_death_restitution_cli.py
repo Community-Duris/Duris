@@ -8,6 +8,7 @@ import json
 import hashlib
 import os
 from pathlib import Path
+import struct
 import subprocess
 import tempfile
 import unittest
@@ -42,6 +43,22 @@ def payload_item(uid: int, parent_index: int, vnum: int = 100) -> dict[str, obje
         "vnum": vnum,
         "item_payload_hex": "00",
     }
+
+
+def snapshot_item_payload(equipment_slot: int = 0) -> bytes:
+    """Build the minimal valid one-item snapshot-list codec payload."""
+    payload = bytearray(struct.pack(
+        "<IihQqibB", 1, -1, equipment_slot, 100, 0, 677, 5, 0
+    ))
+    payload.extend(struct.pack("<4I", 0, 0, 0, 0))
+    payload.extend(struct.pack("<8i", *([0] * 8)))
+    payload.extend(struct.pack("<6q", *([0] * 6)))
+    payload.extend(struct.pack("<5I", *([0] * 5)))
+    payload.extend(struct.pack("<ibihh", 1, 1, 1, 100, 0))
+    payload.extend(struct.pack("<5Q", *([0] * 5)))
+    payload.extend(struct.pack("<8h", *([0] * 8)))
+    payload.extend(struct.pack("<2I", 0, 0))
+    return bytes(payload)
 
 
 class RestitutionCliTests(unittest.TestCase):
@@ -592,7 +609,9 @@ class RestitutionCliTests(unittest.TestCase):
         }
         self.assertEqual(cli.item_kind(unique, {}), "unique")
 
-    def test_strict_native_comparison_rejects_changed_or_truncated_ist1(self) -> None:
+    def test_exact_runtime_comparison_accepts_snapshot_projection_and_rejects_changes(self) -> None:
+        snapshot = snapshot_item_payload()
+        self.assertEqual(len(snapshot), 225)
         metadata = {
             "object_uid": 100,
             "vnum": 677,
@@ -613,11 +632,11 @@ class RestitutionCliTests(unittest.TestCase):
             "condition": 100,
             "affects": [],
             "extra_descriptions": [],
-            "item_payload_hex": "00",
+            "item_payload_hex": snapshot.hex(),
         }
         native = cli._native_item_state_payload(metadata, 100, 0)
         self.assertEqual(native[:6], b"IST1\x01\x00")
-        metadata_digest = hashlib.sha256(b"\x00").hexdigest()
+        metadata_digest = hashlib.sha256(snapshot).hexdigest()
         row = {
             "item_uid": 100,
             "eligible": True,
@@ -625,7 +644,7 @@ class RestitutionCliTests(unittest.TestCase):
             "vnum": 677,
             "metadata": metadata,
             "metadata_digest": metadata_digest,
-            "metadata_payload_hex": "00",
+            "metadata_payload_hex": snapshot.hex(),
             "source_root_item_uid": 100,
             "source_parent_item_uid": 0,
             "source_item_revision": 11,
@@ -650,7 +669,7 @@ class RestitutionCliTests(unittest.TestCase):
         }
         delivery = [{
             "item_uid": 100, "metadata_digest": metadata_digest,
-            "original_payload_hex": "00", "delivered_item_id": 900,
+            "original_payload_hex": snapshot.hex(), "delivered_item_id": 900,
         }]
         player = {
             "id": 900, "pid": 42, "vnum": 677, "equip_slot": 0,
@@ -684,6 +703,21 @@ class RestitutionCliTests(unittest.TestCase):
                 db, plan, policy=None,
             )
             self.assertTrue(ok, failures)
+            snapshot_runtime = cli._snapshot_runtime_state_payload(metadata)
+            self.assertIsNotNone(snapshot_runtime)
+            with mock.patch.object(cli, "fetch_runtime_state", return_value={
+                "100": snapshot_runtime.hex(),
+            }):
+                ok, _, failures = cli.verify_plan(db, plan, policy=None)
+            self.assertTrue(ok, failures)
+            changed_snapshot = bytearray(snapshot_runtime)
+            changed_snapshot[10] ^= 1  # approved object UID must remain exact
+            with mock.patch.object(cli, "fetch_runtime_state", return_value={
+                "100": bytes(changed_snapshot).hex(),
+            }):
+                ok, _, failures = cli.verify_plan(db, plan, policy=None)
+            self.assertFalse(ok)
+            self.assertIn("exact runtime metadata payload differs", failures)
             changed = bytearray(native)
             changed[24] ^= 1
             for label, payload in (("changed-field", bytes(changed)), ("truncated", native[:-1])):

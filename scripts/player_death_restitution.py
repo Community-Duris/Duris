@@ -2281,6 +2281,34 @@ def validate_staff_approval(actor: str, reason: str) -> tuple[str, str]:
     return actor, reason
 
 
+def _snapshot_runtime_state_payload(metadata: Mapping[str, Any]) -> bytes | None:
+    """Project the approved one-item snapshot into the post-save sidecar form.
+
+    ``player_snapshot_repository.c`` rewrites a delivered runtime companion on
+    a normal player save as a detached one-item snapshot: the snapshot codec's
+    parent index is ``PLAYER_SNAPSHOT_NO_PARENT`` and its equipment slot is
+    ``-1``.  The native bridge already emits a detached payload, but it keeps
+    the captured equipment slot in that payload.  Keep every other byte exact;
+    this is a representation projection, not metadata normalization.
+    """
+    payload = _native_hex(
+        metadata.get("item_payload_hex"),
+        "snapshot item payload",
+        maximum=NATIVE_MAX_ORIGINAL_PAYLOAD_BYTES,
+    )
+    # A valid item_payload_hex is produced by the native snapshot codec as a
+    # one-item list.  The fixed portion is 225 bytes before variable strings,
+    # dynamic affects, and extra descriptions. Non-snapshot test/legacy
+    # payloads have no post-save projection and remain covered by the native
+    # IST1 alternative below.
+    if len(payload) < 225 or payload[:4] != struct.pack("<I", 1):
+        return None
+    projected = bytearray(payload)
+    projected[4:8] = struct.pack("<i", -1)
+    projected[8:10] = struct.pack("<h", -1)
+    return bytes(projected)
+
+
 def _native_item_state_payload(metadata: Mapping[str, Any], item_uid: int,
                                planned_equipment_slot: int) -> bytes:
     """Encode one snapshot item into the native IST1 projection format."""
@@ -4228,14 +4256,18 @@ def verify_plan(
             expected_descriptions.add((key_bytes, text_bytes))
         if descriptions.get(uid, set()) != expected_descriptions:
             failures.append("item extra descriptions differ")
-        # The offline writer stores the captured snapshot-list bytes, while
-        # native delivery projects the same evidence into IST1.  Accept only
-        # either exact encoding of the approved metadata, never a header-only
-        # or digest-only approximation of the current runtime state.
+        # The offline writer stores the captured snapshot-list bytes. Native
+        # delivery stores IST1. A normal player save rewrites the companion as
+        # a detached one-item snapshot (parent=-1, equipment=-1). Accept only
+        # those exact full-byte encodings; never a header or digest shortcut.
         native_delivery_hex = _native_item_state_payload(
             item, uid, int_value(row.get("equipment_slot", 0), "equipment slot", -32768, 32767)
         ).hex()
-        if runtimes.get(key) not in (item["item_payload_hex"], native_delivery_hex):
+        snapshot_runtime = _snapshot_runtime_state_payload(item)
+        accepted_runtime_payloads = {item["item_payload_hex"], native_delivery_hex}
+        if snapshot_runtime is not None:
+            accepted_runtime_payloads.add(snapshot_runtime.hex())
+        if runtimes.get(key) not in accepted_runtime_payloads:
             failures.append("exact runtime metadata payload differs")
         if row.get("kind") == "artifact":
             receipt_timing = receipt_item_rows.get(key)
