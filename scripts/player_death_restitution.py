@@ -273,6 +273,15 @@ def row_value(row: list[str], index: int) -> str | None:
     return row[index]
 
 
+def row_nullable_hex(row: list[str], index: int) -> str | None:
+    # mysql batch output uses NULL; some adapters use \N. This normalization
+    # is safe only for HEX() columns: literal text "NULL" is encoded 4e554c4c.
+    value = row_value(row, index)
+    if value is None or value in ("NULL", ""):
+        return None
+    return hex_bytes(value, "nullable hexadecimal metadata").hex()
+
+
 def row_int(row: list[str], index: int, label: str, default: int | None = None) -> int | None:
     value = row_value(row, index)
     if value is None:
@@ -4027,10 +4036,10 @@ def fetch_player_rows(db: Mysql, pid: int, uids: Iterable[int]) -> dict[str, dic
             "timer": row_int(row, 8, "timer", 0), "extra_flags": row_int(row, 9, "extra flags", 0),
             "wear_flags": row_int(row, 10, "wear flags", 0), "type": row_int(row, 11, "item type", 0),
             "values": [row_int(row, index, "item value", 0) for index in range(12, 20)],
-            "name_hex": (row_value(row, 20) or "").lower() or None,
-            "short_description_hex": (row_value(row, 21) or "").lower() or None,
-            "description_hex": (row_value(row, 22) or "").lower() or None,
-            "action_description_hex": (row_value(row, 23) or "").lower() or None,
+            "name_hex": row_nullable_hex(row, 20),
+            "short_description_hex": row_nullable_hex(row, 21),
+            "description_hex": row_nullable_hex(row, 22),
+            "action_description_hex": row_nullable_hex(row, 23),
             "bitvectors": [row_int(row, index, "item bitvector", 0) if row_value(row, index) is not None else None
                            for index in range(24, 29)],
             "material": row_int(row, 29, "item material", 0),

@@ -88,6 +88,17 @@ class RestitutionCliTests(unittest.TestCase):
         process_inventory.assert_called_once_with()
         self.assertEqual(len(db.queries), 7)
 
+    def test_nullable_hex_readback_distinguishes_sql_null_from_literal_text(self) -> None:
+        row = ["1"] * 32
+        row[20:24] = ["NULL", r"\N", "", "4E554C4C"]
+        db = mock.Mock()
+        db.run.return_value = [row]
+        item = cli.fetch_player_rows(db, 1, [1])["1"]
+        self.assertIsNone(item["name_hex"])
+        self.assertIsNone(item["short_description_hex"])
+        self.assertIsNone(item["description_hex"])
+        self.assertEqual(item["action_description_hex"], "4e554c4c")
+
     def test_quiescence_rejects_transient_writer_sample(self) -> None:
         db = ScalarDB(["1", "0", "1"])
         with self.assertRaisesRegex(cli.ToolError, "active database writers"):
