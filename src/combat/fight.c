@@ -45,6 +45,7 @@
 #include "classes/dreadlord.h"
 #include "world/epic.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "net/gmcp.h"
 #include "world/hardcore_config.h"
 #include "combat/grapple.h"
@@ -8370,6 +8371,8 @@ void set_fighting(P_char ch, P_char vict)
 	GET_OPPONENT(ch) = victim;
 	ch->specials.next_fighting = combat_list;
 	combat_list = ch;
+	world_activity_promote_character(ch);
+	world_activity_promote_character(victim);
 	telemetry_combat_context_changed(ch);
 	(void)telemetry_runtime_game_encounter_begin(
 		ch, IS_PC(victim) ? telemetry_encounter_mode::pvp : telemetry_encounter_mode::pve);

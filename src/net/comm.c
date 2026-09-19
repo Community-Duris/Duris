@@ -24,6 +24,7 @@
 #include "net/command_latency.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -2341,6 +2342,10 @@ void game_loop(int port, int sslport)
 		reconcile_shopkeepers(copyover_boot != 0);
 		initialize_transport();
 	}
+
+	/* Rebuild once after boot/recovery so delayed work never depends on stale
+	 * room, corpse, or character indexes from a prior process. */
+	world_activity_rebuild();
 
 	PROFILES(RESET);
 #ifdef DO_PROFILE

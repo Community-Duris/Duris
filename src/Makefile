@@ -222,6 +222,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/epic_skills.o \
 				 classes/ethermancer.o \
 				 world/events.o \
+				 world/world_activity.o \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \

@@ -17,6 +17,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <ctype.h>
@@ -2736,7 +2737,7 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	if (!mobile_probe_mode)
 	{
 		// All mobs do mundane things.
-		add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
+		world_activity_schedule_mundane(mob, false, true);
 		// ACT_SPEC mobs with specials proc check CMD_SET_PERIODIC.
 		if (IS_SET(mob->specials.act, ACT_SPEC))
 		{
