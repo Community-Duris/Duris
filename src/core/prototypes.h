@@ -845,7 +845,7 @@ int real_object0(const int);
 int real_room(const int);
 int real_room0(const int);
 int writePet(P_char);
-int writeShopKeeper(P_char);
+int writeShopKeeper(P_char, int shop_nr);
 void MemReport(void);
 void boot_db(int);
 void boot_pose_messages(void);
@@ -1343,6 +1343,7 @@ void char_from_room(P_char);
 bool char_to_room(P_char, int, int);
 void equip_char(P_char, P_obj, int, int);
 void extract_char(P_char);
+void hold_durable_pet_items(P_char);
 extern uint64_t character_removal_generation;
 void extract_char_after_terminal_save(P_char);
 void extract_obj(P_obj obj,
@@ -2308,7 +2309,7 @@ void show_stats_to_char(P_char ch);
 
 P_obj accept_gem_for_debt(P_char, P_char, int);
 void restore_shopkeepers(void);
-void save_dirty_shopkeepers(void);
+bool save_dirty_shopkeepers(bool force = false);
 void push(struct stack_data *stack, int pushval);
 int topp(struct stack_data *stack);
 int pop(struct stack_data *stack);

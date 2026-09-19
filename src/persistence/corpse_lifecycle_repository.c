@@ -4,6 +4,7 @@
 #include "economy/collector_repository.h"
 #include "economy/currency_repository.h"
 #include "item/item_transfer_repository.h"
+#include "player/pet_restore_state.h"
 #include "world/vnum.obj.h"
 
 #include <algorithm>
@@ -267,8 +268,8 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<phys
 		{
 			if (!ids.insert(item.id).second || item.parent_id == item.id ||
 			    (item.parent_id && !find_physical(*items, item.parent_id)) ||
-			    (!item.skipped &&
-			     (!item.item_uid || !uids.insert(item.item_uid).second)))
+			    (!item.money_item && !item.transient && !item.item_uid) ||
+			    (item.item_uid && !uids.insert(item.item_uid).second))
 			{
 				*result_code = EILSEQ;
 				return true;
@@ -283,12 +284,13 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<phys
 
 	for (physical_item &item : *items)
 	{
-		if (item.skipped)
+		if (item.money_item || (item.transient && !item.item_uid))
 			continue;
 		const physical_item *current = &item;
 		for (size_t depth = 0; depth <= items->size(); ++depth)
 		{
-			if (current->skipped)
+			if (current->money_item || !current->item_uid ||
+			    (!item.transient && current->transient))
 			{
 				*result_code = EILSEQ;
 				return true;
@@ -313,7 +315,8 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<phys
 		if (item.parent_id)
 		{
 			const physical_item *parent = find_physical(*items, item.parent_id);
-			if (!parent || parent->skipped || !parent->item_uid)
+			if (!parent || parent->money_item || !parent->item_uid ||
+			    (!item.transient && parent->transient))
 			{
 				*result_code = EILSEQ;
 				return true;
@@ -347,18 +350,34 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<phys
 
 bool build_transfer_entries(MYSQL *connection, uint64_t corpse_owner_id,
 			    std::vector<physical_item> *physical, item_transfer_payload *transfer,
-			    bool for_update, unsigned int *result_code)
+			    item_transfer_payload *transient_transfer, bool for_update,
+			    unsigned int *result_code)
 {
 	std::vector<item_transfer_entry> entries;
+	std::vector<item_transfer_entry> transient_entries;
+	std::vector<item_transfer_entry> expected;
 	try
 	{
 		entries.reserve(physical->size());
+		transient_entries.reserve(physical->size());
 		for (const physical_item &item : *physical)
 			if (!item.skipped)
 				entries.push_back({ item.item_uid, item.root_item_uid,
 						    item.parent_item_uid, 0, item.vnum,
 						    item_custody_state::active });
+			else if (transient_transfer && item.transient && item.item_uid)
+				transient_entries.push_back({ item.item_uid, item.root_item_uid,
+							      item.parent_item_uid, 0, item.vnum,
+							      item_custody_state::active });
 		std::sort(entries.begin(), entries.end(),
+			  [](const item_transfer_entry &left, const item_transfer_entry &right)
+			  { return left.item_uid < right.item_uid; });
+		std::sort(transient_entries.begin(), transient_entries.end(),
+			  [](const item_transfer_entry &left, const item_transfer_entry &right)
+			  { return left.item_uid < right.item_uid; });
+		expected = entries;
+		expected.insert(expected.end(), transient_entries.begin(), transient_entries.end());
+		std::sort(expected.begin(), expected.end(),
 			  [](const item_transfer_entry &left, const item_transfer_entry &right)
 			  { return left.item_uid < right.item_uid; });
 	}
@@ -383,7 +402,7 @@ bool build_transfer_entries(MYSQL *connection, uint64_t corpse_owner_id,
 		errno = static_cast<int>(mysql_errno(connection));
 		return false;
 	}
-	if (mysql_num_rows(rows) != entries.size())
+	if (mysql_num_rows(rows) != expected.size())
 	{
 		mysql_free_result(rows);
 		*result_code = ESTALE;
@@ -395,19 +414,41 @@ bool build_transfer_entries(MYSQL *connection, uint64_t corpse_owner_id,
 	{
 		uint64_t uid = 0, root = 0, parent = 0, revision = 0, state = 0;
 		int32_t vnum = 0;
-		if (index >= entries.size() || !parse_u64(row[0], &uid) ||
+		if (index >= expected.size() || !parse_u64(row[0], &uid) ||
 		    !parse_u64(row[1], &root) || !parse_u64(row[2], &parent) ||
 		    !parse_u64(row[3], &revision) || !parse_i32(row[4], &vnum) ||
-		    !parse_u64(row[5], &state) || uid != entries[index].item_uid ||
-		    root != entries[index].root_item_uid ||
-		    parent != entries[index].parent_item_uid || vnum != entries[index].vnum ||
+		    !parse_u64(row[5], &state) || uid != expected[index].item_uid ||
+		    root != expected[index].root_item_uid ||
+		    parent != expected[index].parent_item_uid || vnum != expected[index].vnum ||
 		    state != static_cast<uint8_t>(item_custody_state::active) || !revision)
 		{
 			mysql_free_result(rows);
 			*result_code = ESTALE;
 			return true;
 		}
-		entries[index].expected_item_revision = revision;
+		item_transfer_entry *entry = nullptr;
+		auto primary =
+			std::lower_bound(entries.begin(), entries.end(), uid,
+					 [](const item_transfer_entry &candidate, uint64_t value)
+					 { return candidate.item_uid < value; });
+		if (primary != entries.end() && primary->item_uid == uid)
+			entry = &*primary;
+		else
+		{
+			auto transient = std::lower_bound(
+				transient_entries.begin(), transient_entries.end(), uid,
+				[](const item_transfer_entry &candidate, uint64_t value)
+				{ return candidate.item_uid < value; });
+			if (transient != transient_entries.end() && transient->item_uid == uid)
+				entry = &*transient;
+		}
+		if (!entry)
+		{
+			mysql_free_result(rows);
+			*result_code = EILSEQ;
+			return true;
+		}
+		entry->expected_item_revision = revision;
 		physical_item *item = nullptr;
 		for (physical_item &candidate : *physical)
 			if (candidate.item_uid == uid)
@@ -432,6 +473,12 @@ bool build_transfer_entries(MYSQL *connection, uint64_t corpse_owner_id,
 	}
 	transfer->item_count = static_cast<uint16_t>(entries.size());
 	std::copy(entries.begin(), entries.end(), transfer->items.begin());
+	if (transient_transfer)
+	{
+		transient_transfer->item_count = static_cast<uint16_t>(transient_entries.size());
+		std::copy(transient_entries.begin(), transient_entries.end(),
+			  transient_transfer->items.begin());
+	}
 	return true;
 }
 
@@ -537,9 +584,16 @@ bool prepare_transfer(const corpse_lifecycle_payload &payload, uint64_t corpse_o
 			      0 };
 		break;
 	case corpse_lifecycle_action::raise_follower:
-		transfer->to_owner = { item_owner_type::player, payload.destination_player_pid, 0 };
-		transfer->reason = item_transfer_reason::corpse_loot;
-		transfer->expected_to_revision = payload.expected_player_revision;
+		transfer->to_owner =
+			payload.pet_uid ?
+				item_owner_identity{ item_owner_type::pet, payload.pet_uid,
+						     payload.destination_player_pid } :
+				item_owner_identity{ item_owner_type::player,
+						     payload.destination_player_pid, 0 };
+		transfer->reason = payload.pet_uid ? item_transfer_reason::corpse_raise_pet :
+						     item_transfer_reason::corpse_loot;
+		transfer->expected_to_revision = payload.pet_uid ? 0 :
+								   payload.expected_player_revision;
 		break;
 	case corpse_lifecycle_action::release_nested:
 		transfer->to_owner =
@@ -567,7 +621,8 @@ bool prepare_transfer(const corpse_lifecycle_payload &payload, uint64_t corpse_o
 	// for every corpse-to-player custody boundary.  The lifecycle command only
 	// needs the identity fields here; materialization remains owned by this
 	// repository and the item repository never mutates the legacy corpse rows.
-	if (transfer->reason == item_transfer_reason::corpse_loot)
+	if (transfer->reason == item_transfer_reason::corpse_loot ||
+	    transfer->reason == item_transfer_reason::corpse_raise_pet)
 	{
 		transfer->corpse.present = true;
 		transfer->corpse.room_vnum = payload.room_vnum;
@@ -602,9 +657,10 @@ bool prepare_physical_destination(MYSQL *connection, const corpse_lifecycle_payl
 			uids += (uids.empty() ? "" : ",") + std::to_string(item.item_uid);
 	if (!uids.empty())
 	{
-		const std::string table = transfer.to_owner.type == item_owner_type::player ?
-						  "player_items" :
-						  "saved_items";
+		const std::string table =
+			transfer.to_owner.type == item_owner_type::player ? "player_items" :
+			transfer.to_owner.type == item_owner_type::pet	  ? "player_pet_items" :
+									    "saved_items";
 		if (!execute(connection, "SELECT obj_uid FROM " + table + " WHERE obj_uid IN (" +
 						 uids + ") FOR UPDATE"))
 			return false;
@@ -620,6 +676,23 @@ bool prepare_physical_destination(MYSQL *connection, const corpse_lifecycle_payl
 		{
 			*result_code = EEXIST;
 			return true;
+		}
+		if (transfer.to_owner.type == item_owner_type::pet)
+		{
+			if (!execute(connection, "SELECT obj_uid FROM player_items WHERE "
+						 "obj_uid IN (" +
+							 uids + ") FOR UPDATE"))
+				return false;
+			rows = mysql_store_result(connection);
+			if (!rows)
+				return false;
+			const bool player_duplicate = mysql_num_rows(rows) != 0;
+			mysql_free_result(rows);
+			if (player_duplicate)
+			{
+				*result_code = EEXIST;
+				return true;
+			}
 		}
 	}
 	if (!payload.target_parent_item_uid)
@@ -740,6 +813,57 @@ bool escape_text(MYSQL *connection, const char *text, size_t length, std::string
 	}
 }
 
+bool create_raised_pet_row(MYSQL *connection, const corpse_lifecycle_payload &payload,
+			   uint32_t *pet_row_id, unsigned int *result_code)
+{
+	*pet_row_id = 0;
+	if (!payload.pet_uid)
+		return true;
+	if (!execute(connection, "SELECT COALESCE(MAX(pet_order),-1)+1 FROM player_pets "
+				 "WHERE owner_pid=" +
+					 std::to_string(payload.destination_player_pid) +
+					 " FOR UPDATE"))
+		return false;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	MYSQL_ROW row = rows ? mysql_fetch_row(rows) : nullptr;
+	uint32_t order = 0;
+	const bool valid = row && parse_u32(row[0], &order) && order < 16;
+	if (rows)
+		mysql_free_result(rows);
+	if (!valid)
+	{
+		*result_code = EOVERFLOW;
+		return true;
+	}
+	std::string escaped;
+	if (!escape_text(connection, payload.pet_restore_state.data(),
+			 payload.pet_restore_state.size(), &escaped))
+		return false;
+	const std::string sql =
+		"INSERT INTO player_pets(owner_pid,pet_uid,mob_vnum,pet_order,hit,max_hit,"
+		"mana,max_mana,vitality,max_vitality,charm_duration,room_vnum,saved_at,"
+		"restore_state,hold_reason) VALUES (" +
+		std::to_string(payload.destination_player_pid) + "," +
+		std::to_string(payload.pet_uid) + "," + std::to_string(payload.pet_mob_vnum) + "," +
+		std::to_string(order) + "," + std::to_string(payload.pet_hit) + "," +
+		std::to_string(payload.pet_max_hit) + "," + std::to_string(payload.pet_mana) + "," +
+		std::to_string(payload.pet_max_mana) + "," + std::to_string(payload.pet_vitality) +
+		"," + std::to_string(payload.pet_max_vitality) + "," +
+		std::to_string(payload.pet_charm_duration) + "," +
+		std::to_string(payload.room_vnum) + ",NOW(),'" + escaped + "'," +
+		std::to_string(static_cast<unsigned>(pet_hold_reason::none)) + ")";
+	if (!execute(connection, sql))
+		return false;
+	const uint64_t inserted = mysql_insert_id(connection);
+	if (!inserted || inserted > UINT32_MAX)
+	{
+		errno = ERANGE;
+		return false;
+	}
+	*pet_row_id = static_cast<uint32_t>(inserted);
+	return true;
+}
+
 bool prepare_wallet(MYSQL *connection, const corpse_lifecycle_payload &payload,
 		    const std::array<int32_t, 4> &corpse_money, wallet_plan *plan,
 		    unsigned int *result_code)
@@ -858,14 +982,20 @@ owner_lock *find_owner_lock(std::vector<owner_lock> *locks, const item_owner_ide
 
 bool lock_transfer_owners(MYSQL *connection, item_transfer_payload *transfer,
 			  const item_owner_identity &old_room,
-			  const corpse_lifecycle_payload &payload, std::vector<owner_lock> *locks,
-			  unsigned int *result_code)
+			  const corpse_lifecycle_payload &payload, bool include_destruction,
+			  std::vector<owner_lock> *locks, unsigned int *result_code)
 {
 	try
 	{
 		locks->clear();
 		locks->push_back({ transfer->from_owner, 0 });
 		locks->push_back({ transfer->to_owner, 0 });
+		if (payload.pet_uid)
+			locks->push_back(
+				{ { item_owner_type::player, payload.destination_player_pid, 0 },
+				  0 });
+		if (include_destruction && transfer->to_owner.type != item_owner_type::destruction)
+			locks->push_back({ { item_owner_type::destruction, 0, 0 }, 0 });
 		if (old_room.type != item_owner_type::unknown)
 			locks->push_back({ old_room, 0 });
 		std::sort(locks->begin(), locks->end(),
@@ -894,10 +1024,16 @@ bool lock_transfer_owners(MYSQL *connection, item_transfer_payload *transfer,
 			return false;
 	owner_lock *source = find_owner_lock(locks, transfer->from_owner);
 	owner_lock *destination = find_owner_lock(locks, transfer->to_owner);
+	owner_lock *player = payload.pet_uid ?
+				     find_owner_lock(locks, { item_owner_type::player,
+							      payload.destination_player_pid, 0 }) :
+				     nullptr;
 	owner_lock *room = old_room.type == item_owner_type::unknown ?
 				   nullptr :
 				   find_owner_lock(locks, old_room);
 	if (!source || !destination || destination->revision != transfer->expected_to_revision ||
+	    (payload.pet_uid &&
+	     (!player || player->revision != payload.expected_player_revision)) ||
 	    (room && room->revision != payload.expected_room_revision))
 	{
 		*result_code = ESTALE;
@@ -1021,10 +1157,16 @@ bool apply_artifacts(MYSQL *connection, const corpse_lifecycle_payload &payload,
 	return true;
 }
 
-bool copy_related_rows(MYSQL *connection, bool player, uint32_t source_id, uint32_t target_id)
+bool copy_related_rows(MYSQL *connection, item_owner_type owner_type, uint32_t source_id,
+		       uint32_t target_id)
 {
-	const std::string affects = player ? "player_item_affects" : "saved_item_affects";
-	const std::string extra = player ? "player_item_extra_descr" : "saved_item_extra_descr";
+	const std::string affects = owner_type == item_owner_type::pet ? "player_pet_item_affects" :
+				    owner_type == item_owner_type::player ? "player_item_affects" :
+									    "saved_item_affects";
+	const std::string extra =
+		owner_type == item_owner_type::pet    ? "player_pet_item_extra_descr" :
+		owner_type == item_owner_type::player ? "player_item_extra_descr" :
+							"saved_item_extra_descr";
 	return execute(connection,
 		       "INSERT INTO " + affects + "(item_id,location,modifier) SELECT " +
 			       std::to_string(target_id) +
@@ -1040,11 +1182,18 @@ bool copy_related_rows(MYSQL *connection, bool player, uint32_t source_id, uint3
 bool materialize_items(MYSQL *connection, const critical_command &command,
 		       const corpse_lifecycle_payload &payload,
 		       const item_transfer_payload &transfer,
-		       const std::vector<physical_item> &items, uint32_t external_parent_id)
+		       const std::vector<physical_item> &items, uint32_t external_parent_id,
+		       uint32_t pet_row_id)
 {
 	if (transfer.to_owner.type == item_owner_type::destruction)
 		return true;
 	const bool player = transfer.to_owner.type == item_owner_type::player;
+	const bool pet = transfer.to_owner.type == item_owner_type::pet;
+	if (pet != (pet_row_id != 0))
+	{
+		errno = EINVAL;
+		return false;
+	}
 	std::unordered_map<uint32_t, uint32_t> mapped;
 	std::unordered_set<uint32_t> completed;
 	try
@@ -1080,7 +1229,24 @@ bool materialize_items(MYSQL *connection, const critical_command &command,
 				parent_id = external_parent_id;
 			const std::string parent = parent_id ? std::to_string(parent_id) : "NULL";
 			std::string sql;
-			if (player)
+			if (pet)
+			{
+				sql = "INSERT INTO player_pet_items(pet_id,vnum,equip_slot,"
+				      "container_id,weight,cost,timer,extra_flags,wear_flags,"
+				      "item_type,value0,value1,value2,value3,value4,value5,value6,"
+				      "value7,name,short_descr,description,action_descr,bitvector1,"
+				      "bitvector2,bitvector3,bitvector4,bitvector5,obj_uid,"
+				      "item_condition,item_material) SELECT " +
+				      std::to_string(pet_row_id) + ",vnum,0," + parent + "," +
+				      std::to_string(item.adjusted_weight) +
+				      ",cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
+				      "value2,value3,value4,value5,value6,value7,name,short_descr,"
+				      "description,action_descr,bitvector1,bitvector2,bitvector3,"
+				      "bitvector4,bitvector5,obj_uid,item_condition,item_material "
+				      "FROM corpse_items WHERE id=" +
+				      std::to_string(item.id);
+			}
+			else if (player)
 			{
 				sql = "INSERT INTO player_items(pid,vnum,equip_slot,container_id,quantity,"
 				      "weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
@@ -1116,7 +1282,7 @@ bool materialize_items(MYSQL *connection, const critical_command &command,
 				return false;
 			const uint64_t inserted = mysql_insert_id(connection);
 			if (!inserted || inserted > UINT32_MAX ||
-			    !copy_related_rows(connection, player, item.id,
+			    !copy_related_rows(connection, transfer.to_owner.type, item.id,
 					       static_cast<uint32_t>(inserted)))
 			{
 				errno = inserted > UINT32_MAX ? ERANGE : EIO;
@@ -1207,13 +1373,17 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 		return true;
 
 	std::vector<physical_item> physical;
+	item_transfer_payload transient_transfer = {};
 	std::array<int32_t, 4> corpse_money = {};
 	if (!load_physical_items(connection, identity.id, &physical, &corpse_money, result_code))
 		return false;
 	if (*result_code)
 		return true;
-	if (!build_transfer_entries(connection, corpse_owner_id, &physical, &transfer, false,
-				    result_code))
+	if (!build_transfer_entries(connection, corpse_owner_id, &physical, &transfer,
+				    payload.action == corpse_lifecycle_action::raise_follower ?
+					    &transient_transfer :
+					    nullptr,
+				    false, result_code))
 		return false;
 	if (*result_code)
 		return true;
@@ -1246,12 +1416,63 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 		return rollback_domain(connection);
 
 	std::vector<owner_lock> owners;
-	if (!lock_transfer_owners(connection, &transfer, old_room, payload, &owners, result_code))
+	if (!lock_transfer_owners(connection, &transfer, old_room, payload,
+				  transient_transfer.item_count != 0, &owners, result_code))
 		return false;
 	if (*result_code)
 		return rollback_domain(connection);
-	if (!build_transfer_entries(connection, corpse_owner_id, &physical, &transfer, true,
-				    result_code))
+	uint32_t pet_row_id = 0;
+	if (!create_raised_pet_row(connection, payload, &pet_row_id, result_code))
+		return false;
+	if (*result_code)
+		return rollback_domain(connection);
+	item_transfer_result transient_result = {};
+	if (transient_transfer.item_count)
+	{
+		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+		owner_lock *source = find_owner_lock(&owners, transfer.from_owner);
+		owner_lock *destination = find_owner_lock(&owners, destruction);
+		if (!source || !destination)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		transient_transfer.from_owner = transfer.from_owner;
+		transient_transfer.to_owner = destruction;
+		transient_transfer.reason = item_transfer_reason::destruction;
+		transient_transfer.reason_id = transfer.reason_id;
+		transient_transfer.multi_root = true;
+		transient_transfer.expected_from_revision = source->revision;
+		transient_transfer.expected_to_revision = destination->revision;
+		critical_command transient_command = {};
+		if (!item_transfer_command_build(&transient_command, command.operation_id,
+						 transient_transfer, command.source_site,
+						 command.deadline_class))
+		{
+			*result_code = EILSEQ;
+			return rollback_domain(connection);
+		}
+		transient_command.accepted_at_usec = command.accepted_at_usec;
+		bool transient_mutation = false;
+		if (!item_transfer_repository_execute(connection, transient_command,
+						      &transient_result, result_code,
+						      &transient_mutation))
+			return false;
+		if (*result_code)
+			return rollback_domain(connection);
+		if (!transient_mutation)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		source->revision = transient_result.from_owner_revision;
+		destination->revision = transient_result.to_owner_revision;
+		transfer.expected_from_revision = source->revision;
+		if (item_owner_identity_equal(transfer.to_owner, destruction))
+			transfer.expected_to_revision = destination->revision;
+	}
+	if (!build_transfer_entries(connection, corpse_owner_id, &physical, &transfer, nullptr,
+				    true, result_code))
 		return false;
 	if (*result_code)
 		return rollback_domain(connection);
@@ -1268,8 +1489,9 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 		}
 		item_command.accepted_at_usec = command.accepted_at_usec;
 		bool item_mutation = false;
-		if (!item_transfer_repository_execute(connection, item_command, &transfer_result,
-						      result_code, &item_mutation))
+		if (!item_transfer_repository_execute_at_offset(
+			    connection, item_command, transient_transfer.item_count,
+			    &transfer_result, result_code, &item_mutation))
 			return false;
 		if (*result_code)
 			return rollback_domain(connection);
@@ -1302,8 +1524,8 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	if (*result_code)
 		return rollback_domain(connection);
 	if (!apply_artifacts(connection, payload, artifacts) ||
-	    !materialize_items(connection, command, payload, transfer, physical,
-			       external_parent_id) ||
+	    !materialize_items(connection, command, payload, transfer, physical, external_parent_id,
+			       pet_row_id) ||
 	    !finish_corpse(connection, identity, catalog_revision) ||
 	    !execute(connection, "RELEASE SAVEPOINT corpse_lifecycle_domain"))
 		return false;
@@ -1315,10 +1537,24 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	result->corpse_owner_revision = transfer_result.from_owner_revision;
 	result->max_item_revision = transfer_result.max_item_revision;
 	result->item_count = transfer_result.item_count;
+	if (transient_transfer.item_count)
+	{
+		result->destruction_owner_revision = transient_result.to_owner_revision;
+		result->max_discarded_item_revision = transient_result.max_item_revision;
+		result->discarded_item_count = transient_result.item_count;
+	}
 	result->collector_catalog_changed = !collector_events->empty();
 	if (transfer.to_owner.type == item_owner_type::player)
 	{
 		result->player_owner_revision = transfer_result.to_owner_revision;
+		result->wallet_revision = currency.wallet_revision;
+		result->bank_revision = currency.bank_revision;
+		for (size_t index = 0; index < result->wallet.size(); ++index)
+			result->wallet[index] = static_cast<int32_t>(currency.wallet.amount[index]);
+	}
+	else if (transfer.to_owner.type == item_owner_type::pet)
+	{
+		result->pet_owner_revision = transfer_result.to_owner_revision;
 		result->wallet_revision = currency.wallet_revision;
 		result->bank_revision = currency.bank_revision;
 		for (size_t index = 0; index < result->wallet.size(); ++index)

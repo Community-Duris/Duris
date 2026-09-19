@@ -309,25 +309,74 @@ bool reconcile_item_ownership(const std::string &root, player_load_result *resul
 		return false;
 	}
 	uint64_t next_database_id = 1;
+	size_t pet_owned_count = 0;
+	size_t pet_materialized_count = 0;
 	if (!build_item_identities(&result->snapshot.items, owned, owner, owner_revision,
 				   &next_database_id, &consumed, &result->item_identities, result))
 		goto invalid;
 	for (size_t index = 0; index < result->snapshot.pets.size(); ++index)
 	{
-		result->pet_identities[index].database_id = index + 1;
-		if (!build_item_identities(&result->snapshot.pets[index].items, owned, owner,
-					   owner_revision, &next_database_id, &consumed,
-					   &result->pet_identities[index].item_identities, result))
+		const uint64_t pet_uid = result->snapshot.pets[index].pet_uid;
+		const item_owner_identity pet_owner =
+			pet_uid ? item_owner_identity{ item_owner_type::pet, pet_uid,
+						       static_cast<uint64_t>(result->pid) } :
+				  owner;
+		uint64_t pet_revision = owner_revision;
+		std::unordered_map<uint64_t, flatfile_item_ownership_record> pet_owned;
+		if (pet_uid)
+		{
+			std::vector<flatfile_item_ownership_record> pet_records;
+			const auto read = flatfile_item_repository_load_owner_locked(
+				root, authority, pet_owner, &pet_revision, &pet_records, &error);
+			if (read != flatfile_item_repository_result::ok)
+			{
+				result->outcome =
+					read == flatfile_item_repository_result::io_error ?
+						player_load_outcome::retryable_failure :
+						player_load_outcome::component_failure;
+				result->error_code =
+					read == flatfile_item_repository_result::io_error ? EIO :
+											    EILSEQ;
+				result->failed_component = "pet_ownership";
+				return false;
+			}
+			pet_owned_count += pet_records.size();
+			try
+			{
+				for (const auto &record : pet_records)
+					if (!pet_owned.emplace(record.item_uid, record).second)
+						goto invalid;
+			}
+			catch (const std::bad_alloc &)
+			{
+				result->outcome = player_load_outcome::retryable_failure;
+				result->error_code = ENOMEM;
+				result->failed_component = "pet_ownership";
+				return false;
+			}
+		}
+		auto &identity = result->pet_identities[index];
+		identity.database_id = index + 1;
+		identity.pet_uid = pet_uid;
+		identity.owner_revision = pet_revision;
+		if (!build_item_identities(&result->snapshot.pets[index].items,
+					   pet_uid ? pet_owned : owned, pet_owner, pet_revision,
+					   &next_database_id, &consumed, &identity.item_identities,
+					   result))
 			goto invalid;
+		if (pet_uid)
+			pet_materialized_count += identity.item_identities.size();
 	}
-	if (consumed.size() > records.size())
+	if (consumed.size() > records.size() + pet_owned_count ||
+	    pet_materialized_count > consumed.size())
 		goto invalid;
 	// An ownership record whose payload item is gone cannot be rebuilt, but it must not
 	// refuse the load either. Preserve it for explicit operator repair; snapshot saves are
 	// not allowed to rewrite authoritative custody.
-	result->missing_payload_rows = records.size() - consumed.size();
+	result->missing_payload_rows = records.size() + pet_owned_count - consumed.size();
 	result->item_owner_revision = owner_revision;
-	result->authoritative_item_count = consumed.size();
+	result->authoritative_item_count = consumed.size() - pet_materialized_count;
+	result->authoritative_pet_item_count = pet_materialized_count;
 	return true;
 
 invalid:

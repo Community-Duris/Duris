@@ -27,11 +27,11 @@ def function(source, signature):
 def main():
     source = (ROOT / 'src/persistence/copyover.c').read_text()
     header = (ROOT / 'src/persistence/copyover.h').read_text()
-    assert '#define COPYOVER_VERSION 15' in header
+    assert '#define COPYOVER_VERSION 16' in header
     recover = source[source.index('int copyover_recover('):]
-    for version in (12, 13, 14):
-        assert f'header.version != {version}' in recover
-    assert 'header.version == COPYOVER_VERSION' in recover
+    assert 'copyover_version_supported(header.version)' in recover
+    assert 'version >= 12 && version <= COPYOVER_VERSION' in source
+    assert 'header.version >= 15' in recover
     assert recover.index('read_telemetry_copyover_state(') < recover.index('restore_telemetry_copyover_sessions(')
     wire_types = source[source.index('constexpr char TELEMETRY_COPYOVER_MAGIC'):source.index('} // namespace', source.index('constexpr char TELEMETRY_COPYOVER_MAGIC'))]
     signatures = (

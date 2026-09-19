@@ -528,12 +528,14 @@ bool load_bank(MYSQL *connection, const player_load_request &request, player_loa
 
 bool load_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::collector)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::pet)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
 	if (owner.type == item_owner_type::collector)
 		return owner.id != 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::pet)
+		return owner.id != 0 && owner.context_id != 0 && owner.context_id <= INT32_MAX;
 	return owner.id != 0;
 }
 
@@ -548,7 +550,8 @@ enum class item_row_outcome
 
 /** Parse one saved payload, distinguishing authoritative, stale, and invalid rows. */
 item_row_outcome parse_item_payload(MYSQL_ROW row, player_load_result *result,
-				    player_item_snapshot *item, player_load_item_identity *identity)
+				    player_item_snapshot *item, player_load_item_identity *identity,
+				    uint64_t pet_uid = 0)
 {
 	if (!row || !result || !item || !identity)
 		return item_row_outcome::invalid;
@@ -671,9 +674,13 @@ item_row_outcome parse_item_payload(MYSQL_ROW row, player_load_result *result,
 	identity->state = static_cast<item_custody_state>(unsigned_field);
 	// Someone else owns it now, or custody is not active. Same reasoning as the orphan
 	// above, and the same recovery: skip the row and let the next full save reconcile.
-	if (identity->owner.type != item_owner_type::player ||
-	    identity->owner.id != static_cast<uint64_t>(result->pid) ||
-	    identity->owner.context_id != 0 || identity->state != item_custody_state::active)
+	const bool player_owned = identity->owner.type == item_owner_type::player &&
+				  identity->owner.id == static_cast<uint64_t>(result->pid) &&
+				  identity->owner.context_id == 0;
+	const bool pet_owned = pet_uid && identity->owner.type == item_owner_type::pet &&
+			       identity->owner.id == pet_uid &&
+			       identity->owner.context_id == static_cast<uint64_t>(result->pid);
+	if ((!player_owned && !pet_owned) || identity->state != item_custody_state::active)
 		return item_row_outcome::skipped;
 	// Only an owned, active row needs a revision; a foreign owner may have none at all.
 	if (!parse_unsigned(row[40], UINT64_MAX, &identity->owner_revision))
@@ -1398,9 +1405,14 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 		return false;
 	}
 	const std::string pet_sql =
-		"SELECT id,mob_vnum,pet_order,hit,max_hit,mana,max_mana,vitality,max_vitality,"
-		"charm_duration,room_vnum,restore_state,hold_reason FROM player_pets WHERE owner_pid=" +
-		pid + " ORDER BY pet_order,id";
+		"SELECT pp.id,pp.mob_vnum,pp.pet_order,pp.hit,pp.max_hit,pp.mana,"
+		"pp.max_mana,pp.vitality,pp.max_vitality,pp.charm_duration,pp.room_vnum,"
+		"pp.restore_state,pp.hold_reason,COALESCE(pp.pet_uid,0),"
+		"COALESCE(rev.revision,0) FROM player_pets pp LEFT JOIN item_owner_revision rev "
+		"ON rev.owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
+		" AND rev.owner_id=pp.pet_uid AND rev.owner_context_id=" + pid +
+		" WHERE pp.owner_pid=" + pid + " ORDER BY pp.pet_order,pp.id";
 	if (!load_rows(
 		    connection, pet_sql, result,
 		    [&](MYSQL_ROW row)
@@ -1451,8 +1463,16 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 				    if (!parse_unsigned(row[12], UINT32_MAX, &reason))
 					    return false;
 				    pet.hold_reason = static_cast<pet_hold_reason>(reason);
+				    uint64_t pet_uid = 0;
+				    uint64_t owner_revision = 0;
+				    if (!parse_unsigned(row[13], UINT64_MAX, &pet_uid) ||
+					!parse_unsigned(row[14], UINT64_MAX, &owner_revision) ||
+					(pet_uid && !owner_revision))
+					    return false;
+				    pet.pet_uid = pet_uid;
 				    result->snapshot.pets.push_back(std::move(pet));
-				    result->pet_identities.push_back({ database_id, {} });
+				    result->pet_identities.push_back(
+					    { database_id, pet_uid, owner_revision, {} });
 			    }
 			    catch (const std::bad_alloc &)
 			    {
@@ -1483,6 +1503,7 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 		result->outcome = player_load_outcome::retryable_failure;
 		return false;
 	}
+	size_t pet_owned_count = 0;
 	const std::string item_sql =
 		"SELECT ppi.id,ppi.vnum,ppi.equip_slot,ppi.container_id,1,ppi.weight,ppi.cost,"
 		"ppi.timer,ppi.extra_flags,ppi.wear_flags,ppi.item_type,ppi.value0,ppi.value1,"
@@ -1498,77 +1519,86 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 		"AND owner_revision.owner_context_id=own.owner_context_id WHERE pp.owner_pid=" +
 		pid + " ORDER BY ppi.pet_id,ppi.id";
 	size_t total_items = result->snapshot.items.size();
-	if (!load_rows(connection, item_sql, result,
-		       [&](MYSQL_ROW row)
-		       {
-			       if (total_items >= PLAYER_LOAD_ITEM_MAX)
-			       {
-				       result->outcome = player_load_outcome::limit_exceeded;
-				       return false;
-			       }
-			       uint64_t pet_database_id = 0;
-			       if (!parse_unsigned(row[41], UINT64_MAX, &pet_database_id))
-				       return false;
-			       const auto pet_found = pet_indices.find(pet_database_id);
-			       if (pet_found == pet_indices.end())
-				       return false;
-			       player_item_snapshot item = {};
-			       player_load_item_identity identity = {};
-			       const item_row_outcome parsed =
-				       parse_item_payload(row, result, &item, &identity);
-			       if (parsed == item_row_outcome::invalid)
-				       return false;
-			       // Pet inventories get the same tolerance as the character's own:
-			       // one orphaned or reassigned row is skipped, not fatal.
-			       if (parsed == item_row_outcome::skipped)
-			       {
-				       try
-				       {
-					       stale_pet_item_ids.insert(identity.database_id);
-					       ++result->stale_item_rows;
-				       }
-				       catch (const std::bad_alloc &)
-				       {
-					       result->outcome =
-						       player_load_outcome::retryable_failure;
-					       return false;
-				       }
-				       return true;
-			       }
-			       if (identity.owner_revision != result->item_owner_revision ||
-				   stale_pet_item_ids.find(identity.database_id) !=
-					   stale_pet_item_ids.end())
-				       return false;
-			       const size_t pet_index = pet_found->second;
-			       try
-			       {
-				       const size_t item_index =
-					       result->snapshot.pets[pet_index].items.size();
-				       if (!database_indices[pet_index]
-						    .emplace(identity.database_id, item_index)
-						    .second ||
-					   !uid_indices[pet_index]
-						    .emplace(identity.item_uid, item_index)
-						    .second ||
-					   !aggregate_uids.insert(identity.item_uid).second ||
-					   !metadata_indices
-						    .emplace(identity.database_id,
-							     std::make_pair(pet_index, item_index))
-						    .second)
-					       return false;
-				       result->snapshot.pets[pet_index].items.push_back(
-					       std::move(item));
-				       result->pet_identities[pet_index].item_identities.push_back(
-					       identity);
-			       }
-			       catch (const std::bad_alloc &)
-			       {
-				       result->outcome = player_load_outcome::retryable_failure;
-				       return false;
-			       }
-			       ++total_items;
-			       return true;
-		       }))
+	if (!load_rows(
+		    connection, item_sql, result,
+		    [&](MYSQL_ROW row)
+		    {
+			    if (total_items >= PLAYER_LOAD_ITEM_MAX)
+			    {
+				    result->outcome = player_load_outcome::limit_exceeded;
+				    return false;
+			    }
+			    uint64_t pet_database_id = 0;
+			    if (!parse_unsigned(row[41], UINT64_MAX, &pet_database_id))
+				    return false;
+			    const auto pet_found = pet_indices.find(pet_database_id);
+			    if (pet_found == pet_indices.end())
+				    return false;
+			    player_item_snapshot item = {};
+			    player_load_item_identity identity = {};
+			    const item_row_outcome parsed = parse_item_payload(
+				    row, result, &item, &identity,
+				    result->pet_identities[pet_found->second].pet_uid);
+			    if (parsed == item_row_outcome::invalid)
+				    return false;
+			    // Pet inventories get the same tolerance as the character's own:
+			    // one orphaned or reassigned row is skipped, not fatal.
+			    if (parsed == item_row_outcome::skipped)
+			    {
+				    try
+				    {
+					    stale_pet_item_ids.insert(identity.database_id);
+					    ++result->stale_item_rows;
+				    }
+				    catch (const std::bad_alloc &)
+				    {
+					    result->outcome =
+						    player_load_outcome::retryable_failure;
+					    return false;
+				    }
+				    return true;
+			    }
+			    if (!identity.owner_revision ||
+				(identity.owner.type == item_owner_type::player &&
+				 identity.owner_revision != result->item_owner_revision) ||
+				(identity.owner.type == item_owner_type::pet &&
+				 identity.owner_revision !=
+					 result->pet_identities[pet_found->second].owner_revision) ||
+				stale_pet_item_ids.find(identity.database_id) !=
+					stale_pet_item_ids.end())
+				    return false;
+			    if (identity.owner.type == item_owner_type::pet)
+				    ++pet_owned_count;
+			    const size_t pet_index = pet_found->second;
+			    try
+			    {
+				    const size_t item_index =
+					    result->snapshot.pets[pet_index].items.size();
+				    if (!database_indices[pet_index]
+						 .emplace(identity.database_id, item_index)
+						 .second ||
+					!uid_indices[pet_index]
+						 .emplace(identity.item_uid, item_index)
+						 .second ||
+					!aggregate_uids.insert(identity.item_uid).second ||
+					!metadata_indices
+						 .emplace(identity.database_id,
+							  std::make_pair(pet_index, item_index))
+						 .second)
+					    return false;
+				    result->snapshot.pets[pet_index].items.push_back(
+					    std::move(item));
+				    result->pet_identities[pet_index].item_identities.push_back(
+					    identity);
+			    }
+			    catch (const std::bad_alloc &)
+			    {
+				    result->outcome = player_load_outcome::retryable_failure;
+				    return false;
+			    }
+			    ++total_items;
+			    return true;
+		    }))
 		return false;
 
 	for (size_t pet_index = 0; pet_index < result->snapshot.pets.size(); ++pet_index)
@@ -1661,8 +1691,23 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 								   row[6], result);
 		    }))
 		return false;
+	const std::string pet_custody_sql =
+		"SELECT COUNT(*) FROM item_current_owner WHERE owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
+		" AND owner_context_id=" + pid + " AND state=1";
+	uint64_t authoritative_pet_count = UINT64_MAX;
+	if (!load_rows(connection, pet_custody_sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       return authoritative_pet_count == UINT64_MAX &&
+				      parse_unsigned(row[0], PLAYER_LOAD_ITEM_MAX,
+						     &authoritative_pet_count);
+		       }))
+		return false;
+	result->authoritative_pet_item_count = pet_owned_count;
 	return result->snapshot.pets.size() == result->pet_identities.size() &&
-	       total_items == result->authoritative_item_count;
+	       authoritative_pet_count == pet_owned_count &&
+	       total_items == result->authoritative_item_count + pet_owned_count;
 }
 
 bool load_gameplay_reads(MYSQL *connection, player_load_result *result)

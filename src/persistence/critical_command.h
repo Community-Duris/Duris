@@ -33,6 +33,7 @@ enum class critical_entity_type : uint8_t
 	zone,
 	shopkeeper,
 	collector,
+	pet,
 };
 
 struct critical_entity_key
@@ -84,6 +85,38 @@ enum class critical_deadline_class : uint8_t
 	recovery,
 };
 
+// A bounded, aggregate-safe explanation for a terminal optimistic-concurrency
+// rejection. Values are bit flags so a command that observed more than one
+// mismatched revision can retain that fact without retaining command payloads,
+// entity IDs, or amounts in diagnostics.
+enum class critical_failure_stage : uint16_t
+{
+	none = 0,
+	coin_source_wallet_revision = 1u << 0,
+	coin_source_bank_revision = 1u << 1,
+	coin_destination_wallet_revision = 1u << 2,
+	coin_destination_bank_revision = 1u << 3,
+	coin_source_owner_revision = 1u << 4,
+	coin_destination_owner_revision = 1u << 5,
+	coin_source_item_revision = 1u << 6,
+	coin_destination_item_revision = 1u << 7,
+	coin_source_target_parent_revision = 1u << 8,
+	coin_destination_target_parent_revision = 1u << 9,
+	coin_source_coin_payload_revision = 1u << 10,
+	coin_destination_coin_payload_revision = 1u << 11,
+	coin_destination_rebase = 1u << 12,
+	coin_revision_unknown = 1u << 13,
+};
+
+constexpr uint16_t CRITICAL_FAILURE_STAGE_MASK =
+	static_cast<uint16_t>(critical_failure_stage::coin_revision_unknown) |
+	(static_cast<uint16_t>(critical_failure_stage::coin_revision_unknown) - 1);
+
+inline bool critical_failure_stage_valid(critical_failure_stage stage)
+{
+	return !(static_cast<uint16_t>(stage) & ~CRITICAL_FAILURE_STAGE_MASK);
+}
+
 struct critical_expected_revision
 {
 	critical_entity_key key;
@@ -127,6 +160,7 @@ bool critical_entity_key_equal(const critical_entity_key &left, const critical_e
 bool critical_command_normalize(critical_command *command);
 bool critical_command_valid(const critical_command &command);
 bool critical_command_equal(const critical_command &left, const critical_command &right);
+const char *critical_failure_stage_name(critical_failure_stage stage);
 critical_command_codec_result critical_command_encode(const critical_command &command,
 						      std::vector<uint8_t> *encoded);
 critical_command_codec_result critical_command_decode(const uint8_t *encoded, size_t size,

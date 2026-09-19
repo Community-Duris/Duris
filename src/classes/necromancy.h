@@ -98,8 +98,13 @@ bool complete_corpse_wall_of_bones(P_char caster, P_obj corpse, int level, int e
 bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower,
 				    corpse_raise_kind kind, int level, int variant, bool globe,
 				    const char *message);
+bool prepare_corpse_raise_pet_state(P_obj corpse, P_char caster, P_char follower,
+				    corpse_raise_kind kind, bool globe, int32_t *charm_duration,
+				    std::string *restore_state);
 void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj corpse,
-					corpse_raise_kind kind, int level, int variant, bool globe,
-					const char *message);
+					corpse_raise_kind kind, int level, int variant,
+					const char *message, uint64_t pet_uid, bool hostile,
+					int32_t prepared_duration,
+					const std::string &restore_state);
 
 #endif // __NECROMANCY_H__

@@ -31,8 +31,11 @@
 #include "economy/collector_catalog_cache.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/pet_restore_runtime.h"
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
+#include "redis/redis_world_runtime.h"
+#include "persistence/copyover.h"
 #include "combat/damage.h"
 #include "combat/training_dummy.h"
 #include "net/gmcp.h"
@@ -1600,7 +1603,10 @@ bool char_to_room(P_char ch, int room, int dir)
 			}
 	/* too much money in your hands? Didn't have it in a bag? shame...  */
 	total_coins = GET_COPPER(ch) + GET_SILVER(ch) + GET_GOLD(ch) + GET_PLATINUM(ch);
-	if (total_coins > 200 && !IS_TRUSTED(ch))
+	// Recovery placement is not movement: spilling freshly generated NPC cash
+	// here creates new coin piles before the captured floor ledger is restored.
+	if (!is_copyover_boot() && !redis_world_recovery_boot_active() && total_coins > 200 &&
+	    !IS_TRUSTED(ch))
 	{
 		do
 		{
@@ -3458,7 +3464,7 @@ struct corpse_raise_context
 	corpse_raise_kind kind = corpse_raise_kind::undead;
 	int level = 0;
 	int variant = 0;
-	bool globe = false;
+	bool hostile = false;
 	const char *message = nullptr;
 };
 
@@ -3585,6 +3591,17 @@ bool validate_corpse_release_items(P_obj corpse, const corpse_lifecycle_result &
 		if (!validate_corpse_release_item(item, owner, item->obj_uid, 0, &count))
 			return false;
 	return count == result.item_count;
+}
+
+void collect_corpse_transient_uids(P_obj container, std::vector<uint64_t> *uids)
+{
+	for (P_obj item = container ? container->contains : nullptr; item;
+	     item = item->next_content)
+	{
+		if (IS_SET(item->extra_flags, ITEM_TRANSIENT) && item->obj_uid)
+			uids->push_back(item->obj_uid);
+		collect_corpse_transient_uids(item, uids);
+	}
 }
 
 P_char corpse_release_carrier(P_obj corpse)
@@ -3887,7 +3904,7 @@ bool recover_corpse_raise_items(P_obj corpse, P_char caster)
 	{
 		P_obj item = corpse->contains;
 		obj_from_obj(item);
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 			extract_obj(item);
 		else
 		{
@@ -3899,7 +3916,8 @@ bool recover_corpse_raise_items(P_obj corpse, P_char caster)
 }
 
 void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
-				    bool transfer_live_items, bool fence_save, const char *reason)
+				    bool transfer_live_items, bool fence_save, bool pet_custody,
+				    const char *reason)
 {
 	auto found = corpse_raises.find(key);
 	if (found == corpse_raises.end())
@@ -3908,7 +3926,7 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 	corpse_raises.erase(found);
 	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
 	corpse_release_side_effect_guard guard;
-	const bool live_items_recovered = transfer_live_items && caster &&
+	const bool live_items_recovered = !pet_custody && transfer_live_items && caster &&
 					  recover_corpse_raise_items(corpse, caster);
 	// The durable transaction has already moved the item rows to the caster.
 	// Never leave a stale live corpse behind for a later loot/raise attempt.  A
@@ -3918,7 +3936,7 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 		extract_obj(corpse, FALSE);
 	if (follower)
 		extract_char(follower);
-	if (caster && (fence_save || !live_items_recovered))
+	if (caster && (fence_save || pet_custody || !live_items_recovered))
 		SET_BIT(caster->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
 	persistence_alert(AVATAR, "corpse", "durable_raise", "none", "none",
 			  reason ? reason : "committed_live_recovery", "corpse_key=%llu", key);
@@ -3927,6 +3945,8 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 		const bool save_fenced =
 			IS_SET(caster->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
 		send_to_char(
+			pet_custody ?
+				"The raising committed, but its live effects needed recovery. The equipment is retained with the durable pet record; saving is paused until a fresh login verifies it.\r\n" :
 			save_fenced ?
 				"The raising committed, but its live effects needed recovery. The corpse and minion were removed; saving is paused until a fresh login verifies the recovered equipment.\r\n" :
 			live_items_recovered ?
@@ -3959,36 +3979,44 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	const bool source_items_valid = corpse && validate_corpse_release_items(corpse, result);
 	const bool source_valid = source_items_valid && corpse_release_room(corpse, &corpse_room) &&
 				  world[corpse_room].number == payload.room_vnum;
-	if (!item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
-						       payload.destination_player_pid, result))
+	std::vector<uint64_t> transient_uids;
+	if (corpse)
+		collect_corpse_transient_uids(corpse, &transient_uids);
+	if (!item_ownership_runtime_apply_corpse_discarded(payload.owner_pid, payload.save_id,
+							   transient_uids, result) ||
+	    !item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
+						       payload.destination_player_pid,
+						       payload.pet_uid, result))
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
-					       "raise_runtime_recovery");
+					       payload.pet_uid != 0, "raise_runtime_recovery");
 		return;
 	}
 	if (!source_valid)
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
-					       "raise_live_topology_stale");
+					       payload.pet_uid != 0, "raise_live_topology_stale");
 		return;
 	}
 	if (!caster || !follower || caster->in_room <= NOWHERE || caster->in_room > top_of_world ||
 	    world[caster->in_room].number != payload.room_vnum || follower->in_room != NOWHERE)
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
-					       "raise_live_topology_stale");
+					       payload.pet_uid != 0, "raise_live_topology_stale");
 		return;
 	}
 	if (!publish_corpse_wallet(caster, result))
 	{
 		recover_committed_corpse_raise(key, corpse, follower, source_items_valid, false,
-					       "raise_wallet_invalid");
+					       payload.pet_uid != 0, "raise_wallet_invalid");
 		return;
 	}
 	corpse_raises.erase(found);
 	corpse_release_side_effect_guard guard;
 	complete_corpse_raise_after_commit(caster, follower, corpse, context.kind, context.level,
-					   context.variant, context.globe, context.message);
+					   context.variant, context.message, payload.pet_uid,
+					   context.hostile, payload.pet_charm_duration,
+					   payload.pet_restore_state);
 }
 
 P_obj find_resurrection_item(P_char target, const item_owner_identity &owner)
@@ -4222,7 +4250,7 @@ void discard_corpse_release_money(P_obj container)
 	     item = next)
 	{
 		next = item->next_content;
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
 		{
 			obj_from_obj(item);
 			extract_obj(item);
@@ -4458,6 +4486,23 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 				    corpse_raise_kind kind, int level, int variant, bool globe,
 				    const char *message)
 {
+	// Legacy NPC corpse raises have no transaction that transfers their item graph
+	// into pet custody. Refuse an equipped corpse before the old caster route can
+	// grant even hidden or non-take objects to the player. Money keeps its
+	// historical follower path.
+	if (durable_corpse_lifecycle_enabled() && corpse && caster && follower && IS_PC(caster) &&
+	    IS_NPC(follower) && corpse->type == ITEM_CORPSE &&
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+	{
+		for (P_obj item = corpse->contains; item; item = item->next_content)
+		{
+			if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+				continue;
+			send_to_char("The equipped corpse cannot be raised safely.\r\n", caster);
+			extract_char(follower);
+			return true;
+		}
+	}
 	if (!durable_corpse_lifecycle_enabled() || !corpse || !caster || !follower ||
 	    IS_NPC(caster) || !caster->only.pc || !IS_NPC(follower) ||
 	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
@@ -4491,12 +4536,20 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 		extract_char(follower);
 		return true;
 	}
+	// Resolve the existing hostility roll before the durable custody decision.
+	// A hostile summon is not a follower and keeps the old caster-owned route.
+	const bool hostile =
+		(kind == corpse_raise_kind::titan || kind == corpse_raise_kind::avatar) ?
+			!number(0, 12) :
+		(kind == corpse_raise_kind::dracolich)	       ? !globe && !number(0, 12) :
+		(kind == corpse_raise_kind::greater_dracolich) ? !globe && !number(0, 9) :
+								 false;
 	try
 	{
 		corpse_raises.emplace(key,
 				      corpse_raise_context{ caster, caster->runtime_id, follower,
 							    follower->runtime_id, kind, level,
-							    variant, globe, message });
+							    variant, hostile, message });
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -4515,6 +4568,24 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 	payload.money = { GET_COPPER(caster), GET_SILVER(caster), GET_GOLD(caster),
 			  GET_PLATINUM(caster) };
 	payload.owner_name = corpse->action_description;
+	if (!hostile)
+	{
+		payload.pet_uid = key;
+		payload.pet_mob_vnum = GET_VNUM(follower);
+		payload.pet_hit = GET_HIT(follower);
+		payload.pet_max_hit = GET_MAX_HIT(follower);
+		payload.pet_mana = GET_MANA(follower);
+		payload.pet_max_mana = GET_MAX_MANA(follower);
+		payload.pet_vitality = GET_VITALITY(follower);
+		payload.pet_max_vitality = GET_MAX_VITALITY(follower);
+		if (!prepare_corpse_raise_pet_state(corpse, caster, follower, kind, globe,
+						    &payload.pet_charm_duration,
+						    &payload.pet_restore_state))
+		{
+			fail_corpse_raise(key, "raise_pet_state_invalid");
+			return true;
+		}
+	}
 	if (!corpse_lifecycle_transaction_raise_follower(payload, publish_corpse_raise))
 		fail_corpse_raise(key, "raise_submission_failed");
 	return true;
@@ -5051,6 +5122,44 @@ void extract_char_after_terminal_save(P_char ch)
 	extract_char(ch);
 }
 
+// A stable raised pet's ledger remains authoritative after its live body leaves.
+// A completed return can also be player-owned before its live callback runs.
+// Do not publish either domain into a corpse or room on pet teardown.
+void hold_durable_pet_items(P_char ch)
+{
+	if (!ch || !IS_NPC(ch) || !ch->durable_pet_uid)
+		return;
+	const P_char master = GET_MASTER(ch);
+	uint32_t owner_pid = ch->durable_pet_owner_pid;
+	if (master && IS_PC(master))
+	{
+		const uint32_t master_pid = GET_PID(master);
+		owner_pid = !owner_pid || owner_pid == master_pid ? master_pid : 0;
+	}
+	const auto held_item = [ch, owner_pid](P_obj obj)
+	{
+		if (!obj || !obj->obj_uid)
+			return false;
+		item_ownership_runtime_entry entry = {};
+		return item_ownership_runtime_lookup(obj->obj_uid, &entry) &&
+		       entry.state == item_custody_state::active &&
+		       ((entry.owner.type == item_owner_type::pet &&
+			 entry.owner.id == ch->durable_pet_uid) ||
+			(owner_pid && entry.owner.type == item_owner_type::player &&
+			 entry.owner.id == owner_pid));
+	};
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (held_item(ch->equipment[slot]))
+			extract_obj(ch->equipment[slot]);
+	for (P_obj obj = ch->carrying; obj;)
+	{
+		P_obj next = obj->next_content;
+		if (held_item(obj))
+			extract_obj(obj);
+		obj = next;
+	}
+}
+
 void extract_char(P_char ch)
 {
 	P_obj obj;
@@ -5105,13 +5214,17 @@ void extract_char(P_char ch)
 			StopCasting(ch);
 	}
 
-	// mark owner dirty when extracting a pc pet (must be before die_follower clears the link)
-	if (IS_PC_PET(ch))
+	// Mark the stable owner even if charm already cleared the live master link.
+	// This runs before die_follower removes any remaining follower relation.
+	if (ch->in_room != NOWHERE && ch->durable_pet_uid && ch->durable_pet_owner_pid)
+		mark_player_dirty_components(ch->durable_pet_owner_pid, PLAYER_COMPONENT_PETS);
+	else if (IS_PC_PET(ch))
 	{
 		P_char owner = GET_MASTER(ch);
 		if (owner && IS_PC(owner))
 			mark_player_dirty_components(GET_PID(owner), PLAYER_COMPONENT_PETS);
 	}
+	hold_durable_pet_items(ch);
 
 	if (ch->followers || ch->following)
 	{

@@ -4,6 +4,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "world/world_singletons.h"
 
 #include <climits>
 #include <cstdint>
@@ -90,6 +91,7 @@ flatfile_shopkeeper_materialize(const std::string &root, const flatfile_shopkeep
 	staged_shopkeeper staged(character);
 	if (!IS_SHOPKEEPER(character))
 		return flatfile_shopkeeper_materialize_result::invalid;
+	bind_shopkeeper(character, static_cast<int>(record.shop_id));
 	GET_BIRTHPLACE(character) = record.room_vnum;
 	for (const auto &saved : record.affects)
 	{

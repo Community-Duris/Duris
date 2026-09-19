@@ -17,11 +17,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/sha.h>
 #include <sys/time.h>
 #include <time.h>
 #include <algorithm>
+#include <chrono>
 #include <new>
 #include <string>
+#include <thread>
 #include <unordered_set>
 #include <vector>
 #include "account/account.h"
@@ -33,6 +36,7 @@
 #include "flatfile/flatfile_recipe_repository.h"
 #include "flatfile/flatfile_spellbook_repository.h"
 #include "world/epic_bonus.h"
+#include "world/world_singletons.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "ships/ships.h"
@@ -372,7 +376,15 @@ P_char sql_restore_shopkeeper(int shop_nr)
 {
 	return NULL;
 }
-void sql_restore_shopkeepers(void) {}
+bool sql_restore_shopkeepers(void)
+{
+	return true;
+}
+bool sql_save_dirty_shopkeepers(bool force)
+{
+	(void)force;
+	return true;
+}
 
 bool sql_save_saved_item(P_obj item, const char *item_key)
 {
@@ -2372,6 +2384,8 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 		 table, item_id);
 
 	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
 	if (result)
 	{
 		struct extra_descr_data *loaded_spellbook = NULL;
@@ -8560,6 +8574,186 @@ cleanup:
 
 extern struct shop_data *shop_index;
 extern int number_of_shops;
+extern int top_of_mobt;
+
+namespace
+{
+enum class shopkeeper_save_reason
+{
+	ok,
+	database_unavailable,
+	null_keeper,
+	invalid_shop,
+	invalid_keeper,
+	invalid_shop_room,
+	keeper_not_npc,
+	keeper_rnum_mismatch,
+	keeper_room_invalid,
+	keeper_room_mismatch,
+	keeper_not_found,
+	keeper_ambiguous,
+	keeper_not_shopkeeper,
+	save_failed,
+};
+
+const char *shopkeeper_save_reason_name(shopkeeper_save_reason reason)
+{
+	switch (reason)
+	{
+	case shopkeeper_save_reason::ok:
+		return "ok";
+	case shopkeeper_save_reason::database_unavailable:
+		return "database_unavailable";
+	case shopkeeper_save_reason::null_keeper:
+		return "null_keeper";
+	case shopkeeper_save_reason::invalid_shop:
+		return "invalid_shop";
+	case shopkeeper_save_reason::invalid_keeper:
+		return "invalid_keeper";
+	case shopkeeper_save_reason::invalid_shop_room:
+		return "invalid_shop_room";
+	case shopkeeper_save_reason::keeper_not_npc:
+		return "keeper_not_npc";
+	case shopkeeper_save_reason::keeper_rnum_mismatch:
+		return "keeper_rnum_mismatch";
+	case shopkeeper_save_reason::keeper_room_invalid:
+		return "keeper_room_invalid";
+	case shopkeeper_save_reason::keeper_room_mismatch:
+		return "keeper_room_mismatch";
+	case shopkeeper_save_reason::keeper_not_found:
+		return "keeper_not_found";
+	case shopkeeper_save_reason::keeper_ambiguous:
+		return "keeper_ambiguous";
+	case shopkeeper_save_reason::keeper_not_shopkeeper:
+		return "keeper_not_shopkeeper";
+	case shopkeeper_save_reason::save_failed:
+		return "save_failed";
+	}
+	return "unknown";
+}
+
+int shopkeeper_expected_room_rnum(int shop_nr)
+{
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return NOWHERE;
+	return real_room(shop_index[shop_nr].in_room);
+}
+
+bool shopkeeper_save_matches_room(P_char ch, int shop_nr)
+{
+	if (!ch || !shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return false;
+	if (ch->only.npc && ch->only.npc->shopkeeper_shop_id >= 0)
+		return ch->only.npc->shopkeeper_shop_id == shop_nr;
+	const int room = shopkeeper_expected_room_rnum(shop_nr);
+	if (shop_index[shop_nr].shop_is_roaming)
+		return singleton_shop_id(ch) == shop_nr;
+	return ch->in_room == room;
+}
+
+shopkeeper_save_reason validate_shopkeeper_save(P_char ch, int shop_nr)
+{
+	if (!DB)
+		return shopkeeper_save_reason::database_unavailable;
+	if (!ch)
+		return shopkeeper_save_reason::null_keeper;
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return shopkeeper_save_reason::invalid_shop;
+	if (shop_index[shop_nr].keeper < 0 || shop_index[shop_nr].keeper > top_of_mobt)
+		return shopkeeper_save_reason::invalid_keeper;
+	const int shop_room = shopkeeper_expected_room_rnum(shop_nr);
+	if (!shop_index[shop_nr].shop_is_roaming && (shop_room < 0 || shop_room > top_of_world))
+		return shopkeeper_save_reason::invalid_shop_room;
+	if (!IS_NPC(ch) || GET_MASTER(ch))
+		return shopkeeper_save_reason::keeper_not_npc;
+	if (GET_RNUM(ch) != shop_index[shop_nr].keeper)
+		return shopkeeper_save_reason::keeper_rnum_mismatch;
+	if (ch->in_room < 0 || ch->in_room > top_of_world)
+		return shopkeeper_save_reason::keeper_room_invalid;
+	if (!shopkeeper_save_matches_room(ch, shop_nr))
+		return shopkeeper_save_reason::keeper_room_mismatch;
+	// Persistence identity is the configured shop/binding, not its command
+	// procedure: quest and tradeskill keepers deliberately use other procs.
+	bind_shopkeeper(ch, shop_nr);
+	return shopkeeper_save_reason::ok;
+}
+
+shopkeeper_save_reason find_shopkeeper_for_dirty_save(int shop_nr, P_char *keeper_out)
+{
+	if (keeper_out)
+		*keeper_out = NULL;
+	if (!DB)
+		return shopkeeper_save_reason::database_unavailable;
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return shopkeeper_save_reason::invalid_shop;
+	if (shop_index[shop_nr].keeper < 0 || shop_index[shop_nr].keeper > top_of_mobt)
+		return shopkeeper_save_reason::invalid_keeper;
+	const int shop_room = shopkeeper_expected_room_rnum(shop_nr);
+	if (!shop_index[shop_nr].shop_is_roaming && (shop_room < 0 || shop_room > top_of_world))
+		return shopkeeper_save_reason::invalid_shop_room;
+
+	const int expected_rnum = shop_index[shop_nr].keeper;
+	P_char candidate = NULL;
+	int same_rnum = 0;
+	int candidates = 0;
+	for (P_char ch = character_list; ch; ch = ch->next)
+	{
+		if (!IS_NPC(ch) || GET_MASTER(ch) || GET_RNUM(ch) != expected_rnum)
+			continue;
+		++same_rnum;
+		if (ch->in_room < 0 || ch->in_room > top_of_world)
+			continue;
+		if (!shopkeeper_save_matches_room(ch, shop_nr))
+			continue;
+		candidate = ch;
+		++candidates;
+	}
+
+	if (candidates == 0)
+		return same_rnum > 0 ? shopkeeper_save_reason::keeper_room_mismatch :
+				       shopkeeper_save_reason::keeper_not_found;
+	if (candidates > 1)
+		return shopkeeper_save_reason::keeper_ambiguous;
+	if (keeper_out)
+		*keeper_out = candidate;
+	return validate_shopkeeper_save(candidate, shop_nr);
+}
+
+void log_shopkeeper_save_guard(P_char ch, int shop_nr, shopkeeper_save_reason reason)
+{
+	int expected_rnum = -1;
+	int expected_room = NOWHERE;
+	if (shop_index && shop_nr >= 0 && shop_nr < number_of_shops)
+	{
+		expected_rnum = shop_index[shop_nr].keeper;
+		expected_room = shopkeeper_expected_room_rnum(shop_nr);
+	}
+	const int actual_rnum = ch && IS_NPC(ch) ? GET_RNUM(ch) : -1;
+	const int actual_room = ch ? ch->in_room : NOWHERE;
+	logit(LOG_DEBUG,
+	      "sql_save_shopkeeper: phase=pretransaction outcome=retry shop=%d reason=%s "
+	      "expected_keeper_rnum=%d actual_keeper_rnum=%d expected_room_rnum=%d actual_room_rnum=%d",
+	      shop_nr, shopkeeper_save_reason_name(reason), expected_rnum, actual_rnum,
+	      expected_room, actual_room);
+}
+
+void log_shopkeeper_dirty_retry(int shop_nr, shopkeeper_save_reason reason, P_char keeper,
+				time_t now, bool force)
+{
+	const int expected_rnum = shop_index[shop_nr].keeper;
+	const int expected_room = shopkeeper_expected_room_rnum(shop_nr);
+	const int actual_rnum = keeper && IS_NPC(keeper) ? GET_RNUM(keeper) : -1;
+	const int actual_room = keeper ? keeper->in_room : NOWHERE;
+	const shopkeeper_save_retry_state &retry = shop_index[shop_nr].dirty_save_retry;
+	logit(LOG_DEBUG,
+	      "sql_save_dirty_shopkeepers: shop=%d outcome=retry reason=%s leaving_dirty=1 "
+	      "attempt=%u next_retry=%lld now=%lld force=%d expected_keeper_rnum=%d "
+	      "actual_keeper_rnum=%d expected_room_rnum=%d actual_room_rnum=%d",
+	      shop_nr, shopkeeper_save_reason_name(reason), retry.failure_count,
+	      static_cast<long long>(retry.next_retry_at), static_cast<long long>(now),
+	      force ? 1 : 0, expected_rnum, actual_rnum, expected_room, actual_room);
+}
+}
 
 static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
 {
@@ -8734,11 +8928,12 @@ static bool sql_save_shopkeeper_affects(int shopkeeper_id, P_char ch)
 
 bool sql_save_shopkeeper(P_char ch, int shop_nr)
 {
-	if (!ch || !DB || shop_nr < 0)
+	const shopkeeper_save_reason guard = validate_shopkeeper_save(ch, shop_nr);
+	if (guard != shopkeeper_save_reason::ok)
+	{
+		log_shopkeeper_save_guard(ch, shop_nr, guard);
 		return false;
-
-	if (IS_PC(ch) || !IS_SHOPKEEPER(ch))
-		return false;
+	}
 
 	// start transaction
 	if (!sql_begin_transaction())
@@ -8749,7 +8944,11 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	}
 
 	int mob_vnum = mob_index[GET_RNUM(ch)].virtual_number;
-	int room_vnum = world[ch->in_room].number;
+	// Fixed shops can be moved by game mechanics after binding. Their stock
+	// remains owned by that shop and cold-restores at its configured home;
+	// only roaming shops persist a changing location.
+	int room_vnum = shop_index[shop_nr].shop_is_roaming ? world[ch->in_room].number :
+							      shop_index[shop_nr].in_room;
 	long save_time = time(0);
 
 	char del_query[128];
@@ -9041,333 +9240,6 @@ bool sql_delete_saved_item(const char *item_key)
 	return sql_run_query(query);
 }
 
-// temp struct for batched item loading
-struct shopkeeper_item_temp
-{
-	int item_id;
-	int container_id;
-	int equip_slot;
-	P_obj obj;
-	struct shopkeeper_item_temp *next;
-};
-
-static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], P_obj *inventory)
-{
-	if (!DB || shopkeeper_id <= 0)
-		return;
-
-	// load all items in one query
-	char query[512];
-	snprintf(query, sizeof(query),
-		 "SELECT id, vnum, equip_slot, weight, cost, timer, extra_flags, "
-		 "value0, value1, value2, value3, value4, value5, value6, value7, "
-		 "name, short_descr, description, action_descr, "
-		 "wear_flags, item_type, item_material, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		 "container_id "
-		 "FROM shopkeeper_items WHERE shopkeeper_id=%d ORDER BY id",
-		 shopkeeper_id);
-
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return;
-
-	// first pass: create all objects and store metadata
-	struct shopkeeper_item_temp *items = NULL;
-	struct shopkeeper_item_temp *last_item = NULL;
-	int item_count = 0;
-	MYSQL_ROW row;
-
-	while ((row = mysql_fetch_row(result)))
-	{
-		int item_id = atoi(row[0]);
-		int vnum = atoi(row[1]);
-		int rnum = real_object(vnum);
-		if (rnum < 0)
-			continue;
-
-		P_obj obj = read_object(rnum, REAL);
-		if (!obj)
-			continue;
-
-		int equip_slot = atoi(row[2]);
-		int container_id = row[27] ? atoi(row[27]) : 0;
-
-		if (row[3])
-			obj->weight = atoi(row[3]);
-		if (row[4])
-			obj->cost = atoi(row[4]);
-		if (row[5])
-			obj->timer[0] = atol(row[5]);
-		if (row[6])
-			obj->extra_flags = strtoul(row[6], NULL, 10);
-
-		obj->value[0] = row[7] ? atoi(row[7]) : 0;
-		obj->value[1] = row[8] ? atoi(row[8]) : 0;
-		obj->value[2] = row[9] ? atoi(row[9]) : 0;
-		obj->value[3] = row[10] ? atoi(row[10]) : 0;
-		obj->value[4] = row[11] ? atoi(row[11]) : 0;
-		obj->value[5] = row[12] ? atoi(row[12]) : 0;
-		obj->value[6] = row[13] ? atoi(row[13]) : 0;
-		obj->value[7] = row[14] ? atoi(row[14]) : 0;
-
-		if (row[15] && strlen(row[15]) > 0)
-		{
-			obj->name = str_dup(row[15]);
-			obj->str_mask |= STRUNG_KEYS;
-		}
-		if (row[16] && strlen(row[16]) > 0)
-		{
-			obj->short_description = str_dup(row[16]);
-			obj->str_mask |= STRUNG_DESC2;
-		}
-		if (row[17] && strlen(row[17]) > 0)
-		{
-			obj->description = str_dup(row[17]);
-			obj->str_mask |= STRUNG_DESC1;
-		}
-		if (row[18] && strlen(row[18]) > 0)
-		{
-			obj->action_description = str_dup(row[18]);
-			obj->str_mask |= STRUNG_DESC3;
-		}
-		// v19 diff columns - NULL means use prototype value from read_object()
-		if (row[19])
-			obj->wear_flags = atoi(row[19]);
-		if (row[20])
-			obj->type = sql_validate_loaded_item_type(obj, atoi(row[20]),
-								  "sql_load_shopkeeper_items");
-		if (row[21])
-			obj->material = atoi(row[21]);
-		if (row[22])
-			obj->bitvector = strtoul(row[22], NULL, 10);
-		if (row[23])
-			obj->bitvector2 = strtoul(row[23], NULL, 10);
-		if (row[24])
-			obj->bitvector3 = strtoul(row[24], NULL, 10);
-		if (row[25])
-			obj->bitvector4 = strtoul(row[25], NULL, 10);
-		if (row[26])
-			obj->bitvector5 = strtoul(row[26], NULL, 10);
-		obj->db_item_id = item_id;
-		sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item");
-
-		struct shopkeeper_item_temp *temp =
-			(struct shopkeeper_item_temp *)malloc(sizeof(struct shopkeeper_item_temp));
-		temp->item_id = item_id;
-		temp->container_id = container_id;
-		temp->equip_slot = equip_slot;
-		temp->obj = obj;
-		temp->next = NULL;
-
-		if (!items)
-			items = temp;
-		else
-			last_item->next = temp;
-		last_item = temp;
-		item_count++;
-	}
-	mysql_free_result(result);
-
-	if (item_count == 0)
-		return;
-
-	// load all item affects in one query
-	snprintf(query, sizeof(query),
-		 "SELECT sia.item_id, sia.location, sia.modifier "
-		 "FROM shopkeeper_item_affects sia "
-		 "INNER JOIN shopkeeper_items si ON sia.item_id = si.id "
-		 "WHERE si.shopkeeper_id=%d ORDER BY sia.item_id",
-		 shopkeeper_id);
-
-	result = db_query("%s", query);
-	if (result)
-	{
-		while ((row = mysql_fetch_row(result)))
-		{
-			int aff_item_id = atoi(row[0]);
-			int location = atoi(row[1]);
-			int modifier = atoi(row[2]);
-
-			// find the item
-			for (struct shopkeeper_item_temp *t = items; t; t = t->next)
-			{
-				if (t->item_id == aff_item_id)
-				{
-					for (int i = 0; i < MAX_OBJ_AFFECT; i++)
-					{
-						if (t->obj->affected[i].location == 0 &&
-						    t->obj->affected[i].modifier == 0)
-						{
-							t->obj->affected[i].location = location;
-							t->obj->affected[i].modifier = modifier;
-							break;
-						}
-					}
-					break;
-				}
-			}
-		}
-		mysql_free_result(result);
-	}
-
-	// link container contents
-	for (struct shopkeeper_item_temp *t = items; t; t = t->next)
-	{
-		if (t->container_id > 0)
-		{
-			// find parent container
-			for (struct shopkeeper_item_temp *p = items; p; p = p->next)
-			{
-				if (p->item_id == t->container_id)
-				{
-					if (!obj_can_nest(t->obj, p->obj))
-					{
-						logit(LOG_DEBUG,
-						      "sql_load_all_shopkeeper_items: skipping malformed container link %d -> %d",
-						      t->item_id, p->item_id);
-						break;
-					}
-					t->obj->next_content = p->obj->contains;
-					p->obj->contains = t->obj;
-					t->obj->loc_p = LOC_INSIDE;
-					t->obj->loc.inside = p->obj;
-					break;
-				}
-			}
-		}
-	}
-
-	// assign equipment and inventory
-	P_obj inv_first = NULL;
-	P_obj inv_last = NULL;
-
-	for (struct shopkeeper_item_temp *t = items; t; t = t->next)
-	{
-		if (t->container_id > 0)
-			continue; // already placed in container
-
-		if (t->equip_slot > 0 && t->equip_slot <= MAX_WEAR)
-			equipment[t->equip_slot - 1] = t->obj;
-		else
-		{
-			if (!inv_first)
-				inv_first = t->obj;
-			else
-				inv_last->next_content = t->obj;
-			inv_last = t->obj;
-			t->obj->next_content = NULL;
-		}
-	}
-
-	*inventory = inv_first;
-
-	// free temp structs
-	struct shopkeeper_item_temp *t = items;
-	while (t)
-	{
-		struct shopkeeper_item_temp *next = t->next;
-		free(t);
-		t = next;
-	}
-}
-
-static bool sql_load_shopkeeper_affects(P_char ch, int shopkeeper_id)
-{
-	if (!ch || !DB || shopkeeper_id <= 0)
-		return false;
-
-	char query[256];
-	snprintf(
-		query, sizeof(query),
-		"SELECT type, duration, modifier, location, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
-		"FROM shopkeeper_affects WHERE shopkeeper_id=%d",
-		shopkeeper_id);
-
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return false;
-
-	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(result)))
-	{
-		struct affected_type af;
-		memset(&af, 0, sizeof(af));
-		af.type = atoi(row[0]);
-		af.duration = atoi(row[1]);
-		af.modifier = atoi(row[2]);
-		af.location = atoi(row[3]);
-		af.bitvector = strtoul(row[4], NULL, 10);
-		af.bitvector2 = strtoul(row[5], NULL, 10);
-		af.bitvector3 = strtoul(row[6], NULL, 10);
-		af.bitvector4 = strtoul(row[7], NULL, 10);
-		af.bitvector5 = strtoul(row[8], NULL, 10);
-		affect_to_char(ch, &af);
-	}
-
-	mysql_free_result(result);
-	return true;
-}
-
-P_char sql_restore_shopkeeper(int shop_nr)
-{
-	if (!DB || shop_nr < 0)
-		return NULL;
-
-	char query[256];
-	snprintf(query, sizeof(query),
-		 "SELECT id, mob_vnum, room_vnum FROM shopkeepers WHERE shop_id=%d", shop_nr);
-
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return NULL;
-
-	MYSQL_ROW row = mysql_fetch_row(result);
-	if (!row)
-	{
-		mysql_free_result(result);
-		return NULL;
-	}
-
-	int shopkeeper_id = atoi(row[0]);
-	int mob_vnum = atoi(row[1]);
-	int room_vnum = atoi(row[2]);
-	mysql_free_result(result);
-
-	P_char ch = read_mobile(mob_vnum, VIRTUAL);
-	if (!ch)
-	{
-		logit(LOG_DEBUG, "sql_restore_shopkeeper: mob vnum %d not found", mob_vnum);
-		return NULL;
-	}
-
-	GET_BIRTHPLACE(ch) = room_vnum;
-	sql_load_shopkeeper_affects(ch, shopkeeper_id);
-
-	// batched load of all equipment and inventory
-	P_obj equipment[MAX_WEAR];
-	memset(equipment, 0, sizeof(equipment));
-	P_obj inventory = NULL;
-
-	sql_load_all_shopkeeper_items(shopkeeper_id, equipment, &inventory);
-
-	for (int slot = 0; slot < MAX_WEAR; slot++)
-	{
-		if (equipment[slot])
-			equip_char(ch, equipment[slot], slot, 0);
-	}
-
-	ch->carrying = inventory;
-	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
-	{
-		obj->loc_p = LOC_CARRIED;
-		obj->loc.carrying = ch;
-	}
-
-	return ch;
-}
-
-// temp struct for batched shopkeeper loading
 struct shopkeeper_temp
 {
 	int shop_nr;
@@ -9387,22 +9259,75 @@ struct all_items_temp
 	int shopkeeper_id;
 	int container_id;
 	int equip_slot;
+	int affect_count;
 	P_obj obj;
 	struct all_items_temp *next;
 };
 
-void sql_restore_shopkeepers(void)
+void discard_shopkeeper_restore_stage(struct shopkeeper_temp *keepers,
+				      struct all_items_temp *all_items, bool items_attached)
+{
+	/* Once items have been attached to staged NPCs, extract_char owns their
+	 * complete object graph.  Before that point every materialized item is an
+	 * unlinked root and must be explicitly discarded. */
+	if (items_attached)
+	{
+		// Trees are linked in the staging records, not yet equipped/carried.
+		for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+		{
+			for (P_obj obj : k->equipment)
+				if (obj)
+					extract_obj(obj);
+			while (k->inventory)
+			{
+				P_obj obj = k->inventory;
+				k->inventory = obj->next_content;
+				obj->next_content = nullptr;
+				extract_obj(obj);
+			}
+			if (k->mob)
+				extract_char(k->mob);
+		}
+	}
+	else
+	{
+		for (struct all_items_temp *item = all_items; item; item = item->next)
+			if (item->obj)
+				extract_obj(item->obj);
+		for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+			if (k->mob)
+				extract_char(k->mob);
+	}
+	while (keepers)
+	{
+		struct shopkeeper_temp *next = keepers->next;
+		free(keepers);
+		keepers = next;
+	}
+	while (all_items)
+	{
+		struct all_items_temp *next = all_items->next;
+		free(all_items);
+		all_items = next;
+	}
+}
+
+static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 {
 	if (!DB)
-		return;
+		return false;
 
 	// query 1: load all shopkeepers
-	MYSQL_RES *result = db_query("SELECT shop_id, id, mob_vnum, room_vnum FROM shopkeepers "
-				     "ORDER BY save_time DESC, id DESC");
+	MYSQL_RES *result =
+		db_query("SELECT shop_id, id, mob_vnum, room_vnum FROM shopkeepers "
+			 "WHERE (%d < 0 OR shop_id=%d) ORDER BY save_time DESC, id DESC",
+			 only_shop, only_shop);
 	if (!result)
-		return;
+		return false;
 
 	struct shopkeeper_temp *keepers = NULL;
+	struct all_items_temp *all_items = NULL;
+	struct all_items_temp *last_item = NULL;
 	int keeper_count = 0;
 	MYSQL_ROW row;
 
@@ -9415,18 +9340,22 @@ void sql_restore_shopkeepers(void)
 
 		const int mob_rnum = real_mobile(mob_vnum);
 		if (shop_nr < 0 || shop_nr >= number_of_shops || mob_rnum < 0 ||
-		    shop_index[shop_nr].keeper != mob_rnum || real_room(room_vnum) == NOWHERE)
+		    shop_index[shop_nr].keeper != mob_rnum || room_vnum <= 0 ||
+		    real_room(room_vnum) == NOWHERE ||
+		    (!shop_index[shop_nr].shop_is_roaming &&
+		     room_vnum != shop_index[shop_nr].in_room))
 		{
 			logit(LOG_DEBUG,
 			      "sql_restore_shopkeepers: skipping invalid shop %d vnum %d room %d",
 			      shop_nr, mob_vnum, room_vnum);
-			continue;
+			mysql_free_result(result);
+			discard_shopkeeper_restore_stage(keepers, all_items, false);
+			return false;
 		}
 		bool duplicate = false;
 		for (struct shopkeeper_temp *existing = keepers; existing;
 		     existing = existing->next)
-			if (existing->shop_nr == shop_nr ||
-			    (existing->mob_vnum == mob_vnum && existing->room_vnum == room_vnum))
+			if (existing->shop_nr == shop_nr)
 			{
 				duplicate = true;
 				break;
@@ -9443,11 +9372,20 @@ void sql_restore_shopkeepers(void)
 		if (!mob)
 		{
 			logit(LOG_DEBUG, "sql_restore_shopkeeper: mob vnum %d not found", mob_vnum);
-			continue;
+			mysql_free_result(result);
+			discard_shopkeeper_restore_stage(keepers, all_items, false);
+			return false;
 		}
 
 		struct shopkeeper_temp *k =
 			(struct shopkeeper_temp *)malloc(sizeof(struct shopkeeper_temp));
+		if (!k)
+		{
+			extract_char(mob);
+			mysql_free_result(result);
+			discard_shopkeeper_restore_stage(keepers, all_items, false);
+			return false;
+		}
 		k->shop_nr = shop_nr;
 		k->shopkeeper_id = shopkeeper_id;
 		k->mob_vnum = mob_vnum;
@@ -9457,6 +9395,7 @@ void sql_restore_shopkeepers(void)
 		k->inventory = NULL;
 
 		GET_BIRTHPLACE(mob) = room_vnum;
+		bind_shopkeeper(mob, shop_nr);
 
 		k->next = keepers;
 		keepers = k;
@@ -9465,23 +9404,30 @@ void sql_restore_shopkeepers(void)
 	mysql_free_result(result);
 
 	if (keeper_count == 0)
-		return;
+		return true;
 
 	// query 2: load all shopkeeper affects
 	result = db_query(
 		"SELECT sa.shopkeeper_id, sa.type, sa.duration, sa.modifier, sa.location, "
 		"sa.bitvector1, sa.bitvector2, sa.bitvector3, sa.bitvector4, sa.bitvector5 "
 		"FROM shopkeeper_affects sa "
-		"INNER JOIN shopkeepers s ON sa.shopkeeper_id = s.id");
-	if (result)
+		"INNER JOIN shopkeepers s ON sa.shopkeeper_id = s.id WHERE (%d < 0 OR s.shop_id=%d)",
+		only_shop, only_shop);
+	if (!result)
+	{
+		discard_shopkeeper_restore_stage(keepers, all_items, false);
+		return false;
+	}
 	{
 		while ((row = mysql_fetch_row(result)))
 		{
 			int shopkeeper_id = atoi(row[0]);
+			bool matched = false;
 			for (struct shopkeeper_temp *k = keepers; k; k = k->next)
 			{
 				if (k->shopkeeper_id == shopkeeper_id)
 				{
+					matched = true;
 					struct affected_type af;
 					memset(&af, 0, sizeof(af));
 					af.type = atoi(row[1]);
@@ -9497,22 +9443,31 @@ void sql_restore_shopkeepers(void)
 					break;
 				}
 			}
+			if (!matched)
+			{
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
 		}
 		mysql_free_result(result);
 	}
 
 	// query 3: load all items for all shopkeepers
-	struct all_items_temp *all_items = NULL;
-	struct all_items_temp *last_item = NULL;
-
 	result = db_query(
 		"SELECT si.id, si.shopkeeper_id, si.vnum, si.equip_slot, si.weight, si.cost, si.timer, "
 		"si.extra_flags, si.value0, si.value1, si.value2, si.value3, si.value4, si.value5, "
-		"si.value6, si.value7, si.name, si.short_descr, si.description, si.action_descr, si.container_id "
+		"si.value6, si.value7, si.name, si.short_descr, si.description, si.action_descr, si.container_id, "
+		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5 "
 		"FROM shopkeeper_items si "
 		"INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
-		"ORDER BY si.shopkeeper_id, si.id");
-	if (result)
+		"WHERE (%d < 0 OR s.shop_id=%d) ORDER BY si.shopkeeper_id, si.id",
+		only_shop, only_shop);
+	if (!result)
+	{
+		discard_shopkeeper_restore_stage(keepers, all_items, false);
+		return false;
+	}
 	{
 		while ((row = mysql_fetch_row(result)))
 		{
@@ -9526,18 +9481,37 @@ void sql_restore_shopkeepers(void)
 					break;
 				}
 			if (!accepted_keeper)
-				continue;
+			{
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
 			int vnum = atoi(row[2]);
 			int rnum = real_object(vnum);
 			if (rnum < 0)
-				continue;
+			{
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
 
 			P_obj obj = read_object(rnum, REAL);
 			if (!obj)
-				continue;
+			{
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
 
 			int equip_slot = atoi(row[3]);
 			int container_id = row[20] ? atoi(row[20]) : 0;
+			if (equip_slot < 0 || equip_slot > MAX_WEAR || container_id < 0)
+			{
+				extract_obj(obj);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
 
 			if (row[4])
 				obj->weight = atoi(row[4]);
@@ -9578,12 +9552,56 @@ void sql_restore_shopkeepers(void)
 				obj->str_mask |= STRUNG_DESC3;
 			}
 
+			if (row[21])
+				obj->wear_flags = atoi(row[21]);
+			if (row[22])
+				obj->type = sql_validate_loaded_item_type(
+					obj, atoi(row[22]), "sql_restore_shopkeepers");
+			if (row[23])
+				obj->material = atoi(row[23]);
+			if (row[24])
+				obj->bitvector = strtoul(row[24], NULL, 10);
+			if (row[25])
+				obj->bitvector2 = strtoul(row[25], NULL, 10);
+			if (row[26])
+				obj->bitvector3 = strtoul(row[26], NULL, 10);
+			if (row[27])
+				obj->bitvector4 = strtoul(row[27], NULL, 10);
+			if (row[28])
+				obj->bitvector5 = strtoul(row[28], NULL, 10);
+			obj->db_item_id = item_id;
+			if (!sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item"))
+			{
+				extract_obj(obj);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+
 			struct all_items_temp *t =
 				(struct all_items_temp *)malloc(sizeof(struct all_items_temp));
+			if (!t)
+			{
+				extract_obj(obj);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			for (struct all_items_temp *existing = all_items; existing;
+			     existing = existing->next)
+				if (existing->item_id == item_id)
+				{
+					extract_obj(obj);
+					free(t);
+					mysql_free_result(result);
+					discard_shopkeeper_restore_stage(keepers, all_items, false);
+					return false;
+				}
 			t->item_id = item_id;
 			t->shopkeeper_id = shopkeeper_id;
 			t->container_id = container_id;
 			t->equip_slot = equip_slot;
+			t->affect_count = 0;
 			t->obj = obj;
 			t->next = NULL;
 
@@ -9601,60 +9619,117 @@ void sql_restore_shopkeepers(void)
 			  "FROM shopkeeper_item_affects sia "
 			  "INNER JOIN shopkeeper_items si ON sia.item_id = si.id "
 			  "INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
-			  "ORDER BY sia.item_id");
-	if (result)
+			  "WHERE (%d < 0 OR s.shop_id=%d) ORDER BY sia.item_id",
+			  only_shop, only_shop);
+	if (!result)
+	{
+		discard_shopkeeper_restore_stage(keepers, all_items, false);
+		return false;
+	}
 	{
 		while ((row = mysql_fetch_row(result)))
 		{
 			int aff_item_id = atoi(row[0]);
 			int location = atoi(row[1]);
 			int modifier = atoi(row[2]);
+			bool matched = false;
+			bool placed = false;
 
 			for (struct all_items_temp *t = all_items; t; t = t->next)
 			{
-				if (t->item_id == aff_item_id)
+				if (t->item_id != aff_item_id)
+					continue;
+				matched = true;
+				if (t->affect_count == 0)
+					memset(t->obj->affected, 0, sizeof(t->obj->affected));
+				if (t->affect_count < MAX_OBJ_AFFECT)
 				{
-					for (int i = 0; i < MAX_OBJ_AFFECT; i++)
-					{
-						if (t->obj->affected[i].location == 0 &&
-						    t->obj->affected[i].modifier == 0)
-						{
-							t->obj->affected[i].location = location;
-							t->obj->affected[i].modifier = modifier;
-							break;
-						}
-					}
-					break;
+					t->obj->affected[t->affect_count].location = location;
+					t->obj->affected[t->affect_count++].modifier = modifier;
+					placed = true;
 				}
+				break;
+			}
+			if (!matched || !placed)
+			{
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
 			}
 		}
 		mysql_free_result(result);
 	}
 
 	// link container contents
+	int item_count = 0;
+	for (struct all_items_temp *item = all_items; item; item = item->next)
+		++item_count;
 	for (struct all_items_temp *t = all_items; t; t = t->next)
 	{
+		if (t->equip_slot > 0)
+			for (struct all_items_temp *other = t->next; other; other = other->next)
+				if (other->shopkeeper_id == t->shopkeeper_id &&
+				    other->equip_slot == t->equip_slot)
+				{
+					discard_shopkeeper_restore_stage(keepers, all_items, false);
+					return false;
+				}
 		if (t->container_id > 0)
 		{
+			struct all_items_temp *parent = NULL;
 			for (struct all_items_temp *p = all_items; p; p = p->next)
-			{
 				if (p->item_id == t->container_id)
 				{
-					if (!obj_can_nest(t->obj, p->obj))
+					parent = p;
+					break;
+				}
+			if (!parent || parent->shopkeeper_id != t->shopkeeper_id ||
+			    t->equip_slot != 0 || !obj_can_nest(t->obj, parent->obj))
+			{
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			int hops = 0;
+			for (struct all_items_temp *cursor = t; cursor && cursor->container_id > 0;
+			     ++hops)
+			{
+				if (hops >= item_count)
+				{
+					discard_shopkeeper_restore_stage(keepers, all_items, false);
+					return false;
+				}
+				const int parent_id = cursor->container_id;
+				cursor = NULL;
+				for (struct all_items_temp *candidate = all_items; candidate;
+				     candidate = candidate->next)
+					if (candidate->item_id == parent_id)
 					{
-						logit(LOG_DEBUG,
-						      "sql_restore_shopkeepers: skipping malformed container link %d -> %d",
-						      t->item_id, p->item_id);
+						cursor = candidate;
 						break;
 					}
-					t->obj->next_content = p->obj->contains;
-					p->obj->contains = t->obj;
-					t->obj->loc_p = LOC_INSIDE;
-					t->obj->loc.inside = p->obj;
+				if (!cursor)
 					break;
+				if (cursor == t)
+				{
+					discard_shopkeeper_restore_stage(keepers, all_items, false);
+					return false;
 				}
 			}
 		}
+	}
+	for (struct all_items_temp *t = all_items; t; t = t->next)
+	{
+		if (t->container_id <= 0)
+			continue;
+		for (struct all_items_temp *p = all_items; p; p = p->next)
+			if (p->item_id == t->container_id)
+			{
+				t->obj->next_content = p->obj->contains;
+				p->obj->contains = t->obj;
+				t->obj->loc_p = LOC_INSIDE;
+				t->obj->loc.inside = p->obj;
+				break;
+			}
 	}
 
 	// assign items to shopkeepers
@@ -9675,6 +9750,40 @@ void sql_restore_shopkeepers(void)
 					k->inventory = t->obj;
 				}
 				break;
+			}
+		}
+	}
+
+	/* Materialize derived stock while the restore is still staged.  A failed
+	 * prototype read must discard the complete stage, not publish a partial
+	 * snapshot and mark the durable row dirty. */
+	for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+	{
+		for (int i = 0; i < shop_index[k->shop_nr].number_items_produced; ++i)
+		{
+			const int rnum = shop_index[k->shop_nr].producing[i];
+			if (rnum < 0)
+				continue;
+			bool found = false;
+			for (P_obj obj = k->inventory; obj; obj = obj->next_content)
+				if (obj->R_num == rnum)
+				{
+					found = true;
+					break;
+				}
+			for (int slot = 0; !found && slot < MAX_WEAR; ++slot)
+				if (k->equipment[slot] && k->equipment[slot]->R_num == rnum)
+					found = true;
+			if (!found)
+			{
+				P_obj obj = read_object(rnum, REAL);
+				if (!obj)
+				{
+					discard_shopkeeper_restore_stage(keepers, all_items, true);
+					return false;
+				}
+				obj->next_content = k->inventory;
+				k->inventory = obj;
 			}
 		}
 	}
@@ -9716,58 +9825,55 @@ void sql_restore_shopkeepers(void)
 
 		const int shop_idx = k->shop_nr;
 
-		// Replace only incumbents in this room. Other rooms and the unplaced
-		// mobs in this restore batch may legitimately share the keeper vnum.
+		// Replace only one incumbent already proven to belong to this exact
+		// shop.  A controlled NPC, a different bound shop, or an ambiguous
+		// same-template population is never destructive restore authority.
+		int incumbent_matches = 0;
+		for (P_char keeper2 = character_list; keeper2; keeper2 = keeper2->next)
+			if (IS_NPC(keeper2) && keeper2 != k->mob && !GET_MASTER(keeper2) &&
+			    (shop_index[k->shop_nr].shop_is_roaming ||
+			     keeper2->in_room == load_room) &&
+			    mob_index[GET_RNUM(keeper2)].virtual_number == k->mob_vnum &&
+			    singleton_shop_id(keeper2) == k->shop_nr)
+				incumbent_matches++;
 		int extracted = 0;
-		for (P_char keeper2 = character_list; keeper2;)
-		{
-			P_char next = keeper2->next;
-			if (IS_NPC(keeper2) && keeper2 != k->mob && keeper2->in_room == load_room &&
-			    mob_index[GET_RNUM(keeper2)].virtual_number == k->mob_vnum)
+		if (!restored && incumbent_matches == 1)
+			for (P_char keeper2 = character_list; keeper2;)
 			{
-				extract_char(keeper2);
-				extracted++;
-			}
-			keeper2 = next;
-		}
-		logit(LOG_DEBUG, "sql_restore_shopkeepers: shop %d vnum %d extracted %d existing",
-		      k->shop_nr, k->mob_vnum, extracted);
-
-		char_to_room(k->mob, load_room, 0);
-
-		// add produced items not in db
-		if (shop_idx < number_of_shops)
-		{
-			for (int i = 0; i < shop_index[shop_idx].number_items_produced; i++)
-			{
-				int rnum = shop_index[shop_idx].producing[i];
-				if (rnum >= 0)
+				P_char next = keeper2->next;
+				if (IS_NPC(keeper2) && keeper2 != k->mob && !GET_MASTER(keeper2) &&
+				    (shop_index[k->shop_nr].shop_is_roaming ||
+				     keeper2->in_room == load_room) &&
+				    mob_index[GET_RNUM(keeper2)].virtual_number == k->mob_vnum &&
+				    singleton_shop_id(keeper2) == k->shop_nr)
 				{
-					int found = 0;
-					for (P_obj o = k->mob->carrying; o; o = o->next_content)
-					{
-						if (o->R_num == rnum)
-						{
-							found = 1;
-							break;
-						}
-					}
-					if (!found)
-					{
-						P_obj obj = read_object(rnum, REAL);
-						if (obj)
-							obj_to_char(obj, k->mob);
-					}
+					extract_char(keeper2);
+					extracted++;
 				}
+				keeper2 = next;
 			}
+		logit(LOG_DEBUG,
+		      "sql_restore_shopkeepers: shop %d vnum %d incumbent_matches=%d extracted=%d",
+		      k->shop_nr, k->mob_vnum, incumbent_matches, extracted);
+
+		if (restored)
+			*restored = k->mob;
+		else
+			char_to_room(k->mob, load_room, 0);
+
+		// Derived stock was materialized before publication. Only a complete
+		// catalog restore schedules a replacement snapshot.
+		if (!restored)
+		{
 			shop_index[shop_idx].dirty = 1;
+			shopkeeper_save_retry_reset(&shop_index[shop_idx].dirty_save_retry);
 		}
 		loaded++;
 	}
 
-	// query 5: delete all shopkeepers in one go
-	if (!sql_run_query("DELETE FROM shopkeepers"))
-		logit(LOG_DEBUG, "sql_restore_shopkeepers: failed to delete old shopkeepers");
+	// Keep the durable snapshot through restore and failed dirty retries.
+	// sql_save_shopkeeper replaces only this shop, inside its transaction.
+	// Invalid/unloaded rows require operator reconciliation, never a blanket delete.
 
 	// free keeper temp structs
 	struct shopkeeper_temp *tk = keepers;
@@ -9779,79 +9885,76 @@ void sql_restore_shopkeepers(void)
 	}
 
 	logit(LOG_DEBUG, "sql_restore_shopkeepers: loaded %d shopkeepers", loaded);
+	return true;
 }
 
-void sql_save_dirty_shopkeepers(void)
+bool sql_restore_shopkeepers(void)
 {
-	if (!DB)
-		return;
+	return sql_restore_shopkeeper_catalog(-1, nullptr);
+}
 
+P_char sql_restore_shopkeeper(int shop_nr)
+{
+	if (shop_nr < 0 || shop_nr >= number_of_shops)
+		return nullptr;
+	P_char restored = nullptr;
+	return sql_restore_shopkeeper_catalog(shop_nr, &restored) ? restored : nullptr;
+}
+
+bool sql_save_dirty_shopkeepers(bool force)
+{
+	if (!shop_index || number_of_shops <= 0)
+		return true;
+
+	const time_t now = time(NULL);
 	int saved = 0;
 	for (int i = 0; i < number_of_shops; i++)
 	{
 		if (!shop_index[i].dirty)
+		{
+			shopkeeper_save_retry_reset(&shop_index[i].dirty_save_retry);
 			continue;
+		}
+		shopkeeper_save_retry_state *retry = &shop_index[i].dirty_save_retry;
+		if (!DB || !shopkeeper_save_retry_due(retry, now, force))
+		{
+			if (!DB)
+				shopkeeper_save_retry_record_failure(retry, now);
+			continue;
+		}
 
-		int keeper_rnum = shop_index[i].keeper;
-		if (keeper_rnum < 0)
+		P_char keeper = NULL;
+		shopkeeper_save_reason reason = find_shopkeeper_for_dirty_save(i, &keeper);
+		if (reason == shopkeeper_save_reason::ok && sql_save_shopkeeper(keeper, i))
 		{
 			shop_index[i].dirty = 0;
+			shopkeeper_save_retry_reset(retry);
+			saved++;
 			continue;
 		}
-
-		// find the shopkeeper mob in the shop's defined room
-		int shop_room = real_room(shop_index[i].in_room);
-		P_char keeper = NULL;
-
-		if (shop_room >= 0 && shop_room <= top_of_world)
-		{
-			for (P_char ch = world[shop_room].people; ch; ch = ch->next_in_room)
-			{
-				if (IS_NPC(ch) && GET_RNUM(ch) == keeper_rnum)
-				{
-					keeper = ch;
-					break;
-				}
-			}
-		}
-
-		if (keeper)
-		{
-			// sql_save_shopkeeper already does DELETE before INSERT
-			if (sql_save_shopkeeper(keeper, i))
-			{
-				shop_index[i].dirty = 0;
-				saved++;
-			}
-			else
-			{
-				logit(LOG_DEBUG,
-				      "sql_save_dirty_shopkeepers: failed to save shopkeeper for shop %d",
-				      i);
-			}
-		}
-		else
-		{
-			// keeper not found; keep dirty so a later flush can retry when the
-			// NPC is present again.
-			logit(LOG_DEBUG,
-			      "sql_save_dirty_shopkeepers: keeper not found for shop %d; leaving dirty",
-			      i);
-		}
+		if (reason == shopkeeper_save_reason::ok)
+			reason = shopkeeper_save_reason::save_failed;
+		shopkeeper_save_retry_record_failure(retry, now);
+		log_shopkeeper_dirty_retry(i, reason, keeper, now, force);
 	}
 
 	if (saved > 0)
 		logit(LOG_DEBUG, "sql_save_dirty_shopkeepers: saved %d shopkeepers", saved);
+	for (int i = 0; i < number_of_shops; ++i)
+		if (shop_index[i].dirty)
+			return false;
+	return true;
 }
 
 static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, int container_id,
-					  int depth)
+					  int depth, std::vector<int> *source_ids, bool *valid)
 {
-	if (!DB || !item_key)
+	if (!DB || !item_key || !source_ids || !valid)
 		return NULL;
 
 	if (depth > MAX_CONTAINER_LOAD_DEPTH)
 	{
+		*valid = false;
 		logit(LOG_DEBUG,
 		      "sql_load_saved_item_contents: component=container outcome=depth_limit");
 		return NULL;
@@ -9859,7 +9962,10 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 
 	char *esc_key = sql_escape_string(item_key);
 	if (!esc_key)
+	{
+		*valid = false;
 		return NULL;
+	}
 
 	char query[512];
 	snprintf(query, sizeof(query),
@@ -9875,7 +9981,10 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
+	{
+		*valid = false;
 		return NULL;
+	}
 
 	P_obj first_obj = NULL;
 	P_obj last_obj = NULL;
@@ -9884,14 +9993,21 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 	while ((row = mysql_fetch_row(result)))
 	{
 		int item_id = atoi(row[0]);
+		source_ids->push_back(item_id);
 		int vnum = atoi(row[1]);
 		int rnum = real_object(vnum);
 		if (rnum < 0)
+		{
+			*valid = false;
 			continue;
+		}
 
 		P_obj obj = read_object(rnum, REAL);
 		if (!obj)
+		{
+			*valid = false;
 			continue;
+		}
 
 		if (row[2])
 			obj->weight = atoi(row[2]);
@@ -9957,11 +10073,13 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 		if (!sql_persistence_item_owner_matches(obj->obj_uid, "room", owner_ref,
 							"sql_load_saved_item_contents"))
 		{
+			*valid = false;
 			extract_obj(obj, FALSE);
 			continue;
 		}
 		obj->db_item_id = item_id;
-		sql_load_item_extra_descr_from_table(item_id, obj, "saved_item");
+		if (!sql_load_item_extra_descr_from_table(item_id, obj, "saved_item"))
+			*valid = false;
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query),
@@ -9980,13 +10098,16 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 			}
 			mysql_free_result(aff_result);
 		}
+		else
+			*valid = false;
 
-		obj->contains =
-			sql_load_saved_item_contents(item_key, room_vnum, item_id, depth + 1);
+		obj->contains = sql_load_saved_item_contents(item_key, room_vnum, item_id,
+							     depth + 1, source_ids, valid);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))
 			{
+				*valid = false;
 				logit(LOG_DEBUG,
 				      "sql_load_saved_item_contents: skipping malformed container link %d -> %d",
 				      c->db_item_id, obj->db_item_id);
@@ -10008,30 +10129,341 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 	return first_obj;
 }
 
+static void sql_saved_item_restore_fault(const char *stage)
+{
+	const char *environment = getenv("ENVIRONMENT");
+	const char *selected = getenv("DURIS_SAVED_ITEM_RESTORE_FAULT_STAGE");
+	const char *pause = getenv("DURIS_SAVED_ITEM_RESTORE_PAUSE_STAGE");
+	if (environment && strcmp(environment, "local") == 0 && pause && strcmp(pause, stage) == 0)
+	{
+		logit(LOG_SYS, "sql_restore_saved_items: injected pause stage=%s", stage);
+		std::this_thread::sleep_for(std::chrono::seconds(5));
+	}
+	if (environment && strcmp(environment, "local") == 0 && selected &&
+	    strcmp(selected, stage) == 0)
+	{
+		logit(LOG_SYS, "sql_restore_saved_items: injected stop stage=%s", stage);
+		fflush(NULL);
+		_Exit(80);
+	}
+}
+
+static bool sql_saved_item_uid_key(uint64_t uid, char *buffer, size_t size)
+{
+	if (!uid || !buffer || size < sizeof "item.uid.18446744073709551615")
+		return false;
+	const int length =
+		snprintf(buffer, size, "item.uid.%llu", static_cast<unsigned long long>(uid));
+	return length > 0 && static_cast<size_t>(length) < size;
+}
+
+static uint64_t sql_saved_item_season_epoch()
+{
+	MYSQL_RES *result =
+		db_query("SELECT season_epoch FROM season_reset_state WHERE state_id=1");
+	if (!result)
+		return 0;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const uint64_t epoch = row && row[0] ? strtoull(row[0], NULL, 10) : 0;
+	mysql_free_result(result);
+	return epoch;
+}
+
+static bool sql_saved_item_source_rows_match(const char *item_key, const std::vector<int> &expected,
+					     bool lock)
+{
+	if (!item_key || expected.empty())
+		return false;
+	char *escaped = sql_escape_string(item_key);
+	if (!escaped)
+		return false;
+	char query[512];
+	snprintf(query, sizeof(query),
+		 "SELECT id, container_id FROM saved_items WHERE item_key='%s' ORDER BY id%s",
+		 escaped, lock ? " FOR UPDATE" : "");
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+	{
+		free(escaped);
+		return false;
+	}
+	std::vector<int> observed;
+	bool graph_valid = true;
+	int roots = 0;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)))
+	{
+		const int id = atoi(row[0]);
+		observed.push_back(id);
+		if (!row[1])
+		{
+			++roots;
+			if (id != expected[0])
+				graph_valid = false;
+		}
+		else if (std::find(expected.begin(), expected.end(), atoi(row[1])) ==
+			 expected.end())
+			graph_valid = false;
+	}
+	mysql_free_result(result);
+	std::vector<int> sorted = expected;
+	std::sort(sorted.begin(), sorted.end());
+	graph_valid = graph_valid && roots == 1 && observed == sorted;
+	for (int id : expected)
+	{
+		snprintf(
+			query, sizeof(query),
+			"SELECT COUNT(*) FROM saved_items WHERE container_id=%d AND item_key<>'%s'%s",
+			id, escaped, lock ? " FOR UPDATE" : "");
+		result = db_query("%s", query);
+		if (!result)
+		{
+			graph_valid = false;
+			break;
+		}
+		row = mysql_fetch_row(result);
+		if (!row || !row[0] || atoi(row[0]) != 0)
+			graph_valid = false;
+		mysql_free_result(result);
+		if (!graph_valid)
+			break;
+	}
+	free(escaped);
+	return graph_valid;
+}
+
+static bool sql_saved_item_source_ids(const char *item_key, std::vector<int> *ids)
+{
+	if (!item_key || !ids)
+		return false;
+	char *escaped = sql_escape_string(item_key);
+	if (!escaped)
+		return false;
+	char query[512];
+	snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE item_key='%s'", escaped);
+	free(escaped);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+	ids->clear();
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)))
+		ids->push_back(atoi(row[0]));
+	mysql_free_result(result);
+	return true;
+}
+
+static std::string sql_saved_item_source_id_digest(const std::vector<int> &ids)
+{
+	std::vector<int> ordered = ids;
+	std::sort(ordered.begin(), ordered.end());
+	std::string serialized;
+	for (int id : ordered)
+	{
+		serialized += std::to_string(id);
+		serialized += ',';
+	}
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	SHA256(reinterpret_cast<const unsigned char *>(serialized.data()), serialized.size(),
+	       digest);
+	static const char digits[] = "0123456789ABCDEF";
+	std::string hex;
+	hex.reserve(SHA256_DIGEST_LENGTH * 2);
+	for (unsigned char byte : digest)
+	{
+		hex += digits[byte >> 4];
+		hex += digits[byte & 15];
+	}
+	return hex;
+}
+
+static bool sql_saved_item_collect_uids(P_obj obj, std::unordered_set<uint64_t> *uids)
+{
+	if (!obj || !uids || !obj->obj_uid || !uids->insert(obj->obj_uid).second)
+		return false;
+	for (P_obj child = obj->contains; child; child = child->next_content)
+		if (!sql_saved_item_collect_uids(child, uids))
+			return false;
+	return true;
+}
+
+static bool sql_saved_item_handoff_receipt(uint64_t epoch, int source_root_id,
+					   int *destination_root_id, int *source_count,
+					   bool *retired, std::string *source_digest = NULL)
+{
+	char query[256];
+	snprintf(query, sizeof(query),
+		 "SELECT destination_root_id, source_row_count, retired_at, HEX(source_id_digest) "
+		 "FROM saved_item_recovery_handoff "
+		 "WHERE season_epoch=%llu AND source_root_id=%d",
+		 static_cast<unsigned long long>(epoch), source_root_id);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const bool found = row != NULL;
+	if (found)
+	{
+		if (destination_root_id)
+			*destination_root_id = atoi(row[0]);
+		if (source_count)
+			*source_count = atoi(row[1]);
+		if (retired)
+			*retired = row[2] != NULL;
+		if (source_digest)
+			*source_digest = row[3] ? row[3] : "";
+	}
+	mysql_free_result(result);
+	return found;
+}
+
+static bool sql_retire_saved_item_source(uint64_t epoch, int source_root_id, const char *source_key,
+					 int source_count)
+{
+	if (!sql_begin_transaction())
+		return false;
+	bool ok = false;
+	int destination_root_id = 0;
+	bool retired = false;
+	std::string source_digest;
+	if (!sql_saved_item_handoff_receipt(epoch, source_root_id, &destination_root_id, NULL,
+					    &retired, &source_digest) ||
+	    !destination_root_id)
+		goto done;
+	if (retired)
+	{
+		ok = true;
+		goto done;
+	}
+	{
+		std::vector<int> source_ids;
+		if (!sql_saved_item_source_ids(source_key, &source_ids) ||
+		    static_cast<int>(source_ids.size()) != source_count ||
+		    std::find(source_ids.begin(), source_ids.end(), source_root_id) ==
+			    source_ids.end() ||
+		    sql_saved_item_source_id_digest(source_ids) != source_digest ||
+		    !sql_saved_item_source_rows_match(source_key, source_ids, true))
+			goto done;
+	}
+	sql_saved_item_restore_fault("before_retirement");
+	{
+		char query[512];
+		char *escaped = sql_escape_string(source_key);
+		if (!escaped)
+			goto done;
+		snprintf(query, sizeof(query),
+			 "DELETE FROM saved_items WHERE id=%d AND item_key='%s'", source_root_id,
+			 escaped);
+		free(escaped);
+		if (!sql_run_query(query) || mysql_affected_rows(DB) != 1)
+			goto done;
+		sql_saved_item_restore_fault("after_retirement");
+		snprintf(query, sizeof(query),
+			 "UPDATE saved_item_recovery_handoff SET retired_at=CURRENT_TIMESTAMP(6) "
+			 "WHERE season_epoch=%llu AND source_root_id=%d AND retired_at IS NULL",
+			 static_cast<unsigned long long>(epoch), source_root_id);
+		if (!sql_run_query(query) || mysql_affected_rows(DB) != 1)
+			goto done;
+	}
+	ok = true;
+done:
+	if (!ok || !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
+	sql_saved_item_restore_fault("after_retirement_commit");
+	return true;
+}
+
+static bool sql_acknowledge_saved_item_handoff(uint64_t epoch, const char *source_key,
+					       const std::vector<int> &source_ids, P_obj item,
+					       int room_vnum, const char *destination_key)
+{
+	if (!epoch || !source_key || source_ids.empty() || !item || !destination_key ||
+	    sql_in_transaction() || !sql_begin_transaction())
+		return false;
+	bool ok = false;
+	int destination_root_id = 0;
+	char *escaped_source = NULL;
+	char *escaped_destination = NULL;
+	if (!sql_saved_item_source_rows_match(source_key, source_ids, true))
+		goto done;
+	escaped_destination = sql_escape_string(destination_key);
+	if (!escaped_destination)
+		goto done;
+	{
+		char query[512];
+		snprintf(query, sizeof(query),
+			 "SELECT id FROM saved_items WHERE item_key='%s' FOR UPDATE",
+			 escaped_destination);
+		MYSQL_RES *existing = db_query("%s", query);
+		if (!existing)
+			goto done;
+		const bool occupied = mysql_num_rows(existing) > 0;
+		mysql_free_result(existing);
+		if (occupied)
+			goto done;
+	}
+	sql_saved_item_restore_fault("before_acknowledgment");
+	destination_root_id = sql_save_saved_item_recursive(destination_key, room_vnum, item, 0);
+	if (destination_root_id <= 0)
+		goto done;
+	escaped_source = sql_escape_string(source_key);
+	if (!escaped_source)
+		goto done;
+	{
+		char query[1024];
+		snprintf(query, sizeof(query),
+			 "INSERT INTO saved_item_recovery_handoff "
+			 "(season_epoch,source_root_id,source_key,source_uid,source_room_vnum,"
+			 "source_row_count,source_id_digest,destination_root_id,destination_key) "
+			 "VALUES (%llu,%d,'%s',%llu,%d,%u,UNHEX('%s'),%d,'%s')",
+			 static_cast<unsigned long long>(epoch), source_ids[0], escaped_source,
+			 static_cast<unsigned long long>(item->obj_uid), room_vnum,
+			 static_cast<unsigned int>(source_ids.size()),
+			 sql_saved_item_source_id_digest(source_ids).c_str(), destination_root_id,
+			 escaped_destination);
+		if (!sql_run_query(query))
+			goto done;
+	}
+	ok = true;
+done:
+	if (escaped_source)
+		free(escaped_source);
+	if (escaped_destination)
+		free(escaped_destination);
+	if (!ok || !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
+	sql_saved_item_restore_fault("after_acknowledgment");
+	return true;
+}
+
 void sql_restore_saved_items(void)
 {
 	if (!DB)
 		return;
 
-	struct restored_saved_item
+	const uint64_t season_epoch = sql_saved_item_season_epoch();
+	if (!season_epoch)
 	{
-		char *item_key;
-		P_obj item;
-		struct restored_saved_item *next;
-	};
+		logit(LOG_SYS,
+		      "sql_restore_saved_items: season epoch unavailable; source rows retained");
+		return;
+	}
+	std::unordered_set<uint64_t> published_uids;
 
-	struct restored_saved_item *restored_head = NULL;
-	struct restored_saved_item *restored_tail = NULL;
-
-	// get distinct item keys with root items only
-	MYSQL_RES *result = db_query(
-		"SELECT DISTINCT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
-		"value0, value1, value2, value3, value4, value5, value6, value7, "
-		"name, short_descr, description, action_descr, "
-		"wear_flags, item_type, item_material, "
-		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		"obj_uid "
-		"FROM saved_items WHERE container_id IS NULL");
+	MYSQL_RES *result =
+		db_query("SELECT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
+			 "value0, value1, value2, value3, value4, value5, value6, value7, "
+			 "name, short_descr, description, action_descr, "
+			 "wear_flags, item_type, item_material, "
+			 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+			 "obj_uid "
+			 "FROM saved_items WHERE container_id IS NULL ORDER BY id DESC");
 	if (!result)
 	{
 		logit(LOG_SYS,
@@ -10048,6 +10480,37 @@ void sql_restore_saved_items(void)
 		int room_vnum = atoi(row[1]);
 		int item_id = atoi(row[2]);
 		int vnum = atoi(row[3]);
+		const uint64_t saved_uid = row[28] ? strtoull(row[28], NULL, 10) : 0;
+		int destination_root_id = 0;
+		int source_count = 0;
+		bool retired = false;
+		if (sql_saved_item_handoff_receipt(season_epoch, item_id, &destination_root_id,
+						   &source_count, &retired))
+		{
+			char query[128];
+			snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE id=%d",
+				 destination_root_id);
+			MYSQL_RES *destination = db_query("%s", query);
+			const bool acknowledged_payload = destination &&
+							  mysql_num_rows(destination) == 1;
+			if (destination)
+				mysql_free_result(destination);
+			if (acknowledged_payload)
+			{
+				if (!retired &&
+				    !sql_retire_saved_item_source(season_epoch, item_id, item_key,
+								  source_count))
+					logit(LOG_SYS,
+					      "sql_restore_saved_items: acknowledged source retirement deferred");
+				continue;
+			}
+		}
+		if (saved_uid && published_uids.find(saved_uid) != published_uids.end())
+		{
+			logit(LOG_SYS,
+			      "sql_restore_saved_items: duplicate source UID deferred for reconciliation");
+			continue;
+		}
 
 		int room = real_room(room_vnum);
 		if (room == NOWHERE)
@@ -10060,9 +10523,12 @@ void sql_restore_saved_items(void)
 		if (rnum < 0)
 			continue;
 
+		sql_saved_item_restore_fault("before_materialization");
 		P_obj obj = read_object(rnum, REAL);
 		if (!obj)
 			continue;
+		bool valid = true;
+		std::vector<int> source_ids = { item_id };
 
 		if (row[4])
 			obj->weight = atoi(row[4]);
@@ -10120,7 +10586,6 @@ void sql_restore_saved_items(void)
 			obj->bitvector4 = strtoul(row[26], NULL, 10);
 		if (row[27])
 			obj->bitvector5 = strtoul(row[27], NULL, 10);
-		const unsigned long saved_uid = row[28] ? strtoul(row[28], NULL, 10) : 0;
 		if (saved_uid)
 			obj->obj_uid = saved_uid;
 		char owner_ref[32];
@@ -10132,7 +10597,8 @@ void sql_restore_saved_items(void)
 			continue;
 		}
 		obj->db_item_id = item_id;
-		sql_load_item_extra_descr_from_table(item_id, obj, "saved_item");
+		if (!sql_load_item_extra_descr_from_table(item_id, obj, "saved_item"))
+			valid = false;
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query),
@@ -10151,12 +10617,16 @@ void sql_restore_saved_items(void)
 			}
 			mysql_free_result(aff_result);
 		}
+		else
+			valid = false;
 
-		obj->contains = sql_load_saved_item_contents(item_key, room_vnum, item_id, 0);
+		obj->contains = sql_load_saved_item_contents(item_key, room_vnum, item_id, 0,
+							     &source_ids, &valid);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))
 			{
+				valid = false;
 				logit(LOG_DEBUG,
 				      "sql_load_saved_item_contents: skipping malformed container link %d -> %d",
 				      c->db_item_id, obj->db_item_id);
@@ -10165,48 +10635,53 @@ void sql_restore_saved_items(void)
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		if (!valid || !sql_saved_item_source_rows_match(item_key, source_ids, false))
+		{
+			logit(LOG_SYS,
+			      "sql_restore_saved_items: incomplete source graph retained without publication");
+			extract_obj(obj, FALSE);
+			continue;
+		}
+		std::unordered_set<uint64_t> tree_uids;
+		if (!sql_saved_item_collect_uids(obj, &tree_uids) ||
+		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
+				{ return published_uids.find(uid) != published_uids.end(); }))
+		{
+			extract_obj(obj, FALSE);
+			continue;
+		}
+		char destination_key[128];
+		if (!sql_saved_item_uid_key(obj->obj_uid, destination_key, sizeof destination_key))
+		{
+			extract_obj(obj, FALSE);
+			continue;
+		}
+		sql_saved_item_restore_fault("after_materialization");
 
 		obj_to_room(obj, room);
-
-		struct restored_saved_item *entry;
-		CREATE(entry, struct restored_saved_item, 1, MEM_TAG_OTHER);
-		if (entry)
+		if (!OBJ_ROOM(obj) || obj->loc.room != room)
 		{
-			entry->item_key = str_dup(item_key ? item_key : "");
-			entry->item = obj;
-			entry->next = NULL;
-			if (!restored_head)
-				restored_head = entry;
-			else
-				restored_tail->next = entry;
-			restored_tail = entry;
+			extract_obj(obj, FALSE);
+			continue;
+		}
+		published_uids.insert(tree_uids.begin(), tree_uids.end());
+		sql_saved_item_restore_fault("after_publication");
+
+		if (strcmp(item_key, destination_key) != 0)
+		{
+			if (!sql_acknowledge_saved_item_handoff(season_epoch, item_key, source_ids,
+								obj, room_vnum, destination_key))
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: handoff deferred; original source retained");
+			else if (!sql_retire_saved_item_source(season_epoch, item_id, item_key,
+							       static_cast<int>(source_ids.size())))
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged source retirement deferred");
 		}
 		loaded++;
 	}
 
 	mysql_free_result(result);
-
-	// delete all saved items after loading (they get re-saved on next tick)
-	if (!sql_run_query("DELETE FROM saved_items"))
-	{
-		logit(LOG_DEBUG,
-		      "sql_restore_saved_items: failed to delete old saved items; attempting to rewrite loaded items");
-		for (struct restored_saved_item *entry = restored_head; entry; entry = entry->next)
-		{
-			if (!sql_save_saved_item(entry->item, entry->item_key))
-				logit(LOG_DEBUG,
-				      "sql_restore_saved_items: component=rewrite outcome=failure");
-		}
-	}
-
-	for (struct restored_saved_item *entry = restored_head; entry;)
-	{
-		struct restored_saved_item *next = entry->next;
-		if (entry->item_key)
-			free(entry->item_key);
-		free(entry);
-		entry = next;
-	}
 
 	logit(LOG_DEBUG, "sql_restore_saved_items: loaded %d items", loaded);
 }

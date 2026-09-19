@@ -494,8 +494,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 		include_resurrection_wallet = true;
 		const auto materialization_prepared =
 			flatfile_corpse_resurrection_materialization_prepare(
-				root, authority, command.operation_id,
-				payload.destination_player_pid, release.items,
+				root, authority, command.operation_id, payload, release.items,
 				&resurrection_materialization, &error);
 		if (materialization_prepared != flatfile_shop_trade_materialization_result::ok &&
 		    materialization_prepared !=
@@ -539,6 +538,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 			result.corpse_owner_revision = release_items.corpse_owner_revision;
 			result.room_owner_revision = release_items.room_owner_revision;
 			result.player_owner_revision = release_items.player_owner_revision;
+			result.pet_owner_revision = release_items.pet_owner_revision;
 			result.wallet_revision = resurrection_wallet.wallet_revision;
 			result.max_item_revision = release_items.max_item_revision;
 			result.item_count = static_cast<uint32_t>(release_items.item_count);

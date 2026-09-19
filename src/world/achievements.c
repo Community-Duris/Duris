@@ -13,6 +13,33 @@
 
 extern P_index mob_index;
 extern int pulse;
+extern struct zone_data *zone_table;
+extern int top_of_zone_table;
+
+namespace
+{
+int zone_number_from_player_name(const char *value)
+{
+	if (!value || !*value)
+		return 0;
+
+	const int numeric_zone = atoi(value);
+	if (numeric_zone > 0)
+		return numeric_zone;
+
+	if (!zone_table || top_of_zone_table < 0)
+		return 0;
+	for (int index = 0; index <= top_of_zone_table; ++index)
+	{
+		if (!zone_table[index].name)
+			continue;
+		const std::string area_name = strip_ansi(zone_table[index].name);
+		if (is_abbrev(value, area_name.c_str()))
+			return zone_table[index].number;
+	}
+	return 0;
+}
+} // namespace
 
 int get_frags(P_char ch)
 {
@@ -21,7 +48,7 @@ int get_frags(P_char ch)
 
 void do_achievements(P_char ch, char *arg, int /*cmd*/)
 {
-	char section[MAX_INPUT_LENGTH], value[MAX_INPUT_LENGTH];
+	char section[MAX_INPUT_LENGTH];
 	char *remaining = one_argument(arg ? arg : (char *)"", section);
 	if (*section && (is_abbrev(section, "zones") || is_abbrev(section, "zone")))
 	{
@@ -41,11 +68,10 @@ void do_achievements(P_char ch, char *arg, int /*cmd*/)
 		std::string output;
 		if (is_abbrev(section, "zone"))
 		{
-			one_argument(remaining, value);
-			const int zone = atoi(value);
+			const int zone = zone_number_from_player_name(remaining);
 			if (zone <= 0)
 			{
-				send_to_char("Usage: achievements zone <zone-number>\r\n", ch);
+				send_to_char("Usage: achievements zone <area>\r\n", ch);
 				return;
 			}
 			output = tracker->render_zone(season, pid, zone, GET_NAME(ch), colors);

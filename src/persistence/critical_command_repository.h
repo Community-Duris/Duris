@@ -21,8 +21,9 @@ bool critical_command_repository_insert_outbox_event(MYSQL *connection,
 						     uint16_t event_index, uint16_t destination,
 						     uint16_t event_type, uint16_t payload_version,
 						     const uint8_t *payload, size_t payload_size);
-bool critical_command_repository_finish_inbox(MYSQL *connection, const critical_command &command,
-					      uint64_t durable_revision, unsigned int result_code,
-					      const uint8_t *payload, size_t payload_size);
+bool critical_command_repository_finish_inbox(
+	MYSQL *connection, const critical_command &command, uint64_t durable_revision,
+	unsigned int result_code, const uint8_t *payload, size_t payload_size,
+	critical_failure_stage failure_stage = critical_failure_stage::none);
 
 #endif

@@ -46,16 +46,16 @@ prelude = r'''
 #define HIGHEST_MAT_VNUM 2000
 #define ITEM2_ACCOUNT_BOUND 1
 #define ITEM2_NOLOOT 2
-#define GET_PID(ch) ((ch)->pid)
+#define GET_PID(ch) (assert(!(ch)->npc), (ch)->pid)
 #define GET_ITEM_TYPE(obj) ((obj)->type)
-#define IS_PC(ch) true
+#define IS_PC(ch) (!(ch)->npc)
 #define IS_SET(a,b) ((a)&(b))
 #define OBJ_ROOM(o) ((o)->location == 1)
 #define OBJ_INSIDE(o) ((o)->location == 2)
 #define OBJ_CARRIED_BY(o,ch) ((o)->location == 3 && (o)->carrier == (ch))
 #define OBJ_WORN_BY(o,ch) false
 #define OBJ_VNUM(obj) 0
-#define CAN_SEE_OBJ(ch,obj) true
+#define CAN_SEE_OBJ(ch,obj) ((obj)->visible)
 #define CAN_CARRY_N(ch) ((ch)->count_limit)
 #define CAN_CARRY_W(ch) ((ch)->weight_limit)
 #define IS_CARRYING_N(ch) 0
@@ -68,13 +68,13 @@ prelude = r'''
 #define CAP(text) ((text)[0] = toupper((text)[0]))
 #define PLAYER_COMPONENT_STATUS 1
 #define PLAYER_COMPONENT_INVENTORY 2
-struct char_data { int pid=42; int in_room=1; int count_limit=3; int weight_limit=10; };
+struct char_data { int pid=42; bool npc=false; int in_room=1; int count_limit=3; int weight_limit=10; };
 using P_char = char_data *;
 struct obj_data {
  uint64_t obj_uid=0; int type=0, location=0; int value[8]={};
  struct { P_obj_unused_placeholder; } unused;
  const char *short_description="a dagger", *name="dagger";
- int weight=1, condition=1, flags=0;
+ int weight=1, condition=1, flags=0; bool visible=true;
  P_char carrier=nullptr, hitched_to=nullptr;
  obj_data *next_content=nullptr, *contains=nullptr;
  struct { int room=0; obj_data *inside=nullptr; } loc;
@@ -253,6 +253,42 @@ int main() {
  reset(); setup(&actor,&corpse,&dagger,nullptr); actor.count_limit=0;
  start_bulk_get(&actor,&corpse,nullptr,false);
  assert(output=="You can't carry any more.\r\n"); actor.count_limit=3;
+ // Several rejected roots still produce one count-limit notice. The scan
+ // must reach a later coin pile for either NPC or player corpses.
+ for(bool player_corpse : {false,true}) {
+  reset(); char_data full_actor; full_actor.count_limit=0;
+  obj_data full_corpse, first_item, second_item, later_coins;
+  setup(&full_actor,&full_corpse,&first_item,&later_coins);
+  second_item.obj_uid=53; second_item.location=2; second_item.loc.inside=&full_corpse;
+  first_item.next_content=&second_item; second_item.next_content=&later_coins;
+  objects[53]=&second_item;
+  start_bulk_get(&full_actor,&full_corpse,nullptr,player_corpse);
+  assert(coin_attempts==1 && output.find("carry any more")==std::string::npos);
+  coin_pickup_context full_context={50,42,TRUE,true};
+  coin_transfer_payload full_payload; full_payload.source.before={0,0,4,0};
+  assert(coin_get_completion(&full_actor,true,full_payload,{},0,
+      (const uint8_t*)&full_context,sizeof(full_context)));
+  assert(output.find("  0p 4g 0s 0c")!=std::string::npos);
+  assert(output.find("You can't carry any more.\r\n")!=std::string::npos);
+  assert(output.find("You can't carry any more.\r\n") ==
+         output.rfind("You can't carry any more.\r\n"));
+  assert(OBJ_INSIDE(&first_item) && OBJ_INSIDE(&second_item));
+  assert(bulk_gets.empty());
+ }
+ // A bounded malformed sibling cycle does not multiply the typed notice;
+ // neither a hidden direct child nor a nested descendant is disclosed.
+ reset(); char_data cycle_actor; cycle_actor.count_limit=0;
+ obj_data cycle_corpse, visible_root, hidden_root, nested_secret;
+ setup(&cycle_actor,&cycle_corpse,&visible_root,nullptr);
+ hidden_root.obj_uid=53; hidden_root.location=2; hidden_root.loc.inside=&cycle_corpse;
+ hidden_root.visible=false; hidden_root.short_description="a hidden gem";
+ nested_secret.short_description="a nested pearl";
+ visible_root.contains=&nested_secret;
+ visible_root.next_content=&hidden_root; hidden_root.next_content=&visible_root;
+ objects[53]=&hidden_root;
+ start_bulk_get(&cycle_actor,&cycle_corpse,nullptr,false);
+ assert(output=="You can't carry any more.\r\n" && bulk_gets.empty());
+ assert(OBJ_INSIDE(&visible_root) && OBJ_INSIDE(&hidden_root));
  // Missing/moved source never falsely reports selected items as delivered.
  for(int missing=0;missing<3;++missing) {
   reset(); setup(&actor,&corpse,&dagger,nullptr); start_bulk_get(&actor,&corpse,nullptr,false);
@@ -300,7 +336,17 @@ int main() {
  assert(coin_get_completion(&actor,false,{}, {},0,(const uint8_t*)&context,sizeof(context)));
  assert(output.find("  a dagger")!=std::string::npos && output.find("  0p 7g 0s 0c")!=std::string::npos);
  assert(output.find("sorting")<output.find("did not commit") && bulk_gets.empty());
- puts("corpse haul: held transfer/adoption/coins, movement, rejection, stale source and disconnect passed");
+ // The helper is PC-only. The strict PID macro above aborts for a real NPC,
+ // so this also protects every container/coin/artifact publication caller.
+ reset(); char_data scavenger; scavenger.npc=true; obj_data npc_bag,npc_loot;
+ setup(&scavenger,&npc_bag,&npc_loot,nullptr);
+ assert(corpse_bulk_get(nullptr,npc_bag.obj_uid)==nullptr);
+ assert(corpse_bulk_get(&scavenger,npc_bag.obj_uid)==nullptr);
+ item_get_ack_publication=true;
+ publish_container_get(&scavenger,&npc_loot,&npc_bag,TRUE,false);
+ item_get_ack_publication=false;
+ assert(OBJ_CARRIED_BY(&npc_loot,&scavenger) && bulk_gets.empty());
+ puts("corpse haul: held transfer/adoption/coins, movement, rejection, stale source, disconnect and strict NPC publication passed");
 }
 '''
 

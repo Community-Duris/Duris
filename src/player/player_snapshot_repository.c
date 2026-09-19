@@ -19,6 +19,7 @@
 #include <string>
 #include <strings.h>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 namespace
@@ -702,34 +703,167 @@ query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 	return sync_restitution_runtime_state(connection, snapshot.items, snapshot.pid);
 }
 
-query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
+query_result verify_pet_custody(MYSQL *connection, int pid, const player_pet_snapshot &pet)
 {
-	query_result result = execute(connection, "DELETE FROM player_pets WHERE owner_pid=" +
-							  std::to_string(snapshot.pid));
+	if (!pet.pet_uid)
+		return { true, 0 };
+	struct expected_item
+	{
+		uint64_t root;
+		uint64_t parent;
+		int32_t vnum;
+	};
+	std::unordered_map<uint64_t, expected_item> expected;
+	for (size_t index = 0; index < pet.items.size(); ++index)
+	{
+		const auto &item = pet.items[index];
+		if (!item.object_uid || item.parent_index >= static_cast<int32_t>(index) ||
+		    item.parent_index < -1)
+			return { false, EINVAL };
+		uint64_t root = item.object_uid;
+		uint64_t parent = 0;
+		if (item.parent_index >= 0)
+		{
+			const auto &ancestor = pet.items[item.parent_index];
+			const auto found = expected.find(ancestor.object_uid);
+			if (found == expected.end())
+				return { false, EINVAL };
+			root = found->second.root;
+			parent = ancestor.object_uid;
+		}
+		if (!expected.emplace(item.object_uid, expected_item{ root, parent, item.vnum })
+			     .second)
+			return { false, EINVAL };
+	}
+	const std::string sql =
+		"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),vnum FROM "
+		"item_current_owner WHERE owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
+		" AND owner_id=" + std::to_string(pet.pet_uid) +
+		" AND owner_context_id=" + std::to_string(pid) +
+		" AND state=1 ORDER BY item_uid FOR UPDATE";
+	query_result result = execute(connection, sql);
 	if (!result.ok)
 		return result;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+		return { false, mysql_errno(connection) };
+	while (MYSQL_ROW row = mysql_fetch_row(rows))
+	{
+		if (!row[0] || !row[1] || !row[2] || !row[3])
+		{
+			mysql_free_result(rows);
+			return { false, EILSEQ };
+		}
+		const uint64_t uid = std::strtoull(row[0], nullptr, 10);
+		const auto found = expected.find(uid);
+		if (found == expected.end() || std::to_string(found->second.root) != row[1] ||
+		    std::to_string(found->second.parent) != row[2] ||
+		    std::to_string(found->second.vnum) != row[3])
+		{
+			mysql_free_result(rows);
+			return { false, ESTALE };
+		}
+		expected.erase(found);
+	}
+	mysql_free_result(rows);
+	return expected.empty() ? query_result{ true, 0 } : query_result{ false, ESTALE };
+}
+
+query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
+{
+	query_result result = { true, 0 };
+	std::unordered_set<uint64_t> retained;
+	std::unordered_set<uint64_t> pet_uids;
 	for (const player_pet_snapshot &pet : snapshot.pets)
 	{
+		if (pet.pet_uid && !pet_uids.insert(pet.pet_uid).second)
+			return { false, EINVAL };
+		uint64_t pet_id = 0;
+		if (pet.pet_uid)
+		{
+			result = execute(connection,
+					 "SELECT id FROM player_pets WHERE owner_pid=" +
+						 std::to_string(snapshot.pid) + " AND pet_uid=" +
+						 std::to_string(pet.pet_uid) + " FOR UPDATE");
+			if (!result.ok)
+				return result;
+			MYSQL_RES *rows = mysql_store_result(connection);
+			if (!rows)
+				return { false, mysql_errno(connection) };
+			MYSQL_ROW row = mysql_fetch_row(rows);
+			if (row && row[0])
+				pet_id = std::strtoull(row[0], nullptr, 10);
+			mysql_free_result(rows);
+			if (!pet_id)
+				return { false, ESTALE };
+			result = verify_pet_custody(connection, snapshot.pid, pet);
+			if (!result.ok)
+				return result;
+		}
 		std::ostringstream sql;
-		sql << "INSERT INTO player_pets (owner_pid,mob_vnum,pet_order,hit,max_hit,mana,"
-		       "max_mana,vitality,max_vitality,charm_duration,room_vnum,saved_at,restore_state,hold_reason) VALUES ("
-		    << snapshot.pid << ',' << pet.mob_vnum << ',' << pet.order << ',' << pet.hit
-		    << ',' << pet.max_hit << ',' << pet.mana << ',' << pet.max_mana << ','
-		    << pet.vitality << ',' << pet.max_vitality << ',' << pet.charm_duration << ','
-		    << pet.room_vnum << ",NOW()," << quote(connection, pet.restore_state) << ','
-		    << static_cast<uint32_t>(pet.hold_reason) << ')';
+		if (pet_id)
+			sql << "UPDATE player_pets SET mob_vnum=" << pet.mob_vnum
+			    << ",pet_order=" << pet.order << ",hit=" << pet.hit
+			    << ",max_hit=" << pet.max_hit << ",mana=" << pet.mana
+			    << ",max_mana=" << pet.max_mana << ",vitality=" << pet.vitality
+			    << ",max_vitality=" << pet.max_vitality
+			    << ",charm_duration=" << pet.charm_duration
+			    << ",room_vnum=" << pet.room_vnum << ",saved_at=NOW(),restore_state="
+			    << quote(connection, pet.restore_state)
+			    << ",hold_reason=" << static_cast<uint32_t>(pet.hold_reason)
+			    << " WHERE id=" << pet_id;
+		else
+			sql << "INSERT INTO player_pets (owner_pid,mob_vnum,pet_order,hit,"
+			       "max_hit,mana,max_mana,vitality,max_vitality,charm_duration,room_vnum,"
+			       "saved_at,restore_state,hold_reason) VALUES ("
+			    << snapshot.pid << ',' << pet.mob_vnum << ',' << pet.order << ','
+			    << pet.hit << ',' << pet.max_hit << ',' << pet.mana << ','
+			    << pet.max_mana << ',' << pet.vitality << ',' << pet.max_vitality << ','
+			    << pet.charm_duration << ',' << pet.room_vnum << ",NOW(),"
+			    << quote(connection, pet.restore_state) << ','
+			    << static_cast<uint32_t>(pet.hold_reason) << ')';
 		result = execute(connection, sql.str());
 		if (!result.ok)
 			return result;
-		const unsigned long long pet_id = mysql_insert_id(connection);
+		if (!pet_id)
+			pet_id = mysql_insert_id(connection);
 		if (!pet_id ||
 		    pet_id > static_cast<unsigned long long>(std::numeric_limits<int>::max()))
 			return { false, EIO };
+		retained.insert(pet_id);
+		if (pet.pet_uid)
+		{
+			result = execute(connection, "DELETE FROM player_pet_items WHERE pet_id=" +
+							     std::to_string(pet_id));
+			if (!result.ok)
+				return result;
+		}
 		result = insert_item_rows(connection, pet.items, static_cast<int>(pet_id), true);
 		if (!result.ok)
 			return result;
 	}
-	return result;
+	std::string missing = "owner_pid=" + std::to_string(snapshot.pid);
+	if (!retained.empty())
+	{
+		missing += " AND id NOT IN (";
+		for (uint64_t id : retained)
+			missing += std::to_string(id) + ',';
+		missing.back() = ')';
+	}
+	const std::string custody =
+		"EXISTS (SELECT 1 FROM item_owner_revision own WHERE own.owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
+		" AND own.owner_id=player_pets.pet_uid AND own.owner_context_id=" +
+		std::to_string(snapshot.pid) + " AND own.revision>0)";
+	result = execute(connection, "UPDATE player_pets SET hold_reason=" +
+					     std::to_string(static_cast<uint32_t>(
+						     pet_hold_reason::custody_pending)) +
+					     " WHERE " + missing + " AND " + custody);
+	if (!result.ok)
+		return result;
+	return execute(connection,
+		       "DELETE FROM player_pets WHERE " + missing + " AND NOT " + custody);
 }
 
 query_result apply_shapes(MYSQL *connection, const player_snapshot &snapshot)

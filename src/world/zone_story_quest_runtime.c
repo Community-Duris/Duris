@@ -98,6 +98,38 @@ std::string new_transaction_id(uint32_t season_id, uint32_t pid, std::string_vie
 	       std::string(definition_id) + ":" + std::to_string(completed_at) + ":" +
 	       std::to_string(sequence);
 }
+
+std::string render_daily_surface(P_char player, bool colors, bool score, std::string *error)
+{
+	if (!ready() || !player || IS_NPC(player))
+	{
+		if (error)
+			*error = "zone-story daily service is unavailable";
+		return {};
+	}
+	/* Disabled daily quests are intentionally absent from every ordinary-player
+	 * surface.  In particular, do not remember a character or create an
+	 * assignment merely because score/quest was viewed. */
+	if (!tracker.get_daily_policy().enabled)
+		return {};
+	const std::string before = tracker.serialize_state(error);
+	tracker.remember_character(current_season_id(), static_cast<uint32_t>(GET_PID(player)),
+				   GET_NAME(player));
+	const int64_t now = static_cast<int64_t>(time(NULL));
+	std::string output =
+		score ? tracker.render_daily_score(current_season_id(),
+						   static_cast<uint32_t>(GET_PID(player)),
+						   GET_LEVEL(player), GET_RACEWAR(player), now,
+						   colors) :
+			tracker.render_daily(current_season_id(),
+					     static_cast<uint32_t>(GET_PID(player)),
+					     GET_LEVEL(player), GET_RACEWAR(player), now, colors);
+	if (save_persisted_state(error))
+		return output;
+	std::string restore_error;
+	tracker.deserialize_state(before, &restore_error);
+	return "Daily quest state could not be saved; no assignment was committed.\r\n";
+}
 } // namespace
 
 uint32_t current_season_id()
@@ -187,22 +219,12 @@ bool erase_character(uint32_t pid, std::string *error)
 
 std::string render_daily(P_char player, bool colors, std::string *error)
 {
-	if (!ready() || !player || IS_NPC(player))
-		return fail(error, "zone-story daily service is unavailable"),
-		       std::string(
-			       "Daily zone-story quests are unavailable until catalog/persistence boot completes.\r\n");
-	const std::string before = tracker.serialize_state(error);
-	tracker.remember_character(current_season_id(), static_cast<uint32_t>(GET_PID(player)),
-				   GET_NAME(player));
-	std::string output = tracker.render_daily(current_season_id(),
-						  static_cast<uint32_t>(GET_PID(player)),
-						  GET_LEVEL(player), GET_RACEWAR(player),
-						  static_cast<int64_t>(time(NULL)), colors);
-	if (save_persisted_state(error))
-		return output;
-	std::string restore_error;
-	tracker.deserialize_state(before, &restore_error);
-	return "Daily zone-story quest state could not be saved; no assignment was committed.\r\n";
+	return render_daily_surface(player, colors, false, error);
+}
+
+std::string render_daily_score(P_char player, bool colors, std::string *error)
+{
+	return render_daily_surface(player, colors, true, error);
 }
 
 bool record_authoritative_completion(std::string_view definition_id, int32_t zone_number,

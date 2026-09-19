@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 5;
-constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 6;
+constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 7;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 8;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
@@ -197,6 +197,7 @@ struct player_item_snapshot
 
 struct player_pet_snapshot
 {
+	uint64_t pet_uid = 0;
 	int32_t mob_vnum;
 	int32_t order;
 	int32_t hit;

@@ -4245,6 +4245,35 @@
       "dependencies": ["database:saved_items"]
     },
     {
+      "id": "database:saved_item_recovery_handoff",
+      "kind": "database_table",
+      "locator": "saved_item_recovery_handoff",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "durable acknowledgment and exact-source retirement for saved ground item replay",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:saved_items"]
+    },
+    {
       "id": "database:saved_items",
       "kind": "database_table",
       "locator": "saved_items",

@@ -454,22 +454,21 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
 					    ch->desc->term_type != TERM_SKIP_ANSI;
 			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
-			send_to_char(daily.c_str(), ch);
+			if (!daily.empty())
+				send_to_char(daily.c_str(), ch);
 		}
-		else
-			send_to_char(
-				"Daily zone-story quests are unavailable until catalog/persistence boot completes.\r\n",
-				ch);
 		return;
 	}
-	/* Keep the daily section visible even when the bartender has no active
-	 * assignment and the legacy path returns early below. */
+	/* When a populated daily assignment exists, show its player-facing details
+	 * alongside the ordinary bartender/world quest.  Empty or disabled daily
+	 * state deliberately contributes no text. */
 	if (zone_story_quest_runtime::service())
 	{
 		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
 				    ch->desc->term_type != TERM_SKIP_ANSI;
 		std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
-		send_to_char(daily.c_str(), ch);
+		if (!daily.empty())
+			send_to_char(daily.c_str(), ch);
 	}
 
 	// Allow Illithids to do bartender quests.

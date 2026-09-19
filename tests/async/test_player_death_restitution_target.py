@@ -12,12 +12,14 @@ import hashlib
 import os
 from pathlib import Path
 import secrets
+import socket
 import shlex
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 import importlib
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
@@ -77,6 +79,200 @@ class TargetTests(unittest.TestCase):
             replace(policy, maintenance_kind="docker", maintenance_id="a-convenient-name").require_maintenance()
         with self.assertRaises(TargetError):
             replace(policy, maintenance_kind="systemd", maintenance_id="duris-mud.service").require_maintenance()
+
+    def test_user_systemd_boundary_binds_owner_manager_unit_and_cgroup(self):
+        uid = os.getuid()
+        db_name = "duris_user_manager_fixture"
+        policy_env = self.env(ENVIRONMENT="production", DB_NAME=db_name)
+        with tempfile.TemporaryDirectory(prefix="duris-504-user-systemd-") as directory:
+            root = Path(directory)
+            runtime_root = root / "run" / "user"
+            runtime = runtime_root / str(uid)
+            (runtime / "systemd").mkdir(parents=True, mode=0o700)
+            runtime.chmod(0o700)
+            private = runtime / "systemd" / "private"
+            manager_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            manager_socket.bind(str(private))
+
+            cgroup_root = root / "cgroup"
+            cgroup_root.mkdir()
+            (cgroup_root / "cgroup.controllers").write_text("cpu\n")
+            manager_group = cgroup_root / "user.slice" / f"user-{uid}.slice" / f"user@{uid}.service"
+            unit_group = manager_group / "app.slice" / "duris-mud-production.service"
+            unit_group.mkdir(parents=True)
+            (manager_group / "cgroup.procs").write_text("123\n")
+            (unit_group / "cgroup.procs").write_text("")
+
+            proc_root = root / "proc"
+            (proc_root / "123").mkdir(parents=True)
+            (proc_root / "123" / "status").write_text(
+                f"Name:\tsystemd\nUid:\t{uid}\t{uid}\t{uid}\t{uid}\n"
+            )
+            (proc_root / "123" / "comm").write_text("systemd\n")
+            (proc_root / "123" / "cmdline").write_bytes(b"/usr/lib/systemd/systemd\x00--user\x00")
+            manager_output = "SystemState=running\n"
+            unit_output = "\n".join([
+                "Id=duris-mud-production.service", "LoadState=loaded",
+                "ActiveState=inactive", "SubState=dead", "MainPID=0", "ControlPID=0",
+                f"UnitFileState=masked", f"ControlGroup=/user.slice/user-{uid}.slice/user@{uid}.service/app.slice/duris-mud-production.service",
+            ]) + "\n"
+
+            def systemctl(command, **_kwargs):
+                output = unit_output if "duris-mud-production.service" in command else manager_output
+                return subprocess.CompletedProcess(command, 0, output, "")
+
+            with mock.patch.object(target_module, "SYSTEMD_CGROUP_ROOT", cgroup_root), \
+                    mock.patch.object(target_module, "SYSTEMD_RUNTIME_ROOT", runtime_root), \
+                    mock.patch.object(target_module, "SYSTEMD_PROC_ROOT", proc_root), \
+                    mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": str(runtime)}, clear=False), \
+                    mock.patch.object(os, "getuid", return_value=uid), \
+                    mock.patch.object(subprocess, "run", side_effect=systemctl):
+                policy = TargetPolicy.from_environment(
+                    policy_env, confirm_production_target=db_name,
+                    maintenance_kind="systemd-user",
+                    maintenance_id="duris-mud-production.service",
+                    maintenance_owner=str(uid),
+                )
+                boundary = policy.require_maintenance()
+                self.assertEqual(boundary["kind"], "systemd-user")
+                self.assertEqual(boundary["owner_uid"], str(uid))
+                self.assertEqual(boundary["manager_id"], f"user@{uid}.service")
+                self.assertEqual(boundary["main_pid"], "0")
+                self.assertEqual(target_module.validate_maintenance_record(boundary), boundary)
+                stale = dict(boundary)
+                stale["manager_pid"] = "124"
+                self.assertNotEqual(stale, boundary)
+
+                # A masked user unit can have no retained cgroup at all.  The
+                # empty ControlGroup is the observed state; do not synthesize
+                # a path merely to make the old cgroup check pass.
+                (unit_group / "cgroup.procs").unlink()
+                unit_group.rmdir()
+                unit_group.parent.rmdir()
+                unit_output = "\n".join([
+                    "Id=duris-mud-production.service", "LoadState=masked",
+                    "ActiveState=inactive", "SubState=dead", "MainPID=0", "ControlPID=0",
+                    "UnitFileState=masked", "ControlGroup=",
+                ]) + "\n"
+                boundary = policy.require_maintenance()
+                self.assertEqual(boundary["control_group"], "")
+                self.assertEqual(boundary["cgroup_processes"], "0")
+                self.assertEqual(target_module.validate_maintenance_record(boundary), boundary)
+
+                # Do not turn the absent-group compatibility state into a
+                # generic loaded-unit bypass.
+                unit_output = unit_output.replace("LoadState=masked", "LoadState=loaded")
+                with self.assertRaisesRegex(TargetError, "no verifiable cgroup"):
+                    policy.require_maintenance()
+            manager_socket.close()
+
+    def test_systemd_boundary_keeps_system_scope_and_cgroup_gate(self):
+        policy = TargetPolicy.from_environment(
+            self.env(), maintenance_kind="systemd", maintenance_id="duris-mud-production.service"
+        )
+        properties = "\n".join([
+            "Id=duris-mud-production.service", "LoadState=masked", "ActiveState=inactive",
+            "SubState=dead", "MainPID=0", "ControlPID=0", "UnitFileState=masked",
+            "ControlGroup=/system.slice/duris-mud-production.service",
+        ]) + "\n"
+        with tempfile.TemporaryDirectory(prefix="duris-504-systemd-") as directory:
+            cgroup_root = Path(directory) / "cgroup"
+            group = cgroup_root / "system.slice" / "duris-mud-production.service"
+            group.mkdir(parents=True)
+            (cgroup_root / "cgroup.controllers").write_text("cpu\n")
+            (group / "cgroup.procs").write_text("")
+
+            def systemctl(command, **_kwargs):
+                return subprocess.CompletedProcess(command, 0, properties, "")
+
+            with mock.patch.object(target_module, "SYSTEMD_CGROUP_ROOT", cgroup_root), \
+                    mock.patch.object(subprocess, "run", side_effect=systemctl) as run:
+                self.assertEqual(
+                    policy.require_maintenance(),
+                    {"kind": "systemd", "id": "duris-mud-production.service", "state": "masked-inactive"},
+                )
+                self.assertIn("--system", run.call_args.args[0])
+
+            (group / "cgroup.procs").write_text("987\n")
+            with mock.patch.object(target_module, "SYSTEMD_CGROUP_ROOT", cgroup_root), \
+                    mock.patch.object(subprocess, "run", side_effect=systemctl), \
+                    self.assertRaisesRegex(TargetError, "control group"):
+                policy.require_maintenance()
+
+            (group / "cgroup.procs").write_text("")
+            (cgroup_root / "cgroup.controllers").unlink()
+            with mock.patch.object(target_module, "SYSTEMD_CGROUP_ROOT", cgroup_root), \
+                    mock.patch.object(subprocess, "run", side_effect=systemctl), \
+                    self.assertRaisesRegex(TargetError, "visibility"):
+                policy.require_maintenance()
+
+        live = properties.replace("ActiveState=inactive", "ActiveState=active").replace(
+            "SubState=dead", "SubState=running").replace("MainPID=0", "MainPID=987", 1)
+        with mock.patch.object(subprocess, "run", return_value=subprocess.CompletedProcess(
+                ["systemctl"], 0, live, "")), self.assertRaisesRegex(TargetError, "masked"):
+            policy.require_maintenance()
+
+    def test_user_systemd_boundary_refuses_owner_state_and_visibility_bypasses(self):
+        uid = os.getuid()
+        db_name = "duris_user_manager_fixture"
+        env = self.env(ENVIRONMENT="production", DB_NAME=db_name)
+        with self.assertRaises(TargetError):
+            TargetPolicy.from_environment(
+                env, confirm_production_target=db_name,
+                maintenance_kind="systemd-user", maintenance_id="duris-mud-production.service",
+            )
+        policy = TargetPolicy.from_environment(
+            env, confirm_production_target=db_name,
+            maintenance_kind="systemd-user", maintenance_id="duris-mud-production.service",
+            maintenance_owner=str(uid),
+        )
+        with mock.patch.object(os, "getuid", return_value=uid + 1), \
+                self.assertRaisesRegex(TargetError, "owner"):
+            policy.require_maintenance()
+
+        with self.assertRaises(TargetError):
+            replace(policy, maintenance_id="duris-mud.service").require_maintenance()
+
+        manager = {"SystemState": "running"}
+        unit = {
+            "Id": "duris-mud-production.service", "LoadState": "loaded",
+            "ActiveState": "active", "SubState": "running", "MainPID": "456",
+            "ControlPID": "0", "UnitFileState": "masked",
+            "ControlGroup": f"/user.slice/user-{uid}.slice/user@{uid}.service/app.slice/duris-mud-production.service",
+        }
+        with mock.patch.object(os, "getuid", return_value=uid), \
+                mock.patch.object(TargetPolicy, "_user_runtime", return_value=(Path(f"/run/user/{uid}"), Path(f"/run/user/{uid}/systemd/private"))), \
+                mock.patch.object(TargetPolicy, "_systemd_properties", side_effect=[manager, unit]), \
+                mock.patch.object(TargetPolicy, "_user_manager_pid", return_value=123), \
+                mock.patch.object(TargetPolicy, "_cgroup_pids", return_value={123}), \
+                self.assertRaisesRegex(TargetError, "stopped"):
+            policy.require_maintenance()
+
+        bad_manager = {"SystemState": "degraded"}
+        with mock.patch.object(os, "getuid", return_value=uid), \
+                mock.patch.object(TargetPolicy, "_user_runtime", return_value=(Path(f"/run/user/{uid}"), Path(f"/run/user/{uid}/systemd/private"))), \
+                mock.patch.object(TargetPolicy, "_systemd_properties", side_effect=[bad_manager, unit]), \
+                self.assertRaisesRegex(TargetError, "manager"):
+            policy.require_maintenance()
+
+        unit["ActiveState"] = "inactive"
+        unit["SubState"] = "dead"
+        unit["MainPID"] = "0"
+        with mock.patch.object(os, "getuid", return_value=uid), \
+                mock.patch.object(TargetPolicy, "_user_runtime", return_value=(Path(f"/run/user/{uid}"), Path(f"/run/user/{uid}/systemd/private"))), \
+                mock.patch.object(TargetPolicy, "_systemd_properties", side_effect=[manager, unit]), \
+                mock.patch.object(TargetPolicy, "_user_manager_pid", return_value=123), \
+                mock.patch.object(TargetPolicy, "_cgroup_pids", side_effect=[{123}, {456}]), \
+                self.assertRaisesRegex(TargetError, "not empty"):
+            policy.require_maintenance()
+
+        with mock.patch.object(os, "getuid", return_value=uid), \
+                mock.patch.object(TargetPolicy, "_user_runtime", return_value=(Path(f"/run/user/{uid}"), Path(f"/run/user/{uid}/systemd/private"))), \
+                mock.patch.object(TargetPolicy, "_systemd_properties", side_effect=[manager, unit]), \
+                mock.patch.object(TargetPolicy, "_user_manager_pid", return_value=123), \
+                mock.patch.object(TargetPolicy, "_cgroup_pids", side_effect=TargetError("process visibility is unavailable")), \
+                self.assertRaisesRegex(TargetError, "visibility"):
+            policy.require_maintenance()
 
     def test_backup_file_security_and_mutation(self):
         with tempfile.TemporaryDirectory() as tmp:

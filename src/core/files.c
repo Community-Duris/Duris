@@ -70,6 +70,7 @@ static int short_size = sizeof(short);
 static int stat_vers, obj_vers, skill_vers;
 [[maybe_unused]] static int aff_vers, witness_vers;
 extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 // flag to skip corpse saves during boot (loading from db)
 int skip_corpse_save = 0;
@@ -4770,12 +4771,21 @@ P_char restorePet(char *id)
 	return ch;
 }
 
+static bool saved_item_uid_key(P_obj item, char *key, size_t size)
+{
+	if (!item || !item->obj_uid || !key || size < sizeof "item.uid.18446744073709551615")
+		return false;
+	const int length = snprintf(key, size, "item.uid.%llu",
+				    static_cast<unsigned long long>(item->obj_uid));
+	return length > 0 && static_cast<size_t>(length) < size;
+}
+
 void writeSavedItem(P_obj item)
 {
 	if (!item)
 		return;
 
-	if (item->cost < 100)
+	if (item->cost < 100 && item->db_item_id <= 0 && item->type != ITEM_STORAGE)
 		return;
 
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
@@ -4799,10 +4809,12 @@ void writeSavedItem(P_obj item)
 	}
 
 	char item_key[MAX_STRING_LENGTH];
-	snprintf(item_key, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
-
-	for (char *p = item_key; *p; p++)
-		*p = LOWER(*p);
+	if (!saved_item_uid_key(item, item_key, sizeof item_key))
+	{
+		persistence_alert(AVATAR, "saved_item", "sql_write", "none", "none", "missing_uid",
+				  "item_vnum=%d", OBJ_VNUM(item));
+		return;
+	}
 
 	if (!OBJ_ROOM(item))
 	{
@@ -4832,7 +4844,6 @@ void restoreSavedItems(void)
 
 void PurgeSavedItemFile(P_obj item)
 {
-	char *tmp;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	if (!item)
@@ -4849,9 +4860,12 @@ void PurgeSavedItemFile(P_obj item)
 		return;
 	}
 
-	snprintf(Gbuf2, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
-	for (tmp = Gbuf2; *tmp; tmp++)
-		*tmp = LOWER(*tmp);
+	if (!saved_item_uid_key(item, Gbuf2, sizeof Gbuf2))
+	{
+		persistence_alert(AVATAR, "saved_item", "sql_purge", "none", "none", "missing_uid",
+				  "item_vnum=%d", OBJ_VNUM(item));
+		return;
+	}
 	if (!sql_delete_saved_item(Gbuf2))
 		logit(LOG_FILE, "sql_delete_saved_item failed");
 
@@ -4867,19 +4881,37 @@ void PurgeSavedItemFile(P_obj item)
 	return;
 }
 
-int writeShopKeeper(P_char ch)
+int writeShopKeeper(P_char ch, int shop_nr)
 {
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return 0;
+
 	if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
+	{
+		shop_index[shop_nr].dirty = 1;
 		return 0;
+	}
 
-	if (IS_NPC(ch) && !IS_SHOPKEEPER(ch))
+	/* The caller already has the authoritative shop identity.  Do not
+	 * rediscover it from a room/template pair: roaming templates are shared,
+	 * and a failed discovery must not lose the dirty state. */
+	if (shop_index[shop_nr].keeper != GET_RNUM(ch))
+	{
+		shop_index[shop_nr].dirty = 1;
 		return 0;
+	}
 
-	int shop_nr;
-	for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(ch); shop_nr++)
-		;
+	if (sql_save_shopkeeper(ch, shop_nr))
+	{
+		shop_index[shop_nr].dirty = 0;
+		shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+		return 1;
+	}
 
-	return sql_save_shopkeeper(ch, shop_nr) ? 1 : 0;
+	shop_index[shop_nr].dirty = 1;
+	shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+	logit(LOG_DEBUG, "writeShopKeeper: shop=%d outcome=retry leaving_dirty=1", shop_nr);
+	return 0;
 }
 
 int deleteShopKeeper(int id)
@@ -4915,14 +4947,24 @@ void restore_shopkeepers(void)
 		return;
 	}
 #ifndef __NO_MYSQL__
-	sql_restore_shopkeepers();
+	if (!sql_restore_shopkeepers())
+		fatal_boot_error(
+			"shopkeeper",
+			"SQL shopkeeper restore incomplete; refusing to publish partial stock");
 #endif
 }
 
-void save_dirty_shopkeepers(void)
+bool save_dirty_shopkeepers(bool force)
 {
+	// Flat-file trades commit stock/custody atomically in their own journal.
+	// Legacy SQL dirty flags are not an outstanding SQL save in that mode.
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return true;
 #ifndef __NO_MYSQL__
-	sql_save_dirty_shopkeepers();
+	return sql_save_dirty_shopkeepers(force);
+#else
+	(void)force;
+	return true;
 #endif
 }
 
