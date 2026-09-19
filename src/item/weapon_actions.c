@@ -1,4 +1,5 @@
 #include "item/weapon_actions.h"
+#include "item/native_artifact_actions.h"
 
 #include "core/prototypes.h"
 #include "core/utils.h"
@@ -286,14 +287,22 @@ void update_weapon_action_properties()
 item_action_start selected_avernus_action(P_obj source, P_char actor, P_char target, int damage,
 					  int cap)
 {
+	if (!native_artifact_control_enabled(19730))
+		return item_action_start::suppressed;
+	if (!native_artifact_variant_enabled(19730, actor, "telegraphic"))
+		return item_action_start::legacy;
+	if (!native_artifact_power_enabled(19730, "drain"))
+		return item_action_start::suppressed;
 	uint32_t id = 0;
 	const auto routing = prepare(weapon_kind::avernus, source, id);
 	if (routing != item_action_start::scheduled)
 		return routing;
 	item_action_selection selection;
 	selection.effect_count = 1;
-	selection.effects[0] = { 1, damage, item_action_call::weapon,
-				 item_action_effect_target::original, cap };
+	selection.effects[0] = {
+		1, std::min(damage, native_artifact_power_level(19730, "drain", damage)),
+		item_action_call::weapon, item_action_effect_target::original, cap
+	};
 	return start_selected_item_action(id, actor, target, source, selection);
 }
 

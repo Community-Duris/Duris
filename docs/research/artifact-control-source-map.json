@@ -1,0 +1,3527 @@
+{
+  "revision": "440248b17eecc3517229a48a4946cf6c0a33ffa5",
+  "scope": "Active AREA direct E/G/O/P references only; source evidence, not live availability. Does not resolve indirect tables, script loads, or reset execution branches. lastMob is lexical context, not proof of successful load.",
+  "templates": [
+    {
+      "vnum": 17,
+      "name": "a mystical warhammer",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 115,
+      "callback": "barb",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/nyneth3.zon",
+          "line": 43,
+          "zone": "#387",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 38811,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 17 1 38811 100 0 0 0           * (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 3123
+        }
+      ]
+    },
+    {
+      "vnum": 21,
+      "name": "'Mayhem', chaotic sword of the night",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 180,
+      "callback": "good_evil_sword",
+      "disposition": "default-off pilot: Mayhem",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 3810
+        }
+      ]
+    },
+    {
+      "vnum": 22,
+      "name": "'Symmetry', the uniform sword of light",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 192,
+      "callback": "good_evil_sword",
+      "disposition": "default-off pilot: Symmetry",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 3810
+        }
+      ]
+    },
+    {
+      "vnum": 30,
+      "name": "a skull headed staff of power",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 333,
+      "callback": "staff_of_power",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.undermountain.c",
+          "line": 636
+        }
+      ]
+    },
+    {
+      "vnum": 58,
+      "name": "The Holy Relic of the True Gods",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 836,
+      "callback": "relic_proc",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": []
+    },
+    {
+      "vnum": 59,
+      "name": "The blood-splattered Relic of the Undead Kings",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 846,
+      "callback": "relic_proc",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": []
+    },
+    {
+      "vnum": 68,
+      "name": "The ancient Relic of the Spider Queen LLoth",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 952,
+      "callback": "relic_proc",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": []
+    },
+    {
+      "vnum": 69,
+      "name": "the hammer of earthen creation",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 962,
+      "callback": "cold_hammer",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 12484
+        }
+      ]
+    },
+    {
+      "vnum": 401,
+      "name": "a dark brown ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 4187,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 424,
+      "name": "a wispy astral-twined mindstone ring",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 4472,
+      "callback": "lucrot_mindstone",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/newhope.zon",
+          "line": 1149,
+          "zone": "#890",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 89138,
+            "room": 89098,
+            "sourceLine": 1147,
+            "command": "M"
+          },
+          "raw": "G 1 424 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.lucrot.c",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "vnum": 425,
+      "name": "the holy avenger of Ambran",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 4495,
+      "callback": "holy_weapon",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/shabo.zon",
+          "line": 273,
+          "zone": "#328",
+          "command": "P",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 32820,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "P 1 425 1 32820 100 0 0 0          *   (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4978
+        }
+      ]
+    },
+    {
+      "vnum": 430,
+      "name": "the holy flamberge of the efreeti",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 4554,
+      "callback": "flamberge",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/brass.zon",
+          "line": 1055,
+          "zone": "#1390",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 139011,
+            "room": 139312,
+            "sourceLine": 1052,
+            "command": "M"
+          },
+          "raw": "G 1 430 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 822
+        },
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 1284
+        }
+      ]
+    },
+    {
+      "vnum": 790,
+      "name": "the standard of the Good Races of Duris",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 7419,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 791,
+      "name": "the standard of the Evil Races of Duris",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 7427,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 900,
+      "name": "a bright purple ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8246,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/ceofutur.zon",
+          "line": 314,
+          "zone": "#814",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 81454,
+            "room": 81676,
+            "sourceLine": 310,
+            "command": "M"
+          },
+          "raw": "G 1 900 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 901,
+      "name": "a bright red ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8258,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 902,
+      "name": "a bright blue ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8268,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 903,
+      "name": "a dark yellow ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8280,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/nyneth3.zon",
+          "line": 232,
+          "zone": "#387",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 38737,
+            "room": 38809,
+            "sourceLine": 226,
+            "command": "M"
+          },
+          "raw": "G 1 903 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 904,
+      "name": "a dark red ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8290,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 905,
+      "name": "a dark green ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8300,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 906,
+      "name": "a dark purple ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8310,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/trnsptow.zon",
+          "line": 238,
+          "zone": "#162",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 16205,
+            "room": 16253,
+            "sourceLine": 235,
+            "command": "M"
+          },
+          "raw": "G 1 906 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 907,
+      "name": "a dark cyan ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8320,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 908,
+      "name": "a dark blue ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8330,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 909,
+      "name": "a soft white ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8340,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 910,
+      "name": "a bright green ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8352,
+      "callback": "artifact_biofeedback",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/dragonnia.zon",
+          "line": 208,
+          "zone": "#68",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 6816,
+            "room": 6835,
+            "sourceLine": 204,
+            "command": "M"
+          },
+          "raw": "G 1 910 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 355
+        }
+      ]
+    },
+    {
+      "vnum": 911,
+      "name": "a dark ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8360,
+      "callback": "artifact_stone",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/tiamat.zon",
+          "line": 159,
+          "zone": "#196",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 19617,
+            "room": 19624,
+            "sourceLine": 155,
+            "command": "M"
+          },
+          "raw": "G 1 911 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 408
+        }
+      ]
+    },
+    {
+      "vnum": 912,
+      "name": "a rainbow colored ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8368,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 913,
+      "name": "a swirling ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8376,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 914,
+      "name": "a BRIGHT blue ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8384,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/ravenloft.zon",
+          "line": 514,
+          "zone": "#583",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 58449,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 914 1 58449 100 0 0 0          * (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 915,
+      "name": "a LARGE blue ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8394,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/ravenloft.zon",
+          "line": 537,
+          "zone": "#583",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 58564,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 915 1 58564 100 0 0 0          * (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 916,
+      "name": "a glowing white ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8404,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 917,
+      "name": "a flaming ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8412,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 918,
+      "name": "an icy ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8420,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 919,
+      "name": "a deep blue ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8428,
+      "callback": "ioun_sustenance",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.ioun.c",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "vnum": 920,
+      "name": "a phased ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8436,
+      "callback": "ioun_warp",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.ioun.c",
+          "line": 180
+        }
+      ]
+    },
+    {
+      "vnum": 921,
+      "name": "a LARGE green ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8444,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/celestia.zon",
+          "line": 373,
+          "zone": "#455",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 45565,
+            "room": 45688,
+            "sourceLine": 368,
+            "command": "M"
+          },
+          "raw": "G 1 921 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 922,
+      "name": "a mirrored ioun stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8456,
+      "callback": "deflect_ioun",
+      "disposition": "default-off pilot: mirrored ioun",
+      "directResets": [
+        {
+          "source": "areas/zon/juiblex.zon",
+          "line": 411,
+          "zone": "#875",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 87544,
+            "room": 87626,
+            "sourceLine": 409,
+            "command": "M"
+          },
+          "raw": "G 1 922 1 0 100 0 0 0              *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 2941
+        }
+      ]
+    },
+    {
+      "vnum": 923,
+      "name": "Orcus' Left Testicle",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8464,
+      "callback": "ioun_testicle",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.ioun.c",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "vnum": 924,
+      "name": "Orcus' Left Testicle",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8472,
+      "callback": "ioun_testicle",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.ioun.c",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "vnum": 925,
+      "name": "Orcus' Left Testicle",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8480,
+      "callback": "ioun_testicle",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.ioun.c",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "vnum": 926,
+      "name": "Orcus' Left Testicle",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 8488,
+      "callback": "ioun_testicle",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.ioun.c",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "vnum": 1210,
+      "name": "tendrils of shadowy mist",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 9368,
+      "callback": "tendrils",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/dragonnia.zon",
+          "line": 94,
+          "zone": "#68",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 6801,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 1210 1 6801 100 0 0 0          * (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 4534
+        }
+      ]
+    },
+    {
+      "vnum": 1220,
+      "name": "Lyrical Instrument of Time",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 9475,
+      "callback": "lyrical_instrument_of_time",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/ceofutur.zon",
+          "line": 67,
+          "zone": "#814",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 81456,
+            "room": 81417,
+            "sourceLine": 64,
+            "command": "M"
+          },
+          "raw": "G 1 1220 1 0 100 0 0 0             *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 12007
+        }
+      ]
+    },
+    {
+      "vnum": 1222,
+      "name": "the God Stone",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 9493,
+      "callback": "gfstone",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 3966
+        }
+      ]
+    },
+    {
+      "vnum": 1230,
+      "name": "the Totem of Mastery",
+      "template": "areas/obj/heavens.obj",
+      "templateLine": 9638,
+      "callback": "totem_of_mastery",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/snogres.zon",
+          "line": 210,
+          "zone": "#877",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 87727,
+            "room": 87793,
+            "sourceLine": 207,
+            "command": "F"
+          },
+          "raw": "G 1 1230 1 0 100 0 0 0             *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 10078
+        }
+      ]
+    },
+    {
+      "vnum": 6818,
+      "name": "the totem of the ancient dragon riders",
+      "template": "areas/obj/dragonnia.obj",
+      "templateLine": 299,
+      "callback": "resurrect_totem",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 14448
+        }
+      ]
+    },
+    {
+      "vnum": 6826,
+      "name": "the mystic axe of the dragonkind",
+      "template": "areas/obj/dragonnia.obj",
+      "templateLine": 437,
+      "callback": "dragonkind",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/dragonnia.zon",
+          "line": 207,
+          "zone": "#68",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 6816,
+            "room": 6835,
+            "sourceLine": 204,
+            "command": "M"
+          },
+          "raw": "G 1 6826 1 0 100 0 0 0             *    the mystic axe of the dragonkind"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "vnum": 16242,
+      "name": "the mace of light and darkness",
+      "template": "areas/obj/trnsptow.obj",
+      "templateLine": 674,
+      "callback": "zion_light_dark",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/barovia2.zon",
+          "line": 396,
+          "zone": "#588",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 58835,
+            "room": 58984,
+            "sourceLine": 388,
+            "command": "M"
+          },
+          "raw": "G 1 16242 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.zion.c",
+          "line": 408
+        }
+      ]
+    },
+    {
+      "vnum": 16262,
+      "name": "the globe of shadows",
+      "template": "areas/obj/trnsptow.obj",
+      "templateLine": 994,
+      "callback": "trans_tower_shadow_globe",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/ceofutur.zon",
+          "line": 313,
+          "zone": "#814",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 81454,
+            "room": 81676,
+            "sourceLine": 310,
+            "command": "M"
+          },
+          "raw": "G 1 16262 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 7953
+        },
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 7993
+        }
+      ]
+    },
+    {
+      "vnum": 19730,
+      "name": "Avernus the life stealer",
+      "template": "areas/obj/astral_main.obj",
+      "templateLine": 285,
+      "callback": "avernus",
+      "disposition": "default-off pilot: Avernus",
+      "directResets": [
+        {
+          "source": "areas/zon/bctdl.zon",
+          "line": 287,
+          "zone": "#324",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 32420,
+            "room": 32469,
+            "sourceLine": 281,
+            "command": "M"
+          },
+          "raw": "G 1 19730 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 1401
+        }
+      ]
+    },
+    {
+      "vnum": 22070,
+      "name": "the icecrown of the frost revenants",
+      "template": "areas/obj/cerebusp.obj",
+      "templateLine": 1109,
+      "callback": "revenant_helm",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/Voluntown.zon",
+          "line": 153,
+          "zone": "#1424",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 142425,
+            "room": 142446,
+            "sourceLine": 147,
+            "command": "M"
+          },
+          "raw": "G 1 22070 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 2400
+        }
+      ]
+    },
+    {
+      "vnum": 23206,
+      "name": "the orb of the sea",
+      "template": "areas/obj/plane_water_one.obj",
+      "templateLine": 71,
+      "callback": "orb_of_the_sea",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/plane_water_one.zon",
+          "line": 57,
+          "zone": "#232",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 16,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 23240,
+            "room": 23250,
+            "sourceLine": 55,
+            "command": "M"
+          },
+          "raw": "E 1 23206 1 16 100 0 0 0           *   the orb of the sea"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 619
+        }
+      ]
+    },
+    {
+      "vnum": 23805,
+      "name": "the mace of the earth",
+      "template": "areas/obj/plane_earth_one.obj",
+      "templateLine": 56,
+      "callback": "zion_mace_of_earth",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/earth.zon",
+          "line": 503,
+          "zone": "#435",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 43576,
+            "room": 43682,
+            "sourceLine": 500,
+            "command": "M"
+          },
+          "raw": "G 1 23805 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.zion.c",
+          "line": 938
+        }
+      ]
+    },
+    {
+      "vnum": 24406,
+      "name": "the sphere of wind",
+      "template": "areas/obj/plane_air_one.obj",
+      "templateLine": 81,
+      "callback": "lightning",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/plane_air_one.zon",
+          "line": 62,
+          "zone": "#244",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 24440,
+            "room": 24450,
+            "sourceLine": 54,
+            "command": "M"
+          },
+          "raw": "G 1 24406 1 0 100 0 0 0            *    the sphere of wind"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 476
+        }
+      ]
+    },
+    {
+      "vnum": 25710,
+      "name": "the granite dagger 'BloodFeast'",
+      "template": "areas/obj/bahamut.obj",
+      "templateLine": 177,
+      "callback": "bloodfeast",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/bahamut.zon",
+          "line": 160,
+          "zone": "#257",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 25922,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 25710 1 25922 100 0 0 0        * the granite dagger 'BloodFeast'"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 2204
+        },
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 2246
+        }
+      ]
+    },
+    {
+      "vnum": 25723,
+      "name": "the platemail of the DragonLord",
+      "template": "areas/obj/bahamut.obj",
+      "templateLine": 398,
+      "callback": "dragonlord_plate",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/bahamut.zon",
+          "line": 162,
+          "zone": "#257",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 25922,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 25723 1 25922 100 0 0 0        * the platemail of the DragonLord"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 2651
+        }
+      ]
+    },
+    {
+      "vnum": 25745,
+      "name": "Sunblade, longsword of Justice",
+      "template": "areas/obj/bahamut.obj",
+      "templateLine": 733,
+      "callback": "sunblade",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/ravenloft.zon",
+          "line": 536,
+          "zone": "#583",
+          "command": "P",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 58430,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "P 1 25745 1 58430 100 0 0 0        *   (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4114
+        }
+      ]
+    },
+    {
+      "vnum": 26665,
+      "name": "a cloak of Elvenkind",
+      "template": "areas/obj/negplane.obj",
+      "templateLine": 1015,
+      "callback": "elvenkind_cloak",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/nyneth3.zon",
+          "line": 231,
+          "zone": "#387",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 38737,
+            "room": 38809,
+            "sourceLine": 226,
+            "command": "M"
+          },
+          "raw": "G 1 26665 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 2874
+        }
+      ]
+    },
+    {
+      "vnum": 26666,
+      "name": "a pair of pale, misty gloves",
+      "template": "areas/obj/negplane.obj",
+      "templateLine": 1035,
+      "callback": "transp_tow_misty_gloves",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/vecna.zon",
+          "line": 266,
+          "zone": "#1300",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 130035,
+            "room": 130071,
+            "sourceLine": 262,
+            "command": "M"
+          },
+          "raw": "G 1 26666 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 857
+        }
+      ]
+    },
+    {
+      "vnum": 28973,
+      "name": "an obsidian buckle named \"Rage\"",
+      "template": "areas/obj/torg.obj",
+      "templateLine": 1123,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 31514,
+      "name": "Tsunami, the trident of storms",
+      "template": "areas/obj/seakngdm.obj",
+      "templateLine": 221,
+      "callback": "SeaKingdom_Tsunami",
+      "disposition": "default-off pilot: Tsunami",
+      "directResets": [
+        {
+          "source": "areas/zon/seakngdm.zon",
+          "line": 320,
+          "zone": "#315",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 17,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 31528,
+            "room": 31722,
+            "sourceLine": 316,
+            "command": "M"
+          },
+          "raw": "E 1 31514 1 17 100 0 0 0           *   Tsunami, the trident of storms"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 4204
+        }
+      ]
+    },
+    {
+      "vnum": 32619,
+      "name": "the stone mace 'Godsfury'",
+      "template": "areas/obj/eth2.obj",
+      "templateLine": 238,
+      "callback": "eth2_godsfury",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/eth2.zon",
+          "line": 246,
+          "zone": "#326",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 16,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 32635,
+            "room": 32703,
+            "sourceLine": 245,
+            "command": "M"
+          },
+          "raw": "E 1 32619 1 16 100 0 0 0           *   the stone mace 'Godsfury'"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.eth2.c",
+          "line": 298
+        }
+      ]
+    },
+    {
+      "vnum": 32621,
+      "name": "the crown of Aramus",
+      "template": "areas/obj/eth2.obj",
+      "templateLine": 271,
+      "callback": "eth2_aramus_crown",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/eth2.zon",
+          "line": 256,
+          "zone": "#326",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 32637,
+            "room": 32706,
+            "sourceLine": 255,
+            "command": "M"
+          },
+          "raw": "G 1 32621 1 0 100 0 0 0            *    the crown of Aramus"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.eth2.c",
+          "line": 395
+        }
+      ]
+    },
+    {
+      "vnum": 32817,
+      "name": "the staff of the magi",
+      "template": "areas/obj/shabo.obj",
+      "templateLine": 210,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 32822,
+      "name": "Chaos, The Unholy Avenger",
+      "template": "areas/obj/shabo.obj",
+      "templateLine": 258,
+      "callback": "holy_weapon",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4978
+        }
+      ]
+    },
+    {
+      "vnum": 32827,
+      "name": "the cloak of the stalker",
+      "template": "areas/obj/shabo.obj",
+      "templateLine": 312,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 32836,
+      "name": "the totem of Mox",
+      "template": "areas/obj/shabo.obj",
+      "templateLine": 404,
+      "callback": "mox_totem",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/shabo.zon",
+          "line": 495,
+          "zone": "#328",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 32881,
+            "room": 32916,
+            "sourceLine": 489,
+            "command": "M"
+          },
+          "raw": "G 1 32836 1 0 100 0 0 0            *    the totem of Mox"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.shabo.c",
+          "line": 714
+        }
+      ]
+    },
+    {
+      "vnum": 41203,
+      "name": "the unholy avenger named 'Bloodlust'",
+      "template": "areas/obj/shadamehr_keep.obj",
+      "templateLine": 17,
+      "callback": "unholy_avenger_bloodlust",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/barovia.zon",
+          "line": 336,
+          "zone": "#910",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 91031,
+            "room": 91124,
+            "sourceLine": 331,
+            "command": "M"
+          },
+          "raw": "G 1 41203 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 1080
+        },
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 1234
+        }
+      ]
+    },
+    {
+      "vnum": 43569,
+      "name": "a ball of negative energy",
+      "template": "areas/obj/earth.obj",
+      "templateLine": 1200,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/earth.zon",
+          "line": 533,
+          "zone": "#435",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 41,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 43506,
+            "room": 43693,
+            "sourceLine": 531,
+            "command": "M"
+          },
+          "raw": "E 1 43569 1 41 100 0 0 0           *   a ball of negative energy"
+        }
+      ]
+    },
+    {
+      "vnum": 45525,
+      "name": "'Einjar' the titan shield of purity",
+      "template": "areas/obj/celestia.obj",
+      "templateLine": 361,
+      "callback": "Einjar",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/celestia.zon",
+          "line": 405,
+          "zone": "#455",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 11,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 45562,
+            "room": 45715,
+            "sourceLine": 404,
+            "command": "M"
+          },
+          "raw": "E 1 45525 1 11 100 0 0 0           *   'Einjar' the titan shield of purity"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 4673
+        }
+      ]
+    },
+    {
+      "vnum": 51005,
+      "name": "a blood red sword named 'Death Rider'",
+      "template": "areas/obj/hell_one_avernus.obj",
+      "templateLine": 45,
+      "callback": "holy_weapon",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/shabo.zon",
+          "line": 271,
+          "zone": "#328",
+          "command": "P",
+          "ifFlag": 1,
+          "limit": 3,
+          "destination": 32870,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "P 1 51005 3 32870 100 0 0 0        *   (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4978
+        }
+      ]
+    },
+    {
+      "vnum": 51006,
+      "name": "Tiamat's poison tail stinger",
+      "template": "areas/obj/hell_one_avernus.obj",
+      "templateLine": 64,
+      "callback": "tiamat_stinger",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/tiamat.zon",
+          "line": 139,
+          "zone": "#196",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 19700,
+            "room": 19617,
+            "sourceLine": 135,
+            "command": "M"
+          },
+          "raw": "G 1 51006 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 2668
+        }
+      ]
+    },
+    {
+      "vnum": 51401,
+      "name": "the rod of Dispator",
+      "template": "areas/obj/hell_two_dis.obj",
+      "templateLine": 1,
+      "callback": "dispator",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/4horse.zon",
+          "line": 231,
+          "zone": "#345",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 34804,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 51401 1 34804 100 0 0 0        * (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 560
+        }
+      ]
+    },
+    {
+      "vnum": 55306,
+      "name": "the mystical longsword of Volo the Traveler",
+      "template": "areas/obj/wh.obj",
+      "templateLine": 3779,
+      "callback": "volo_longsword",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.winterhaven.c",
+          "line": 510
+        }
+      ]
+    },
+    {
+      "vnum": 55377,
+      "name": "a gladius called 'Backstabber'",
+      "template": "areas/obj/wh.obj",
+      "templateLine": 4552,
+      "callback": "gladius_backstabber",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/caertannad.zon",
+          "line": 1230,
+          "zone": "#784",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 78430,
+            "room": 78642,
+            "sourceLine": 1223,
+            "command": "M"
+          },
+          "raw": "G 1 55377 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.winterhaven.c",
+          "line": 3963
+        }
+      ]
+    },
+    {
+      "vnum": 67200,
+      "name": "Bahamut's mask of vigor",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1,
+      "callback": "vigor_mask",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/bahamut.zon",
+          "line": 310,
+          "zone": "#257",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 20,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 25700,
+            "room": 25918,
+            "sourceLine": 308,
+            "command": "M"
+          },
+          "raw": "E 1 67200 1 20 100 0 0 0           *   (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4186
+        }
+      ]
+    },
+    {
+      "vnum": 67201,
+      "name": "the platemail of the Dragon Horde",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 32,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/hall.zon",
+          "line": 464,
+          "zone": "#777",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 77734,
+            "room": 77894,
+            "sourceLine": 460,
+            "command": "M"
+          },
+          "raw": "G 1 67201 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67202,
+      "name": "the boots of inertia",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 44,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/brass.zon",
+          "line": 464,
+          "zone": "#1390",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 139313,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 67202 1 139313 100 0 0 0       * (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67203,
+      "name": "a haze of swirling green vapor",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 60,
+      "callback": "vapor",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/mansion.zon",
+          "line": 358,
+          "zone": "#35",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 3524,
+            "room": 3669,
+            "sourceLine": 353,
+            "command": "M"
+          },
+          "raw": "G 1 67203 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 2989
+        }
+      ]
+    },
+    {
+      "vnum": 67204,
+      "name": "misty tendrils of shadow",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 87,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67205,
+      "name": "the ethereal blade",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 103,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67206,
+      "name": "the wicked-looking scimitar of Demogorgon",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 120,
+      "callback": "demo_scimitar",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/astral_main.zon",
+          "line": 45,
+          "zone": "#197",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 19704,
+            "room": 19730,
+            "sourceLine": 32,
+            "command": "M"
+          },
+          "raw": "G 1 67206 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4661
+        }
+      ]
+    },
+    {
+      "vnum": 67207,
+      "name": "a swirling staff of air conjuration",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 132,
+      "callback": "staff_of_air_conjuration",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/plane_air_one.zon",
+          "line": 57,
+          "zone": "#244",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 24440,
+            "room": 24450,
+            "sourceLine": 54,
+            "command": "M"
+          },
+          "raw": "G 1 67207 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 8733
+        }
+      ]
+    },
+    {
+      "vnum": 67208,
+      "name": "the three-pronged totem of the Naga Queen",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 151,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/airshipgrave.zon",
+          "line": 300,
+          "zone": "#775",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 77525,
+            "room": 77576,
+            "sourceLine": 297,
+            "command": "M"
+          },
+          "raw": "G 1 67208 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67209,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 163,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67210,
+      "name": "the orb of elemental fire",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 176,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/plane_fire_one.zon",
+          "line": 65,
+          "zone": "#254",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 25440,
+            "room": 25450,
+            "sourceLine": 61,
+            "command": "M"
+          },
+          "raw": "G 1 67210 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67211,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 192,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67212,
+      "name": "a carved dragonbone longbow called \"Eternity\"",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 205,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/jade.zon",
+          "line": 586,
+          "zone": "#766",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 76683,
+            "room": 76759,
+            "sourceLine": 583,
+            "command": "M"
+          },
+          "raw": "G 1 67212 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67213,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 225,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67214,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 238,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67215,
+      "name": "a belt of iron solidarity",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 251,
+      "callback": "artifact_biofeedback",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/barovia2.zon",
+          "line": 399,
+          "zone": "#588",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 58835,
+            "room": 58984,
+            "sourceLine": 388,
+            "command": "M"
+          },
+          "raw": "G 1 67215 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 355
+        }
+      ]
+    },
+    {
+      "vnum": 67216,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 259,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67217,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 272,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67218,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 285,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67219,
+      "name": "the dark heart of Dreggan Wood",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 298,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/shadamehr_keep.zon",
+          "line": 38,
+          "zone": "#412",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 41223,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 67219 1 41223 100 0 0 0        * (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67220,
+      "name": "a shaped chunk from a golem",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 316,
+      "callback": "golem_chunk",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 3198
+        }
+      ]
+    },
+    {
+      "vnum": 67222,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 339,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67223,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 352,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67224,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 365,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67225,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 378,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67226,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 391,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67227,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 404,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67228,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 417,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67229,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 430,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67230,
+      "name": "the eyes of the mindflayer",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 443,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/prisonb.zon",
+          "line": 306,
+          "zone": "#430",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 43005,
+            "room": 43018,
+            "sourceLine": 303,
+            "command": "M"
+          },
+          "raw": "G 1 67230 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67231,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 459,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67232,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 472,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67233,
+      "name": "some platemail of colorless salamander scales",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 485,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/labyrinth.zon",
+          "line": 222,
+          "zone": "#50",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 5006,
+            "room": 5134,
+            "sourceLine": 219,
+            "command": "M"
+          },
+          "raw": "G 1 67233 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67234,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 497,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67235,
+      "name": "the robe of Lost Souls",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 510,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/dlsc.zon",
+          "line": 503,
+          "zone": "#368",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 36855,
+            "room": 36877,
+            "sourceLine": 496,
+            "command": "M"
+          },
+          "raw": "G 1 67235 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67236,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 529,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67237,
+      "name": "the blade of the entwined dark serpent",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 542,
+      "callback": "serpent_blade",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4362
+        }
+      ]
+    },
+    {
+      "vnum": 67238,
+      "name": "some platinum linked sleeves of life",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 554,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/swamp_two.zon",
+          "line": 59,
+          "zone": "#261",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 26006,
+            "room": 26133,
+            "sourceLine": 58,
+            "command": "M"
+          },
+          "raw": "G 1 67238 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67239,
+      "name": "a large gold-rimmed church door",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 566,
+      "callback": "church_door",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/citadel.zon",
+          "line": 601,
+          "zone": "#130",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 13027,
+            "room": 13199,
+            "sourceLine": 600,
+            "command": "M"
+          },
+          "raw": "G 1 67239 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 8577
+        }
+      ]
+    },
+    {
+      "vnum": 67240,
+      "name": "the black skull of Sakaslan, the destroyer",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 605,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/basin_wa.zon",
+          "line": 142,
+          "zone": "#340",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 34012,
+            "room": 34110,
+            "sourceLine": 140,
+            "command": "M"
+          },
+          "raw": "G 1 67240 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67241,
+      "name": "Utgard-Loki's crystal ball",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 624,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/jotun.zon",
+          "line": 526,
+          "zone": "#960",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 96040,
+            "room": 96287,
+            "sourceLine": 519,
+            "command": "M"
+          },
+          "raw": "G 1 67241 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67242,
+      "name": "the twisted spine and skull of the Lich Lord",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 638,
+      "callback": "lich_spine",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/clfhaven.zon",
+          "line": 1145,
+          "zone": "#215",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 21646,
+            "room": 21857,
+            "sourceLine": 1141,
+            "command": "M"
+          },
+          "raw": "G 1 67242 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4467
+        }
+      ]
+    },
+    {
+      "vnum": 67243,
+      "name": "the Living Necroplasm",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 660,
+      "callback": "living_necroplasm",
+      "disposition": "default-off pilot: living necroplasm",
+      "directResets": [
+        {
+          "source": "areas/zon/negplane.zon",
+          "line": 581,
+          "zone": "#266",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 26642,
+            "room": 26859,
+            "sourceLine": 577,
+            "command": "M"
+          },
+          "raw": "G 1 67243 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 2805
+        }
+      ]
+    },
+    {
+      "vnum": 67244,
+      "name": "the band of emerald flames",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 676,
+      "callback": "artifact_stone",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/brass.zon",
+          "line": 467,
+          "zone": "#1390",
+          "command": "P",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 139134,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "P 1 67244 1 139134 100 0 0 0       *   (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 408
+        }
+      ]
+    },
+    {
+      "vnum": 67245,
+      "name": "a lightning rod composed of pure magic",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 686,
+      "callback": "rod_of_magic",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/brass.zon",
+          "line": 1031,
+          "zone": "#1390",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 139009,
+            "room": 139299,
+            "sourceLine": 1029,
+            "command": "M"
+          },
+          "raw": "G 1 67245 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 11610
+        }
+      ]
+    },
+    {
+      "vnum": 67246,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 702,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67247,
+      "name": "a shimmering golden Ttken",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 715,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67248,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 728,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67249,
+      "name": "the dirk of vigor",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 741,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67250,
+      "name": "a gilded Songbird charm",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 759,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/realm.zon",
+          "line": 381,
+          "zone": "#140",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 14072,
+            "room": 14112,
+            "sourceLine": 379,
+            "command": "M"
+          },
+          "raw": "G 1 67250 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67251,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 786,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67252,
+      "name": "a frost-covered braided necklace",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 799,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/icecrag.zon",
+          "line": 740,
+          "zone": "#970",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 97002,
+            "room": 97082,
+            "sourceLine": 737,
+            "command": "M"
+          },
+          "raw": "G 1 67252 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67253,
+      "name": "the instrument of lyrical mastery",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 816,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/suntmpl.zon",
+          "line": 360,
+          "zone": "#824",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 82408,
+            "room": 82435,
+            "sourceLine": 358,
+            "command": "M"
+          },
+          "raw": "G 1 67253 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67254,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 838,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67255,
+      "name": "a set of gartham hide sleeves",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 851,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/pharrvly.zon",
+          "line": 462,
+          "zone": "#402",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 40215,
+            "room": 40381,
+            "sourceLine": 460,
+            "command": "M"
+          },
+          "raw": "G 1 67255 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67256,
+      "name": "the glittering cloak of the sprite queen, Faelarae",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 869,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/realm.zon",
+          "line": 322,
+          "zone": "#140",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 14016,
+            "room": 14064,
+            "sourceLine": 319,
+            "command": "M"
+          },
+          "raw": "G 1 67256 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67257,
+      "name": "the sacred totem of 'Minthka'",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 889,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67258,
+      "name": "a cold saber called 'icicle'",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 909,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/icetower.zon",
+          "line": 306,
+          "zone": "#318",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 31824,
+            "room": 31945,
+            "sourceLine": 300,
+            "command": "M"
+          },
+          "raw": "G 1 67258 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67259,
+      "name": "some fingerless gloves of su-monster skin",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 938,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/darkfall.zon",
+          "line": 35,
+          "zone": "#953",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 95301,
+            "room": 95339,
+            "sourceLine": 33,
+            "command": "M"
+          },
+          "raw": "G 1 67259 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67260,
+      "name": "a glowing wagon splinter",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 950,
+      "callback": "splinter",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/ravenloft2.zon",
+          "line": 1178,
+          "zone": "#590",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 59060,
+            "room": 59070,
+            "sourceLine": 1176,
+            "command": "M"
+          },
+          "raw": "G 1 67260 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 8542
+        }
+      ]
+    },
+    {
+      "vnum": 67261,
+      "name": "some spiked crabshell armor",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 960,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/shipy.zon",
+          "line": 518,
+          "zone": "#431",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 43136,
+            "room": 43233,
+            "sourceLine": 515,
+            "command": "M"
+          },
+          "raw": "G 1 67261 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67262,
+      "name": "the wondrous mace of the Sea",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 972,
+      "callback": "mace_of_sea",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/banditca.zon",
+          "line": 222,
+          "zone": "#148",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 14813,
+            "room": 14842,
+            "sourceLine": 220,
+            "command": "M"
+          },
+          "raw": "G 1 67262 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4334
+        }
+      ]
+    },
+    {
+      "vnum": 67263,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 984,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67264,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 997,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67265,
+      "name": "a raven skull ring",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1010,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67266,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1032,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67267,
+      "name": "a tormented zarbon face, twisted in agony",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1045,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67268,
+      "name": "an umbilical cord from a pregnant duergar",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1057,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/khildarak.zon",
+          "line": 2250,
+          "zone": "#170",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 17175,
+            "room": 17040,
+            "sourceLine": 2248,
+            "command": "M"
+          },
+          "raw": "G 1 67268 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67269,
+      "name": "the severed tentacle of a carrion crawler",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1074,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67270,
+      "name": "a bracelet of poisonous snake scales",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1093,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/caves_skelenak.zon",
+          "line": 164,
+          "zone": "#40",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 4028,
+            "room": 4074,
+            "sourceLine": 163,
+            "command": "M"
+          },
+          "raw": "G 1 67270 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67271,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1105,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67272,
+      "name": "the terrifying visage of the great wraith Dranum",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1118,
+      "callback": "dranum_mask",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/new_cavecity.zon",
+          "line": 172,
+          "zone": "#151",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 15113,
+            "room": 15143,
+            "sourceLine": 166,
+            "command": "M"
+          },
+          "raw": "G 1 67272 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 4072
+        }
+      ]
+    },
+    {
+      "vnum": 67273,
+      "name": "the wailing face of a drow banshee",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1134,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/mist_chasm.zon",
+          "line": 112,
+          "zone": "#150",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 15008,
+            "room": 15063,
+            "sourceLine": 110,
+            "command": "M"
+          },
+          "raw": "G 1 67273 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ]
+    },
+    {
+      "vnum": 67274,
+      "name": "the blackened staff of Netheril",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1153,
+      "callback": "zion_netheril",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/juiblex.zon",
+          "line": 222,
+          "zone": "#875",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 87627,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 67274 1 87627 100 0 0 0        * (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.zion.c",
+          "line": 796
+        }
+      ]
+    },
+    {
+      "vnum": 67275,
+      "name": "a petrified roper corpse",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1186,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 67276,
+      "name": "a sword of the whirlwinds",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1198,
+      "callback": "sword_whirlwinds",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/trnsptow.zon",
+          "line": 156,
+          "zone": "#162",
+          "command": "O",
+          "ifFlag": 0,
+          "limit": 1,
+          "destination": 16249,
+          "nominalChance": 100,
+          "lastMob": null,
+          "raw": "O 0 67276 1 16249 100 0 0 0        * (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 11269
+        }
+      ]
+    },
+    {
+      "vnum": 67277,
+      "name": "a shimmering golden token",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1212,
+      "callback": null,
+      "disposition": "placeholder; preserve source record; no invented ability",
+      "directResets": []
+    },
+    {
+      "vnum": 67280,
+      "name": "a death ring of Tezcatlipoca",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1263,
+      "callback": "artifact_stone",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/tezcat.zon",
+          "line": 193,
+          "zone": "#989",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 98900,
+            "room": 98949,
+            "sourceLine": 192,
+            "command": "M"
+          },
+          "raw": "G 1 67280 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.object.c",
+          "line": 408
+        }
+      ]
+    },
+    {
+      "vnum": 67281,
+      "name": "the cloak of the stalker",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1287,
+      "callback": "stalker_cloak",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/negplane.zon",
+          "line": 495,
+          "zone": "#266",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 26621,
+            "room": 26791,
+            "sourceLine": 490,
+            "command": "M"
+          },
+          "raw": "G 1 67281 1 0 100 0 0 0            *    (object type not in this .obj file)"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.shabo.c",
+          "line": 168
+        }
+      ]
+    },
+    {
+      "vnum": 67283,
+      "name": "Obe's portable force field",
+      "template": "areas/obj/unique.obj",
+      "templateLine": 1317,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 71215,
+      "name": "the rod of seven parts",
+      "template": "areas/obj/scorchvalley.obj",
+      "templateLine": 207,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 77738,
+      "name": "Illesarus, the Sword of Sharpness",
+      "template": "areas/obj/hall.obj",
+      "templateLine": 652,
+      "callback": "illesarus",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/hall.zon",
+          "line": 465,
+          "zone": "#777",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 77734,
+            "room": 77894,
+            "sourceLine": 460,
+            "command": "M"
+          },
+          "raw": "G 1 77738 1 0 100 0 0 0            *    Illesarus, the Sword of Sharpness"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.hoa.c",
+          "line": 140
+        }
+      ]
+    },
+    {
+      "vnum": 87546,
+      "name": "the mask of wildmagic",
+      "template": "areas/obj/juiblex.obj",
+      "templateLine": 668,
+      "callback": "mask_of_wildmagic",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/juiblex.zon",
+          "line": 333,
+          "zone": "#875",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 20,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 87559,
+            "room": 87580,
+            "sourceLine": 332,
+            "command": "M"
+          },
+          "raw": "E 1 87546 1 20 100 0 0 0           *   the mask of wildmagic"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.juiblex.c",
+          "line": 117
+        }
+      ]
+    },
+    {
+      "vnum": 87612,
+      "name": "Doombringer, the sword of chaos",
+      "template": "areas/obj/juiblex.obj",
+      "templateLine": 1644,
+      "callback": "doombringer",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/juiblex.zon",
+          "line": 412,
+          "zone": "#875",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 87544,
+            "room": 87626,
+            "sourceLine": 409,
+            "command": "M"
+          },
+          "raw": "G 1 87612 1 0 100 0 0 0            *    Doombringer, the sword of chaos"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 963
+        }
+      ]
+    },
+    {
+      "vnum": 87701,
+      "name": "a pair of skin leggings with bleached skull kneepads",
+      "template": "areas/obj/snogres.obj",
+      "templateLine": 19,
+      "callback": "skull_leggings",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/snogres.zon",
+          "line": 57,
+          "zone": "#877",
+          "command": "E",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 7,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 87700,
+            "room": 87727,
+            "sourceLine": 56,
+            "command": "M"
+          },
+          "raw": "E 1 87701 1 7 100 0 0 0            *   a pair of skin leggings with bleached skull kneepads"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.snogres.c",
+          "line": 417
+        }
+      ]
+    },
+    {
+      "vnum": 88327,
+      "name": "the sword of fire and flame",
+      "template": "areas/obj/firep.obj",
+      "templateLine": 305,
+      "callback": "zion_fnf",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/firep.zon",
+          "line": 351,
+          "zone": "#883",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 88316,
+            "room": 88446,
+            "sourceLine": 348,
+            "command": "M"
+          },
+          "raw": "G 1 88327 1 0 100 0 0 0            *    the sword of fire and flame"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.zion.c",
+          "line": 255
+        }
+      ]
+    },
+    {
+      "vnum": 98904,
+      "name": "a death ring of Tezcatlipoca",
+      "template": "areas/obj/tezcat.obj",
+      "templateLine": 85,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 99446,
+      "name": "the devil eyes of Elishia",
+      "template": "areas/obj/kastle.obj",
+      "templateLine": 746,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 130027,
+      "name": "the oaken staff of the woodlands",
+      "template": "areas/obj/vecna.obj",
+      "templateLine": 302,
+      "callback": "vecna_staffoaken",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/vecna.zon",
+          "line": 253,
+          "zone": "#1300",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 130025,
+            "room": 130065,
+            "sourceLine": 251,
+            "command": "M"
+          },
+          "raw": "G 1 130027 1 0 100 0 0 0           *    the oaken staff of the woodlands"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.vecna.c",
+          "line": 600
+        }
+      ]
+    },
+    {
+      "vnum": 130028,
+      "name": "Krindors Incredible Device",
+      "template": "areas/obj/vecna.obj",
+      "templateLine": 314,
+      "callback": "vecna_krindor_main",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/vecna.zon",
+          "line": 267,
+          "zone": "#1300",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 130035,
+            "room": 130071,
+            "sourceLine": 262,
+            "command": "M"
+          },
+          "raw": "G 1 130028 1 0 100 0 0 0           *    Krindors Incredible Device"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.vecna.c",
+          "line": 835
+        }
+      ]
+    },
+    {
+      "vnum": 131616,
+      "name": "the dagger of Wind",
+      "template": "areas/obj/airp.obj",
+      "templateLine": 179,
+      "callback": "dagger_of_wind",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/airp.zon",
+          "line": 395,
+          "zone": "#1316",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 131648,
+            "room": 131792,
+            "sourceLine": 387,
+            "command": "M"
+          },
+          "raw": "G 1 131616 1 0 100 0 0 0           *    the dagger of Wind"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 4447
+        }
+      ]
+    },
+    {
+      "vnum": 139002,
+      "name": "the staff of blue flames",
+      "template": "areas/obj/brass.obj",
+      "templateLine": 36,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    },
+    {
+      "vnum": 139004,
+      "name": "the holy mace of the efreeti",
+      "template": "areas/obj/brass.obj",
+      "templateLine": 68,
+      "callback": "holy_mace",
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": [
+        {
+          "source": "areas/zon/brass.zon",
+          "line": 739,
+          "zone": "#1390",
+          "command": "G",
+          "ifFlag": 1,
+          "limit": 1,
+          "destination": 0,
+          "nominalChance": 100,
+          "lastMob": {
+            "vnum": 139004,
+            "room": 139125,
+            "sourceLine": 737,
+            "command": "M"
+          },
+          "raw": "G 1 139004 1 0 100 0 0 0           *    the holy mace of the efreeti"
+        }
+      ],
+      "callbackDefinitions": [
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 2711
+        },
+        {
+          "source": "src/specs/specs.underworld.c",
+          "line": 2782
+        }
+      ]
+    },
+    {
+      "vnum": 142249,
+      "name": "a thick broadsword named 'dragonslayer'",
+      "template": "areas/obj/blackpearl.obj",
+      "templateLine": 502,
+      "callback": null,
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget",
+      "directResets": []
+    }
+  ]
+}

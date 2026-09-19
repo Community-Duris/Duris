@@ -10,6 +10,7 @@
 
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "artifact/artifact_control.h"
 #include "guild/artifact_cache_codec.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -301,7 +302,17 @@ void do_artifact_sql(P_char ch, char *arg, int /*cmd*/)
 	arg = one_argument(arg, arg1);
 	rest = one_argument(arg, arg2);
 	rest = one_argument(rest, arg3);
-	arg = skip_spaces(arg);
+	arg = skip_spaces(rest);
+
+	// Additive revisioned control namespace. Existing list/timer/poof/swap/
+	// soul-reset subcommands retain their historical semantics.
+	if (is_abbrev(arg1, "control"))
+	{
+		char control_args[MAX_INPUT_LENGTH];
+		checked_snprintf(control_args, sizeof(control_args), "%s %s %s", arg2, arg3, arg);
+		artifact_control_command(ch, control_args);
+		return;
+	}
 
 	// all -> show even the artis not in game.
 	if (IS_TRUSTED(ch) &&

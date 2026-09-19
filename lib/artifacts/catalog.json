@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "revision": 2,
+  "hash": "6ffca26e302fedc9",
+  "definitions": [
+    {
+      "id": "mayhem",
+      "vnum": 21,
+      "displayName": "'Mayhem', chaotic sword of the night",
+      "classification": "unique",
+      "uniquenessFamily": "mayhem-symmetry-swords",
+      "defaultVariant": "legacy",
+      "legacyBinding": "good_evil_sword",
+      "source": "areas/obj/heavens.obj",
+      "sourceLine": 180,
+      "initialLifetimeSeconds": 864000,
+      "maxRemainingLifetimeSeconds": 864000,
+      "loadChance": 100,
+      "loadLimit": 1,
+      "loadRoom": 0,
+      "loadMob": 0,
+      "loadSlot": 0,
+      "enabled": true,
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
+      "variants": {
+        "legacy": {"adapter": "native.good_evil_sword"},
+        "telegraphic": {"adapter": "item.sword_actions"}
+      },
+      "powers": [
+        {"id": "combat", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 15, "cooldownSeconds": 0, "windupPulses": 8, "manaCostMilliunits": 1000, "powerLevel": 55},
+        {"id": "nova", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 15, "cooldownSeconds": 10, "windupPulses": 32, "manaCostMilliunits": 4000, "powerLevel": 60}
+      ]
+    },
+    {
+      "id": "symmetry",
+      "vnum": 22,
+      "displayName": "'Symmetry', the uniform sword of light",
+      "classification": "unique",
+      "uniquenessFamily": "mayhem-symmetry-swords",
+      "defaultVariant": "legacy",
+      "legacyBinding": "good_evil_sword",
+      "source": "areas/obj/heavens.obj",
+      "sourceLine": 192,
+      "initialLifetimeSeconds": 864000,
+      "maxRemainingLifetimeSeconds": 864000,
+      "loadChance": 100,
+      "loadLimit": 1,
+      "loadRoom": 0,
+      "loadMob": 0,
+      "loadSlot": 0,
+      "enabled": true,
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
+      "variants": {
+        "legacy": {"adapter": "native.good_evil_sword"},
+        "telegraphic": {"adapter": "item.sword_actions"}
+      },
+      "powers": [
+        {"id": "combat", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 15, "cooldownSeconds": 0, "windupPulses": 8, "manaCostMilliunits": 1000, "powerLevel": 55},
+        {"id": "nova", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 15, "cooldownSeconds": 10, "windupPulses": 32, "manaCostMilliunits": 4000, "powerLevel": 60}
+      ]
+    },
+    {
+      "id": "mirrored-ioun",
+      "vnum": 922,
+      "displayName": "a mirrored ioun stone",
+      "classification": "ioun",
+      "uniquenessFamily": "mirrored-ioun",
+      "defaultVariant": "legacy",
+      "legacyBinding": "deflect_ioun",
+      "source": "areas/obj/heavens.obj",
+      "sourceLine": 8456,
+      "initialLifetimeSeconds": 864000,
+      "maxRemainingLifetimeSeconds": 864000,
+      "loadChance": 100,
+      "loadLimit": 1,
+      "loadRoom": 0,
+      "loadMob": 87544,
+      "loadSlot": -1,
+      "enabled": true,
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
+      "variants": {
+        "legacy": {"adapter": "native.deflect_ioun"},
+        "telegraphic": {"adapter": "item.ioun_actions.synchronous"}
+      },
+      "powers": [
+        {"id": "intercept", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 4, "cooldownSeconds": 0, "windupPulses": 0, "manaCostMilliunits": 1000, "powerLevel": 0}
+      ]
+    },
+    {
+      "id": "avernus",
+      "vnum": 19730,
+      "displayName": "Avernus the life stealer",
+      "classification": "major",
+      "uniquenessFamily": "avernus",
+      "defaultVariant": "legacy",
+      "legacyBinding": "avernus",
+      "source": "areas/obj/astral_main.obj",
+      "sourceLine": 285,
+      "initialLifetimeSeconds": 864000,
+      "maxRemainingLifetimeSeconds": 864000,
+      "loadChance": 100,
+      "loadLimit": 1,
+      "loadRoom": 0,
+      "loadMob": 32420,
+      "loadSlot": -1,
+      "enabled": true,
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
+      "variants": {
+        "legacy": {"adapter": "native.avernus"},
+        "telegraphic": {"adapter": "item.weapon_actions.avernus"}
+      },
+      "powers": [
+        {"id": "drain", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 25, "cooldownSeconds": 0, "windupPulses": 8, "manaCostMilliunits": 0, "powerLevel": 50},
+        {"id": "stone", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 1, "cooldownSeconds": 60, "windupPulses": 0, "manaCostMilliunits": 0, "powerLevel": 60}
+      ]
+    },
+    {
+      "id": "tsunami",
+      "vnum": 31514,
+      "displayName": "Tsunami, the trident of storms",
+      "classification": "unique",
+      "uniquenessFamily": "tsunami",
+      "defaultVariant": "legacy",
+      "legacyBinding": "SeaKingdom_Tsunami",
+      "source": "areas/obj/seakngdm.obj",
+      "sourceLine": 221,
+      "initialLifetimeSeconds": 864000,
+      "maxRemainingLifetimeSeconds": 864000,
+      "loadChance": 100,
+      "loadLimit": 1,
+      "loadRoom": 31722,
+      "loadMob": 31528,
+      "loadSlot": 17,
+      "enabled": true,
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
+      "variants": {
+        "legacy": {"adapter": "native.SeaKingdom_Tsunami"},
+        "telegraphic": {"adapter": "item.tsunami_actions"}
+      },
+      "powers": [
+        {"id": "tap", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 1, "cooldownSeconds": 300, "windupPulses": 8, "manaCostMilliunits": 1000, "powerLevel": 0},
+        {"id": "wave", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 1, "cooldownSeconds": 500, "windupPulses": 8, "manaCostMilliunits": 1000, "powerLevel": 0},
+        {"id": "hum", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 1, "cooldownSeconds": 0, "windupPulses": 0, "manaCostMilliunits": 0, "powerLevel": 0}
+      ]
+    },
+    {
+      "id": "wand-of-wonder",
+      "vnum": 41350,
+      "displayName": "a wand of wonder",
+      "classification": "unique",
+      "uniquenessFamily": "wand-of-wonder",
+      "defaultVariant": "legacy",
+      "legacyBinding": "wand_of_wonder",
+      "source": "areas/obj/unique.obj",
+      "sourceLine": 0,
+      "initialLifetimeSeconds": 864000,
+      "maxRemainingLifetimeSeconds": 864000,
+      "loadChance": 100,
+      "loadLimit": 1,
+      "loadRoom": 0,
+      "loadMob": 0,
+      "loadSlot": -1,
+      "enabled": true,
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
+      "variants": {
+        "legacy": {"adapter": "native.wand_of_wonder"},
+        "telegraphic": {"adapter": "item.wonder_actions"}
+      },
+      "powers": [
+        {"id": "wonder", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 1, "cooldownSeconds": 0, "windupPulses": 8, "manaCostMilliunits": 0, "powerLevel": 40}
+      ]
+    },
+    {
+      "id": "living-necroplasm",
+      "vnum": 67243,
+      "displayName": "the Living Necroplasm",
+      "classification": "unique",
+      "uniquenessFamily": "living-necroplasm",
+      "defaultVariant": "legacy",
+      "legacyBinding": "living_necroplasm",
+      "source": "areas/obj/unique.obj",
+      "sourceLine": 660,
+      "initialLifetimeSeconds": 864000,
+      "maxRemainingLifetimeSeconds": 864000,
+      "loadChance": 100,
+      "loadLimit": 1,
+      "loadRoom": 26859,
+      "loadMob": 26642,
+      "loadSlot": -1,
+      "enabled": true,
+      "holderPolicy": {"player": "legacy", "wildNpc": "legacy", "controlledNpc": "legacy"},
+      "variants": {
+        "legacy": {"adapter": "native.living_necroplasm"},
+        "telegraphic": {"adapter": "item.necroplasm_actions"}
+      },
+      "powers": [
+        {"id": "transformation", "enabled": true, "chanceNumerator": 1, "chanceDenominator": 1, "cooldownSeconds": 0, "windupPulses": 8, "manaCostMilliunits": 1000, "powerLevel": 55}
+      ]
+    }
+  ]
+}

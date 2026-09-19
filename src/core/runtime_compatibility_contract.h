@@ -8,14 +8,17 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 202;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 211;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
 	"'account_erasure_tombstones','account_ips','account_locker_access','account_locker_item_affects',"
 	"'account_locker_item_extra_descr','account_locker_items','account_lockers','accounts',"
-	"'alliances','artifact_bind','artifact_delta_ledger','artifact_domain_baseline',"
-	"'artifact_domain_state','artifact_guild_outcome','artifact_guild_outcome_delta','artifact_mana','artifacts',"
+	"'alliances','artifact_bind','artifact_config_draft','artifact_config_head','artifact_config_publish_audit',"
+	"'artifact_config_revision','artifact_control_lease','artifact_control_request','artifact_control_result',"
+	"'artifact_delta_ledger','artifact_domain_baseline',"
+	"'artifact_domain_state','artifact_guild_outcome','artifact_guild_outcome_delta','artifact_instance_policy','artifact_mana',"
+	"'artifact_power_policy','artifacts',"
 	"'artifacts_mortal','associations','auction_bid_history','auction_item_custody',"
 	"'auction_item_pickups','auction_ledger','auction_money_pickups','auction_reconciliation_quarantine',"
 	"'auctions','boon_reward_outcome','boon_reward_outcome_entry','boons',"
@@ -60,9 +63,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"55205509d4b8e9c8c5ef88aa9ec701570c4dab798ed7cfff0a428834b38d16b0";
+	"cf3aa4eaafb57175d3b4d7f4433bf5eab6d3792097e2be960adc556ed2fceba4";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"545a4cf7595b66fb20f761071601eeb737d43b6d995a25ec2849368fbcc8ad05";
+	"beed51a12dad733026bed3b073295932584752d30c79b8fe45246021eccba66c";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -71,17 +74,18 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * by migration 0021, additive progression fields introduced by migration
  * 0022, committed reward projection/reconciliation state introduced by
  * migration 0023, bounded encounter lifecycle facts introduced by migration
- * 0024, the durable zone-story quest state introduced by migration 0026, and
- * the saved-item recovery receipt introduced by migration 0027.
+ * 0024, the durable zone-story quest state introduced by migration 0026, the
+ * saved-item recovery receipt introduced by migration 0027, and revisioned
+ * artifact control authority introduced by migration 0029.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0028_pet_custody";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 28;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0029_artifact_control";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 29;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"0a72bb83e3a8a4880ea37306269b71042d0f6a775f31c74f396512bcbaf29c8a";
+	"65ff84d83ae9697dd65149c058a1b6b57ee0d519544901a64093c48ab4e5ad84";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"4605ed2ed58c4854dc0572ca166857b87bb5c120839ff76a70d9e03e64df7124";
+	"5e12f2a92aaf4bb0e7f7e4f8de07c918fff88f8b8ae4766ab50dc65854971ab2";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"825e4b29610331dad84f76668d5e4376a743108bd9fe2ace181bd67863bcae70";
+	"c21436d8dd8a6a591c641f74e70ebf18b618705bae37abebd1ca83c1de85bfbc";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

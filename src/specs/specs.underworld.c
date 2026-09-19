@@ -1417,6 +1417,8 @@ int avernus(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		return FALSE;
 	}
+	const bool modern_holder = native_artifact_owns(19730) &&
+				   native_artifact_variant_enabled(19730, ch, "telegraphic");
 	/*
 	   if (!OBJ_WORN_POS(obj, WIELD) || !OBJ_WORN_POS(obj, WIELD2))
 	    return (FALSE);
@@ -1426,6 +1428,8 @@ int avernus(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (isname(arg, "stone"))
 		{
+			if (modern_holder && !native_artifact_power_enabled(19730, "stone"))
+				return TRUE;
 			curr_time = time(NULL);
 
 			if (obj->timer[0] + 60 <= curr_time)
@@ -2955,8 +2959,14 @@ int deflect_ioun(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	data = legacy_proc_arg<struct proc_data *>(arg);
-	if (native_artifact_owns(922))
+	if (!native_artifact_control_enabled(922))
+		return TRUE;
+	if (native_artifact_owns(922) && native_artifact_variant_enabled(922, ch, "telegraphic"))
+	{
+		if (!native_artifact_power_enabled(922, "intercept"))
+			return TRUE;
 		return data && intercept_mirrored_ioun(obj, ch, *data);
+	}
 
 	if (!data || ch == data->victim || !ch->in_room)
 	{
@@ -4204,12 +4214,23 @@ void event_tsunamiwave(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 int SeaKingdom_Tsunami(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL;
-	if (native_artifact_owns(31514))
+	if (!native_artifact_control_enabled(31514))
+	{
+		if (cmd == CMD_TAP || cmd == CMD_THRUST || cmd == CMD_RAISE)
+			send_to_char("Tsunami's powers are suppressed by artifact control.\r\n",
+				     ch);
+		return TRUE;
+	}
+	const bool modern = native_artifact_owns(31514) &&
+			    (!ch || native_artifact_variant_enabled(31514, ch, "telegraphic"));
+	if (modern)
 	{
 		if (cmd == CMD_SET_PERIODIC)
 			return TRUE;
 		if (cmd == CMD_PERIODIC)
 		{
+			if (!native_artifact_power_enabled(31514, "hum"))
+				return TRUE;
 			if (!ch)
 				hummer(obj);
 			return TRUE;

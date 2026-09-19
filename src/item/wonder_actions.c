@@ -1,10 +1,12 @@
 #include "item/wonder_actions.h"
+#include "item/native_artifact_actions.h"
 
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "magic/spells.h"
 #include "net/comm.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
@@ -308,6 +310,12 @@ item_action_start begin_wonder_action(P_obj source, P_char actor, P_char target,
 		return item_action_start::suppressed;
 	if (!item_actions_enabled())
 		return item_action_start::legacy;
+	if (!native_artifact_control_enabled(WONDER_VNUM))
+		return item_action_start::suppressed;
+	if (!native_artifact_variant_enabled(WONDER_VNUM, actor, "telegraphic"))
+		return item_action_start::legacy;
+	if (!native_artifact_power_enabled(WONDER_VNUM, "wonder"))
+		return item_action_start::suppressed;
 	update_wonder_action_properties();
 	if (wonder_settings.valid && !wonder_settings.enabled)
 		return item_action_start::legacy;
@@ -316,7 +324,8 @@ item_action_start begin_wonder_action(P_obj source, P_char actor, P_char target,
 	    OBJ_VNUM(source) != WONDER_VNUM || selected_level < 20 || selected_level > 40)
 		return item_action_start::suppressed;
 	wonder_selection selection;
-	selection.level = selected_level;
+	selection.level = std::clamp(
+		native_artifact_power_level(WONDER_VNUM, "wonder", selected_level), 20, 40);
 	selection.choice = number(1, 20);
 	if (selection.choice == 12)
 	{

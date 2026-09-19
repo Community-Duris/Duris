@@ -35,6 +35,10 @@ boundary = literal(ROOT / "tests/async/test_device_actions_runtime.py", "HARNESS
 boundary = boundary.replace("void update_wonder_action_properties() {}", '#include "item/wonder_actions.c"')
 
 HARNESS = r'''
+bool native_artifact_control_enabled(int) { return true; }
+bool native_artifact_variant_enabled(int, P_char, const char *) { return true; }
+bool native_artifact_power_enabled(int, const char *) { return true; }
+int native_artifact_power_level(int, const char *, int fallback) { return fallback; }
 static int choice=1, rolls=0, native_mutation=0, placements=0, gem_damage=0, years=0;
 static std::vector<int> mobile_types, gem_types;
 int number(int low,int high) {

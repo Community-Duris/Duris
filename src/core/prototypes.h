@@ -697,6 +697,7 @@ void do_protocol(P_char ch, char *arg, int cmd);
 char *food_modifiers(P_obj food);
 
 /* artifact.c */
+void artifact_control_command(P_char, char *);
 void addOnGroundArtis_sql();
 void addOnMobArtis_sql();
 void artifact_feed_blood_sql(P_char ch, P_obj arti, int frag_gain);

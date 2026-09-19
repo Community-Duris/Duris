@@ -149,6 +149,12 @@ int spell_damage(P_char actor,P_char target,double amount,int type,uint flags,da
 }
 #define time native_test_time
 #include "item/native_artifact_actions.c"
+namespace artifact_control {
+bool control_enabled(int) { return true; }
+bool control_allows_variant(int, holder_kind, const char *) { return true; }
+bool control_power_enabled(int, const char *) { return true; }
+int control_power_level(int, const char *, int fallback) { return fallback; }
+}
 #include "item/tsunami_actions.c"
 #include "item/ioun_actions.c"
 #include "item/necroplasm_actions.c"

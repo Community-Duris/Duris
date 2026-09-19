@@ -58,7 +58,8 @@ class necroplasm_adapter final : public item_action_adapter
 		     const item_action_effect &) const noexcept override
 	{
 		// Retain the spell's pet/order and memorized-slot rules as well as its stats.
-		spell_vampire(55, c.actor, nullptr, 0, c.actor, nullptr);
+		spell_vampire(native_artifact_power_level(NECROPLASM, "transformation", 55),
+			      c.actor, nullptr, 0, c.actor, nullptr);
 		P_char actor = find_character_by_runtime_id(c.identity.actor_id);
 		if (!actor)
 			return;
@@ -117,6 +118,12 @@ void release_necroplasm_forms()
 
 item_action_start begin_necroplasm_form(P_obj source, P_char actor)
 {
+	if (!native_artifact_control_enabled(NECROPLASM))
+		return item_action_start::suppressed;
+	if (!native_artifact_variant_enabled(NECROPLASM, actor, "telegraphic"))
+		return item_action_start::legacy;
+	if (!native_artifact_power_enabled(NECROPLASM, "transformation"))
+		return item_action_start::suppressed;
 	if (!native_artifact_owns(NECROPLASM))
 		return item_action_start::legacy;
 	const auto config = native_artifact_settings(NECROPLASM);

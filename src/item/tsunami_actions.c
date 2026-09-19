@@ -143,6 +143,15 @@ class tsunami_adapter final : public item_action_adapter
 
 item_action_start begin_tsunami_action(P_obj source, P_char actor, int command)
 {
+	if (!native_artifact_control_enabled(TSUNAMI))
+		return item_action_start::suppressed;
+	if (!native_artifact_variant_enabled(TSUNAMI, actor, "telegraphic"))
+		return item_action_start::legacy;
+	const char *power = command == CMD_TAP				  ? "tap" :
+			    command == CMD_THRUST || command == CMD_RAISE ? "wave" :
+									    "hum";
+	if (!native_artifact_power_enabled(TSUNAMI, power))
+		return item_action_start::suppressed;
 	if (!native_artifact_owns(TSUNAMI))
 		return item_action_start::legacy;
 	const auto config = native_artifact_settings(TSUNAMI);

@@ -53,6 +53,10 @@ DOUBLES = r'''
 #include "item/weapon_actions.c"
 #include "item/native_artifact_actions.h"
 bool native_artifact_owns(int) { return false; }
+bool native_artifact_control_enabled(int) { return true; }
+bool native_artifact_variant_enabled(int, P_char, const char *) { return true; }
+bool native_artifact_power_enabled(int, const char *) { return true; }
+int native_artifact_power_level(int, const char *, int fallback) { return fallback; }
 #include "item/artifact_mana_model.c"
 #include "combat/damage.h"
 #include <deque>
