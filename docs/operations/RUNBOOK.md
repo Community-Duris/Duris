@@ -726,7 +726,11 @@ service owner and bind the exact manager explicitly. The tool checks the owner
 UID, `user@UID.service` manager, manager/unit state and PIDs, the owner runtime
 socket, the real cgroup hierarchy, and visible cgroup processes. It does not
 stop or mask the unit; prepare that state through the approved service operation
-before probing, and treat any mismatch as a refusal:
+before probing, and treat any mismatch as a refusal. A masked inactive/dead unit
+may report `LoadState=masked` with `ControlGroup=` empty after systemd removes
+its dead cgroup; the probe records that empty value and accepts it only with
+zero service PIDs and complete owner-manager process visibility. It never
+invents a cgroup path for an absent group:
 
 ```bash
 python3 scripts/player_death_restitution.py --env-file /secure/duris.env \

@@ -27,7 +27,16 @@ canonical row or the separately approved exact-evidence reconciliation path.
   manager used by `.sbs` deployments (`--maintenance-kind systemd-user` with
   `--maintenance-owner <UID>`). The latter verifies the user manager identity,
   unit identity/state, PIDs, runtime socket, cgroup, and visible process set;
-  it is not a `--system`/`--user` substitution or a fabricated proof.
+  it supports only these stopped-unit forms: a unit whose
+  `UnitFileState` is `masked` or `masked-runtime`, whose `LoadState` is
+  `masked` or `loaded`, and whose manager-descendant `ControlGroup` has
+  recursively visible process files that are empty; or a masked unit reported
+  with `LoadState=masked` and `ControlGroup=` empty after systemd has removed
+  its dead cgroup. The second form preserves the empty value and relies on zero
+  service PIDs plus the owner-manager process-visibility proof; it never
+  fabricates a cgroup path. A loaded unit with no cgroup, an active unit, an
+  unexpected cgroup, or incomplete visibility is refused. This is not a
+  `--system`/`--user` substitution or a fabricated proof.
 - Recipient: this first slice requires the explicit recipient PID to equal the
   death PID. It delivers to ordinary player inventory (`equip_slot=0`) and
   rebuilds nested containers in captured payload order.
@@ -121,9 +130,13 @@ python3 scripts/player_death_restitution.py \
 
 For a `.sbs` deployment managed by the owner’s user manager, use the same
 read-only probe with the explicit numeric UID. The owner must run the command
-inside that user manager’s session; the tool refuses a different UID, missing
-runtime socket, active unit, non-empty service cgroup, or incomplete process
-visibility:
+inside that user manager’s session. The tool refuses a different UID, a live
+unit, a loaded unit with no cgroup, non-zero service PIDs, a non-empty service
+cgroup, an unexpected cgroup path, or incomplete process visibility. A real
+masked, inactive/dead unit may instead report `LoadState=masked` with
+`ControlGroup=` empty because systemd already removed the unit cgroup; that
+exact empty state is recorded and is accepted only with zero service PIDs and a
+complete owner-manager visibility proof. No cgroup identity is synthesized:
 
 ```sh
 python3 scripts/player_death_restitution.py \

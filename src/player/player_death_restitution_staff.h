@@ -4,13 +4,36 @@
 #include "player/player_death_restitution_adapter.h"
 
 #include <cstddef>
+#include <cstdint>
 
 // The canonical critical-command codec already enforces the payload bound;
 // the staff handoff keeps the same bound while chunking around the in-game
 // command reader's per-line limit.
 constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_COMMAND_BYTES =
 	CRITICAL_COMMAND_MAX_ENCODED_BYTES;
-constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX = 1023;
+// The game command reader accepts at most 1023 characters per input line.  Keep
+// accepted chunks byte-aligned so an incomplete final nibble is rejected at the
+// transport boundary rather than being carried into canonical validation.
+constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX = 1022;
+constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNKS =
+	(CRITICAL_COMMAND_MAX_ENCODED_BYTES * 2 + PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX -
+	 1) /
+	PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX;
+
+enum class player_death_restitution_staff_staging_state : uint8_t
+{
+	inactive = 0,
+	active,
+};
+
+struct player_death_restitution_staff_staging_status
+{
+	player_death_restitution_staff_staging_state state;
+	size_t accepted_chunks;
+	size_t accepted_hex_bytes;
+	size_t max_chunks;
+	size_t max_hex_bytes;
+};
 
 // Decode and submit one canonical, operator-approved critical command.  The
 // actor must be the plan actor and meet the staff level gate; no SQL or shell
@@ -32,5 +55,11 @@ player_death_restitution_runtime_result player_death_restitution_staff_commit(
 	player_death_restitution_runtime_submission *submission_out = nullptr);
 player_death_restitution_runtime_result player_death_restitution_staff_abort(const char *actor,
 									     int actor_level);
+
+// Read-only progress projection for the actor-bound in-memory staging slot.
+// It contains only transport counts and bounds, never payload bytes.
+bool player_death_restitution_staff_get_staging_status(
+	const char *actor, int actor_level,
+	player_death_restitution_staff_staging_status *status_out);
 
 #endif

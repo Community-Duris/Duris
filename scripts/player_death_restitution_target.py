@@ -119,9 +119,14 @@ def validate_maintenance_record(value: Any, *, label: str = "maintenance boundar
                 or value["manager_socket"] != expected_runtime + "/systemd/private":
             raise TargetError(f"{label} is not bound to the declared user runtime directory")
         expected_group = f"/user.slice/user-{owner_uid}.slice/user@{owner_uid}.service"
-        if value["manager_control_group"] != expected_group \
-                or not value["control_group"].startswith(expected_group + "/"):
+        if value["manager_control_group"] != expected_group:
             raise TargetError(f"{label} has an unexpected user-manager cgroup")
+        control_group = value["control_group"]
+        if control_group and not control_group.startswith(expected_group + "/"):
+            raise TargetError(f"{label} has an unexpected user-manager cgroup")
+        # A masked inactive unit may have no cgroup after systemd removes the
+        # dead unit's scope.  Preserve the observed empty identity; never
+        # manufacture a path for a group that does not exist.
         return {str(key): str(item) for key, item in value.items()}
     if kind not in {"docker", "systemd"}:
         raise TargetError(f"{label} has an unsupported kind")
@@ -417,16 +422,25 @@ class TargetPolicy:
         service = self._systemd_properties(
             "--user", unit, unit_properties, environment=systemd_environment,
         )
-        if (service["Id"] != unit or service["LoadState"] != "loaded"
+        if (service["Id"] != unit or service["LoadState"] not in {"masked", "loaded"}
                 or service["ActiveState"] != "inactive" or service["SubState"] != "dead"
                 or service["MainPID"] != "0" or service["ControlPID"] != "0"
                 or service["UnitFileState"] not in {"masked", "masked-runtime"}):
             raise TargetError("production user service is not masked, inactive, and fully stopped")
         control_group = service["ControlGroup"]
-        if not control_group.startswith(manager_group + "/"):
-            raise TargetError("production user service cgroup is outside its manager")
-        if self._cgroup_pids(control_group, label="production user service"):
-            raise TargetError("production user service cgroup is not empty")
+        if control_group:
+            if not control_group.startswith(manager_group + "/"):
+                raise TargetError("production user service cgroup is outside its manager")
+            if self._cgroup_pids(control_group, label="production user service"):
+                raise TargetError("production user service cgroup is not empty")
+        elif service["LoadState"] != "masked":
+            # A loaded unit without a cgroup is not an approved stopped
+            # boundary.  The empty form is supported only for a unit that
+            # systemd reports as masked and fully inactive.
+            raise TargetError("production user service has no verifiable cgroup")
+        # Keep an empty ControlGroup empty in the evidence.  It means the
+        # masked unit's removed cgroup was observed as absent; do not invent a
+        # manager-descendant path for it.
         return {
             "kind": "systemd-user",
             "id": unit,

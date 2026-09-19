@@ -142,6 +142,28 @@ class TargetTests(unittest.TestCase):
                 stale = dict(boundary)
                 stale["manager_pid"] = "124"
                 self.assertNotEqual(stale, boundary)
+
+                # A masked user unit can have no retained cgroup at all.  The
+                # empty ControlGroup is the observed state; do not synthesize
+                # a path merely to make the old cgroup check pass.
+                (unit_group / "cgroup.procs").unlink()
+                unit_group.rmdir()
+                unit_group.parent.rmdir()
+                unit_output = "\n".join([
+                    "Id=duris-mud-production.service", "LoadState=masked",
+                    "ActiveState=inactive", "SubState=dead", "MainPID=0", "ControlPID=0",
+                    "UnitFileState=masked", "ControlGroup=",
+                ]) + "\n"
+                boundary = policy.require_maintenance()
+                self.assertEqual(boundary["control_group"], "")
+                self.assertEqual(boundary["cgroup_processes"], "0")
+                self.assertEqual(target_module.validate_maintenance_record(boundary), boundary)
+
+                # Do not turn the absent-group compatibility state into a
+                # generic loaded-unit bypass.
+                unit_output = unit_output.replace("LoadState=masked", "LoadState=loaded")
+                with self.assertRaisesRegex(TargetError, "no verifiable cgroup"):
+                    policy.require_maintenance()
             manager_socket.close()
 
     def test_systemd_boundary_keeps_system_scope_and_cgroup_gate(self):
