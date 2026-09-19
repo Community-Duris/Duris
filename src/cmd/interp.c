@@ -72,6 +72,60 @@ static bool is_normal_movement_command(int cmd)
 	return (cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE);
 }
 
+/* Meditation should only yield to an action that uses the character's body,
+ * position, or concentration.  These commands only report information (or,
+ * for read/examine, ask the room to describe something) and do not represent
+ * a physical action by the character. */
+static bool command_preserves_meditation(int cmd, const char *argument)
+{
+	switch (cmd)
+	{
+	case CMD_LOOK:
+	case CMD_GLANCE:
+	case CMD_EXITS:
+	case CMD_LISTEN:
+	case CMD_INVENTORY:
+	case CMD_EQUIPMENT:
+	case CMD_SCORE:
+	case CMD_STAT:
+	case CMD_TIME:
+	case CMD_WEATHER:
+	case CMD_WHO:
+	case CMD_READ:
+	case CMD_EXAMINE:
+		return true;
+	case CMD_GROUP:
+	{
+		char first[MAX_INPUT_LENGTH];
+
+		/* `group` only reports the current group without an argument.  A
+		 * targeted group command can change another character's state. */
+		one_argument(argument, first);
+		return !*first;
+	}
+	case CMD_PUT:
+	{
+		char first[MAX_INPUT_LENGTH];
+		char second[MAX_INPUT_LENGTH];
+
+		/* Coin pickup reports arrive asynchronously.  Allow the trigger that
+		 * bags that report to run without throwing away an active meditation.
+		 * The ordinary item-put path remains an interruption. */
+		argument = one_argument(argument, first);
+		if (!*first)
+			return false;
+		if (!strcmp(first, "all.coins"))
+			return true;
+		if (!is_number(first))
+			return false;
+		one_argument(argument, second);
+		return coin_type(second) != COIN_NONE;
+	}
+	default:
+		return false;
+	}
+}
+
 static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
 {
 	if (cmd == CMD_SAY || cmd == CMD_SAY2 || cmd == CMD_GSHOUT || cmd == CMD_TELL ||
@@ -2223,7 +2277,9 @@ void command_interpreter(P_char ch, char *argument)
 						 cmd != CMD_GCC && cmd != CMD_HELP &&
 						 cmd != CMD_RWC && cmd != CMD_OUTPOST &&
 						 cmd != CMD_NEXUS && cmd != CMD_FRAGLIST &&
-						 cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS)
+						 cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS &&
+						 !command_preserves_meditation(
+							 cmd, argument + begin + look_at))
 					{
 						// Advanced med allows you to continue meditating while doing the below commands.
 						// At 60 skill, you no longer have to worry about these commands.
