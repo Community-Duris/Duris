@@ -52,7 +52,17 @@ if buy.count("transaction_price") < 3:
     raise SystemExit("flat buy does not carry trusted pricing through produced continuations")
 
 buy_submit = buy.index("shop_trade_transaction_submit(ch, payload, shop_trade_completion)")
-if not buy_submit < buy.index("transact(ch, gem, keeper, sale)") < buy.index("writeShopKeeper(keeper)"):
+shopkeeper_write = next(
+    (
+        token
+        for token in ("writeShopKeeper(keeper, shop_nr)", "writeShopKeeper(keeper)")
+        if token in buy
+    ),
+    None,
+)
+if shopkeeper_write is None or not buy_submit < buy.index("transact(ch, gem, keeper, sale)") < buy.index(
+    shopkeeper_write
+):
     raise SystemExit("flat buy does not submit before legacy money/shop mutation")
 flat_branch = buy.index("if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)",
                         buy.index("IS_CARRYING_N(ch)"))

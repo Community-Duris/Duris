@@ -1508,6 +1508,10 @@ struct char_data
 
 	P_nevent nevents;
 	P_nevent nevents_tail;
+	/* Runtime-only fast path for the ordinary mobile event.  The sequence
+	 * makes the pointer safe to validate after scheduler-pool reuse. */
+	P_nevent world_activity_mundane_event;
+	unsigned long long world_activity_mundane_event_sequence;
 
 	struct char_player_data player; /* Normal data               */
 	struct player_disguise_data disguise;

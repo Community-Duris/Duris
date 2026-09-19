@@ -15,6 +15,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <climits>
@@ -8209,18 +8210,13 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 
 normal: // 99.999%
 	PROFILE_START(mundane_newevent);
-	if (remember_array[world[ch->in_room].zone])
-		add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), ch, 0, 0, 0, 0, 0);
-	else
-		add_event(event_mob_mundane,
-			  PULSE_MOBILE * PLAYERLESS_ZONE_SPEED_MODIFIER + number(-4, 4), ch, 0, 0,
-			  0, 0, 0);
+	world_activity_schedule_mundane(ch, false, remember_array[world[ch->in_room].zone] != NULL);
 	PROFILE_END(mundane_newevent);
 	return;
 
 quick: // 0.001%
 	PROFILE_START(mundane_newevent);
-	add_event(event_mob_mundane, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
+	world_activity_schedule_mundane(ch, true, true);
 	PROFILE_END(mundane_newevent);
 	return;
 }
@@ -8885,6 +8881,7 @@ void AddCharToZone(P_char ch)
 	if ((zn >= 0) && (zn < MAX_ZONES))
 	{
 		AddToRememberArray(ch, zn);
+		world_activity_player_enter(ch);
 		// Immortals do not affect misfire regardless of IS_TRUSTED toggle.
 		if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
 		{
@@ -9061,6 +9058,8 @@ void DelCharFromZone(P_char ch)
 	if ((zn < 0) || (zn >= MAX_ZONES))
 		return;
 
+	world_activity_player_leave(ch);
+
 	// Immortals do not affect misfire regardless of IS_TRUSTED toggle.
 	if (GET_LEVEL(ch) < MINLVLIMMORTAL)
 	{
@@ -9162,7 +9161,7 @@ bool CheckForRemember(P_char ch)
 
 		if (!CAN_ACT(ch) || IS_IMMOBILE(ch))
 		{
-			add_event(event_mob_mundane, PULSE_VIOLENCE, ch, NULL, NULL, 0, NULL, 0);
+			world_activity_schedule_mundane(ch, true, true);
 			// AddEvent(current_event->type, PULSE_VIOLENCE, TRUE, ch, 0);
 			return TRUE;
 		}

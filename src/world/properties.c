@@ -15,6 +15,7 @@
 #include "item/native_artifact_actions.h"
 #include "economy/collector_config.h"
 #include "world/difficulty.h"
+#include "world/world_activity.h"
 #include "telemetry/telemetry_config_reload.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -167,6 +168,7 @@ void apply_properties()
 	hitroll_cap = get_property("damage.hitrollCap", 75);
 	errand_notch = get_property("epic.errandStep", 500);
 	update_misfire_properties();
+	world_activity_reload();
 	// Observe effective values only after all cached property consumers update.
 	telemetry_config_reload_notify();
 }
