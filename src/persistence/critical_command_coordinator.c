@@ -625,8 +625,7 @@ void admission_worker_main()
 				{
 					admission_available.wait(
 						lock,
-						[]
-						{
+						[] {
 							return stop_requested ||
 							       !pending_admission.empty() ||
 							       recovery_requested;
