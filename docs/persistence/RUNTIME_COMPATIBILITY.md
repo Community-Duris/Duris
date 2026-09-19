@@ -16,21 +16,42 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0008_statistics_date_index`, and the contract describes 174
-current tables: the 170-table baseline plus `lookup_dataset_state`,
-`season_reset_state`, `server_reboots` and `kingdom_realms`, each created by an
-immutable migration. Migrations 0007 and 0008 change existing inventory tables,
-so their fingerprints were resealed against `mysql:8.0` and `mariadb:10.11` with
-`tests/async/run_runtime_compatibility_mysql.sh`. A database left at head
-`0007_pkill_event_stamp_contract` therefore fails this gate. An existing database
-must first
-complete the guarded legacy upgrade and verified baseline adoption described in
-[IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md). Never run migration or
-destructive verification commands against production.
+The current head is `0029_critical_failure_stage`, and the contract describes 202
+current tables: the 170-table baseline plus the post-baseline runtime tables created
+by immutable migrations. Migration 0029 adds the replay-safe
+`critical_operation_inbox.failure_stage` receipt field as `SMALLINT UNSIGNED NOT
+NULL DEFAULT 0` immediately after `result_code`; it creates no table. A legacy clone
+may already contain that column from the earlier compatibility DDL. The immutable
+step is guarded and re-runnable: it verifies the existing shape, preserves all rows,
+and records sequence 29 rather than trying to alter the old immutable history.
+Fingerprints are measured on clean `mysql:8.0` and `mariadb:10.11` schemas with
+`tests/async/telemetry_rollup_schema_mysql.py --update-contract`; they must not be
+copied from a production-derived clone.
 
-Compatibility fingerprints and table counts use the positive 174-table runtime
-inventory. Additional tables restored from a combined game/website dump are ignored
-by the game contract, while every runtime table still has to match exactly.
+An existing populated database must first be upgraded only on a disposable clone.
+Run the legacy convergence, then the immutable runner against the same clone before
+running the read-only runtime verifier:
+
+```sh
+MIGRATION_ENV_FILE=/path/to/clone.env ./migrations/run_migration.sh
+# clone.env is owner-readable, mode 0600, and still targets only the clone.
+set -a; . /path/to/clone.env; set +a
+python3 scripts/migration_runner.py run
+./migrations/verify_runtime_compatibility.sh
+```
+
+If the clone already has `failure_stage`, migration 0029 takes its no-op branch and
+still records the checksummed migration. If it does not, the migration adds the
+column with default zero; existing receipt rows remain present and at stage zero.
+Rebuild the native server after the checked-in compatibility header changes (`make -C
+src`, or the approved clean production build) and stage that rebuilt binary before
+any boot attempt. Never treat a successful SQL migration as proof that an old
+binary is compatible.
+
+The legacy upgrade remains guarded and additive; a database left at head
+`0028_pet_custody` must not be booted with this contract. An existing database must
+first complete the clone sequence above. Never run migration or destructive
+verification commands against production.
 
 ## Boot gate
 
@@ -41,7 +62,7 @@ recovery replay, listener acceptance, or gameplay publication, it verifies:
 - the sealed baseline ID and table-name fingerprint;
 - immutable migration ID, sequence, apply/verifier hashes, applied count, and history
   checksum;
-- all 174 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- all 202 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
 - `utf8mb4`, UTC, READ COMMITTED, strict SQL modes, ten-second connection/read/write

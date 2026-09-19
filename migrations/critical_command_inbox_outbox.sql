@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS critical_operation_inbox (
     payload_version SMALLINT UNSIGNED NOT NULL,
     status TINYINT UNSIGNED NOT NULL,
     result_code INT UNSIGNED NOT NULL DEFAULT 0,
+    failure_stage SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     durable_revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
     result_payload VARBINARY(4096) NOT NULL,
     created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -17,6 +18,24 @@ CREATE TABLE IF NOT EXISTS critical_operation_inbox (
     PRIMARY KEY (operation_id),
     KEY idx_critical_inbox_status_created (status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Keep upgrades from the pre-diagnostic schema additive and re-runnable.
+-- MySQL 8.0 does not accept IF NOT EXISTS on ALTER TABLE ... ADD COLUMN;
+-- select the no-op branch when an older schema has already been upgraded.
+SET @critical_failure_stage_sql = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE critical_operation_inbox ADD COLUMN failure_stage SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER result_code',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'critical_operation_inbox'
+      AND column_name = 'failure_stage'
+);
+PREPARE critical_failure_stage_stmt FROM @critical_failure_stage_sql;
+EXECUTE critical_failure_stage_stmt;
+DEALLOCATE PREPARE critical_failure_stage_stmt;
 
 CREATE TABLE IF NOT EXISTS critical_test_state (
     entity_type TINYINT UNSIGNED NOT NULL,

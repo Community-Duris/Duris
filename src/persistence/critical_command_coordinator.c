@@ -625,7 +625,8 @@ void admission_worker_main()
 				{
 					admission_available.wait(
 						lock,
-						[] {
+						[]
+						{
 							return stop_requested ||
 							       !pending_admission.empty() ||
 							       recovery_requested;
@@ -780,6 +781,7 @@ void worker_main()
 						   .queued_at_usec = queued_at,
 						   .started_at_usec = started,
 						   .completed_at_usec = now_usec(),
+						   .failure_stage = applied.failure_stage,
 						   .result_size = applied.result_size,
 						   .result_payload = applied.result_payload };
 		std::unique_lock<std::mutex> lock(coordinator_mutex);

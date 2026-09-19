@@ -71,6 +71,7 @@ struct stored_operation
 	uint16_t payload_version;
 	uint8_t status;
 	uint32_t result_code;
+	uint16_t failure_stage;
 	uint64_t durable_revision;
 	std::vector<uint8_t> result_payload;
 };
@@ -95,6 +96,7 @@ critical_apply_result failure(unsigned int error)
 critical_apply_result stored_result(critical_apply_outcome outcome, const stored_operation &stored)
 {
 	critical_apply_result result = { outcome, stored.durable_revision, stored.result_code };
+	result.failure_stage = static_cast<critical_failure_stage>(stored.failure_stage);
 	result.result_size = static_cast<uint16_t>(
 		std::min(stored.result_payload.size(), result.result_payload.size()));
 	std::copy_n(stored.result_payload.begin(), result.result_size,
@@ -179,16 +181,90 @@ bool command_hashes(const critical_command &command,
 	return true;
 }
 
+void add_failure_stage(critical_failure_stage *stages, critical_failure_stage stage)
+{
+	if (!stages || stage == critical_failure_stage::none)
+		return;
+	*stages = static_cast<critical_failure_stage>(static_cast<uint16_t>(*stages) |
+						      static_cast<uint16_t>(stage));
+}
+
+critical_failure_stage classify_coin_wallet_revision(size_t endpoint_index,
+						     const critical_command &change,
+						     const currency_command_result &result)
+{
+	if (change.expected_revisions.size() != 2)
+		return critical_failure_stage::coin_revision_unknown;
+	const bool wallet_stale = change.expected_revisions[0].revision !=
+					  std::numeric_limits<uint64_t>::max() &&
+				  change.expected_revisions[0].revision != result.wallet_revision;
+	const bool bank_stale = change.expected_revisions[1].revision !=
+					std::numeric_limits<uint64_t>::max() &&
+				change.expected_revisions[1].revision != result.bank_revision;
+	critical_failure_stage stages = critical_failure_stage::none;
+	if (endpoint_index == 0)
+	{
+		if (wallet_stale)
+			add_failure_stage(&stages,
+					  critical_failure_stage::coin_source_wallet_revision);
+		if (bank_stale)
+			add_failure_stage(&stages,
+					  critical_failure_stage::coin_source_bank_revision);
+	}
+	else
+	{
+		if (wallet_stale)
+			add_failure_stage(&stages,
+					  critical_failure_stage::coin_destination_wallet_revision);
+		if (bank_stale)
+			add_failure_stage(&stages,
+					  critical_failure_stage::coin_destination_bank_revision);
+	}
+	return stages == critical_failure_stage::none ?
+		       critical_failure_stage::coin_revision_unknown :
+		       stages;
+}
+
+critical_failure_stage classify_coin_item_revision(size_t endpoint_index,
+						   item_transfer_failure_stage local_stage)
+{
+	const bool source = endpoint_index == 0;
+	const uint8_t local = static_cast<uint8_t>(local_stage);
+	critical_failure_stage stages = critical_failure_stage::none;
+	if (local & static_cast<uint8_t>(item_transfer_failure_stage::from_owner_revision) ||
+	    local & static_cast<uint8_t>(item_transfer_failure_stage::to_owner_revision))
+		add_failure_stage(&stages,
+				  source ? critical_failure_stage::coin_source_owner_revision :
+					   critical_failure_stage::coin_destination_owner_revision);
+	if (local & static_cast<uint8_t>(item_transfer_failure_stage::item_revision))
+		add_failure_stage(&stages,
+				  source ? critical_failure_stage::coin_source_item_revision :
+					   critical_failure_stage::coin_destination_item_revision);
+	if (local & static_cast<uint8_t>(item_transfer_failure_stage::target_parent_revision))
+		add_failure_stage(
+			&stages,
+			source ? critical_failure_stage::coin_source_target_parent_revision :
+				 critical_failure_stage::coin_destination_target_parent_revision);
+	if (local & static_cast<uint8_t>(item_transfer_failure_stage::coin_payload_revision))
+		add_failure_stage(
+			&stages,
+			source ? critical_failure_stage::coin_source_coin_payload_revision :
+				 critical_failure_stage::coin_destination_coin_payload_revision);
+	return stages == critical_failure_stage::none ?
+		       critical_failure_stage::coin_revision_unknown :
+		       stages;
+}
+
 bool read_operation(MYSQL *connection, const critical_operation_id &operation_id, bool for_update,
 		    stored_operation *stored, bool *found)
 {
 	static const char SELECT_SQL[] =
 		"SELECT command_hash,keys_hash,command_type,schema_version,payload_version,status,"
-		"result_code,durable_revision,result_payload FROM critical_operation_inbox "
+		"result_code,failure_stage,durable_revision,result_payload FROM critical_operation_inbox "
 		"WHERE operation_id=?";
 	static const char SELECT_LOCK_SQL[] =
 		"SELECT command_hash,keys_hash,command_type,schema_version,payload_version,status,"
-		"result_code,durable_revision,result_payload FROM critical_operation_inbox "
+		"result_code,failure_stage,durable_revision,result_payload FROM critical_operation_inbox "
 		"WHERE operation_id=? FOR UPDATE";
 	if (!stored || !found)
 		return false;
@@ -207,7 +283,7 @@ bool read_operation(MYSQL *connection, const critical_operation_id &operation_id
 		return statement_failure(statement);
 	std::array<uint8_t, CRITICAL_COMMAND_RESULT_MAX_BYTES> result_payload = {};
 	unsigned long command_hash_length = 0, keys_hash_length = 0, result_length = 0;
-	MYSQL_BIND results[9] = {};
+	MYSQL_BIND results[10] = {};
 	results[0].buffer_type = MYSQL_TYPE_BLOB;
 	results[0].buffer = stored->command_hash.data();
 	results[0].buffer_length = stored->command_hash.size();
@@ -231,13 +307,16 @@ bool read_operation(MYSQL *connection, const critical_operation_id &operation_id
 	results[6].buffer_type = MYSQL_TYPE_LONG;
 	results[6].buffer = &stored->result_code;
 	results[6].is_unsigned = true;
-	results[7].buffer_type = MYSQL_TYPE_LONGLONG;
-	results[7].buffer = &stored->durable_revision;
+	results[7].buffer_type = MYSQL_TYPE_SHORT;
+	results[7].buffer = &stored->failure_stage;
 	results[7].is_unsigned = true;
-	results[8].buffer_type = MYSQL_TYPE_BLOB;
-	results[8].buffer = result_payload.data();
-	results[8].buffer_length = result_payload.size();
-	results[8].length = &result_length;
+	results[8].buffer_type = MYSQL_TYPE_LONGLONG;
+	results[8].buffer = &stored->durable_revision;
+	results[8].is_unsigned = true;
+	results[9].buffer_type = MYSQL_TYPE_BLOB;
+	results[9].buffer = result_payload.data();
+	results[9].buffer_length = result_payload.size();
+	results[9].length = &result_length;
 	if (mysql_stmt_bind_result(statement, results) != 0)
 		return statement_failure(statement);
 	const int fetched = mysql_stmt_fetch(statement);
@@ -248,6 +327,9 @@ bool read_operation(MYSQL *connection, const critical_operation_id &operation_id
 	}
 	if (fetched != 0 || command_hash_length != stored->command_hash.size() ||
 	    keys_hash_length != stored->keys_hash.size() || result_length > result_payload.size())
+		return statement_failure(statement);
+	if (!critical_failure_stage_valid(
+		    static_cast<critical_failure_stage>(stored->failure_stage)))
 		return statement_failure(statement);
 	stored->result_payload.assign(result_payload.begin(),
 				      result_payload.begin() + result_length);
@@ -503,31 +585,42 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 }
 
 bool finish_inbox(MYSQL *connection, const critical_command &command, uint64_t revision,
-		  unsigned int result_code, const uint8_t *payload, size_t payload_size)
+		  unsigned int result_code, const uint8_t *payload, size_t payload_size,
+		  critical_failure_stage failure_stage = critical_failure_stage::none)
 {
 	static const char SQL[] =
-		"UPDATE critical_operation_inbox SET status=1,result_code=?,durable_revision=?,"
+		"UPDATE critical_operation_inbox SET status=1,result_code=?,failure_stage=?,"
+		"durable_revision=?,"
 		"result_payload=?,committed_at=CURRENT_TIMESTAMP(6) WHERE operation_id=? AND status=0";
+	if (!critical_failure_stage_valid(failure_stage))
+	{
+		errno = EINVAL;
+		return false;
+	}
 	MYSQL_STMT *statement = nullptr;
 	if (!prepare(&statement, connection, SQL))
 		return false;
 	unsigned long payload_length = payload_size,
 		      operation_length = command.operation_id.bytes.size();
-	MYSQL_BIND bindings[4] = {};
+	uint16_t encoded_failure_stage = static_cast<uint16_t>(failure_stage);
+	MYSQL_BIND bindings[5] = {};
 	bindings[0].buffer_type = MYSQL_TYPE_LONG;
 	bindings[0].buffer = &result_code;
 	bindings[0].is_unsigned = true;
-	bindings[1].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[1].buffer = &revision;
+	bindings[1].buffer_type = MYSQL_TYPE_SHORT;
+	bindings[1].buffer = &encoded_failure_stage;
 	bindings[1].is_unsigned = true;
-	bindings[2].buffer_type = MYSQL_TYPE_BLOB;
-	bindings[2].buffer = const_cast<uint8_t *>(payload);
-	bindings[2].buffer_length = payload_length;
-	bindings[2].length = &payload_length;
+	bindings[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[2].buffer = &revision;
+	bindings[2].is_unsigned = true;
 	bindings[3].buffer_type = MYSQL_TYPE_BLOB;
-	bindings[3].buffer = const_cast<uint8_t *>(command.operation_id.bytes.data());
-	bindings[3].buffer_length = operation_length;
-	bindings[3].length = &operation_length;
+	bindings[3].buffer = const_cast<uint8_t *>(payload);
+	bindings[3].buffer_length = payload_length;
+	bindings[3].length = &payload_length;
+	bindings[4].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[4].buffer = const_cast<uint8_t *>(command.operation_id.bytes.data());
+	bindings[4].buffer_length = operation_length;
+	bindings[4].length = &operation_length;
 	const bool ok = mysql_stmt_bind_param(statement, bindings) == 0 &&
 			mysql_stmt_execute(statement) == 0 &&
 			mysql_stmt_affected_rows(statement) == 1;
@@ -1066,6 +1159,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		}
 		coin_transfer_result result;
 		unsigned int result_code = 0;
+		critical_failure_stage failure_stage = critical_failure_stage::none;
 		uint64_t durable_revision = 0;
 		const coin_transfer_endpoint *endpoints[2] = { &coin_payload.source,
 							       &coin_payload.destination };
@@ -1076,6 +1170,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 					     coin_payload, result, &change))
 			{
 				result_code = ESTALE;
+				failure_stage = critical_failure_stage::coin_destination_rebase;
 				break;
 			}
 			std::array<uint8_t, SHA256_DIGEST_LENGTH> child_hash = {},
@@ -1089,6 +1184,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			}
 			bool mutated = false;
 			bool ok = false;
+			item_transfer_failure_stage item_failure_stage =
+				item_transfer_failure_stage::none;
 			std::vector<uint8_t> child_result;
 			uint64_t revision = 0;
 			if (change.type == critical_command_type::account_bank)
@@ -1100,7 +1197,15 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				    !std::equal(endpoints[index]->after.begin(),
 						endpoints[index]->after.end(),
 						result.wallets[index].wallet.amount.begin()))
+				{
 					result_code = ESTALE;
+					failure_stage =
+						critical_failure_stage::coin_revision_unknown;
+				}
+				if (ok && result_code == ESTALE &&
+				    failure_stage == critical_failure_stage::none)
+					failure_stage = classify_coin_wallet_revision(
+						index, change, result.wallets[index]);
 				std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> bytes = {};
 				if (ok && !result_code)
 				{
@@ -1116,7 +1221,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				ok = item_transfer_repository_execute_coin(connection, change,
 									   endpoints[index]->before,
 									   &result.piles[index],
-									   &result_code, &mutated);
+									   &result_code, &mutated,
+									   &item_failure_stage);
+				if (ok && result_code == ESTALE)
+					failure_stage = classify_coin_item_revision(
+						index, item_failure_stage);
 				std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> bytes = {};
 				if (ok && !result_code)
 				{
@@ -1181,7 +1290,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			return failure(error);
 		}
 		if (!finish_inbox(connection, command, durable_revision, result_code, bytes.data(),
-				  result_size))
+				  result_size, failure_stage))
 		{
 			const auto error = database_error(connection);
 			rollback(connection);
@@ -1201,6 +1310,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 							  critical_apply_outcome::terminal_failure :
 							  critical_apply_outcome::applied,
 						  durable_revision, result_code };
+		applied.failure_stage = failure_stage;
 		applied.result_size = result_size;
 		std::copy_n(bytes.begin(), result_size, applied.result_payload.begin());
 		return applied;
@@ -1774,7 +1884,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				for (size_t i = 0; i < zone_payload.group_size; ++i)
 					order.push_back(i);
 				std::sort(order.begin(), order.end(),
-					  [&](size_t a, size_t b) {
+					  [&](size_t a, size_t b)
+					  {
 						  return zone_payload.participant_pids[a] <
 							 zone_payload.participant_pids[b];
 					  });
@@ -2022,8 +2133,9 @@ bool critical_command_repository_insert_outbox_event(MYSQL *connection,
 
 bool critical_command_repository_finish_inbox(MYSQL *connection, const critical_command &command,
 					      uint64_t durable_revision, unsigned int result_code,
-					      const uint8_t *payload, size_t payload_size)
+					      const uint8_t *payload, size_t payload_size,
+					      critical_failure_stage failure_stage)
 {
 	return finish_inbox(connection, command, durable_revision, result_code, payload,
-			    payload_size);
+			    payload_size, failure_stage);
 }

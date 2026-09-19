@@ -44,6 +44,21 @@ void execute(const std::string &sql)
 	}
 }
 
+void kill_if_present(unsigned long thread_id)
+{
+	const std::string sql = "KILL CONNECTION " + std::to_string(thread_id);
+	if (mysql_query(connection, sql.c_str()) == 0)
+		return;
+	// The sleep can finish between the processlist observation and KILL. Treat
+	// that race as a test assertion below, not as an unrelated fixture abort.
+	if (mysql_errno(connection) != 1094)
+	{
+		fprintf(stderr, "fixture SQL failed: %s\n%s\n", sql.c_str(),
+			mysql_error(connection));
+		abort();
+	}
+}
+
 long long scalar(const std::string &sql)
 {
 	execute(sql);
@@ -61,6 +76,13 @@ std::string operation_hex(const critical_operation_id &operation_id)
 	char value[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
 	assert(critical_operation_id_to_hex(operation_id, value, sizeof(value)));
 	return value;
+}
+
+long long failure_stage_of(const critical_command &command)
+{
+	return scalar(
+		"SELECT failure_stage FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		operation_hex(command.operation_id) + "')");
 }
 
 critical_command command_for(uint32_t pid, const char *account_name,
@@ -329,8 +351,17 @@ void coin_failure_matrix()
 	critical_command stale = make_put(700, 299, 50);
 	applied = critical_command_repository_apply(connection, stale);
 	assert(applied.outcome == critical_apply_outcome::terminal_failure &&
-	       applied.error_code == ESTALE);
-	assert(critical_command_repository_apply(connection, stale).error_code == ESTALE);
+	       applied.error_code == ESTALE &&
+	       applied.failure_stage ==
+		       critical_failure_stage::coin_destination_coin_payload_revision);
+	assert(failure_stage_of(stale) ==
+	       static_cast<unsigned int>(
+		       critical_failure_stage::coin_destination_coin_payload_revision));
+	assert(scalar("SELECT OCTET_LENGTH(result_payload) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		      operation_hex(stale.operation_id) + "')") == 0);
+	const auto stale_replay = critical_command_repository_apply(connection, stale);
+	assert(stale_replay.error_code == ESTALE &&
+	       stale_replay.failure_stage == applied.failure_stage);
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 700);
 	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + pid_text) ==
 	       ledger_count);
@@ -345,9 +376,16 @@ void coin_failure_matrix()
 		pid_text);
 	applied = critical_command_repository_apply(connection, conflicted_wallet);
 	assert(applied.outcome == critical_apply_outcome::terminal_failure &&
-	       applied.error_code == ESTALE);
-	assert(critical_command_repository_apply(connection, conflicted_wallet).error_code ==
-	       ESTALE);
+	       applied.error_code == ESTALE &&
+	       applied.failure_stage == critical_failure_stage::coin_source_wallet_revision);
+	assert(failure_stage_of(conflicted_wallet) ==
+	       static_cast<unsigned int>(critical_failure_stage::coin_source_wallet_revision));
+	assert(scalar("SELECT OCTET_LENGTH(result_payload) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		      operation_hex(conflicted_wallet.operation_id) + "')") == 0);
+	const auto conflicted_replay =
+		critical_command_repository_apply(connection, conflicted_wallet);
+	assert(conflicted_replay.error_code == ESTALE &&
+	       conflicted_replay.failure_stage == applied.failure_stage);
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 701);
 	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + pid_text) ==
 	       ledger_count);
@@ -397,7 +435,8 @@ void coin_failure_matrix()
 				 " AND LOWER(STATE)='user sleep'") == 1) &&
 	       std::chrono::steady_clock::now() < pause_deadline)
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	execute("KILL CONNECTION " + std::to_string(interrupted_id));
+	if (paused)
+		kill_if_present(interrupted_id);
 	transaction.join();
 	assert(paused && interrupted_result.outcome == critical_apply_outcome::retryable_failure);
 	execute("DROP TRIGGER coin_crash_pause");

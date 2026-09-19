@@ -12,6 +12,33 @@ struct player_death_restitution_runtime_live_health
 	size_t fenced_targets;
 };
 
+enum class player_death_restitution_runtime_operation_phase : uint8_t
+{
+	unknown = 0,
+	awaiting_durability,
+	admitted,
+	durable_execution,
+	journal_uncertain,
+	durable_receipt_unverified,
+	terminal_failure,
+};
+
+// This is deliberately a public, privacy-preserving status projection.  It
+// carries no player/item identifiers or payload bytes.  A durable receipt is
+// not an exact target readback, so the runtime never reports `verified` here.
+struct player_death_restitution_runtime_operation_status
+{
+	critical_operation_id operation_id;
+	player_death_restitution_runtime_operation_phase phase;
+	critical_command_durability durability;
+	critical_apply_outcome completion_outcome;
+	bool completion_available;
+	bool durable_receipt_recorded;
+	bool target_save_login_fence_held;
+	bool exact_verification_required;
+	bool retry_safe;
+};
+
 // Game-thread boundary for the native per-player restitution command.  The
 // adapter owns the callback context and retains accepted/ambiguous submissions
 // until critical-command completion is published.
@@ -24,6 +51,13 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 player_death_restitution_runtime_result player_death_restitution_runtime_submit_live_approved(
 	const critical_command &approved_command, const char *actor, int actor_level,
 	player_death_restitution_runtime_submission *submission_out = nullptr);
+
+// Read-only operation lookup for a reconnecting staff actor.  The actor must
+// exactly match the protected plan actor; unknown and mismatched identities
+// both return false so this boundary cannot be used to enumerate operations.
+bool player_death_restitution_runtime_operation_status_copy(
+	const char *actor, int actor_level, const critical_operation_id &operation_id,
+	player_death_restitution_runtime_operation_status *status_out);
 
 void player_death_restitution_runtime_handle_completions(const critical_completion *completions,
 							 size_t count);

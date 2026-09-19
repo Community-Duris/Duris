@@ -8,6 +8,8 @@ import json
 import hashlib
 import os
 from pathlib import Path
+import struct
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -41,6 +43,22 @@ def payload_item(uid: int, parent_index: int, vnum: int = 100) -> dict[str, obje
         "vnum": vnum,
         "item_payload_hex": "00",
     }
+
+
+def snapshot_item_payload(equipment_slot: int = 0) -> bytes:
+    """Build the minimal valid one-item snapshot-list codec payload."""
+    payload = bytearray(struct.pack(
+        "<IihQqibB", 1, -1, equipment_slot, 100, 0, 677, 5, 0
+    ))
+    payload.extend(struct.pack("<4I", 0, 0, 0, 0))
+    payload.extend(struct.pack("<8i", *([0] * 8)))
+    payload.extend(struct.pack("<6q", *([0] * 6)))
+    payload.extend(struct.pack("<5I", *([0] * 5)))
+    payload.extend(struct.pack("<ibihh", 1, 1, 1, 100, 0))
+    payload.extend(struct.pack("<5Q", *([0] * 5)))
+    payload.extend(struct.pack("<8h", *([0] * 8)))
+    payload.extend(struct.pack("<2I", 0, 0))
+    return bytes(payload)
 
 
 class RestitutionCliTests(unittest.TestCase):
@@ -87,6 +105,17 @@ class RestitutionCliTests(unittest.TestCase):
         process_inventory.assert_called_once_with()
         self.assertEqual(len(db.queries), 7)
 
+    def test_nullable_hex_readback_distinguishes_sql_null_from_literal_text(self) -> None:
+        row = ["1"] * 32
+        row[20:24] = ["NULL", r"\N", "", "4E554C4C"]
+        db = mock.Mock()
+        db.run.return_value = [row]
+        item = cli.fetch_player_rows(db, 1, [1])["1"]
+        self.assertIsNone(item["name_hex"])
+        self.assertIsNone(item["short_description_hex"])
+        self.assertIsNone(item["description_hex"])
+        self.assertEqual(item["action_description_hex"], "4e554c4c")
+
     def test_quiescence_rejects_transient_writer_sample(self) -> None:
         db = ScalarDB(["1", "0", "1"])
         with self.assertRaisesRegex(cli.ToolError, "active database writers"):
@@ -95,21 +124,31 @@ class RestitutionCliTests(unittest.TestCase):
 
     @mock.patch.object(cli, "ensure_codec", return_value=Path("/unused-codec"))
     @mock.patch.object(cli.subprocess, "run")
-    def test_normalized_native_codec_death_versions(self, run: mock.Mock, _codec: mock.Mock) -> None:
+    def test_native_raw_wire_and_normalized_death_schema_contract(
+        self, run: mock.Mock, _codec: mock.Mock
+    ) -> None:
         # This tests the Python acceptance boundary, not native byte decoding.
-        # Native wire-2 decoding is separately exercised on retained evidence.
-        for wire in (2, 4, 6):
+        # The native codec bridge emits both values: historical raw wires 2/4/6
+        # and the current writer's raw wire 8 all normalize to death schema 8.
+        self.assertEqual(cli.DEATH_NORMALIZED_SCHEMA_VERSION, 8)
+        self.assertEqual(cli.DEATH_SCHEMA_VERSION, 8)
+        for wire in (2, 4, 6, 8):
             with self.subTest(wire=wire):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
-                    "wire_version": wire, "schema_version": 6,
+                    "wire_version": wire, "schema_version": 8,
                 }).encode())
-                self.assertEqual(cli.decode_payload(b"fixture")["wire_version"], wire)
-        for wire, schema in ((1, 5), (3, 5), (5, 5), (2, 5), (99, 6)):
+                decoded = cli.decode_payload(b"fixture")
+                self.assertEqual(decoded["wire_version"], wire)
+                self.assertEqual(decoded["schema_version"], 8)
+        for wire, schema in (
+            (1, 8), (3, 8), (5, 8), (7, 8), (99, 8),
+            (2, 7), (6, 7), (8, 7),
+        ):
             with self.subTest(wire=wire, schema=schema):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
                     "wire_version": wire, "schema_version": schema,
                 }).encode())
-                with self.assertRaises(cli.ToolError):
+                with self.assertRaisesRegex(cli.ToolError, "raw-wire.*schema-8"):
                     cli.decode_payload(b"fixture")
 
     def test_normalized_related_payload_is_reused_and_deduplicated(self) -> None:
@@ -132,6 +171,384 @@ class RestitutionCliTests(unittest.TestCase):
         self.assertEqual(parents["100"], 0)
         self.assertEqual(roots["100"], 100)
 
+    def test_current_native_writer_reaches_python_inspection_gate(self) -> None:
+        # Compile the tracked native fixture and the actual bridge in a private
+        # temporary directory.  This catches the production mismatch where the
+        # bridge returned raw wire 8 / normalized schema 8 but Python still
+        # required the retired schema-6 label.
+        fixture_source = ROOT / "tests" / "async" / "player_death_restitution_fixture.cpp"
+        codec_source = ROOT / "src" / "player" / "player_snapshot_codec.c"
+        bridge_source = ROOT / "scripts" / "player_death_restitution_codec.cpp"
+        with tempfile.TemporaryDirectory(prefix="duris-504-codec-") as directory:
+            fixture = Path(directory) / "fixture"
+            bridge = Path(directory) / "bridge"
+            for output, sources in (
+                (fixture, (fixture_source, codec_source)),
+                (bridge, (bridge_source, codec_source)),
+            ):
+                subprocess.run(
+                    ["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                     "-Isrc", "-I.", *(str(source) for source in sources), "-o", str(output)],
+                    cwd=ROOT, check=True, capture_output=True, text=True,
+                )
+            fixture_output = subprocess.run(
+                [str(fixture)], capture_output=True, check=True,
+            ).stdout.decode("ascii")
+            payloads = [bytes.fromhex(line) for line in fixture_output.splitlines()]
+            self.assertEqual(len(payloads), 2)
+            with mock.patch.object(cli, "ensure_codec", return_value=bridge):
+                for payload in payloads:
+                    decoded = cli.decode_payload(payload)
+                    self.assertEqual(int.from_bytes(payload[:4], "little"), 8)
+                    self.assertEqual(decoded["wire_version"], 8)
+                    self.assertEqual(decoded["schema_version"], 8)
+                    self.assertIsInstance(decoded["death"], dict)
+            for bad_wire in (7, 99):
+                corrupted = bytearray(payloads[0])
+                corrupted[:4] = bad_wire.to_bytes(4, "little")
+                rejected = subprocess.run(
+                    [str(bridge), "decode-death"], input=bytes(corrupted),
+                    capture_output=True, check=False,
+                )
+                self.assertNotEqual(rejected.returncode, 0)
+
+    def test_native_export_is_not_gated_by_offline_sql_boundary(self) -> None:
+        args = cli.parser().parse_args([
+            "export", "--plan", "plan.json", "--inspect", "inspect.json",
+            "--artifact", "staff.json", "--approve", "--actor", "staff",
+            "--reason", "death-evidence",
+        ])
+        self.assertEqual(args.command, "export")
+        self.assertFalse(hasattr(args, "offline_proof"))
+        self.assertFalse(hasattr(args, "maintenance_kind"))
+
+    def test_plan_exposes_explicit_native_preparation_mode(self) -> None:
+        native = cli.parser().parse_args([
+            "plan", "--inspect", "inspect.json", "--artifact", "plan.json",
+            "--preparation-mode", "native",
+        ])
+        self.assertEqual(native.preparation_mode, cli.PREPARATION_MODE_NATIVE)
+        alias = cli.parser().parse_args([
+            "plan", "--inspect", "inspect.json", "--artifact", "plan.json", "--native",
+        ])
+        self.assertEqual(alias.preparation_mode, cli.PREPARATION_MODE_NATIVE)
+        offline = cli.parser().parse_args([
+            "plan", "--inspect", "inspect.json", "--artifact", "plan.json",
+        ])
+        self.assertEqual(offline.preparation_mode, cli.PREPARATION_MODE_OFFLINE_SQL)
+
+    def test_production_native_plan_is_read_only_without_backup_or_maintenance(self) -> None:
+        target = {
+            "host": "127.0.0.1", "port": "3306", "database": "duris",
+            "production": True, "server_fingerprint": "ab" * 32,
+        }
+        inspection = {
+            "source": {
+                "pid": 42, "death_revision": 7, "operation_id_hex": "20" * 16,
+                "loss_epoch": 1700000000,
+            },
+            "target": target,
+            "recipient_pid": 42,
+            "payload_digest": "11" * 32,
+            "evidence_digest": "22" * 32,
+            "decoded": {"death": {
+                "wallet_pile_uid": 0,
+                "corpse": [{"object_uid": 900, "parent_index": -1}],
+            }},
+            "custody_db": [], "current_owners": {}, "player_projections": [],
+            "player_authority": {"42": {"save_revision": 8, "owner_revision": 6}},
+            "recipient_existing_uids": [], "related_deaths": [], "related_custody": [],
+            "item_loss_epochs": {}, "deliveries": {}, "artifacts": {},
+            "consistency_errors": [],
+        }
+        target_info = {"target": target, "maintenance_boundary": None}
+        with mock.patch.object(cli, "require_policy_maintenance", side_effect=AssertionError("stop")), \
+                mock.patch.object(cli, "verify_backup_receipt", side_effect=AssertionError("backup")):
+            plan = cli.plan_from_inspection(
+                inspection, target_info=target_info, approve_production=True,
+                mode=cli.PREPARATION_MODE_NATIVE,
+            )
+        self.assertEqual(plan["preparation_mode"], cli.PREPARATION_MODE_NATIVE)
+        self.assertFalse(plan["applyable"])
+        self.assertFalse(plan["exportable"])
+        self.assertEqual(plan["target"], target)
+        self.assertNotIn("backup_receipt", plan)
+        self.assertNotIn("maintenance_boundary", plan)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "native-plan.json"
+            cli.atomic_write_json(path, plan, overwrite=False)
+            loaded = cli.load_plan(path)
+        self.assertEqual(loaded["preparation_mode"], cli.PREPARATION_MODE_NATIVE)
+        self.assertFalse(loaded["applyable"])
+
+    def test_native_production_verify_rejects_unbound_target_or_live_boundary_before_reads(self) -> None:
+        target = {
+            "host": "127.0.0.1", "port": "3306", "database": "duris",
+            "production": True, "server_fingerprint": "ab" * 32,
+        }
+        boundary = {"kind": "systemd", "id": "duris-mud-production.service", "state": "masked-inactive"}
+        plan = {
+            "preparation_mode": cli.PREPARATION_MODE_NATIVE,
+            "target": target,
+            "source": {"pid": 42, "death_revision": 7, "operation_id_hex": "20" * 16},
+            "recipient_pid": 42,
+            "restitution_id_hex": "cc" * 16,
+            "items": [],
+        }
+        policy = mock.Mock(
+            production=True,
+            maintenance_kind="systemd",
+            maintenance_id="duris-mud-production.service",
+            maintenance_owner=None,
+        )
+        policy.require_maintenance.return_value = boundary
+        db = mock.Mock(policy=policy)
+        fetch_receipt = mock.Mock()
+        identify = mock.Mock(return_value=target)
+        cases = (
+            ("missing target-info", None, "fresh protected target-info", None),
+            (
+                "mismatched fingerprint",
+                {"target": {**target, "server_fingerprint": "cd" * 32}, "maintenance_boundary": boundary},
+                "does not match the approved plan target",
+                None,
+            ),
+            (
+                "missing boundary",
+                {"target": target, "maintenance_boundary": None},
+                "stopped maintenance boundary",
+                None,
+            ),
+            (
+                "mismatched boundary",
+                {
+                    "target": target,
+                    "maintenance_boundary": {
+                        "kind": "systemd", "id": "duris-mud-production.service", "state": "stale"
+                    },
+                },
+                "differs from fresh target-info",
+                None,
+            ),
+            (
+                "live service",
+                {"target": target, "maintenance_boundary": boundary},
+                "service is live",
+                cli.TargetError("production service is live"),
+            ),
+        )
+        with mock.patch.object(cli, "fetch_receipt", fetch_receipt), \
+                mock.patch.object(cli, "identify_target", identify):
+            for label, target_info, message, maintenance_failure in cases:
+                with self.subTest(label=label):
+                    fetch_receipt.reset_mock()
+                    identify.reset_mock()
+                    policy.require_maintenance.reset_mock()
+                    policy.require_maintenance.side_effect = maintenance_failure
+                    if maintenance_failure is None:
+                        policy.require_maintenance.return_value = boundary
+                    with self.assertRaisesRegex(cli.ToolError, message):
+                        cli.verify_plan(db, plan, policy, target_info)
+                    fetch_receipt.assert_not_called()
+                    identify.assert_not_called()
+
+    def test_native_production_verify_reads_exactly_without_replanning_or_backup(self) -> None:
+        target = {
+            "host": "127.0.0.1", "port": "3306", "database": "duris",
+            "production": True, "server_fingerprint": "ab" * 32,
+        }
+        boundary = {"kind": "systemd", "id": "duris-mud-production.service", "state": "masked-inactive"}
+        metadata = {
+            "object_uid": 100,
+            "vnum": 677,
+            "type": 5,
+            "string_mask": 0,
+            "name_hex": "",
+            "short_description_hex": "",
+            "description_hex": "",
+            "action_description_hex": "",
+            "values": [0] * 8,
+            "bitvectors": [0] * 5,
+            "weight": 1,
+            "cost": 1,
+            "timers": [0],
+            "extra_flags": 0,
+            "wear_flags": 0,
+            "material": 1,
+            "condition": 100,
+            "affects": [],
+            "extra_descriptions": [],
+            "item_payload_hex": "00",
+        }
+        item = {
+            "item_uid": 100,
+            "eligible": True,
+            "kind": "normal",
+            "vnum": 677,
+            "metadata": metadata,
+            "metadata_digest": hashlib.sha256(b"\x00").hexdigest(),
+            "metadata_payload_hex": "00",
+            "source_root_item_uid": 100,
+            "source_parent_item_uid": 0,
+            "source_item_revision": 11,
+            "delivered_root_item_uid": 100,
+            "delivered_parent_item_uid": 0,
+            "equipment_slot": 0,
+        }
+        plan = {
+            "preparation_mode": cli.PREPARATION_MODE_NATIVE,
+            "target": target,
+            "source": {"pid": 42, "death_revision": 7, "operation_id_hex": "20" * 16},
+            "recipient_pid": 42,
+            "restitution_id_hex": "cc" * 16,
+            "evidence_digest": "11" * 32,
+            "plan_digest": "22" * 32,
+            "items": [item],
+            "recipient_existing_uids": [],
+        }
+        receipt = {
+            "source_pid": 42,
+            "death_revision": 7,
+            "recipient_pid": 42,
+            "death_operation_id_hex": "20" * 16,
+            "evidence_digest": "11" * 32,
+            "plan_digest": "22" * 32,
+            "candidate_count": 1,
+            "delivered_count": 1,
+            "status": cli.RECEIPT_APPLIED,
+        }
+        delivery = [{
+            "item_uid": 100,
+            "metadata_digest": item["metadata_digest"],
+            "original_payload_hex": "00",
+            "delivered_item_id": 900,
+        }]
+        player = {
+            "id": 900,
+            "pid": 42,
+            "vnum": 677,
+            "equip_slot": 0,
+            "container_id": 0,
+            "quantity": 1,
+            "weight": 1,
+            "cost": 1,
+            "timer": 0,
+            "extra_flags": 0,
+            "wear_flags": 0,
+            "type": 5,
+            "values": [0] * 8,
+            "name_hex": None,
+            "short_description_hex": None,
+            "description_hex": None,
+            "action_description_hex": None,
+            "bitvectors": [0] * 5,
+            "object_uid": 100,
+            "condition": 100,
+        }
+        owner = {
+            "item_uid": 100,
+            "root_item_uid": 100,
+            "parent_item_uid": 0,
+            "owner_type": cli.OWNER_PLAYER,
+            "owner_id": 42,
+            "owner_context_id": 0,
+            "item_revision": 11,
+            "vnum": 677,
+            "state": cli.STATE_ACTIVE,
+        }
+        policy = mock.Mock(
+            production=True,
+            maintenance_kind="systemd",
+            maintenance_id="duris-mud-production.service",
+            maintenance_owner=None,
+        )
+        policy.require_maintenance.return_value = boundary
+        db = mock.Mock(policy=policy)
+        db.scalar.return_value = "0"
+        events: list[str] = []
+
+        def maintenance() -> dict[str, str]:
+            events.append("boundary")
+            return boundary
+
+        policy.require_maintenance.side_effect = maintenance
+
+        def identity(*_args: object, **_kwargs: object) -> dict[str, object]:
+            events.append("identity")
+            return target
+
+        def receipt_read(*_args: object, **_kwargs: object) -> dict[str, object]:
+            events.append("receipt")
+            return receipt
+
+        before = json.loads(json.dumps(plan))
+        with mock.patch.object(cli, "identify_target", side_effect=identity), \
+                mock.patch.object(cli, "fetch_receipt", side_effect=receipt_read), \
+                mock.patch.object(cli, "fetch_delivery_rows", return_value=delivery), \
+                mock.patch.object(cli, "fetch_restitution_item_rows", return_value={}), \
+                mock.patch.object(cli, "fetch_player_rows", return_value={"100": player}), \
+                mock.patch.object(cli, "fetch_current_owners", return_value={"100": owner}), \
+                mock.patch.object(cli, "fetch_runtime_state", return_value={
+                    "100": cli._native_item_state_payload(metadata, 100, 0).hex(),
+                }), \
+                mock.patch.object(cli, "fetch_item_metadata", return_value=({}, {})), \
+                mock.patch.object(cli, "fetch_recipient_uids", return_value=[100]), \
+                mock.patch.object(cli, "validate_plan_backup", side_effect=AssertionError("backup")), \
+                mock.patch.object(cli, "plan_from_inspection", side_effect=AssertionError("replan")):
+            verified, count, failures = cli.verify_plan(
+                db,
+                plan,
+                policy,
+                {"target": target, "maintenance_boundary": boundary},
+            )
+        self.assertTrue(verified, failures)
+        self.assertEqual(count, 1)
+        self.assertEqual(events, ["boundary", "identity", "receipt"])
+        self.assertEqual(plan, before)
+        self.assertEqual(db.run.call_count, 0)
+        self.assertEqual(db.scalar.call_count, 1)
+
+    def test_native_plan_cannot_enter_sql_apply_or_mark_verified(self) -> None:
+        native = {"preparation_mode": cli.PREPARATION_MODE_NATIVE}
+        with self.assertRaisesRegex(cli.ToolError, "cannot enter SQL apply"):
+            cli.build_apply_sql(native, "actor", "reason")
+        with self.assertRaisesRegex(cli.ToolError, "cannot enter SQL apply"):
+            cli.apply_plan(mock.Mock(), native, Path("/unusable/proof"), "actor", "reason")
+        with self.assertRaisesRegex(cli.ToolError, "cannot enter SQL mark-verified"):
+            cli.mark_verified(mock.Mock(), native, Path("/unusable/proof"))
+
+    def test_native_export_lineage_preserves_identity(self) -> None:
+        plan = {
+            "backend": "sql", "preparation_mode": cli.PREPARATION_MODE_NATIVE,
+            "evidence_digest": "aa" * 32, "payload_digest": "dd" * 32,
+            "plan_digest": "bb" * 32,
+            "restitution_id_hex": "cc" * 16, "production_approved": True,
+            "exportable": True, "artifact_reconciliation_approved": False,
+            "artifact_timing_compensations": {}, "artifact_timing_compensation_count": 0,
+            "items": [{"item_uid": 900, "eligible": True,
+                       "expected_current": {"owner_revision": 6}}],
+            "source": {"pid": 42, "death_revision": 7,
+                                     "operation_id_hex": "20" * 16, "loss_epoch": 1700000000},
+            "recipient_pid": 42,
+            "native_fence": {"expected_recipient_save_revision": 8,
+                             "expected_source_owner_revision": 6,
+                             "expected_recipient_owner_revision": 6},
+        }
+        inspection = {"evidence_digest": plan["evidence_digest"]}
+        with mock.patch.object(cli, "plan_from_inspection", return_value=dict(plan)) as rebuild, \
+                mock.patch.object(cli, "_native_item_payload", return_value=b"item"):
+            payload = cli.build_staff_payload(plan, inspection, "staff", "death-evidence")
+        self.assertEqual(rebuild.call_args.kwargs["mode"], cli.PREPARATION_MODE_NATIVE)
+        self.assertEqual(payload["source"]["pid"], plan["source"]["pid"])
+        self.assertEqual(payload["recipient_pid"], plan["recipient_pid"])
+        self.assertEqual(payload["restitution_id_hex"], plan["restitution_id_hex"])
+        self.assertEqual(payload["evidence_digest"], plan["evidence_digest"])
+        self.assertEqual(payload["plan_digest"], plan["plan_digest"])
+        command_bytes = bytes.fromhex(payload["canonical_hex"])
+        self.assertTrue(command_bytes.startswith(b"CCM1"))
+        self.assertGreater(len(command_bytes), len(b"item"))
+        self.assertEqual(payload["command_digest"], hashlib.sha256(command_bytes).hexdigest())
+
     def test_conflicting_normalized_related_payload_refuses_uid(self) -> None:
         selected = [payload_item(900, -1)]
         first = payload_item(100, 0, 100)
@@ -149,6 +566,7 @@ class RestitutionCliTests(unittest.TestCase):
         }
         _, _, _, _, conflicts = cli.payload_evidence_maps(inspection)
         self.assertEqual(conflicts, {"100"})
+
 
     def test_identity_mismatched_related_payload_marks_all_seen_uids_conflicting(self) -> None:
         inspection = {
@@ -191,7 +609,9 @@ class RestitutionCliTests(unittest.TestCase):
         }
         self.assertEqual(cli.item_kind(unique, {}), "unique")
 
-    def test_strict_native_comparison_rejects_changed_or_truncated_ist1(self) -> None:
+    def test_exact_runtime_comparison_accepts_snapshot_projection_and_rejects_changes(self) -> None:
+        snapshot = snapshot_item_payload()
+        self.assertEqual(len(snapshot), 225)
         metadata = {
             "object_uid": 100,
             "vnum": 677,
@@ -212,11 +632,11 @@ class RestitutionCliTests(unittest.TestCase):
             "condition": 100,
             "affects": [],
             "extra_descriptions": [],
-            "item_payload_hex": "00",
+            "item_payload_hex": snapshot.hex(),
         }
         native = cli._native_item_state_payload(metadata, 100, 0)
         self.assertEqual(native[:6], b"IST1\x01\x00")
-        metadata_digest = hashlib.sha256(b"\x00").hexdigest()
+        metadata_digest = hashlib.sha256(snapshot).hexdigest()
         row = {
             "item_uid": 100,
             "eligible": True,
@@ -224,7 +644,7 @@ class RestitutionCliTests(unittest.TestCase):
             "vnum": 677,
             "metadata": metadata,
             "metadata_digest": metadata_digest,
-            "metadata_payload_hex": "00",
+            "metadata_payload_hex": snapshot.hex(),
             "source_root_item_uid": 100,
             "source_parent_item_uid": 0,
             "source_item_revision": 11,
@@ -249,7 +669,7 @@ class RestitutionCliTests(unittest.TestCase):
         }
         delivery = [{
             "item_uid": 100, "metadata_digest": metadata_digest,
-            "original_payload_hex": "00", "delivered_item_id": 900,
+            "original_payload_hex": snapshot.hex(), "delivered_item_id": 900,
         }]
         player = {
             "id": 900, "pid": 42, "vnum": 677, "equip_slot": 0,
@@ -283,6 +703,21 @@ class RestitutionCliTests(unittest.TestCase):
                 db, plan, policy=None,
             )
             self.assertTrue(ok, failures)
+            snapshot_runtime = cli._snapshot_runtime_state_payload(metadata)
+            self.assertIsNotNone(snapshot_runtime)
+            with mock.patch.object(cli, "fetch_runtime_state", return_value={
+                "100": snapshot_runtime.hex(),
+            }):
+                ok, _, failures = cli.verify_plan(db, plan, policy=None)
+            self.assertTrue(ok, failures)
+            changed_snapshot = bytearray(snapshot_runtime)
+            changed_snapshot[10] ^= 1  # approved object UID must remain exact
+            with mock.patch.object(cli, "fetch_runtime_state", return_value={
+                "100": bytes(changed_snapshot).hex(),
+            }):
+                ok, _, failures = cli.verify_plan(db, plan, policy=None)
+            self.assertFalse(ok)
+            self.assertIn("exact runtime metadata payload differs", failures)
             changed = bytearray(native)
             changed[24] ^= 1
             for label, payload in (("changed-field", bytes(changed)), ("truncated", native[:-1])):
@@ -392,6 +827,15 @@ class RestitutionCliTests(unittest.TestCase):
         self.assertIn("@database_quiescent", sql)
         self.assertIn("FOR UPDATE", sql)
         self.assertIn("@owner_rows_updated=1", sql)
+        # MySQL 8 cannot reopen one TEMPORARY table through two aliases in a
+        # statement. Keep the full parent authority fence using a separate copy.
+        self.assertIn("CREATE TEMPORARY TABLE restitution_apply_parents LIKE restitution_apply_items;", sql)
+        self.assertIn("INSERT INTO restitution_apply_parents SELECT * FROM restitution_apply_items;", sql)
+        parent_gate = next(line for line in sql.splitlines() if line.startswith("SET @parent_ok="))
+        self.assertEqual(parent_gate.count("restitution_apply_items"), 1)
+        self.assertIn("JOIN restitution_apply_parents pp", parent_gate)
+        self.assertIn("parent.item_revision=pp.expected_item_revision", parent_gate)
+        self.assertIn("pp.expected_state=3", parent_gate)
         self.assertIn("@restitution_decision", sql)
         epoch_marker = "SET @restitution_delivery_epoch=FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)));"
         self.assertEqual(sql.count(epoch_marker), 1)

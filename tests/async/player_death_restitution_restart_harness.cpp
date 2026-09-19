@@ -181,8 +181,12 @@ void run_crash_stage(const std::string &directory)
 		directory.c_str(), apply, nullptr, 1,
 		player_death_restitution_runtime_restore_replayed_command, nullptr));
 	player_death_restitution_runtime_submission submission = {};
-	assert(player_death_restitution_runtime_submit_live(valid_plan(), &submission) ==
-	       player_death_restitution_runtime_result::accepted);
+	const auto result = player_death_restitution_runtime_submit_live(valid_plan(), &submission);
+	// A retained live command may return before the journal worker's fsync
+	// acknowledgement. Both outcomes hold the target fence and are accepted
+	// admission states; durability is checked by the restart path below.
+	assert(result == player_death_restitution_runtime_result::accepted ||
+	       result == player_death_restitution_runtime_result::awaiting_durability);
 	assert(target_fence_held && !player_death_restitution_runtime_login_admit(RECIPIENT_PID));
 	assert(player_death_restitution_runtime_login_admit(RECIPIENT_PID + 1));
 
