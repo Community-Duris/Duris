@@ -55,8 +55,13 @@ normal target policy.
 ```sh
 python3 scripts/player_death_restitution.py \
   plan --inspect /secure/restitution/inspection.json \
-  --artifact /secure/restitution/plan.json
+  --preparation-mode native --artifact /secure/restitution/plan.json
 ```
+
+For production, also supply the same protected `--target-info` artifact and
+`--approve-production`. Native plans remain `applyable=false`; approval and
+eligibility permit `exportable=true`, not offline SQL mutation. See the
+[guided workflow](operations/RESTITUTION_GUIDE.md) for the full target-pin sequence.
 
 Review `plan.json` before approval. An artifact is eligible only when its
 identity, domain/legacy authority, and timer evidence reconcile. If historical
@@ -66,7 +71,7 @@ approval; do not invent a timer or use a full-reset fallback:
 ```sh
 python3 scripts/player_death_restitution.py \
   plan --inspect /secure/restitution/inspection.json \
-  --artifact /secure/restitution/plan.json --overwrite \
+  --preparation-mode native --artifact /secure/restitution/plan.json --overwrite \
   --artifact-timing-compensation <ITEM_UID>=<SECONDS>:<APPROVAL_REFERENCE>
 ```
 
@@ -91,15 +96,17 @@ python3 scripts/player_death_restitution.py \
 
 `export` re-derives the plan from the protected inspection and refuses a stale
 inspection, changed evidence digest, changed plan digest, non-SQL plan,
-non-applyable plan, or altered UID fence. The resulting protected artifact has
+non-exportable native plan, or altered UID fence. The resulting protected artifact has
 `source_site` `operator_repair`, `deadline_class` `interactive`, the exact
 `canonical_hex`, bounded `chunks`, and an `artifact_timing_approvals` map keyed
 by item UID. Do not edit or copy only the hex field into a new file.
 
 ### 4. Submit through the production staff command
 
-The game command reader accepts at most 1023 hex characters per chunk. The
-exporter emits 1022-character chunks so each line is byte-aligned. In the staff
+The game command reader accepts at most 1023 characters per complete input line.
+The exporter emits at most 1004 hex characters per chunk, leaving room for the
+18-character `restitution chunk ` prefix and keeping each chunk byte-aligned.
+The 512 KiB payload ceiling therefore permits up to 1045 chunks. In the staff
 client, start staging, execute every line printed by the following command in
 order, then commit:
 

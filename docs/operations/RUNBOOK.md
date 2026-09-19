@@ -711,8 +711,25 @@ accepts only normalized death schema 8 after the native bridge has validated the
 raw wire version. Raw death wires 2, 4, 6, and the current writer's 8 are distinct
 inputs; an unknown or corrupt wire is refused.
 
-The production target probe is read-only. Use the installed system manager when
-the production unit is root-managed:
+The production target probe is read-only. Native preparation uses a target-info
+artifact containing the exact database-name confirmation and actual server
+fingerprint; it does not require a stopped service or a maintenance boundary:
+
+```bash
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  target-info --confirm-production-target <exact-db-name> \
+  --artifact /secure/restitution-target-info.json
+```
+
+Pass that artifact to `inspect --target-info` with the exact confirmation and
+fingerprint, and to `plan --target-info --preparation-mode native`. The native
+`inspect -> plan -> export` preparation is read-only and does not run backup,
+quiescence, service-stop, or SQL mutation code. It still carries the target
+fingerprint, actor/plan identity, explicit approval, expiration/deadline metadata,
+recipient-only native fence, and revision/custody evidence into the exported command.
+
+The offline SQL path has the stronger stopped-boundary probe. Use the installed
+system manager when the production unit is root-managed:
 
 ```bash
 python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
@@ -749,17 +766,32 @@ SQL target makes the artifact stale.
 
 There are two intentionally separate execution modes:
 
-- The native live-runtime handoff uses `inspect`, `plan`, and `export`. `export`
-  requires the exact SQL-derived evidence lineage, explicit staff approval,
-  actor/reason, and native revision fences, but does **not** require
-  `--offline-proof` or a server-wide stop. Submit the protected native payload
-  through the existing authorized staff command and wait for its durable native
-  receipt/readback; admission or queued output is not delivery proof.
+- The native live-runtime handoff uses `inspect`, `plan --preparation-mode native`,
+  and `export`. Production `inspect`/`plan` must carry the read-only target-info
+  artifact with exact target confirmation and server fingerprint; native `plan`
+  must not carry an offline backup or maintenance boundary. `export` requires the
+  exact SQL-derived evidence lineage, explicit staff approval, actor/reason, and
+  native revision fences, but does **not** require `--offline-proof` or a
+  server-wide stop. Submit the protected native payload through the existing
+  authorized staff command and wait for its durable native receipt/readback;
+  admission or queued output is not delivery proof.
 - Direct SQL `apply` is offline-only. It additionally requires the pinned target,
   backup receipt, explicit approval, owner-only v3 offline context, process and
   SQL-writer quiescence checks, and the existing advisory-lock/custody,
   authorization, ownership, artifact, revision, and idempotency fences. The tool
   never stops or masks a service automatically.
+
+Production `verify --plan` has two read-only policy branches and neither is a
+live-native verification mode. For an explicit native plan, the original plan and
+its digests are retained: supply a **fresh protected** `target-info` artifact bound
+to the same production target and server fingerprint, captured with the explicit
+stopped/masked maintenance boundary, plus the matching maintenance arguments.
+The verifier validates that boundary before any receipt/item read, performs the
+existing exact readback, does not require or inspect a plan-bound backup, does not
+replan or convert the native artifact, and never promotes receipt status. A native
+plan still refuses SQL `apply` and `--mark-verified`. For an `offline-sql` plan,
+the existing stopped-boundary, plan-bound backup, offline-proof, and explicit
+approval gates remain unchanged; `--mark-verified` remains its separate write.
 
 Use the dedicated restitution runbook for the complete inspect/plan/export or
 backup/apply/verify command sequence:

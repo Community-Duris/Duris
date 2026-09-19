@@ -11,10 +11,10 @@
 // command reader's per-line limit.
 constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_COMMAND_BYTES =
 	CRITICAL_COMMAND_MAX_ENCODED_BYTES;
-// The game command reader accepts at most 1023 characters per input line.  Keep
-// accepted chunks byte-aligned so an incomplete final nibble is rejected at the
-// transport boundary rather than being carried into canonical validation.
-constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX = 1022;
+// The game command reader accepts at most 1023 characters per input line,
+// including the 18-character "restitution chunk " prefix.  Round the remaining
+// payload budget down to an even number of hex characters (whole bytes).
+constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX = 1004;
 constexpr size_t PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNKS =
 	(CRITICAL_COMMAND_MAX_ENCODED_BYTES * 2 + PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX -
 	 1) /

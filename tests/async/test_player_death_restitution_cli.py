@@ -194,6 +194,333 @@ class RestitutionCliTests(unittest.TestCase):
         self.assertFalse(hasattr(args, "offline_proof"))
         self.assertFalse(hasattr(args, "maintenance_kind"))
 
+    def test_plan_exposes_explicit_native_preparation_mode(self) -> None:
+        native = cli.parser().parse_args([
+            "plan", "--inspect", "inspect.json", "--artifact", "plan.json",
+            "--preparation-mode", "native",
+        ])
+        self.assertEqual(native.preparation_mode, cli.PREPARATION_MODE_NATIVE)
+        alias = cli.parser().parse_args([
+            "plan", "--inspect", "inspect.json", "--artifact", "plan.json", "--native",
+        ])
+        self.assertEqual(alias.preparation_mode, cli.PREPARATION_MODE_NATIVE)
+        offline = cli.parser().parse_args([
+            "plan", "--inspect", "inspect.json", "--artifact", "plan.json",
+        ])
+        self.assertEqual(offline.preparation_mode, cli.PREPARATION_MODE_OFFLINE_SQL)
+
+    def test_production_native_plan_is_read_only_without_backup_or_maintenance(self) -> None:
+        target = {
+            "host": "127.0.0.1", "port": "3306", "database": "duris",
+            "production": True, "server_fingerprint": "ab" * 32,
+        }
+        inspection = {
+            "source": {
+                "pid": 42, "death_revision": 7, "operation_id_hex": "20" * 16,
+                "loss_epoch": 1700000000,
+            },
+            "target": target,
+            "recipient_pid": 42,
+            "payload_digest": "11" * 32,
+            "evidence_digest": "22" * 32,
+            "decoded": {"death": {
+                "wallet_pile_uid": 0,
+                "corpse": [{"object_uid": 900, "parent_index": -1}],
+            }},
+            "custody_db": [], "current_owners": {}, "player_projections": [],
+            "player_authority": {"42": {"save_revision": 8, "owner_revision": 6}},
+            "recipient_existing_uids": [], "related_deaths": [], "related_custody": [],
+            "item_loss_epochs": {}, "deliveries": {}, "artifacts": {},
+            "consistency_errors": [],
+        }
+        target_info = {"target": target, "maintenance_boundary": None}
+        with mock.patch.object(cli, "require_policy_maintenance", side_effect=AssertionError("stop")), \
+                mock.patch.object(cli, "verify_backup_receipt", side_effect=AssertionError("backup")):
+            plan = cli.plan_from_inspection(
+                inspection, target_info=target_info, approve_production=True,
+                mode=cli.PREPARATION_MODE_NATIVE,
+            )
+        self.assertEqual(plan["preparation_mode"], cli.PREPARATION_MODE_NATIVE)
+        self.assertFalse(plan["applyable"])
+        self.assertFalse(plan["exportable"])
+        self.assertEqual(plan["target"], target)
+        self.assertNotIn("backup_receipt", plan)
+        self.assertNotIn("maintenance_boundary", plan)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "native-plan.json"
+            cli.atomic_write_json(path, plan, overwrite=False)
+            loaded = cli.load_plan(path)
+        self.assertEqual(loaded["preparation_mode"], cli.PREPARATION_MODE_NATIVE)
+        self.assertFalse(loaded["applyable"])
+
+    def test_native_production_verify_rejects_unbound_target_or_live_boundary_before_reads(self) -> None:
+        target = {
+            "host": "127.0.0.1", "port": "3306", "database": "duris",
+            "production": True, "server_fingerprint": "ab" * 32,
+        }
+        boundary = {"kind": "systemd", "id": "duris-mud-production.service", "state": "masked-inactive"}
+        plan = {
+            "preparation_mode": cli.PREPARATION_MODE_NATIVE,
+            "target": target,
+            "source": {"pid": 42, "death_revision": 7, "operation_id_hex": "20" * 16},
+            "recipient_pid": 42,
+            "restitution_id_hex": "cc" * 16,
+            "items": [],
+        }
+        policy = mock.Mock(
+            production=True,
+            maintenance_kind="systemd",
+            maintenance_id="duris-mud-production.service",
+            maintenance_owner=None,
+        )
+        policy.require_maintenance.return_value = boundary
+        db = mock.Mock(policy=policy)
+        fetch_receipt = mock.Mock()
+        identify = mock.Mock(return_value=target)
+        cases = (
+            ("missing target-info", None, "fresh protected target-info", None),
+            (
+                "mismatched fingerprint",
+                {"target": {**target, "server_fingerprint": "cd" * 32}, "maintenance_boundary": boundary},
+                "does not match the approved plan target",
+                None,
+            ),
+            (
+                "missing boundary",
+                {"target": target, "maintenance_boundary": None},
+                "stopped maintenance boundary",
+                None,
+            ),
+            (
+                "mismatched boundary",
+                {
+                    "target": target,
+                    "maintenance_boundary": {
+                        "kind": "systemd", "id": "duris-mud-production.service", "state": "stale"
+                    },
+                },
+                "differs from fresh target-info",
+                None,
+            ),
+            (
+                "live service",
+                {"target": target, "maintenance_boundary": boundary},
+                "service is live",
+                cli.TargetError("production service is live"),
+            ),
+        )
+        with mock.patch.object(cli, "fetch_receipt", fetch_receipt), \
+                mock.patch.object(cli, "identify_target", identify):
+            for label, target_info, message, maintenance_failure in cases:
+                with self.subTest(label=label):
+                    fetch_receipt.reset_mock()
+                    identify.reset_mock()
+                    policy.require_maintenance.reset_mock()
+                    policy.require_maintenance.side_effect = maintenance_failure
+                    if maintenance_failure is None:
+                        policy.require_maintenance.return_value = boundary
+                    with self.assertRaisesRegex(cli.ToolError, message):
+                        cli.verify_plan(db, plan, policy, target_info)
+                    fetch_receipt.assert_not_called()
+                    identify.assert_not_called()
+
+    def test_native_production_verify_reads_exactly_without_replanning_or_backup(self) -> None:
+        target = {
+            "host": "127.0.0.1", "port": "3306", "database": "duris",
+            "production": True, "server_fingerprint": "ab" * 32,
+        }
+        boundary = {"kind": "systemd", "id": "duris-mud-production.service", "state": "masked-inactive"}
+        metadata = {
+            "object_uid": 100,
+            "vnum": 677,
+            "type": 5,
+            "string_mask": 0,
+            "name_hex": "",
+            "short_description_hex": "",
+            "description_hex": "",
+            "action_description_hex": "",
+            "values": [0] * 8,
+            "bitvectors": [0] * 5,
+            "weight": 1,
+            "cost": 1,
+            "timers": [0],
+            "extra_flags": 0,
+            "wear_flags": 0,
+            "material": 1,
+            "condition": 100,
+            "affects": [],
+            "extra_descriptions": [],
+            "item_payload_hex": "00",
+        }
+        item = {
+            "item_uid": 100,
+            "eligible": True,
+            "kind": "normal",
+            "vnum": 677,
+            "metadata": metadata,
+            "metadata_digest": hashlib.sha256(b"\x00").hexdigest(),
+            "metadata_payload_hex": "00",
+            "source_root_item_uid": 100,
+            "source_parent_item_uid": 0,
+            "source_item_revision": 11,
+            "delivered_root_item_uid": 100,
+            "delivered_parent_item_uid": 0,
+            "equipment_slot": 0,
+        }
+        plan = {
+            "preparation_mode": cli.PREPARATION_MODE_NATIVE,
+            "target": target,
+            "source": {"pid": 42, "death_revision": 7, "operation_id_hex": "20" * 16},
+            "recipient_pid": 42,
+            "restitution_id_hex": "cc" * 16,
+            "evidence_digest": "11" * 32,
+            "plan_digest": "22" * 32,
+            "items": [item],
+            "recipient_existing_uids": [],
+        }
+        receipt = {
+            "source_pid": 42,
+            "death_revision": 7,
+            "recipient_pid": 42,
+            "death_operation_id_hex": "20" * 16,
+            "evidence_digest": "11" * 32,
+            "plan_digest": "22" * 32,
+            "candidate_count": 1,
+            "delivered_count": 1,
+            "status": cli.RECEIPT_APPLIED,
+        }
+        delivery = [{
+            "item_uid": 100,
+            "metadata_digest": item["metadata_digest"],
+            "original_payload_hex": "00",
+            "delivered_item_id": 900,
+        }]
+        player = {
+            "id": 900,
+            "pid": 42,
+            "vnum": 677,
+            "equip_slot": 0,
+            "container_id": 0,
+            "quantity": 1,
+            "weight": 1,
+            "cost": 1,
+            "timer": 0,
+            "extra_flags": 0,
+            "wear_flags": 0,
+            "type": 5,
+            "values": [0] * 8,
+            "name_hex": None,
+            "short_description_hex": None,
+            "description_hex": None,
+            "action_description_hex": None,
+            "bitvectors": [0] * 5,
+            "object_uid": 100,
+            "condition": 100,
+        }
+        owner = {
+            "item_uid": 100,
+            "root_item_uid": 100,
+            "parent_item_uid": 0,
+            "owner_type": cli.OWNER_PLAYER,
+            "owner_id": 42,
+            "owner_context_id": 0,
+            "item_revision": 11,
+            "vnum": 677,
+            "state": cli.STATE_ACTIVE,
+        }
+        policy = mock.Mock(
+            production=True,
+            maintenance_kind="systemd",
+            maintenance_id="duris-mud-production.service",
+            maintenance_owner=None,
+        )
+        policy.require_maintenance.return_value = boundary
+        db = mock.Mock(policy=policy)
+        db.scalar.return_value = "0"
+        events: list[str] = []
+
+        def maintenance() -> dict[str, str]:
+            events.append("boundary")
+            return boundary
+
+        policy.require_maintenance.side_effect = maintenance
+
+        def identity(*_args: object, **_kwargs: object) -> dict[str, object]:
+            events.append("identity")
+            return target
+
+        def receipt_read(*_args: object, **_kwargs: object) -> dict[str, object]:
+            events.append("receipt")
+            return receipt
+
+        before = json.loads(json.dumps(plan))
+        with mock.patch.object(cli, "identify_target", side_effect=identity), \
+                mock.patch.object(cli, "fetch_receipt", side_effect=receipt_read), \
+                mock.patch.object(cli, "fetch_delivery_rows", return_value=delivery), \
+                mock.patch.object(cli, "fetch_restitution_item_rows", return_value={}), \
+                mock.patch.object(cli, "fetch_player_rows", return_value={"100": player}), \
+                mock.patch.object(cli, "fetch_current_owners", return_value={"100": owner}), \
+                mock.patch.object(cli, "fetch_runtime_state", return_value={
+                    "100": cli._native_item_state_payload(metadata, 100, 0).hex(),
+                }), \
+                mock.patch.object(cli, "fetch_item_metadata", return_value=({}, {})), \
+                mock.patch.object(cli, "fetch_recipient_uids", return_value=[100]), \
+                mock.patch.object(cli, "validate_plan_backup", side_effect=AssertionError("backup")), \
+                mock.patch.object(cli, "plan_from_inspection", side_effect=AssertionError("replan")):
+            verified, count, failures = cli.verify_plan(
+                db,
+                plan,
+                policy,
+                {"target": target, "maintenance_boundary": boundary},
+            )
+        self.assertTrue(verified, failures)
+        self.assertEqual(count, 1)
+        self.assertEqual(events, ["boundary", "identity", "receipt"])
+        self.assertEqual(plan, before)
+        self.assertEqual(db.run.call_count, 0)
+        self.assertEqual(db.scalar.call_count, 1)
+
+    def test_native_plan_cannot_enter_sql_apply_or_mark_verified(self) -> None:
+        native = {"preparation_mode": cli.PREPARATION_MODE_NATIVE}
+        with self.assertRaisesRegex(cli.ToolError, "cannot enter SQL apply"):
+            cli.build_apply_sql(native, "actor", "reason")
+        with self.assertRaisesRegex(cli.ToolError, "cannot enter SQL apply"):
+            cli.apply_plan(mock.Mock(), native, Path("/unusable/proof"), "actor", "reason")
+        with self.assertRaisesRegex(cli.ToolError, "cannot enter SQL mark-verified"):
+            cli.mark_verified(mock.Mock(), native, Path("/unusable/proof"))
+
+    def test_native_export_lineage_preserves_identity(self) -> None:
+        plan = {
+            "backend": "sql", "preparation_mode": cli.PREPARATION_MODE_NATIVE,
+            "evidence_digest": "aa" * 32, "payload_digest": "dd" * 32,
+            "plan_digest": "bb" * 32,
+            "restitution_id_hex": "cc" * 16, "production_approved": True,
+            "exportable": True, "artifact_reconciliation_approved": False,
+            "artifact_timing_compensations": {}, "artifact_timing_compensation_count": 0,
+            "items": [{"item_uid": 900, "eligible": True,
+                       "expected_current": {"owner_revision": 6}}],
+            "source": {"pid": 42, "death_revision": 7,
+                                     "operation_id_hex": "20" * 16, "loss_epoch": 1700000000},
+            "recipient_pid": 42,
+            "native_fence": {"expected_recipient_save_revision": 8,
+                             "expected_source_owner_revision": 6,
+                             "expected_recipient_owner_revision": 6},
+        }
+        inspection = {"evidence_digest": plan["evidence_digest"]}
+        with mock.patch.object(cli, "plan_from_inspection", return_value=dict(plan)) as rebuild, \
+                mock.patch.object(cli, "_native_item_payload", return_value=b"item"):
+            payload = cli.build_staff_payload(plan, inspection, "staff", "death-evidence")
+        self.assertEqual(rebuild.call_args.kwargs["mode"], cli.PREPARATION_MODE_NATIVE)
+        self.assertEqual(payload["source"]["pid"], plan["source"]["pid"])
+        self.assertEqual(payload["recipient_pid"], plan["recipient_pid"])
+        self.assertEqual(payload["restitution_id_hex"], plan["restitution_id_hex"])
+        self.assertEqual(payload["evidence_digest"], plan["evidence_digest"])
+        self.assertEqual(payload["plan_digest"], plan["plan_digest"])
+        command_bytes = bytes.fromhex(payload["canonical_hex"])
+        self.assertTrue(command_bytes.startswith(b"CCM1"))
+        self.assertGreater(len(command_bytes), len(b"item"))
+        self.assertEqual(payload["command_digest"], hashlib.sha256(command_bytes).hexdigest())
+
     def test_conflicting_normalized_related_payload_refuses_uid(self) -> None:
         selected = [payload_item(900, -1)]
         first = payload_item(100, 0, 100)
@@ -211,6 +538,7 @@ class RestitutionCliTests(unittest.TestCase):
         }
         _, _, _, _, conflicts = cli.payload_evidence_maps(inspection)
         self.assertEqual(conflicts, {"100"})
+
 
     def test_identity_mismatched_related_payload_marks_all_seen_uids_conflicting(self) -> None:
         inspection = {

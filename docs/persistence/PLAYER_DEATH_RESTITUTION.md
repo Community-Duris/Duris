@@ -18,11 +18,16 @@ canonical row or the separately approved exact-evidence reconciliation path.
 - Target: `ENVIRONMENT=test`, `dev`, `development`, or `local` remains the
   default non-production path. A production-classified target (including the
   legacy database name `duris` or a name containing `prod`, `production`, or
-  `live`) is accepted only through the production policy below: literal
-  loopback DB address, exact database-name confirmation, a protected target-info
-  probe containing the actual server fingerprint, an explicit stopped
-  maintenance boundary, and a native backup receipt bound to that target and
-  boundary. The supported service boundaries are the installed system-manager
+  `live`) is accepted only through exact database-name confirmation, a protected
+  target-info probe containing the actual server fingerprint, and a literal
+  loopback DB address. The read-only native preparation mode uses that target
+  identity without a stopped maintenance boundary or backup. Offline SQL apply
+  and production `offline-sql` verification additionally require an explicit
+  stopped maintenance boundary and a native backup receipt bound to that target
+  and boundary. Production `native` verification instead requires a fresh
+  protected target-info artifact bound to the same plan target and an explicit
+  stopped/masked validated boundary for that read-only check; it does not require
+  a backup receipt. The supported service boundaries are the installed system-manager
   unit (`--maintenance-kind systemd`) and the explicitly owner-bound user
   manager used by `.sbs` deployments (`--maintenance-kind systemd-user` with
   `--maintenance-owner <UID>`). The latter verifies the user manager identity,
@@ -107,11 +112,52 @@ python3 scripts/player_death_restitution.py --env-file /secure/test-db.env \
 
 python3 scripts/player_death_restitution.py \
   plan --inspect /secure/restitution-42-7.inspect.json \
+  --preparation-mode offline-sql \
   --approve-artifact-reconciliation \
   --artifact /secure/restitution-42-7.plan.json
 ```
 
-### Production policy workflow
+### Native live preparation workflow
+
+Production-native preparation is a separate read-only mode. First create a
+protected target-info artifact with exact production-name confirmation and a
+server fingerprint, without maintenance arguments. Then pass it to the read-only
+inspection and native plan:
+
+```sh
+python3 scripts/player_death_restitution.py \
+  target-info --confirm-production-target <exact-production-db-name> \
+  --artifact /secure/restitution-target-info.json
+
+python3 scripts/player_death_restitution.py \
+  inspect --target-info /secure/restitution-target-info.json \
+  --confirm-production-target <exact-production-db-name> \
+  --expected-fingerprint <fingerprint-from-target-info> \
+  --pid 42 --death-revision 7 --recipient-pid 42 \
+  --artifact /secure/restitution-42-7.inspect.json
+
+python3 scripts/player_death_restitution.py \
+  plan --inspect /secure/restitution-42-7.inspect.json \
+  --target-info /secure/restitution-target-info.json \
+  --preparation-mode native --approve-production \
+  --artifact /secure/restitution-42-7.native-plan.json
+
+python3 scripts/player_death_restitution.py \
+  export --plan /secure/restitution-42-7.native-plan.json \
+  --inspect /secure/restitution-42-7.inspect.json \
+  --artifact /secure/restitution-42-7.staff-payload.json \
+  --approve --actor operator-repair --reason disputed-death-evidence
+```
+
+Native `inspect`, `plan`, and `export` do not create a backup, require an
+offline proof, inspect a stopped service boundary, stop/mask a service, or
+perform SQL mutation. The production target identity and fingerprint remain
+mandatory. The native plan carries the actor/plan identity, explicit approval,
+interactive deadline/expiration metadata, recipient-only native fence, and
+revision/custody gates into the exact exported payload. It is explicitly
+`applyable=false`; SQL `apply` and `mark_verified` refuse it.
+
+### Production policy workflow (offline SQL)
 
 Production-classified targets do not bypass the non-production guard. They use
 a separate, target-pinned path in which every write command rechecks the actual
@@ -192,7 +238,7 @@ python3 scripts/player_death_restitution.py \
   plan --inspect /secure/restitution-42-7.inspect.json \
   --target-info /secure/restitution-target-info.json \
   --backup-receipt /secure/restitution-backup.json \
-  --approve-production \
+  --preparation-mode offline-sql --approve-production \
   --artifact /secure/restitution-42-7.plan.json
 ```
 
@@ -216,10 +262,19 @@ python3 scripts/player_death_restitution.py \
 ```
 
 `verify` performs the exact authority/payload readback under the same target
-and boundary pin. `--mark-verified` is a separate database write: it requires
-`--approve`, a fresh proof, the explicit maintenance boundary, the still-valid
-plan-bound backup, and the production approval recorded in the plan. It does
-not merely relax the old `ENVIRONMENT` check:
+and boundary pin. For a production `native` plan, do not reuse the preparation
+artifact's boundary-less target-info: create a fresh protected target-info artifact
+with the exact same target/fingerprint and the explicit stopped/masked boundary,
+then pass it with the matching maintenance arguments. This read-only native
+fallback does not require or inspect a plan-bound backup receipt, convert or
+replan the original plan, write a receipt status, or accept `--mark-verified`.
+It rejects missing/mismatched target-info, a missing/mismatched boundary, or a live
+service before receipt/item data reads. For a production `offline-sql` plan, the
+existing plan-bound backup and stopped-boundary gates remain unchanged.
+`--mark-verified` is a separate database write available only to the offline-sql
+path: it requires `--approve`, a fresh proof, the explicit maintenance boundary,
+the still-valid plan-bound backup, and the production approval recorded in the
+plan. It does not merely relax the old `ENVIRONMENT` check:
 
 ```sh
 python3 scripts/player_death_restitution.py \

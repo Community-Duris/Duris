@@ -22,8 +22,8 @@ this in-game command.
 
 ## Copyable workflow
 
-Use a private owner-only directory for artifacts. These preparation commands are
-read-only until the separately authorized apply/verification step:
+Use a private owner-only directory for artifacts. The preparation commands below are
+read-only and select the native live-runtime mode explicitly:
 
 ```sh
 python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
@@ -32,7 +32,7 @@ python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
 
 python3 scripts/player_death_restitution.py \
   plan --inspect /secure/restitution/inspection.json \
-  --artifact /secure/restitution/plan.json
+  --preparation-mode native --artifact /secure/restitution/plan.json
 
 python3 scripts/player_death_restitution.py \
   export --plan /secure/restitution/plan.json \
@@ -40,6 +40,38 @@ python3 scripts/player_death_restitution.py \
   --artifact /secure/restitution/staff-payload.json \
   --approve --actor <STAFF_ACTOR> --reason death_restitution_review
 ```
+
+For a production-classified target, first create a protected `target-info` artifact
+with the exact database-name confirmation and live server fingerprint, then pass that
+artifact to both `inspect` and `plan`. Native preparation does not create a backup,
+require an offline proof, stop/mask a service, or bind a stopped maintenance boundary:
+
+```sh
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  target-info --confirm-production-target <EXACT_DB_NAME> \
+  --artifact /secure/restitution/target-info.json
+
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  inspect --target-info /secure/restitution/target-info.json \
+  --confirm-production-target <EXACT_DB_NAME> \
+  --expected-fingerprint <FINGERPRINT_FROM_TARGET_INFO> \
+  --pid <PID> --death-revision <DEATH_REVISION> --recipient-pid <PID> \
+  --artifact /secure/restitution/inspection.json
+
+python3 scripts/player_death_restitution.py \
+  plan --inspect /secure/restitution/inspection.json \
+  --target-info /secure/restitution/target-info.json \
+  --preparation-mode native --approve-production \
+  --artifact /secure/restitution/plan.json
+```
+
+The native plan is `applyable=false` and `exportable=true` only after all exact
+recipient, revision, custody, evidence, and production-approval gates pass. An
+explicit native plan cannot be sent to SQL `apply` or `mark-verified`.
+
+The offline SQL mode is separate: use `--preparation-mode offline-sql` with the
+existing target-info, backup receipt, stopped maintenance boundary, offline proof,
+and apply/verification gates. Do not use a native plan as an SQL mutation artifact.
 
 Review the protected plan and payload. Do not edit `canonical_hex` or copy only
 that field into a new artifact. In the normal game client, use the commands in
@@ -54,8 +86,8 @@ restitution chunk <CHUNK_2_FROM_staff-payload.json>
 restitution commit
 ```
 
-The exporter emits byte-aligned chunks of at most 1022 hex characters. Native
-staging accepts at most 512 KiB of encoded command bytes and at most 1027 chunks.
+The exporter emits byte-aligned chunks of at most 1004 hex characters. Native
+staging accepts at most 512 KiB of encoded command bytes and at most 1045 chunks.
 The command reports accepted chunk count/byte count and remaining capacity after
 each accepted chunk. A chunk is not durable merely because it was accepted.
 
@@ -144,9 +176,37 @@ python3 scripts/player_death_restitution.py \
 ```
 
 Supply the same approved environment/target-policy arguments required by the
-protected plan. That verification must perform the exact target readback before
-any operator records success. If it cannot verify, record refusal/uncertainty;
-do not turn a queue, receipt, or runtime completion into a delivery claim.
+protected plan. For a production **native** plan, first create a fresh protected
+`target-info` artifact while the approved service boundary is stopped and masked,
+then pass that artifact and the exact target/fingerprint and maintenance arguments
+to `verify`:
+
+```sh
+python3 scripts/player_death_restitution.py \
+  target-info --confirm-production-target <EXACT_DB_NAME> \
+  --maintenance-kind systemd --maintenance-id duris-mud-production.service \
+  --artifact /secure/restitution/verify-target-info.json
+
+python3 scripts/player_death_restitution.py \
+  verify --plan /secure/restitution/native-plan.json \
+  --target-info /secure/restitution/verify-target-info.json \
+  --confirm-production-target <EXACT_DB_NAME> \
+  --expected-fingerprint <FINGERPRINT_FROM_VERIFY_TARGET_INFO> \
+  --maintenance-kind systemd --maintenance-id duris-mud-production.service
+```
+
+This native fallback is still a stopped/masked, exact read-only SQL readback; it
+is not a live-native verification path. The fresh target-info must bind the same
+production name and server fingerprint as the original native plan and its
+validated maintenance boundary must still match at verification time. Native
+read-only verification does not require or inspect a plan-bound backup receipt,
+convert or replan the artifact, write a receipt status, or accept `--mark-verified`.
+For an `offline-sql` plan, the existing plan-bound backup, stopped boundary, and
+`--mark-verified` offline-proof/approval gates remain unchanged. Do not run either
+route while unrelated players are online or turn a queue, receipt, or runtime
+completion into a delivery claim. The exact target readback plus receipt, item, ownership, runtime,
+artifact, and inventory readback must pass before recording success; otherwise
+record refusal/uncertainty.
 
 The normal game protocol is therefore:
 
