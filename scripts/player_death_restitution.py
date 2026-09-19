@@ -162,7 +162,7 @@ def normalize_preparation_mode(value: Any, *, label: str = "preparation mode") -
     return value
 
 
-def plan_mode(plan: Mapping[str, Any], *, require_explicit: bool = False) -> str:
+def plan_mode(plan: Mapping[str, Any]) -> str:
     """Read the plan mode, rejecting conflicting aliases and unknown modes."""
     value = plan.get("preparation_mode")
     legacy_value = plan.get("mode")
@@ -175,7 +175,7 @@ def plan_mode(plan: Mapping[str, Any], *, require_explicit: bool = False) -> str
 
 def require_offline_sql_plan(plan: Mapping[str, Any], action: str) -> None:
     """Keep native preparation artifacts outside every SQL mutation path."""
-    if plan_mode(plan, require_explicit=True) != PREPARATION_MODE_OFFLINE_SQL:
+    if plan_mode(plan) != PREPARATION_MODE_OFFLINE_SQL:
         raise ToolError(f"native preparation plan cannot enter SQL {action}")
 
 
@@ -1613,6 +1613,7 @@ def plan_from_inspection(
     artifact_timing_compensations: Mapping[Any, Any] | None = None,
     mode: str = PREPARATION_MODE_OFFLINE_SQL,
     preparation_mode: str | None = None,
+    _legacy_plan_shape: bool = False,
 ) -> dict[str, Any]:
     if preparation_mode is not None:
         if mode != PREPARATION_MODE_OFFLINE_SQL and mode != preparation_mode:
@@ -2109,6 +2110,14 @@ def plan_from_inspection(
         body["artifact_timing_compensation_approval_record"] = (
             "explicit approved compensation; apply must repeat --approve-artifact-timing-compensation"
         )
+    if _legacy_plan_shape:
+        # Revalidate the original pre-mode v3 schema without rewriting the
+        # approved artifact or changing its restitution identity. All evidence,
+        # approval and offline policy checks above remain mandatory.
+        if mode != PREPARATION_MODE_OFFLINE_SQL:
+            raise ToolError("legacy plan shape is only valid for offline SQL")
+        del body["preparation_mode"]
+        del body["exportable"]
     body["plan_digest"] = digest_json(body)
     material = (
         b"duris-player-death-restitution-v1\0" + hex_bytes(body["evidence_digest"], "evidence digest") +
@@ -2143,7 +2152,7 @@ def load_plan(path: Path) -> dict[str, Any]:
     )
     if hashlib.sha256(material).digest()[:16].hex() != rid:
         raise ToolError("protected artifact restitution identity does not match its plan")
-    mode = plan_mode(value, require_explicit=True)
+    mode = plan_mode(value)
     validate_artifact_timing_compensations(value)
     if mode == PREPARATION_MODE_NATIVE:
         if value.get("applyable") is not False:
@@ -2787,6 +2796,7 @@ def _revalidate_export_lineage(plan: dict[str, Any], inspection: dict[str, Any])
         approve_production=bool(plan.get("production_approved")),
         artifact_timing_compensations=plan.get("artifact_timing_compensations"),
         mode=mode,
+        _legacy_plan_shape=not any(key in plan for key in ("preparation_mode", "mode", "exportable")),
     )
     if rebuilt["plan_digest"] != plan.get("plan_digest") or rebuilt["restitution_id_hex"] != plan.get("restitution_id_hex"):
         raise ToolError("plan is not the exact protected result of this inspection")
@@ -2794,9 +2804,9 @@ def _revalidate_export_lineage(plan: dict[str, Any], inspection: dict[str, Any])
         if plan.get("exportable") is not True:
             raise ToolError("native staff export requires an exportable native preparation plan")
     elif plan.get("applyable") is not True:
-        # Keep pre-mode, non-production plans exportable for compatibility with
-        # already-reviewed handoffs. Newly-created native production plans use
-        # the explicit exportable flag above and never enter SQL apply.
+        # exportable is a native-only approval flag. Applyable offline SQL
+        # plans (including pre-mode plans) retain the existing export bridge
+        # after their full lineage and offline production policy checks.
         raise ToolError("staff export requires an applyable plan")
 
 
@@ -3887,6 +3897,7 @@ def apply_plan(
         backup_receipt=plan.get("backup_receipt"),
         approve_production=bool(plan.get("production_approved")),
         mode=plan_mode(plan),
+        _legacy_plan_shape=not any(key in plan for key in ("preparation_mode", "mode", "exportable")),
         artifact_timing_compensations=plan.get("artifact_timing_compensations"),
     )
     if fresh_plan["plan_digest"] != plan["plan_digest"] or fresh_plan["restitution_id_hex"] != plan["restitution_id_hex"]:

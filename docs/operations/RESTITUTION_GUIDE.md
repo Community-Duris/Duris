@@ -69,6 +69,12 @@ The native plan is `applyable=false` and `exportable=true` only after all exact
 recipient, revision, custody, evidence, and production-approval gates pass. An
 explicit native plan cannot be sent to SQL `apply` or `mark-verified`.
 
+`exportable` is the native-mode approval flag, not a universal export ban.
+An `applyable` offline SQL plan retains the existing native export bridge after
+its full evidence and policy checks, even though its native-only `exportable`
+flag is false. Protected pre-mode plans retain their original digest and
+operation identity when revalidated; they are not rewritten into the new format.
+
 The offline SQL mode is separate: use `--preparation-mode offline-sql` with the
 existing target-info, backup receipt, stopped maintenance boundary, offline proof,
 and apply/verification gates. Do not use a native plan as an SQL mutation artifact.

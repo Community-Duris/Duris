@@ -1,6 +1,7 @@
 # Audited player death restitution
 
-`player_death_restitution.py` is the SQL-only first slice for issue #331. It
+`player_death_restitution.py` prepares SQL-derived item recovery for the native
+staff command or the separately guarded offline SQL application path. It
 restores only original item UIDs whose normalized schema-8 death payload and retained
 custody row agree. It never mints an item from a vnum, clears a corpse, refunds
 currency, or rewrites artifact authority without either an identity-bound
@@ -373,8 +374,9 @@ Verification checks the receipt, global UID guard, current owner/topology,
 player projection, newer inventory set, affects, extra-descriptions, strings,
 values, timers, condition, material, bitvectors, original payload digest,
 runtime exact-state payload, and—when reconciled—the canonical domain/baseline,
-legacy timer/binding, artifact metadata, and recipient transition. To mark the
-receipt verified, repeat with a fresh proof and `--mark-verified`.
+legacy timer/binding, artifact metadata, and recipient transition. For an
+`offline-sql` plan only, mark the receipt verified by repeating with a fresh
+proof and `--mark-verified`. Native plans support read-only verification only.
 
 ## Receipt states
 
