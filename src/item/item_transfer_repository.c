@@ -1045,7 +1045,8 @@ bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_
 bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critical_command &command,
 						uint16_t event_index_base,
 						item_transfer_result *result,
-						unsigned int *result_code, bool *mutation_applied)
+						unsigned int *result_code, bool *mutation_applied,
+						item_transfer_failure_stage *failure_stage)
 {
 	item_transfer_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
@@ -1057,6 +1058,8 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 	*result = { item_transfer_result_root(payload), payload.item_count, 0, 0, 0, 0 };
 	*result_code = 0;
 	*mutation_applied = false;
+	if (failure_stage)
+		*failure_stage = item_transfer_failure_stage::none;
 	if (static_cast<size_t>(event_index_base) + payload.item_count > UINT16_MAX)
 	{
 		*result_code = E2BIG;
@@ -1089,6 +1092,17 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 	if (from_revision != payload.expected_from_revision ||
 	    to_revision != payload.expected_to_revision)
 	{
+		if (failure_stage)
+		{
+			uint8_t stage = 0;
+			if (from_revision != payload.expected_from_revision)
+				stage |= static_cast<uint8_t>(
+					item_transfer_failure_stage::from_owner_revision);
+			if (to_revision != payload.expected_to_revision)
+				stage |= static_cast<uint8_t>(
+					item_transfer_failure_stage::to_owner_revision);
+			*failure_stage = static_cast<item_transfer_failure_stage>(stage);
+		}
 		*result_code = ESTALE;
 		return true;
 	}
@@ -1200,6 +1214,8 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 		{
 			const current_item &stored = selected[index];
 			const item_transfer_entry &expected = payload.items[index];
+			const bool item_revision_mismatch = stored.item_revision !=
+							    expected.expected_item_revision;
 			result->max_item_revision =
 				std::max(result->max_item_revision, stored.item_revision);
 			if (stored.item_uid != expected.item_uid ||
@@ -1208,10 +1224,14 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 			    stored.owner_type != static_cast<uint8_t>(payload.from_owner.type) ||
 			    stored.owner_id != payload.from_owner.id ||
 			    stored.owner_context_id != payload.from_owner.context_id ||
-			    stored.item_revision != expected.expected_item_revision ||
-			    stored.vnum != expected.vnum ||
+			    item_revision_mismatch || stored.vnum != expected.vnum ||
 			    stored.state != static_cast<uint8_t>(expected.expected_state))
 			{
+				if (failure_stage && item_revision_mismatch)
+					*failure_stage = static_cast<item_transfer_failure_stage>(
+						static_cast<uint8_t>(*failure_stage) |
+						static_cast<uint8_t>(
+							item_transfer_failure_stage::item_revision));
 				*result_code = ESTALE;
 				return true;
 			}
@@ -1239,6 +1259,12 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 		    parent.item_revision != payload.expected_target_parent_revision ||
 		    parent.state != static_cast<uint8_t>(item_custody_state::active))
 		{
+			if (failure_stage && parent_found &&
+			    parent.item_revision != payload.expected_target_parent_revision)
+				*failure_stage = static_cast<item_transfer_failure_stage>(
+					static_cast<uint8_t>(*failure_stage) |
+					static_cast<uint8_t>(
+						item_transfer_failure_stage::target_parent_revision));
 			*result_code = ESTALE;
 			return true;
 		}
@@ -1302,16 +1328,18 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
 				      item_transfer_result *result, unsigned int *result_code,
-				      bool *mutation_applied)
+				      bool *mutation_applied,
+				      item_transfer_failure_stage *failure_stage)
 {
-	return item_transfer_repository_execute_at_offset(connection, command, 0, result,
-							  result_code, mutation_applied);
+	return item_transfer_repository_execute_at_offset(
+		connection, command, 0, result, result_code, mutation_applied, failure_stage);
 }
 
 bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_command &command,
 					   const std::array<int32_t, 4> &before,
 					   item_transfer_result *result, unsigned int *result_code,
-					   bool *mutation_applied)
+					   bool *mutation_applied,
+					   item_transfer_failure_stage *failure_stage)
 {
 	item_transfer_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
@@ -1323,6 +1351,8 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 	}
 	*mutation_applied = false;
 	*result_code = 0;
+	if (failure_stage)
+		*failure_stage = item_transfer_failure_stage::none;
 	const uint64_t uid = payload.selected_item_uid;
 	if (payload.from_owner.type != item_owner_type::system)
 	{
@@ -1357,7 +1387,12 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 				*result_code = EBADMSG;
 			else if (!std::equal(before.begin(), before.end(),
 					     snapshots[0].values.begin()))
+			{
 				*result_code = ESTALE;
+				if (failure_stage)
+					*failure_stage =
+						item_transfer_failure_stage::coin_payload_revision;
+			}
 		}
 		mysql_free_result(rows);
 		if (!found)
@@ -1421,16 +1456,24 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 								    -1;
 				if (!end || end == row[index] || *end || errno ||
 				    amount != before[index])
+				{
 					*result_code = ESTALE;
+					if (failure_stage)
+						*failure_stage = item_transfer_failure_stage::
+							coin_payload_revision;
+				}
 			}
 			mysql_free_result(rows);
 			if (*result_code)
 				return true;
 		}
 	}
+	item_transfer_failure_stage nested_stage = item_transfer_failure_stage::none;
 	if (!item_transfer_repository_execute(connection, command, result, result_code,
-					      mutation_applied))
+					      mutation_applied, &nested_stage))
 		return false;
+	if (failure_stage && *result_code == ESTALE)
+		*failure_stage = nested_stage;
 	if (!*mutation_applied)
 		return true;
 

@@ -170,6 +170,19 @@ struct item_transfer_result
 	bool collector_catalog_changed = false;
 };
 
+// Internal classification returned by the SQL executor. The enclosing coin
+// command maps these bounded flags to source/destination stages before the
+// failure receipt is persisted.
+enum class item_transfer_failure_stage : uint8_t
+{
+	none = 0,
+	from_owner_revision = 1u << 0,
+	to_owner_revision = 1u << 1,
+	item_revision = 1u << 2,
+	target_parent_revision = 1u << 3,
+	coin_payload_revision = 1u << 4,
+};
+
 bool item_owner_identity_valid(const item_owner_identity &owner);
 bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right);
 uint64_t item_transfer_selected_root(const item_transfer_payload &payload, uint64_t item_uid);
