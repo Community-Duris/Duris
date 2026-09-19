@@ -169,6 +169,71 @@ def test_glyph_tables_are_compiler_length_checked() -> None:
     )
 
 
+def _node_glyph_letters() -> dict:
+    """{what the row draws: the letter it draws} for the eight kingdom node
+    rows of sector_symbol[], read from the table itself.
+
+    Each row is "&+<colour><letter>", // node: <what it is>, so the letter is
+    the last character of the string, after the colour code.
+    """
+    mapc = read("src/world/map.c")
+    block = re.search(r"// Kingdom harvest nodes\.(.*?)\n\};", mapc, re.S)
+    if not block:
+        return {}
+    return {
+        note.strip(): sym[-1]
+        for sym, note in re.findall(r'"([^"]+)",\s*// node: ([^\n]+)', block.group(1))
+    }
+
+
+def test_node_glyphs_are_not_the_ship_letter() -> None:
+    """No harvest node is drawn with a ship's letter, and the help legend
+    names the letters the map actually draws.
+
+    Both mineral nodes were 's' once, which players read as one of the seven
+    'S' ships (good, evil, undead, neutral, unknown, NPC and plain). They are
+    'o' for ore now. The letter lives in two places -- this table and the help
+    text -- so the pin is that they move together.
+    """
+    letters = _node_glyph_letters()
+    check(
+        len(letters) == 8,
+        "the eight kingdom node rows are readable from sector_symbol[]",
+        f"found {sorted(letters)}",
+    )
+
+    for note, letter in sorted(letters.items()):
+        check(
+            letter not in ("s", "S"),
+            f"the {note} node is not drawn with a ship's letter (draws '{letter}')",
+        )
+
+    for note in ("stone seam (surface)", "ore seam (Underdark)"):
+        check(
+            letters.get(note) == "o",
+            f"the {note} node is drawn as 'o' for ore",
+            f"draws {letters.get(note)!r}",
+        )
+
+    # A legend that names a letter the map never prints sends players looking
+    # for the wrong thing, so the two have to agree exactly.
+    legend = re.search(
+        r"Nodes are drawn on the overhead map.*?Everyone sees them",
+        read("lib/information/helpkingdoms"),
+        re.S,
+    )
+    check(legend is not None, "the help still carries the node legend sentence")
+    if legend:
+        # The legend is wrapped text, so a letter and its "for" can sit on
+        # either side of a line break.
+        named = set(re.findall(r"\b([a-z])\s+for\b", legend.group(0)))
+        check(
+            named == set(letters.values()),
+            "the help legend names exactly the letters the map draws",
+            f"help={sorted(named)} map={sorted(set(letters.values()))}",
+        )
+
+
 def test_command_table_arithmetic() -> None:
     """CMD_KINGDOM, the name array index and MAX_CMD agree, and do_kingdom
     is dispatched."""

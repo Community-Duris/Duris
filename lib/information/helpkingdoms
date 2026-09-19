@@ -375,10 +375,11 @@ restocked toward its accustomed TOTAL of nodes, all kinds counted
 together, however hard it is worked - and every replacement rolls its
 own kind, so the supply moves about rather than running down.
 
-Nodes are drawn on the overhead map as a coloured letter - s for a
-seam of stone, t for timber, f for fibre, w for water, and m for the
-fungal stands of the Underdark. Everyone sees them, with no skill or
-distance test to pass - even the deep forest that hides men and beasts
+Nodes are drawn on the overhead map as a coloured letter - o for a
+seam of stone or ore, t for timber, f for fibre, w for water, and m
+for the fungal stands of the Underdark. A ship is an S, so a seam is
+never one of those. Everyone sees them, with no skill or distance
+test to pass - even the deep forest that hides men and beasts
 on the map does not hide a node, for a stand of timber IS the visible
 feature of a forest - though anything else standing on the square is
 drawn ahead of the node. Underdark nodes are drawn dimmer than surface

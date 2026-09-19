@@ -220,11 +220,20 @@ const AnsiString sector_symbol[] = {
 	// Kingdom harvest nodes. Surface bright, Underdark dim, one hue per
 	// resource -- except fungus, which takes the mushroom magenta of
 	// SECT_UNDRWLD_MUSHROOM so a fungal stand never reads as a tree.
-	"&+Ws", // node: stone seam (surface)
+	//
+	// The mineral pair is 'o' for ore, NOT 's'. Every ship on this map is an
+	// 'S' -- good, evil, undead, neutral, unknown, NPC and plain, the seven
+	// rows near the top -- and players read a stone seam as a ship at a
+	// glance. 'o' is also worn by cargo, but cargo is blue and sits on
+	// water while these two are white and grey on land: the same
+	// letter-plus-hue rule the rest of this table already runs on ('m' is
+	// mine, gem mine and fungal stand; 'f' is fibre and cave silk; 'w' is
+	// spring and dark pool).
+	"&+Wo", // node: stone seam (surface)
 	"&+Gt", // node: timber stand (surface)
 	"&+Yf", // node: flax and reeds (surface)
 	"&+Cw", // node: clean spring (surface)
-	"&+ws", // node: ore seam (Underdark)
+	"&+wo", // node: ore seam (Underdark)
 	"&+mm", // node: fungal stand (Underdark)
 	"&+mf", // node: cave silk (Underdark)
 	"&+cw", // node: dark pool (Underdark)
