@@ -4881,38 +4881,25 @@ void PurgeSavedItemFile(P_obj item)
 	return;
 }
 
-int writeShopKeeper(P_char ch)
+int writeShopKeeper(P_char ch, int shop_nr)
 {
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return 0;
+
 	if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
-		return 0;
-
-	if (!shop_index || number_of_shops <= 0)
-		return 0;
-
-	// A template can own several shops; never save into its first matching slot.
-	int shop_nr = -1;
-	for (int i = 0; i < number_of_shops; ++i)
 	{
-		if (shop_index[i].keeper != GET_RNUM(ch) ||
-		    real_room(shop_index[i].in_room) != ch->in_room)
-			continue;
-		if (shop_nr >= 0)
-			return 0; // ambiguous configuration, not authority to overwrite either stock
-		shop_nr = i;
-	}
-	if (shop_nr < 0)
-	{
-		// Away from home, only a uniquely configured roaming template is safe.
-		for (int i = 0; i < number_of_shops; ++i)
-			if (shop_index[i].keeper == GET_RNUM(ch))
-			{
-				if (shop_nr >= 0 || !shop_index[i].shop_is_roaming)
-					return 0;
-				shop_nr = i;
-			}
-	}
-	if (shop_nr < 0)
+		shop_index[shop_nr].dirty = 1;
 		return 0;
+	}
+
+	/* The caller already has the authoritative shop identity.  Do not
+	 * rediscover it from a room/template pair: roaming templates are shared,
+	 * and a failed discovery must not lose the dirty state. */
+	if (shop_index[shop_nr].keeper != GET_RNUM(ch))
+	{
+		shop_index[shop_nr].dirty = 1;
+		return 0;
+	}
 
 	if (sql_save_shopkeeper(ch, shop_nr))
 	{
@@ -4960,15 +4947,24 @@ void restore_shopkeepers(void)
 		return;
 	}
 #ifndef __NO_MYSQL__
-	sql_restore_shopkeepers();
+	if (!sql_restore_shopkeepers())
+		fatal_boot_error(
+			"shopkeeper",
+			"SQL shopkeeper restore incomplete; refusing to publish partial stock");
 #endif
 }
 
-void save_dirty_shopkeepers(bool force)
+bool save_dirty_shopkeepers(bool force)
 {
-	(void)force;
+	// Flat-file trades commit stock/custody atomically in their own journal.
+	// Legacy SQL dirty flags are not an outstanding SQL save in that mode.
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return true;
 #ifndef __NO_MYSQL__
-	sql_save_dirty_shopkeepers(force);
+	return sql_save_dirty_shopkeepers(force);
+#else
+	(void)force;
+	return true;
 #endif
 }
 

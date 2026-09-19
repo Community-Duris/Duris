@@ -1113,6 +1113,15 @@ static MYSQL *sql_open_verified_connection(unsigned long client_flags, const cha
 			      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
 			return NULL;
 		}
+		// Every SQL socket must close on successful copyover exec, not just
+		// telemetry sockets. Otherwise the inherited main connection retains
+		// the runtime exclusion lock and rejects the replacement process.
+		if (!sql_telemetry_set_cloexec(conn))
+		{
+			logit(LOG_STATUS,
+			      "Database connection rejected: close-on-exec setup failed");
+			return NULL;
+		}
 		if ((!protected_local && !mysql_get_ssl_cipher(conn)) ||
 		    !sql_apply_session_contract(conn))
 		{

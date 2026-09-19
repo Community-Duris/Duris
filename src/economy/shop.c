@@ -1020,7 +1020,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 			ch);
 		return;
 	}
-	writeShopKeeper(keeper);
+	writeShopKeeper(keeper, shop_nr);
 	if (produced_purchase && container && purchase_count > 1)
 	{
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s %s %d", argm, arg2, purchase_count - 1);

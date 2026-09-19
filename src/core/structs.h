@@ -1344,6 +1344,10 @@ struct pc_only_data
 struct npc_only_data
 { /* values only used by NPCs  */
 	int R_num; // replacement for NPC's ->nr
+	// Durable shop identity for a live NPC.  -1 means that the instance has
+	// not been bound to a shop; the template/rnum alone is not authoritative
+	// when roaming shops share a mobile prototype.
+	int shopkeeper_shop_id;
 
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs

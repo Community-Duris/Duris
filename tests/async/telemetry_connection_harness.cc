@@ -21,6 +21,11 @@ static const char *expected_password = "fixture_ingest_only";
 static bool fail_after_connect = false;
 static bool fail_next_new = false;
 static unsigned int closes = 0;
+static const char *fixture_database()
+{
+	const char *value = getenv("TELEMETRY_FIXTURE_DATABASE");
+	return value && *value ? value : "duris_telemetry_test";
+}
 static constexpr unsigned int LOCK_ATTEMPTS = 10;
 static constexpr unsigned int LOCK_WAIT_SECONDS = 1;
 extern "C" void *__real__Znwm(std::size_t);
@@ -51,14 +56,16 @@ extern "C" MYSQL *__wrap_mysql_real_connect(MYSQL *conn, const char *host, const
 	assert(std::strcmp(user, expected_user) == 0);
 	assert(std::strcmp(password, expected_password) == 0);
 	assert(std::strcmp(host, "127.0.0.1") == 0);
-	assert(std::strcmp(database, "duris_telemetry_test") == 0);
+	assert(std::strcmp(database, fixture_database()) == 0);
 	assert((flags & CLIENT_MULTI_STATEMENTS) == 0);
 	// A credential-boundary spy only: verify the real factory selected the
 	// expected role, then use the existing disposable root account for I/O.
 	// This deliberately does not create users, grant privileges or claim
 	// real ingest-role authentication/grant coverage.
-	MYSQL *connected =
-		__real_mysql_real_connect(conn, host, "root", "", database, port, socket, flags);
+	MYSQL *connected = __real_mysql_real_connect(
+		conn, host, "root",
+		getenv("TELEMETRY_FIXTURE_PASSWORD") ? getenv("TELEMETRY_FIXTURE_PASSWORD") : "",
+		database, port, socket, flags);
 	if (connected)
 	{
 		// Start with an inheritable socket even if this client library protects
@@ -99,13 +106,19 @@ static void acquire_lock(MYSQL *conn, const char *name)
 	}
 	assert(false && "timed out acquiring telemetry advisory lock");
 }
-static void exec_releases_socket_and_lock(const char *executable)
+static void exec_releases_socket_and_lock(const char *executable, bool main_connection)
 {
 	pid_t child = fork();
 	assert(child >= 0);
 	if (child == 0)
 	{
-		MYSQL *conn = sql_open_telemetry_connection();
+		if (main_connection)
+		{
+			expected_user = "fixture_game";
+			expected_password = "fixture_game_only";
+		}
+		MYSQL *conn = main_connection ? sql_open_configured_connection(0) :
+						sql_open_telemetry_connection();
 		assert(conn);
 		char lock[80], socket[24];
 		std::snprintf(lock, sizeof(lock), "telemetry_copyover_fixture_%ld",
@@ -129,7 +142,9 @@ static void exec_releases_socket_and_lock(const char *executable)
 		mysql_free_result(result);
 		// Exec owns the only client handle. There is deliberately no close or
 		// RELEASE_LOCK: COM_QUIT would hide a leaked inherited descriptor.
-		execl(executable, executable, "--after-exec", socket, lock, nullptr);
+		execl(executable, executable,
+		      main_connection ? "--after-exec-main" : "--after-exec", socket, lock,
+		      nullptr);
 		_exit(127);
 	}
 	int status = 0;
@@ -140,12 +155,20 @@ int main(int argc, char **argv)
 {
 	assert(getenv("TELEMETRY_REPOSITORY_DISPOSABLE") &&
 	       std::strcmp(getenv("TELEMETRY_REPOSITORY_DISPOSABLE"), "1") == 0);
-	if (argc == 4 && std::strcmp(argv[1], "--after-exec") == 0)
+	if (argc == 4 && (std::strcmp(argv[1], "--after-exec") == 0 ||
+			  std::strcmp(argv[1], "--after-exec-main") == 0))
 	{
 		// Inspect before opening anything that might reuse the descriptor.
 		errno = 0;
 		assert(fcntl(std::atoi(argv[2]), F_GETFD) == -1 && errno == EBADF);
-		MYSQL *conn = sql_open_telemetry_connection();
+		const bool main_connection = std::strcmp(argv[1], "--after-exec-main") == 0;
+		if (main_connection)
+		{
+			expected_user = "fixture_game";
+			expected_password = "fixture_game_only";
+		}
+		MYSQL *conn = main_connection ? sql_open_configured_connection(0) :
+						sql_open_telemetry_connection();
 		assert(conn);
 		acquire_lock(conn, argv[3]);
 		mysql_close(conn);
@@ -155,8 +178,8 @@ int main(int argc, char **argv)
 	env("DB_HOST", "127.0.0.1");
 	env("DB_USER", "fixture_game");
 	env("DB_PASSWD", "fixture_game_only");
-	env("DB_NAME", "duris_telemetry_test");
-	env("DB_ALLOWED_TARGETS", "127.0.0.1/duris_telemetry_test");
+	env("DB_NAME", fixture_database());
+	env("DB_ALLOWED_TARGETS", (std::string("127.0.0.1/") + fixture_database()).c_str());
 	unsetenv("DB_SOCKET");
 	unsetenv("TELEMETRY_DB_USER");
 	unsetenv("TELEMETRY_DB_PASSWD");
@@ -166,7 +189,7 @@ int main(int argc, char **argv)
 	env("TELEMETRY_DB_PASSWD", expected_password);
 	env("DB_ALLOWED_TARGETS", "127.0.0.1/another_test");
 	assert(sql_open_telemetry_connection() == nullptr && calls == 0);
-	env("DB_ALLOWED_TARGETS", "127.0.0.1/duris_telemetry_test");
+	env("DB_ALLOWED_TARGETS", (std::string("127.0.0.1/") + fixture_database()).c_str());
 	env("ENVIRONMENT", "production");
 	RUNNING_PORT = 7778;
 	assert(sql_open_telemetry_connection() == nullptr && calls == 0);
@@ -195,6 +218,7 @@ int main(int argc, char **argv)
 	expected_password = "fixture_game_only";
 	conn = sql_open_configured_connection(0);
 	assert(conn && calls == 2);
+	assert((fcntl(sql_telemetry_socket(conn), F_GETFD) & FD_CLOEXEC) != 0);
 	mysql_close(conn);
 	expected_user = "fixture_ingest";
 	expected_password = "fixture_ingest_only";
@@ -202,7 +226,8 @@ int main(int argc, char **argv)
 	fail_after_connect = true;
 	conn = sql_open_telemetry_connection();
 	assert(conn == nullptr && !fail_next_new && closes == closes_before + 1);
-	exec_releases_socket_and_lock(argv[0]);
+	exec_releases_socket_and_lock(argv[0], false);
+	exec_releases_socket_and_lock(argv[0], true);
 	std::cout
 		<< "verified factory: fail-closed credential selection, target/role rejection, "
 		   "real UTC/strict/charset/deadline initialization, allocation cleanup, failed-exec continuity, exec socket closure and advisory lock release PASS (credential I/O spy)\n";
