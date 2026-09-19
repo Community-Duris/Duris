@@ -10,8 +10,12 @@ without recording operation IDs, entity IDs, amounts, or command payloads.
 
 The historical acceptance criterion cannot honestly close from this evidence alone:
 the prior incident record has no failed command payload or binary provenance, and no
-currency loss was established. A parent-mediated, read-only journal lookup is listed
-below; if the journal was checkpointed, that lookup may also be inconclusive.
+currency loss was established. A subsequent authorized read-only check matched 889
+historical ESTALE coin-transfer receipts in a fresh production-derived clone. The
+configured live critical-command journal was empty when captured, with unchanged size
+and modification time across the read, so it supplied no matching historical command
+frames. This does not identify the failed gate or rule out separately retained older
+evidence. The diagnostic change does not backfill or infer a historical failure stage.
 
 ## Publication trace
 

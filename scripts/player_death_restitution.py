@@ -3066,6 +3066,13 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "custody_item_revision,custody_state,custody_owner_type,custody_owner_id,custody_owner_context_id,"
         "custody_owner_revision,vnum,metadata_digest,metadata_payload) VALUES " + ",".join(temp_values) + ";"
     )
+    # MySQL cannot reference the same TEMPORARY table twice in one statement
+    # (ER_CANT_REOPEN_TABLE). A connection-local copy keeps the nested parent
+    # authority checks intact without changing transaction or custody fences.
+    lines.extend([
+        "CREATE TEMPORARY TABLE restitution_apply_parents LIKE restitution_apply_items;",
+        "INSERT INTO restitution_apply_parents SELECT * FROM restitution_apply_items;",
+    ])
     existing_uids = sorted({
         int_value(uid, "existing recipient UID", 1, 2**64 - 1)
         for uid in plan.get("recipient_existing_uids", [])
@@ -3377,7 +3384,7 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "AND own.item_revision=p.expected_item_revision AND own.state=p.expected_state "
         "AND COALESCE(r.revision,0)=p.expected_owner_revision AND own.vnum=p.vnum);",
         "SET @parent_ok=(SELECT COUNT(*) FROM restitution_apply_items p WHERE p.delivered_parent_item_uid=0 OR "
-        "EXISTS(SELECT 1 FROM item_current_owner parent JOIN restitution_apply_items pp "
+        "EXISTS(SELECT 1 FROM item_current_owner parent JOIN restitution_apply_parents pp "
         "ON pp.item_uid=p.delivered_parent_item_uid WHERE parent.item_uid=pp.item_uid "
         "AND parent.owner_type=1 AND parent.owner_id=" + str(source_pid) +
         " AND parent.owner_context_id=0 AND parent.root_item_uid=pp.expected_root_item_uid "

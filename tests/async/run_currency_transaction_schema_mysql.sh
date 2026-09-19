@@ -8,7 +8,7 @@ cd "$ROOT"
 NAME="duris-currency-$$-$RANDOM"
 PASSWORD="currency-$$-$RANDOM"
 IMAGE="${CURRENCY_DB_IMAGE:-mariadb:10.11}"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+cleanup() { docker rm -fv "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
@@ -21,16 +21,22 @@ export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 export DB_NAME=currency_coin_test CURRENCY_TEST_DB_NAME=currency_coin_test
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 ready=0
-for candidate in "$published_host:$published_port" "$container_host:3306"; do
+# A nested Docker/WSL caller has a different loopback namespace. Prefer the
+# exact published port through Docker's host gateway before a bridge address.
+for candidate in "$published_host:$published_port" "host.docker.internal:$published_port" "$container_host:3306"; do
     [[ "$candidate" == :3306 ]] && continue
     export DB_HOST="${candidate%:*}" DB_PORT="${candidate##*:}"
-    MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
+    MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
     for _ in $(seq 1 10); do
         if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
         sleep 1
     done
 done
-[[ "$ready" == 1 ]]
+if [[ "$ready" != 1 ]]; then
+    printf 'Disposable currency SQL readiness failed on the bounded local endpoints.\n' >&2
+    "${MYSQL[@]}" --connect-timeout=3 -e 'SELECT 1' >/dev/null
+    exit 1
+fi
 "${MYSQL[@]}" -e "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/bootstrap_multithread_safe.sql"
 # Exercise the same additive critical-command migration used by deployed

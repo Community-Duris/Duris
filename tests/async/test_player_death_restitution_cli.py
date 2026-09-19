@@ -454,6 +454,15 @@ class RestitutionCliTests(unittest.TestCase):
         self.assertIn("@database_quiescent", sql)
         self.assertIn("FOR UPDATE", sql)
         self.assertIn("@owner_rows_updated=1", sql)
+        # MySQL 8 cannot reopen one TEMPORARY table through two aliases in a
+        # statement. Keep the full parent authority fence using a separate copy.
+        self.assertIn("CREATE TEMPORARY TABLE restitution_apply_parents LIKE restitution_apply_items;", sql)
+        self.assertIn("INSERT INTO restitution_apply_parents SELECT * FROM restitution_apply_items;", sql)
+        parent_gate = next(line for line in sql.splitlines() if line.startswith("SET @parent_ok="))
+        self.assertEqual(parent_gate.count("restitution_apply_items"), 1)
+        self.assertIn("JOIN restitution_apply_parents pp", parent_gate)
+        self.assertIn("parent.item_revision=pp.expected_item_revision", parent_gate)
+        self.assertIn("pp.expected_state=3", parent_gate)
         self.assertIn("@restitution_decision", sql)
         epoch_marker = "SET @restitution_delivery_epoch=FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)));"
         self.assertEqual(sql.count(epoch_marker), 1)
