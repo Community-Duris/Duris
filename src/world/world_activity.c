@@ -385,7 +385,8 @@ void world_activity_rebuild()
 		for (P_nevent event = ch->nevents; event; event = event->next_char_nev)
 			if (event->func == event_mob_mundane)
 			{
-				world_activity_record_mundane_event(ch, nevent_handle_from_event(event));
+				world_activity_record_mundane_event(
+					ch, nevent_handle_from_event(event));
 				break;
 			}
 
@@ -521,7 +522,7 @@ nevent_handle world_activity_mundane_event(P_char ch)
 		return { NULL, 0 };
 
 	const nevent_handle event = { ch->world_activity_mundane_event,
-					      ch->world_activity_mundane_event_sequence };
+				      ch->world_activity_mundane_event_sequence };
 	if (!nevent_handle_is_active(event) || event.event->func != event_mob_mundane ||
 	    event.event->ch != ch)
 	{
