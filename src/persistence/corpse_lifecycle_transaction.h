@@ -9,6 +9,11 @@
 #include <cstdint>
 
 constexpr size_t CORPSE_LIFECYCLE_PENDING_MAX = 1024;
+// A stale corpse action gets one authoritative-revision retry.  The delay is
+// expressed in transaction pulses so the game thread remains non-blocking and
+// tests can exercise the state machine without sleeping.
+constexpr unsigned int CORPSE_LIFECYCLE_STALE_RETRY_LIMIT = 1;
+constexpr unsigned int CORPSE_LIFECYCLE_STALE_RETRY_BACKOFF_PULSES = 4;
 
 using corpse_lifecycle_release_completion_fn = void (*)(bool committed,
 							const corpse_lifecycle_result &result,

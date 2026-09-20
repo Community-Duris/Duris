@@ -548,6 +548,26 @@ bool load_corpse_identity(MYSQL *connection, const corpse_lifecycle_payload &pay
 	if (identity->revision != payload.expected_corpse_revision ||
 	    identity->room_vnum != payload.room_vnum)
 	{
+		// A stale corpse whose historical owner has disappeared cannot be
+		// reconciled by a live player. Keep the durable row for operator repair
+		// instead of treating it as an endlessly retryable revision conflict.
+		const std::string owner_query = "SELECT pid FROM player_data WHERE pid=" +
+						std::to_string(payload.owner_pid) + " FOR UPDATE";
+		if (!execute(connection, owner_query))
+			return false;
+		MYSQL_RES *owner_rows = mysql_store_result(connection);
+		if (!owner_rows)
+		{
+			errno = static_cast<int>(mysql_errno(connection));
+			return false;
+		}
+		const bool owner_exists = mysql_num_rows(owner_rows) == 1;
+		mysql_free_result(owner_rows);
+		if (!owner_exists)
+		{
+			*result_code = ESRCH;
+			return true;
+		}
 		*result_code = ESTALE;
 		return true;
 	}
@@ -1363,7 +1383,16 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	if (!load_corpse_identity(connection, payload, &catalog_revision, &identity, result_code))
 		return false;
 	if (*result_code)
+	{
+		if (*result_code == ESTALE)
+			result->corpse_revision = identity.revision;
 		return true;
+	}
+	// Preserve the authoritative revision for any later ESTALE returned by an
+	// item, room, wallet, or artifact check. The successful result format keeps
+	// corpse_revision zero for terminal actions, so it is cleared before the
+	// success payload is encoded below.
+	result->corpse_revision = identity.revision;
 	const uint64_t corpse_owner_id = item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	item_transfer_payload transfer = {};
 	item_owner_identity old_room = { item_owner_type::unknown, 0, 0 };
@@ -1530,6 +1559,7 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	    !execute(connection, "RELEASE SAVEPOINT corpse_lifecycle_domain"))
 		return false;
 
+	result->corpse_revision = 0;
 	result->owner_pid = payload.owner_pid;
 	result->save_id = payload.save_id;
 	result->action = payload.action;

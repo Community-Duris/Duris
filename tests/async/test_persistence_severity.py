@@ -18,6 +18,9 @@ harness = r'''
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <chrono>
+#include <limits>
+#include <mutex>
 #include <string>
 #include <vector>
 #define MAX_STRING_LENGTH 256
@@ -54,27 +57,55 @@ void verify(const char *outcome, bool alert) {
     }
 }
 int main() {
+    const char *normal_events[] = {"severity_ok", "severity_info", "severity_alert",
+                                   "severity_unknown"};
+    const char *invalid_events[][5] = {
+        {"ok_null", "ok_empty", "ok_name", "ok_ptr", "ok_write"},
+        {"info_null", "info_empty", "info_name", "info_ptr", "info_write"},
+        {"alert_null", "alert_empty", "alert_name", "alert_ptr", "alert_write"},
+        {"unknown_null", "unknown_empty", "unknown_name", "unknown_ptr", "unknown_write"}
+    };
+    size_t severity_index = 0;
     for (auto level : {persistence_severity::ok, persistence_severity::info,
                        persistence_severity::alert, static_cast<persistence_severity>(99)}) {
         logs.clear(); broadcasts.clear();
         persistence_report(level, 57, "player_save", "secret_owner", "secret_uid",
-                           "secret_event", "death_recovery", "delay=%d count=%llu", 4, 8ULL);
+                           normal_events[severity_index], "death_recovery", "delay=%d count=%llu", 4, 8ULL);
         verify(level == persistence_severity::ok ? "ok" :
                level == persistence_severity::info ? "info" : "alert",
                level != persistence_severity::ok && level != persistence_severity::info);
         assert(logs[0].text.find("detail=delay=4 count=8") != std::string::npos);
+        size_t event_index = 0;
         for (const char *format : {static_cast<const char *>(nullptr), "", "name=%s", "ptr=%p", "write=%n"}) {
             logs.clear(); broadcasts.clear();
-            persistence_report(level, 57, "bad category", "secret", "secret", "secret",
+            persistence_report(level, 57, "bad category", "secret", "secret",
+                               invalid_events[severity_index][event_index],
                                "bad\naction", format, "secret");
             assert(logs[0].text.find("domain=unknown action=unknown") != std::string::npos);
             assert(logs[0].text.find("detail=") == std::string::npos);
+            ++event_index;
         }
+        ++severity_index;
     }
     logs.clear(); broadcasts.clear();
     persistence_alert(57, "player_save", "secret", "secret", "secret", "terminal_save_failed", "retry=%d", 1);
     verify("alert", true);
     assert(logs[0].text.find("detail=retry=1") != std::string::npos);
+
+    logs.clear(); broadcasts.clear();
+    persistence_alert(57, "corpse", "corpse_owner", "none", "rate_event",
+                      "rate_limit_action", "retry=%d", 1);
+    assert(broadcasts.size() == 1);
+    persistence_alert(57, "corpse", "corpse_owner", "none", "rate_event",
+                      "rate_limit_action", "retry=%d", 1);
+    assert(broadcasts.size() == 1);
+    assert(logs.size() == 4); // throttling only affects wizlog, not durable log records
+    persistence_alert(57, "corpse", "corpse_owner", "none", "rate_event",
+                      "rate_limit_action", "retry=%d", 2);
+    assert(broadcasts.size() == 2); // distinct alert detail remains visible
+    persistence_alert(57, "corpse", "different_owner", "none", "rate_event",
+                      "rate_limit_action", "retry=%d", 3);
+    assert(broadcasts.size() == 3); // distinct failure key remains visible
 }
 '''
 with tempfile.TemporaryDirectory(prefix='persistence-severity-') as temp:
