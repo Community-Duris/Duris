@@ -1874,7 +1874,12 @@ void do_teach(P_char, char *, int);
 void handle_scribe(P_char, P_char, P_obj, void *);
 void handle_spell_mem(P_char);
 void handle_undead_mem(P_char);
-void stop_memorizing(P_char);
+enum class memorization_stop_reason : uint8_t
+{
+	voluntary,
+	disrupted
+};
+void stop_memorizing(P_char, memorization_stop_reason = memorization_stop_reason::disrupted);
 int forget_spells(P_char, int);
 void do_stance(P_char, char *, int);
 int memorize_last_spell(P_char ch);
