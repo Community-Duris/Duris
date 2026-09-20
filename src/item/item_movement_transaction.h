@@ -94,6 +94,15 @@ bool item_movement_transaction_submit_batch(
 	item_movement_reject *reject = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
+/* As above, but invoke `completion` only after the ownership authority has
+ * published the detached object to the recipient (or has terminally rejected
+ * the grant). The callback context is copied into the bounded transaction
+ * state and must not contain live pointers. */
+bool item_creation_grant_submit_to_player_with_completion(P_char actor, P_obj object,
+							  P_char recipient,
+							  item_movement_completion_fn completion,
+							  const void *context, size_t context_size,
+							  P_obj target_container = NULL);
 // Reports only the final outcome: committed means the durable grant was also
 // published into the requested live inventory/container. The callback runs
 // after the grant queue releases this request, so it may submit a successor.

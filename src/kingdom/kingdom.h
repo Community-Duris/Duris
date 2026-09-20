@@ -137,6 +137,21 @@ void kingdom_on_guildhall_changed(int assoc_id);
 void kingdom_upkeep_event(void);
 
 /* ------------------------------------------------------------------ *
+ * The guild store
+ * ------------------------------------------------------------------ */
+
+/* `list`, or `buy <item> [variant]` when `buying`, typed in a kingdom's
+ * guild-store room; guild/guildhall_procs.c binds the room proc that calls
+ * this. The catalogue, the prices and every rule about who may buy live
+ * behind it, in kingdom_craft.c.
+ *
+ * Answers the player whatever happens -- a refusal for a non-member, a
+ * dormant realm or a short store included -- and returns true, so the
+ * command goes no further. False only for a non-player or a room that is not
+ * a guild store, which the room proc then lets pass. */
+bool kingdom_store_command(struct char_data *ch, int room_vnum, bool buying, char *argument);
+
+/* ------------------------------------------------------------------ *
  * The command
  * ------------------------------------------------------------------ */
 
