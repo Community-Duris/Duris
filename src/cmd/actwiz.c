@@ -10701,45 +10701,7 @@ void newb_spellup(P_char ch, P_char victim)
 
 void do_newb_spellup_all(P_char ch, char *arg, int /*cmd*/)
 {
-	P_desc d;
-	char buf[MAX_STRING_LENGTH];
-	int racewar_filter = 0;
-	int count = 0;
-
-	one_argument(arg, buf);
-
-	if (*buf)
-	{
-		if (*buf == 'g' || *buf == 'G')
-			racewar_filter = RACEWAR_GOOD;
-		else if (*buf == 'e' || *buf == 'E')
-			racewar_filter = RACEWAR_EVIL;
-		else
-		{
-			send_to_char("Usage: newbsa [g|e]\n", ch);
-			send_to_char("  g = good racewar only\n", ch);
-			send_to_char("  e = evil racewar only\n", ch);
-			send_to_char("  no argument = all players\n", ch);
-			return;
-		}
-	}
-
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->connected == CON_PLAYING && ch != d->character)
-		{
-			if (GET_LEVEL(d->character) <= 60)
-			{
-				if (racewar_filter == 0 ||
-				    GET_RACEWAR(d->character) == racewar_filter)
-				{
-					newb_spellup(ch, d->character);
-					count++;
-				}
-			}
-		}
-	}
-	send_to_char_f(ch, "Done. Blessed %d player%s.\n", count, count == 1 ? "" : "s");
+	community_spellup_command(ch, arg);
 }
 
 void do_newb_spellup(P_char ch, char *arg, int /*cmd*/)
