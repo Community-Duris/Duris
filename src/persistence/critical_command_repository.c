@@ -1318,7 +1318,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> result_payload = {};
 		const size_t result_size = result_code ? 0 : result_payload.size();
 		uint64_t durable_revision = 0;
-		if (!result_code)
+		if (result_code == ESTALE)
+			// On a rejected corpse action the result payload is intentionally
+			// empty. Carry the revision read under the corpse lock so the live
+			// transaction can reconcile once before fencing the action.
+			durable_revision = corpse_result.corpse_revision;
+		else if (!result_code)
 			durable_revision = std::max(
 				{ corpse_result.corpse_revision, corpse_result.catalog_revision,
 				  corpse_result.corpse_owner_revision,
