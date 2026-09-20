@@ -278,6 +278,95 @@ static std::string escape_sql(const char *value)
 	return std::string(escaped.data(), length);
 }
 
+static std::string compact_duration(long long seconds, bool round_up = false)
+{
+	char text[32];
+	long long value;
+	const char *suffix;
+
+	if (seconds < 0)
+		seconds = 0;
+	if (seconds >= 86400)
+	{
+		value = round_up ? (seconds + 86399) / 86400 : seconds / 86400;
+		suffix = "d";
+	}
+	else if (seconds >= 3600)
+	{
+		value = round_up ? (seconds + 3599) / 3600 : seconds / 3600;
+		suffix = "h";
+	}
+	else if (seconds >= 60)
+	{
+		value = round_up ? (seconds + 59) / 60 : seconds / 60;
+		suffix = "m";
+	}
+	else
+	{
+		value = seconds;
+		suffix = "s";
+	}
+	snprintf(text, sizeof(text), "%lld%s", value, suffix);
+	return text;
+}
+
+static std::string divineclaim_table_field(const std::string &value, size_t width)
+{
+	if (value.size() <= width)
+		return value;
+	if (width <= 3)
+		return value.substr(0, width);
+	return value.substr(0, width - 3) + "...";
+}
+
+static std::string divineclaim_lifetime_text(const RewardGrant &grant)
+{
+	if (grant.remaining_pwipes > 0)
+	{
+		char text[32];
+		snprintf(text, sizeof(text), "%d wipe%s", grant.remaining_pwipes,
+			 grant.remaining_pwipes == 1 ? "" : "s");
+		return text;
+	}
+	if (grant.expires_seconds >= 0)
+		return compact_duration(grant.expires_seconds, true) + " left";
+	return "perm";
+}
+
+static void send_divineclaim_instance_lines(P_char ch, const std::vector<std::string> &instances)
+{
+	const size_t max_line_width = 96;
+	const std::string first_prefix = "       instances: ";
+	const std::string continuation_prefix = "                  ";
+	std::string line;
+	bool first_line = true;
+
+	for (const std::string &instance : instances)
+	{
+		std::string candidate = line.empty() ? instance : line + ", " + instance;
+		size_t prefix_width = first_line ? first_prefix.size() : continuation_prefix.size();
+		if (!line.empty() && prefix_width + candidate.size() > max_line_width)
+		{
+			if (first_line)
+				send_to_char_f(ch, "       &+Linstances:&n &+w%s&n\r\n",
+					       line.c_str());
+			else
+				send_to_char_f(ch, "                  &+w%s&n\r\n", line.c_str());
+			first_line = false;
+			line = instance;
+		}
+		else
+			line = candidate;
+	}
+
+	if (line.empty())
+		return;
+	if (first_line)
+		send_to_char_f(ch, "       &+Linstances:&n &+w%s&n\r\n", line.c_str());
+	else
+		send_to_char_f(ch, "                  &+w%s&n\r\n", line.c_str());
+}
+
 static bool canonical_account(const char *requested, std::string *canonical)
 {
 	MYSQL_RES *res;
@@ -927,29 +1016,82 @@ static bool list_grants(P_char ch, const char *account)
 	}
 	if (grants.empty())
 		return false;
-	send_to_char("Active divine account rewards:\r\n", ch);
-	for (const RewardGrant &grant : grants)
+	send_to_char_f(ch, "&+WActive &+CDivine Account Rewards &+Y(%zu)&n\r\n", grants.size());
+	for (size_t group_start = 0; group_start < grants.size();)
 	{
-		MYSQL_RES *res = db_query(
-			"SELECT GROUP_CONCAT(CONCAT(pd.name,' (',GREATEST(0,TIMESTAMPDIFF(SECOND,s.last_summoned_at,NOW())),'s ago)') ORDER BY pd.name SEPARATOR ', ') FROM account_bound_reward_summons s LEFT JOIN player_data pd ON pd.pid=s.pid WHERE s.grant_id=%llu",
-			grant.id);
-		MYSQL_ROW row = res ? mysql_fetch_row(res) : NULL;
-		std::string instances = res ? ((row && row[0] && *row[0]) ? row[0] : "none yet") :
-					      "unavailable";
-		if (!res)
-			logit(LOG_WIZ, "divineclaim: instance listing failed for grant %llu",
-			      grant.id);
-		if (res)
-			mysql_free_result(res);
-		send_to_char_f(
-			ch,
-			"  #%llu account=%s reward=%s (vnum %d) granted_by=%s granted=%s ago expires=%s instances=%s\r\n",
-			grant.id, grant.account.c_str(),
-			grant.display_name.empty() ? "legacy vnum reward" :
-						     grant.display_name.c_str(),
-			grant.vnum, grant.granted_by.empty() ? "unknown" : grant.granted_by.c_str(),
-			human_duration(grant.age_seconds).c_str(), lifetime_text(grant).c_str(),
-			instances.c_str());
+		size_t group_end = group_start + 1;
+		while (group_end < grants.size() &&
+		       grants[group_end].account == grants[group_start].account)
+			++group_end;
+		size_t group_count = group_end - group_start;
+		send_to_char_f(ch, "\r\n&+Y%s&n &+W(%zu reward%s)&n\r\n",
+			       grants[group_start].account.c_str(), group_count,
+			       group_count == 1 ? "" : "s");
+		send_to_char(
+			"  &+CID     Reward                                          Vnum   By         Age  Life       Copies&n\r\n",
+			ch);
+
+		for (size_t i = group_start; i < group_end; ++i)
+		{
+			const RewardGrant &grant = grants[i];
+			std::vector<std::string> instances;
+			int instance_count = -1;
+			MYSQL_RES *res = db_query(
+				"SELECT pd.name,GREATEST(0,TIMESTAMPDIFF(SECOND,s.last_summoned_at,NOW())) FROM account_bound_reward_summons s LEFT JOIN player_data pd ON pd.pid=s.pid WHERE s.grant_id=%llu ORDER BY pd.name",
+				grant.id);
+			if (res)
+			{
+				MYSQL_ROW row;
+				instance_count = 0;
+				while ((row = mysql_fetch_row(res)) != NULL)
+				{
+					std::string name = row[0] && *row[0] ? row[0] : "unknown";
+					long long age = row[1] ? strtoll(row[1], NULL, 10) : 0;
+					instances.push_back(name + " (" + compact_duration(age) +
+							    " ago)");
+					++instance_count;
+				}
+				mysql_free_result(res);
+			}
+			else
+			{
+				logit(LOG_WIZ,
+				      "divineclaim: instance listing failed for grant %llu",
+				      grant.id);
+			}
+
+			std::string id = "#" + std::to_string(grant.id);
+			std::string reward_name = grant.display_name.empty() ?
+							  "legacy vnum reward" :
+							  grant.display_name;
+			std::string granted_by_name = grant.granted_by.empty() ? "unknown" :
+										 grant.granted_by;
+			std::string reward = divineclaim_table_field(reward_name, 42);
+			std::string granted_by = divineclaim_table_field(granted_by_name, 9);
+			std::string age = compact_duration(grant.age_seconds);
+			std::string lifetime = divineclaim_lifetime_text(grant);
+			std::string copies = instance_count < 0 ? "?" :
+								  std::to_string(instance_count);
+			const char *lifetime_color =
+				grant.remaining_pwipes > 0 ?
+					"&+Y" :
+					(grant.expires_seconds >= 0 ? "&+C" : "&+G");
+			const char *copies_color =
+				instance_count < 0 ? "&+R" : (instance_count > 0 ? "&+G" : "&+w");
+
+			send_to_char_f(
+				ch,
+				"  &+W%7s&n &+W%-42s&n &+C%6d&n &+Y%-9s&n &+w%5s&n %s%-9s&n %s%6s&n\r\n",
+				id.c_str(), reward.c_str(), grant.vnum, granted_by.c_str(),
+				age.c_str(), lifetime_color, lifetime.c_str(), copies_color,
+				copies.c_str());
+
+			if (instance_count > 0)
+				send_divineclaim_instance_lines(ch, instances);
+			else if (instance_count < 0)
+				send_to_char("       &+Linstances:&n &+Runavailable&n\r\n", ch);
+		}
+		group_start = group_end;
 	}
 	return true;
 }
