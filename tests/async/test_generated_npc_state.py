@@ -65,7 +65,7 @@ int main() {
   auto oversized=extension; oversized[4]=oversized[5]=oversized[6]=oversized[7]=char(255);
   std::string bad; assert(!generated_npc_extension_decode(1255,oversized.data(),oversized.size(),&bad));
   assert(!generated_npc_extension_decode(11,extension.data(),extension.size(),&bad));
-  copyover_mob entry={}; entry.vnum=indexes[type].virtual_number; entry.idnum=123+type; entry.room=22800;
+  copyover_mob entry={}; entry.shopkeeper_shop_id=-1; entry.vnum=indexes[type].virtual_number; entry.idnum=123+type; entry.room=22800;
   entry.hit=4321; entry.max_hit=5421;
   for(auto &v:entry.equipment_vnums) v=-1;
   std::vector<unsigned char> native(sizeof(entry)+extension.size());
