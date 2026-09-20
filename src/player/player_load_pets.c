@@ -94,7 +94,8 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 				    player_load_pet_materialize_outcome::allocation_failure);
 		}
 		if (!identity.database_id || !valid_pet(snapshot) || !unique ||
-		    snapshot.room_vnum != result.snapshot.room_vnum ||
+		    (snapshot.hold_reason == pet_hold_reason::none &&
+		     snapshot.room_vnum != result.snapshot.room_vnum) ||
 		    snapshot.items.size() != identity.item_identities.size() ||
 		    snapshot.items.size() > PLAYER_LOAD_ITEM_MAX - metrics->item_count)
 		{

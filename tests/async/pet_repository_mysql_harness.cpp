@@ -9,13 +9,20 @@
 #include <iostream>
 #include <string>
 
+MYSQL *DB = nullptr;
+
 int main()
 {
 	const char *host = std::getenv("TEST_DB_HOST");
 	const char *password = std::getenv("TEST_DB_PASSWORD");
-	assert(host && password);
+	const char *user = std::getenv("TEST_DB_USER");
+	const char *database = std::getenv("TEST_DB_NAME");
+	const char *port_text = std::getenv("TEST_DB_PORT");
+	assert(host && password && user && database && port_text);
+	const unsigned int port = static_cast<unsigned int>(std::strtoul(port_text, nullptr, 10));
+	assert(port > 0 && port <= 65535);
 	MYSQL *db = mysql_init(nullptr);
-	assert(mysql_real_connect(db, host, "root", password, "pet_state_test", 3306, nullptr, 0));
+	assert(mysql_real_connect(db, host, user, password, database, port, nullptr, 0));
 	auto sql = [&](const std::string &query)
 	{
 		if (mysql_real_query(db, query.data(), query.size()))
@@ -23,6 +30,17 @@ int main()
 			std::cerr << mysql_error(db) << '\n';
 			std::abort();
 		}
+	};
+	auto scalar = [&](const std::string &query)
+	{
+		sql(query);
+		MYSQL_RES *rows = mysql_store_result(db);
+		assert(rows && mysql_num_rows(rows) == 1);
+		MYSQL_ROW row = mysql_fetch_row(rows);
+		assert(row && row[0]);
+		const std::string value = row[0];
+		mysql_free_result(rows);
+		return value;
 	};
 	sql("INSERT INTO player_data(pid,name,account_name,level,last_room,base_hit,save_revision) "
 	    "VALUES(212212,'Petfixture','Petfixture',56,123,100,1)");
@@ -93,8 +111,53 @@ int main()
 		assert(loaded.authoritative_item_count == 1);
 		snapshot.pets = loaded.snapshot.pets;
 	}
+	// A positive pet owner revision is not custody evidence by itself. A missing
+	// item_current_owner set must be deleted, while a quarantined pet-owned item
+	// keeps the pet held and refreshes its room to the owner's current room.
+	sql("INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES"
+	    "(11,212213,212212,1),(11,212214,212212,1)");
+	sql("INSERT INTO item_current_owner(item_uid,root_item_uid,owner_type,owner_id,"
+	    "owner_context_id,item_revision,vnum,state) VALUES"
+	    "(212213,212213,11,212213,212212,1,100,3)");
+	sql("INSERT INTO player_pets(id,owner_pid,mob_vnum,pet_order,hit,max_hit,mana,max_mana,"
+	    "vitality,max_vitality,charm_duration,room_vnum,restore_state,hold_reason,pet_uid) VALUES"
+	    "(4001,212212,1201,0,10,10,3,3,4,4,-1,99,NULL,0,212213),"
+	    "(4002,212212,1201,1,10,10,3,3,4,4,-1,99,NULL,0,212214)");
+	player_snapshot empty = {};
+	empty.pid = snapshot.pid;
+	empty.room_vnum = snapshot.room_vnum;
+	empty.components = PLAYER_COMPONENT_PETS;
+	empty.revision = snapshot.revision + 1;
+	sql("START TRANSACTION");
+	assert(player_snapshot_repository_write_pets(db, empty));
+	sql("COMMIT");
+	assert(scalar("SELECT COUNT(*) FROM player_pets WHERE id=4001") == "1");
+	assert(scalar("SELECT CONCAT(hold_reason,':',room_vnum) FROM player_pets WHERE id=4001") ==
+	       "6:123");
+	assert(scalar("SELECT COUNT(*) FROM player_pets WHERE id=4002") == "0");
+	sql("INSERT INTO player_pets(id,owner_pid,mob_vnum,pet_order,hit,max_hit,mana,max_mana,"
+	    "vitality,max_vitality,charm_duration,room_vnum,restore_state,hold_reason,pet_uid) VALUES"
+	    "(4003,212212,1201,1,10,10,3,3,4,4,-1,99,NULL,6,212215)");
+	player_pet_snapshot stale_pet = {};
+	stale_pet.pet_uid = 212215;
+	stale_pet.mob_vnum = 1201;
+	stale_pet.order = 1;
+	stale_pet.hit = stale_pet.max_hit = 10;
+	stale_pet.mana = stale_pet.max_mana = 3;
+	stale_pet.vitality = stale_pet.max_vitality = 4;
+	stale_pet.charm_duration = -1;
+	stale_pet.room_vnum = 99;
+	stale_pet.hold_reason = pet_hold_reason::custody_pending;
+	player_snapshot captured_stale = empty;
+	captured_stale.pets.push_back(stale_pet);
+	sql("START TRANSACTION");
+	assert(player_snapshot_repository_write_pets(db, captured_stale));
+	sql("COMMIT");
+	assert(scalar("SELECT COUNT(*) FROM player_pets WHERE id=4003") == "0");
 	sql("DELETE FROM item_current_owner WHERE item_uid=212212");
+	sql("DELETE FROM item_current_owner WHERE item_uid=212213");
 	sql("DELETE FROM item_owner_revision WHERE owner_type=1 AND owner_id=212212");
+	sql("DELETE FROM item_owner_revision WHERE owner_type=11 AND owner_context_id=212212");
 	sql("DELETE FROM player_data WHERE pid=212212");
 	mysql_close(db);
 	std::cout

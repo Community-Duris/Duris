@@ -930,6 +930,23 @@ int main()
         player_load_result result = base_result();
         result.snapshot.room_vnum = 123;
         add_pet(result, 3001, 200);
+        result.snapshot.pets[0].room_vnum = 122;
+        result.snapshot.pets[0].hold_reason = pet_hold_reason::custody_pending;
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && !pets[0]);
+        assert(owner.pc.held_pets && owner.pc.held_pets->pets.size() == 1 &&
+               owner.pc.held_pets->pets[0].hold_reason == pet_hold_reason::custody_pending &&
+               owner.pc.held_pets->pets[0].room_vnum == 122);
+        player_load_pets_discard(&pets);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200);
         result.snapshot.pets[0].hit = result.snapshot.pets[0].max_hit + 1;
         std::vector<P_char> pets;
         player_load_pet_materialize_metrics metrics = {};

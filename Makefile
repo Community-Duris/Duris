@@ -178,6 +178,7 @@ test-db:
 	tests/async/run_lookup_dataset_mysql.sh
 	tests/async/run_runtime_compatibility_mysql.sh
 	tests/async/run_legacy_migration_mysql.sh
+	tests/async/run_pet_repository_mysql.sh
 
 clean:
 	+$(MAKE) -C src clean
