@@ -153,6 +153,34 @@ player_load_result identity_failure(const player_load_request &request,
 	return result;
 }
 
+void mark_degraded(player_load_result *result, uint32_t component, const char *stage)
+{
+	if (!result)
+		return;
+	result->outcome = player_load_outcome::degraded;
+	result->degraded_components |= component;
+	if (!result->failed_component)
+		result->failed_component = stage;
+}
+
+void clear_items_and_pets(player_load_result *result)
+{
+	if (!result)
+		return;
+	result->snapshot.items.clear();
+	result->snapshot.pets.clear();
+	result->item_identities.clear();
+	result->pet_identities.clear();
+	result->item_owner_revision = 0;
+	result->authoritative_item_count = 0;
+	result->authoritative_pet_item_count = 0;
+	result->stale_item_rows = 0;
+	result->missing_payload_rows = 0;
+	result->promoted_item_rows = 0;
+	result->repaired_item_rows = 0;
+	result->snapshot.components = PLAYER_LOAD_SESSION01_COMPONENTS;
+}
+
 // The ownership file is authoritative. A payload item it does not list, or lists as
 // somebody else's or as inactive, is one skippable row: refusing it here would make the
 // character permanently unloadable over a single inconsistent entry. Skipped rows are
@@ -720,7 +748,12 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		return result;
 	}
 	if (request.include_items && !reconcile_item_ownership(root, &result))
-		return result;
+	{
+		clear_items_and_pets(&result);
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_ITEMS, "item_ownership");
+		if (request.include_pets)
+			result.degraded_components |= PLAYER_LOAD_DEGRADED_PETS;
+	}
 	int64_t snapshot_racewar = 0;
 	if (!snapshot_signed(result.snapshot, player_status_field::racewar, &snapshot_racewar) ||
 	    snapshot_racewar != identity.racewar)
@@ -735,20 +768,24 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		root, identity.pid, identity.account, identity.racewar, &domains, &error);
 	if (domains_loaded != flatfile_player_domain_result::ok)
 	{
-		result.outcome = domains_loaded == flatfile_player_domain_result::io_error ?
-					 player_load_outcome::retryable_failure :
-					 player_load_outcome::component_failure;
 		result.error_code =
 			domains_loaded == flatfile_player_domain_result::not_found ? ENOENT :
 			domains_loaded == flatfile_player_domain_result::io_error  ? EIO :
 										     EILSEQ;
-		result.failed_component = "domains";
-		return result;
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_BANK | PLAYER_LOAD_DEGRADED_GAMEPLAY,
+			      "domains");
+		result.read_components = 0;
+		result.domains = {};
+		result.recent_pvp_deaths.clear();
+		result.completed_epic_zones.clear();
 	}
-	result.domains = domains.domains;
-	result.recent_pvp_deaths = std::move(domains.recent_pvp_deaths);
-	result.completed_epic_zones = std::move(domains.completed_epic_zones);
-	result.read_components = PLAYER_LOAD_SESSION04_READS;
+	else
+	{
+		result.domains = domains.domains;
+		result.recent_pvp_deaths = std::move(domains.recent_pvp_deaths);
+		result.completed_epic_zones = std::move(domains.completed_epic_zones);
+		result.read_components = PLAYER_LOAD_SESSION04_READS;
+	}
 	if (!request.include_pets)
 	{
 		result.snapshot.pets.clear();
@@ -768,7 +805,8 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	result.metrics.byte_count = result.snapshot.encoded_size_bound;
 	result.metrics.row_count = 1;
 	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
-	result.outcome = player_load_outcome::applied;
+	if (!result.degraded_components)
+		result.outcome = player_load_outcome::applied;
 	return result;
 }
 

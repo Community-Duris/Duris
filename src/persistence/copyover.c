@@ -1159,13 +1159,21 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
 	request.include_items = true;
 	request.include_pets = true;
-	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
-	    result.request_id != request.request_id ||
-	    result.outcome != player_load_outcome::applied)
+	const bool worker_loaded =
+		player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000);
+	if (!worker_loaded || result.request_id != request.request_id ||
+	    (result.outcome != player_load_outcome::applied &&
+	     result.outcome != player_load_outcome::degraded))
 	{
-		logit(LOG_STATUS, "copyover: worker load failed (request=%llu outcome=%u)",
-		      (unsigned long long)request.request_id, (unsigned int)result.outcome);
-		return NULL;
+		player_load_result retry = {};
+		if (!player_load_pipeline_execute_sync(request, &retry) ||
+		    retry.request_id != request.request_id)
+		{
+			logit(LOG_STATUS, "copyover: player load failed (request=%llu outcome=%u)",
+			      (unsigned long long)request.request_id, (unsigned int)result.outcome);
+			return NULL;
+		}
+		result = std::move(retry);
 	}
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
