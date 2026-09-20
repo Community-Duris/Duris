@@ -51,8 +51,9 @@ bool same_publication_receipt(const critical_completion &left, const critical_co
 	// Queue timestamps do not affect publication. Every field that can change the
 	// authoritative outcome or decoded result must match before a replay sleeps.
 	return left.outcome == right.outcome && left.durable_revision == right.durable_revision &&
-	       left.error_code == right.error_code && left.attempt == right.attempt &&
-	       left.result_size == right.result_size && left.result_payload == right.result_payload;
+	       left.error_code == right.error_code && left.failure_stage == right.failure_stage &&
+	       left.attempt == right.attempt && left.result_size == right.result_size &&
+	       left.result_payload == right.result_payload;
 }
 
 bool retain_unresolved_publication(pending_currency &entry, const char *reason, bool malformed)

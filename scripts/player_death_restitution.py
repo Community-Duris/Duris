@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Inspect, plan, apply, and verify SQL death-item restitution.
+"""Inspect and prepare SQL-derived death-item restitution.
 
-This tool deliberately has no file-authority implementation. It only operates
-against the MySQL/MariaDB ownership authority after the caller proves a stopped
-server and drained writers. Protected JSON artifacts contain identifiers and
-must not be copied to ordinary logs.
+Native preparation and export are read-only and carry target/revision/custody
+fences into the staff command. Offline SQL apply and offline-sql status marking
+still require the caller to prove a stopped server and drained writers; native
+production verification uses a fresh stopped-boundary target-info artifact
+but does not require a backup or change receipt status. Protected JSON artifacts
+contain identifiers and must not be copied to ordinary logs.
 """
 
 from __future__ import annotations
@@ -55,7 +57,11 @@ CODEC_BINARY = ROOT / "bin" / "tools" / "player_death_restitution_codec"
 
 STAFF_PAYLOAD_FORMAT = "duris-player-death-restitution-staff-payload-v1"
 STAFF_PAYLOAD_MAX_BYTES = 512 * 1024
-STAFF_CHUNK_HEX = 1022
+# Leave space for "restitution chunk " within the game's 1023-character line.
+STAFF_CHUNK_HEX = 1004
+PREPARATION_MODE_OFFLINE_SQL = "offline-sql"
+PREPARATION_MODE_NATIVE = "native"
+PREPARATION_MODES = frozenset({PREPARATION_MODE_OFFLINE_SQL, PREPARATION_MODE_NATIVE})
 NATIVE_COMMAND_SCHEMA_VERSION = 1
 NATIVE_COMMAND_TYPE_PLAYER_DEATH_RESTITUTION = 19
 NATIVE_COMMAND_PAYLOAD_VERSION = 3
@@ -80,11 +86,17 @@ NATIVE_ARTIFACT_LEGACY_GOD = 1 << 0
 NATIVE_ARTIFACT_LEGACY_MORTAL = 1 << 1
 
 TOOL_VERSION = 3
-DEATH_SCHEMA_VERSION = 6
-# All supported death encodings carry the same exact item representation.
-# Wire 3/4 added pet restoration fields; wire 5/6 added output preferences.
-# Let the native codec validate the bytes, then require a death schema.
-DEATH_WIRE_VERSIONS = {2, 4, 6}
+# The bridge reports the first uint32 as the raw wire version and the decoder's
+# post-compatibility value separately as schema_version.  Death schema 8 is the
+# normalized in-memory contract; wire 8 is also the current writer's encoding.
+# Historical death records use wire 2, 4, or 6.  Keep this allow-list explicit:
+# the native decoder remains responsible for byte-level validation, while this
+# gate rejects a valid non-death snapshot or an unknown future encoding.
+DEATH_NORMALIZED_SCHEMA_VERSION = 8
+# Compatibility alias for callers that imported the old name; the normalized
+# label is authoritative and must not be confused with raw wire_version.
+DEATH_SCHEMA_VERSION = DEATH_NORMALIZED_SCHEMA_VERSION
+DEATH_WIRE_VERSIONS = frozenset({2, 4, 6, 8})
 ITEM_MONEY = 20
 VOBJ_COINS = 3
 ITEM_ARTIFACT = REAL_ARTIFACT_FLAG
@@ -139,6 +151,32 @@ MAX_ARTIFACT_COMPENSATION_SECONDS = 10 * 365 * 24 * 60 * 60
 
 class ToolError(Exception):
     """An operator-facing error without SQL, credentials, or player data."""
+
+
+def normalize_preparation_mode(value: Any, *, label: str = "preparation mode") -> str:
+    """Normalize the explicit plan mode without inferring native behavior."""
+    if value is None:
+        return PREPARATION_MODE_OFFLINE_SQL
+    if not isinstance(value, str) or value not in PREPARATION_MODES:
+        raise ToolError(f"{label} must be one of: offline-sql, native")
+    return value
+
+
+def plan_mode(plan: Mapping[str, Any]) -> str:
+    """Read the plan mode, rejecting conflicting aliases and unknown modes."""
+    value = plan.get("preparation_mode")
+    legacy_value = plan.get("mode")
+    if value is not None and legacy_value is not None and value != legacy_value:
+        raise ToolError("plan preparation mode fields disagree")
+    if value is None:
+        value = legacy_value
+    return normalize_preparation_mode(value)
+
+
+def require_offline_sql_plan(plan: Mapping[str, Any], action: str) -> None:
+    """Keep native preparation artifacts outside every SQL mutation path."""
+    if plan_mode(plan) != PREPARATION_MODE_OFFLINE_SQL:
+        raise ToolError(f"native preparation plan cannot enter SQL {action}")
 
 
 # ---------- safe local files and canonical digests ----------
@@ -235,6 +273,15 @@ def row_value(row: list[str], index: int) -> str | None:
     return row[index]
 
 
+def row_nullable_hex(row: list[str], index: int) -> str | None:
+    # mysql batch output uses NULL; some adapters use \N. This normalization
+    # is safe only for HEX() columns: literal text "NULL" is encoded 4e554c4c.
+    value = row_value(row, index)
+    if value is None or value in ("NULL", ""):
+        return None
+    return hex_bytes(value, "nullable hexadecimal metadata").hex()
+
+
 def row_int(row: list[str], index: int, label: str, default: int | None = None) -> int | None:
     value = row_value(row, index)
     if value is None:
@@ -297,7 +344,7 @@ def validate_target(
     *, confirm_production_target: str | None = None,
     expected_fingerprint: str | None = None,
     maintenance_kind: str | None = None,
-    maintenance_id: str | None = None,
+    maintenance_id: str | None = None, maintenance_owner: str | None = None,
 ) -> TargetPolicy:
     """Build the target policy used by every database-facing command."""
     try:
@@ -307,6 +354,7 @@ def validate_target(
             expected_fingerprint=expected_fingerprint,
             maintenance_kind=maintenance_kind,
             maintenance_id=maintenance_id,
+            maintenance_owner=maintenance_owner,
         )
     except TargetError as exc:
         raise ToolError(str(exc)) from exc
@@ -445,13 +493,19 @@ def policy_for_command(
 
     maintenance_kind = getattr(args, "maintenance_kind", None)
     maintenance_id = getattr(args, "maintenance_id", None)
+    maintenance_owner = getattr(args, "maintenance_owner", None)
     if (maintenance_kind is None) != (maintenance_id is None):
         raise ToolError("maintenance kind and immutable maintenance identity must be supplied together")
+    if maintenance_kind == "systemd-user" and maintenance_owner is None:
+        raise ToolError("user-systemd maintenance requires --maintenance-owner")
+    if maintenance_kind != "systemd-user" and maintenance_owner is not None:
+        raise ToolError("--maintenance-owner is only valid with --maintenance-kind systemd-user")
     policy = validate_target(
         confirm_production_target=getattr(args, "confirm_production_target", None),
         expected_fingerprint=supplied_fingerprint,
         maintenance_kind=maintenance_kind,
         maintenance_id=maintenance_id,
+        maintenance_owner=maintenance_owner,
     )
     current_fields = {
         "host": policy.host,
@@ -534,6 +588,37 @@ def validate_plan_backup(
         verify_backup_receipt(receipt, target, maintenance)
     except TargetError as exc:
         raise ToolError(str(exc)) from exc
+
+
+def validate_native_readonly_verify_controls(
+    db: Mysql, plan: Mapping[str, Any], policy: TargetPolicy,
+    target_info: Mapping[str, Any] | None,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Validate the separate stopped-boundary policy for native read-only verify."""
+    expected = plan.get("target")
+    expected_record = target_record(expected, label="plan target")
+    if not expected_record["production"]:
+        raise ToolError("native read-only verification policy requires a production plan target")
+    if target_info is None:
+        raise ToolError("native production verification requires a fresh protected target-info artifact")
+    info_target = target_record(target_info.get("target"), label="target-info target")
+    if info_target != expected_record:
+        raise ToolError("native verification target-info does not match the approved plan target")
+    info_boundary = target_info.get("maintenance_boundary")
+    if info_boundary is None:
+        raise ToolError("native production verification requires a stopped maintenance boundary")
+    expected_boundary = maintenance_record(
+        info_boundary, label="native verification target-info maintenance boundary"
+    )
+    if not policy.production:
+        raise ToolError("native production verification requires a production target policy")
+    if policy.maintenance_kind is None or policy.maintenance_id is None:
+        raise ToolError("native production verification requires an explicit stopped maintenance boundary")
+    current_boundary = require_policy_maintenance(policy)
+    if current_boundary != expected_boundary:
+        raise ToolError("current maintenance boundary differs from fresh target-info")
+    actual = identify_target(db, policy, expected_record)
+    return actual, current_boundary
 
 
 def sql_num(value: Any, label: str, minimum: int | None = None,
@@ -1121,8 +1206,11 @@ def decode_payload(payload: bytes) -> dict[str, Any]:
         raise ToolError("codec bridge returned invalid structured output") from exc
     if not isinstance(decoded, dict):
         raise ToolError("codec bridge returned an invalid death object")
-    if decoded.get("wire_version") not in DEATH_WIRE_VERSIONS or decoded.get("schema_version") != DEATH_SCHEMA_VERSION:
-        raise ToolError("death payload is not a supported schema-6 death encoding")
+    if (decoded.get("wire_version") not in DEATH_WIRE_VERSIONS
+            or decoded.get("schema_version") != DEATH_NORMALIZED_SCHEMA_VERSION):
+        raise ToolError(
+            "death payload is not a supported raw-wire death encoding normalized to schema-8"
+        )
     return decoded
 
 
@@ -1532,7 +1620,15 @@ def plan_from_inspection(
     backup_receipt: Mapping[str, Any] | None = None,
     approve_production: bool = False,
     artifact_timing_compensations: Mapping[Any, Any] | None = None,
+    mode: str = PREPARATION_MODE_OFFLINE_SQL,
+    preparation_mode: str | None = None,
+    _legacy_plan_shape: bool = False,
 ) -> dict[str, Any]:
+    if preparation_mode is not None:
+        if mode != PREPARATION_MODE_OFFLINE_SQL and mode != preparation_mode:
+            raise ToolError("conflicting native preparation modes")
+        mode = preparation_mode
+    mode = normalize_preparation_mode(mode)
     inspection_target = inspection.get("target")
     target: dict[str, Any] | None = None
     if inspection_target is not None:
@@ -1543,9 +1639,16 @@ def plan_from_inspection(
             raise ToolError("target-info does not match the inspection target")
         target = info_target
     production = bool(target and target["production"])
+    if mode == PREPARATION_MODE_NATIVE and production and inspection_target is None:
+        raise ToolError("native production planning requires a target-pinned inspection")
     if approve_production and not production:
         raise ToolError("production approval requires a production-classified target")
     timing_compensations = normalize_artifact_timing_compensations(artifact_timing_compensations)
+    if mode == PREPARATION_MODE_NATIVE:
+        if backup_receipt is not None:
+            raise ToolError("native preparation cannot bind an offline SQL backup receipt")
+        if target_info is not None and target_info.get("maintenance_boundary") is not None:
+            raise ToolError("native preparation cannot bind an offline maintenance boundary")
     boundary: dict[str, str] | None = None
     if target_info is not None and target_info.get("maintenance_boundary") is not None:
         boundary = maintenance_record(
@@ -1571,7 +1674,10 @@ def plan_from_inspection(
             verify_backup_receipt(receipt, target, boundary)
         except TargetError as exc:
             raise ToolError(str(exc)) from exc
-    if production:
+    if mode == PREPARATION_MODE_NATIVE:
+        if production and target_info is None:
+            raise ToolError("native production planning requires a protected target-info artifact")
+    elif production:
         if target_info is None:
             raise ToolError("production planning requires a protected target-info artifact")
         if receipt is None:
@@ -1958,6 +2064,7 @@ def plan_from_inspection(
         "artifact_version": TOOL_VERSION,
         "kind": "death_restitution_plan",
         "backend": "sql",
+        "preparation_mode": mode,
         "source": source,
         "recipient_pid": recipient,
         "destination": "player_inventory",
@@ -1982,9 +2089,14 @@ def plan_from_inspection(
         "production_approval_required": production,
         "production_approved": bool(approve_production),
         "applyable": bool(
-            eligible_count and not global_errors and recipient == pid and
+            mode == PREPARATION_MODE_OFFLINE_SQL and eligible_count and not global_errors and recipient == pid and
             (not reconciliation_items or approve_artifact_reconciliation) and
             (not production or (approve_production and receipt is not None and boundary is not None))
+        ),
+        "exportable": bool(
+            mode == PREPARATION_MODE_NATIVE and eligible_count and not global_errors and recipient == pid and
+            (not reconciliation_items or approve_artifact_reconciliation) and
+            (not production or approve_production)
         ),
         "consistency_errors": global_errors,
         "recipient_existing_uids": inspection.get("recipient_existing_uids", []),
@@ -2007,6 +2119,14 @@ def plan_from_inspection(
         body["artifact_timing_compensation_approval_record"] = (
             "explicit approved compensation; apply must repeat --approve-artifact-timing-compensation"
         )
+    if _legacy_plan_shape:
+        # Revalidate the original pre-mode v3 schema without rewriting the
+        # approved artifact or changing its restitution identity. All evidence,
+        # approval and offline policy checks above remain mandatory.
+        if mode != PREPARATION_MODE_OFFLINE_SQL:
+            raise ToolError("legacy plan shape is only valid for offline SQL")
+        del body["preparation_mode"]
+        del body["exportable"]
     body["plan_digest"] = digest_json(body)
     material = (
         b"duris-player-death-restitution-v1\0" + hex_bytes(body["evidence_digest"], "evidence digest") +
@@ -2041,25 +2161,36 @@ def load_plan(path: Path) -> dict[str, Any]:
     )
     if hashlib.sha256(material).digest()[:16].hex() != rid:
         raise ToolError("protected artifact restitution identity does not match its plan")
+    mode = plan_mode(value)
     validate_artifact_timing_compensations(value)
+    if mode == PREPARATION_MODE_NATIVE:
+        if value.get("applyable") is not False:
+            raise ToolError("native preparation plan is not an offline SQL-apply artifact")
+        if value.get("maintenance_boundary") is not None or value.get("backup_receipt") is not None:
+            raise ToolError("native preparation plan carries offline SQL policy artifacts")
+        if type(value.get("exportable")) is not bool:
+            raise ToolError("native preparation plan export approval is invalid")
     plan_target = value.get("target")
     if plan_target is not None:
         plan_target = target_record(plan_target, label="plan target")
         if value.get("production_approval_required") is not plan_target["production"]:
             raise ToolError("plan production classification is inconsistent with its target")
         if plan_target["production"]:
-            boundary = maintenance_record(
-                value.get("maintenance_boundary"), label="plan maintenance boundary"
-            )
-            receipt = value.get("backup_receipt")
-            if not isinstance(receipt, dict):
-                raise ToolError("production plan has no approved native backup receipt")
-            if receipt.get("target") != plan_target or receipt.get("maintenance_boundary") != boundary:
-                raise ToolError("production plan backup is not bound to its target and boundary")
-            try:
-                verify_backup_receipt(receipt, plan_target, boundary)
-            except TargetError as exc:
-                raise ToolError(str(exc)) from exc
+            if mode == PREPARATION_MODE_OFFLINE_SQL:
+                boundary = maintenance_record(
+                    value.get("maintenance_boundary"), label="plan maintenance boundary"
+                )
+                receipt = value.get("backup_receipt")
+                if not isinstance(receipt, dict):
+                    raise ToolError("production plan has no approved native backup receipt")
+                if receipt.get("target") != plan_target or receipt.get("maintenance_boundary") != boundary:
+                    raise ToolError("production plan backup is not bound to its target and boundary")
+                try:
+                    verify_backup_receipt(receipt, plan_target, boundary)
+                except TargetError as exc:
+                    raise ToolError(str(exc)) from exc
+            elif value.get("maintenance_boundary") is not None or value.get("backup_receipt") is not None:
+                raise ToolError("native production plan carries offline SQL policy artifacts")
             if type(value.get("production_approved")) is not bool:
                 raise ToolError("production plan approval is invalid")
         elif value.get("production_approved") is True:
@@ -2148,6 +2279,34 @@ def validate_staff_approval(actor: str, reason: str) -> tuple[str, str]:
     if not re.fullmatch(r"[A-Za-z0-9_.@:/()\[\], -]{1,255}", reason):
         raise ToolError("reason contains unsupported characters")
     return actor, reason
+
+
+def _snapshot_runtime_state_payload(metadata: Mapping[str, Any]) -> bytes | None:
+    """Project the approved one-item snapshot into the post-save sidecar form.
+
+    ``player_snapshot_repository.c`` rewrites a delivered runtime companion on
+    a normal player save as a detached one-item snapshot: the snapshot codec's
+    parent index is ``PLAYER_SNAPSHOT_NO_PARENT`` and its equipment slot is
+    ``-1``.  The native bridge already emits a detached payload, but it keeps
+    the captured equipment slot in that payload.  Keep every other byte exact;
+    this is a representation projection, not metadata normalization.
+    """
+    payload = _native_hex(
+        metadata.get("item_payload_hex"),
+        "snapshot item payload",
+        maximum=NATIVE_MAX_ORIGINAL_PAYLOAD_BYTES,
+    )
+    # A valid item_payload_hex is produced by the native snapshot codec as a
+    # one-item list.  The fixed portion is 225 bytes before variable strings,
+    # dynamic affects, and extra descriptions. Non-snapshot test/legacy
+    # payloads have no post-save projection and remain covered by the native
+    # IST1 alternative below.
+    if len(payload) < 225 or payload[:4] != struct.pack("<I", 1):
+        return None
+    projected = bytearray(payload)
+    projected[4:8] = struct.pack("<i", -1)
+    projected[8:10] = struct.pack("<h", -1)
+    return bytes(projected)
 
 
 def _native_item_state_payload(metadata: Mapping[str, Any], item_uid: int,
@@ -2659,6 +2818,7 @@ def _native_command_bytes(plan: Mapping[str, Any], actor: str, reason: str) -> b
 def _revalidate_export_lineage(plan: dict[str, Any], inspection: dict[str, Any]) -> None:
     if plan.get("backend") != "sql":
         raise ToolError("native staff export requires a SQL-derived plan")
+    mode = plan_mode(plan)
     if plan.get("evidence_digest") != inspection.get("evidence_digest"):
         raise ToolError("plan and inspection carry different evidence digests")
     target = plan.get("target")
@@ -2672,10 +2832,18 @@ def _revalidate_export_lineage(plan: dict[str, Any], inspection: dict[str, Any])
         backup_receipt=plan.get("backup_receipt"),
         approve_production=bool(plan.get("production_approved")),
         artifact_timing_compensations=plan.get("artifact_timing_compensations"),
+        mode=mode,
+        _legacy_plan_shape=not any(key in plan for key in ("preparation_mode", "mode", "exportable")),
     )
     if rebuilt["plan_digest"] != plan.get("plan_digest") or rebuilt["restitution_id_hex"] != plan.get("restitution_id_hex"):
         raise ToolError("plan is not the exact protected result of this inspection")
-    if plan.get("applyable") is not True:
+    if mode == PREPARATION_MODE_NATIVE:
+        if plan.get("exportable") is not True:
+            raise ToolError("native staff export requires an exportable native preparation plan")
+    elif plan.get("applyable") is not True:
+        # exportable is a native-only approval flag. Applyable offline SQL
+        # plans (including pre-mode plans) retain the existing export bridge
+        # after their full lineage and offline production policy checks.
         raise ToolError("staff export requires an applyable plan")
 
 
@@ -2960,6 +3128,7 @@ def eligible_items(plan: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
+    require_offline_sql_plan(plan, "apply")
     source_pid = int_value(plan["source"]["pid"], "source pid", 1, 2**31 - 1)
     death_revision = int_value(plan["source"]["death_revision"], "death revision", 1, 2**64 - 1)
     recipient_pid = int_value(plan["recipient_pid"], "recipient pid", 1, 2**31 - 1)
@@ -3050,6 +3219,13 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "custody_item_revision,custody_state,custody_owner_type,custody_owner_id,custody_owner_context_id,"
         "custody_owner_revision,vnum,metadata_digest,metadata_payload) VALUES " + ",".join(temp_values) + ";"
     )
+    # MySQL cannot reference the same TEMPORARY table twice in one statement
+    # (ER_CANT_REOPEN_TABLE). A connection-local copy keeps the nested parent
+    # authority checks intact without changing transaction or custody fences.
+    lines.extend([
+        "CREATE TEMPORARY TABLE restitution_apply_parents LIKE restitution_apply_items;",
+        "INSERT INTO restitution_apply_parents SELECT * FROM restitution_apply_items;",
+    ])
     existing_uids = sorted({
         int_value(uid, "existing recipient UID", 1, 2**64 - 1)
         for uid in plan.get("recipient_existing_uids", [])
@@ -3361,7 +3537,7 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
         "AND own.item_revision=p.expected_item_revision AND own.state=p.expected_state "
         "AND COALESCE(r.revision,0)=p.expected_owner_revision AND own.vnum=p.vnum);",
         "SET @parent_ok=(SELECT COUNT(*) FROM restitution_apply_items p WHERE p.delivered_parent_item_uid=0 OR "
-        "EXISTS(SELECT 1 FROM item_current_owner parent JOIN restitution_apply_items pp "
+        "EXISTS(SELECT 1 FROM item_current_owner parent JOIN restitution_apply_parents pp "
         "ON pp.item_uid=p.delivered_parent_item_uid WHERE parent.item_uid=pp.item_uid "
         "AND parent.owner_type=1 AND parent.owner_id=" + str(source_pid) +
         " AND parent.owner_context_id=0 AND parent.root_item_uid=pp.expected_root_item_uid "
@@ -3688,6 +3864,7 @@ def apply_plan(
     target_info: Mapping[str, Any] | None = None,
     approve_artifact_timing_compensation: bool = False,
 ) -> str:
+    require_offline_sql_plan(plan, "apply")
     if not plan.get("applyable"):
         raise ToolError("plan is not applyable; refused classifications or missing reconciliation approval remain")
     validate_artifact_timing_compensations(plan)
@@ -3756,6 +3933,8 @@ def apply_plan(
         ),
         backup_receipt=plan.get("backup_receipt"),
         approve_production=bool(plan.get("production_approved")),
+        mode=plan_mode(plan),
+        _legacy_plan_shape=not any(key in plan for key in ("preparation_mode", "mode", "exportable")),
         artifact_timing_compensations=plan.get("artifact_timing_compensations"),
     )
     if fresh_plan["plan_digest"] != plan["plan_digest"] or fresh_plan["restitution_id_hex"] != plan["restitution_id_hex"]:
@@ -3885,10 +4064,10 @@ def fetch_player_rows(db: Mysql, pid: int, uids: Iterable[int]) -> dict[str, dic
             "timer": row_int(row, 8, "timer", 0), "extra_flags": row_int(row, 9, "extra flags", 0),
             "wear_flags": row_int(row, 10, "wear flags", 0), "type": row_int(row, 11, "item type", 0),
             "values": [row_int(row, index, "item value", 0) for index in range(12, 20)],
-            "name_hex": (row_value(row, 20) or "").lower() or None,
-            "short_description_hex": (row_value(row, 21) or "").lower() or None,
-            "description_hex": (row_value(row, 22) or "").lower() or None,
-            "action_description_hex": (row_value(row, 23) or "").lower() or None,
+            "name_hex": row_nullable_hex(row, 20),
+            "short_description_hex": row_nullable_hex(row, 21),
+            "description_hex": row_nullable_hex(row, 22),
+            "action_description_hex": row_nullable_hex(row, 23),
             "bitvectors": [row_int(row, index, "item bitvector", 0) if row_value(row, index) is not None else None
                            for index in range(24, 29)],
             "material": row_int(row, 29, "item material", 0),
@@ -3959,13 +4138,23 @@ def verify_plan(
     if plan_target is not None:
         if policy is None:
             raise ToolError("target-pinned verification requires an explicit target policy")
-        actual_target, boundary = validate_plan_target_controls(
-            db, plan, policy, require_maintenance=policy.production, target_info=target_info
+        native_production = (
+            plan_mode(plan) == PREPARATION_MODE_NATIVE
+            and isinstance(plan_target, Mapping)
+            and bool(plan_target.get("production"))
         )
-        if actual_target is None:
-            raise ToolError("approved plan target could not be read back")
-        if actual_target["production"]:
-            validate_plan_backup(plan, actual_target, boundary)
+        if native_production:
+            actual_target, boundary = validate_native_readonly_verify_controls(
+                db, plan, policy, target_info
+            )
+        else:
+            actual_target, boundary = validate_plan_target_controls(
+                db, plan, policy, require_maintenance=policy.production, target_info=target_info
+            )
+            if actual_target is None:
+                raise ToolError("approved plan target could not be read back")
+            if actual_target["production"]:
+                validate_plan_backup(plan, actual_target, boundary)
     elif policy is not None and policy.production:
         raise ToolError("production verification requires a target-pinned plan")
     rid = plan["restitution_id_hex"]
@@ -4067,14 +4256,18 @@ def verify_plan(
             expected_descriptions.add((key_bytes, text_bytes))
         if descriptions.get(uid, set()) != expected_descriptions:
             failures.append("item extra descriptions differ")
-        # The offline writer stores the captured snapshot-list bytes, while
-        # native delivery projects the same evidence into IST1.  Accept only
-        # either exact encoding of the approved metadata, never a header-only
-        # or digest-only approximation of the current runtime state.
+        # The offline writer stores the captured snapshot-list bytes. Native
+        # delivery stores IST1. A normal player save rewrites the companion as
+        # a detached one-item snapshot (parent=-1, equipment=-1). Accept only
+        # those exact full-byte encodings; never a header or digest shortcut.
         native_delivery_hex = _native_item_state_payload(
             item, uid, int_value(row.get("equipment_slot", 0), "equipment slot", -32768, 32767)
         ).hex()
-        if runtimes.get(key) not in (item["item_payload_hex"], native_delivery_hex):
+        snapshot_runtime = _snapshot_runtime_state_payload(item)
+        accepted_runtime_payloads = {item["item_payload_hex"], native_delivery_hex}
+        if snapshot_runtime is not None:
+            accepted_runtime_payloads.add(snapshot_runtime.hex())
+        if runtimes.get(key) not in accepted_runtime_payloads:
             failures.append("exact runtime metadata payload differs")
         if row.get("kind") == "artifact":
             receipt_timing = receipt_item_rows.get(key)
@@ -4169,6 +4362,7 @@ def mark_verified(
     db: Mysql, plan: dict[str, Any], proof: Path, *, policy: TargetPolicy | None = None,
     target_info: Mapping[str, Any] | None = None, approve_production: bool = False,
 ) -> None:
+    require_offline_sql_plan(plan, "mark-verified")
     if policy is None:
         policy = getattr(db, "policy", None)
     plan_target = plan.get("target")
@@ -4235,10 +4429,14 @@ def add_policy_arguments(
         help="pin the actual database server fingerprint",
     )
     if maintenance:
-        command.add_argument("--maintenance-kind", choices=("docker", "systemd"))
+        command.add_argument("--maintenance-kind", choices=("docker", "systemd", "systemd-user"))
         command.add_argument(
             "--maintenance-id",
             help="complete immutable container ID or duris-mud-production.service",
+        )
+        command.add_argument(
+            "--maintenance-owner",
+            help="numeric UID owning the user-systemd manager (required for systemd-user)",
         )
 
 
@@ -4254,7 +4452,7 @@ def make_target_info(target: Mapping[str, Any], boundary: Mapping[str, Any] | No
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(description="SQL-only audited disputed-death item restitution")
+    root = argparse.ArgumentParser(description="Audited disputed-death item restitution: offline SQL or read-only native preparation")
     root.add_argument("--env-file", help="explicit database environment file")
     sub = root.add_subparsers(dest="command", required=True)
     target_info = sub.add_parser(
@@ -4279,6 +4477,16 @@ def parser() -> argparse.ArgumentParser:
         help="explicitly approve evidence-backed canonical artifact identity reconciliation",
     )
     plan.add_argument(
+        "--preparation-mode", "--mode", dest="preparation_mode",
+        choices=(PREPARATION_MODE_OFFLINE_SQL, PREPARATION_MODE_NATIVE),
+        default=PREPARATION_MODE_OFFLINE_SQL,
+        help="explicitly select offline SQL apply or read-only native preparation",
+    )
+    plan.add_argument(
+        "--native", dest="preparation_mode", action="store_const", const=PREPARATION_MODE_NATIVE,
+        help="shortcut for --preparation-mode native",
+    )
+    plan.add_argument(
         "--artifact-timing-compensation", action="append", default=[], metavar="UID=SECONDS:APPROVAL",
         help="repeat per-artifact approved remaining lifetime when historical timing is unavailable",
     )
@@ -4292,7 +4500,7 @@ def parser() -> argparse.ArgumentParser:
     )
     plan.add_argument(
         "--approve-production", action="store_true",
-        help="approve this exact target, boundary, and backup for production apply",
+        help="approve this exact target for native export or offline SQL apply",
     )
     export = sub.add_parser(
         "export",
@@ -4385,14 +4593,15 @@ def main(argv: list[str]) -> int:
             target_info=target_info,
             backup_receipt=backup_receipt,
             approve_production=args.approve_production,
+            mode=args.preparation_mode,
             artifact_timing_compensations=parse_artifact_timing_compensation_specs(
                 args.artifact_timing_compensation
             ),
         )
         atomic_write_json(args.artifact, plan, args.overwrite)
-        print("plan written: candidates=%d eligible=%d unresolved=%d applyable=%s plan_digest=%s" % (
-            plan["candidate_count"], plan["eligible_count"], plan["unresolved_count"],
-            str(plan["applyable"]).lower(), plan["plan_digest"]))
+        print("plan written: mode=%s candidates=%d eligible=%d unresolved=%d applyable=%s exportable=%s plan_digest=%s" % (
+            plan["preparation_mode"], plan["candidate_count"], plan["eligible_count"], plan["unresolved_count"],
+            str(plan["applyable"]).lower(), str(plan["exportable"]).lower(), plan["plan_digest"]))
         return 0
     if args.command == "export":
         if not args.approve:
@@ -4414,6 +4623,7 @@ def main(argv: list[str]) -> int:
         if not args.approve:
             raise ToolError("apply requires explicit --approve")
         plan = load_plan(args.plan)
+        require_offline_sql_plan(plan, "apply")
         expected = plan.get("target")
         policy, target_info = policy_for_command(
             args,
@@ -4432,6 +4642,8 @@ def main(argv: list[str]) -> int:
         return 0
     if args.command == "verify":
         plan = load_plan(args.plan)
+        if args.mark_verified:
+            require_offline_sql_plan(plan, "mark-verified")
         expected = plan.get("target")
         production = bool(expected and expected.get("production"))
         if args.mark_verified and production and not args.approve_production:

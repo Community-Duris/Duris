@@ -17352,11 +17352,12 @@ See also: "DETECT GOOD", "DETECT EVIL", "DETECT MAGIC", "SENSE LIFE",
 #
 TUPOR (Innate)
 ===========================================================================
-Syntax:         tupor (while resting or reclined and sleeping)
+Syntax:         tupor (while resting, reclined, or asleep)
 
-Allows a Harpy or Gargoyle to regain spell slots. The more relaxed and in
-a state of mental and physical rest the Harpy or Gargoyle, the faster they
-will regain their spell slots.
+Allows a Harpy or Ethermancer to recover spell slots. Use tupor while
+resting or asleep; recovery proceeds from the highest incomplete circle.
+Waking or changing posture voluntarily ends the recovery without a shock,
+while forced interruptions can briefly stagger you.
 ===========================================================================
 See also: HARPY, CASTER, "SPELL SYSTEM", "SPELL CIRCLE", "SPELL SLOTS" 
 

@@ -6,6 +6,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "world/world_singletons.h"
 
 #include <new>
 #include <unordered_set>
@@ -28,6 +29,10 @@ bool valid_shop_binding(const flatfile_shopkeeper_record &record)
 		return false;
 	const int mobile_rnum = real_mobile(record.mob_vnum);
 	if (mobile_rnum < 0 || shop_index[record.shop_id].keeper != mobile_rnum)
+		return false;
+	if (record.room_vnum == 0 || real_room(record.room_vnum) == NOWHERE ||
+	    (!shop_index[record.shop_id].shop_is_roaming &&
+	     record.room_vnum != shop_index[record.shop_id].in_room))
 		return false;
 	const int produced_count = shop_index[record.shop_id].number_items_produced;
 	if (produced_count < 0 || produced_count > MAX_PROD)
@@ -85,11 +90,11 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 			       flatfile_shopkeeper_restore_result::io_error :
 			       flatfile_shopkeeper_restore_result::invalid;
 
-	std::unordered_set<uint64_t> mobile_rooms;
+	std::unordered_set<uint64_t> shop_ids;
 	std::vector<flatfile_materialized_shopkeeper> staged;
 	try
 	{
-		mobile_rooms.reserve(records.size());
+		shop_ids.reserve(records.size());
 		staged.reserve(records.size());
 	}
 	catch (const std::bad_alloc &)
@@ -100,11 +105,8 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 	{
 		try
 		{
-			const uint64_t identity =
-				(static_cast<uint64_t>(static_cast<uint32_t>(record.mob_vnum))
-				 << 32) |
-				static_cast<uint32_t>(record.room_vnum);
-			if (!mobile_rooms.insert(identity).second || !valid_shop_binding(record))
+			const uint64_t identity = record.shop_id;
+			if (!shop_ids.insert(identity).second || !valid_shop_binding(record))
 			{
 				discard_staged(&staged, records);
 				return flatfile_shopkeeper_restore_result::invalid;
@@ -155,19 +157,30 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 		discard_staged(&staged, records);
 		return flatfile_shopkeeper_restore_result::io_error;
 	}
-	for (P_char existing = character_list; existing;)
+	for (const auto &record : records)
 	{
-		P_char next = existing->next;
-		if (IS_NPC(existing) && replacements.find(existing) == replacements.end() &&
-		    existing->in_room >= 0 && existing->in_room <= top_of_world &&
-		    mobile_rooms.count((static_cast<uint64_t>(static_cast<uint32_t>(
-						mob_index[GET_RNUM(existing)].virtual_number))
-					<< 32) |
-				       static_cast<uint32_t>(world[existing->in_room].number)))
-			extract_char(existing);
-		existing = next;
+		P_char incumbent = nullptr;
+		int incumbent_count = 0;
+		for (P_char existing = character_list; existing; existing = existing->next)
+		{
+			if (!IS_NPC(existing) || GET_MASTER(existing) ||
+			    replacements.find(existing) != replacements.end() ||
+			    existing->in_room < 0 || existing->in_room > top_of_world ||
+			    mob_index[GET_RNUM(existing)].virtual_number != record.mob_vnum ||
+			    (!shop_index[record.shop_id].shop_is_roaming &&
+			     world[existing->in_room].number != record.room_vnum) ||
+			    singleton_shop_id(existing) != static_cast<int>(record.shop_id))
+				continue;
+			incumbent = existing;
+			++incumbent_count;
+		}
+		if (incumbent_count == 1)
+			extract_char(incumbent);
 	}
 	for (const auto &record : records)
+	{
 		shop_index[record.shop_id].dirty = 1;
+		shopkeeper_save_retry_reset(&shop_index[record.shop_id].dirty_save_retry);
+	}
 	return flatfile_shopkeeper_restore_result::ok;
 }

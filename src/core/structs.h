@@ -33,6 +33,7 @@
 #include "net/ansi.h"
 #include "net/output_channel.h"
 #include "net/output_preference_state.h"
+#include "economy/shopkeeper_save_policy.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -190,6 +191,7 @@ struct shop_data
 	::byte temper1; /* * How does keeper react if no money       */
 	::byte temper2; /* * How does keeper react when attacked     */
 	::byte dirty; /* needs save to db                          */
+	struct shopkeeper_save_retry_state dirty_save_retry;
 	shop_proc_type func; /* * Secondary spec_proc for shopkeeper      */
 };
 
@@ -1342,6 +1344,10 @@ struct pc_only_data
 struct npc_only_data
 { /* values only used by NPCs  */
 	int R_num; // replacement for NPC's ->nr
+	// Durable shop identity for a live NPC.  -1 means that the instance has
+	// not been bound to a shop; the template/rnum alone is not authoritative
+	// when roaming shops share a mobile prototype.
+	int shopkeeper_shop_id;
 
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs

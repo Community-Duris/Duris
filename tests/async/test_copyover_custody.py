@@ -124,6 +124,8 @@ affected_type *affect_to_char(P_char, affected_type *) { std::abort(); }
 char affect_total(P_char, int) { std::abort(); }
 void equip_char(P_char, P_obj, int, int) { std::abort(); }
 void obj_to_char(P_obj, P_char) { std::abort(); }
+int bind_shopkeeper_calls = 0;
+void bind_shopkeeper(P_char, int) { ++bind_shopkeeper_calls; }
 
 // Exercise a real process replacement. Only the executable destination changes;
 // the production save, publication, counting and recovery functions are intact.
@@ -241,6 +243,7 @@ int main(int argc, char **argv)
     extract_obj(corpse, FALSE);
     item_ownership_runtime_reset();
     assert(!object_list);
+    assert(bind_shopkeeper_calls == 0);
     std::puts("[PASS] production copyover save/exec/recover preserves corpse, generated loot and live custody without SQL");
 }
 '''

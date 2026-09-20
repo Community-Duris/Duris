@@ -34,6 +34,8 @@
 #include "player/pet_restore_runtime.h"
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
+#include "redis/redis_world_runtime.h"
+#include "persistence/copyover.h"
 #include "combat/damage.h"
 #include "combat/training_dummy.h"
 #include "net/gmcp.h"
@@ -1601,7 +1603,10 @@ bool char_to_room(P_char ch, int room, int dir)
 			}
 	/* too much money in your hands? Didn't have it in a bag? shame...  */
 	total_coins = GET_COPPER(ch) + GET_SILVER(ch) + GET_GOLD(ch) + GET_PLATINUM(ch);
-	if (total_coins > 200 && !IS_TRUSTED(ch))
+	// Recovery placement is not movement: spilling freshly generated NPC cash
+	// here creates new coin piles before the captured floor ledger is restored.
+	if (!is_copyover_boot() && !redis_world_recovery_boot_active() && total_coins > 200 &&
+	    !IS_TRUSTED(ch))
 	{
 		do
 		{
@@ -3638,6 +3643,14 @@ void rearm_corpse_release(P_obj corpse)
 		set_obj_affected(corpse, CORPSE_RELEASE_RETRY_DELAY, TAG_OBJ_DECAY, 0);
 }
 
+const char *corpse_durable_failure_action(unsigned int error_code)
+{
+	// ESRCH means the historical owner pid is gone. The durable corpse is
+	// intentionally retained for operator repair rather than being retried by
+	// decay or silently discarded.
+	return error_code == ESRCH ? "owner_missing" : "commit_failed";
+}
+
 bool publish_corpse_wallet(P_char character, const corpse_lifecycle_result &result)
 {
 	if (!character || !character->only.pc)
@@ -3696,8 +3709,8 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 	if (!committed)
 	{
 		persistence_alert(AVATAR, "corpse", "durable_release", "none", "none",
-				  "commit_failed", "save_id=%u error=%u", payload.save_id,
-				  error_code);
+				  corpse_durable_failure_action(error_code), "save_id=%u error=%u",
+				  payload.save_id, error_code);
 		if (unmade)
 		{
 			if (P_char caster = find_live_character(unmaking_context.caster,
@@ -3726,8 +3739,6 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 					"Your spell fails to compact the corpse; it remains intact.\r\n",
 					caster);
 		}
-		else if (error_code == ESTALE)
-			rearm_corpse_release(corpse);
 		if (compact_pile)
 			extract_obj(compact_pile);
 		return;
@@ -4285,10 +4296,8 @@ void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result
 	if (!committed)
 	{
 		persistence_alert(AVATAR, "corpse", "durable_nested_release", "none", "none",
-				  "commit_failed", "save_id=%u error=%u", payload.save_id,
-				  error_code);
-		if (error_code == ESTALE)
-			rearm_corpse_release(corpse);
+				  corpse_durable_failure_action(error_code), "save_id=%u error=%u",
+				  payload.save_id, error_code);
 		return;
 	}
 	const item_owner_identity destination =
@@ -4427,11 +4436,9 @@ void publish_corpse_destruction(bool committed, const corpse_lifecycle_result &r
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	if (!committed)
 	{
-		if (error_code == ESTALE && corpse && submit_corpse_destruction(corpse))
-			return;
 		persistence_alert(AVATAR, "corpse", "durable_destroy", "none", "none",
-				  "commit_failed", "save_id=%u error=%u", payload.save_id,
-				  error_code);
+				  corpse_durable_failure_action(error_code), "save_id=%u error=%u",
+				  payload.save_id, error_code);
 		return;
 	}
 	int room = NOWHERE;

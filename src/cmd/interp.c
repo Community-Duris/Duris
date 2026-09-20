@@ -2073,7 +2073,7 @@ void command_interpreter(P_char ch, char *argument)
 				    (cmd != CMD_RECLINE) && (cmd != CMD_EAT) &&
 				    (cmd != CMD_DRINK) && (cmd != CMD_MEDITATE) &&
 				    (cmd != CMD_RWC) && (cmd != CMD_ASSIMILATE) &&
-				    IS_AFFECTED2(exec_char, AFF2_CONCEALMENT))
+				    (cmd != CMD_TUPOR) && IS_AFFECTED2(exec_char, AFF2_CONCEALMENT))
 				{
 					send_to_char("You reappear, visible to all.\r\n",
 						     exec_char);
@@ -2223,7 +2223,8 @@ void command_interpreter(P_char ch, char *argument)
 						 cmd != CMD_GCC && cmd != CMD_HELP &&
 						 cmd != CMD_RWC && cmd != CMD_OUTPOST &&
 						 cmd != CMD_NEXUS && cmd != CMD_FRAGLIST &&
-						 cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS)
+						 cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS &&
+						 cmd != CMD_TUPOR)
 					{
 						// Advanced med allows you to continue meditating while doing the below commands.
 						// At 60 skill, you no longer have to worry about these commands.
@@ -3276,7 +3277,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_VIS, STAT_DEAD + POS_PRONE, do_vis, 0, TRUE);
 	CMD_Y(CMD_WAKE, STAT_SLEEPING + POS_PRONE, do_wake, 0, TRUE);
 	//  CMD_Y(CMD_TUPOR, STAT_SLEEPING + POS_PRONE, do_tupor, 0, TRUE);
-	CMD_Y(CMD_TUPOR, STAT_SLEEPING + POS_PRONE, do_assimilate, 0, TRUE);
+	CMD_Y(CMD_TUPOR, STAT_SLEEPING + POS_PRONE, do_assimilate, 0, FALSE);
 	CMD_Y(CMD_WEATHER, STAT_RESTING + POS_PRONE, do_weather, 0, FALSE);
 	CMD_Y(CMD_WHIRLWIND, STAT_NORMAL + POS_STANDING, do_whirlwind, 0, TRUE);
 	CMD_Y(CMD_WIELD, STAT_RESTING + POS_PRONE, do_wield, 0, TRUE);
