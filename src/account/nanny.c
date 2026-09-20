@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "account/newbie_kit_plan.h"
 #include "world/object_template.h"
@@ -1691,7 +1692,7 @@ void enter_game(P_desc d)
 	}
 
 	// Add well-rested or rested bonus, if applicable.
-	if (nobonus)
+	if (nobonus || !rested_bonus_enabled())
 	{
 	}
 	// 20 hrs (almost a day) -> 2.5h well-rested bonus.
@@ -1743,27 +1744,27 @@ void enter_game(P_desc d)
 		loginlog(GET_LEVEL(ch), "&+GIMMORTAL&n: (%s) [%s] has logged on.%s", GET_NAME(ch),
 			 d->host, Gbuf1);
 
-		//  /* multiplay check */
-		//  for (P_desc k = descriptor_list; k; k = k->next)
-		//  {
-		//    if( d == k || !k->character )
-		//      continue;
-		//
-		//    if (k->connected == CON_PLAYING && d->host && k->host && !str_cmp(d->host, k->host) )
-		//    {
-		//      logit(LOG_STATUS, "%s and %s are logged in from the same IP address",
-		//            d->character->player.name, k->character->player.name);
-		//      sql_log(d->character, PLAYERLOG, "%s and %s logged in from same IP address", d->character->player.name, k->character->player.name);
-		//
-		//      if( d->character->in_room != k->character->in_room )
-		//      {
-		//        wizlog(AVATAR, "%s and %s are logged in from the same IP address but not in the same room",
-		//               d->character->player.name, k->character->player.name);
-		//      }
-		//    }
-		//  }
+	//  /* multiplay check */
+	//  for (P_desc k = descriptor_list; k; k = k->next)
+	//  {
+	//    if( d == k || !k->character )
+	//      continue;
+	//
+	//    if (k->connected == CON_PLAYING && d->host && k->host && !str_cmp(d->host, k->host) )
+	//    {
+	//      logit(LOG_STATUS, "%s and %s are logged in from the same IP address",
+	//            d->character->player.name, k->character->player.name);
+	//      sql_log(d->character, PLAYERLOG, "%s and %s logged in from same IP address", d->character->player.name, k->character->player.name);
+	//
+	//      if( d->character->in_room != k->character->in_room )
+	//      {
+	//        wizlog(AVATAR, "%s and %s are logged in from the same IP address but not in the same room",
+	//               d->character->player.name, k->character->player.name);
+	//      }
+	//    }
+	//  }
 
-		// CTF - level them up, and setbit hardcore off them!
+	// CTF - level them up, and setbit hardcore off them!
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	// setbit hardcore off according to policy
 	if (hardcore_config_get()->disable_in_ctf)

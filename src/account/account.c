@@ -10,6 +10,7 @@
 #include "world/db.h"
 #include "world/epic_transaction.h"
 #include "world/handler.h"
+#include "world/rested.h"
 #include "world/zone_touch_transaction.h"
 #include "cmd/interp.h"
 #include "economy/auction_transaction.h"
@@ -758,7 +759,8 @@ void display_account_menu(P_desc d, char *arg)
 		SEND_TO_Q("&+Y5) Change registered email address&n\r\n", d);
 		SEND_TO_Q("&+Y6) Change account password&n\r\n", d);
 		SEND_TO_Q("&+R7) Delete this account&n\r\n", d);
-		SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
+		if (rested_bonus_enabled())
+			SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
 		SEND_TO_Q("\r\n", d);
 		SEND_TO_Q("&+L0) Disconnect from this account&n\r\n", d);
 		SEND_TO_Q("&+y------------------------------------------&n\r\n", d);
@@ -829,6 +831,12 @@ void display_account_menu(P_desc d, char *arg)
 		break;
 
 	case 8:
+		if (!rested_bonus_enabled())
+		{
+			SEND_TO_Q("\r\nThe rested bonus feature is currently disabled.\r\n", d);
+			display_account_menu(d, NULL);
+			break;
+		}
 		check_rested_bonus(d);
 		break;
 
@@ -1734,34 +1742,38 @@ int load_char_display_data(char *charname, struct char_display_info *info)
 	info->m_class = temp_ch->player.m_class;
 	info->secondary_class = temp_ch->player.secondary_class;
 	info->hometown = GET_HOME(temp_ch);
+	info->rested_status = NULL;
 
-	// Calculate rested status based on offline time (same logic as nanny.c)
-	time_t current_time = time(0);
-	time_t offline_seconds = current_time - temp_ch->player.time.saved;
-	int offline_hours = offline_seconds / 3600;
-	char rested_buf[128];
+	if (rested_bonus_enabled())
+	{
+		// Calculate rested status based on offline time (same logic as nanny.c)
+		time_t current_time = time(0);
+		time_t offline_seconds = current_time - temp_ch->player.time.saved;
+		int offline_hours = offline_seconds / 3600;
+		char rested_buf[128];
 
-	if (offline_hours >= 20)
-	{
-		// Well-rested bonus
-		snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)",
-			 offline_hours);
-		info->rested_status = str_dup(rested_buf);
-	}
-	else if (offline_hours >= 9)
-	{
-		// Rested bonus
-		snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)",
-			 offline_hours);
-		info->rested_status = str_dup(rested_buf);
-	}
-	else
-	{
-		// No bonus yet - show how many more hours needed
-		int hours_needed = 9 - offline_hours;
-		snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)", hours_needed,
-			 hours_needed == 1 ? "" : "s");
-		info->rested_status = str_dup(rested_buf);
+		if (offline_hours >= 20)
+		{
+			// Well-rested bonus
+			snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)",
+				 offline_hours);
+			info->rested_status = str_dup(rested_buf);
+		}
+		else if (offline_hours >= 9)
+		{
+			// Rested bonus
+			snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)",
+				 offline_hours);
+			info->rested_status = str_dup(rested_buf);
+		}
+		else
+		{
+			// No bonus yet - show how many more hours needed
+			int hours_needed = 9 - offline_hours;
+			snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)",
+				 hours_needed, hours_needed == 1 ? "" : "s");
+			info->rested_status = str_dup(rested_buf);
+		}
 	}
 
 	cleanup_temp_char(temp_ch);
@@ -1786,6 +1798,13 @@ void get_race_name_from_info(struct char_display_info *info, char *race_str, int
 
 void check_rested_bonus(P_desc d)
 {
+	if (!rested_bonus_enabled())
+	{
+		SEND_TO_Q("\r\nThe rested bonus feature is currently disabled.\r\n", d);
+		display_account_menu(d, NULL);
+		return;
+	}
+
 	struct acct_chars *c = d->account->acct_character_list;
 	char buf[512];
 	int count = 0;

@@ -23,6 +23,7 @@
 using namespace std;
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -6767,6 +6768,9 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 
 		for (aff = ch->affected; aff; aff = aff->next)
 		{
+			if ((aff->type == TAG_RESTED || aff->type == TAG_WELLRESTED) &&
+			    !rested_bonus_effect_active(aff))
+				continue;
 			if ((aff->type > 0) && skills[aff->type].name &&
 			    (aff->type <= LAST_SKILL || aff->type == TAG_CTF ||
 			     aff->type == TAG_RESTED || aff->type == TAG_WELLRESTED ||

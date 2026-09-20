@@ -25,8 +25,9 @@ registry so missing context is visible.
 
 | Stable entry | Source/effective behavior | Registry role |
 |---|---|---|
-| `rested.xp_multiplier` | hard-coded `1.5f` in the XP path | effective hard-coded |
-| `wellrested.xp_multiplier` | hard-coded `2.0f` in the XP path | effective hard-coded |
+| `rested.xp_multiplier` | fixed constant `1.5f` in the XP path; applies when enabled or explicitly staff-granted | effective hard-coded |
+| `wellrested.xp_multiplier` | fixed constant `2.0f` in the XP path; applies when enabled or explicitly staff-granted | effective hard-coded |
+| `rested.enabled` | `get_property("exp.rested.enabled", 1)`; an absent property defaults to `1`; `0` suppresses ordinary automatic rested tiers, with an explicit staff-granted immortal/newbie affect as an exception | effective property |
 | `rested.resurrect_exempt` | resurrect branch bypasses rested modifiers | effective hard-coded |
 | `trophy.exp.zoneTrophy.observe` | `get_property(..., 0)`; current properties file is `0` | effective property |
 | `trophy.min_level` | hard-coded level `25` | effective hard-coded |
@@ -39,6 +40,17 @@ registry so missing context is visible.
 | `payout.epic.zone.alignmentMod` | `get_property(..., 0.10)` coefficient; current file value is `0.20` | effective property |
 | `payout.epic.alignment.minPercentage` | `get_property(..., 0.10)` floor; current file value is `0.15` | effective property |
 | `payout.zone_alignment_context` | zone alignment comes from the database at payout time | unavailable context |
+
+The multiplier entries are the configured gameplay constants, not alternate
+disabled-state values. The `rested.enabled` entry is the automatic/default
+applicability gate: disabling it does not rewrite `1.5f` or `2.0f` to a no-op
+multiplier, and the telemetry context does not invent a no-op hard-coded row.
+With the gate at `0`, ordinary automatic rested tiers are suppressed, but an
+explicit staff-granted immortal/newbie affect remains an effective exception.
+Rested XP flags therefore identify actual application: they are emitted when
+the gate is enabled or when the matching staff-marked affect exception applies.
+A capture with the gate at `0` still records the same multiplier constants plus a
+distinct effective gate value.
 
 The registry also names these maintained properties so they cannot be mistaken
 for effective reward controls:
@@ -105,21 +117,29 @@ inputs:
 - season `0x0102030405060708`, environment `0x1112131415161718`
 - interval `60,000,000`, checkpoint `120,000,000`, active window `300,000,000`
 - context cap `8`, pulse slots `16`, SQL backend enabled
-- effective properties: observe `0`, max factor `10`, payout factor `1`,
-  alignment coefficient `0.20`, alignment floor `0.15`
+- effective properties: rested enabled `1` (the reviewed fallback), observe `0`,
+  max factor `10`, payout factor `1`, alignment coefficient `0.20`, alignment
+  floor `0.15`
 
 It produces:
 
 ```text
-property_version = 1867102185
-config_id        = 8204136469756508836
-fingerprint      = 71daf2a6e0a9faa4f200f855b88426d6cac93b9b3cead7d66046ac0263e0daf7
+property_version = 4128692423
+config_id        = 6473875177026978697
+fingerprint      = 59d7d32c66e983892b115dda333d75ec73500e13e015c7e3fb90a2bdb4b1f65f
 ```
 
 The C++ harness independently rebuilds the 70-byte field sequence and compares
 its SHA-256 result with this fixture. It also verifies that changing only
 revision/effective UTC preserves the identity and changing an effective payout
-value changes the identity.
+value changes the identity. Changing only the effective rested gate to `0`
+produces a distinct property/config identity:
+
+```text
+property_version = 3224700872
+config_id        = 2889668470079446183
+fingerprint      = 281a2a29d5bb5ca73c5cad6c15887484547e4425c3510306a7e11a93b8f15b70
+```
 
 The default builder maps the first eight digest bytes, interpreted big-endian,
 to a nonzero `config_id` (with a deterministic fallback if that word is zero).
@@ -196,7 +216,34 @@ through its reader, supplies a strictly newer persisted revision and publishes
 the built snapshot. This keeps reload notification after all cached property
 updates while preventing an old pending retry from reviving stale config.
 
-## Restart and registry persistence handoff
+## Registry evolution, catalog compatibility and restart handoff
+
+The reviewed property registry is append-only. This change adds ID `20` for
+`rested.enabled` and leaves IDs `1..19` byte-for-byte in their existing order and
+roles. Keep the property snapshot schema and frozen public 70-byte config
+encoding unchanged. Adding a property changes the full typed property digest,
+so it must receive a new catalog mapping; it must not be represented by changing
+the old multiplier entries or by assigning the old property version to the new
+digest.
+
+Catalog updates are additive. Retain the sealed historical mapping for the
+previous 19-entry digest (`6f49b7e9b16055b6c7d48d83f4a9de789d89adeddabbb4bfc1f6d2c86f6b8792`,
+property version `265`, namespace `265`, catalog version `1`) unchanged.
+The reviewed default-on digest is
+`f616d8c74b8768d1eaab9e007e2289f431dfe7eaf3a57fac7ee95f29da73eca8` with a new
+property version (`4128692423` in the focused fixture). If the disabled gate is
+admitted, add its distinct digest
+`c03507c8b08d29199431ca57d072d642cf145df9c8b868076cf13fd572e784b6` with
+another unused property version (`3224700872` in the focused fixture). Use the
+catalog's next stable revision for newly reviewed mappings while retaining all
+older lines. The loader's full-digest and unique-property-version checks must
+continue to reject aliases.
+
+An already sealed `telemetry_config` row keeps its original property version,
+fingerprint, config ID, first revision and effective timestamp. Never rewrite or
+delete that row, remove its old catalog line, or reconstruct it from the current
+`exp.rested.enabled` value after a restart. A new gate state gets a new immutable
+row; it does not mutate historical attribution.
 
 The runtime identity guard is a bounded cache, not durable history. #265/F must
 resolve the reviewed registry without a schema change as follows:
@@ -241,8 +288,9 @@ python3 tests/async/test_telemetry_config.py
 
 The test compiles `telemetry_config.c` and its C++20 harness with `-Wall
 -Wextra -Werror -lcrypto`, then runs both a normal and ASan/UBSan harness. It
-exercises default/live capture, full property-digest/catalog refusal, the
-known 32-bit collision values (`0x3f00908c` and `0x3f01c902`), the golden
+exercises default/live capture, the default-on/disabled rested gate identities,
+full property-digest/catalog refusal, the known 32-bit collision values
+(`0x3f00908c` and `0x3f01c902`), the golden
 encoding, redaction/allowlisting, changed identities, A→B→A canonical replay,
 same-revision conflicts, sink failure/retry, stale ordering, bounded FIFO
 pending state, repeated disabled results and reload invalidation. It does not

@@ -13,6 +13,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
+#include "world/rested.h"
 #include "core/utils.h"
 #include "net/ws_handlers.h"
 #include <ctype.h>
@@ -65,6 +66,19 @@ extern const int avail_hometowns[][LAST_RACE + 1];
 static const char *ws_get_race_name(int race);
 static const char *ws_get_class_name(unsigned int m_class);
 static int ws_durisweb_auth_limited(struct descriptor_data *d);
+
+static void ws_add_account_capabilities(cJSON *data)
+{
+	cJSON *capabilities;
+
+	if (!data)
+		return;
+	capabilities = cJSON_CreateObject();
+	if (!capabilities)
+		return;
+	cJSON_AddBoolToObject(capabilities, "restedBonus", rested_bonus_enabled());
+	cJSON_AddItemToObject(data, "capabilities", capabilities);
+}
 
 #define WS_IP_RATE_SLOTS 256
 
@@ -1024,6 +1038,7 @@ void ws_send_auth_success(struct descriptor_data *d, const char *account_name)
 	cJSON_AddStringToObject(root, "status", "success");
 
 	cJSON_AddStringToObject(data, "account", account_name);
+	ws_add_account_capabilities(data);
 
 	/* build character list */
 	cJSON_AddItemToObject(data, "characters", ws_build_character_list(d));
@@ -3608,6 +3623,7 @@ void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON * /*data*/)
 	struct acct_chars *c;
 	P_char temp_ch;
 	time_t current_time;
+	bool enabled;
 
 	if (!d->account)
 	{
@@ -3615,54 +3631,62 @@ void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON * /*data*/)
 		return;
 	}
 
+	enabled = rested_bonus_enabled();
 	result_data = cJSON_CreateObject();
 	characters = cJSON_CreateArray();
-	current_time = time(0);
+	cJSON_AddBoolToObject(result_data, "enabled", enabled);
 
-	c = d->account->acct_character_list;
-	while (c)
+	if (enabled)
 	{
-		temp_ch = (struct char_data *)malloc(sizeof(struct char_data));
-		if (temp_ch)
+		current_time = time(0);
+		c = d->account->acct_character_list;
+		while (c)
 		{
-			memset(temp_ch, 0, sizeof(struct char_data));
-			temp_ch->only.pc =
-				(struct pc_only_data *)malloc(sizeof(struct pc_only_data));
-			if (temp_ch->only.pc)
+			temp_ch = (struct char_data *)malloc(sizeof(struct char_data));
+			if (temp_ch)
 			{
-				memset(temp_ch->only.pc, 0, sizeof(struct pc_only_data));
-				if (restoreCharOnly(temp_ch, c->charname) >= 0)
+				memset(temp_ch, 0, sizeof(struct char_data));
+				temp_ch->only.pc =
+					(struct pc_only_data *)malloc(sizeof(struct pc_only_data));
+				if (temp_ch->only.pc)
 				{
-					time_t offline_seconds =
-						current_time - temp_ch->player.time.saved;
-					int offline_hours = offline_seconds / 3600;
-					int max_hours = 20; /* well-rested threshold */
-					int percent = (offline_hours * 100) / max_hours;
-					if (percent > 100)
-						percent = 100;
+					memset(temp_ch->only.pc, 0, sizeof(struct pc_only_data));
+					if (restoreCharOnly(temp_ch, c->charname) >= 0)
+					{
+						time_t offline_seconds =
+							current_time - temp_ch->player.time.saved;
+						int offline_hours = offline_seconds / 3600;
+						int max_hours = 20; /* well-rested threshold */
+						int percent = (offline_hours * 100) / max_hours;
+						if (percent > 100)
+							percent = 100;
 
-					/* capitalize name */
-					char name_cap[32];
-					strlcpy(name_cap, GET_NAME(temp_ch), sizeof name_cap);
-					if (name_cap[0])
-						name_cap[0] = toupper(name_cap[0]);
+						/* capitalize name */
+						char name_cap[32];
+						strlcpy(name_cap, GET_NAME(temp_ch),
+							sizeof name_cap);
+						if (name_cap[0])
+							name_cap[0] = toupper(name_cap[0]);
 
-					char_obj = cJSON_CreateObject();
-					cJSON_AddStringToObject(char_obj, "name", name_cap);
-					cJSON_AddNumberToObject(char_obj, "restedPercent", percent);
-					cJSON_AddNumberToObject(char_obj, "restedHours",
-								offline_hours > max_hours ?
-									max_hours :
-									offline_hours);
-					cJSON_AddNumberToObject(char_obj, "maxHours", max_hours);
-					cJSON_AddItemToArray(characters, char_obj);
+						char_obj = cJSON_CreateObject();
+						cJSON_AddStringToObject(char_obj, "name", name_cap);
+						cJSON_AddNumberToObject(char_obj, "restedPercent",
+									percent);
+						cJSON_AddNumberToObject(char_obj, "restedHours",
+									offline_hours > max_hours ?
+										max_hours :
+										offline_hours);
+						cJSON_AddNumberToObject(char_obj, "maxHours",
+									max_hours);
+						cJSON_AddItemToArray(characters, char_obj);
+					}
+					cleanup_temp_char(temp_ch);
+					free(temp_ch->only.pc);
 				}
-				cleanup_temp_char(temp_ch);
-				free(temp_ch->only.pc);
+				free(temp_ch);
 			}
-			free(temp_ch);
+			c = c->next;
 		}
-		c = c->next;
 	}
 
 	cJSON_AddItemToObject(result_data, "characters", characters);
@@ -3695,6 +3719,7 @@ void ws_send_return_to_menu(struct descriptor_data *d, const char *reason)
 		return;
 
 	data_obj = cJSON_CreateObject();
+	ws_add_account_capabilities(data_obj);
 	cJSON_AddItemToObject(data_obj, "characters", ws_build_character_list(d));
 
 	cJSON *root = cJSON_CreateObject();
