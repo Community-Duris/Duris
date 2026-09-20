@@ -1,9 +1,14 @@
 #include "world/zone_story_quest_feature.h"
 
+#include "core/defines.h"
+
 #include <algorithm>
 #include <charconv>
 #include <cctype>
+#include <ctime>
+#include <iomanip>
 #include <limits>
+#include <map>
 #include <set>
 #include <sstream>
 #include <tuple>
@@ -113,6 +118,29 @@ const char *color(bool enabled, const char *code)
 bool valid_period(int64_t period_seconds)
 {
 	return period_seconds >= 60 && period_seconds <= 7 * 24 * 60 * 60;
+}
+
+const char *racewar_name_color(int racewar)
+{
+	switch (racewar)
+	{
+	case RACEWAR_GOOD:
+		return "&+Y";
+	case RACEWAR_EVIL:
+		return "&+R";
+	default:
+		return "";
+	}
+}
+
+constexpr int64_t leaderboard_delay_seconds = 12 * 60 * 60;
+constexpr int64_t no_completion_cutoff = std::numeric_limits<int64_t>::max();
+
+int64_t leaderboard_cutoff(int64_t now)
+{
+	if (now <= 0)
+		now = static_cast<int64_t>(std::time(nullptr));
+	return now > leaderboard_delay_seconds ? now - leaderboard_delay_seconds : 0;
 }
 
 const char *status_name(daily_status status)
@@ -252,6 +280,30 @@ bool deserialize_observation(std::string_view encoded, telemetry_observation *ob
 bool same_score(const leaderboard_entry &left, const leaderboard_entry &right)
 {
 	return left.completed == right.completed && left.total == right.total;
+}
+
+std::string display_count(uint64_t value)
+{
+	std::string output = std::to_string(value);
+	for (size_t position = output.size(); position > 3;)
+	{
+		position -= 3;
+		output.insert(position, 1, ',');
+	}
+	return output;
+}
+
+std::string display_percentage(uint64_t completed, uint64_t total)
+{
+	if (!total)
+		return "N/A";
+	const double percentage =
+		static_cast<double>(completed) * 100.0 / static_cast<double>(total);
+	if (completed > 0 && percentage < 0.01)
+		return "<0.01%";
+	std::ostringstream output;
+	output << std::fixed << std::setprecision(2) << percentage << "%";
+	return output.str();
 }
 
 /* Compare non-negative fractions without multiplying the operands.  The
@@ -475,8 +527,8 @@ void service::award_daily_for(const zone_story_quest_tracking::completion_transa
 
 result
 service::apply_transaction(const zone_story_quest_tracking::completion_transaction &transaction,
-			   std::string_view character_name, bool allow_stale, bool award_daily,
-			   std::string *error)
+			   std::string_view character_name, int racewar, bool allow_stale,
+			   bool award_daily, std::string *error)
 {
 	std::string encoded;
 	encoded = zone_story_quest_tracking::serialize_transaction(transaction, error);
@@ -511,6 +563,8 @@ service::apply_transaction(const zone_story_quest_tracking::completion_transacti
 			zone_story_quest_tracking::credit_mask_for_pid(transaction, pid);
 		if (pid == transaction.direct_completer_pid && !character_name.empty())
 			state.character_name = character_name;
+		if (pid == transaction.direct_completer_pid && racewar != RACEWAR_NONE)
+			state.racewar = racewar;
 	}
 	if (award_daily)
 		award_daily_for(transaction);
@@ -528,8 +582,8 @@ result service::record_completion(const completion_event &event, std::string *er
 			    "direct completer is deleted and must re-identify before earning credit"),
 		       result::rejected;
 	const std::string before = serialize_state();
-	const result recorded =
-		apply_transaction(event.transaction, event.character_name, false, true, error);
+	const result recorded = apply_transaction(event.transaction, event.character_name,
+						  event.racewar, false, true, error);
 	if (recorded == result::invalid || recorded == result::conflict ||
 	    recorded == result::rejected)
 		return recorded;
@@ -584,20 +638,47 @@ result service::record_telemetry(const telemetry_observation &observation, std::
 	return result::applied;
 }
 
-void service::remember_character(uint32_t season_id, uint32_t pid, std::string character_name)
+void service::remember_character(uint32_t season_id, uint32_t pid, std::string character_name,
+				 bool leaderboard_eligible, int racewar)
 {
 	if (!season_id || !pid)
 		return;
-	deleted_characters_.erase({ season_id, pid });
-	state_for(season_id, pid).character_name = std::move(character_name);
+	const std::pair<uint32_t, uint32_t> key{ season_id, pid };
+	deleted_characters_.erase(key);
+	if (!leaderboard_eligible)
+	{
+		leaderboard_exclusions_.insert(key);
+		return;
+	}
+	leaderboard_exclusions_.erase(key);
+	auto &state = state_for(season_id, pid);
+	state.character_name = std::move(character_name);
+	if (racewar != RACEWAR_NONE)
+		state.racewar = racewar;
+
+	const std::string normalized_name = lower_name(state.character_name);
+	if (normalized_name.empty())
+		return;
+	/* Names are unique for current player rows, but durable quest state can outlive
+	 * a rename or deleted character.  Once a current PID re-identifies a name,
+	 * keep any older PID carrying that same display name out of the public list. */
+	for (const auto &[other_key, other_state] : characters_)
+	{
+		if (other_key == key || other_state.character_name.empty() ||
+		    lower_name(other_state.character_name) != normalized_name)
+			continue;
+		leaderboard_exclusions_.insert(other_key);
+	}
 }
 
 bool service::erase_character(uint32_t season_id, uint32_t pid)
 {
 	if (!season_id || !pid)
 		return false;
-	characters_.erase({ season_id, pid });
-	deleted_characters_.insert({ season_id, pid });
+	const std::pair<uint32_t, uint32_t> key{ season_id, pid };
+	characters_.erase(key);
+	leaderboard_exclusions_.erase(key);
+	deleted_characters_.insert(key);
 	for (auto transaction = transactions_.begin(); transaction != transactions_.end();)
 	{
 		if (contains_pid(transaction->second.transaction, pid))
@@ -622,14 +703,21 @@ bool service::erase_character_all_seasons(uint32_t pid, uint32_t current_season_
 	std::set<uint32_t> seasons;
 	seasons.insert(current_season_id);
 	for (const auto &[key, state] : characters_)
+	{
+		(void)state;
 		if (key.second == pid)
 			seasons.insert(key.first);
+	}
+	for (const auto &[season, excluded_pid] : leaderboard_exclusions_)
+		if (excluded_pid == pid)
+			seasons.insert(season);
 	for (const auto &[season, deleted_pid] : deleted_characters_)
 		if (deleted_pid == pid)
 			seasons.insert(season);
 	for (uint32_t season : seasons)
 	{
 		characters_.erase({ season, pid });
+		leaderboard_exclusions_.erase({ season, pid });
 		deleted_characters_.insert({ season, pid });
 	}
 	for (auto transaction = transactions_.begin(); transaction != transactions_.end();)
@@ -649,12 +737,47 @@ bool service::erase_character_all_seasons(uint32_t pid, uint32_t current_season_
 	return true;
 }
 
-zone_progress service::progress_for_zone(uint32_t season_id, uint32_t pid,
-					 int32_t zone_number) const
+std::set<std::string> service::completed_definition_ids(uint32_t season_id, uint32_t pid,
+							int64_t completed_before) const
 {
+	const auto *state = find_state(season_id, pid);
+	std::set<std::string> completed_ids;
+	if (!state)
+		return completed_ids;
+	if (completed_before == no_completion_cutoff)
+	{
+		for (const auto &[definition_id, credit_mask] : state->credit_masks)
+		{
+			(void)credit_mask;
+			completed_ids.insert(definition_id);
+		}
+		return completed_ids;
+	}
+	for (const auto &[transaction_id, encoded] : state->transaction_ids)
+	{
+		zone_story_quest_tracking::completion_transaction transaction;
+		const auto stored = transactions_.find(transaction_id);
+		if (stored != transactions_.end())
+			transaction = stored->second.transaction;
+		else if (!zone_story_quest_tracking::deserialize_transaction(encoded, &transaction))
+			continue;
+		if (transaction.season_id != season_id || transaction.completed_at <= 0 ||
+		    transaction.completed_at > completed_before ||
+		    zone_story_quest_tracking::credit_mask_for_pid(transaction, pid) ==
+			    zone_story_quest_tracking::ZONE_STORY_CREDIT_NONE)
+			continue;
+		completed_ids.insert(transaction.quest_definition_id);
+	}
+	return completed_ids;
+}
+
+zone_progress service::progress_for_zone_at(uint32_t season_id, uint32_t pid, int32_t zone_number,
+					    const std::set<std::string> &completed_ids) const
+{
+	(void)season_id;
+	(void)pid;
 	zone_progress progress;
 	progress.zone_number = zone_number;
-	const auto *state = find_state(season_id, pid);
 	for (const auto &definition : catalog_.definitions)
 	{
 		if (definition.zone_number != zone_number)
@@ -665,8 +788,7 @@ zone_progress service::progress_for_zone(uint32_t season_id, uint32_t pid,
 		    definition.content_revision != catalog_.content_revision)
 			continue;
 		progress.total++;
-		if (state &&
-		    state->credit_masks.find(definition.definition_id) != state->credit_masks.end())
+		if (completed_ids.find(definition.definition_id) != completed_ids.end())
 			progress.completed++;
 	}
 	progress.available = progress.total > 0;
@@ -677,8 +799,16 @@ zone_progress service::progress_for_zone(uint32_t season_id, uint32_t pid,
 	return progress;
 }
 
-personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
-				      std::string_view fallback_name) const
+zone_progress service::progress_for_zone(uint32_t season_id, uint32_t pid,
+					 int32_t zone_number) const
+{
+	return progress_for_zone_at(season_id, pid, zone_number,
+				    completed_definition_ids(season_id, pid, no_completion_cutoff));
+}
+
+personal_summary service::summary_for_at(uint32_t season_id, uint32_t pid,
+					 std::string_view fallback_name,
+					 int64_t completed_before) const
 {
 	personal_summary summary;
 	summary.season_id = season_id;
@@ -687,6 +817,8 @@ personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
 	summary.character_name = state && !state->character_name.empty() ?
 					 state->character_name :
 					 std::string(fallback_name);
+	const std::set<std::string> all_completed_ids =
+		completed_definition_ids(season_id, pid, completed_before);
 	std::set<std::string> completed_ids;
 	for (const auto &definition : catalog_.definitions)
 	{
@@ -694,8 +826,7 @@ personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
 		    definition.content_revision != catalog_.content_revision)
 			continue;
 		++summary.total;
-		if (state &&
-		    state->credit_masks.find(definition.definition_id) != state->credit_masks.end())
+		if (all_completed_ids.find(definition.definition_id) != all_completed_ids.end())
 			completed_ids.insert(definition.definition_id);
 	}
 	summary.completed = completed_ids.size();
@@ -708,7 +839,8 @@ personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
 			zones.insert(definition.zone_number);
 	for (int32_t zone : zones)
 	{
-		zone_progress zone_state = progress_for_zone(season_id, pid, zone);
+		zone_progress zone_state =
+			progress_for_zone_at(season_id, pid, zone, all_completed_ids);
 		if (zone_state.available && zone_state.completed == zone_state.total)
 			++summary.full_zones;
 		summary.zones.push_back(zone_state);
@@ -716,24 +848,48 @@ personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
 	return summary;
 }
 
-std::vector<leaderboard_entry> service::sorted_leaderboard(uint32_t season_id,
-							   int32_t zone_number) const
+personal_summary service::summary_for(uint32_t season_id, uint32_t pid,
+				      std::string_view fallback_name) const
+{
+	return summary_for_at(season_id, pid, fallback_name, no_completion_cutoff);
+}
+
+std::vector<leaderboard_entry> service::sorted_leaderboard(uint32_t season_id, int32_t zone_number,
+							   int64_t completed_before) const
 {
 	(void)zone_number;
 	std::vector<leaderboard_entry> entries;
+	std::map<std::string, leaderboard_entry> named_entries;
 	for (const auto &[key, state] : characters_)
 	{
-		if (key.first != season_id)
+		if (key.first != season_id ||
+		    leaderboard_exclusions_.find(key) != leaderboard_exclusions_.end())
 			continue;
-		const personal_summary summary =
-			summary_for(season_id, key.second, state.character_name);
+		const personal_summary summary = summary_for_at(
+			season_id, key.second, state.character_name, completed_before);
+		if (summary.completed == 0)
+			continue;
 		leaderboard_entry entry{ .pid = key.second,
 					 .character_name = summary.character_name.empty() ?
 								   "Unknown adventurer" :
 								   summary.character_name };
+		entry.racewar = state.racewar;
 		entry.completed = summary.completed;
 		entry.total = summary.total;
 		entry.full_zones = summary.full_zones;
+		if (state.character_name.empty())
+		{
+			entries.push_back(std::move(entry));
+			continue;
+		}
+		const std::string normalized_name = lower_name(state.character_name);
+		const auto existing = named_entries.find(normalized_name);
+		if (existing == named_entries.end() || better_score(entry, existing->second))
+			named_entries[normalized_name] = std::move(entry);
+	}
+	for (auto &[name, entry] : named_entries)
+	{
+		(void)name;
 		entries.push_back(std::move(entry));
 	}
 	std::sort(entries.begin(), entries.end(),
@@ -749,13 +905,14 @@ std::vector<leaderboard_entry> service::sorted_leaderboard(uint32_t season_id,
 }
 
 leaderboard_page service::leaderboard(uint32_t season_id, int32_t zone_number, uint64_t page,
-				      uint64_t page_size, uint32_t viewer_pid) const
+				      uint64_t page_size, uint32_t viewer_pid, int64_t now) const
 {
 	(void)zone_number;
 	leaderboard_page output;
 	if (page_size == 0)
 		return output;
-	const std::vector<leaderboard_entry> entries = sorted_leaderboard(season_id, 0);
+	const std::vector<leaderboard_entry> entries =
+		sorted_leaderboard(season_id, 0, leaderboard_cutoff(now));
 	output.total_entries = entries.size();
 	for (const auto &entry : entries)
 		if (entry.pid == viewer_pid)
@@ -1032,9 +1189,8 @@ std::string service::render_zone(uint32_t season_id, uint32_t pid, int32_t zone_
 		output << "  N/A: this zone has no active zone-story quests in the current catalog.\r\n";
 		return output.str();
 	}
-	const uint64_t percent = progress.total ? progress.completed * 100 / progress.total : 0;
-	output << "  Completed: " << progress.completed << "/" << progress.total << " (" << percent
-	       << "%, exact numerator/denominator)\r\n";
+	output << "  Completed: " << display_count(progress.completed) << " unique quests ("
+	       << display_percentage(progress.completed, progress.total) << ")\r\n";
 	const char *bar_color = progress.milestone_100 ? "&+G" :
 				progress.milestone_75  ? "&+g" :
 				progress.milestone_50  ? "&+y" :
@@ -1068,45 +1224,70 @@ std::string service::render_summary(uint32_t season_id, uint32_t pid,
 		output << "  N/A: the current production catalog contains no eligible quests.\r\n";
 		return output.str();
 	}
-	const uint64_t overall_percent = summary.total ? summary.completed * 100 / summary.total :
-							 0;
-	output << "  Overall: " << summary.completed << "/" << summary.total << " ("
-	       << overall_percent << "%, exact distinct completions)\r\n";
+	output << "  Overall: " << display_count(summary.completed) << " unique quests ("
+	       << display_percentage(summary.completed, summary.total) << ")\r\n";
 	output << "  Fully completed zones: " << summary.full_zones << "\r\n";
 	if (daily_policy_.enabled && summary.renown > 0)
 		output << "  Daily renown: " << summary.renown << "\r\n";
 	for (const auto &zone : summary.zones)
-		output << "  " << display_zone_name(zone) << ": " << zone.completed << "/"
-		       << zone.total << (zone.milestone_100 ? " [100%]" : "") << "\r\n";
+		output << "  " << display_zone_name(zone) << ": " << display_count(zone.completed)
+		       << " unique quests (" << display_percentage(zone.completed, zone.total)
+		       << ")" << (zone.milestone_100 ? " [100%]" : "") << "\r\n";
 	return output.str();
 }
 
 std::string service::render_leaderboard(uint32_t season_id, int32_t zone_number, uint64_t page,
-					uint64_t page_size, uint32_t viewer_pid, bool colors) const
+					uint64_t page_size, uint32_t viewer_pid, bool colors,
+					int64_t now) const
 {
 	(void)zone_number;
-	const leaderboard_page board = leaderboard(season_id, 0, page, page_size, viewer_pid);
+	const int64_t completed_before = leaderboard_cutoff(now);
+	const leaderboard_page board = leaderboard(season_id, 0, page, page_size, viewer_pid, now);
 	std::ostringstream output;
 	output << "\r\n"
 	       << color(colors, "&+L") << "Worldwide quest completion leaderboard"
+	       << color(colors, "&n") << "\r\n"
+	       << color(colors, "&+L")
+	       << "  Quest totals and percentages may lag actual completions by up to 12 hours."
 	       << color(colors, "&n") << "\r\n";
 	if (!board.total_entries)
 	{
-		output << "  No character completion records are available for this season.\r\n";
+		output << "  No players with a completed quest are ranked for this season.\r\n";
+		if (viewer_pid)
+		{
+			const personal_summary viewer =
+				summary_for_at(season_id, viewer_pid, {}, completed_before);
+			output << "  You have " << display_count(viewer.completed)
+			       << " unique quests ("
+			       << display_percentage(viewer.completed, viewer.total)
+			       << ") and are unranked.\r\n";
+		}
 		return output.str();
 	}
 	for (const auto &entry : board.entries)
 	{
-		const uint64_t percentage = entry.total ? entry.completed * 100 / entry.total : 0;
 		const bool viewer = entry.pid == viewer_pid;
+		const char *name_color = racewar_name_color(entry.racewar);
 		output << "  " << color(colors, viewer ? "&+Y" : "") << (viewer ? "* " : "  ")
-		       << color(colors, viewer ? "&+Y" : "") << "#" << entry.rank << " "
-		       << entry.character_name << " " << percentage << "%";
-		output << color(colors, "&n") << "\r\n";
+		       << color(colors, viewer ? "&+Y" : "") << "#" << entry.rank
+		       << color(colors, "&n") << " " << color(colors, name_color)
+		       << entry.character_name << color(colors, "&n") << " " << color(colors, "&+C")
+		       << display_count(entry.completed) << " unique quests" << color(colors, "&n")
+		       << " " << color(colors, "&+W") << "("
+		       << display_percentage(entry.completed, entry.total) << ")"
+		       << color(colors, "&n") << "\r\n";
 	}
-	output << "  Page " << (page + 1) << ", " << board.total_entries << " players";
+	output << "  Page " << (page + 1) << ", " << display_count(board.total_entries)
+	       << " ranked players";
 	if (board.own_rank)
 		output << "; your rank: #" << board.own_rank;
+	else if (viewer_pid)
+	{
+		const personal_summary viewer =
+			summary_for_at(season_id, viewer_pid, {}, completed_before);
+		output << "; you are unranked (" << display_count(viewer.completed)
+		       << " unique quests)";
+	}
 	output << "\r\n";
 	return output.str();
 }
@@ -1207,7 +1388,7 @@ std::string service::serialize_state(std::string *error) const
 			continue;
 		if (!state.character_name.empty())
 			output << "N|" << state.season_id << "|" << state.pid << "|"
-			       << hex_encode(state.character_name) << "\n";
+			       << hex_encode(state.character_name) << "|" << state.racewar << "\n";
 		for (const auto &[definition_id, credit_mask] : state.credit_masks)
 			output << "C|" << state.season_id << "|" << state.pid << "|"
 			       << hex_encode(definition_id) << "|" << credit_mask << "\n";
@@ -1225,6 +1406,11 @@ std::string service::serialize_state(std::string *error) const
 	}
 	for (const auto &[season, pid] : deleted_characters_)
 		output << "X|" << season << "|" << pid << "\n";
+	for (const auto &[season, pid] : leaderboard_exclusions_)
+	{
+		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
+			output << "H|" << season << "|" << pid << "\n";
+	}
 	for (const auto &[id, observation] : telemetry_)
 	{
 		bool deleted_pid = false;
@@ -1244,12 +1430,13 @@ std::string service::serialize_state(std::string *error) const
 bool service::deserialize_state(std::string_view encoded, std::string *error)
 {
 	std::vector<zone_story_quest_tracking::completion_transaction> transactions;
-	std::vector<std::tuple<uint32_t, uint32_t, std::string>> names;
+	std::vector<std::tuple<uint32_t, uint32_t, std::string, int>> names;
 	std::vector<std::tuple<uint32_t, uint32_t, std::string, uint32_t>> credits;
 	std::vector<daily_assignment> assignments;
 	std::vector<std::tuple<uint32_t, uint32_t, std::string, std::string>> rewards;
 	std::vector<telemetry_observation> observations;
 	std::vector<std::pair<uint32_t, uint32_t>> deleted;
+	std::vector<std::pair<uint32_t, uint32_t>> leaderboard_exclusions;
 	bool header_seen = false;
 	size_t begin = 0;
 	while (begin < encoded.size())
@@ -1280,14 +1467,17 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 				return false;
 			transactions.push_back(std::move(transaction));
 		}
-		else if (fields[0] == "N" && fields.size() == 4)
+		else if (fields[0] == "N" && (fields.size() == 4 || fields.size() == 5))
 		{
 			uint32_t season = 0, pid = 0;
+			int racewar = RACEWAR_NONE;
 			std::string name;
 			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
-			    !hex_decode(fields[3], &name) || !season || !pid)
+			    !hex_decode(fields[3], &name) ||
+			    (fields.size() == 5 && !parse_integer(fields[4], &racewar)) ||
+			    !season || !pid)
 				return fail(error, "invalid character name record");
-			names.emplace_back(season, pid, std::move(name));
+			names.emplace_back(season, pid, std::move(name), racewar);
 		}
 		else if (fields[0] == "C" && fields.size() == 5)
 		{
@@ -1346,6 +1536,14 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 				return fail(error, "invalid deleted character record");
 			deleted.emplace_back(season, pid);
 		}
+		else if (fields[0] == "H" && fields.size() == 3)
+		{
+			uint32_t season = 0, pid = 0;
+			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
+			    !season || !pid)
+				return fail(error, "invalid leaderboard exclusion record");
+			leaderboard_exclusions.emplace_back(season, pid);
+		}
 		else
 			return fail(error, "unknown or malformed zone-story state record");
 	}
@@ -1353,13 +1551,21 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 		return fail(error, "zone-story state header is missing");
 	characters_.clear();
 	deleted_characters_.clear();
+	leaderboard_exclusions_.clear();
 	transactions_.clear();
 	telemetry_.clear();
 	for (const auto &[season, pid] : deleted)
 		deleted_characters_.insert({ season, pid });
-	for (const auto &[season, pid, name] : names)
+	for (const auto &[season, pid] : leaderboard_exclusions)
 		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
-			state_for(season, pid).character_name = name;
+			leaderboard_exclusions_.insert({ season, pid });
+	for (const auto &[season, pid, name, racewar] : names)
+		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
+		{
+			auto &state = state_for(season, pid);
+			state.character_name = name;
+			state.racewar = racewar;
+		}
 	for (const auto &[season, pid, definition_id, credit_mask] : credits)
 		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
 			state_for(season, pid).credit_masks[definition_id] = credit_mask;
@@ -1385,7 +1591,8 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 	}
 	for (const auto &transaction : transactions)
 	{
-		const result applied = apply_transaction(transaction, {}, true, false, error);
+		const result applied =
+			apply_transaction(transaction, {}, RACEWAR_NONE, true, false, error);
 		if (applied != result::applied && applied != result::already_applied)
 			return false;
 	}

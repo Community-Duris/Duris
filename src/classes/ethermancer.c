@@ -1278,6 +1278,8 @@ void spell_induce_tupor(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused
 		SET_POS(victim, GET_POS(victim) + STAT_SLEEPING);
 	}
 
+	stop_memorizing(victim, memorization_stop_reason::disrupted);
+
 	if (number(0, 2) && IS_NPC(victim))
 	{
 		act("&+W$N sleepily stares about blankly, forgetting why $n is here.", TRUE, ch, 0,

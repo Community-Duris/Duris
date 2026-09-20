@@ -1,5 +1,7 @@
 #include "world/zone_story_quest_feature.h"
 
+#include "core/defines.h"
+
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -129,10 +131,12 @@ int main()
 	const personal_summary bob = tracker.summary_for(7, 77);
 	require(bob.completed == 2 && bob.total == 4,
 		"group participant did not receive distinct completion credit");
+	tracker.remember_character(7, 42, "Alice", true, RACEWAR_GOOD);
+	tracker.remember_character(7, 77, "Bob", true, RACEWAR_EVIL);
 
 	const leaderboard_page board = tracker.leaderboard(7, 0, 0, 10, 42);
-	require(board.total_entries == 3 && board.own_rank == 1,
-		"overall leaderboard omitted offline or own rank");
+	require(board.total_entries == 2 && board.own_rank == 1,
+		"overall leaderboard included a zero-completion character or lost own rank");
 	require(board.entries[0].completed == 2 && board.entries[0].total == 4,
 		"leaderboard did not expose exact completion values");
 	require(board.entries[0].rank == board.entries[1].rank,
@@ -142,7 +146,13 @@ int main()
 	const std::string hidden_zone_leaderboard =
 		tracker.render_leaderboard(7, 900, 0, 10, 42, false);
 	require(leaderboard_output.find("&+Y* ") != std::string::npos &&
-			leaderboard_output.find("50%") != std::string::npos &&
+			leaderboard_output.find("&+YAlice&n") != std::string::npos &&
+			leaderboard_output.find("&+RBob&n") != std::string::npos &&
+			leaderboard_output.find("&+C2 unique quests&n") != std::string::npos &&
+			leaderboard_output.find("&+W(50.00%)&n") != std::string::npos &&
+			leaderboard_output.find("may lag actual completions by up to 12 hours") !=
+				std::string::npos &&
+			plain_leaderboard.find("2 unique quests (50.00%)") != std::string::npos &&
 			leaderboard_output.find("PID") == std::string::npos &&
 			leaderboard_output.find("900") == std::string::npos &&
 			plain_leaderboard.find("* #1") != std::string::npos &&
@@ -150,6 +160,61 @@ int main()
 			hidden_zone_leaderboard == plain_leaderboard &&
 			plain_leaderboard.find('&') == std::string::npos,
 		"leaderboard output did not enforce the worldwide player-facing format");
+	const std::string colored_state = tracker.serialize_state(&error);
+	service colored_recovered(catalog);
+	require(colored_recovered.deserialize_state(colored_state, &error) &&
+			colored_recovered.render_leaderboard(7, 0, 0, 10, 0, true)
+					.find("&+YAlice&n") != std::string::npos &&
+			colored_recovered.render_leaderboard(7, 0, 0, 10, 0, true)
+					.find("&+RBob&n") != std::string::npos,
+		"racewar color identity did not survive state recovery");
+
+	service delayed_tracker(catalog);
+	completion_event delayed_completion =
+		completion("tx-delayed", "zone-story:900:001", 900, 42, 1000000, { 42 });
+	delayed_completion.party_context_known = true;
+	delayed_completion.party_size = 1;
+	delayed_completion.strongest_party_level = 10;
+	require(delayed_tracker.record_completion(delayed_completion, &error) == result::applied,
+		"delayed leaderboard completion was not applied");
+	delayed_tracker.remember_character(7, 42, "Alice", true, RACEWAR_GOOD);
+	require(delayed_tracker.leaderboard(7, 0, 0, 10, 42, 1000000).total_entries == 0,
+		"leaderboard exposed a completion before its publication delay elapsed");
+	const std::string delayed_leaderboard =
+		delayed_tracker.render_leaderboard(7, 0, 0, 10, 42, false, 1000000 + 12 * 60 * 60);
+	require(delayed_leaderboard.find("1 unique quests (25.00%)") != std::string::npos,
+		"leaderboard did not publish a completion after its 12-hour delay");
+
+	completion_event duplicate_name =
+		completion("tx-duplicate-name", "zone-story:901:002", 901, 91, 172800350, { 91 });
+	duplicate_name.party_context_known = true;
+	duplicate_name.party_size = 1;
+	duplicate_name.strongest_party_level = 10;
+	require(tracker.record_completion(duplicate_name, &error) == result::applied,
+		"duplicate-name completion was not applied");
+	tracker.remember_character(7, 91, "Alice");
+	require(tracker.leaderboard(7, 0, 0, 10, 42).total_entries == 2,
+		"leaderboard exposed the same display name more than once");
+
+	completion_event staff_completion =
+		completion("tx-staff", "zone-story:901:002", 901, 88, 172800360, { 88 });
+	staff_completion.party_context_known = true;
+	staff_completion.party_size = 1;
+	staff_completion.strongest_party_level = 10;
+	require(tracker.record_completion(staff_completion, &error) == result::applied,
+		"staff exclusion fixture was not applied");
+	tracker.remember_character(7, 88, "Staff", false);
+	const leaderboard_page staff_filtered = tracker.leaderboard(7, 0, 0, 10, 42);
+	require(staff_filtered.total_entries == 2 &&
+			tracker.render_leaderboard(7, 0, 0, 10, 42, false).find("Staff") ==
+				std::string::npos,
+		"leaderboard included a character explicitly excluded from public ranking");
+	service empty_tracker(catalog);
+	const std::string empty_leaderboard =
+		empty_tracker.render_leaderboard(7, 0, 0, 10, 42, false);
+	require(empty_leaderboard.find("You have 0 unique quests (0.00%) and are unranked") !=
+			std::string::npos,
+		"empty leaderboard did not expose the viewer's current progress");
 
 	const std::string color_output = tracker.render_zone(7, 42, 900, "Alice", true);
 	const std::string plain_output = tracker.render_zone(7, 42, 900, "Alice", false);
@@ -188,7 +253,7 @@ int main()
 			"telemetry evidence was not recorded");
 	}
 	const evidence_summary evidence = tracker.evidence_for("zone-story:901:002", 7);
-	require(evidence.suitable && evidence.observed_attempts == 2 && evidence.distinct_pids == 2,
+	require(evidence.suitable && evidence.observed_attempts >= 2 && evidence.distinct_pids >= 2,
 		"evidence policy did not produce a suitable candidate");
 	const int64_t daily_now = 200 * 86400 + 100;
 	const daily_assignment assignment = tracker.assign_daily(7, 42, 10, 1, daily_now, &error);
@@ -232,6 +297,10 @@ int main()
 	require(recovered.summary_for(7, 42).renown == 1 &&
 			recovered.progress_for_zone(7, 42, 900).completed == 2,
 		"recovered state lost completion or renown");
+	require(serialized.find("H|7|88") != std::string::npos &&
+			recovered.render_leaderboard(7, 0, 0, 10, 88, false).find("Staff") ==
+				std::string::npos,
+		"leaderboard exclusion did not survive state recovery");
 	require(recovered.daily_for(7, 42, service::period_for(daily_now)).status ==
 			daily_status::completed,
 		"recovered daily assignment did not remain completed");

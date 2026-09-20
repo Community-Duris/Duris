@@ -3,6 +3,7 @@
 #include "item/item_transfer_command.h"
 #include "redis/redis_report_cache.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <mutex>
 #include <new>
@@ -25,6 +26,8 @@ struct corpse_state
 	bool dirty = false;
 	bool pending = false;
 	bool fenced = false;
+	unsigned int stale_retries = 0;
+	unsigned int retry_wait_pulses = 0;
 	corpse_lifecycle_release_completion_fn release_completion = nullptr;
 	corpse_lifecycle_release_completion_fn queued_destruction_completion = nullptr;
 };
@@ -128,9 +131,44 @@ void account_health()
 	}
 }
 
+bool is_terminal_action(corpse_lifecycle_action action)
+{
+	return action == corpse_lifecycle_action::release ||
+	       action == corpse_lifecycle_action::destroy ||
+	       action == corpse_lifecycle_action::resurrect ||
+	       action == corpse_lifecycle_action::raise_follower ||
+	       action == corpse_lifecycle_action::release_nested;
+}
+
+bool schedule_stale_retry(corpse_state *state, const critical_completion &completion)
+{
+	if (!state || !is_terminal_action(state->inflight.action) ||
+	    completion.error_code != ESTALE || !completion.durable_revision ||
+	    state->stale_retries >= CORPSE_LIFECYCLE_STALE_RETRY_LIMIT)
+		return false;
+	try
+	{
+		state->desired = state->inflight;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	// The repository returns the corpse revision it read while holding the
+	// corpse lock. Keep the larger value because a concurrent item transfer can
+	// legitimately advance the runtime revision before this completion arrives.
+	state->revision = std::max(state->revision, completion.durable_revision);
+	state->has_desired = true;
+	state->dirty = true;
+	state->retry_wait_pulses = CORPSE_LIFECYCLE_STALE_RETRY_BACKOFF_PULSES;
+	++state->stale_retries;
+	return true;
+}
+
 submit_outcome submit(uint64_t key, corpse_state *state)
 {
-	if (!state || state->pending || !state->dirty || state->fenced || !state->has_desired)
+	if (!state || state->pending || !state->dirty || state->fenced || !state->has_desired ||
+	    state->retry_wait_pulses)
 		return submit_outcome::deferred;
 	if ((state->desired.action == corpse_lifecycle_action::remove ||
 	     state->desired.action == corpse_lifecycle_action::release ||
@@ -240,6 +278,7 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	state->pending = true;
 	state->dirty = false;
 	state->has_desired = false;
+	state->retry_wait_pulses = 0;
 	if (state->inflight.action == corpse_lifecycle_action::destroy)
 	{
 		state->release_completion = state->queued_destruction_completion;
@@ -485,6 +524,8 @@ bool corpse_lifecycle_transaction_hydrate(uint32_t owner_pid, uint32_t save_id,
 		return false;
 	state.revision = corpse_revision;
 	state.fenced = false;
+	state.stale_retries = 0;
+	state.retry_wait_pulses = 0;
 	account_health();
 	return true;
 }
@@ -520,7 +561,11 @@ bool corpse_lifecycle_transaction_note_item_transfer(uint32_t owner_pid, uint32_
 	const bool advanced = corpse_revision > state.revision;
 	state.revision = corpse_revision;
 	if (advanced)
+	{
 		state.fenced = false;
+		state.stale_retries = 0;
+		state.retry_wait_pulses = 0;
+	}
 	if (state.dirty && !state.pending)
 		(void)submit(key, &state);
 	account_health();
@@ -543,8 +588,15 @@ bool corpse_lifecycle_transaction_forget(uint32_t owner_pid, uint32_t save_id)
 void corpse_lifecycle_transaction_pulse(void)
 {
 	for (auto &[key, state] : states)
+	{
+		if (state.retry_wait_pulses)
+		{
+			--state.retry_wait_pulses;
+			continue;
+		}
 		if (state.dirty && !state.pending && !state.fenced)
 			(void)submit(key, &state);
+	}
 	account_health();
 }
 
@@ -581,36 +633,35 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 							completions[index].error_code :
 							EBADMSG;
 		const corpse_lifecycle_payload inflight = state.inflight;
-		const corpse_lifecycle_release_completion_fn release_completion =
-			state.release_completion;
+		corpse_lifecycle_release_completion_fn release_completion = nullptr;
 		corpse_lifecycle_release_completion_fn queued_failure = nullptr;
 		corpse_lifecycle_payload queued_failure_payload = {};
-		state.release_completion = nullptr;
+		const bool stale_retry = !committed &&
+					 schedule_stale_retry(&state, completions[index]);
 		if (committed)
 		{
 			state.revision = result.corpse_revision;
+			state.stale_retries = 0;
+			state.retry_wait_pulses = 0;
+			release_completion = state.release_completion;
+			state.release_completion = nullptr;
 			++health.committed;
 		}
-		else
+		else if (!stale_retry)
 		{
 			++health.rejected;
+			release_completion = state.release_completion;
+			state.release_completion = nullptr;
 			if (state.inflight.action == corpse_lifecycle_action::remove &&
 			    completions[index].error_code == ENOENT)
 				state.revision = 0;
-			else if ((state.inflight.action == corpse_lifecycle_action::release ||
-				  state.inflight.action == corpse_lifecycle_action::destroy ||
-				  state.inflight.action == corpse_lifecycle_action::resurrect ||
-				  state.inflight.action ==
-					  corpse_lifecycle_action::raise_follower ||
-				  state.inflight.action ==
-					  corpse_lifecycle_action::release_nested) &&
-				 completions[index].error_code == ESTALE)
-				state.fenced = false;
 			else if (!(state.inflight.action == corpse_lifecycle_action::remove &&
 				   completions[index].error_code == ENOTEMPTY))
 				state.fenced = true;
 		}
-		if (state.dirty && !state.fenced)
+		else
+			++health.rejected;
+		if (!stale_retry && state.dirty && !state.fenced)
 			(void)submit(found->first, &state);
 		if (state.queued_destruction_completion && state.fenced)
 		{
