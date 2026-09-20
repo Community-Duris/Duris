@@ -45,10 +45,32 @@ uint64_t session_rows_sent(MYSQL *connection)
 {
 	execute_sql(connection, "SHOW SESSION STATUS LIKE 'Rows_sent'");
 	MYSQL_RES *rows = mysql_store_result(connection);
+	assert(rows);
+	unsigned int value_column = 1;
+	if (mysql_num_rows(rows) == 0)
+	{
+		// MySQL 8 does not expose MariaDB's Rows_sent session counter.
+		// Measure this connection's instrumented statement results instead;
+		// do not silently turn missing instrumentation into a zero-row pass.
+		mysql_free_result(rows);
+		execute_sql(connection,
+			    "SELECT IF((SELECT INSTRUMENTED FROM performance_schema.threads "
+			    "WHERE PROCESSLIST_ID=CONNECTION_ID())='YES' "
+			    "AND (SELECT COUNT(*) FROM performance_schema.setup_consumers "
+			    "WHERE NAME IN ('global_instrumentation','thread_instrumentation',"
+			    "'events_statements_current') AND ENABLED='YES')=3 "
+			    "AND EXISTS(SELECT 1 FROM performance_schema.setup_instruments "
+			    "WHERE NAME='statement/sql/select' AND ENABLED='YES'),"
+			    "(SELECT SUM(SUM_ROWS_SENT) FROM "
+			    "performance_schema.events_statements_summary_by_thread_by_event_name "
+			    "WHERE THREAD_ID=PS_CURRENT_THREAD_ID()),NULL)");
+		rows = mysql_store_result(connection);
+		value_column = 0;
+	}
 	assert(rows && mysql_num_rows(rows) == 1);
 	MYSQL_ROW row = mysql_fetch_row(rows);
-	assert(row && row[1]);
-	const uint64_t count = std::strtoull(row[1], nullptr, 10);
+	assert(row && row[value_column]);
+	const uint64_t count = std::strtoull(row[value_column], nullptr, 10);
 	mysql_free_result(rows);
 	return count;
 }

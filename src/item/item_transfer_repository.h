@@ -7,18 +7,20 @@
 
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
 				      item_transfer_result *result, unsigned int *result_code,
-				      bool *mutation_applied);
+				      bool *mutation_applied,
+				      item_transfer_failure_stage *failure_stage = nullptr);
 // Compound commands may use one inbox operation for consecutive transfer
 // segments. The offset keeps their item-ledger event indexes disjoint.
-bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critical_command &command,
-						uint16_t event_index_base,
-						item_transfer_result *result,
-						unsigned int *result_code, bool *mutation_applied);
+bool item_transfer_repository_execute_at_offset(
+	MYSQL *connection, const critical_command &command, uint16_t event_index_base,
+	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
+	item_transfer_failure_stage *failure_stage = nullptr);
 // Called only inside the enclosing coin transaction; never commits independently.
 bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_command &command,
 					   const std::array<int32_t, 4> &before,
 					   item_transfer_result *result, unsigned int *result_code,
-					   bool *mutation_applied);
+					   bool *mutation_applied,
+					   item_transfer_failure_stage *failure_stage = nullptr);
 // Transaction-scoped owner primitives used by compound authority commands.
 // Callers must acquire every participating owner in canonical identity order.
 bool item_transfer_repository_ensure_owner(MYSQL *connection, const item_owner_identity &owner);

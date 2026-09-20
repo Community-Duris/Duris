@@ -703,6 +703,100 @@ the exact backup, and run the player materializer plus item-ownership, currency,
 and FK reconciliation on the clone. Rollback is the inverse UID update to the exact payload
 row and is safe only before the repaired player is loaded or saved again.
 
+### Player death restitution: offline SQL and native live modes
+
+The audited restitution tool is evidence recovery, not an automatic reimbursement
+command. It reads the immutable `0020_player_death_restitution` contract and
+accepts only normalized death schema 8 after the native bridge has validated the
+raw wire version. Raw death wires 2, 4, 6, and the current writer's 8 are distinct
+inputs; an unknown or corrupt wire is refused.
+
+The production target probe is read-only. Native preparation uses a target-info
+artifact containing the exact database-name confirmation and actual server
+fingerprint; it does not require a stopped service or a maintenance boundary:
+
+```bash
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  target-info --confirm-production-target <exact-db-name> \
+  --artifact /secure/restitution-target-info.json
+```
+
+Pass that artifact to `inspect --target-info` with the exact confirmation and
+fingerprint, and to `plan --target-info --preparation-mode native`. The native
+`inspect -> plan -> export` preparation is read-only and does not run backup,
+quiescence, service-stop, or SQL mutation code. It still carries the target
+fingerprint, actor/plan identity, explicit approval, expiration/deadline metadata,
+recipient-only native fence, and revision/custody evidence into the exported command.
+
+The offline SQL path has the stronger stopped-boundary probe. Use the installed
+system manager when the production unit is root-managed:
+
+```bash
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  target-info --confirm-production-target <exact-db-name> \
+  --maintenance-kind systemd --maintenance-id duris-mud-production.service \
+  --artifact /secure/restitution-target-info.json
+```
+
+For the `.sbs` deployment, which is user-manager managed, run the probe as the
+service owner and bind the exact manager explicitly. The tool checks the owner
+UID, `user@UID.service` manager, manager/unit state and PIDs, the owner runtime
+socket, the real cgroup hierarchy, and visible cgroup processes. It does not
+stop or mask the unit; prepare that state through the approved service operation
+before probing, and treat any mismatch as a refusal. A masked inactive/dead unit
+may report `LoadState=masked` with `ControlGroup=` empty after systemd removes
+its dead cgroup; the probe records that empty value and accepts it only with
+zero service PIDs and complete owner-manager process visibility. It never
+invents a cgroup path for an absent group:
+
+```bash
+python3 scripts/player_death_restitution.py --env-file /secure/duris.env \
+  target-info --confirm-production-target <exact-db-name> \
+  --maintenance-kind systemd-user \
+  --maintenance-id duris-mud-production.service \
+  --maintenance-owner "$(id -u)" \
+  --artifact /secure/restitution-target-info.json
+```
+
+Do not substitute `--user` for `--system`, omit the owner, accept an active
+unit, or create an offline-proof file as a lifecycle attestation. The target
+fingerprint and maintenance record are carried into the backup, plan, apply,
+and verification artifacts; a changed manager, owner, unit, PID, cgroup, or
+SQL target makes the artifact stale.
+
+There are two intentionally separate execution modes:
+
+- The native live-runtime handoff uses `inspect`, `plan --preparation-mode native`,
+  and `export`. Production `inspect`/`plan` must carry the read-only target-info
+  artifact with exact target confirmation and server fingerprint; native `plan`
+  must not carry an offline backup or maintenance boundary. `export` requires the
+  exact SQL-derived evidence lineage, explicit staff approval, actor/reason, and
+  native revision fences, but does **not** require `--offline-proof` or a
+  server-wide stop. Submit the protected native payload through the existing
+  authorized staff command and wait for its durable native receipt/readback;
+  admission or queued output is not delivery proof.
+- Direct SQL `apply` is offline-only. It additionally requires the pinned target,
+  backup receipt, explicit approval, owner-only v3 offline context, process and
+  SQL-writer quiescence checks, and the existing advisory-lock/custody,
+  authorization, ownership, artifact, revision, and idempotency fences. The tool
+  never stops or masks a service automatically.
+
+Production `verify --plan` has two read-only policy branches and neither is a
+live-native verification mode. For an explicit native plan, the original plan and
+its digests are retained: supply a **fresh protected** `target-info` artifact bound
+to the same production target and server fingerprint, captured with the explicit
+stopped/masked maintenance boundary, plus the matching maintenance arguments.
+The verifier validates that boundary before any receipt/item read, performs the
+existing exact readback, does not require or inspect a plan-bound backup, does not
+replan or convert the native artifact, and never promotes receipt status. A native
+plan still refuses SQL `apply` and `--mark-verified`. For an `offline-sql` plan,
+the existing stopped-boundary, plan-bound backup, offline-proof, and explicit
+approval gates remain unchanged; `--mark-verified` remains its separate write.
+
+Use the dedicated restitution runbook for the complete inspect/plan/export or
+backup/apply/verify command sequence:
+[`PLAYER_DEATH_RESTITUTION.md`](../persistence/PLAYER_DEATH_RESTITUTION.md).
+
 ### Maintenance, lifecycle, export, and erasure
 
 The maintenance scheduler is bounded and persistent. Use `world persistence` to

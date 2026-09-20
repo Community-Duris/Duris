@@ -47,6 +47,7 @@ class ProductionPolicyCliJourney(unittest.TestCase):
             input=data,
             text=isinstance(data, str) or data is None,
             capture_output=True,
+            cwd=ROOT,
             env=env,
             timeout=timeout,
             check=False,

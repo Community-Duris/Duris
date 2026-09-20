@@ -1,10 +1,13 @@
 // The Python runner inserts production code; these doubles model only its I/O.
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
+
+#include "economy/shopkeeper_save_policy.h"
 
 constexpr int MAX_WEAR = 4, MAX_OBJ_AFFECT = 4, NOWHERE = -1;
 constexpr int VIRTUAL = 0, REAL = 1, LOG_DEBUG = 0, LOG_MOB = 1;
@@ -14,17 +17,20 @@ struct Character;
 struct Object;
 using P_char = Character *;
 using P_obj = Object *;
+struct object_affect
+{
+	int location, modifier;
+};
 struct Object
 {
-	int R_num = 0, weight = 0, cost = 0, value[8] = {}, str_mask = 0, loc_p = 0;
+	int R_num = 0, weight = 0, cost = 0, value[8] = {}, str_mask = 0, loc_p = 0, wear_flags = 0,
+	    type = 0, material = 0, db_item_id = 0;
 	long timer[1] = {};
-	unsigned long extra_flags = 0;
+	unsigned long extra_flags = 0, bitvector = 0, bitvector2 = 0, bitvector3 = 0,
+		      bitvector4 = 0, bitvector5 = 0;
 	char *name = nullptr, *short_description = nullptr, *description = nullptr,
 	     *action_description = nullptr;
-	struct
-	{
-		int location = 0, modifier = 0;
-	} affected[MAX_OBJ_AFFECT];
+	object_affect affected[MAX_OBJ_AFFECT] = {};
 	P_obj next_content = nullptr, contains = nullptr;
 	struct
 	{
@@ -36,8 +42,20 @@ struct Character
 {
 	int rnum = 0, in_room = NOWHERE, birthplace = 0, affects = 0;
 	bool npc = true, shopkeeper = true;
-	P_char next = nullptr, next_in_room = nullptr;
+	P_char next = nullptr, next_in_room = nullptr, master = nullptr;
+	struct npc_data
+	{
+		int shopkeeper_shop_id = -1;
+	} npc_storage;
+	struct
+	{
+		npc_data *npc;
+	} only;
 	P_obj carrying = nullptr, equipment[MAX_WEAR] = {};
+	Character()
+		: only{ &npc_storage }
+	{
+	}
 };
 struct affected_type
 {
@@ -55,16 +73,57 @@ struct
 } world[3];
 struct
 {
-	int keeper = 0, dirty = 0, number_items_produced = 0, producing[4] = {};
+	int keeper = 0, in_room = 0, shop_is_roaming = 0, dirty = 0, number_items_produced = 0,
+	    producing[4] = {};
+	shopkeeper_save_retry_state dirty_save_retry = {};
 } shop_index[4];
 int number_of_shops = 4, top_of_world = 2;
 P_char character_list = nullptr;
 std::vector<P_obj> objects;
 int births = 0;
+void extract_obj(P_obj obj, int = 0);
 #define GET_RNUM(ch) ((ch)->rnum)
 #define GET_BIRTHPLACE(ch) ((ch)->birthplace)
+#define GET_MASTER(ch) ((ch)->master)
 #define IS_NPC(ch) ((ch)->npc)
 #define IS_SHOPKEEPER(ch) ((ch)->npc && (ch)->shopkeeper)
+int singleton_shop_id(P_char keeper)
+{
+	if (!keeper || !IS_NPC(keeper) || GET_MASTER(keeper))
+		return -1;
+	const int bound = keeper->only.npc ? keeper->only.npc->shopkeeper_shop_id : -1;
+	if (bound >= 0)
+		return bound < number_of_shops && shop_index[bound].keeper == GET_RNUM(keeper) ?
+			       bound :
+			       -1;
+	const int room = keeper->in_room >= 0 && keeper->in_room <= top_of_world ?
+				 world[keeper->in_room].number :
+				 -1;
+	int room_match = -1, home = -1, roaming = -1;
+	for (int shop = 0; shop < number_of_shops; ++shop)
+	{
+		if (shop_index[shop].keeper != GET_RNUM(keeper))
+			continue;
+		if (!shop_index[shop].shop_is_roaming && shop_index[shop].in_room == room)
+		{
+			if (room_match >= 0)
+				return -1;
+			room_match = shop;
+		}
+		if (!shop_index[shop].shop_is_roaming &&
+		    shop_index[shop].in_room == GET_BIRTHPLACE(keeper))
+			home = shop;
+		if (shop_index[shop].shop_is_roaming)
+			roaming = roaming == -1 ? shop : -2;
+	}
+	return room_match >= 0 ? room_match : (home >= 0 ? home : (roaming >= 0 ? roaming : -1));
+}
+void bind_shopkeeper(P_char keeper, int shop_nr)
+{
+	if (keeper && IS_NPC(keeper) && !GET_MASTER(keeper) && keeper->only.npc && shop_nr >= 0 &&
+	    shop_nr < number_of_shops && shop_index[shop_nr].keeper == GET_RNUM(keeper))
+		keeper->only.npc->shopkeeper_shop_id = shop_nr;
+}
 void logit(int, const char *, ...) {}
 int real_mobile(int vnum)
 {
@@ -106,6 +165,20 @@ void unlink_room(P_char ch)
 }
 void extract_char(P_char ch)
 {
+	while (ch->carrying)
+	{
+		P_obj obj = ch->carrying;
+		ch->carrying = obj->next_content;
+		obj->next_content = nullptr;
+		extract_obj(obj);
+	}
+	for (P_obj &obj : ch->equipment)
+		if (obj)
+		{
+			P_obj owned = obj;
+			obj = nullptr;
+			extract_obj(owned);
+		}
 	unlink_room(ch);
 	P_char *link = &character_list;
 	while (*link != ch)
@@ -124,8 +197,11 @@ void char_to_room(P_char ch, int room, int)
 	world[room].people = ch;
 	ch->in_room = room;
 }
+int read_object_fail_rnum = -1;
 P_obj read_object(int rnum, int)
 {
+	if (rnum == read_object_fail_rnum)
+		return nullptr;
 	P_obj obj = new Object;
 	obj->R_num = rnum;
 	objects.push_back(obj);
@@ -142,6 +218,27 @@ void obj_to_char(P_obj obj, P_char ch)
 	obj->loc_p = LOC_CARRIED;
 	obj->loc.carrying = ch;
 }
+void extract_obj(P_obj obj, int)
+{
+	if (!obj)
+		return;
+	while (obj->contains)
+	{
+		P_obj child = obj->contains;
+		obj->contains = child->next_content;
+		child->next_content = nullptr;
+		extract_obj(child);
+	}
+	auto found = std::find(objects.begin(), objects.end(), obj);
+	if (found == objects.end())
+		return;
+	free(obj->name);
+	free(obj->short_description);
+	free(obj->description);
+	free(obj->action_description);
+	objects.erase(found);
+	delete obj;
+}
 void affect_to_char(P_char ch, affected_type *)
 {
 	++ch->affects;
@@ -154,10 +251,19 @@ char *str_dup(const char *str)
 {
 	return strdup(str);
 }
+int sql_validate_loaded_item_type(P_obj, int saved_type, const char *)
+{
+	return saved_type;
+}
+bool sql_load_item_extra_descr_from_table(int, P_obj, const char *)
+{
+	return true;
+}
 
 // Fake MySQL results own strings until mysql_free_result(), as the real API does.
 using Rows = std::vector<std::vector<std::string>>;
-Rows saved_keepers, saved_items, saved_affects;
+Rows saved_keepers, saved_items, saved_affects, saved_item_affects;
+bool fail_affects_query = false;
 struct MYSQL_RES
 {
 	Rows rows;
@@ -168,9 +274,13 @@ using MYSQL_ROW = char **;
 bool DB = true;
 MYSQL_RES *db_query(const char *query, ...)
 {
+	if (fail_affects_query && strstr(query, "FROM shopkeeper_affects sa"))
+		return nullptr;
 	Rows rows;
 	if (strstr(query, "SELECT shop_id"))
 		rows = saved_keepers;
+	else if (strstr(query, "FROM shopkeeper_item_affects sia"))
+		rows = saved_item_affects;
 	else if (strstr(query, "FROM shopkeeper_items si"))
 		rows = saved_items;
 	else if (strstr(query, "FROM shopkeeper_affects sa"))
@@ -192,7 +302,8 @@ void mysql_free_result(MYSQL_RES *result)
 }
 bool sql_run_query(const char *)
 {
-	return true;
+	assert(false && "restore must not delete the durable snapshots");
+	return false;
 }
 
 // PRODUCTION_RESTORE
@@ -237,7 +348,7 @@ P_char spawn(int room, int rnum = 0)
 }
 void add_item(int keeper, int vnum, int slot = 0)
 {
-	std::vector<std::string> row(21, "0");
+	std::vector<std::string> row(29, "0");
 	row[0] = std::to_string(saved_items.size() + 1);
 	row[1] = std::to_string(keeper);
 	row[2] = std::to_string(vnum);
@@ -261,6 +372,12 @@ int main(int argc, char **argv)
 	{
 		world[i].number = 200 + i;
 		mob_index[i].virtual_number = 100 + i;
+	}
+	for (int i = 0; i < 4; ++i)
+	{
+		shop_index[i].keeper = 0;
+		shop_index[i].in_room = 200 + (i % 3);
+		shop_index[i].shop_is_roaming = 0;
 	}
 	if (scenario == "reset")
 	{
@@ -299,33 +416,39 @@ int main(int argc, char **argv)
 		add_item(11, 71);
 		add_item(11, 72, 1);
 		saved_affects = { { "11", "1", "2", "3", "4", "0", "0", "0", "0", "0" } };
+		saved_item_affects = { { "2", "3", "4" } };
 		shop_index[0].number_items_produced = shop_index[1].number_items_produced = 1;
 		shop_index[0].producing[0] = 80;
 		shop_index[1].producing[0] = 81;
-		sql_restore_shopkeepers();
+		assert(sql_restore_shopkeepers());
 		P_char first = world[0].people, second = world[1].people;
-		assert(first->next_in_room == player && !player->next_in_room);
+		assert(first->next_in_room == player && player->next_in_room);
 		assert(!second->next_in_room && world[2].people == elsewhere);
 		assert(has_item(first, 70) && has_item(first, 80) && !has_item(first, 81));
 		assert(has_item(second, 71) && has_item(second, 81) && !has_item(second, 80));
 		assert(second->equipment[0]->R_num == 72 && second->affects == 1);
 		assert(shop_index[0].dirty && shop_index[1].dirty);
-		assert(mob_index[0].number == 4);
+		assert(mob_index[0].number == 6);
 	}
 	else if (scenario == "duplicate")
 	{
 		// DB orders newest snapshot first; only its stock should materialize.
-		saved_keepers = { { "1", "11", "100", "200" },
-				  { "0", "10", "100", "200" },
-				  { "1", "12", "100", "201" } };
+		saved_keepers = { { "1", "11", "100", "201" }, { "1", "12", "100", "201" } };
 		add_item(11, 71);
-		add_item(10, 70);
-		add_item(12, 72);
-		sql_restore_shopkeepers();
-		assert(births == 1 && objects.size() == 1 && !world[0].people->next_in_room);
-		assert(has_item(world[0].people, 71) && !has_item(world[0].people, 70) &&
-		       !has_item(world[0].people, 72));
+		assert(sql_restore_shopkeepers());
+		assert(births == 1 && objects.size() == 1 && world[1].people &&
+		       !world[1].people->next_in_room);
+		assert(has_item(world[1].people, 71) && !has_item(world[1].people, 72));
 		assert(shop_index[1].dirty && !shop_index[0].dirty);
+	}
+	else if (scenario == "cleanup")
+	{
+		saved_keepers = { { "0", "10", "100", "200" } };
+		add_item(10, 60);
+		fail_affects_query = true;
+		assert(!sql_restore_shopkeepers());
+		assert(!character_list && objects.empty() && !world[0].people &&
+		       mob_index[0].number == 0);
 	}
 	else if (scenario == "invalid")
 	{
@@ -334,9 +457,9 @@ int main(int argc, char **argv)
 				  { "2", "14", "100", "999" }, { "3", "15", "999", "201" } };
 		for (int id = 10; id <= 15; ++id)
 			add_item(id, id + 50);
-		sql_restore_shopkeepers();
-		assert(births == 1 && objects.size() == 1 && has_item(world[0].people, 60));
-		assert(!world[1].people && !world[2].people);
+		assert(!sql_restore_shopkeepers());
+		assert(!character_list && objects.empty() && !world[0].people && !world[1].people &&
+		       !world[2].people && mob_index[0].number == 0);
 	}
 	else
 		assert(false);

@@ -139,6 +139,7 @@ int main()
     assert(encoded_object[604] == 4 && encoded_object[607] == 1);
 
     copyover_mob mob = {};
+    mob.shopkeeper_shop_id = -1;
     mob.vnum = 10;
     mob.idnum = 20;
     mob.room = 30;
@@ -174,6 +175,23 @@ int main()
            decoded_mob.num_affects == 1);
     assert(decoded_affect.type == affect.type && decoded_affect.flags == affect.flags &&
            decoded_affect.bitvector5 == affect.bitvector5);
+    assert(decoded_mob.shopkeeper_shop_id == -1); // Legacy wire must not claim shop zero.
+    mob.shopkeeper_shop_id = 480;
+    memcpy(native_mob.data(), &mob, sizeof(mob));
+    assert(world_recovery_encode_record(world_recovery_record_type::mob, native_mob.data(),
+                                        native_mob.size(), encoded_mob.data(),
+                                        encoded_mob.size(), &encoded_size));
+    assert(encoded_size == 354 && !memcmp(encoded_mob.data()+346, "SHP1", 4));
+    assert(world_recovery_decode_record(world_recovery_record_type::mob, encoded_mob.data(),
+                                        encoded_size, &native));
+    memcpy(&decoded_mob, native.data(), sizeof(decoded_mob));
+    assert(decoded_mob.shopkeeper_shop_id == 480);
+    for (size_t truncated = 347; truncated < 354; ++truncated)
+        assert(!world_recovery_decode_record(world_recovery_record_type::mob, encoded_mob.data(),
+                                             truncated, &native));
+    memset(encoded_mob.data()+350, 0xff, 4);
+    assert(!world_recovery_decode_record(world_recovery_record_type::mob, encoded_mob.data(),
+                                         encoded_size, &native));
 
     std::vector<unsigned char> floor;
     assert(world_recovery_encode_floor_object(native_object.data(), native_object.size(), &floor));
