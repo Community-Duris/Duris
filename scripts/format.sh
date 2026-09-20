@@ -208,7 +208,7 @@ if [[ "$MODE" == "staged" ]]; then
         ;;
     esac
 
-    if (( rc != 1 )) || [[ "$out" != "diff --git "* ]]; then
+    if (( rc != 0 && rc != 1 )) || [[ "$out" != "diff --git "* ]]; then
       echo "ERROR: git clang-format could not produce a staged formatting patch." >&2
       [[ -n "$out" ]] && echo "$out" >&2
       exit 1
