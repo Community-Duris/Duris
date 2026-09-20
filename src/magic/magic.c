@@ -37,7 +37,11 @@
 #include "world/map.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "persistence/persistence_checkpoint.h"
 #include "item/objmisc.h"
+#include "item/item_movement_transaction.h"
+#include "item/item_ownership_runtime.h"
+#include "item/item_command_policy.h"
 #include "kingdom/kingdom_store_piece.h"
 #include "world/outposts.h"
 #include "world/specs.prototypes.h"
@@ -11012,7 +11016,7 @@ void spell_acid_breath(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 			 &messages) != DAM_NONEDEAD)
 		return;
 
-		/*
+	/*
 	 * And now for the damage on equipment
 	 */
 
@@ -22289,13 +22293,219 @@ void remove_soulbind(P_char ch)
 	}
 }
 
+void load_soulbind(P_char ch);
+
+struct soulbind_movement_context
+{
+	uint64_t item_uid;
+	uint32_t source_pid;
+	uint32_t victim_pid;
+	int32_t source_room;
+	int32_t victim_room;
+	uint8_t replace_existing;
+};
+
+static_assert(sizeof(soulbind_movement_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+static P_char find_soulbind_player(uint32_t pid)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (IS_PC(character) && GET_PID(character) == static_cast<int>(pid))
+			return character;
+	return NULL;
+}
+
+static P_obj find_soulbind_item(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+static bool apply_soulbind_metadata(P_char victim, P_obj obj)
+{
+	if (!victim || !obj)
+		return false;
+	struct affected_type af;
+	char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
+	memset(&af, 0, sizeof(struct affected_type));
+	af.type = TAG_SOULBIND;
+	af.modifier = obj_index[obj->R_num].virtual_number;
+	af.duration = -1;
+	af.location = 0;
+	af.flags = AFFTYPE_NOSHOW | AFFTYPE_PERM | AFFTYPE_NODISPEL;
+	affect_to_char(victim, &af);
+
+	snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(victim), obj->name);
+	if ((obj->str_mask & STRUNG_KEYS) && obj->name)
+		str_free(obj->name);
+	obj->str_mask |= STRUNG_KEYS;
+	obj->name = str_dup(gbuf2);
+
+	snprintf(buffer, MAX_STRING_LENGTH, "%s &+Lbearing the &+Wsoul&+L of &+r%s&n",
+		 obj->short_description, GET_NAME(victim));
+	set_short_description(obj, buffer);
+
+	SET_BIT(obj->extra_flags, ITEM_NOSELL);
+	SET_BIT(obj->extra_flags, ITEM_NORENT);
+	SET_BIT(obj->extra2_flags, ITEM2_CRUMBLELOOT);
+	SET_BIT(obj->extra2_flags, ITEM2_SOULBIND);
+	REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
+	REMOVE_BIT(obj->extra_flags, ITEM_INVISIBLE);
+	SET_BIT(obj->extra_flags, ITEM_NOREPAIR);
+	REMOVE_BIT(obj->extra_flags, ITEM_NODROP);
+	if (!do_save_silent(victim, 1))
+		logit(LOG_WIZ, "Failed to save %s after soulbind.", GET_NAME(victim));
+	act("&+W$n &+rbegins to chant loudly, calling forth the &+Bblood &+rof their enemies. &+W$n's &+rhands begin to &+Rg&+rl&+Ro&+rw &+Rbrightly &+ras drops of blood begin to form.\r\n"
+	    "&+W$n &+rgently takes the &+Rblood&+r and begins to spread it about their $p&+r, which starts to glow with an &+Lun&+rho&+Lly &+Rlight.&N",
+	    TRUE, victim, obj, 0, TO_ROOM);
+	act("&+rYou begin to chant loudly, calling forth the &+Bblood &+rof their enemies. Your &+rhands begin to &+Rg&+rl&+Ro&+rw &+Rbrightly &+ras drops of blood begin to form.\r\n"
+	    "&+rYou &+rgently take the &+Rblood&+r and begin to spread it about their $p&+r, which starts to glow with an &+Lun&+rho&+Lly &+Rlight.&N",
+	    FALSE, victim, obj, 0, TO_CHAR);
+	return true;
+}
+
+static bool publish_nonplayer_soulbind(P_char source, P_char victim, P_obj object)
+{
+	if (!source || !victim || !object || !OBJ_CARRIED_BY(object, source))
+		return false;
+	obj_from_char(object);
+	obj_to_char(object, victim);
+	return OBJ_CARRIED_BY(object, victim);
+}
+
+static void soulbind_transfer_completion(P_char callback_actor, bool committed,
+					 const item_transfer_result &, unsigned int error_code,
+					 const uint8_t *encoded, size_t encoded_size)
+{
+	soulbind_movement_context context = {};
+	if (!encoded || encoded_size != sizeof(context))
+	{
+		persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none", "none",
+				  "invalid_context", "uid=unknown");
+		return;
+	}
+	memcpy(&context, encoded, sizeof(context));
+	P_char owner = find_soulbind_player(context.source_pid);
+	if (!committed)
+	{
+		if (owner)
+			send_to_char(
+				"The soulbind transfer did not commit; the item remains with you.\r\n",
+				owner);
+		else if (callback_actor)
+			send_to_char(
+				"The soulbind transfer did not commit; the item was not moved.\r\n",
+				callback_actor);
+		logit(LOG_FILE,
+		      "item_movement: command=soulbind outcome=not_committed source_pid=%u "
+		      "victim_pid=%u uid=%llu error=%u",
+		      context.source_pid, context.victim_pid, (unsigned long long)context.item_uid,
+		      error_code);
+		return;
+	}
+
+	P_char victim = find_soulbind_player(context.victim_pid);
+	P_obj object = find_soulbind_item(context.item_uid);
+	if (!owner || !victim || !object || !IS_TRUSTED(owner) ||
+	    owner->in_room != context.source_room || victim->in_room != context.victim_room)
+	{
+		persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none", "none",
+				  "stale_live_topology",
+				  "item_uid=%llu source_pid=%u victim_pid=%u",
+				  (unsigned long long)context.item_uid, context.source_pid,
+				  context.victim_pid);
+		return;
+	}
+	if (OBJ_CARRIED_BY(object, victim) &&
+	    has_soulbind(victim) == obj_index[object->R_num].virtual_number &&
+	    IS_OBJ_STAT2(object, ITEM2_SOULBIND))
+		return;
+	if (has_soulbind(victim) != 0 && !context.replace_existing)
+	{
+		persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none", "none",
+				  "victim_already_soulbound", "item_uid=%llu victim_pid=%u",
+				  (unsigned long long)context.item_uid, context.victim_pid);
+		return;
+	}
+	if (!OBJ_CARRIED_BY(object, victim))
+	{
+		if (!OBJ_NOWHERE(object) && (!owner || !OBJ_CARRIED_BY(object, owner)))
+		{
+			persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none",
+					  "none", "source_not_carrying",
+					  "item_uid=%llu source_pid=%u",
+					  (unsigned long long)context.item_uid, context.source_pid);
+			return;
+		}
+		if (total_carried_weight(victim) + GET_OBJ_WEIGHT(object) > CAN_CARRY_W(victim))
+		{
+			persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none",
+					  "none", "destination_at_capacity",
+					  "item_uid=%llu victim_pid=%u",
+					  (unsigned long long)context.item_uid, context.victim_pid);
+			return;
+		}
+		if (owner && OBJ_CARRIED_BY(object, owner))
+			obj_from_char(object);
+		obj_to_char(object, victim);
+		object = find_soulbind_item(context.item_uid);
+	}
+	if (!object || !OBJ_CARRIED_BY(object, victim))
+	{
+		persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none", "none",
+				  "publication_refused", "item_uid=%llu victim_pid=%u",
+				  (unsigned long long)context.item_uid, context.victim_pid);
+		return;
+	}
+
+	if (has_soulbind(victim) != 0)
+	{
+		if (!context.replace_existing)
+		{
+			persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none",
+					  "none", "victim_already_soulbound",
+					  "item_uid=%llu victim_pid=%u",
+					  (unsigned long long)context.item_uid, context.victim_pid);
+			return;
+		}
+		remove_soulbind(victim);
+		for (struct affected_type *findaf = victim->affected; findaf; findaf = findaf->next)
+			if (findaf->type == TAG_SOULBIND)
+			{
+				affect_remove(victim, findaf);
+				break;
+			}
+		if (owner)
+			send_to_char(
+				"Cleared the recipient's previous soulbind after the transfer committed.\r\n",
+				owner);
+	}
+	if (!apply_soulbind_metadata(victim, object))
+	{
+		persistence_alert(AVATAR, "item_movement", "soulbind_publish", "none", "none",
+				  "metadata_apply_failed", "item_uid=%llu victim_pid=%u",
+				  (unsigned long long)context.item_uid, context.victim_pid);
+		return;
+	}
+	if (owner)
+		mark_player_dirty_components(GET_PID(owner), PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
+	mark_player_dirty_components(GET_PID(victim), PLAYER_COMPONENT_STATUS |
+							      PLAYER_COMPONENT_EQUIPMENT |
+							      PLAYER_COMPONENT_INVENTORY);
+}
+
 void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj;
 	P_char victim;
 	char gbuf1[MAX_STRING_LENGTH], gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH],
 		gbuf3[MAX_STRING_LENGTH];
-	struct affected_type af, *findaf;
+	struct affected_type *findaf;
+	bool replace_existing = false;
 
 	argument_interpreter(argument, gbuf1, gbuf2);
 
@@ -22315,6 +22525,11 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 		{
 			if (findaf->type == TAG_SOULBIND)
 			{
+				if (*gbuf2)
+				{
+					replace_existing = true;
+					break;
+				}
 				remove_soulbind(victim);
 				affect_remove(victim, findaf);
 				snprintf(buffer, MAX_STRING_LENGTH, "%s", GET_NAME(victim));
@@ -22323,12 +22538,7 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 				send_to_char(gbuf3, ch);
 				logit(LOG_WIZ, "%s cleared soulbind on %s", J_NAME(ch),
 				      J_NAME(victim));
-				// If we're not setting a new soulbound item.
-				if (!*gbuf2)
-				{
-					return;
-				}
-				break;
+				return;
 			}
 		}
 	}
@@ -22337,7 +22547,7 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 		victim = ch;
 	}
 
-	if (has_soulbind(victim) != 0)
+	if (has_soulbind(victim) != 0 && !replace_existing)
 	{
 		remove_soulbind(victim);
 		send_to_char(
@@ -22370,7 +22580,7 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 		}
 
 		// If the victim has a soulbound item already (note: for God setting for someone, it was cleared above).
-		if (affected_by_spell(victim, TAG_SOULBIND))
+		if (affected_by_spell(victim, TAG_SOULBIND) && !replace_existing)
 		{
 			send_to_char("&+rA character may only &+Wsoulbind&+r once.&n\r\n", victim);
 			return;
@@ -22389,50 +22599,80 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 
-		memset(&af, 0, sizeof(struct affected_type));
-		af.type = TAG_SOULBIND;
-		af.modifier = (obj_index[obj->R_num].virtual_number);
-		af.duration = -1;
-		af.location = 0;
-		af.flags = AFFTYPE_NOSHOW | AFFTYPE_PERM | AFFTYPE_NODISPEL;
-		affect_to_char(victim, &af);
-
-		// Restring item with chars name as a possible argument.
-		snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(victim), obj->name);
-		// Free old name if strung.
-		if ((obj->str_mask & STRUNG_KEYS) && obj->name)
+		if (ch != victim && (!IS_PC(ch) || !IS_PC(victim)))
 		{
-			str_free(obj->name);
+			if (!publish_nonplayer_soulbind(ch, victim, obj) ||
+			    !apply_soulbind_metadata(victim, obj))
+			{
+				send_to_char("The soulbind could not be applied.\r\n", ch);
+			}
+			return;
 		}
-		obj->str_mask |= STRUNG_KEYS;
-		obj->name = str_dup(gbuf2);
 
-		snprintf(buffer, MAX_STRING_LENGTH, "%s &+Lbearing the &+Wsoul&+L of &+r%s&n",
-			 obj->short_description, GET_NAME(victim));
-		set_short_description(obj, buffer);
-
-		SET_BIT(obj->extra_flags, ITEM_NOSELL);
-		SET_BIT(obj->extra_flags, ITEM_NORENT);
-		SET_BIT(obj->extra2_flags, ITEM2_CRUMBLELOOT);
-		SET_BIT(obj->extra2_flags, ITEM2_SOULBIND);
-		// So our item updates right.
-		if (!do_save_silent(victim, 1))
-			logit(LOG_WIZ, "Failed to save %s after soulbind.", GET_NAME(victim));
-
-		// Transfer the object to victim if necessary.
 		if (ch != victim)
 		{
-			obj_from_char(obj);
-			obj_to_char(obj, victim);
+			const item_owner_identity source = { item_owner_type::player,
+							     static_cast<uint64_t>(GET_PID(ch)),
+							     0 };
+			const item_owner_identity destination = {
+				item_owner_type::player, static_cast<uint64_t>(GET_PID(victim)), 0
+			};
+			if (total_carried_weight(victim) + GET_OBJ_WEIGHT(obj) >
+			    CAN_CARRY_W(victim))
+			{
+				send_to_char("The recipient cannot carry that item right now.\r\n",
+					     ch);
+				return;
+			}
+			item_ownership_runtime_entry ownership = {};
+			if (!obj->obj_uid ||
+			    !item_ownership_runtime_lookup(obj->obj_uid, &ownership) ||
+			    ownership.state != item_custody_state::active ||
+			    !item_owner_identity_equal(ownership.owner, source))
+			{
+				send_to_char(
+					"The item's ownership records do not permit this soulbind transfer.\r\n",
+					ch);
+				logit(LOG_FILE,
+				      "item_movement: command=soulbind outcome=owner_mismatch actor=%s uid=%llu",
+				      J_NAME(ch), (unsigned long long)obj->obj_uid);
+				return;
+			}
+			const soulbind_movement_context context = {
+				obj->obj_uid,
+				static_cast<uint32_t>(GET_PID(ch)),
+				static_cast<uint32_t>(GET_PID(victim)),
+				ch->in_room,
+				victim->in_room,
+				static_cast<uint8_t>(replace_existing)
+			};
+			item_movement_reject reject = item_movement_reject::none;
+			if (!item_movement_transaction_submit(
+				    ch, obj, NULL, source, destination,
+				    item_transfer_reason::soulbind, GET_PID(ch),
+				    soulbind_transfer_completion, &context, sizeof(context), NULL,
+				    &reject))
+			{
+				send_to_char(
+					"The soulbind transfer could not start; the item and recipient were unchanged.\r\n",
+					ch);
+				logit(LOG_FILE,
+				      "item_movement: command=soulbind outcome=%s actor=%s uid=%llu",
+				      item_movement_reject_name(reject), J_NAME(ch),
+				      (unsigned long long)obj->obj_uid);
+				return;
+			}
+			send_to_char(
+				"The soulbind transfer is pending; no item or soulbound metadata changes until it commits.\r\n",
+				ch);
+			return;
 		}
 
-		// Send messages to the victim.
-		act("&+W$n &+rbegins to chant loudly, calling forth the &+Bblood &+rof their enemies. &+W$n's &+rhands begin to &+Rg&+rl&+Ro&+rw &+Rbrightly &+ras drops of blood begin to form.\r\n"
-		    "&+W$n &+rgently takes the &+Rblood&+r and begins to spread it about their $p&+r, which starts to glow with an &+Lun&+rho&+Lly &+Rlight.&N",
-		    TRUE, victim, obj, 0, TO_ROOM);
-		act("&+rYou begin to chant loudly, calling forth the &+Bblood &+rof your enemies. Your &+rhands begin to &+Rg&+rl&+Ro&+rw &+Rbrightly &+ras drops of blood begin to form.\r\n"
-		    "&+rYou &+rgently take the &+Rblood&+r and begin to spread it about your $p&+r, which starts to glow with an &+Lun&+rho&+Lly &+Rlight.&N",
-		    FALSE, victim, obj, 0, TO_CHAR);
+		if (!apply_soulbind_metadata(victim, obj))
+		{
+			send_to_char("The soulbind could not be applied.\r\n", ch);
+			return;
+		}
 	}
 	else
 	{

@@ -168,7 +168,8 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry) {
+			   [&](const auto &entry)
+			   {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -378,6 +379,40 @@ void retain_trusted_steal_publication(pending_movement &entry, uint64_t item_uid
 	logit(LOG_FILE,
 	      "item_movement: command=steal publication retained for retry uid=%llu actor_pid=%u",
 	      (unsigned long long)item_uid, entry.actor_pid);
+}
+
+bool retained_player_transfer_reason(item_transfer_reason reason)
+{
+	return reason == item_transfer_reason::soulbind || reason == item_transfer_reason::slip;
+}
+
+bool player_transfer_live_ready(const pending_movement &entry)
+{
+	if (entry.payload.to_owner.type != item_owner_type::player ||
+	    entry.payload.to_owner.id > INT32_MAX)
+		return false;
+	P_char source = find_live_player(entry.actor_pid);
+	P_char recipient = find_live_player(static_cast<uint32_t>(entry.payload.to_owner.id));
+	P_obj root = find_item(entry.payload.selected_item_uid);
+	return source && recipient && root && OBJ_CARRIED_BY(root, recipient);
+}
+
+void retain_player_transfer_publication(pending_movement &entry, uint64_t item_uid)
+{
+	if (!entry.publication_failed)
+	{
+		entry.publication_failed = true;
+		++health.stale_publications;
+		persistence_alert(AVATAR, "item_movement", "player_transfer_publish", "none",
+				  "none", "stale_live_publication",
+				  "item_uid=%llu actor_pid=%u reason=%u",
+				  (unsigned long long)item_uid, entry.actor_pid,
+				  static_cast<unsigned int>(entry.requested_reason));
+	}
+	logit(LOG_FILE,
+	      "item_movement: player transfer publication retained for retry uid=%llu actor_pid=%u reason=%u",
+	      (unsigned long long)item_uid, entry.actor_pid,
+	      static_cast<unsigned int>(entry.requested_reason));
 }
 
 item_owner_identity creation_grant_owner(const pending_creation_grant &request)
@@ -1448,15 +1483,18 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	const bool retain_trusted_steal = committed && registry_applied &&
 					  entry.requested_reason ==
 						  item_transfer_reason::trusted_steal;
+	const bool retain_player_transfer = committed && registry_applied &&
+					    retained_player_transfer_reason(entry.requested_reason);
 	const uint64_t trusted_steal_uid = entry.payload.selected_item_uid;
+	const uint64_t player_transfer_uid = entry.payload.selected_item_uid;
 	const std::string pending_key = found->first;
 	/*
-	 * A trusted steal has a second publication boundary after the durable
-	 * ownership commit: the exact live UID must reach the thief's carrying list.
-	 * Keep that entry fenced until the callback proves the boundary, otherwise a
-	 * committed ledger row could strand the live object with no retry path.
+	 * A trusted steal, Soulbind, or Slip has a second publication boundary after
+	 * the durable ownership commit: the exact live UID must reach its destination
+	 * carrying list. Keep that entry fenced until the callback proves the boundary,
+	 * otherwise a committed ledger row could strand the live object with no retry path.
 	 */
-	if (!retain_creation_grant && !retain_trusted_steal)
+	if (!retain_creation_grant && !retain_trusted_steal && !retain_player_transfer)
 		pending.erase(found);
 	if (completion_fn)
 		completion_fn(actor, committed && registry_applied, result, error_code,
@@ -1468,6 +1506,18 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		    !trusted_steal_live_ready(actor, trusted_steal_uid))
 		{
 			retain_trusted_steal_publication(retained->second, trusted_steal_uid);
+			account_health();
+			return;
+		}
+		if (retained != pending.end())
+			pending.erase(retained);
+	}
+	else if (retain_player_transfer)
+	{
+		auto retained = pending.find(pending_key);
+		if (retained != pending.end() && !player_transfer_live_ready(retained->second))
+		{
+			retain_player_transfer_publication(retained->second, player_transfer_uid);
 			account_health();
 			return;
 		}
@@ -2260,7 +2310,14 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			publish(found, nullptr);
 		else if (found->second.actor_pid)
 		{
-			if (P_char actor = find_live_player(found->second.actor_pid))
+			P_char actor = find_live_player(found->second.actor_pid);
+			if (!actor &&
+			    retained_player_transfer_reason(found->second.requested_reason) &&
+			    found->second.payload.to_owner.type == item_owner_type::player &&
+			    found->second.payload.to_owner.id <= INT32_MAX)
+				actor = find_live_player(
+					static_cast<uint32_t>(found->second.payload.to_owner.id));
+			if (actor)
 				publish(found, actor);
 		}
 		else if (found->second.actor_runtime_id)
@@ -2281,14 +2338,22 @@ void item_movement_transaction_player_ready(P_char actor)
 		return;
 	for (;;)
 	{
-		auto found =
-			std::find_if(pending.begin(), pending.end(),
-				     [&](const auto &entry)
-				     {
-					     return entry.second.actor_pid ==
-							    static_cast<uint32_t>(GET_PID(actor)) &&
-						    entry.second.completion_ready;
-				     });
+		auto found = std::find_if(
+			pending.begin(), pending.end(),
+			[&](const auto &entry)
+			{
+				const bool source_ready = entry.second.actor_pid ==
+							  static_cast<uint32_t>(GET_PID(actor));
+				const bool destination_ready =
+					retained_player_transfer_reason(
+						entry.second.requested_reason) &&
+					entry.second.payload.to_owner.type ==
+						item_owner_type::player &&
+					entry.second.payload.to_owner.id ==
+						static_cast<uint64_t>(GET_PID(actor));
+				return (source_ready || destination_ready) &&
+				       entry.second.completion_ready;
+			});
 		if (found == pending.end())
 			break;
 		/* publish may invoke a callback that inserts and rehashes pending. */
@@ -2300,7 +2365,12 @@ void item_movement_transaction_player_ready(P_char actor)
 			found->second.publication_attempts = 0;
 			found->second.publication_status = publication_state::ready;
 		}
-		publish(found, actor);
+		P_char publisher = find_live_player(found->second.actor_pid);
+		if (!publisher && retained_player_transfer_reason(found->second.requested_reason))
+			publisher = actor;
+		if (!publisher)
+			break;
+		publish(found, publisher);
 		if (pending.find(key) != pending.end())
 			break;
 	}
