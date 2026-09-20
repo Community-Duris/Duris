@@ -103,6 +103,127 @@ extern int get_next_dragoon_circle(P_char ch);
 extern P_char get_dragoon_mount(P_char ch);
 extern void do_point(P_char ch, P_char victim);
 
+enum class conjured_weapon_kind : uint8_t
+{
+	ensis_unguis,
+	lancea_cineralae,
+	simulacrum_anguis,
+};
+
+struct conjured_weapon_grant_context
+{
+	uint64_t item_uid;
+	uint32_t actor_pid;
+	float self_damage;
+	uint8_t kind;
+};
+
+static_assert(sizeof(conjured_weapon_grant_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+static P_obj magic_find_object_by_uid(uint64_t item_uid)
+{
+	if (!item_uid)
+		return NULL;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+static void conjured_weapon_publish_effect(P_char actor, P_obj blade, conjured_weapon_kind kind,
+					   float self_damage)
+{
+	if (!actor || !blade || !IS_ALIVE(actor))
+		return;
+
+	switch (kind)
+	{
+	case conjured_weapon_kind::ensis_unguis:
+		act("$n forearm snaps as $e tears free $p from $s &+rflesh&n.", TRUE, actor, blade,
+		    0, TO_ROOM);
+		act("Your forearm snaps as you tear free $p from your &+rflesh&n.", TRUE, actor,
+		    blade, 0, TO_CHAR);
+		break;
+	case conjured_weapon_kind::lancea_cineralae:
+		act("As $n writhes in agony a disgusting growth erupts from $s shoulder $e rips away $p.",
+		    TRUE, actor, blade, 0, TO_ROOM);
+		act("You writhe in agony as a disgusting growth erupts from your shoulder, you rip away $p.",
+		    TRUE, actor, blade, 0, TO_CHAR);
+		break;
+	case conjured_weapon_kind::simulacrum_anguis:
+		act("$n clutches $s abdomen as $s entrails burst out in a writhing mass, forming $p.",
+		    TRUE, actor, blade, 0, TO_ROOM);
+		act("You clutch your abdomen as your entrails burst out in a writhing mass, forming $p.",
+		    TRUE, actor, blade, 0, TO_CHAR);
+		break;
+	}
+
+	spell_damage(actor, actor, self_damage, SPLDAM_SPIRIT, SPLDAM_GRSPIRIT | SPLDAM_NOSHRUG,
+		     NULL);
+}
+
+static void conjured_weapon_grant_completed(P_char actor, bool committed,
+					    const item_transfer_result & /*result*/,
+					    unsigned int /*error_code*/, const uint8_t *encoded,
+					    size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(conjured_weapon_grant_context) ||
+	    GET_PID(actor) <= 0)
+		return;
+
+	conjured_weapon_grant_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (context.actor_pid != static_cast<uint32_t>(GET_PID(actor)))
+		return;
+	if (!committed)
+	{
+		send_to_char(
+			"The conjured weapon could not be delivered; no health was spent. Please try again later.\r\n",
+			actor);
+		return;
+	}
+
+	P_obj blade = magic_find_object_by_uid(context.item_uid);
+	if (!blade)
+	{
+		logit(LOG_FILE,
+		      "conjured weapon grant committed without live publication (uid=%llu pid=%d)",
+		      (unsigned long long)context.item_uid, GET_PID(actor));
+		return;
+	}
+	conjured_weapon_publish_effect(
+		actor, blade, static_cast<conjured_weapon_kind>(context.kind), context.self_damage);
+}
+
+static bool submit_conjured_weapon(P_char actor, P_obj blade, conjured_weapon_kind kind)
+{
+	if (!actor || !blade)
+		return false;
+	if (!IS_PC(actor))
+	{
+		obj_to_char(blade, actor);
+		conjured_weapon_publish_effect(actor, blade, kind, GET_HIT(actor) * 0.10f);
+		return true;
+	}
+
+	const conjured_weapon_grant_context context = {
+		blade->obj_uid,
+		static_cast<uint32_t>(GET_PID(actor)),
+		GET_HIT(actor) * 0.10f,
+		static_cast<uint8_t>(kind),
+	};
+	if (item_creation_grant_submit_to_player_with_completion(actor, blade, actor,
+								 conjured_weapon_grant_completed,
+								 &context, sizeof(context)))
+		return true;
+
+	extract_obj(blade, FALSE);
+	send_to_char(
+		"The conjured weapon could not be created right now; no health was spent. Please try again later.\r\n",
+		actor);
+	return false;
+}
+
 // THE NEXT PERSON THAT OUTRIGHT COPIES A SPELL JUST TO CHANGE THE NAME/MESSAGES
 // IT OUTPUTS IS GOING TO BE CASTRATED BY ME AND FORCED TO EAT THEIR OWN GENITALIA.
 // There is no reason to do this other than to make a headache for another coder.
@@ -11015,7 +11136,7 @@ void spell_acid_breath(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 			 &messages) != DAM_NONEDEAD)
 		return;
 
-		/*
+	/*
 	 * And now for the damage on equipment
 	 */
 
@@ -22269,10 +22390,9 @@ int has_soulbind(P_char ch)
 	return result;
 }
 
-void remove_soulbind(P_char ch)
+static void remove_soulbind_except(P_char ch, uint64_t keep_uid)
 {
 	P_obj obj, next_obj;
-	//  bool found = FALSE;
 
 	// find any instance of their soulbound item and remove it
 	for (obj = object_list; obj; obj = next_obj)
@@ -22285,12 +22405,17 @@ void remove_soulbind(P_char ch)
 		 * every such piece whose keywords hold this character's name.
 		 * kingdom_store_bound() knows one by its maker's mark as well as
 		 * by its vnum. */
-		if (IS_SET((obj)->extra2_flags, ITEM2_SOULBIND) && !kingdom_store_bound(obj) &&
-		    isname(GET_NAME(ch), obj->name))
+		if (obj->obj_uid != keep_uid && IS_SET(obj->extra2_flags, ITEM2_SOULBIND) &&
+		    !kingdom_store_bound(obj) && isname(GET_NAME(ch), obj->name))
 		{
 			extract_obj(obj);
 		}
 	}
+}
+
+void remove_soulbind(P_char ch)
+{
+	remove_soulbind_except(ch, 0);
 }
 
 void load_soulbind(P_char ch);
@@ -22521,9 +22646,69 @@ static bool soulbind_transfer_publication(P_char /*callback_actor*/, bool commit
 								     PLAYER_COMPONENT_EQUIPMENT |
 								     PLAYER_COMPONENT_INVENTORY);
 	mark_player_dirty_components(GET_PID(victim), PLAYER_COMPONENT_STATUS |
-							      PLAYER_COMPONENT_EQUIPMENT |
-							      PLAYER_COMPONENT_INVENTORY);
+						      PLAYER_COMPONENT_EQUIPMENT |
+						      PLAYER_COMPONENT_INVENTORY);
 	return true;
+}
+
+struct soulbind_reload_context
+{
+	uint64_t item_uid;
+	uint32_t recipient_pid;
+	int32_t item_vnum;
+};
+
+static_assert(sizeof(soulbind_reload_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+static void soulbind_reload_completed(P_char actor, bool committed,
+				      const item_transfer_result & /*result*/,
+				      unsigned int /*error_code*/, const uint8_t *encoded,
+				      size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(soulbind_reload_context) ||
+	    GET_PID(actor) <= 0)
+		return;
+
+	soulbind_reload_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (context.recipient_pid != static_cast<uint32_t>(GET_PID(actor)))
+		return;
+	if (!committed)
+	{
+		send_to_char(
+			"The soulbound item could not be restored; your existing soulbound item was kept.\r\n",
+			actor);
+		return;
+	}
+
+	P_obj replacement = magic_find_object_by_uid(context.item_uid);
+	if (!replacement ||
+	    (!OBJ_CARRIED_BY(replacement, actor) && !OBJ_WORN_BY(replacement, actor)))
+	{
+		logit(LOG_FILE,
+		      "soulbind reload committed without live publication (uid=%llu pid=%d)",
+		      (unsigned long long)context.item_uid, GET_PID(actor));
+		send_to_char(
+			"The ownership authority restored the soulbound item, but it is not available yet.\r\n",
+			actor);
+		return;
+	}
+	if (has_soulbind(actor) != context.item_vnum)
+	{
+		logit(LOG_FILE,
+		      "soulbind reload found changed binding state (uid=%llu pid=%d expected=%d actual=%d)",
+		      (unsigned long long)context.item_uid, GET_PID(actor), context.item_vnum,
+		      has_soulbind(actor));
+		send_to_char(
+			"Your soulbound state changed while the replacement was arriving; the existing state was kept.\r\n",
+			actor);
+		return;
+	}
+
+	remove_soulbind_except(actor, context.item_uid);
+	send_to_char(
+		"&+yAfter a brief moment, you feel &+Wwhole&+y once again, ready to &+rconquer &+ythe world.\r\n",
+		actor);
 }
 
 void do_soulbind(P_char ch, char *argument, int /*cmd*/)
@@ -22577,14 +22762,10 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 
 	if (has_soulbind(victim) != 0 && !replace_existing)
 	{
-		remove_soulbind(victim);
 		send_to_char(
 			"&+yYour &+Ysoul &+ycalls out to the world to bring forth your &+ritem&+y...\r\n",
 			victim);
 		load_soulbind(victim);
-		send_to_char(
-			"&+yAfter a brief moment, you feel &+Wwhole&+y once again, ready to &+rconquer &+ythe world.\r\n",
-			victim);
 		return;
 	}
 
@@ -22722,6 +22903,13 @@ void load_soulbind(P_char ch)
 	/* snprintf(gbuf2, MAX_STRING_LENGTH, "%d", item);
 	 send_to_char(gbuf2, ch);*/
 	obj = read_object(item, VIRTUAL);
+	if (!obj)
+	{
+		send_to_char(
+			"The soulbound item could not be recreated; your existing soulbound item was kept.\r\n",
+			ch);
+		return;
+	}
 	snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), obj->name);
 	obj->name = str_dup(gbuf2);
 	snprintf(buffer, MAX_STRING_LENGTH, "%s &+Lbearing the &+Wsoul&+L of &+r%s&n",
@@ -22735,7 +22923,30 @@ void load_soulbind(P_char ch)
 	REMOVE_BIT(obj->extra_flags, ITEM_INVISIBLE);
 	SET_BIT(obj->extra_flags, ITEM_NOREPAIR);
 	REMOVE_BIT(obj->extra_flags, ITEM_NODROP);
-	obj_to_char(obj, ch);
+
+	if (!IS_PC(ch))
+	{
+		obj_to_char(obj, ch);
+		remove_soulbind_except(ch, obj->obj_uid);
+		send_to_char(
+			"&+yAfter a brief moment, you feel &+Wwhole&+y once again, ready to &+rconquer &+ythe world.\r\n",
+			ch);
+		return;
+	}
+
+	const soulbind_reload_context context = {
+		obj->obj_uid,
+		static_cast<uint32_t>(GET_PID(ch)),
+		item,
+	};
+	if (item_creation_grant_submit_to_player_with_completion(
+		    ch, obj, ch, soulbind_reload_completed, &context, sizeof(context)))
+		return;
+
+	extract_obj(obj, FALSE);
+	send_to_char(
+		"The soulbound item could not be restored; your existing soulbound item was kept.\r\n",
+		ch);
 }
 
 void spell_contain_being(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -22899,22 +23110,13 @@ void spell_ensis_unguis(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, 
 		blade->value[7] = 40; // procs flameburst
 	}
 
-	act("$n forearm snaps as $e tears free $p from $s &+rflesh&n.", TRUE, ch, blade, 0,
-	    TO_ROOM);
-	act("Your forearm snaps as you tear free $p from your &+rflesh&n.", TRUE, ch, blade, 0,
-	    TO_CHAR);
-
 	blade->timer[0] = 180;
 	if (IS_PC(ch))
 		blade->timer[1] = GET_PID(ch);
 	else
 		blade->timer[1] = -1;
 
-	obj_to_char(blade, ch);
-
-	// Take a little damage for your benefits
-	spell_damage(ch, ch, GET_HIT(ch) * 0.10f, SPLDAM_SPIRIT, SPLDAM_GRSPIRIT | SPLDAM_NOSHRUG,
-		     NULL);
+	submit_conjured_weapon(ch, blade, conjured_weapon_kind::ensis_unguis);
 }
 
 void spell_lancea_cineralae(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
@@ -22960,22 +23162,13 @@ void spell_lancea_cineralae(int /*level*/, P_char ch, char * /*arg*/, int /*type
 		blade->value[7] = 40; // procs flameburst
 	}
 
-	act("As $n writhes in agony a disgusting growth erupts from $s shoulder $e rips away $p.",
-	    TRUE, ch, blade, 0, TO_ROOM);
-	act("You writhe in agony as a disgusting growth erupts from your shoulder, you rip away $p.",
-	    TRUE, ch, blade, 0, TO_CHAR);
-
 	blade->timer[0] = 180;
 	if (IS_PC(ch))
 		blade->timer[1] = GET_PID(ch);
 	else
 		blade->timer[1] = -1;
 
-	obj_to_char(blade, ch);
-
-	// Take a little damage for your benefits
-	spell_damage(ch, ch, GET_HIT(ch) * 0.10f, SPLDAM_SPIRIT, SPLDAM_GRSPIRIT | SPLDAM_NOSHRUG,
-		     NULL);
+	submit_conjured_weapon(ch, blade, conjured_weapon_kind::lancea_cineralae);
 }
 
 void spell_simulacrum_anguis(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
@@ -23021,22 +23214,13 @@ void spell_simulacrum_anguis(int /*level*/, P_char ch, char * /*arg*/, int /*typ
 		blade->value[7] = 40; // procs flameburst
 	}
 
-	act("$n clutches $s abdomen as $s entrails burst out in a writhing mass, forming $p.", TRUE,
-	    ch, blade, 0, TO_ROOM);
-	act("$n clutch you abdomen as your entrails burst out in a writhing mass, forming $p.",
-	    TRUE, ch, blade, 0, TO_CHAR);
-
 	blade->timer[0] = 180;
 	if (IS_PC(ch))
 		blade->timer[1] = GET_PID(ch);
 	else
 		blade->timer[1] = -1;
 
-	obj_to_char(blade, ch);
-
-	// Take a little damage for your benefits
-	spell_damage(ch, ch, GET_HIT(ch) * 0.10f, SPLDAM_SPIRIT, SPLDAM_GRSPIRIT | SPLDAM_NOSHRUG,
-		     NULL);
+	submit_conjured_weapon(ch, blade, conjured_weapon_kind::simulacrum_anguis);
 }
 
 void spell_stigmata_draconica(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
