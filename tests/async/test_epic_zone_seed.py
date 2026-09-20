@@ -57,7 +57,7 @@ class EpicZoneSeedTest(unittest.TestCase):
                                      "--server-stopped").returncode, 0)
         result = self.cli("sql-apply", "--database", "seed_qa", "--server-stopped")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("DATABASE() = 'seed_qa'", result.stdout)
+        self.assertIn("CAST(DATABASE() AS BINARY) = CAST('seed_qa' AS BINARY)", result.stdout)
         self.assertIn("START TRANSACTION", result.stdout)
         self.assertIn("FOR UPDATE", result.stdout)
         self.assertIn("COMMIT", result.stdout)

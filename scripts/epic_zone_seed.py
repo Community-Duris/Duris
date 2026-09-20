@@ -214,7 +214,7 @@ START TRANSACTION;
 -- The number index is not unique and its access plan is optimizer-dependent.
 SELECT number AS locked_zone_number FROM zones ORDER BY number FOR UPDATE;
 SET @duris_epic_seed_ok = (
-  DATABASE() = '{database}'
+  COALESCE(CAST(DATABASE() AS BINARY) = CAST('{database}' AS BINARY), 0)
   AND (SELECT COUNT(*) FROM information_schema.tables
        WHERE table_schema = DATABASE() AND table_name = 'zones' AND engine = 'InnoDB') = 1
   AND NOT EXISTS (SELECT number FROM zones GROUP BY number HAVING COUNT(*) > 1)

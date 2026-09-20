@@ -115,6 +115,10 @@ def run(image: str) -> None:
         result = query(seed.apply_sql(manifest, "wrong_database"), ok=False)
         assert result.returncode and "Duplicate entry" in result.stderr
         assert snapshot() == before
+        before = snapshot()
+        result = query(seed.apply_sql(manifest, "EPIC_SEED_QA"), ok=False)
+        assert result.returncode and "Duplicate entry" in result.stderr
+        assert snapshot() == before
         query("INSERT INTO zones(number,name) VALUES (14,'duplicate sentinel');")
         before = snapshot()
         result = query(sql, ok=False)
