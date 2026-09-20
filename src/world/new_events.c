@@ -1937,6 +1937,7 @@ void ne_init_events(void)
 	int j = 0, i = 0;
 
 	ne_init_event_pool();
+	community_spellup_reset_for_boot();
 
 	logit(LOG_STATUS, "assigning room specials events.");
 	for (j = 0; j < top_of_world; j++)

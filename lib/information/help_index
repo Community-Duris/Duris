@@ -20014,13 +20014,27 @@ See also: MAKEGUIDE, NCHAT
 #
 NEWBSA (Immortal Command)
 ===========================================================================
-Syntax: newbsa [g|e]
+Syntax: newbsa help
+        newbsa spells | add <effect> | remove <effect> | reset
+        newbsa preview [g|e] | newbsa [g|e]
+        newbsa repeat <10s..1h> [g|e] | newbsa status
+        newbsa update | newbsa stop
 
-Lesser God command (level 59). Blesses every player in the world (level 60 and below, excluding
-you) with the standard newbie spell-up package: bless, spirit armor,
-barkskin, enhance armor, stone skin, fly, haste, strength, agility,
-dexterity, accelerated healing and rest. 'g'/'e' restrict to good/evil
-side.
+Lesser God command (level 59). The default one-shot package blesses every connected
+playing player in the world at level 60 and below, excluding you: bless, spirit
+armor, barkskin, enhance armor, stone skin, fly, haste, strength, agility,
+dexterity, accelerated healing and rest. 'g'/'e' restrict to the good/evil side.
+
+Each immortal has an in-memory allowlisted draft. 'spells' lists it; 'add' and
+'remove' edit it; 'reset' restores the default; and 'preview' counts eligible
+players without casting. 'regeneration' is the first optional effect. 'repeat'
+starts one server-owned job immediately and schedules later passes; intervals are
+strictly 10 seconds through 1 hour and accept s/m/h units. 'update' publishes a
+draft as the next job revision, 'status' reports progress, and 'stop' cancels
+future work. A repeat continues while its creator is offline, ends on reboot or
+copyover, and never reverses effects already applied. The creator is excluded from
+every pass. Repeat target work is bounded and reports applied, refreshed, upgraded,
+unchanged, blocked, and failed outcomes.
 
 See also: NEWBSU
 ===========================================================================
