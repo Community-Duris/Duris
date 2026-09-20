@@ -19,6 +19,13 @@ set -euo pipefail
 # Always run from the repository root so relative paths resolve correctly.
 cd "$(dirname "$0")/.." || exit 1
 
+# Git runs hooks with a relative GIT_INDEX_FILE.  git-clang-format changes
+# directories while building its temporary trees; make the hook's index path
+# absolute first so staged formatting cannot accidentally read unstaged lines.
+if [[ -n "${GIT_INDEX_FILE:-}" && "$GIT_INDEX_FILE" != /* ]]; then
+  export GIT_INDEX_FILE="$PWD/$GIT_INDEX_FILE"
+fi
+
 MODE="worktree"
 CHECK=0
 REV=""
