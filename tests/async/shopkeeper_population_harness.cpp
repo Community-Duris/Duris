@@ -12,6 +12,8 @@
 constexpr int MAX_WEAR = 4, MAX_OBJ_AFFECT = 4, NOWHERE = -1;
 constexpr int VIRTUAL = 0, REAL = 1, LOG_DEBUG = 0, LOG_MOB = 1;
 constexpr int LOC_CARRIED = 1, LOC_INSIDE = 2;
+constexpr unsigned char OBJ_RFLAG_CREATION_CANDIDATE = 1u << 2;
+#define REMOVE_BIT(var, bit) ((var) = (var) & ~((unsigned long)(bit)))
 constexpr int STRUNG_KEYS = 1, STRUNG_DESC2 = 2, STRUNG_DESC1 = 4, STRUNG_DESC3 = 8;
 struct Character;
 struct Object;
@@ -25,6 +27,7 @@ struct Object
 {
 	int R_num = 0, weight = 0, cost = 0, value[8] = {}, str_mask = 0, loc_p = 0, wear_flags = 0,
 	    type = 0, material = 0, db_item_id = 0;
+	unsigned char runtime_flags = 0;
 	long timer[1] = {};
 	unsigned long extra_flags = 0, bitvector = 0, bitvector2 = 0, bitvector3 = 0,
 		      bitvector4 = 0, bitvector5 = 0;
