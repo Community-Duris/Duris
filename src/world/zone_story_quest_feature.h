@@ -158,6 +158,7 @@ struct leaderboard_entry
 {
 	uint32_t pid = 0;
 	std::string character_name;
+	int racewar = 0;
 	uint64_t completed = 0;
 	uint64_t total = 0;
 	uint64_t full_zones = 0;
@@ -186,7 +187,8 @@ class service
 	result record_telemetry(const telemetry_observation &observation,
 				std::string *error = nullptr);
 
-	void remember_character(uint32_t season_id, uint32_t pid, std::string character_name);
+	void remember_character(uint32_t season_id, uint32_t pid, std::string character_name,
+				bool leaderboard_eligible = true, int racewar = 0);
 	bool erase_character(uint32_t season_id, uint32_t pid);
 	bool erase_character_all_seasons(uint32_t pid, uint32_t current_season_id);
 	zone_progress progress_for_zone(uint32_t season_id, uint32_t pid,
@@ -195,7 +197,8 @@ class service
 				     std::string_view fallback_name = {}) const;
 
 	leaderboard_page leaderboard(uint32_t season_id, int32_t zone_number, uint64_t page,
-				     uint64_t page_size, uint32_t viewer_pid = 0) const;
+				     uint64_t page_size, uint32_t viewer_pid = 0,
+				     int64_t now = 0) const;
 
 	evidence_summary evidence_for(std::string_view quest_definition_id,
 				      uint32_t content_revision) const;
@@ -212,8 +215,8 @@ class service
 	std::string render_summary(uint32_t season_id, uint32_t pid,
 				   std::string_view fallback_name = {}, bool colors = true) const;
 	std::string render_leaderboard(uint32_t season_id, int32_t zone_number, uint64_t page,
-				       uint64_t page_size, uint32_t viewer_pid,
-				       bool colors = true) const;
+				       uint64_t page_size, uint32_t viewer_pid, bool colors = true,
+				       int64_t now = 0) const;
 	std::string render_daily(uint32_t season_id, uint32_t pid, int level, int racewar,
 				 int64_t now, bool colors = true);
 	std::string render_daily_score(uint32_t season_id, uint32_t pid, int level, int racewar,
@@ -228,6 +231,7 @@ class service
 		uint32_t season_id = 0;
 		uint32_t pid = 0;
 		std::string character_name;
+		int racewar = 0;
 		std::map<std::string, uint32_t> credit_masks;
 		std::map<std::string, std::string> transaction_ids;
 		std::map<int64_t, daily_assignment> daily_assignments;
@@ -244,23 +248,31 @@ class service
 	daily_policy daily_policy_;
 	std::map<std::pair<uint32_t, uint32_t>, character_state> characters_;
 	std::set<std::pair<uint32_t, uint32_t>> deleted_characters_;
+	std::set<std::pair<uint32_t, uint32_t>> leaderboard_exclusions_;
 	std::map<std::string, stored_transaction> transactions_;
 	std::map<std::string, telemetry_observation> telemetry_;
 
 	character_state &state_for(uint32_t season_id, uint32_t pid);
 	const character_state *find_state(uint32_t season_id, uint32_t pid) const;
+	std::set<std::string> completed_definition_ids(uint32_t season_id, uint32_t pid,
+						       int64_t completed_before) const;
+	zone_progress progress_for_zone_at(uint32_t season_id, uint32_t pid, int32_t zone_number,
+					   const std::set<std::string> &completed_ids) const;
+	personal_summary summary_for_at(uint32_t season_id, uint32_t pid,
+					std::string_view fallback_name,
+					int64_t completed_before) const;
 	const zone_story_quest_tracking::quest_definition *
 	find_definition(std::string_view definition_id) const;
 	result
 	apply_transaction(const zone_story_quest_tracking::completion_transaction &transaction,
-			  std::string_view character_name, bool allow_stale, bool award_daily,
-			  std::string *error);
+			  std::string_view character_name, int racewar, bool allow_stale,
+			  bool award_daily, std::string *error);
 	void award_daily_for(const zone_story_quest_tracking::completion_transaction &transaction);
 	bool
 	eligible_for_current_catalog(const zone_story_quest_tracking::completion_transaction &tx,
 				     std::string *error) const;
-	std::vector<leaderboard_entry> sorted_leaderboard(uint32_t season_id,
-							  int32_t zone_number) const;
+	std::vector<leaderboard_entry> sorted_leaderboard(uint32_t season_id, int32_t zone_number,
+							  int64_t completed_before) const;
 };
 } // namespace zone_story_quest_feature
 

@@ -571,6 +571,7 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 		staged.objects[index] = object;
 		object->obj_uid = static_cast<unsigned long>(identity.item_uid);
 		object->db_item_id = static_cast<int>(identity.database_id);
+		REMOVE_BIT(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		object->g_key = item.generated_key;
 		object->weight = item.weight;
 		object->cost = item.cost;
