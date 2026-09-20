@@ -57,9 +57,52 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
         self.assertLess(completion.index("if (!committed)"), completion.index("unequip_char"))
         self.assertLess(completion.index("OBJ_CARRIED_BY(object, thief)"),
                         completion.index('send_to_char("Got it!'))
-        self.assertIn("OBJ_IN_ROOM(object, context.source_room)", completion)
+        self.assertIn("find_trusted_steal_player(context.victim_pid)", completion)
+        self.assertIn("OBJ_ROOM(object)", completion)
         self.assertIn("OBJ_NOWHERE(object)", completion)
         self.assertIn("reconnect to recover", completion)
+
+    def test_committed_publication_failure_remains_retryable(self):
+        movement = source("item/item_movement_transaction.c").read_text()
+        publish = function_body(movement, r"void publish\(")
+        self.assertIn("retain_trusted_steal", publish)
+        self.assertIn("trusted_steal_live_ready", movement)
+        self.assertIn("stale_live_publication", movement)
+        self.assertLess(
+            publish.index("!retain_creation_grant && !retain_trusted_steal"),
+            publish.index("completion_fn(actor, committed && registry_applied"),
+        )
+        self.assertIn("pending.find(pending_key)", publish)
+        self.assertIn("account_health();\n\t\t\treturn;", publish)
+
+    def test_trusted_steal_payload_is_scoped_to_distinct_player_owners(self):
+        command = source("item/item_transfer_command.c").read_text()
+        validate = function_body(command, r"bool validate_payload\(")
+        self.assertIn("const bool trusted_steal", validate)
+        self.assertIn("payload.from_owner.type != item_owner_type::player", validate)
+        self.assertIn("payload.to_owner.type != item_owner_type::player", validate)
+        self.assertIn("payload.from_owner.id == payload.to_owner.id", validate)
+        self.assertIn("payload.multi_root", validate)
+        self.assertIn("payload.reason_id", validate)
+
+    def test_refused_publication_only_discards_explicit_fresh_candidates(self):
+        defines = source("core/defines.h").read_text()
+        database = source("world/db.c").read_text()
+        handler = function_body(
+            source("world/handler.c").read_text(), r"void obj_to_char\("
+        )
+        self.assertIn("OBJ_RFLAG_CREATION_CANDIDATE", defines)
+        self.assertIn("SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE)", database)
+        self.assertIn("creation_candidate", handler)
+        self.assertIn(
+            "!has_authoritative_ownership && creation_candidate &&\n\t\t\t    item_creation_grant_submit_to_player",
+            handler,
+        )
+        self.assertIn(
+            "if (!has_authoritative_ownership && creation_candidate)", handler
+        )
+        self.assertIn("REMOVE_BIT(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE)",
+                      source("player/player_load_items.c").read_text())
 
     def test_shared_publication_refusal_does_not_extract_authoritative_graphs(self):
         handler = function_body(
@@ -67,15 +110,15 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
         )
         self.assertIn("has_authoritative_ownership", handler)
         self.assertIn(
-            "!has_authoritative_ownership &&\n\t\t\t    item_creation_grant_submit_to_player",
+            "!has_authoritative_ownership && creation_candidate &&\n\t\t\t    item_creation_grant_submit_to_player",
             handler,
         )
-        self.assertIn("if (!has_authoritative_ownership)", handler)
-        self.assertIn("preserved existing owned graph", handler)
+        self.assertIn("if (!has_authoritative_ownership && creation_candidate)", handler)
+        self.assertIn("preserved non-candidate object", handler)
 
-        refused = handler[handler.index("if (!has_authoritative_ownership)"):]
+        refused = handler[handler.index("if (!has_authoritative_ownership && creation_candidate)"):]
         self.assertIn("extract_obj(object, FALSE)", refused)
-        self.assertLess(refused.index("if (!has_authoritative_ownership)"),
+        self.assertLess(refused.index("if (!has_authoritative_ownership && creation_candidate)"),
                         refused.index("extract_obj(object, FALSE)"))
         self.assertNotIn("extract_obj(object, TRUE)", refused)
 

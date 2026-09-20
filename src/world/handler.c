@@ -1901,11 +1901,13 @@ void obj_to_char(P_obj object, P_char ch)
 		item_ownership_runtime_entry ownership = {};
 		const bool has_authoritative_ownership =
 			item_ownership_runtime_lookup(object->obj_uid, &ownership);
+		const bool creation_candidate =
+			IS_SET(object->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		if (!has_authoritative_ownership ||
 		    !item_owner_identity_equal(ownership.owner, player) ||
 		    ownership.state != item_custody_state::active)
 		{
-			if (!has_authoritative_ownership &&
+			if (!has_authoritative_ownership && creation_candidate &&
 			    item_creation_grant_submit_to_player(ch, object, ch))
 				return;
 			logit(LOG_FILE,
@@ -1915,18 +1917,19 @@ void obj_to_char(P_obj object, P_char ch)
 				"The ownership authority is busy; the item was not granted.\r\n",
 				ch);
 			/*
-			 * Only a newly-created object with no ownership row can be safely
-			 * discarded here.  An existing row is evidence that this object is
-			 * part of an authoritative graph; extracting it after a refused
-			 * publication would turn a custody mismatch into item loss.
+			 * Only a prototype-instantiated object that has not been identified by
+			 * a persistence loader can be discarded here.  A missing row alone is
+			 * not evidence that this is a fresh object: an orphaned or partially
+			 * loaded graph must remain available for recovery.
 			 */
-			if (!has_authoritative_ownership)
+			if (!has_authoritative_ownership && creation_candidate)
 				extract_obj(object, FALSE);
 			else
 				logit(LOG_FILE,
-				      "obj_to_char preserved existing owned graph after publication refusal "
-				      "(uid=%llu owner_type=%u owner_id=%llu state=%u)",
+				      "obj_to_char preserved non-candidate object after publication refusal "
+				      "(uid=%llu authoritative=%d owner_type=%u owner_id=%llu state=%u)",
 				      (unsigned long long)object->obj_uid,
+				      has_authoritative_ownership ? 1 : 0,
 				      (unsigned int)ownership.owner.type,
 				      (unsigned long long)ownership.owner.id,
 				      (unsigned int)ownership.state);

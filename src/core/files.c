@@ -3359,6 +3359,8 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 			if (o_f_flag & O_F_CONTAINS)
 				ignore++;
 		}
+		else
+			REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 		obj->g_key = 1;
 
@@ -3740,6 +3742,7 @@ P_obj read_one_object(char *read_buf)
 		logit(LOG_DEBUG, "read_one_object(): could not load object %d\n", V_num);
 		return NULL;
 	}
+	REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 	obj->g_key = 1;
 	obj->craftsmanship = GET_SHORT(buf);

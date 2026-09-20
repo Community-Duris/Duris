@@ -3200,6 +3200,14 @@ static P_obj find_trusted_steal_item(uint64_t item_uid)
 	return NULL;
 }
 
+static P_char find_trusted_steal_player(uint32_t pid)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (IS_PC(character) && GET_PID(character) == static_cast<int>(pid))
+			return character;
+	return NULL;
+}
+
 static bool trusted_steal_was_caught(int percent)
 {
 	bool caught = FALSE;
@@ -3313,7 +3321,8 @@ static void trusted_steal_completion(P_char thief, bool committed, const item_tr
 	}
 
 	P_obj object = find_trusted_steal_item(context.item_uid);
-	P_char victim = find_player_by_pid(static_cast<int>(context.victim_pid));
+	/* A linkdead character remains the authoritative live holder until extraction. */
+	P_char victim = find_trusted_steal_player(context.victim_pid);
 	if (!object)
 	{
 		persistence_alert(AVATAR, "item_movement", "steal_publish", "none", "none",
@@ -3357,8 +3366,10 @@ static void trusted_steal_completion(P_char thief, bool committed, const item_tr
 				published = true;
 			}
 		}
-		else if (OBJ_IN_ROOM(object, context.source_room))
+		else if (OBJ_ROOM(object) && object->loc.room > NOWHERE &&
+			 object->loc.room <= top_of_world)
 		{
+			/* extract_char may have moved the exact root to a different valid room. */
 			obj_from_room(object);
 			published = true;
 		}

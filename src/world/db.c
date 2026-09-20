@@ -3067,6 +3067,7 @@ P_obj instantiate_object_template(const object_template &prototype)
 	obj->trap_charge = prototype.trap_charge;
 	obj->trap_level = prototype.trap_level;
 	obj->obj_uid = static_cast<unsigned long>(persistence_next_item_uid());
+	SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.room = NOWHERE;
 	obj_index[nr].number++;

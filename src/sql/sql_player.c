@@ -4464,6 +4464,7 @@ bool sql_load_player_items(P_char ch)
 			extract_obj(obj, FALSE);
 			continue;
 		}
+		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		obj->condition = sql_row_int(row, col++, obj->condition);
 
 		// store db id for incremental saves
@@ -6266,6 +6267,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
 		obj->db_item_id = item_id;
+		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item");
@@ -7061,6 +7063,7 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		}
 
 		obj->db_item_id = item_id;
+		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item");
 
@@ -8447,6 +8450,7 @@ bool sql_load_all_corpses(void)
 			last_item_stored = false;
 			continue;
 		}
+		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 		int aff_loc = atoi(row[CORPSE_COL_ITEM_AFFECT_LOCATION]);
 		if (aff_loc >= 0)
@@ -9155,6 +9159,7 @@ static void sql_load_all_shopkeeper_items(int shopkeeper_id, P_obj equipment[], 
 		if (row[26])
 			obj->bitvector5 = strtoul(row[26], NULL, 10);
 		obj->db_item_id = item_id;
+		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item");
 
 		struct shopkeeper_item_temp *temp =
@@ -9981,6 +9986,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 			continue;
 		}
 		obj->db_item_id = item_id;
+		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		if (!sql_load_item_extra_descr_from_table(item_id, obj, "saved_item"))
 			*valid = false;
 
@@ -10500,6 +10506,7 @@ void sql_restore_saved_items(void)
 			continue;
 		}
 		obj->db_item_id = item_id;
+		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		if (!sql_load_item_extra_descr_from_table(item_id, obj, "saved_item"))
 			valid = false;
 
