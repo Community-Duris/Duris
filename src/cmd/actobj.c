@@ -348,6 +348,33 @@ struct bulk_put_state
 	bool alldot;
 };
 
+struct empty_state
+{
+	uint64_t source_uid;
+	uint64_t target_uid;
+	P_obj source_object;
+	P_obj target_object;
+	std::string source_name;
+	std::string target_name;
+	std::vector<uint64_t> selected_items;
+	std::vector<P_obj> selected_objects;
+	std::vector<uint64_t> durable_items;
+	item_owner_identity source_owner;
+	item_owner_identity destination_owner;
+	item_transfer_reason destination_reason;
+	int64_t destination_reason_id;
+	uint64_t target_root_uid;
+	size_t durable_item_count;
+	uint64_t blocked_uid;
+	P_obj blocked_object;
+	bool stopped_on_capacity;
+};
+
+struct empty_movement_context
+{
+	uint32_t actor_pid;
+};
+
 bool item_get_ack_publication = false;
 bool item_get_deferred = false;
 bool item_get_rejected = false;
@@ -358,6 +385,7 @@ bool item_put_deferred = false;
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
 std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
+std::unordered_map<uint32_t, empty_state> empty_operations;
 
 static bulk_get_state *corpse_bulk_get(P_char actor, uint64_t container_uid)
 {
@@ -9524,13 +9552,624 @@ void list_foods()
 	}
 }
 
+namespace
+{
+bool empty_source_available(P_char actor, P_obj source)
+{
+	return actor && source && GET_ITEM_TYPE(source) == ITEM_CONTAINER &&
+	       !training_dummy_item_owner(source) && bulk_put_destination_available(actor, source);
+}
+
+bool empty_target_available(P_char actor, P_obj target)
+{
+	return target && !training_dummy_item_owner(target) &&
+	       bulk_put_destination_available(actor, target);
+}
+
+bool empty_item_restrictions_allow(P_char actor, P_obj object, P_obj target)
+{
+	if (!actor || !object || !target || object == target ||
+	    (IS_ARTIFACT(object) && !IS_TRUSTED(actor)) ||
+	    (IS_SET(object->extra_flags, ITEM_NODROP) && !IS_TRUSTED(actor)))
+		return false;
+	if (GET_ITEM_TYPE(target) == ITEM_QUIVER &&
+	    (object->type != ITEM_MISSILE || target->value[2] != object->value[3]))
+		return false;
+	return true;
+}
+
+bool empty_target_accepts(P_obj object, P_obj target)
+{
+	if (!object || !target || object == target || !item_command_container_is_valid(target) ||
+	    training_dummy_item_owner(target))
+		return false;
+	int limit = top_of_objt + 1;
+	for (P_obj current = target; current && limit-- > 0;)
+	{
+		if (current == object)
+			return false;
+		if (!OBJ_INSIDE(current))
+			return true;
+		if (!current->loc.inside)
+			return false;
+		current = current->loc.inside;
+	}
+	return false;
+}
+
+bool empty_tree_contains(P_obj root, P_obj sought, std::vector<P_obj> *visited)
+{
+	if (!root || !sought || !visited || visited->size() >= ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	if (root == sought)
+		return true;
+	if (std::find(visited->begin(), visited->end(), root) != visited->end())
+		return false;
+	visited->push_back(root);
+	for (P_obj child = root->contains; child; child = child->next_content)
+		if (empty_tree_contains(child, sought, visited))
+			return true;
+	return false;
+}
+
+bool empty_graph_is_valid(P_obj object, P_obj target, std::vector<P_obj> *visited,
+			  size_t *item_count)
+{
+	if (!object || !target || !visited || !item_count ||
+	    *item_count >= ITEM_TRANSFER_MAX_ITEMS ||
+	    std::find(visited->begin(), visited->end(), object) != visited->end() ||
+	    object == target)
+		return false;
+	if (*item_count == 0 && !empty_target_accepts(object, target))
+		return false;
+	visited->push_back(object);
+	++*item_count;
+	for (P_obj child = object->contains; child; child = child->next_content)
+	{
+		if (!OBJ_INSIDE(child) || child->loc.inside != object ||
+		    !empty_graph_is_valid(child, target, visited, item_count))
+			return false;
+	}
+	return true;
+}
+
+bool empty_graph_has_durable(P_obj object, std::vector<P_obj> *visited)
+{
+	if (!object || !visited || visited->size() >= ITEM_TRANSFER_MAX_ITEMS ||
+	    std::find(visited->begin(), visited->end(), object) != visited->end())
+		return true;
+	visited->push_back(object);
+	if (item_command_uses_durable_ownership(object))
+		return true;
+	for (P_obj child = object->contains; child; child = child->next_content)
+		if (empty_graph_has_durable(child, visited))
+			return true;
+	return false;
+}
+
+bool empty_published_graph_matches(P_obj object, P_obj root, const item_owner_identity &owner,
+				   P_obj target, uint64_t target_root_uid,
+				   std::vector<P_obj> *visited)
+{
+	if (!object || !root || !visited ||
+	    std::find(visited->begin(), visited->end(), object) != visited->end())
+		return false;
+	item_ownership_runtime_entry runtime = {};
+	if (!item_ownership_runtime_lookup(object->obj_uid, &runtime) ||
+	    runtime.state != item_custody_state::active ||
+	    !item_owner_identity_equal(runtime.owner, owner) || runtime.vnum != OBJ_VNUM(object))
+		return false;
+	const uint64_t expected_root = target ? target_root_uid : root->obj_uid;
+	const uint64_t expected_parent = object == root	    ? target ? target->obj_uid : 0 :
+					 object->loc.inside ? object->loc.inside->obj_uid :
+							      0;
+	if (!expected_root || runtime.root_item_uid != expected_root ||
+	    runtime.parent_item_uid != expected_parent)
+		return false;
+	visited->push_back(object);
+	for (P_obj child = object->contains; child; child = child->next_content)
+		if (!empty_published_graph_matches(child, root, owner, target, target_root_uid,
+						   visited))
+			return false;
+	return true;
+}
+
+bool empty_is_durable_root(const empty_state &state, uint64_t item_uid)
+{
+	return std::find(state.durable_items.begin(), state.durable_items.end(), item_uid) !=
+	       state.durable_items.end();
+}
+
+bool empty_publication_allowed(bool committed, bool actor_valid, bool source_valid,
+			       bool target_valid, bool selection_valid, bool topology_valid,
+			       bool capacity_valid, size_t result_item_count,
+			       size_t expected_item_count)
+{
+	return committed && actor_valid && source_valid && target_valid && selection_valid &&
+	       topology_valid && capacity_valid && result_item_count == expected_item_count;
+}
+
+P_obj empty_state_source(const empty_state &state)
+{
+	return state.source_uid ? find_live_item_uid(state.source_uid) : state.source_object;
+}
+
+P_obj empty_state_target(const empty_state &state)
+{
+	return state.target_uid ? find_live_item_uid(state.target_uid) : state.target_object;
+}
+
+bool empty_collect_publication_objects(P_char actor, const empty_state &state,
+				       const item_transfer_result &result,
+				       std::vector<P_obj> *objects)
+{
+	P_obj source = empty_state_source(state);
+	P_obj target = empty_state_target(state);
+	if (!actor || !objects || !empty_source_available(actor, source))
+		return false;
+	if ((state.source_uid && source != state.source_object) ||
+	    (state.target_uid && target != state.target_object))
+		return false;
+	if (!source || !target || source == target || !empty_target_available(actor, target))
+		return false;
+	item_put_destination destination = {};
+	const bool durable = !state.durable_items.empty();
+	if (durable)
+	{
+		item_put_destination source_destination = {};
+		if (!item_command_resolve_put_destination(actor, source, &source_destination) ||
+		    !item_owner_identity_equal(source_destination.owner, state.source_owner))
+			return false;
+		item_ownership_runtime_entry target_runtime = {};
+		if (!item_command_resolve_put_destination(actor, target, &destination) ||
+		    !item_owner_identity_equal(destination.owner, state.destination_owner) ||
+		    destination.reason != state.destination_reason ||
+		    destination.reason_id != state.destination_reason_id ||
+		    (destination.target_container != NULL) !=
+			    (state.target_uid != 0 && state.target_root_uid != 0) ||
+		    (destination.target_container &&
+		     (!item_ownership_runtime_lookup(target->obj_uid, &target_runtime) ||
+		      target_runtime.root_item_uid != state.target_root_uid ||
+		      !item_owner_identity_equal(target_runtime.owner, state.destination_owner))))
+			return false;
+		if (result.item_count != state.durable_item_count)
+			return false;
+	}
+	else if (result.item_count != 0)
+		return false;
+
+	int64_t weight = container_total_weight(target);
+	int64_t space = 0;
+	int64_t quiver_count = target->value[3];
+	std::vector<P_obj> graph_seen;
+	try
+	{
+		objects->reserve(state.selected_items.size());
+		if (state.selected_items.size() != state.selected_objects.size())
+			return false;
+		for (size_t index = 0; index < state.selected_items.size(); ++index)
+		{
+			const uint64_t item_uid = state.selected_items[index];
+			P_obj object = item_uid ? find_live_item_uid(item_uid) :
+						  state.selected_objects[index];
+			size_t graph_items = 0;
+			if (!object || (item_uid && object != state.selected_objects[index]) ||
+			    !obj_is_in_container(object, source) ||
+			    !empty_item_restrictions_allow(actor, object, target) ||
+			    !empty_graph_is_valid(object, target, &graph_seen, &graph_items) ||
+			    !bulk_put_permitted(actor, object, target, weight, space, quiver_count))
+				return false;
+			const bool planned_durable = empty_is_durable_root(state, item_uid);
+			if (planned_durable != item_command_uses_durable_ownership(object))
+				return false;
+			if (planned_durable)
+			{
+				std::vector<P_obj> authority_seen;
+				if (!empty_published_graph_matches(
+					    object, object, state.destination_owner,
+					    destination.target_container, state.target_root_uid,
+					    &authority_seen))
+					return false;
+			}
+			else
+			{
+				std::vector<P_obj> durable_seen;
+				if (empty_graph_has_durable(object, &durable_seen))
+					return false;
+			}
+			objects->push_back(object);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool publish_empty_objects(P_char actor, const empty_state &state,
+			   const item_transfer_result &result, std::vector<P_obj> *published)
+{
+	if (!published || !empty_collect_publication_objects(actor, state, result, published))
+		return false;
+	P_obj source = empty_state_source(state);
+	P_obj target = empty_state_target(state);
+	std::vector<P_obj> moved;
+	try
+	{
+		moved.reserve(published->size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	const bool quiver = target && GET_ITEM_TYPE(target) == ITEM_QUIVER;
+	for (P_obj object : *published)
+	{
+		obj_from_obj(object);
+		if (!OBJ_NOWHERE(object))
+			break;
+		obj_to_obj(object, target);
+		if (!OBJ_INSIDE_OBJ(object, target))
+			break;
+		if (quiver)
+			++target->value[3];
+		moved.push_back(object);
+	}
+	if (moved.size() == published->size())
+		return true;
+	if (quiver && target)
+		target->value[3] -= static_cast<int>(moved.size());
+	for (auto moved_object = moved.rbegin(); moved_object != moved.rend(); ++moved_object)
+	{
+		obj_from_obj(*moved_object);
+		obj_to_obj(*moved_object, source);
+	}
+	for (P_obj object : *published)
+	{
+		if (OBJ_INSIDE_OBJ(object, source))
+			continue;
+		if (OBJ_INSIDE(object))
+			obj_from_obj(object);
+		else if (OBJ_ROOM(object))
+			obj_from_room(object);
+		else if (OBJ_CARRIED(object))
+			obj_from_char(object);
+		obj_to_obj(object, source);
+	}
+	return false;
+}
+
+void finish_empty(P_char actor, const empty_state &state)
+{
+	P_obj source = empty_state_source(state);
+	P_obj target = empty_state_target(state);
+	if (state.stopped_on_capacity)
+	{
+		P_obj blocked = state.blocked_uid ? find_live_item_uid(state.blocked_uid) :
+						    state.blocked_object;
+		if (blocked && source && obj_is_in_container(blocked, source))
+			act("$P will not fit in $p.", FALSE, actor, target, blocked, TO_CHAR);
+	}
+	send_to_char_f(actor, "You moved %zu item%s from %s to %s.\n", state.selected_items.size(),
+		       state.selected_items.size() == 1 ? "" : "s", state.source_name.c_str(),
+		       state.target_name.c_str());
+	char_light(actor);
+	room_light(actor->in_room, REAL);
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+	if (source && GET_ITEM_TYPE(source) == ITEM_STORAGE)
+		writeSavedItem(source);
+	if (target && GET_ITEM_TYPE(target) == ITEM_STORAGE)
+		writeSavedItem(target);
+}
+
+void empty_completion(P_char actor, bool committed, const item_transfer_result &result,
+		      unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	empty_movement_context context = {};
+	if (!encoded || encoded_size != sizeof(context))
+	{
+		if (actor && IS_PC(actor) && GET_PID(actor) > 0)
+			empty_operations.erase(static_cast<uint32_t>(GET_PID(actor)));
+		return;
+	}
+	memcpy(&context, encoded, sizeof(context));
+	auto found = empty_operations.find(context.actor_pid);
+	if (found == empty_operations.end())
+		return;
+	if (!actor || !IS_PC(actor) || GET_PID(actor) != static_cast<int>(context.actor_pid))
+	{
+		empty_operations.erase(found);
+		return;
+	}
+	if (!empty_publication_allowed(committed, true, true, true, true, true, true,
+				       result.item_count, found->second.durable_item_count))
+	{
+		if (!committed)
+			send_to_char(
+				"Nothing was emptied; the batch ownership move did not commit.\r\n",
+				actor);
+		else
+			send_to_char(
+				"The empty operation could not be published; nothing was detached.\r\n",
+				actor);
+		empty_operations.erase(found);
+		return;
+	}
+	std::vector<P_obj> objects;
+	if (!publish_empty_objects(actor, found->second, result, &objects))
+	{
+		persistence_alert(AVATAR, "item_movement", "empty_publish", "none", "none",
+				  "stale_live_topology", "actor_pid=%u", context.actor_pid);
+		send_to_char(
+			"The empty operation could not be published; nothing was detached.\r\n",
+			actor);
+		empty_operations.erase(found);
+		return;
+	}
+	finish_empty(actor, found->second);
+	empty_operations.erase(found);
+}
+
+void start_empty(P_char actor, P_obj source, P_obj target)
+{
+	if (!actor || !IS_PC(actor) || GET_PID(actor) <= 0)
+		return;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	if (empty_operations.count(actor_pid) || item_movement_transaction_player_busy(actor))
+	{
+		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
+		return;
+	}
+	if (!empty_source_available(actor, source) || !empty_target_available(actor, target) ||
+	    source == target)
+	{
+		send_to_char(
+			"The empty operation could not start; both containers must be open and accessible.\r\n",
+			actor);
+		return;
+	}
+	std::vector<P_obj> tree_seen;
+	if (empty_tree_contains(source, target, &tree_seen))
+	{
+		send_to_char("You cannot empty a container into an item it contains.\r\n", actor);
+		return;
+	}
+
+	empty_state state = {};
+	state.source_uid = source->obj_uid;
+	state.target_uid = target->obj_uid;
+	state.source_object = source;
+	state.target_object = target;
+	state.source_name = source->short_description ? source->short_description : "source";
+	state.target_name = target->short_description ? target->short_description : "target";
+	state.destination_reason = item_transfer_reason::unknown;
+	int64_t weight = container_total_weight(target);
+	int64_t space = 0;
+	int64_t quiver_count = target->value[3];
+	std::vector<P_obj> roots;
+	std::vector<P_obj> graph_seen;
+	bool source_owner_set = false;
+	bool destination_set = false;
+	size_t planned_item_count = 0;
+	try
+	{
+		for (P_obj content = source->contains; content; content = content->next_content)
+		{
+			if (state.selected_items.size() >= ITEM_TRANSFER_MAX_ITEMS ||
+			    !empty_item_restrictions_allow(actor, content, target))
+			{
+				send_to_char(
+					"Nothing was emptied; an item cannot be moved into that destination.\r\n",
+					actor);
+				return;
+			}
+			size_t graph_items = 0;
+			if (!empty_graph_is_valid(content, target, &graph_seen, &graph_items))
+			{
+				send_to_char(
+					"Nothing was emptied; the source contains a malformed or cyclic item graph.\r\n",
+					actor);
+				return;
+			}
+			if (!bulk_put_permitted(actor, content, target, weight, space,
+						quiver_count))
+			{
+				state.blocked_uid = content->obj_uid;
+				state.blocked_object = content;
+				state.stopped_on_capacity = true;
+				break;
+			}
+			if (graph_items > ITEM_TRANSFER_MAX_ITEMS - planned_item_count)
+			{
+				send_to_char(
+					"Nothing was emptied; the bounded movement plan is too large.\r\n",
+					actor);
+				return;
+			}
+			planned_item_count += graph_items;
+			const bool durable = item_command_uses_durable_ownership(content);
+			if (durable &&
+			    std::find(state.selected_items.begin(), state.selected_items.end(),
+				      0) != state.selected_items.end())
+			{
+				send_to_char(
+					"Nothing was emptied; an unowned item cannot share a durable batch.\r\n",
+					actor);
+				return;
+			}
+			if (!durable && !roots.empty() && !content->obj_uid)
+			{
+				send_to_char(
+					"Nothing was emptied; an unowned item cannot share a durable batch.\r\n",
+					actor);
+				return;
+			}
+			if (!durable)
+			{
+				std::vector<P_obj> durable_seen;
+				if (empty_graph_has_durable(content, &durable_seen))
+				{
+					send_to_char(
+						"Nothing was emptied; a nested item lacks a movable ownership root.\r\n",
+						actor);
+					return;
+				}
+			}
+			else
+			{
+				item_ownership_runtime_entry runtime = {};
+				if (!item_ownership_runtime_lookup(content->obj_uid, &runtime) ||
+				    runtime.state != item_custody_state::active ||
+				    !item_owner_identity_valid(runtime.owner) ||
+				    runtime.parent_item_uid != source->obj_uid)
+				{
+					send_to_char(
+						"Nothing was emptied; an item's ownership is not authoritative.\r\n",
+						actor);
+					return;
+				}
+				item_put_destination source_destination = {};
+				if (!item_command_resolve_put_destination(actor, source,
+									  &source_destination))
+				{
+					send_to_char(
+						"Nothing was emptied; the source lacks authoritative ownership.\r\n",
+						actor);
+					return;
+				}
+				if (!source_owner_set)
+				{
+					state.source_owner = source_destination.owner;
+					source_owner_set = true;
+				}
+				if (!item_owner_identity_equal(state.source_owner, runtime.owner))
+				{
+					send_to_char(
+						"Nothing was emptied; the source contains mixed ownership.\r\n",
+						actor);
+					return;
+				}
+				item_put_destination destination = {};
+				if (!item_command_resolve_put_destination(actor, target,
+									  &destination))
+				{
+					send_to_char(
+						"Nothing was emptied; the destination lacks authoritative ownership.\r\n",
+						actor);
+					return;
+				}
+				if (!destination_set)
+				{
+					state.destination_owner = destination.owner;
+					state.destination_reason = destination.reason;
+					state.destination_reason_id = destination.reason_id;
+					if (destination.target_container)
+					{
+						item_ownership_runtime_entry target_runtime = {};
+						if (!item_ownership_runtime_lookup(target->obj_uid,
+										   &target_runtime))
+						{
+							send_to_char(
+								"Nothing was emptied; the destination lacks authoritative ownership.\r\n",
+								actor);
+							return;
+						}
+						state.target_root_uid =
+							target_runtime.root_item_uid;
+					}
+					destination_set = true;
+				}
+				else if (!item_owner_identity_equal(state.destination_owner,
+								    destination.owner) ||
+					 state.destination_reason != destination.reason ||
+					 state.destination_reason_id != destination.reason_id)
+				{
+					send_to_char(
+						"Nothing was emptied; the destination authority changed.\r\n",
+						actor);
+					return;
+				}
+				state.durable_items.push_back(content->obj_uid);
+				state.durable_item_count += graph_items;
+				roots.push_back(content);
+			}
+			state.selected_items.push_back(content->obj_uid);
+			state.selected_objects.push_back(content);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char(
+			"Nothing was emptied; the bounded movement plan could not be prepared.\r\n",
+			actor);
+		return;
+	}
+	if (state.selected_items.empty())
+	{
+		if (state.stopped_on_capacity)
+		{
+			P_obj blocked = state.blocked_uid ? find_live_item_uid(state.blocked_uid) :
+							    state.blocked_object;
+			if (blocked)
+				act("$P will not fit in $p.", FALSE, actor, target, blocked,
+				    TO_CHAR);
+			send_to_char_f(actor, "You moved 0 items from %s to %s.\n",
+				       state.source_name.c_str(), state.target_name.c_str());
+		}
+		return;
+	}
+	if (roots.empty())
+	{
+		std::vector<P_obj> objects;
+		if (!publish_empty_objects(actor, state, {}, &objects))
+		{
+			send_to_char(
+				"The empty operation could not be published; nothing was detached.\r\n",
+				actor);
+			return;
+		}
+		finish_empty(actor, state);
+		return;
+	}
+	const empty_movement_context context = { actor_pid };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!state.blocked_uid)
+		state.blocked_object = roots.empty() ? state.blocked_object : NULL;
+	try
+	{
+		auto inserted = empty_operations.emplace(actor_pid, std::move(state));
+		if (!inserted.second)
+			return;
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char(
+			"Nothing was emptied; the bounded movement plan could not be retained.\r\n",
+			actor);
+		return;
+	}
+	auto found = empty_operations.find(actor_pid);
+	if (!item_movement_transaction_submit_batch(
+		    actor, roots.data(), roots.size(),
+		    found->second.target_root_uid ? target : NULL, found->second.source_owner,
+		    found->second.destination_owner, found->second.destination_reason,
+		    found->second.destination_reason_id, empty_completion, &context,
+		    sizeof(context), NULL, &reject))
+	{
+		report_batch_movement_reject(actor, reject, "empty", "Nothing was emptied.\r\n");
+		empty_operations.erase(found);
+	}
+}
+}
+
 void do_empty(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char unused_ch;
-	P_obj obj1, obj2, content;
+	P_obj obj1, obj2;
 	char objname[MAX_STRING_LENGTH];
-	int count;
-
 	argument = one_argument(argument, objname);
 	if (objname[0] == '\0' || !strcmp(objname, "?"))
 	{
@@ -9572,6 +10211,12 @@ void do_empty(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("&+YSyntax: &+wempty <container1> <container2>&n\n", ch);
 		return;
 	}
+	if (!item_command_container_is_valid(obj2))
+	{
+		act("$p is not a container.", FALSE, ch, obj2, NULL, TO_CHAR);
+		send_to_char("&+YSyntax: &+wempty <container1> <container2>&n\n", ch);
+		return;
+	}
 	if (IS_SET(obj2->value[1], CONT_CLOSED))
 	{
 		act("$p is closed.", FALSE, ch, obj2, NULL, TO_CHAR);
@@ -9584,33 +10229,5 @@ void do_empty(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	count = 0;
-	while ((content = obj1->contains) != NULL)
-	{
-		if (((container_total_weight(obj2) + GET_OBJ_WEIGHT(content)) > obj2->value[0]) &&
-		    (obj2->value[0] != -1))
-		{
-			act("$P will not fit in $p.", FALSE, ch, obj2, (void *)content, TO_CHAR);
-			send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count,
-				       count == 1 ? "" : "s", OBJ_SHORT(obj1), OBJ_SHORT(obj2));
-			return;
-		}
-
-#if USE_SPACE
-		if (((GET_OBJ_SPACE(obj2) + GET_OBJ_SPACE(content)) > obj1->value[3]) &&
-		    (obj1->value[3] != -1))
-		{
-			act("$P will not fit in $p.", FALSE, ch, obj2, (void *)content, TO_CHAR);
-			send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count,
-				       count == 1 ? "" : "s", OBJ_SHORT(obj1), OBJ_SHORT(obj2));
-			return;
-		}
-#endif
-
-		obj_from_obj(content);
-		obj_to_obj(content, obj2);
-		count++;
-	}
-	send_to_char_f(ch, "You moved %d item%s from %s to %s.\n", count, count == 1 ? "" : "s",
-		       OBJ_SHORT(obj1), OBJ_SHORT(obj2));
+	start_empty(ch, obj1, obj2);
 }
