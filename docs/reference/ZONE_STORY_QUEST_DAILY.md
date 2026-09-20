@@ -77,8 +77,17 @@ Player completion surfaces are:
 * `leaderboard quests [page]` for the worldwide completion ranking;
 * `quest daily` for the assignment/status/reward section.
 
-The public leaderboard shows only top character names and their total
-worldwide quest-completion percentage. It has no area or quest breakdown.
-Area names and per-area totals appear only in the current character's private
-achievement view. Character names are remembered by PID for durable personal
-progress; an unknown name is displayed as `Unknown adventurer`, never as a PID.
+The public leaderboard shows only characters with at least one distinct quest
+completion. Each row leads with the exact count of unique quests completed,
+followed by a two-decimal percentage (for example, `2 unique quests (0.07%)`).
+Good racewar names are gold, evil racewar names are bright red, unique-quest
+counts are cyan, and percentages are white when terminal colors are enabled.
+A character with no completion is not yet ranked. Staff/immortal characters are
+excluded from public ranking. The list
+has no area or quest breakdown; area names and per-area progress appear only in
+the current character's private achievement view. Character names are
+remembered by PID for durable personal progress, while stale duplicate display
+names are collapsed and an unknown name is displayed as `Unknown adventurer`,
+never as a PID. Displayed quest totals and percentages may lag actual
+completions by up to 12 hours. This publication delay applies to the public
+leaderboard; the current character's private achievement view remains current.
