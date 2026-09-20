@@ -195,7 +195,7 @@ if [[ "$MODE" == "staged" ]]; then
   worktree_updated=1
   for pass in 0 1 2 3 4 5; do
     set +e
-    out="$(git -c color.ui=false clang-format "${ARGS[@]}" ${REV:+"$REV"})"
+    out="$(git -c color.ui=false -c diff.context=0 clang-format "${ARGS[@]}" ${REV:+"$REV"})"
     rc=$?
     set -e
 
