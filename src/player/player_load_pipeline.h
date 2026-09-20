@@ -28,6 +28,7 @@ struct player_load_pipeline_health
 	uint64_t cancelled = 0;
 	uint64_t stale = 0;
 	uint64_t applied = 0;
+	uint64_t degraded = 0;
 	uint64_t retryable_failures = 0;
 	uint64_t component_failures = 0;
 	uint64_t limit_exceeded = 0;
@@ -54,7 +55,12 @@ bool player_load_pipeline_cancel(uint64_t request_id);
 size_t player_load_pipeline_pulse(player_load_result *results_out, size_t capacity);
 bool player_load_pipeline_wait(player_load_request request, player_load_result *result_out,
 			       uint64_t timeout_msec);
+// Synchronous fallback used when the asynchronous worker is unavailable, saturated, or
+// timed out. It reads a consistent snapshot directly and never changes login admission policy.
+bool player_load_pipeline_execute_sync(player_load_request request, player_load_result *result_out);
 bool player_load_pipeline_pid_pending(int pid);
+// Identity sanity check only. Secondary persistence fences are represented as degraded
+// admission state and must not deny an otherwise valid player login.
 bool player_load_pipeline_login_admit(int pid);
 player_load_pipeline_health player_load_pipeline_health_copy(void);
 void player_load_pipeline_note_stale(void);

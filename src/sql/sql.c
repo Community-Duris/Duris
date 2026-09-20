@@ -2210,6 +2210,13 @@ int sql_save_player_core(P_char ch)
 	char assoc_name[MAX_STRING_LENGTH];
 	char assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	struct char_player_data *p;
+	if (ch && IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		logit(LOG_DEBUG,
+		      "sql_save_player_core: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return 1;
+	}
 
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);

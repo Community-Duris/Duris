@@ -507,6 +507,7 @@ OBJS =  $(SHIP_OBJS) \
 				 kingdom/kingdom_harvest.o \
 				 kingdom/kingdom_guards.o \
 				 kingdom/kingdom_display.o \
+				 kingdom/kingdom_craft.o \
 				 kingdom/kingdom_cmds.o \
 				 kingdom/kingdom_db.o \
 				 world/transport.o \

@@ -64,6 +64,10 @@ struct pending_creation_grant
 	int32_t room;
 	bool to_room;
 	bool allow_pre_entry;
+	item_movement_completion_fn completion = nullptr;
+	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> context = {};
+	size_t context_size = 0;
+	item_creation_grant_completion_fn grant_completion = nullptr;
 };
 
 struct creation_grant_queue
@@ -719,7 +723,7 @@ bool publish_creation_grant(P_char actor, const pending_creation_grant &request)
 	return true;
 }
 
-void creation_grant_completion(P_char actor, bool committed, const item_transfer_result &,
+void creation_grant_completion(P_char actor, bool committed, const item_transfer_result &result,
 			       unsigned int error_code, const uint8_t *encoded, size_t encoded_size)
 {
 	if (!actor || !encoded || encoded_size != sizeof(uint64_t) || IS_NPC(actor) ||
@@ -734,6 +738,18 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 		return;
 	creation_grant_queue &queue = queue_found->second;
 	const pending_creation_grant request = queue.requests.front();
+	const auto business_completion = request.completion;
+	const auto business_context = request.context;
+	const size_t business_context_size = request.context_size;
+	const auto grant_completion = request.grant_completion;
+	const auto notify_business = [&]()
+	{
+		if (business_completion)
+			business_completion(actor, committed, result, error_code,
+					    business_context.data(), business_context_size);
+		if (grant_completion)
+			grant_completion(actor, request.item_uid, committed, error_code);
+	};
 	P_obj object = find_item(request.item_uid);
 	if (!committed)
 	{
@@ -741,9 +757,10 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 			extract_obj(object, FALSE);
 		logit(LOG_FILE, "item creation grant did not commit (uid=%llu error=%u)",
 		      (unsigned long long)request.item_uid, error_code);
-		send_to_char(
-			"The ownership authority did not commit; the granted item was discarded.\r\n",
-			actor);
+		if (!business_completion && !grant_completion)
+			send_to_char(
+				"The ownership authority did not commit; the granted item was discarded.\r\n",
+				actor);
 	}
 	else if (!publish_creation_grant(actor, request))
 	{
@@ -759,6 +776,7 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 		// tail requests and never report a partial kit as successfully ready.
 		discard_creation_queue(actor, queue);
 		creation_grants.erase(queue_found);
+		notify_business();
 		return;
 	}
 	if (queue.requests.empty())
@@ -779,6 +797,7 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 		{
 			send_to_char("Your Chaos Equipment has been prepared!!\r\n", actor);
 		}
+		notify_business();
 		return;
 	}
 	const pending_creation_grant &next = queue.requests.front();
@@ -786,10 +805,14 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	{
 		discard_creation_queue(actor, queue);
 		creation_grants.erase(queue_found);
+		notify_business();
 		return;
 	}
 	if (creation_grant_conflicts(next))
+	{
+		notify_business();
 		return;
+	}
 	item_movement_reject reject = item_movement_reject::none;
 	if (!start_creation_grant(actor, queue, &reject) &&
 	    !item_movement_reject_is_transient(reject))
@@ -797,6 +820,7 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 		discard_creation_queue(actor, queue);
 		creation_grants.erase(queue_found);
 	}
+	notify_business();
 }
 
 void creation_grant_batch_completion(P_char actor, bool committed, const item_transfer_result &,
@@ -929,13 +953,17 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_moveme
 }
 
 bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room,
-			  P_obj target_container, bool to_room, bool allow_pre_entry)
+			  P_obj target_container, bool to_room, bool allow_pre_entry,
+			  item_movement_completion_fn completion, const void *context,
+			  size_t context_size, item_creation_grant_completion_fn grant_completion)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !object || !object->obj_uid ||
 	    !OBJ_NOWHERE(object) ||
 	    (to_room ? (room <= NOWHERE || room > top_of_world) :
 		       (!recipient || IS_NPC(recipient) || GET_PID(recipient) <= 0)) ||
-	    (allow_pre_entry && (to_room || target_container || recipient != actor)))
+	    (allow_pre_entry && (to_room || target_container || recipient != actor)) ||
+	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
+	    (context_size && !completion))
 		return false;
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	auto [found, inserted] = creation_grants.try_emplace(actor_pid);
@@ -967,10 +995,20 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 	{
 		auto &destination = queue.batch_submission ? queue.following_requests :
 							     queue.requests;
-		destination.push_back({ object->obj_uid,
-					target_container ? target_container->obj_uid : 0,
-					recipient ? static_cast<uint32_t>(GET_PID(recipient)) : 0,
-					room, to_room, allow_pre_entry });
+		pending_creation_grant request = {
+			object->obj_uid,
+			target_container ? target_container->obj_uid : 0,
+			recipient ? static_cast<uint32_t>(GET_PID(recipient)) : 0,
+			room,
+			to_room,
+			allow_pre_entry
+		};
+		request.completion = completion;
+		request.context_size = context_size;
+		request.grant_completion = grant_completion;
+		if (context_size)
+			memcpy(request.context.data(), context, context_size);
+		destination.push_back(request);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -1712,7 +1750,29 @@ bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char rec
 					  P_obj target_container)
 {
 	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false,
-				    false);
+				    false, nullptr, nullptr, 0, nullptr);
+}
+
+bool item_creation_grant_submit_to_player_with_completion(P_char actor, P_obj object,
+							  P_char recipient,
+							  item_movement_completion_fn completion,
+							  const void *context, size_t context_size,
+							  P_obj target_container)
+{
+	if (!completion)
+		return false;
+	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false,
+				    false, completion, context, context_size, nullptr);
+}
+
+bool item_creation_grant_submit_to_player_with_completion(
+	P_char actor, P_obj object, P_char recipient, P_obj target_container,
+	item_creation_grant_completion_fn completion)
+{
+	if (!completion)
+		return false;
+	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false,
+				    false, nullptr, nullptr, 0, completion);
 }
 
 /** Reserve the player before any legacy kit objects or persistence work exist. */
@@ -1824,7 +1884,8 @@ void item_creation_grant_prepare_pulse(void)
 
 bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient)
 {
-	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true);
+	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true, nullptr,
+				    nullptr, 0, nullptr);
 }
 
 bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
@@ -1876,7 +1937,8 @@ bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj
 
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room)
 {
-	return queue_creation_grant(actor, object, NULL, room, NULL, true, false);
+	return queue_creation_grant(actor, object, NULL, room, NULL, true, false, nullptr, nullptr,
+				    0, nullptr);
 }
 
 bool item_creation_grant_mark_blocking(P_char actor)

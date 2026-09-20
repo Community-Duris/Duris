@@ -155,6 +155,11 @@ int main()
     assert(results[0].request_id == 5);
     assert(results[0].outcome == player_load_outcome::component_failure);
 
+    player_load_result synchronous = {};
+    assert(player_load_pipeline_execute_sync(request(6, 60), &synchronous));
+    assert(synchronous.request_id == 6 && synchronous.pid == 60);
+    assert(synchronous.outcome == player_load_outcome::applied);
+
     assert(player_load_pipeline_submit(request(1000, 1000)) ==
            player_load_submit_outcome::accepted);
     {
@@ -257,6 +262,8 @@ assert REPOSITORY.index("load_components(connection") < REPOSITORY.index("load_b
 
 assert "restoreCharOnly(player" not in ACCOUNT
 assert "player_load_pipeline_submit(request)" in ACCOUNT
+assert "player_load_pipeline_execute_sync" in ACCOUNT
+assert "player_death_restitution_runtime_login_admit" not in ACCOUNT
 assert "STATE(d) = CON_PLAYER_LOAD" in ACCOUNT
 assert "player_load_materialize(player, loaded)" in ACCOUNT
 assert "d->rtype = loaded.snapshot.save_intent;" in ACCOUNT
@@ -269,6 +276,8 @@ blocking = ACCOUNT[ACCOUNT.index("P_char load_char_into_game") : ACCOUNT.index("
 assert "ready_player_loads.emplace(request.request_id" not in blocking
 assert "restoreCharOnly(player" not in COPYOVER
 assert "player_load_pipeline_wait(request" in COPYOVER
+assert "player_load_pipeline_execute_sync(request" in COPYOVER
+assert "player_load_outcome::degraded" in COPYOVER
 assert "player_load_materialize(player, result)" in COPYOVER
 assert "player_load_pipeline_cancel(d->player_load_request_id)" in COMM
 assert "player_load_pipeline_shutdown()" in COMM
@@ -277,6 +286,8 @@ assert NANNY.rindex("d->player_load_mode == PLAYER_LOAD_MODE_NONE", 0, bank_load
 assert "restoreCharOnly(d->character" not in NANNY
 assert "d->player_load_mode = PLAYER_LOAD_MODE_LEGACY" in NANNY
 assert "nanny_player_load_complete" in NANNY
+assert "player_load_pipeline_execute_sync" in NANNY
+assert "player_death_restitution_runtime_login_admit" not in NANNY
 assert "d->rtype = result.snapshot.save_intent;" in NANNY
 assert "const bool snapshot_load = d->player_load_mode != PLAYER_LOAD_MODE_NONE;" in NANNY
 assert NANNY.count("if (!snapshot_load)\n\t\t\t\tcost = restoreItemsOnly") == 7
@@ -285,6 +296,11 @@ assert "valid_snapshot(result)" in MATERIALIZE
 assert "result.snapshot.save_intent > RENT_FIGHTARTI" in MATERIALIZE
 assert "player_revision_hydrate" in MATERIALIZE
 assert "ZONE_TROPHY(ch) = zone_trophies.release()" in MATERIALIZE
+assert "mark_degraded(PLAYER_LOAD_DEGRADED_GAMEPLAY" in MATERIALIZE
+assert "mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS" in MATERIALIZE
+assert "item_domains_admitted" in MATERIALIZE
+assert "CHAR_RFLAG_LOAD_DEGRADED" in (SRC / "files.c").read_text()
+assert "CHAR_RFLAG_LOAD_DEGRADED" in (SRC / "player_save_pipeline.c").read_text()
 assert "player_load state=" in DIAGNOSTICS
 assert "account_name" not in DIAGNOSTICS[DIAGNOSTICS.index("player_load state=") :][:1000]
 

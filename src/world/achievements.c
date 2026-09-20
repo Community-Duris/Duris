@@ -161,13 +161,13 @@ void do_achievements(P_char ch, char *arg, int /*cmd*/)
 	//-----The Journey Begins
 
 	//-----Achievement: The Sailor's Tattoo
-	if (lvlachi >= 30)
+	if (lvlachi >= 20)
 		snprintf(buf3, MAX_STRING_LENGTH, "  &+L%-34s&+L%-45s&+L%s\r\n",
-			 "&+bThe Sai&+Blor's Tat&+btoo&n", "&+BGain level 30",
+			 "&+bThe Sai&+Blor's Tat&+btoo&n", "&+BGain level 20",
 			 "&+ya small &+bS&+Ba&+bi&+Bl&+bo&+Br&+b'&+Bs&n &+yTattoo&n");
 	else
 		snprintf(buf3, MAX_STRING_LENGTH, "  &+L%-34s&+L%-45s&+L%s\r\n",
-			 "&+bThe Sai&+Blor's Tat&+btoo&n", "&+wGain level 30",
+			 "&+bThe Sai&+Blor's Tat&+btoo&n", "&+wGain level 20",
 			 "&+wan Unknown Item");
 	strcat(buf, buf3);
 	//-----The Sailor's Tattoo
@@ -420,7 +420,7 @@ void update_achievements(P_char ch, P_char victim, int cmd, int ach)
 			paf->modifier = 5;
 		}
 		// The Sailor's Tattoo
-		if (GET_LEVEL(ch) >= 30 && (!paf || paf->modifier < 30))
+		if (GET_LEVEL(ch) >= 20 && (!paf || paf->modifier < 20))
 		{
 			send_to_char(
 				"&+rCon&+Rgra&+Wtula&+Rtio&+rns! You have completed the &+RThe Sailor's Tattoo&+r achievement!&n\r\n",
@@ -455,7 +455,7 @@ void update_achievements(P_char ch, P_char victim, int cmd, int ach)
 			{
 				paf = apply_achievement(ch, AIP_LEVELACHIEVEMENT);
 			}
-			paf->modifier = 30;
+			paf->modifier = 20;
 		}
 	}
 

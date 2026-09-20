@@ -336,6 +336,60 @@ int main(int argc, char **argv)
 				flatfile_association_result::ok &&
 			guildhall_records.empty(),
 		"guildhall erase was not complete and idempotent");
+
+	// A kingdom's forge, loom, jeweller and guild store are room types 11-14.
+	// The validator bounds room types by FLATFILE_GUILDHALL_ROOM_TYPE_COUNT, and
+	// a catalogue it refuses is a fatal boot error, so every type below the
+	// bound must round trip and the bound itself must be refused.
+	require(FLATFILE_GUILDHALL_ROOM_TYPE_COUNT == 15,
+		"the flat-file room type bound does not cover the kingdom workshops");
+	flatfile_guildhall_record workshops = {};
+	workshops.guildhall_id = 20;
+	workshops.association_id = 9;
+	workshops.type = 1;
+	workshops.outside_vnum = 588200;
+	workshops.racewar = 1;
+	for (int type = 11; type <= 14; ++type)
+	{
+		flatfile_guildhall_room_record room = {};
+		room.room_id = 200 + type;
+		room.vnum = 48200 + type;
+		room.type = type;
+		room.values[0] = static_cast<uint32_t>(type);
+		room.exits.fill(-1);
+		workshops.rooms.push_back(room);
+	}
+	require(flatfile_guildhall_save(root.string(), workshops, &error) ==
+			flatfile_association_result::ok,
+		"workshop room types were refused: " + error);
+	require(flatfile_guildhall_list(root.string(), &guildhall_records, &error) ==
+				flatfile_association_result::ok &&
+			guildhall_records.size() == 1 && guildhall_records[0].guildhall_id == 20 &&
+			guildhall_records[0].rooms.size() == 4 &&
+			guildhall_records[0].rooms[0].type == 11 &&
+			guildhall_records[0].rooms[1].type == 12 &&
+			guildhall_records[0].rooms[2].type == 13 &&
+			guildhall_records[0].rooms[3].type == 14 &&
+			guildhall_records[0].rooms[3].values[0] == 14 &&
+			guildhall_records[0].rooms[3].vnum == 48214,
+		"workshop room types did not round trip");
+	auto beyond = workshops;
+	beyond.rooms[3].type = FLATFILE_GUILDHALL_ROOM_TYPE_COUNT;
+	require(flatfile_guildhall_save(root.string(), beyond, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall authority accepted a room type at the bound");
+	auto negative = workshops;
+	negative.rooms[0].type = -1;
+	require(flatfile_guildhall_save(root.string(), negative, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall authority accepted a negative room type");
+	require(flatfile_guildhall_erase(root.string(), 20, &error) ==
+				flatfile_association_result::ok &&
+			flatfile_guildhall_list(root.string(), &guildhall_records, &error) ==
+				flatfile_association_result::ok &&
+			guildhall_records.empty(),
+		"workshop guildhall erase was not complete");
+
 	require(flatfile_guildhall_save(root.string(), guildhall_source, &error) ==
 			flatfile_association_result::ok,
 		"guildhall authority could not be restored for corruption test");
