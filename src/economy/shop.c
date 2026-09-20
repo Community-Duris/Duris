@@ -14,6 +14,7 @@
 #include "item/item_movement_transaction.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/currency_transaction.h"
 #include "economy/shop.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -29,6 +30,7 @@
 #include "economy/shop_trade_runtime.h"
 #include "economy/shop_trade_transaction.h"
 #include <cerrno>
+#include <cstdlib>
 #include <new>
 #include <unordered_map>
 
@@ -60,8 +62,14 @@ struct produced_purchase_sequence
 	uint32_t shop_id = 0;
 	uint64_t stock_item_uid = 0;
 	uint64_t container_item_uid = 0;
+	uint64_t current_item_uid = 0;
+	int requested = 0;
 	int remaining = 0;
+	int completed = 0;
 	int64_t price = 0;
+	bool flatfile = false;
+	bool payment_pending = false;
+	bool payment_committed = false;
 };
 
 static std::unordered_map<uint32_t, produced_purchase_sequence> produced_purchase_sequences;
@@ -111,6 +119,128 @@ static bool shop_trade_container_accepts(P_char ch, P_obj object, P_obj containe
 #endif
 #endif
 	return true;
+}
+
+static bool shop_purchase_count(const char *argument, int *count)
+{
+	if (!argument || !*argument || !count)
+		return false;
+	char *end = NULL;
+	errno = 0;
+	const long parsed = strtol(argument, &end, 10);
+	if (errno || !end || *end || parsed < 1 || parsed > 50)
+		return false;
+	*count = static_cast<int>(parsed);
+	return true;
+}
+
+static void shop_purchase_report(P_char ch, const produced_purchase_sequence &sequence,
+				 bool complete)
+{
+	if (!ch || sequence.requested <= 1)
+		return;
+	char message[MAX_STRING_LENGTH];
+	if (complete)
+		snprintf(message, sizeof(message),
+			 "Purchase complete: %d of %d items delivered for %s.\r\n",
+			 sequence.completed, sequence.requested,
+			 coin_stringv(sequence.price * sequence.completed));
+	else
+		snprintf(
+			message, sizeof(message),
+			"Purchase stopped: %d of %d items delivered for %s; the remaining %d were not charged.\r\n",
+			sequence.completed, sequence.requested,
+			coin_stringv(sequence.price * sequence.completed), sequence.remaining);
+	send_to_char(message, ch);
+}
+
+static void shop_creation_grant_completion(P_char ch, uint64_t item_uid, bool committed,
+					   unsigned int error_code);
+static void shop_creation_payment_completion(P_char ch, bool committed,
+					     const currency_command_result &result,
+					     unsigned int error_code, const uint8_t *context,
+					     size_t context_size);
+
+static bool shop_creation_refund(P_char ch, const produced_purchase_sequence &sequence)
+{
+	if (!ch || sequence.price <= 0)
+		return true;
+	ADD_MONEY(ch, sequence.price);
+	P_char keeper = shop_trade_find_keeper(sequence.shop_id);
+	if (!keeper)
+	{
+		logit(LOG_FILE,
+		      "shop purchase refunded player but keeper was unavailable (pid=%d shop=%u amount=%lld)",
+		      GET_PID(ch), sequence.shop_id, static_cast<long long>(sequence.price));
+		return false;
+	}
+	if (SUB_MONEY(keeper, sequence.price, 0) != 0)
+		logit(LOG_FILE,
+		      "shop purchase refund could not debit keeper (pid=%d shop=%u amount=%lld)",
+		      GET_PID(ch), sequence.shop_id, static_cast<long long>(sequence.price));
+	writeShopKeeper(keeper, static_cast<int>(sequence.shop_id));
+	return true;
+}
+
+static bool shop_creation_submit_grant(P_char ch, produced_purchase_sequence &sequence)
+{
+	P_obj selected = shop_trade_find_object(sequence.current_item_uid);
+	P_obj destination = sequence.container_item_uid ?
+				    shop_trade_find_object(sequence.container_item_uid) :
+				    NULL;
+	return selected && OBJ_NOWHERE(selected) && IS_CARRYING_N(ch) + 1 <= CAN_CARRY_N(ch) &&
+	       (!sequence.container_item_uid || (destination && OBJ_CARRIED_BY(destination, ch) &&
+						 GET_ITEM_TYPE(destination) == ITEM_CONTAINER)) &&
+	       shop_trade_container_accepts(ch, selected, destination) &&
+	       item_creation_grant_submit_to_player_with_completion(ch, selected, ch, destination,
+								    shop_creation_grant_completion);
+}
+
+static bool shop_creation_submit_produced_continuation(P_char ch,
+						       produced_purchase_sequence &sequence)
+{
+	P_char keeper = shop_trade_find_keeper(sequence.shop_id);
+	P_obj stock = shop_trade_find_object(sequence.stock_item_uid);
+	P_obj destination = sequence.container_item_uid ?
+				    shop_trade_find_object(sequence.container_item_uid) :
+				    NULL;
+	if (!ch || !keeper || !stock || !OBJ_CARRIED_BY(stock, keeper) ||
+	    !shop_producing(stock, static_cast<int>(sequence.shop_id)) ||
+	    (sequence.container_item_uid && (!destination || !OBJ_CARRIED_BY(destination, ch) ||
+					     GET_ITEM_TYPE(destination) != ITEM_CONTAINER)) ||
+	    IS_CARRYING_N(ch) + 1 > CAN_CARRY_N(ch) ||
+	    (sequence.price > 0 && GET_MONEY(ch) < sequence.price))
+		return false;
+
+	P_obj selected = read_object(stock->R_num, REAL);
+	if (!selected)
+		return false;
+	SET_BIT(selected->extra2_flags, ITEM2_STOREITEM);
+	if (!shop_trade_container_accepts(ch, selected, destination))
+	{
+		extract_obj(selected, FALSE);
+		return false;
+	}
+	sequence.current_item_uid = selected->obj_uid;
+	if (sequence.price <= 0)
+	{
+		if (shop_creation_submit_grant(ch, sequence))
+			return true;
+	}
+	else
+	{
+		sequence.payment_pending = true;
+		if (currency_transaction_submit_wallet_value(
+			    ch, -sequence.price, currency_reason_type::wallet_spend,
+			    sequence.shop_id, critical_source_site::command,
+			    critical_deadline_class::interactive, shop_creation_payment_completion,
+			    &sequence.current_item_uid, sizeof(sequence.current_item_uid)))
+			return true;
+		sequence.payment_pending = false;
+	}
+	sequence.current_item_uid = 0;
+	extract_obj(selected, FALSE);
+	return false;
 }
 
 static bool shop_trade_submit_produced_continuation(P_char ch,
@@ -203,7 +333,16 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 	if (!committed || !exact_object)
 	{
 		if (produced)
-			produced_purchase_sequences.erase(static_cast<uint32_t>(GET_PID(ch)));
+		{
+			auto sequence = produced_purchase_sequences.find(
+				static_cast<uint32_t>(GET_PID(ch)));
+			if (sequence != produced_purchase_sequences.end())
+			{
+				const produced_purchase_sequence stopped = sequence->second;
+				produced_purchase_sequences.erase(sequence);
+				shop_purchase_report(ch, stopped, false);
+			}
+		}
 		const bool durable_commit = committed ||
 					    (result.shop_revision && result.item_count);
 		if (durable_commit)
@@ -265,19 +404,23 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 			const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
 			auto sequence = produced_purchase_sequences.find(pid);
 			if (sequence != produced_purchase_sequences.end() &&
+			    sequence->second.flatfile &&
 			    sequence->second.shop_id == payload.shop_id &&
 			    sequence->second.stock_item_uid == payload.stock_item_uid &&
 			    sequence->second.container_item_uid == payload.target_parent_item_uid)
 			{
+				++sequence->second.completed;
 				if (--sequence->second.remaining <= 0)
+				{
+					shop_purchase_report(ch, sequence->second, true);
 					produced_purchase_sequences.erase(sequence);
+				}
 				else if (!shop_trade_submit_produced_continuation(ch,
 										  sequence->second))
 				{
+					const produced_purchase_sequence stopped = sequence->second;
 					produced_purchase_sequences.erase(sequence);
-					send_to_char(
-						"Your remaining purchases could not be continued.\r\n",
-						ch);
+					shop_purchase_report(ch, stopped, false);
 				}
 			}
 			else if (sequence != produced_purchase_sequences.end())
@@ -308,6 +451,144 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 		snprintf(message, MAX_STRING_LENGTH, "The shopkeeper now has %s.\r\n",
 			 object->short_description);
 		send_to_char(message, ch);
+	}
+}
+
+static void shop_creation_grant_completion(P_char ch, uint64_t item_uid, bool committed,
+					   unsigned int error_code)
+{
+	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
+		return;
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
+	auto found = produced_purchase_sequences.find(pid);
+	if (found == produced_purchase_sequences.end() || found->second.flatfile ||
+	    found->second.current_item_uid != item_uid)
+	{
+		logit(LOG_FILE,
+		      "shop creation completion did not match a purchase (pid=%u uid=%llu committed=%d error=%u)",
+		      pid, static_cast<unsigned long long>(item_uid), committed, error_code);
+		return;
+	}
+	produced_purchase_sequence &sequence = found->second;
+	sequence.current_item_uid = 0;
+	if (!committed)
+	{
+		if (sequence.payment_committed)
+			shop_creation_refund(ch, sequence);
+		sequence.payment_committed = false;
+		const produced_purchase_sequence stopped = sequence;
+		produced_purchase_sequences.erase(found);
+		shop_purchase_report(ch, stopped, false);
+		if (stopped.requested == 1)
+			send_to_char(
+				stopped.price > 0 ?
+					"The purchase could not be delivered; your payment is being refunded.\r\n" :
+					"The purchase could not be delivered; you were not charged.\r\n",
+				ch);
+		return;
+	}
+	sequence.payment_committed = false;
+
+	P_obj object = shop_trade_find_object(item_uid);
+	P_char keeper = shop_trade_find_keeper(sequence.shop_id);
+	if (!object || (!OBJ_CARRIED_BY(object, ch) && !OBJ_INSIDE(object)))
+	{
+		statuslog(
+			56,
+			"&+RALERT&n: completed shop grant missing live publication [%llu] for player [%u]",
+			static_cast<unsigned long long>(item_uid), pid);
+		const produced_purchase_sequence stopped = sequence;
+		produced_purchase_sequences.erase(found);
+		shop_purchase_report(ch, stopped, false);
+		return;
+	}
+
+	char message[MAX_STRING_LENGTH];
+	act("$n buys $p.", FALSE, ch, object, 0, TO_ROOM);
+	if (keeper)
+	{
+		checked_substitute(message, sizeof(message),
+				   shop_index[sequence.shop_id].message_buy, GET_NAME(ch),
+				   coin_stringv(sequence.price));
+		do_tell(keeper, message, 0);
+	}
+	snprintf(message, sizeof(message), "You now have %s.\r\n", object->short_description);
+	send_to_char(message, ch);
+	++sequence.completed;
+	--sequence.remaining;
+	if (sequence.remaining <= 0)
+	{
+		const produced_purchase_sequence complete = sequence;
+		produced_purchase_sequences.erase(found);
+		shop_purchase_report(ch, complete, true);
+		return;
+	}
+	if (!shop_creation_submit_produced_continuation(ch, sequence))
+	{
+		const produced_purchase_sequence stopped = sequence;
+		produced_purchase_sequences.erase(found);
+		shop_purchase_report(ch, stopped, false);
+	}
+}
+
+static void shop_creation_payment_completion(P_char ch, bool committed,
+					     const currency_command_result &,
+					     unsigned int error_code, const uint8_t *context,
+					     size_t context_size)
+{
+	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !context || context_size != sizeof(uint64_t))
+		return;
+	uint64_t item_uid = 0;
+	memcpy(&item_uid, context, sizeof(item_uid));
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
+	auto found = produced_purchase_sequences.find(pid);
+	if (found == produced_purchase_sequences.end() || found->second.flatfile ||
+	    !found->second.payment_pending || found->second.current_item_uid != item_uid)
+	{
+		logit(LOG_FILE,
+		      "shop payment completion did not match a purchase (pid=%u uid=%llu committed=%d error=%u)",
+		      pid, static_cast<unsigned long long>(item_uid), committed, error_code);
+		return;
+	}
+	produced_purchase_sequence &sequence = found->second;
+	sequence.payment_pending = false;
+	P_obj selected = shop_trade_find_object(item_uid);
+	if (!committed)
+	{
+		if (selected && OBJ_NOWHERE(selected))
+			extract_obj(selected, FALSE);
+		sequence.current_item_uid = 0;
+		const produced_purchase_sequence stopped = sequence;
+		produced_purchase_sequences.erase(found);
+		shop_purchase_report(ch, stopped, false);
+		if (stopped.requested == 1)
+			send_to_char("The payment was declined; nothing was purchased.\r\n", ch);
+		return;
+	}
+
+	sequence.payment_committed = true;
+	P_char keeper = shop_trade_find_keeper(sequence.shop_id);
+	if (keeper && ch->in_room == keeper->in_room)
+	{
+		ADD_MONEY(keeper, static_cast<int>(sequence.price));
+		writeShopKeeper(keeper, static_cast<int>(sequence.shop_id));
+	}
+	else
+		keeper = NULL;
+	if (!keeper || !selected || !shop_creation_submit_grant(ch, sequence))
+	{
+		shop_creation_refund(ch, sequence);
+		sequence.payment_committed = false;
+		if (selected && OBJ_NOWHERE(selected))
+			extract_obj(selected, FALSE);
+		sequence.current_item_uid = 0;
+		const produced_purchase_sequence stopped = sequence;
+		produced_purchase_sequences.erase(found);
+		shop_purchase_report(ch, stopped, false);
+		if (stopped.requested == 1)
+			send_to_char(
+				"The purchase could not be delivered; your payment is being refunded.\r\n",
+				ch);
 	}
 }
 
@@ -812,9 +1093,41 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		sale = 1;
 	}
 
+	const bool produced_purchase = shop_producing(temp1, shop_nr);
+	P_obj purchase_destination = NULL;
+	int purchase_count = 1;
+	if (produced_purchase && *arg)
+	{
+		arg = one_argument(arg, arg2);
+		purchase_destination = get_obj_in_list(arg2, ch->carrying);
+		if (!purchase_destination)
+		{
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "You don't seem to have a '%s'.\r\n",
+				 arg2);
+			send_to_char(Gbuf1, ch);
+			return;
+		}
+		if (GET_ITEM_TYPE(purchase_destination) != ITEM_CONTAINER)
+		{
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s&n isn't a container.\r\n",
+				 purchase_destination->short_description);
+			send_to_char(Gbuf1, ch);
+			return;
+		}
+		arg = one_argument(arg, arg3);
+		if ((*arg3 && !shop_purchase_count(arg3, &purchase_count)) || *arg)
+		{
+			send_to_char(
+				"The amount must be a whole number between 1 and 50 with no extra arguments; nothing was purchased.\r\n",
+				ch);
+			return;
+		}
+	}
+
 	if ((GET_MONEY(ch) < sale) && !IS_TRUSTED(ch))
 	{
-		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+		    produced_purchase)
 		{
 			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
 					   shop_index[shop_nr].missing_cash2, GET_NAME(ch));
@@ -834,36 +1147,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		const int64_t transaction_price = IS_TRUSTED(ch) ? 0 : sale;
-		const bool produced = shop_producing(temp1, shop_nr);
-		P_obj destination = NULL;
-		int purchase_count = 1;
-		if (produced && *arg)
-		{
-			arg = one_argument(arg, arg2);
-			destination = get_obj_in_list(arg2, ch->carrying);
-			if (!destination)
-			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH,
-					 "You don't seem to have a '%s'.\r\n", arg2);
-				send_to_char(Gbuf1, ch);
-				return;
-			}
-			if (GET_ITEM_TYPE(destination) != ITEM_CONTAINER)
-			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "%s&n isn't a container.\r\n",
-					 destination->short_description);
-				send_to_char(Gbuf1, ch);
-				return;
-			}
-			arg = one_argument(arg, arg3);
-			if (*arg3 && atoi(arg3) > 1)
-				purchase_count = atoi(arg3);
-			if (purchase_count > 50 || *arg)
-			{
-				send_to_char("The limit for buying items is 50 at a time.\r\n", ch);
-				return;
-			}
-		}
+		const bool produced = produced_purchase;
+		P_obj destination = purchase_destination;
 		const uint32_t player_pid = static_cast<uint32_t>(GET_PID(ch));
 		bool sequence_registered = false;
 		if (produced && purchase_count > 1)
@@ -874,11 +1159,19 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 					produced_purchase_sequences
 						.emplace(player_pid,
 							 produced_purchase_sequence{
-								 static_cast<uint32_t>(shop_nr),
-								 temp1->obj_uid,
-								 destination->obj_uid,
-								 purchase_count,
-								 transaction_price })
+								 .shop_id = static_cast<uint32_t>(
+									 shop_nr),
+								 .stock_item_uid = temp1->obj_uid,
+								 .container_item_uid =
+									 destination->obj_uid,
+								 .current_item_uid = 0,
+								 .requested = purchase_count,
+								 .remaining = purchase_count,
+								 .completed = 0,
+								 .price = transaction_price,
+								 .flatfile = true,
+								 .payment_pending = false,
+								 .payment_committed = false })
 						.second;
 			}
 			catch (const std::bad_alloc &)
@@ -928,6 +1221,61 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		send_to_char("Your purchase is being processed.\r\n", ch);
 		return;
 	}
+	if (produced_purchase)
+	{
+		const uint32_t player_pid = static_cast<uint32_t>(GET_PID(ch));
+		bool sequence_registered = false;
+		try
+		{
+			sequence_registered =
+				produced_purchase_sequences
+					.emplace(player_pid,
+						 produced_purchase_sequence{
+							 .shop_id = static_cast<uint32_t>(shop_nr),
+							 .stock_item_uid = temp1->obj_uid,
+							 .container_item_uid =
+								 purchase_destination ?
+									 purchase_destination
+										 ->obj_uid :
+									 0,
+							 .current_item_uid = 0,
+							 .requested = purchase_count,
+							 .remaining = purchase_count,
+							 .completed = 0,
+							 .price = IS_TRUSTED(ch) ? 0 : sale,
+							 .flatfile = false,
+							 .payment_pending = false,
+							 .payment_committed = false })
+					.second;
+		}
+		catch (const std::bad_alloc &)
+		{
+			sequence_registered = false;
+		}
+		if (!sequence_registered)
+		{
+			send_to_char("The shop transaction service is busy. Please try again.\r\n",
+				     ch);
+			return;
+		}
+		auto sequence = produced_purchase_sequences.find(player_pid);
+		if (sequence == produced_purchase_sequences.end() ||
+		    !shop_creation_submit_produced_continuation(ch, sequence->second))
+		{
+			if (sequence != produced_purchase_sequences.end())
+			{
+				const produced_purchase_sequence stopped = sequence->second;
+				produced_purchase_sequences.erase(sequence);
+				shop_purchase_report(ch, stopped, false);
+			}
+			send_to_char(
+				"The shop could not begin that purchase; nothing was charged.\r\n",
+				ch);
+			return;
+		}
+		send_to_char("Your purchase is being processed.\r\n", ch);
+		return;
+	}
 	if (!IS_TRUSTED(ch))
 	{
 		if (!transact(ch, gem, keeper, sale))
@@ -953,65 +1301,10 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	    shop_index[shop_nr].sell_percent += .03;
 	*/
 	/* Test if producing shop !   */
-	const bool produced_purchase = shop_producing(temp1, shop_nr);
-	if (produced_purchase)
-	{
-		temp1 = read_object(temp1->R_num, REAL);
-		if (!temp1)
-		{
-			send_to_char("The shop could not create that item.\r\n", ch);
-			return;
-		}
-	}
-	else
-	{
-		obj_from_char(temp1);
-	}
+	obj_from_char(temp1);
 	SET_BIT(temp1->extra2_flags, ITEM2_STOREITEM);
-	int purchase_count = 1;
 	container = NULL;
-	// Format: buy <object> <container> <amount>
-	if (produced_purchase && *arg)
-	{
-		arg = one_argument(arg, arg2);
-		if (!(container = get_obj_in_list(arg2, ch->carrying)))
-		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You don't seem to have a '%s'.\r\n",
-				 arg2);
-			send_to_char(Gbuf1, ch);
-		}
-		else if (container->type != ITEM_CONTAINER)
-		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s&n isn't a container.\r\n",
-				 container->short_description);
-			send_to_char(Gbuf1, ch);
-			container = NULL;
-		}
-		if (container)
-		{
-			arg = one_argument(arg, arg3);
-			if (*arg3)
-			{
-				purchase_count = atoi(arg3);
-				if (purchase_count < 1 || purchase_count > 50 || *arg)
-				{
-					send_to_char(
-						"The amount must be between 1 and 50 with no extra arguments. The purchased item will be delivered to your inventory.\n\r",
-						ch);
-					purchase_count = 1;
-					container = NULL;
-				}
-			}
-		}
-		if (container && !shop_trade_container_accepts(ch, temp1, container))
-		{
-			send_to_char(
-				"That item will not fit in the selected container, so it will be delivered to your inventory.\r\n",
-				ch);
-			container = NULL;
-			purchase_count = 1;
-		}
-	}
+	container = purchase_destination;
 	if (!item_creation_grant_submit_to_player(ch, temp1, ch, container))
 	{
 		extract_obj(temp1, FALSE);
@@ -1021,12 +1314,6 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		return;
 	}
 	writeShopKeeper(keeper, shop_nr);
-	if (produced_purchase && container && purchase_count > 1)
-	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s %s %d", argm, arg2, purchase_count - 1);
-		shop_keeper(keeper, ch, CMD_BUY, Gbuf1);
-	}
-
 	return;
 }
 

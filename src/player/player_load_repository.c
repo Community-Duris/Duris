@@ -135,6 +135,77 @@ bool within_budget(const player_load_result &result)
 	       result.metrics.byte_count <= PLAYER_SNAPSHOT_MAX_BYTES;
 }
 
+void mark_degraded(player_load_result *result, uint32_t component, const char *stage)
+{
+	if (!result)
+		return;
+	result->outcome = player_load_outcome::degraded;
+	result->degraded_components |= component;
+	if (!result->failed_component)
+		result->failed_component = stage;
+}
+
+void clear_optional_components(player_load_result *result)
+{
+	if (!result)
+		return;
+	result->snapshot.languages.clear();
+	result->snapshot.introductions.clear();
+	result->snapshot.timers.clear();
+	result->snapshot.undead_slots.clear();
+	result->snapshot.forged_items.clear();
+	result->snapshot.granted_commands.clear();
+	result->snapshot.skills.clear();
+	result->snapshot.affects.clear();
+	result->snapshot.shapes.clear();
+	result->snapshot.trophies.clear();
+}
+
+void clear_items_and_pets(player_load_result *result)
+{
+	if (!result)
+		return;
+	result->snapshot.items.clear();
+	result->snapshot.pets.clear();
+	result->item_identities.clear();
+	result->pet_identities.clear();
+	result->item_owner_revision = 0;
+	result->authoritative_item_count = 0;
+	result->authoritative_pet_item_count = 0;
+	result->stale_item_rows = 0;
+	result->missing_payload_rows = 0;
+	result->promoted_item_rows = 0;
+	result->repaired_item_rows = 0;
+	result->snapshot.components = PLAYER_LOAD_SESSION01_COMPONENTS;
+}
+
+void clear_pets(player_load_result *result)
+{
+	if (!result)
+		return;
+	result->snapshot.pets.clear();
+	result->pet_identities.clear();
+	result->authoritative_pet_item_count = 0;
+	result->snapshot.components = PLAYER_LOAD_SESSION02_COMPONENTS;
+}
+
+void clear_gameplay_reads(player_load_result *result)
+{
+	if (!result)
+		return;
+	result->recent_pvp_deaths.clear();
+	result->completed_epic_zones.clear();
+	result->read_components = 0;
+}
+
+void clear_bank(player_load_result *result)
+{
+	if (!result)
+		return;
+	result->domains.bank = {};
+	result->domains.bank_revision = 0;
+}
+
 bool before_deadline(const player_load_request &request)
 {
 	return persistence_observability_now_usec() <= request.deadline_usec;
@@ -1431,8 +1502,7 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 						      &values[index]))
 					    return false;
 			    if (values[0] <= 0 || values[1] < 0 ||
-				values[1] >= static_cast<int64_t>(PLAYER_LOAD_PET_MAX) ||
-				values[9] <= 0)
+				values[1] >= static_cast<int64_t>(PLAYER_LOAD_PET_MAX))
 				    return false;
 			    try
 			    {
@@ -1819,44 +1889,9 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	result.snapshot.components = request.include_pets  ? PLAYER_LOAD_SESSION03_COMPONENTS :
 				     request.include_items ? PLAYER_LOAD_SESSION02_COMPONENTS :
 							     PLAYER_LOAD_SESSION01_COMPONENTS;
-	bool ok = true;
-	const auto stage = [&](const char *name, bool completed)
+	if (!load_status(connection, request, &result))
 	{
-		if (!ok)
-			return false;
-		if (completed)
-			return true;
-		ok = false;
-		result.failed_component = name;
-		return false;
-	};
-	stage("status", load_status(connection, request, &result));
-	if (ok)
-		stage("components", load_components(connection, request, &result));
-	if (ok && request.include_items)
-		stage("items", load_items(connection, &result));
-	if (ok && request.include_pets)
-		stage("pets", load_pets(connection, &result));
-	if (ok)
-		stage("gameplay_reads", load_gameplay_reads(connection, &result));
-	if (ok)
-		stage("bank", load_bank(connection, request, &result));
-	if (ok)
-		stage("deadline", before_deadline(request));
-	if (ok)
-		stage("budget", within_budget(result));
-	result.snapshot.pid = result.pid;
-	if (ok && !execute(connection, "COMMIT", &result))
-		stage("commit", false);
-	else if (ok && !before_deadline(request))
-		stage("commit_deadline", false);
-	if (ok)
-		result.outcome = player_load_outcome::applied;
-	else
-	{
-		if (result.outcome == player_load_outcome::component_failure &&
-		    !before_deadline(request))
-			result.outcome = player_load_outcome::timed_out;
+		result.failed_component = "status";
 		if (result.outcome == player_load_outcome::component_failure &&
 		    mysql_errno(connection))
 		{
@@ -1864,7 +1899,61 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 			result.outcome = failure_outcome(result.error_code);
 		}
 		execute(connection, "ROLLBACK", &result);
+		result.metrics.transaction_usec = persistence_observability_now_usec() - started;
+		return result;
 	}
+
+	// Status and identity are the only mandatory player-load domain. Everything below can be
+	// omitted from the runtime snapshot and repaired without denying entry to the character.
+	if (!load_components(connection, request, &result))
+	{
+		clear_optional_components(&result);
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_COMPONENTS, "components");
+	}
+	if (request.include_items)
+	{
+		if (!load_items(connection, &result))
+		{
+			clear_items_and_pets(&result);
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_ITEMS, "items");
+			if (request.include_pets)
+				result.degraded_components |= PLAYER_LOAD_DEGRADED_PETS;
+		}
+		else if (request.include_pets && !load_pets(connection, &result))
+		{
+			clear_pets(&result);
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_PETS, "pets");
+		}
+	}
+	if (!load_gameplay_reads(connection, &result))
+	{
+		clear_gameplay_reads(&result);
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_GAMEPLAY, "gameplay_reads");
+	}
+	if (!load_bank(connection, request, &result))
+	{
+		clear_bank(&result);
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_BANK, "bank");
+	}
+	result.snapshot.pid = result.pid;
+	const bool deadline_ok = before_deadline(request);
+	const bool budget_ok = within_budget(result);
+	if (!deadline_ok)
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_PIPELINE, "deadline");
+	if (!budget_ok)
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_PIPELINE, "budget");
+	if (result.degraded_components)
+	{
+		execute(connection, "ROLLBACK", &result);
+	}
+	else if (!execute(connection, "COMMIT", &result))
+	{
+		result.error_code = mysql_errno(connection);
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_PIPELINE, "commit");
+		execute(connection, "ROLLBACK", &result);
+	}
+	else
+		result.outcome = player_load_outcome::applied;
 	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
 	return result;
 }

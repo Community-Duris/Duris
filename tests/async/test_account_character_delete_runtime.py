@@ -27,9 +27,10 @@ guild = (ROOT / 'src/guild/assocs.c').read_text()
 prototypes = (ROOT / 'src/core/prototypes.h').read_text()
 # Menu loads must not instantiate inventory/pets before free_char().
 load = function(account, 'P_char load_char_into_game(')
-assert 'STATE(d) == CON_ACCT_DELETE_CHAR' in load
-assert 'request.include_items = false;' in load
-assert 'request.include_pets = false;' in load
+request_builder = function(account, 'bool build_account_load_request(')
+assert 'STATE(d) == CON_ACCT_DELETE_CHAR' in request_builder
+assert 'request.include_items = false;' in request_builder
+assert 'request.include_pets = false;' in request_builder
 
 enum_start = prototypes.index('enum class character_delete_result')
 enum_end = prototypes.index('};', enum_start) + 2
