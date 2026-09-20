@@ -47,12 +47,14 @@
 #include "net/comm.h"
 
 #include <climits>
+#include <cstdint>
 #include <cstring>
 #include <string>
 
 /* core/constant.c, declared by each file that asks CAN_CARRY_OBJ() (it reads
  * the strength table through CAN_CARRY_W) -- no header exports it. */
 extern struct str_app_type str_app[];
+extern P_obj object_list;
 
 /* The approved worked examples, checked at compile time as well as by
  * tests/async/test_kingdom_craft_math.py: a change to the curve that moves a
@@ -279,17 +281,20 @@ static const kingdom_craft_variant kingdom_craft_necklace_forms[] = {
 
 #define KCRAFT_FORMS(table) table, (int)(sizeof(table) / sizeof(table[0]))
 #define KCRAFT_ONE_WAY NULL, 0
-#define KCRAFT_WEAPON_LINES(n)                              \
-	{                                                   \
-		{ APPLY_HITROLL, n }, { APPLY_DAMROLL, n }, \
+#define KCRAFT_WEAPON_LINES(n)        \
+	{                             \
+		{ APPLY_HITROLL, n }, \
+		{ APPLY_DAMROLL, n }, \
 	}
-#define KCRAFT_LINE(location, top)           \
-	{                                    \
-		{ location, top }, { 0, 0 }, \
+#define KCRAFT_LINE(location, top) \
+	{                          \
+		{ location, top }, \
+		{ 0, 0 },          \
 	}
-#define KCRAFT_NO_LINES             \
-	{                           \
-		{ 0, 0 }, { 0, 0 }, \
+#define KCRAFT_NO_LINES   \
+	{                 \
+		{ 0, 0 }, \
+		{ 0, 0 }, \
 	}
 
 static const kingdom_craft_item kingdom_craft_catalogue[] = {
@@ -595,6 +600,11 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 		kingdom_cfg.craft_resale_permille));
 	obj->anti_flags = 0;
 	obj->anti2_flags = 0;
+	/* The blank is a prototype, not a source of gameplay flags.  Clear both
+	 * flag words before adding the two flags this feature owns so a future
+	 * prototype edit cannot leak NOSELL, SOULBIND, or a proc into store gear. */
+	obj->extra_flags = 0;
+	obj->extra2_flags = 0;
 
 	for (size_t i = 0; i < sizeof(obj->value) / sizeof(obj->value[0]); i++)
 		obj->value[i] = 0;
@@ -798,27 +808,401 @@ static void kingdom_store_list(P_char ch, const kingdom_realm &realm, P_Guild gu
  * buy
  * ------------------------------------------------------------------ */
 
-/* `buy <item> [form]`. THE ORDER IS THE SAFETY -- check first, so nothing
- * needs refunding:
- *
- *   1. what, and which form                      -- refuse, nothing made
- *   2. the piece is made, and delivery is asked:  -- refuse, piece discarded
- *      a grant already pending, or a load the
- *      buyer cannot carry
- *   3. MATERIAL IS CHECKED BEFORE COIN (ruled), the shortfall named
- *   4. the coin is checked
- *   5. the coin is taken -- DESTROYED, credited to no treasury
- *   6. the material is spent through kingdom_resource_spend(), the store's
- *      one way out, which cannot refuse now: it was checked in 3 and nothing
- *      has run since. If it ever did, the purchase stops and the coin goes
- *      back, rather than a piece going out unpaid for
- *   7. the piece is granted; a refusal here (transient, and impossible to
- *      check first) undoes the purchase: coin and material both go back
- *   8. the realm's record is written, not left to the next flush
- *
- * The coin goes before the material, as in a claim, because SUB_MONEY() can
- * refuse (a currency transaction still in flight for the buyer) and a realm
- * must not lose material to a purchase that then fails to be paid for. */
+/* The currency coordinator commits a purse debit asynchronously. Keep the
+ * complete, immutable purchase description in its bounded callback context,
+ * and do not spend realm material or create an object until that debit has
+ * actually committed. This closes the path where a debit is accepted for
+ * processing, the item is delivered, and a later durable rejection leaves the
+ * buyer with free gear and the realm short. */
+struct kingdom_store_purchase_context
+{
+	int32_t assoc_id;
+	int32_t realm_id;
+	uint32_t item_index;
+	int32_t form_index;
+	int32_t level;
+	int64_t price;
+	int64_t platinum;
+	int32_t costs[KRES_MAX];
+};
+
+static_assert(sizeof(kingdom_store_purchase_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES,
+	      "store purchase context must fit the currency coordinator");
+
+struct kingdom_store_grant_context
+{
+	kingdom_store_purchase_context purchase;
+	uint64_t item_uid;
+};
+
+static_assert(sizeof(kingdom_store_grant_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES,
+	      "store grant context must fit the item coordinator");
+
+static void kingdom_store_refund(P_char ch, int64_t price)
+{
+	if (!ch || price <= 0)
+		return;
+	if (price > INT_MAX)
+	{
+		logit(LOG_KINGDOM,
+		      "STORE REFUND: price %lld is outside ADD_MONEY's range for pid %d",
+		      static_cast<long long>(price), ch ? GET_PID(ch) : 0);
+		return;
+	}
+	ADD_MONEY(ch, static_cast<int>(price));
+}
+
+static bool kingdom_store_context_bill(const kingdom_store_purchase_context &context,
+				       const kingdom_craft_item &item,
+				       const kingdom_craft_variant **form_out,
+				       kingdom_craft_bill *bill_out)
+{
+	if (!form_out || !bill_out || context.assoc_id <= 0 || context.realm_id <= 0 ||
+	    context.level != kingdom_craft_item_level(context.level) || context.form_index < -1)
+		return false;
+
+	const kingdom_craft_variant *form = NULL;
+	if (item.variant_count > 0)
+	{
+		if (context.form_index < 0 || context.form_index >= item.variant_count)
+			return false;
+		form = &item.variants[context.form_index];
+	}
+	else if (context.form_index != -1)
+		return false;
+
+	const kingdom_craft_bill expected = kingdom_craft_bill_for(item, context.level);
+	if (context.price != static_cast<int64_t>(expected.platinum) * 1000 ||
+	    context.platinum != expected.platinum)
+		return false;
+	for (int res = 0; res < KRES_MAX; res++)
+		if (context.costs[res] != expected.costs[res])
+			return false;
+
+	*form_out = form;
+	*bill_out = expected;
+	return true;
+}
+
+static void kingdom_store_lack_text(const kingdom_realm &realm, const kingdom_craft_bill &bill,
+				    char *out, size_t out_len)
+{
+	out[0] = '\0';
+	for (int res = 0; res < KRES_MAX; res++)
+	{
+		if (realm.resources[res] >= bill.costs[res])
+			continue;
+		checked_appendf(out, out_len, "%s%ld more %s", out[0] ? ", " : "",
+				bill.costs[res] - realm.resources[res], kingdom_resource_name(res));
+	}
+}
+
+static void kingdom_store_return_material(kingdom_realm &realm, const kingdom_craft_bill &bill)
+{
+	for (int res = 0; res < KRES_MAX; res++)
+	{
+		if (bill.costs[res] <= 0)
+			continue;
+		const long returned = kingdom_resource_deposit(realm, res, bill.costs[res]);
+		if (returned != bill.costs[res])
+			logit(LOG_KINGDOM,
+			      "STORE RETURN SHORT: realm %d (assoc %d) restored %ld of %ld %s",
+			      realm.realm_id, realm.assoc_id, returned, bill.costs[res],
+			      kingdom_resource_name(res));
+	}
+	if (!kingdom_persist_realm(realm))
+		logit(LOG_KINGDOM,
+		      "STORE RECORD PENDING: realm %d (assoc %d) holds returned material in memory "
+		      "only; the flush retries it.",
+		      realm.realm_id, realm.assoc_id);
+}
+
+static void kingdom_store_grant_completed(P_char ch, bool committed,
+					  const item_transfer_result &result,
+					  unsigned int error_code, const uint8_t *raw_context,
+					  size_t context_size);
+
+static P_obj kingdom_store_find_item(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+/* Deliver a purchase whose currency command has already committed. Every
+ * failure path returns the purse payment; material is drawn and durably
+ * recorded before the grant is submitted, and is returned if the grant is
+ * refused. The accepted grant remains responsible for its own terminal
+ * callback. */
+static bool kingdom_store_deliver(P_char ch, kingdom_realm &realm, P_Guild guild,
+				  const kingdom_craft_item &item, const kingdom_craft_variant *form,
+				  const kingdom_store_purchase_context &purchase,
+				  const kingdom_craft_bill &bill)
+{
+	const bool wants_material = kingdom_craft_bill_wants_material(bill);
+	const std::string realm_name = guild->get_name();
+	P_obj obj = kingdom_craft_make(ch, item, form, purchase.level, realm_name.c_str());
+
+	if (!obj)
+	{
+		kingdom_store_refund(ch, purchase.price);
+		send_to_char("The workshops could not make that just now; your payment is being "
+			     "returned. Please try again in a moment.\r\n",
+			     ch);
+		logit(LOG_KINGDOM, "STORE: no %s could be made for %s after payment committed",
+		      item.keyword, GET_NAME(ch));
+		return false;
+	}
+
+	if (!CAN_CARRY_OBJ(ch, obj) || IS_CARRYING_N(ch) + 1 > CAN_CARRY_N(ch))
+	{
+		extract_obj(obj, FALSE);
+		kingdom_store_refund(ch, purchase.price);
+		send_to_char("You could not carry it; your payment is being returned. Lighten your "
+			     "load first.\r\n",
+			     ch);
+		return false;
+	}
+
+	if (!kingdom_craft_stores_cover(realm, bill))
+	{
+		char lack[192];
+		kingdom_store_lack_text(realm, bill, lack, sizeof(lack));
+		extract_obj(obj, FALSE);
+		kingdom_store_refund(ch, purchase.price);
+		send_to_char_f(ch,
+			       "The realm's stores changed before payment settled: they need %s. "
+			       "Your payment is being returned.\r\n",
+			       lack);
+		return false;
+	}
+
+	if (wants_material && !kingdom_resource_spend(realm, bill.costs))
+	{
+		extract_obj(obj, FALSE);
+		kingdom_store_refund(ch, purchase.price);
+		send_to_char("The realm's stores could not supply it after all; your payment is "
+			     "being returned. Try again in a moment.\r\n",
+			     ch);
+		logit(LOG_KINGDOM,
+		      "STORE ABORTED: realm %d (assoc %d) refused a committed bill for %s at level %d",
+		      realm.realm_id, realm.assoc_id, item.keyword, purchase.level);
+		return false;
+	}
+
+	const std::string shown = obj->short_description;
+	if (wants_material && !kingdom_persist_realm(realm))
+	{
+		extract_obj(obj, FALSE);
+		kingdom_store_refund(ch, purchase.price);
+		kingdom_store_return_material(realm, bill);
+		send_to_char(
+			"The realm's ledgers could not record the materials; your payment and the "
+			"realm's material are being returned. Try again in a moment.\r\n",
+			ch);
+		logit(LOG_KINGDOM,
+		      "STORE REVERSED: %s (assoc %d) could not persist the material draw for %s at "
+		      "level %d",
+		      GET_NAME(ch), realm.assoc_id, shown.c_str(), purchase.level);
+		return false;
+	}
+
+	kingdom_store_grant_context grant = {};
+	grant.purchase = purchase;
+	grant.item_uid = obj->obj_uid;
+	if (!item_creation_grant_submit_to_player_with_completion(
+		    ch, obj, ch, kingdom_store_grant_completed, &grant, sizeof(grant)))
+	{
+		extract_obj(obj, FALSE);
+		kingdom_store_refund(ch, purchase.price);
+		if (wants_material)
+			kingdom_store_return_material(realm, bill);
+		send_to_char(
+			"The workshops could not hand the piece over just now; your payment and "
+			"the realm's material are being returned. Try again in a moment.\r\n",
+			ch);
+		logit(LOG_KINGDOM,
+		      "STORE REVERSED: %s (assoc %d) was refused the grant of %s at level %d",
+		      GET_NAME(ch), realm.assoc_id, shown.c_str(), purchase.level);
+		return false;
+	}
+
+	return true;
+}
+
+static void kingdom_store_grant_completed(P_char ch, bool committed,
+					  const item_transfer_result &result,
+					  unsigned int error_code, const uint8_t *raw_context,
+					  size_t context_size)
+{
+	kingdom_store_grant_context grant = {};
+	if (!ch || !raw_context || context_size != sizeof(grant))
+	{
+		logit(LOG_KINGDOM,
+		      "STORE GRANT callback lost its player or context (committed=%d error=%u)",
+		      committed, error_code);
+		return;
+	}
+	memcpy(&grant, raw_context, sizeof(grant));
+
+	const size_t item_count =
+		sizeof(kingdom_craft_catalogue) / sizeof(kingdom_craft_catalogue[0]);
+	if (grant.purchase.item_index >= item_count)
+	{
+		logit(LOG_KINGDOM, "STORE GRANT callback received an invalid item for pid %d",
+		      GET_PID(ch));
+		return;
+	}
+
+	const kingdom_craft_item &item = kingdom_craft_catalogue[grant.purchase.item_index];
+	const kingdom_craft_variant *form = NULL;
+	kingdom_craft_bill bill = {};
+	if (grant.item_uid == 0 || !kingdom_store_context_bill(grant.purchase, item, &form, &bill))
+	{
+		logit(LOG_KINGDOM, "STORE GRANT callback received an invalid order for pid %d",
+		      GET_PID(ch));
+		return;
+	}
+	if (committed && result.root_item_uid != grant.item_uid)
+	{
+		logit(LOG_KINGDOM,
+		      "STORE GRANT callback received mismatched item result for pid %d (expected %llu, "
+		      "got %llu)",
+		      GET_PID(ch), static_cast<unsigned long long>(grant.item_uid),
+		      static_cast<unsigned long long>(result.root_item_uid));
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_find_realm(grant.purchase.assoc_id);
+	const bool same_realm = realm && realm->realm_id == grant.purchase.realm_id;
+	if (!committed)
+	{
+		kingdom_store_refund(ch, grant.purchase.price);
+		if (same_realm)
+			kingdom_store_return_material(*realm, bill);
+		else
+			logit(LOG_KINGDOM,
+			      "STORE RETURN LOST: realm %d (assoc %d) disappeared before a refused grant "
+			      "could be restored",
+			      grant.purchase.realm_id, grant.purchase.assoc_id);
+		send_to_char(
+			"The workshops could not hand the piece over just now; your payment and "
+			"the realm's material are being returned. Try again in a moment.\r\n",
+			ch);
+		logit(LOG_KINGDOM,
+		      "STORE REVERSED: %s (assoc %d) grant was rejected at level %d (error %u)",
+		      GET_NAME(ch), grant.purchase.assoc_id, grant.purchase.level, error_code);
+		return;
+	}
+
+	P_obj obj = kingdom_store_find_item(grant.item_uid);
+	if (!obj || !OBJ_CARRIED_BY(obj, ch))
+	{
+		logit(LOG_KINGDOM,
+		      "STORE GRANT committed but item %llu was not published for pid %d",
+		      static_cast<unsigned long long>(grant.item_uid), GET_PID(ch));
+		send_to_char(
+			"Your payment committed, but the workshops could not place the piece in "
+			"your inventory. Please contact staff for recovery.\r\n",
+			ch);
+		return;
+	}
+
+	const std::string shown = obj->short_description;
+	send_to_char_f(ch,
+		       "You pay &+W%ld&n platinum, and your realm's workshops make you %s&n.\r\n",
+		       bill.platinum, shown.c_str());
+	act("$n settles a purchase at the counter.", FALSE, ch, 0, 0, TO_ROOM);
+	logit(LOG_KINGDOM,
+	      "STORE: %s (assoc %d) bought %s at level %d for %ld platinum (destroyed) and "
+	      "%ld mineral, %ld wood, %ld fibre, %ld water.",
+	      GET_NAME(ch), grant.purchase.assoc_id, shown.c_str(), grant.purchase.level,
+	      bill.platinum, bill.costs[KRES_MINERAL], bill.costs[KRES_WOOD],
+	      bill.costs[KRES_FIBRE], bill.costs[KRES_WATER]);
+}
+
+static void kingdom_store_purchase_committed(P_char ch, bool committed,
+					     const currency_command_result & /*result*/,
+					     unsigned int error_code, const uint8_t *raw_context,
+					     size_t context_size)
+{
+	if (!committed)
+	{
+		if (ch)
+			send_to_char(
+				"Your guild-store payment was not committed; nothing was made. "
+				"Please try again.\r\n",
+				ch);
+		logit(LOG_KINGDOM, "STORE PAYMENT REJECTED for pid %d (error %u)",
+		      ch ? GET_PID(ch) : 0, error_code);
+		return;
+	}
+
+	if (!ch || !raw_context || context_size != sizeof(kingdom_store_purchase_context))
+	{
+		logit(LOG_KINGDOM,
+		      "STORE PAYMENT committed with an invalid callback context for pid %d",
+		      ch ? GET_PID(ch) : 0);
+		if (ch)
+			send_to_char(
+				"Your payment committed, but the store could not identify the order. "
+				"Please contact staff.\r\n",
+				ch);
+		return;
+	}
+
+	kingdom_store_purchase_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	const size_t item_count =
+		sizeof(kingdom_craft_catalogue) / sizeof(kingdom_craft_catalogue[0]);
+	if (context.item_index >= item_count || context.price < 0 || context.platinum < 0 ||
+	    context.price > INT_MAX)
+	{
+		kingdom_store_refund(ch, context.price);
+		send_to_char("Your payment committed, but the store could not validate the order. "
+			     "Your payment is being returned; please contact staff.\r\n",
+			     ch);
+		logit(LOG_KINGDOM, "STORE PAYMENT context validation failed for pid %d",
+		      GET_PID(ch));
+		return;
+	}
+
+	const kingdom_craft_item &item = kingdom_craft_catalogue[context.item_index];
+	const kingdom_craft_variant *form = NULL;
+	kingdom_craft_bill bill = {};
+	if (!kingdom_store_context_bill(context, item, &form, &bill))
+	{
+		kingdom_store_refund(ch, context.price);
+		send_to_char("Your payment committed, but the store could not validate the order. "
+			     "Your payment is being returned; please contact staff.\r\n",
+			     ch);
+		logit(LOG_KINGDOM, "STORE PAYMENT context validation failed for pid %d",
+		      GET_PID(ch));
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_find_realm(context.assoc_id);
+	P_Guild guild = get_guild_from_id(context.assoc_id);
+	if (!realm || realm->realm_id != context.realm_id || !guild ||
+	    !(kingdom_works_built(context.assoc_id) & (1u << item.station)))
+	{
+		kingdom_store_refund(ch, context.price);
+		send_to_char(
+			"The guild store changed before payment settled; your payment is being "
+			"returned. Please try again.\r\n",
+			ch);
+		logit(LOG_KINGDOM, "STORE PAYMENT lost its workshop for pid %d (assoc %d)",
+		      GET_PID(ch), context.assoc_id);
+		return;
+	}
+
+	kingdom_store_deliver(ch, *realm, guild, item, form, context, bill);
+}
+
+/* Validate everything before submitting a purse debit. The currency callback
+ * performs the material draw and item grant only after that debit is durable,
+ * so a later rejection cannot create free gear. */
 static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, unsigned built,
 			      int level, char *argument)
 {
@@ -855,14 +1239,12 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 	}
 
 	const kingdom_craft_variant *form = NULL;
-
 	if (item->variant_count > 0)
 	{
 		form = kingdom_craft_find_form(*item, form_word);
 		if (!form)
 		{
 			char forms[96];
-
 			kingdom_craft_forms_text(*item, ", ", " or ", forms, sizeof(forms));
 			send_to_char_f(ch, "A %s is made %s. As in '&+Wbuy %s %s&n'.\r\n",
 				       item->keyword, forms, item->keyword, item->variants[0].name);
@@ -877,60 +1259,46 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 	}
 
 	const kingdom_craft_bill bill = kingdom_craft_bill_for(*item, level);
-	const long price = bill.platinum * 1000;
-
-	if (price > INT_MAX)
+	const int64_t price = static_cast<int64_t>(bill.platinum) * 1000;
+	if (price < 0 || price > INT_MAX)
 	{
 		send_to_char("That price is past what a purse can settle.\r\n", ch);
 		return;
 	}
+	for (int res = 0; res < KRES_MAX; res++)
+	{
+		if (bill.costs[res] < 0 || bill.costs[res] > INT32_MAX)
+		{
+			send_to_char(
+				"That order is outside the store's supported material range. Please "
+				"petition.\r\n",
+				ch);
+			return;
+		}
+	}
 
-	/* 2. Delivery. A grant already in flight for this buyer would make the
-	 * new one wait on it or be refused, and a currency transaction in flight
-	 * would make SUB_MONEY() refuse, so ask about both before anything is
-	 * made. */
 	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
 	{
-		send_to_char("You are still settling or receiving something; try again in a "
-			     "moment.\r\n",
-			     ch);
+		send_to_char(
+			"You are still settling or receiving something; try again in a moment.\r\n",
+			ch);
 		return;
 	}
 
-	const std::string realm_name = guild->get_name();
-	P_obj obj = kingdom_craft_make(ch, *item, form, level, realm_name.c_str());
-
-	if (!obj)
+	/* Recheck the capacity without constructing a free-standing object. The
+	 * callback repeats this check after payment in case the character changes
+	 * state while the command is in flight. */
+	if (total_carried_weight(ch) + item->pounds > CAN_CARRY_W(ch) ||
+	    IS_CARRYING_N(ch) + 1 > CAN_CARRY_N(ch))
 	{
-		send_to_char("The workshops cannot make that just now. Please petition.\r\n", ch);
-		logit(LOG_KINGDOM,
-		      "STORE: no %s could be made for %s (blank %d would not load, or no player "
-		      "id to bind it to).",
-		      item->keyword, GET_NAME(ch), VOBJ_KINGDOM_CRAFT_BLANK);
-		return;
-	}
-
-	if (!CAN_CARRY_OBJ(ch, obj))
-	{
-		extract_obj(obj, FALSE);
 		send_to_char("You could not carry it. Lighten your load first.\r\n", ch);
 		return;
 	}
 
-	/* 3. Material, before coin, naming what is short. */
 	if (!kingdom_craft_stores_cover(realm, bill))
 	{
-		char lack[192] = "";
-
-		for (int res = 0; res < KRES_MAX; res++)
-		{
-			if (realm.resources[res] >= bill.costs[res])
-				continue;
-			checked_appendf(lack, sizeof(lack), "%s%ld more %s", lack[0] ? ", " : "",
-					bill.costs[res] - realm.resources[res],
-					kingdom_resource_name(res));
-		}
-		extract_obj(obj, FALSE);
+		char lack[192];
+		kingdom_store_lack_text(realm, bill, lack, sizeof(lack));
 		send_to_char_f(ch,
 			       "The realm's stores cannot supply it: they need %s. More must be "
 			       "harvested first.\r\n",
@@ -938,133 +1306,51 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 		return;
 	}
 
-	/* 4. Coin. */
 	if (price > 0 && GET_MONEY(ch) < price)
 	{
-		extract_obj(obj, FALSE);
 		send_to_char_f(ch, "That costs %ld platinum, and you do not carry so much.\r\n",
 			       bill.platinum);
 		return;
 	}
 
-	/* 5. The coin is taken from the buyer and credited to nobody: the
-	 * platinum a member pays for store gear is DESTROYED (ruled 2026-09-15). */
-	if (price > 0 && SUB_MONEY(ch, static_cast<int>(price), 0) != 0)
+	kingdom_store_purchase_context context = {};
+	context.assoc_id = realm.assoc_id;
+	context.realm_id = realm.realm_id;
+	context.item_index = static_cast<uint32_t>(item - kingdom_craft_catalogue);
+	context.form_index = form ? static_cast<int32_t>(form - item->variants) : -1;
+	context.level = level;
+	context.price = price;
+	context.platinum = bill.platinum;
+	for (int res = 0; res < KRES_MAX; res++)
+		context.costs[res] = static_cast<int32_t>(bill.costs[res]);
+
+	if (price > 0 &&
+	    !currency_transaction_submit_wallet_value(
+		    ch, -static_cast<int64_t>(price), currency_reason_type::wallet_spend, 0,
+		    critical_source_site::command, critical_deadline_class::interactive,
+		    kingdom_store_purchase_committed, &context, sizeof(context)))
 	{
-		extract_obj(obj, FALSE);
 		send_to_char("Your purse could not be settled just now; nothing has been taken. "
 			     "Try again in a moment.\r\n",
 			     ch);
 		return;
 	}
 
-	/* 6. The material, through the store's only way out. */
-	const bool wants_material = kingdom_craft_bill_wants_material(bill);
-
-	if (wants_material && !kingdom_resource_spend(realm, bill.costs))
+	if (price > 0)
 	{
-		/* Unreachable in today's single-threaded loop -- the bill was checked
-		 * in 3 and nothing has run since -- but a store must never hand over a
-		 * piece the realm did not pay for, so the purchase stops here all the
-		 * same: the piece is discarded and the buyer's platinum, taken in 5,
-		 * goes back. No material moved, so there is none to return. */
-		extract_obj(obj, FALSE);
-		if (price > 0)
-			ADD_MONEY(ch, static_cast<int>(price));
-		send_to_char(
-			"The realm's stores could not supply it after all, so nothing has been "
-			"taken. Try again in a moment.\r\n",
-			ch);
-		logit(LOG_KINGDOM,
-		      "STORE ABORTED: realm %d (assoc %d) refused a bill it had just been seen to "
-		      "cover (%s, level %d); %s's %ld platinum went back and nothing was made.",
-		      realm.realm_id, realm.assoc_id, item->keyword, level, GET_NAME(ch),
-		      bill.platinum);
+		send_to_char_f(ch,
+			       "Your payment of &+W%ld&n platinum is settling; the workshops will "
+			       "deliver the piece shortly.\r\n",
+			       bill.platinum);
 		return;
 	}
 
-	/* 7. The grant. Copy what the messages need first: once the grant is
-	 * accepted the object belongs to the ownership coordinator and must not
-	 * be touched again. */
-	const std::string shown = obj->short_description;
-
-	if (!item_creation_grant_submit_to_player(ch, obj, ch))
-	{
-		/* THE ONE REVERSAL. The coordinator refuses a grant only for reasons
-		 * the buyer can neither cause nor check first -- a saturated queue, a
-		 * failed allocation, an unavailable or overloaded coordinator
-		 * (item_movement_reject_is_transient(), item/item_movement_transaction.c)
-		 * -- and by now the coin is taken and the material drawn. The module's
-		 * "nothing refunds" means check first so nothing needs refunding; this
-		 * cannot be checked first, so the purchase is undone instead.
-		 *
-		 * The piece is still ours to discard, since the grant refused it. The
-		 * buyer's own platinum goes back to the buyer. And the material goes
-		 * back to the store it came from: that is the reversal of this
-		 * purchase's own draw, not a withdrawal -- nothing enters the store that
-		 * did not leave it a moment ago -- so the non-withdrawable ruling
-		 * stands. */
-		extract_obj(obj, FALSE);
-		if (price > 0)
-			ADD_MONEY(ch, static_cast<int>(price));
-		if (wants_material)
-		{
-			for (int res = 0; res < KRES_MAX; res++)
-			{
-				if (bill.costs[res] > 0)
-					kingdom_resource_deposit(realm, res, bill.costs[res]);
-			}
-			/* Written now rather than left to the flush, like the draw it
-			 * undoes (below): the realm's record should hold its material
-			 * back as promptly as the buyer's purse holds its coin. A write
-			 * that does not land leaves the realm dirty for the flush, and
-			 * says so in the log, as the sale's own write does. */
-			if (!kingdom_persist_realm(realm))
-				logit(LOG_KINGDOM,
-				      "STORE RECORD PENDING: realm %d (assoc %d) holds %s's returned "
-				      "material in memory only; the flush retries it.",
-				      realm.realm_id, realm.assoc_id, GET_NAME(ch));
-		}
-		send_to_char(
-			"The workshops could not hand the piece over just now, so nothing has "
-			"been taken: your platinum and the realm's material are back where they "
-			"were. Try again in a moment.\r\n",
-			ch);
-		logit(LOG_KINGDOM,
-		      "STORE REVERSED: %s (assoc %d) was refused the grant of %s at level %d; %ld "
-		      "platinum and %ld mineral, %ld wood, %ld fibre, %ld water put back.",
-		      GET_NAME(ch), realm.assoc_id, shown.c_str(), level, bill.platinum,
-		      bill.costs[KRES_MINERAL], bill.costs[KRES_WOOD], bill.costs[KRES_FIBRE],
-		      bill.costs[KRES_WATER]);
-		return;
-	}
-
-	/* 8. The draw is written at once instead of waiting for the next flush.
-	 * The buyer's platinum is durable through its own currency transaction;
-	 * without this a crash before the flush would bring the realm back with
-	 * material it had already spent on a piece the buyer keeps. The write is
-	 * the realm's alone -- no treasury moved -- and kingdom_persist_realm()
-	 * keeps the pending rule: a realm with a paired payment still pending is
-	 * left dirty for that retry, not published alone. kingdom_store_command()
-	 * refuses a sale while one is pending, so this write is never held; a
-	 * write that fails leaves the realm dirty for the flush, and is logged. */
-	if (wants_material && !kingdom_persist_realm(realm))
-		logit(LOG_KINGDOM,
-		      "STORE RECORD PENDING: realm %d (assoc %d) holds %s's draw in memory only; "
-		      "the flush retries it.",
-		      realm.realm_id, realm.assoc_id, GET_NAME(ch));
-
-	send_to_char_f(ch,
-		       "You pay &+W%ld&n platinum, and your realm's workshops make you %s&n.\r\n",
-		       bill.platinum, shown.c_str());
-	act("$n settles a purchase at the counter.", FALSE, ch, 0, 0, TO_ROOM);
-
-	logit(LOG_KINGDOM,
-	      "STORE: %s (assoc %d) bought %s at level %d for %ld platinum (destroyed) and "
-	      "%ld mineral, %ld wood, %ld fibre, %ld water.",
-	      GET_NAME(ch), realm.assoc_id, shown.c_str(), level, bill.platinum,
-	      bill.costs[KRES_MINERAL], bill.costs[KRES_WOOD], bill.costs[KRES_FIBRE],
-	      bill.costs[KRES_WATER]);
+	/* A free configured purchase has no currency command to await. It follows
+	 * the same delivery path synchronously, including the material draw and all
+	 * failure handling. */
+	if (kingdom_store_deliver(ch, realm, guild, *item, form, context, bill))
+		send_to_char("The workshops are preparing your piece; it will arrive shortly.\r\n",
+			     ch);
 }
 
 /* ------------------------------------------------------------------ *
