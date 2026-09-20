@@ -183,6 +183,7 @@ struct fixture
         for (P_obj obj : {&bag, &food, &extra, &child})
         {
             obj->obj_uid = id++; obj->R_num = 0; obj->loc_p = LOC_NOWHERE;
+            SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
             obj->next = object_list; object_list = obj;
         }
         bag.type = ITEM_CONTAINER;
