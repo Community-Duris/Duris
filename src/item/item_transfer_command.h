@@ -73,6 +73,10 @@ enum class item_transfer_reason : uint16_t
 	corpse_raise_pet,
 	pet_give,
 	pet_return,
+	// Trusted theft is still a player-to-player custody move.  Keeping a
+	// distinct reason preserves the audit trail without weakening the generic
+	// player-owner validation used by the transfer repositories.
+	trusted_steal,
 };
 
 enum class item_custody_state : uint8_t
@@ -168,6 +172,19 @@ struct item_transfer_result
 	// metadata. The game thread uses this replay-safe flag to invalidate its
 	// asynchronous collector projection after the item result is published.
 	bool collector_catalog_changed = false;
+};
+
+// Internal classification returned by the SQL executor. The enclosing coin
+// command maps these bounded flags to source/destination stages before the
+// failure receipt is persisted.
+enum class item_transfer_failure_stage : uint8_t
+{
+	none = 0,
+	from_owner_revision = 1u << 0,
+	to_owner_revision = 1u << 1,
+	item_revision = 1u << 2,
+	target_parent_revision = 1u << 3,
+	coin_payload_revision = 1u << 4,
 };
 
 bool item_owner_identity_valid(const item_owner_identity &owner);

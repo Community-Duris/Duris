@@ -684,8 +684,11 @@ void do_nchat(P_char, char *, int);
 void do_jestros(P_char ch, char *argument, int cmd);
 void do_tranquilize(P_char ch, char *argument, int cmd);
 void do_storage(P_char ch, char *arg, int cmd);
+void newb_spellup(P_char ch, P_char victim);
 void do_newb_spellup_all(P_char ch, char *arg, int cmd);
 void do_newb_spellup(P_char ch, char *arg, int cmd);
+void community_spellup_command(P_char ch, char *arg);
+void community_spellup_reset_for_boot(void);
 void do_givepet(P_char ch, char *arg, int cmd);
 void do_petition_block(P_char, char *, int);
 void concat_which_flagsde(const char *flagType, const flagDef flagNames[], char *buf);
@@ -845,7 +848,7 @@ int real_object0(const int);
 int real_room(const int);
 int real_room0(const int);
 int writePet(P_char);
-int writeShopKeeper(P_char);
+int writeShopKeeper(P_char, int shop_nr);
 void MemReport(void);
 void boot_db(int);
 void boot_pose_messages(void);
@@ -1874,7 +1877,12 @@ void do_teach(P_char, char *, int);
 void handle_scribe(P_char, P_char, P_obj, void *);
 void handle_spell_mem(P_char);
 void handle_undead_mem(P_char);
-void stop_memorizing(P_char);
+enum class memorization_stop_reason : uint8_t
+{
+	voluntary,
+	disrupted
+};
+void stop_memorizing(P_char, memorization_stop_reason = memorization_stop_reason::disrupted);
 int forget_spells(P_char, int);
 void do_stance(P_char, char *, int);
 int memorize_last_spell(P_char ch);
@@ -2309,7 +2317,7 @@ void show_stats_to_char(P_char ch);
 
 P_obj accept_gem_for_debt(P_char, P_char, int);
 void restore_shopkeepers(void);
-void save_dirty_shopkeepers(void);
+bool save_dirty_shopkeepers(bool force = false);
 void push(struct stack_data *stack, int pushval);
 int topp(struct stack_data *stack);
 int pop(struct stack_data *stack);

@@ -79,6 +79,20 @@ extern void clear_char(P_char ch);
 
 static int copyover_in_progress = 0;
 
+static bool copyover_version_supported(int version)
+{
+	return version >= 12 && version <= COPYOVER_VERSION;
+}
+
+static size_t copyover_mob_bytes_for_version(int version)
+{
+	if (version == 12)
+		return offsetof(copyover_mob, transport);
+	if (version < COPYOVER_VERSION)
+		return offsetof(copyover_mob, shopkeeper_shop_id);
+	return sizeof(copyover_mob);
+}
+
 const char *copyover_state_file()
 {
 	const char *path = getenv("COPYOVER_STATE_FILE");
@@ -139,9 +153,8 @@ bool copyover_has_durable_shopkeepers()
 		return false;
 	copyover_header header = {};
 	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
-			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 &&
-			     (header.version == COPYOVER_VERSION || header.version == 14 ||
-			      header.version == 13);
+			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 && header.version >= 13 &&
+			     copyover_version_supported(header.version);
 	fclose(file);
 	return current;
 }
@@ -492,6 +505,7 @@ static int write_mob_entry(FILE *fp, P_char mob)
 
 	entry.gold = GET_GOLD(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	entry.shopkeeper_shop_id = mob->only.npc ? mob->only.npc->shopkeeper_shop_id : -1;
 	transport_capture(mob, &entry.transport);
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
@@ -1145,13 +1159,21 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
 	request.include_items = true;
 	request.include_pets = true;
-	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
-	    result.request_id != request.request_id ||
-	    result.outcome != player_load_outcome::applied)
+	const bool worker_loaded =
+		player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000);
+	if (!worker_loaded || result.request_id != request.request_id ||
+	    (result.outcome != player_load_outcome::applied &&
+	     result.outcome != player_load_outcome::degraded))
 	{
-		logit(LOG_STATUS, "copyover: worker load failed (request=%llu outcome=%u)",
-		      (unsigned long long)request.request_id, (unsigned int)result.outcome);
-		return NULL;
+		player_load_result retry = {};
+		if (!player_load_pipeline_execute_sync(request, &retry) ||
+		    retry.request_id != request.request_id)
+		{
+			logit(LOG_STATUS, "copyover: player load failed (request=%llu outcome=%u)",
+			      (unsigned long long)request.request_id, (unsigned int)result.outcome);
+			return NULL;
+		}
+		result = std::move(retry);
 	}
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
@@ -1210,8 +1232,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	// read and verify header
 	if (fread(&header, sizeof(header), 1, fp) != 1 ||
 	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 ||
-	    (header.version != COPYOVER_VERSION && header.version != 14 && header.version != 13 &&
-	     header.version != 12))
+	    !copyover_version_supported(header.version))
 	{
 		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
 		goto copyover_recover_fail;
@@ -1358,7 +1379,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		descriptor_list = d;
 	}
 
-	if (header.version == COPYOVER_VERSION)
+	if (header.version >= 15)
 	{
 		if (!read_telemetry_copyover_state(fp, header.num_descriptors, &telemetry_entries))
 		{
@@ -1383,10 +1404,11 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		copyover_carried_item inv_entries[256];
 		int num_affs, num_inv;
 
-		const size_t mob_bytes = header.version == 12 ? offsetof(copyover_mob, transport) :
-								sizeof(mob_entry);
+		const size_t mob_bytes = copyover_mob_bytes_for_version(header.version);
 		if (fread(&mob_entry, mob_bytes, 1, fp) != 1)
 			goto copyover_recover_fail;
+		if (header.version < COPYOVER_VERSION)
+			mob_entry.shopkeeper_shop_id = -1;
 
 		// read affects into temp array
 		num_affs = mob_entry.num_affects;
@@ -1476,6 +1498,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		// restore gold
 		GET_GOLD(mob) = mob_entry.gold;
 		GET_BIRTHPLACE(mob) = mob_entry.birthplace;
+		if (mob_entry.shopkeeper_shop_id >= 0)
+			bind_shopkeeper(mob, mob_entry.shopkeeper_shop_id);
 		transport_restore(mob, mob_entry.transport);
 
 		// restore affects
@@ -1796,6 +1820,7 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 	entry.gold = GET_GOLD(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	entry.shopkeeper_shop_id = mob->only.npc ? mob->only.npc->shopkeeper_shop_id : -1;
 	transport_capture(mob, &entry.transport);
 
 	memcpy(buf + offset, &entry, sizeof(entry));
@@ -1984,6 +2009,8 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 	SET_POS(mob, POS_STANDING + STAT_NORMAL);
 	GET_GOLD(mob) = mob_entry.gold;
 	GET_BIRTHPLACE(mob) = mob_entry.birthplace;
+	if (mob_entry.shopkeeper_shop_id >= 0)
+		bind_shopkeeper(mob, mob_entry.shopkeeper_shop_id);
 	transport_restore(mob, mob_entry.transport);
 
 	// restore affects

@@ -70,6 +70,7 @@ static int short_size = sizeof(short);
 static int stat_vers, obj_vers, skill_vers;
 [[maybe_unused]] static int aff_vers, witness_vers;
 extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 // flag to skip corpse saves during boot (loading from db)
 int skip_corpse_save = 0;
@@ -1710,6 +1711,16 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
+	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		// A degraded load may have omitted durable inventory or sidecar state. Treat
+		// save as a safe no-op until a clean cold load can hydrate every component;
+		// publishing the partial runtime snapshot would destroy the unresolved rows.
+		logit(LOG_DEBUG,
+		      "writeCharacter: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return 1;
+	}
 	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
 		return 0;
 	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
@@ -3359,6 +3370,8 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 			if (o_f_flag & O_F_CONTAINS)
 				ignore++;
 		}
+		else
+			REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 		obj->g_key = 1;
 
@@ -3740,6 +3753,7 @@ P_obj read_one_object(char *read_buf)
 		logit(LOG_DEBUG, "read_one_object(): could not load object %d\n", V_num);
 		return NULL;
 	}
+	REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 	obj->g_key = 1;
 	obj->craftsmanship = GET_SHORT(buf);
@@ -4880,19 +4894,37 @@ void PurgeSavedItemFile(P_obj item)
 	return;
 }
 
-int writeShopKeeper(P_char ch)
+int writeShopKeeper(P_char ch, int shop_nr)
 {
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return 0;
+
 	if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
+	{
+		shop_index[shop_nr].dirty = 1;
 		return 0;
+	}
 
-	if (IS_NPC(ch) && !IS_SHOPKEEPER(ch))
+	/* The caller already has the authoritative shop identity.  Do not
+	 * rediscover it from a room/template pair: roaming templates are shared,
+	 * and a failed discovery must not lose the dirty state. */
+	if (shop_index[shop_nr].keeper != GET_RNUM(ch))
+	{
+		shop_index[shop_nr].dirty = 1;
 		return 0;
+	}
 
-	int shop_nr;
-	for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(ch); shop_nr++)
-		;
+	if (sql_save_shopkeeper(ch, shop_nr))
+	{
+		shop_index[shop_nr].dirty = 0;
+		shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+		return 1;
+	}
 
-	return sql_save_shopkeeper(ch, shop_nr) ? 1 : 0;
+	shop_index[shop_nr].dirty = 1;
+	shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+	logit(LOG_DEBUG, "writeShopKeeper: shop=%d outcome=retry leaving_dirty=1", shop_nr);
+	return 0;
 }
 
 int deleteShopKeeper(int id)
@@ -4928,14 +4960,24 @@ void restore_shopkeepers(void)
 		return;
 	}
 #ifndef __NO_MYSQL__
-	sql_restore_shopkeepers();
+	if (!sql_restore_shopkeepers())
+		fatal_boot_error(
+			"shopkeeper",
+			"SQL shopkeeper restore incomplete; refusing to publish partial stock");
 #endif
 }
 
-void save_dirty_shopkeepers(void)
+bool save_dirty_shopkeepers(bool force)
 {
+	// Flat-file trades commit stock/custody atomically in their own journal.
+	// Legacy SQL dirty flags are not an outstanding SQL save in that mode.
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return true;
 #ifndef __NO_MYSQL__
-	sql_save_dirty_shopkeepers();
+	return sql_save_dirty_shopkeepers(force);
+#else
+	(void)force;
+	return true;
 #endif
 }
 

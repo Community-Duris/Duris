@@ -244,12 +244,14 @@ terminal_preamble = r'''
 #include "player/player_save_pipeline.h"
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_capture.h"
+#include "core/defines.h"
 #include <cassert>
 #include <chrono>
 #include <mutex>
 #include <thread>
-struct char_data { int pid; };
+struct char_data { int pid; unsigned int runtime_flags; };
 struct obj_data { int uid; };
+#define IS_SET(flag, bit) ((flag) & (bit))
 player_snapshot_capture_result death_capture_result = player_snapshot_capture_result::ok;
 int death_enqueued = 0;
 bool enqueue_refused = false;

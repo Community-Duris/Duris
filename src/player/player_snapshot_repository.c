@@ -770,6 +770,33 @@ query_result verify_pet_custody(MYSQL *connection, int pid, const player_pet_sna
 	return expected.empty() ? query_result{ true, 0 } : query_result{ false, ESTALE };
 }
 
+query_result pet_has_live_custody(MYSQL *connection, int pid, uint64_t pet_uid, bool *has_custody)
+{
+	if (!has_custody)
+		return { false, EINVAL };
+	*has_custody = false;
+	if (!pet_uid)
+		return { true, 0 };
+	const std::string sql =
+		"SELECT 1 FROM item_current_owner WHERE owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
+		" AND owner_id=" + std::to_string(pet_uid) +
+		" AND owner_context_id=" + std::to_string(pid) + " AND state IN (" +
+		std::to_string(static_cast<unsigned>(item_custody_state::active)) + "," +
+		std::to_string(static_cast<unsigned>(item_custody_state::quarantined)) +
+		") LIMIT 1";
+	query_result result = execute(connection, sql);
+	if (!result.ok)
+		return result;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+		return { false, mysql_errno(connection) };
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	*has_custody = row != nullptr;
+	mysql_free_result(rows);
+	return { true, 0 };
+}
+
 query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
 {
 	query_result result = { true, 0 };
@@ -779,6 +806,16 @@ query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
 	{
 		if (pet.pet_uid && !pet_uids.insert(pet.pet_uid).second)
 			return { false, EINVAL };
+		if (pet.hold_reason == pet_hold_reason::custody_pending)
+		{
+			bool has_custody = false;
+			result = pet_has_live_custody(connection, snapshot.pid, pet.pet_uid,
+						      &has_custody);
+			if (!result.ok)
+				return result;
+			if (!has_custody)
+				continue;
+		}
 		uint64_t pet_id = 0;
 		if (pet.pet_uid)
 		{
@@ -852,13 +889,16 @@ query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
 		missing.back() = ')';
 	}
 	const std::string custody =
-		"EXISTS (SELECT 1 FROM item_owner_revision own WHERE own.owner_type=" +
+		"EXISTS (SELECT 1 FROM item_current_owner own WHERE own.owner_type=" +
 		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
 		" AND own.owner_id=player_pets.pet_uid AND own.owner_context_id=" +
-		std::to_string(snapshot.pid) + " AND own.revision>0)";
+		std::to_string(snapshot.pid) + " AND own.state IN (" +
+		std::to_string(static_cast<unsigned>(item_custody_state::active)) + "," +
+		std::to_string(static_cast<unsigned>(item_custody_state::quarantined)) + "))";
 	result = execute(connection, "UPDATE player_pets SET hold_reason=" +
 					     std::to_string(static_cast<uint32_t>(
 						     pet_hold_reason::custody_pending)) +
+					     ",room_vnum=" + std::to_string(snapshot.room_vnum) +
 					     " WHERE " + missing + " AND " + custody);
 	if (!result.ok)
 		return result;

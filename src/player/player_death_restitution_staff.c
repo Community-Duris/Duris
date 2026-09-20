@@ -18,6 +18,7 @@ struct staged_staff_submission
 	bool active = false;
 	std::string actor;
 	std::string hex;
+	size_t chunk_count = 0;
 };
 
 // All access is on the game thread through the staff command path.  A fixed
@@ -64,6 +65,14 @@ int hex_digit(unsigned char value)
 	if (value >= 'A' && value <= 'F')
 		return value - 'A' + 10;
 	return -1;
+}
+
+bool result_keeps_operation(player_death_restitution_runtime_result result)
+{
+	return result == player_death_restitution_runtime_result::accepted ||
+	       result == player_death_restitution_runtime_result::awaiting_durability ||
+	       result == player_death_restitution_runtime_result::attached ||
+	       result == player_death_restitution_runtime_result::journal_uncertain;
 }
 
 bool hex_chunk_valid(const char *input, size_t input_size)
@@ -143,10 +152,14 @@ player_death_restitution_runtime_result player_death_restitution_staff_begin(con
 		return player_death_restitution_runtime_result::unauthorized;
 	try
 	{
-		staged_staff_submission *staged = allocate_staged(actor);
+		staged_staff_submission *staged = find_staged(actor);
+		if (staged)
+			return player_death_restitution_runtime_result::duplicate_staging;
+		staged = allocate_staged(actor);
 		if (!staged)
 			return player_death_restitution_runtime_result::overloaded;
 		staged->hex.clear();
+		staged->chunk_count = 0;
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -162,15 +175,24 @@ player_death_restitution_staff_append_hex(const char *actor, int actor_level, co
 	if (!actor_authorized(actor, actor_level))
 		return player_death_restitution_runtime_result::unauthorized;
 	staged_staff_submission *staged = find_staged(actor);
-	if (!staged || !hex_chunk_valid(hex_chunk, hex_chunk_size))
-		return player_death_restitution_runtime_result::invalid_plan;
-	if (staged->hex.size() > PLAYER_DEATH_RESTITUTION_STAFF_MAX_COMMAND_BYTES * 2 ||
+	if (!staged)
+		return player_death_restitution_runtime_result::no_staging;
+	if (!hex_chunk || hex_chunk_size == 0)
+		return player_death_restitution_runtime_result::malformed_chunk;
+	if (hex_chunk_size > PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX ||
+	    staged->chunk_count >= PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNKS ||
+	    staged->hex.size() > PLAYER_DEATH_RESTITUTION_STAFF_MAX_COMMAND_BYTES * 2 ||
 	    hex_chunk_size >
 		    PLAYER_DEATH_RESTITUTION_STAFF_MAX_COMMAND_BYTES * 2 - staged->hex.size())
-		return player_death_restitution_runtime_result::invalid_plan;
+		return player_death_restitution_runtime_result::chunk_limit;
+	if ((hex_chunk_size & 1) != 0)
+		return player_death_restitution_runtime_result::incomplete_chunk;
+	if (!hex_chunk_valid(hex_chunk, hex_chunk_size))
+		return player_death_restitution_runtime_result::malformed_chunk;
 	try
 	{
 		staged->hex.append(hex_chunk, hex_chunk_size);
+		++staged->chunk_count;
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -188,15 +210,26 @@ player_death_restitution_staff_commit(const char *actor, int actor_level,
 	if (!actor_authorized(actor, actor_level))
 		return player_death_restitution_runtime_result::unauthorized;
 	staged_staff_submission *staged = find_staged(actor);
-	if (!staged || staged->hex.empty())
-		return player_death_restitution_runtime_result::invalid_plan;
+	if (!staged)
+		return player_death_restitution_runtime_result::no_staging;
+	if (staged->hex.empty() || (staged->hex.size() & 1) != 0)
+		return player_death_restitution_runtime_result::incomplete_chunk;
 
-	std::string canonical_hex = std::move(staged->hex);
-	staged->actor.clear();
-	staged->hex.clear();
-	staged->active = false;
-	return player_death_restitution_staff_submit_hex(actor, actor_level, canonical_hex.data(),
-							 canonical_hex.size(), submission_out);
+	std::string canonical_hex;
+	try
+	{
+		canonical_hex = staged->hex;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_death_restitution_runtime_result::overloaded;
+	}
+	const player_death_restitution_runtime_result result =
+		player_death_restitution_staff_submit_hex(actor, actor_level, canonical_hex.data(),
+							  canonical_hex.size(), submission_out);
+	if (result_keeps_operation(result))
+		*staged = {};
+	return result;
 }
 
 player_death_restitution_runtime_result player_death_restitution_staff_abort(const char *actor,
@@ -206,7 +239,31 @@ player_death_restitution_runtime_result player_death_restitution_staff_abort(con
 		return player_death_restitution_runtime_result::unauthorized;
 	staged_staff_submission *staged = find_staged(actor);
 	if (!staged)
-		return player_death_restitution_runtime_result::invalid_plan;
+		return player_death_restitution_runtime_result::no_staging;
 	*staged = {};
 	return player_death_restitution_runtime_result::accepted;
+}
+
+bool player_death_restitution_staff_get_staging_status(
+	const char *actor, int actor_level,
+	player_death_restitution_staff_staging_status *status_out)
+{
+	if (status_out)
+		*status_out = {};
+	if (!status_out || !actor_authorized(actor, actor_level))
+		return false;
+	staged_staff_submission *staged = find_staged(actor);
+	if (!staged)
+	{
+		status_out->state = player_death_restitution_staff_staging_state::inactive;
+		status_out->max_chunks = PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNKS;
+		status_out->max_hex_bytes = PLAYER_DEATH_RESTITUTION_STAFF_MAX_COMMAND_BYTES * 2;
+		return true;
+	}
+	status_out->state = player_death_restitution_staff_staging_state::active;
+	status_out->accepted_chunks = staged->chunk_count;
+	status_out->accepted_hex_bytes = staged->hex.size();
+	status_out->max_chunks = PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNKS;
+	status_out->max_hex_bytes = PLAYER_DEATH_RESTITUTION_STAFF_MAX_COMMAND_BYTES * 2;
+	return true;
 }

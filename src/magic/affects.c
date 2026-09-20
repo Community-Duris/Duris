@@ -35,6 +35,7 @@
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "kingdom/kingdom_store_piece.h"
 #include "classes/paladins.h"
 #include "combat/racewar_stat_mods.h"
 #include "classes/reavers.h"
@@ -277,6 +278,16 @@ int apply_ac(P_char ch, int eq_pos)
 		break;
 		;
 	}
+	/* Guild-store gear (kingdom/kingdom_store_piece.h) carries armour class
+	 * scaled to its buyer's level, and the material figure above would put a
+	 * floor under it -- steel on the body alone is 24 -- handing a level-10
+	 * buyer level-56 armour class. So for those pieces, and only those, the
+	 * figure is dropped and the piece's own AC below is what counts. Their
+	 * material stays real for everything else that reads it. kingdom_store_bound()
+	 * also knows a piece by its binding token, so one whose object index is
+	 * unresolved does not get the floor back. */
+	if (kingdom_store_bound(ch->equipment[eq_pos]))
+		value = 0;
 	// If values in zone files are better than values calculated..
 	if (GET_ITEM_TYPE(ch->equipment[eq_pos]) == ITEM_SHIELD && eq_pos == WEAR_SHIELD)
 	{

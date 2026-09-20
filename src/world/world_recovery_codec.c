@@ -127,9 +127,10 @@ bool encode_mob(const unsigned char *native_data, size_t native_size, unsigned c
 		    mob.vnum, reinterpret_cast<const char *>(native_data + base_native),
 		    extension_size, &generated))
 		return false;
-	const size_t encoded_size =
-		MOB_WIRE_FIXED_BYTES + static_cast<size_t>(mob.num_affects) * AFFECT_WIRE_BYTES +
-		(mob.transport.origin ? TRANSPORT_WIRE_BYTES : 0) + extension_size;
+	const size_t encoded_size = MOB_WIRE_FIXED_BYTES +
+				    static_cast<size_t>(mob.num_affects) * AFFECT_WIRE_BYTES +
+				    (mob.transport.origin ? TRANSPORT_WIRE_BYTES : 0) +
+				    (mob.shopkeeper_shop_id >= 0 ? 8 : 0) + extension_size;
 	if (encoded_size > output_capacity)
 		return false;
 	size_t offset = 0;
@@ -206,6 +207,12 @@ bool encode_mob(const unsigned char *native_data, size_t native_size, unsigned c
 		memcpy(output + offset, mob.transport.rider, sizeof(mob.transport.rider));
 		offset += sizeof(mob.transport.rider);
 	}
+	if (mob.shopkeeper_shop_id >= 0)
+	{
+		memcpy(output + offset, "SHP1", 4);
+		put_i32(output + offset + 4, mob.shopkeeper_shop_id);
+		offset += 8;
+	}
 	if (extension_size)
 	{
 		memcpy(output + offset, native_data + base_native, extension_size);
@@ -234,6 +241,13 @@ bool mob_native_size(const unsigned char *wire_data, size_t wire_size, size_t *n
 		    !memchr(wire_data + extension_offset + 20, '\0', 50))
 			return false;
 		extension_offset += TRANSPORT_WIRE_BYTES;
+	}
+	if (wire_size - extension_offset >= 4 && !memcmp(wire_data + extension_offset, "SHP1", 4))
+	{
+		if (wire_size - extension_offset < 8 ||
+		    get_i32(wire_data + extension_offset + 4) < 0)
+			return false;
+		extension_offset += 8;
 	}
 	const size_t generated_size = wire_size - extension_offset;
 	std::string generated;
@@ -265,6 +279,7 @@ bool decode_mob(const unsigned char *wire_data, size_t wire_size,
 		return false;
 	}
 	copyover_mob mob = {};
+	mob.shopkeeper_shop_id = -1; // Old wire records have no explicit shop identity.
 	size_t offset = 0;
 #define GET_MOB_I32(field)                       \
 	mob.field = get_i32(wire_data + offset); \
@@ -342,6 +357,12 @@ bool decode_mob(const unsigned char *wire_data, size_t wire_size,
 		}
 		memcpy(mob.transport.rider, wire_data + offset, sizeof(mob.transport.rider));
 		offset += sizeof(mob.transport.rider);
+		memcpy(native_record->data(), &mob, sizeof(mob));
+	}
+	if (wire_size - offset >= 4 && !memcmp(wire_data + offset, "SHP1", 4))
+	{
+		mob.shopkeeper_shop_id = get_i32(wire_data + offset + 4);
+		offset += 8;
 		memcpy(native_record->data(), &mob, sizeof(mob));
 	}
 	if (offset < wire_size)

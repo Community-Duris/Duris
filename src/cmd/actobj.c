@@ -44,6 +44,7 @@
 #include "item/item_command_policy.h"
 #include "item/item_get_policy.h"
 #include "item/storage_lockers.h"
+#include "kingdom/kingdom_store_piece.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
@@ -140,13 +141,41 @@ static bool get_trace_enabled(void)
 	return cached != 0;
 }
 
-/** Authorize soulbound equipment by account marker or legacy character-name binding. */
+/** Authorize equipment bound to someone: guild-store gear by its maker's mark,
+ *  then soulbound items by account marker, the store's buyer binding, or the
+ *  legacy character-name binding. */
 static bool can_equip_soulbound_item(P_char actor, P_obj object, bool show_rejection)
 {
+	/* GUILD-STORE GEAR: only the character who bought it may WEAR it (ruled
+	 * 2026-09-17), though anyone may carry, loot or sell it (ruled
+	 * 2026-09-16, so the piece carries no ITEM2_SOULBIND -- that flag also
+	 * forbids giving and dropping, which this gear is meant to allow).
+	 *
+	 * This sits BEFORE the flag test below, which store gear would otherwise
+	 * pass straight through. A piece is made at its buyer's own level, and
+	 * that is the whole of the rule that a level 10 cannot end up in level-56
+	 * work: without this, buying it at 56 and handing it over would. */
+	if (kingdom_store_bound(object) && !kingdom_store_piece_owner(actor, object))
+	{
+		if (show_rejection)
+			send_to_char(
+				"&+LThis was made to another's measure; it will not sit on you.&n\r\n",
+				actor);
+		return false;
+	}
 	if (!IS_OBJ_STAT2(object, ITEM2_SOULBIND))
 		return true;
+	/* Guild-store gear is bound to the character who bought it by PLAYER ID
+	 * (kingdom/kingdom_store_piece.h), never by name: its keywords are
+	 * ordinary words -- "steel", "kingdom", "strength" -- and a character
+	 * named after one would pass the name test below. kingdom_store_bound()
+	 * also catches a piece by its binding token alone, so one whose object
+	 * index is unresolved never reaches the name test either. Every other
+	 * soulbound item keeps that test unchanged. */
 	const bool owns_item = IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND) ?
 				       account_bound_reward_owner(actor, object) :
+			       kingdom_store_bound(object) ?
+				       kingdom_store_piece_owner(actor, object) :
 				       isname(GET_NAME(actor), object->name);
 	if (!owns_item && show_rejection)
 		send_to_char(
@@ -8887,13 +8916,26 @@ void do_wear(P_char ch, char *argument, int /*cmd*/)
 							ch);
 						continue;
 					}
-					if (!can_equip_soulbound_item(ch, obj_object, true))
-						continue;
 					if (obj_object->type != ITEM_SPELLBOOK)
 					{
 						if (CAN_WEAR(obj_object,
 							     equipment_pos_table[loop][0]))
 						{
+							/* Asked here, and silently. HERE because
+							 * this is the inner loop of `wear all`:
+							 * asking before the slot fits would run
+							 * the check for every carried item
+							 * against every empty slot, including
+							 * items that could never go there.
+							 * SILENTLY because a spoken refusal would
+							 * then fire once per slot per item --
+							 * someone carrying looted store gear to
+							 * sell, or an account-bound piece that is
+							 * not theirs, would get pages of it. An
+							 * explicit `wear <item>` still says why. */
+							if (!can_equip_soulbound_item(
+								    ch, obj_object, false))
+								continue;
 							wear(ch, obj_object,
 							     equipment_pos_table[loop][1], TRUE);
 							break;

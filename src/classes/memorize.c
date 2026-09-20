@@ -487,7 +487,7 @@ void SetSpellCircles(void)
 #endif
 }
 
-void show_stop_memorizing(P_char ch)
+void show_stop_memorizing(P_char ch, memorization_stop_reason reason)
 {
 	if (IS_PUNDEAD(ch) || GET_CLASS(ch, CLASS_WARLOCK) || IS_UNDEADRACE(ch) ||
 	    is_wearing_necroplasm(ch))
@@ -501,13 +501,31 @@ void show_stop_memorizing(P_char ch)
 	}
 	else if (USES_TUPOR(ch))
 	{
-		send_to_char(
-			"Your tupor has been disturbed!\n"
-			"&+CThe interr&n&+cupted lin&+Wk with the st&+Corm spirits leav&n&+ces you in sho&+Wck.\r\n",
-			ch);
-		act("$n &+Wshrieks&n in shock from the severed tupor link.", FALSE, ch, 0, 0,
-		    TO_ROOM);
-		CharWait(ch, WAIT_SEC * 2);
+		if (reason == memorization_stop_reason::voluntary)
+		{
+			send_to_char(
+				"You abandon your tupor before your spell power is fully restored.\n",
+				ch);
+			act("$n abandons $s tupor before $s spell power is fully restored.", FALSE,
+			    ch, 0, 0, TO_ROOM);
+		}
+		else
+		{
+			send_to_char(
+				"Your tupor has been disturbed!\n"
+				"&+CThe interr&n&+cupted lin&+Wk with the st&+Corm spirits leav&n&+ces you in sho&+Wck.\r\n",
+				ch);
+			act("$n &+Wshrieks&n in shock from the severed tupor link.", FALSE, ch, 0,
+			    0, TO_ROOM);
+			const int wait =
+				MAX(0, static_cast<int>(
+					       WAIT_SEC *
+					       get_property("memorize.interrupt.tupor.wait", 1.0)));
+			if (wait > 0)
+			{
+				CharWait(ch, wait);
+			}
+		}
 	}
 	else if (book_class(ch))
 	{
@@ -530,11 +548,11 @@ void show_stop_memorizing(P_char ch)
 		stop_meditation(ch);
 }
 
-void stop_memorizing(P_char ch)
+void stop_memorizing(P_char ch, memorization_stop_reason reason)
 {
 	if (IS_PC(ch) && IS_AFFECTED2(ch, AFF2_MEMORIZING))
 	{
-		show_stop_memorizing(ch);
+		show_stop_memorizing(ch, reason);
 		disarm_char_nevents(ch, event_memorize);
 	}
 }
@@ -1128,7 +1146,7 @@ void handle_memorize(P_char ch)
 	if (GET_STAT(ch) != STAT_RESTING ||
 	    (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
 	{
-		show_stop_memorizing(ch);
+		show_stop_memorizing(ch, memorization_stop_reason::disrupted);
 		return;
 	}
 
@@ -1183,7 +1201,7 @@ void handle_memorize(P_char ch)
 	if (no_book)
 	{
 		send_to_char("You have managed to misplace your spellbook!\n", ch);
-		show_stop_memorizing(ch);
+		show_stop_memorizing(ch, memorization_stop_reason::disrupted);
 		return;
 	}
 
@@ -1369,6 +1387,12 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 			}
 		}
 
+		if (IS_AFFECTED2(ch, AFF2_MEMORIZING))
+		{
+			send_to_char("You are already recovering your spell power.\n", ch);
+			return;
+		}
+
 		send_to_char("\n&+cYour mind dr&+Cifts int&+Wo a deep meditat&+cion and "
 			     "th&+Ce spirits of sto&+Wrms and i&+cce spe&+Cak to yo&+cu.&n\n",
 			     ch);
@@ -1393,7 +1417,7 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 
 	if (!IS_AFFECTED2(ch, AFF2_MEMORIZING))
 	{
-		if (!schedule_memorize(ch, get_circle_memtime(ch, get_max_circle(ch)) / 2))
+		if (!schedule_memorize(ch, get_circle_memtime(ch, need_mem) / 2))
 			return;
 	}
 

@@ -46,6 +46,22 @@ static std::map<int, int> dirty, commands;
 static std::string fixture_messages;
 static bool recover_creation = false;
 static obj_data recovered_creation = {};
+static int grant_callback_count = 0;
+static bool grant_callback_committed = false;
+static uint64_t grant_callback_uid = 0;
+static P_obj grant_callback_successor = nullptr;
+static void grant_callback(P_char actor, uint64_t item_uid, bool committed, unsigned int)
+{
+    ++grant_callback_count;
+    grant_callback_committed = committed;
+    grant_callback_uid = item_uid;
+    if (committed && grant_callback_successor)
+    {
+        P_obj successor = grant_callback_successor;
+        grant_callback_successor = nullptr;
+        assert(item_creation_grant_submit_to_player(actor, successor, actor));
+    }
+}
 void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
@@ -183,6 +199,7 @@ struct fixture
         for (P_obj obj : {&bag, &food, &extra, &child})
         {
             obj->obj_uid = id++; obj->R_num = 0; obj->loc_p = LOC_NOWHERE;
+            SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
             obj->next = object_list; object_list = obj;
         }
         bag.type = ITEM_CONTAINER;
@@ -220,6 +237,34 @@ static void deliver(const critical_completion &completion)
 }
 int main()
 {
+    // A final-publication callback runs exactly once and may safely enqueue the
+    // next creation after the completed request releases its queue slot.
+    {
+        fixture f;
+        grant_callback_count = 0; grant_callback_committed = false;
+        grant_callback_uid = 0; grant_callback_successor = &f.extra;
+        assert(item_creation_grant_submit_to_player_with_completion(
+            &f.actor, &f.bag, &f.actor, nullptr, grant_callback));
+        deliver(next_completion(critical_apply_outcome::applied));
+        assert(grant_callback_count == 1 && grant_callback_committed);
+        assert(grant_callback_uid == 100 && publications[100] == 1);
+        assert(submitted.size() == 1);
+        deliver(next_completion(critical_apply_outcome::applied));
+        assert(publications[102] == 1 && grant_callback_count == 1);
+    }
+    // Terminal ownership failure discards the detached item before reporting
+    // failure, allowing a caller to refund payment without exposing the item.
+    {
+        fixture f;
+        grant_callback_count = 0; grant_callback_committed = true;
+        grant_callback_uid = 0; grant_callback_successor = nullptr;
+        assert(item_creation_grant_submit_to_player_with_completion(
+            &f.actor, &f.bag, &f.actor, nullptr, grant_callback));
+        deliver(next_completion(critical_apply_outcome::terminal_failure));
+        assert(grant_callback_count == 1 && !grant_callback_committed);
+        assert(grant_callback_uid == 100 && extractions[100] == 1);
+        assert(publications[100] == 0 && !item_movement_transaction_player_busy(&f.actor));
+    }
     // A timed reward during preparation remains independent of the atomic kit.
     // It survives both successful publication and a terminal kit rejection.
     for (bool commit : {false, true})

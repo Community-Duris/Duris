@@ -132,6 +132,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
+				 cmd/community_spellup.o \
 				 cmd/player_death_restitution.o \
 				 net/ansi.o net/chat_presentation.o \
 				 net/output_style.o \
@@ -506,6 +507,7 @@ OBJS =  $(SHIP_OBJS) \
 				 kingdom/kingdom_harvest.o \
 				 kingdom/kingdom_guards.o \
 				 kingdom/kingdom_display.o \
+				 kingdom/kingdom_craft.o \
 				 kingdom/kingdom_cmds.o \
 				 kingdom/kingdom_db.o \
 				 world/transport.o \

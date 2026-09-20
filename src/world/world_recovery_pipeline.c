@@ -408,6 +408,7 @@ int write_mob_record(P_char mob, char *buffer, size_t maximum)
 	entry.max_vitality = GET_MAX_VITALITY(mob);
 	entry.position = GET_POS(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	entry.shopkeeper_shop_id = mob->only.npc ? mob->only.npc->shopkeeper_shop_id : -1;
 	transport_capture(mob, &entry.transport);
 	// Currency is authoritative player state and must not be replayed from a fuzzy world view.
 	entry.gold = 0;

@@ -748,7 +748,44 @@ void test_stale_wallet_rolls_back()
 		      operation_hex(command.operation_id) + "')") == 0);
 	rejected = critical_command_repository_apply(database, command);
 	assert(rejected.outcome == critical_apply_outcome::terminal_failure &&
-	       rejected.error_code == ESTALE && rejected.result_size == 0);
+	       rejected.error_code == ESTALE && rejected.durable_revision == 1 &&
+	       rejected.result_size == 0);
+}
+
+void test_stale_corpse_revision_reports_authority()
+{
+	constexpr int32_t ROOM = 4109;
+	constexpr uint64_t ROOT_UID = 880000001, CHILD_UID = 880000002;
+	seed_player(OWNER_PID, "CorpseHarnessOwner", "corpse_owner_stale", {});
+	const corpse_fixture fixture =
+		seed_corpse(1009, ROOM, 1881, ROOT_UID, CHILD_UID, 1, false, false);
+	corpse_lifecycle_payload payload = payload_for(fixture, corpse_lifecycle_action::release);
+	payload.expected_corpse_revision = 2;
+	const critical_apply_result rejected =
+		critical_command_repository_apply(database, command_for(payload));
+	assert(rejected.outcome == critical_apply_outcome::terminal_failure &&
+	       rejected.error_code == ESTALE && rejected.durable_revision == 1 &&
+	       rejected.result_size == 0);
+	assert(scalar("SELECT COUNT(*) FROM corpses WHERE id=" +
+		      std::to_string(fixture.corpse_id)) == 1);
+}
+
+void test_stale_corpse_owner_missing_is_quarantined()
+{
+	execute("DELETE FROM player_data WHERE pid=" + std::to_string(OWNER_PID));
+	constexpr int32_t ROOM = 4110;
+	constexpr uint64_t ROOT_UID = 890000001, CHILD_UID = 890000002;
+	const corpse_fixture fixture =
+		seed_corpse(1010, ROOM, 1891, ROOT_UID, CHILD_UID, 1, false, false);
+	corpse_lifecycle_payload payload = payload_for(fixture, corpse_lifecycle_action::release);
+	payload.expected_corpse_revision = 2;
+	const critical_apply_result rejected =
+		critical_command_repository_apply(database, command_for(payload));
+	assert(rejected.outcome == critical_apply_outcome::terminal_failure &&
+	       rejected.error_code == ESRCH && rejected.durable_revision == 0 &&
+	       rejected.result_size == 0);
+	assert(scalar("SELECT COUNT(*) FROM corpses WHERE id=" +
+		      std::to_string(fixture.corpse_id)) == 1);
 }
 } // namespace
 
@@ -769,9 +806,11 @@ int main()
 	test_nested_room_release();
 	test_nested_player_release();
 	test_stale_wallet_rolls_back();
+	test_stale_corpse_revision_reports_authority();
+	test_stale_corpse_owner_missing_is_quarantined();
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=" +
 		      std::to_string(static_cast<unsigned int>(
-			      critical_command_type::corpse_lifecycle))) == 8);
+			      critical_command_type::corpse_lifecycle))) == 10);
 	mysql_close(database);
 	return 0;
 }

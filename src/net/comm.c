@@ -903,7 +903,7 @@ void run_the_game(int port, int sslport)
 	 * and turning a controlled configuration failure into SIGABRT. */
 	if (!player_load_pipeline_init())
 		logit(LOG_STATUS,
-		      "Player load pipeline unavailable; existing-character login fails closed.");
+		      "Player load pipeline unavailable; existing-character login will use synchronous fallback.");
 	/* Same rule for the mail worker: joinable thread only after the fatal loads. */
 	if (!account_recovery_init())
 		logit(LOG_STATUS,
@@ -1939,9 +1939,11 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		for (size_t index = 0; index < critical_completion_count; ++index)
 			if (critical_completions[index].outcome ==
 			    critical_apply_outcome::terminal_failure)
-				persistence_alert(AVATAR, "critical_command", "completion", "none",
-						  "none", "integrity_failure",
-						  "operation metadata redacted");
+				persistence_alert(
+					AVATAR, "critical_command", "completion", "none",
+					critical_failure_stage_name(
+						critical_completions[index].failure_stage),
+					"integrity_failure", "operation metadata redacted");
 		player_save_pipeline_pulse();
 		persistence_pulse_character_saves();
 		death_extract_retry_pulse();
@@ -2532,6 +2534,27 @@ resume_game_loop:
 		_autoboot = 0;
 		goto resume_game_loop;
 	}
+	if (!_pwipe && !save_dirty_shopkeepers(true))
+	{
+		/* Dirty shopkeeper state is authoritative inventory.  Do not extract
+		 * characters or tear down services while a forced save is unresolved. */
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		player_save_pipeline_resume();
+		persistence_alert(AVATAR, "shopkeeper_save", "shutdown", "none", "none",
+				  "dirty_save_failed", "shutdown_cancelled=1");
+		shutdownData.eShutdownType = TimedShutdownData::NONE;
+		for (P_desc pending_desc = descriptor_list; pending_desc;
+		     pending_desc = pending_desc->next)
+			if (pending_desc->descriptor > 0 && pending_desc->connected == CON_PLAYING)
+				write_to_descriptor(
+					pending_desc,
+					"\r\nShutdown cancelled because shopkeeper inventory could not be saved.\r\n");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
 
 	PROFILES(SAVE);
 #ifdef DO_PROFILE
@@ -2541,7 +2564,6 @@ resume_game_loop:
 	// Don't want to save stuff just after we wiped all the tables in SQL.
 	if (!_pwipe)
 	{
-		save_dirty_shopkeepers();
 		flush_pending_ship_saves();
 		locker_async_drain(2000);
 

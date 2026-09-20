@@ -38,6 +38,7 @@
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "item/objmisc.h"
+#include "kingdom/kingdom_store_piece.h"
 #include "world/outposts.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -22249,7 +22250,15 @@ void remove_soulbind(P_char ch)
 	// find any instance of their soulbound item and remove it
 	for (obj = object_list; obj; obj = obj->next)
 	{
-		if (IS_SET((obj)->extra2_flags, ITEM2_SOULBIND) && isname(GET_NAME(ch), obj->name))
+		/* Store gear is not soulbound (ruled 2026-09-16), so this spell
+		 * does not meet it in practice. The guard stays anyway: a store
+		 * piece's keywords are ordinary words, including its buyer's name,
+		 * so if one ever were soulbound, matching names here would destroy
+		 * every such piece whose keywords hold this character's name.
+		 * kingdom_store_bound() knows one by its maker's mark as well as
+		 * by its vnum. */
+		if (IS_SET((obj)->extra2_flags, ITEM2_SOULBIND) && !kingdom_store_bound(obj) &&
+		    isname(GET_NAME(ch), obj->name))
 		{
 			extract_obj(obj);
 		}

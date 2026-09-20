@@ -49,7 +49,7 @@ class CorpseLifecycleRepositoryTest(unittest.TestCase):
         self.assertEqual(runtime["current_table_count"], 202)
         self.assertIn("'corpse_catalog_state'", runtime["runtime_table_sql_list"])
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0028_pet_custody")
+                         "0029_critical_failure_stage")
         entry = lifecycle_entries["database:corpse_catalog_state"]
         self.assertEqual(entry["data_category"], "reconciliation_or_replay_record")
         self.assertEqual(entry["export_rule"]["disposition"], "exclude")

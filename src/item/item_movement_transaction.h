@@ -18,6 +18,8 @@ enum class item_creation_prepare_result
 // Each invocation creates at most one detached root. Captures must own their
 // data and must not retain a character pointer across pulses.
 using item_creation_prepare_fn = std::function<item_creation_prepare_result(P_char, P_obj *)>;
+using item_creation_grant_completion_fn = void (*)(P_char actor, uint64_t item_uid, bool committed,
+						   unsigned int error_code);
 bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare);
 void item_creation_grant_prepare_pulse(void);
 
@@ -92,6 +94,21 @@ bool item_movement_transaction_submit_batch(
 	item_movement_reject *reject = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
+/* As above, but invoke `completion` only after the ownership authority has
+ * published the detached object to the recipient (or has terminally rejected
+ * the grant). The callback context is copied into the bounded transaction
+ * state and must not contain live pointers. */
+bool item_creation_grant_submit_to_player_with_completion(P_char actor, P_obj object,
+							  P_char recipient,
+							  item_movement_completion_fn completion,
+							  const void *context, size_t context_size,
+							  P_obj target_container = NULL);
+// Reports only the final outcome: committed means the durable grant was also
+// published into the requested live inventory/container. The callback runs
+// after the grant queue releases this request, so it may submit a successor.
+bool item_creation_grant_submit_to_player_with_completion(
+	P_char actor, P_obj object, P_char recipient, P_obj target_container,
+	item_creation_grant_completion_fn completion);
 bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
 						       P_char recipient);
 // Admit all detached roots before starting any ownership operation. A refused

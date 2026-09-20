@@ -1782,6 +1782,7 @@ CREATE TABLE `critical_operation_inbox` (
   `payload_version` smallint unsigned NOT NULL,
   `status` tinyint unsigned NOT NULL,
   `result_code` int unsigned NOT NULL DEFAULT '0',
+  `failure_stage` smallint unsigned NOT NULL DEFAULT '0',
   `durable_revision` bigint unsigned NOT NULL DEFAULT '0',
   `result_payload` varbinary(4096) NOT NULL,
   `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

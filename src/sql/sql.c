@@ -1113,6 +1113,15 @@ static MYSQL *sql_open_verified_connection(unsigned long client_flags, const cha
 			      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
 			return NULL;
 		}
+		// Every SQL socket must close on successful copyover exec, not just
+		// telemetry sockets. Otherwise the inherited main connection retains
+		// the runtime exclusion lock and rejects the replacement process.
+		if (!sql_telemetry_set_cloexec(conn))
+		{
+			logit(LOG_STATUS,
+			      "Database connection rejected: close-on-exec setup failed");
+			return NULL;
+		}
 		if ((!protected_local && !mysql_get_ssl_cipher(conn)) ||
 		    !sql_apply_session_contract(conn))
 		{
@@ -1730,7 +1739,7 @@ static bool sql_verify_boot_database(void)
 		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
 		"AND ((table_name='critical_operation_inbox' AND column_name IN "
 		"('operation_id','command_hash','keys_hash','command_type','schema_version',"
-		"'payload_version','status','result_code','durable_revision','result_payload',"
+		"'payload_version','status','result_code','failure_stage','durable_revision','result_payload',"
 		"'created_at','committed_at')) OR (table_name='critical_test_state' AND "
 		"column_name IN ('entity_type','entity_id','value','revision','updated_at')) OR "
 		"(table_name='critical_outbox' AND column_name IN "
@@ -1747,12 +1756,12 @@ static bool sql_verify_boot_database(void)
 	}
 	row = mysql_fetch_row(result);
 	lengths = row ? mysql_fetch_lengths(result) : NULL;
-	const bool critical_columns_ok = row && lengths && row[0] && atoi(row[0]) == 34;
+	const bool critical_columns_ok = row && lengths && row[0] && atoi(row[0]) == 35;
 	mysql_free_result(result);
 	if (!critical_columns_ok)
 	{
 		logit(LOG_STATUS,
-		      "FATAL: critical command schema is incomplete at boot (expected 34 required columns).");
+		      "FATAL: critical command schema is incomplete at boot (expected 35 required columns).");
 		return false;
 	}
 	const char *critical_index_probe =
@@ -2201,6 +2210,13 @@ int sql_save_player_core(P_char ch)
 	char assoc_name[MAX_STRING_LENGTH];
 	char assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	struct char_player_data *p;
+	if (ch && IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		logit(LOG_DEBUG,
+		      "sql_save_player_core: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return 1;
+	}
 
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
