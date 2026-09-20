@@ -66,14 +66,29 @@ typedef unsigned int uint;
 
 static char *one_argument(const char *argument, char *first_arg)
 {
+    static const char *const fill_words[] = {
+        "in", "from", "with", "the", "on", "at", "to", nullptr,
+    };
     if (!argument) {
         *first_arg = '\0';
         return nullptr;
     }
-    while (*argument && std::isspace(static_cast<unsigned char>(*argument)))
-        ++argument;
-    while (*argument && !std::isspace(static_cast<unsigned char>(*argument)))
-        *first_arg++ = static_cast<char>(std::tolower(static_cast<unsigned char>(*argument++)));
+    do {
+        while (*argument && std::isspace(static_cast<unsigned char>(*argument)))
+            ++argument;
+        char *word = first_arg;
+        while (*argument && *argument > ' ')
+            *word++ = static_cast<char>(std::tolower(static_cast<unsigned char>(*argument++)));
+        *word = '\0';
+        bool fill_word = false;
+        for (const char *const *fill = fill_words; *fill; ++fill)
+            if (!std::strcmp(first_arg, *fill)) {
+                fill_word = true;
+                break;
+            }
+        if (!fill_word)
+            return const_cast<char *>(argument);
+    } while (*argument || *first_arg);
     *first_arg = '\0';
     return const_cast<char *>(argument);
 }
@@ -82,6 +97,8 @@ static bool is_number(char *value)
 {
     if (!value || !*value)
         return false;
+    if (*value == '-')
+        ++value;
     for (; *value; ++value)
         if (!std::isdigit(static_cast<unsigned char>(*value)))
             return false;
@@ -90,10 +107,13 @@ static bool is_number(char *value)
 
 static int coin_type(char *value)
 {
-    return !std::strcmp(value, "copper") || !std::strcmp(value, "silver") ||
-                   !std::strcmp(value, "gold") || !std::strcmp(value, "platinum")
-               ? 0
-               : COIN_NONE;
+    static const char *const coins[] = {"copper", "silver", "gold", "platinum"};
+    for (const char *coin : coins) {
+        const std::size_t length = std::strlen(value);
+        if (length && length <= std::strlen(coin) && !std::strncmp(value, coin, length))
+            return 0;
+    }
+    return COIN_NONE;
 }
 '''
 
@@ -109,10 +129,16 @@ int main()
         assert(command_preserves_meditation(command, ""));
 
     assert(command_preserves_meditation(CMD_PUT, "all.coins bag"));
+    assert(command_preserves_meditation(CMD_PUT, "all.coins in bag"));
     assert(command_preserves_meditation(CMD_PUT, "100 gold bag"));
+    assert(command_preserves_meditation(CMD_PUT, "25 g in bag"));
     assert(command_preserves_meditation(CMD_PUT, "1 platinum satchel"));
     assert(!command_preserves_meditation(CMD_PUT, "all potions bag"));
     assert(!command_preserves_meditation(CMD_PUT, "100 apples bag"));
+    assert(!command_preserves_meditation(CMD_PUT, "100 gold"));
+    assert(!command_preserves_meditation(CMD_PUT, "0 gold bag"));
+    assert(!command_preserves_meditation(CMD_PUT, "-1 gold bag"));
+    assert(!command_preserves_meditation(CMD_PUT, "10000000 gold bag"));
     assert(!command_preserves_meditation(CMD_PUT, ""));
     assert(command_preserves_meditation(CMD_GROUP, ""));
     assert(!command_preserves_meditation(CMD_GROUP, "invite friend"));

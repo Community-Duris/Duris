@@ -107,19 +107,38 @@ static bool command_preserves_meditation(int cmd, const char *argument)
 	{
 		char first[MAX_INPUT_LENGTH];
 		char second[MAX_INPUT_LENGTH];
+		char destination[MAX_INPUT_LENGTH];
 
 		/* Coin pickup reports arrive asynchronously.  Allow the trigger that
 		 * bags that report to run without throwing away an active meditation.
-		 * The ordinary item-put path remains an interruption. */
+		 * The ordinary item-put path remains an interruption.  Match do_put's
+		 * accepted shape so malformed coin commands still interrupt meditation. */
 		argument = one_argument(argument, first);
 		if (!*first)
 			return false;
 		if (!strcmp(first, "all.coins"))
-			return true;
-		if (!is_number(first))
+		{
+			one_argument(argument, destination);
+			return *destination;
+		}
+		if (!is_number(first) || first[0] == '-' || strlen(first) > 7)
 			return false;
-		one_argument(argument, second);
-		return coin_type(second) != COIN_NONE;
+		bool nonzero = false;
+		for (const char *digit = first; *digit; ++digit)
+		{
+			if (*digit != '0')
+			{
+				nonzero = true;
+				break;
+			}
+		}
+		if (!nonzero)
+			return false;
+		argument = one_argument(argument, second);
+		if (coin_type(second) == COIN_NONE)
+			return false;
+		one_argument(argument, destination);
+		return *destination;
 	}
 	default:
 		return false;
