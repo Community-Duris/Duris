@@ -21,8 +21,8 @@ HARNESS = r'''
 static std::vector<critical_command> submitted;
 static bool externally_fenced = false;
 static bool release_completed = false;
-static bool retryable_release_failed = false;
 static bool retryable_release_completed = false;
+static bool fenced_release_failed = false;
 static bool queued_destruction_completed = false;
 static bool resurrection_completed = false;
 static bool raise_completed = false;
@@ -263,21 +263,21 @@ static void on_release(bool committed, const corpse_lifecycle_result &result,
 	release_completed = true;
 }
 
-static void on_retryable_release(bool committed, const corpse_lifecycle_result &,
+static void on_retryable_release(bool committed, const corpse_lifecycle_result &result,
 				 unsigned int error_code,
 				 const corpse_lifecycle_payload &payload)
 {
-	assert(!committed && error_code == ESTALE && payload.expected_corpse_revision == 3);
-	retryable_release_failed = true;
+	assert(committed && error_code == 0 && result.owner_pid == 44 &&
+	       payload.expected_corpse_revision == 4 && payload.expected_room_revision == 0);
+	retryable_release_completed = true;
 }
 
-static void on_retryable_release_success(bool committed, const corpse_lifecycle_result &result,
-					 unsigned int error_code,
-					 const corpse_lifecycle_payload &payload)
+static void on_fenced_release(bool committed, const corpse_lifecycle_result &,
+				      unsigned int error_code,
+				      const corpse_lifecycle_payload &payload)
 {
-	assert(committed && error_code == 0 && result.owner_pid == 44 &&
-	       payload.expected_corpse_revision == 3 && payload.expected_room_revision == 1);
-	retryable_release_completed = true;
+	assert(!committed && error_code == ESTALE && payload.expected_corpse_revision == 4);
+	fenced_release_failed = true;
 }
 
 static void on_queued_destruction(bool committed, const corpse_lifecycle_result &result,
@@ -385,12 +385,18 @@ int main()
 	stale_release.operation_id = submitted[6].operation_id;
 	stale_release.outcome = critical_apply_outcome::terminal_failure;
 	stale_release.error_code = ESTALE;
+	stale_release.durable_revision = 4;
 	corpse_lifecycle_transaction_handle_completions(&stale_release, 1);
-	assert(retryable_release_failed);
-	assert(corpse_lifecycle_transaction_release(release(44, 22, 901, 1),
-						     on_retryable_release_success));
-	assert(submitted.size() == 8 && decode(7).expected_corpse_revision == 3 &&
-	       decode(7).expected_room_revision == 1);
+	assert(!retryable_release_completed && submitted.size() == 7);
+	for (unsigned int pulse = 0;
+	     pulse < CORPSE_LIFECYCLE_STALE_RETRY_BACKOFF_PULSES; ++pulse)
+	{
+		corpse_lifecycle_transaction_pulse();
+		assert(submitted.size() == 7);
+	}
+	corpse_lifecycle_transaction_pulse();
+	assert(submitted.size() == 8 && decode(7).expected_corpse_revision == 4 &&
+	       decode(7).expected_room_revision == 0);
 	done = release_completion(7, 44, 22, 16);
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
 	assert(retryable_release_completed);
@@ -447,12 +453,41 @@ int main()
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
 	assert(nested_completed && !corpse_lifecycle_transaction_busy(48, 26));
 
+	// A second stale result fences the corpse. It cannot create another
+	// operation, and the terminal callback is delivered exactly once.
+	assert(corpse_lifecycle_transaction_hydrate(49, 27, 3));
+	assert(corpse_lifecycle_transaction_release(release(49, 27, 910, 0),
+						     on_fenced_release));
+	assert(submitted.size() == 17);
+	critical_completion first_fenced_stale = {};
+	first_fenced_stale.operation_id = submitted[16].operation_id;
+	first_fenced_stale.outcome = critical_apply_outcome::terminal_failure;
+	first_fenced_stale.error_code = ESTALE;
+	first_fenced_stale.durable_revision = 4;
+	corpse_lifecycle_transaction_handle_completions(&first_fenced_stale, 1);
+	assert(!fenced_release_failed && submitted.size() == 17);
+	for (unsigned int pulse = 0;
+	     pulse < CORPSE_LIFECYCLE_STALE_RETRY_BACKOFF_PULSES; ++pulse)
+		corpse_lifecycle_transaction_pulse();
+	corpse_lifecycle_transaction_pulse();
+	assert(submitted.size() == 18 && decode(17).expected_corpse_revision == 4);
+	critical_completion second_fenced_stale = {};
+	second_fenced_stale.operation_id = submitted[17].operation_id;
+	second_fenced_stale.outcome = critical_apply_outcome::terminal_failure;
+	second_fenced_stale.error_code = ESTALE;
+	second_fenced_stale.durable_revision = 4;
+	corpse_lifecycle_transaction_handle_completions(&second_fenced_stale, 1);
+	assert(fenced_release_failed && !corpse_lifecycle_transaction_busy(49, 27));
+	assert(!corpse_lifecycle_transaction_release(release(49, 27, 910, 0),
+						      on_fenced_release));
+
 	const auto health = corpse_lifecycle_transaction_health_copy();
-	assert(health.submitted == 16 && health.committed == 15 && health.rejected == 1 &&
+	assert(health.submitted == 18 && health.committed == 15 && health.rejected == 3 &&
 	       health.pending == 0 && health.dirty == 0);
 	assert(corpse_lifecycle_transaction_forget(42, 20));
 	assert(corpse_lifecycle_transaction_forget(43, 21));
 	assert(corpse_lifecycle_transaction_forget(44, 22));
+	assert(corpse_lifecycle_transaction_forget(49, 27));
 	return 0;
 }
 '''
