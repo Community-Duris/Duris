@@ -1272,7 +1272,7 @@ void ws_finish_login(struct descriptor_data *d, int password_valid)
 	/* reconnect check: look for in-game characters from this account */
 	{
 		struct descriptor_data *k, *next_k;
-		struct acct_chars *c;
+		struct acct_chars *c = NULL;
 		struct char_data *online_char = NULL;
 
 		/* search through account's characters to find one in-game */
