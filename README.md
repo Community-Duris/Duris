@@ -196,6 +196,11 @@ python3 scripts/migration_runner.py run
 # Confirm the exact runtime contract before first boot.
 ./migrations/verify_runtime_compatibility.sh
 
+# Epic-zone gameplay data is separate from the sealed schema contract.
+# Before first boot, inspect and apply the source-derived seed as documented in
+# docs/operations/EPIC_ZONE_SEED.md (it handles the initially empty zones table).
+python3 scripts/epic_zone_seed.py check
+
 # Seed the tracked help and login content. Inspect the counts first, then
 # confirm the live import when prompted.
 ./scripts/import_help_to_prod.sh --local --dry-run
