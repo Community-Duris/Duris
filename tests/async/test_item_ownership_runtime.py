@@ -302,7 +302,7 @@ int main()
 	raised.max_item_revision = 5;
 	raised.item_count = 2;
 	raised.wallet = { 5, 6, 7, 8 };
-	assert(item_ownership_runtime_apply_corpse_raise(61, 41, 71, raised));
+	assert(item_ownership_runtime_apply_corpse_raise(61, 41, 71, 0, raised));
 	assert(item_ownership_runtime_lookup(510, &absent) &&
 	       item_owner_identity_equal(absent.owner, raising_player) &&
 	       absent.item_revision == 3 && absent.owner_revision == 6);
@@ -313,7 +313,7 @@ int main()
 	       owner_revision == 4);
 	assert(item_ownership_runtime_owner_revision(raising_player, &owner_revision) &&
 	       owner_revision == 6);
-	assert(!item_ownership_runtime_apply_corpse_raise(61, 41, 71, raised));
+	assert(!item_ownership_runtime_apply_corpse_raise(61, 41, 71, 0, raised));
 
 	item_ownership_runtime_reset();
 	const item_owner_identity transient_corpse = {
@@ -333,7 +333,7 @@ int main()
 	raised.discarded_item_count = 1;
 	assert(!item_ownership_runtime_apply_corpse_discarded(61, 42, { 511 }, raised));
 	assert(item_ownership_runtime_apply_corpse_discarded(61, 42, { 512 }, raised));
-	assert(item_ownership_runtime_apply_corpse_raise(61, 42, 71, raised));
+	assert(item_ownership_runtime_apply_corpse_raise(61, 42, 71, 0, raised));
 	assert(item_ownership_runtime_lookup(512, &absent) &&
 	       item_owner_identity_equal(absent.owner, destruction) &&
 	       absent.state == item_custody_state::destroyed &&

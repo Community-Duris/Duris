@@ -2066,6 +2066,15 @@ def _store_buy_code() -> str:
     return strip_comments(body[0]) if len(body) == 1 else ""
 
 
+def _store_deliver_code() -> str:
+    """kingdom_store_deliver()'s body, comments blanked out, or "" if absent."""
+    body = function_bodies(
+        read("src/kingdom/kingdom_craft.c"),
+        r"\bstatic\s+bool\s+kingdom_store_deliver\s*\(",
+    )
+    return strip_comments(body[0]) if len(body) == 1 else ""
+
+
 def _block_after(code: str, head: str) -> str:
     """The brace-matched block that follows the first `head` in `code`, or ""."""
     at = code.find(head)
@@ -2084,16 +2093,18 @@ def _block_after(code: str, head: str) -> str:
 
 
 def _refused_grant_block(buy: str) -> str:
-    """The brace-matched block kingdom_store_buy() runs when the ownership
+    """The brace-matched block kingdom_store_deliver() runs when the ownership
     coordinator refuses the grant: the one place material may be put back,
     because it undoes a purchase that could not be delivered."""
-    return _block_after(buy, "if (!item_creation_grant_submit_to_player(")
+    return _block_after(
+        _store_deliver_code(), "if (!item_creation_grant_submit_to_player_with_completion("
+    )
 
 
 def _unpaid_material_block(buy: str) -> str:
-    """The block kingdom_store_buy() runs if kingdom_resource_spend() refuses
+    """The block kingdom_store_deliver() runs if kingdom_resource_spend() refuses
     a bill it was just seen to cover: the purchase stops there."""
-    return _block_after(buy, "if (wants_material && !kingdom_resource_spend(")
+    return _block_after(_store_deliver_code(), "if (wants_material && !kingdom_resource_spend(")
 
 
 def test_store_spends_only_through_kingdom_resource_spend() -> None:
@@ -2107,24 +2118,29 @@ def test_store_spends_only_through_kingdom_resource_spend() -> None:
     )
     writes = re.findall(r"\bresources\s*\[[^\]]*\]\s*(?:[-+*/]?=(?!=)|--|\+\+)", code)
     check(not writes, "kingdom_craft.c never writes a realm resource counter itself", f"{writes}")
-    # The one deposit is the refused grant putting back what that purchase
-    # drew: a reversal of a purchase that was never delivered, not a way in.
-    refused = _refused_grant_block(_store_buy_code())
-    deposits = len(re.findall(r"\bkingdom_resource_deposit\s*\(", code))
+    # Return material is centralized in one reversal helper. Both immediate
+    # grant admission failure and a later ownership rejection call that helper;
+    # no normal success path calls it.
+    return_helper = function_bodies(
+        read("src/kingdom/kingdom_craft.c"),
+        r"\bstatic\s+void\s+kingdom_store_return_material\s*\(",
+    )
     check(
-        deposits >= 1
-        and deposits == len(re.findall(r"\bkingdom_resource_deposit\s*\(", refused)),
-        "kingdom_craft.c deposits into a realm's stores only to reverse a purchase whose "
-        "grant was refused",
-        f"{deposits} deposit call(s) in the file",
+        len(return_helper) == 1
+        and len(re.findall(r"\bkingdom_resource_deposit\s*\(", return_helper[0])) == 1
+        and code.count("kingdom_store_return_material(") == 4,
+        "kingdom_craft.c deposits into a realm's stores only through the grant-reversal "
+        "helper",
+        f"{len(return_helper)} helper(s), {code.count('kingdom_store_return_material(')} "
+        "references (one definition and three call sites)",
     )
 
 
 def test_store_checks_material_before_coin_and_pays_before_spending() -> None:
-    """Nothing refunds, so the order is the safety: delivery is asked first,
-    material is CHECKED before coin (the module's ruling), the coin is taken
-    before the material is spent (SUB_MONEY can refuse; the spend cannot by
-    then), and the piece is granted last."""
+    """The purse debit is asynchronous: the command validates capacity and
+    materials before submitting it, and delivery draws material only from the
+    committed-payment callback. The ownership grant is the last step and has
+    its own terminal reversal callback."""
     body = function_bodies(
         read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+void\s+kingdom_store_buy\s*\("
     )
@@ -2133,23 +2149,29 @@ def test_store_checks_material_before_coin_and_pays_before_spending() -> None:
         return
     code = strip_comments(body[0])
     busy = code.find("item_movement_transaction_player_busy(")
-    carry = code.find("CAN_CARRY_OBJ(")
+    carry = code.find("total_carried_weight(")
     material = code.find("kingdom_craft_stores_cover(")
     coin_check = code.find("GET_MONEY(ch)")
-    coin_take = code.find("SUB_MONEY(")
-    spend = code.find("kingdom_resource_spend(")
-    grant = code.find("item_creation_grant_submit_to_player(")
+    coin_submit = code.find("currency_transaction_submit_wallet_value(")
     check(
         -1 < busy < material and -1 < carry < material,
         "a buy asks whether the piece can be delivered before anything is checked or taken",
         f"busy {busy}, carry {carry}, material {material}",
     )
     check(
-        -1 < material < coin_check < coin_take < spend < grant,
-        "material is checked before coin, the coin is taken before the material is spent, "
-        "and the piece is granted last",
-        f"material {material}, coin check {coin_check}, coin {coin_take}, spend {spend}, "
-        f"grant {grant}",
+        -1 < material < coin_check < coin_submit,
+        "material is checked before the purse debit is submitted",
+        f"material {material}, coin check {coin_check}, submit {coin_submit}",
+    )
+    deliver = _store_deliver_code()
+    spend = deliver.find("kingdom_resource_spend(")
+    persist = deliver.find("kingdom_persist_realm(")
+    grant = deliver.find("item_creation_grant_submit_to_player_with_completion(")
+    check(
+        -1 < spend < persist < grant,
+        "a committed payment spends and persists material before the ownership grant is "
+        "submitted",
+        f"spend {spend}, persist {persist}, grant {grant}",
     )
 
 
@@ -2253,11 +2275,12 @@ def test_store_item_level_never_above_the_buyer() -> None:
 
 def test_store_platinum_is_destroyed_not_banked() -> None:
     """The platinum a member pays for store gear is DESTROYED (ruled
-    2026-09-15): it comes out of the buyer's purse and into no treasury."""
+   2026-09-15): it comes out of the buyer's purse and into no treasury."""
     code = _craft_code()
     check(
-        re.search(r"\bSUB_MONEY\s*\(\s*ch\b", code) is not None,
-        "the buyer's own purse pays for store gear",
+        "currency_transaction_submit_wallet_value(" in code
+        and "currency_reason_type::wallet_spend" in code,
+        "the buyer's own purse pays for store gear through the wallet-spend coordinator",
     )
     for token in (
         "->deposit(",
@@ -2271,18 +2294,20 @@ def test_store_platinum_is_destroyed_not_banked() -> None:
             token not in code,
             f"kingdom_craft.c never calls {token} -- store platinum is credited to no treasury",
         )
-    # Coin goes back only to the BUYER, and only where a purchase is undone:
-    # a refused grant, or a material draw that failed after the coin was taken.
-    buy = _store_buy_code()
-    undoing = _refused_grant_block(buy) + _unpaid_material_block(buy)
-    credits = re.findall(r"\bADD_MONEY\s*\(", code)
-    to_buyer = re.findall(r"\bADD_MONEY\s*\(\s*ch\s*,", undoing)
     check(
-        len(credits) == 2 and len(to_buyer) == 2,
+        "currency_transaction_submit_wallet_value(" in code,
+        "the buyer's purse is debited through the currency transaction coordinator",
+    )
+    # Coin goes back only to the BUYER, through one helper used where a
+    # committed payment cannot be delivered or a grant is later rejected.
+    credits = re.findall(r"\bADD_MONEY\s*\(", code)
+    check(
+        len(credits) == 1
+        and re.search(r"\bstatic\s+void\s+kingdom_store_refund\s*\(", code) is not None
+        and re.search(r"\bADD_MONEY\s*\(\s*ch\s*,", code) is not None,
         "the only coin credits in kingdom_craft.c return the buyer's own platinum where a "
-        "purchase is undone (a refused grant, a failed material draw)",
-        f"{len(credits)} ADD_MONEY call(s) in the file, {len(to_buyer)} to the buyer where "
-        "a purchase is undone",
+        "purchase is undone",
+        f"{len(credits)} ADD_MONEY call(s) in the file",
     )
 
 
@@ -2298,37 +2323,44 @@ def test_store_unpaid_material_stops_the_purchase() -> None:
         re.search(r"\bextract_obj\s*\(\s*obj\b", block) is not None,
         "a failed material draw discards the piece",
     )
+    check("kingdom_store_refund(ch" in block, "a failed material draw returns the buyer's platinum")
     check(
-        re.search(r"\bADD_MONEY\s*\(\s*ch\s*,", block) is not None,
-        "a failed material draw returns the buyer's platinum",
-    )
-    check(
-        re.search(r"\breturn\s*;", block) is not None
-        and "item_creation_grant_submit_to_player" not in block,
+        re.search(r"\breturn\s+false\s*;", block) is not None
+        and "item_creation_grant_submit_to_player_with_completion" not in block,
         "a failed material draw returns before any grant",
     )
     check("kingdom_resource_deposit" not in block, "a failed material draw deposits nothing")
-    draw = buy.find("if (wants_material && !kingdom_resource_spend(")
-    grant = buy.find("if (!item_creation_grant_submit_to_player(")
-    check(-1 < draw < grant, "the material draw is settled before the grant", f"draw {draw}, grant {grant}")
+    deliver = _store_deliver_code()
+    draw = deliver.find("if (wants_material && !kingdom_resource_spend(")
+    persist = deliver.find("if (wants_material && !kingdom_persist_realm(")
+    grant = deliver.find("if (!item_creation_grant_submit_to_player_with_completion(")
+    check(
+        -1 < draw < persist < grant,
+        "the material draw is persisted before the grant",
+        f"draw {draw}, persist {persist}, grant {grant}",
+    )
 
 
 def test_store_writes_the_realm_after_a_sale_and_a_reversal() -> None:
     """A sale's coin is durable through its own currency transaction the
     moment it moves, so the realm's material must not wait for the next flush:
     a crash in between would bring the realm back holding material it spent on
-    a piece the buyer keeps. kingdom_store_buy() writes the realm after a sale
-    and after a refused grant puts the material back, through
-    kingdom_persist_realm(), which keeps the pending rule."""
-    buy = _store_buy_code()
-    refused = _refused_grant_block(buy)
+    a piece the buyer keeps. The delivery path writes the realm before the grant
+    is submitted, and the shared reversal helper writes it after material is
+    put back, through kingdom_persist_realm(), which keeps the pending rule."""
+    deliver = _store_deliver_code()
+    return_helper = function_bodies(
+        read("src/kingdom/kingdom_craft.c"),
+        r"\bstatic\s+void\s+kingdom_store_return_material\s*\(",
+    )
     write = r"\bkingdom_persist_realm\s*\(\s*realm\s*\)"
     check(
-        re.search(write, refused) is not None,
+        len(return_helper) == 1 and re.search(write, return_helper[0]) is not None,
         "a refused grant writes the realm once its material is back",
     )
-    after = buy[buy.find(refused) + len(refused) :] if refused else ""
-    check(re.search(write, after) is not None, "a sale writes the realm once the grant is accepted")
+    grant = deliver.find("item_creation_grant_submit_to_player_with_completion(")
+    before = deliver[:grant] if grant >= 0 else ""
+    check(re.search(write, before) is not None, "a sale writes the realm before the grant is submitted")
     check(
         re.search(
             r"\bbool\s+kingdom_persist_realm\s*\(\s*kingdom_realm\s*&",
@@ -2619,34 +2651,35 @@ def test_store_refused_grant_restores_coin_and_material() -> None:
     in flight is asked about before the piece is made, so SUB_MONEY is
     unlikely to refuse once it exists."""
     buy = _store_buy_code()
+    deliver = _store_deliver_code()
     refused = _refused_grant_block(buy)
     check(refused != "", "kingdom_store_buy() has a refused-grant block")
     check(
-        re.search(r"\bADD_MONEY\s*\(\s*ch\s*,", refused) is not None,
+        "kingdom_store_refund(ch" in refused,
         "a refused grant re-credits the buyer's platinum",
     )
     check(
-        re.search(r"\bkingdom_resource_deposit\s*\(\s*realm\s*,", refused) is not None,
+        "kingdom_store_return_material(realm, bill)" in refused,
         "a refused grant returns the material to the realm's stores",
     )
     check(
         re.search(r"\bextract_obj\s*\(\s*obj\b", refused) is not None,
         "a refused grant discards the piece, which is still the store's to discard",
     )
-    coin_take = buy.find("SUB_MONEY(")
-    spend = buy.find("kingdom_resource_spend(")
-    grant = buy.find("if (!item_creation_grant_submit_to_player(")
+    coin_take = buy.find("currency_transaction_submit_wallet_value(")
+    spend = deliver.find("kingdom_resource_spend(")
+    grant = deliver.find("if (!item_creation_grant_submit_to_player_with_completion(")
     check(
-        -1 < coin_take < grant and -1 < spend < grant,
-        "the reversal follows the charge it reverses",
+        -1 < coin_take and -1 < spend < grant,
+        "the material draw follows the committed purse debit and precedes the grant",
         f"coin {coin_take}, spend {spend}, grant {grant}",
     )
     busy = buy.find("currency_transaction_player_busy(")
-    make = buy.find("kingdom_craft_make(")
+    make = buy.find("currency_transaction_submit_wallet_value(")
     check(
         -1 < busy < make,
-        "a currency transaction in flight is asked about before the piece is made",
-        f"busy {busy}, make {make}",
+        "a currency transaction in flight is asked about before a payment is submitted",
+        f"busy {busy}, submit {make}",
     )
 
 
@@ -2829,7 +2862,7 @@ def test_store_sells_nothing_while_a_paired_payment_is_pending() -> None:
     check(
         re.search(
             r"if\s*\(\s*wants_material\s*&&\s*!\s*kingdom_persist_realm\(\s*realm\s*\)\s*\)",
-            _store_buy_code(),
+            _store_deliver_code(),
         )
         is not None,
         "a sale's realm write is checked, and a write that does not land is logged",
