@@ -37,6 +37,7 @@ RECONCILE = function_body(MOVEMENT, "bool reconcile_creation_grant_batch(")
 BATCH_COMPLETE = function_body(MOVEMENT, "void creation_grant_batch_completion(")
 SINGLE_COMPLETE = function_body(MOVEMENT, "void creation_grant_completion(")
 LIVE_READY = function_body(MOVEMENT, "bool creation_grant_batch_live_ready(")
+REQUEST_READY = function_body(MOVEMENT, "bool creation_grant_request_live_ready(")
 MATERIALIZE = function_body(
     LOAD, "bool player_load_item_graph_materialize_creation("
 )
@@ -83,6 +84,8 @@ check("batch publication failure retains the queue",
 check("published predicate requires actor carriage",
       "OBJ_CARRIED_BY(object, actor)" in LIVE_READY or
       "OBJ_CARRIED_BY(object, actor)" in MOVEMENT)
+check("single request live-ready accepts only nowhere or intended-carrier roots",
+      "OBJ_NOWHERE(object) || OBJ_CARRIED_BY(object, actor)" in REQUEST_READY)
 
 # Reconciliation must be able to replace a partially carried/malformed graph.  It
 # stages the replacement while old UIDs are hidden, restores them on failure, and

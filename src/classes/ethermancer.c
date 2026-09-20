@@ -15,6 +15,7 @@
 #include "world/map.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
+#include "item/item_movement_transaction.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 
@@ -457,6 +458,70 @@ bool has_wind_blade(P_char ch)
 	return FALSE;
 }
 
+struct wind_blade_grant_context
+{
+	uint64_t item_uid;
+};
+
+static P_obj find_carried_object_by_uid(P_char ch, uint64_t item_uid)
+{
+	if (!ch || !item_uid)
+		return NULL;
+	for (P_obj object = ch->carrying; object; object = object->next_content)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+static void wind_blade_grant_completed(P_char actor, bool committed,
+				       const item_transfer_result & /*result*/,
+				       unsigned int /*error_code*/, const uint8_t *encoded,
+				       size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(wind_blade_grant_context))
+		return;
+
+	wind_blade_grant_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("The winds could not deliver the blade; nothing was equipped. "
+			     "Please try again later.\r\n",
+			     actor);
+		return;
+	}
+
+	P_obj blade = find_carried_object_by_uid(actor, context.item_uid);
+	if (!blade)
+	{
+		logit(LOG_FILE,
+		      "wind blade grant committed without live publication (uid=%llu pid=%d)",
+		      (unsigned long long)context.item_uid, GET_PID(actor));
+		send_to_char("The ownership authority delivered the blade, but it is not "
+			     "available to wield yet.\r\n",
+			     actor);
+		return;
+	}
+
+	act("&+cSwirling air solidifies into a slender sword.&n.", TRUE, actor, blade, 0, TO_ROOM);
+	act("&+cSwirling air solidifies into a slender sword.&n", TRUE, actor, blade, 0, TO_CHAR);
+	if (actor->equipment[PRIMARY_WEAPON])
+	{
+		send_to_char("You are now wielding another weapon, so the wind blade remains "
+			     "in your inventory.\r\n",
+			     actor);
+		return;
+	}
+	if (!wear(actor, blade, 12, TRUE))
+		return;
+
+	if (IS_FIGHTING(actor) && has_wind_blade_wielded(actor))
+	{
+		if (P_char victim = GET_OPPONENT(actor))
+			wind_blade_attack_routine(actor, victim);
+	}
+}
+
 void grant_wind_blade(P_char ch)
 {
 	P_obj blade;
@@ -509,14 +574,17 @@ void grant_wind_blade(P_char ch)
 	{
 		SET_BIT(blade->bitvector2, AFF2_AIR_AURA);
 	}
-	act("&+cSwirling air solidifies into a slender sword.&n.", TRUE, ch, blade, 0, TO_ROOM);
-	act("&+cSwirling air solidifies into a slender sword.&n", TRUE, ch, blade, 0, TO_CHAR);
 	blade->timer[0] = 180;
 
-	obj_to_char(blade, ch);
-
-	if (!ch->equipment[PRIMARY_WEAPON])
-		wear(ch, blade, 12, TRUE);
+	const wind_blade_grant_context context = { blade->obj_uid };
+	if (!item_creation_grant_submit_to_player_with_completion(
+		    ch, blade, ch, wind_blade_grant_completed, &context, sizeof(context)))
+	{
+		extract_obj(blade, FALSE);
+		send_to_char("The winds could not create the blade right now. Please try "
+			     "again later.\r\n",
+			     ch);
+	}
 }
 
 void spell_wind_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
@@ -525,7 +593,10 @@ void spell_wind_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_
 	P_obj obj, next_obj;
 
 	if (!has_wind_blade(ch))
+	{
 		grant_wind_blade(ch);
+		return;
+	}
 	else
 	{
 		if (!IS_FIGHTING(ch))

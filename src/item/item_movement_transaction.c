@@ -168,7 +168,8 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry) {
+			   [&](const auto &entry)
+			   {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -513,13 +514,47 @@ void note_creation_grant_publication_failure(P_char actor, creation_grant_queue 
 	if (queue.publication_failed)
 		return;
 	queue.publication_failed = true;
-	statuslog(56, "&+RALERT&n: committed starter kit needs live publication repair (pid=%u)",
-		  actor_pid);
+	const pending_creation_grant *request = queue.requests.empty() ? nullptr :
+									 &queue.requests.front();
+	P_obj object = request ? find_item(request->item_uid) : nullptr;
+	const char *kind = queue.batch_submission ? "batch" : "single";
+	const uint32_t recipient_pid = request ? request->recipient_pid : actor_pid;
+	unsigned int loc_p = object ? object->loc_p : 0;
+	uint32_t carrier_pid = 0;
+	uint32_t wearer_pid = 0;
+	uint64_t container_uid = 0;
+	int room = NOWHERE;
+	if (object && OBJ_CARRIED(object) && object->loc.carrying && IS_PC(object->loc.carrying))
+		carrier_pid = static_cast<uint32_t>(GET_PID(object->loc.carrying));
+	if (object && OBJ_WORN(object) && object->loc.wearing && IS_PC(object->loc.wearing))
+		wearer_pid = static_cast<uint32_t>(GET_PID(object->loc.wearing));
+	if (object && OBJ_INSIDE(object) && object->loc.inside)
+		container_uid = object->loc.inside->obj_uid;
+	if (object && OBJ_ROOM(object) && object->loc.room > NOWHERE &&
+	    object->loc.room <= top_of_world)
+		room = world[object->loc.room].number;
+	const unsigned long long item_uid = object ? object->obj_uid :
+						     (request ? request->item_uid : 0);
+	const int vnum = object ? OBJ_VNUM(object) : -1;
+	statuslog(56,
+		  "&+RALERT&n: committed %s creation grant needs live publication repair "
+		  "(actor_pid=%u recipient_pid=%u uid=%llu vnum=%d loc_p=%u carrier_pid=%u "
+		  "wearer_pid=%u container_uid=%llu room=%d)",
+		  kind, actor_pid, recipient_pid, item_uid, vnum, loc_p, carrier_pid, wearer_pid,
+		  static_cast<unsigned long long>(container_uid), room);
 	persistence_alert(AVATAR, "item", "redacted", "none", "none", "stale_live_publication",
-			  "pid=%u", actor_pid);
-	send_to_char("The ownership authority committed, but the item grant needs live "
-		     "publication repair. Please wait or reconnect.\r\n",
-		     actor);
+			  "kind=%s uid=%llu vnum=%d recipient_pid=%u loc_p=%u carrier_pid=%u "
+			  "wearer_pid=%u container_uid=%llu room=%d",
+			  kind, item_uid, vnum, recipient_pid, loc_p, carrier_pid, wearer_pid,
+			  static_cast<unsigned long long>(container_uid), room);
+	if (actor)
+		send_to_char(
+			queue.batch_submission ?
+				"The ownership authority committed, but your item grant batch "
+				"needs live publication repair. Please wait or reconnect.\r\n" :
+				"The ownership authority committed, but the granted item needs "
+				"live publication repair. Please wait or reconnect.\r\n",
+			actor);
 }
 
 bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,
@@ -532,7 +567,7 @@ bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,
 	{
 		const pending_creation_grant &request = queue.requests[index];
 		P_obj object = find_item(request.item_uid);
-		if (!object || !creation_grant_tree_available(object))
+		if (!object || !creation_grant_request_live_ready(actor, request))
 			needs_reconciliation = true;
 	}
 	if (!needs_reconciliation)
