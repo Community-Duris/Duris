@@ -32,7 +32,13 @@ int64_t value(const player_snapshot_integer &entry)
 
 bool valid_snapshot(const player_load_result &result)
 {
-	if (result.outcome != player_load_outcome::applied || result.pid <= 0 ||
+	const bool degraded = result.outcome == player_load_outcome::degraded ||
+			      result.degraded_components ||
+			      result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX ||
+			      result.missing_payload_rows > PLAYER_LOAD_ITEM_MAX ||
+			      result.promoted_item_rows > PLAYER_LOAD_ITEM_MAX ||
+			      result.repaired_item_rows > PLAYER_LOAD_ITEM_MAX;
+	if ((result.outcome != player_load_outcome::applied && !degraded) || result.pid <= 0 ||
 	    result.snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 	    result.snapshot.pid != result.pid || result.snapshot.save_intent < 0 ||
 	    result.snapshot.save_intent > RENT_FIGHTARTI ||
@@ -41,10 +47,10 @@ bool valid_snapshot(const player_load_result &result)
 	     result.snapshot.components != PLAYER_LOAD_SESSION03_COMPONENTS) ||
 	    result.snapshot.status_strings.size() != 7 ||
 	    result.snapshot.status_integers.size() != 63 ||
-	    result.metrics.query_count > PLAYER_LOAD_QUERY_MAX ||
-	    result.metrics.row_count > PLAYER_SNAPSHOT_MAX_ROWS ||
-	    result.metrics.byte_count > PLAYER_SNAPSHOT_MAX_BYTES ||
-	    result.metrics.transaction_usec > PLAYER_LOAD_TIMEOUT_USEC)
+	    (!degraded && result.metrics.query_count > PLAYER_LOAD_QUERY_MAX) ||
+	    (!degraded && result.metrics.row_count > PLAYER_SNAPSHOT_MAX_ROWS) ||
+	    (!degraded && result.metrics.byte_count > PLAYER_SNAPSHOT_MAX_BYTES) ||
+	    (!degraded && result.metrics.transaction_usec > PLAYER_LOAD_TIMEOUT_USEC))
 		return false;
 	std::unordered_set<unsigned int> integers;
 	std::unordered_set<unsigned int> strings;
@@ -120,13 +126,13 @@ bool valid_snapshot(const player_load_result &result)
 	// Skipping is only ever the lesser evil in small numbers: the next full save rewrites
 	// player_items from the snapshot, so past this many rows the tolerant path would
 	// silently delete most of an inventory. Refuse instead and let staff repair it.
-	if (result.read_components != PLAYER_LOAD_SESSION04_READS ||
-	    result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX ||
-	    result.missing_payload_rows > PLAYER_LOAD_ITEM_MAX ||
-	    result.promoted_item_rows > PLAYER_LOAD_ITEM_MAX ||
-	    result.repaired_item_rows > PLAYER_LOAD_ITEM_MAX ||
-	    result.recent_pvp_deaths.size() > PLAYER_LOAD_RECENT_PVP_MAX ||
-	    result.completed_epic_zones.size() > PLAYER_LOAD_COMPLETED_ZONE_MAX)
+	if ((!degraded && result.read_components != PLAYER_LOAD_SESSION04_READS) ||
+	    (!degraded && result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX) ||
+	    (!degraded && result.missing_payload_rows > PLAYER_LOAD_ITEM_MAX) ||
+	    (!degraded && result.promoted_item_rows > PLAYER_LOAD_ITEM_MAX) ||
+	    (!degraded && result.repaired_item_rows > PLAYER_LOAD_ITEM_MAX) ||
+	    (!degraded && result.recent_pvp_deaths.size() > PLAYER_LOAD_RECENT_PVP_MAX) ||
+	    (!degraded && result.completed_epic_zones.size() > PLAYER_LOAD_COMPLETED_ZONE_MAX))
 		return false;
 	return true;
 }
@@ -379,8 +385,9 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      result.failed_component ? result.failed_component : "none",
 		      result.metrics.query_count, result.metrics.row_count,
 		      result.snapshot.items.size());
-		// A refused load locks the account out of that character until someone repairs
-		// the data, so it has to reach staff rather than sitting in the debug log.
+		// A core snapshot refusal still locks the account out of that character until
+		// someone repairs the data, so it has to reach staff rather than sitting in the
+		// debug log. Degraded secondary state is admitted below.
 		logit(LOG_SYS,
 		      "player_load_materialize: refused pid=%d component=%s outcome=%u error=%u",
 		      result.pid, result.failed_component ? result.failed_component : "none",
@@ -404,21 +411,56 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 			       result.failed_component ? result.failed_component : "none");
 		return false;
 	}
+	uint32_t materialize_degraded_components = result.degraded_components;
+	bool degraded = result.outcome == player_load_outcome::degraded ||
+			materialize_degraded_components ||
+			result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX ||
+			result.missing_payload_rows > PLAYER_LOAD_ITEM_MAX ||
+			result.promoted_item_rows > PLAYER_LOAD_ITEM_MAX ||
+			result.repaired_item_rows > PLAYER_LOAD_ITEM_MAX;
+	if (degraded && !materialize_degraded_components)
+		materialize_degraded_components =
+			(result.stale_item_rows || result.missing_payload_rows ||
+			 result.promoted_item_rows || result.repaired_item_rows) ?
+				PLAYER_LOAD_DEGRADED_ITEMS :
+				PLAYER_LOAD_DEGRADED_PIPELINE;
+	reset_char(ch);
+	auto mark_degraded = [&](uint32_t components, const char *component, const char *outcome)
+	{
+		degraded = true;
+		materialize_degraded_components |= components;
+		SET_BIT(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED);
+		ch->only.pc->load_degraded_components = materialize_degraded_components;
+		logit(LOG_SYS,
+		      "player_load_materialize: admitted degraded pid=%d component=%s outcome=%s "
+		      "components=0x%x",
+		      result.pid, component, outcome, materialize_degraded_components);
+	};
+	std::unique_ptr<std::vector<zone_trophy_data>> zone_trophies;
 	if (ZONE_TROPHY(ch))
-		return false;
-	std::unique_ptr<std::vector<zone_trophy_data>> zone_trophies(
-		new (std::nothrow) std::vector<zone_trophy_data>());
-	if (!zone_trophies)
-		return false;
-	try
+		mark_degraded(PLAYER_LOAD_DEGRADED_COMPONENTS, "trophies", "already_materialized");
+	else
 	{
-		zone_trophies->reserve(result.snapshot.trophies.size());
-		for (const player_trophy_snapshot &entry : result.snapshot.trophies)
-			zone_trophies->push_back({ entry.zone_number, entry.experience });
-	}
-	catch (const std::bad_alloc &)
-	{
-		return false;
+		zone_trophies.reset(new (std::nothrow) std::vector<zone_trophy_data>());
+		if (!zone_trophies)
+			mark_degraded(PLAYER_LOAD_DEGRADED_COMPONENTS, "trophies",
+				      "allocation_failure");
+		else
+		{
+			try
+			{
+				zone_trophies->reserve(result.snapshot.trophies.size());
+				for (const player_trophy_snapshot &entry : result.snapshot.trophies)
+					zone_trophies->push_back(
+						{ entry.zone_number, entry.experience });
+			}
+			catch (const std::bad_alloc &)
+			{
+				zone_trophies.reset();
+				mark_degraded(PLAYER_LOAD_DEGRADED_COMPONENTS, "trophies",
+					      "allocation_failure");
+			}
+		}
 	}
 	if (result.stale_item_rows)
 		logit(LOG_DEBUG,
@@ -442,7 +484,21 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      "player_load_materialize: component=items pid=%d outcome=missing_payload_rows "
 		      "count=%zu recovery=operator_repair",
 		      result.pid, result.missing_payload_rows);
-	reset_char(ch);
+	ch->only.pc->load_degraded_components = materialize_degraded_components;
+	if (degraded)
+	{
+		SET_BIT(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED);
+		logit(LOG_SYS,
+		      "player_load_materialize: admitted degraded pid=%d components=0x%x "
+		      "failed_component=%s",
+		      result.pid, materialize_degraded_components,
+		      result.failed_component ? result.failed_component : "bounded_reconciliation");
+	}
+	else
+	{
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED);
+		ch->only.pc->load_degraded_components = 0;
+	}
 	ch->only.pc->output_preferences =
 		decode_output_preferences(result.snapshot.output_preferences);
 	int hit_difference = 0;
@@ -456,7 +512,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		    &ch->only.pc->gameplay_reads, result.recent_pvp_deaths.data(),
 		    result.recent_pvp_deaths.size(), result.completed_epic_zones.data(),
 		    result.completed_epic_zones.size()))
-		return false;
+	{
+		gameplay_read_state_reset(&ch->only.pc->gameplay_reads);
+		mark_degraded(PLAYER_LOAD_DEGRADED_GAMEPLAY, "gameplay_reads",
+			      "materialize_failure");
+	}
 	ch->player.time.saved = result.saved_at;
 	ch->player.time.logon = time(nullptr);
 	ch->specials.was_in_room = result.snapshot.room_vnum;
@@ -539,10 +599,16 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		ch->only.pc->gcmd_arr = static_cast<int *>(
 			malloc(result.snapshot.granted_commands.size() * sizeof(int)));
 		if (!ch->only.pc->gcmd_arr)
-			return false;
-		ch->only.pc->numb_gcmd = result.snapshot.granted_commands.size();
-		for (size_t index = 0; index < result.snapshot.granted_commands.size(); ++index)
-			ch->only.pc->gcmd_arr[index] = result.snapshot.granted_commands[index];
+			mark_degraded(PLAYER_LOAD_DEGRADED_COMPONENTS, "granted_commands",
+				      "allocation_failure");
+		else
+		{
+			ch->only.pc->numb_gcmd = result.snapshot.granted_commands.size();
+			for (size_t index = 0; index < result.snapshot.granted_commands.size();
+			     ++index)
+				ch->only.pc->gcmd_arr[index] =
+					result.snapshot.granted_commands[index];
+		}
 	}
 	for (const player_skill_snapshot &entry : result.snapshot.skills)
 	{
@@ -569,7 +635,8 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		else
 			affect_to_char(ch, &affect);
 	}
-	ZONE_TROPHY(ch) = zone_trophies.release();
+	if (zone_trophies)
+		ZONE_TROPHY(ch) = zone_trophies.release();
 	char_shapechange_data **shape = &ch->only.pc->knownShapes;
 	for (const player_shape_snapshot &entry : result.snapshot.shapes)
 	{
@@ -578,7 +645,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		*shape = static_cast<char_shapechange_data *>(
 			calloc(1, sizeof(char_shapechange_data)));
 		if (!*shape)
-			return false;
+		{
+			mark_degraded(PLAYER_LOAD_DEGRADED_COMPONENTS, "shapechanges",
+				      "allocation_failure");
+			break;
+		}
 		(*shape)->mobVnum = entry.mob_vnum;
 		(*shape)->timesResearched = entry.times_researched;
 		(*shape)->lastResearched = entry.last_researched;
@@ -592,8 +663,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	const int loaded_mana = GET_MANA(ch);
 	const int loaded_vitality = GET_VITALITY(ch);
 	if (!player_revision_hydrate(result.pid, result.snapshot.revision))
-		return false;
-	if (result.snapshot.components == PLAYER_LOAD_SESSION02_COMPONENTS)
+		mark_degraded(PLAYER_LOAD_DEGRADED_RECOVERY, "revision", "hydrate_failure");
+	const bool item_domains_admitted =
+		!(materialize_degraded_components &
+		  (PLAYER_LOAD_DEGRADED_ITEMS | PLAYER_LOAD_DEGRADED_PETS));
+	if (result.snapshot.components == PLAYER_LOAD_SESSION02_COMPONENTS && item_domains_admitted)
 	{
 		player_load_item_materialize_metrics metrics = {};
 		if (!player_load_items_materialize(ch, result, &metrics))
@@ -602,10 +676,12 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 			      "player_load_materialize: component=items outcome=%u count=%zu operations=%zu depth=%zu",
 			      static_cast<unsigned int>(metrics.outcome), metrics.item_count,
 			      metrics.operation_count, metrics.maximum_depth);
-			return false;
+			player_load_items_discard(ch);
+			mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS, "items", "materialize_failure");
 		}
 	}
-	else if (result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS)
+	else if (result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS &&
+		 item_domains_admitted)
 	{
 		std::vector<P_char> pets;
 		player_load_pet_materialize_metrics pet_metrics = {};
@@ -616,102 +692,165 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 			      static_cast<unsigned int>(pet_metrics.outcome), pet_metrics.pet_count,
 			      pet_metrics.item_count, pet_metrics.operation_count,
 			      pet_metrics.maximum_depth);
-			return false;
-		}
-		player_load_item_materialize_metrics item_metrics = {};
-		if (!player_load_item_graph_materialize(
-			    ch, result.snapshot.items, result.item_identities, result.pid,
-			    result.item_owner_revision, false, &item_metrics))
-		{
-			logit(LOG_DEBUG,
-			      "player_load_materialize: component=item_graph pid=%d outcome=%u "
-			      "count=%zu operations=%zu depth=%zu",
-			      result.pid, static_cast<unsigned int>(item_metrics.outcome),
-			      item_metrics.item_count, item_metrics.operation_count,
-			      item_metrics.maximum_depth);
+			player_load_items_discard(ch);
 			player_load_pets_discard(&pets);
-			return false;
+			mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS | PLAYER_LOAD_DEGRADED_PETS,
+				      "pets", "materialize_failure");
 		}
-		std::vector<item_ownership_runtime_entry> ownership;
-		try
+		else
 		{
-			ownership.reserve(result.authoritative_item_count +
-					  result.authoritative_pet_item_count);
-			auto append = [&](const std::vector<player_item_snapshot> &items,
-					  const std::vector<player_load_item_identity> &identities)
+			player_load_item_materialize_metrics item_metrics = {};
+			if (!player_load_item_graph_materialize(
+				    ch, result.snapshot.items, result.item_identities, result.pid,
+				    result.item_owner_revision, false, &item_metrics))
 			{
-				for (size_t index = 0; index < identities.size(); ++index)
+				logit(LOG_DEBUG,
+				      "player_load_materialize: component=item_graph pid=%d outcome=%u "
+				      "count=%zu operations=%zu depth=%zu",
+				      result.pid, static_cast<unsigned int>(item_metrics.outcome),
+				      item_metrics.item_count, item_metrics.operation_count,
+				      item_metrics.maximum_depth);
+				item_ownership_runtime_forget_player_domain(result.pid);
+				player_load_items_discard(ch);
+				player_load_pets_discard(&pets);
+				mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS |
+						      PLAYER_LOAD_DEGRADED_PETS,
+					      "item_graph", "materialize_failure");
+			}
+			else
+			{
+				std::vector<item_ownership_runtime_entry> ownership;
+				bool ownership_built = true;
+				try
 				{
-					const player_load_item_identity &identity =
-						identities[index];
-					ownership.push_back(
-						{ identity.item_uid, identity.root_item_uid,
-						  identity.parent_item_uid, identity.owner,
-						  identity.item_revision, identity.owner_revision,
-						  items[index].vnum, identity.state });
+					ownership.reserve(result.authoritative_item_count +
+							  result.authoritative_pet_item_count);
+					auto append =
+						[&](const std::vector<player_item_snapshot> &items,
+						    const std::vector<player_load_item_identity>
+							    &identities)
+					{
+						for (size_t index = 0; index < identities.size();
+						     ++index)
+						{
+							const player_load_item_identity &identity =
+								identities[index];
+							ownership.push_back(
+								{ identity.item_uid,
+								  identity.root_item_uid,
+								  identity.parent_item_uid,
+								  identity.owner,
+								  identity.item_revision,
+								  identity.owner_revision,
+								  items[index].vnum,
+								  identity.state });
+						}
+					};
+					append(result.snapshot.items, result.item_identities);
+					for (size_t index = 0; index < result.snapshot.pets.size();
+					     ++index)
+						append(result.snapshot.pets[index].items,
+						       result.pet_identities[index].item_identities);
 				}
-			};
-			append(result.snapshot.items, result.item_identities);
-			for (size_t index = 0; index < result.snapshot.pets.size(); ++index)
-				append(result.snapshot.pets[index].items,
-				       result.pet_identities[index].item_identities);
+				catch (const std::bad_alloc &)
+				{
+					ownership_built = false;
+					logit(LOG_DEBUG,
+					      "player_load_materialize: component=ownership pid=%d "
+					      "outcome=allocation_failure",
+					      result.pid);
+					item_ownership_runtime_forget_player_domain(result.pid);
+					player_load_items_discard(ch);
+					player_load_pets_discard(&pets);
+					mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS |
+							      PLAYER_LOAD_DEGRADED_PETS,
+						      "ownership", "allocation_failure");
+				}
+				if (ownership_built)
+				{
+					const item_owner_identity owner = {
+						item_owner_type::player,
+						static_cast<uint64_t>(result.pid), 0
+					};
+					if (ownership.size() !=
+					    result.authoritative_item_count +
+						    result.authoritative_pet_item_count)
+					{
+						logit(LOG_DEBUG,
+						      "player_load_materialize: component=ownership pid=%d "
+						      "outcome=count_mismatch entries=%zu authoritative=%zu",
+						      result.pid, ownership.size(),
+						      result.authoritative_item_count +
+							      result.authoritative_pet_item_count);
+						item_ownership_runtime_forget_player_domain(
+							result.pid);
+						player_load_items_discard(ch);
+						player_load_pets_discard(&pets);
+						mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS |
+								      PLAYER_LOAD_DEGRADED_PETS,
+							      "ownership", "count_mismatch");
+					}
+					else
+					{
+						bool ownership_applied =
+							ownership.empty() ?
+								item_ownership_runtime_hydrate_owner(
+									owner,
+									result.item_owner_revision) :
+								item_ownership_runtime_hydrate_many_atomic(
+									ownership.data(),
+									ownership.size());
+						if (ownership_applied &&
+						    result.authoritative_item_count == 0)
+							ownership_applied =
+								item_ownership_runtime_hydrate_owner(
+									owner,
+									result.item_owner_revision);
+						for (size_t index = 0;
+						     ownership_applied &&
+						     index < result.pet_identities.size();
+						     ++index)
+						{
+							const player_load_pet_identity &pet =
+								result.pet_identities[index];
+							if (pet.pet_uid &&
+							    pet.item_identities.empty())
+								ownership_applied =
+									item_ownership_runtime_hydrate_owner(
+										{ item_owner_type::pet,
+										  pet.pet_uid,
+										  static_cast<
+											  uint64_t>(
+											  result.pid) },
+										pet.owner_revision);
+						}
+						if (!ownership_applied)
+						{
+							logit(LOG_DEBUG,
+							      "player_load_materialize: component=ownership pid=%d "
+							      "outcome=hydrate_failure entries=%zu",
+							      result.pid, ownership.size());
+							item_ownership_runtime_forget_player_domain(
+								result.pid);
+							player_load_items_discard(ch);
+							player_load_pets_discard(&pets);
+							mark_degraded(
+								PLAYER_LOAD_DEGRADED_ITEMS |
+									PLAYER_LOAD_DEGRADED_PETS,
+								"ownership", "hydrate_failure");
+						}
+						else
+							player_load_pets_commit(ch, &pets, result);
+					}
+				}
+			}
 		}
-		catch (const std::bad_alloc &)
-		{
-			logit(LOG_DEBUG,
-			      "player_load_materialize: component=ownership pid=%d outcome=allocation_failure",
-			      result.pid);
-			player_load_items_discard(ch);
-			player_load_pets_discard(&pets);
-			return false;
-		}
-		const item_owner_identity owner = { item_owner_type::player,
-						    static_cast<uint64_t>(result.pid), 0 };
-		if (ownership.size() !=
-		    result.authoritative_item_count + result.authoritative_pet_item_count)
-		{
-			logit(LOG_DEBUG,
-			      "player_load_materialize: component=ownership pid=%d outcome=count_mismatch "
-			      "entries=%zu authoritative=%zu",
-			      result.pid, ownership.size(),
-			      result.authoritative_item_count +
-				      result.authoritative_pet_item_count);
-			player_load_items_discard(ch);
-			player_load_pets_discard(&pets);
-			return false;
-		}
-		bool ownership_applied =
-			ownership.empty() ?
-				item_ownership_runtime_hydrate_owner(owner,
-								     result.item_owner_revision) :
-				item_ownership_runtime_hydrate_many_atomic(ownership.data(),
-									   ownership.size());
-		if (ownership_applied && result.authoritative_item_count == 0)
-			ownership_applied = item_ownership_runtime_hydrate_owner(
-				owner, result.item_owner_revision);
-		for (size_t index = 0; ownership_applied && index < result.pet_identities.size();
-		     ++index)
-		{
-			const player_load_pet_identity &pet = result.pet_identities[index];
-			if (pet.pet_uid && pet.item_identities.empty())
-				ownership_applied = item_ownership_runtime_hydrate_owner(
-					{ item_owner_type::pet, pet.pet_uid,
-					  static_cast<uint64_t>(result.pid) },
-					pet.owner_revision);
-		}
-		if (!ownership_applied)
-		{
-			logit(LOG_DEBUG,
-			      "player_load_materialize: component=ownership pid=%d outcome=hydrate_failure "
-			      "entries=%zu",
-			      result.pid, ownership.size());
-			item_ownership_runtime_forget_player_domain(result.pid);
-			player_load_items_discard(ch);
-			player_load_pets_discard(&pets);
-			return false;
-		}
-		player_load_pets_commit(ch, &pets, result);
 	}
+	else if (result.snapshot.components != PLAYER_LOAD_SESSION01_COMPONENTS &&
+		 !item_domains_admitted)
+		logit(LOG_DEBUG,
+		      "player_load_materialize: component=item_domains outcome=skipped_degraded pid=%d",
+		      result.pid);
 	// Resolve the saved HP difference after all base stats, affects and equipment
 	// have been materialized. enter_game() can then safely apply offline regen
 	// against initialized maxima; its later affect_total() handles expired affects.

@@ -235,9 +235,9 @@ assert "CHAOS_RESOURCE_" not in NANNY
 assert "chaos_resource_" not in NANNY
 assert "PLR3_CHAOS_STARTER_PENDING" not in NANNY
 assert "item_creation_grant_submit_to_player_before_entry_with_completion" not in NANNY
-assert "item_creation_grant_completion_fn" not in source("item_movement_transaction.h").read_text(
-    encoding="utf-8", errors="replace"
-)
+assert "item_creation_grant_submit_to_player_before_entry_with_completion" not in source(
+    "item/item_movement_transaction.h"
+).read_text(encoding="utf-8", errors="replace")
 SNAPSHOT = source("player_snapshot.h").read_text(encoding="utf-8", errors="replace")
 assert "PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024" in SNAPSHOT
 assert "PLAYER_SNAPSHOT_MAX_ROWS = 8192" in SNAPSHOT

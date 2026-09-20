@@ -421,6 +421,8 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (find_target_save_login_fence_locked(GET_PID(ch)))
@@ -465,6 +467,8 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum)
 {
+	if (ch && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
 	if (!ch || IS_NPC(ch) || !player_save_pipeline_mark(GET_PID(ch), components))
 		return player_save_pipeline_result::invalid;
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
@@ -511,6 +515,8 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !timeout_msec)
 		return player_save_terminal_result::invalid;
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;
 	if (!begin_terminal_fence(pid, &revision))
@@ -533,6 +539,8 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !corpse || !timeout_msec)
 		return player_save_terminal_result::invalid;
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;
 	if (!begin_terminal_fence(pid, &revision))

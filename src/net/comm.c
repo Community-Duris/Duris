@@ -903,7 +903,7 @@ void run_the_game(int port, int sslport)
 	 * and turning a controlled configuration failure into SIGABRT. */
 	if (!player_load_pipeline_init())
 		logit(LOG_STATUS,
-		      "Player load pipeline unavailable; existing-character login fails closed.");
+		      "Player load pipeline unavailable; existing-character login will use synchronous fallback.");
 	/* Same rule for the mail worker: joinable thread only after the fatal loads. */
 	if (!account_recovery_init())
 		logit(LOG_STATUS,

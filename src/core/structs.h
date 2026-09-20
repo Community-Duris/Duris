@@ -1239,6 +1239,7 @@ struct pc_only_data
 	OutputPreferenceState output_preferences;
 	player_held_pet_state *held_pets; // owned snapshots; never active followers
 	int pid; // replacement for PC's ->nr
+	uint32_t load_degraded_components; // runtime-only admission disposition; never persisted
 
 	char *poofIn;
 	char *poofOut;

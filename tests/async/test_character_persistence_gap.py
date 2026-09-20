@@ -224,8 +224,17 @@ execute = section(
     "player_load_result player_load_repository_execute(MYSQL *connection,",
     "\n\tresult.metrics.transaction_usec",
 )
-for stage in ("status", "components", "items", "pets", "gameplay_reads", "bank", "budget"):
-    require(f'stage("{stage}"' in execute, f"repository must name the {stage} stage on failure")
+for token, stage in (
+    ('result.failed_component = "status"', "status"),
+    ('"components")', "components"),
+    ('"items")', "items"),
+    ('"pets")', "pets"),
+    ('"gameplay_reads")', "gameplay_reads"),
+    ('"bank")', "bank"),
+    ('"deadline")', "deadline"),
+    ('"budget")', "budget"),
+):
+    require(token in execute, f"repository must name the {stage} stage on failure")
 
 require(
     "component=snapshot" in LOAD_MATERIALIZE and "repository_component=%s" in LOAD_MATERIALIZE,
