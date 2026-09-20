@@ -283,7 +283,12 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 
   echo "Backing up authoritative persistence state..."
   BACKUP_OK=0
+  if [[ "${SKIP_PREBOOT_BACKUP:-0}" == "1" ]]; then
+    echo "SKIP_PREBOOT_BACKUP=1 set; skipping pre-boot persistence backup" >&2
+    BACKUP_OK=1
+  fi
   for BACKUP_ATTEMPT in 1 2 3; do
+    (( BACKUP_OK == 1 )) && break
     BACKUP_OUTPUT=$(mktemp)
     if ./scripts/backup_pfiles.sh >"$BACKUP_OUTPUT" 2>&1; then
       cat "$BACKUP_OUTPUT"
