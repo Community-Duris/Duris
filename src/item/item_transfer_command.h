@@ -73,6 +73,10 @@ enum class item_transfer_reason : uint16_t
 	corpse_raise_pet,
 	pet_give,
 	pet_return,
+	// Trusted theft is still a player-to-player custody move.  Keeping a
+	// distinct reason preserves the audit trail without weakening the generic
+	// player-owner validation used by the transfer repositories.
+	trusted_steal,
 };
 
 enum class item_custody_state : uint8_t

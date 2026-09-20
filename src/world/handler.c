@@ -1899,11 +1899,14 @@ void obj_to_char(P_obj object, P_char ch)
 		const item_owner_identity player = { item_owner_type::player,
 						     static_cast<uint64_t>(GET_PID(ch)), 0 };
 		item_ownership_runtime_entry ownership = {};
-		if (!item_ownership_runtime_lookup(object->obj_uid, &ownership) ||
+		const bool has_authoritative_ownership =
+			item_ownership_runtime_lookup(object->obj_uid, &ownership);
+		if (!has_authoritative_ownership ||
 		    !item_owner_identity_equal(ownership.owner, player) ||
 		    ownership.state != item_custody_state::active)
 		{
-			if (item_creation_grant_submit_to_player(ch, object, ch))
+			if (!has_authoritative_ownership &&
+			    item_creation_grant_submit_to_player(ch, object, ch))
 				return;
 			logit(LOG_FILE,
 			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",
@@ -1911,7 +1914,22 @@ void obj_to_char(P_obj object, P_char ch)
 			send_to_char(
 				"The ownership authority is busy; the item was not granted.\r\n",
 				ch);
-			extract_obj(object, FALSE);
+			/*
+			 * Only a newly-created object with no ownership row can be safely
+			 * discarded here.  An existing row is evidence that this object is
+			 * part of an authoritative graph; extracting it after a refused
+			 * publication would turn a custody mismatch into item loss.
+			 */
+			if (!has_authoritative_ownership)
+				extract_obj(object, FALSE);
+			else
+				logit(LOG_FILE,
+				      "obj_to_char preserved existing owned graph after publication refusal "
+				      "(uid=%llu owner_type=%u owner_id=%llu state=%u)",
+				      (unsigned long long)object->obj_uid,
+				      (unsigned int)ownership.owner.type,
+				      (unsigned long long)ownership.owner.id,
+				      (unsigned int)ownership.state);
 			return;
 		}
 	}

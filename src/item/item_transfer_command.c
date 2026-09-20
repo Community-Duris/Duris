@@ -365,6 +365,7 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::corpse_raise_pet:
 	case item_transfer_reason::pet_give:
 	case item_transfer_reason::pet_return:
+	case item_transfer_reason::trusted_steal:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
