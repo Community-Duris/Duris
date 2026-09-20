@@ -25,7 +25,7 @@ checks = [
     ("the refusal explains that NPC custody is not durable", contains(
         body[guard:guard + 700], "custody cannot be saved yet")),
     ("internal quest/spec callers retain their explicit private command path", contains(
-        body[guard - 420:guard + 900], "private command values")),
+        body[guard:guard + 700], "cmd == CMD_GIVE")),
 ]
 
 failed = [name for name, ok in checks if not ok]

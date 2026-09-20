@@ -249,6 +249,39 @@ int main()
 	assert(item_transfer_command_decode_payload(command, &decoded));
 	assert(decoded.reason == item_transfer_reason::pet_return);
 
+	item_transfer_payload trusted_steal = {};
+	trusted_steal.from_owner = { item_owner_type::player, 42, 0 };
+	trusted_steal.to_owner = { item_owner_type::player, 77, 0 };
+	trusted_steal.reason = item_transfer_reason::trusted_steal;
+	trusted_steal.reason_id = 42;
+	trusted_steal.expected_from_revision = 10;
+	trusted_steal.expected_to_revision = 11;
+	trusted_steal.selected_item_uid = 100;
+	trusted_steal.target_root_item_uid = 100;
+	trusted_steal.item_count = 1;
+	trusted_steal.items[0] = { 100, 100, 0, 5, 500, item_custody_state::active };
+	assert(item_transfer_command_build(&command, operation(), trusted_steal,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.reason == item_transfer_reason::trusted_steal &&
+	       decoded.reason_id == trusted_steal.reason_id);
+	auto invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.from_owner = { item_owner_type::room, 500, 0 };
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.reason_id = 77;
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.to_owner.id = 42;
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+
 	// Version 6 batch commands remain replayable: v7 adds one trailing collector
 	// context length, which is absent from the older wire contract.
 	auto version_six = batch_command;

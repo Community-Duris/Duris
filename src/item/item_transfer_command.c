@@ -365,6 +365,7 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::corpse_raise_pet:
 	case item_transfer_reason::pet_give:
 	case item_transfer_reason::pet_return:
+	case item_transfer_reason::trusted_steal:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -462,6 +463,17 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
 	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
 	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
+	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
+	if (trusted_steal &&
+	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	     !payload.to_owner.id || payload.from_owner.id > INT32_MAX ||
+	     payload.to_owner.id > INT32_MAX || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.from_owner.id == payload.to_owner.id ||
+	     payload.multi_root || payload.target_parent_item_uid ||
+	     payload.reason_id != static_cast<int64_t>(payload.from_owner.id)))
+		return false;
 	// Other commands do not update the pet's physical item projection.
 	if ((payload.from_owner.type == item_owner_type::pet ||
 	     payload.to_owner.type == item_owner_type::pet) &&
