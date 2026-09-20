@@ -3776,6 +3776,22 @@ void do_drag(P_char ch, char *argument, int /*cmd*/)
 	send_to_char("What/who do you want to drag?\n", ch);
 }
 
+static bool standing_and_resting(P_char ch)
+{
+	return GET_POS(ch) == POS_STANDING && GET_STAT(ch) == STAT_RESTING;
+}
+
+static int resting_posture(P_char ch)
+{
+	return MIN(POS_SITTING, GET_POS(ch));
+}
+
+static void log_standing_resting_recovery(P_char ch, const char *command)
+{
+	logit(LOG_DEBUG, "posture-state: %s recovered POS_STANDING+STAT_RESTING during %s.",
+	      GET_NAME(ch) ? GET_NAME(ch) : "(unknown)", command);
+}
+
 void do_stand(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!ch)
@@ -3789,12 +3805,11 @@ void do_stand(P_char ch, char * /*argument*/, int /*cmd*/)
 		return;
 	}
 
-	if (GET_POS(ch) == POS_STANDING)
+	if (GET_POS(ch) == POS_STANDING && GET_STAT(ch) == STAT_NORMAL)
 	{
 		act("You are already standing.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-
 	// Why is this here? - We might want to call do_stand from say, the monk auto-stand skill while they're bashed.
 	if (!CAN_ACT(ch))
 	{
@@ -3876,8 +3891,8 @@ void do_stand(P_char ch, char * /*argument*/, int /*cmd*/)
 				act("$n clambers to $s feet.", TRUE, ch, 0, 0, TO_ROOM);
 				break;
 			case POS_STANDING:
-				act("You are already standing.", FALSE, ch, 0, 0, TO_CHAR);
-				return;
+				send_to_char("You tense up and become more alert.\n", ch);
+				break;
 			}
 			break;
 		}
@@ -3888,6 +3903,8 @@ void do_stand(P_char ch, char * /*argument*/, int /*cmd*/)
 	if (check_crippling_strike(ch))
 		return;
 
+	if (standing_and_resting(ch))
+		log_standing_resting_recovery(ch, "stand");
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 	gmcp_char_vitals(ch);
 	stop_memorizing(ch);
@@ -4187,10 +4204,6 @@ void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 
 	switch (GET_STAT(ch))
 	{
-	case STAT_RESTING:
-		send_to_char("You are already resting.\n", ch);
-		return;
-		break;
 	case STAT_SLEEPING:
 		send_to_char("You dream of relaxing.\n", ch);
 		return;
@@ -4201,6 +4214,13 @@ void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 		send_to_char("Just wait a bit, you'll soon be VERY relaxed.\n", ch);
 		return;
 		break;
+	case STAT_RESTING:
+		if (!standing_and_resting(ch))
+		{
+			send_to_char("You are already resting.\n", ch);
+			return;
+		}
+		[[fallthrough]];
 	case STAT_NORMAL:
 		if (IS_FIGHTING(ch) || NumAttackers(ch))
 		{
@@ -4248,7 +4268,9 @@ void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 		}
 		break;
 	}
-	SET_POS(ch, MIN(POS_SITTING, GET_POS(ch)) + STAT_RESTING);
+	if (standing_and_resting(ch))
+		log_standing_resting_recovery(ch, "rest");
+	SET_POS(ch, resting_posture(ch) + STAT_RESTING);
 	gmcp_char_vitals(ch);
 	if ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING))
 		stop_memorizing(ch);
@@ -4476,7 +4498,8 @@ void do_wake(P_char ch, char *argument, int /*cmd*/)
 						}
 						act("You wake $M up.", FALSE, ch, 0, tmp_char,
 						    TO_CHAR);
-						SET_POS(tmp_char, GET_POS(tmp_char) + STAT_RESTING);
+						SET_POS(tmp_char,
+							resting_posture(tmp_char) + STAT_RESTING);
 						gmcp_char_vitals(tmp_char);
 						act("You are awakened by $n.", FALSE, ch, 0,
 						    tmp_char, TO_VICT);
@@ -4518,7 +4541,7 @@ void do_wake(P_char ch, char *argument, int /*cmd*/)
 					stop_memorizing(ch);
 				}
 
-				SET_POS(ch, GET_POS(ch) + STAT_RESTING);
+				SET_POS(ch, resting_posture(ch) + STAT_RESTING);
 				gmcp_char_vitals(ch);
 				telemetry_gameplay_context_changed(ch);
 			}
