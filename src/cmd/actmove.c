@@ -3890,7 +3890,7 @@ void do_stand(P_char ch, char * /*argument*/, int /*cmd*/)
 
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 	gmcp_char_vitals(ch);
-	stop_memorizing(ch);
+	stop_memorizing(ch, memorization_stop_reason::voluntary);
 	telemetry_gameplay_context_changed(ch);
 }
 
@@ -4158,7 +4158,7 @@ void do_recline(P_char ch, char * /*argument*/, int /*cmd*/)
 				    CAN_SEE(GET_OPPONENT(ch), ch))
 				{
 					SET_POS(ch, GET_STAT(ch) + POS_PRONE);
-					stop_memorizing(ch);
+					stop_memorizing(ch, memorization_stop_reason::voluntary);
 					attack(GET_OPPONENT(ch), ch); /*
 							                               * ie: switch
 							                               */
@@ -4171,7 +4171,7 @@ void do_recline(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 	SET_POS(ch, GET_STAT(ch) + POS_PRONE);
 	gmcp_char_vitals(ch);
-	stop_memorizing(ch);
+	stop_memorizing(ch, memorization_stop_reason::voluntary);
 	telemetry_gameplay_context_changed(ch);
 }
 
@@ -4251,7 +4251,7 @@ void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 	SET_POS(ch, MIN(POS_SITTING, GET_POS(ch)) + STAT_RESTING);
 	gmcp_char_vitals(ch);
 	if ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING))
-		stop_memorizing(ch);
+		stop_memorizing(ch, memorization_stop_reason::voluntary);
 	StartRegen(ch, regen_resource::hit);
 	StartRegen(ch, regen_resource::vitality);
 	StartRegen(ch, regen_resource::mana);
@@ -4319,7 +4319,7 @@ void do_alert(P_char ch, char * /*argument*/, int /*cmd*/)
 		break;
 	}
 	SET_POS(ch, GET_POS(ch) + STAT_NORMAL);
-	stop_memorizing(ch);
+	stop_memorizing(ch, memorization_stop_reason::voluntary);
 	telemetry_gameplay_context_changed(ch);
 }
 
@@ -4399,7 +4399,7 @@ void do_sleep(P_char ch, char * /*argument*/, int /*cmd*/)
 
 	SET_POS(ch, GET_POS(ch) + STAT_SLEEPING);
 	gmcp_char_vitals(ch);
-	stop_memorizing(ch);
+	stop_memorizing(ch, memorization_stop_reason::voluntary);
 	telemetry_gameplay_context_changed(ch);
 }
 
@@ -4515,7 +4515,7 @@ void do_wake(P_char ch, char *argument, int /*cmd*/)
 
 				if (USES_TUPOR(ch) && IS_AFFECTED2(ch, AFF2_MEMORIZING))
 				{
-					stop_memorizing(ch);
+					stop_memorizing(ch, memorization_stop_reason::voluntary);
 				}
 
 				SET_POS(ch, GET_POS(ch) + STAT_RESTING);
