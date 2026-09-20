@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
-import os
 from pathlib import Path
 import re
 import subprocess
 import time
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("epic_zone_seed", ROOT / "scripts/epic_zone_seed.py")
@@ -18,7 +18,7 @@ spec.loader.exec_module(seed)
 
 
 def run(image: str) -> None:
-    name = f"duris-epic-seed-qa-{os.getpid()}"
+    name = f"duris-epic-seed-qa-{uuid.uuid4().hex}"
     client = "mariadb" if image.startswith("mariadb:") else "mysql"
     subprocess.run(["docker", "run", "--detach", "--name", name, "--network", "none",
                     "--env", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", image], check=True,
