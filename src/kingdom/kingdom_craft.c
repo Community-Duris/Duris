@@ -281,20 +281,17 @@ static const kingdom_craft_variant kingdom_craft_necklace_forms[] = {
 
 #define KCRAFT_FORMS(table) table, (int)(sizeof(table) / sizeof(table[0]))
 #define KCRAFT_ONE_WAY NULL, 0
-#define KCRAFT_WEAPON_LINES(n)        \
-	{                             \
-		{ APPLY_HITROLL, n }, \
-		{ APPLY_DAMROLL, n }, \
+#define KCRAFT_WEAPON_LINES(n)                              \
+	{                                                   \
+		{ APPLY_HITROLL, n }, { APPLY_DAMROLL, n }, \
 	}
-#define KCRAFT_LINE(location, top) \
-	{                          \
-		{ location, top }, \
-		{ 0, 0 },          \
+#define KCRAFT_LINE(location, top)           \
+	{                                    \
+		{ location, top }, { 0, 0 }, \
 	}
-#define KCRAFT_NO_LINES   \
-	{                 \
-		{ 0, 0 }, \
-		{ 0, 0 }, \
+#define KCRAFT_NO_LINES             \
+	{                           \
+		{ 0, 0 }, { 0, 0 }, \
 	}
 
 static const kingdom_craft_item kingdom_craft_catalogue[] = {

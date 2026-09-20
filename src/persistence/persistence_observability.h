@@ -11,7 +11,10 @@
 
 #define PERSISTENCE_STRINGIFY_INNER(value) #value
 #define PERSISTENCE_STRINGIFY(value) PERSISTENCE_STRINGIFY_INNER(value)
-#define PERSISTENCE_QUERY_SITE { __FILE__, __func__, __LINE__ }
+#define PERSISTENCE_QUERY_SITE               \
+	{                                    \
+		__FILE__, __func__, __LINE__ \
+	}
 
 enum persistence_query_context
 {
