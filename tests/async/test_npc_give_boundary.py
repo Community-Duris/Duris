@@ -6,6 +6,7 @@ from contract_text import contains, index
 
 
 source = (SRC / "actobj.c").read_text(encoding="utf-8", errors="replace")
+quest_source = (SRC / "world" / "quest.c").read_text(encoding="utf-8", errors="replace")
 start = index(source, "void do_give(P_char ch, char *argument, int cmd)")
 opening = source.index("{", start)
 depth = 1
@@ -25,7 +26,8 @@ checks = [
     ("the refusal explains that NPC custody is not durable", contains(
         body[guard:guard + 700], "custody cannot be saved yet")),
     ("internal quest/spec callers retain their explicit private command path", contains(
-        body[guard - 420:guard + 900], "private command values")),
+        body[guard - 420:guard + 900], "cmd != -4") and contains(
+            quest_source, "do_give(pl, arg, -4);")),
 ]
 
 failed = [name for name, ok in checks if not ok]

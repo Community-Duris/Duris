@@ -51,7 +51,7 @@ assert contains(saved_restore, 'sql_load_item_extra_descr_from_table(item_id, ob
 
 shop_writer = body(SQL, "static int sql_save_shopkeeper_item(", "static bool sql_save_shopkeeper_affects(")
 assert contains(shop_writer, 'sql_save_item_extra_descr(item_id, obj, "shopkeeper_item_extra_descr")')
-shop_loader = body(SQL, "static void sql_load_all_shopkeeper_items(", "static bool sql_load_shopkeeper_affects(")
+shop_loader = body(SQL, "static bool sql_restore_shopkeeper_catalog(", "bool sql_restore_shopkeepers(void)")
 assert contains(shop_loader, 'sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item")')
 
 extra_descr_save = body(SQL, "static bool sql_save_item_extra_descr(", "// save a single item")
