@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LOAD_PETS = (ROOT / "src/player/player_load_pets.c").read_text()
+LOAD_REPOSITORY = (ROOT / "src/player/player_load_repository.c").read_text()
 REPOSITORY = (ROOT / "src/player/player_snapshot_repository.c").read_text()
 REPAIR = (ROOT / "migrations/repair_stale_pet_custody.sh").read_text()
 UNIT_TEST = (ROOT / "tests/async/test_player_load_items.py").read_text()
@@ -13,10 +14,12 @@ UNIT_TEST = (ROOT / "tests/async/test_player_load_items.py").read_text()
 
 # The runtime regression lives in the existing native materialization harness;
 # pin the exact stale-held case here so it cannot be removed while the harness
-# continues to cover ordinary room mismatches.
+# continues to cover active and held room mismatches.
 assert "snapshot.pets[0].hold_reason = pet_hold_reason::custody_pending;" in UNIT_TEST
 assert "owner.pc.held_pets->pets[0].room_vnum == 122" in UNIT_TEST
-assert "snapshot.hold_reason == pet_hold_reason::none" in LOAD_PETS
+assert "snapshot.room_vnum != result.snapshot.room_vnum" not in LOAD_PETS
+assert "pet.room_vnum > 0" not in LOAD_PETS
+assert "values[9] <= 0" not in LOAD_REPOSITORY
 
 # A positive owner revision is only historical evidence. Retention requires a
 # live or quarantined pet-owned custody row, and refreshes the projection room.

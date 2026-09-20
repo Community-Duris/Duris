@@ -1431,8 +1431,7 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 						      &values[index]))
 					    return false;
 			    if (values[0] <= 0 || values[1] < 0 ||
-				values[1] >= static_cast<int64_t>(PLAYER_LOAD_PET_MAX) ||
-				values[9] <= 0)
+				values[1] >= static_cast<int64_t>(PLAYER_LOAD_PET_MAX))
 				    return false;
 			    try
 			    {

@@ -919,9 +919,8 @@ int main()
         result.snapshot.pets[0].room_vnum = 122;
         std::vector<P_char> pets;
         player_load_pet_materialize_metrics metrics = {};
-        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
-        result.snapshot.pets[0].room_vnum = result.snapshot.room_vnum;
         assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && pets[0]);
         player_load_pets_discard(&pets);
     }
     {
