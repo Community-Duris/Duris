@@ -43,7 +43,7 @@ assert "TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO, spell_induce_tupor" in SKILL
 # Tupor is an active recovery command that should preserve meditation and
 # concealment just like the other passive recovery commands.
 assert "(cmd != CMD_TUPOR)" in INTERP
-assert "cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS &&\n\t\t\t\t\t\t cmd != CMD_TUPOR)" in INTERP
+assert "cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS &&\n\t\t\t\t\t\t cmd != CMD_TUPOR &&\n\t\t\t\t\t\t !command_preserves_meditation(" in INTERP
 
 # The first event must be based on the highest incomplete circle, not the
 # character's maximum circle when the top circle is already full.

@@ -8349,7 +8349,7 @@ void set_fighting(P_char ch, P_char vict)
 	if (IS_AFFECTED(victim, AFF_MEDITATE))
 	{
 		act("$n is disrupted from meditation.", TRUE, victim, 0, 0, TO_ROOM);
-		REMOVE_BIT(victim->specials.affected_by, AFF_MEDITATE);
+		stop_meditation(victim);
 	}
 
 	if (affected_by_spell(ch, SPELL_CEGILUNE_BLADE))
