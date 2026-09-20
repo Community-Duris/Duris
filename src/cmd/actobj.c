@@ -373,6 +373,7 @@ struct empty_state
 struct empty_movement_context
 {
 	uint32_t actor_pid;
+	uint64_t actor_runtime_id;
 };
 
 bool item_get_ack_publication = false;
@@ -9865,52 +9866,47 @@ void finish_empty(P_char actor, const empty_state &state)
 		writeSavedItem(target);
 }
 
-void empty_completion(P_char actor, bool committed, const item_transfer_result &result,
-		      unsigned int, const uint8_t *encoded, size_t encoded_size)
+bool empty_completion(P_char actor, bool committed, const item_transfer_result &result,
+		      unsigned int error_code, const uint8_t *encoded, size_t encoded_size)
 {
+	(void)error_code;
 	empty_movement_context context = {};
 	if (!encoded || encoded_size != sizeof(context))
-	{
-		if (actor && IS_PC(actor) && GET_PID(actor) > 0)
-			empty_operations.erase(static_cast<uint32_t>(GET_PID(actor)));
-		return;
-	}
+		return false;
 	memcpy(&context, encoded, sizeof(context));
 	auto found = empty_operations.find(context.actor_pid);
 	if (found == empty_operations.end())
-		return;
-	if (!actor || !IS_PC(actor) || GET_PID(actor) != static_cast<int>(context.actor_pid))
+		return false;
+	if (!actor || !IS_PC(actor) || GET_PID(actor) != static_cast<int>(context.actor_pid) ||
+	    !context.actor_runtime_id || actor->runtime_id != context.actor_runtime_id)
+		return false;
+	if (!committed)
 	{
+		send_to_char(
+			"Nothing was emptied; the batch ownership move did not commit.\r\n",
+			actor);
 		empty_operations.erase(found);
-		return;
+		return true;
 	}
-	if (!empty_publication_allowed(committed, true, true, true, true, true, true,
+	if (!empty_publication_allowed(true, true, true, true, true, true, true,
 				       result.item_count, found->second.durable_item_count))
 	{
-		if (!committed)
-			send_to_char(
-				"Nothing was emptied; the batch ownership move did not commit.\r\n",
-				actor);
-		else
-			send_to_char(
-				"The empty operation could not be published; nothing was detached.\r\n",
-				actor);
-		empty_operations.erase(found);
-		return;
+		send_to_char(
+			"The empty operation could not be published; nothing was detached.\r\n",
+			actor);
+		return false;
 	}
 	std::vector<P_obj> objects;
 	if (!publish_empty_objects(actor, found->second, result, &objects))
 	{
-		persistence_alert(AVATAR, "item_movement", "empty_publish", "none", "none",
-				  "stale_live_topology", "actor_pid=%u", context.actor_pid);
 		send_to_char(
 			"The empty operation could not be published; nothing was detached.\r\n",
 			actor);
-		empty_operations.erase(found);
-		return;
+		return false;
 	}
 	finish_empty(actor, found->second);
 	empty_operations.erase(found);
+	return true;
 }
 
 void start_empty(P_char actor, P_obj source, P_obj target)
@@ -10134,7 +10130,7 @@ void start_empty(P_char actor, P_obj source, P_obj target)
 		finish_empty(actor, state);
 		return;
 	}
-	const empty_movement_context context = { actor_pid };
+	const empty_movement_context context = { actor_pid, actor->runtime_id };
 	item_movement_reject reject = item_movement_reject::none;
 	if (!state.blocked_uid)
 		state.blocked_object = roots.empty() ? state.blocked_object : NULL;
@@ -10156,8 +10152,8 @@ void start_empty(P_char actor, P_obj source, P_obj target)
 		    actor, roots.data(), roots.size(),
 		    found->second.target_root_uid ? target : NULL, found->second.source_owner,
 		    found->second.destination_owner, found->second.destination_reason,
-		    found->second.destination_reason_id, empty_completion, &context,
-		    sizeof(context), NULL, &reject))
+		    found->second.destination_reason_id, NULL, &context,
+		    sizeof(context), NULL, &reject, empty_completion))
 	{
 		report_batch_movement_reject(actor, reject, "empty", "Nothing was emptied.\r\n");
 		empty_operations.erase(found);

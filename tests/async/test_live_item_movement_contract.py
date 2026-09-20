@@ -23,8 +23,12 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("P_obj", pending)
         self.assertNotIn("P_char", pending)
         self.assertIn("critical_command_coordinator_submit", movement)
+        self.assertIn("critical_command_coordinator_submit_for_publication", movement)
+        self.assertIn("critical_command_coordinator_acknowledge_publication", movement)
         self.assertIn("critical_command_coordinator_is_fenced", movement)
         self.assertIn("item_ownership_runtime_apply", movement)
+        self.assertIn("publication_status", movement)
+        self.assertIn("ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS", movement)
         batch = extract_function(
             "item_movement_transaction.c", "bool item_movement_transaction_submit_batch("
         )
@@ -195,6 +199,39 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertLess(artifact_prepare, artifact_image)
         self.assertLess(image, commit)
         self.assertLess(artifact_image, commit)
+    def test_523_and_524_retain_shared_fences_until_safe_callback(self):
+        actobj = (SRC / "actobj.c").read_text()
+        actoth = (SRC / "actoth.c").read_text()
+        movement = (SRC / "item_movement_transaction.c").read_text()
+        movement_header = (SRC / "item/item_movement_transaction.h").read_text()
+        self.assertIn("using item_movement_publication_fn", movement_header)
+        self.assertIn("publication = nullptr", movement_header)
+        self.assertIn("const empty_movement_context context = { actor_pid, actor->runtime_id }", actobj)
+        self.assertIn("sizeof(context), NULL, &reject, empty_completion", actobj)
+        self.assertIn("steal_movement_context context", actoth)
+        self.assertIn("sizeof(context), NULL, &reject, steal_completion", actoth)
+
+        empty = extract_function("actobj.c", "bool empty_completion(")
+        steal = extract_function("actoth.c", "bool steal_completion(")
+        for callback in (empty, steal):
+            self.assertIn("return false", callback)
+            self.assertIn("return true", callback)
+        self.assertIn("actor->runtime_id != context.actor_runtime_id", empty)
+        self.assertIn("actor->runtime_id != context.thief_runtime_id", steal)
+        self.assertIn("critical_command_coordinator_acknowledge_publication", movement)
+
+    def test_failed_publication_is_bounded_and_not_erased(self):
+        movement = (SRC / "item_movement_transaction.c").read_text()
+        failure = movement[movement.index("if (!published)"):]
+        failure = failure[:failure.index("if (!critical_command_coordinator_acknowledge_publication")]
+        self.assertIn("retain_publication_failure", failure)
+        self.assertNotIn("pending.erase", failure)
+        self.assertIn("publication_status", movement)
+        self.assertIn("ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS", movement)
+        coordinator = (SRC / "persistence/critical_command_coordinator.c").read_text()
+        self.assertIn("publication_pending", coordinator)
+        self.assertIn("state.retain_until_publication", coordinator)
+        self.assertIn("!snapshot.publication_pending", coordinator)
 
 
 if __name__ == "__main__":

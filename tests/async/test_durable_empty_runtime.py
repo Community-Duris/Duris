@@ -42,7 +42,7 @@ do_empty = function_body("void do_empty(")
 assert "obj_from_obj" not in do_empty
 assert "obj_to_obj" not in do_empty
 start_empty = function_body("void start_empty(")
-completion = function_body("void empty_completion(")
+completion = function_body("bool empty_completion(")
 publish = function_body("bool publish_empty_objects(")
 for required in (
     "empty_graph_is_valid",

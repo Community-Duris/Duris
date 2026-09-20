@@ -45,6 +45,7 @@ struct apply_state
     bool late_started = false;
     bool hold_all = false;
     bool release_all = false;
+    bool already_applied = false;
 };
 
 critical_command make_command(unsigned int tag, std::vector<critical_entity_key> keys)
@@ -102,7 +103,8 @@ critical_apply_result apply(const critical_command &command, void *raw)
     }
     if (tag == 4 && attempt == 1)
         return {critical_apply_outcome::ambiguous_commit, 0, 2013};
-    return {critical_apply_outcome::applied, 1, 0};
+    return {state.already_applied ? critical_apply_outcome::already_applied :
+            critical_apply_outcome::applied, 1, 0};
 }
 
 struct replay_state
@@ -299,6 +301,61 @@ int main(int argc, char **argv)
     auto health = critical_command_coordinator_health_copy();
     assert(health.ambiguous == 1 && health.retries == 1 && health.fenced_keys == 0);
     assert(critical_command_coordinator_submit(d) == critical_submit_result::attached);
+
+    critical_command publication = make_command(12, {{critical_entity_type::item, 120},
+                                                       {critical_entity_type::player, 12}});
+    assert(critical_command_coordinator_submit_for_publication(publication) ==
+           critical_submit_result::awaiting_durability);
+    critical_completion held = {};
+    wait_until([&] {
+        const size_t count = critical_command_coordinator_pulse(completions, 16);
+        if (count != 1)
+            return false;
+        return critical_command_coordinator_health_copy().publication_pending == 1;
+    });
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 120}, nullptr));
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::player, 12}, nullptr));
+    assert(critical_command_coordinator_get_completed(publication.operation_id, &held));
+    assert(held.outcome == critical_apply_outcome::applied);
+    critical_operation_id invalid_publication_id = {};
+    invalid_publication_id.bytes[0] = 1;
+    assert(!critical_command_coordinator_acknowledge_publication(invalid_publication_id));
+    assert(critical_command_coordinator_health_copy().publication_pending == 1);
+    assert(!critical_command_coordinator_drain(5));
+    assert(critical_command_coordinator_acknowledge_publication(publication.operation_id));
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 120}, nullptr));
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::player, 12}, nullptr));
+    assert(critical_command_coordinator_health_copy().publication_pending == 0);
+
+    // The callback hold is process-local; after restart the journaled command
+    // replays against authoritative SQL (already_applied) and can checkpoint
+    // without inventing a stale actor/object callback.
+    critical_command restart_publication = make_command(
+        13, {{critical_entity_type::item, 130}, {critical_entity_type::player, 13}});
+    assert(critical_command_coordinator_submit_for_publication(restart_publication) ==
+           critical_submit_result::awaiting_durability);
+    wait_until([&] {
+        critical_command_coordinator_pulse(completions, 16);
+        return critical_command_coordinator_health_copy().publication_pending == 1;
+    });
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 130}, nullptr));
+    critical_command_coordinator_shutdown();
+    apply_state restart_state;
+    restart_state.already_applied = true;
+    assert(critical_command_coordinator_init(argv[2], apply, &restart_state, 1));
+    wait_until([&] {
+        critical_command_coordinator_pulse(completions, 16);
+        return critical_command_coordinator_health_copy().completed == 1;
+    });
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 130}, nullptr));
+    assert(critical_command_journal_health_copy().records == 0);
+
     critical_command_coordinator_quiesce();
     critical_command rejected = make_command(6, {{critical_entity_type::player, 6}});
     assert(critical_command_coordinator_submit(rejected) == critical_submit_result::unavailable);
