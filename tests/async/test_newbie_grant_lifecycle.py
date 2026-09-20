@@ -149,6 +149,17 @@ void extract_obj(P_obj obj, int)
     *at = obj->next;
     obj->next = nullptr;
 }
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command)
+{
+    assert(false && "default caller unexpectedly requested publication retention");
+    return critical_submit_result::unavailable;
+}
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{
+    assert(false && "default caller unexpectedly acknowledged publication");
+    return false;
+}
+
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
     if (submit_result == critical_submit_result::accepted) submitted.push_back(std::move(command));

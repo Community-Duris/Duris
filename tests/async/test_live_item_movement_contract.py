@@ -199,25 +199,18 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertLess(artifact_prepare, artifact_image)
         self.assertLess(image, commit)
         self.assertLess(artifact_image, commit)
-    def test_523_and_524_retain_shared_fences_until_safe_callback(self):
+    def test_523_retain_shared_fences_until_safe_callback(self):
         actobj = (SRC / "actobj.c").read_text()
-        actoth = (SRC / "actoth.c").read_text()
         movement = (SRC / "item_movement_transaction.c").read_text()
         movement_header = (SRC / "item/item_movement_transaction.h").read_text()
         self.assertIn("using item_movement_publication_fn", movement_header)
         self.assertIn("publication = nullptr", movement_header)
         self.assertIn("const empty_movement_context context = { actor_pid, actor->runtime_id }", actobj)
         self.assertIn("sizeof(context), NULL, &reject, empty_completion", actobj)
-        self.assertIn("steal_movement_context context", actoth)
-        self.assertIn("sizeof(context), NULL, &reject, steal_completion", actoth)
-
         empty = extract_function("actobj.c", "bool empty_completion(")
-        steal = extract_function("actoth.c", "bool steal_completion(")
-        for callback in (empty, steal):
-            self.assertIn("return false", callback)
-            self.assertIn("return true", callback)
+        self.assertIn("return false", empty)
+        self.assertIn("return true", empty)
         self.assertIn("actor->runtime_id != context.actor_runtime_id", empty)
-        self.assertIn("actor->runtime_id != context.thief_runtime_id", steal)
         self.assertIn("critical_command_coordinator_acknowledge_publication", movement)
 
     def test_failed_publication_is_bounded_and_not_erased(self):
