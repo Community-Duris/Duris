@@ -1447,6 +1447,33 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_ASK:
 	case CMD_BUY:
 	case CMD_SELL:
+	case CMD_VALUE:
+	case CMD_REPAIR:
+	case CMD_APPRAISE:
+	case CMD_LORE:
+	case CMD_WRITE:
+	case CMD_ITEMMANA:
+	case CMD_AUCTION:
+	case CMD_FORGE:
+	case CMD_REFINE:
+	case CMD_ENHANCE:
+	case CMD_CRAFT:
+	case CMD_ENCRUST:
+	case CMD_SPELLBIND:
+	case CMD_FIX:
+	case CMD_MIX:
+	case CMD_MIXPOISON:
+	case CMD_SMELT:
+	case CMD_ENCHANT:
+	case CMD_MAKE:
+	case CMD_SCRIBE:
+	case CMD_DISGUISE:
+	case CMD_LOCK:
+	case CMD_UNLOCK:
+	case CMD_PICK:
+	case CMD_RENT:
+	case CMD_QUIT:
+	case CMD_CAMP:
 	case CMD_EQUIPMENT:
 	case CMD_INVENTORY:
 	case CMD_COLLECTOR:

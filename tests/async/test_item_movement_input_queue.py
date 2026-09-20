@@ -41,7 +41,12 @@ for command in (
     "CMD_EAT", "CMD_FILL", "CMD_POUR", "CMD_QUAFF", "CMD_RECITE",
     "CMD_RELOAD", "CMD_SALVAGE", "CMD_SIP", "CMD_SMOKE", "CMD_TASTE",
     "CMD_THROW", "CMD_THROWPOTION", "CMD_USE",
-    "CMD_ASK",
+    "CMD_ASK", "CMD_VALUE", "CMD_REPAIR", "CMD_APPRAISE", "CMD_LORE",
+    "CMD_WRITE", "CMD_ITEMMANA", "CMD_AUCTION", "CMD_FORGE", "CMD_REFINE",
+    "CMD_ENHANCE", "CMD_CRAFT", "CMD_ENCRUST", "CMD_SPELLBIND", "CMD_FIX",
+    "CMD_MIX", "CMD_MIXPOISON", "CMD_SMELT", "CMD_ENCHANT", "CMD_MAKE",
+    "CMD_SCRIBE", "CMD_DISGUISE", "CMD_LOCK", "CMD_UNLOCK", "CMD_PICK",
+    "CMD_RENT", "CMD_QUIT", "CMD_CAMP",
 ):
     assert command in DEPENDS
 
@@ -138,13 +143,44 @@ PRELUDE = r'''
 #define CMD_USE 39
 #define CMD_COLLECTOR 40
 #define CMD_ASK 41
+#define CMD_VALUE 42
+#define CMD_REPAIR 43
+#define CMD_APPRAISE 44
+#define CMD_LORE 45
+#define CMD_WRITE 46
+#define CMD_ITEMMANA 47
+#define CMD_AUCTION 48
+#define CMD_FORGE 49
+#define CMD_REFINE 50
+#define CMD_ENHANCE 51
+#define CMD_CRAFT 52
+#define CMD_ENCRUST 53
+#define CMD_SPELLBIND 54
+#define CMD_FIX 55
+#define CMD_MIX 56
+#define CMD_MIXPOISON 57
+#define CMD_SMELT 58
+#define CMD_ENCHANT 59
+#define CMD_MAKE 60
+#define CMD_SCRIBE 61
+#define CMD_DISGUISE 62
+#define CMD_LOCK 63
+#define CMD_UNLOCK 64
+#define CMD_PICK 65
+#define CMD_RENT 66
+#define CMD_QUIT 67
+#define CMD_CAMP 68
 
 static const char *command[] = {
 	"get", "take", "drop", "put", "give", "wear", "wield", "grab", "hold",
 	"remove", "open", "close", "empty", "junk", "donate", "sacrifice", "buy",
 	"sell", "look", "score", "equipment", "inventory", "fire", "apply", "bandage",
 	"drink", "eat", "fill", "pour", "quaff", "recite", "reload", "salvage", "sip",
-	"smoke", "taste", "throw", "throwpotion", "use", "collector", "ask", "\n"
+	"smoke", "taste", "throw", "throwpotion", "use", "collector", "ask", "value",
+	"repair", "appraise", "lore", "write", "itemmana", "auction", "forge", "refine",
+	"enhance", "craft", "encrust", "spellbind", "fix", "mix", "mixpoison", "smelt",
+	"enchant", "make", "scribe", "disguise", "lock", "unlock", "pick", "rent", "quit",
+	"camp", "\n"
 };
 
 P_obj object_list = NULL;
@@ -329,6 +365,8 @@ static int bow_publication_count = 0;
 static int cloak_publication_count = 0;
 static int score_dispatches = 0;
 static int put_dispatches = 0;
+static int repair_dispatches = 0;
+static int value_dispatches = 0;
 static int equipment_dispatches = 0;
 static int inventory_dispatches = 0;
 static int wear_failures = 0;
@@ -451,6 +489,18 @@ void command_interpreter(P_char actor, char *input)
 	if (!strcmp(input, "score"))
 	{
 		++score_dispatches;
+		return;
+	}
+	if (!strcmp(input, "repair pick"))
+	{
+		assert(publication_count == 1 && actor->carrying == published_roots[0]);
+		++repair_dispatches;
+		return;
+	}
+	if (!strcmp(input, "value pick"))
+	{
+		assert(publication_count == 1 && actor->carrying == published_roots[0]);
+		++value_dispatches;
 		return;
 	}
 	if (!strcmp(input, "put all.roast bp"))
@@ -676,6 +726,12 @@ int main()
 	assert(!input_allowed_while_item_moving("reload bow arrow"));
 	assert(!input_allowed_while_item_moving("use wand target"));
 	assert(!input_allowed_while_item_moving("ask bartender abandon"));
+	assert(!input_allowed_while_item_moving("repair pick"));
+	assert(!input_allowed_while_item_moving("rep pick"));
+	assert(!input_allowed_while_item_moving("value pick"));
+	assert(!input_allowed_while_item_moving("auction offer sword 100"));
+	assert(!input_allowed_while_item_moving("refine ore"));
+	assert(!input_allowed_while_item_moving("rent"));
 	assert(input_allowed_while_item_moving("score"));
 	assert(input_allowed_while_item_moving("look"));
 	assert(input_allowed_while_item_moving("say still here"));
@@ -683,8 +739,10 @@ int main()
 
 	/* The real movement transaction is pending while its captured coordinator
 	   command is held. Dependent commands remain queued while score can run. */
-	push(&q, "put all.roast bp");
+	push(&q, "repair pick");
 	push(&q, "score");
+	push(&q, "value pick");
+	push(&q, "put all.roast bp");
 	push(&q, "equipment");
 	push(&q, "inventory");
 	push(&q, "wear roast");
@@ -693,7 +751,7 @@ int main()
 	dispatch_playing_command(&actor, dest);
 	assert(score_dispatches == 1);
 	check_intact(&q);
-	expect_text(q.head->text, "put all.roast bp", "put remains at head");
+	expect_text(q.head->text, "repair pick", "repair remains at head");
 	expect_text(q.tail->text, "wear roast", "wear remains at tail");
 	strcpy(dest, "sentinel");
 	assert(!get_playing_cmd_from_q(&actor, &q, dest));
@@ -730,7 +788,8 @@ int main()
 	/* The normal command path now observes the published inventory and returns
 	   each dependent command exactly once in its original order. */
 	const char *expected[] = {
-		"put all.roast bp", "equipment", "inventory", "wear roast"
+		"repair pick", "value pick", "put all.roast bp", "equipment", "inventory",
+		"wear roast"
 	};
 	for (const char *command_text : expected)
 	{
@@ -741,6 +800,8 @@ int main()
 	assert(!get_playing_cmd_from_q(&actor, &q, dest));
 	assert(q.head == NULL);
 	assert(q.tail == NULL);
+	assert(repair_dispatches == 1);
+	assert(value_dispatches == 1);
 	assert(put_dispatches == 1);
 	assert(equipment_dispatches == 1);
 	assert(inventory_dispatches == 1);
