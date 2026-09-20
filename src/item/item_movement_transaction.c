@@ -343,6 +343,27 @@ P_char find_live_mobile(uint64_t runtime_id)
 	return NULL;
 }
 
+bool trusted_steal_live_ready(P_char actor, uint64_t item_uid)
+{
+	P_obj object = find_item(item_uid);
+	return actor && object && OBJ_CARRIED_BY(object, actor);
+}
+
+void retain_trusted_steal_publication(pending_movement &entry, uint64_t item_uid)
+{
+	if (!entry.publication_failed)
+	{
+		entry.publication_failed = true;
+		++health.stale_publications;
+		persistence_alert(AVATAR, "item_movement", "steal_publish", "none", "none",
+				  "stale_live_publication", "item_uid=%llu actor_pid=%u",
+				  (unsigned long long)item_uid, entry.actor_pid);
+	}
+	logit(LOG_FILE,
+	      "item_movement: command=steal publication retained for retry uid=%llu actor_pid=%u",
+	      (unsigned long long)item_uid, entry.actor_pid);
+}
+
 item_owner_identity creation_grant_owner(const pending_creation_grant &request)
 {
 	return request.to_room ?
@@ -1207,13 +1228,36 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	const size_t context_size = entry.context_size;
 	const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
 	const bool retain_creation_grant = committed && completion_fn == creation_grant_completion;
+	const bool retain_trusted_steal = committed && registry_applied &&
+					  entry.requested_reason ==
+						  item_transfer_reason::trusted_steal;
+	const uint64_t trusted_steal_uid = entry.payload.selected_item_uid;
 	const std::string pending_key = found->first;
-	if (!retain_creation_grant)
+	/*
+	 * A trusted steal has a second publication boundary after the durable
+	 * ownership commit: the exact live UID must reach the thief's carrying list.
+	 * Keep that entry fenced until the callback proves the boundary, otherwise a
+	 * committed ledger row could strand the live object with no retry path.
+	 */
+	if (!retain_creation_grant && !retain_trusted_steal)
 		pending.erase(found);
 	if (completion_fn)
 		completion_fn(actor, committed && registry_applied, result, error_code,
 			      context.data(), context_size);
-	if (retain_creation_grant)
+	if (retain_trusted_steal)
+	{
+		auto retained = pending.find(pending_key);
+		if (retained != pending.end() &&
+		    !trusted_steal_live_ready(actor, trusted_steal_uid))
+		{
+			retain_trusted_steal_publication(retained->second, trusted_steal_uid);
+			account_health();
+			return;
+		}
+		if (retained != pending.end())
+			pending.erase(retained);
+	}
+	else if (retain_creation_grant)
 	{
 		auto queue_found = creation_grants.find(entry.actor_pid);
 		if (queue_found != creation_grants.end() && queue_found->second.active &&

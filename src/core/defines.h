@@ -94,6 +94,8 @@ typedef unsigned int uint;
 
 /* object runtime flags (not saved to db) */
 #define OBJ_RFLAG_DIRTY_CONTAINER BIT_1
+/* set by prototype instantiation; persistence loaders clear it after hydration */
+#define OBJ_RFLAG_CREATION_CANDIDATE BIT_2
 
 /* The following defs are for obj_data  */
 
