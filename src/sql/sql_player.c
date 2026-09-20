@@ -1208,6 +1208,13 @@ bool sql_save_player(P_char ch, int type, int room)
 		logit(LOG_DEBUG, "sql_save_player: invalid char or npc");
 		return false;
 	}
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		logit(LOG_DEBUG,
+		      "sql_save_player: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return true;
+	}
 
 	if (!DB)
 	{

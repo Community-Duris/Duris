@@ -1322,6 +1322,14 @@ void ws_finish_login(struct descriptor_data *d, int password_valid)
 		/* if we found an in-game character, reconnect to it */
 		if (online_char)
 		{
+			/* Match the native account flow: reconnects still honor explicit
+			 * character policy gates, but persistence recovery is not a login
+			 * admission dependency. */
+			if (!c || !can_connect(c, d))
+			{
+				ws_send_auth_failed(d, "Character is not available for login");
+				return;
+			}
 			struct descriptor_data *old_desc = online_char->desc;
 
 			/* close old descriptor if exists */

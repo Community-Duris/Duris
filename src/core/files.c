@@ -1711,6 +1711,16 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
+	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		// A degraded load may have omitted durable inventory or sidecar state. Treat
+		// save as a safe no-op until a clean cold load can hydrate every component;
+		// publishing the partial runtime snapshot would destroy the unresolved rows.
+		logit(LOG_DEBUG,
+		      "writeCharacter: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return 1;
+	}
 	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
 		return 0;
 	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);

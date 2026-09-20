@@ -154,7 +154,8 @@ for source in (repository, flatfile):
 assert "outcome=topology_repaired" in materialize
 assert "recovery=next_full_save" in materialize
 missing_payload = materialize[materialize.index("if (result.missing_payload_rows)"):]
-missing_payload = missing_payload[:missing_payload.index("reset_char(ch);")]
+missing_payload = missing_payload[:missing_payload.index(
+    "ch->only.pc->load_degraded_components")]
 assert "recovery=operator_repair" in missing_payload
 assert "recovery=next_full_save" not in missing_payload
 
