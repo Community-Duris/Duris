@@ -38,7 +38,7 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
         self.assertNotIn("return false;", submit)
 
         steal = function_body(source("cmd/actoth.c").read_text(), r"void do_steal\(")
-        equipped = steal[steal.index("if (roll && (GET_LEVEL(ch) > 40)"):]
+        equipped = steal[steal.index("if (!failed && (trusted ||"):]
         self.assertIn("submit_trusted_steal(ch, victim, obj, TRUE", equipped)
         inventory = steal[steal.index("case 2:"):steal.index("case 3:")]
         self.assertIn("submit_trusted_steal(ch, victim, obj, FALSE", inventory)
@@ -131,6 +131,31 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
         self.assertIn("capture(child, root_uid, object->obj_uid, items)", capture)
         self.assertIn("player_item_snapshot_tree_capture(root", movement)
         self.assertIn("item_ownership_runtime_apply(entry.payload, result)", movement)
+
+    def test_trusted_steal_bypasses_legacy_random_and_cooldown_gates(self):
+        steal = function_body(source("cmd/actoth.c").read_text(), r"void do_steal\(")
+        self.assertIn("const bool trusted = IS_TRUSTED(ch);", steal)
+        self.assertIn("if (!trusted && affected_by_spell(ch, TAG_PVPDELAY))", steal)
+        self.assertIn("if (!trusted && IS_FIGHTING(victim))", steal)
+        self.assertIn("if (trusted)\n\t\tpercent = 100;", steal)
+        self.assertIn("roll = trusted ? 1 : number(0, 100);", steal)
+        self.assertIn("if (!trusted && roll > MIN(percent, 99))", steal)
+        self.assertIn("if (!trusted)\n\t\tCharWait(ch, PULSE_VIOLENCE * 2);", steal)
+        self.assertIn("if (trusted)\n\t\treturn;", steal)
+
+    def test_trusted_steal_preserves_account_and_soul_binding(self):
+        command = source("cmd/actoth.c").read_text()
+        self.assertIn("static bool trusted_steal_binding_allows_recipient", command)
+        self.assertIn("account_bound_reward_owner(thief, object)", command)
+        self.assertIn("ITEM2_SOULBIND", command)
+        self.assertIn("trusted_steal_binding_allows_tree", command)
+
+    def test_trusted_steal_has_no_random_caught_result_or_delay(self):
+        command = source("cmd/actoth.c").read_text()
+        caught = function_body(command, r"static bool trusted_steal_was_caught\(")
+        delay = function_body(command, r"static void trusted_steal_attempt_delay\(")
+        self.assertIn("return false;", caught)
+        self.assertIn("if (IS_TRUSTED(thief))\n\t\treturn;", delay)
 
     def test_trusted_player_gate_remains_in_place(self):
         steal = function_body(source("cmd/actoth.c").read_text(), r"void do_steal\(")
