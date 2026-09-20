@@ -68,7 +68,7 @@ void gmcp_char_vitals(P_char)
     ++gmcp_calls;
 }
 
-void stop_memorizing(P_char)
+void stop_memorizing(P_char, memorization_stop_reason)
 {
     ++stop_memorizing_calls;
 }
