@@ -1091,12 +1091,13 @@ static void preview(P_char character, unsigned int selection, community_scope sc
 		return;
 	}
 	target_collection collection = collect_targets(character, GET_PID(character), scope);
-	send_to_char_f(character,
-		       "Preview: level %d, scope %s, %d eligible player%s (%d stored for a bounded "
-		       "preview; cap %llu).\n",
-		       COMMUNITY_SPELL_LEVEL, scope_name(scope), collection.totals.eligible,
-		       collection.totals.eligible == 1 ? "" : "s", collection.count,
-		       static_cast<unsigned long long>(COMMUNITY_MAX_TARGETS));
+	send_to_char_f(
+		character,
+		"Preview: level %d, scope %s, %d eligible player%s (%zu stored for a bounded "
+		"preview; cap %llu).\n",
+		COMMUNITY_SPELL_LEVEL, scope_name(scope), collection.totals.eligible,
+		collection.totals.eligible == 1 ? "" : "s", collection.count,
+		static_cast<unsigned long long>(COMMUNITY_MAX_TARGETS));
 	send_selection(character, "Selection: ", selection);
 	send_to_char(
 		character,
