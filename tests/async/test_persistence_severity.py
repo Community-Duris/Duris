@@ -19,6 +19,8 @@ harness = r'''
 #include <cstdio>
 #include <cstring>
 #include <chrono>
+#include <limits>
+#include <mutex>
 #include <string>
 #include <vector>
 #define MAX_STRING_LENGTH 256
@@ -95,12 +97,15 @@ int main() {
                       "rate_limit_action", "retry=%d", 1);
     assert(broadcasts.size() == 1);
     persistence_alert(57, "corpse", "corpse_owner", "none", "rate_event",
-                      "rate_limit_action", "retry=%d", 2);
+                      "rate_limit_action", "retry=%d", 1);
     assert(broadcasts.size() == 1);
     assert(logs.size() == 4); // throttling only affects wizlog, not durable log records
+    persistence_alert(57, "corpse", "corpse_owner", "none", "rate_event",
+                      "rate_limit_action", "retry=%d", 2);
+    assert(broadcasts.size() == 2); // distinct alert detail remains visible
     persistence_alert(57, "corpse", "different_owner", "none", "rate_event",
                       "rate_limit_action", "retry=%d", 3);
-    assert(broadcasts.size() == 2);
+    assert(broadcasts.size() == 3); // distinct failure key remains visible
 }
 '''
 with tempfile.TemporaryDirectory(prefix='persistence-severity-') as temp:

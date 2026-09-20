@@ -1939,9 +1939,11 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		for (size_t index = 0; index < critical_completion_count; ++index)
 			if (critical_completions[index].outcome ==
 			    critical_apply_outcome::terminal_failure)
-				persistence_alert(AVATAR, "critical_command", "completion", "none",
-						  "none", "integrity_failure",
-						  "operation metadata redacted");
+				persistence_alert(
+					AVATAR, "critical_command", "completion", "none",
+					critical_failure_stage_name(
+						critical_completions[index].failure_stage),
+					"integrity_failure", "operation metadata redacted");
 		player_save_pipeline_pulse();
 		persistence_pulse_character_saves();
 		death_extract_retry_pulse();
