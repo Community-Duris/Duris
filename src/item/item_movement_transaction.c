@@ -168,8 +168,7 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry)
-			   {
+			   [&](const auto &entry) {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -411,8 +410,28 @@ bool creation_grant_tree_available(P_obj object)
 bool creation_grant_request_live_ready(P_char actor, const pending_creation_grant &request)
 {
 	P_obj object = find_item(request.item_uid);
-	return object && (OBJ_NOWHERE(object) || OBJ_CARRIED_BY(object, actor)) &&
-	       creation_grant_tree_available(object);
+	if (!object || !creation_grant_tree_available(object))
+		return false;
+	if (OBJ_NOWHERE(object))
+		return true;
+	if (request.to_room)
+		return request.room > NOWHERE && request.room <= top_of_world &&
+		       OBJ_IN_ROOM(object, request.room);
+
+	P_char recipient = request.allow_pre_entry && actor &&
+					   request.recipient_pid ==
+						   static_cast<uint32_t>(GET_PID(actor)) ?
+				   actor :
+				   find_live_player(request.recipient_pid);
+	if (!recipient)
+		return false;
+	if (OBJ_CARRIED_BY(object, recipient))
+		return true;
+	if (!request.target_container_uid)
+		return false;
+	P_obj container = find_item(request.target_container_uid);
+	return container && OBJ_CARRIED_BY(container, recipient) &&
+	       GET_ITEM_TYPE(container) == ITEM_CONTAINER && OBJ_INSIDE_OBJ(object, container);
 }
 
 bool creation_grant_batch_live_ready(P_char actor, const creation_grant_queue &queue)

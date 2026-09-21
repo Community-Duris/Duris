@@ -39,7 +39,13 @@ assert "obj_to_char(blade, ch)" not in grant
 assert "wear(ch, blade, 12, TRUE)" not in grant
 assert "wind_blade_grant_completed" in grant
 assert "grant_wind_blade(ch);" in spell and "return;" in spell
+assert "item_movement_transaction_player_busy(ch)" in spell
+assert spell.index("item_movement_transaction_player_busy(ch)") < spell.index(
+    "grant_wind_blade(ch);"
+)
 assert "if (!committed)" in callback
+assert "result.root_item_uid != context.item_uid" in callback
+assert "blade->R_num != real_object(WIND_BLADE)" in callback
 assert callback.index("find_carried_object_by_uid") < callback.index("wear(actor, blade, 12, TRUE)")
 assert "OBJ_CARRIED_BY(obj_object, ch)" in wear
 assert wear.index("OBJ_CARRIED_BY(obj_object, ch)") < wear.index("can_equip_soulbound_item")
@@ -60,7 +66,11 @@ PRELUDE = r'''
 #include "net/comm.h"
 #include "item/item_movement_transaction.h"
 
+#define WIND_BLADE 98
+
 static int wear_calls = 0;
+static int attack_calls = 0;
+static P_char attacked = nullptr;
 static std::string output;
 
 void act(const char *, int, P_char, P_obj, void *, int) {}
@@ -73,7 +83,11 @@ void logit(const char *, const char *, ...) {}
 bool has_wind_blade_wielded(P_char ch) {
     return ch && ch->equipment[PRIMARY_WEAPON] != nullptr;
 }
-void wind_blade_attack_routine(P_char, P_char) {}
+int real_object(int vnum) { return vnum; }
+void wind_blade_attack_routine(P_char, P_char victim) {
+    ++attack_calls;
+    attacked = victim;
+}
 int wear(P_char ch, P_obj object, int, bool) {
     ++wear_calls;
     ch->carrying = object->next_content;
@@ -99,6 +113,7 @@ int main() {
     obj_data blade{};
     actor.carrying = nullptr;
     blade.obj_uid = 88001;
+    blade.R_num = WIND_BLADE;
     blade.loc_p = LOC_NOWHERE;
 
     auto failed = context_for(blade.obj_uid);
@@ -114,20 +129,45 @@ int main() {
     actor.only.pc = &player_data;
     blade = {};
     blade.obj_uid = 88001;
+    blade.R_num = WIND_BLADE;
     blade.loc_p = LOC_CARRIED;
     blade.loc.carrying = &actor;
     actor.carrying = &blade;
     wear_calls = 0;
+    attack_calls = 0;
+    attacked = nullptr;
     output.clear();
     auto committed = context_for(blade.obj_uid);
-    wind_blade_grant_completed(&actor, true, {}, 0,
+    item_transfer_result result{};
+    result.root_item_uid = blade.obj_uid;
+
+    item_transfer_result mismatched_result{};
+    mismatched_result.root_item_uid = blade.obj_uid + 1;
+    wind_blade_grant_completed(&actor, true, mismatched_result, 0,
+                               reinterpret_cast<const uint8_t *>(&committed), sizeof(committed));
+    assert(wear_calls == 0);
+    assert(actor.carrying == &blade);
+
+    blade.R_num = WIND_BLADE + 1;
+    wind_blade_grant_completed(&actor, true, result, 0,
+                               reinterpret_cast<const uint8_t *>(&committed), sizeof(committed));
+    assert(wear_calls == 0);
+    assert(actor.carrying == &blade);
+    blade.R_num = WIND_BLADE;
+
+    char_data opponent{};
+    actor.specials.fighting = &opponent;
+    wind_blade_grant_completed(&actor, true, result, 0,
                                reinterpret_cast<const uint8_t *>(&committed), sizeof(committed));
     assert(wear_calls == 1);
     assert(actor.equipment[PRIMARY_WEAPON] == &blade);
     assert(actor.carrying == nullptr);
-    wind_blade_grant_completed(&actor, true, {}, 0,
+    assert(attack_calls == 1);
+    assert(attacked == &opponent);
+    wind_blade_grant_completed(&actor, true, result, 0,
                                reinterpret_cast<const uint8_t *>(&committed), sizeof(committed));
     assert(wear_calls == 1);
+    assert(attack_calls == 1);
 
     // If another weapon arrives while the grant is in flight, the blade stays
     // carried and the callback does not replace the player's new weapon.
@@ -136,16 +176,22 @@ int main() {
     blade = {};
     obj_data other{};
     blade.obj_uid = 88002;
+    blade.R_num = WIND_BLADE;
     blade.loc_p = LOC_CARRIED;
     blade.loc.carrying = &actor;
     actor.carrying = &blade;
     actor.equipment[PRIMARY_WEAPON] = &other;
     wear_calls = 0;
+    attack_calls = 0;
+    attacked = nullptr;
     output.clear();
     auto occupied = context_for(blade.obj_uid);
-    wind_blade_grant_completed(&actor, true, {}, 0,
+    result = {};
+    result.root_item_uid = blade.obj_uid;
+    wind_blade_grant_completed(&actor, true, result, 0,
                                reinterpret_cast<const uint8_t *>(&occupied), sizeof(occupied));
     assert(wear_calls == 0);
+    assert(attack_calls == 0);
     assert(actor.equipment[PRIMARY_WEAPON] == &other);
     assert(actor.carrying == &blade);
 

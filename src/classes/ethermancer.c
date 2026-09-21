@@ -474,7 +474,7 @@ static P_obj find_carried_object_by_uid(P_char ch, uint64_t item_uid)
 }
 
 static void wind_blade_grant_completed(P_char actor, bool committed,
-				       const item_transfer_result & /*result*/,
+				       const item_transfer_result &result,
 				       unsigned int /*error_code*/, const uint8_t *encoded,
 				       size_t encoded_size)
 {
@@ -490,13 +490,25 @@ static void wind_blade_grant_completed(P_char actor, bool committed,
 			     actor);
 		return;
 	}
-
-	P_obj blade = find_carried_object_by_uid(actor, context.item_uid);
-	if (!blade)
+	if (result.root_item_uid != context.item_uid)
 	{
 		logit(LOG_FILE,
-		      "wind blade grant committed without live publication (uid=%llu pid=%d)",
-		      (unsigned long long)context.item_uid, GET_PID(actor));
+		      "wind blade grant result identity mismatch (expected_uid=%llu result_uid=%llu pid=%d)",
+		      (unsigned long long)context.item_uid,
+		      (unsigned long long)result.root_item_uid, GET_PID(actor));
+		send_to_char("The ownership authority returned an unexpected blade; nothing was "
+			     "equipped.\r\n",
+			     actor);
+		return;
+	}
+
+	P_obj blade = find_carried_object_by_uid(actor, context.item_uid);
+	if (!blade || blade->R_num != real_object(WIND_BLADE))
+	{
+		logit(LOG_FILE,
+		      "wind blade grant committed without the expected live blade (uid=%llu rnum=%d pid=%d)",
+		      (unsigned long long)context.item_uid, blade ? blade->R_num : -1,
+		      GET_PID(actor));
 		send_to_char("The ownership authority delivered the blade, but it is not "
 			     "available to wield yet.\r\n",
 			     actor);
@@ -594,6 +606,14 @@ void spell_wind_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_
 
 	if (!has_wind_blade(ch))
 	{
+		if (item_movement_transaction_player_busy(ch))
+		{
+			send_to_char(
+				"The winds are still resolving another item movement. Please wait "
+				"a moment.\r\n",
+				ch);
+			return;
+		}
 		grant_wind_blade(ch);
 		return;
 	}
