@@ -1,4 +1,4 @@
-#include "economy/economic_accounting_plan.h"
+#include "economy/economic_accounting_intent.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -315,7 +315,7 @@ void maximum_plan()
 	CHECK(economic_plan_decode(wallet, &over) != error::ok);
 }
 
-void command_binding()
+critical_command binding_command()
 {
 	critical_command command = {};
 	command.schema_version = 1;
@@ -328,6 +328,12 @@ void command_binding()
 			 { critical_entity_type::account, 8 } };
 	command.expected_revisions = { { command.keys[0], 9 }, { command.keys[1], 10 } };
 	command.payload = { 1, 2, 3 };
+	return command;
+}
+
+void command_binding()
+{
+	auto command = binding_command();
 	economic_digest digest = {};
 	CHECK(economic_command_binding_digest(command, &digest) == error::ok);
 	CHECK(digest == REFERENCE_COMMAND_DIGEST);
@@ -362,7 +368,7 @@ void command_binding()
 	command.expected_revisions[0].key.id = 80;
 	differs();
 	digest = REFERENCE_COMMAND_DIGEST;
-	command.schema_version = 2;
+	command.schema_version = 3;
 	CHECK(economic_command_binding_digest(command, &digest) == error::invalid_version);
 	CHECK(digest == REFERENCE_COMMAND_DIGEST);
 	command = baseline;
@@ -375,6 +381,171 @@ void command_binding()
 	CHECK(digest == REFERENCE_COMMAND_DIGEST);
 }
 
+void frozen_intent()
+{
+	auto command = binding_command();
+	economic_admission_facts facts;
+	facts.metadata = base_plan().metadata;
+	facts.metadata.operation_id = {}; // freeze binds the command's existing ID
+	facts.facts = { 4, 5, 6 };
+	std::vector<uint8_t> bytes;
+	CHECK(economic_intent_freeze(command, facts, &bytes) == error::ok);
+	CHECK(bytes == REFERENCE_INTENT);
+	CHECK(critical_operation_id_is_zero(facts.metadata.operation_id));
+	economic_frozen_intent intent;
+	CHECK(economic_intent_decode(bytes, &intent) == error::ok);
+	CHECK(economic_intent_verify_binding(command, intent) == error::ok);
+	economic_digest digest = {};
+	CHECK(economic_intent_digest(intent, &digest) == error::ok);
+	CHECK(digest == REFERENCE_INTENT_DIGEST);
+	economic_plan_metadata metadata;
+	CHECK(economic_intent_plan_metadata(command, intent, &metadata) == error::ok);
+	CHECK(metadata.intent_digest == digest && metadata.domain_digest == intent.domain_digest);
+	CHECK(metadata.operation_id.bytes == command.operation_id.bytes && metadata.writer_id == 1);
+	command.accepted_at_usec = 123456;
+	CHECK(economic_intent_verify_binding(command, intent) == error::ok);
+	command.payload[0] = 99;
+	metadata.writer_id = 99;
+	CHECK(economic_intent_plan_metadata(command, intent, &metadata) == error::payload_conflict);
+	CHECK(metadata.writer_id == 99);
+	command = binding_command();
+	auto changed = intent;
+	changed.domain_digest[0] ^= 1;
+	CHECK(economic_intent_verify_binding(command, changed) == error::payload_conflict);
+	changed = intent;
+	changed.command_binding[0] ^= 1;
+	CHECK(economic_intent_verify_binding(command, changed) == error::payload_conflict);
+	changed = intent;
+	changed.admission.facts[0] ^= 1;
+	CHECK(economic_intent_digest(changed, &digest) == error::ok &&
+	      digest != REFERENCE_INTENT_DIGEST);
+	// Facts need the typed writer's semantic authorization; digesting them alone
+	// intentionally cannot establish a reward or refund entitlement.
+	economic_frozen_intent output = intent;
+	output.admission.metadata.writer_id = 99;
+	for (size_t size = 0; size < bytes.size(); ++size)
+	{
+		CHECK(economic_intent_decode(std::span(bytes).first(size), &output) != error::ok);
+		CHECK(output.admission.metadata.writer_id == 99);
+	}
+	for (size_t offset : { 30U, 31U, 108U, 111U, 224U, 255U, 112U, 159U })
+	{
+		auto bad = bytes;
+		bad[offset] = 1;
+		CHECK(economic_intent_decode(bad, &output) == error::corrupt_evidence);
+	}
+	for (size_t offset : { 4U, 16U, 20U, 28U })
+	{
+		auto bad = bytes;
+		bad[offset] = 2;
+		CHECK(economic_intent_decode(bad, &output) == error::invalid_version);
+	}
+	auto bad = bytes;
+	bad[27] = 2;
+	CHECK(economic_intent_decode(bad, &output) == error::corrupt_evidence);
+	bad = bytes;
+	bad[104] = 255;
+	bad[105] = 255;
+	CHECK(economic_intent_decode(bad, &output) == error::corrupt_evidence);
+	bad = bytes;
+	bad.push_back(0);
+	CHECK(economic_intent_decode(bad, &output) == error::corrupt_evidence);
+	facts.facts.resize(ECONOMIC_INTENT_MAX_FACT_BYTES, 7);
+	CHECK(economic_intent_freeze(command, facts, &bytes) == error::ok);
+	CHECK(bytes.size() == 8192 && economic_intent_decode(bytes, &output) == error::ok);
+	std::vector<uint8_t> again;
+	CHECK(economic_intent_encode(output, &again) == error::ok && again == bytes);
+	facts.facts.push_back(8);
+	CHECK(economic_intent_freeze(command, facts, &bytes) == error::capacity);
+	CHECK(bytes == again);
+	facts.facts.clear();
+	facts.metadata.operation_id = id(9);
+	CHECK(economic_intent_freeze(command, facts, &bytes) == error::payload_conflict);
+	facts.metadata.operation_id = {};
+	facts.metadata.reason = economic_reason::quest_reward;
+	CHECK(economic_intent_freeze(command, facts, &bytes) == error::invalid_identity);
+	facts.metadata.source_event = source_event();
+	CHECK(economic_intent_freeze(command, facts, &bytes) == error::ok);
+	CHECK(economic_intent_decode(bytes, &output) == error::ok);
+	CHECK(output.admission.metadata.source_event->generation.bytes == id(5).bytes);
+	CHECK(economic_intent_verify_binding(command, output) == error::ok);
+}
+
+void versioned_envelopes()
+{
+	auto command = binding_command();
+	command.accepted_at_usec = 1;
+	std::vector<uint8_t> legacy;
+	CHECK(critical_command_encode(command, &legacy) == critical_command_codec_result::ok);
+	CHECK(legacy == REFERENCE_LEGACY_COMMAND);
+	economic_admission_facts facts;
+	facts.metadata = base_plan().metadata;
+	facts.facts = { 4, 5, 6 };
+	CHECK(economic_intent_freeze(command, facts, &command.accounting_intent) == error::ok);
+	CHECK(!critical_command_envelope_valid(command)); // schema 1 cannot hide an extension
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	CHECK(critical_command_envelope_valid(command) && !critical_command_valid(command));
+	CHECK(!critical_command_legacy_execution_supported(command));
+	std::vector<uint8_t> encoded;
+	CHECK(critical_command_encode(command, &encoded) == critical_command_codec_result::ok);
+	CHECK(encoded == REFERENCE_ACCOUNTING_COMMAND);
+	critical_command decoded;
+	CHECK(critical_command_decode(encoded.data(), encoded.size(), &decoded) ==
+	      critical_command_codec_result::ok);
+	CHECK(critical_command_equal(command, decoded));
+	economic_frozen_intent intent;
+	CHECK(economic_intent_decode(decoded.accounting_intent, &intent) == error::ok);
+	CHECK(economic_intent_verify_binding(decoded, intent) == error::ok);
+	auto changed = decoded;
+	changed.accounting_intent.back() ^= 1;
+	CHECK(!critical_command_equal(changed, decoded));
+	CHECK(economic_intent_verify_binding(changed, intent) == error::payload_conflict);
+	for (size_t size = 0; size < encoded.size(); ++size)
+		CHECK(critical_command_decode(encoded.data(), size, &decoded) !=
+		      critical_command_codec_result::ok);
+	auto bad = encoded;
+	bad[legacy.size()] = 0;
+	bad[legacy.size() + 1] = 0;
+	CHECK(critical_command_decode(bad.data(), bad.size(), &decoded) ==
+	      critical_command_codec_result::overflow);
+	bad = encoded;
+	bad[legacy.size()] = 255;
+	bad[legacy.size() + 1] = 255;
+	CHECK(critical_command_decode(bad.data(), bad.size(), &decoded) ==
+	      critical_command_codec_result::overflow);
+	bad = encoded;
+	bad.push_back(0);
+	CHECK(critical_command_decode(bad.data(), bad.size(), &decoded) ==
+	      critical_command_codec_result::invalid);
+	bad = encoded;
+	bad[4] = 3;
+	CHECK(critical_command_decode(bad.data(), bad.size(), &decoded) ==
+	      critical_command_codec_result::unsupported_version);
+	command = binding_command();
+	command.accepted_at_usec = 1;
+	command.keys.clear();
+	command.expected_revisions.clear();
+	for (size_t index = 0; index < CRITICAL_COMMAND_MAX_KEYS; ++index)
+	{
+		critical_entity_key key = { critical_entity_type::player, index + 1 };
+		command.keys.push_back(key);
+		command.expected_revisions.push_back({ key, index });
+	}
+	command.payload.resize(CRITICAL_COMMAND_MAX_PAYLOAD_BYTES, 17);
+	facts.facts.resize(ECONOMIC_INTENT_MAX_FACT_BYTES, 7);
+	CHECK(economic_intent_freeze(command, facts, &command.accounting_intent) == error::ok);
+	command.schema_version = 2;
+	CHECK(critical_command_encode(command, &encoded) == critical_command_codec_result::ok);
+	CHECK(encoded.size() == 521584);
+	CHECK(critical_command_decode(encoded.data(), encoded.size(), &decoded) ==
+	      critical_command_codec_result::ok);
+	CHECK(critical_command_equal(command, decoded));
+	CHECK(economic_intent_decode(decoded.accounting_intent, &intent) == error::ok);
+	CHECK(economic_intent_verify_binding(decoded, intent) == error::ok);
+	command.accounting_intent.push_back(0);
+	CHECK(critical_command_encode(command, &encoded) == critical_command_codec_result::invalid);
+}
+
 int main()
 {
 	fixed_bytes_and_rejection();
@@ -382,7 +553,9 @@ int main()
 	source_and_policy();
 	maximum_plan();
 	command_binding();
+	frozen_intent();
+	versioned_envelopes();
 	golden_cases();
 	std::cout
-		<< "accounting plan: canonical bytes, source identities, permutations, malformed inputs and 13 goldens passed\n";
+		<< "accounting plan and intent: reference bytes/digests, limits, bindings, malformed inputs and 13 goldens passed\n";
 }

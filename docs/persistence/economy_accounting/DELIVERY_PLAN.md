@@ -5,9 +5,24 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## First increment: reviewable pure foundation
+## Current increment: frozen intent and guarded envelopes
 
-This PR extracts the existing bounded types and plan codec, golden fixtures,
+Depends on [foundation PR #599](https://github.com/Community-Duris/Duris/pull/599)
+at `a63ae0d26c4060d21054a6056009b7ece8f8ef60`; review/merge in that order.
+This follow-up adds EAI1 frozen intent, bounded schema-2 wire encoding, binding
+verification, and explicit legacy SQL entrypoint guards. It does not add storage,
+accounting execution or gameplay activation. Existing schema-1 bytes and execution
+remain supported. Unsupported durable records must stop coordinator replay without
+applying or checkpointing them. See [INTENT_DESIGN.md](INTENT_DESIGN.md).
+
+Required evidence: independent wire fixtures, malformed/capacity/binding rejection,
+SQL rejection before connection access, flat-file rejection without root mutation,
+legacy-only and mixed unsupported journal recovery, and both server builds.
+#475/#476 remain open pending complete contracts and typed transactional adapters.
+
+## Delivered foundation: PR #599 (awaiting review)
+
+The first PR extracts the existing bounded types and plan codec, golden fixtures,
 contract model, and writer census onto canonical master
 `48c0aedd8e094eee37285111e46e735e4cf12320`. The original integration branch is
 preserved. Only the two new pure modules are registered in the server build.
@@ -70,3 +85,15 @@ component available / gameplay connected / journey qualified.
 
 The prior 80-140-hour range is a planning allowance for the whole remaining
 feature, not a deadline. Re-estimate after the first complete wallet/bank journey.
+
+## Known prerequisite retained for reward integration
+
+The representative flat-file gate harness exposed an existing boon completion
+size mismatch under GCC 13 at `-O1`: `BOON_REWARD_RESULT_BYTES` is 2,080 while
+`critical_apply_result::result_payload` is 2,048 bytes. The identical diagnostic
+reproduces on clean foundation head `a63ae0d26`; this increment does not alter that
+helper. Gate tests use `-O0` with ASan/UBSan, matching existing flat-file harnesses;
+they do not qualify a successful boon reward. Before enabling reward routes or
+archiving those receipts, port and verify the already-preserved complete-result
+fix (`27222aea4`) rather than redesigning completion storage. Track this with
+#481 and the relevant storage/legacy-receipt integration.

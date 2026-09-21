@@ -1,7 +1,7 @@
 # Economy accounting contract
 
-Status: **phase 1 foundation; draft coverage, no runtime integration or release
-qualification**. Parent #474; partial delivery for #475 and #476. Source census
+Status: **phased foundation; draft coverage, guarded wire support, no accounting
+execution or release qualification**. Parent #474; partial delivery for #475 and #476. Source census
 baseline: `48c0aedd8e094eee37285111e46e735e4cf12320`.
 See [phased delivery and acceptance](economy_accounting/DELIVERY_PLAN.md).
 
@@ -268,7 +268,9 @@ Deliver linked, dependency-ordered PRs for `xander-l` review. Merging a foundati
 does not activate accounting or complete its parent issue. Preserve existing
 separately owned fixes and verify their current interfaces rather than duplicating
 them. PR #409 has merged on this baseline; kingdom/workshop routes belong in the
-writer inventory. This first increment adds no storage or gameplay callers.
+writer inventory. These foundation increments add no storage or gameplay callers. Frozen intent
+and schema-2 wire support are guarded by legacy-only execution checks; see
+[economic intent design](economy_accounting/INTENT_DESIGN.md).
 
 Migrations remain additive and sealed history remains unchanged. New tables,
 flatfiles, codecs, manifests, exports, erasure, reset, backups and rollback

@@ -768,5 +768,21 @@
     "source_event_bytes": 48,
     "reserved": "must be zero",
     "digest": "SHA-256 of complete canonical plan bytes"
+  },
+  "intent_encoding": {
+    "magic": "EAI1",
+    "version": 1,
+    "header_bytes": 256,
+    "maximum_bytes": 8192,
+    "maximum_fact_bytes": 7936,
+    "facts_version": 1,
+    "command_binding_tag": "DURIS-ECONOMIC-COMMAND-V1",
+    "domain_digest_tag": "DURIS-ECONOMIC-DOMAIN-V1",
+    "intent_digest_tag": "DURIS-ECONOMIC-INTENT-V1",
+    "tag_delimiter": "NUL",
+    "legacy_schema": 1,
+    "accounting_schema": 2,
+    "maximum_envelope_bytes": 521584,
+    "execution": "unsupported until typed transactional accounting integration"
   }
 }

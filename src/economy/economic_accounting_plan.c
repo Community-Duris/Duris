@@ -390,18 +390,15 @@ economic_accounting_error economic_source_event_decode(std::span<const uint8_t> 
 	return economic_accounting_error::ok;
 }
 
-economic_accounting_error economic_plan_validate_structure(const economic_accounting_plan &plan)
+economic_accounting_error
+economic_operation_metadata_validate(const economic_operation_metadata &meta)
 {
-	if (!sizes_valid(plan))
-		return economic_accounting_error::capacity;
-	const auto &meta = plan.metadata;
 	if (meta.version != ECONOMIC_ACCOUNTING_VERSION || meta.policy_version != 1 ||
 	    meta.compiler_version != 1)
 		return economic_accounting_error::invalid_version;
 	if (critical_operation_id_is_zero(meta.lineage) ||
 	    critical_operation_id_is_zero(meta.epoch) ||
 	    critical_operation_id_is_zero(meta.operation_id) || !meta.actor_id || !meta.writer_id ||
-	    zero(meta.intent_digest) || zero(meta.domain_digest) ||
 	    critical_operation_id_equal(meta.original_operation_id, meta.operation_id))
 		return economic_accounting_error::invalid_identity;
 	const auto *rule = rule_for(meta.reason);
@@ -413,6 +410,20 @@ economic_accounting_error economic_plan_validate_structure(const economic_accoun
 	    (meta.source_event && !economic_source_event_valid(*meta.source_event)) ||
 	    (rule->original_required && critical_operation_id_is_zero(meta.original_operation_id)))
 		return economic_accounting_error::invalid_identity;
+	return economic_accounting_error::ok;
+}
+
+economic_accounting_error economic_plan_validate_structure(const economic_accounting_plan &plan)
+{
+	if (!sizes_valid(plan))
+		return economic_accounting_error::capacity;
+	const auto &meta = plan.metadata;
+	const auto metadata_status = economic_operation_metadata_validate(meta);
+	if (metadata_status != economic_accounting_error::ok)
+		return metadata_status;
+	if (zero(meta.intent_digest) || zero(meta.domain_digest))
+		return economic_accounting_error::invalid_identity;
+	const auto *rule = rule_for(meta.reason);
 	auto status = economic_child_links_validate(meta.operation_id, plan.children);
 	if (status != economic_accounting_error::ok)
 		return status;
@@ -674,8 +685,16 @@ economic_accounting_error economic_command_binding_digest(const critical_command
 {
 	if (!digest)
 		return economic_accounting_error::corrupt_evidence;
-	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION)
+	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
 		return economic_accounting_error::invalid_version;
+	if (command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES)
+		return economic_accounting_error::capacity;
+	if ((command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     !command.accounting_intent.empty()) ||
+	    (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	     command.accounting_intent.empty()))
+		return economic_accounting_error::invalid_identity;
 	if (command.keys.size() > CRITICAL_COMMAND_MAX_KEYS ||
 	    command.expected_revisions.size() > CRITICAL_COMMAND_MAX_KEYS ||
 	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
@@ -683,6 +702,8 @@ economic_accounting_error economic_command_binding_digest(const critical_command
 	try
 	{
 		auto projection = command;
+		projection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		projection.accounting_intent.clear();
 		// Only this binding projection uses a sentinel. Actual admission,
 		// journal bytes, exact-ID equality and durable receipts keep real time.
 		projection.accepted_at_usec = 1;

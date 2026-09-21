@@ -92,7 +92,7 @@ struct economic_source_event
 	uint32_t slot = 0;
 };
 
-struct economic_plan_metadata
+struct economic_operation_metadata
 {
 	uint16_t version = ECONOMIC_ACCOUNTING_VERSION;
 	critical_operation_id lineage = {};
@@ -106,6 +106,10 @@ struct economic_plan_metadata
 	uint32_t compiler_version = 1;
 	economic_reason reason = {};
 	std::optional<economic_source_event> source_event;
+};
+
+struct economic_plan_metadata : economic_operation_metadata
+{
 	economic_digest intent_digest = {};
 	economic_digest domain_digest = {};
 };
@@ -120,6 +124,10 @@ struct economic_accounting_plan
 	std::vector<economic_item_snapshot> items_after;
 	std::vector<economic_item_event> item_events;
 };
+
+// Shared structural metadata check; this does not grant a writer capability.
+economic_accounting_error
+economic_operation_metadata_validate(const economic_operation_metadata &metadata);
 
 bool economic_source_event_valid(const economic_source_event &event);
 economic_accounting_error
