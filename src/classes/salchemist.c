@@ -84,7 +84,8 @@ void alchemy_craft_completed(P_char ch, bool committed, const item_transfer_resu
 			ch);
 		return;
 	}
-	notch_skill(ch, craft.skill, 6.25);
+	if (craft.kind >= 1 && craft.kind <= 3)
+		notch_skill(ch, craft.skill, 6.25);
 	if (craft.kind == 1)
 		send_to_char("You finish mixing the poison.\r\n", ch);
 	else if (craft.kind == 2)
@@ -1377,7 +1378,7 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	if (!succeeded)
 	{
 		P_obj inputs[] = { item, jewel };
-		const alchemy_craft_context context = { 0, 5, false };
+		const alchemy_craft_context context = { skill, 5, false };
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_craft(
 			    ch, inputs, 2, nullptr, 0, OBJ_VNUM(jewel), alchemy_craft_completed,
@@ -1459,7 +1460,7 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	if (IS_SET(new_item->extra2_flags, ITEM2_ENHANCED))
 		describe_encrusted_enhanced(new_item);
 	P_obj inputs[] = { item, jewel };
-	const alchemy_craft_context context = { 0, 4, false };
+	const alchemy_craft_context context = { skill, 4, false };
 	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit_craft(ch, inputs, 2, &new_item, 1, OBJ_VNUM(jewel),
 						    alchemy_craft_completed, &context,

@@ -37,6 +37,8 @@ struct current_item
 	uint8_t state;
 };
 
+bool sync_restitution_runtime_payload(MYSQL *connection, const item_transfer_payload &payload);
+
 bool run_sql(MYSQL *connection, const std::string &sql)
 {
 	if (mysql_real_query(connection, sql.data(), sql.size()) == 0)
@@ -1108,6 +1110,8 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 	*mutation_applied = false;
 	if (failure_stage)
 		*failure_stage = item_transfer_failure_stage::none;
+	if (!sync_restitution_runtime_payload(connection, payload))
+		return false;
 	std::vector<player_item_snapshot> outputs;
 	if (!decode_craft_outputs(payload, &outputs) ||
 	    static_cast<size_t>(event_index_base) + payload.item_count + outputs.size() >
@@ -1412,6 +1416,15 @@ bool sync_restitution_runtime_payload(MYSQL *connection, const item_transfer_pay
 	mysql_free_result(tables);
 	if (delivered_uids.empty())
 		return true;
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		// Craft payloads carry output snapshots, not the input snapshot list
+		// required to rewrite restitution runtime state. Refuse the craft while
+		// the delivery row is still authoritative rather than consuming the item
+		// and leaving stale runtime recovery state behind.
+		errno = EPERM;
+		return false;
+	}
 	if (!runtime_present)
 	{
 		errno = ENOENT;

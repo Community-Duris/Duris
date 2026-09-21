@@ -293,6 +293,31 @@ void check_restitution_runtime_transfer(MYSQL *connection)
 		"owner_id,owner_context_id,item_revision,vnum,state) VALUES (9000001,9000001,NULL,1,41,0,1,1901,1)");
 	const uint64_t source_revision = owner_revision(connection, source);
 	const uint64_t target_revision = owner_revision(connection, target);
+	item_transfer_payload craft = {};
+	craft.from_owner = source;
+	craft.to_owner = source;
+	craft.reason = item_transfer_reason::craft;
+	craft.reason_id = 9002;
+	craft.expected_from_revision = source_revision;
+	craft.expected_to_revision = source_revision;
+	craft.selected_item_uid = uid;
+	craft.target_root_item_uid = uid;
+	craft.item_count = 1;
+	craft.items[0] = { uid, uid, 0, 1, 1901, item_custody_state::active };
+	const critical_apply_result rejected_craft = apply(connection, 16, craft);
+	assert(rejected_craft.outcome == critical_apply_outcome::terminal_failure &&
+	       rejected_craft.error_code == EPERM);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid=9000001 AND "
+		      "owner_id=41 AND state=1 AND item_revision=1") == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_death_restitution_delivery WHERE item_uid=9000001") ==
+	       1);
+	const std::vector<uint8_t> preserved_payload = read_blob(
+		connection,
+		"SELECT state_payload FROM player_death_restitution_runtime WHERE item_uid=9000001");
+	assert(preserved_payload == initial_payload);
+	assert(owner_revision(connection, source) == source_revision);
 	item_transfer_payload transfer = {};
 	transfer.from_owner = source;
 	transfer.to_owner = target;
@@ -619,7 +644,7 @@ int main()
 	assert(item_uid_allocator_reserve(connection, 2));
 	assert(item_uid_allocator_next() == allocator_start + 9);
 	assert(item_uid_allocator_next() == allocator_start + 10);
-	for (uint8_t id = 1; id <= 15; ++id)
+	for (uint8_t id = 1; id <= 16; ++id)
 	{
 		const std::string hex = operation_hex(id);
 		execute(connection,

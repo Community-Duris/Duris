@@ -45,6 +45,9 @@ require_in_order(
 )
 
 assert "bool execute_craft" in repository_c
+assert "sync_restitution_runtime_payload(connection, payload)" in repository_c
+assert "payload.reason == item_transfer_reason::craft" in repository_c
+assert "Craft payloads carry output snapshots" in repository_c
 assert "event_index_base + index" in repository_c
 assert "insert_craft_snapshot_rows" in repository_c
 assert "update_owner_revision(connection, payload.from_owner" in repository_c
@@ -52,6 +55,7 @@ assert "src/sql/item_extra_descr_codec.c" in mysql_runner
 assert "tests/async/item_extra_descr_codec_sql_escape_stub.cpp" in mysql_runner
 assert "src/persistence/player_death_restitution_command.c" in mysql_runner
 assert "src/persistence/player_death_restitution_repository.c" in mysql_runner
+assert "item_transfer_reason::craft" in (ROOT / "tests/async/item_transfer_mysql_harness.cpp").read_text()
 assert "payload.reason == item_transfer_reason::craft" in runtime_c
 assert "item_ownership_runtime_hydrate_many_atomic" in runtime_c
 
@@ -80,6 +84,9 @@ assert "if (ingredients_consumed)" in mix
 assert "obj_to_char(new_item, ch)" not in encrust
 assert "chaos_material_pouch_record_generated" not in encrust
 assert "Virtual Chaos-pouch encrust is temporarily unavailable" in encrust
+assert "if (craft.kind >= 1 && craft.kind <= 3)" in salchemist_c
+assert "const alchemy_craft_context context = { skill, 5, false };" in encrust
+assert "const alchemy_craft_context context = { skill, 4, false };" in encrust
 assert "vnum_from_inv" not in pvp
 assert "obj_to_char(orb, pl)" not in pvp
 
