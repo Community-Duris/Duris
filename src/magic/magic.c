@@ -4532,7 +4532,7 @@ void spell_siren_song(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_
 
 const char *elemental_aura_failure_message(P_char ch)
 {
-	if (!ch || ch->in_room == NOWHERE)
+	if (!ch || ch->in_room < 0 || ch->in_room > top_of_world)
 		return "There is no elemental planar essence here to draw upon.\n";
 
 	if (affected_by_spell(ch, SPELL_ELEMENTAL_AURA) || IS_AFFECTED2(ch, AFF2_EARTH_AURA) ||
@@ -11012,7 +11012,7 @@ void spell_acid_breath(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 			 &messages) != DAM_NONEDEAD)
 		return;
 
-	/*
+		/*
 	 * And now for the damage on equipment
 	 */
 

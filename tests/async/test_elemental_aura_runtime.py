@@ -19,6 +19,7 @@ PRELUDE = r'''
 
 static room_data rooms[1]{};
 P_room world = rooms;
+const int top_of_world = 0;
 static std::string output;
 
 void send_to_char(const char *text, P_char) {
@@ -120,6 +121,10 @@ int main() {
 
     reset(caster, SECT_FIREPLANE);
     caster.in_room = NOWHERE;
+    expect_message(&caster, location_failure);
+
+    reset(caster, SECT_FIREPLANE);
+    caster.in_room = top_of_world + 1;
     expect_message(&caster, location_failure);
 
     std::puts("Elemental aura eligibility, messages, and valid-plane effects passed.");
