@@ -6812,6 +6812,68 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "file:economic-accounting-index",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/*.eai",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retained bounded economic operation lookup and bucket counters; must survive replay, season reset and restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
+    },
+    {
+      "id": "file:economic-accounting-segment",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/*.eas",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Checksummed economic command, canonical plan and exact outcome records retained for replay and conservation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
     }
   ]
 }

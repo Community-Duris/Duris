@@ -5,7 +5,15 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: typed SQL bank admission and replay
+## Current increment: bounded flat-file evidence storage
+
+Based on [PR #604](https://github.com/Community-Duris/Duris/pull/604). Reuse
+preserved bounded storage and its authority-journal bridge, including subsequent
+durability fixes. Register evidence indexes/segments for lifecycle and backup.
+See [FLATFILE_STORAGE.md](FLATFILE_STORAGE.md). Retained lifetime metadata and
+the typed flat-file bank owner follow before backend admission or activation.
+
+## Prior increment: typed SQL bank admission and replay
 
 Based on [PR #603](https://github.com/Community-Duris/Duris/pull/603). Reuse the
 bank-only coordinator extension from preserved `a89fa8f18`, pair it with the SQL

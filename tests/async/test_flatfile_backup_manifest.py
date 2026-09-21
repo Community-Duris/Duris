@@ -9,6 +9,19 @@ from test_persistence_backup import Fixture, backup
 
 
 class FlatfileManifestTests(Fixture):
+    def test_manifest_retains_accounting_indexes_and_segments(self):
+        directory = self.base / "live/economic-evidence"
+        directory.mkdir(mode=0o700)
+        for name in ("bucket-01.eai", "bucket-01-0.eas", "bucket-01-1.eas"):
+            (directory / name).write_bytes(("synthetic-accounting:" + name).encode())
+            (directory / name).chmod(0o600)
+        generation = self.create()
+        manifest = backup.verify(generation)
+        recorded = set(manifest["files"])
+        for name in ("bucket-01.eai", "bucket-01-0.eas", "bucket-01-1.eas"):
+            self.assertIn("state/economic-evidence/" + name, recorded)
+        backup.verify(generation)
+
     def test_manifest_covers_authority_and_pending_transaction(self):
         live = self.base / "live"
         (live / "domains/.critical-authority-transaction").write_bytes(b"synthetic-pending-transaction")

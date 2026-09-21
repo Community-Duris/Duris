@@ -71,6 +71,8 @@ DESTRUCTIVE_ACTIONS = {
     "archive", "purge", "pseudonymize", "cascade", "restore_tombstone",
 }
 REQUIRED_NON_DATABASE_STORES = {
+    "file:economic-accounting-index": ("recovery_state", "FLATFILE_ROOT/economic-evidence/*.eai"),
+    "file:economic-accounting-segment": ("recovery_state", "FLATFILE_ROOT/economic-evidence/*.eas"),
     "file:player_save_journal": ("journal", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal"),
     "file:player_save_quarantine": (
         "quarantine", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine",
