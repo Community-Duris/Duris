@@ -366,6 +366,8 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::pet_give:
 	case item_transfer_reason::pet_return:
 	case item_transfer_reason::trusted_steal:
+	case item_transfer_reason::soulbind:
+	case item_transfer_reason::slip:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -464,7 +466,10 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
 	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
 	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
-	if (trusted_steal &&
+	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
+	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (player_transfer &&
 	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
 	     payload.from_owner.type != item_owner_type::player ||
 	     payload.to_owner.type != item_owner_type::player || !payload.from_owner.id ||

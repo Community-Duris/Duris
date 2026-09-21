@@ -380,6 +380,11 @@ void retain_trusted_steal_publication(pending_movement &entry, uint64_t item_uid
 	      (unsigned long long)item_uid, entry.actor_pid);
 }
 
+bool retained_player_transfer_reason(item_transfer_reason reason)
+{
+	return reason == item_transfer_reason::soulbind || reason == item_transfer_reason::slip;
+}
+
 item_owner_identity creation_grant_owner(const pending_creation_grant &request)
 {
 	return request.to_room ?
@@ -2260,7 +2265,14 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			publish(found, nullptr);
 		else if (found->second.actor_pid)
 		{
-			if (P_char actor = find_live_player(found->second.actor_pid))
+			P_char actor = find_live_player(found->second.actor_pid);
+			if (!actor &&
+			    retained_player_transfer_reason(found->second.requested_reason) &&
+			    found->second.payload.to_owner.type == item_owner_type::player &&
+			    found->second.payload.to_owner.id <= INT32_MAX)
+				actor = find_live_player(
+					static_cast<uint32_t>(found->second.payload.to_owner.id));
+			if (actor)
 				publish(found, actor);
 		}
 		else if (found->second.actor_runtime_id)
@@ -2281,14 +2293,22 @@ void item_movement_transaction_player_ready(P_char actor)
 		return;
 	for (;;)
 	{
-		auto found =
-			std::find_if(pending.begin(), pending.end(),
-				     [&](const auto &entry)
-				     {
-					     return entry.second.actor_pid ==
-							    static_cast<uint32_t>(GET_PID(actor)) &&
-						    entry.second.completion_ready;
-				     });
+		auto found = std::find_if(
+			pending.begin(), pending.end(),
+			[&](const auto &entry)
+			{
+				const bool source_ready = entry.second.actor_pid ==
+							  static_cast<uint32_t>(GET_PID(actor));
+				const bool destination_ready =
+					retained_player_transfer_reason(
+						entry.second.requested_reason) &&
+					entry.second.payload.to_owner.type ==
+						item_owner_type::player &&
+					entry.second.payload.to_owner.id ==
+						static_cast<uint64_t>(GET_PID(actor));
+				return (source_ready || destination_ready) &&
+				       entry.second.completion_ready;
+			});
 		if (found == pending.end())
 			break;
 		/* publish may invoke a callback that inserts and rehashes pending. */
@@ -2300,7 +2320,12 @@ void item_movement_transaction_player_ready(P_char actor)
 			found->second.publication_attempts = 0;
 			found->second.publication_status = publication_state::ready;
 		}
-		publish(found, actor);
+		P_char publisher = find_live_player(found->second.actor_pid);
+		if (!publisher && retained_player_transfer_reason(found->second.requested_reason))
+			publisher = actor;
+		if (!publisher)
+			break;
+		publish(found, publisher);
 		if (pending.find(key) != pending.end())
 			break;
 	}
