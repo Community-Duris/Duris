@@ -111,11 +111,14 @@ checks["flat terminal saves require the typed durable outcome"] = all(
     )
 )
 
-# Ghost extraction lives in actwiz.c and uses the shared terminal helper twice.
+# Ghost extraction shares one fail-closed terminal-save helper across the named
+# and bulk command paths, and extraction remains ordered after that save gate.
 actwiz = read("actwiz.c")
-checks["ghost extraction gate"] = actwiz.count(
-    "persistence_save_character_terminal(vict, RENT_LINKDEAD)"
-) == 2
+checks["ghost extraction gate"] = (
+    actwiz.count("persistence_save_character_terminal(vict, RENT_LINKDEAD)") == 1
+    and actwiz.index("persistence_save_character_terminal(vict, RENT_LINKDEAD)")
+    < actwiz.index("extract_char_after_terminal_save(vict)")
+)
 
 for name, passed in checks.items():
     print(f"[{'PASS' if passed else 'FAIL'}] {name}")
