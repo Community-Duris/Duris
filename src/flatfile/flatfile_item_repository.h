@@ -74,6 +74,9 @@ struct flatfile_item_corpse_release_mutation
 	uint64_t pet_owner_revision = 0;
 	uint64_t max_item_revision = 0;
 	uint64_t item_count = 0;
+	uint64_t destruction_owner_revision = 0;
+	uint64_t max_discarded_item_revision = 0;
+	uint64_t discarded_item_count = 0;
 	std::vector<collector_custody_boundary_item> collector_items;
 };
 
@@ -125,6 +128,13 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const corpse_lifecycle_payload &payload,
 	const std::vector<flatfile_corpse_custody_item> &expected_items,
+	flatfile_item_corpse_release_mutation *mutation, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_raise(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload,
+	const std::vector<flatfile_corpse_custody_item> &expected_items,
+	const std::vector<uint64_t> &durable_uids,
+	const std::vector<uint64_t> &discarded_uids,
 	flatfile_item_corpse_release_mutation *mutation, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,

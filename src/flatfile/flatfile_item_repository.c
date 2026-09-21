@@ -1633,6 +1633,286 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	return flatfile_item_repository_result::ok;
 }
 
+flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_raise(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload,
+	const std::vector<flatfile_corpse_custody_item> &expected_items,
+	const std::vector<uint64_t> &durable_uids,
+	const std::vector<uint64_t> &discarded_uids,
+	flatfile_item_corpse_release_mutation *mutation, std::string *error)
+{
+	const uint64_t source_uid = (static_cast<uint64_t>(payload.owner_pid) << 32) |
+				    static_cast<uint64_t>(payload.save_id);
+	const bool hostile = payload.pet_uid == 0;
+	auto sorted_unique_uids = [](const std::vector<uint64_t> &values)
+	{
+		return std::is_sorted(values.begin(), values.end()) &&
+		       std::adjacent_find(values.begin(), values.end()) == values.end();
+	};
+	const bool expected_sorted =
+		std::is_sorted(expected_items.begin(), expected_items.end(),
+			       [](const auto &left, const auto &right)
+			       { return left.item_uid < right.item_uid; }) &&
+		std::adjacent_find(expected_items.begin(), expected_items.end(),
+				   [](const auto &left, const auto &right)
+				   { return left.item_uid == right.item_uid; }) == expected_items.end();
+	if (!mutation || !lock.matches(root) ||
+	    payload.action != corpse_lifecycle_action::raise_world_follower || !source_uid ||
+	    payload.room_vnum <= 0 || !payload.destination_player_pid ||
+	    !payload.expected_corpse_revision || !payload.expected_room_revision ||
+	    !payload.expected_player_revision || (!hostile && payload.pet_uid != source_uid) ||
+	    expected_items.empty() || expected_items.size() > ITEM_TRANSFER_MAX_ITEMS ||
+	    expected_items.size() != durable_uids.size() + discarded_uids.size() ||
+	    !expected_sorted || !sorted_unique_uids(durable_uids) ||
+	    !sorted_unique_uids(discarded_uids) ||
+	    !std::binary_search(discarded_uids.begin(), discarded_uids.end(), source_uid) ||
+	    (hostile && !durable_uids.empty()))
+		return flatfile_item_repository_result::invalid;
+	*mutation = {};
+	for (size_t index = 0; index < expected_items.size(); ++index)
+	{
+		const auto &item = expected_items[index];
+		const bool durable = std::binary_search(durable_uids.begin(), durable_uids.end(),
+							item.item_uid);
+		const bool discarded = std::binary_search(discarded_uids.begin(),
+							  discarded_uids.end(),
+							  item.item_uid);
+		if (!item.item_uid || item.vnum <= 0 || item.root_item_uid != source_uid ||
+		    (item.item_uid == source_uid ? item.parent_item_uid != 0 :
+						     item.parent_item_uid == 0) ||
+		    durable == discarded ||
+		    (index && expected_items[index - 1].item_uid == item.item_uid))
+			return flatfile_item_repository_result::invalid;
+	}
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_item_repository_result::invalid;
+	const item_owner_identity room = { item_owner_type::room,
+					   static_cast<uint64_t>(payload.room_vnum), 0 };
+	const item_owner_identity player = { item_owner_type::player,
+					     payload.destination_player_pid, 0 };
+	const item_owner_identity pet = { item_owner_type::pet, payload.pet_uid,
+					  payload.destination_player_pid };
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	owner_state *room_owner = find_owner(&catalog, room);
+	owner_state *player_owner = find_owner(&catalog, player);
+	if (!room_owner || room_owner->revision != payload.expected_room_revision ||
+	    !player_owner || player_owner->revision != payload.expected_player_revision ||
+	    !ensure_owner(&catalog, destruction) || (!hostile && !ensure_owner(&catalog, pet)))
+		return flatfile_item_repository_result::invalid;
+	room_owner = find_owner(&catalog, room);
+	player_owner = find_owner(&catalog, player);
+	owner_state *pet_owner = hostile ? nullptr : find_owner(&catalog, pet);
+	if (!room_owner || !player_owner || (!hostile && (!pet_owner || pet_owner->revision)))
+		return flatfile_item_repository_result::invalid;
+
+	size_t matched = 0;
+	for (const auto &item : catalog.items)
+	{
+		if (item.state != item_custody_state::active ||
+		    !item_owner_identity_equal(item.owner, room) || item.root_item_uid != source_uid)
+			continue;
+		if (matched >= expected_items.size())
+			return flatfile_item_repository_result::invalid;
+		const auto &expected = expected_items[matched++];
+		if (item.item_uid != expected.item_uid ||
+		    item.root_item_uid != expected.root_item_uid ||
+		    item.parent_item_uid != expected.parent_item_uid || item.vnum != expected.vnum ||
+		    !item.item_revision || item.item_revision == UINT64_MAX)
+			return flatfile_item_repository_result::invalid;
+	}
+	const auto *source = find_item(&catalog, source_uid);
+	if (matched != expected_items.size() || !source ||
+	    source->item_revision != payload.expected_corpse_revision)
+		return flatfile_item_repository_result::invalid;
+
+	auto expected_by_uid = [&](uint64_t uid) -> const flatfile_corpse_custody_item *
+	{
+		auto found = std::lower_bound(
+			expected_items.begin(), expected_items.end(), uid,
+			[](const flatfile_corpse_custody_item &item, uint64_t value)
+			{ return item.item_uid < value; });
+		return found != expected_items.end() && found->item_uid == uid ? &*found : nullptr;
+	};
+	std::vector<std::pair<size_t, uint64_t>> boundaries;
+	try
+	{
+		for (const auto &item : expected_items)
+		{
+			if (!item.parent_item_uid)
+				continue;
+			const auto *parent = expected_by_uid(item.parent_item_uid);
+			if (!parent)
+				return flatfile_item_repository_result::invalid;
+			const bool item_discarded = std::binary_search(
+				discarded_uids.begin(), discarded_uids.end(), item.item_uid);
+			const bool parent_discarded = std::binary_search(
+				discarded_uids.begin(), discarded_uids.end(), parent->item_uid);
+			if (item_discarded == parent_discarded)
+				continue;
+			size_t depth = 0;
+			const auto *ancestor = &item;
+			while (ancestor->parent_item_uid)
+			{
+				if (++depth > expected_items.size() ||
+				    !(ancestor = expected_by_uid(ancestor->parent_item_uid)))
+					return flatfile_item_repository_result::invalid;
+			}
+			boundaries.emplace_back(depth, item.item_uid);
+		}
+		std::sort(boundaries.begin(), boundaries.end(),
+			  [](const auto &left, const auto &right) { return left.first > right.first; });
+		mutation->collector_items.reserve(durable_uids.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
+
+	auto descends_from = [&](const flatfile_item_ownership_record &candidate,
+				 uint64_t ancestor_uid)
+	{
+		uint64_t current_uid = candidate.item_uid;
+		for (size_t depth = 0; depth <= expected_items.size(); ++depth)
+		{
+			if (current_uid == ancestor_uid)
+				return true;
+			const auto *current = find_item(&catalog, current_uid);
+			if (!current || !current->parent_item_uid)
+				return false;
+			current_uid = current->parent_item_uid;
+		}
+		return false;
+	};
+	auto fill_transfer = [&](item_transfer_payload *transfer,
+				 const std::vector<uint64_t> *selected_uids,
+				 uint64_t subtree_uid)
+	{
+		if (!transfer)
+			return false;
+		size_t count = 0;
+		for (const auto &item : catalog.items)
+		{
+			if (item.state != item_custody_state::active ||
+			    !item_owner_identity_equal(item.owner, room))
+				continue;
+			const bool selected = subtree_uid ? descends_from(item, subtree_uid) :
+						 selected_uids && std::binary_search(
+									 selected_uids->begin(),
+									 selected_uids->end(),
+									 item.item_uid);
+			if (!selected)
+				continue;
+			if (count >= transfer->items.size())
+				return false;
+			transfer->items[count++] = { item.item_uid, item.root_item_uid,
+						     item.parent_item_uid, item.item_revision,
+						     item.vnum, item_custody_state::active };
+		}
+		transfer->item_count = static_cast<uint16_t>(count);
+		return count != 0;
+	};
+
+	for (const auto &[depth, boundary_uid] : boundaries)
+	{
+		(void)depth;
+		item_transfer_payload detach = {};
+		detach.from_owner = room;
+		detach.to_owner = room;
+		detach.reason = item_transfer_reason::player_drop;
+		detach.reason_id = static_cast<int64_t>(source_uid);
+		detach.expected_from_revision = room_owner->revision;
+		detach.expected_to_revision = room_owner->revision;
+		detach.selected_item_uid = boundary_uid;
+		if (!fill_transfer(&detach, nullptr, boundary_uid))
+			return flatfile_item_repository_result::invalid;
+		item_transfer_result detached = {};
+		const unsigned int applied = apply_transfer(&catalog, detach, &detached);
+		if (applied)
+			return applied == ENOMEM ? flatfile_item_repository_result::io_error :
+						   flatfile_item_repository_result::invalid;
+		room_owner = find_owner(&catalog, room);
+		if (!room_owner)
+			return flatfile_item_repository_result::invalid;
+	}
+
+	item_transfer_result durable_result = {};
+	if (!hostile && !durable_uids.empty())
+	{
+		item_transfer_payload durable = {};
+		durable.from_owner = room;
+		durable.to_owner = pet;
+		durable.reason = item_transfer_reason::corpse_raise_pet;
+		durable.reason_id = static_cast<int64_t>(source_uid);
+		durable.expected_from_revision = room_owner->revision;
+		durable.expected_to_revision = pet_owner->revision;
+		durable.multi_root = true;
+		if (!fill_transfer(&durable, &durable_uids, 0))
+			return flatfile_item_repository_result::invalid;
+		const unsigned int applied = apply_transfer(&catalog, durable, &durable_result);
+		if (applied)
+			return applied == ENOMEM ? flatfile_item_repository_result::io_error :
+						   flatfile_item_repository_result::invalid;
+		room_owner = find_owner(&catalog, room);
+		pet_owner = find_owner(&catalog, pet);
+		for (uint64_t uid : durable_uids)
+		{
+			const auto *item = find_item(&catalog, uid);
+			if (!item || !item_owner_identity_equal(item->owner, pet))
+				return flatfile_item_repository_result::invalid;
+			mutation->collector_items.push_back({ uid, item->item_revision });
+		}
+	}
+	else if (!hostile)
+	{
+		if (room_owner->revision == UINT64_MAX || pet_owner->revision == UINT64_MAX)
+			return flatfile_item_repository_result::invalid;
+		++room_owner->revision;
+		++pet_owner->revision;
+		durable_result.from_owner_revision = room_owner->revision;
+		durable_result.to_owner_revision = pet_owner->revision;
+	}
+
+	item_transfer_payload discarded = {};
+	discarded.from_owner = room;
+	discarded.to_owner = destruction;
+	discarded.reason = item_transfer_reason::destruction;
+	discarded.reason_id = static_cast<int64_t>(source_uid);
+	discarded.expected_from_revision = room_owner->revision;
+	discarded.expected_to_revision = find_owner(&catalog, destruction)->revision;
+	discarded.multi_root = true;
+	if (!fill_transfer(&discarded, &discarded_uids, 0))
+		return flatfile_item_repository_result::invalid;
+	item_transfer_result discarded_result = {};
+	const unsigned int discarded_applied = apply_transfer(&catalog, discarded, &discarded_result);
+	if (discarded_applied)
+		return discarded_applied == ENOMEM ? flatfile_item_repository_result::io_error :
+						     flatfile_item_repository_result::invalid;
+	room_owner = find_owner(&catalog, room);
+	pet_owner = hostile ? nullptr : find_owner(&catalog, pet);
+	if (!room_owner || (!hostile && !pet_owner))
+		return flatfile_item_repository_result::invalid;
+	mutation->corpse_owner_revision = room_owner->revision;
+	mutation->pet_owner_revision = hostile ? 0 : pet_owner->revision;
+	mutation->max_item_revision = durable_result.max_item_revision;
+	mutation->item_count = durable_result.item_count;
+	mutation->destruction_owner_revision = discarded_result.to_owner_revision;
+	mutation->max_discarded_item_revision = discarded_result.max_item_revision;
+	mutation->discarded_item_count = discarded_result.item_count;
+	mutation->after_image.filename = ownership_filename;
+	if (!encode_catalog(catalog, catalog.revision + 1, &mutation->after_image.bytes))
+		return flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_result::ok;
+}
+
 flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantine(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<uint64_t> &custody_uids, flatfile_authority_operation *operation,

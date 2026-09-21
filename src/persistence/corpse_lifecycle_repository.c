@@ -50,6 +50,7 @@ struct physical_item
 	uint32_t id = 0;
 	uint32_t parent_id = 0;
 	int32_t vnum = 0;
+	int32_t item_type = -1;
 	int32_t weight = 0;
 	int64_t adjusted_weight = 0;
 	uint64_t extra_flags = 0;
@@ -62,6 +63,7 @@ struct physical_item
 	bool transient = false;
 	bool skipped = false;
 	bool artifact = false;
+	bool source_root = false;
 };
 
 struct artifact_state
@@ -104,6 +106,8 @@ bool execute(MYSQL *connection, const std::string &sql)
 	errno = static_cast<int>(mysql_errno(connection));
 	return false;
 }
+
+bool escape_text(MYSQL *connection, const char *text, size_t length, std::string *escaped);
 
 bool parse_u64(const char *text, uint64_t *value)
 {
@@ -344,6 +348,400 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<phys
 			parent = parent->parent_id ? find_physical(items, parent->parent_id) :
 						     nullptr;
 		}
+	}
+	return true;
+}
+
+uint64_t world_corpse_uid(const corpse_lifecycle_payload &payload)
+{
+	return (static_cast<uint64_t>(payload.owner_pid) << 32) |
+	       static_cast<uint64_t>(payload.save_id);
+}
+
+bool load_world_corpse_items(MYSQL *connection, const corpse_lifecycle_payload &payload,
+			     std::vector<physical_item> *items, uint32_t *root_row_id,
+			     unsigned int *result_code)
+{
+	const uint64_t source_uid = world_corpse_uid(payload);
+	if (!source_uid || !items || !root_row_id || !result_code)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	const std::string root_query =
+		"SELECT id FROM saved_items WHERE room_vnum=" +
+		std::to_string(payload.room_vnum) + " AND obj_uid=" + std::to_string(source_uid) +
+		" FOR UPDATE";
+	if (!execute(connection, root_query))
+		return false;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	MYSQL_ROW row = rows ? mysql_fetch_row(rows) : nullptr;
+	uint32_t selected_root = 0;
+	const bool root_ok = row && mysql_num_rows(rows) == 1 &&
+			     parse_u32(row[0], &selected_root) && selected_root;
+	if (rows)
+		mysql_free_result(rows);
+	if (!root_ok)
+	{
+		if (mysql_errno(connection))
+		{
+			errno = static_cast<int>(mysql_errno(connection));
+			return false;
+		}
+		*result_code = row ? EILSEQ : ENOENT;
+		return true;
+	}
+	const std::string query =
+		"WITH RECURSIVE corpse_graph AS ("
+		"SELECT id,container_id,vnum,item_type,weight,extra_flags,value0,value1,value2,value3,"
+		"obj_uid "
+		"FROM saved_items WHERE id=" +
+		std::to_string(selected_root) + " AND room_vnum=" +
+		std::to_string(payload.room_vnum) +
+		" UNION ALL SELECT child.id,child.container_id,child.vnum,child.item_type,"
+		"child.weight,child.extra_flags,child.value0,child.value1,child.value2,"
+		"child.value3,child.obj_uid FROM saved_items child JOIN corpse_graph parent ON "
+		"child.container_id=parent.id WHERE child.room_vnum=" +
+		std::to_string(payload.room_vnum) +
+		") SELECT id,COALESCE(container_id,0),vnum,COALESCE(item_type,-1),weight,"
+		"extra_flags,value0,value1,value2,value3,COALESCE(obj_uid,0) FROM corpse_graph "
+		"ORDER BY id FOR UPDATE";
+	if (!execute(connection, query))
+		return false;
+	rows = mysql_store_result(connection);
+	if (!rows)
+	{
+		errno = static_cast<int>(mysql_errno(connection));
+		return false;
+	}
+	const uint64_t row_count = mysql_num_rows(rows);
+	if (!row_count || row_count > ITEM_TRANSFER_MAX_ITEMS)
+	{
+		mysql_free_result(rows);
+		*result_code = row_count ? E2BIG : ENOENT;
+		return true;
+	}
+	try
+	{
+		items->clear();
+		items->reserve(static_cast<size_t>(mysql_num_rows(rows)));
+		while ((row = mysql_fetch_row(rows)) != nullptr)
+		{
+			physical_item item;
+			if (!parse_u32(row[0], &item.id) || !item.id ||
+			    !parse_u32(row[1], &item.parent_id) || !parse_i32(row[2], &item.vnum) ||
+			    item.vnum <= 0 || !parse_i32(row[3], &item.item_type) ||
+			    !parse_i32(row[4], &item.weight) || !parse_u64(row[5], &item.extra_flags) ||
+			    !parse_u64(row[10], &item.item_uid) || !item.item_uid)
+			{
+				mysql_free_result(rows);
+				*result_code = EILSEQ;
+				return true;
+			}
+			for (size_t index = 0; index < item.money.size(); ++index)
+				if (!parse_i32(row[index + 6], &item.money[index]) ||
+				    item.money[index] < 0)
+				{
+					mysql_free_result(rows);
+					*result_code = EILSEQ;
+					return true;
+				}
+			item.source_root = item.id == selected_root;
+			item.money_item = item.item_type == ITEM_MONEY ||
+					  (item.item_type < 0 && item.vnum == VOBJ_COINS);
+			item.transient = (item.extra_flags & ITEM_TRANSIENT) != 0;
+			item.skipped = item.source_root || item.money_item || item.transient;
+			item.artifact = !item.skipped && (item.extra_flags & ITEM_ARTIFACT) != 0;
+			item.adjusted_weight = item.weight;
+			items->push_back(item);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		mysql_free_result(rows);
+		errno = ENOMEM;
+		return false;
+	}
+	mysql_free_result(rows);
+
+	std::unordered_set<uint32_t> ids;
+	std::unordered_set<uint64_t> uids;
+	try
+	{
+		ids.reserve(items->size());
+		uids.reserve(items->size());
+		for (const physical_item &item : *items)
+			if (!ids.insert(item.id).second || !uids.insert(item.item_uid).second ||
+			    item.parent_id == item.id)
+			{
+				*result_code = EILSEQ;
+				return true;
+			}
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	physical_item *root = find_physical(items, selected_root);
+	if (!root || !root->source_root || root->item_uid != source_uid || root->parent_id ||
+	    (root->item_type >= 0 ? root->item_type != ITEM_CORPSE : root->vnum != VOBJ_CORPSE))
+	{
+		*result_code = EILSEQ;
+		return true;
+	}
+	for (physical_item &item : *items)
+	{
+		const physical_item *current = &item;
+		for (size_t depth = 0; depth <= items->size(); ++depth)
+		{
+			if (current->id == selected_root)
+			{
+				item.root_item_uid = source_uid;
+				break;
+			}
+			if (!current->parent_id || depth == items->size())
+			{
+				*result_code = EILSEQ;
+				return true;
+			}
+			current = find_physical(*items, current->parent_id);
+			if (!current)
+			{
+				*result_code = EILSEQ;
+				return true;
+			}
+		}
+		if (item.parent_id)
+		{
+			const physical_item *parent = find_physical(*items, item.parent_id);
+			if (!parent)
+			{
+				*result_code = EILSEQ;
+				return true;
+			}
+			item.parent_item_uid = parent->item_uid;
+		}
+	}
+	// A disposable node cannot contain durable equipment. That would require
+	// inventing a new physical parent while the command is in flight.
+	for (const physical_item &item : *items)
+	{
+		if (item.skipped)
+			continue;
+		const physical_item *parent = item.parent_id ? find_physical(*items, item.parent_id) :
+							     nullptr;
+		for (size_t depth = 0; parent && depth <= items->size(); ++depth)
+		{
+			if (parent->skipped && !parent->source_root)
+			{
+				*result_code = EILSEQ;
+				return true;
+			}
+			parent = parent->parent_id ? find_physical(*items, parent->parent_id) : nullptr;
+		}
+	}
+	for (const physical_item &skipped : *items)
+	{
+		if (!skipped.skipped || skipped.source_root || !skipped.parent_id)
+			continue;
+		physical_item *parent = find_physical(items, skipped.parent_id);
+		for (size_t depth = 0; parent && depth <= items->size(); ++depth)
+		{
+			if (!parent->skipped)
+			{
+				parent->adjusted_weight -= skipped.weight;
+				if (parent->adjusted_weight < INT32_MIN ||
+				    parent->adjusted_weight > INT32_MAX)
+				{
+					*result_code = ERANGE;
+					return true;
+				}
+			}
+			parent = parent->parent_id ? find_physical(items, parent->parent_id) : nullptr;
+		}
+	}
+
+	const std::string authority =
+		"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),item_revision,vnum,state "
+		"FROM item_current_owner WHERE owner_type=" +
+		std::to_string(static_cast<unsigned int>(item_owner_type::room)) +
+		" AND owner_id=" + std::to_string(payload.room_vnum) +
+		" AND owner_context_id=0 AND root_item_uid=" + std::to_string(source_uid) +
+		" ORDER BY item_uid FOR UPDATE";
+	if (!execute(connection, authority))
+		return false;
+	rows = mysql_store_result(connection);
+	if (!rows)
+	{
+		errno = static_cast<int>(mysql_errno(connection));
+		return false;
+	}
+	if (mysql_num_rows(rows) != items->size())
+	{
+		mysql_free_result(rows);
+		*result_code = ESTALE;
+		return true;
+	}
+	while ((row = mysql_fetch_row(rows)) != nullptr)
+	{
+		uint64_t uid = 0, stored_root = 0, parent = 0, revision = 0, state = 0;
+		int32_t vnum = 0;
+		if (!parse_u64(row[0], &uid) || !parse_u64(row[1], &stored_root) ||
+		    !parse_u64(row[2], &parent) || !parse_u64(row[3], &revision) || !revision ||
+		    !parse_i32(row[4], &vnum) || !parse_u64(row[5], &state))
+		{
+			mysql_free_result(rows);
+			*result_code = EILSEQ;
+			return true;
+		}
+		physical_item *item = nullptr;
+		for (physical_item &candidate : *items)
+			if (candidate.item_uid == uid)
+			{
+				item = &candidate;
+				break;
+			}
+		if (!item || stored_root != item->root_item_uid ||
+		    parent != item->parent_item_uid || vnum != item->vnum ||
+		    state != static_cast<uint8_t>(item_custody_state::active))
+		{
+			mysql_free_result(rows);
+			*result_code = ESTALE;
+			return true;
+		}
+		item->item_revision = revision;
+	}
+	mysql_free_result(rows);
+	if (root->item_revision != payload.expected_corpse_revision)
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	*root_row_id = selected_root;
+	return true;
+}
+
+physical_item *find_physical_uid(std::vector<physical_item> *items, uint64_t uid)
+{
+	const auto found = std::find_if(items->begin(), items->end(),
+					[uid](const physical_item &item) { return item.item_uid == uid; });
+	return found == items->end() ? nullptr : &*found;
+}
+
+const physical_item *find_physical_uid(const std::vector<physical_item> &items, uint64_t uid)
+{
+	const auto found = std::find_if(items.begin(), items.end(),
+					[uid](const physical_item &item) { return item.item_uid == uid; });
+	return found == items.end() ? nullptr : &*found;
+}
+
+bool world_item_discarded(const physical_item &item, bool hostile)
+{
+	return hostile || item.skipped;
+}
+
+bool world_item_descends_from(const std::vector<physical_item> &items,
+			      const physical_item &item, uint64_t ancestor_uid)
+{
+	const physical_item *current = &item;
+	for (size_t depth = 0; current && depth <= items.size(); ++depth)
+	{
+		if (current->item_uid == ancestor_uid)
+			return true;
+		current = current->parent_item_uid ?
+				  find_physical_uid(items, current->parent_item_uid) :
+				  nullptr;
+	}
+	return false;
+}
+
+size_t world_item_depth(const std::vector<physical_item> &items, const physical_item &item)
+{
+	size_t depth = 0;
+	const physical_item *current = &item;
+	while (current && current->parent_item_uid && depth <= items.size())
+	{
+		++depth;
+		current = find_physical_uid(items, current->parent_item_uid);
+	}
+	return current ? depth : items.size() + 1;
+}
+
+bool fill_world_transfer_items(const std::vector<physical_item> &items,
+			       item_transfer_payload *transfer, bool discarded, bool hostile,
+			       uint64_t subtree_uid = 0)
+{
+	std::vector<item_transfer_entry> selected;
+	try
+	{
+		selected.reserve(items.size());
+		for (const physical_item &item : items)
+		{
+			if (subtree_uid && !world_item_descends_from(items, item, subtree_uid))
+				continue;
+			if (!subtree_uid && world_item_discarded(item, hostile) != discarded)
+				continue;
+			selected.push_back({ item.item_uid, item.root_item_uid,
+					     item.parent_item_uid, item.item_revision, item.vnum,
+					     item_custody_state::active });
+		}
+		std::sort(selected.begin(), selected.end(),
+			  [](const item_transfer_entry &left, const item_transfer_entry &right)
+			  { return left.item_uid < right.item_uid; });
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	if (selected.size() > transfer->items.size())
+	{
+		errno = E2BIG;
+		return false;
+	}
+	transfer->item_count = static_cast<uint16_t>(selected.size());
+	std::copy(selected.begin(), selected.end(), transfer->items.begin());
+	return true;
+}
+
+bool apply_world_transfer_topology(std::vector<physical_item> *items,
+				   const item_transfer_payload &transfer)
+{
+	for (size_t index = 0; index < transfer.item_count; ++index)
+	{
+		physical_item *item = find_physical_uid(items, transfer.items[index].item_uid);
+		uint64_t root = 0, parent = 0;
+		if (!item || item->item_revision == UINT64_MAX ||
+		    !item_transfer_target_topology(transfer, item->item_uid, &root, &parent))
+			return false;
+		++item->item_revision;
+		item->root_item_uid = root;
+		item->parent_item_uid = parent;
+	}
+	return true;
+}
+
+bool execute_world_item_transfer(MYSQL *connection, const critical_command &outer,
+				 item_transfer_payload *transfer, uint16_t event_offset,
+				 item_transfer_result *result, unsigned int *result_code)
+{
+	critical_command item_command = {};
+	if (!item_transfer_command_build(&item_command, outer.operation_id, *transfer,
+					 outer.source_site, outer.deadline_class))
+	{
+		*result_code = EILSEQ;
+		return true;
+	}
+	item_command.accepted_at_usec = outer.accepted_at_usec;
+	bool mutation = false;
+	if (!item_transfer_repository_execute_at_offset(connection, item_command, event_offset,
+							result, result_code, &mutation))
+		return false;
+	if (!*result_code && !mutation)
+	{
+		errno = EILSEQ;
+		return false;
 	}
 	return true;
 }
@@ -634,6 +1032,7 @@ bool prepare_transfer(const corpse_lifecycle_payload &payload, uint64_t corpse_o
 		break;
 	case corpse_lifecycle_action::upsert:
 	case corpse_lifecycle_action::remove:
+	case corpse_lifecycle_action::raise_world_follower:
 		*result_code = EOPNOTSUPP;
 		return true;
 	}
@@ -1321,6 +1720,94 @@ bool materialize_items(MYSQL *connection, const critical_command &command,
 	return true;
 }
 
+bool copy_world_item_related_rows(MYSQL *connection, uint32_t source_id, uint32_t target_id)
+{
+	return execute(connection,
+		       "INSERT INTO player_pet_item_affects(item_id,location,modifier) SELECT " +
+			       std::to_string(target_id) +
+			       ",location,modifier FROM saved_item_affects WHERE item_id=" +
+			       std::to_string(source_id)) &&
+	       execute(connection,
+		       "INSERT INTO player_pet_item_extra_descr(item_id,keyword,description) SELECT " +
+			       std::to_string(target_id) +
+			       ",keyword,description FROM saved_item_extra_descr WHERE item_id=" +
+			       std::to_string(source_id));
+}
+
+bool materialize_world_pet_items(MYSQL *connection, const std::vector<physical_item> &items,
+				 uint32_t pet_row_id, bool hostile)
+{
+	if (hostile)
+		return pet_row_id == 0;
+	if (!pet_row_id)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	std::unordered_map<uint64_t, uint32_t> copied;
+	size_t durable_count = 0;
+	for (const physical_item &item : items)
+		durable_count += item.skipped ? 0 : 1;
+	try
+	{
+		copied.reserve(durable_count);
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	while (copied.size() < durable_count)
+	{
+		bool progressed = false;
+		for (const physical_item &item : items)
+		{
+			if (item.skipped || copied.contains(item.item_uid))
+				continue;
+			uint32_t parent_id = 0;
+			if (item.parent_item_uid)
+			{
+				const auto parent = copied.find(item.parent_item_uid);
+				if (parent == copied.end())
+					continue;
+				parent_id = parent->second;
+			}
+			const std::string parent = parent_id ? std::to_string(parent_id) : "NULL";
+			const std::string sql =
+				"INSERT INTO player_pet_items(pet_id,vnum,equip_slot,container_id,"
+				"weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
+				"value2,value3,value4,value5,value6,value7,name,short_descr,description,"
+				"action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
+				"obj_uid,item_material) SELECT " +
+				std::to_string(pet_row_id) + ",vnum,0," + parent + "," +
+				std::to_string(item.adjusted_weight) +
+				",cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
+				"value3,value4,value5,value6,value7,name,short_descr,description,"
+				"action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
+				"obj_uid,item_material FROM saved_items WHERE id=" +
+				std::to_string(item.id);
+			if (!execute(connection, sql) || mysql_affected_rows(connection) != 1)
+				return false;
+			const uint64_t inserted = mysql_insert_id(connection);
+			if (!inserted || inserted > UINT32_MAX ||
+			    !copy_world_item_related_rows(connection, item.id,
+						  static_cast<uint32_t>(inserted)))
+			{
+				errno = inserted > UINT32_MAX ? ERANGE : EIO;
+				return false;
+			}
+			copied.emplace(item.item_uid, static_cast<uint32_t>(inserted));
+			progressed = true;
+		}
+		if (!progressed)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+	}
+	return true;
+}
+
 bool advance_empty_transfer(MYSQL *connection, const item_transfer_payload &transfer,
 			    std::vector<owner_lock> *locks, item_transfer_result *result)
 {
@@ -1339,6 +1826,271 @@ bool rollback_domain(MYSQL *connection)
 {
 	return execute(connection, "ROLLBACK TO SAVEPOINT corpse_lifecycle_domain") &&
 	       execute(connection, "RELEASE SAVEPOINT corpse_lifecycle_domain");
+}
+
+bool execute_world_corpse_raise(
+	MYSQL *connection, const critical_command &command, const corpse_lifecycle_payload &payload,
+	corpse_lifecycle_result *result, unsigned int *result_code, bool *mutation_applied,
+	uint64_t *collector_revision, std::vector<collector_command_result> *collector_events)
+{
+	const uint64_t source_uid = world_corpse_uid(payload);
+	const bool hostile = payload.pet_uid == 0;
+	std::vector<physical_item> physical;
+	uint32_t root_row_id = 0;
+	if (!load_world_corpse_items(connection, payload, &physical, &root_row_id, result_code))
+		return false;
+	if (*result_code)
+	{
+		if (*result_code == ESTALE)
+		{
+			const physical_item *root = find_physical_uid(physical, source_uid);
+			if (root)
+				result->corpse_revision = root->item_revision;
+		}
+		return true;
+	}
+	// Artifacts need their legacy domain row moved in the same transaction. Until
+	// that domain supplies a room-to-pet transition, preserve the entire corpse
+	// rather than committing an ownership split.
+	if (std::any_of(physical.begin(), physical.end(),
+			[](const physical_item &item) { return item.artifact; }))
+	{
+		*result_code = EOPNOTSUPP;
+		return true;
+	}
+
+	const item_owner_identity room = { item_owner_type::room,
+					   static_cast<uint64_t>(payload.room_vnum), 0 };
+	const item_owner_identity player = { item_owner_type::player,
+					     payload.destination_player_pid, 0 };
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	const item_owner_identity pet = { item_owner_type::pet, payload.pet_uid,
+					  payload.destination_player_pid };
+	item_transfer_payload destination_probe = {};
+	destination_probe.to_owner = hostile ? destruction : pet;
+	uint32_t ignored_parent = 0;
+	if (!prepare_physical_destination(connection, payload, destination_probe, physical,
+					  &ignored_parent, result_code))
+		return false;
+	if (*result_code)
+		return true;
+	if (!execute(connection, "SAVEPOINT corpse_lifecycle_domain"))
+		return false;
+
+	std::vector<owner_lock> locks = { { room, 0 }, { player, 0 }, { destruction, 0 } };
+	if (!hostile)
+		locks.push_back({ pet, 0 });
+	std::sort(locks.begin(), locks.end(),
+		  [](const owner_lock &left, const owner_lock &right)
+		  { return owner_less(left.owner, right.owner); });
+	for (owner_lock &entry : locks)
+		if (!item_transfer_repository_ensure_owner(connection, entry.owner))
+			return false;
+	for (owner_lock &entry : locks)
+		if (!item_transfer_repository_lock_owner(connection, entry.owner, &entry.revision))
+			return false;
+	auto revision_of = [&](const item_owner_identity &owner) -> uint64_t *
+	{
+		for (owner_lock &entry : locks)
+			if (item_owner_identity_equal(entry.owner, owner))
+				return &entry.revision;
+		return nullptr;
+	};
+	uint64_t *room_revision = revision_of(room);
+	uint64_t *player_revision = revision_of(player);
+	uint64_t *destruction_revision = revision_of(destruction);
+	uint64_t *pet_revision = hostile ? nullptr : revision_of(pet);
+	if (!room_revision || !player_revision || !destruction_revision ||
+	    (!hostile && !pet_revision))
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	if (*room_revision != payload.expected_room_revision ||
+	    *player_revision != payload.expected_player_revision ||
+	    (!hostile && *pet_revision != 0))
+	{
+		*result_code = ESTALE;
+		return rollback_domain(connection);
+	}
+	uint32_t pet_row_id = 0;
+	if (!create_raised_pet_row(connection, payload, &pet_row_id, result_code))
+		return false;
+	if (*result_code)
+		return rollback_domain(connection);
+
+	std::vector<std::pair<size_t, uint64_t>> boundaries;
+	try
+	{
+		for (const physical_item &item : physical)
+		{
+			if (!item.parent_item_uid)
+				continue;
+			const physical_item *parent =
+				find_physical_uid(physical, item.parent_item_uid);
+			if (!parent)
+			{
+				*result_code = EILSEQ;
+				return rollback_domain(connection);
+			}
+			if (world_item_discarded(item, hostile) !=
+			    world_item_discarded(*parent, hostile))
+				boundaries.emplace_back(world_item_depth(physical, item),
+							item.item_uid);
+		}
+		std::sort(boundaries.begin(), boundaries.end(),
+			  [](const auto &left, const auto &right) { return left.first > right.first; });
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+
+	uint32_t event_offset = 0;
+	for (const auto &[depth, boundary_uid] : boundaries)
+	{
+		(void)depth;
+		item_transfer_payload detach = {};
+		detach.from_owner = room;
+		detach.to_owner = room;
+		detach.reason = item_transfer_reason::player_drop;
+		detach.reason_id = static_cast<int64_t>(source_uid);
+		detach.expected_from_revision = *room_revision;
+		detach.expected_to_revision = *room_revision;
+		detach.selected_item_uid = boundary_uid;
+		if (!fill_world_transfer_items(physical, &detach, false, hostile, boundary_uid) ||
+		    !detach.item_count ||
+		    event_offset > static_cast<uint32_t>(UINT16_MAX) - detach.item_count)
+		{
+			*result_code = E2BIG;
+			return rollback_domain(connection);
+		}
+		item_transfer_result detached = {};
+		if (!execute_world_item_transfer(connection, command, &detach,
+						 static_cast<uint16_t>(event_offset), &detached,
+						 result_code))
+			return false;
+		if (*result_code)
+			return rollback_domain(connection);
+		if (!apply_world_transfer_topology(&physical, detach))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		*room_revision = detached.from_owner_revision;
+		event_offset += detach.item_count;
+	}
+
+	item_transfer_payload durable = {};
+	durable.from_owner = room;
+	durable.to_owner = pet;
+	durable.reason = item_transfer_reason::corpse_raise_pet;
+	durable.reason_id = static_cast<int64_t>(source_uid);
+	durable.expected_from_revision = *room_revision;
+	durable.expected_to_revision = hostile ? 0 : *pet_revision;
+	durable.multi_root = true;
+	if (!hostile && !fill_world_transfer_items(physical, &durable, false, false))
+		return false;
+	collector_item_boundary_repository_plan collector_plan;
+	if (!hostile && durable.item_count &&
+	    !collector_repository_prepare_item_boundary(connection, durable, &collector_plan,
+							 result_code))
+		return false;
+	if (*result_code)
+		return rollback_domain(connection);
+
+	item_transfer_result durable_result = {};
+	if (!hostile && durable.item_count)
+	{
+		if (event_offset > static_cast<uint32_t>(UINT16_MAX) - durable.item_count)
+		{
+			*result_code = E2BIG;
+			return rollback_domain(connection);
+		}
+		if (!execute_world_item_transfer(connection, command, &durable,
+						 static_cast<uint16_t>(event_offset), &durable_result,
+						 result_code))
+			return false;
+		if (*result_code)
+			return rollback_domain(connection);
+		if (!apply_world_transfer_topology(&physical, durable))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		*room_revision = durable_result.from_owner_revision;
+		*pet_revision = durable_result.to_owner_revision;
+		event_offset += durable.item_count;
+	}
+	else if (!hostile)
+	{
+		if (*room_revision == UINT64_MAX || *pet_revision == UINT64_MAX ||
+		    !item_transfer_repository_advance_owner(connection, room, *room_revision) ||
+		    !item_transfer_repository_advance_owner(connection, pet, *pet_revision))
+			return false;
+		++*room_revision;
+		++*pet_revision;
+		durable_result.from_owner_revision = *room_revision;
+		durable_result.to_owner_revision = *pet_revision;
+	}
+
+	item_transfer_payload discarded = {};
+	discarded.from_owner = room;
+	discarded.to_owner = destruction;
+	discarded.reason = item_transfer_reason::destruction;
+	discarded.reason_id = static_cast<int64_t>(source_uid);
+	discarded.expected_from_revision = *room_revision;
+	discarded.expected_to_revision = *destruction_revision;
+	discarded.multi_root = true;
+	if (!fill_world_transfer_items(physical, &discarded, true, hostile) ||
+	    !discarded.item_count ||
+	    event_offset > static_cast<uint32_t>(UINT16_MAX) - discarded.item_count)
+	{
+		*result_code = E2BIG;
+		return rollback_domain(connection);
+	}
+	item_transfer_result discarded_result = {};
+	if (!execute_world_item_transfer(connection, command, &discarded,
+					 static_cast<uint16_t>(event_offset), &discarded_result,
+					 result_code))
+		return false;
+	if (*result_code)
+		return rollback_domain(connection);
+	if (!apply_world_transfer_topology(&physical, discarded))
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	*room_revision = discarded_result.from_owner_revision;
+	*destruction_revision = discarded_result.to_owner_revision;
+
+	if (!collector_plan.entries.empty() &&
+	    !collector_repository_apply_item_boundary(connection, command, collector_plan,
+						      collector_revision, collector_events))
+		return false;
+	if (!materialize_world_pet_items(connection, physical, pet_row_id, hostile) ||
+	    !execute(connection,
+		     "DELETE FROM saved_items WHERE id=" + std::to_string(root_row_id) +
+			     " AND obj_uid=" + std::to_string(source_uid)) ||
+	    mysql_affected_rows(connection) != 1 ||
+	    !execute(connection, "RELEASE SAVEPOINT corpse_lifecycle_domain"))
+		return false;
+
+	result->owner_pid = payload.owner_pid;
+	result->save_id = payload.save_id;
+	result->action = payload.action;
+	result->catalog_revision = *room_revision;
+	result->corpse_owner_revision = *room_revision;
+	result->pet_owner_revision = hostile ? 0 : durable_result.to_owner_revision;
+	result->max_item_revision = durable_result.max_item_revision;
+	result->item_count = durable_result.item_count;
+	result->destruction_owner_revision = discarded_result.to_owner_revision;
+	result->max_discarded_item_revision = discarded_result.max_item_revision;
+	result->discarded_item_count = discarded_result.item_count;
+	result->collector_catalog_changed = !collector_events->empty();
+	*mutation_applied = true;
+	return true;
 }
 
 bool finish_corpse(MYSQL *connection, const corpse_identity &identity, uint64_t catalog_revision)
@@ -1377,6 +2129,10 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	*mutation_applied = false;
 	*collector_revision = 0;
 	collector_events->clear();
+	if (payload.action == corpse_lifecycle_action::raise_world_follower)
+		return execute_world_corpse_raise(connection, command, payload, result, result_code,
+						  mutation_applied, collector_revision,
+						  collector_events);
 
 	uint64_t catalog_revision = 0;
 	corpse_identity identity;
