@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sanitizer harness for issue 549's held-completion callbacks.
+"""Sanitizer harness for issue 549's held-publication callbacks.
 
 The harness exercises terminal refusal, committed publication, and callback replay
 for both commands.  It deliberately models the live UID lists and keeps all
@@ -37,6 +37,7 @@ static int alert_count = 0;
 static int act_count = 0;
 static int notch_count = 0;
 static int save_count = 0;
+static bool save_succeeds = true;
 
 #undef IS_TRUSTED
 #define IS_TRUSTED(ch) true
@@ -63,7 +64,7 @@ void statuslog(int, const char *, ...) {}
 void logit(const char *, const char *, ...) {}
 void sql_log(P_char, const char *, const char *, ...) {}
 int writeCharacter(P_char, int, int) { ++save_count; return 1; }
-bool do_save_silent(P_char, int) { ++save_count; return true; }
+bool do_save_silent(P_char, int) { ++save_count; return save_succeeds; }
 bool notch_skill(P_char, int, float) { ++notch_count; return true; }
 int char_light(P_char) { return 0; }
 int room_light(int, int) { return 0; }
@@ -157,11 +158,12 @@ struct slip_movement_context {
         extract_function("magic.c", "void remove_soulbind("),
         extract_function("magic.c", "static P_char find_soulbind_player("),
         extract_function("magic.c", "static P_obj find_soulbind_item("),
+        extract_function("magic.c", "static bool soulbind_metadata_applied("),
         extract_function("magic.c", "static bool apply_soulbind_metadata("),
-        extract_function("magic.c", "static void soulbind_transfer_completion("),
+        extract_function("magic.c", "static bool soulbind_transfer_publication("),
         extract_function("classes/rogues.c", "static P_char find_slip_player("),
         extract_function("classes/rogues.c", "static P_obj find_slip_item("),
-        extract_function("classes/rogues.c", "static void slip_transfer_completion("),
+        extract_function("classes/rogues.c", "static bool slip_transfer_publication("),
     ]
 )
 
@@ -214,28 +216,46 @@ int main() {
     link_item(source, object, 77001);
 
     soulbind_movement_context soulbind = { object.obj_uid, 101, 202, 0, 0, 0 };
+    item_transfer_result soulbind_result{};
+    soulbind_result.root_item_uid = object.obj_uid;
     output.clear();
     act_count = alert_count = save_count = 0;
-    soulbind_transfer_completion(&source, false, {}, 5,
-        reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind));
+    assert(soulbind_transfer_publication(&source, false, {}, 5,
+        reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
     assert(source.carrying == &object);
     assert(victim.carrying == nullptr);
     assert(has_soulbind(&victim) == 0);
     assert(act_count == 0 && save_count == 0);
     assert(output.find("did not commit") != std::string::npos);
 
+    item_transfer_result mismatched{};
+    mismatched.root_item_uid = object.obj_uid + 1;
     output.clear();
     act_count = alert_count = save_count = 0;
-    soulbind_transfer_completion(&source, true, {}, 0,
-        reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind));
+    assert(!soulbind_transfer_publication(&source, true, mismatched, 0,
+        reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
+    assert(source.carrying == &object && victim.carrying == nullptr);
+    assert(has_soulbind(&victim) == 0);
+    assert(alert_count == 1 && act_count == 0 && save_count == 0);
+
+	// A committed ownership move must still publish if forced movement changed
+	// either live room while the asynchronous command was in flight.
+	source.in_room = 7;
+	victim.in_room = 8;
+    output.clear();
+    act_count = alert_count = save_count = 0;
+    save_succeeds = false;
+    assert(!soulbind_transfer_publication(&source, true, soulbind_result, 0,
+        reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
     assert(source.carrying == nullptr);
     assert(victim.carrying == &object);
     assert(has_soulbind(&victim) == 9001);
     assert((object.extra2_flags & ITEM2_SOULBIND) != 0);
     assert(act_count == 2 && save_count >= 1);
     const auto soulbind_output = output;
-    soulbind_transfer_completion(&source, true, {}, 0,
-        reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind));
+    save_succeeds = true;
+    assert(soulbind_transfer_publication(&source, true, soulbind_result, 0,
+        reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
     assert(output == soulbind_output);
     assert(has_soulbind(&victim) == 9001);
 
@@ -243,23 +263,42 @@ int main() {
     link_players(source, source_pc, victim, victim_pc);
     link_item(source, object, 77002);
     slip_movement_context slip = { object.obj_uid, 101, 202, 0, 0 };
+    item_transfer_result slip_result{};
+    slip_result.root_item_uid = object.obj_uid;
     output.clear();
     act_count = alert_count = notch_count = save_count = 0;
-    slip_transfer_completion(&source, false, {}, 5,
-        reinterpret_cast<const uint8_t *>(&slip), sizeof(slip));
+    assert(slip_transfer_publication(&source, false, {}, 5,
+        reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
+    assert(source.carrying == &object && victim.carrying == nullptr);
+    assert(notch_count == 0 && act_count == 0 && save_count == 0);
+	// A destination-only retry of a rejected secret handoff must not disclose
+	// the Slip attempt to its intended victim.
+	character_list = &victim;
+	output.clear();
+	assert(slip_transfer_publication(&victim, false, {}, 5,
+		reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
+	assert(output.empty());
+	character_list = &source;
+
+    mismatched = {};
+    mismatched.root_item_uid = object.obj_uid + 1;
+    assert(!slip_transfer_publication(&source, true, mismatched, 0,
+        reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
     assert(source.carrying == &object && victim.carrying == nullptr);
     assert(notch_count == 0 && act_count == 0 && save_count == 0);
 
+	source.in_room = 9;
+	victim.in_room = 10;
     output.clear();
     act_count = alert_count = notch_count = save_count = 0;
-    slip_transfer_completion(&source, true, {}, 0,
-        reinterpret_cast<const uint8_t *>(&slip), sizeof(slip));
+    assert(slip_transfer_publication(&source, true, slip_result, 0,
+        reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
     assert(source.carrying == nullptr && victim.carrying == &object);
     assert(notch_count == 1 && save_count == 2);
     assert(act_count == 1);
     const auto slip_output = output;
-    slip_transfer_completion(&source, true, {}, 0,
-        reinterpret_cast<const uint8_t *>(&slip), sizeof(slip));
+    assert(slip_transfer_publication(&source, true, slip_result, 0,
+        reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
     assert(output == slip_output);
     assert(notch_count == 1 && act_count == 1);
 
@@ -270,7 +309,7 @@ int main() {
     }
     std::free(object.name);
     std::free(object.short_description);
-    std::puts("Soulbind and Slip held-completion callbacks passed under ASan/UBSan.");
+    std::puts("Soulbind and Slip held-publication callbacks passed under ASan/UBSan.");
 }
 '''
 

@@ -31,7 +31,7 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
         self.assertIn("ownership.state != item_custody_state::active", cross_player)
         self.assertIn("item_movement_transaction_submit(", cross_player)
         self.assertIn("item_transfer_reason::soulbind", cross_player)
-        self.assertIn("soulbind_transfer_completion", cross_player)
+        self.assertIn("soulbind_transfer_publication", cross_player)
         self.assertIn("total_carried_weight(victim)", cross_player)
         self.assertIn("ch->in_room", cross_player)
         self.assertIn("victim->in_room", cross_player)
@@ -45,17 +45,18 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
     def test_soulbind_completion_defers_metadata_until_commit_and_publication(self):
         magic = source("magic/magic.c").read_text()
         completion = function_body(
-            magic, r"static void soulbind_transfer_completion\("
+            magic, r"static bool soulbind_transfer_publication\("
         )
 
+        self.assertIn("result.root_item_uid != context.item_uid", completion)
         self.assertIn("find_soulbind_item(context.item_uid)", completion)
         self.assertIn("find_soulbind_player(context.victim_pid)", completion)
         self.assertIn("OBJ_CARRIED_BY(object, victim)", completion)
         self.assertLess(completion.index("if (!committed)"), completion.index("obj_from_char"))
         self.assertLess(completion.index("OBJ_CARRIED_BY(object, victim)"),
-                        completion.index("apply_soulbind_metadata(victim, object)"))
+                        completion.index("apply_soulbind_metadata(victim, object, true)"))
         self.assertLess(completion.index("remove_soulbind(victim)"),
-                        completion.index("apply_soulbind_metadata(victim, object)"))
+                        completion.rindex("apply_soulbind_metadata(victim, object, true)"))
         self.assertIn("mark_player_dirty_components", completion)
 
     def test_slip_admits_before_detachment_and_defers_success_effects(self):
@@ -69,7 +70,7 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
         self.assertIn("ownership.state != item_custody_state::active", durable)
         self.assertIn("item_movement_transaction_submit(", durable)
         self.assertIn("item_transfer_reason::slip", durable)
-        self.assertIn("slip_transfer_completion", durable)
+        self.assertIn("slip_transfer_publication", durable)
         self.assertIn("ch->in_room", durable)
         self.assertIn("vict->in_room", durable)
         self.assertNotIn("obj_from_char", durable)
@@ -79,10 +80,11 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
         )
 
         completion = function_body(
-            rogues, r"static void slip_transfer_completion\("
+            rogues, r"static bool slip_transfer_publication\("
         )
         self.assertIn("find_slip_item(context.item_uid)", completion or "")
         self.assertIn("find_slip_player(context.victim_pid)", completion or "")
+        self.assertIn("result.root_item_uid != context.item_uid", completion or "")
         self.assertIn("already_published", completion or "")
         self.assertIn("OBJ_NOWHERE(object)", completion or "")
         self.assertIn("ITEM2_CRUMBLELOOT", completion or "")
@@ -94,21 +96,23 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
 
     def test_committed_player_publication_remains_retryable_for_disconnects(self):
         movement = source("item/item_movement_transaction.c").read_text()
-        publish = function_body(movement, r"void publish\(")
+        magic = source("magic/magic.c").read_text()
+        rogues = source("classes/rogues.c").read_text()
+        soulbind = function_body(magic, r"void do_soulbind\(")
+        slip = function_body(rogues, r"void do_slip\(")
 
         self.assertIn("retained_player_transfer_reason", movement)
-        self.assertIn("player_transfer_live_ready", movement)
-        self.assertIn("retain_player_transfer_publication", movement)
         self.assertIn("item_transfer_reason::soulbind", movement)
         self.assertIn("item_transfer_reason::slip", movement)
         self.assertIn("destination_ready", function_body(
             movement, r"void item_movement_transaction_player_ready\("
         ))
-        self.assertIn("pending.find(pending_key)", publish)
-        self.assertLess(
-            publish.index("!retain_creation_grant && !retain_trusted_steal && !retain_player_transfer"),
-            publish.index("completion_fn(actor, committed && registry_applied"),
-        )
+        self.assertIn("soulbind_transfer_publication", soulbind)
+        self.assertIn("slip_transfer_publication", slip)
+        self.assertIn("GET_PID(ch), NULL, &context", soulbind)
+        self.assertIn("&reject, soulbind_transfer_publication", soulbind)
+        self.assertIn("GET_PID(ch), NULL, &context", slip)
+        self.assertIn("slip_transfer_publication", slip)
 
     def test_payload_scope_requires_distinct_live_player_owners(self):
         command = source("item/item_transfer_command.c").read_text()

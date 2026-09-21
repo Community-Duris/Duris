@@ -168,8 +168,7 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry)
-			   {
+			   [&](const auto &entry) {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -384,35 +383,6 @@ void retain_trusted_steal_publication(pending_movement &entry, uint64_t item_uid
 bool retained_player_transfer_reason(item_transfer_reason reason)
 {
 	return reason == item_transfer_reason::soulbind || reason == item_transfer_reason::slip;
-}
-
-bool player_transfer_live_ready(const pending_movement &entry)
-{
-	if (entry.payload.to_owner.type != item_owner_type::player ||
-	    entry.payload.to_owner.id > INT32_MAX)
-		return false;
-	P_char source = find_live_player(entry.actor_pid);
-	P_char recipient = find_live_player(static_cast<uint32_t>(entry.payload.to_owner.id));
-	P_obj root = find_item(entry.payload.selected_item_uid);
-	return source && recipient && root && OBJ_CARRIED_BY(root, recipient);
-}
-
-void retain_player_transfer_publication(pending_movement &entry, uint64_t item_uid)
-{
-	if (!entry.publication_failed)
-	{
-		entry.publication_failed = true;
-		++health.stale_publications;
-		persistence_alert(AVATAR, "item_movement", "player_transfer_publish", "none",
-				  "none", "stale_live_publication",
-				  "item_uid=%llu actor_pid=%u reason=%u",
-				  (unsigned long long)item_uid, entry.actor_pid,
-				  static_cast<unsigned int>(entry.requested_reason));
-	}
-	logit(LOG_FILE,
-	      "item_movement: player transfer publication retained for retry uid=%llu actor_pid=%u reason=%u",
-	      (unsigned long long)item_uid, entry.actor_pid,
-	      static_cast<unsigned int>(entry.requested_reason));
 }
 
 item_owner_identity creation_grant_owner(const pending_creation_grant &request)
@@ -1483,18 +1453,15 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	const bool retain_trusted_steal = committed && registry_applied &&
 					  entry.requested_reason ==
 						  item_transfer_reason::trusted_steal;
-	const bool retain_player_transfer = committed && registry_applied &&
-					    retained_player_transfer_reason(entry.requested_reason);
 	const uint64_t trusted_steal_uid = entry.payload.selected_item_uid;
-	const uint64_t player_transfer_uid = entry.payload.selected_item_uid;
 	const std::string pending_key = found->first;
 	/*
-	 * A trusted steal, Soulbind, or Slip has a second publication boundary after
-	 * the durable ownership commit: the exact live UID must reach its destination
-	 * carrying list. Keep that entry fenced until the callback proves the boundary,
-	 * otherwise a committed ledger row could strand the live object with no retry path.
+	 * A trusted steal has a second publication boundary after the durable
+	 * ownership commit: the exact live UID must reach the thief's carrying list.
+	 * Keep that entry fenced until the callback proves the boundary, otherwise a
+	 * committed ledger row could strand the live object with no retry path.
 	 */
-	if (!retain_creation_grant && !retain_trusted_steal && !retain_player_transfer)
+	if (!retain_creation_grant && !retain_trusted_steal)
 		pending.erase(found);
 	if (completion_fn)
 		completion_fn(actor, committed && registry_applied, result, error_code,
@@ -1506,18 +1473,6 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		    !trusted_steal_live_ready(actor, trusted_steal_uid))
 		{
 			retain_trusted_steal_publication(retained->second, trusted_steal_uid);
-			account_health();
-			return;
-		}
-		if (retained != pending.end())
-			pending.erase(retained);
-	}
-	else if (retain_player_transfer)
-	{
-		auto retained = pending.find(pending_key);
-		if (retained != pending.end() && !player_transfer_live_ready(retained->second))
-		{
-			retain_player_transfer_publication(retained->second, player_transfer_uid);
 			account_health();
 			return;
 		}

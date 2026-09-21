@@ -52,16 +52,16 @@ static P_obj find_slip_item(uint64_t item_uid)
 	return NULL;
 }
 
-static void slip_transfer_completion(P_char callback_actor, bool committed,
-				     const item_transfer_result &, unsigned int error_code,
-				     const uint8_t *encoded, size_t encoded_size)
+static bool slip_transfer_publication(P_char /*callback_actor*/, bool committed,
+				      const item_transfer_result &result, unsigned int error_code,
+				      const uint8_t *encoded, size_t encoded_size)
 {
 	slip_movement_context context = {};
 	if (!encoded || encoded_size != sizeof(context))
 	{
 		persistence_alert(AVATAR, "item_movement", "slip_publish", "none", "none",
 				  "invalid_context", "uid=unknown");
-		return;
+		return false;
 	}
 	memcpy(&context, encoded, sizeof(context));
 	P_char source = find_slip_player(context.source_pid);
@@ -71,39 +71,49 @@ static void slip_transfer_completion(P_char callback_actor, bool committed,
 			send_to_char(
 				"The Slip transfer did not commit; the item remains with you.\r\n",
 				source);
-		else if (callback_actor)
-			send_to_char(
-				"The Slip transfer did not commit; the item was not moved.\r\n",
-				callback_actor);
 		logit(LOG_FILE,
 		      "item_movement: command=slip outcome=not_committed source_pid=%u "
 		      "victim_pid=%u uid=%llu error=%u",
 		      context.source_pid, context.victim_pid, (unsigned long long)context.item_uid,
 		      error_code);
-		return;
+		return true;
+	}
+	if (result.root_item_uid != context.item_uid)
+	{
+		persistence_alert(AVATAR, "item_movement", "slip_publish", "none", "none",
+				  "result_identity_mismatch",
+				  "expected_uid=%llu result_uid=%llu source_pid=%u",
+				  (unsigned long long)context.item_uid,
+				  (unsigned long long)result.root_item_uid, context.source_pid);
+		return false;
 	}
 
 	P_char victim = find_slip_player(context.victim_pid);
 	P_obj object = find_slip_item(context.item_uid);
-	if (!source || !victim || !object || source->in_room != context.source_room ||
-	    victim->in_room != context.victim_room)
+	if (!source || !victim || !object)
 	{
 		persistence_alert(AVATAR, "item_movement", "slip_publish", "none", "none",
 				  "stale_live_topology",
 				  "item_uid=%llu source_pid=%u victim_pid=%u",
 				  (unsigned long long)context.item_uid, context.source_pid,
 				  context.victim_pid);
-		return;
+		return false;
 	}
+	if (source->in_room != context.source_room || victim->in_room != context.victim_room)
+		logit(LOG_FILE,
+		      "item_movement: command=slip recovering committed publication after room "
+		      "change source_pid=%u victim_pid=%u source_room=%d->%d victim_room=%d->%d",
+		      context.source_pid, context.victim_pid, context.source_room, source->in_room,
+		      context.victim_room, victim->in_room);
 	const bool already_published = OBJ_CARRIED_BY(object, victim);
 	if (already_published)
-		return;
+		return true;
 	if (IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && !IS_TRUSTED(victim))
 	{
 		persistence_alert(AVATAR, "item_movement", "slip_publish", "none", "none",
 				  "recipient_policy_refused", "item_uid=%llu victim_pid=%u",
 				  (unsigned long long)context.item_uid, context.victim_pid);
-		return;
+		return false;
 	}
 	if (!OBJ_CARRIED_BY(object, victim))
 	{
@@ -112,14 +122,14 @@ static void slip_transfer_completion(P_char callback_actor, bool committed,
 			persistence_alert(AVATAR, "item_movement", "slip_publish", "none", "none",
 					  "source_not_carrying", "item_uid=%llu source_pid=%u",
 					  (unsigned long long)context.item_uid, context.source_pid);
-			return;
+			return false;
 		}
 		if (total_carried_weight(victim) + GET_OBJ_WEIGHT(object) > CAN_CARRY_W(victim))
 		{
 			persistence_alert(AVATAR, "item_movement", "slip_publish", "none", "none",
 					  "destination_at_capacity", "item_uid=%llu victim_pid=%u",
 					  (unsigned long long)context.item_uid, context.victim_pid);
-			return;
+			return false;
 		}
 		if (source && OBJ_CARRIED_BY(object, source))
 			obj_from_char(object);
@@ -131,10 +141,8 @@ static void slip_transfer_completion(P_char callback_actor, bool committed,
 		persistence_alert(AVATAR, "item_movement", "slip_publish", "none", "none",
 				  "publication_refused", "item_uid=%llu victim_pid=%u",
 				  (unsigned long long)context.item_uid, context.victim_pid);
-		return;
+		return false;
 	}
-	if (already_published)
-		return;
 
 	act("You successfuly slip $p into $N's pockets!", 0, source, object, victim, TO_CHAR);
 	if (IS_TRUSTED(source) && GET_LEVEL(source) < OVERLORD)
@@ -151,7 +159,9 @@ static void slip_transfer_completion(P_char callback_actor, bool committed,
 	writeCharacter(victim, 1, victim->in_room);
 	char_light(source);
 	room_light(source->in_room, REAL);
-	nq_action_check(source, victim, NULL);
+	if (source->in_room == victim->in_room)
+		nq_action_check(source, victim, NULL);
+	return true;
 }
 
 void do_slip(P_char ch, char *argument, int /*cmd*/)
@@ -313,9 +323,9 @@ void do_slip(P_char ch, char *argument, int /*cmd*/)
 				item_movement_reject reject = item_movement_reject::none;
 				if (!item_movement_transaction_submit(
 					    ch, obj, NULL, source, destination,
-					    item_transfer_reason::slip, GET_PID(ch),
-					    slip_transfer_completion, &context, sizeof(context),
-					    NULL, &reject))
+					    item_transfer_reason::slip, GET_PID(ch), NULL, &context,
+					    sizeof(context), NULL, &reject,
+					    slip_transfer_publication))
 				{
 					send_to_char(
 						"The Slip transfer could not start; the item remains with you.\r\n",
