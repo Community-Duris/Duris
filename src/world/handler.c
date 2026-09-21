@@ -31,6 +31,7 @@
 #include "economy/collector_catalog_cache.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_death_restitution_locker.h"
 #include "player/pet_restore_runtime.h"
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
@@ -2784,12 +2785,17 @@ void obj_to_room(P_obj object, int room)
 	if (IS_SET(object->extra_flags, ITEM_TRANSIENT))
 	{
 		/* Transient objects needed to be destroyed when dropped */
-		// in lockers, this can cause problems with the resort events, so make
-		// the DECAY event slightly delayed...
-		if (!IS_ROOM(room, ROOM_LOCKER))
-			set_obj_affected(object, 0, TAG_OBJ_DECAY, 0);
-		else
-			set_obj_affected(object, 2, TAG_OBJ_DECAY, 0);
+		// A marked restitution bag is durable while it remains in a locker. It
+		// keeps ITEM_TRANSIENT, so taking it out and dropping it still arms the
+		// ordinary immediate decay path.
+		if (!(IS_ROOM(room, ROOM_LOCKER) && player_death_restitution_is_locker_bag(object)))
+		{
+			if (!IS_ROOM(room, ROOM_LOCKER))
+				set_obj_affected(object, 0, TAG_OBJ_DECAY, 0);
+			else
+				// Other transient locker objects retain the legacy resort grace.
+				set_obj_affected(object, 2, TAG_OBJ_DECAY, 0);
+		}
 	}
 	if (world[room].contents && (world[room].contents->R_num == object->R_num))
 	{

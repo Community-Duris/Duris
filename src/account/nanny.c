@@ -57,6 +57,7 @@
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_locker.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
@@ -1980,6 +1981,7 @@ void enter_game(P_desc d)
 
 	do_look(ch, 0, -4);
 	account_bound_reward_on_login(ch);
+	player_death_restitution_locker_notice(ch);
 
 	if (has_innate(ch, INNATE_SUMMON_BOOK))
 	{
