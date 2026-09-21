@@ -463,6 +463,14 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
 	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
+	const bool world_corpse_raise_pet =
+		corpse_raise_pet && payload.from_owner.type == item_owner_type::room &&
+		payload.from_owner.id && payload.from_owner.id <= INT32_MAX &&
+		!payload.from_owner.context_id && payload.to_owner.type == item_owner_type::pet &&
+		payload.to_owner.id && payload.to_owner.context_id &&
+		payload.to_owner.context_id <= INT32_MAX && payload.multi_root &&
+		!payload.target_root_item_uid && !payload.target_parent_item_uid &&
+		static_cast<uint64_t>(payload.reason_id) == payload.to_owner.id;
 	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
 	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
 	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
@@ -496,14 +504,16 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		return false;
 	const bool corpse_context_required = payload_version >=
 						     ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
-					     (corpse_create || corpse_loot || corpse_raise_pet);
+					     (corpse_create || corpse_loot ||
+					      (corpse_raise_pet && !world_corpse_raise_pet));
 	if (corpse_context_required != payload.corpse.present ||
 	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
 			       payload.to_owner.type != item_owner_type::corpse)) ||
 	    (corpse_loot && (payload.from_owner.type != item_owner_type::corpse ||
 			     payload.to_owner.type != item_owner_type::player)) ||
-	    (corpse_raise_pet && (payload.from_owner.type != item_owner_type::corpse ||
-				  payload.to_owner.type != item_owner_type::pet)))
+	    (corpse_raise_pet && !world_corpse_raise_pet &&
+	     (payload.from_owner.type != item_owner_type::corpse ||
+	      payload.to_owner.type != item_owner_type::pet)))
 		return false;
 	if (payload.corpse.present)
 	{

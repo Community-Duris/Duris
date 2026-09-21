@@ -7,7 +7,8 @@
 #include <cstdint>
 #include <string>
 
-constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 6;
+constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 7;
+constexpr uint16_t CORPSE_LIFECYCLE_WORLD_RAISE_PAYLOAD_VERSION = 7;
 constexpr uint16_t CORPSE_LIFECYCLE_NESTED_PAYLOAD_VERSION = 5;
 constexpr uint16_t CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION = 4;
 constexpr uint16_t CORPSE_LIFECYCLE_INTERMEDIATE_PAYLOAD_VERSION = 3;
@@ -36,6 +37,7 @@ enum class corpse_lifecycle_action : uint8_t
 	resurrect = 5,
 	raise_follower = 6,
 	release_nested = 7,
+	raise_world_follower = 8,
 };
 
 struct corpse_lifecycle_payload

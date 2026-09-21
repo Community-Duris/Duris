@@ -3620,6 +3620,71 @@ bool validate_corpse_release_items(P_obj corpse, const corpse_lifecycle_result &
 	return count == result.item_count;
 }
 
+bool collect_world_corpse_raise_items(P_obj item, const item_owner_identity &room_owner,
+				      uint64_t source_uid, uint64_t parent_uid, bool root,
+				      bool hostile, std::vector<uint64_t> *durable,
+				      std::vector<uint64_t> *discarded)
+{
+	if (!item || !item->obj_uid || !durable || !discarded)
+		return false;
+	item_ownership_runtime_entry runtime = {};
+	if (!item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
+	    !item_owner_identity_equal(runtime.owner, room_owner) ||
+	    runtime.root_item_uid != source_uid || runtime.parent_item_uid != parent_uid ||
+	    runtime.state != item_custody_state::active || runtime.vnum != OBJ_VNUM(item))
+		return false;
+	const bool destroy = root || hostile || GET_ITEM_TYPE(item) == ITEM_MONEY ||
+			     IS_SET(item->extra_flags, ITEM_TRANSIENT);
+	try
+	{
+		(destroy ? discarded : durable)->push_back(item->obj_uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (P_obj child = item->contains; child; child = child->next_content)
+		if (!collect_world_corpse_raise_items(child, room_owner, source_uid,
+						 item->obj_uid, false, hostile, durable, discarded))
+			return false;
+	return true;
+}
+
+bool collect_world_corpse_raise_items(P_obj corpse, int32_t room_vnum, bool hostile,
+				      std::vector<uint64_t> *durable,
+				      std::vector<uint64_t> *discarded,
+				      item_ownership_runtime_entry *root_runtime)
+{
+	if (!corpse || !corpse->obj_uid || !durable || !discarded || !root_runtime ||
+	    room_vnum <= 0)
+		return false;
+	durable->clear();
+	discarded->clear();
+	const item_owner_identity room = { item_owner_type::room,
+					   static_cast<uint64_t>(room_vnum), 0 };
+	if (!item_ownership_runtime_lookup(corpse->obj_uid, root_runtime) ||
+	    !item_owner_identity_equal(root_runtime->owner, room) ||
+	    root_runtime->root_item_uid != corpse->obj_uid || root_runtime->parent_item_uid ||
+	    root_runtime->state != item_custody_state::active)
+		return false;
+	if (!collect_world_corpse_raise_items(corpse, room, corpse->obj_uid, 0, true, hostile,
+					      durable, discarded))
+		return false;
+	std::sort(durable->begin(), durable->end());
+	std::sort(discarded->begin(), discarded->end());
+	return std::adjacent_find(durable->begin(), durable->end()) == durable->end() &&
+	       std::adjacent_find(discarded->begin(), discarded->end()) == discarded->end();
+}
+
+P_obj find_live_world_corpse(uint64_t source_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == source_uid && object->type == ITEM_CORPSE &&
+		    !IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE))
+			return object;
+	return nullptr;
+}
+
 void collect_corpse_transient_uids(P_obj container, std::vector<uint64_t> *uids)
 {
 	for (P_obj item = container ? container->contains : nullptr; item;
@@ -3683,7 +3748,11 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 {
 	if (committed && result.collector_catalog_changed)
 		collector_catalog_cache_invalidate();
-	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	const bool world_raise = payload.action == corpse_lifecycle_action::raise_world_follower;
+	const uint64_t key = world_raise ?
+				     (static_cast<uint64_t>(payload.owner_pid) << 32) |
+					     static_cast<uint64_t>(payload.save_id) :
+				     item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	corpse_unmaking_context unmaking_context = {};
 	const auto unmaking = corpse_unmakings.find(key);
 	const bool unmade = unmaking != corpse_unmakings.end();
@@ -3994,7 +4063,12 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 {
 	if (committed && result.collector_catalog_changed)
 		collector_catalog_cache_invalidate();
-	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	const bool world_raise =
+		payload.action == corpse_lifecycle_action::raise_world_follower;
+	const uint64_t key = world_raise ?
+				     (static_cast<uint64_t>(payload.owner_pid) << 32) |
+					     static_cast<uint64_t>(payload.save_id) :
+				     item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	auto found = corpse_raises.find(key);
 	if (found == corpse_raises.end())
 		return;
@@ -4007,19 +4081,37 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	}
 	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
 	P_char follower = find_live_character(context.follower, context.follower_runtime_id);
-	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	P_obj corpse = world_raise ? find_live_world_corpse(key) :
+				    find_live_corpse(payload.owner_pid, payload.save_id);
 	int corpse_room = NOWHERE;
-	const bool source_items_valid = corpse && validate_corpse_release_items(corpse, result);
+	std::vector<uint64_t> durable_uids;
+	std::vector<uint64_t> discarded_uids;
+	item_ownership_runtime_entry root_runtime = {};
+	const bool source_items_valid =
+		corpse &&
+		(world_raise ?
+			 collect_world_corpse_raise_items(corpse, payload.room_vnum, context.hostile,
+						  &durable_uids, &discarded_uids,
+						  &root_runtime) &&
+				 durable_uids.size() == result.item_count &&
+				 discarded_uids.size() == result.discarded_item_count :
+			 validate_corpse_release_items(corpse, result));
 	const bool source_valid = source_items_valid && corpse_release_room(corpse, &corpse_room) &&
 				  world[corpse_room].number == payload.room_vnum;
 	std::vector<uint64_t> transient_uids;
-	if (corpse)
+	if (corpse && !world_raise)
 		collect_corpse_transient_uids(corpse, &transient_uids);
-	if (!item_ownership_runtime_apply_corpse_discarded(payload.owner_pid, payload.save_id,
-							   transient_uids, result) ||
-	    !item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
-						       payload.destination_player_pid,
-						       payload.pet_uid, result))
+	const bool runtime_applied =
+		world_raise ?
+			item_ownership_runtime_apply_world_corpse_raise(
+				key, payload.room_vnum, payload.destination_player_pid, payload.pet_uid,
+				durable_uids, discarded_uids, result) :
+			item_ownership_runtime_apply_corpse_discarded(
+				payload.owner_pid, payload.save_id, transient_uids, result) &&
+				item_ownership_runtime_apply_corpse_raise(
+					payload.owner_pid, payload.save_id,
+					payload.destination_player_pid, payload.pet_uid, result);
+	if (!runtime_applied)
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
 					       payload.pet_uid != 0, "raise_runtime_recovery");
@@ -4038,7 +4130,7 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 					       payload.pet_uid != 0, "raise_live_topology_stale");
 		return;
 	}
-	if (!publish_corpse_wallet(caster, result))
+	if (!world_raise && !publish_corpse_wallet(caster, result))
 	{
 		recover_committed_corpse_raise(key, corpse, follower, source_items_valid, false,
 					       payload.pet_uid != 0, "raise_wallet_invalid");
@@ -4047,9 +4139,9 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	corpse_raises.erase(found);
 	corpse_release_side_effect_guard guard;
 	complete_corpse_raise_after_commit(caster, follower, corpse, context.kind, context.level,
-					   context.variant, context.message, payload.pet_uid,
-					   context.hostile, payload.pet_charm_duration,
-					   payload.pet_restore_state);
+				   context.variant, context.message, payload.pet_uid,
+				   context.hostile, payload.pet_charm_duration,
+				   payload.pet_restore_state, world_raise && context.hostile);
 }
 
 P_obj find_resurrection_item(P_char target, const item_owner_identity &owner)
@@ -4515,22 +4607,114 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 				    corpse_raise_kind kind, int level, int variant, bool globe,
 				    const char *message)
 {
-	// Legacy NPC corpse raises have no transaction that transfers their item graph
-	// into pet custody. Refuse an equipped corpse before the old caster route can
-	// grant even hidden or non-take objects to the player. Money keeps its
-	// historical follower path.
+	// Persisted NPC corpses belong to the room-item domain rather than the player
+	// corpse catalog. Move that complete graph through its own atomic room-to-pet
+	// boundary before publishing the follower. A hostile awakening has no durable
+	// pet identity, so its graph is retired in the same transaction instead.
 	if (durable_corpse_lifecycle_enabled() && corpse && caster && follower && IS_PC(caster) &&
 	    IS_NPC(follower) && corpse->type == ITEM_CORPSE &&
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 	{
+		bool has_durable_contents = false;
 		for (P_obj item = corpse->contains; item; item = item->next_content)
 		{
 			if (GET_ITEM_TYPE(item) == ITEM_MONEY)
 				continue;
-			send_to_char("The equipped corpse cannot be raised safely.\r\n", caster);
+			has_durable_contents = true;
+			break;
+		}
+		// A legacy, unsaved empty corpse has no graph to transfer. Keep its old
+		// synchronous path, but never let an unowned equipped graph bypass custody.
+		if (!corpse->obj_uid)
+		{
+			if (!has_durable_contents)
+				return false;
+			send_to_char("The corpse cannot be raised safely.\r\n", caster);
 			extract_char(follower);
 			return true;
 		}
+		int corpse_room = NOWHERE;
+		const bool hostile =
+			(kind == corpse_raise_kind::titan || kind == corpse_raise_kind::avatar) ?
+				!number(0, 12) :
+			(kind == corpse_raise_kind::dracolich) ? !globe && !number(0, 12) :
+			(kind == corpse_raise_kind::greater_dracolich) ?
+				!globe && !number(0, 9) :
+				false;
+		std::vector<uint64_t> durable_uids;
+		std::vector<uint64_t> discarded_uids;
+		item_ownership_runtime_entry root_runtime = {};
+		const item_owner_identity player = { item_owner_type::player,
+						     static_cast<uint64_t>(GET_PID(caster)), 0 };
+		uint64_t player_revision = 0;
+		uint64_t room_revision = 0;
+		if (GET_PID(caster) <= 0 || follower->in_room != NOWHERE ||
+		    !corpse_release_room(corpse, &corpse_room) || corpse_room != caster->in_room ||
+		    !collect_world_corpse_raise_items(corpse, world[corpse_room].number, hostile,
+						      &durable_uids, &discarded_uids,
+						      &root_runtime) ||
+		    !item_ownership_runtime_owner_revision(root_runtime.owner, &room_revision) ||
+		    room_revision != root_runtime.owner_revision ||
+		    !item_ownership_runtime_owner_revision(player, &player_revision))
+		{
+			send_to_char("The corpse cannot be raised safely.\r\n", caster);
+			extract_char(follower);
+			return true;
+		}
+		const uint64_t key = corpse->obj_uid;
+		if (corpse_raises.contains(key))
+		{
+			send_to_char("That corpse is already caught in a persistence change.\r\n",
+				     caster);
+			extract_char(follower);
+			return true;
+		}
+		try
+		{
+			corpse_raises.emplace(key,
+					      corpse_raise_context{ caster, caster->runtime_id, follower,
+								    follower->runtime_id, kind, level,
+								    variant, hostile, message });
+		}
+		catch (const std::bad_alloc &)
+		{
+			send_to_char("The corpse cannot be raised safely.\r\n", caster);
+			extract_char(follower);
+			return true;
+		}
+		corpse_lifecycle_payload payload = {};
+		payload.action = corpse_lifecycle_action::raise_world_follower;
+		payload.owner_pid = static_cast<uint32_t>(key >> 32);
+		payload.save_id = static_cast<uint32_t>(key);
+		payload.expected_room_revision = room_revision;
+		payload.destination_player_pid = static_cast<uint32_t>(GET_PID(caster));
+		payload.expected_player_revision = player_revision;
+		payload.room_vnum = world[corpse_room].number;
+		// World-item corpse identity is its obj_uid. The owner-name field remains
+		// mandatory for the shared command codec but is not an authority key here.
+		payload.owner_name = "world corpse";
+		if (!hostile)
+		{
+			payload.pet_uid = key;
+			payload.pet_mob_vnum = GET_VNUM(follower);
+			payload.pet_hit = GET_HIT(follower);
+			payload.pet_max_hit = GET_MAX_HIT(follower);
+			payload.pet_mana = GET_MANA(follower);
+			payload.pet_max_mana = GET_MAX_MANA(follower);
+			payload.pet_vitality = GET_VITALITY(follower);
+			payload.pet_max_vitality = GET_MAX_VITALITY(follower);
+			if (!prepare_corpse_raise_pet_state(corpse, caster, follower, kind, globe,
+							    &payload.pet_charm_duration,
+							    &payload.pet_restore_state))
+			{
+				fail_corpse_raise(key, "raise_pet_state_invalid");
+				return true;
+			}
+		}
+		if (!corpse_lifecycle_transaction_raise_world_follower(
+			    payload, root_runtime.item_revision, publish_corpse_raise))
+			fail_corpse_raise(key, "raise_submission_failed");
+		return true;
 	}
 	if (!durable_corpse_lifecycle_enabled() || !corpse || !caster || !follower ||
 	    IS_NPC(caster) || !caster->only.pc || !IS_NPC(follower) ||

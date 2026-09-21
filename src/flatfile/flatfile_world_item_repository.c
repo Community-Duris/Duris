@@ -5,6 +5,7 @@
 #include "player/player_snapshot_codec.h"
 #include "economy/coin_transfer_command.h"
 #include "economy/collector_command.h"
+#include "core/defines.h"
 
 #include <algorithm>
 #include <array>
@@ -1858,6 +1859,173 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 	if (!encode_catalog(catalog, &encoded))
 		return flatfile_world_item_result::invalid;
 	mutation->after_image = { catalog_filename, std::move(encoded) };
+	mutation->catalog_revision = catalog.revision;
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload, flatfile_world_corpse_raise_mutation *mutation,
+	std::string *error)
+{
+	const uint64_t source_uid = (static_cast<uint64_t>(payload.owner_pid) << 32) |
+				    static_cast<uint64_t>(payload.save_id);
+	const bool hostile = payload.pet_uid == 0;
+	if (root.empty() || !lock.matches(root) || !mutation ||
+	    payload.action != corpse_lifecycle_action::raise_world_follower || !source_uid ||
+	    !payload.expected_corpse_revision || !payload.expected_room_revision ||
+	    !payload.destination_player_pid || !payload.expected_player_revision ||
+	    payload.room_vnum <= 0 || (!hostile && payload.pet_uid != source_uid))
+		return flatfile_world_item_result::invalid;
+	*mutation = {};
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	auto selected = catalog.saved_items.end();
+	size_t selected_root = 0;
+	for (auto saved = catalog.saved_items.begin(); saved != catalog.saved_items.end(); ++saved)
+	{
+		for (size_t index = 0; index < saved->items.size(); ++index)
+		{
+			if (saved->items[index].object_uid != source_uid)
+				continue;
+			if (selected != catalog.saved_items.end() ||
+			    saved->items[index].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				return flatfile_world_item_result::conflict;
+			selected = saved;
+			selected_root = index;
+		}
+	}
+	if (selected == catalog.saved_items.end())
+		return flatfile_world_item_result::not_found;
+	if (selected->room_vnum != payload.room_vnum ||
+	    selected->items[selected_root].type != ITEM_CORPSE ||
+	    selected->items.size() > ITEM_TRANSFER_MAX_ITEMS || catalog.revision == UINT64_MAX)
+		return flatfile_world_item_result::conflict;
+
+	std::vector<bool> discarded;
+	std::vector<int32_t> pet_indexes;
+	try
+	{
+		discarded.resize(selected->items.size());
+		pet_indexes.assign(selected->items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		mutation->expected_items.reserve(selected->items.size());
+		mutation->pet_items.reserve(selected->items.size());
+		mutation->durable_uids.reserve(selected->items.size());
+		mutation->discarded_uids.reserve(selected->items.size());
+		for (size_t index = 0; index < selected->items.size(); ++index)
+		{
+			const auto &item = selected->items[index];
+			uint64_t parent_uid = 0;
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				if (item.parent_index < 0 ||
+				    static_cast<size_t>(item.parent_index) >= selected->items.size())
+					return flatfile_world_item_result::invalid;
+				parent_uid = selected->items[static_cast<size_t>(item.parent_index)]
+						     .object_uid;
+			}
+			bool reaches_source = index == selected_root;
+			int32_t parent_index = item.parent_index;
+			for (size_t depth = 0;
+			     !reaches_source && parent_index != PLAYER_SNAPSHOT_NO_PARENT;
+			     ++depth)
+			{
+				if (depth >= selected->items.size() || parent_index < 0 ||
+				    static_cast<size_t>(parent_index) >= selected->items.size())
+					return flatfile_world_item_result::invalid;
+				const size_t parent = static_cast<size_t>(parent_index);
+				reaches_source = parent == selected_root;
+				parent_index = selected->items[parent].parent_index;
+			}
+			if (!reaches_source)
+				return flatfile_world_item_result::conflict;
+			mutation->expected_items.push_back(
+				{ item.object_uid, item.vnum, source_uid, parent_uid });
+			discarded[index] = hostile || index == selected_root || item.type == ITEM_MONEY ||
+					   (item.extra_flags & ITEM_TRANSIENT) != 0;
+			if ((item.extra_flags & ITEM_ARTIFACT) != 0)
+				return flatfile_world_item_result::conflict;
+			(discarded[index] ? mutation->discarded_uids : mutation->durable_uids)
+				.push_back(item.object_uid);
+		}
+		for (size_t index = 0; index < selected->items.size(); ++index)
+		{
+			if (discarded[index])
+				continue;
+			int32_t parent = selected->items[index].parent_index;
+			for (size_t depth = 0; parent != PLAYER_SNAPSHOT_NO_PARENT; ++depth)
+			{
+				if (depth >= selected->items.size() || parent < 0 ||
+				    static_cast<size_t>(parent) >= selected->items.size())
+					return flatfile_world_item_result::invalid;
+				const size_t parent_index = static_cast<size_t>(parent);
+				if (discarded[parent_index] && parent_index != selected_root)
+					return flatfile_world_item_result::conflict;
+				parent = selected->items[parent_index].parent_index;
+			}
+			pet_indexes[index] = static_cast<int32_t>(mutation->pet_items.size());
+			auto item = selected->items[index];
+			item.equipment_slot = -1;
+			mutation->pet_items.push_back(std::move(item));
+		}
+		for (size_t index = 0; index < selected->items.size(); ++index)
+		{
+			if (discarded[index])
+				continue;
+			auto &pet_item = mutation->pet_items[static_cast<size_t>(pet_indexes[index])];
+			const int32_t parent = selected->items[index].parent_index;
+			pet_item.parent_index =
+				parent == PLAYER_SNAPSHOT_NO_PARENT ||
+					discarded[static_cast<size_t>(parent)] ?
+					PLAYER_SNAPSHOT_NO_PARENT :
+					pet_indexes[static_cast<size_t>(parent)];
+		}
+		for (size_t skipped = 0; skipped < selected->items.size(); ++skipped)
+		{
+			if (!discarded[skipped] || skipped == selected_root)
+				continue;
+			int32_t parent = selected->items[skipped].parent_index;
+			for (size_t depth = 0; parent != PLAYER_SNAPSHOT_NO_PARENT; ++depth)
+			{
+				if (depth >= selected->items.size() || parent < 0 ||
+				    static_cast<size_t>(parent) >= selected->items.size())
+					return flatfile_world_item_result::invalid;
+				const size_t parent_index = static_cast<size_t>(parent);
+				if (!discarded[parent_index])
+				{
+					auto &pet_parent = mutation->pet_items[static_cast<size_t>(
+						pet_indexes[parent_index])];
+					const int64_t adjusted = static_cast<int64_t>(pet_parent.weight) -
+							 selected->items[skipped].weight;
+					if (adjusted < INT32_MIN || adjusted > INT32_MAX)
+						return flatfile_world_item_result::conflict;
+					pet_parent.weight = static_cast<int32_t>(adjusted);
+				}
+				parent = selected->items[parent_index].parent_index;
+			}
+		}
+		std::sort(mutation->expected_items.begin(), mutation->expected_items.end(),
+			  [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
+		std::sort(mutation->durable_uids.begin(), mutation->durable_uids.end());
+		std::sort(mutation->discarded_uids.begin(), mutation->discarded_uids.end());
+		catalog.saved_items.erase(selected);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_world_item_result::io_error;
+	}
+	if (mutation->discarded_uids.empty() ||
+	    mutation->discarded_uids.front() > source_uid ||
+	    !std::binary_search(mutation->discarded_uids.begin(),
+				mutation->discarded_uids.end(), source_uid))
+		return flatfile_world_item_result::invalid;
+	++catalog.revision;
+	mutation->after_image.filename = catalog_filename;
+	if (!encode_catalog(catalog, &mutation->after_image.bytes))
+		return flatfile_world_item_result::invalid;
 	mutation->catalog_revision = catalog.revision;
 	return flatfile_world_item_result::ok;
 }

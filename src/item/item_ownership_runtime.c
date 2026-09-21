@@ -1105,6 +1105,152 @@ bool item_ownership_runtime_apply_corpse_discarded(uint32_t owner_pid, uint32_t 
 	return true;
 }
 
+bool item_ownership_runtime_apply_world_corpse_raise(
+	uint64_t source_uid, int32_t room_vnum, uint32_t player_pid, uint64_t pet_uid,
+	const std::vector<uint64_t> &durable_uids, const std::vector<uint64_t> &discarded_uids,
+	const corpse_lifecycle_result &result)
+{
+	const uint64_t result_source = (static_cast<uint64_t>(result.owner_pid) << 32) |
+				       static_cast<uint64_t>(result.save_id);
+	if (!source_uid || source_uid != result_source || room_vnum <= 0 || !player_pid ||
+	    result.action != corpse_lifecycle_action::raise_world_follower ||
+	    result.corpse_revision || result.catalog_revision != result.corpse_owner_revision ||
+	    !result.corpse_owner_revision || result.room_owner_revision ||
+	    result.player_owner_revision || result.wallet_revision || result.bank_revision ||
+	    result.item_count != durable_uids.size() ||
+	    result.discarded_item_count != discarded_uids.size() ||
+	    !result.discarded_item_count ||
+	    (pet_uid ? (!result.pet_owner_revision || pet_uid != source_uid) :
+		       (result.pet_owner_revision || !durable_uids.empty())))
+		return false;
+	const item_owner_identity room = { item_owner_type::room,
+					   static_cast<uint64_t>(room_vnum), 0 };
+	const item_owner_identity pet = { item_owner_type::pet, pet_uid, player_pid };
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	std::unordered_set<uint64_t> durable;
+	std::unordered_set<uint64_t> discarded;
+	struct planned_entry
+	{
+		uint64_t uid = 0;
+		uint64_t root = 0;
+		uint64_t parent = 0;
+		uint64_t revision = 0;
+		bool destroy = false;
+	};
+	std::vector<planned_entry> planned;
+	size_t boundary_count = 0;
+	uint64_t durable_max = 0;
+	uint64_t discarded_max = 0;
+	try
+	{
+		durable.reserve(durable_uids.size());
+		discarded.reserve(discarded_uids.size());
+		planned.reserve(durable_uids.size() + discarded_uids.size());
+		for (uint64_t uid : durable_uids)
+			if (!uid || !durable.insert(uid).second)
+				return false;
+		for (uint64_t uid : discarded_uids)
+			if (!uid || durable.contains(uid) || !discarded.insert(uid).second)
+				return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!discarded.contains(source_uid))
+		return false;
+	for (const auto &[uid, entry] : entries)
+	{
+		if (!item_owner_identity_equal(entry.owner, room) || entry.root_item_uid != source_uid)
+			continue;
+		const bool destroy = discarded.contains(uid);
+		if ((!destroy && !durable.contains(uid)) || entry.state != item_custody_state::active ||
+		    entry.item_revision == UINT64_MAX)
+			return false;
+		const bool parent_selected = entry.parent_item_uid &&
+					     (durable.contains(entry.parent_item_uid) ||
+					      discarded.contains(entry.parent_item_uid));
+		if (uid == source_uid ? entry.parent_item_uid != 0 : !parent_selected)
+			return false;
+		const bool parent_destroyed = discarded.contains(entry.parent_item_uid);
+		const bool boundary = entry.parent_item_uid && parent_destroyed != destroy;
+		boundary_count += boundary ? 1 : 0;
+		uint64_t root = uid;
+		uint64_t parent = entry.parent_item_uid;
+		if (parent && (destroy ? discarded.contains(parent) : durable.contains(parent)))
+		{
+			root = parent;
+			for (size_t depth = 0; depth <= durable.size() + discarded.size(); ++depth)
+			{
+				const auto ancestor = entries.find(root);
+				if (ancestor == entries.end())
+					return false;
+				const uint64_t next = ancestor->second.parent_item_uid;
+				if (!next || !(destroy ? discarded.contains(next) : durable.contains(next)))
+					break;
+				root = next;
+				if (depth == durable.size() + discarded.size())
+					return false;
+			}
+		}
+		else
+			parent = 0;
+		const uint64_t revision = entry.item_revision + (boundary ? 2 : 1);
+		if (revision < entry.item_revision)
+			return false;
+		if (destroy)
+			discarded_max = std::max(discarded_max, revision);
+		else
+			durable_max = std::max(durable_max, revision);
+		planned.push_back({ uid, root, parent, revision, destroy });
+	}
+	if (planned.size() != durable.size() + discarded.size() ||
+	    durable_max != result.max_item_revision ||
+	    discarded_max != result.max_discarded_item_revision)
+		return false;
+	const uint64_t source_steps = boundary_count + 1 + (pet_uid ? 1 : 0);
+	if (result.corpse_owner_revision < source_steps)
+		return false;
+	const auto source_revision = owner_revisions.find(room);
+	const auto pet_revision = pet_uid ? owner_revisions.find(pet) : owner_revisions.end();
+	const auto destroy_revision = owner_revisions.find(destruction);
+	if ((source_revision == owner_revisions.end() ? 0 : source_revision->second) !=
+		    result.corpse_owner_revision - source_steps ||
+	    (pet_uid && (pet_revision == owner_revisions.end() ? 0 : pet_revision->second) !=
+			result.pet_owner_revision - 1) ||
+	    (destroy_revision != owner_revisions.end() &&
+	     destroy_revision->second != result.destruction_owner_revision - 1))
+		return false;
+	try
+	{
+		owner_revisions.reserve(owner_revisions.size() + 3);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (const planned_entry &change : planned)
+	{
+		auto found = entries.find(change.uid);
+		if (found == entries.end())
+			return false;
+		found->second.root_item_uid = change.root;
+		found->second.parent_item_uid = change.parent;
+		found->second.item_revision = change.revision;
+		found->second.owner = change.destroy ? destruction : pet;
+		found->second.owner_revision = change.destroy ?
+						 result.destruction_owner_revision :
+						 result.pet_owner_revision;
+		if (change.destroy)
+			found->second.state = item_custody_state::destroyed;
+	}
+	owner_revisions.insert_or_assign(room, result.corpse_owner_revision);
+	owner_revisions.insert_or_assign(destruction, result.destruction_owner_revision);
+	if (pet_uid)
+		owner_revisions.insert_or_assign(pet, result.pet_owner_revision);
+	return true;
+}
+
 void item_ownership_runtime_forget(uint64_t item_uid)
 {
 	if (item_uid)
