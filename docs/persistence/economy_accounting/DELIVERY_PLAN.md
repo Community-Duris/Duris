@@ -5,7 +5,20 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: frozen intent and guarded envelopes
+## Current increment: SQL storage and retained identity locks
+
+Based on [guarded-envelope PR #600](https://github.com/Community-Duris/Duris/pull/600)
+at `511d04f16b613a000a857af4293fcd8b2d3fb48a`, including foundation contract
+amendment `881663d68946bd80f72f720a2e5c368711023c3b`. Reuse the nine-table
+schema and transaction-borrowing identity helper from the preserved implementation.
+The provisional migration is 0031 because canonical 0030 is telemetry quarantine.
+See [SQL_STORAGE.md](SQL_STORAGE.md) for scope, required evidence and the remaining
+append/finalize, access-control and transaction qualification gates for #477.
+No gameplay accounting is activated. Storage registration and native schema/identity qualification now pass; the
+PR remains dependent on the earlier increments, and the remaining #477 gates
+are unchanged.
+
+## Prior increment: frozen intent and guarded envelopes
 
 Depends on [foundation PR #599](https://github.com/Community-Duris/Duris/pull/599)
 at `a63ae0d26c4060d21054a6056009b7ece8f8ef60`; review/merge in that order.
@@ -97,3 +110,5 @@ they do not qualify a successful boon reward. Before enabling reward routes or
 archiving those receipts, port and verify the already-preserved complete-result
 fix (`27222aea4`) rather than redesigning completion storage. Track this with
 #481 and the relevant storage/legacy-receipt integration.
+
+The focused boon prerequisite now has [PR #601](https://github.com/Community-Duris/Duris/pull/601); it remains an independent review/merge dependency for reward integration.

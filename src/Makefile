@@ -327,6 +327,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
+				 persistence/economic_accounting_repository.o \
 				 persistence/critical_command_repository.o \
 				 persistence/player_death_restitution_command.o \
 				 persistence/player_death_restitution_repository.o \
