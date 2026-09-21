@@ -19,6 +19,9 @@
 #include <cstring>
 #include <iostream>
 
+static bool supported_bank_pool = false;
+static bool bank_initialized_library = false;
+
 // These must remain unreachable for every unsupported envelope variant.
 extern "C" MYSQL *sql_pool_acquire()
 {
@@ -36,7 +39,8 @@ extern "C" MYSQL *sql_pool_replace_connection(MYSQL *)
 }
 extern "C" int __wrap_mysql_server_init(int, char **, char **)
 {
-	assert(false && "unsupported envelope initialized SQL library");
+	assert(supported_bank_pool);
+	bank_initialized_library = true;
 	return 1;
 }
 extern "C" decltype(mysql_thread_init()) __wrap_mysql_thread_init()
@@ -106,16 +110,20 @@ void check_rejected(const critical_command &command)
 	assert(transaction.outcome == critical_apply_outcome::retryable_failure);
 	assert(transaction.error_code == EPROTONOSUPPORT);
 	assert(result_code == 123 && mutated);
-	const auto pooled = critical_command_repository_apply_from_pool(command, nullptr);
-	assert(pooled.outcome == critical_apply_outcome::retryable_failure);
-	assert(pooled.error_code == EPROTONOSUPPORT);
-	// Only the direct schema-2 bank root now owns a SQL transaction. Its null
-	// connection check must still reject before SQL; every closed root retains
-	// the poison-pointer proof that the connection is never inspected.
+
 	const bool bank_root = command.schema_version ==
 				       CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 			       command.type == critical_command_type::account_bank &&
 			       critical_command_envelope_valid(command);
+	supported_bank_pool = bank_root;
+	const auto pooled = critical_command_repository_apply_from_pool(command, nullptr);
+	assert(pooled.outcome == critical_apply_outcome::retryable_failure);
+	assert(pooled.error_code == (bank_root ? EIO : EPROTONOSUPPORT));
+	if (bank_root)
+		assert(bank_initialized_library);
+	supported_bank_pool = false;
+	// Supported pooled banks reach SQL initialization; this fixture injects its
+	// failure. Unsupported paths never touch SQL. Direct roots reject nullptr.
 	auto *root_connection = bank_root ? nullptr : unusable_connection;
 	for (const auto &top_level :
 	     { critical_command_repository_apply(root_connection, command),
@@ -189,5 +197,5 @@ int main()
 	check_rejected(bank);
 
 	std::cout
-		<< "closed SQL helpers, pools and roots reject before connection access; typed bank roots reject null connections\n";
+		<< "closed SQL paths reject before access; typed bank pool reaches initialization and roots reject null connections\n";
 }

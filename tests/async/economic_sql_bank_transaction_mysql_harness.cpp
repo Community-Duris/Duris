@@ -36,14 +36,53 @@ extern "C" unsigned int __wrap_mysql_errno(MYSQL *connection)
 	return connection == lost_commit_connection ? 2013 : __real_mysql_errno(connection);
 }
 
+namespace
+{
+MYSQL *connect_fixture();
+bool pool_enabled = false;
+bool lose_next_pooled_commit = false;
+size_t pool_acquisitions = 0, pool_releases = 0, pool_replacements = 0;
+void close_pooled(MYSQL *connection)
+{
+	if (connection == lost_commit_connection)
+		lost_commit_connection = nullptr;
+	if (connection == lose_commit_reply)
+		lose_commit_reply = nullptr;
+	mysql_close(connection);
+}
+}
 extern "C" MYSQL *sql_pool_acquire(void)
 {
-	return nullptr;
+	if (!pool_enabled)
+		return nullptr;
+	++pool_acquisitions;
+	auto *connection = connect_fixture();
+	if (lose_next_pooled_commit)
+	{
+		lose_next_pooled_commit = false;
+		lose_commit_reply = connection;
+	}
+	return connection;
 }
-extern "C" void sql_pool_release(MYSQL *) {}
-extern "C" MYSQL *sql_pool_replace_connection(MYSQL *)
+extern "C" void sql_pool_release(MYSQL *connection)
 {
-	return nullptr;
+	if (!pool_enabled)
+		return;
+	if (connection)
+	{
+		assert(pool_enabled);
+		++pool_releases;
+		close_pooled(connection);
+	}
+}
+extern "C" MYSQL *sql_pool_replace_connection(MYSQL *connection)
+{
+	if (!pool_enabled)
+		return nullptr;
+	assert(connection);
+	++pool_replacements;
+	close_pooled(connection);
+	return connect_fixture();
 }
 
 namespace
@@ -319,6 +358,62 @@ int main()
 	       0);
 	assert(scalar(connection, "SELECT COUNT(*) FROM currency_ledger WHERE operation_id=" +
 					  literal(rejected.operation_id)) == 0);
+
+	// Exercise the production pooled entrypoint with disposable fixture leases.
+	// A worker owns each client lifecycle; the fixture observer stays independent.
+	auto pooled_apply = [&](const critical_command &command)
+	{
+		critical_apply_result result;
+		std::thread worker(
+			[&] {
+				result = critical_command_repository_apply_from_pool(command,
+										     nullptr);
+			});
+		worker.join();
+		return result;
+	};
+	auto same_receipt =
+		[](const critical_apply_result &left, const critical_apply_result &right)
+	{
+		assert(left.error_code == right.error_code &&
+		       left.failure_stage == right.failure_stage &&
+		       left.durable_revision == right.durable_revision &&
+		       left.result_size == right.result_size &&
+		       left.result_payload == right.result_payload);
+	};
+	pool_enabled = true;
+	const auto pooled_command = command_for(10);
+	const auto pooled_result = pooled_apply(pooled_command);
+	assert(pooled_result.outcome == critical_apply_outcome::applied);
+	const auto pooled_replayed = pooled_apply(pooled_command);
+	assert(pooled_replayed.outcome == critical_apply_outcome::already_applied);
+	same_receipt(pooled_result, pooled_replayed);
+	assert(pool_acquisitions == 2 && pool_releases == 2 && pool_replacements == 0);
+	assert(scalar(connection, wallet_sql) == 915);
+	assert(scalar(connection, "SELECT COUNT(*) FROM currency_ledger WHERE operation_id=" +
+					  literal(pooled_command.operation_id)) == 1);
+	assert(critical_command_repository_apply(connection, command_for(-10)).outcome ==
+	       critical_apply_outcome::applied);
+	const auto pooled_ambiguous = command_for(10);
+	lose_next_pooled_commit = true;
+	const auto pooled_reconciled = pooled_apply(pooled_ambiguous);
+	assert(pooled_reconciled.outcome == critical_apply_outcome::already_applied);
+	assert(pool_acquisitions == 3 && pool_releases == 3 && pool_replacements == 1 &&
+	       !lose_next_pooled_commit && !lose_commit_reply && !lost_commit_connection);
+	same_receipt(pooled_reconciled,
+		     critical_command_repository_reconcile(connection, pooled_ambiguous));
+	const auto pooled_ambiguous_replayed = pooled_apply(pooled_ambiguous);
+	assert(pooled_ambiguous_replayed.outcome == critical_apply_outcome::already_applied);
+	same_receipt(pooled_reconciled, pooled_ambiguous_replayed);
+	assert(scalar(connection, wallet_sql) == 915);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=" +
+			      literal(pooled_ambiguous.operation_id)) == 1);
+	assert(critical_command_repository_apply(connection, command_for(-10)).outcome ==
+	       critical_apply_outcome::applied);
+	pool_enabled = false;
+	assert(scalar(connection, wallet_sql) == 925);
+	puts("SQL pooled bank: apply, exact replay and replacement-connection commit reconciliation passed");
 
 	// The actual root owns receipt, domain writes, accounting, outbox and commit.
 	const auto root_command = command_for(10);
@@ -789,6 +884,17 @@ int main()
 			       result.result_size == original.result_size &&
 			       result.result_payload == original.result_payload);
 	}
+
+	pool_enabled = true;
+	const auto pooled_retired = pooled_apply(pooled_command);
+	const auto pooled_retired_ambiguous = pooled_apply(pooled_ambiguous);
+	assert(pooled_retired.outcome == critical_apply_outcome::already_applied &&
+	       pooled_retired_ambiguous.outcome == critical_apply_outcome::already_applied);
+	same_receipt(pooled_result, pooled_retired);
+	same_receipt(pooled_reconciled, pooled_retired_ambiguous);
+	assert(pool_acquisitions == 6 && pool_releases == 6 && pool_replacements == 1);
+	pool_enabled = false;
+	puts("SQL pooled bank: retained receipts survive authority retirement");
 
 	// A structurally valid coin stage cannot authenticate a retained bank receipt.
 	for (const auto &command : { root_command, root_rejection })

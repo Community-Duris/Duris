@@ -1,6 +1,6 @@
 # Economy accounting contract
 
-Status: **phased implementation; draft coverage, typed SQL bank repository execution,
+Status: **phased implementation; draft coverage, typed SQL bank repository execution and durable admission,
 no gameplay activation or release qualification**. Parent #474; partial delivery for #475 and #476. Source census
 baseline: `48c0aedd8e094eee37285111e46e735e4cf12320`.
 See [phased delivery and acceptance](economy_accounting/DELIVERY_PLAN.md).

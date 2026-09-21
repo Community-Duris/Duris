@@ -353,6 +353,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_accounting_types.o \
 				 economy/economic_accounting_plan.o \
 				 economy/economic_accounting_intent.o \
+				 economy/economic_command_admission.o \
 				 economy/economic_currency_adapter.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \

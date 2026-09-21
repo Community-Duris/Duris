@@ -5,7 +5,14 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: typed SQL bank root
+## Current increment: typed SQL bank admission and replay
+
+Based on [PR #603](https://github.com/Community-Duris/Duris/pull/603). Reuse the
+bank-only coordinator extension from preserved `a89fa8f18`, pair it with the SQL
+pool root, and retain default/flat-file refusal. See [BANK_ADMISSION.md](BANK_ADMISSION.md).
+Gameplay, baseline and activation remain pending.
+
+## Prior increment: typed SQL bank root
 
 Based on [SQL storage PR #602](https://github.com/Community-Duris/Duris/pull/602)
 plus independent [boon prerequisite #601](https://github.com/Community-Duris/Duris/pull/601).

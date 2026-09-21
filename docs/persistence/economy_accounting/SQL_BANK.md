@@ -4,6 +4,9 @@ Status: direct repository integration qualified locally on `codex/474-phase4-sql
 Based on SQL storage PR #602 plus independent full-boon-result prerequisite #601.
 Partial delivery for #476/#477/#480; no gameplay or baseline activation.
 
+The next increment connects SQL coordinator/pool admission; see
+[BANK_ADMISSION.md](BANK_ADMISSION.md). The boundaries below describe PR #603 itself.
+
 ## Scope and retained boundaries
 
 This increment reuses the preserved currency preparation, typed bank adapter and

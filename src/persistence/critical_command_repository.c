@@ -2235,7 +2235,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context)
 {
-	if (!critical_command_legacy_execution_supported(command))
+	if (!critical_command_legacy_execution_supported(command) &&
+	    !accounted_bank_envelope(command))
 		return { critical_apply_outcome::retryable_failure, 0, EPROTONOSUPPORT };
 
 	(void)context;

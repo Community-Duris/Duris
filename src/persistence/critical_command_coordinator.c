@@ -73,6 +73,7 @@ size_t admission_inflight_bytes = 0;
 std::vector<std::thread> workers;
 std::thread admission_worker;
 critical_apply_fn apply_callback = nullptr;
+critical_extension_validator_fn extension_validator_callback = nullptr;
 void *apply_context = nullptr;
 critical_drain_observer_fn drain_observer = nullptr;
 critical_coordinator_health health = {};
@@ -317,10 +318,19 @@ void retain_exhausted_retry_locked(const std::string &identity, operation_state 
 	++health.terminal_failures;
 }
 
+bool execution_supported(const critical_command &command)
+{
+	if (critical_command_valid(command))
+		return true;
+	return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	       critical_command_envelope_valid(command) && extension_validator_callback &&
+	       extension_validator_callback(command);
+}
+
 bool enqueue_replayed(critical_command command, void *context)
 {
 	std::vector<uint8_t> encoded;
-	if (!critical_command_valid(command) ||
+	if (!execution_supported(command) ||
 	    critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
 		return false;
 	const std::string identity = operation_key(command.operation_id);
@@ -811,7 +821,8 @@ void worker_main()
 bool critical_command_coordinator_init(const char *journal_directory_path, critical_apply_fn apply,
 				       void *context, unsigned int worker_count,
 				       critical_replay_observer_fn replay_observer,
-				       void *replay_context)
+				       void *replay_context,
+				       critical_extension_validator_fn extension_validator)
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
@@ -834,6 +845,7 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	health.accepting = true;
 	health.running = true;
 	apply_callback = apply;
+	extension_validator_callback = extension_validator;
 	apply_context = context;
 	stop_requested = false;
 	recovery_requested = false;
@@ -845,6 +857,7 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	    critical_command_journal_result::ok)
 	{
 		health = {};
+		extension_validator_callback = nullptr;
 		critical_command_journal_shutdown();
 		return false;
 	}
@@ -869,6 +882,7 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 		workers.clear();
 		admission_worker = {};
 		health = {};
+		extension_validator_callback = nullptr;
 		critical_command_journal_shutdown();
 		return false;
 	}
@@ -906,6 +920,7 @@ void critical_command_coordinator_shutdown(void)
 	admission_inflight_bytes = 0;
 	health = {};
 	apply_callback = nullptr;
+	extension_validator_callback = nullptr;
 	apply_context = nullptr;
 	recovery_requested = false;
 	uncertain_recovery_not_before_usec = 0;
@@ -919,9 +934,15 @@ critical_submit_result critical_command_coordinator_submit_internal(critical_com
 	const bool supplied_acceptance_time = command.accepted_at_usec != 0;
 	if (!supplied_acceptance_time)
 		command.accepted_at_usec = wall_now_usec();
-	if (!critical_command_normalize(&command))
+	// Frozen accounting commands are already canonical. Sorting after binding
+	// would silently change the immutable admission decision.
+	if (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ?
+		    !critical_command_envelope_valid(command) :
+		    !critical_command_normalize(&command))
 		return critical_submit_result::invalid;
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (!execution_supported(command))
+		return critical_submit_result::invalid;
 	if (!health.initialized || !health.accepting || stop_requested)
 		return critical_submit_result::unavailable;
 	const std::string identity = operation_key(command.operation_id);
