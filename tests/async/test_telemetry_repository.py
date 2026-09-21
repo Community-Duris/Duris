@@ -13,6 +13,7 @@ import copy
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import tempfile
@@ -28,6 +29,57 @@ ENUMS = {
     "reason": "telemetry_gap_reason", "backend": "telemetry_storage_backend",
 }
 PAYLOADS = {"session_lifecycle": "lifecycle", "session_checkpoint": "checkpoint", "coverage_gap": "gap"}
+
+
+def function_body(source: str, start: str, end: str) -> str:
+    return source[source.index(start) : source.index(end, source.index(start))]
+
+
+def mapped_columns(source: str) -> list[str]:
+    columns = []
+    for line in source.splitlines():
+        explicit = re.search(r'number\(values, "([a-z0-9_]+)"', line)
+        inferred = re.search(r'FIELD\(values, [^,]+, ([a-z0-9_]+)\)', line)
+        if explicit:
+            columns.append(explicit.group(1))
+        elif inferred:
+            columns.append(inferred.group(1))
+    return columns
+
+
+def migration_columns(name: str) -> list[str]:
+    migration = (ROOT / "migrations" / "immutable" / name).read_text()
+    return re.findall(r"ADD COLUMN ([a-z0-9_]+)", migration)
+
+
+def repository_mapping_contract() -> None:
+    repository = (ROOT / "src" / "telemetry" / "telemetry_repository.c").read_text()
+    encounter = function_body(repository, "void encounter_fields", "void combat_summary_fields")
+    combat = function_body(repository, "void combat_summary_fields", "fields counter_fields")
+    progression = function_body(
+        repository,
+        "case telemetry_record_kind::progression:",
+        "case telemetry_record_kind::encounter:",
+    )
+
+    progression_schema = migration_columns("0022_telemetry_progression.sql")
+    progression_mapped = mapped_columns(progression)
+    assert set(progression_schema).issubset(progression_mapped)
+    assert not set(column.removeprefix("progression_") for column in progression_schema).intersection(
+        progression_mapped
+    )
+
+    encounter_schema = migration_columns("0024_telemetry_encounters.sql")
+    encounter_mapped = mapped_columns(encounter)
+    assert encounter_mapped == encounter_schema
+    assert "start_monotonic_usec" not in encounter_mapped
+    assert "start_utc_usec" not in encounter_mapped
+    assert "quality_flags" not in encounter_mapped
+
+    combat_schema = migration_columns("0025_telemetry_combat_summaries.sql")
+    combat_mapped = mapped_columns(combat)
+    assert combat_mapped == combat_schema
+    assert "FIELD(values, summary" not in combat
 
 
 def assignments(value, target):
@@ -119,6 +171,7 @@ def main():
         parser.error("--sql-fixture requires TELEMETRY_REPOSITORY_DISPOSABLE=1; database reset is destructive")
     if os.environ.get("TELEMETRY_REPOSITORY_PORT", "3306") not in {"3306", "3307"}:
         parser.error("TELEMETRY_REPOSITORY_PORT must be 3306 or 3307 for the disposable fixtures")
+    repository_mapping_contract()
     compiler = shlex.split(os.environ.get("CXX", "g++"))
     output_root = ROOT / "bin/tests"
     output_root.mkdir(parents=True, exist_ok=True)
@@ -139,7 +192,9 @@ def main():
         print("SQL repository harness compile: PASS", flush=True)
         if args.sql_fixture:
             subprocess.run([str(sql), str(ROOT / "migrations/immutable/0014_telemetry_storage.sql"),
-                            str(ROOT / "migrations/immutable/0022_telemetry_progression.sql")],
+                            str(ROOT / "migrations/immutable/0022_telemetry_progression.sql"),
+                            str(ROOT / "migrations/immutable/0024_telemetry_encounters.sql"),
+                            str(ROOT / "migrations/immutable/0025_telemetry_combat_summaries.sql")],
                            check=True, timeout=120)
         else:
             print("SQL runtime: SKIPPED (use --sql-fixture with disposable fixture acknowledgement)")
