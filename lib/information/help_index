@@ -19779,7 +19779,9 @@ Syntax: extractlink <name> | extractlink all
 Greater God command (level 60). Removes ghost characters - link-dead PCs whose connection is
 truly gone or whose descriptor pointer has gone stale. Their state is
 saved as linkdead-rent before extraction. 'all' sweeps every ghost in
-the game.
+the game. Each attempt reports whether the character was extracted or
+retained. If the terminal save is not durable, the character remains in
+the game so incomplete state cannot overwrite or discard durable data.
 
 See also: SWITCH, RETURN
 ===========================================================================

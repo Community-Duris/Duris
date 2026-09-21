@@ -13684,13 +13684,59 @@ void do_account(P_char ch, char *arg, int /*cmd*/)
  * Usage: extractlink <name> - extract specific ghost character
  *        extractlink all    - extract all ghost characters
  */
+static bool extractlink_attempt(P_char ch, P_char vict)
+{
+	char victim_name[MAX_INPUT_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	const bool dangling_descriptor = vict->desc && !is_desc_valid(vict->desc);
+	const char *name = GET_NAME(vict);
+
+	snprintf(victim_name, sizeof(victim_name), "%s", name ? name : "<unnamed>");
+	snprintf(buf, sizeof(buf), "Attempting ghost extraction: %s (%s).\r\n", victim_name,
+		 dangling_descriptor ? "invalid descriptor" : "linkdead");
+	send_to_char(buf, ch);
+
+	/* A pointer outside descriptor_list is never safe to retain or dereference. */
+	if (dangling_descriptor)
+		vict->desc = NULL;
+
+	if (!persistence_save_character_terminal(vict, RENT_LINKDEAD))
+	{
+		snprintf(buf, sizeof(buf),
+			 "Retained ghost %s: terminal save was not durable, so no extraction "
+			 "was performed. Resolve the persistence failure and retry.\r\n",
+			 victim_name);
+		send_to_char(buf, ch);
+		wizlog(GET_LEVEL(ch),
+		       "%s could not extract ghost character %s: terminal save was not "
+		       "durable; character retained",
+		       GET_NAME(ch), victim_name);
+		logit(LOG_WIZ,
+		      "%s could not extract ghost character %s: terminal save was not "
+		      "durable; character retained",
+		      GET_NAME(ch), victim_name);
+		return false;
+	}
+
+	extract_char_after_terminal_save(vict);
+	wizlog(GET_LEVEL(ch), "%s extracted ghost character %s", GET_NAME(ch), victim_name);
+	logit(LOG_WIZ, "%s extracted ghost character %s", GET_NAME(ch), victim_name);
+	snprintf(buf, sizeof(buf), "Extracted ghost: %s.\r\n", victim_name);
+	send_to_char(buf, ch);
+	return true;
+}
+
 void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict, next_vict;
 	char name[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
-	int count = 0;
-	int is_ghost;
+	int matches = 0;
+	int ghosts = 0;
+	int extracted = 0;
+	int retained = 0;
+	int connected = 0;
+	int excluded = 0;
 
 	if (!IS_TRUSTED(ch))
 		return;
@@ -13699,126 +13745,93 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 
 	if (!*name)
 	{
-		send_to_char("Usage: extractlink <name> - extract specific ghost character\r\n",
+		send_to_char("Usage:\r\n", ch);
+		send_to_char(
+			"  extractlink <name>  Save and extract a matching disconnected player\r\n",
+			ch);
+		send_to_char("  extractlink all     Save and extract every disconnected player\r\n",
 			     ch);
-		send_to_char("       extractlink all    - extract all ghost characters\r\n", ch);
-		send_to_char("Detects both linkdead and dangling pointer ghosts.\r\n", ch);
+		send_to_char("A character is retained when its terminal save is not durable.\r\n",
+			     ch);
+		send_to_char(
+			"Detects both linkdead characters and invalid descriptor pointers.\r\n",
+			ch);
 		return;
 	}
 
-	if (!strcasecmp(name, "all"))
+	const bool extract_all = !strcasecmp(name, "all");
+	for (vict = character_list; vict; vict = next_vict)
 	{
-		/* Extract all ghost PCs */
-		for (vict = character_list; vict; vict = next_vict)
+		next_vict = vict->next;
+
+		if (IS_NPC(vict))
+			continue;
+		if (!extract_all && !isname(name, GET_NAME(vict)))
+			continue;
+		if (!extract_all)
+			matches++;
+
+		if (vict == ch)
 		{
-			next_vict = vict->next;
-
-			if (IS_NPC(vict))
-				continue;
-
-			/* Skip if this is the command issuer */
-			if (vict == ch)
-				continue;
-
-			/* Check if ghost: no desc, or desc not in descriptor_list (dangling pointer) */
-			is_ghost = !vict->desc || !is_desc_valid(vict->desc);
-
-			if (!is_ghost)
-				continue;
-
-			snprintf(buf, MAX_STRING_LENGTH, "Extracting ghost: %s (%s)\r\n",
-				 GET_NAME(vict), vict->desc ? "dangling ptr" : "linkdead");
-			send_to_char(buf, ch);
-
-			wizlog(GET_LEVEL(ch), "%s extracted ghost character %s", GET_NAME(ch),
-			       GET_NAME(vict));
-			logit(LOG_WIZ, "%s extracted ghost character %s", GET_NAME(ch),
-			      GET_NAME(vict));
-
-			/* Clear dangling pointer before save/extract */
-			if (vict->desc && !is_desc_valid(vict->desc))
-				vict->desc = NULL;
-
-			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
-			if (!saved)
+			if (!extract_all)
 			{
-				send_to_char(
-					"Failed to save ghost character before extraction.\r\n",
-					ch);
-				continue;
+				excluded++;
+				send_to_char("Cannot extract yourself with extractlink.\r\n", ch);
 			}
-			extract_char_after_terminal_save(vict);
-			count++;
+			continue;
 		}
 
-		snprintf(buf, MAX_STRING_LENGTH, "Extracted %d ghost character%s.\r\n", count,
-			 count == 1 ? "" : "s");
-		send_to_char(buf, ch);
-	}
-	else
-	{
-		/* Extract specific ghost character by name */
-		for (vict = character_list; vict; vict = next_vict)
+		const bool is_ghost = !vict->desc || !is_desc_valid(vict->desc);
+		if (!is_ghost)
 		{
-			next_vict = vict->next;
-
-			if (IS_NPC(vict))
-				continue;
-
-			/* Skip if this is the command issuer */
-			if (vict == ch)
-				continue;
-
-			if (!isname(name, GET_NAME(vict)))
-				continue;
-
-			/* Check if ghost: no desc, or desc not in descriptor_list (dangling pointer) */
-			is_ghost = !vict->desc || !is_desc_valid(vict->desc);
-
-			if (!is_ghost)
+			if (!extract_all)
 			{
+				connected++;
 				snprintf(buf, MAX_STRING_LENGTH,
-					 "Skipping %s - has valid connection.\r\n", GET_NAME(vict));
+					 "Cannot extract %s: character has a valid connection.\r\n",
+					 GET_NAME(vict));
 				send_to_char(buf, ch);
-				continue;
 			}
-
-			snprintf(buf, MAX_STRING_LENGTH, "Extracting ghost: %s (%s)\r\n",
-				 GET_NAME(vict), vict->desc ? "dangling ptr" : "linkdead");
-			send_to_char(buf, ch);
-
-			wizlog(GET_LEVEL(ch), "%s extracted ghost character %s", GET_NAME(ch),
-			       GET_NAME(vict));
-			logit(LOG_WIZ, "%s extracted ghost character %s", GET_NAME(ch),
-			      GET_NAME(vict));
-
-			/* Clear dangling pointer before save/extract */
-			if (vict->desc && !is_desc_valid(vict->desc))
-				vict->desc = NULL;
-
-			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
-			if (!saved)
-			{
-				send_to_char(
-					"Failed to save ghost character before extraction.\r\n",
-					ch);
-				continue;
-			}
-			extract_char_after_terminal_save(vict);
-			count++;
+			continue;
 		}
 
-		if (count == 0)
-		{
-			send_to_char("No ghost character by that name found.\r\n", ch);
-		}
+		ghosts++;
+		if (extractlink_attempt(ch, vict))
+			extracted++;
+		else
+			retained++;
+	}
+
+	if (extract_all)
+	{
+		if (ghosts == 0)
+			send_to_char("extractlink all complete: no ghost characters found.\r\n",
+				     ch);
 		else
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Extracted %d ghost character%s.\r\n",
-				 count, count == 1 ? "" : "s");
+			snprintf(buf, sizeof(buf),
+				 "extractlink all complete: %d ghost%s found; %d extracted; %d "
+				 "retained after save failure.\r\n",
+				 ghosts, ghosts == 1 ? "" : "s", extracted, retained);
 			send_to_char(buf, ch);
 		}
+		return;
 	}
+
+	if (matches == 0)
+	{
+		snprintf(buf, sizeof(buf), "No player character matching '%s' was found.\r\n",
+			 name);
+		send_to_char(buf, ch);
+		return;
+	}
+
+	snprintf(buf, sizeof(buf),
+		 "extractlink result: %d match%s; %d ghost%s found; %d extracted; %d "
+		 "retained after save failure; %d connected; %d excluded.\r\n",
+		 matches, matches == 1 ? "" : "es", ghosts, ghosts == 1 ? "" : "s", extracted,
+		 retained, connected, excluded);
+	send_to_char(buf, ch);
 }
 
 /*
