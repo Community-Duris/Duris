@@ -348,6 +348,8 @@ OBJS =  $(SHIP_OBJS) \
 				 world/epic_transaction.o \
 				 economy/currency_command.o \
 				 economy/coin_transfer_command.o \
+				 economy/economic_accounting_types.o \
+				 economy/economic_accounting_plan.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \
 				 economy/auction_transaction.o \
