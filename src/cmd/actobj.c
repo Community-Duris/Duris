@@ -7732,6 +7732,15 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 	{
 		return FALSE;
 	}
+	// A creation grant may still be detached while its ownership transaction is
+	// in flight.  Do not let a caller emit a wear message or pass that object to
+	// obj_from_char()/equip_char() until publication has linked it to this actor.
+	if (!OBJ_CARRIED_BY(obj_object, ch))
+	{
+		if (showit)
+			send_to_char("You do not have that item in your inventory yet.\r\n", ch);
+		return FALSE;
+	}
 	if (!can_equip_soulbound_item(ch, obj_object, showit))
 		return FALSE;
 
