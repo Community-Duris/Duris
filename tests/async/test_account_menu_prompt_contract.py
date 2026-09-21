@@ -64,9 +64,11 @@ ok &= check(
     and "atoi(" not in select_char,
 )
 ok &= check(
-    "race-switch feedback uses the configured timer",
-    select_char.count("+ racewarSwitchTimer) - current_time") == 2
-    and "+ 3600) - current_time" not in select_char,
+    "race-switch feedback uses the shared configured policy",
+    "account_check_racewar_admission" in select_char
+    and "account_format_racewar_denial" in select_char
+    and "racewarSwitchTimer" not in select_char
+    and "+ 3600" not in select_char,
 )
 ok &= check(
     "character list preserves the negotiated terminal type",

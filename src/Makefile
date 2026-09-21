@@ -112,6 +112,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic/magic.o \
 				 world/achievements.o \
 				 account/account.o \
+				 account/racewar_admission.o \
 				 account/password_hash.o \
 				 account/password_async.o \
 				 account/account_recovery.o \

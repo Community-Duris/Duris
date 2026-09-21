@@ -167,6 +167,40 @@ void ensure_pconly_pool(void)
 	}
 }
 
+static void release_preentry_character(P_desc d)
+{
+	if (!d || !d->character)
+		return;
+	P_char character = d->character;
+	item_creation_grant_cancel_batch_before_entry(character);
+	d->character = NULL;
+	character->desc = NULL;
+	free_char(character);
+}
+
+static bool account_creation_side_allowed(P_desc d)
+{
+#ifdef USE_ACCOUNT
+	if (!d || !d->account || !d->character)
+		return true;
+	const account_racewar_admission admission = account_check_racewar_admission(
+		d, GET_RACEWAR(d->character), false, IS_TRUSTED(d->character));
+	if (admission.allowed)
+		return true;
+
+	char buf[512];
+	account_format_racewar_denial(&admission, buf, sizeof(buf));
+	SEND_TO_Q(buf, d);
+	release_preentry_character(d);
+	STATE(d) = CON_DISPLAY_ACCT_MENU;
+	display_account_menu(d, NULL);
+	return false;
+#else
+	(void)d;
+	return true;
+#endif
+}
+
 void swapstat(P_desc d, char *arg);
 void select_swapstat(P_desc d, char *arg);
 void swapstats(P_char ch, int stat1, int stat2);
@@ -3697,6 +3731,8 @@ void select_class(P_desc d, char *arg)
 		GET_RACEWAR(d->character) = RACEWAR_UNDEAD;
 	else if (IS_HARPY(d->character))
 		GET_RACEWAR(d->character) = RACEWAR_NEUTRAL;
+	if (!account_creation_side_allowed(d))
+		return;
 
 	/* pass through here, they don't get an alignment d->characterchoice. */
 
@@ -3838,6 +3874,8 @@ void select_alignment(P_desc d, char *arg)
 		GET_RACEWAR(d->character) = RACEWAR_UNDEAD;
 	else if (IS_HARPY(d->character))
 		GET_RACEWAR(d->character) = RACEWAR_NEUTRAL;
+	if (!account_creation_side_allowed(d))
+		return;
 
 	/* does this race get to choose a hometown ? */
 	home = find_hometown(GET_RACE(d->character), false);
@@ -5115,7 +5153,19 @@ void nanny(P_desc d, char *arg)
 #ifdef USE_ACCOUNT
 		if (d->character)
 		{
-			// New character entering the game for the first time
+			account_racewar_admission admission = {};
+			if (!account_commit_character_admission(d, d->character, false, &admission))
+			{
+				char buf[512];
+				account_format_racewar_denial(&admission, buf, sizeof(buf));
+				SEND_TO_Q(buf, d);
+				release_preentry_character(d);
+				STATE(d) = CON_ACCT_SELECT_CHAR;
+				display_character_list(d);
+				break;
+			}
+
+			// New character entering the game for the first time.
 			echo_on(d);
 			STATE(d) = CON_PLAYING;
 			enter_game(d);
