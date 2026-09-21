@@ -6,6 +6,7 @@
 #include <mysql/mysql.h>
 
 constexpr size_t CRITICAL_COMMAND_RESULT_MAX_BYTES = 4096;
+static_assert(CRITICAL_COMMAND_RESULT_MAX_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 constexpr size_t CRITICAL_OUTBOX_PAYLOAD_MAX_BYTES = 65535;
 
 critical_apply_result critical_command_repository_apply(MYSQL *connection,
