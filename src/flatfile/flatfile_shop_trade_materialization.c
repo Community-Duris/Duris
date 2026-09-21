@@ -442,6 +442,33 @@ bool payload_items_match(const shop_trade_payload &payload,
 bool payload_items_match(const item_transfer_payload &payload,
 			 const std::vector<player_item_snapshot> &items)
 {
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		if (items.empty() || items.front().object_uid != payload.selected_item_uid)
+			return false;
+		std::unordered_set<uint64_t> output_uids;
+		try
+		{
+			output_uids.reserve(items.size());
+			for (size_t index = 0; index < items.size(); ++index)
+			{
+				const auto &item = items[index];
+				if (!item.object_uid || item.vnum <= 0 ||
+				    !output_uids.insert(item.object_uid).second ||
+				    item.parent_index >= static_cast<int32_t>(index) ||
+				    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT)
+					return false;
+				for (size_t input = 0; input < payload.item_count; ++input)
+					if (payload.items[input].item_uid == item.object_uid)
+						return false;
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+		return true;
+	}
 	if (items.empty() || items.size() != payload.item_count ||
 	    items.front().object_uid != item_transfer_result_root(payload))
 		return false;

@@ -21,6 +21,7 @@
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -156,7 +157,8 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry) {
+			   [&](const auto &entry)
+			   {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -366,6 +368,141 @@ void retain_trusted_steal_publication(pending_movement &entry, uint64_t item_uid
 	logit(LOG_FILE,
 	      "item_movement: command=steal publication retained for retry uid=%llu actor_pid=%u",
 	      (unsigned long long)item_uid, entry.actor_pid);
+}
+
+bool object_belongs_to_actor(P_obj object, P_char actor)
+{
+	if (!object || !actor)
+		return false;
+	for (size_t depth = 0; object && depth <= ITEM_TRANSFER_MAX_ITEMS; ++depth)
+	{
+		if (OBJ_CARRIED_BY(object, actor) || OBJ_WORN_BY(object, actor))
+			return true;
+		if (!OBJ_INSIDE(object) || !object->loc.inside)
+			return false;
+		object = object->loc.inside;
+	}
+	return false;
+}
+
+bool craft_output_roots(const item_transfer_payload &payload,
+			std::vector<player_item_snapshot> *outputs, std::vector<uint64_t> *roots)
+{
+	if (!outputs || !roots)
+		return false;
+	outputs->clear();
+	roots->clear();
+	if (!payload.item_blob_size)
+		return true;
+	try
+	{
+		if (player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size,
+						     outputs) != player_snapshot_codec_result::ok ||
+		    outputs->empty())
+			return false;
+		for (const player_item_snapshot &output : *outputs)
+			if (output.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+				roots->push_back(output.object_uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return !roots->empty();
+}
+
+bool craft_live_ready(P_char actor, const pending_movement &entry)
+{
+	if (!actor)
+		return false;
+	std::vector<player_item_snapshot> outputs;
+	std::vector<uint64_t> output_roots;
+	if (!craft_output_roots(entry.payload, &outputs, &output_roots))
+		return false;
+	std::unordered_set<uint64_t> input_roots;
+	try
+	{
+		for (size_t index = 0; index < entry.payload.item_count; ++index)
+			if (entry.payload.items[index].item_uid ==
+			    entry.payload.items[index].root_item_uid)
+				input_roots.insert(entry.payload.items[index].item_uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (uint64_t uid : input_roots)
+	{
+		P_obj object = find_item(uid);
+		if (object && !object_belongs_to_actor(object, actor))
+			return false;
+	}
+	for (uint64_t uid : output_roots)
+	{
+		P_obj object = find_item(uid);
+		if (!object || (!OBJ_NOWHERE(object) && !object_belongs_to_actor(object, actor)))
+			return false;
+	}
+	return true;
+}
+
+bool publish_craft(const pending_movement &entry, P_char actor)
+{
+	if (!craft_live_ready(actor, entry))
+		return false;
+	std::vector<player_item_snapshot> outputs;
+	std::vector<uint64_t> output_roots;
+	if (!craft_output_roots(entry.payload, &outputs, &output_roots))
+		return false;
+	std::unordered_set<uint64_t> input_roots;
+	try
+	{
+		for (size_t index = 0; index < entry.payload.item_count; ++index)
+			if (entry.payload.items[index].item_uid ==
+			    entry.payload.items[index].root_item_uid)
+				input_roots.insert(entry.payload.items[index].item_uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (uint64_t uid : input_roots)
+	{
+		P_obj object = find_item(uid);
+		if (!object)
+			continue;
+		if (!object_belongs_to_actor(object, actor))
+			return false;
+		extract_obj(object);
+	}
+	for (uint64_t uid : output_roots)
+	{
+		P_obj object = find_item(uid);
+		if (!object)
+			return false;
+		if (OBJ_NOWHERE(object))
+			obj_to_char(object, actor);
+		if (!object_belongs_to_actor(object, actor))
+			return false;
+	}
+	return true;
+}
+
+void discard_craft_outputs(const pending_movement &entry)
+{
+	if (entry.payload.reason != item_transfer_reason::craft || !entry.payload.item_blob_size)
+		return;
+	std::vector<player_item_snapshot> outputs;
+	std::vector<uint64_t> roots;
+	if (!craft_output_roots(entry.payload, &outputs, &roots))
+		return;
+	for (uint64_t uid : roots)
+	{
+		P_obj object = find_item(uid);
+		if (object && OBJ_NOWHERE(object))
+			extract_obj(object);
+	}
 }
 
 item_owner_identity creation_grant_owner(const pending_creation_grant &request)
@@ -1133,6 +1270,20 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
+	const bool craft = entry.payload.reason == item_transfer_reason::craft;
+	if (committed && craft && !publish_craft(entry, actor))
+	{
+		if (!entry.publication_failed)
+		{
+			entry.publication_failed = true;
+			++health.stale_publications;
+			persistence_alert(AVATAR, "item_movement", "craft_publish", "none", "none",
+					  "stale_live_publication", "actor_pid=%u",
+					  entry.actor_pid);
+		}
+		account_health();
+		return;
+	}
 	if (committed && entry.payload.reason == item_transfer_reason::corpse_create &&
 	    entry.payload.collector.present)
 	{
@@ -1156,6 +1307,8 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			return;
 		}
 	}
+	if (!committed && craft)
+		discard_craft_outputs(entry);
 	if (entry.creation_batch)
 	{
 		if (committed)
@@ -1677,6 +1830,180 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		// The coordinator retained the original operation ID and fence because
 		// the journal rollback itself was uncertain. Keep the live pending entry
 		// and let the recovery/shutdown path resolve it; never mint a new ID.
+		return true;
+	}
+	if (submitted != critical_submit_result::accepted &&
+	    submitted != critical_submit_result::awaiting_durability &&
+	    submitted != critical_submit_result::attached)
+	{
+		pending.erase(key);
+		++health.submission_failures;
+		return reject_with(reject, coordinator_reject_reason(submitted));
+	}
+	++health.submitted;
+	account_health();
+	return true;
+}
+
+bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,
+					    P_obj const *outputs, size_t output_count,
+					    int64_t recipe_id,
+					    item_movement_completion_fn completion,
+					    const void *context, size_t context_size,
+					    item_movement_reject *reject)
+{
+	item_movement_reject discarded = item_movement_reject::none;
+	if (!reject)
+		reject = &discarded;
+	*reject = item_movement_reject::none;
+	const bool valid_actor = actor && IS_PC(actor) && GET_PID(actor) > 0;
+	if (!valid_actor || !inputs || !input_count || input_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    (output_count && (!outputs || output_count > ITEM_TRANSFER_MAX_ITEMS)) ||
+	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
+		return reject_with(reject, item_movement_reject::invalid_request);
+	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
+		return reject_with(reject, item_movement_reject::queue_saturated);
+	const item_owner_identity owner = { item_owner_type::player,
+					    static_cast<uint64_t>(GET_PID(actor)), 0 };
+	if (movement_conflicts(owner, owner))
+		return reject_with(reject, item_movement_reject::pending_conflict);
+	uint64_t owner_revision = 0;
+	if (!item_ownership_runtime_owner_revision(owner, &owner_revision))
+		return reject_with(reject, item_movement_reject::missing_owner_revision);
+	std::vector<item_transfer_entry> items;
+	std::vector<player_item_snapshot> output_snapshots;
+	std::unordered_set<uint64_t> input_uids;
+	std::unordered_set<uint64_t> output_uids;
+	try
+	{
+		items.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		output_snapshots.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		input_uids.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		output_uids.reserve(ITEM_TRANSFER_MAX_ITEMS);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return reject_with(reject, item_movement_reject::allocation_failure);
+	}
+	for (size_t index = 0; index < input_count; ++index)
+	{
+		P_obj root = inputs[index];
+		item_ownership_runtime_entry runtime = {};
+		if (!root || !root->obj_uid || !object_belongs_to_actor(root, actor) ||
+		    coordinator_item_fenced(root) || coin_movement_pending(root) ||
+		    !item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
+		    !item_owner_identity_equal(runtime.owner, owner) ||
+		    !input_uids.insert(root->obj_uid).second ||
+		    !capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
+			return reject_with(reject, item_movement_reject::topology_mismatch);
+	}
+	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
+		  { return left.item_uid < right.item_uid; });
+	if (items.empty() || items.size() > ITEM_TRANSFER_MAX_ITEMS ||
+	    std::adjacent_find(items.begin(), items.end(), [](const auto &left, const auto &right)
+			       { return left.item_uid == right.item_uid; }) != items.end())
+		return reject_with(reject, item_movement_reject::topology_mismatch);
+	for (size_t index = 0; index < output_count; ++index)
+	{
+		P_obj root = outputs[index];
+		if (!root || !root->obj_uid || !OBJ_NOWHERE(root) ||
+		    coordinator_item_fenced(root) || coin_movement_pending(root))
+			return reject_with(reject, item_movement_reject::invalid_request);
+		std::vector<player_item_snapshot> tree;
+		if (player_item_snapshot_tree_capture(root, &tree, nullptr) !=
+			    player_snapshot_capture_result::ok ||
+		    tree.empty() || tree.size() > ITEM_TRANSFER_MAX_ITEMS ||
+		    output_snapshots.size() > ITEM_TRANSFER_MAX_ITEMS - tree.size())
+			return reject_with(reject, item_movement_reject::snapshot_failure);
+		const size_t offset = output_snapshots.size();
+		for (player_item_snapshot &snapshot : tree)
+		{
+			if (!snapshot.object_uid ||
+			    !output_uids.insert(snapshot.object_uid).second ||
+			    input_uids.contains(snapshot.object_uid))
+				return reject_with(reject, item_movement_reject::topology_mismatch);
+			if (snapshot.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				snapshot.parent_index += static_cast<int32_t>(offset);
+			output_snapshots.push_back(std::move(snapshot));
+		}
+	}
+	if ((output_count && (output_snapshots.empty() ||
+			      output_snapshots.front().object_uid != outputs[0]->obj_uid)) ||
+	    (!output_count && !output_snapshots.empty()))
+		return reject_with(reject, item_movement_reject::snapshot_failure);
+	std::vector<uint8_t> item_blob;
+	if ((!output_snapshots.empty() &&
+	     (player_item_snapshot_list_encode(output_snapshots, &item_blob) !=
+		      player_snapshot_codec_result::ok ||
+	      item_blob.empty() || item_blob.size() > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES)) ||
+	    (output_count && item_blob.empty()))
+		return reject_with(reject, item_movement_reject::snapshot_failure);
+	item_transfer_payload payload = { .from_owner = owner,
+					  .to_owner = owner,
+					  .reason = item_transfer_reason::craft,
+					  .reason_id = recipe_id,
+					  .expected_from_revision = owner_revision,
+					  .expected_to_revision = owner_revision,
+					  .selected_item_uid = output_count ?
+								       outputs[0]->obj_uid :
+								       items[0].root_item_uid,
+					  .target_root_item_uid = 0,
+					  .target_parent_item_uid = 0,
+					  .expected_target_parent_revision = 0,
+					  .multi_root = true,
+					  .item_count = static_cast<uint16_t>(items.size()),
+					  .items = {},
+					  .item_blob_size = static_cast<uint32_t>(item_blob.size()),
+					  .item_blob = {},
+					  .corpse = {},
+					  .collector = {} };
+	for (size_t index = 0; index < items.size(); ++index)
+		payload.items[index] = items[index];
+	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
+	critical_operation_id operation_id = {};
+	critical_command command = {};
+	if (!critical_operation_id_generate(&operation_id) ||
+	    !item_transfer_command_build(&command, operation_id, payload,
+					 critical_source_site::command,
+					 critical_deadline_class::interactive))
+		return reject_with(reject, item_movement_reject::command_build_failure);
+	pending_movement entry = { .actor_pid = static_cast<uint32_t>(GET_PID(actor)),
+				   .actor_runtime_id = actor->runtime_id,
+				   .payload = payload,
+				   .requested_to_owner = owner,
+				   .requested_target_parent_uid = 0,
+				   .requested_reason = item_transfer_reason::craft,
+				   .requested_reason_id = recipe_id,
+				   .requested_corpse_uid = 0,
+				   .adopting = false,
+				   .adoption_only = false,
+				   .completion = completion,
+				   .context = {},
+				   .context_size = context_size,
+				   .completion_ready = false,
+				   .publication_failed = false,
+				   .creation_batch = false,
+				   .registry_applied = false,
+				   .collector_invalidated = false,
+				   .completed = {} };
+	if (context_size)
+		memcpy(entry.context.data(), context, context_size);
+	const std::string key = operation_key(operation_id);
+	try
+	{
+		pending.emplace(key, std::move(entry));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return reject_with(reject, item_movement_reject::allocation_failure);
+	}
+	const critical_submit_result submitted =
+		critical_command_coordinator_submit(std::move(command));
+	if (submitted == critical_submit_result::journal_uncertain)
+	{
+		++health.submission_failures;
+		*reject = coordinator_reject_reason(submitted);
+		account_health();
 		return true;
 	}
 	if (submitted != critical_submit_result::accepted &&

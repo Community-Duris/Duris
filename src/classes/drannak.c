@@ -28,6 +28,7 @@
 #include "world/map.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "item/item_movement_transaction.h"
 #include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -364,6 +365,25 @@ int vnum_in_inv(P_char ch, int vnum)
 }
 
 #define SHARDS_FOR_ORB 3
+
+namespace
+{
+void pvp_craft_completed(P_char pl, bool committed, const item_transfer_result &, unsigned int,
+			 const uint8_t *, size_t)
+{
+	if (committed)
+	{
+		send_to_char(
+			"The Harvester accepts the soul shards and gives you a greater orb.\r\n",
+			pl);
+		return;
+	}
+	send_to_char(
+		"The Harvester's craft could not be committed; your soul shards were preserved.\r\n",
+		pl);
+}
+}
+
 int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
@@ -415,18 +435,32 @@ int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			// Subtract SHARDS_FOR_ORB soul shards
+			std::vector<P_obj> shards;
+			for (P_obj object = pl->carrying; object && shards.size() < SHARDS_FOR_ORB;
+			     object = object->next_content)
+				if (OBJ_VNUM(object) == VOBJ_SOUL_SHARD)
+					shards.push_back(object);
+			if (shards.size() != SHARDS_FOR_ORB)
+				return TRUE;
+
 			orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);
-			vnum_from_inv(pl, VOBJ_SOUL_SHARD, SHARDS_FOR_ORB);
-			send_to_char("&+LThe Harvester&+L &+wsays '&nExcellent, mortal.'\n", pl);
-			send_to_char(
-				"&+LThe Harvester &ntakes the &+rshards&n from you and tightly grasps them with his hands. After a moment, a large grin appears across it's face.\r\n&n",
-				pl);
-			send_to_char(
-				"Moments later, &+LThe Harvester &nmakes a strange gesture about your body.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, orb, 0, TO_CHAR);
-			obj_to_char(orb, pl);
+			if (!orb)
+			{
+				send_to_char("The Harvester cannot produce that orb right now.\r\n",
+					     pl);
+				return TRUE;
+			}
+			item_movement_reject reject = item_movement_reject::none;
+			if (!item_movement_transaction_submit_craft(
+				    pl, shards.data(), shards.size(), &orb, 1,
+				    VOBJ_GREATER_ORB_MAGIC, pvp_craft_completed, nullptr, 0,
+				    &reject))
+			{
+				extract_obj(orb);
+				send_to_char(
+					"The Harvester's craft service is busy; your soul shards were preserved.\r\n",
+					pl);
+			}
 			return TRUE;
 		}
 	}

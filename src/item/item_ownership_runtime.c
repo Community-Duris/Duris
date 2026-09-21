@@ -1,6 +1,7 @@
 #include "item/item_ownership_runtime.h"
 
 #include "economy/collector_command.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <limits>
@@ -498,9 +499,94 @@ bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uin
 	return true;
 }
 
+bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
+					const item_transfer_result &result)
+{
+	if (payload.reason != item_transfer_reason::craft || !payload.item_count ||
+	    result.item_count != payload.item_count ||
+	    result.root_item_uid != payload.selected_item_uid ||
+	    result.from_owner_revision != result.to_owner_revision ||
+	    !item_owner_identity_equal(payload.from_owner, payload.to_owner))
+		return false;
+	std::vector<player_item_snapshot> outputs;
+	if (payload.item_blob_size &&
+	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &outputs) != player_snapshot_codec_result::ok)
+		return false;
+	if (!outputs.empty() && outputs[0].object_uid != payload.selected_item_uid)
+		return false;
+	std::vector<item_ownership_runtime_entry> changes;
+	try
+	{
+		changes.reserve(payload.item_count + outputs.size());
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &expected = payload.items[index];
+			auto found = entries.find(expected.item_uid);
+			uint64_t target_root = 0, target_parent = 0;
+			if (found == entries.end() ||
+			    found->second.item_revision != expected.expected_item_revision ||
+			    !item_owner_identity_equal(found->second.owner, payload.from_owner) ||
+			    found->second.state != item_custody_state::active ||
+			    !item_transfer_target_topology(payload, expected.item_uid, &target_root,
+							   &target_parent))
+				return false;
+			changes.push_back({ expected.item_uid,
+					    target_root,
+					    target_parent,
+					    { item_owner_type::destruction, 0, 0 },
+					    found->second.item_revision + 1,
+					    result.from_owner_revision,
+					    found->second.vnum,
+					    item_custody_state::destroyed });
+		}
+		std::unordered_set<uint64_t> output_uids;
+		output_uids.reserve(outputs.size());
+		for (size_t index = 0; index < outputs.size(); ++index)
+		{
+			const player_item_snapshot &output = outputs[index];
+			if (!output.object_uid || output.vnum <= 0 ||
+			    !output_uids.insert(output.object_uid).second ||
+			    entries.find(output.object_uid) != entries.end())
+				return false;
+			uint64_t root = output.object_uid;
+			int32_t parent = output.parent_index;
+			for (size_t depth = 0;
+			     parent != PLAYER_SNAPSHOT_NO_PARENT && depth < outputs.size(); ++depth)
+			{
+				if (parent < 0 || static_cast<size_t>(parent) >= outputs.size())
+					return false;
+				root = outputs[static_cast<size_t>(parent)].object_uid;
+				parent = outputs[static_cast<size_t>(parent)].parent_index;
+			}
+			if (parent != PLAYER_SNAPSHOT_NO_PARENT)
+				return false;
+			const uint64_t parent_uid =
+				output.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					0 :
+					outputs[static_cast<size_t>(output.parent_index)].object_uid;
+			changes.push_back({ output.object_uid, root, parent_uid, payload.to_owner,
+					    1, result.to_owner_revision, output.vnum,
+					    item_custody_state::active });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!item_ownership_runtime_hydrate_many_atomic(changes.data(), changes.size()))
+		return false;
+	return item_ownership_runtime_hydrate_owner(payload.from_owner,
+						    result.from_owner_revision) &&
+	       item_ownership_runtime_hydrate_owner({ item_owner_type::destruction, 0, 0 },
+						    result.from_owner_revision);
+}
+
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result)
 {
+	if (payload.reason == item_transfer_reason::craft)
+		return item_ownership_runtime_apply_craft(payload, result);
 	if (!payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    result.item_count != payload.item_count ||
 	    result.root_item_uid != item_transfer_result_root(payload))

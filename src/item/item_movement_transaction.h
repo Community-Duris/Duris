@@ -92,6 +92,14 @@ bool item_movement_transaction_submit_batch(
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context = NULL,
 	item_movement_reject *reject = NULL);
+// Atomically retire captured input trees and publish one or more detached output
+// trees through the existing critical-command coordinator.
+bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,
+					    P_obj const *outputs, size_t output_count,
+					    int64_t recipe_id,
+					    item_movement_completion_fn completion,
+					    const void *context, size_t context_size,
+					    item_movement_reject *reject = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
 /* As above, but invoke `completion` only after the ownership authority has
