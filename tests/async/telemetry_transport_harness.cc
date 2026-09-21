@@ -357,6 +357,14 @@ void row_and_age_flush_tests()
 	bind_and_init(config(8U, 2U, 2U, 100U));
 	CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
+	const auto admitted = telemetry_transport_health_copy();
+	CHECK(admitted.queue_capacity == 8U);
+	CHECK(admitted.producer.boot_id == 11U);
+	CHECK(admitted.producer.process_id == 22U);
+	CHECK(admitted.last_admitted_record_seq == 1U);
+	CHECK(admitted.last_committed_record_seq == 0U);
+	CHECK(admitted.queue_depth == 1U);
+	CHECK(admitted.advisory_lock_state == telemetry_advisory_lock_state::unavailable);
 	CHECK(telemetry_transport_pulse(150U).examined == 0U);
 	CHECK(telemetry_transport_enqueue(detail_record(2U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
@@ -364,6 +372,14 @@ void row_and_age_flush_tests()
 	CHECK(repository_state.calls == 1U);
 	CHECK(repository_state.observed[0].records[0].header.key.record_seq == 1U);
 	CHECK(repository_state.observed[0].records[1].header.key.record_seq == 2U);
+	const auto committed = telemetry_transport_health_copy();
+	CHECK(committed.last_admitted_record_seq == 2U);
+	CHECK(committed.last_committed_record_seq == 2U);
+	CHECK(committed.inflight_active == 0U);
+	CHECK(committed.inflight_first_record_seq == 0U);
+	CHECK(committed.inflight_last_record_seq == 0U);
+	CHECK(committed.inflight_record_kind_mask == 0U);
+	CHECK(committed.advisory_lock_state == telemetry_advisory_lock_state::held);
 	finish();
 
 	bind_and_init(config(8U, 2U, 4U, 10U));
@@ -446,6 +462,11 @@ void immutable_retry_and_ambiguous_tests()
 	clock_state.now.store(2000U, std::memory_order_release);
 	CHECK(telemetry_transport_pulse(2000U).examined == 2U);
 	CHECK(repository_state.calls == 2U);
+	const auto recovered = telemetry_transport_health_copy();
+	CHECK(recovered.state == telemetry_health_state::healthy);
+	CHECK(recovered.last_failure_class == telemetry_failure_class::transient_transaction);
+	CHECK(recovered.last_error_code == 1213U);
+	CHECK(recovered.last_success_monotonic_usec == 2000U);
 	CHECK(repository_state.observed[0].records[0].payload.interval.dimensions.zone_vnum == 5);
 	CHECK(repository_state.observed[1].records[0].payload.interval.dimensions.zone_vnum == 5);
 	CHECK(repository_state.observed[1].records[1].header.key.record_seq == 2U);
@@ -532,6 +553,7 @@ void validation_and_isolation_tests()
 	CHECK(telemetry_transport_health_copy().last_failure_class ==
 	      telemetry_failure_class::invalid_record);
 	CHECK(telemetry_transport_health_copy().last_failure_first_record_seq == 50U);
+	CHECK(telemetry_transport_health_copy().last_failure_monotonic_usec == 101U);
 	finish();
 }
 
@@ -606,6 +628,11 @@ void circuit_breaker_tests()
 	CHECK(permanent.last_failure_class == telemetry_failure_class::permanent_schema);
 	CHECK(permanent.last_error_code == 1054U);
 	CHECK(permanent.last_failure_first_record_seq == 90U);
+	CHECK(permanent.inflight_active == 1U);
+	CHECK(permanent.inflight_first_record_seq == 90U);
+	CHECK(permanent.inflight_last_record_seq == 90U);
+	CHECK(permanent.inflight_record_kind_mask ==
+	      (std::uint64_t{ 1U } << static_cast<std::uint8_t>(telemetry_record_kind::interval)));
 	CHECK(telemetry_transport_pulse(2'000'000U).outcome ==
 	      telemetry_transport_outcome::unavailable);
 	CHECK(repository_state.calls == 1U);

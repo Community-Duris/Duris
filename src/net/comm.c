@@ -1881,6 +1881,78 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 	ctx.prompts_us = prompts_us;
 }
 
+static void log_telemetry_health_event(const telemetry_health_event &event)
+{
+	if (event.kind == telemetry_health_event_kind::none)
+		return;
+	char record_kinds[160]{};
+	char reason_flags[160]{};
+	const std::uint32_t failure_reasons = TELEMETRY_HEALTH_REASON_WRITER_DEGRADED |
+					      TELEMETRY_HEALTH_REASON_CIRCUIT_OPEN |
+					      TELEMETRY_HEALTH_REASON_PERMANENT_FAILURE |
+					      TELEMETRY_HEALTH_REASON_RECOVERY_PENDING;
+	const std::uint64_t kind_mask = event.health.inflight_active != 0U ?
+						event.health.inflight_record_kind_mask :
+					(event.reason_mask & failure_reasons) != 0U ?
+						event.health.last_failure_record_kind_mask :
+						0U;
+	(void)telemetry_health_record_kind_mask_format(kind_mask, record_kinds,
+						       sizeof(record_kinds));
+	(void)telemetry_health_reason_mask_format(event.reason_mask, reason_flags,
+						  sizeof(reason_flags));
+	logit(LOG_STATUS,
+	      "telemetry_health event=%s severity=%s reasons=%u reason_flags=%s state=%s "
+	      "previous_state=%s "
+	      "backend=%s schema=%u producer=%llu:%llu last_admitted_seq=%llu "
+	      "last_committed_seq=%llu last_commit_monotonic_us=%llu last_commit_age_known=%u "
+	      "last_commit_age_us=%llu failure_class=%s error=%u "
+	      "last_failure_monotonic_us=%llu last_failure_age_known=%u last_failure_age_us=%llu "
+	      "admitted=%llu/%llu applied=%llu duplicate=%llu stale=%llu invalid=%llu conflict=%llu "
+	      "dropped=%llu/%llu queue=%llu/%u high_water=%llu inflight=%u "
+	      "inflight_seq=%llu-%llu record_kinds=%s retries=%u/%u backoff_us=%llu "
+	      "advisory_lock=%s gaps=%llu unclosed_tails=%llu quarantined=%llu "
+	      "affected_producer=%llu:%llu affected_seq=%llu-%llu duration_us=%llu",
+	      telemetry_health_event_kind_name(event.kind),
+	      telemetry_health_alert_severity_name(event.severity), event.reason_mask, reason_flags,
+	      telemetry_health_state_name(event.current_state),
+	      telemetry_health_state_name(event.previous_state),
+	      telemetry_health_backend_name(event.health.backend), event.health.schema_version,
+	      (unsigned long long)event.health.producer.boot_id,
+	      (unsigned long long)event.health.producer.process_id,
+	      (unsigned long long)event.health.last_admitted_record_seq,
+	      (unsigned long long)event.health.last_committed_record_seq,
+	      (unsigned long long)event.health.last_success_monotonic_usec,
+	      event.last_commit_age_available, (unsigned long long)event.last_commit_age_usec,
+	      telemetry_health_failure_class_name(event.health.last_failure_class),
+	      event.health.last_error_code,
+	      (unsigned long long)event.health.last_failure_monotonic_usec,
+	      event.last_failure_age_available, (unsigned long long)event.last_failure_age_usec,
+	      (unsigned long long)event.health.admitted_detail,
+	      (unsigned long long)event.health.admitted_control,
+	      (unsigned long long)event.health.applied_records,
+	      (unsigned long long)event.health.duplicate_records,
+	      (unsigned long long)event.health.stale_checkpoint_records,
+	      (unsigned long long)event.health.invalid_records,
+	      (unsigned long long)event.health.conflict_records,
+	      (unsigned long long)event.health.dropped_detail,
+	      (unsigned long long)event.health.dropped_control,
+	      (unsigned long long)event.health.queue_depth, event.health.queue_capacity,
+	      (unsigned long long)event.health.queue_high_water, event.health.inflight_active,
+	      (unsigned long long)event.health.inflight_first_record_seq,
+	      (unsigned long long)event.health.inflight_last_record_seq, record_kinds,
+	      event.health.inflight_retry_attempts, event.health.repository_retry_attempts,
+	      (unsigned long long)event.health.retry_backoff_remaining_usec,
+	      telemetry_health_advisory_lock_name(event.health.advisory_lock_state),
+	      (unsigned long long)event.health.sequence_gap_count,
+	      (unsigned long long)event.health.unclosed_tail_count,
+	      (unsigned long long)event.health.quarantined_records,
+	      (unsigned long long)event.affected_producer.boot_id,
+	      (unsigned long long)event.affected_producer.process_id,
+	      (unsigned long long)event.affected_first_record_seq,
+	      (unsigned long long)event.affected_last_record_seq,
+	      (unsigned long long)event.alert_duration_usec);
+}
+
 static void run_event_phase(game_loop_pulse_context &ctx)
 {
 	const uint64_t loop_tick = ctx.loop_tick;
@@ -1903,6 +1975,7 @@ static void run_event_phase(game_loop_pulse_context &ctx)
 		telemetry_request.slot = static_cast<std::uint16_t>(
 			static_cast<unsigned int>(pulse) % telemetry_slots);
 		(void)telemetry_runtime_pulse(telemetry_request);
+		log_telemetry_health_event(telemetry_runtime_health_observe(telemetry_pulse_now));
 	}
 
 	item_creation_grant_prepare_pulse();

@@ -171,6 +171,18 @@ last record sequence, record-kind bit mask, retry-attempt count, quarantine
 count, and circuit-open count. This makes a poison batch independently alertable
 without exposing subject or gameplay fields.
 
+The snapshot also publishes queue capacity, producer and admitted/committed
+sequence watermarks, the current in-flight range and record-kind mask, retry
+attempts/backoff, and a compact advisory-lock state. The game-loop-owned health
+monitor consumes only this cached snapshot. Outstanding work with no progress
+warns after two configured telemetry intervals and becomes critical after five
+minutes; permanent failures, open circuits, 80% queue pressure, and control
+drops are critical immediately. Identical alerts repeat no more often than every
+five minutes, but transitions are immediate. Recovery requires new progress and
+is emitted once with duration and the affected producer/sequence range. Trusted
+operators can inspect the same payload-free view with `world telemetry`; the
+structured events are written to `logs/log/status` as `telemetry_health` lines.
+
 ## Focused private binding
 
 `telemetry_transport_private.h` is not a production public header. It provides
