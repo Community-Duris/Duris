@@ -843,8 +843,17 @@ personal_summary service::summary_for_at(uint32_t season_id, uint32_t pid,
 			progress_for_zone_at(season_id, pid, zone, all_completed_ids);
 		if (zone_state.available && zone_state.completed == zone_state.total)
 			++summary.full_zones;
-		summary.zones.push_back(zone_state);
+		if (zone_state.completed > 0)
+			summary.zones.push_back(std::move(zone_state));
 	}
+	std::sort(summary.zones.begin(), summary.zones.end(), [](const auto &left, const auto &right)
+		  {
+			  if (left.completed != right.completed)
+				  return left.completed > right.completed;
+			  if (left.zone_name != right.zone_name)
+				  return left.zone_name < right.zone_name;
+			  return left.zone_number < right.zone_number;
+		  });
 	return summary;
 }
 
