@@ -909,8 +909,8 @@
       "integration_issue": 481,
       "owner": "primary / #481",
       "coverage": "legacy",
-      "classification": "Live table stakes, direct win/push credits. Push returns original stake; gross win distinguishes stake return from net issuance.",
-      "authority_boundary": "Live memory cash mutation",
+      "classification": "Stake admission, push return, win payout, loss/bust/fold and round reset. Push returns stake; a gross win separates returned stake from net issuance; a lost stake is a sink.",
+      "authority_boundary": "Live table stakes need durable table/round/outcome identity; interrupted-round disposition is not established.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -1639,8 +1639,8 @@
       "integration_issue": 485,
       "owner": "primary / #485",
       "coverage": "legacy",
-      "classification": "Rejected reward admission can become a separate SQL pending pickup claim.",
-      "authority_boundary": "insert_money_pickup bypass; flatfile claim fallback unavailable",
+      "classification": "Rejected ADD_MONEY admission can create a separate SQL pending pickup; preserve original reward or compensation source-operation attribution. Collection is claim-to-wallet transfer.",
+      "authority_boundary": "Prevent duplicate claims after failed or ambiguous admission; existing aggregate claim storage is allowed, flatfile fallback remains unavailable.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -1827,8 +1827,8 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Separate recipient credits before sender debit; not one conserving commit.",
-      "authority_boundary": "Needs compound authority and recipient set",
+      "classification": "Same-room visible PC or morph recipients, excluding sender; integer shares leave sender share and remainder. Current recipient credits precede sender debit.",
+      "authority_boundary": "Resolve recipient set and exact denominations; pair each accepted transfer with its debit under existing command boundaries, without assuming global bulk atomicity.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -2072,8 +2072,8 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Wallet debit before live floor pile creation/merge; needs atomic integration.",
-      "authority_boundary": "Separate debit completion and publication",
+      "classification": "Wallet-to-pile transfer, including actual pile UID creation or merge; neither issuance nor expense. Current debit precedes live publication.",
+      "authority_boundary": "Bind committed debit to pile effects and recoverable publication; allocation/publication failure must not strand value.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -2101,8 +2101,8 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "PC debit followed by live NPC credit.",
-      "authority_boundary": "Tracked versus untracked boundary unresolved",
+      "classification": "PC debit followed by live NPC credit; transfer only when the recipient holding has an admitted durable lifetime.",
+      "authority_boundary": "Transient NPC identity/admission remains unresolved; do not invent a treasury or relabel the credit as issuance.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -2549,8 +2549,8 @@
       "integration_issue": 483,
       "owner": "primary / #483",
       "coverage": "legacy",
-      "classification": "Live keeper credit/debit after durable commit; roaming keeper has finite cash.",
-      "authority_boundary": "Durable keeper lifetime/treasury boundary unresolved",
+      "classification": "Live keeper credit/debit after durable commit; roaming keepers have finite cash checks except VNUM 11005.",
+      "authority_boundary": "Durable keeper lifetime, reset, death/loot and recovery integration required; VNUM is not a durable holding identity.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -2985,8 +2985,8 @@
       "integration_issue": 485,
       "owner": "primary / #485",
       "coverage": "legacy",
-      "classification": "Trusted winning-bid removal returns seller item without bidder refund.",
-      "authority_boundary": "Existing policy disposition must be explicit; do not invent reimbursement",
+      "classification": "Trusted removal returns the seller item without bidder or seller money reimbursement on SQL and flatfile. Accepted escrow disposition must be recorded explicitly.",
+      "authority_boundary": "Preserve existing no-reimbursement behavior; qualify escrow disposal in the authority transaction rather than adding a refund.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -3165,8 +3165,8 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Consumes ingredients before durable output grant; preview objects excluded.",
-      "authority_boundary": "Recipe exchange not yet one atomic operation",
+      "classification": "Physical ingredients consumed before durable output grant; chaos-pouch variant bypasses low/high material consumption; tools/flux and applicable essence remain consumed, and generated material usage is recorded after grant submission. Preview objects are excluded.",
+      "authority_boundary": "Retain linked inputs, costs and rolled outcome; do not require nonexistent low/high material UIDs for chaos-pouch variants.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -3194,8 +3194,8 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Tool/input consumption and output grant.",
-      "authority_boundary": "Needs linked transformation plan",
+      "classification": "Tool/input consumption and output grant; chaos-pouch variant bypasses low/high material consumption; tools/flux and applicable essence remain consumed, and generated material usage is recorded after grant submission.",
+      "authority_boundary": "Link actual transformation inputs and output; qualify technical-failure recovery separately from intended gameplay outcomes.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
@@ -3252,8 +3252,8 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Ore/coin input plus salvage material consumption and output.",
-      "authority_boundary": "Compound economic recipe required",
+      "classification": "Consumes two matching salvage items and all counted ore before the random outcome; charges 50,000 copper when ore count is not exactly one. Intended failure yields no output; success grants upgraded material.",
+      "authority_boundary": "Persist and replay the selected outcome without reroll; destruction-only failure remains a valid economic operation, distinct from technical failure.",
       "current_support": "Existing behavior only; accounting integration unverified",
       "backends": {
         "mysql": {
