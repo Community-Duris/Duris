@@ -36,3 +36,6 @@ bash migrations/immutable/0031_economy_accounting.sh
 python3 tests/async/test_economic_accounting_schema_mysql.py -v
 
 bash tests/async/run_economic_accounting_authority_mysql.sh
+
+python3 tests/async/test_economic_sql_bank_transaction_flatfile.py
+python3 tests/async/run_economic_sql_bank_transaction_mysql.py

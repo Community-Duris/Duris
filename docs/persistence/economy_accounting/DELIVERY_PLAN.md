@@ -5,7 +5,16 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: SQL storage and retained identity locks
+## Current increment: typed SQL bank root
+
+Based on [SQL storage PR #602](https://github.com/Community-Duris/Duris/pull/602)
+plus independent [boon prerequisite #601](https://github.com/Community-Duris/Duris/pull/601).
+Reuse exact prepared currency mutations, typed bank effects and the existing SQL
+component; connect its direct root apply/replay checks while preserving current
+failure-stage metadata. See [SQL_BANK.md](SQL_BANK.md). Pooled/coordinator and
+flat-file schema-2 admission remain closed; no gameplay producer is enabled.
+
+## Prior increment: SQL storage and retained identity locks
 
 Based on [guarded-envelope PR #600](https://github.com/Community-Duris/Duris/pull/600)
 at `511d04f16b613a000a857af4293fcd8b2d3fb48a`, including foundation contract

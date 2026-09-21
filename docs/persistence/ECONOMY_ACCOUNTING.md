@@ -1,7 +1,7 @@
 # Economy accounting contract
 
-Status: **phased foundation; draft coverage, guarded wire support, no accounting
-execution or release qualification**. Parent #474; partial delivery for #475 and #476. Source census
+Status: **phased implementation; draft coverage, typed SQL bank repository execution,
+no gameplay activation or release qualification**. Parent #474; partial delivery for #475 and #476. Source census
 baseline: `48c0aedd8e094eee37285111e46e735e4cf12320`.
 See [phased delivery and acceptance](economy_accounting/DELIVERY_PLAN.md).
 

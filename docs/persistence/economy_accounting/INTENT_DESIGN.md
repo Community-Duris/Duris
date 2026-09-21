@@ -70,14 +70,17 @@ command intent, preventing a caller from substituting another facts record.
 `critical_command_envelope_valid` checks bounded wire structure for schemas 1/2.
 It deliberately does not interpret writer-specific fact bytes. The economy
 codec checks intent structure and command binding; typed adapters must still
-validate and authorize the facts. `critical_command_valid` remains legacy-only
-through `critical_command_legacy_execution_supported`. Thus current coordinator
-admission, journal replay and repository validity checks reject schema 2.
-All public command-bearing SQL mutation helpers also check the shared legacy
-predicate before touching their connection or output arguments. The pooled root
-entrypoint also rejects before client-library/thread initialization or pool
-acquisition. This predicate
-does not impose new timestamp requirements on existing compound child calls.
+validate and authorize the facts. The typed SQL bank increment is the first
+exception at direct `critical_command_repository_apply`/`reconcile`: structural
+schema-2 currency envelopes reach retained lookup, then new roots must pass the
+typed ATM adapter and transaction checks. See [SQL_BANK.md](SQL_BANK.md).
+
+`critical_command_valid` remains legacy-only through
+`critical_command_legacy_execution_supported`. Coordinator admission/journal
+replay, pooled root entry, flat-file execution and nested SQL mutation helpers
+still reject schema 2. The pooled entry rejects before client initialization or
+pool acquisition; nested entrypoints reject before touching connection/output.
+These gates do not impose new timestamp requirements on legacy compound children.
 No path strips an extension to invoke a legacy writer.
 
 When adding transactional accounting, replace these closed execution gates only
