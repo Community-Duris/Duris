@@ -145,10 +145,29 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
 
     def test_trusted_steal_preserves_account_and_soul_binding(self):
         command = source("cmd/actoth.c").read_text()
-        self.assertIn("static bool trusted_steal_binding_allows_recipient", command)
-        self.assertIn("account_bound_reward_owner(thief, object)", command)
-        self.assertIn("ITEM2_SOULBIND", command)
+        recipient = function_body(
+            command, r"static bool trusted_steal_binding_allows_recipient\("
+        )
+        self.assertIn("!account_bound_reward_owner(thief, object)", recipient)
+        self.assertIn("ITEM2_SOULBIND", recipient)
+        self.assertLess(
+            recipient.index("!account_bound_reward_owner"),
+            recipient.index("ITEM2_SOULBIND"),
+        )
+        self.assertIn("return false;", recipient)
         self.assertIn("trusted_steal_binding_allows_tree", command)
+
+    def test_binding_walk_rejects_cycles_and_oversized_trees(self):
+        command = source("cmd/actoth.c").read_text()
+        binding = function_body(
+            command, r"static bool trusted_steal_binding_allows_tree\("
+        )
+        self.assertIn("std::vector<P_obj> pending", binding)
+        self.assertIn("std::vector<P_obj> visited", binding)
+        self.assertIn("ITEM_TRANSFER_MAX_ITEMS", binding)
+        self.assertIn("std::find(visited.begin(), visited.end(), child)", binding)
+        self.assertIn("std::find(pending.begin(), pending.end(), child)", binding)
+        self.assertIn("catch (const std::bad_alloc &)", binding)
 
     def test_trusted_steal_has_no_random_caught_result_or_delay(self):
         command = source("cmd/actoth.c").read_text()

@@ -21,11 +21,14 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include <algorithm>
 #include <errno.h>
 #include <ctype.h>
+#include <new>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <vector>
 #include "world/achievements.h"
 #include "guild/assocs.h"
 #include "combat/damage.h"
@@ -3469,18 +3472,49 @@ static void trusted_steal_completion(P_char thief, bool committed, const item_tr
 
 static bool trusted_steal_binding_allows_recipient(P_char thief, P_obj object)
 {
-	if (IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND))
-		return account_bound_reward_owner(thief, object);
+	if (IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND) && !account_bound_reward_owner(thief, object))
+		return false;
 	return !IS_OBJ_STAT2(object, ITEM2_SOULBIND) || isname(GET_NAME(thief), object->name);
 }
 
 static bool trusted_steal_binding_allows_tree(P_char thief, P_obj object)
 {
-	if (!trusted_steal_binding_allows_recipient(thief, object))
+	if (!thief || !object)
 		return false;
-	for (P_obj child = object->contains; child; child = child->next_content)
-		if (!trusted_steal_binding_allows_tree(thief, child))
-			return false;
+
+	std::vector<P_obj> pending;
+	std::vector<P_obj> visited;
+	try
+	{
+		pending.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		visited.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		pending.push_back(object);
+		while (!pending.empty())
+		{
+			P_obj current = pending.back();
+			pending.pop_back();
+			if (!current || visited.size() >= ITEM_TRANSFER_MAX_ITEMS ||
+			    std::find(visited.begin(), visited.end(), current) != visited.end() ||
+			    !trusted_steal_binding_allows_recipient(thief, current))
+				return false;
+			visited.push_back(current);
+
+			for (P_obj child = current->contains; child; child = child->next_content)
+			{
+				if (visited.size() + pending.size() >= ITEM_TRANSFER_MAX_ITEMS ||
+				    std::find(visited.begin(), visited.end(), child) !=
+					    visited.end() ||
+				    std::find(pending.begin(), pending.end(), child) !=
+					    pending.end())
+					return false;
+				pending.push_back(child);
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 	return true;
 }
 
