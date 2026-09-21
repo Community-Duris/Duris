@@ -425,6 +425,7 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 				PLAYER_LOAD_DEGRADED_ITEMS :
 				PLAYER_LOAD_DEGRADED_PIPELINE;
 	reset_char(ch);
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP);
 	auto mark_degraded = [&](uint32_t components, const char *component, const char *outcome)
 	{
 		degraded = true;
@@ -851,6 +852,18 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		logit(LOG_DEBUG,
 		      "player_load_materialize: component=item_domains outcome=skipped_degraded pid=%d",
 		      result.pid);
+	if (result.missing_payload_rows)
+	{
+		// Custody rows without payload cannot be materialized, but the remaining
+		// graph is still useful evidence. Admit it read-only: ordinary saves stay
+		// fenced, while an otherwise clean load may use the immutable death
+		// disposition to quarantine the captured roots instead of overwriting
+		// authoritative custody with this partial projection.
+		const bool payload_gap_only = materialize_degraded_components == 0;
+		mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS, "items", "missing_payload_rows");
+		if (payload_gap_only)
+			SET_BIT(ch->runtime_flags, CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP);
+	}
 	// Resolve the saved HP difference after all base stats, affects and equipment
 	// have been materialized. enter_game() can then safely apply offline regen
 	// against initialized maxima; its later affect_total() handles expired affects.

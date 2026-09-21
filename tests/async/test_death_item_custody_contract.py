@@ -88,6 +88,14 @@ checks.append((
     die.index("persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
 checks.append((
+    "a load-time payload gap enters the disposition path without waiting for a transfer",
+    contains(die, "CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP") and
+    contains(die, "note_corpse_transfer_dispute(ch);") and
+    contains(die, '"load_item_payload_gap_disposition"') and
+    die.index("CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP") <
+    die.rindex("item_movement_transaction_player_busy(ch)")
+))
+checks.append((
     "a deferred death remains dead until recovery completes",
     contains(body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{"),
              "GET_HIT(ch) = 1;") and

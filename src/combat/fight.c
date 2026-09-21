@@ -3459,6 +3459,18 @@ void die(P_char ch, P_char killer)
 	{
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
 		if (!CHAR_IN_ARENA(ch) &&
+		    IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP))
+		{
+			// No live transfer is guaranteed to touch a payload-less custody row
+			// (it may be a separate root, or the only owned item). Route the death
+			// directly through the durable disposition instead of allowing an
+			// ordinary empty snapshot or waiting forever for a mismatch callback.
+			note_corpse_transfer_dispute(ch);
+			persistence_alert(AVATAR, "player_save", "death", "none", "none",
+					  "load_item_payload_gap_disposition",
+					  "extract_refused=1 recovery_scheduled=1");
+		}
+		if (!CHAR_IN_ARENA(ch) &&
 		    (item_movement_transaction_player_busy(ch) ||
 		     currency_transaction_player_busy(ch) || corpse_transfer_disputed(ch) ||
 		     (!IS_TRUSTED(ch) && death_wallet_pending(ch))))
