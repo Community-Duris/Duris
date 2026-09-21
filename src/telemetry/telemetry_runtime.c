@@ -220,6 +220,8 @@ struct runtime_state
 	bool shutdown_pending = false;
 	bool has_last_health = false;
 	telemetry_health_snapshot last_health{};
+	telemetry_health_monitor_config health_monitor_config{};
+	telemetry_health_monitor_state health_monitor{};
 	telemetry_producer_id producer{};
 	telemetry_config_snapshot config{};
 	telemetry_config_property_capture property_capture{};
@@ -1122,6 +1124,12 @@ telemetry_health_snapshot fallback_health() noexcept
 	health.schema_version = TELEMETRY_SCHEMA_VERSION;
 	health.state = telemetry_health_state::disabled;
 	health.backend = R.config.backend;
+	health.queue_capacity = QUEUE_CAPACITY;
+	health.producer = R.producer;
+	health.advisory_lock_state = R.config.backend ==
+						     telemetry_storage_backend::flatfile_disabled ?
+					     telemetry_advisory_lock_state::not_applicable :
+					     telemetry_advisory_lock_state::unavailable;
 	health.disabled_reason = R.config.backend == telemetry_storage_backend::flatfile_disabled ?
 					 telemetry_disabled_reason::flatfile_authority :
 					 telemetry_disabled_reason::not_initialized;
@@ -1391,6 +1399,9 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 		return telemetry_runtime_outcome::invalid;
 	R.producer = options.producer;
 	R.config = options.config;
+	R.health_monitor_config = telemetry_health_monitor_default_config(
+		options.config.interval_usec, QUEUE_CAPACITY);
+	telemetry_health_monitor_reset(&R.health_monitor);
 	R.property_capture = options.property_capture;
 	R.property_capture_enabled = options.property_capture_enabled != 0U;
 	R.capture_input = capture_input_for(options.config, options.property_capture);
@@ -1951,6 +1962,22 @@ telemetry_health_snapshot telemetry_runtime_health_copy(void)
 	if (R.has_last_health)
 		return R.last_health;
 	return fallback_health();
+}
+
+telemetry_health_event
+telemetry_runtime_health_observe(telemetry_monotonic_usec now_monotonic_usec) noexcept
+{
+	return telemetry_health_monitor_evaluate(&R.health_monitor, &R.health_monitor_config,
+						 telemetry_runtime_health_copy(),
+						 now_monotonic_usec);
+}
+
+telemetry_health_status
+telemetry_runtime_health_status_copy(telemetry_monotonic_usec now_monotonic_usec) noexcept
+{
+	return telemetry_health_monitor_status_copy(&R.health_monitor, &R.health_monitor_config,
+						    telemetry_runtime_health_copy(),
+						    now_monotonic_usec);
 }
 
 /* Small value-only seams used by gameplay glue. */

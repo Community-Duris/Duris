@@ -325,6 +325,16 @@ enum class telemetry_disabled_reason : std::uint8_t
 	not_initialized = 4,
 };
 
+/* The SQL repository holds its advisory lock for the lifetime of the owned
+ * writer connection.  This compact state is safe to expose; lock names and
+ * connection details remain private to the repository. */
+enum class telemetry_advisory_lock_state : std::uint8_t
+{
+	not_applicable = 0,
+	unavailable = 1,
+	held = 2,
+};
+
 /* Queue admission is RAM retention, not durable acknowledgement. */
 enum class telemetry_queue_admission : std::uint8_t
 {
@@ -787,7 +797,14 @@ struct telemetry_health_snapshot
 	std::uint16_t schema_version;
 	std::uint16_t reserved2;
 	std::uint32_t last_error_code;
-	std::uint32_t reserved3;
+	std::uint32_t queue_capacity;
+	telemetry_producer_id producer;
+	telemetry_record_sequence last_admitted_record_seq;
+	telemetry_record_sequence last_committed_record_seq;
+	telemetry_record_sequence inflight_first_record_seq;
+	telemetry_record_sequence inflight_last_record_seq;
+	std::uint64_t inflight_record_kind_mask;
+	telemetry_duration_usec retry_backoff_remaining_usec;
 	std::uint64_t queue_depth;
 	std::uint64_t queue_high_water;
 	std::uint64_t admitted_detail;
@@ -814,7 +831,11 @@ struct telemetry_health_snapshot
 	std::uint64_t quarantined_records;
 	std::uint64_t circuit_open_count;
 	std::uint32_t last_failure_retry_attempts;
-	std::uint32_t reserved4;
+	std::uint32_t inflight_retry_attempts;
+	std::uint32_t repository_retry_attempts;
+	telemetry_advisory_lock_state advisory_lock_state;
+	std::uint8_t inflight_active;
+	std::uint8_t reserved4[2];
 };
 
 constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexcept

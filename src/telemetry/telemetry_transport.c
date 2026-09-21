@@ -76,6 +76,19 @@ struct transport_health_atoms
 	std::atomic<std::uint8_t> last_failure_class{ static_cast<std::uint8_t>(
 		telemetry_failure_class::none) };
 	std::atomic<std::uint32_t> last_error_code{ 0U };
+	std::atomic<std::uint32_t> queue_capacity{ 0U };
+	std::atomic<std::uint64_t> producer_boot_id{ 0U };
+	std::atomic<std::uint64_t> producer_process_id{ 0U };
+	std::atomic<std::uint64_t> last_admitted_record_seq{ 0U };
+	std::atomic<std::uint64_t> last_committed_record_seq{ 0U };
+	std::atomic<std::uint64_t> inflight_first_record_seq{ 0U };
+	std::atomic<std::uint64_t> inflight_last_record_seq{ 0U };
+	std::atomic<std::uint64_t> inflight_record_kind_mask{ 0U };
+	std::atomic<std::uint64_t> inflight_retry_not_before{ 0U };
+	std::atomic<std::uint64_t> repository_retry_not_before{ 0U };
+	std::atomic<std::uint32_t> inflight_retry_attempts{ 0U };
+	std::atomic<std::uint32_t> repository_retry_attempts{ 0U };
+	std::atomic<std::uint8_t> inflight_active{ 0U };
 	std::atomic<std::uint64_t> queue_high_water{ 0U };
 	std::atomic<std::uint64_t> admitted_detail{ 0U };
 	std::atomic<std::uint64_t> admitted_control{ 0U };
@@ -281,6 +294,20 @@ void reset_health(const telemetry_transport_config &config) noexcept
 	HEALTH.last_failure_class.store(static_cast<std::uint8_t>(telemetry_failure_class::none),
 					std::memory_order_relaxed);
 	HEALTH.last_error_code.store(0U, std::memory_order_relaxed);
+	HEALTH.queue_capacity.store(config.queue_capacity, std::memory_order_relaxed);
+	HEALTH.producer_boot_id.store(config.fresh_producer.boot_id, std::memory_order_relaxed);
+	HEALTH.producer_process_id.store(config.fresh_producer.process_id,
+					 std::memory_order_relaxed);
+	HEALTH.last_admitted_record_seq.store(0U, std::memory_order_relaxed);
+	HEALTH.last_committed_record_seq.store(0U, std::memory_order_relaxed);
+	HEALTH.inflight_first_record_seq.store(0U, std::memory_order_relaxed);
+	HEALTH.inflight_last_record_seq.store(0U, std::memory_order_relaxed);
+	HEALTH.inflight_record_kind_mask.store(0U, std::memory_order_relaxed);
+	HEALTH.inflight_retry_not_before.store(0U, std::memory_order_relaxed);
+	HEALTH.repository_retry_not_before.store(0U, std::memory_order_relaxed);
+	HEALTH.inflight_retry_attempts.store(0U, std::memory_order_relaxed);
+	HEALTH.repository_retry_attempts.store(0U, std::memory_order_relaxed);
+	HEALTH.inflight_active.store(0U, std::memory_order_relaxed);
 	HEALTH.queue_high_water.store(0U, std::memory_order_relaxed);
 	HEALTH.admitted_detail.store(0U, std::memory_order_relaxed);
 	HEALTH.admitted_control.store(0U, std::memory_order_relaxed);
@@ -309,9 +336,43 @@ void reset_health(const telemetry_transport_config &config) noexcept
 	HEALTH.last_failure_monotonic_usec.store(0U, std::memory_order_relaxed);
 }
 
+void clear_inflight_health() noexcept
+{
+	HEALTH.inflight_active.store(0U, std::memory_order_release);
+	HEALTH.inflight_first_record_seq.store(0U, std::memory_order_release);
+	HEALTH.inflight_last_record_seq.store(0U, std::memory_order_release);
+	HEALTH.inflight_record_kind_mask.store(0U, std::memory_order_release);
+	HEALTH.inflight_retry_attempts.store(0U, std::memory_order_release);
+	HEALTH.inflight_retry_not_before.store(0U, std::memory_order_release);
+}
+
+void publish_inflight_health() noexcept
+{
+	if (!INFLIGHT.active || INFLIGHT.count == 0U)
+	{
+		clear_inflight_health();
+		return;
+	}
+	std::uint64_t kinds = 0U;
+	for (std::size_t index = 0U; index < INFLIGHT.count; ++index)
+		kinds |= std::uint64_t{ 1U }
+			 << static_cast<std::uint8_t>(INFLIGHT_RECORDS[index].header.kind);
+	HEALTH.inflight_first_record_seq.store(INFLIGHT_RECORDS[0].header.key.record_seq,
+					       std::memory_order_release);
+	HEALTH.inflight_last_record_seq.store(
+		INFLIGHT_RECORDS[INFLIGHT.count - 1U].header.key.record_seq,
+		std::memory_order_release);
+	HEALTH.inflight_record_kind_mask.store(kinds, std::memory_order_release);
+	HEALTH.inflight_retry_attempts.store(INFLIGHT.retry_attempts, std::memory_order_release);
+	HEALTH.inflight_retry_not_before.store(INFLIGHT.retry_not_before,
+					       std::memory_order_release);
+	HEALTH.inflight_active.store(1U, std::memory_order_release);
+}
+
 void reset_inflight() noexcept
 {
 	INFLIGHT = {};
+	clear_inflight_health();
 }
 
 void add_drop_health(bool control) noexcept
@@ -443,6 +504,7 @@ bool schedule_inflight_retry(telemetry_monotonic_usec now, std::uint32_t error_c
 		open_circuit(now, error_code, failure_class, &INFLIGHT_RECORDS[index],
 			     INFLIGHT.isolation ? 1U : INFLIGHT.count, INFLIGHT.retry_attempts);
 		INFLIGHT.retry_not_before = std::numeric_limits<telemetry_monotonic_usec>::max();
+		publish_inflight_health();
 		return false;
 	}
 	INFLIGHT.retry_not_before =
@@ -452,6 +514,7 @@ bool schedule_inflight_retry(telemetry_monotonic_usec now, std::uint32_t error_c
 		&INFLIGHT_RECORDS[INFLIGHT.isolation ? INFLIGHT.isolation_index : 0U],
 		INFLIGHT.isolation ? 1U : INFLIGHT.count, failure_class, error_code,
 		INFLIGHT.retry_attempts);
+	publish_inflight_health();
 	return true;
 }
 
@@ -464,11 +527,19 @@ bool schedule_repository_retry(telemetry_monotonic_usec now, std::uint32_t error
 		open_circuit(now, error_code, telemetry_failure_class::transient_connection,
 			     nullptr, 0U, REPOSITORY_RETRY_ATTEMPTS);
 		REPOSITORY_RETRY_NOT_BEFORE = std::numeric_limits<telemetry_monotonic_usec>::max();
+		HEALTH.repository_retry_attempts.store(REPOSITORY_RETRY_ATTEMPTS,
+						       std::memory_order_release);
+		HEALTH.repository_retry_not_before.store(REPOSITORY_RETRY_NOT_BEFORE,
+							 std::memory_order_release);
 		return false;
 	}
 	REPOSITORY_RETRY_NOT_BEFORE =
 		saturating_time_add(now, retry_backoff(REPOSITORY_RETRY_ATTEMPTS));
 	mark_failure(now, error_code, telemetry_failure_class::transient_connection);
+	HEALTH.repository_retry_attempts.store(REPOSITORY_RETRY_ATTEMPTS,
+					       std::memory_order_release);
+	HEALTH.repository_retry_not_before.store(REPOSITORY_RETRY_NOT_BEFORE,
+						 std::memory_order_release);
 	return true;
 }
 
@@ -614,6 +685,8 @@ bool ensure_repository(telemetry_monotonic_usec now) noexcept
 		REPOSITORY_READY.store(true, std::memory_order_release);
 		REPOSITORY_RETRY_ATTEMPTS = 0U;
 		REPOSITORY_RETRY_NOT_BEFORE = 0U;
+		HEALTH.repository_retry_attempts.store(0U, std::memory_order_release);
+		HEALTH.repository_retry_not_before.store(0U, std::memory_order_release);
 		if (!STOP_REQUESTED.load(std::memory_order_acquire))
 			set_health_state(telemetry_health_state::healthy);
 		return true;
@@ -720,6 +793,7 @@ void discard_inflight_for_disabled() noexcept
 		}
 	}
 	INFLIGHT = {};
+	clear_inflight_health();
 }
 
 void disable_transport() noexcept
@@ -773,6 +847,7 @@ bool begin_batch() noexcept
 	if (count_limit == 0U)
 		return false;
 	INFLIGHT = {};
+	clear_inflight_health();
 	INFLIGHT.active = true;
 	INFLIGHT.count = count_limit;
 	for (std::size_t index = 0U; index < count_limit; ++index)
@@ -784,6 +859,7 @@ bool begin_batch() noexcept
 						   index == 0U ? &admitted_at_valid : nullptr))
 		{
 			INFLIGHT = {};
+			clear_inflight_health();
 			return false;
 		}
 		if (index == 0U)
@@ -791,6 +867,7 @@ bool begin_batch() noexcept
 		if (telemetry_record_kind_is_control(INFLIGHT_RECORDS[index].header.kind))
 			++INFLIGHT.control_count;
 	}
+	publish_inflight_health();
 	return true;
 }
 
@@ -799,8 +876,13 @@ void handle_success(const telemetry_apply_batch_result &result, const telemetry_
 		    telemetry_transport_pulse_result &pulse) noexcept
 {
 	update_pulse_counts(result, records, attempt_count, pulse);
-	HEALTH.last_error_code.store(result.error_code, std::memory_order_release);
+	if (result.quarantined_count != 0U)
+		HEALTH.last_failure_monotonic_usec.store(now, std::memory_order_release);
 	HEALTH.last_success_monotonic_usec.store(now, std::memory_order_release);
+	if (attempt_count != 0U)
+		HEALTH.last_committed_record_seq.store(
+			records[attempt_count - 1U].header.key.record_seq,
+			std::memory_order_release);
 	if (!STOP_REQUESTED.load(std::memory_order_acquire))
 		set_health_state(result.invalid_count != 0U || result.conflict_count != 0U ||
 						 result.quarantined_count != 0U ?
@@ -813,7 +895,10 @@ void handle_success(const telemetry_apply_batch_result &result, const telemetry_
 		INFLIGHT.retry_attempts = 0U;
 		INFLIGHT.retry_not_before = 0U;
 		if (INFLIGHT.isolation_index < INFLIGHT.count)
+		{
+			publish_inflight_health();
 			return;
+		}
 	}
 	{
 		if (!telemetry_queue_private::commit(&QUEUE, INFLIGHT.count,
@@ -821,10 +906,12 @@ void handle_success(const telemetry_apply_batch_result &result, const telemetry_
 		{
 			mark_failure(now, static_cast<std::uint32_t>(EPROTO));
 			INFLIGHT.retry_not_before = now;
+			publish_inflight_health();
 			return;
 		}
 	}
 	INFLIGHT = {};
+	clear_inflight_health();
 }
 
 void handle_corrupt_callback(telemetry_monotonic_usec now,
@@ -873,6 +960,7 @@ void start_isolation() noexcept
 	INFLIGHT.isolation_index = 0U;
 	INFLIGHT.retry_attempts = 0U;
 	INFLIGHT.retry_not_before = 0U;
+	publish_inflight_health();
 }
 
 void handle_invalid_batch(telemetry_monotonic_usec now,
@@ -1103,6 +1191,8 @@ void finalize_shutdown() noexcept
 	reset_inflight();
 	REPOSITORY_RETRY_ATTEMPTS = 0U;
 	REPOSITORY_RETRY_NOT_BEFORE = 0U;
+	HEALTH.repository_retry_attempts.store(0U, std::memory_order_release);
+	HEALTH.repository_retry_not_before.store(0U, std::memory_order_release);
 	REPOSITORY_READY.store(false, std::memory_order_release);
 	QUIESCED.store(true, std::memory_order_release);
 	STOP_REQUESTED.store(false, std::memory_order_release);
@@ -1343,6 +1433,12 @@ telemetry_enqueue_result telemetry_transport_enqueue(telemetry_record record)
 		return result;
 	}
 	LAST_ADMITTED_KEY = record.header.key;
+	HEALTH.producer_boot_id.store(record.header.key.producer.boot_id,
+				      std::memory_order_release);
+	HEALTH.producer_process_id.store(record.header.key.producer.process_id,
+					 std::memory_order_release);
+	HEALTH.last_admitted_record_seq.store(record.header.key.record_seq,
+					      std::memory_order_release);
 	result.admission = control ? telemetry_queue_admission::accepted_control_reserve :
 				     telemetry_queue_admission::accepted_detail;
 	if (control)
@@ -1474,6 +1570,39 @@ telemetry_health_snapshot telemetry_transport_health_copy(void)
 		HEALTH.last_failure_class.load(std::memory_order_acquire));
 	result.schema_version = TELEMETRY_SCHEMA_VERSION;
 	result.last_error_code = HEALTH.last_error_code.load(std::memory_order_acquire);
+	result.queue_capacity = HEALTH.queue_capacity.load(std::memory_order_acquire);
+	result.producer.boot_id = HEALTH.producer_boot_id.load(std::memory_order_acquire);
+	result.producer.process_id = HEALTH.producer_process_id.load(std::memory_order_acquire);
+	result.last_admitted_record_seq =
+		HEALTH.last_admitted_record_seq.load(std::memory_order_acquire);
+	result.last_committed_record_seq =
+		HEALTH.last_committed_record_seq.load(std::memory_order_acquire);
+	result.inflight_first_record_seq =
+		HEALTH.inflight_first_record_seq.load(std::memory_order_acquire);
+	result.inflight_last_record_seq =
+		HEALTH.inflight_last_record_seq.load(std::memory_order_acquire);
+	result.inflight_record_kind_mask =
+		HEALTH.inflight_record_kind_mask.load(std::memory_order_acquire);
+	result.inflight_retry_attempts =
+		HEALTH.inflight_retry_attempts.load(std::memory_order_acquire);
+	result.repository_retry_attempts =
+		HEALTH.repository_retry_attempts.load(std::memory_order_acquire);
+	result.inflight_active = HEALTH.inflight_active.load(std::memory_order_acquire);
+	result.advisory_lock_state = result.backend ==
+						     telemetry_storage_backend::flatfile_disabled ?
+					     telemetry_advisory_lock_state::not_applicable :
+				     REPOSITORY_READY.load(std::memory_order_acquire) ?
+					     telemetry_advisory_lock_state::held :
+					     telemetry_advisory_lock_state::unavailable;
+	const telemetry_monotonic_usec retry_not_before =
+		result.inflight_active != 0U ?
+			HEALTH.inflight_retry_not_before.load(std::memory_order_acquire) :
+			HEALTH.repository_retry_not_before.load(std::memory_order_acquire);
+	telemetry_monotonic_usec now = 0U;
+	if (retry_not_before == std::numeric_limits<telemetry_monotonic_usec>::max())
+		result.retry_backoff_remaining_usec = retry_not_before;
+	else if (retry_not_before != 0U && clock_now(now) && retry_not_before > now)
+		result.retry_backoff_remaining_usec = retry_not_before - now;
 	result.queue_depth = telemetry_queue_private::depth(&QUEUE);
 	result.queue_high_water = HEALTH.queue_high_water.load(std::memory_order_acquire);
 	result.admitted_detail = HEALTH.admitted_detail.load(std::memory_order_acquire);
