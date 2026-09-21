@@ -286,26 +286,30 @@ ASan/UBSan and the full applicable test suite are required. Hosted CI does not
 replace these checks. Production migration, deployment, wipes, or restitution
 are outside this implementation authorization.
 
-## Census decisions still preventing contract freeze
+## Source-verified route semantics and remaining integration gates
 
-- Floor coin drops currently commit a wallet debit before pile publication;
-  NPC gifts cross a separate live credit. Group split credits recipients before
-  the sender debit. These need explicit compound-operation integration.
-- Failed `ADD_MONEY` admission can create a SQL pending pickup outside the
-  command receipt protocol. The pending-claim identity therefore covers
-  non-auction rewards and compensation as well as refunds/proceeds.
-- Blackjack has real live stakes on the table. A push returns the original
-  stake; a win distinguishes returned stake from net issuance. Durable holding
-  and round identity are still unresolved.
-- Roaming shopkeepers have finite cash checks and postcommit live cash changes.
-  Neither a generic treasury label nor infinite NPC issuance proves authority.
-- Trusted auction removal currently permits a winning bid without staging a
-  bidder refund on either backend. Account for the existing disposition
-  explicitly; do not silently introduce a reimbursement or change policy.
-- Collector purchases have no seller payout and use a named purchase sink.
-  Disabled shop gem barter must remain disabled.
-- Crafting, smithing, and refinement consume inputs separately from durable
-  output grants. A creation receipt alone does not prove an atomic recipe.
-- General archive/export/erasure controllers remain disabled by their canonical
-  policy, whereas character/account deletion is executable. Preserve these
-  refusals and register accounting data without inventing policy approval.
+These findings describe the census baseline above, not deployed-game evidence or
+qualified accounting support. The writer inventory remains legacy/unverified.
+They separate established economics from missing durable integration; they do not
+freeze the remaining unmapped census or grant permission to change gameplay.
+
+| Route and source | Established behavior | Remaining accounting gate |
+| --- | --- | --- |
+| Floor drop (`src/cmd/actobj.c`, `submit_coin_debit`) | Wallet value becomes a newly created or merged pile; no issuance or expense. Current debit precedes pile publication. | Record actual pile UID/effects with the debit and recover publication/allocation failure without losing value. |
+| NPC gift (`src/cmd/actobj.c`, `begin_coin_give_credit`) | Player debit followed by live NPC credit. | An admitted NPC holding permits a transfer; transient NPC lifetime authority is still unresolved. A generic treasury or new-issuance label does not resolve it. |
+| Group split (`src/cmd/actoth.c`, `do_split`) | Same-room visible PC or morph recipients; sender excluded from payouts, integer shares leave sender share and remainder. Recipient credits currently precede sender debit. | Resolve recipients and pair accepted credits with exact debits. Preserve existing per-child and whole-command boundaries; #480 forbids silently making bulk commands globally atomic. |
+| Non-auction pickups (`src/core/utility.c`, `ADD_MONEY`; `src/economy/auction_houses.c`, `insert_money_pickup`) | Failed reward admission can stage a SQL aggregate pickup. | Retain original reward/compensation operation attribution; collection moves claim value to wallet, not new issuance. Failed or ambiguous admission must not duplicate a claim. Flatfile fallback is still unavailable. |
+| Blackjack (`src/economy/cardgames.c`, `blackjack_table`) | Stake held in the table; push returns stake; win returns stake plus net issuance; loss/bust/fold consumes stake. | Cover admission, loss and round reset as well as payout. Durable table/round/outcome identity is missing; interrupted-round refund/forfeit policy remains undecided. |
+| Keeper cash (`src/economy/shop.c`, `shop_trade_completion` and roaming sale checks) | Roaming keepers have finite cash checks except VNUM 11005; live cash updates follow durable commit. | Bind keeper lifetime and reset/death/loot/recovery. The VNUM exception is existing behavior, not a durable account identity. |
+| Trusted auction removal (`src/economy/auction_repository.c` and `src/flatfile/flatfile_auction_repository.c`) | Seller item return without bidder or seller money reimbursement on either backend. | Record accepted escrow disposition explicitly within removal; do not add automatic refunds. |
+| Collector/gem shop (`src/economy/collector_service.c`, `src/economy/collector_repository.c`, `src/economy/shop.c`) | Collector purchase is a sink with no seller payout; gem barter is disabled. | Qualify purchase sink and preserve disabled barter. |
+| Craft/forge (`src/economy/crafting.c`) | Physical inputs and grant are separate; chaos-pouch variants bypass low/high materials, but still consume tools/flux and applicable essence; generated material usage is recorded after grant submission. | Link actual consumed inputs, costs and output; do not demand nonexistent low/high material UIDs for pouch variants. |
+| Smith/refine (`src/economy/tradeskill.c`) | Costs and inputs precede grant. Refinement consumes two matching salvage items and counted ore before its random outcome, charging 50,000 copper when ore count is not exactly one. Intended failure produces no output. | Retain the selected outcome, including destruction-only failure, without reroll on replay. Technical failure must be handled separately from a committed gameplay failure. |
+| Lifecycle (`tests/async/test_lifecycle_archive_execution.py`) | General archive/export/erasure controllers are disabled; character/account deletion remains executable. | Preserve refusals and register accounting data without inventing policy approval. |
+
+Required later journey cases include split remainder/morph recipients, pickup
+source deduplication, blackjack push versus net winnings, the keeper cash
+exception, auction removal without refund, and crafting success versus intended
+failure and replay. These are qualification requirements, not claims that the
+current tests exercise them. Existing candidate tests stay separately identified
+in `writers.json`; source review alone does not advance backend coverage.
