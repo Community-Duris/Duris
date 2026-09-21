@@ -160,7 +160,8 @@ bool critical_command_normalize(critical_command *command)
 bool critical_command_legacy_execution_supported(const critical_command &command)
 {
 	return command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
-	       command.accounting_intent.empty();
+	       command.accounting_intent.empty() && command.type >= critical_command_type::test &&
+	       command.type <= critical_command_type::player_death_restitution;
 }
 
 bool critical_command_valid(const critical_command &command)
@@ -182,7 +183,7 @@ bool critical_command_envelope_valid(const critical_command &command)
 	    command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
-	    command.type > critical_command_type::player_death_restitution ||
+	    command.type > critical_command_type::economic_baseline ||
 	    command.source_site < critical_source_site::command ||
 	    command.source_site > critical_source_site::operator_repair ||
 	    command.deadline_class < critical_deadline_class::interactive ||

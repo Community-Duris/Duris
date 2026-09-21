@@ -707,7 +707,13 @@ economic_accounting_error economic_command_binding_digest(const critical_command
 		// Only this binding projection uses a sentinel. Actual admission,
 		// journal bytes, exact-ID equality and durable receipts keep real time.
 		projection.accepted_at_usec = 1;
-		if (!critical_command_normalize(&projection))
+		// Structural projections also cover accounting-only command types.
+		// Do not pass them through the legacy execution predicate.
+		std::sort(projection.keys.begin(), projection.keys.end(), critical_entity_key_less);
+		std::sort(projection.expected_revisions.begin(),
+			  projection.expected_revisions.end(), [](const auto &a, const auto &b)
+			  { return critical_entity_key_less(a.key, b.key); });
+		if (!critical_command_envelope_valid(projection))
 			return economic_accounting_error::invalid_identity;
 		std::vector<uint8_t> encoded;
 		const auto result = critical_command_encode(projection, &encoded);

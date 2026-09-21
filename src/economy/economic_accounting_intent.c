@@ -175,7 +175,9 @@ economic_accounting_error economic_intent_freeze(const critical_command &command
 						 const economic_admission_facts &facts,
 						 std::vector<uint8_t> *encoded)
 {
-	if (!critical_command_legacy_execution_supported(command))
+	// Freezing structural evidence is independent of execution support.
+	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    !command.accounting_intent.empty())
 		return economic_accounting_error::invalid_version;
 	if (!encoded)
 		return economic_accounting_error::corrupt_evidence;

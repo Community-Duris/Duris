@@ -5,7 +5,18 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: flat-file bank dispatch and admission
+## Current increment: baseline preparation and retained source witnesses
+
+Based on [PR #608](https://github.com/Community-Duris/Duris/pull/608) at `190602263`.
+Reuse pure preparation, EAB1 witness encoding and EBC1 command binding from
+`5c7d0683c`, `53fd01af9` and `dac52b03f`. Execution admission remains closed;
+this component does not read or mutate native holdings, establish a cutover
+boundary, persist openings or activate accounting. See
+[BASELINE_PREPARATION.md](BASELINE_PREPARATION.md). Native baseline stores and
+wallet/shared-bank enrollment follow, alongside the required maintenance and
+publication recovery boundary before gameplay activation.
+
+## Prior increment: flat-file bank dispatch and admission
 
 Based on [PR #607](https://github.com/Community-Duris/Duris/pull/607) at `790665585`.
 Pair the existing bank-only validator with the native flat-file transaction owner

@@ -783,6 +783,57 @@
     "legacy_schema": 1,
     "accounting_schema": 2,
     "maximum_envelope_bytes": 521584,
-    "execution": "unsupported until typed transactional accounting integration"
+    "execution": "Typed SQL and flatfile bank owners and coordinator admission are implemented; gameplay, baseline execution and activation remain pending."
+  },
+  "typed_writers": [
+    {
+      "id": "baseline_batch",
+      "number": 4,
+      "reason": "baseline",
+      "facts_version": 1,
+      "policy": "Operator baseline genesis only: zero accounting balances open against epoch equity; native values/revisions and item custody remain unchanged. Exact boundary, coverage and native-source fingerprints are bound. Lifecycle owner must prove authority, complete coverage and unique account/epoch opening.",
+      "execution": "Pure preparation only; no critical command admission, baseline commit, global quiescence or activation.",
+      "intent_bytes": 178,
+      "holding_witness_bytes": 112,
+      "item_witness_bytes": 82,
+      "command_envelope": "Compact EBC1 witness reference in schema-2 economic_baseline; execution refused."
+    }
+  ],
+  "baseline_preparation": {
+    "version": 1,
+    "operation_domain": 1111577413,
+    "maximum_holdings": 3071,
+    "maximum_item_witnesses": 6000,
+    "opening_accounting_revision": 1,
+    "native_revision": "Retained unchanged in canonical witness; never overwritten with opening accounting revision.",
+    "intent_tag": "DURIS-ECONOMIC-BASELINE-INTENT-V1",
+    "domain_tag": "DURIS-ECONOMIC-BASELINE-DOMAIN-V1",
+    "tag_delimiter": "NUL",
+    "witness_encoding": {
+      "magic": "EAB1",
+      "version": 1,
+      "header_bytes": 192,
+      "holding_bytes": 112,
+      "item_bytes": 88,
+      "maximum_bytes": 872144,
+      "byte_order": "little_endian",
+      "reserved": "must be zero",
+      "storage": "Cutover owner must retain atomically beside the original plan and receipt; backend integration pending."
+    },
+    "command_binding": {
+      "type": 20,
+      "name": "economic_baseline",
+      "schema_version": 2,
+      "payload_version": 1,
+      "payload_magic": "EBC1",
+      "payload_bytes": 48,
+      "witness_digest": "SHA256 of complete canonical EAB1 bytes",
+      "intent": "EAI1 v1; metadata from preparation; empty writer facts; domain binds EBC1 payload",
+      "fence": {
+        "type": "system",
+        "id": 4990920009594262341
+      },
+      "execution": "Legacy execution and coordinator admission refuse; lifecycle persistence and activation pending."
+    }
   }
 }
