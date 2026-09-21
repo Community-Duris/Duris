@@ -4493,7 +4493,7 @@ static void show_world_persistence(P_char ch)
 		 "critical_commands state=%s awaiting=%llu admission_queue_bytes=%llu "
 		 "admission_worker=%d append_inflight=%d durable_admissions=%llu "
 		 "admission_failures=%llu admission_uncertain=%llu queued=%llu inflight=%llu "
-		 "blocked=%llu bytes=%llu "
+		 "blocked=%llu publication_pending=%llu bytes=%llu "
 		 "fences=%llu completed_cache=%llu high_water=%llu/%llu accepted=%llu "
 		 "attached=%llu completed=%llu retries=%llu ambiguous=%llu terminal=%llu "
 		 "stale=%llu overloads=%llu oldest_age_ms=%llu journal=%s "
@@ -4503,7 +4503,7 @@ static void show_world_persistence(P_char ch)
 		 critical.blocked	      ? "blocked" :
 		 critical.admission_uncertain ? "uncertain" :
 		 critical.awaiting_durability || critical.append_inflight || critical.queued ||
-				 critical.inflight ?
+				 critical.inflight || critical.publication_pending ?
 						"pending" :
 						"ready",
 		 (unsigned long long)critical.awaiting_durability,
@@ -4513,7 +4513,9 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)critical.admission_failures,
 		 (unsigned long long)critical.admission_uncertain,
 		 (unsigned long long)critical.queued, (unsigned long long)critical.inflight,
-		 (unsigned long long)critical.blocked, (unsigned long long)critical.retained_bytes,
+		 (unsigned long long)critical.blocked,
+		 (unsigned long long)critical.publication_pending,
+		 (unsigned long long)critical.retained_bytes,
 		 (unsigned long long)critical.fenced_keys,
 		 (unsigned long long)critical.completed_cache,
 		 (unsigned long long)critical.high_water_operations,

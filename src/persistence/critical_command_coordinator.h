@@ -96,8 +96,8 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 // Opt-in path for commands whose durable result is not complete until the game
 // thread has safely published its live projection. The operation and all of its
 // entity fences remain held until critical_command_coordinator_acknowledge_publication().
-critical_submit_result critical_command_coordinator_submit_for_publication(
-	critical_command command);
+critical_submit_result
+critical_command_coordinator_submit_for_publication(critical_command command);
 // `awaiting_durability` is the only positive submit result before the admission
 // worker has acknowledged the journal append and fsync.
 critical_command_durability
@@ -107,8 +107,7 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &ope
 						critical_completion *completion);
 // Release a publication-held operation only after the live callback succeeded and
 // the journal checkpoint was durable. A false result leaves the operation fenced.
-bool critical_command_coordinator_acknowledge_publication(
-	const critical_operation_id &operation_id);
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 					    critical_operation_id *operation_id);

@@ -309,6 +309,10 @@ int main(int argc, char **argv)
                                                        {critical_entity_type::player, 12}});
     assert(critical_command_coordinator_submit_for_publication(publication) ==
            critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit(publication) ==
+           critical_submit_result::identity_conflict);
+    assert(critical_command_coordinator_submit_for_publication(publication) ==
+           critical_submit_result::attached);
     critical_completion held = {};
     wait_until([&] {
         const size_t count = critical_command_coordinator_pulse(completions, 16);
@@ -332,6 +336,8 @@ int main(int argc, char **argv)
     critical_command unrelated = make_command(15, {{critical_entity_type::item, 150}});
     assert(critical_command_coordinator_submit(follower) ==
            critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit_for_publication(follower) ==
+           critical_submit_result::identity_conflict);
     assert(critical_command_coordinator_submit(unrelated) ==
            critical_submit_result::awaiting_durability);
     wait_until([&] {
@@ -552,6 +558,7 @@ assert "awaiting=%llu" in ACTINF
 assert "admission_queue_bytes=%llu" in ACTINF
 assert "durable_admissions=%llu" in ACTINF
 assert "admission_uncertain=%llu" in ACTINF
+assert "publication_pending=%llu" in ACTINF
 assert "command.payload" not in ACTINF and "operation_id" not in ACTINF
 assert "critical_command_equal" in COORDINATOR and "identity_conflict" in COORDINATOR
 assert "keys_available" in COORDINATOR and "acquire_keys" in COORDINATOR

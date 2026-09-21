@@ -637,8 +637,7 @@ void admission_worker_main()
 				{
 					admission_available.wait(
 						lock,
-						[]
-						{
+						[] {
 							return stop_requested ||
 							       !pending_admission.empty() ||
 							       recovery_requested;
@@ -943,7 +942,7 @@ critical_submit_result critical_command_coordinator_submit_internal(critical_com
 			command.accepted_at_usec = found->second->command.accepted_at_usec;
 		if (!critical_command_equal(found->second->command, command))
 			return critical_submit_result::identity_conflict;
-		if (retain_until_publication && !found->second->retain_until_publication)
+		if (retain_until_publication != found->second->retain_until_publication)
 			return critical_submit_result::identity_conflict;
 		++found->second->attachments;
 		++health.attached;

@@ -44,6 +44,7 @@ assert "obj_to_obj" not in do_empty
 start_empty = function_body("void start_empty(")
 completion = function_body("bool empty_completion(")
 publish = function_body("bool publish_empty_objects(")
+collect_publication = function_body("bool empty_collect_publication_objects(")
 for required in (
     "empty_graph_is_valid",
     "empty_item_restrictions_allow",
@@ -54,6 +55,10 @@ for required in (
 assert "empty_publication_allowed" in completion
 assert "Nothing was emptied; the batch ownership move did not commit." in completion
 assert "moved.rbegin()" in publish
+assert "space = GET_OBJ_SPACE(target);" in start_empty
+assert "space = GET_OBJ_SPACE(target);" in collect_publication
+assert "corpse_lifecycle_transaction_busy" in start_empty
+assert "source_destination.target_container ? source->obj_uid : 0" in start_empty
 
 PRELUDE = r'''
 #include <algorithm>

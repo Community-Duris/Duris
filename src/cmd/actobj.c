@@ -9741,6 +9741,9 @@ bool empty_collect_publication_objects(P_char actor, const empty_state &state,
 
 	int64_t weight = container_total_weight(target);
 	int64_t space = 0;
+#if USE_SPACE
+	space = GET_OBJ_SPACE(target);
+#endif
 	int64_t quiver_count = target->value[3];
 	std::vector<P_obj> graph_seen;
 	try
@@ -9882,14 +9885,13 @@ bool empty_completion(P_char actor, bool committed, const item_transfer_result &
 		return false;
 	if (!committed)
 	{
-		send_to_char(
-			"Nothing was emptied; the batch ownership move did not commit.\r\n",
-			actor);
+		send_to_char("Nothing was emptied; the batch ownership move did not commit.\r\n",
+			     actor);
 		empty_operations.erase(found);
 		return true;
 	}
-	if (!empty_publication_allowed(true, true, true, true, true, true, true,
-				       result.item_count, found->second.durable_item_count))
+	if (!empty_publication_allowed(true, true, true, true, true, true, true, result.item_count,
+				       found->second.durable_item_count))
 	{
 		send_to_char(
 			"The empty operation could not be published; nothing was detached.\r\n",
@@ -9927,6 +9929,14 @@ void start_empty(P_char actor, P_obj source, P_obj target)
 			actor);
 		return;
 	}
+	if (target->type == ITEM_CORPSE && IS_SET(target->value[CORPSE_FLAGS], PC_CORPSE) &&
+	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(target->value[CORPSE_PID]),
+					      static_cast<uint32_t>(target->value[CORPSE_SAVEID])))
+	{
+		send_to_char("That corpse is settling into the world; try again shortly.\r\n",
+			     actor);
+		return;
+	}
 	std::vector<P_obj> tree_seen;
 	if (empty_tree_contains(source, target, &tree_seen))
 	{
@@ -9944,6 +9954,9 @@ void start_empty(P_char actor, P_obj source, P_obj target)
 	state.destination_reason = item_transfer_reason::unknown;
 	int64_t weight = container_total_weight(target);
 	int64_t space = 0;
+#if USE_SPACE
+	space = GET_OBJ_SPACE(target);
+#endif
 	int64_t quiver_count = target->value[3];
 	std::vector<P_obj> roots;
 	std::vector<P_obj> graph_seen;
@@ -10016,23 +10029,25 @@ void start_empty(P_char actor, P_obj source, P_obj target)
 			}
 			else
 			{
-				item_ownership_runtime_entry runtime = {};
-				if (!item_ownership_runtime_lookup(content->obj_uid, &runtime) ||
-				    runtime.state != item_custody_state::active ||
-				    !item_owner_identity_valid(runtime.owner) ||
-				    runtime.parent_item_uid != source->obj_uid)
-				{
-					send_to_char(
-						"Nothing was emptied; an item's ownership is not authoritative.\r\n",
-						actor);
-					return;
-				}
 				item_put_destination source_destination = {};
 				if (!item_command_resolve_put_destination(actor, source,
 									  &source_destination))
 				{
 					send_to_char(
 						"Nothing was emptied; the source lacks authoritative ownership.\r\n",
+						actor);
+					return;
+				}
+				const uint64_t expected_source_parent =
+					source_destination.target_container ? source->obj_uid : 0;
+				item_ownership_runtime_entry runtime = {};
+				if (!item_ownership_runtime_lookup(content->obj_uid, &runtime) ||
+				    runtime.state != item_custody_state::active ||
+				    !item_owner_identity_valid(runtime.owner) ||
+				    runtime.parent_item_uid != expected_source_parent)
+				{
+					send_to_char(
+						"Nothing was emptied; an item's ownership is not authoritative.\r\n",
 						actor);
 					return;
 				}
@@ -10152,8 +10167,8 @@ void start_empty(P_char actor, P_obj source, P_obj target)
 		    actor, roots.data(), roots.size(),
 		    found->second.target_root_uid ? target : NULL, found->second.source_owner,
 		    found->second.destination_owner, found->second.destination_reason,
-		    found->second.destination_reason_id, NULL, &context,
-		    sizeof(context), NULL, &reject, empty_completion))
+		    found->second.destination_reason_id, NULL, &context, sizeof(context), NULL,
+		    &reject, empty_completion))
 	{
 		report_batch_movement_reject(actor, reject, "empty", "Nothing was emptied.\r\n");
 		empty_operations.erase(found);

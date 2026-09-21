@@ -39,9 +39,9 @@ using item_movement_completion_fn = void (*)(P_char actor, bool committed,
 // Opt-in callbacks are the publication boundary: returning false retains the
 // movement entry and the coordinator's entity fences for a later attempt.
 using item_movement_publication_fn = bool (*)(P_char actor, bool committed,
-						       const item_transfer_result &result,
-						       unsigned int error_code, const uint8_t *context,
-						       size_t context_size);
+					      const item_transfer_result &result,
+					      unsigned int error_code, const uint8_t *context,
+					      size_t context_size);
 constexpr unsigned int ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS = 8;
 
 // A submission can be refused for reasons that are operationally very different: a
@@ -102,8 +102,7 @@ bool item_movement_transaction_submit_batch(
 	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context = NULL,
-	item_movement_reject *reject = NULL,
-	item_movement_publication_fn publication = nullptr);
+	item_movement_reject *reject = NULL, item_movement_publication_fn publication = nullptr);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
 /* As above, but invoke `completion` only after the ownership authority has
