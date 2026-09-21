@@ -121,6 +121,7 @@
 #include "economy/shop_trade_transaction.h"
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_accounting_dispatch.h"
 #include "economy/auction_transaction.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
@@ -930,11 +931,11 @@ void run_the_game(int port, int sslport)
 	}
 	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
 	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
-	critical_extension_validator_fn critical_extension_validator = nullptr;
+	critical_extension_validator_fn critical_extension_validator =
+		economic_command_admission_supported;
 #ifdef __NO_MYSQL__
-	critical_apply = flatfile_critical_command_repository_apply_selected;
+	critical_apply = flatfile_accounting_apply_selected;
 #else
-	critical_extension_validator = economic_command_admission_supported;
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
 #endif

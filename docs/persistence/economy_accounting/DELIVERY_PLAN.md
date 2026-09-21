@@ -5,7 +5,17 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: typed flat-file bank owner
+## Current increment: flat-file bank dispatch and admission
+
+Based on [PR #607](https://github.com/Community-Duris/Duris/pull/607) at `790665585`.
+Pair the existing bank-only validator with the native flat-file transaction owner
+at server startup. Preserve legacy dispatch and refuse unsupported schema-2 roots.
+See [BANK_ADMISSION.md](BANK_ADMISSION.md). Native coordinator replay qualification
+is separate from gameplay publication: replay currently does not restore the
+in-memory publication-retention flag. Resolve and test publication/save
+acknowledgement across restart before activating wallet/bank producers.
+
+## Prior increment: typed flat-file bank owner
 
 Based on [PR #606](https://github.com/Community-Duris/Duris/pull/606).
 Reuse borrowed-lock native reads from `42cacc40e` and the standalone bank owner
