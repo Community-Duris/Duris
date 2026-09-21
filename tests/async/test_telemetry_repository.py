@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Compile repository boundary tests; --sql-fixture resets ONLY duris_telemetry_test.
+"""Compile repository boundary tests and optionally execute disposable SQL.
 
-SQL execution requires an explicitly disposable loopback MariaDB/MySQL fixture
-and TELEMETRY_REPOSITORY_DISPOSABLE=1. TELEMETRY_REPOSITORY_PORT permits only 3306
-(default MariaDB fixture) or 3307 (MySQL 8.4 fixture). No game, Redis, pool, or production credentials
-are used. Default execution runs the SQL-free harness and only builds SQL tests.
+SQL execution requires an explicitly disposable loopback MariaDB/MySQL fixture,
+TELEMETRY_REPOSITORY_DISPOSABLE=1, and a unique database name beginning with
+``duris_telemetry_test_``.  The fixture loads the authoritative bootstrap,
+adopts its sealed baseline, and applies/verifies the complete immutable migration
+manifest before running the repository.  No checkout credentials are used.
 """
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
+import sys
 import tempfile
 
 from test_telemetry_contract_fixtures import canonical_config_fingerprint
@@ -29,6 +31,7 @@ ENUMS = {
     "reason": "telemetry_gap_reason", "backend": "telemetry_storage_backend",
 }
 PAYLOADS = {"session_lifecycle": "lifecycle", "session_checkpoint": "checkpoint", "coverage_gap": "gap"}
+DATABASE_PATTERN = re.compile(r"duris_telemetry_test_[a-z0-9_]{12,80}\Z")
 
 
 def function_body(source: str, start: str, end: str) -> str:
@@ -62,24 +65,124 @@ def repository_mapping_contract() -> None:
         "case telemetry_record_kind::encounter:",
     )
 
+    engine = os.environ.get("TELEMETRY_REPOSITORY_DB_IMAGE", "source-contract")
     progression_schema = migration_columns("0022_telemetry_progression.sql")
     progression_mapped = mapped_columns(progression)
-    assert set(progression_schema).issubset(progression_mapped)
-    assert not set(column.removeprefix("progression_") for column in progression_schema).intersection(
-        progression_mapped
-    )
+    missing = sorted(set(progression_schema) - set(progression_mapped))
+    generic = sorted(set(column.removeprefix("progression_") for column in progression_schema) &
+                     set(progression_mapped))
+    assert not missing, (f"engine={engine} migration=0022_telemetry_progression "
+                         f"record_kind=6 missing_columns={','.join(missing)}")
+    assert not generic, (f"engine={engine} migration=0022_telemetry_progression "
+                         f"record_kind=6 generic_columns={','.join(generic)}")
 
     encounter_schema = migration_columns("0024_telemetry_encounters.sql")
     encounter_mapped = mapped_columns(encounter)
-    assert encounter_mapped == encounter_schema
-    assert "start_monotonic_usec" not in encounter_mapped
-    assert "start_utc_usec" not in encounter_mapped
-    assert "quality_flags" not in encounter_mapped
+    assert encounter_mapped == encounter_schema, (
+        f"engine={engine} migration=0024_telemetry_encounters record_kind=7 "
+        f"columns_mapped={encounter_mapped!r} columns_schema={encounter_schema!r}")
+    generic = sorted({"start_monotonic_usec", "start_utc_usec", "quality_flags"} &
+                     set(encounter_mapped))
+    assert not generic, (f"engine={engine} migration=0024_telemetry_encounters "
+                         f"record_kind=7 generic_columns={','.join(generic)}")
 
     combat_schema = migration_columns("0025_telemetry_combat_summaries.sql")
     combat_mapped = mapped_columns(combat)
-    assert combat_mapped == combat_schema
-    assert "FIELD(values, summary" not in combat
+    assert combat_mapped == combat_schema, (
+        f"engine={engine} migration=0025_telemetry_combat_summaries record_kind=8 "
+        f"columns_mapped={combat_mapped!r} columns_schema={combat_schema!r}")
+    assert "FIELD(values, summary" not in combat, (
+        f"engine={engine} migration=0025_telemetry_combat_summaries "
+        "record_kind=8 unprefixed_FIELD_mapping")
+
+
+def sql_environment() -> tuple[dict[str, str], list[str], str]:
+    required = {
+        "TELEMETRY_REPOSITORY_HOST": "DB_HOST",
+        "TELEMETRY_REPOSITORY_PORT": "DB_PORT",
+        "TELEMETRY_REPOSITORY_USER": "DB_USER",
+        "TELEMETRY_REPOSITORY_PASSWORD": "DB_PASSWD",
+        "TELEMETRY_REPOSITORY_DATABASE": "DB_NAME",
+    }
+    missing = [name for name in required if not os.environ.get(name)]
+    if missing:
+        raise RuntimeError("disposable SQL fixture is missing: " + ", ".join(missing))
+    host = os.environ["TELEMETRY_REPOSITORY_HOST"]
+    database = os.environ["TELEMETRY_REPOSITORY_DATABASE"]
+    if not DATABASE_PATTERN.fullmatch(database):
+        raise RuntimeError("disposable SQL fixture database name is not uniquely test-scoped")
+    if host != "127.0.0.1":
+        raise RuntimeError("disposable SQL fixture host must be explicit TCP loopback")
+    try:
+        port = int(os.environ["TELEMETRY_REPOSITORY_PORT"])
+    except ValueError as error:
+        raise RuntimeError("disposable SQL fixture port is not numeric") from error
+    if not 1 <= port <= 65535:
+        raise RuntimeError("disposable SQL fixture port is outside 1..65535")
+    environment = dict(os.environ)
+    environment.pop("DB_SOCKET", None)
+    environment.pop("MYSQL_UNIX_PORT", None)
+    environment.update({
+        "ENVIRONMENT": "test",
+        "DB_HOST": host,
+        "DB_PORT": str(port),
+        "DB_USER": os.environ["TELEMETRY_REPOSITORY_USER"],
+        "DB_PASSWD": os.environ["TELEMETRY_REPOSITORY_PASSWORD"],
+        "DB_NAME": database,
+        "DB_ALLOWED_TARGETS": f"{host}/{database}",
+        "DB_TLS": "FALSE",
+        "MYSQL_PWD": os.environ["TELEMETRY_REPOSITORY_PASSWORD"],
+    })
+    command = ["mysql", "--protocol=tcp", "-h", host, "-P", str(port), "-u",
+               os.environ["TELEMETRY_REPOSITORY_USER"], "-N", "-B", "--raw"]
+    return environment, command, database
+
+
+def prepare_sql_fixture() -> tuple[dict[str, str], list[str], str]:
+    environment, command, database = sql_environment()
+    engine = os.environ.get("TELEMETRY_REPOSITORY_DB_IMAGE", "unknown-engine")
+    print(f"Preparing disposable SQL fixture: engine={engine} database={database}", flush=True)
+    existing = subprocess.check_output(
+        command + ["-e", ("SELECT COUNT(*) FROM information_schema.schemata WHERE "
+                           f"schema_name='{database}'")],
+        text=True, env=environment).strip()
+    if existing != "0":
+        raise RuntimeError(f"engine={engine} disposable database already exists: {database}")
+    subprocess.run(command + ["-e", (f"CREATE DATABASE `{database}` CHARACTER SET utf8mb4 "
+                                           "COLLATE utf8mb4_unicode_ci")],
+                   check=True, env=environment)
+    try:
+        subprocess.run(command + [database],
+                       input=(ROOT / "migrations/bootstrap_multithread_safe.sql").read_bytes(),
+                       check=True, env=environment)
+        subprocess.run([sys.executable, "scripts/migration_runner.py", "adopt", "--kind",
+                        "fresh_bootstrap"], cwd=ROOT, env=environment, check=True)
+        subprocess.run([sys.executable, "scripts/migration_runner.py", "run"], cwd=ROOT,
+                       env=environment, check=True)
+        manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
+        expected_count = len(manifest["migrations"])
+        expected_head = manifest["migrations"][-1]["id"]
+        actual = subprocess.check_output(
+            command + [database, "-e", ("SELECT COUNT(*),COALESCE(MAX(migration_id),'') "
+                                         "FROM mud_schema_history")],
+            text=True, env=environment).strip()
+        if actual != f"{expected_count}\t{expected_head}":
+            raise RuntimeError(
+                f"engine={engine} migration=manifest-head expected="
+                f"{expected_count}:{expected_head} actual={actual!r}")
+        environment["TELEMETRY_REPOSITORY_MIGRATION_COUNT"] = str(expected_count)
+        print(f"Immutable migration chain: PASS ({engine}, {expected_count} steps through "
+              f"{expected_head})", flush=True)
+        return environment, command, database
+    except Exception:
+        subprocess.run(command + ["-e", f"DROP DATABASE IF EXISTS `{database}`"],
+                       check=False, env=environment)
+        raise
+
+
+def drop_sql_fixture(environment: dict[str, str], command: list[str], database: str) -> None:
+    subprocess.run(command + ["-e", f"DROP DATABASE IF EXISTS `{database}`"],
+                   check=True, env=environment)
 
 
 def assignments(value, target):
@@ -169,8 +272,6 @@ def main():
     args = parser.parse_args()
     if args.sql_fixture and os.environ.get("TELEMETRY_REPOSITORY_DISPOSABLE") != "1":
         parser.error("--sql-fixture requires TELEMETRY_REPOSITORY_DISPOSABLE=1; database reset is destructive")
-    if os.environ.get("TELEMETRY_REPOSITORY_PORT", "3306") not in {"3306", "3307"}:
-        parser.error("TELEMETRY_REPOSITORY_PORT must be 3306 or 3307 for the disposable fixtures")
     repository_mapping_contract()
     compiler = shlex.split(os.environ.get("CXX", "g++"))
     output_root = ROOT / "bin/tests"
@@ -193,14 +294,13 @@ def main():
                                   "-o", str(sql)] + mysql, check=True)
         print("SQL repository harness compile: PASS", flush=True)
         if args.sql_fixture:
-            subprocess.run([str(sql), str(ROOT / "migrations/immutable/0014_telemetry_storage.sql"),
-                            str(ROOT / "migrations/immutable/0022_telemetry_progression.sql"),
-                            str(ROOT / "migrations/immutable/0024_telemetry_encounters.sql"),
-                            str(ROOT / "migrations/immutable/0025_telemetry_combat_summaries.sql"),
-                            str(ROOT / "migrations/immutable/0030_telemetry_quarantine.sql")],
-                           check=True, timeout=120)
+            environment, command, database = prepare_sql_fixture()
+            try:
+                subprocess.run([str(sql)], check=True, timeout=180, env=environment)
+            finally:
+                drop_sql_fixture(environment, command, database)
         else:
-            print("SQL runtime: SKIPPED (use --sql-fixture with disposable fixture acknowledgement)")
+            print("SQL runtime: NOT REQUESTED (the required workflow uses --sql-fixture)")
 
 
 if __name__ == "__main__":
