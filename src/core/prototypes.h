@@ -2489,6 +2489,7 @@ void resolve_nova(P_char);
 void spell_spore_burst(int, P_char, char *, int, P_char, P_obj);
 void spell_siren_song(int, P_char, char *, int, P_char, P_obj);
 void spell_harmonic_resonance(int, P_char, char *, int, P_char, P_obj);
+const char *elemental_aura_failure_message(P_char);
 void spell_elemental_aura(int, P_char, char *, int, P_char, P_obj);
 void spell_summon_insects(int, P_char, char *, int, P_char, P_obj);
 void spell_consecrate_land(int, P_char, char *, int, P_char, P_obj);

@@ -109,11 +109,15 @@ Elemental Aura - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Duration:       Dependent on proficiency of caster
 * Type of spell:  Generic
 
-When cast on an elemental plane, this spell allows the Druid to temporarily
-possess some properties of that plane. The specific properties vary from
-plane to plane, although, rumors tell that most planes possess statistical
-elements and many others. There is also a chance that the caster will 
-achieve FULL elemental form, infusing them with added powers.
+When cast in a Fire, Water, Air, or Earth Plane room, this spell allows the
+Druid to temporarily possess some properties of that plane. The specific
+properties vary from plane to plane, although rumors tell that most planes
+possess statistical elements and many others. There is also a chance that the
+caster will achieve FULL elemental form, infusing them with added powers.
+
+An existing elemental aura from this spell, another aura spell, equipment,
+race, or form prevents a second elemental aura. A rejected cast does not
+consume mana or a prepared spell.
 
 < 273h/273H 176v/176V Pos: standing >
 <> 

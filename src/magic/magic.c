@@ -4530,19 +4530,43 @@ void spell_siren_song(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_
 	}
 }
 
-void spell_elemental_aura(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
-			  P_char victim, P_obj /*obj*/)
+const char *elemental_aura_failure_message(P_char ch)
 {
-	struct affected_type af;
-
-	if (!ch)
-		return;
+	if (!ch || ch->in_room < 0 || ch->in_room > top_of_world)
+		return "There is no elemental planar essence here to draw upon.\n";
 
 	if (affected_by_spell(ch, SPELL_ELEMENTAL_AURA) || IS_AFFECTED2(ch, AFF2_EARTH_AURA) ||
 	    IS_AFFECTED2(ch, AFF2_WATER_AURA) || IS_AFFECTED2(ch, AFF2_FIRE_AURA) ||
 	    IS_AFFECTED2(ch, AFF2_AIR_AURA) || IS_AFFECTED4(ch, AFF4_ICE_AURA))
 	{
-		send_to_char("Nothing seems to happen.\n", ch);
+		return "An elemental aura already surrounds you.\n";
+	}
+
+	switch (world[ch->in_room].sector_type)
+	{
+	case SECT_FIREPLANE:
+	case SECT_WATER_PLANE:
+	case SECT_AIR_PLANE:
+	case SECT_EARTH_PLANE:
+		return NULL;
+	default:
+		return "There is no elemental planar essence here to draw upon.\n";
+	}
+}
+
+void spell_elemental_aura(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char victim, P_obj /*obj*/)
+{
+	struct affected_type af;
+	const char *failure;
+
+	if (!ch)
+		return;
+
+	failure = elemental_aura_failure_message(ch);
+	if (failure)
+	{
+		send_to_char(failure, ch);
 		return;
 	}
 
@@ -4685,7 +4709,7 @@ void spell_elemental_aura(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 		break;
 
 	default:
-		send_to_char("Nothing seems to happen.\n", ch);
+		send_to_char("There is no elemental planar essence here to draw upon.\n", ch);
 	}
 }
 

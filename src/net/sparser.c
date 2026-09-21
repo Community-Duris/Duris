@@ -2774,6 +2774,18 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 		args[0] = '\0';
 	}
 
+	/* Reject elemental-aura no-ops before use_spell consumes mana or a slot. */
+	if (!weaving && arg->spell == SPELL_ELEMENTAL_AURA)
+	{
+		const char *failure = elemental_aura_failure_message(ch);
+		if (failure)
+		{
+			send_to_char(failure, ch);
+			StopCasting(ch);
+			return;
+		}
+	}
+
 	/*
 	   ok, we are in the home stretch, this event call has arg->timeleft of <= 0
 	   so now we *FINALLY*, actually cast the spell.  JAB
