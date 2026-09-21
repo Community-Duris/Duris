@@ -5,7 +5,16 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: retained flat-file authority metadata
+## Current increment: typed flat-file bank owner
+
+Based on [PR #606](https://github.com/Community-Duris/Duris/pull/606).
+Reuse borrowed-lock native reads from `42cacc40e` and the standalone bank owner
+from `d47c7af0b`, adapted to DURECR2 failure-stage verification. Preserve 4096-byte
+accounting results and the separate 2048-byte legacy receipt limit. See
+[FLATFILE_BANK.md](FLATFILE_BANK.md). Backend dispatch/admission follows; gameplay,
+baseline, lifecycle ownership and activation remain pending.
+
+## Prior increment: retained flat-file authority metadata
 
 Based on [PR #605](https://github.com/Community-Duris/Duris/pull/605), including its
 boot-topology test fix. Reuse `6698326e4` lineage, epoch and lifetime metadata,
