@@ -378,14 +378,34 @@ void coin_failure_matrix()
 	assert(applied.outcome == critical_apply_outcome::terminal_failure &&
 	       applied.error_code == ESTALE &&
 	       applied.failure_stage == critical_failure_stage::coin_source_wallet_revision);
+	coin_transfer_stale_result stale_wallet = {};
+	assert(applied.result_size == COIN_TRANSFER_STALE_RESULT_BYTES &&
+	       coin_transfer_command_decode_stale_result(decoded, applied.failure_stage,
+							 applied.result_payload.data(),
+							 applied.result_size, &stale_wallet) &&
+	       applied.durable_revision == stale_wallet.current.wallet_revision &&
+	       stale_wallet.endpoint_index == 0 && stale_wallet.wallet_stale &&
+	       !stale_wallet.bank_stale && stale_wallet.current.wallet.amount[0] == 701 &&
+	       stale_wallet.current.wallet_revision ==
+		       static_cast<uint64_t>(scalar(
+			       "SELECT wallet_revision FROM player_data WHERE pid=" + pid_text)) &&
+	       stale_wallet.current.bank_revision == 0 &&
+	       std::all_of(stale_wallet.current.bank.amount.begin(),
+			   stale_wallet.current.bank.amount.end(),
+			   [](int64_t amount) { return amount == 0; }));
 	assert(failure_stage_of(conflicted_wallet) ==
 	       static_cast<unsigned int>(critical_failure_stage::coin_source_wallet_revision));
 	assert(scalar("SELECT OCTET_LENGTH(result_payload) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
-		      operation_hex(conflicted_wallet.operation_id) + "')") == 0);
+		      operation_hex(conflicted_wallet.operation_id) + "')") ==
+	       COIN_TRANSFER_STALE_RESULT_BYTES);
 	const auto conflicted_replay =
 		critical_command_repository_apply(connection, conflicted_wallet);
 	assert(conflicted_replay.error_code == ESTALE &&
-	       conflicted_replay.failure_stage == applied.failure_stage);
+	       conflicted_replay.failure_stage == applied.failure_stage &&
+	       conflicted_replay.result_size == applied.result_size &&
+	       std::equal(applied.result_payload.begin(),
+			  applied.result_payload.begin() + applied.result_size,
+			  conflicted_replay.result_payload.begin()));
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 701);
 	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + pid_text) ==
 	       ledger_count);

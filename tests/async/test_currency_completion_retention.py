@@ -149,8 +149,10 @@ int main(int argc, char **argv)
     receipt.outcome = critical_apply_outcome::applied;
     receipt.attempt = CRITICAL_COORDINATOR_MAX_RETRIES + 1;
 
+    const bool malformed_stale = scenario.rfind("coin_stale_", 0) == 0;
+    const bool nonwallet_payload = scenario == "coin_nonwallet_payload";
     if (scenario == "coin_ambiguous" || scenario == "coin_exhausted_retry" ||
-        scenario == "coin_malformed_commit")
+        scenario == "coin_malformed_commit" || malformed_stale || nonwallet_payload)
     {
         currency_transaction_reset_for_tests();
         pc_only_data recipient_player = {};
@@ -164,6 +166,66 @@ int main(int argc, char **argv)
         assert(currency_transaction_coin_wallet(&recipient, 1, &transfer.destination));
         assert(currency_transaction_submit_coin(&actor, transfer, coin_completed, nullptr, 0));
         receipt.operation_id = submitted.operation_id;
+        const auto assert_malformed_coin_blocked = [&]
+        {
+            currency_transaction_handle_completions(&receipt, 1);
+            for (int i = 0; i < 5; ++i)
+                currency_transaction_handle_completions(&receipt, 1);
+            const auto blocked = currency_transaction_health_copy();
+            assert(callbacks == 0 && GET_COPPER(&actor) == 5 &&
+                   player.wallet_revision == 1 && bank_publications == 0);
+            assert(blocked.pending == 1 && blocked.publication_blocked == 1 &&
+                   blocked.malformed_completions == 1 && alerts == 1);
+            assert(currency_transaction_player_busy(&actor) &&
+                   currency_transaction_player_busy(&recipient));
+        };
+        if (nonwallet_payload)
+        {
+            receipt.outcome = critical_apply_outcome::terminal_failure;
+            receipt.error_code = ESTALE;
+            receipt.failure_stage = critical_failure_stage::coin_source_owner_revision;
+            receipt.result_size = 1;
+            receipt.result_payload[0] = 1;
+            assert_malformed_coin_blocked();
+            return 0;
+        }
+        if (malformed_stale)
+        {
+            coin_transfer_payload admitted = {};
+            assert(coin_transfer_command_decode_payload(submitted, &admitted));
+            coin_transfer_result current = {};
+            current.wallets[0].wallet.amount[0] =
+                scenario == "coin_stale_wallet_negative" ? -1 :
+                scenario == "coin_stale_wallet_range" ? static_cast<int64_t>(INT_MAX) + 1 : 7;
+            current.wallets[0].bank.amount[0] =
+                scenario == "coin_stale_bank_negative" ? -1 :
+                scenario == "coin_stale_bank_range" ? static_cast<int64_t>(INT_MAX) + 1 : 0;
+            current.wallets[0].wallet_revision =
+                scenario == "coin_stale_equal_revision" ? 1 :
+                scenario == "coin_stale_max_revision" ? UINT64_MAX : 2;
+            current.wallets[0].bank_revision = 2;
+            const bool bank_stale = scenario == "coin_stale_bank_negative" ||
+                                    scenario == "coin_stale_bank_range";
+            receipt.failure_stage = bank_stale ?
+                static_cast<critical_failure_stage>(
+                    static_cast<uint16_t>(critical_failure_stage::coin_source_wallet_revision) |
+                    static_cast<uint16_t>(critical_failure_stage::coin_source_bank_revision)) :
+                critical_failure_stage::coin_source_wallet_revision;
+            std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> bytes = {};
+            if (scenario != "coin_stale_empty")
+            {
+                assert(coin_transfer_command_encode_stale_result(
+                    admitted, current, receipt.failure_stage, &bytes));
+                if (scenario == "coin_stale_wrong_version") bytes[0] = 0;
+                receipt.result_size = bytes.size() -
+                                      static_cast<size_t>(scenario == "coin_stale_wrong_size");
+                std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+            }
+            receipt.outcome = critical_apply_outcome::terminal_failure;
+            receipt.error_code = ESTALE;
+            assert_malformed_coin_blocked();
+            return 0;
+        }
         receipt.outcome = scenario == "coin_ambiguous" ? critical_apply_outcome::ambiguous_commit :
                           scenario == "coin_exhausted_retry" ?
                               critical_apply_outcome::retryable_failure :
@@ -339,7 +401,11 @@ def main():
         "ambiguous_with_payload", "exhausted_retry", "offline", "rejected",
         "rejected_without_payload", "callback_chain", "callback_rehash", "active_rebasable",
         "blocked_rebasable", "coin_ambiguous", "coin_exhausted_retry",
-        "coin_malformed_commit",
+        "coin_malformed_commit", "coin_nonwallet_payload", "coin_stale_empty",
+        "coin_stale_wrong_version", "coin_stale_wrong_size",
+        "coin_stale_wallet_negative", "coin_stale_wallet_range",
+        "coin_stale_bank_negative", "coin_stale_bank_range",
+        "coin_stale_equal_revision", "coin_stale_max_revision",
     )
     with tempfile.TemporaryDirectory(prefix="currency-retention-") as directory:
         source = Path(directory) / "retention.cpp"

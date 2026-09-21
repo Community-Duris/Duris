@@ -1260,6 +1260,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			durable_revision = std::max(durable_revision, revision);
 		}
 		std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> bytes = {};
+		size_t result_size = 0;
 		if (result_code)
 		{
 			if (!execute(connection, "ROLLBACK TO SAVEPOINT coin_endpoints"))
@@ -1269,13 +1270,32 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				return failure(error);
 			}
 			durable_revision = 0;
+			std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> stale_bytes = {};
+			coin_transfer_stale_result stale_result = {};
+			if (result_code == ESTALE &&
+			    coin_transfer_command_encode_stale_result(
+				    coin_payload, result, failure_stage, &stale_bytes) &&
+			    coin_transfer_command_decode_stale_result(
+				    coin_payload, failure_stage, stale_bytes.data(),
+				    stale_bytes.size(), &stale_result))
+			{
+				std::copy(stale_bytes.begin(), stale_bytes.end(), bytes.begin());
+				result_size = stale_bytes.size();
+				if (stale_result.wallet_stale)
+					durable_revision = stale_result.current.wallet_revision;
+				if (stale_result.bank_stale)
+					durable_revision =
+						std::max(durable_revision,
+							 stale_result.current.bank_revision);
+			}
 		}
 		else if (!coin_transfer_command_encode_result(coin_payload, result, &bytes))
 		{
 			rollback(connection);
 			return failure(EBADMSG);
 		}
-		const size_t result_size = result_code ? 0 : bytes.size();
+		else
+			result_size = bytes.size();
 		std::array<uint8_t, CRITICAL_OUTBOX_COIN_RECEIPT_BYTES> receipt;
 		std::copy(coin_payload.source.change.operation_id.bytes.begin(),
 			  coin_payload.source.change.operation_id.bytes.end(), receipt.begin());
@@ -1889,7 +1909,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				for (size_t i = 0; i < zone_payload.group_size; ++i)
 					order.push_back(i);
 				std::sort(order.begin(), order.end(),
-					  [&](size_t a, size_t b) {
+					  [&](size_t a, size_t b)
+					  {
 						  return zone_payload.participant_pids[a] <
 							 zone_payload.participant_pids[b];
 					  });

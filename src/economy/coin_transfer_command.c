@@ -7,6 +7,8 @@
 #include "core/structs.h"
 
 #include <algorithm>
+#include <climits>
+#include <limits>
 #include <new>
 #include <utility>
 
@@ -173,7 +175,46 @@ bool read_endpoint(const critical_command &command, size_t *offset,
 	*offset += size;
 	return true;
 }
+
+bool stale_currency_endpoint(const coin_transfer_payload &payload,
+			     critical_failure_stage failure_stage, size_t *endpoint_index,
+			     bool *wallet_stale, bool *bank_stale)
+{
+	if (!endpoint_index || !wallet_stale || !bank_stale ||
+	    !critical_failure_stage_valid(failure_stage))
+		return false;
+	const uint16_t raw = static_cast<uint16_t>(failure_stage);
+	const uint16_t source_wallet =
+		static_cast<uint16_t>(critical_failure_stage::coin_source_wallet_revision);
+	const uint16_t source_bank =
+		static_cast<uint16_t>(critical_failure_stage::coin_source_bank_revision);
+	const uint16_t destination_wallet =
+		static_cast<uint16_t>(critical_failure_stage::coin_destination_wallet_revision);
+	const uint16_t destination_bank =
+		static_cast<uint16_t>(critical_failure_stage::coin_destination_bank_revision);
+	const uint16_t source = source_wallet | source_bank;
+	const uint16_t destination = destination_wallet | destination_bank;
+	if (!raw || (raw & ~(source | destination)) ||
+	    static_cast<bool>(raw & source) == static_cast<bool>(raw & destination))
+		return false;
+	*endpoint_index = raw & source ? 0 : 1;
+	if ((*endpoint_index ? payload.destination : payload.source).change.type !=
+	    critical_command_type::account_bank)
+		return false;
+	*wallet_stale = raw & (*endpoint_index ? destination_wallet : source_wallet);
+	*bank_stale = raw & (*endpoint_index ? destination_bank : source_bank);
+	return *wallet_stale || *bank_stale;
+}
 } // namespace
+
+bool coin_transfer_command_stale_result_expected(const coin_transfer_payload &payload,
+						 critical_failure_stage failure_stage)
+{
+	size_t endpoint_index = 0;
+	bool wallet_stale = false, bank_stale = false;
+	return stale_currency_endpoint(payload, failure_stage, &endpoint_index, &wallet_stale,
+				       &bank_stale);
+}
 
 bool coin_transfer_command_build(critical_command *command,
 				 const critical_operation_id &operation_id,
@@ -376,6 +417,85 @@ bool coin_transfer_command_decode_result(const coin_transfer_payload &payload,
 		else
 			return false;
 	}
+	*result = decoded;
+	return true;
+}
+
+bool coin_transfer_command_encode_stale_result(
+	const coin_transfer_payload &payload, const coin_transfer_result &result,
+	critical_failure_stage failure_stage,
+	std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> *encoded)
+{
+	size_t endpoint_index = 0;
+	bool wallet_stale = false, bank_stale = false;
+	std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> current = {};
+	currency_command_result selected = {};
+	if (!encoded || !stale_currency_endpoint(payload, failure_stage, &endpoint_index,
+						 &wallet_stale, &bank_stale))
+		return false;
+	if (wallet_stale)
+	{
+		selected.wallet = result.wallets[endpoint_index].wallet;
+		selected.wallet_revision = result.wallets[endpoint_index].wallet_revision;
+	}
+	if (bank_stale)
+	{
+		selected.bank = result.wallets[endpoint_index].bank;
+		selected.bank_revision = result.wallets[endpoint_index].bank_revision;
+	}
+	if (!currency_command_encode_result(selected, &current))
+		return false;
+	encoded->fill(0);
+	(*encoded)[0] = COIN_TRANSFER_STALE_RESULT_VERSION;
+	(*encoded)[1] = static_cast<uint8_t>(endpoint_index);
+	(*encoded)[2] = static_cast<uint8_t>((wallet_stale ? 1 : 0) | (bank_stale ? 2 : 0));
+	std::copy(current.begin(), current.end(), encoded->begin() + 3);
+	return true;
+}
+
+bool coin_transfer_command_decode_stale_result(const coin_transfer_payload &payload,
+					       critical_failure_stage failure_stage,
+					       const uint8_t *encoded, size_t size,
+					       coin_transfer_stale_result *result)
+{
+	if (!result || size != COIN_TRANSFER_STALE_RESULT_BYTES)
+		return false;
+	coin_transfer_stale_result decoded;
+	if (!stale_currency_endpoint(payload, failure_stage, &decoded.endpoint_index,
+				     &decoded.wallet_stale, &decoded.bank_stale) ||
+	    !encoded || encoded[0] != COIN_TRANSFER_STALE_RESULT_VERSION ||
+	    encoded[1] != decoded.endpoint_index ||
+	    encoded[2] != static_cast<uint8_t>((decoded.wallet_stale ? 1 : 0) |
+					       (decoded.bank_stale ? 2 : 0)) ||
+	    !currency_command_decode_result(encoded + 3, CURRENCY_RESULT_PAYLOAD_BYTES,
+					    &decoded.current))
+		return false;
+	if ((!decoded.wallet_stale && (decoded.current.wallet_revision ||
+				       std::any_of(decoded.current.wallet.amount.begin(),
+						   decoded.current.wallet.amount.end(),
+						   [](int64_t amount) { return amount != 0; }))) ||
+	    (!decoded.bank_stale &&
+	     (decoded.current.bank_revision ||
+	      std::any_of(decoded.current.bank.amount.begin(), decoded.current.bank.amount.end(),
+			  [](int64_t amount) { return amount != 0; }))))
+		return false;
+	const critical_command &endpoint = decoded.endpoint_index ? payload.destination.change :
+								    payload.source.change;
+	currency_command_payload endpoint_payload = {};
+	if (endpoint.expected_revisions.size() != 2 ||
+	    !currency_command_decode_payload(endpoint, &endpoint_payload))
+		return false;
+	if ((decoded.wallet_stale &&
+	     (decoded.current.wallet_revision == std::numeric_limits<uint64_t>::max() ||
+	      decoded.current.wallet_revision <= endpoint.expected_revisions[0].revision ||
+	      std::any_of(decoded.current.wallet.amount.begin(), decoded.current.wallet.amount.end(),
+			  [](int64_t amount) { return amount < 0 || amount > INT_MAX; }))) ||
+	    (decoded.bank_stale &&
+	     (decoded.current.bank_revision == std::numeric_limits<uint64_t>::max() ||
+	      decoded.current.bank_revision <= endpoint.expected_revisions[1].revision ||
+	      std::any_of(decoded.current.bank.amount.begin(), decoded.current.bank.amount.end(),
+			  [](int64_t amount) { return amount < 0 || amount > INT_MAX; }))))
+		return false;
 	*result = decoded;
 	return true;
 }
