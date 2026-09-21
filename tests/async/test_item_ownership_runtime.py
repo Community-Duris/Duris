@@ -595,6 +595,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-ownership-runtime-") as temp
 			str(source),
 			rel("item_ownership_runtime.c"),
 			rel("item_transfer_command.c"),
+			rel("player_snapshot_codec.c"),
 			rel("critical_command.c"),
 			"-lcrypto",
 			"-o",

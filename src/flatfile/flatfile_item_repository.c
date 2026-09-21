@@ -584,7 +584,9 @@ bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t p
 				payload.to_owner.type == item_owner_type::player &&
 				payload.from_owner.context_id == payload.to_owner.id &&
 				!payload.multi_root && !payload.target_parent_item_uid;
-	return (generic_materialization_owner(payload.from_owner.type) &&
+	const bool craft = payload.reason == item_transfer_reason::craft;
+	return craft ||
+	       (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
 	       mobile_claim || pet_give || pet_return || locker_transfer(payload) ||
 	       corpse_loot_transfer(payload) ||
@@ -845,6 +847,138 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 		++to_owner->revision;
 	result->from_owner_revision = from_owner->revision;
 	result->to_owner_revision = same_owner ? from_owner->revision : to_owner->revision;
+	return 0;
+}
+unsigned int apply_craft(ownership_catalog *catalog, const item_transfer_payload &payload,
+			 item_transfer_result *result)
+{
+	if (!catalog || !result || payload.reason != item_transfer_reason::craft ||
+	    !item_owner_identity_equal(payload.from_owner, payload.to_owner))
+		return EINVAL;
+	if (!ensure_owner(catalog, payload.from_owner))
+		return ENOSPC;
+	owner_state *owner = find_owner(catalog, payload.from_owner);
+	if (!owner)
+		return EILSEQ;
+	*result = { payload.selected_item_uid,
+		    payload.item_count,
+		    owner->revision,
+		    owner->revision,
+		    0,
+		    0 };
+	if (owner->revision != payload.expected_from_revision ||
+	    owner->revision != payload.expected_to_revision)
+		return ESTALE;
+	if (owner->revision == UINT64_MAX || catalog->revision == UINT64_MAX)
+		return ERANGE;
+	std::vector<player_item_snapshot> outputs;
+	if (payload.item_blob_size &&
+	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &outputs) != player_snapshot_codec_result::ok)
+		return EBADMSG;
+	if (!outputs.empty() && outputs[0].object_uid != payload.selected_item_uid)
+		return EBADMSG;
+	std::vector<uint64_t> source_roots;
+	std::vector<flatfile_item_ownership_record *> source;
+	try
+	{
+		for (size_t index = 0; index < payload.item_count; ++index)
+			source_roots.push_back(payload.items[index].root_item_uid);
+		std::sort(source_roots.begin(), source_roots.end());
+		source_roots.erase(std::unique(source_roots.begin(), source_roots.end()),
+				   source_roots.end());
+		for (auto &entry : catalog->items)
+			if (entry.state == item_custody_state::active &&
+			    item_owner_identity_equal(entry.owner, payload.from_owner) &&
+			    std::binary_search(source_roots.begin(), source_roots.end(),
+					       entry.root_item_uid))
+				source.push_back(&entry);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	if (source.size() != payload.item_count)
+		return EMSGSIZE;
+	std::sort(source.begin(), source.end(), [](const auto *left, const auto *right)
+		  { return left->item_uid < right->item_uid; });
+	for (size_t index = 0; index < source.size(); ++index)
+	{
+		const auto &stored = *source[index];
+		const auto &expected = payload.items[index];
+		if (stored.item_uid != expected.item_uid ||
+		    stored.root_item_uid != expected.root_item_uid ||
+		    stored.parent_item_uid != expected.parent_item_uid ||
+		    stored.item_revision != expected.expected_item_revision ||
+		    stored.vnum != expected.vnum || stored.state != item_custody_state::active)
+			return ESTALE;
+		if (stored.item_revision == UINT64_MAX)
+			return ERANGE;
+	}
+	std::unordered_set<uint64_t> output_uids;
+	try
+	{
+		output_uids.reserve(outputs.size());
+		for (size_t index = 0; index < outputs.size(); ++index)
+		{
+			const auto &output = outputs[index];
+			if (!output.object_uid || output.vnum <= 0 ||
+			    !output_uids.insert(output.object_uid).second ||
+			    find_item(catalog, output.object_uid))
+				return EEXIST;
+			if (output.parent_index >= static_cast<int32_t>(index) ||
+			    output.parent_index < PLAYER_SNAPSHOT_NO_PARENT)
+				return EBADMSG;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	if (outputs.size() > ownership_maximum_entries ||
+	    catalog->items.size() > ownership_maximum_entries - outputs.size())
+		return ENOSPC;
+	owner_state *destruction = ensure_owner(catalog, { item_owner_type::destruction, 0, 0 });
+	if (!destruction)
+		return ENOSPC;
+	owner = find_owner(catalog, payload.from_owner);
+	if (!owner)
+		return EILSEQ;
+	for (auto *entry : source)
+	{
+		++entry->item_revision;
+		entry->owner = { item_owner_type::destruction, 0, 0 };
+		entry->state = item_custody_state::destroyed;
+		result->max_item_revision =
+			std::max(result->max_item_revision, entry->item_revision);
+	}
+	++owner->revision;
+	for (size_t index = 0; index < outputs.size(); ++index)
+	{
+		const auto &output = outputs[index];
+		uint64_t root = output.object_uid;
+		int32_t parent = output.parent_index;
+		for (size_t depth = 0;
+		     parent != PLAYER_SNAPSHOT_NO_PARENT && depth < outputs.size(); ++depth)
+		{
+			if (parent < 0 || static_cast<size_t>(parent) >= outputs.size())
+				return EBADMSG;
+			root = outputs[static_cast<size_t>(parent)].object_uid;
+			parent = outputs[static_cast<size_t>(parent)].parent_index;
+		}
+		if (parent != PLAYER_SNAPSHOT_NO_PARENT)
+			return EBADMSG;
+		const uint64_t parent_uid =
+			output.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				0 :
+				outputs[static_cast<size_t>(output.parent_index)].object_uid;
+		catalog->items.push_back({ output.object_uid, root, parent_uid, payload.to_owner, 1,
+					   output.vnum, item_custody_state::active });
+		result->max_item_revision = std::max(result->max_item_revision, uint64_t(1));
+	}
+	std::sort(catalog->items.begin(), catalog->items.end(), item_less);
+	result->from_owner_revision = owner->revision;
+	result->to_owner_revision = owner->revision;
 	return 0;
 }
 } // namespace
@@ -1786,11 +1920,10 @@ prepare_custody_remove(const std::string &root, const flatfile_authority_lock &l
 					    [](const auto &left, const auto &right)
 					    { return left.item_uid < right.item_uid; }))
 				return flatfile_item_repository_result::invalid;
-			if (std::find_if(owners.begin(), owners.end(),
-					 [&](const auto &owner) {
-						 return item_owner_identity_equal(owner,
-										  expected.owner);
-					 }) != owners.end())
+			if (std::find_if(
+				    owners.begin(), owners.end(), [&](const auto &owner)
+				    { return item_owner_identity_equal(owner, expected.owner); }) !=
+			    owners.end())
 				return flatfile_item_repository_result::invalid;
 			const owner_state *stored_owner = find_owner(&catalog, expected.owner);
 			if (!stored_owner)
@@ -1823,11 +1956,10 @@ prepare_custody_remove(const std::string &root, const flatfile_authority_lock &l
 					    [](const auto &left, const auto &right)
 					    { return left.item_uid < right.item_uid; }))
 				return flatfile_item_repository_result::invalid;
-			if (std::find_if(owners.begin(), owners.end(),
-					 [&](const auto &owner) {
-						 return item_owner_identity_equal(owner,
-										  expected.owner);
-					 }) != owners.end())
+			if (std::find_if(
+				    owners.begin(), owners.end(), [&](const auto &owner)
+				    { return item_owner_identity_equal(owner, expected.owner); }) !=
+			    owners.end())
 				return flatfile_item_repository_result::invalid;
 			const owner_state *stored_owner = find_owner(&catalog, expected.owner);
 			if (!stored_owner)
@@ -1992,7 +2124,9 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
 	}
 	item_transfer_result result = {};
-	unsigned int result_code = apply_transfer(&candidate, payload, &result);
+	unsigned int result_code = payload.reason == item_transfer_reason::craft ?
+					   apply_craft(&candidate, payload, &result) :
+					   apply_transfer(&candidate, payload, &result);
 	if (result_code == ENOMEM || result_code == EILSEQ)
 		return { critical_apply_outcome::retryable_failure, catalog.revision, result_code };
 	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&

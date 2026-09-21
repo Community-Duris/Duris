@@ -77,6 +77,9 @@ enum class item_transfer_reason : uint16_t
 	// distinct reason preserves the audit trail without weakening the generic
 	// player-owner validation used by the transfer repositories.
 	trusted_steal,
+	// Retire one or more input trees and admit detached output snapshots in
+	// the same authority transaction while reusing item-transfer journaling.
+	craft,
 };
 
 enum class item_custody_state : uint8_t
