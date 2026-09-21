@@ -29,6 +29,7 @@ def main() -> None:
                     "telemetry_combat_summary.c",
                     "telemetry_config.c",
                     "telemetry_encounter.c",
+                    "telemetry_failure.c",
                     "telemetry_queue.c",
                     "telemetry_progression.c",
                     "telemetry_repository.c",

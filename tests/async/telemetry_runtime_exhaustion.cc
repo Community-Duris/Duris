@@ -144,10 +144,15 @@ generation_barrier_apply(void *context, const telemetry_record *records, std::si
 	if (call == 1U)
 	{
 		result.outcome = telemetry_batch_outcome::commit_ambiguous;
+		result.failure_class = telemetry_failure_class::commit_ambiguous;
+		result.error_code = 2013U;
 		for (std::size_t index = 0U; index < count; ++index)
 		{
 			result.results[index].key = records[index].header.key;
 			result.results[index].outcome = telemetry_apply_outcome::commit_ambiguous;
+			result.results[index].failure_class =
+				telemetry_failure_class::commit_ambiguous;
+			result.results[index].error_code = 2013U;
 		}
 	}
 	else

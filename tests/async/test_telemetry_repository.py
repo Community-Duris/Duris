@@ -181,20 +181,23 @@ def main():
         common = compiler + ["-std=c++20", "-Wall", "-Wextra", "-Werror", "-pedantic", "-pthread",
                              "-I", str(ROOT / "src"), "-I", str(tmp)]
         source = str(ROOT / "src/telemetry/telemetry_repository.c")
+        failure_source = str(ROOT / "src/telemetry/telemetry_failure.c")
         harness = str(ROOT / "tests/async/telemetry_repository_harness.cc")
         no_sql = tmp / "no_mysql"
-        subprocess.run(common + ["-D__NO_MYSQL__", source, harness, "-o", str(no_sql)], check=True)
+        subprocess.run(common + ["-D__NO_MYSQL__", failure_source, source, harness,
+                                 "-o", str(no_sql)], check=True)
         subprocess.run([str(no_sql)], check=True, timeout=30)
         mysql = shlex.split(subprocess.check_output(["mysql_config", "--cflags", "--libs"], text=True)) + ["-lcrypto"]
         sql = tmp / "sql"
-        subprocess.run(common + [source, harness, "-Wl,--wrap=mysql_real_query", "-Wl,--wrap=mysql_errno", "-Wl,--wrap=_Znwm",
+        subprocess.run(common + [failure_source, source, harness, "-Wl,--wrap=mysql_real_query", "-Wl,--wrap=mysql_errno", "-Wl,--wrap=_Znwm",
                                   "-o", str(sql)] + mysql, check=True)
         print("SQL repository harness compile: PASS", flush=True)
         if args.sql_fixture:
             subprocess.run([str(sql), str(ROOT / "migrations/immutable/0014_telemetry_storage.sql"),
                             str(ROOT / "migrations/immutable/0022_telemetry_progression.sql"),
                             str(ROOT / "migrations/immutable/0024_telemetry_encounters.sql"),
-                            str(ROOT / "migrations/immutable/0025_telemetry_combat_summaries.sql")],
+                            str(ROOT / "migrations/immutable/0025_telemetry_combat_summaries.sql"),
+                            str(ROOT / "migrations/immutable/0030_telemetry_quarantine.sql")],
                            check=True, timeout=120)
         else:
             print("SQL runtime: SKIPPED (use --sql-fixture with disposable fixture acknowledgement)")

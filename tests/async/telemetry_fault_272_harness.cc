@@ -131,6 +131,11 @@ telemetry_apply_batch_result apply_result(const telemetry_record *records, std::
 {
 	telemetry_apply_batch_result result{};
 	result.outcome = outcome;
+	if (outcome == telemetry_batch_outcome::commit_ambiguous)
+	{
+		result.failure_class = telemetry_failure_class::commit_ambiguous;
+		result.error_code = 2013U;
+	}
 	result.input_count = static_cast<std::uint16_t>(count);
 	result.result_count = static_cast<std::uint16_t>(count);
 	result.first_record_seq = records[0].header.key.record_seq;
@@ -139,6 +144,8 @@ telemetry_apply_batch_result apply_result(const telemetry_record *records, std::
 	{
 		result.results[index].key = records[index].header.key;
 		result.results[index].outcome = record_outcome;
+		result.results[index].failure_class = result.failure_class;
+		result.results[index].error_code = result.error_code;
 		if (record_outcome == telemetry_apply_outcome::applied)
 			++result.applied_count;
 		else if (record_outcome == telemetry_apply_outcome::duplicate_identical)
