@@ -539,7 +539,12 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !corpse || !timeout_msec)
 		return player_save_terminal_result::invalid;
-	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	// A payload-gap load keeps its valid item graph read-only. Its only safe
+	// terminal write is the immutable death disposition, which records that
+	// graph and quarantines matching durable custody. Every other degraded load
+	// may be missing state the disposition cannot reconstruct.
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) &&
+	    !IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP))
 		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;

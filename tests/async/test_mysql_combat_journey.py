@@ -7,7 +7,6 @@ built MariaDB executable; by default this script builds bin/server/dms_new.
 """
 from pathlib import Path
 import argparse
-import errno
 import os
 import signal
 import subprocess
@@ -136,16 +135,26 @@ def run(server, reset_coins=False, boons=False):
                     client=journey.reconnect_character(plain)
                     client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.')
                     banana=number(f'SELECT item_uid FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND state=1 AND vnum=15 LIMIT 1')
+                    client.send('quit'); client.expect('ACCOUNT MENU',timeout=30)
+                    client.send('0'); client.close(); client=None
                     # Add a durable child absent from the live object graph.
-                    # The real batch repository must refuse the incomplete tree.
+                    # A cold load must retain the valid graph read-only and route
+                    # death through its immutable disposition.
                     ghost=9000000000000000000+pid
                     sql(f'INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES({ghost},{banana},{banana},1,{pid},1,15,1)')
+                    client=journey.reconnect_character(plain)
+                    client.send('inventory'); client.expect('a banana',timeout=15)
+                    deadline=time.monotonic()+15
+                    while 'outcome=missing_payload_rows' not in journey.runtime_logs(runtime):
+                        assert time.monotonic()<deadline, 'payload gap was not reported at load'
+                        time.sleep(.01)
+                    assert number(f'SELECT COUNT(*) FROM item_current_owner WHERE item_uid={ghost} AND owner_type=1 AND owner_id={pid} AND state=1')==1
                     before_deaths=number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')
                     journey.attack_until_death(client)
                     client.expect('ACCOUNT MENU',timeout=45)
                     client.send('0'); client.close(); client=None
                     logs=journey.runtime_logs(runtime)
-                    assert f'error={errno.EMSGSIZE} disputed=1' in logs
+                    assert 'load_item_payload_gap_disposition' in logs
                     assert logs.index('death_disposition_recorded')<logs.index('death_disposition_completed')
                     assert number(f'SELECT COUNT(*) FROM player_death_disposition WHERE pid={pid}')==1
                     assert number(f'SELECT COUNT(*) FROM player_death_custody WHERE pid={pid} AND item_uid={banana} AND owner_type=1')==1

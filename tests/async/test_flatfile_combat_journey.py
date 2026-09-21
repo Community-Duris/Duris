@@ -12,7 +12,6 @@ from __future__ import annotations
 import server_build_artifacts
 
 import os
-import errno
 import fcntl
 import hashlib
 import json
@@ -281,15 +280,31 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         client.expect(f"Save complete for {CHARACTER}.")
         before = inspect_authority(state_root)
         banana = next(item["uid"] for item in before["player_items"] if item["vnum"] == 15)
+        client.send("quit")
+        client.expect("ACCOUNT MENU", timeout=30)
+        client.send("0")
+        client.close()
         ghost = add_death_conflict(state_root, banana)
         require(any(item["uid"] == ghost and item["parent"] == banana
                     for item in inspect_authority(state_root)["player_items"]),
                 "conflicting durable custody was not installed")
-        # Wait for the real repository refusal while the character remains live.
+        # Cold-load the partial projection. The valid graph stays visible but
+        # read-only, and death enters the disposition path without relying on a
+        # particular live root to discover the payload-less descendant.
+        client = reconnect_character(port)
+        client.send("inventory")
+        client.expect("a banana", timeout=15)
+        deadline = time.monotonic() + 15
+        while "outcome=missing_payload_rows" not in runtime_logs(run_root):
+            require(time.monotonic() < deadline, "payload gap was not reported at load")
+            time.sleep(0.01)
+        require(any(item["uid"] == ghost and item["parent"] == banana
+                    for item in inspect_authority(state_root)["player_items"]),
+                "partial load rewrote durable custody")
         attack_until_death(client)
         deadline = time.monotonic() + 15
-        while f"error={errno.EMSGSIZE} disputed=1" not in runtime_logs(run_root):
-            require(time.monotonic() < deadline, "death did not reach EMSGSIZE refusal")
+        while "load_item_payload_gap_disposition" not in runtime_logs(run_root):
+            require(time.monotonic() < deadline, "payload-gap death did not enter disposition")
             time.sleep(0.01)
         refused_at = time.monotonic()
         client.expect("ACCOUNT MENU", timeout=30)
@@ -315,7 +330,7 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         logs = runtime_logs(run_root)
         require(logs.index("death_disposition_recorded") < logs.index("death_disposition_completed"),
                 "character released before disposition durability")
-        print(f"flatfile-primary EMSGSIZE refusal-to-account-menu (n=1, isolated): {elapsed:.3f}s", flush=True)
+        print(f"flatfile-primary payload-gap disposition-to-account-menu (n=1, isolated): {elapsed:.3f}s", flush=True)
         client.send("0")
         return after
     finally:

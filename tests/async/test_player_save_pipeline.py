@@ -214,6 +214,7 @@ assert death_terminal.index("player_death_snapshot_capture") < death_terminal.in
     "enqueue_snapshot(std::move(snapshot))"
 ) < death_terminal.index("await_terminal_fence(pid, revision")
 assert "player_save_pipeline_checkpoint_dirty" not in death_terminal
+assert "CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP" in death_terminal
 assert "promote_existing" not in terminal
 assert terminal.index("if (fence->acknowledged)") < terminal.index("if (allow_journal_handoff")
 assert "*fence = {};" in terminal
@@ -419,6 +420,24 @@ int main() {
         assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
                                                    22806, 20, false) ==
                player_save_terminal_result::database_acknowledged);
+
+        // Partial loads remain fenced from every ordinary snapshot. A generic
+        // degraded load cannot record a death either, but the specific payload-
+        // gap admission can use the immutable disposition without opening the
+        // ordinary terminal path.
+        player.runtime_flags = CHAR_RFLAG_LOAD_DEGRADED;
+        assert(player_save_pipeline_terminal(&player, 6, 22807, 20, false) ==
+               player_save_terminal_result::unavailable);
+        assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                   22807, 20, false) ==
+               player_save_terminal_result::unavailable);
+        player.runtime_flags |= CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP;
+        assert(player_save_pipeline_terminal(&player, 6, 22807, 20, false) ==
+               player_save_terminal_result::unavailable);
+        assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                   22807, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
+        player.runtime_flags = 0;
     }
 }
 '''
