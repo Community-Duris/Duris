@@ -28,6 +28,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
         [
             "g++",
             "-std=c++20",
+            "-g",
+            "-Og",
+            "-fsanitize=address,undefined",
+            "-fno-omit-frame-pointer",
+            "-fno-pie",
+            "-no-pie",
             "-Wall",
             "-Wextra",
             "-Wpedantic",
