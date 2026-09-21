@@ -57,12 +57,20 @@ flatfile_accounting_status flatfile_accounting_lookup(const std::string &root,
 						      flatfile_accounting_record *,
 						      std::string *error);
 
+// Check the bucket index, active segment and stale-next fence without selecting
+// a command. This is not a full semantic scan of sealed history.
+flatfile_accounting_status flatfile_accounting_check_bucket(const std::string &,
+							    const flatfile_authority_lock &,
+							    const critical_operation_id &lineage,
+							    size_t bucket, std::string *error);
+
 // Private staging bridge. Only typed domain/lifecycle owners can combine
 // actual locked effects with evidence; structural records grant no capability.
 class flatfile_accounting_storage
 {
 	friend class flatfile_accounting_bank_transaction;
 	friend class flatfile_accounting_lifecycle_transaction;
+	friend class flatfile_accounting_authority_storage;
 #ifdef DURIS_FLATFILE_ACCOUNTING_TEST
 	friend class flatfile_accounting_test_access;
 #endif

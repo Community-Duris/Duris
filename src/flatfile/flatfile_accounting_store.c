@@ -637,3 +637,20 @@ flatfile_accounting_storage::stage(const std::string &root, const flatfile_autho
 		},
 		error);
 }
+
+flatfile_accounting_status flatfile_accounting_check_bucket(const std::string &root,
+							    const flatfile_authority_lock &lock,
+							    const critical_operation_id &lineage,
+							    size_t bucket, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			require(bucket < FLATFILE_ACCOUNTING_BUCKETS &&
+				!critical_operation_id_is_zero(lineage));
+			recover(root, lock, error);
+			auto value = load_context(root, bucket, error);
+			require(value.index.lineage.bytes == lineage.bytes);
+		},
+		error);
+}

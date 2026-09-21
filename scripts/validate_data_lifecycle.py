@@ -71,6 +71,10 @@ DESTRUCTIVE_ACTIONS = {
     "archive", "purge", "pseudonymize", "cascade", "restore_tombstone",
 }
 REQUIRED_NON_DATABASE_STORES = {
+    "file:economic-authority-control": ("recovery_state", "FLATFILE_ROOT/economic-evidence/authority.eal"),
+    "file:economic-authority-epoch": ("recovery_state", "FLATFILE_ROOT/economic-evidence/epochs.eae"),
+    "file:economic-authority-mapping": ("recovery_state", "FLATFILE_ROOT/economic-evidence/mapping-*.eam"),
+    "file:economic-authority-native-index": ("recovery_state", "FLATFILE_ROOT/economic-evidence/native-*.ean"),
     "file:economic-accounting-index": ("recovery_state", "FLATFILE_ROOT/economic-evidence/*.eai"),
     "file:economic-accounting-segment": ("recovery_state", "FLATFILE_ROOT/economic-evidence/*.eas"),
     "file:player_save_journal": ("journal", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal"),
