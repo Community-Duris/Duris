@@ -2118,6 +2118,18 @@ void send_movement_noise(P_char ch, int num)
 	}
 }
 
+static P_char movement_special_actor(P_char mover)
+{
+	P_char rider = get_linking_char(mover, LNK_RIDING);
+
+	// Ordered movement and fleeing run as the mount, but the player riding it is
+	// still attempting passage.  Let movement specials authorize that player once.
+	if (IS_NPC(mover) && rider && IS_PC(rider))
+		return rider;
+
+	return mover;
+}
+
 int do_simple_move(P_char ch, int exitnumb, unsigned int flags)
 {
 	if (ch->in_room == NOWHERE)
@@ -2127,7 +2139,7 @@ int do_simple_move(P_char ch, int exitnumb, unsigned int flags)
 		return FALSE;
 
 	// Check for special routines
-	if (special(ch, exitnumb_to_cmd(exitnumb), 0))
+	if (special(movement_special_actor(ch), exitnumb_to_cmd(exitnumb), 0))
 		return FALSE;
 
 	if (grease_check(ch))
