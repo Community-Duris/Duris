@@ -712,13 +712,14 @@ int main()
 	/* When both domains are pending, an input must be safe under both gates. */
 	struct txt_q combined = {};
 	item_pending = true;
+	push(&combined, "repair pick");
 	push(&combined, "inventory");
 	push(&combined, "deposit all");
 	push(&combined, "say waiting");
 	assert(get_playing_cmd_from_q(&actor, &combined, dest));
 	expect_text(dest, "say waiting");
 	assert(!get_playing_cmd_from_q(&actor, &combined, dest));
-	expect_text(combined.head->text, "inventory");
+	expect_text(combined.head->text, "repair pick");
 	expect_text(combined.tail->text, "deposit all");
 	drain(&combined);
 	item_pending = false;
