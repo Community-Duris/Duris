@@ -1013,6 +1013,23 @@ static bool sql_verify_session_contract(MYSQL *conn)
 	if (!valid)
 		return false;
 
+	const char *server = mysql_get_server_info(conn);
+	if (!server)
+		return false;
+	if (strstr(server, "MariaDB"))
+	{
+		const char *checks = "SELECT @@SESSION.check_constraint_checks";
+		if (mysql_real_query(conn, checks, strlen(checks)))
+			return false;
+		result = mysql_store_result(conn);
+		row = result ? mysql_fetch_row(result) : NULL;
+		valid = row && row[0] && !strcmp(row[0], "1");
+		if (result)
+			mysql_free_result(result);
+		if (!valid)
+			return false;
+	}
+
 	const char *isolation_queries[] = { "SELECT @@transaction_isolation",
 					    "SELECT @@tx_isolation" };
 	for (const char *query : isolation_queries)
@@ -1042,6 +1059,10 @@ static bool sql_apply_session_contract(MYSQL *conn)
 	for (const char *statement : statements)
 		if (!sql_connection_execute(conn, statement))
 			return false;
+	const char *server = mysql_get_server_info(conn);
+	if (!server || (strstr(server, "MariaDB") &&
+			!sql_connection_execute(conn, "SET SESSION check_constraint_checks=1")))
+		return false;
 	return sql_verify_session_contract(conn);
 }
 
@@ -2132,7 +2153,16 @@ static bool sql_verify_metadata_fingerprint(void)
 	query += RUNTIME_TABLE_SQL_LIST;
 	query += ") OR k.referenced_table_name IN (";
 	query += RUNTIME_TABLE_SQL_LIST;
-	query += ")) AND k.referenced_table_name IS NOT NULL ORDER BY 1";
+	query += ")) AND k.referenced_table_name IS NOT NULL";
+	query +=
+		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness')";
+	const char *server = mysql_get_server_info(DB);
+	if (!server)
+		return false;
+	if (!strstr(server, "MariaDB"))
+		query +=
+			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness')";
+	query += " ORDER BY 1";
 	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;
 	MYSQL_RES *result = mysql_store_result(DB);
@@ -2164,7 +2194,7 @@ static bool sql_verify_metadata_fingerprint(void)
 	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
 		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
 	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
-	const char *server = mysql_get_server_info(DB);
+
 	const char *expected = server && strstr(server, "MariaDB") ?
 				       RUNTIME_MARIADB10_11_METADATA_FINGERPRINT :
 				       RUNTIME_MYSQL8_METADATA_FINGERPRINT;

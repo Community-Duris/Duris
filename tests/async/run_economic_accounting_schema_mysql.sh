@@ -34,8 +34,12 @@ bash migrations/verify_runtime_compatibility.sh
 "${MYSQL[@]}" "$DB_NAME" < migrations/immutable/0031_economy_accounting.sql
 bash migrations/immutable/0031_economy_accounting.sh
 python3 tests/async/test_economic_accounting_schema_mysql.py -v
+python3 migrations/verify_economic_baseline_schema.py
+python3 tests/async/test_economic_baseline_schema_mysql.py -v
 
 bash tests/async/run_economic_accounting_authority_mysql.sh
 
 python3 tests/async/test_economic_sql_bank_transaction_flatfile.py
 python3 tests/async/run_economic_sql_bank_transaction_mysql.py
+
+python3 tests/async/run_economic_sql_baseline_transaction_mysql.py

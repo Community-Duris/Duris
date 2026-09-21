@@ -34,6 +34,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0027_saved_item_recovery_handoff.sql",
     ROOT / "migrations" / "immutable" / "0030_telemetry_quarantine.sql",
     ROOT / "migrations" / "immutable" / "0031_economy_accounting.sql",
+    ROOT / "migrations" / "economic_baseline.sql",
 )
 
 ROOT_FIELDS = {

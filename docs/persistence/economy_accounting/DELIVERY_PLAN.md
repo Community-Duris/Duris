@@ -5,14 +5,26 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: flat-file baseline witness and reservation storage
+## Current increment: SQL baseline witness and reservation storage
+
+Based on [PR #610](https://github.com/Community-Duris/Duris/pull/610) at `a039c6c94`.
+Reuse the bounded schema and private transaction owner from `e52e18003` and
+`2c2469cff`, adapting the unpublished migration to `0032`. Retain complete witnesses,
+reserve each identity once per epoch, and reconcile exact-ID retries after an
+ambiguous commit. See [SQL_BASELINE_STORAGE.md](SQL_BASELINE_STORAGE.md).
+Native source capture, wallet/shared-bank enrollment, maintenance ownership,
+publication acknowledgement and activation remain pending. This component does
+not change gameplay coverage or close #479.
+
+## Prior increment: flat-file baseline witness and reservation storage
 
 Based on [PR #609](https://github.com/Community-Duris/Duris/pull/609) at `5fd726388`.
 Reuse `ad840cf4c` private baseline storage, adapted to current v2 journal framing
 and DURECR2 failure-stage validation. Retain complete witnesses and unique
 per-epoch openings with lifecycle and backup registration. See
 [BASELINE_STORAGE.md](BASELINE_STORAGE.md). Native source proof, lifecycle
-admission, maintenance ownership, SQL counterpart and activation remain pending.
+admission, maintenance ownership and activation remain pending. The SQL counterpart
+is the current increment.
 
 ## Prior increment: baseline preparation and retained source witnesses
 
