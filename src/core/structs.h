@@ -133,6 +133,7 @@ typedef struct combat_data *P_combat;
 #define AFFTYPE_LINKED_OBJ BIT_12
 #define AFFTYPE_SET_AFFECT BIT_13
 #define AFFTYPE_DAM_WARD BIT_14
+#define AFFTYPE_SPELL_WARD BIT_15
 #define AFFTYPE_STORE (AFFTYPE_NOAPPLY | AFFTYPE_NODISPEL | AFFTYPE_NOSHOW)
 #define MAX_FORGE_ITEMS 1000
 #define MEMTYPE_FULL AFFTYPE_CUSTOM1
@@ -1187,6 +1188,17 @@ struct affected_type
 	unsigned long bitvector3;
 	unsigned long bitvector4;
 	unsigned long bitvector5;
+	/* Finite spell-ward state carried by the ordinary affect lifecycle. */
+	uint64_t ward_source_uid;
+	int ward_full_duration;
+	int64_t ward_capacity;
+	int64_t ward_capacity_max;
+	int ward_refresh_remaining;
+	uint64_t ward_last_tick;
+	::byte ward_source_type;
+	::byte ward_source_worn;
+	::byte ward_active;
+	::byte ward_reserved;
 	struct affected_type *next;
 };
 

@@ -42,6 +42,7 @@
 #include "ships/ships.h"
 #include "redis/redis_ship_legacy.h"
 #include "magic/spells.h"
+#include "combat/spell_wards.h"
 #include "sql/sql.h"
 #include "player/player_name.h"
 #include "account/password_hash.h"
@@ -2072,6 +2073,7 @@ bool sql_save_player_affects(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
+	spell_ward_sync_timers(ch);
 
 	// Start own transaction if not already in one
 	bool own_txn = false;
@@ -2112,7 +2114,10 @@ bool sql_save_player_affects(P_char ch)
 	int pos = snprintf(
 		batch, 32768,
 		"REPLACE INTO player_affects (pid, type, duration, flags, modifier, location, level, "
-		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, custom_msg_char, custom_msg_room) VALUES ");
+		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, custom_msg_char, "
+		"custom_msg_room, ward_source_uid, ward_full_duration, ward_capacity, "
+		"ward_capacity_max, ward_refresh_remaining, ward_source_type, ward_source_worn, "
+		"ward_active) VALUES ");
 
 	bool has_affects = false;
 	for (struct affected_type *af = ch->affected; af; af = af->next)
@@ -2156,12 +2161,22 @@ bool sql_save_player_affects(P_char ch)
 			strcpy(wear_off_room_sql, "NULL");
 
 		int new_pos = batch_append(batch, pos, 32768,
-					   "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s)",
+					   "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s,%llu,%d,%llu,%llu,%d,%u,%u,%u)",
 					   has_affects ? "," : "", pid, af->type, af->duration,
 					   af->flags, af->modifier, af->location, af->level,
 					   af->bitvector, af->bitvector2, af->bitvector3,
 					   af->bitvector4, af->bitvector5, wear_off_char_sql,
-					   wear_off_room_sql);
+					   wear_off_room_sql,
+					   static_cast<unsigned long long>(af->ward_source_uid),
+					   af->ward_full_duration,
+					   af->ward_capacity > 0 ?
+						   static_cast<unsigned long long>(af->ward_capacity) : 0ULL,
+					   af->ward_capacity_max > 0 ?
+						   static_cast<unsigned long long>(af->ward_capacity_max) : 0ULL,
+					   af->ward_refresh_remaining,
+					   static_cast<unsigned int>(af->ward_source_type),
+					   static_cast<unsigned int>(af->ward_source_worn),
+					   static_cast<unsigned int>(af->ward_active));
 		free(esc_wear_off_char);
 		free(esc_wear_off_room);
 		if (new_pos < 0)
@@ -3889,6 +3904,11 @@ static unsigned long sql_row_ulong(MYSQL_ROW row, int idx, unsigned long def)
 	return (row && row[idx]) ? strtoul(row[idx], NULL, 10) : def;
 }
 
+static unsigned long long sql_row_ull(MYSQL_ROW row, int idx, unsigned long long def)
+{
+	return (row && row[idx]) ? strtoull(row[idx], NULL, 10) : def;
+}
+
 static bool sql_row_revision(MYSQL_ROW row, int idx, player_revision_t *revision_out)
 {
 	if (!row || !row[idx] || !revision_out)
@@ -4305,7 +4325,9 @@ bool sql_load_player_affects(P_char ch)
 	snprintf(query, sizeof(query),
 		 "SELECT type, duration, flags, modifier, location, level, "
 		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		 "custom_msg_char, custom_msg_room "
+		 "custom_msg_char, custom_msg_room, ward_source_uid, ward_full_duration, "
+		 "ward_capacity, ward_capacity_max, ward_refresh_remaining, ward_source_type, "
+		 "ward_source_worn, ward_active "
 		 "FROM player_affects WHERE pid=%d",
 		 pid);
 
@@ -4332,6 +4354,15 @@ bool sql_load_player_affects(P_char ch)
 		af.bitvector5 = sql_row_ulong(row, 10, 0);
 		char *wear_off_char = sql_row_str(row, 11);
 		char *wear_off_room = sql_row_str(row, 12);
+		af.ward_source_uid = sql_row_ull(row, 13, 0);
+		af.ward_full_duration = sql_row_int(row, 14, 0);
+		af.ward_capacity = static_cast<int64_t>(sql_row_ull(row, 15, 0));
+		af.ward_capacity_max = static_cast<int64_t>(sql_row_ull(row, 16, 0));
+		af.ward_refresh_remaining = sql_row_int(row, 17, 0);
+		af.ward_source_type = static_cast<::byte>(sql_row_int(row, 18, 0));
+		af.ward_source_worn = static_cast<::byte>(sql_row_int(row, 19, 0));
+		af.ward_active = static_cast<::byte>(sql_row_int(row, 20, 0));
+		af.ward_last_tick = 0;
 		if (af.type == SKILL_DIAMOND_SOUL && af.location == APPLY_SAVING_PARA)
 			af.wear_off_message_index = 1;
 

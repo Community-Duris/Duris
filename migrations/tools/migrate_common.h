@@ -30,7 +30,7 @@
 #define SAV_SAVEVERS 5
 #define SAV_STATVERS 47
 #define SAV_SKILLVERS 2
-#define SAV_AFFVERS 8
+#define SAV_AFFVERS 9
 #define SAV_WTNSVERS 2
 #define SAV_ITEMVERS 35
 
@@ -142,6 +142,14 @@ struct mig_affect
 	unsigned char location;
 	long bitvector1, bitvector2, bitvector3, bitvector4, bitvector5;
 	short level;
+	unsigned long long ward_source_uid;
+	int ward_full_duration;
+	unsigned long long ward_capacity;
+	unsigned long long ward_capacity_max;
+	int ward_refresh_remaining;
+	unsigned char ward_source_type;
+	unsigned char ward_source_worn;
+	unsigned char ward_active;
 	char *wear_off_char;
 	char *wear_off_room;
 	struct mig_affect *next;
@@ -234,6 +242,7 @@ struct mig_player
 extern ush_int mig_getShort(char **buf);
 extern uint mig_getInt(char **buf);
 extern long mig_getLong(char **buf);
+extern unsigned long long mig_getULL(char **buf);
 extern char *mig_getString(char **buf);
 extern MYSQL *DB;
 

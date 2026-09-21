@@ -30,7 +30,7 @@ non-production target whose exact `host/database` pair appears in `DB_ALLOWED_TA
 | Runtime table | One of the 174 canonical game tables required by the current server. |
 | Extension table | A source table used by the website, administration tools, or an older subsystem, but not owned by the game runtime contract. |
 | Preservation archive | A `legacy_import_*` table containing source rows that cannot remain verbatim in a canonical runtime table. |
-| Legacy migration | The additive 145-step upgrade in `migrations/run_migration.sh`. |
+| Legacy migration | The additive 146-step upgrade in `migrations/run_migration.sh`. |
 | Immutable migration | A checksummed post-baseline migration in `migrations/immutable/`. |
 
 ## End-to-end flow

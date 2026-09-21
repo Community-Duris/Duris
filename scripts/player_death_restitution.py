@@ -87,16 +87,16 @@ NATIVE_ARTIFACT_LEGACY_MORTAL = 1 << 1
 
 TOOL_VERSION = 3
 # The bridge reports the first uint32 as the raw wire version and the decoder's
-# post-compatibility value separately as schema_version.  Death schema 8 is the
-# normalized in-memory contract; wire 8 is also the current writer's encoding.
-# Historical death records use wire 2, 4, or 6.  Keep this allow-list explicit:
+# post-compatibility value separately as schema_version.  Death schema 10 is the
+# normalized in-memory contract; wire 10 is the current writer's encoding.
+# Historical death records use wire 2, 4, 6, or 8.  Keep this allow-list explicit:
 # the native decoder remains responsible for byte-level validation, while this
 # gate rejects a valid non-death snapshot or an unknown future encoding.
-DEATH_NORMALIZED_SCHEMA_VERSION = 8
+DEATH_NORMALIZED_SCHEMA_VERSION = 10
 # Compatibility alias for callers that imported the old name; the normalized
 # label is authoritative and must not be confused with raw wire_version.
 DEATH_SCHEMA_VERSION = DEATH_NORMALIZED_SCHEMA_VERSION
-DEATH_WIRE_VERSIONS = frozenset({2, 4, 6, 8})
+DEATH_WIRE_VERSIONS = frozenset({2, 4, 6, 8, 10})
 ITEM_MONEY = 20
 VOBJ_COINS = 3
 ITEM_ARTIFACT = REAL_ARTIFACT_FLAG
@@ -1461,7 +1461,7 @@ def decode_payload(payload: bytes) -> dict[str, Any]:
     if (decoded.get("wire_version") not in DEATH_WIRE_VERSIONS
             or decoded.get("schema_version") != DEATH_NORMALIZED_SCHEMA_VERSION):
         raise ToolError(
-            "death payload is not a supported raw-wire death encoding normalized to schema-8"
+            "death payload is not a supported raw-wire death encoding normalized to schema-10"
         )
     return decoded
 

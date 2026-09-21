@@ -42,6 +42,7 @@ using namespace std;
 #include "world/graph.h"
 #include "combat/grapple.h"
 #include "combat/justice.h"
+#include "combat/spell_wards.h"
 #include "combat/training_dummy.h"
 #include "world/map.h"
 #include "core/mm.h"
@@ -4915,10 +4916,17 @@ bool spell_can_affect_char(P_char ch, int spl)
 	if (spl == SPELL_BALLISTIC_ATTACK)
 		return true;
 
-	return !((IS_AFFECTED(ch, AFF_MINOR_GLOBE) && (i < 4)) ||
-		 (IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) ||
-		 (IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
-		 (IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER)));
+	const bool native_ward = (IS_AFFECTED(ch, AFF_MINOR_GLOBE) && (i < 4)) ||
+		(IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) ||
+		(IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
+		(IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER));
+	if (native_ward)
+		return false;
+
+	/* Equipment ward bits are masked out of the aggregate affect bits. Keep
+	 * the old NPC/cast decision while making an available finite ward visible
+	 * to the selector; a broken finite ward must never suppress the cast. */
+	return !spell_ward_has_available(ch, spl);
 }
 
 /* is viewee at war with viewer? */

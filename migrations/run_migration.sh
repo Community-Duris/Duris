@@ -44,7 +44,10 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=145
+# Keep the historical baseline visible for immutable-runner documentation.
+# The live runner includes the renewable ward schema step below.
+# TOTAL=145 was the pre-ward migration count.
+TOTAL=146
 FAILED=0
 
 run_sql() {
@@ -771,6 +774,14 @@ CREATE TABLE IF NOT EXISTS player_affects (
     bitvector5 BIGINT UNSIGNED DEFAULT 0,
     custom_msg_char TEXT DEFAULT NULL,
     custom_msg_room TEXT DEFAULT NULL,
+    ward_source_uid BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_full_duration INT NOT NULL DEFAULT 0,
+    ward_capacity BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_capacity_max BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_refresh_remaining INT NOT NULL DEFAULT 0,
+    ward_source_type TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_source_worn TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_active TINYINT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     INDEX idx_pid (pid),
     CONSTRAINT fk_player_affects FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
@@ -2961,6 +2972,7 @@ convert_tables_to_charset "ensure consistent collation on all tables" 1
 run_sql_file "apply account-bound reward schema" "$SCRIPT_DIR/account_bound_rewards.sql"
 run_check "verify account-bound reward schema" "$SCRIPT_DIR/verify_account_bound_rewards.sh"
 run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persistence_contract.sql"
+run_sql_file "apply renewable spell ward durability schema" "$SCRIPT_DIR/spell_ward_durability.sql"
 run_sql_file "apply player corpse persistence state" "$SCRIPT_DIR/corpse_persistence_state.sql"
 run_sql_file "apply critical command inbox and outbox" "$SCRIPT_DIR/critical_command_inbox_outbox.sql"
 run_check "verify critical command inbox and outbox" "$SCRIPT_DIR/verify_critical_command_schema.sh"

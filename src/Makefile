@@ -229,6 +229,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
+				 combat/spell_wards.o \
 				 combat/fight.o \
 				 core/files.o \
 				 combat/fraglist.o \

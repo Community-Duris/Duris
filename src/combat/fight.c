@@ -39,6 +39,7 @@
 #include "economy/boon.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
+#include "combat/spell_wards.h"
 #include "combat/dam_mods.h"
 #include "combat/training_dummy.h"
 #include "classes/disguise.h"
@@ -4649,8 +4650,30 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// globes check
 	if (ch != victim)
 	{
-		if ((IS_AFFECTED3(victim, AFF3_SPIRIT_WARD) && (flags & SPLDAM_SPIRITWARD)) ||
-		    (IS_AFFECTED3(victim, AFF3_GR_SPIRIT_WARD) && (flags & SPLDAM_GRSPIRIT)))
+		/* A finite ward is the only defense allowed to consume part of this
+		 * damage packet. It is resolved before the legacy raw-bit fallback so
+		 * overflow can continue through the normal damage path. */
+		const spell_ward_absorb_result ward = spell_ward_absorb(ch, victim, dam, flags);
+		if (ward.blocked > 0.0)
+		{
+			const bool spirit_ward = (flags & (SPLDAM_SPIRITWARD | SPLDAM_GRSPIRIT)) != 0;
+			act(spirit_ward ?
+				    "&+WThe globe around your body flares as it bears the brunt of&n $n&+W's assault!" :
+				    "&+RThe globe around your body flares as it bears the brunt of&n $n&+R's assault!",
+			    FALSE, ch, 0, victim, TO_VICT | ACT_NOTTERSE);
+			act(spirit_ward ?
+				    "&+WThe globe around&n $N&+W's body flares as it bears the brunt of your assault!" :
+				    "&+RThe globe around&n $N&+R's body flares as it bears the brunt of your assault!",
+			    FALSE, ch, 0, victim, TO_CHAR | ACT_NOTTERSE);
+			if (ward.fully_blocked)
+			{
+				attack_back(ch, victim, FALSE);
+				return DAM_NONEDEAD;
+			}
+			dam = ward.remaining;
+		}
+		else if ((IS_AFFECTED3(victim, AFF3_SPIRIT_WARD) && (flags & SPLDAM_SPIRITWARD)) ||
+			 (IS_AFFECTED3(victim, AFF3_GR_SPIRIT_WARD) && (flags & SPLDAM_GRSPIRIT)))
 		{
 			act("&+WThe globe around your body flares as it bears the brunt of&n $n&+W's assault!",
 			    FALSE, ch, 0, victim, TO_VICT | ACT_NOTTERSE);
@@ -4659,8 +4682,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 			attack_back(ch, victim, FALSE);
 			return DAM_NONEDEAD;
 		}
-		if (((IS_AFFECTED(victim, AFF_MINOR_GLOBE)) && (flags & SPLDAM_MINORGLOBE)) ||
-		    (IS_AFFECTED2(victim, AFF2_GLOBE) && (flags & SPLDAM_GLOBE)))
+		else if (((IS_AFFECTED(victim, AFF_MINOR_GLOBE)) && (flags & SPLDAM_MINORGLOBE)) ||
+			 (IS_AFFECTED2(victim, AFF2_GLOBE) && (flags & SPLDAM_GLOBE)))
 		{
 			act("&+RThe globe around your body flares as it bears the brunt of&n $n&+R's assault!",
 			    FALSE, ch, 0, victim, TO_VICT | ACT_NOTTERSE);
