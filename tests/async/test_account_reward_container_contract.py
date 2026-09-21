@@ -29,6 +29,15 @@ assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(
     summon, "item_creation_grant_submit_to_player(ch,obj,ch)"
 )
 
+# Account rewards use explicit lifecycle rules and must not also opt into the
+# generic snapshot filter that conflicts with their authoritative custody row.
+mark_start = index(reward, "static void mark_reward_item")
+mark_end = index(reward, "static bool promote_reward_contents", mark_start)
+mark = reward[mark_start:mark_end]
+assert contains(mark, "ITEM_NOSELL") and contains(mark, "ITEM_NODROP")
+assert contains(mark, "REMOVE_BIT(obj->extra_flags,ITEM_NORENT)")
+assert not contains(mark, "SET_BIT(obj->extra_flags,ITEM_NORENT)")
+
 # Account reward code owns one public pre-persistence corpse hook. ACK-staged death
 # invokes it before the first empty corpse snapshot and ownership submission; player
 # inventory remains visible until each transfer commits.

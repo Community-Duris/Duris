@@ -386,10 +386,10 @@ void player_save_pipeline_shutdown(void)
 /** Mark player components dirty and advance any outstanding terminal fence to the new revision. */
 bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 {
-#ifdef __NO_MYSQL__
+	/* Equipment and inventory are one custody graph.  Saving either half alone can
+	 * delete container descendants or make an exact custody comparison impossible. */
 	if (components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY))
 		components |= PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
-#endif
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!accepting)
 		return false;
@@ -656,6 +656,8 @@ void player_save_pipeline_pulse(void)
 	player_save_completion completions[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	int32_t missing_baseline[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	size_t missing_baseline_count = 0;
+	player_save_completion custody_mismatches[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	size_t custody_mismatch_count = 0;
 	const size_t completed =
 		player_save_worker_pulse(completions, PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
 	{
@@ -695,8 +697,21 @@ void player_save_pipeline_pulse(void)
 				    player_save_apply_outcome::terminal_failure &&
 			    completions[index].error_code == ENOENT && completions[index].pid > 0)
 				missing_baseline[missing_baseline_count++] = completions[index].pid;
+			if (completions[index].outcome ==
+				    player_save_apply_outcome::terminal_failure &&
+			    completions[index].error_code ==
+				    PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
+			    completions[index].pid > 0)
+				custody_mismatches[custody_mismatch_count++] = completions[index];
 		}
 	}
+	for (size_t index = 0; index < custody_mismatch_count; ++index)
+		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
+				  "custody_payload_mismatch_rejected",
+				  "pid=%d revision=%llu components=%llu destructive_write=0",
+				  custody_mismatches[index].pid,
+				  (unsigned long long)custody_mismatches[index].revision,
+				  (unsigned long long)custody_mismatches[index].components);
 	for (size_t index = 0; index < missing_baseline_count; ++index)
 	{
 		const int32_t pid = missing_baseline[index];
