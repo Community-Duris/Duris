@@ -11,6 +11,7 @@ extern P_char character_list;
 extern P_room world;
 extern struct shop_data *shop_index;
 extern int number_of_shops;
+extern int top_of_mobt;
 extern int top_of_world;
 
 namespace
@@ -27,6 +28,48 @@ size_t keeper_stock(P_char keeper)
 			++count;
 	return count;
 }
+
+bool place_replicated_shop_at_home(P_char keeper, int shop)
+{
+	if (!keeper || !shop_index || shop < 0 || shop >= number_of_shops)
+		return false;
+	const int home = real_room(shop_index[shop].in_room);
+	if (home == NOWHERE)
+		return false;
+	GET_BIRTHPLACE(keeper) = shop_index[shop].in_room;
+	if (keeper->in_room == home)
+		return true;
+	const int prior_room = keeper->in_room;
+	if (prior_room != NOWHERE)
+		char_from_room(keeper);
+	if (char_to_room(keeper, home, -2))
+		return true;
+	// char_to_room() can free an NPC. Only compare the pointer against the live
+	// list before attempting to restore or clean up a rejected placement.
+	if (!char_in_list(keeper))
+		return false;
+	if (prior_room >= 0 && prior_room <= top_of_world && char_to_room(keeper, prior_room, -2))
+		return false;
+	if (char_in_list(keeper))
+		extract_char(keeper);
+	return false;
+}
+}
+
+bool is_replicated_shop(int shop)
+{
+	if (!shop_index || shop < 0 || shop >= number_of_shops || shop_index[shop].in_room <= 0)
+		return false;
+	const int keeper = shop_index[shop].keeper;
+	if (keeper < 0 || keeper > top_of_mobt)
+		return false;
+	for (int candidate = 0; candidate < number_of_shops; ++candidate)
+		if (candidate != shop && shop_index[candidate].keeper == keeper &&
+		    shop_index[candidate].in_room > 0 &&
+		    shop_index[candidate].in_room != shop_index[shop].in_room &&
+		    (!shop_index[shop].shop_is_roaming || !shop_index[candidate].shop_is_roaming))
+			return true;
+	return false;
 }
 
 int singleton_shop_id(P_char keeper)
@@ -75,6 +118,11 @@ void bind_shopkeeper(P_char keeper, int shop_nr)
 	    shop_index[shop_nr].keeper != GET_RNUM(keeper))
 		return;
 	keeper->only.npc->shopkeeper_shop_id = shop_nr;
+	// Replicated local services must remain in their configured rooms. The
+	// historical roaming bit on shop zero is retained only so old durable rows
+	// from another valid room remain loadable during an upgrade.
+	if (is_replicated_shop(shop_nr))
+		SET_BIT(keeper->specials.act, ACT_SENTINEL);
 }
 
 void remember_boot_shopkeepers()
@@ -137,7 +185,21 @@ void reconcile_shopkeepers(bool recovered_inventory)
 			       GET_IDNUM(candidate) < GET_IDNUM(keeper)))))
 				keeper = candidate;
 		}
+		if (!keeper && is_replicated_shop(shop))
+		{
+			keeper = read_mobile(shop_index[shop].keeper, REAL);
+			if (keeper && !place_replicated_shop_at_home(keeper, shop))
+			{
+				keeper = nullptr;
+			}
+		}
 		if (!keeper)
+			continue;
+		// Shop zero was historically roaming and may be restored from any of the
+		// five dealer rooms. Preserve its durable identity and inventory, then
+		// return it to its newly configured home before filling the other rooms.
+		if (shop_index[shop].shop_is_roaming && is_replicated_shop(shop) &&
+		    !place_replicated_shop_at_home(keeper, shop))
 			continue;
 		bind_shopkeeper(keeper, shop);
 		for (P_char duplicate : candidates)

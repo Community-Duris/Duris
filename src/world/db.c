@@ -54,6 +54,8 @@
  */
 
 extern P_desc descriptor_list;
+extern struct shop_data *shop_index;
+extern int number_of_shops;
 extern const char *equipment_types[];
 extern const char *town_name_list[];
 extern const int min_stats_for_class[][8];
@@ -3226,13 +3228,25 @@ static bool room_has_shopkeeper(int mobile_rnum, int room_rnum)
 	return false;
 }
 
+static int replicated_shopkeeper_for_room(int mobile_rnum, int room_rnum)
+{
+	if (!shop_index || number_of_shops <= 0 || room_rnum < 0 || room_rnum > top_of_world)
+		return -1;
+	const int room = world[room_rnum].number;
+	for (int shop = 0; shop < number_of_shops; ++shop)
+		if (shop_index[shop].keeper == mobile_rnum && shop_index[shop].in_room == room &&
+		    is_replicated_shop(shop))
+			return shop;
+	return -1;
+}
+
 /* execute the reset command table of a given zone */
 /* force_item_repop : 2 means this is a boot-time initial reset of zone. */
 void reset_zone(int zone, int force_item_repop)
 {
 	const int respawn = get_property("artifact.respawn", 0);
 	int cmd_no, last_cmd = 1, last_mob_load = 0;
-	int temp, ival;
+	int temp, ival, replicated_shop;
 	P_char mob = NULL, last_mob = NULL, tmp_mob = NULL, last_mob_followable = NULL;
 	P_obj obj, obj_to;
 	arti_data artidata;
@@ -3480,63 +3494,64 @@ void reset_zone(int zone, int force_item_repop)
 			case 'M': /* read a mobile */
 				mob_index[ZCMD.arg1].limit =
 					ZCMD.arg2; // set the limit from zone file
+				replicated_shop =
+					replicated_shopkeeper_for_room(ZCMD.arg1, ZCMD.arg3);
 
-				// Forced resets bypass population limits, but must not duplicate a
-				// keeper or apply this M command's stock/followers to an earlier mob.
-				if (room_has_shopkeeper(ZCMD.arg1, ZCMD.arg3))
+				// Replicated shop identities are room-scoped: the same mobile prototype
+				// may legitimately have one keeper in each configured shop room.
+				if (room_has_shopkeeper(ZCMD.arg1, ZCMD.arg3) ||
+				    !((replicated_shop >= 0 && ZCMD.arg2 > 0 && ZCMD.arg4 == 100) ||
+				      (mob_index[ZCMD.arg1].number < ZCMD.arg2 &&
+				       ZCMD.arg4 == 100) ||
+				      force_item_repop))
 				{
 					mob = last_mob = tmp_mob = last_mob_followable = NULL;
 					last_cmd = last_mob_load = 0;
 					break;
 				}
-
-				if ((mob_index[ZCMD.arg1].number < ZCMD.arg2 && ZCMD.arg4 == 100) ||
-				    force_item_repop)
+				if (ZCMD.arg4 > number(0, 99))
 				{
-					if (ZCMD.arg4 > number(0, 99))
+					if (!(mob = read_mobile(ZCMD.arg1, REAL)))
 					{
-						if (!(mob = read_mobile(ZCMD.arg1, REAL)))
-						{
-							ZCMD.command = '!';
-							logit(LOG_DEBUG,
-							      "reset_zone(): (zone %d) mob %d [%d] not loadable",
-							      zone, ZCMD.arg1,
-							      mob_index[ZCMD.arg1].virtual_number);
-						}
-					}
-					else
-					{
-						mob = 0;
-						last_mob = 0;
-						logit(LOG_MOB, "M cmd not executed %d %d %d %d",
-						      ZCMD.arg1, ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
-					}
-					if (!mob)
-					{
-						last_cmd = last_mob_load = 0;
-						last_mob_followable = 0;
-						break;
-					}
-					tmp_mob = NULL;
-					last_mob = last_mob_followable = mob;
-					/* Safety check: ensure room rnum is valid before accessing world array */
-					if (ZCMD.arg3 < 0 || ZCMD.arg3 > top_of_world)
-					{
-						logit(LOG_DEBUG,
-						      "reset_zone: M cmd zone %d has invalid room rnum %d",
-						      zone, ZCMD.arg3);
-						extract_char(mob);
 						ZCMD.command = '!';
-						last_cmd = last_mob_load = 0;
-						break;
+						logit(LOG_DEBUG,
+						      "reset_zone(): (zone %d) mob %d [%d] not loadable",
+						      zone, ZCMD.arg1,
+						      mob_index[ZCMD.arg1].virtual_number);
 					}
-					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
-					apply_zone_modifier(mob);
-					char_to_room(mob, ZCMD.arg3, -2);
-					last_cmd = last_mob_load = 1;
 				}
 				else
+				{
+					mob = 0;
+					last_mob = 0;
+					logit(LOG_MOB, "M cmd not executed %d %d %d %d", ZCMD.arg1,
+					      ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+				}
+				if (!mob)
+				{
 					last_cmd = last_mob_load = 0;
+					last_mob_followable = 0;
+					break;
+				}
+				tmp_mob = NULL;
+				last_mob = last_mob_followable = mob;
+				/* Safety check: ensure room rnum is valid before accessing world array */
+				if (ZCMD.arg3 < 0 || ZCMD.arg3 > top_of_world)
+				{
+					logit(LOG_DEBUG,
+					      "reset_zone: M cmd zone %d has invalid room rnum %d",
+					      zone, ZCMD.arg3);
+					extract_char(mob);
+					ZCMD.command = '!';
+					last_cmd = last_mob_load = 0;
+					break;
+				}
+				GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
+				apply_zone_modifier(mob);
+				if (replicated_shop >= 0)
+					bind_shopkeeper(mob, replicated_shop);
+				char_to_room(mob, ZCMD.arg3, -2);
+				last_cmd = last_mob_load = 1;
 				break;
 
 			case 'O': /* load an object to room */
