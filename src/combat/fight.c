@@ -75,6 +75,7 @@
 #include "persistence/persistence_observability.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "item/forced_weapon_drop.h"
 #include "combat/combat_outcome_transaction.h"
 #include "persistence/gameplay_read_state.h"
 /*
@@ -7519,34 +7520,26 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			if (weapon && GET_LEVEL(ch) > 1 &&
 			    !IS_SET(weapon->extra_flags, ITEM_NODROP))
 			{
-				for (pos = 0; pos < MAX_WEAR; pos++)
-					if (ch->equipment[pos] == weapon)
-						break;
-				if (pos < MAX_WEAR)
+				if (bIsQuickStepMiss)
 				{
-					P_obj weap = unequip_char(ch, pos);
+					for (pos = 0; pos < MAX_WEAR; pos++)
+						if (ch->equipment[pos] == weapon)
+							break;
+					P_obj weap = pos < MAX_WEAR ? unequip_char(ch, pos) : NULL;
 					if (weap)
 					{
-						if (bIsQuickStepMiss)
-						{
-							act("&-L&+YYou swing at your foe _really_ badly, losing control of your&n $q&-L&+Y!\r\n",
-							    FALSE, ch, weap, victim, TO_CHAR);
-							act("$n stumbles with $s attack, losing control of $s weapon!",
-							    TRUE, ch, 0, 0, TO_ROOM);
-							obj_to_char(weap, ch);
-						}
-						else
-						{
-							act("&-L&+YYou swing at your foe _really_ badly, sending your&n $q&-L&+Y flying!\r\n",
-							    FALSE, ch, weap, victim, TO_CHAR);
-							act("$n stumbles with $s attack, sending $s weapon flying!",
-							    TRUE, ch, 0, 0, TO_ROOM);
-							obj_to_room(weap, ch->in_room);
-						}
+						act("&-L&+YYou swing at your foe _really_ badly, losing control of your&n $q&-L&+Y!\r\n",
+						    FALSE, ch, weap, victim, TO_CHAR);
+						act("$n stumbles with $s attack, losing control of $s weapon!",
+						    TRUE, ch, 0, 0, TO_ROOM);
+						obj_to_char(weap, ch);
 					}
 					char_light(ch);
 					room_light(ch->in_room, REAL);
 				}
+				else
+					forced_weapon_drop(ch, weapon,
+							   forced_weapon_drop_cause::combat_fumble);
 			}
 			else
 			{
@@ -10800,17 +10793,17 @@ bool critical_disarm(P_char ch, P_char victim)
 	if (!obj || obj->type != ITEM_WEAPON || IS_SET(obj->extra_flags, ITEM_NODROP))
 		return FALSE;
 
-	obj = unequip_char(victim, pos);
-
 	if (!IS_ARTIFACT(obj) &&
 	    number(1, 100) < get_property("skill.criticalAttack.disarm.dropChance", 5))
 	{
-		obj_to_room(obj, victim->in_room);
+		return forced_weapon_drop(victim, obj, forced_weapon_drop_cause::critical_disarm) !=
+		       forced_weapon_drop_result::rejected;
 	}
-	else
-	{
-		obj_to_char(obj, victim);
-	}
+
+	obj = unequip_char(victim, pos);
+	if (!obj)
+		return FALSE;
+	obj_to_char(obj, victim);
 
 	return TRUE;
 }
