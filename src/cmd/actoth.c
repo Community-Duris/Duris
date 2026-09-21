@@ -7003,21 +7003,24 @@ void do_suicide(P_char ch, char * /*argument*/, int /*cmd*/)
 	if (IS_TRUSTED(ch))
 	{
 		send_to_char("Suicide is not an option at your level, sorry.\r\n", ch);
-		ch->desc->confirm_state = CONFIRM_NONE;
+		if (ch->desc)
+			ch->desc->confirm_state = CONFIRM_NONE;
 		return;
 	}
 
 	if (IS_ROOM(ch->in_room, ROOM_JAIL) || IS_AFFECTED(ch, AFF_BOUND))
 	{
 		send_to_char("You can't do that in your current state.\r\n", ch);
-		ch->desc->confirm_state = CONFIRM_NONE;
+		if (ch->desc)
+			ch->desc->confirm_state = CONFIRM_NONE;
 		return;
 	}
 
 	if ((IS_AFFECTED(ch, AFF_SLEEP)) || (GET_STAT(ch) == STAT_SLEEPING))
 	{
 		send_to_char("Please wake up to kill yourself.\r\n", ch);
-		ch->desc->confirm_state = CONFIRM_NONE;
+		if (ch->desc)
+			ch->desc->confirm_state = CONFIRM_NONE;
 		return;
 	}
 
@@ -7028,7 +7031,8 @@ void do_suicide(P_char ch, char * /*argument*/, int /*cmd*/)
 		send_to_char(
 			"There is too much adrenaline pumping through your body right now.\r\n",
 			ch);
-		ch->desc->confirm_state = CONFIRM_NONE;
+		if (ch->desc)
+			ch->desc->confirm_state = CONFIRM_NONE;
 		return;
 	}
 
