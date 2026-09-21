@@ -311,6 +311,86 @@ static telemetry_record progression_record(unsigned long long sequence, long lon
 	CHECK(telemetry_record_is_valid(record));
 	return record;
 }
+static telemetry_encounter_source encounter_source()
+{
+	const auto interval = interval_record();
+	return { interval.payload.interval.session.environment_id,
+		 interval.payload.interval.session.season_id,
+		 interval.payload.interval.config_id,
+		 interval.payload.interval.classifier_version,
+		 interval.payload.interval.policy_version,
+		 interval.payload.interval.dimensions.zone_vnum,
+		 7001U };
+}
+static telemetry_record encounter_record(unsigned long long sequence)
+{
+	const auto interval = interval_record();
+	telemetry_record record{};
+	record.header = interval.header;
+	record.header.kind = telemetry_record_kind::encounter;
+	record.header.key.record_seq = sequence;
+	auto &encounter = record.payload.encounter;
+	encounter.encounter = { { 701U, 702U }, 703U };
+	encounter.kind = telemetry_encounter_event_kind::close;
+	encounter.mode = telemetry_encounter_mode::pve;
+	encounter.outcome = telemetry_encounter_outcome::death;
+	encounter.revision = 2U;
+	encounter.source = encounter_source();
+	encounter.at_monotonic_usec = 5000U;
+	encounter.at_utc_usec = 1004000;
+	encounter.start_monotonic_usec = 1000U;
+	encounter.start_utc_usec = 1000000;
+	encounter.elapsed_usec = 4000U;
+	encounter.participant_count = 2U;
+	encounter.expected_credit_count = 1U;
+	encounter.quality_flags = TELEMETRY_QUALITY_LATE;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+static telemetry_record combat_summary_record(unsigned long long sequence)
+{
+	const auto interval = interval_record();
+	telemetry_record record{};
+	record.header = interval.header;
+	record.header.kind = telemetry_record_kind::combat_summary;
+	record.header.key.record_seq = sequence;
+	auto &summary = record.payload.combat_summary;
+	summary.encounter = { { 701U, 702U }, 703U };
+	summary.source = encounter_source();
+	summary.mode = telemetry_encounter_mode::pve;
+	summary.outcome = telemetry_encounter_outcome::death;
+	summary.actor_kind = telemetry_combat_actor_kind::player;
+	summary.revision = 2U;
+	summary.actor_id = interval.payload.interval.session.subject_id;
+	summary.actor_pid = interval.payload.interval.session.pid;
+	summary.owner_subject_id = summary.actor_id;
+	summary.unique_player_count = 1U;
+	summary.participant_count = 2U;
+	summary.dropped_participant_count = 1U;
+	summary.power_band = 10U;
+	summary.opponent_power_band = 12U;
+	summary.opponent_count = 3U;
+	summary.modifier_flags = TELEMETRY_COMBAT_MODIFIER_SPELL |
+				 TELEMETRY_COMBAT_MODIFIER_TANKING;
+	summary.start_monotonic_usec = 1000U;
+	summary.end_monotonic_usec = 5000U;
+	summary.start_utc_usec = 1000000;
+	summary.end_utc_usec = 1004000;
+	summary.damage_dealt = 111U;
+	summary.damage_taken = 112U;
+	summary.healing_attempted = 50U;
+	summary.effective_healing = 40U;
+	summary.overhealing = 10U;
+	summary.control_applications = 3U;
+	summary.casting_attempts = 5U;
+	summary.casting_completions = 3U;
+	summary.casting_aborts = 1U;
+	summary.casting_elapsed_usec = 600U;
+	summary.tanking_usec = 700U;
+	summary.quality_flags = TELEMETRY_QUALITY_CLOCK_DISCONTINUITY;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
 static void seed_config()
 {
 	expect_one(normal_interval_configs[0], telemetry_apply_outcome::applied);
@@ -369,6 +449,62 @@ static void progression_replay_tests()
 	conflict.payload.progression.after_exp++;
 	expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=6") == 1U);
+}
+
+static void typed_extension_mapping_tests()
+{
+	case_name = "typed extension fields use their migrated columns";
+	reset_fixture();
+	seed_config();
+	const auto interval = interval_record();
+	const auto progression = progression_record(20, 25);
+	const auto encounter = encounter_record(21);
+	const auto combat = combat_summary_record(22);
+	const telemetry_record batch[] = { interval, progression, encounter, combat };
+	const auto result = telemetry_repository_apply(batch, std::size(batch));
+	CHECK(result.outcome == telemetry_batch_outcome::committed);
+	CHECK(result.applied_count == std::size(batch));
+	CHECK(result.duplicate_count == 0U && result.invalid_count == 0U &&
+	      result.conflict_count == 0U);
+
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=6 "
+		     "AND progression_kind=1 AND progression_source=5 AND progression_reason=1 "
+		     "AND progression_observation_status=1 AND progression_modifier_flags=0 "
+		     "AND progression_requested_xp=25 AND progression_computed_xp=25 "
+		     "AND progression_applied_xp=25 AND progression_before_exp=100 "
+		     "AND progression_after_exp=125 AND progression_before_level=10 "
+		     "AND progression_after_level=10 AND progression_threshold_xp=0") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=7 "
+		     "AND encounter_start_monotonic_usec=1000 "
+		     "AND encounter_start_utc_usec=1000000 AND encounter_quality_flags=256 "
+		     "AND start_monotonic_usec IS NULL AND start_utc_usec IS NULL "
+		     "AND quality_flags IS NULL") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=8 "
+		     "AND combat_start_monotonic_usec=1000 AND combat_end_monotonic_usec=5000 "
+		     "AND combat_start_utc_usec=1000000 AND combat_end_utc_usec=1004000 "
+		     "AND combat_damage_dealt=111 AND combat_damage_taken=112 "
+		     "AND combat_healing_attempted=50 AND combat_effective_healing=40 "
+		     "AND combat_overhealing=10 AND combat_control_applications=3 "
+		     "AND combat_casting_attempts=5 AND combat_casting_completions=3 "
+		     "AND combat_casting_aborts=1 AND combat_casting_elapsed_usec=600 "
+		     "AND combat_tanking_usec=700 AND combat_quality_flags=128 "
+		     "AND start_monotonic_usec IS NULL AND end_monotonic_usec IS NULL "
+		     "AND start_utc_usec IS NULL AND end_utc_usec IS NULL "
+		     "AND quality_flags IS NULL") == 1U);
+
+	expect_one(progression, telemetry_apply_outcome::duplicate_identical);
+	expect_one(encounter, telemetry_apply_outcome::duplicate_identical);
+	expect_one(combat, telemetry_apply_outcome::duplicate_identical);
+	auto progression_conflict = progression;
+	progression_conflict.payload.progression.applied_xp++;
+	progression_conflict.payload.progression.after_exp++;
+	expect_one(progression_conflict, telemetry_apply_outcome::duplicate_conflict);
+	auto encounter_conflict = encounter;
+	encounter_conflict.payload.encounter.quality_flags |= TELEMETRY_QUALITY_SEQUENCE_GAP;
+	expect_one(encounter_conflict, telemetry_apply_outcome::duplicate_conflict);
+	auto combat_conflict = combat;
+	combat_conflict.payload.combat_summary.damage_dealt++;
+	expect_one(combat_conflict, telemetry_apply_outcome::duplicate_conflict);
 }
 
 static void config_and_scope_tests()
@@ -896,6 +1032,7 @@ int main(int argc, char **argv)
 	golden_tests();
 	replay_and_isolation_tests();
 	progression_replay_tests();
+	typed_extension_mapping_tests();
 	config_and_scope_tests();
 	global_scope_tests();
 	checkpoint_tests();

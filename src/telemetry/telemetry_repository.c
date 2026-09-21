@@ -220,13 +220,13 @@ void encounter_fields(fields &values, const telemetry_encounter_payload &encount
 	number(values, "encounter_participant_pid", encounter.participant.pid);
 	FIELD(values, encounter, at_monotonic_usec);
 	FIELD(values, encounter, at_utc_usec);
-	FIELD(values, encounter, start_monotonic_usec);
-	FIELD(values, encounter, start_utc_usec);
+	number(values, "encounter_start_monotonic_usec", encounter.start_monotonic_usec);
+	number(values, "encounter_start_utc_usec", encounter.start_utc_usec);
 	FIELD(values, encounter, elapsed_usec);
 	FIELD(values, encounter, participant_usec);
 	FIELD(values, encounter, participant_count);
 	FIELD(values, encounter, expected_credit_count);
-	FIELD(values, encounter, quality_flags);
+	number(values, "encounter_quality_flags", encounter.quality_flags);
 }
 
 void combat_summary_fields(fields &values, const telemetry_combat_summary_payload &summary)
@@ -255,22 +255,22 @@ void combat_summary_fields(fields &values, const telemetry_combat_summary_payloa
 	number(values, "combat_opponent_power_band", summary.opponent_power_band);
 	number(values, "combat_opponent_count", summary.opponent_count);
 	number(values, "combat_modifier_flags", summary.modifier_flags);
-	FIELD(values, summary, start_monotonic_usec);
-	FIELD(values, summary, end_monotonic_usec);
-	FIELD(values, summary, start_utc_usec);
-	FIELD(values, summary, end_utc_usec);
-	FIELD(values, summary, damage_dealt);
-	FIELD(values, summary, damage_taken);
-	FIELD(values, summary, healing_attempted);
-	FIELD(values, summary, effective_healing);
-	FIELD(values, summary, overhealing);
-	FIELD(values, summary, control_applications);
-	FIELD(values, summary, casting_attempts);
-	FIELD(values, summary, casting_completions);
-	FIELD(values, summary, casting_aborts);
-	FIELD(values, summary, casting_elapsed_usec);
-	FIELD(values, summary, tanking_usec);
-	FIELD(values, summary, quality_flags);
+	number(values, "combat_start_monotonic_usec", summary.start_monotonic_usec);
+	number(values, "combat_end_monotonic_usec", summary.end_monotonic_usec);
+	number(values, "combat_start_utc_usec", summary.start_utc_usec);
+	number(values, "combat_end_utc_usec", summary.end_utc_usec);
+	number(values, "combat_damage_dealt", summary.damage_dealt);
+	number(values, "combat_damage_taken", summary.damage_taken);
+	number(values, "combat_healing_attempted", summary.healing_attempted);
+	number(values, "combat_effective_healing", summary.effective_healing);
+	number(values, "combat_overhealing", summary.overhealing);
+	number(values, "combat_control_applications", summary.control_applications);
+	number(values, "combat_casting_attempts", summary.casting_attempts);
+	number(values, "combat_casting_completions", summary.casting_completions);
+	number(values, "combat_casting_aborts", summary.casting_aborts);
+	number(values, "combat_casting_elapsed_usec", summary.casting_elapsed_usec);
+	number(values, "combat_tanking_usec", summary.tanking_usec);
+	number(values, "combat_quality_flags", summary.quality_flags);
 }
 
 fields counter_fields(const telemetry_cumulative_counters &counters)
@@ -408,19 +408,19 @@ fields record_fields(const telemetry_record &record)
 		connection_fields(values, p.connection);
 		FIELD(values, p, at_monotonic_usec);
 		FIELD(values, p, at_utc_usec);
-		FIELD(values, p, kind);
-		FIELD(values, p, source);
-		FIELD(values, p, reason);
-		FIELD(values, p, observation_status);
-		FIELD(values, p, modifier_flags);
-		FIELD(values, p, requested_xp);
-		FIELD(values, p, computed_xp);
-		FIELD(values, p, applied_xp);
-		FIELD(values, p, before_exp);
-		FIELD(values, p, after_exp);
-		FIELD(values, p, before_level);
-		FIELD(values, p, after_level);
-		FIELD(values, p, threshold_xp);
+		number(values, "progression_kind", p.kind);
+		number(values, "progression_source", p.source);
+		number(values, "progression_reason", p.reason);
+		number(values, "progression_observation_status", p.observation_status);
+		number(values, "progression_modifier_flags", p.modifier_flags);
+		number(values, "progression_requested_xp", p.requested_xp);
+		number(values, "progression_computed_xp", p.computed_xp);
+		number(values, "progression_applied_xp", p.applied_xp);
+		number(values, "progression_before_exp", p.before_exp);
+		number(values, "progression_after_exp", p.after_exp);
+		number(values, "progression_before_level", p.before_level);
+		number(values, "progression_after_level", p.after_level);
+		number(values, "progression_threshold_xp", p.threshold_xp);
 		dimension_fields(values, p.dimensions);
 		FIELD(values, p, config_id);
 		FIELD(values, p, classifier_version);
