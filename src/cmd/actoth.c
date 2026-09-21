@@ -21,11 +21,14 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include <algorithm>
 #include <errno.h>
 #include <ctype.h>
+#include <new>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <vector>
 #include "world/achievements.h"
 #include "guild/assocs.h"
 #include "combat/damage.h"
@@ -47,6 +50,7 @@
 #include "redis/redis_presence_runtime.h"
 #include "ships/ships.h"
 #include "classes/specializations.h"
+#include "account/account_reward.h"
 #include "specs/specs.winterhaven.h"
 #include "magic/spells.h"
 #include "item/item_command_policy.h"
@@ -3208,18 +3212,15 @@ static P_char find_trusted_steal_player(uint32_t pid)
 	return NULL;
 }
 
-static bool trusted_steal_was_caught(int percent)
+static bool trusted_steal_was_caught(int /*percent*/)
 {
-	bool caught = FALSE;
-	if ((percent < 0) || MIN(100, percent) < number(-60, 100))
-		caught = TRUE;
-	if (!number(0, 1))
-		caught = TRUE;
-	return caught;
+	return false;
 }
 
 static void trusted_steal_attempt_delay(P_char thief, P_char victim)
 {
+	if (IS_TRUSTED(thief))
+		return;
 	if (GET_SPEC(thief, CLASS_ROGUE, SPEC_THIEF))
 		CharWait(thief, 18);
 	else
@@ -3469,11 +3470,66 @@ static void trusted_steal_completion(P_char thief, bool committed, const item_tr
 	report_trusted_steal_detection(thief, victim, object, context);
 }
 
+static bool trusted_steal_binding_allows_recipient(P_char thief, P_obj object)
+{
+	if (IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND) && !account_bound_reward_owner(thief, object))
+		return false;
+	return !IS_OBJ_STAT2(object, ITEM2_SOULBIND) || isname(GET_NAME(thief), object->name);
+}
+
+static bool trusted_steal_binding_allows_tree(P_char thief, P_obj object)
+{
+	if (!thief || !object)
+		return false;
+
+	std::vector<P_obj> pending;
+	std::vector<P_obj> visited;
+	try
+	{
+		pending.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		visited.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		pending.push_back(object);
+		while (!pending.empty())
+		{
+			P_obj current = pending.back();
+			pending.pop_back();
+			if (!current || visited.size() >= ITEM_TRANSFER_MAX_ITEMS ||
+			    std::find(visited.begin(), visited.end(), current) != visited.end() ||
+			    !trusted_steal_binding_allows_recipient(thief, current))
+				return false;
+			visited.push_back(current);
+
+			for (P_obj child = current->contains; child; child = child->next_content)
+			{
+				if (visited.size() + pending.size() >= ITEM_TRANSFER_MAX_ITEMS ||
+				    std::find(visited.begin(), visited.end(), child) !=
+					    visited.end() ||
+				    std::find(pending.begin(), pending.end(), child) !=
+					    pending.end())
+					return false;
+				pending.push_back(child);
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
 static bool submit_trusted_steal(P_char thief, P_char victim, P_obj object, bool equipped,
 				 int equipment_slot, int percent)
 {
 	if (!object || !object->obj_uid || object->type == ITEM_MONEY || IS_PC_CORPSE(object) ||
 	    !item_command_uses_durable_ownership(object))
+	{
+		report_trusted_steal_rejection(thief, object,
+					       item_movement_reject::invalid_request);
+		trusted_steal_attempt_delay(thief, victim);
+		return true;
+	}
+	if (!trusted_steal_binding_allows_tree(thief, object))
 	{
 		report_trusted_steal_rejection(thief, object,
 					       item_movement_reject::invalid_request);
@@ -3548,6 +3604,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	{
 		return;
 	}
+	const bool trusted = IS_TRUSTED(ch);
 
 	if (!IS_TRUSTED(ch))
 	{
@@ -3556,19 +3613,19 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (GET_LEVEL(ch) < 10)
+	if (!trusted && GET_LEVEL(ch) < 10)
 	{
 		send_to_char("You're too inexperienced.. get some levels.\r\n", ch);
 		return;
 	}
 
-	if (IS_RIDING(ch))
+	if (!trusted && IS_RIDING(ch))
 	{
 		send_to_char("While mounted? I don't think so...\r\n", ch);
 		return;
 	}
 
-	if (!CAN_SEE(ch, ch))
+	if (!trusted && !CAN_SEE(ch, ch))
 	{
 		send_to_char("You can't even see your own hand. How do you plan on stealing?\r\n",
 			     ch);
@@ -3581,7 +3638,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (CHAR_IN_ARENA(ch))
+	if (!trusted && CHAR_IN_ARENA(ch))
 	{
 		send_to_char("Steal in the arena? Yeah right.\r\n", ch);
 		return;
@@ -3606,7 +3663,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (affected_by_spell(ch, TAG_PVPDELAY))
+	if (!trusted && affected_by_spell(ch, TAG_PVPDELAY))
 	{
 		send_to_char(
 			"There is too much adrenaline pumping through your body right now.\r\n",
@@ -3651,17 +3708,17 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	   return;
 	 }
 	 */
-	if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !AdjacentInRoom(ch, victim))
+	if (!trusted && IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !AdjacentInRoom(ch, victim))
 	{
 		act("$N seems to be just a BIT out of reach.", FALSE, ch, 0, victim, TO_CHAR);
 		return;
 	}
-	if (ch->group && !on_front_line(ch))
+	if (!trusted && ch->group && !on_front_line(ch))
 	{
 		send_to_char("You can't quite reach...\r\n", ch);
 		return;
 	}
-	if (victim->group && !on_front_line(victim))
+	if (!trusted && victim->group && !on_front_line(victim))
 	{
 		if (GET_SPEC(ch, CLASS_THIEF, SPEC_CUTPURSE))
 		{
@@ -3681,7 +3738,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		}
 	}
 
-	if (IS_FIGHTING(victim))
+	if (!trusted && IS_FIGHTING(victim))
 	{
 		send_to_char("Yah, right, good way to lose a hand, or a head!\r\n", ch);
 		return;
@@ -3695,62 +3752,68 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	*/
 
 	// Percent chance to succeed
-	// Begin trying to figure out chance of success..
-	percent = skl;
-	// thief dex
-	percent += dex_app[STAT_INDEX(GET_C_DEX(ch))].p_pocket;
-	// victim mentals
-	percent -= (STAT_INDEX(GET_C_WIS(victim)) + STAT_INDEX(GET_C_INT(victim))) - 19;
-
-	// Both thief and victim luck
-	if (GET_C_LUK(victim) / 2 > number(0, 100))
-		percent = (int)(percent * 0.85);
-	if (GET_C_LUK(ch) / 2 > number(0, 100))
-		percent = (int)(percent * 1.05);
-	// Modifier for level differences
-	percent += (GET_LEVEL(ch) - GET_LEVEL(victim)) / 2;
-	// Hard to steal from Red Dragon - Monks?
-	if (has_innate(victim, INNATE_DRAGONMIND))
-		percent = percent / 2;
-	// At this point, ensure that percent is between 1 and 100
-	percent = BOUNDED(1, percent, 100);
-
-	// victim can't see?  that makes it much easier to steal...
-	if (!CAN_SEE(victim, ch))
-		percent += 40;
-	// cutpurses get an additional bonus...
-	if (GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF))
-		percent += 25;
-
-	if (IS_TRUSTED(ch) || (GET_STAT(victim) < STAT_SLEEPING) ||
-	    IS_AFFECTED(victim, AFF_SLEEP) || IS_IMMOBILE(victim))
-		percent += 200; /* ALWAYS SUCCESS */
-	else if (IS_AFFECTED2(victim, AFF2_STUNNED))
-		percent += 20; /* nice bonus if target is stunned */
-	else if (GET_STAT(victim) == STAT_SLEEPING)
-		percent += 40; /* hefty bonus if just normal sleeping */
-
-	// AWARE victims get a massive bonus to "save"
-	if (IS_AFFECTED(victim, AFF_AWARE) || affected_by_spell(victim, SKILL_AWARENESS))
-		percent -= 70;
-
-	if (is_being_guarded(victim))
-		percent = (int)(percent * 0.60);
-
-	if (IS_FIGHTING(victim))
-		percent = (int)(percent * 0.60);
-
-	if (affected_by_spell(victim, SPELL_GUARDIAN_SPIRITS))
+	// Trusted callers are administrative custody transfers, not a skill roll.
+	if (trusted)
+		percent = 100;
+	else
 	{
-		percent = (int)(percent * 0.25);
-		guardian_spirits_messages(ch, victim);
+		// Begin trying to figure out chance of success..
+		percent = skl;
+		// thief dex
+		percent += dex_app[STAT_INDEX(GET_C_DEX(ch))].p_pocket;
+		// victim mentals
+		percent -= (STAT_INDEX(GET_C_WIS(victim)) + STAT_INDEX(GET_C_INT(victim))) - 19;
+
+		// Both thief and victim luck
+		if (GET_C_LUK(victim) / 2 > number(0, 100))
+			percent = (int)(percent * 0.85);
+		if (GET_C_LUK(ch) / 2 > number(0, 100))
+			percent = (int)(percent * 1.05);
+		// Modifier for level differences
+		percent += (GET_LEVEL(ch) - GET_LEVEL(victim)) / 2;
+		// Hard to steal from Red Dragon - Monks?
+		if (has_innate(victim, INNATE_DRAGONMIND))
+			percent = percent / 2;
+		// At this point, ensure that percent is between 1 and 100
+		percent = BOUNDED(1, percent, 100);
+
+		// victim can't see?  that makes it much easier to steal...
+		if (!CAN_SEE(victim, ch))
+			percent += 40;
+		// cutpurses get an additional bonus...
+		if (GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF))
+			percent += 25;
+
+		if ((GET_STAT(victim) < STAT_SLEEPING) || IS_AFFECTED(victim, AFF_SLEEP) ||
+		    IS_IMMOBILE(victim))
+			percent += 200; /* ALWAYS SUCCESS */
+		else if (IS_AFFECTED2(victim, AFF2_STUNNED))
+			percent += 20; /* nice bonus if target is stunned */
+		else if (GET_STAT(victim) == STAT_SLEEPING)
+			percent += 40; /* hefty bonus if just normal sleeping */
+
+		// AWARE victims get a massive bonus to "save"
+		if (IS_AFFECTED(victim, AFF_AWARE) || affected_by_spell(victim, SKILL_AWARENESS))
+			percent -= 70;
+
+		if (is_being_guarded(victim))
+			percent = (int)(percent * 0.60);
+
+		if (IS_FIGHTING(victim))
+			percent = (int)(percent * 0.60);
+
+		if (affected_by_spell(victim, SPELL_GUARDIAN_SPIRITS))
+		{
+			percent = (int)(percent * 0.25);
+			guardian_spirits_messages(ch, victim);
+		}
+
+		// certain people just can't be stolen from.  Ever.
+		if (!IS_TRUSTED(ch) && (IS_TRUSTED(victim) || IS_SHOPKEEPER(victim)))
+			percent = 0; /* Failure */
 	}
 
-	// certain people just can't be stolen from.  Ever.
-	if (!IS_TRUSTED(ch) && (IS_TRUSTED(victim) || IS_SHOPKEEPER(victim)))
-		percent = 0; /* Failure */
-
-	roll = number(0, 100);
+	roll = trusted ? 1 : number(0, 100);
 
 	if (!str_cmp(obj_name, "coins"))
 		type = 3;
@@ -3758,7 +3821,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	{
 		if ((obj = get_obj_in_list(obj_name, victim->carrying)))
 		{
-			if (CAN_SEE_OBJ(ch, obj))
+			if (CAN_SEE_OBJ(ch, obj) || trusted)
 				type = 2;
 		}
 		else
@@ -3766,7 +3829,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 			for (eq_pos = 0; (eq_pos < MAX_WEAR); eq_pos++)
 				if (victim->equipment[eq_pos] &&
 				    (isname(obj_name, victim->equipment[eq_pos]->name)) &&
-				    CAN_SEE_OBJ(ch, victim->equipment[eq_pos]))
+				    (CAN_SEE_OBJ(ch, victim->equipment[eq_pos]) || trusted))
 				{
 					obj = victim->equipment[eq_pos];
 					break;
@@ -3776,8 +3839,6 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		}
 	}
 
-	CharWait(ch, PULSE_VIOLENCE * 2);
-
 	if (obj && IS_ARTIFACT(obj) && !IS_TRUSTED(ch))
 	{
 		send_to_char(
@@ -3785,6 +3846,9 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 			ch);
 		return;
 	}
+
+	if (!trusted)
+		CharWait(ch, PULSE_VIOLENCE * 2);
 
 	switch (type)
 	{
@@ -3815,7 +3879,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		// roll is number(0,100) - ensure that percent is 1,101
 		percent = BOUNDED(1, percent, 101); // percent 101 is a critical hit and
 			// roll 0 is a crit miss
-		if (roll && (GET_LEVEL(ch) > 40) && !failed && (roll < percent))
+		if (!failed && (trusted || (roll && (GET_LEVEL(ch) > 40) && (roll < percent))))
 		{ /* success */
 			if (IS_PC(victim) &&
 			    submit_trusted_steal(ch, victim, obj, TRUE, eq_pos, percent))
@@ -3859,7 +3923,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		/* heavy items increase difficulty */
 		// percent -= GET_OBJ_WEIGHT(obj);
 
-		if (roll > MIN(percent, 99))
+		if (!trusted && roll > MIN(percent, 99))
 			failed = TRUE;
 		else
 		{
@@ -3909,7 +3973,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 	case 3:
 		/* Steal some coins */
 
-		if (roll > MIN(percent, 99))
+		if (!trusted && roll > MIN(percent, 99))
 			failed = TRUE;
 		else
 		{
@@ -3917,8 +3981,13 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 
 			/* Steal some coins */
 			/* at best, they are only gonna get a handfull */
-			ncoins = BOUNDED(0, ((percent / 10) + (GET_LEVEL(ch) / 4)), 22);
-			ncoins = number((ncoins - 23), ((GET_LEVEL(ch) / 2) + 2));
+			if (trusted)
+				ncoins = 1;
+			else
+			{
+				ncoins = BOUNDED(0, ((percent / 10) + (GET_LEVEL(ch) / 4)), 22);
+				ncoins = number((ncoins - 23), ((GET_LEVEL(ch) / 2) + 2));
+			}
 
 			/*
 				 * base number range -23 to 27, heavily level dependant: level
@@ -3991,6 +4060,9 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		}
 		break;
 	}
+
+	if (trusted)
+		return;
 
 	/* slap this delay on them to stop the incredibly annoying snatch and
 	 * run */
