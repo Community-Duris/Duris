@@ -43,3 +43,4 @@ python3 tests/async/test_economic_sql_bank_transaction_flatfile.py
 python3 tests/async/run_economic_sql_bank_transaction_mysql.py
 
 python3 tests/async/run_economic_sql_baseline_transaction_mysql.py
+python3 tests/async/run_economic_sql_source_snapshot_mysql.py

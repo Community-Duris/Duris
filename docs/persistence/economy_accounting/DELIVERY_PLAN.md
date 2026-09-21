@@ -5,7 +5,17 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: SQL baseline witness and reservation storage
+## Current increment: read-only SQL source capture and normalization
+
+Based on [PR #612](https://github.com/Community-Duris/Duris/pull/612) at `dab03b0e6`.
+Reuse bounded native capture and typed normalization from `ecfee1218f` and
+`f96949f7f`. Preserve exact selected bytes and source references, report native
+contradictions, and leave source state unchanged. See
+[SQL_SOURCE_SNAPSHOT.md](SQL_SOURCE_SNAPSHOT.md). This is selected evidence, not
+complete inventory coverage or a cutover capability. Lifetimes, enrollment,
+maintenance ownership, publication acknowledgement and activation remain pending.
+
+## Prior increment: SQL baseline witness and reservation storage
 
 Based on [PR #610](https://github.com/Community-Duris/Duris/pull/610) at `a039c6c94`.
 Reuse the bounded schema and private transaction owner from `e52e18003` and

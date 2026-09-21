@@ -334,6 +334,8 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command_coordinator.o \
 				 persistence/economic_accounting_repository.o \
 				 persistence/economic_sql_baseline_transaction.o \
+				 persistence/economic_sql_source_snapshot.o \
+				 economy/economic_sql_source_normalize.o \
 				 persistence/economic_sql_bank_transaction.o \
 				 persistence/critical_command_repository.o \
 				 persistence/player_death_restitution_command.o \
