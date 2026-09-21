@@ -51,6 +51,8 @@ constexpr int COMMUNITY_MAX_INTERVAL_SECONDS = 60 * 60;
 constexpr std::size_t COMMUNITY_MAX_DRAFTS = 128;
 constexpr std::size_t COMMUNITY_MAX_TARGETS = 2048;
 constexpr std::size_t COMMUNITY_TARGETS_PER_SLICE = 32;
+constexpr std::size_t COMMUNITY_SUMMARY_LINE_WIDTH = 78;
+constexpr std::size_t COMMUNITY_SUMMARY_LABEL_WIDTH = 9;
 
 enum class community_scope : unsigned char
 {
@@ -821,21 +823,118 @@ static void send_run_totals(P_char character, const char *prefix, unsigned int s
 {
 	if (!character)
 		return;
-	send_to_char_f(character, "%s Considered %d, eligible %d, processed %d, skipped %d%s.\n",
-		       prefix, totals.considered, totals.eligible, totals.processed, totals.skipped,
-		       totals.truncated ? " (target cap truncated additional players)" : "");
-	for (std::size_t index = 0; index < COMMUNITY_EFFECT_COUNT; ++index)
+
+	struct outcome_presentation
 	{
-		if (!selection_has(selection, effect_at(index).id))
-			continue;
-		const effect_statistics &statistics = totals.effects[index];
-		send_to_char_f(character,
-			       "  %-20s applied %d, refreshed %d, upgraded %d, unchanged %d, "
-			       "blocked %d, failed %d\n",
-			       effect_at(index).name, statistics.applied, statistics.refreshed,
-			       statistics.upgraded, statistics.unchanged, statistics.blocked,
-			       statistics.failed);
+		effect_outcome outcome;
+		const char *label;
+		const char *color;
+	};
+	static constexpr std::array<outcome_presentation, 6> presentations = { {
+		{ effect_outcome::applied, "Applied", "&+G" },
+		{ effect_outcome::refreshed, "Refreshed", "&+C" },
+		{ effect_outcome::upgraded, "Upgraded", "&+M" },
+		{ effect_outcome::unchanged, "Unchanged", "&+L" },
+		{ effect_outcome::blocked, "Blocked", "&+Y" },
+		{ effect_outcome::failed, "Failed", "&+R" },
+	} };
+
+	auto outcome_count = [](const effect_statistics &statistics, effect_outcome outcome)
+	{
+		switch (outcome)
+		{
+		case effect_outcome::applied:
+			return statistics.applied;
+		case effect_outcome::refreshed:
+			return statistics.refreshed;
+		case effect_outcome::upgraded:
+			return statistics.upgraded;
+		case effect_outcome::unchanged:
+			return statistics.unchanged;
+		case effect_outcome::blocked:
+			return statistics.blocked;
+		case effect_outcome::failed:
+			return statistics.failed;
+		}
+		return 0;
+	};
+
+	std::string report = "&+C";
+	report += prefix;
+	report += "&n &+L| targets&n ";
+	const char *target_color = totals.eligible == 0 ?
+					   "&+L" :
+					   (totals.processed == totals.eligible ? "&+G" : "&+Y");
+	report += target_color;
+	report += std::to_string(totals.processed);
+	report += "/";
+	report += std::to_string(totals.eligible);
+	report += " processed&n";
+	if (totals.considered != totals.eligible)
+	{
+		report += " &+Lfrom ";
+		report += std::to_string(totals.considered);
+		report += " considered&n";
 	}
+	if (totals.skipped > 0)
+	{
+		report += " &+Y| ";
+		report += std::to_string(totals.skipped);
+		report += " skipped&n";
+	}
+	if (totals.truncated)
+		report += " &+Y| target cap truncated additional players&n";
+	report += "\n";
+
+	for (const outcome_presentation &presentation : presentations)
+	{
+		bool started = false;
+		std::size_t current_width = 0;
+		for (std::size_t index = 0; index < COMMUNITY_EFFECT_COUNT; ++index)
+		{
+			if (!selection_has(selection, effect_at(index).id))
+				continue;
+			const int count =
+				outcome_count(totals.effects[index], presentation.outcome);
+			if (count <= 0)
+				continue;
+
+			std::string entry = effect_at(index).name;
+			if (totals.processed != 1 || count != 1)
+			{
+				entry += " x";
+				entry += std::to_string(count);
+			}
+			if (!started)
+			{
+				report += presentation.color;
+				report += presentation.label;
+				report.append(COMMUNITY_SUMMARY_LABEL_WIDTH -
+						      std::strlen(presentation.label),
+					      ' ');
+				report += "&n : ";
+				current_width = COMMUNITY_SUMMARY_LABEL_WIDTH + 3;
+				started = true;
+			}
+			else if (current_width + 2 + entry.size() > COMMUNITY_SUMMARY_LINE_WIDTH)
+			{
+				report += ",\n&n";
+				report.append(COMMUNITY_SUMMARY_LABEL_WIDTH + 3, ' ');
+				current_width = COMMUNITY_SUMMARY_LABEL_WIDTH + 3;
+			}
+			else
+			{
+				report += ", ";
+				current_width += 2;
+			}
+			report += entry;
+			current_width += entry.size();
+		}
+		if (started)
+			report += "\n";
+	}
+
+	send_to_char(character, report.c_str());
 }
 
 static std::string interval_text(int seconds)
@@ -905,11 +1004,17 @@ static void audit_job(const char *action, const char *reason = "")
 	      job.interval_seconds, job.selection, reason && *reason ? reason : "none");
 }
 
-static void notify_job_owner(const char *message)
+static P_char find_job_recipient()
 {
 	P_char recipient = find_player_by_pid(job.last_editor_pid);
 	if (!recipient)
 		recipient = find_player_by_pid(job.creator_pid);
+	return recipient;
+}
+
+static void notify_job_owner(const char *message)
+{
+	P_char recipient = find_job_recipient();
 	if (recipient)
 		send_to_char(message, recipient);
 }
@@ -958,14 +1063,11 @@ static void finish_pass()
 	job.pass_running = false;
 	job.last_totals = job.pass_totals;
 	job.has_last_result = true;
-	char message[MAX_STRING_LENGTH];
-	std::snprintf(message, sizeof(message),
-		      "Community spell-up repeat revision %llu (%s) completed.\n",
+	char title[128];
+	std::snprintf(title, sizeof(title), "Community spell-up repeat r%llu (%s) complete",
 		      static_cast<unsigned long long>(job.pass_revision),
 		      scope_name(job.pass_scope));
-	notify_job_owner(message);
-	send_run_totals(find_player_by_pid(job.last_editor_pid),
-			"Repeat result:", job.pass_selection, job.last_totals);
+	send_run_totals(find_job_recipient(), title, job.pass_selection, job.last_totals);
 	if (job.active)
 		schedule_job_event(job.interval_pulses);
 }
@@ -1050,8 +1152,8 @@ static void show_status(P_char character)
 		if (draft)
 			send_selection(character, "Your draft: ", draft->selection);
 		if (job.has_last_result)
-			send_run_totals(character, "Last result:", job.pass_selection,
-					job.last_totals);
+			send_run_totals(character, "Last community spell-up result",
+					job.pass_selection, job.last_totals);
 		return;
 	}
 	send_to_char_f(character,
@@ -1079,7 +1181,8 @@ static void show_status(P_char character)
 							       WAIT_SEC));
 	}
 	if (job.has_last_result)
-		send_run_totals(character, "  Last result:", job.pass_selection, job.last_totals);
+		send_run_totals(character, "Last community spell-up result", job.pass_selection,
+				job.last_totals);
 }
 
 static void preview(P_char character, unsigned int selection, community_scope scope)
@@ -1152,9 +1255,7 @@ static void execute_one_shot(P_char character, unsigned int selection, community
 		}
 	}
 
-	send_to_char_f(character, "Done. Blessed %d player%s.\n", totals.processed,
-		       totals.processed == 1 ? "" : "s");
-	send_run_totals(character, "Community spell-up result:", selection, totals);
+	send_run_totals(character, "Community spell-up complete", selection, totals);
 }
 
 static void update_draft(P_char character, bool add, const std::string &effect_name)
