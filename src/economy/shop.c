@@ -2251,7 +2251,19 @@ static FILE *open_shop_stream(void)
 			fwrite(buf, 1, n, tmp);
 		fclose(in);
 	}
-	fputs("$~\n", tmp);
+	// AREA builds append end.shp last, so do the same in fallback mode. Besides
+	// carrying the terminator, this file is the append-only home for shop records
+	// whose durable numeric IDs must not renumber the existing catalog.
+	FILE *end = fopen("areas/shp/end.shp", "r");
+	if (end)
+	{
+		size_t n;
+		while ((n = fread(buf, 1, sizeof(buf), end)) > 0)
+			fwrite(buf, 1, n, tmp);
+		fclose(end);
+	}
+	else
+		fputs("$~\n", tmp);
 	rewind(tmp);
 	globfree(&gl);
 	return tmp;
