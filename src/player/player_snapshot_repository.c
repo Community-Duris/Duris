@@ -687,10 +687,136 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 	return { true, 0 };
 }
 
+struct expected_player_item_custody
+{
+	uint64_t root_item_uid;
+	uint64_t parent_item_uid;
+	int32_t vnum;
+};
+
+bool parse_custody_uint64(const char *text, uint64_t *value)
+{
+	if (!text || !value || !*text)
+		return false;
+	char *end = nullptr;
+	errno = 0;
+	const unsigned long long parsed = std::strtoull(text, &end, 10);
+	if (errno || end == text || *end)
+		return false;
+	*value = static_cast<uint64_t>(parsed);
+	return true;
+}
+
+/**
+ * Prove that a complete replacement payload is an exact projection of active player
+ * custody before deleting a single existing payload row.  Inline coin custody is the
+ * sole exception: coin_payload is itself an authoritative, independently loadable item
+ * payload and therefore does not require a player_items row.
+ */
+query_result verify_player_item_custody(MYSQL *connection, const player_snapshot &snapshot)
+{
+	std::unordered_map<uint64_t, expected_player_item_custody> expected;
+	try
+	{
+		expected.reserve(snapshot.items.size());
+		for (size_t index = 0; index < snapshot.items.size(); ++index)
+		{
+			const player_item_snapshot &item = snapshot.items[index];
+			if (!item.object_uid || item.vnum <= 0 ||
+			    item.parent_index >= static_cast<int32_t>(index) ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT)
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+
+			uint64_t root_item_uid = item.object_uid;
+			uint64_t parent_item_uid = 0;
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				const player_item_snapshot &parent =
+					snapshot.items[item.parent_index];
+				const auto parent_custody = expected.find(parent.object_uid);
+				if (parent_custody == expected.end())
+					return { false,
+						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				root_item_uid = parent_custody->second.root_item_uid;
+				parent_item_uid = parent.object_uid;
+			}
+			if (!expected.emplace(item.object_uid,
+					      expected_player_item_custody{
+						      root_item_uid, parent_item_uid, item.vnum })
+				     .second)
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { false, ENOMEM };
+	}
+
+	const std::string sql =
+		"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),vnum,"
+		"coin_payload IS NOT NULL FROM item_current_owner WHERE owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::player)) +
+		" AND owner_id=" + std::to_string(snapshot.pid) +
+		" AND owner_context_id=0 AND state=" +
+		std::to_string(static_cast<unsigned>(item_custody_state::active)) +
+		" ORDER BY item_uid FOR UPDATE";
+	query_result query = execute(connection, sql);
+	if (!query.ok)
+		return query;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+		return { false, mysql_errno(connection) };
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(rows)) != nullptr)
+	{
+		uint64_t item_uid = 0, root_item_uid = 0, parent_item_uid = 0;
+		const bool valid = parse_custody_uint64(row[0], &item_uid) && item_uid &&
+				   parse_custody_uint64(row[1], &root_item_uid) && root_item_uid &&
+				   parse_custody_uint64(row[2], &parent_item_uid) && row[3] &&
+				   row[4];
+		if (!valid)
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+
+		const auto found = expected.find(item_uid);
+		const bool inline_coin_payload = std::strcmp(row[4], "0") != 0;
+		if (found == expected.end())
+		{
+			if (inline_coin_payload)
+				continue;
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		const expected_player_item_custody &item = found->second;
+		if (item.root_item_uid != root_item_uid ||
+		    item.parent_item_uid != parent_item_uid || std::to_string(item.vnum) != row[3])
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		expected.erase(found);
+	}
+	mysql_free_result(rows);
+	return expected.empty() ? query_result{ true, 0 } :
+				  query_result{ false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+}
+
 query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 {
 	const bool equipment = snapshot.components & PLAYER_COMPONENT_EQUIPMENT;
 	const bool inventory = snapshot.components & PLAYER_COMPONENT_INVENTORY;
+	/* New snapshots always replace both halves together.  Keep accepting legacy
+	 * component-only journal records, but require every complete replacement to
+	 * prove its payload/custody equivalence before the destructive projection. */
+	if (equipment && inventory)
+	{
+		const query_result verified = verify_player_item_custody(connection, snapshot);
+		if (!verified.ok)
+			return verified;
+	}
 	std::string deletion = "DELETE FROM player_items WHERE pid=" + std::to_string(snapshot.pid);
 	if (equipment != inventory)
 		deletion += equipment ? " AND equip_slot>0" : " AND equip_slot=0";

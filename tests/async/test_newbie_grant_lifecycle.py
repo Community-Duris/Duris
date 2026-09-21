@@ -448,7 +448,8 @@ int main()
         assert(!item_movement_transaction_player_busy(&f.actor));
         assert(f.bag.extra_flags == ITEM_TRANSIENT);
         // Capture a worn transient and a carried weapon, with an independently
-        // no-rent transient present. Only no-rent is filtered from the save.
+        // no-rent transient present. Durable custody wins over the lossy no-rent
+        // filter so every authoritative payload remains reconstructible.
         obj_from_char(&f.bag);
         f.bag.loc_p = LOC_WORN;
         f.bag.loc.wearing = &f.actor;
@@ -456,14 +457,16 @@ int main()
         std::vector<player_item_snapshot> saved, decoded;
         assert(player_item_snapshot_list_capture(&f.actor, true, true, true, &saved, nullptr) ==
                player_snapshot_capture_result::ok);
-        assert(saved.size() == 2 && saved[0].object_uid == 100);
+        assert(saved.size() == 3 && saved[0].object_uid == 100);
         assert(saved[0].extra_flags == ITEM_TRANSIENT && saved[0].equipment_slot == 1);
-        assert(saved[1].object_uid == 101 && saved[1].equipment_slot == 0);
+        assert(saved[1].object_uid == 102 && saved[1].equipment_slot == 0);
+        assert(saved[1].extra_flags == (ITEM_TRANSIENT | ITEM_NORENT));
+        assert(saved[2].object_uid == 101 && saved[2].equipment_slot == 0);
         std::vector<uint8_t> bytes;
         assert(player_item_snapshot_list_encode(saved, &bytes) == player_snapshot_codec_result::ok);
         assert(player_item_snapshot_list_decode(bytes.data(), bytes.size(), &decoded) ==
                player_snapshot_codec_result::ok);
-        assert(decoded.size() == 2 && decoded[0].object_uid == 100);
+        assert(decoded.size() == 3 && decoded[0].object_uid == 100);
         assert(decoded[0].extra_flags == ITEM_TRANSIENT && decoded[0].equipment_slot == 1);
         for (const auto &item : decoded)
         {

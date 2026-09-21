@@ -158,7 +158,12 @@ static void mark_reward_item(P_obj obj, const char *account, unsigned long long 
 	obj->str_mask |= STRUNG_KEYS;
 	obj->name = str_dup(name);
 	beautify_reward_item(obj);
-	SET_BIT(obj->extra_flags, ITEM_NOSELL | ITEM_NORENT | ITEM_NODROP | ITEM_NOREPAIR);
+	/* Account rewards already have explicit summon, dismiss, expiry, revocation, and
+	 * death policies.  Marking the live instance NORENT put it in conflict with
+	 * durable item custody: the ownership ledger retained the item while player
+	 * snapshots deliberately omitted its only payload. */
+	SET_BIT(obj->extra_flags, ITEM_NOSELL | ITEM_NODROP | ITEM_NOREPAIR);
+	REMOVE_BIT(obj->extra_flags, ITEM_NORENT);
 	SET_BIT(obj->extra2_flags, ITEM2_SOULBIND | ITEM2_ACCOUNT_BOUND | ITEM2_NOLOOT);
 	REMOVE_BIT(obj->extra_flags, ITEM_SECRET | ITEM_INVISIBLE);
 }
