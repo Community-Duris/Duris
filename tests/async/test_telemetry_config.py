@@ -14,7 +14,7 @@ PRIVATE_HEADER = ROOT / "src" / "telemetry" / "telemetry_config_private.h"
 HARNESS = ROOT / "tests" / "async" / "telemetry_config_harness.cc"
 DOC = ROOT / "docs" / "telemetry" / "CONFIG_CONTEXT.md"
 PROPERTIES = ROOT / "lib" / "duris.properties"
-GOLDEN = "71daf2a6e0a9faa4f200f855b88426d6cac93b9b3cead7d66046ac0263e0daf7"
+GOLDEN = "59d7d32c66e983892b115dda333d75ec73500e13e015c7e3fb90a2bdb4b1f65f"
 
 
 def check_source_boundary() -> None:
@@ -28,6 +28,7 @@ def check_source_boundary() -> None:
     assert "telemetry_capture_result telemetry_config_publish(" in source
     assert "SHA256(" in source
     assert "TELEMETRY_CONFIG_CANONICAL_BYTES = 70U" in header
+    assert "TELEMETRY_CONFIG_PROPERTY_MAX = 20U" in header
     assert "TELEMETRY_CONFIG_PROPERTY_DIGEST_BYTES" in header
     assert "telemetry_config_property_catalog" in header
     assert "visibility_floor_revision" in header
@@ -39,6 +40,7 @@ def check_source_boundary() -> None:
     assert "0x3F00908CU" in harness
     assert "0x3F01C902U" in harness
     assert "payout.zone_alignment_context" in source
+    assert '"rested.enabled", "exp.rested.enabled", 1U' in source
     assert "DURISWEB_SECRET" not in source
     assert "DB_PASSWD" not in source
     assert "std::vector" not in source
@@ -49,6 +51,8 @@ def check_source_boundary() -> None:
     assert "new telemetry" not in source
     assert "process-local" in document
     assert "epic.freqMod" in document
+    assert "sealed historical mapping" in document
+    assert "no-op hard-coded row" in document
     assert "unknown" in document.lower()
 
 
@@ -60,6 +64,7 @@ def check_reviewed_property_values() -> None:
         key, value = line.split("=", 1)
         values[key.strip()] = value.strip()
     assert values["exp.zoneTrophy.observe"] == "0"
+    assert values["exp.rested.enabled"] == "1.000"
     assert values["epic.touch.maxPayoutFactor"] == "10.000"
     assert values["epic.touch.PayoutFactor"] == "1.000"
     assert values["epic.zone.alignmentMod"] == "0.200"
