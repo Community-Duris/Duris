@@ -56,6 +56,7 @@ void persistence_alert(int, const char *, const char *, const char *, const char
                        const char *, const char *, ...) { ++alert_count; }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
 bool isname(const char *, const char *) { return false; }
+bool kingdom_store_bound(P_obj) { return false; }
 void send_to_char(const char *text, P_char) { output += text ? text : ""; }
 void act(const char *text, int, P_char, P_obj, void *, int) {
     if (text) ++act_count;
@@ -155,6 +156,7 @@ struct slip_movement_context {
 };
 ''',
         extract_function("magic.c", "int has_soulbind("),
+        extract_function("magic.c", "static void remove_soulbind_except("),
         extract_function("magic.c", "void remove_soulbind("),
         extract_function("magic.c", "static P_char find_soulbind_player("),
         extract_function("magic.c", "static P_obj find_soulbind_item("),
