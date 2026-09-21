@@ -411,6 +411,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_death_restitution_runtime.o \
 				 player/player_death_restitution_adapter.o \
 				 player/player_death_restitution_staff.o \
+				 player/player_death_restitution_locker.o \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
