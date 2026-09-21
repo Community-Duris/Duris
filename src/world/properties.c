@@ -19,6 +19,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/ws_handlers.h"
+#include "cmd/divine_refusal_content.h"
 #include "core/utils.h"
 #include <fnmatch.h>
 #include <stdio.h>
@@ -390,6 +391,12 @@ void initialize_properties()
 	properties_count = load_properties(duris_properties);
 	qsort(duris_properties, properties_count, sizeof(struct property), property_comp);
 	apply_properties();
+	auto content = divine_refusal_content_registry().reload_file(DIVINE_REFUSAL_CONTENT_FILE);
+	if (content.ok)
+		logit(LOG_STATUS, "Loaded divine refusal content revision %u.", content.revision);
+	else
+		logit(LOG_STATUS, "Divine refusal content unavailable: %s; retaining revision %u.",
+		      content.diagnostic.c_str(), content.revision);
 }
 
 void do_properties(P_char ch, char *args, int /*cmd*/)

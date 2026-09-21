@@ -1,4 +1,5 @@
 #include "cmd/divine_refusal_policy.h"
+#include "cmd/divine_refusal_content.h"
 
 #include <algorithm>
 #include <cassert>
@@ -16,6 +17,7 @@
 #define FALSE false
 #define TRUE true
 #define MAX_INPUT_LENGTH 512
+#define MAX_STRING_LENGTH 1024
 #define CH_INROOM_SIZE 256
 #define WAIT_SEC 4
 #define PULSE_VIOLENCE 16
@@ -65,6 +67,7 @@ struct char_data
 	bool item_action = false;
 	bool extract_on_command = false;
 	bool become_busy_on_command = false;
+	int vnum = 0;
 	unsigned int primary_classes = 0;
 	unsigned int secondary_classes = 0;
 	int level = 1;
@@ -104,6 +107,7 @@ static divine_refusal_tick ne_event_tick = 0;
 #define CAN_SPEAK(ch) ((ch)->can_speak)
 #define IS_TRUSTED(ch) false
 #define GET_MASTER(ch) ((ch)->master)
+#define GET_VNUM(ch) ((ch)->vnum)
 #define GET_LEVEL(ch) ((ch)->level)
 #define GET_CLASS(ch, bit) ((((ch)->primary_classes | (ch)->secondary_classes) & (bit)) != 0)
 #define IS_AFFECTED(ch, bit) (((ch)->specials.affected_by & (bit)) != 0)
@@ -297,6 +301,29 @@ static void command_interpreter(P_char ch, char *input)
 		ch->live = false;
 }
 
+void escape_act_dollars(char *destination, size_t destination_size, const char *source)
+{
+	if (!destination || destination_size == 0)
+		return;
+	if (!source)
+	{
+		destination[0] = '\0';
+		return;
+	}
+	size_t output = 0;
+	for (size_t input = 0; source[input] && output < destination_size - 2; ++input)
+	{
+		if (source[input] == '$')
+		{
+			destination[output++] = '$';
+			destination[output++] = '$';
+		}
+		else
+			destination[output++] = source[input];
+	}
+	destination[output] = '\0';
+}
+
 /*__DIVINE_REFUSAL_PRODUCTION_FUNCTIONS__*/
 
 static char_data make_master(const char *name = "master")
@@ -308,11 +335,12 @@ static char_data make_master(const char *name = "master")
 	return ch;
 }
 
-static char_data make_pet(const char *name, bool cleric = true)
+static char_data make_pet(const char *name, bool cleric = true, int vnum = 0)
 {
 	char_data pet;
 	pet.name = name;
 	pet.npc = true;
+	pet.vnum = vnum;
 	pet.primary_classes = cleric ? CLASS_CLERIC : 0;
 	pet.specials.affected_by = AFF_CHARM;
 	return pet;
@@ -916,6 +944,81 @@ static void test_output_falls_back_to_nonverbal_safely()
 	assert(count_output("refuses your order with a solemn shake") == 1);
 }
 
+static void test_authored_content_and_exact_template_overrides()
+{
+	reset_runtime();
+	setting_enabled = 1.0f;
+	setting_percent = 100.0f;
+	prepare_rolls({ 1 });
+	const auto loaded = divine_refusal_content_registry().reload_json(R"JSON({
+        "version": 1,
+        "revision": 2,
+        "entries": {
+            "66026": {
+                "patron": "Garl",
+                "message": "{patron} warns me about $5."
+            },
+            "66031": { "enabled": false },
+            "66032": { "percent": 100 },
+            "66033": { "percent": 0 }
+        }
+    })JSON");
+	assert(loaded.ok && loaded.revision == 2);
+	char_data master = make_master();
+	char_data authored = make_pet("garl-cleric", true, 66026);
+	authored.master = &master;
+	place({ &master, &authored });
+	issue_order(&master, "garl-cleric attack goblin");
+	assert(roll_calls == 1 && authored.handler_calls == 0);
+	assert(count_public_output("Garl warns me about $$5.") == 1);
+
+	reset_runtime();
+	setting_enabled = 1.0f;
+	setting_percent = 100.0f;
+	prepare_rolls({ 1 });
+	master = make_master();
+	char_data disabled = make_pet("disabled-cleric", true, 66031);
+	disabled.master = &master;
+	place({ &master, &disabled });
+	issue_order(&master, "disabled-cleric attack goblin");
+	assert(roll_calls == 0 && disabled.handler_calls == 1);
+
+	reset_runtime();
+	setting_enabled = 1.0f;
+	setting_percent = 10.0f;
+	prepare_rolls({ 500 });
+	master = make_master();
+	char_data stronger_override = make_pet("stronger-override", true, 66032);
+	stronger_override.master = &master;
+	place({ &master, &stronger_override });
+	issue_order(&master, "stronger-override attack goblin");
+	assert(roll_calls == 1 && stronger_override.handler_calls == 0);
+	assert(count_public_output("My deity has warned me") == 1);
+
+	reset_runtime();
+	setting_enabled = 1.0f;
+	setting_percent = 100.0f;
+	master = make_master();
+	char_data zero_override = make_pet("zero-override", true, 66033);
+	zero_override.master = &master;
+	place({ &master, &zero_override });
+	issue_order(&master, "zero-override attack goblin");
+	assert(roll_calls == 0 && zero_override.handler_calls == 1);
+
+	reset_runtime();
+	setting_enabled = 1.0f;
+	setting_percent = 100.0f;
+	prepare_rolls({ 1 });
+	master = make_master();
+	char_data unknown = make_pet("unlisted-cleric", true, 66027);
+	unknown.master = &master;
+	place({ &master, &unknown });
+	issue_order(&master, "unlisted-cleric attack goblin");
+	assert(roll_calls == 1 && unknown.handler_calls == 0);
+	assert(count_public_output("My deity has warned me") == 1);
+	assert(count_public_output("Garl warns me") == 0);
+}
+
 int main()
 {
 	test_disabled_named_is_legacy_exact();
@@ -932,6 +1035,7 @@ int main()
 	test_deadline_follows_instance_and_reset_clears_it();
 	test_extraction_cannot_leak_to_reused_address();
 	test_output_falls_back_to_nonverbal_safely();
+	test_authored_content_and_exact_template_overrides();
 	std::puts("divine refusal production order runtime: ok");
 	return 0;
 }
