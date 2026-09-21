@@ -1,5 +1,6 @@
 #include "telemetry/telemetry_transport_private.h"
 #include "telemetry/telemetry_queue_private.h"
+#include "telemetry/telemetry_failure.h"
 
 #include <array>
 #include <atomic>
@@ -58,6 +59,7 @@ std::atomic<bool> RESTART_ALLOWED{ false };
 std::atomic<bool> SHUTDOWN_REQUESTED{ false };
 std::atomic<std::uint64_t> ADMISSION_STATE{ 0U };
 std::atomic<bool> REPOSITORY_READY{ false };
+std::atomic<bool> CIRCUIT_OPEN{ false };
 /* Set only after init reports an owned writer.  DB-down/disabled paths must
  * not synchronously call a borrowed shutdown callback that has no live writer. */
 std::atomic<bool> REPOSITORY_STARTED{ false };
@@ -71,6 +73,8 @@ struct transport_health_atoms
 	std::atomic<std::uint8_t> backend{ 0U };
 	std::atomic<std::uint8_t> disabled_reason{ static_cast<std::uint8_t>(
 		telemetry_disabled_reason::not_initialized) };
+	std::atomic<std::uint8_t> last_failure_class{ static_cast<std::uint8_t>(
+		telemetry_failure_class::none) };
 	std::atomic<std::uint32_t> last_error_code{ 0U };
 	std::atomic<std::uint64_t> queue_high_water{ 0U };
 	std::atomic<std::uint64_t> admitted_detail{ 0U };
@@ -84,6 +88,14 @@ struct transport_health_atoms
 	std::atomic<std::uint64_t> conflict_records{ 0U };
 	std::atomic<std::uint64_t> retryable_failures{ 0U };
 	std::atomic<std::uint64_t> ambiguous_commits{ 0U };
+	std::atomic<std::uint64_t> quarantined_records{ 0U };
+	std::atomic<std::uint64_t> circuit_open_count{ 0U };
+	std::atomic<std::uint64_t> last_failure_boot_id{ 0U };
+	std::atomic<std::uint64_t> last_failure_process_id{ 0U };
+	std::atomic<std::uint64_t> last_failure_first_record_seq{ 0U };
+	std::atomic<std::uint64_t> last_failure_last_record_seq{ 0U };
+	std::atomic<std::uint64_t> last_failure_record_kind_mask{ 0U };
+	std::atomic<std::uint32_t> last_failure_retry_attempts{ 0U };
 	std::atomic<std::uint64_t> sequence_gap_count{ 0U };
 	std::atomic<std::uint64_t> unclosed_tail_count{ 0U };
 	std::atomic<std::uint64_t> attributable_duration_usec{ 0U };
@@ -176,20 +188,20 @@ bool key_equal(const telemetry_record_key &left, const telemetry_record_key &rig
 
 bool apply_result_reserved_is_zero(const telemetry_apply_batch_result &result) noexcept
 {
-	return result.reserved[0] == 0U && result.reserved[1] == 0U && result.reserved[2] == 0U &&
-	       result.reserved2 == 0U;
+	return result.reserved[0] == 0U && result.reserved[1] == 0U;
 }
 
 bool record_apply_reserved_is_zero(const telemetry_record_apply_result &result) noexcept
 {
-	return result.reserved[0] == 0U && result.reserved[1] == 0U && result.reserved[2] == 0U;
+	return result.reserved[0] == 0U && result.reserved[1] == 0U;
 }
 
 bool record_apply_unused_is_zero(const telemetry_record_apply_result &result) noexcept
 {
 	return record_apply_reserved_is_zero(result) && result.key.producer.boot_id == 0U &&
 	       result.key.producer.process_id == 0U && result.key.record_seq == 0U &&
-	       result.outcome == telemetry_apply_outcome::applied && result.error_code == 0U;
+	       result.outcome == telemetry_apply_outcome::applied &&
+	       result.failure_class == telemetry_failure_class::none && result.error_code == 0U;
 }
 
 template <typename T> void saturating_add(std::atomic<T> &value, T amount) noexcept
@@ -266,6 +278,8 @@ void reset_health(const telemetry_transport_config &config) noexcept
 	HEALTH.backend.store(static_cast<std::uint8_t>(config.backend), std::memory_order_relaxed);
 	HEALTH.disabled_reason.store(static_cast<std::uint8_t>(telemetry_disabled_reason::none),
 				     std::memory_order_relaxed);
+	HEALTH.last_failure_class.store(static_cast<std::uint8_t>(telemetry_failure_class::none),
+					std::memory_order_relaxed);
 	HEALTH.last_error_code.store(0U, std::memory_order_relaxed);
 	HEALTH.queue_high_water.store(0U, std::memory_order_relaxed);
 	HEALTH.admitted_detail.store(0U, std::memory_order_relaxed);
@@ -279,6 +293,14 @@ void reset_health(const telemetry_transport_config &config) noexcept
 	HEALTH.conflict_records.store(0U, std::memory_order_relaxed);
 	HEALTH.retryable_failures.store(0U, std::memory_order_relaxed);
 	HEALTH.ambiguous_commits.store(0U, std::memory_order_relaxed);
+	HEALTH.quarantined_records.store(0U, std::memory_order_relaxed);
+	HEALTH.circuit_open_count.store(0U, std::memory_order_relaxed);
+	HEALTH.last_failure_boot_id.store(0U, std::memory_order_relaxed);
+	HEALTH.last_failure_process_id.store(0U, std::memory_order_relaxed);
+	HEALTH.last_failure_first_record_seq.store(0U, std::memory_order_relaxed);
+	HEALTH.last_failure_last_record_seq.store(0U, std::memory_order_relaxed);
+	HEALTH.last_failure_record_kind_mask.store(0U, std::memory_order_relaxed);
+	HEALTH.last_failure_retry_attempts.store(0U, std::memory_order_relaxed);
 	HEALTH.sequence_gap_count.store(0U, std::memory_order_relaxed);
 	HEALTH.unclosed_tail_count.store(0U, std::memory_order_relaxed);
 	HEALTH.attributable_duration_usec.store(0U, std::memory_order_relaxed);
@@ -298,6 +320,27 @@ void add_drop_health(bool control) noexcept
 		saturating_add(HEALTH.dropped_control, std::uint64_t{ 1U });
 	else
 		saturating_add(HEALTH.dropped_detail, std::uint64_t{ 1U });
+}
+
+void record_failed_admission(const telemetry_record &record, bool control) noexcept
+{
+	add_drop_health(control);
+	auto &count = control ? LOSS.rejected_control : LOSS.rejected_detail;
+	if (count != std::numeric_limits<std::uint64_t>::max())
+		++count;
+	const auto seq = record.header.key.record_seq;
+	if (!LOSS_RANGE_UNKNOWN)
+	{
+		if (LOSS.first_rejected_record_seq == 0U)
+			LOSS.first_rejected_record_seq = seq;
+		else if (LOSS.last_rejected_record_seq ==
+				 std::numeric_limits<std::uint64_t>::max() ||
+			 seq != LOSS.last_rejected_record_seq + 1U)
+			LOSS_RANGE_UNKNOWN = true;
+		LOSS.last_rejected_record_seq = seq;
+	}
+	if (LOSS_RANGE_UNKNOWN)
+		LOSS.first_rejected_record_seq = LOSS.last_rejected_record_seq = 0U;
 }
 
 std::size_t pending_count() noexcept
@@ -326,37 +369,107 @@ void update_admission_result(telemetry_enqueue_result &result) noexcept
 	result.dropped_control_total = HEALTH.dropped_control.load(std::memory_order_acquire);
 }
 
-void mark_failure(telemetry_monotonic_usec now, std::uint32_t error_code) noexcept
+void capture_failure_identity(const telemetry_record *records, std::size_t count,
+			      telemetry_failure_class failure_class, std::uint32_t error_code,
+			      std::uint32_t retry_attempts) noexcept
+{
+	HEALTH.last_failure_class.store(static_cast<std::uint8_t>(failure_class),
+					std::memory_order_release);
+	HEALTH.last_error_code.store(error_code, std::memory_order_release);
+	HEALTH.last_failure_retry_attempts.store(retry_attempts, std::memory_order_release);
+	if (records == nullptr || count == 0U)
+	{
+		HEALTH.last_failure_boot_id.store(0U, std::memory_order_release);
+		HEALTH.last_failure_process_id.store(0U, std::memory_order_release);
+		HEALTH.last_failure_first_record_seq.store(0U, std::memory_order_release);
+		HEALTH.last_failure_last_record_seq.store(0U, std::memory_order_release);
+		HEALTH.last_failure_record_kind_mask.store(0U, std::memory_order_release);
+		return;
+	}
+	HEALTH.last_failure_boot_id.store(records[0].header.key.producer.boot_id,
+					  std::memory_order_release);
+	HEALTH.last_failure_process_id.store(records[0].header.key.producer.process_id,
+					     std::memory_order_release);
+	HEALTH.last_failure_first_record_seq.store(records[0].header.key.record_seq,
+						   std::memory_order_release);
+	HEALTH.last_failure_last_record_seq.store(records[count - 1U].header.key.record_seq,
+						  std::memory_order_release);
+	std::uint64_t kinds = 0U;
+	for (std::size_t index = 0U; index < count; ++index)
+		kinds |= std::uint64_t{ 1U }
+			 << static_cast<std::uint8_t>(records[index].header.kind);
+	HEALTH.last_failure_record_kind_mask.store(kinds, std::memory_order_release);
+}
+
+void mark_failure(telemetry_monotonic_usec now, std::uint32_t error_code,
+		  telemetry_failure_class failure_class =
+			  telemetry_failure_class::transient_internal) noexcept
 {
 	HEALTH.last_error_code.store(error_code, std::memory_order_release);
+	HEALTH.last_failure_class.store(static_cast<std::uint8_t>(failure_class),
+					std::memory_order_release);
 	HEALTH.last_failure_monotonic_usec.store(now, std::memory_order_release);
 	if (!STOP_REQUESTED.load(std::memory_order_acquire))
 		set_health_state(telemetry_health_state::degraded);
 }
 
-void schedule_inflight_retry(telemetry_monotonic_usec now, std::uint32_t error_code,
-			     bool ambiguous) noexcept
+void open_circuit(telemetry_monotonic_usec now, std::uint32_t error_code,
+		  telemetry_failure_class failure_class, const telemetry_record *records,
+		  std::size_t count, std::uint32_t retry_attempts) noexcept
+{
+	capture_failure_identity(records, count, failure_class, error_code, retry_attempts);
+	HEALTH.last_failure_monotonic_usec.store(now, std::memory_order_release);
+	if (!CIRCUIT_OPEN.exchange(true, std::memory_order_acq_rel))
+		saturating_add(HEALTH.circuit_open_count, std::uint64_t{ 1U });
+	if (!STOP_REQUESTED.load(std::memory_order_acquire))
+		set_health_state(telemetry_health_state::circuit_open);
+}
+
+bool schedule_inflight_retry(telemetry_monotonic_usec now, std::uint32_t error_code,
+			     telemetry_failure_class failure_class, bool ambiguous) noexcept
 {
 	if (INFLIGHT.retry_attempts < TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS)
 		++INFLIGHT.retry_attempts;
-	INFLIGHT.retry_not_before =
-		saturating_time_add(now, retry_backoff(INFLIGHT.retry_attempts));
 	if (ambiguous)
+	{
 		INFLIGHT.resolution_required = true;
-	if (ambiguous)
 		saturating_add(HEALTH.ambiguous_commits, std::uint64_t{ 1U });
+	}
 	else
 		saturating_add(HEALTH.retryable_failures, std::uint64_t{ 1U });
-	mark_failure(now, error_code);
+	if (!ambiguous && INFLIGHT.retry_attempts >= TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS)
+	{
+		const std::size_t index = INFLIGHT.isolation ? INFLIGHT.isolation_index : 0U;
+		open_circuit(now, error_code, failure_class, &INFLIGHT_RECORDS[index],
+			     INFLIGHT.isolation ? 1U : INFLIGHT.count, INFLIGHT.retry_attempts);
+		INFLIGHT.retry_not_before = std::numeric_limits<telemetry_monotonic_usec>::max();
+		return false;
+	}
+	INFLIGHT.retry_not_before =
+		saturating_time_add(now, retry_backoff(INFLIGHT.retry_attempts));
+	mark_failure(now, error_code, failure_class);
+	capture_failure_identity(
+		&INFLIGHT_RECORDS[INFLIGHT.isolation ? INFLIGHT.isolation_index : 0U],
+		INFLIGHT.isolation ? 1U : INFLIGHT.count, failure_class, error_code,
+		INFLIGHT.retry_attempts);
+	return true;
 }
 
-void schedule_repository_retry(telemetry_monotonic_usec now, std::uint32_t error_code) noexcept
+bool schedule_repository_retry(telemetry_monotonic_usec now, std::uint32_t error_code) noexcept
 {
 	if (REPOSITORY_RETRY_ATTEMPTS < TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS)
 		++REPOSITORY_RETRY_ATTEMPTS;
+	if (REPOSITORY_RETRY_ATTEMPTS >= TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS)
+	{
+		open_circuit(now, error_code, telemetry_failure_class::transient_connection,
+			     nullptr, 0U, REPOSITORY_RETRY_ATTEMPTS);
+		REPOSITORY_RETRY_NOT_BEFORE = std::numeric_limits<telemetry_monotonic_usec>::max();
+		return false;
+	}
 	REPOSITORY_RETRY_NOT_BEFORE =
 		saturating_time_add(now, retry_backoff(REPOSITORY_RETRY_ATTEMPTS));
-	mark_failure(now, error_code);
+	mark_failure(now, error_code, telemetry_failure_class::transient_connection);
+	return true;
 }
 
 void count_duration(const telemetry_record &record) noexcept
@@ -381,7 +494,8 @@ bool validate_early_result(const telemetry_apply_batch_result &result) noexcept
 	    result.result_count != 0U || result.applied_count != 0U ||
 	    result.duplicate_count != 0U || result.stale_checkpoint_count != 0U ||
 	    result.invalid_count != 0U || result.conflict_count != 0U ||
-	    result.first_record_seq != 0U || result.last_record_seq != 0U)
+	    result.quarantined_count != 0U || result.first_record_seq != 0U ||
+	    result.last_record_seq != 0U)
 		return false;
 	for (const auto &item : result.results)
 		if (!record_apply_unused_is_zero(item))
@@ -399,13 +513,14 @@ bool validate_full_result(const telemetry_apply_batch_result &result,
 		return false;
 	if (retry && (result.applied_count != 0U || result.duplicate_count != 0U ||
 		      result.stale_checkpoint_count != 0U || result.invalid_count != 0U ||
-		      result.conflict_count != 0U))
+		      result.conflict_count != 0U || result.quarantined_count != 0U))
 		return false;
 	std::uint32_t applied = 0U;
 	std::uint32_t duplicate = 0U;
 	std::uint32_t stale = 0U;
 	std::uint32_t invalid = 0U;
 	std::uint32_t conflict = 0U;
+	std::uint32_t quarantined = 0U;
 	for (std::size_t index = 0U; index < count; ++index)
 	{
 		const auto &item = result.results[index];
@@ -429,6 +544,12 @@ bool validate_full_result(const telemetry_apply_batch_result &result,
 		case telemetry_apply_outcome::duplicate_conflict:
 			++conflict;
 			break;
+		case telemetry_apply_outcome::quarantined_invalid:
+			++invalid;
+			++quarantined;
+			if (retry || item.failure_class != telemetry_failure_class::invalid_record)
+				return false;
+			break;
 		case telemetry_apply_outcome::retryable_failure:
 			if (!retry)
 				return false;
@@ -437,31 +558,49 @@ bool validate_full_result(const telemetry_apply_batch_result &result,
 			if (!retry)
 				return false;
 			break;
+		case telemetry_apply_outcome::permanent_failure:
+			if (!retry)
+				return false;
+			break;
 		default:
 			return false;
 		}
-		if (retry &&
-		    item.outcome != (result.outcome == telemetry_batch_outcome::commit_ambiguous ?
-					     telemetry_apply_outcome::commit_ambiguous :
-					     telemetry_apply_outcome::retryable_failure))
-			return false;
+		if (retry)
+		{
+			const auto expected =
+				result.outcome == telemetry_batch_outcome::commit_ambiguous ?
+					telemetry_apply_outcome::commit_ambiguous :
+				result.outcome == telemetry_batch_outcome::permanent_failure ?
+					telemetry_apply_outcome::permanent_failure :
+					telemetry_apply_outcome::retryable_failure;
+			if (item.outcome != expected || item.failure_class != result.failure_class)
+				return false;
+		}
 	}
 	for (std::size_t index = count; index < TELEMETRY_BATCH_MAX_RECORDS_PROPOSAL; ++index)
 		if (!record_apply_unused_is_zero(result.results[index]))
 			return false;
 	if (retry)
-		return true;
+		return (result.outcome == telemetry_batch_outcome::commit_ambiguous &&
+			result.failure_class == telemetry_failure_class::commit_ambiguous) ||
+		       (result.outcome == telemetry_batch_outcome::permanent_failure &&
+			telemetry_failure_is_permanent(result.failure_class)) ||
+		       (result.outcome == telemetry_batch_outcome::retryable_failure &&
+			telemetry_failure_is_retryable(result.failure_class));
 	return result.applied_count == applied && result.duplicate_count == duplicate &&
 	       result.stale_checkpoint_count == stale && result.invalid_count == invalid &&
-	       result.conflict_count == conflict &&
+	       result.conflict_count == conflict && result.quarantined_count == quarantined &&
 	       (result.outcome == telemetry_batch_outcome::committed ?
 			(result.invalid_count == 0U && result.conflict_count == 0U) :
 			(result.outcome == telemetry_batch_outcome::committed_with_rejections &&
-			 (result.invalid_count != 0U || result.conflict_count != 0U)));
+			 (result.invalid_count != 0U || result.conflict_count != 0U ||
+			  result.quarantined_count != 0U)));
 }
 
 bool ensure_repository(telemetry_monotonic_usec now) noexcept
 {
+	if (CIRCUIT_OPEN.load(std::memory_order_acquire))
+		return false;
 	if (REPOSITORY_READY.load(std::memory_order_acquire))
 		return true;
 	if (now < REPOSITORY_RETRY_NOT_BEFORE)
@@ -501,6 +640,12 @@ bool ensure_repository(telemetry_monotonic_usec now) noexcept
 		set_health_state(telemetry_health_state::stopping);
 		return false;
 	}
+	if (outcome == telemetry_repository_outcome::permanent_failure)
+	{
+		open_circuit(now, 0U, telemetry_failure_class::permanent_repository, nullptr, 0U,
+			     REPOSITORY_RETRY_ATTEMPTS);
+		return false;
+	}
 	schedule_repository_retry(now, 0U);
 	return false;
 }
@@ -515,7 +660,8 @@ void update_pulse_counts(const telemetry_apply_batch_result &result,
 	pulse.rejected += result.invalid_count + result.conflict_count;
 	for (std::size_t index = 0U; index < count; ++index)
 	{
-		const auto outcome = result.results[index].outcome;
+		const auto &item = result.results[index];
+		const auto outcome = item.outcome;
 		if (outcome == telemetry_apply_outcome::applied)
 		{
 			saturating_add(HEALTH.applied_records, std::uint64_t{ 1U });
@@ -527,6 +673,13 @@ void update_pulse_counts(const telemetry_apply_batch_result &result,
 			saturating_add(HEALTH.stale_checkpoint_records, std::uint64_t{ 1U });
 		else if (outcome == telemetry_apply_outcome::rejected_invalid)
 			saturating_add(HEALTH.invalid_records, std::uint64_t{ 1U });
+		else if (outcome == telemetry_apply_outcome::quarantined_invalid)
+		{
+			saturating_add(HEALTH.invalid_records, std::uint64_t{ 1U });
+			saturating_add(HEALTH.quarantined_records, std::uint64_t{ 1U });
+			capture_failure_identity(&records[index], 1U, item.failure_class,
+						 item.error_code, 0U);
+		}
 		else if (outcome == telemetry_apply_outcome::duplicate_conflict)
 			saturating_add(HEALTH.conflict_records, std::uint64_t{ 1U });
 	}
@@ -649,7 +802,8 @@ void handle_success(const telemetry_apply_batch_result &result, const telemetry_
 	HEALTH.last_error_code.store(result.error_code, std::memory_order_release);
 	HEALTH.last_success_monotonic_usec.store(now, std::memory_order_release);
 	if (!STOP_REQUESTED.load(std::memory_order_acquire))
-		set_health_state(result.invalid_count != 0U || result.conflict_count != 0U ?
+		set_health_state(result.invalid_count != 0U || result.conflict_count != 0U ||
+						 result.quarantined_count != 0U ?
 					 telemetry_health_state::degraded :
 					 telemetry_health_state::healthy);
 
@@ -677,7 +831,8 @@ void handle_corrupt_callback(telemetry_monotonic_usec now,
 			     telemetry_transport_pulse_result &) noexcept
 {
 	INFLIGHT.resolution_required = true;
-	schedule_inflight_retry(now, static_cast<std::uint32_t>(EPROTO), false);
+	schedule_inflight_retry(now, static_cast<std::uint32_t>(EPROTO),
+				telemetry_failure_class::transient_internal, false);
 }
 
 void handle_disabled_callback(const telemetry_apply_batch_result &result,
@@ -700,12 +855,16 @@ void handle_retry_result(const telemetry_apply_batch_result &result,
 			 telemetry_monotonic_usec now) noexcept
 {
 	const bool ambiguous = result.outcome == telemetry_batch_outcome::commit_ambiguous;
+	const telemetry_failure_class failure_class =
+		result.failure_class == telemetry_failure_class::none ?
+			telemetry_failure_class::transient_connection :
+			result.failure_class;
 	if (result.outcome == telemetry_batch_outcome::unavailable)
 	{
 		REPOSITORY_READY.store(false, std::memory_order_release);
 		schedule_repository_retry(now, result.error_code);
 	}
-	schedule_inflight_retry(now, result.error_code, ambiguous);
+	schedule_inflight_retry(now, result.error_code, failure_class, ambiguous);
 }
 
 void start_isolation() noexcept
@@ -768,7 +927,8 @@ void attempt_inflight(telemetry_monotonic_usec now, telemetry_transport_pulse_re
 	    (apply_result.outcome == telemetry_batch_outcome::invalid_batch ||
 	     apply_result.outcome == telemetry_batch_outcome::disabled))
 	{
-		schedule_inflight_retry(now, static_cast<std::uint32_t>(EPROTO), true);
+		schedule_inflight_retry(now, static_cast<std::uint32_t>(EPROTO),
+					telemetry_failure_class::commit_ambiguous, true);
 		result.outcome = telemetry_transport_outcome::unavailable;
 		return;
 	}
@@ -804,6 +964,16 @@ void attempt_inflight(telemetry_monotonic_usec now, telemetry_transport_pulse_re
 		result.outcome = telemetry_transport_outcome::unavailable;
 		return;
 	}
+	if (apply_result.outcome == telemetry_batch_outcome::permanent_failure)
+	{
+		if (validate_full_result(apply_result, attempt_records, attempt_count, true))
+			open_circuit(now, apply_result.error_code, apply_result.failure_class,
+				     attempt_records, attempt_count, INFLIGHT.retry_attempts);
+		else
+			handle_corrupt_callback(now, result);
+		result.outcome = telemetry_transport_outcome::unavailable;
+		return;
+	}
 	if ((apply_result.outcome != telemetry_batch_outcome::committed &&
 	     apply_result.outcome != telemetry_batch_outcome::committed_with_rejections) ||
 	    !validate_full_result(apply_result, attempt_records, attempt_count, false))
@@ -832,6 +1002,12 @@ telemetry_transport_pulse_result pulse_impl(telemetry_monotonic_usec now, bool f
 	if (lifecycle == LIFECYCLE_DISABLED)
 	{
 		result.outcome = telemetry_transport_outcome::flatfile_disabled;
+		fill_pending(result);
+		return result;
+	}
+	if (CIRCUIT_OPEN.load(std::memory_order_acquire))
+	{
+		result.outcome = telemetry_transport_outcome::unavailable;
 		fill_pending(result);
 		return result;
 	}
@@ -1073,6 +1249,7 @@ telemetry_transport_outcome telemetry_transport_init(telemetry_transport_config 
 	SHUTDOWN_REQUESTED.store(false, std::memory_order_release);
 	REPOSITORY_READY.store(false, std::memory_order_release);
 	REPOSITORY_STARTED.store(false, std::memory_order_release);
+	CIRCUIT_OPEN.store(false, std::memory_order_release);
 
 	if (config.backend == telemetry_storage_backend::flatfile_disabled)
 	{
@@ -1145,6 +1322,13 @@ telemetry_enqueue_result telemetry_transport_enqueue(telemetry_record record)
 		update_admission_result(result);
 		return result;
 	}
+	if (CIRCUIT_OPEN.load(std::memory_order_acquire) && !control)
+	{
+		record_failed_admission(record, false);
+		result.admission = telemetry_queue_admission::rejected_circuit_open;
+		update_admission_result(result);
+		return result;
+	}
 
 	telemetry_monotonic_usec now = 0U;
 	const bool now_valid = clock_now(now);
@@ -1152,23 +1336,7 @@ telemetry_enqueue_result telemetry_transport_enqueue(telemetry_record record)
 		telemetry_queue_private::try_push(&QUEUE, record, now, now_valid, control);
 	if (!pushed.accepted)
 	{
-		add_drop_health(control);
-		auto &count = control ? LOSS.rejected_control : LOSS.rejected_detail;
-		if (count != std::numeric_limits<std::uint64_t>::max())
-			++count;
-		const auto seq = record.header.key.record_seq;
-		if (!LOSS_RANGE_UNKNOWN)
-		{
-			if (LOSS.first_rejected_record_seq == 0U)
-				LOSS.first_rejected_record_seq = seq;
-			else if (LOSS.last_rejected_record_seq ==
-					 std::numeric_limits<std::uint64_t>::max() ||
-				 seq != LOSS.last_rejected_record_seq + 1U)
-				LOSS_RANGE_UNKNOWN = true;
-			LOSS.last_rejected_record_seq = seq;
-		}
-		if (LOSS_RANGE_UNKNOWN)
-			LOSS.first_rejected_record_seq = LOSS.last_rejected_record_seq = 0U;
+		record_failed_admission(record, control);
 		result.admission = control ? telemetry_queue_admission::rejected_control_full :
 					     telemetry_queue_admission::rejected_detail_full;
 		update_admission_result(result);
@@ -1302,6 +1470,8 @@ telemetry_health_snapshot telemetry_transport_health_copy(void)
 		HEALTH.backend.load(std::memory_order_acquire));
 	result.disabled_reason = static_cast<telemetry_disabled_reason>(
 		HEALTH.disabled_reason.load(std::memory_order_acquire));
+	result.last_failure_class = static_cast<telemetry_failure_class>(
+		HEALTH.last_failure_class.load(std::memory_order_acquire));
 	result.schema_version = TELEMETRY_SCHEMA_VERSION;
 	result.last_error_code = HEALTH.last_error_code.load(std::memory_order_acquire);
 	result.queue_depth = telemetry_queue_private::depth(&QUEUE);
@@ -1318,6 +1488,20 @@ telemetry_health_snapshot telemetry_transport_health_copy(void)
 	result.conflict_records = HEALTH.conflict_records.load(std::memory_order_acquire);
 	result.retryable_failures = HEALTH.retryable_failures.load(std::memory_order_acquire);
 	result.ambiguous_commits = HEALTH.ambiguous_commits.load(std::memory_order_acquire);
+	result.quarantined_records = HEALTH.quarantined_records.load(std::memory_order_acquire);
+	result.circuit_open_count = HEALTH.circuit_open_count.load(std::memory_order_acquire);
+	result.last_failure_producer.boot_id =
+		HEALTH.last_failure_boot_id.load(std::memory_order_acquire);
+	result.last_failure_producer.process_id =
+		HEALTH.last_failure_process_id.load(std::memory_order_acquire);
+	result.last_failure_first_record_seq =
+		HEALTH.last_failure_first_record_seq.load(std::memory_order_acquire);
+	result.last_failure_last_record_seq =
+		HEALTH.last_failure_last_record_seq.load(std::memory_order_acquire);
+	result.last_failure_record_kind_mask =
+		HEALTH.last_failure_record_kind_mask.load(std::memory_order_acquire);
+	result.last_failure_retry_attempts =
+		HEALTH.last_failure_retry_attempts.load(std::memory_order_acquire);
 	result.sequence_gap_count = HEALTH.sequence_gap_count.load(std::memory_order_acquire);
 	result.unclosed_tail_count = HEALTH.unclosed_tail_count.load(std::memory_order_acquire);
 	result.attributable_duration_usec =

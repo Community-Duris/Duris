@@ -30,10 +30,12 @@ enum class apply_mode : std::uint8_t
 	normal,
 	transient,
 	ambiguous,
+	permanent,
 	unavailable,
 	malformed_success,
 	invalid_batch,
 	mixed_rejections,
+	quarantined_record,
 };
 
 struct observed_call
@@ -47,6 +49,7 @@ struct fake_repository
 	apply_mode mode = apply_mode::normal;
 	std::uint32_t failures_left = 0U;
 	std::uint32_t init_failures_left = 0U;
+	bool init_permanent = false;
 	std::uint32_t calls = 0U;
 	std::uint32_t init_calls = 0U;
 	std::uint32_t invalid_single_seq = 0U;
@@ -76,6 +79,8 @@ telemetry_repository_outcome fake_init(void *context, telemetry_repository_confi
 	++repository.init_calls;
 	if (!telemetry_repository_config_is_bounded(config))
 		return telemetry_repository_outcome::invalid_config;
+	if (repository.init_permanent)
+		return telemetry_repository_outcome::permanent_failure;
 	if (repository.init_failures_left != 0U)
 	{
 		--repository.init_failures_left;
@@ -85,10 +90,14 @@ telemetry_repository_outcome fake_init(void *context, telemetry_repository_confi
 }
 
 telemetry_apply_batch_result retry_result(const telemetry_record *records, std::size_t count,
-					  telemetry_batch_outcome outcome) noexcept
+					  telemetry_batch_outcome outcome,
+					  telemetry_failure_class failure_class,
+					  std::uint32_t error_code) noexcept
 {
 	telemetry_apply_batch_result result{};
 	result.outcome = outcome;
+	result.failure_class = failure_class;
+	result.error_code = error_code;
 	result.input_count = static_cast<std::uint16_t>(count);
 	result.result_count = static_cast<std::uint16_t>(count);
 	if (count != 0U)
@@ -102,7 +111,11 @@ telemetry_apply_batch_result retry_result(const telemetry_record *records, std::
 		result.results[index].outcome =
 			outcome == telemetry_batch_outcome::commit_ambiguous ?
 				telemetry_apply_outcome::commit_ambiguous :
+			outcome == telemetry_batch_outcome::permanent_failure ?
+				telemetry_apply_outcome::permanent_failure :
 				telemetry_apply_outcome::retryable_failure;
+		result.results[index].failure_class = failure_class;
+		result.results[index].error_code = error_code;
 	}
 	return result;
 }
@@ -129,18 +142,28 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 	if (repository.mode == apply_mode::transient && repository.failures_left != 0U)
 	{
 		--repository.failures_left;
-		return retry_result(records, count, telemetry_batch_outcome::retryable_failure);
+		return retry_result(records, count, telemetry_batch_outcome::retryable_failure,
+				    telemetry_failure_class::transient_transaction, 1213U);
 	}
 	if (repository.mode == apply_mode::ambiguous && repository.failures_left != 0U)
 	{
 		--repository.failures_left;
-		return retry_result(records, count, telemetry_batch_outcome::commit_ambiguous);
+		return retry_result(records, count, telemetry_batch_outcome::commit_ambiguous,
+				    telemetry_failure_class::commit_ambiguous, 2013U);
+	}
+	if (repository.mode == apply_mode::permanent && repository.failures_left != 0U)
+	{
+		--repository.failures_left;
+		return retry_result(records, count, telemetry_batch_outcome::permanent_failure,
+				    telemetry_failure_class::permanent_schema, 1054U);
 	}
 	if (repository.mode == apply_mode::unavailable && repository.failures_left != 0U)
 	{
 		--repository.failures_left;
 		telemetry_apply_batch_result result{};
 		result.outcome = telemetry_batch_outcome::unavailable;
+		result.failure_class = telemetry_failure_class::transient_connection;
+		result.error_code = 2013U;
 		return result;
 	}
 	if (repository.mode == apply_mode::malformed_success && repository.failures_left != 0U)
@@ -183,6 +206,18 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 					telemetry_apply_outcome::duplicate_conflict;
 				++result.conflict_count;
 			}
+		}
+		if (repository.mode == apply_mode::quarantined_record && index == 0U)
+		{
+			result.results[index].outcome =
+				telemetry_apply_outcome::quarantined_invalid;
+			result.results[index].failure_class =
+				telemetry_failure_class::invalid_record;
+			result.results[index].error_code = 1366U;
+			result.failure_class = telemetry_failure_class::invalid_record;
+			result.error_code = 1366U;
+			++result.invalid_count;
+			++result.quarantined_count;
 		}
 		if (result.results[index].outcome == telemetry_apply_outcome::applied)
 			++result.applied_count;
@@ -484,21 +519,36 @@ void validation_and_isolation_tests()
 	CHECK(repository_state.calls == 4U);
 	CHECK(telemetry_transport_health_copy().invalid_records == 1U);
 	finish();
+
+	bind_and_init(config(8U, 2U, 4U, 1U));
+	repository_state.mode = apply_mode::quarantined_record;
+	for (std::uint64_t sequence = 50U; sequence < 53U; ++sequence)
+		CHECK(telemetry_transport_enqueue(detail_record(sequence)).admission ==
+		      telemetry_queue_admission::accepted_detail);
+	CHECK(telemetry_transport_pulse(101U).examined == 3U);
+	CHECK(telemetry_transport_health_copy().quarantined_records == 1U);
+	CHECK(telemetry_transport_health_copy().invalid_records == 1U);
+	CHECK(telemetry_transport_health_copy().queue_depth == 0U);
+	CHECK(telemetry_transport_health_copy().last_failure_class ==
+	      telemetry_failure_class::invalid_record);
+	CHECK(telemetry_transport_health_copy().last_failure_first_record_seq == 50U);
+	finish();
 }
 
-void retry_exhaustion_remains_bounded_tests()
+void circuit_breaker_tests()
 {
-	case_name = "retry exponent cap and immutable retention";
+	case_name = "transient retry exhaustion opens a bounded circuit";
 	bind_and_init(config(4U, 1U, 1U, 1U));
 	repository_state.mode = apply_mode::transient;
-	repository_state.failures_left = 12U;
+	repository_state.failures_left = 20U;
 	CHECK(telemetry_transport_enqueue(detail_record(80U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
 	CHECK(telemetry_transport_pulse(101U).outcome == telemetry_transport_outcome::unavailable);
 	CHECK(telemetry_transport_enqueue(detail_record(81U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
 	telemetry_monotonic_usec now = 101U;
-	for (std::uint32_t attempt = 2U; attempt <= 12U; ++attempt)
+	for (std::uint32_t attempt = 2U; attempt <= TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS;
+	     ++attempt)
 	{
 		telemetry_monotonic_usec backoff = TELEMETRY_TRANSPORT_RETRY_BACKOFF_INITIAL_USEC;
 		for (std::uint32_t exponent = 1U; exponent < attempt - 1U; ++exponent)
@@ -508,19 +558,75 @@ void retry_exhaustion_remains_bounded_tests()
 		now += backoff;
 		CHECK(telemetry_transport_pulse(now).examined == 0U);
 	}
-	CHECK(repository_state.calls == 12U);
-	CHECK(telemetry_transport_health_copy().retryable_failures == 12U);
+	CHECK(repository_state.calls == TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS);
+	const auto exhausted = telemetry_transport_health_copy();
+	CHECK(exhausted.retryable_failures == TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS);
+	CHECK(exhausted.state == telemetry_health_state::circuit_open);
+	CHECK(exhausted.circuit_open_count == 1U);
+	CHECK(exhausted.last_failure_class == telemetry_failure_class::transient_transaction);
+	CHECK(exhausted.last_error_code == 1213U);
+	CHECK(exhausted.last_failure_producer.boot_id == 11U);
+	CHECK(exhausted.last_failure_producer.process_id == 22U);
+	CHECK(exhausted.last_failure_first_record_seq == 80U);
+	CHECK(exhausted.last_failure_last_record_seq == 80U);
+	CHECK(exhausted.last_failure_retry_attempts == TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS);
+	CHECK(exhausted.last_failure_record_kind_mask ==
+	      (std::uint64_t{ 1U } << static_cast<std::uint8_t>(telemetry_record_kind::interval)));
 	CHECK(telemetry_transport_health_copy().queue_depth == 2U);
 	for (std::uint32_t call = 0U; call < repository_state.calls; ++call)
 		CHECK(repository_state.observed[call].records[0].header.key.record_seq == 80U);
-	telemetry_monotonic_usec capped_now =
-		now + TELEMETRY_TRANSPORT_RETRY_BACKOFF_INITIAL_USEC * 128U;
-	CHECK(telemetry_transport_pulse(capped_now).examined == 1U);
-	CHECK(repository_state.calls == 13U);
-	CHECK(repository_state.observed[12].records[0].header.key.record_seq == 80U);
-	CHECK(telemetry_transport_pulse(capped_now).examined == 1U);
-	CHECK(repository_state.observed[13].records[0].header.key.record_seq == 81U);
+	CHECK(telemetry_transport_pulse(now + 10'000'000U).outcome ==
+	      telemetry_transport_outcome::unavailable);
+	CHECK(repository_state.calls == TELEMETRY_TRANSPORT_MAX_RETRY_ATTEMPTS);
+	CHECK(telemetry_transport_enqueue(detail_record(82U)).admission ==
+	      telemetry_queue_admission::rejected_circuit_open);
+	CHECK(telemetry_transport_enqueue(control_record(83U)).admission ==
+	      telemetry_queue_admission::accepted_control_reserve);
+
+	/* Explicit lifecycle recovery revalidates the repository before admission. */
+	telemetry_transport_shutdown();
+	repository_state = {};
+	CHECK(telemetry_transport_init(config(4U, 1U, 1U, 1U)) ==
+	      telemetry_transport_outcome::started);
+	CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
+	      telemetry_queue_admission::accepted_detail);
+	CHECK(telemetry_transport_pulse(200U).examined == 1U);
 	finish();
+
+	case_name = "permanent schema failure opens circuit immediately";
+	bind_and_init(config(4U, 1U, 2U, 1U));
+	repository_state.mode = apply_mode::permanent;
+	repository_state.failures_left = 1U;
+	CHECK(telemetry_transport_enqueue(detail_record(90U)).admission ==
+	      telemetry_queue_admission::accepted_detail);
+	CHECK(telemetry_transport_pulse(101U).outcome == telemetry_transport_outcome::unavailable);
+	CHECK(repository_state.calls == 1U);
+	const auto permanent = telemetry_transport_health_copy();
+	CHECK(permanent.state == telemetry_health_state::circuit_open);
+	CHECK(permanent.last_failure_class == telemetry_failure_class::permanent_schema);
+	CHECK(permanent.last_error_code == 1054U);
+	CHECK(permanent.last_failure_first_record_seq == 90U);
+	CHECK(telemetry_transport_pulse(2'000'000U).outcome ==
+	      telemetry_transport_outcome::unavailable);
+	CHECK(repository_state.calls == 1U);
+	telemetry_transport_shutdown();
+	telemetry_transport_unbind_for_tests();
+	repository_state = {};
+
+	case_name = "permanent repository initialization failure does not reconnect";
+	bind_and_init(config(4U, 1U, 2U, 1U));
+	repository_state.init_permanent = true;
+	CHECK(telemetry_transport_enqueue(detail_record(100U)).admission ==
+	      telemetry_queue_admission::accepted_detail);
+	CHECK(telemetry_transport_pulse(101U).outcome == telemetry_transport_outcome::unavailable);
+	CHECK(repository_state.init_calls == 1U);
+	CHECK(telemetry_transport_health_copy().state == telemetry_health_state::circuit_open);
+	CHECK(telemetry_transport_pulse(10'000'000U).outcome ==
+	      telemetry_transport_outcome::unavailable);
+	CHECK(repository_state.init_calls == 1U);
+	telemetry_transport_shutdown();
+	telemetry_transport_unbind_for_tests();
+	repository_state = {};
 }
 
 void controlled_io_teardown_tests()
@@ -653,7 +759,7 @@ int main()
 	reserve_and_loss_tests();
 	immutable_retry_and_ambiguous_tests();
 	validation_and_isolation_tests();
-	retry_exhaustion_remains_bounded_tests();
+	circuit_breaker_tests();
 	controlled_io_teardown_tests();
 	quiesce_and_reconnect_tests();
 	lifecycle_race_and_stress_tests();

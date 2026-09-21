@@ -2,6 +2,7 @@
 // disposable loopback database. The private connection factory is a fixture
 // seam; the real production factory has separate trust-boundary tests.
 #include "telemetry/telemetry_repository.h"
+#include "telemetry/telemetry_failure.h"
 #include "persistence/persistence_mode.h"
 
 #include <atomic>
@@ -10,6 +11,7 @@
 #include <cstring>
 #include <iterator>
 #include <thread>
+#include <utility>
 
 static const char *case_name = "startup";
 #define CHECK(condition)                                                                           \
@@ -38,6 +40,22 @@ static telemetry_repository_config repository_config(telemetry_producer_id fresh
 int main()
 {
 	case_name = "no-mysql";
+	CHECK(telemetry_classify_sql_failure(1213U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::transient_transaction);
+	CHECK(telemetry_classify_sql_failure(1205U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::transient_transaction);
+	CHECK(telemetry_classify_sql_failure(2013U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::transient_connection);
+	CHECK(telemetry_classify_sql_failure(1054U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::permanent_schema);
+	CHECK(telemetry_classify_sql_failure(1146U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::permanent_schema);
+	CHECK(telemetry_classify_sql_failure(1142U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::permanent_permission);
+	CHECK(telemetry_classify_sql_failure(1366U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::invalid_record);
+	CHECK(telemetry_classify_sql_failure(1054U, telemetry_sql_phase::commit) ==
+	      telemetry_failure_class::commit_ambiguous);
 	telemetry_repository_shutdown();
 	auto config = repository_config();
 	config.schema_version = 0;
@@ -76,6 +94,10 @@ enum class fault_kind
 	statement,
 	allocation,
 	deadlock,
+	unknown_column,
+	permission,
+	invalid_data,
+	startup_permission,
 	rollback_lost,
 	commit_lost_committed,
 	commit_lost_rolled_back
@@ -109,6 +131,14 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 	++query_calls;
 	injected_error = 0;
 	const std::string sql(query, length);
+	if (fault == fault_kind::startup_permission &&
+	    sql == "SELECT * FROM telemetry_interval LIMIT 0")
+	{
+		fault = fault_kind::none;
+		injected_handle = connection;
+		injected_error = 1142U;
+		return 1;
+	}
 	if (sql == "COMMIT" && (fault == fault_kind::commit_lost_committed ||
 				fault == fault_kind::commit_lost_rolled_back))
 	{
@@ -130,7 +160,9 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 	}
 	if (sql.find("INSERT INTO telemetry_interval") != std::string::npos &&
 	    (fault == fault_kind::statement || fault == fault_kind::deadlock ||
-	     fault == fault_kind::rollback_lost || fault == fault_kind::allocation))
+	     fault == fault_kind::unknown_column || fault == fault_kind::permission ||
+	     fault == fault_kind::invalid_data || fault == fault_kind::rollback_lost ||
+	     fault == fault_kind::allocation))
 	{
 		if (fault_insert_skips)
 		{
@@ -145,7 +177,11 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 			CHECK(__real_mysql_real_query(connection, "ROLLBACK", 8) == 0);
 		rollback_pending = selected == fault_kind::rollback_lost;
 		injected_handle = connection;
-		injected_error = selected == fault_kind::deadlock ? 1213U : 1205U;
+		injected_error = selected == fault_kind::deadlock	? 1213U :
+				 selected == fault_kind::unknown_column ? 1054U :
+				 selected == fault_kind::permission	? 1142U :
+				 selected == fault_kind::invalid_data	? 1366U :
+									  1205U;
 		return 1;
 	}
 	return __real_mysql_real_query(connection, query, length);
@@ -229,9 +265,9 @@ static void reset_fixture()
 	injected_error = 0;
 	factory_unavailable = false;
 	mode = PERSISTENCE_MODE_MARIADB_PRIMARY;
-	for (const char *table :
-	     { "telemetry_interval", "telemetry_session", "telemetry_config",
-	       "telemetry_player_day", "telemetry_cohort_day", "telemetry_rollup_state" })
+	for (const char *table : { "telemetry_interval", "telemetry_session", "telemetry_config",
+				   "telemetry_player_day", "telemetry_cohort_day",
+				   "telemetry_rollup_state", "telemetry_quarantine" })
 		execute(std::string("DELETE FROM ") + table);
 	CHECK(telemetry_repository_init(repository_config()) ==
 	      telemetry_repository_outcome::ready);
@@ -704,6 +740,60 @@ static void fault_tests()
 	}
 }
 
+static void failure_taxonomy_tests()
+{
+	for (const auto &test :
+	     { std::pair{ fault_kind::unknown_column, telemetry_failure_class::permanent_schema },
+	       std::pair{ fault_kind::permission, telemetry_failure_class::permanent_permission } })
+	{
+		case_name = "permanent statement failures retain identity and open health circuit";
+		reset_fixture();
+		seed_config();
+		const auto record = interval_record();
+		fault = test.first;
+		const auto failed = telemetry_repository_apply(&record, 1U);
+		CHECK(failed.outcome == telemetry_batch_outcome::permanent_failure);
+		CHECK(failed.failure_class == test.second);
+		CHECK(failed.result_count == 1U);
+		CHECK(failed.results[0].outcome == telemetry_apply_outcome::permanent_failure);
+		CHECK(failed.results[0].failure_class == test.second);
+		CHECK(failed.first_record_seq == record.header.key.record_seq);
+		CHECK(failed.last_record_seq == record.header.key.record_seq);
+		const auto health = telemetry_repository_health_copy();
+		CHECK(health.state == telemetry_health_state::circuit_open);
+		CHECK(health.last_failure_class == test.second);
+		CHECK(health.last_failure_producer.boot_id == record.header.key.producer.boot_id);
+		CHECK(health.last_failure_first_record_seq == record.header.key.record_seq);
+		CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 1U);
+	}
+
+	case_name = "record data violation is durably quarantined without blocking later records";
+	reset_fixture();
+	seed_config();
+	auto invalid = interval_record();
+	fault = fault_kind::invalid_data;
+	const auto quarantined = telemetry_repository_apply(&invalid, 1U);
+	CHECK(quarantined.outcome == telemetry_batch_outcome::committed_with_rejections);
+	CHECK(quarantined.failure_class == telemetry_failure_class::invalid_record);
+	CHECK(quarantined.invalid_count == 1U);
+	CHECK(quarantined.quarantined_count == 1U);
+	CHECK(quarantined.results[0].outcome == telemetry_apply_outcome::quarantined_invalid);
+	CHECK(quarantined.results[0].failure_class == telemetry_failure_class::invalid_record);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_quarantine") == 1U);
+	CHECK(scalar("SELECT gap_reason FROM telemetry_quarantine") ==
+	      static_cast<unsigned int>(telemetry_gap_reason::record_quarantined));
+	CHECK(scalar("SELECT quality_flags FROM telemetry_quarantine") ==
+	      TELEMETRY_QUALITY_SEQUENCE_GAP);
+	CHECK(scalar("SELECT OCTET_LENGTH(payload_sha256) FROM telemetry_quarantine") == 32U);
+	CHECK(scalar("SELECT OCTET_LENGTH(record_payload) FROM telemetry_quarantine") ==
+	      sizeof(telemetry_record));
+	auto later = invalid;
+	++later.header.key.record_seq;
+	CHECK(telemetry_repository_apply(&later, 1U).outcome == telemetry_batch_outcome::committed);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
+	CHECK(telemetry_repository_health_copy().quarantined_records == 1U);
+}
+
 static telemetry_apply_batch_result apply_without_allocation_escape(const telemetry_record *records,
 								    std::size_t count)
 {
@@ -831,11 +921,25 @@ static void startup_fencing_tests()
 	case_name = "missing table prevents healthy startup and releases ownership lock";
 	execute("RENAME TABLE telemetry_interval TO telemetry_interval_fixture_hidden");
 	CHECK(telemetry_repository_init(repository_config()) ==
-	      telemetry_repository_outcome::unavailable);
-	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::degraded);
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::circuit_open);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_schema);
 	CHECK(scalar("SELECT GET_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())),2)") == 1U);
 	CHECK(scalar("SELECT RELEASE_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())))") == 1U);
 	execute("RENAME TABLE telemetry_interval_fixture_hidden TO telemetry_interval");
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::ready);
+	shutdown_fixture();
+	case_name = "startup permission failure is permanent and releases ownership lock";
+	fault = fault_kind::startup_permission;
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_permission);
+	CHECK(telemetry_repository_health_copy().last_error_code == 1142U);
+	CHECK(scalar("SELECT GET_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())),2)") == 1U);
+	CHECK(scalar("SELECT RELEASE_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())))") == 1U);
 	CHECK(telemetry_repository_init(repository_config()) ==
 	      telemetry_repository_outcome::ready);
 }
@@ -850,8 +954,10 @@ static void fresh_producer_tests()
 	expect_one(existing, telemetry_apply_outcome::applied);
 	shutdown_fixture();
 	CHECK(telemetry_repository_init(repository_config(reused)) ==
-	      telemetry_repository_outcome::unavailable);
-	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::degraded);
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::circuit_open);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_repository);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
 
 	// A joined owner shutdown resets freshness state, so a different producer
@@ -1037,6 +1143,7 @@ int main(int argc, char **argv)
 	global_scope_tests();
 	checkpoint_tests();
 	fault_tests();
+	failure_taxonomy_tests();
 	startup_fencing_tests();
 	fresh_producer_tests();
 	bounds_and_lifecycle_tests();

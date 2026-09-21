@@ -13,8 +13,10 @@ bounded RAM; it does not mean that SQL committed it.
   thread or invokes repository callbacks. The first active worker pulse initializes
   the repository, including when no records are queued. If startup was cancelled
   by stop and no work is pending, the worker publishes stopped without opening an
-  unnecessary connection. Failed initialization uses
-  bounded backoff. The coordinator starts and joins the worker separately.
+  unnecessary connection. Transient initialization failures use bounded
+  backoff and open the circuit after eight attempts; permanent schema or
+  permission failures open it immediately. The coordinator starts and joins
+  the worker separately.
 - `telemetry_transport_pulse()` and `telemetry_transport_drain_until()` are
   worker-only. `telemetry_transport_request_stop()` only publishes atomic stop
   state and returns; it does not call SQL or wait.
@@ -60,7 +62,10 @@ producer re-enqueues: the worker retains and resubmits its immutable copy.
 A rejected, never-admitted key may be retried before any newer key is accepted.
 The producer must keep that retry value unchanged. Gaps in sequence are legal.
 Saturation updates bounded rejection metadata but never closes the control
-reserve or invents a record using the rejected value's key.
+reserve or invents a record using the rejected value's key. An open failure
+circuit rejects new detail records as `rejected_circuit_open` before they can
+consume the reserve. Control and coverage records may still use the finite
+reserve, so the producer can describe the coverage loss.
 
 ## Flush and immutable batches
 
@@ -77,11 +82,13 @@ in-flight array. While that batch is unresolved, its queue slots remain counted
 against total capacity. Retries call the repository with the same copied keys
 and payloads; records admitted later remain behind it and cannot be applied
 before it resolves. Retry attempts use a bounded exponent (eight levels), with
-1 ms initial, exponential, 1 s maximum backoff. The attempt counter saturates
-at its cap; retryable and ambiguous work is retained rather than silently
-discarded when that cap is reached, so a possible durable commit is never
-skipped. Catch-up is capped at 64 drain iterations. The implementation does
-not busy-wait for a future retry deadline.
+1 ms initial, exponential, 1 s maximum backoff. A transient connection,
+deadlock, lock timeout, or internal failure opens the circuit on the eighth
+failed attempt; the retained batch is no longer called once per second. Commit
+ambiguity is the exception: it continues exact immutable
+replay/reconciliation because advancing or discarding could skip a transaction
+that actually committed. Catch-up is capped at 64 drain iterations. The
+implementation does not busy-wait for a future retry deadline.
 
 Repository results are checked before any queue prefix advances:
 
@@ -90,8 +97,9 @@ Repository results are checked before any queue prefix advances:
 - committed results must have the exact input count, ordered matching keys,
   matching per-record counters, valid per-record outcomes, and the correct
   `committed` versus `committed_with_rejections` aggregate;
-- retryable and ambiguous results must have exact keys/counts and retry outcomes
-  for every record, with no committed counters;
+- retryable, permanent, and ambiguous results must have exact keys/counts,
+  matching failure classes, and failure outcomes for every record, with no
+  committed counters;
 - malformed or mismatched results are treated as protocol failure and leave the
   immutable batch in flight. In particular, a corrupt success cannot advance
   the stable prefix.
@@ -103,10 +111,29 @@ not evidence that the valid rows committed. The worker then isolates bounded
 single-record calls in FIFO order. It never retries a successfully committed
 mixed batch as a whole.
 
+A SQL failure caused by one represented value (for example an incompatible
+numeric or text value) is rolled back to that record's savepoint and written to
+`telemetry_quarantine` in the same outer transaction. The quarantine row keeps
+the producer identity, record sequence, kind, failure class, numeric SQL code,
+payload digest, exact fixed-size record, and explicit sequence-gap quality. No
+record payload appears in ordinary health output. The rest of the batch can
+commit, later records continue, and the quarantine row remains protected for a
+controlled operator replay instead of being discarded after an arbitrary
+retry count.
+
 An ambiguous commit blocks every newer repository call until the same immutable
 batch is retried/reconciled. A later `invalid_batch` or `disabled` callback does
 not resolve that uncertainty and cannot trigger smaller-batch isolation. It is
 not safe to infer that no rows committed.
+
+Permanent schema, query-shape, repository, authentication, and permission
+failures open the circuit immediately. The circuit retains the in-flight batch
+and stops repository calls; it does not turn a permanent defect into a
+one-second reconnect loop. Recovery requires an explicit transport lifecycle
+restart, and repository startup validates the required telemetry tables before
+healthy state is restored. Applying migration `0030_telemetry_quarantine` is
+part of that validation. A restart is an operator action, not an automatic
+timer-based reset.
 
 ## Loss records and health
 
@@ -138,6 +165,12 @@ Shutdown counts never-attempted detail/control records as drops and records an
 unclosed tail. An unresolved in-flight transaction remains an unknown tail rather
 than being falsely classified as definite loss.
 
+Circuit diagnostics are payload-free and remain available while the circuit is
+open: health reports the failure class, numeric error, producer ID, first and
+last record sequence, record-kind bit mask, retry-attempt count, quarantine
+count, and circuit-open count. This makes a poison batch independently alertable
+without exposing subject or gameplay fields.
+
 ## Focused private binding
 
 `telemetry_transport_private.h` is not a production public header. It provides
@@ -150,8 +183,9 @@ to the real frozen repository API.
 `tests/async/test_telemetry_transport.py` compiles the standalone harness
 without SQL, runs normal, Address/Undefined, and Undefined sanitizer variants,
 and attempts ThreadSanitizer. It reports the host's actual TSAN result. The
-harness covers reserve admission, row/byte/age triggers, bounded loss metadata, immutable
-retry, retry-exponent exhaustion, and ambiguity barriers, callback validation,
-mixed rejections, bounded isolation, quiesce/resume, stop-before-init,
-reinitialization, controlled fake-I/O release after nonblocking stop, and
-concurrent producer/worker stress.
+harness covers reserve admission, row/byte/age triggers, bounded loss metadata,
+immutable retry, transient retry exhaustion, permanent circuits, quarantine
+continuation, ambiguity barriers, callback validation, mixed rejections,
+bounded isolation, quiesce/resume, stop-before-init, reinitialization,
+controlled fake-I/O release after nonblocking stop, and concurrent
+producer/worker stress.

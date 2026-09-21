@@ -241,6 +241,7 @@ enum class telemetry_gap_reason : std::uint8_t
 	telemetry_disabled = 4,
 	unclosed_tail = 5,
 	clock_discontinuity = 6,
+	record_quarantined = 7,
 };
 
 /*
@@ -293,6 +294,26 @@ enum class telemetry_health_state : std::uint8_t
 	degraded = 3,
 	stopping = 4,
 	stopped = 5,
+	circuit_open = 6,
+};
+
+/*
+ * Failure classes are intentionally stable, compact diagnostic values. SQL
+ * text and record payloads never cross the repository boundary as health
+ * data. commit_ambiguous remains distinct because only exact replay can
+ * resolve whether the transaction committed.
+ */
+enum class telemetry_failure_class : std::uint8_t
+{
+	none = 0,
+	transient_connection = 1,
+	transient_transaction = 2,
+	transient_internal = 3,
+	commit_ambiguous = 4,
+	invalid_record = 5,
+	permanent_schema = 6,
+	permanent_permission = 7,
+	permanent_repository = 8,
 };
 
 enum class telemetry_disabled_reason : std::uint8_t
@@ -315,6 +336,7 @@ enum class telemetry_queue_admission : std::uint8_t
 	rejected_detail_full = 5,
 	rejected_control_full = 6,
 	rejected_oversize = 7,
+	rejected_circuit_open = 8,
 };
 
 /*
@@ -334,6 +356,8 @@ enum class telemetry_apply_outcome : std::uint8_t
 	commit_ambiguous = 6,
 	unavailable = 7,
 	disabled = 8,
+	quarantined_invalid = 9,
+	permanent_failure = 10,
 };
 
 enum class telemetry_batch_outcome : std::uint8_t
@@ -345,6 +369,7 @@ enum class telemetry_batch_outcome : std::uint8_t
 	commit_ambiguous = 4,
 	unavailable = 5,
 	disabled = 6,
+	permanent_failure = 7,
 };
 
 /* Observation-quality flags are separate from repository/queue health. */
@@ -758,7 +783,7 @@ struct telemetry_health_snapshot
 	telemetry_health_state state;
 	telemetry_storage_backend backend;
 	telemetry_disabled_reason disabled_reason;
-	std::uint8_t reserved;
+	telemetry_failure_class last_failure_class;
 	std::uint16_t schema_version;
 	std::uint16_t reserved2;
 	std::uint32_t last_error_code;
@@ -782,6 +807,14 @@ struct telemetry_health_snapshot
 	telemetry_duration_usec unknown_duration_usec;
 	telemetry_monotonic_usec last_success_monotonic_usec;
 	telemetry_monotonic_usec last_failure_monotonic_usec;
+	telemetry_producer_id last_failure_producer;
+	telemetry_record_sequence last_failure_first_record_seq;
+	telemetry_record_sequence last_failure_last_record_seq;
+	std::uint64_t last_failure_record_kind_mask;
+	std::uint64_t quarantined_records;
+	std::uint64_t circuit_open_count;
+	std::uint32_t last_failure_retry_attempts;
+	std::uint32_t reserved4;
 };
 
 constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexcept
