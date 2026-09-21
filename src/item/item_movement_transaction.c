@@ -30,6 +30,15 @@ extern const int top_of_world;
 
 namespace
 {
+enum class publication_state : uint8_t
+{
+	none,
+	ready,
+	retrying,
+	blocked,
+	ack_pending,
+};
+
 struct pending_movement
 {
 	uint32_t actor_pid;
@@ -43,10 +52,13 @@ struct pending_movement
 	bool adopting;
 	bool adoption_only;
 	item_movement_completion_fn completion;
+	item_movement_publication_fn publication;
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> context;
 	size_t context_size;
 	bool completion_ready;
 	bool publication_failed;
+	unsigned int publication_attempts;
+	publication_state publication_status;
 	bool creation_batch;
 	bool registry_applied;
 	bool collector_invalidated;
@@ -1033,11 +1045,20 @@ void account_health()
 {
 	health.pending = pending.size();
 	health.retained_offline = 0;
+	health.publication_retrying = 0;
+	health.publication_blocked = 0;
+	health.publication_ack_pending = 0;
 	for (const auto &[key, entry] : pending)
 	{
 		(void)key;
 		if (entry.completion_ready)
 			++health.retained_offline;
+		if (entry.publication_status == publication_state::retrying)
+			++health.publication_retrying;
+		else if (entry.publication_status == publication_state::blocked)
+			++health.publication_blocked;
+		else if (entry.publication_status == publication_state::ack_pending)
+			++health.publication_ack_pending;
 	}
 }
 
@@ -1087,16 +1108,73 @@ void publish_corpse_batch(const pending_movement &entry)
 		}
 }
 
+/** Retain a failed opt-in publication without spinning or dropping its fence. */
+void retain_publication_failure(pending_movement &entry, const char *reason)
+{
+	if (!entry.publication_failed)
+	{
+		entry.publication_failed = true;
+		++health.stale_publications;
+		logit(LOG_FILE, "item movement publication retained (pid=%u reason=%s)",
+		      entry.actor_pid, reason ? reason : "unknown");
+		persistence_alert(AVATAR, "item", "redacted", "none", "none",
+				  "stale_live_publication", "pid=%u reason=%s", entry.actor_pid,
+				  reason ? reason : "unknown");
+	}
+	if (entry.publication_attempts < ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS)
+		++entry.publication_attempts;
+	entry.publication_status = entry.publication_attempts >=
+						   ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS ?
+					   publication_state::blocked :
+					   publication_state::retrying;
+}
+
 /** Publish a completion, retaining committed work if the live registry cannot advance. */
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
 	pending_movement &entry = found->second;
+	if (entry.publication &&
+	    (entry.completed.outcome == critical_apply_outcome::ambiguous_commit ||
+	     entry.completed.outcome == critical_apply_outcome::retryable_failure))
+	{
+		// Exhausted uncertainty remains owned by coordinator recovery. Never
+		// tell the command it failed or acknowledge away its replay record.
+		account_health();
+		return;
+	}
 	item_transfer_result result = {};
 	const bool decoded = item_transfer_command_decode_result(
 		entry.completed.result_payload.data(), entry.completed.result_size, &result);
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
+	const bool durable_outcome = entry.completed.outcome == critical_apply_outcome::applied ||
+				     entry.completed.outcome ==
+					     critical_apply_outcome::already_applied;
+	if (entry.publication && entry.publication_status == publication_state::ack_pending)
+	{
+		if (critical_command_coordinator_acknowledge_publication(
+			    entry.completed.operation_id))
+		{
+			const bool was_committed = committed;
+			pending.erase(found);
+			if (was_committed)
+				++health.committed;
+			else
+				++health.rejected;
+		}
+		account_health();
+		return;
+	}
+	if (entry.publication && durable_outcome && !decoded)
+	{
+		// A durable success without a decodable result cannot be safely projected.
+		// Keep both the movement record and coordinator fence for repair; never
+		// reinterpret it as a rejection and release ownership authority.
+		retain_publication_failure(entry, "invalid_result");
+		account_health();
+		return;
+	}
 	if (committed && result.collector_catalog_changed && !entry.collector_invalidated)
 	{
 		collector_catalog_cache_invalidate();
@@ -1124,12 +1202,59 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	}
 	if (committed && !registry_applied)
 	{
-		if (!entry.publication_failed)
+		if (entry.publication)
+			retain_publication_failure(entry, "registry");
+		else if (!entry.publication_failed)
 		{
 			entry.publication_failed = true;
 			++health.rejected;
 			++health.stale_publications;
 		}
+		account_health();
+		return;
+	}
+	if (entry.publication)
+	{
+		if (!actor)
+		{
+			account_health();
+			return;
+		}
+		const std::string pending_key = found->first;
+		const auto context = entry.context;
+		const size_t context_size = entry.context_size;
+		const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
+		bool published = false;
+		try
+		{
+			published = entry.publication(actor, committed, result, error_code,
+						      context.data(), context_size);
+		}
+		catch (...)
+		{
+			published = false;
+		}
+		auto current = pending.find(pending_key);
+		if (current == pending.end())
+			return;
+		if (!published)
+		{
+			retain_publication_failure(current->second, "callback");
+			account_health();
+			return;
+		}
+		if (!critical_command_coordinator_acknowledge_publication(
+			    current->second.completed.operation_id))
+		{
+			current->second.publication_status = publication_state::ack_pending;
+			account_health();
+			return;
+		}
+		pending.erase(current);
+		if (committed)
+			++health.committed;
+		else
+			++health.rejected;
 		account_health();
 		return;
 	}
@@ -1320,7 +1445,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
 				      size_t context_size, P_obj corpse_context,
-				      item_movement_reject *reject)
+				      item_movement_reject *reject,
+				      item_movement_publication_fn publication)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1439,10 +1565,14 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.adopting = !adopted,
 		.adoption_only = !adopted && item_owner_identity_equal(from_owner, to_owner),
 		.completion = completion,
+		.publication = publication,
 		.context = {},
 		.context_size = context_size,
 		.completion_ready = false,
 		.publication_failed = false,
+		.publication_attempts = 0,
+		.publication_status = publication ? publication_state::ready :
+						    publication_state::none,
 		.creation_batch = false,
 		.registry_applied = false,
 		.collector_invalidated = false,
@@ -1460,7 +1590,9 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		publication ?
+			critical_command_coordinator_submit_for_publication(std::move(command)) :
+			critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
 		++health.submission_failures;
@@ -1484,14 +1616,12 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	return true;
 }
 
-bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, size_t root_count,
-					    P_obj target_container,
-					    const item_owner_identity &from_owner,
-					    const item_owner_identity &to_owner,
-					    item_transfer_reason reason, int64_t reason_id,
-					    item_movement_completion_fn completion,
-					    const void *context, size_t context_size,
-					    P_obj corpse_context, item_movement_reject *reject)
+bool item_movement_transaction_submit_batch(
+	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
+	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
+	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj corpse_context,
+	item_movement_reject *reject, item_movement_publication_fn publication)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1647,10 +1777,14 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		.adopting = false,
 		.adoption_only = false,
 		.completion = completion,
+		.publication = publication,
 		.context = {},
 		.context_size = context_size,
 		.completion_ready = false,
 		.publication_failed = false,
+		.publication_attempts = 0,
+		.publication_status = publication ? publication_state::ready :
+						    publication_state::none,
 		.creation_batch = creation,
 		.registry_applied = false,
 		.collector_invalidated = false,
@@ -1668,7 +1802,9 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		publication ?
+			critical_command_coordinator_submit_for_publication(std::move(command)) :
+			critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
 		++health.submission_failures;
@@ -2007,11 +2143,46 @@ void item_creation_grant_cancel_batch_before_entry(P_char actor)
 	}
 }
 
+void retry_publications(void)
+{
+	std::vector<std::string> retry_keys;
+	try
+	{
+		retry_keys.reserve(pending.size());
+		for (const auto &[key, entry] : pending)
+			if (entry.publication && entry.completion_ready &&
+			    (entry.publication_status == publication_state::ready ||
+			     entry.publication_status == publication_state::retrying ||
+			     entry.publication_status == publication_state::ack_pending))
+				retry_keys.push_back(key);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return;
+	}
+	for (const std::string &key : retry_keys)
+	{
+		auto found = pending.find(key);
+		if (found == pending.end())
+			continue;
+		if (found->second.publication_status == publication_state::ack_pending)
+		{
+			publish(found, nullptr);
+			continue;
+		}
+		if (!found->second.actor_pid)
+			continue;
+		if (P_char actor = find_live_player(found->second.actor_pid))
+			publish(found, actor);
+	}
+}
+
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count)
 {
 	if (count && !completions)
 		return;
+	retry_publications();
 	for (size_t index = 0; index < count; ++index)
 	{
 		auto found = pending.find(operation_key(completions[index].operation_id));
@@ -2030,7 +2201,10 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			collector_catalog_cache_invalidate();
 			found->second.collector_invalidated = true;
 		}
-		if (found->second.actor_pid)
+		if (found->second.publication &&
+		    found->second.publication_status == publication_state::ack_pending)
+			publish(found, nullptr);
+		else if (found->second.actor_pid)
 		{
 			if (P_char actor = find_live_player(found->second.actor_pid))
 				publish(found, actor);
@@ -2065,6 +2239,13 @@ void item_movement_transaction_player_ready(P_char actor)
 			break;
 		/* publish may invoke a callback that inserts and rehashes pending. */
 		const std::string key = found->first;
+		if (found->second.publication &&
+		    found->second.publication_status == publication_state::blocked)
+		{
+			// A reconnect/reload is an explicit recovery edge, not a pulse loop.
+			found->second.publication_attempts = 0;
+			found->second.publication_status = publication_state::ready;
+		}
 		publish(found, actor);
 		if (pending.find(key) != pending.end())
 			break;
