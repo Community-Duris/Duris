@@ -88,8 +88,13 @@ static bool summoned_totem_matches(P_obj object, P_char actor)
 	char totemname[512];
 	snprintf(totemname, sizeof(totemname), "totem spirit %s", actor->player.name);
 	char *suffix = strstr(object->name, totemname);
-	return suffix && strcmp(suffix, totemname) == 0 &&
-	       obj_index[object->R_num].virtual_number == 417;
+	return suffix && strcmp(suffix, totemname) == 0 && OBJ_VNUM(object) == 417;
+}
+
+static bool summoned_replacement_kind_valid(uint8_t kind)
+{
+	return kind == static_cast<uint8_t>(summoned_replacement_kind::book) ||
+	       kind == static_cast<uint8_t>(summoned_replacement_kind::totem);
 }
 
 static void retire_other_summoned_items(P_char actor, uint64_t keep_uid,
@@ -108,7 +113,7 @@ static void retire_other_summoned_items(P_char actor, uint64_t keep_uid,
 }
 
 static void summoned_replacement_completed(P_char actor, bool committed,
-					   const item_transfer_result & /*result*/,
+					   const item_transfer_result &result,
 					   unsigned int /*error_code*/, const uint8_t *encoded,
 					   size_t encoded_size)
 {
@@ -118,8 +123,15 @@ static void summoned_replacement_completed(P_char actor, bool committed,
 
 	summoned_replacement_context context = {};
 	memcpy(&context, encoded, sizeof(context));
-	if (context.recipient_pid != static_cast<uint32_t>(GET_PID(actor)))
+	if (context.recipient_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+	    !summoned_replacement_kind_valid(context.kind))
+	{
+		logit(LOG_FILE,
+		      "summoned replacement completion had invalid context (uid=%llu pid=%d kind=%u)",
+		      (unsigned long long)context.item_uid, GET_PID(actor),
+		      static_cast<unsigned int>(context.kind));
 		return;
+	}
 	const summoned_replacement_kind kind = static_cast<summoned_replacement_kind>(context.kind);
 	if (!committed)
 	{
@@ -132,9 +144,24 @@ static void summoned_replacement_completed(P_char actor, bool committed,
 			actor);
 		return;
 	}
+	if (result.root_item_uid != context.item_uid || !result.item_count)
+	{
+		logit(LOG_FILE,
+		      "summoned replacement completion identity mismatch (expected=%llu actual=%llu pid=%d kind=%u)",
+		      (unsigned long long)context.item_uid,
+		      (unsigned long long)result.root_item_uid, GET_PID(actor),
+		      static_cast<unsigned int>(context.kind));
+		send_to_char(
+			"The ownership authority returned an unexpected replacement; your existing item was kept.\r\n",
+			actor);
+		return;
+	}
 
 	P_obj replacement = new_skills_find_object_by_uid(context.item_uid);
-	if (!replacement || !OBJ_CARRIED_BY(replacement, actor))
+	const bool replacement_matches = kind == summoned_replacement_kind::book ?
+						 summoned_book_matches(replacement, actor) :
+						 summoned_totem_matches(replacement, actor);
+	if (!replacement || !OBJ_CARRIED_BY(replacement, actor) || !replacement_matches)
 	{
 		logit(LOG_FILE,
 		      "summoned replacement committed without live publication (uid=%llu pid=%d kind=%u)",

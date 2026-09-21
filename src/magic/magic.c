@@ -120,6 +120,20 @@ struct conjured_weapon_grant_context
 
 static_assert(sizeof(conjured_weapon_grant_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
 
+static int conjured_weapon_vnum(uint8_t kind)
+{
+	switch (static_cast<conjured_weapon_kind>(kind))
+	{
+	case conjured_weapon_kind::ensis_unguis:
+		return 56;
+	case conjured_weapon_kind::lancea_cineralae:
+		return 93;
+	case conjured_weapon_kind::simulacrum_anguis:
+		return 171;
+	}
+	return -1;
+}
+
 static P_obj magic_find_object_by_uid(uint64_t item_uid)
 {
 	if (!item_uid)
@@ -163,7 +177,7 @@ static void conjured_weapon_publish_effect(P_char actor, P_obj blade, conjured_w
 }
 
 static void conjured_weapon_grant_completed(P_char actor, bool committed,
-					    const item_transfer_result & /*result*/,
+					    const item_transfer_result &result,
 					    unsigned int /*error_code*/, const uint8_t *encoded,
 					    size_t encoded_size)
 {
@@ -173,8 +187,16 @@ static void conjured_weapon_grant_completed(P_char actor, bool committed,
 
 	conjured_weapon_grant_context context = {};
 	memcpy(&context, encoded, sizeof(context));
-	if (context.actor_pid != static_cast<uint32_t>(GET_PID(actor)))
+	if (context.actor_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+	    conjured_weapon_vnum(context.kind) < 0 || !isfinite(context.self_damage) ||
+	    context.self_damage < 0.0f)
+	{
+		logit(LOG_FILE,
+		      "conjured weapon completion had invalid context (uid=%llu pid=%d kind=%u damage=%f)",
+		      (unsigned long long)context.item_uid, GET_PID(actor),
+		      static_cast<unsigned int>(context.kind), context.self_damage);
 		return;
+	}
 	if (!committed)
 	{
 		send_to_char(
@@ -182,9 +204,18 @@ static void conjured_weapon_grant_completed(P_char actor, bool committed,
 			actor);
 		return;
 	}
+	if (result.root_item_uid != context.item_uid || !result.item_count)
+	{
+		logit(LOG_FILE,
+		      "conjured weapon completion identity mismatch (expected=%llu actual=%llu pid=%d)",
+		      (unsigned long long)context.item_uid,
+		      (unsigned long long)result.root_item_uid, GET_PID(actor));
+		return;
+	}
 
 	P_obj blade = magic_find_object_by_uid(context.item_uid);
-	if (!blade)
+	if (!blade || !OBJ_CARRIED_BY(blade, actor) ||
+	    OBJ_VNUM(blade) != conjured_weapon_vnum(context.kind))
 	{
 		logit(LOG_FILE,
 		      "conjured weapon grant committed without live publication (uid=%llu pid=%d)",
@@ -11136,7 +11167,7 @@ void spell_acid_breath(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 			 &messages) != DAM_NONEDEAD)
 		return;
 
-	/*
+		/*
 	 * And now for the damage on equipment
 	 */
 
@@ -22405,8 +22436,9 @@ static void remove_soulbind_except(P_char ch, uint64_t keep_uid)
 		 * every such piece whose keywords hold this character's name.
 		 * kingdom_store_bound() knows one by its maker's mark as well as
 		 * by its vnum. */
-		if (obj->obj_uid != keep_uid && IS_SET(obj->extra2_flags, ITEM2_SOULBIND) &&
-		    !kingdom_store_bound(obj) && isname(GET_NAME(ch), obj->name))
+		if (obj->obj_uid != keep_uid && obj->name &&
+		    IS_SET(obj->extra2_flags, ITEM2_SOULBIND) && !kingdom_store_bound(obj) &&
+		    isname(GET_NAME(ch), obj->name))
 		{
 			extract_obj(obj);
 		}
@@ -22646,8 +22678,8 @@ static bool soulbind_transfer_publication(P_char /*callback_actor*/, bool commit
 								     PLAYER_COMPONENT_EQUIPMENT |
 								     PLAYER_COMPONENT_INVENTORY);
 	mark_player_dirty_components(GET_PID(victim), PLAYER_COMPONENT_STATUS |
-						      PLAYER_COMPONENT_EQUIPMENT |
-						      PLAYER_COMPONENT_INVENTORY);
+							      PLAYER_COMPONENT_EQUIPMENT |
+							      PLAYER_COMPONENT_INVENTORY);
 	return true;
 }
 
@@ -22661,7 +22693,7 @@ struct soulbind_reload_context
 static_assert(sizeof(soulbind_reload_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
 
 static void soulbind_reload_completed(P_char actor, bool committed,
-				      const item_transfer_result & /*result*/,
+				      const item_transfer_result &result,
 				      unsigned int /*error_code*/, const uint8_t *encoded,
 				      size_t encoded_size)
 {
@@ -22671,8 +22703,14 @@ static void soulbind_reload_completed(P_char actor, bool committed,
 
 	soulbind_reload_context context = {};
 	memcpy(&context, encoded, sizeof(context));
-	if (context.recipient_pid != static_cast<uint32_t>(GET_PID(actor)))
+	if (context.recipient_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+	    context.item_vnum <= 0)
+	{
+		logit(LOG_FILE,
+		      "soulbind reload completion had invalid context (uid=%llu pid=%d vnum=%d)",
+		      (unsigned long long)context.item_uid, GET_PID(actor), context.item_vnum);
 		return;
+	}
 	if (!committed)
 	{
 		send_to_char(
@@ -22680,10 +22718,23 @@ static void soulbind_reload_completed(P_char actor, bool committed,
 			actor);
 		return;
 	}
+	if (result.root_item_uid != context.item_uid || !result.item_count)
+	{
+		logit(LOG_FILE,
+		      "soulbind reload completion identity mismatch (expected=%llu actual=%llu pid=%d)",
+		      (unsigned long long)context.item_uid,
+		      (unsigned long long)result.root_item_uid, GET_PID(actor));
+		send_to_char(
+			"The ownership authority returned an unexpected soulbound item; your existing item was kept.\r\n",
+			actor);
+		return;
+	}
 
 	P_obj replacement = magic_find_object_by_uid(context.item_uid);
 	if (!replacement ||
-	    (!OBJ_CARRIED_BY(replacement, actor) && !OBJ_WORN_BY(replacement, actor)))
+	    (!OBJ_CARRIED_BY(replacement, actor) && !OBJ_WORN_BY(replacement, actor)) ||
+	    OBJ_VNUM(replacement) != context.item_vnum ||
+	    !IS_OBJ_STAT2(replacement, ITEM2_SOULBIND))
 	{
 		logit(LOG_FILE,
 		      "soulbind reload committed without live publication (uid=%llu pid=%d)",

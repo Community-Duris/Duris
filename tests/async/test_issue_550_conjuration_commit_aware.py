@@ -46,17 +46,23 @@ assert weapon_submit.index("item_creation_grant_submit_to_player_with_completion
 assert "item_uid" in weapon_callback and "actor_pid" in weapon_callback
 assert "self_damage" in weapon_callback
 assert "if (!committed)" in weapon_callback
+assert "result.root_item_uid != context.item_uid" in weapon_callback
+assert "OBJ_CARRIED_BY(blade, actor)" in weapon_callback
+assert "conjured_weapon_vnum(context.kind) < 0" in weapon_callback
+assert "OBJ_VNUM(blade) != conjured_weapon_vnum(context.kind)" in weapon_callback
 assert weapon_callback.index("magic_find_object_by_uid") < weapon_callback.index(
     "conjured_weapon_publish_effect"
 )
 assert "spell_damage" in weapon_effect
 assert "no health was spent" in weapon_callback
 
-reload = function_body(MAGIC, "void load_soulbind(")
+reload = function_body(MAGIC, "\nvoid load_soulbind(P_char ch)\n{")
 reload_callback = function_body(MAGIC, "static void soulbind_reload_completed(")
 assert "item_creation_grant_submit_to_player_with_completion" in reload
 assert "soulbind_reload_completed" in reload
 assert "existing soulbound item was kept" in reload
+assert "result.root_item_uid != context.item_uid" in reload_callback
+assert "OBJ_VNUM(replacement) != context.item_vnum" in reload_callback
 assert "remove_soulbind_except" in reload_callback
 assert reload_callback.index("magic_find_object_by_uid") < reload_callback.index(
     "remove_soulbind_except"
@@ -66,7 +72,9 @@ assert reload_callback.index("if (!committed)") < reload_callback.index(
 )
 
 soulbind_command = function_body(MAGIC, "void do_soulbind(")
-reload_block_start = soulbind_command.index("if (has_soulbind(victim) != 0)")
+reload_block_start = soulbind_command.index(
+    "if (has_soulbind(victim) != 0 && !replace_existing)"
+)
 reload_block_end = soulbind_command.index("// If victim doesn't have soulbind", reload_block_start)
 reload_block = soulbind_command[reload_block_start:reload_block_end]
 assert "remove_soulbind(victim)" not in reload_block
@@ -86,6 +94,8 @@ assert replacement_submit.index("item_creation_grant_submit_to_player_with_compl
     "extract_obj"
 )
 assert "if (!committed)" in replacement_callback
+assert "result.root_item_uid != context.item_uid" in replacement_callback
+assert "summoned_replacement_kind_valid(context.kind)" in replacement_callback
 assert "new_skills_find_object_by_uid" in replacement_callback
 assert replacement_callback.index("new_skills_find_object_by_uid") < replacement_callback.index(
     "retire_other_summoned_items"
@@ -99,5 +109,8 @@ assert "existing totem was kept" in replacement_callback
 retire = function_body(SKILLS, "static void retire_other_summoned_items(")
 assert "P_obj next = object->next" in retire
 assert "object->obj_uid != keep_uid" in retire
+assert "OBJ_VNUM(object) == 417" in function_body(
+    SKILLS, "static bool summoned_totem_matches("
+)
 
 print("Issue 550 commit-aware conjuration contract passed.")
