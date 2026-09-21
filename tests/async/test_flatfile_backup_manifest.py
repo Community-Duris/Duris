@@ -13,14 +13,18 @@ class FlatfileManifestTests(Fixture):
         directory = self.base / "live/economic-evidence"
         directory.mkdir(mode=0o700)
         for name in ("bucket-01.eai", "bucket-01-0.eas", "bucket-01-1.eas",
-                     "authority.eal", "epochs.eae", "mapping-01.eam", "native-01.ean"):
+                     "authority.eal", "epochs.eae", "mapping-01.eam", "native-01.ean",
+                     "baseline-synthetic-head.ebc", "baseline-synthetic-0.ebi",
+                     "baseline-synthetic-operation.eab"):
             (directory / name).write_bytes(("synthetic-accounting:" + name).encode())
             (directory / name).chmod(0o600)
         generation = self.create()
         manifest = backup.verify(generation)
         recorded = set(manifest["files"])
         for name in ("bucket-01.eai", "bucket-01-0.eas", "bucket-01-1.eas",
-                     "authority.eal", "epochs.eae", "mapping-01.eam", "native-01.ean"):
+                     "authority.eal", "epochs.eae", "mapping-01.eam", "native-01.ean",
+                     "baseline-synthetic-head.ebc", "baseline-synthetic-0.ebi",
+                     "baseline-synthetic-operation.eab"):
             self.assertIn("state/economic-evidence/" + name, recorded)
         backup.verify(generation)
 

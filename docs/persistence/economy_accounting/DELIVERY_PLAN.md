@@ -5,7 +5,16 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: baseline preparation and retained source witnesses
+## Current increment: flat-file baseline witness and reservation storage
+
+Based on [PR #609](https://github.com/Community-Duris/Duris/pull/609) at `5fd726388`.
+Reuse `ad840cf4c` private baseline storage, adapted to current v2 journal framing
+and DURECR2 failure-stage validation. Retain complete witnesses and unique
+per-epoch openings with lifecycle and backup registration. See
+[BASELINE_STORAGE.md](BASELINE_STORAGE.md). Native source proof, lifecycle
+admission, maintenance ownership, SQL counterpart and activation remain pending.
+
+## Prior increment: baseline preparation and retained source witnesses
 
 Based on [PR #608](https://github.com/Community-Duris/Duris/pull/608) at `190602263`.
 Reuse pure preparation, EAB1 witness encoding and EBC1 command binding from

@@ -792,11 +792,14 @@
       "reason": "baseline",
       "facts_version": 1,
       "policy": "Operator baseline genesis only: zero accounting balances open against epoch equity; native values/revisions and item custody remain unchanged. Exact boundary, coverage and native-source fingerprints are bound. Lifecycle owner must prove authority, complete coverage and unique account/epoch opening.",
-      "execution": "Pure preparation only; no critical command admission, baseline commit, global quiescence or activation.",
-      "intent_bytes": 178,
+      "execution": "Pure preparation, bound commands and private flatfile retention implemented; lifecycle admission, SQL baseline storage, maintenance boundary and activation pending.",
+      "intent_bytes": 256,
       "holding_witness_bytes": 112,
       "item_witness_bytes": 82,
-      "command_envelope": "Compact EBC1 witness reference in schema-2 economic_baseline; execution refused."
+      "command_envelope": "Compact EBC1 witness reference in schema-2 economic_baseline; execution refused.",
+      "preparation_intent_preimage_bytes": 178,
+      "facts_bytes": 0,
+      "command_payload_bytes": 48
     }
   ],
   "baseline_preparation": {
@@ -818,7 +821,7 @@
       "maximum_bytes": 872144,
       "byte_order": "little_endian",
       "reserved": "must be zero",
-      "storage": "Cutover owner must retain atomically beside the original plan and receipt; backend integration pending."
+      "storage": "Private flatfile baseline stage combines complete witness, reservations and common receipt under the existing journal; lifecycle caller and SQL counterpart pending."
     },
     "command_binding": {
       "type": 20,
@@ -834,6 +837,20 @@
         "id": 4990920009594262341
       },
       "execution": "Legacy execution and coordinator admission refuse; lifecycle persistence and activation pending."
+    },
+    "flatfile_retention": {
+      "version": 1,
+      "reservation_buckets": 16,
+      "maximum_bucket_records": 65536,
+      "maximum_index_bytes": 2097240,
+      "maximum_stage_operations": 20,
+      "initialization_operations": 17,
+      "files": [
+        "baseline-*.ebc",
+        "baseline-*.ebi",
+        "baseline-*.eab"
+      ],
+      "execution": "Private lifecycle storage seam; no production caller, native-source proof or activation."
     }
   }
 }

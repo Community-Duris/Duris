@@ -286,6 +286,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_accounting_authority.o \
 				 flatfile/flatfile_accounting_bank_transaction.o \
 				 flatfile/flatfile_accounting_dispatch.o \
+				 flatfile/flatfile_accounting_baseline.o \
 				 flatfile/flatfile_account_repository.o \
 				 flatfile/flatfile_account_delete.o \
 				 flatfile/flatfile_account_reward_summon_repository.o \
