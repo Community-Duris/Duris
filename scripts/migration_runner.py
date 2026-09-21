@@ -277,9 +277,21 @@ def run_pending(manifest: Manifest, executor: Executor) -> list[str]:
         executor.require_baseline(manifest)
         pending = validate_applied_prefix(manifest, executor.applied())
         for migration in pending:
-            executor.apply(migration)
-            executor.verify(migration)
-            executor.record(migration, manifest.runner_version)
+            try:
+                executor.apply(migration)
+            except MigrationContractError as error:
+                raise MigrationContractError(
+                    f"migration {migration.migration_id} apply failed: {error}") from error
+            try:
+                executor.verify(migration)
+            except MigrationContractError as error:
+                raise MigrationContractError(
+                    f"migration {migration.migration_id} verify failed: {error}") from error
+            try:
+                executor.record(migration, manifest.runner_version)
+            except MigrationContractError as error:
+                raise MigrationContractError(
+                    f"migration {migration.migration_id} history record failed: {error}") from error
             completed.append(migration.migration_id)
         return completed
     finally:
