@@ -19,7 +19,7 @@
 #include "world/vnum.obj.h"
 
 extern const char *god_list[];
-const char *god_list[] = { "Arih", "Fotenak", "Xanadin", "Tyrus", "\0" };
+const char *god_list[] = { "Arih", "Fotenak", "Xanadin", "Tyrus", "Zusuk", "\0" };
 
 extern const struct attr_names_struct attr_names[];
 const attr_names_struct attr_names[] = { {},
