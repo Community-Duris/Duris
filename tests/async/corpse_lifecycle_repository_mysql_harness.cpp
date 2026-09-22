@@ -361,9 +361,17 @@ void assert_outbox(const critical_command &command, bool collector_changed)
 void test_room_release()
 {
 	constexpr int32_t ROOM = 4101;
-	constexpr uint64_t LISTING = 9101, ROOT_UID = 810000001, CHILD_UID = 810000002;
+	constexpr uint64_t LISTING = 9101, ROOT_UID = 810000001, CHILD_UID = 810000002,
+			   TRANSIENT_UID = 810000003;
 	const corpse_fixture fixture =
 		seed_corpse(1001, ROOM, 1801, ROOT_UID, CHILD_UID, 2, true, true);
+	execute("UPDATE corpse_items SET container_id=NULL,obj_uid=" +
+		std::to_string(TRANSIENT_UID) + ",extra_flags=" +
+		std::to_string(ITEM_TRANSIENT) +
+		" WHERE corpse_id=" + std::to_string(fixture.corpse_id) +
+		" AND vnum=3");
+	seed_authority(TRANSIENT_UID, TRANSIENT_UID, 0, 3,
+		       { item_owner_type::corpse, fixture.owner_id, 0 }, INITIAL_ITEM_REVISION);
 	seed_owner({ item_owner_type::room, ROOM, 0 }, 3);
 	seed_candidate(LISTING, ROOT_UID, INITIAL_ITEM_REVISION);
 	const uint64_t catalog_before =
@@ -375,9 +383,13 @@ void test_room_release()
 	const applied_corpse applied = apply_success(command);
 	assert(applied.result.action == corpse_lifecycle_action::release &&
 	       applied.result.catalog_revision == catalog_before + 1 &&
-	       applied.result.corpse_owner_revision == 3 &&
+	       applied.result.corpse_owner_revision == 4 &&
 	       applied.result.room_owner_revision == 4 && applied.result.item_count == 2 &&
-	       applied.result.max_item_revision == 6 && !applied.result.collector_catalog_changed);
+	       applied.result.max_item_revision == 6 &&
+	       applied.result.destruction_owner_revision == 1 &&
+	       applied.result.discarded_item_count == 1 &&
+	       applied.result.max_discarded_item_revision == 6 &&
+	       !applied.result.collector_catalog_changed);
 	assert(scalar("SELECT COUNT(*) FROM corpses WHERE id=" +
 		      std::to_string(fixture.corpse_id)) == 0);
 	assert(text("SELECT GROUP_CONCAT(CONCAT(item_uid,':',root_item_uid,':',"
@@ -389,9 +401,12 @@ void test_room_release()
 	assert(text("SELECT CONCAT(r.weight,':',c.weight,':',c.container_id=r.id) FROM "
 		    "saved_items r JOIN saved_items c ON c.container_id=r.id WHERE r.obj_uid=" +
 		    std::to_string(ROOT_UID) + " AND c.obj_uid=" + std::to_string(CHILD_UID)) ==
-	       "5:4:1");
+	       "7:4:1");
 	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid IN (" +
 		      std::to_string(ROOT_UID) + "," + std::to_string(CHILD_UID) + ")") == 2);
+	assert(text("SELECT CONCAT(owner_type,':',state,':',item_revision) FROM "
+		    "item_current_owner WHERE item_uid=" +
+		    std::to_string(TRANSIENT_UID)) == "8:2:6");
 	assert(scalar("SELECT COUNT(*) FROM saved_item_affects a JOIN saved_items i ON "
 		      "i.id=a.item_id WHERE i.obj_uid=" +
 		      std::to_string(CHILD_UID) + " AND a.location=2 AND a.modifier=11") == 1);

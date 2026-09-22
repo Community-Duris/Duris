@@ -288,12 +288,12 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<phys
 
 	for (physical_item &item : *items)
 	{
-		if (item.money_item || (item.transient && !item.item_uid))
+		if ((item.money_item || item.transient) && !item.item_uid)
 			continue;
 		const physical_item *current = &item;
 		for (size_t depth = 0; depth <= items->size(); ++depth)
 		{
-			if (current->money_item || !current->item_uid ||
+			if (!current->item_uid || (!item.money_item && current->money_item) ||
 			    (!item.transient && current->transient))
 			{
 				*result_code = EILSEQ;
@@ -763,7 +763,7 @@ bool build_transfer_entries(MYSQL *connection, uint64_t corpse_owner_id,
 				entries.push_back({ item.item_uid, item.root_item_uid,
 						    item.parent_item_uid, 0, item.vnum,
 						    item_custody_state::active });
-			else if (transient_transfer && item.transient && item.item_uid)
+			else if (transient_transfer && item.skipped && item.item_uid)
 				transient_entries.push_back({ item.item_uid, item.root_item_uid,
 							      item.parent_item_uid, 0, item.vnum,
 							      item_custody_state::active });
@@ -2165,9 +2165,7 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	if (*result_code)
 		return true;
 	if (!build_transfer_entries(connection, corpse_owner_id, &physical, &transfer,
-				    payload.action == corpse_lifecycle_action::raise_follower ?
-					    &transient_transfer :
-					    nullptr,
+				    &transient_transfer,
 				    false, result_code))
 		return false;
 	if (*result_code)
