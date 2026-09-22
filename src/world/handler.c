@@ -42,6 +42,7 @@
 #include "net/gmcp.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_movement_transaction.h"
+#include "item/encumbrance_policy.h"
 #include "combat/justice.h"
 #include "world/map.h"
 #include "core/mm.h"
@@ -1978,7 +1979,7 @@ void obj_to_char(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
-	GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(object);
+	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
 	if (IS_ARTIFACT(object))
@@ -2039,7 +2040,7 @@ void obj_from_char(P_obj object)
 		char_light(object->loc.carrying);
 		room_light((object->loc.carrying)->in_room, REAL);
 	}
-	GET_CARRYING_W(object->loc.carrying) -= GET_OBJ_WEIGHT(object);
+	GET_CARRYING_W(object->loc.carrying) -= encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(object->loc.carrying)--;
 	object->z_cord = object->loc.carrying->specials.z_cord;
 
@@ -2236,7 +2237,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 		char_light(ch);
 		room_light(ch->in_room, REAL);
 	}
-	GET_CARRYING_W(ch) += (GET_OBJ_WEIGHT(obj) / 2);
+	GET_CARRYING_W(ch) += (encumbrance_weight(GET_OBJ_WEIGHT(obj)) / 2);
 
 	if (nodrop != 9)
 		if (obj && (o_af = get_obj_affect(obj, SKILL_ENCHANT)))
@@ -2286,7 +2287,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 		char_light(ch);
 		room_light(ch->in_room, REAL);
 	}
-	GET_CARRYING_W(ch) -= (GET_OBJ_WEIGHT(obj) / 2);
+	GET_CARRYING_W(ch) -= (encumbrance_weight(GET_OBJ_WEIGHT(obj)) / 2);
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
@@ -3201,7 +3202,7 @@ void obj_to_char_at_end(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
-	GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(object);
+	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
 	if (IS_ARTIFACT(object))
@@ -3491,6 +3492,7 @@ struct corpse_raise_context
 	corpse_raise_kind kind = corpse_raise_kind::undead;
 	int level = 0;
 	int variant = 0;
+	bool globe = false;
 	bool hostile = false;
 	const char *message = nullptr;
 };
@@ -3500,6 +3502,7 @@ std::unordered_map<uint64_t, corpse_wall_context> corpse_walls;
 std::unordered_map<uint64_t, corpse_compaction_context> corpse_compactions;
 std::unordered_map<uint64_t, corpse_resurrection_context> corpse_resurrections;
 std::unordered_map<uint64_t, corpse_raise_context> corpse_raises;
+std::unordered_map<uint64_t, corpse_raise_context> corpse_raise_admissions;
 
 void discard_corpse_release_money(P_obj container);
 
@@ -4603,6 +4606,36 @@ void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
 	REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
 }
 
+namespace
+{
+void complete_world_corpse_raise_admission(P_char, bool committed, const item_transfer_result &,
+					   unsigned int, const uint8_t *encoded,
+					   size_t encoded_size)
+{
+	if (!encoded || encoded_size != sizeof(uint64_t))
+		return;
+	uint64_t key = 0;
+	memcpy(&key, encoded, sizeof(key));
+	auto found = corpse_raise_admissions.find(key);
+	if (found == corpse_raise_admissions.end())
+		return;
+	const corpse_raise_context context = found->second;
+	corpse_raise_admissions.erase(found);
+	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
+	P_char follower = find_live_character(context.follower, context.follower_runtime_id);
+	P_obj corpse = find_live_world_corpse(key);
+	if (!committed || !caster || !follower || !corpse ||
+	    !persistence_defer_corpse_raise(corpse, caster, follower, context.kind, context.level,
+					    context.variant, context.globe, context.message))
+	{
+		if (caster)
+			send_to_char("The corpse cannot be raised safely.\r\n", caster);
+		if (follower && follower->in_room == NOWHERE)
+			extract_char(follower);
+	}
+}
+} // namespace
+
 bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower,
 				    corpse_raise_kind kind, int level, int variant, bool globe,
 				    const char *message)
@@ -4615,32 +4648,65 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 	    IS_NPC(follower) && corpse->type == ITEM_CORPSE &&
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 	{
-		bool has_durable_contents = false;
-		for (P_obj item = corpse->contains; item; item = item->next_content)
+		int corpse_room = NOWHERE;
+		item_ownership_runtime_entry existing_root = {};
+		const bool registered =
+			item_ownership_runtime_lookup(corpse->obj_uid, &existing_root);
+		if (GET_PID(caster) <= 0 || follower->in_room != NOWHERE ||
+		    !corpse_release_room(corpse, &corpse_room) || corpse_room != caster->in_room)
 		{
-			if (GET_ITEM_TYPE(item) == ITEM_MONEY)
-				continue;
-			has_durable_contents = true;
-			break;
-		}
-		// A legacy, unsaved empty corpse has no graph to transfer. Keep its old
-		// synchronous path, but never let an unowned equipped graph bypass custody.
-		if (!corpse->obj_uid)
-		{
-			if (!has_durable_contents)
-				return false;
 			send_to_char("The corpse cannot be raised safely.\r\n", caster);
 			extract_char(follower);
 			return true;
 		}
-		int corpse_room = NOWHERE;
+		const uint64_t key = corpse->obj_uid;
+		if (!registered)
+		{
+			if (corpse_raise_admissions.contains(key) || corpse_raises.contains(key))
+			{
+				send_to_char(
+					"That corpse is already caught in a persistence change.\r\n",
+					caster);
+				extract_char(follower);
+				return true;
+			}
+			try
+			{
+				corpse_raise_admissions.emplace(
+					key,
+					corpse_raise_context{ caster, caster->runtime_id, follower,
+							      follower->runtime_id, kind, level,
+							      variant, globe, false, message });
+			}
+			catch (const std::bad_alloc &)
+			{
+				send_to_char("The corpse cannot be raised safely.\r\n", caster);
+				extract_char(follower);
+				return true;
+			}
+			const item_owner_identity room = {
+				item_owner_type::room,
+				static_cast<uint64_t>(world[corpse_room].number), 0
+			};
+			item_movement_reject reject = item_movement_reject::none;
+			if (!item_movement_transaction_submit(caster, corpse, nullptr, room, room,
+							      item_transfer_reason::operator_repair,
+							      static_cast<int64_t>(key),
+							      complete_world_corpse_raise_admission,
+							      &key, sizeof(key), nullptr, &reject))
+			{
+				corpse_raise_admissions.erase(key);
+				send_to_char("The corpse cannot be raised safely.\r\n", caster);
+				extract_char(follower);
+			}
+			return true;
+		}
 		const bool hostile =
 			(kind == corpse_raise_kind::titan || kind == corpse_raise_kind::avatar) ?
 				!number(0, 12) :
-			(kind == corpse_raise_kind::dracolich) ? !globe && !number(0, 12) :
-			(kind == corpse_raise_kind::greater_dracolich) ?
-				!globe && !number(0, 9) :
-				false;
+			(kind == corpse_raise_kind::dracolich)	       ? !globe && !number(0, 12) :
+			(kind == corpse_raise_kind::greater_dracolich) ? !globe && !number(0, 9) :
+									 false;
 		std::vector<uint64_t> durable_uids;
 		std::vector<uint64_t> discarded_uids;
 		item_ownership_runtime_entry root_runtime = {};
@@ -4648,9 +4714,7 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 						     static_cast<uint64_t>(GET_PID(caster)), 0 };
 		uint64_t player_revision = 0;
 		uint64_t room_revision = 0;
-		if (GET_PID(caster) <= 0 || follower->in_room != NOWHERE ||
-		    !corpse_release_room(corpse, &corpse_room) || corpse_room != caster->in_room ||
-		    !collect_world_corpse_raise_items(corpse, world[corpse_room].number, hostile,
+		if (!collect_world_corpse_raise_items(corpse, world[corpse_room].number, hostile,
 						      &durable_uids, &discarded_uids,
 						      &root_runtime) ||
 		    !item_ownership_runtime_owner_revision(root_runtime.owner, &room_revision) ||
@@ -4661,7 +4725,6 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 			extract_char(follower);
 			return true;
 		}
-		const uint64_t key = corpse->obj_uid;
 		if (corpse_raises.contains(key))
 		{
 			send_to_char("That corpse is already caught in a persistence change.\r\n",
@@ -4671,10 +4734,10 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 		}
 		try
 		{
-			corpse_raises.emplace(key,
-					      corpse_raise_context{ caster, caster->runtime_id, follower,
-								    follower->runtime_id, kind, level,
-								    variant, hostile, message });
+			corpse_raises.emplace(
+				key, corpse_raise_context{ caster, caster->runtime_id, follower,
+							   follower->runtime_id, kind, level,
+							   variant, globe, hostile, message });
 		}
 		catch (const std::bad_alloc &)
 		{
@@ -4762,7 +4825,7 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 		corpse_raises.emplace(key,
 				      corpse_raise_context{ caster, caster->runtime_id, follower,
 							    follower->runtime_id, kind, level,
-							    variant, hostile, message });
+							    variant, globe, hostile, message });
 	}
 	catch (const std::bad_alloc &)
 	{
