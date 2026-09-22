@@ -316,16 +316,22 @@ bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t 
 		entry.values[index] = object->value[index];
 	for (int index = 0; index < 6; ++index)
 		entry.timers[index] = static_cast<int64_t>(object->timer[index]);
-	if (object->name)
-		strlcpy(entry.name, object->name, sizeof(entry.name));
-	if (object->short_description)
-		strlcpy(entry.short_description, object->short_description,
-			sizeof(entry.short_description));
-	if (object->description)
-		strlcpy(entry.description, object->description, sizeof(entry.description));
-	if (object->action_description)
-		strlcpy(entry.action_description, object->action_description,
-			sizeof(entry.action_description));
+	auto copy_text = [](char *destination, size_t capacity, const char *source) {
+		if (!source)
+			return true;
+		const size_t length = strnlen(source, capacity);
+		if (length >= capacity)
+			return false;
+		memcpy(destination, source, length + 1);
+		return true;
+	};
+	if (!copy_text(entry.name, sizeof(entry.name), object->name) ||
+	    !copy_text(entry.short_description, sizeof(entry.short_description),
+		       object->short_description) ||
+	    !copy_text(entry.description, sizeof(entry.description), object->description) ||
+	    !copy_text(entry.action_description, sizeof(entry.action_description),
+		       object->action_description))
+		return false;
 	entry.wear_flags = object->wear_flags;
 	entry.extra_flags = object->extra_flags;
 	entry.anti_flags = object->anti_flags;
@@ -364,7 +370,15 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 	if (!object || !buffer || room_vnum <= 0 || maximum < sizeof(world_recovery_object_record))
 		return -1;
 	// capture_item_tree initializes each emitted entry; do not clear unused capacity.
-	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items;
+	std::vector<world_recovery_item_snapshot> items;
+	try
+	{
+		items.resize(WORLD_RECOVERY_MAX_ITEM_TREE);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return -1;
+	}
 	uint32_t count = 0;
 	bool skip = false;
 	if (!capture_item_tree(object, room_vnum, 0, 0, items.data(), &count, &skip,
