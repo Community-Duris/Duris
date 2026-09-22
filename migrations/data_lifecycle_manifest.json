@@ -38,6 +38,289 @@
   },
   "entries": [
     {
+      "id": "database:economic_account_mapping",
+      "kind": "database_table",
+      "locator": "economic_account_mapping",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox",
+        "database:economic_lineage_state"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_accounting_account_effect",
+      "kind": "database_table",
+      "locator": "economic_accounting_account_effect",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_accounting_operation"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_accounting_child",
+      "kind": "database_table",
+      "locator": "economic_accounting_child",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox",
+        "database:economic_accounting_operation"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_accounting_coin_posting",
+      "kind": "database_table",
+      "locator": "economic_accounting_coin_posting",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_accounting_account_effect"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_accounting_item_reference",
+      "kind": "database_table",
+      "locator": "economic_accounting_item_reference",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_accounting_operation",
+        "database:item_ownership_ledger"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_accounting_operation",
+      "kind": "database_table",
+      "locator": "economic_accounting_operation",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox",
+        "database:economic_epoch"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_accounting_source_claim",
+      "kind": "database_table",
+      "locator": "economic_accounting_source_claim",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_accounting_operation"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_epoch",
+      "kind": "database_table",
+      "locator": "economic_epoch",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_lineage_state",
+      "kind": "database_table",
+      "locator": "economic_lineage_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Economic conservation evidence and retained replay identities; no independent game balance or custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_epoch"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
       "id": "database:player_death_restitution_receipt",
       "kind": "database_table",
       "locator": "player_death_restitution_receipt",
@@ -6529,6 +6812,421 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "file:economic-accounting-index",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/*.eai",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retained bounded economic operation lookup and bucket counters; must survive replay, season reset and restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
+    },
+    {
+      "id": "file:economic-accounting-segment",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/*.eas",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Checksummed economic command, canonical plan and exact outcome records retained for replay and conservation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
+    },
+    {
+      "id": "file:economic-authority-control",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/authority.eal",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Lineage, epoch selection, never-reused lifetime allocation and exact metadata bucket digests",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
+    },
+    {
+      "id": "file:economic-authority-epoch",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/epochs.eae",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retained immutable epoch transition identities and baseline digests",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
+    },
+    {
+      "id": "file:economic-authority-mapping",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/mapping-*.eam",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retained wallet and bank lifetime mappings including retirement and current native locator",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
+    },
+    {
+      "id": "file:economic-authority-native-index",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/native-*.ean",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Current native locator bindings and retained alias tombstones; missing state cannot authorize a new lifetime",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:critical_command_journal"
+      ]
+    },
+    {
+      "id": "file:economic-baseline-control",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/baseline-*.ebc",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "epoch_baseline_opening_book_and_index_hashes",
+      "technical_purpose": "Baseline epoch book heads bind opening-equity identity and reservation indexes to the original lineage and epoch",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:economic-authority-control",
+        "file:economic-authority-epoch",
+        "file:economic-accounting-index",
+        "file:economic-accounting-segment",
+        "file:flatfile-authority-journal"
+      ]
+    },
+    {
+      "id": "file:economic-baseline-reservations",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/baseline-*.ebi",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "account_lifetime_or_item_uid_and_original_baseline_operation",
+      "technical_purpose": "Bounded per-epoch opening reservations prevent duplicate account or item baselines across preparations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:economic-authority-control",
+        "file:economic-authority-epoch",
+        "file:economic-accounting-index",
+        "file:economic-accounting-segment",
+        "file:flatfile-authority-journal"
+      ]
+    },
+    {
+      "id": "file:economic-baseline-witness",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/baseline-*.eab",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "complete_baseline_native_witness_and_original_operation",
+      "technical_purpose": "Immutable complete native baseline evidence binds original opening receipts; retain across pause reset deletion and restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:economic-authority-control",
+        "file:economic-authority-epoch",
+        "file:economic-accounting-index",
+        "file:economic-accounting-segment",
+        "file:flatfile-authority-journal"
+      ]
+    },
+    {
+      "id": "file:flatfile-authority-journal",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/domains/.critical-authority-transaction",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "transaction_domain_subjects",
+      "technical_purpose": "Existing v2 atomic domain and evidence recovery journal; retain pending after-images until shared recovery completes",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:economic_baseline_control",
+      "kind": "database_table",
+      "locator": "economic_baseline_control",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retained baseline witnesses and per-epoch duplicate-opening protection; no independent native balance or item custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_epoch",
+        "database:critical_operation_inbox"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_baseline_reservation",
+      "kind": "database_table",
+      "locator": "economic_baseline_reservation",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retained baseline witnesses and per-epoch duplicate-opening protection; no independent native balance or item custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_baseline_witness"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:economic_baseline_witness",
+      "kind": "database_table",
+      "locator": "economic_baseline_witness",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retained baseline witnesses and per-epoch duplicate-opening protection; no independent native balance or item custody authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_baseline_control",
+        "database:economic_accounting_operation"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
     }
   ]
 }
