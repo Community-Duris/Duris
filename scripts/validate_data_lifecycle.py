@@ -33,6 +33,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0026_zone_story_quest_state.sql",
     ROOT / "migrations" / "immutable" / "0027_saved_item_recovery_handoff.sql",
     ROOT / "migrations" / "immutable" / "0030_telemetry_quarantine.sql",
+    ROOT / "migrations" / "immutable" / "0031_economy_accounting.sql",
 )
 
 ROOT_FIELDS = {
@@ -70,6 +71,12 @@ DESTRUCTIVE_ACTIONS = {
     "archive", "purge", "pseudonymize", "cascade", "restore_tombstone",
 }
 REQUIRED_NON_DATABASE_STORES = {
+    "file:economic-authority-control": ("recovery_state", "FLATFILE_ROOT/economic-evidence/authority.eal"),
+    "file:economic-authority-epoch": ("recovery_state", "FLATFILE_ROOT/economic-evidence/epochs.eae"),
+    "file:economic-authority-mapping": ("recovery_state", "FLATFILE_ROOT/economic-evidence/mapping-*.eam"),
+    "file:economic-authority-native-index": ("recovery_state", "FLATFILE_ROOT/economic-evidence/native-*.ean"),
+    "file:economic-accounting-index": ("recovery_state", "FLATFILE_ROOT/economic-evidence/*.eai"),
+    "file:economic-accounting-segment": ("recovery_state", "FLATFILE_ROOT/economic-evidence/*.eas"),
     "file:player_save_journal": ("journal", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal"),
     "file:player_save_quarantine": (
         "quarantine", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine",
