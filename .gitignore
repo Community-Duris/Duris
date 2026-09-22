@@ -104,3 +104,6 @@ tests/db_write/schema.sql
 
 # Database dumps written by scripts/backup_pfiles.sh (player/account data).
 db/Backup/
+
+# Local incident/recovery working sets (player data, never committed)
+/private/
