@@ -23,6 +23,7 @@
 #include <limits>
 #include <mutex>
 #include <new>
+#include <set>
 #include <thread>
 #include <utility>
 
@@ -56,6 +57,10 @@ bool stop_requested = false;
 bool accepting = false;
 bool append_inflight = false;
 int append_inflight_pid = 0;
+/* One failed graph may be recaptured once.  Keep the PID armed until a later
+ * database acknowledgement proves custody and payload agree; otherwise every
+ * rejected recapture creates a new revision and an unbounded wizlog loop. */
+std::set<int32_t> custody_recapture_armed;
 
 player_save_apply_fn selected_snapshot_apply()
 {
@@ -657,6 +662,7 @@ void player_save_pipeline_pulse(void)
 	int32_t missing_baseline[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	size_t missing_baseline_count = 0;
 	player_save_completion custody_mismatches[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	bool custody_recapture_allowed[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	size_t custody_mismatch_count = 0;
 	const size_t completed =
 		player_save_worker_pulse(completions, PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
@@ -665,6 +671,10 @@ void player_save_pipeline_pulse(void)
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
+			if (completions[index].outcome == player_save_apply_outcome::applied ||
+			    completions[index].outcome ==
+				    player_save_apply_outcome::already_applied)
+				custody_recapture_armed.erase(completions[index].pid);
 			if (trace_player_saves())
 			{
 				const auto &completion = completions[index];
@@ -702,13 +712,19 @@ void player_save_pipeline_pulse(void)
 			    completions[index].error_code ==
 				    PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
 			    completions[index].pid > 0)
-				custody_mismatches[custody_mismatch_count++] = completions[index];
+			{
+				custody_mismatches[custody_mismatch_count] = completions[index];
+				custody_recapture_allowed[custody_mismatch_count] =
+					custody_recapture_armed.insert(completions[index].pid).second;
+				++custody_mismatch_count;
+			}
 		}
 	}
 	for (size_t index = 0; index < custody_mismatch_count; ++index)
 	{
 		bool recapture_scheduled = false;
-		for (P_char ch = character_list; ch; ch = ch->next)
+		for (P_char ch = custody_recapture_allowed[index] ? character_list : NULL; ch;
+		     ch = ch->next)
 			if (IS_PC(ch) && GET_PID(ch) == custody_mismatches[index].pid &&
 			    GET_STAT(ch) != STAT_DEAD &&
 			    !IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))

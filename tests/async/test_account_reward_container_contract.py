@@ -19,6 +19,8 @@ dismiss = reward[dismiss_start:dismiss_end]
 assert contains(dismiss, "instance->contains")
 assert contains(dismiss, "Empty it first")
 assert index(dismiss, "instance->contains") < index(dismiss, "extract_obj(instance)")
+assert contains(dismiss, "retire_saved_reward_instance")
+assert index(dismiss, "retire_saved_reward_instance") < index(dismiss, "extract_obj(instance)")
 
 # Summoned containers arrive open even when the stored source template was closed.
 summon_start = index(reward, "static bool summon_one")
@@ -99,6 +101,14 @@ assert index(clear_saved, "item_transfer_repository_revoke_roots_preserving_chil
 )
 assert contains(transfer_repository, "item_transfer_reason::operator_repair")
 assert contains(transfer_repository, "item_transfer_reason::destruction")
+retire_start = index(reward, "static bool retire_saved_reward_instance")
+retire_end = index(reward, "static std::string human_duration", retire_start)
+retire = reward[retire_start:retire_end]
+assert contains(retire, "item_transfer_repository_revoke_roots_preserving_children")
+assert contains(retire, "DELETE FROM player_items")
+assert index(retire, "item_transfer_repository_revoke_roots_preserving_children") < index(
+    retire, "DELETE FROM player_items"
+)
 revoke_start = index(reward, "static void revoke_live_grant")
 revoke_end = index(reward, "static void purge_expired_grants", revoke_start)
 revoke = reward[revoke_start:revoke_end]

@@ -719,9 +719,16 @@ void boot_db(int mini_mode)
 
 	if (!mini_mode)
 	{
-		fprintf(stderr, "-- Player corpses\n");
-		logit(LOG_STATUS, "Reloading Player corpses.");
-		restoreCorpses();
+		/* Copyover carries the complete live ground-object graph, including player
+		 * corpses.  Loading SQL corpses first materializes their stable child UIDs
+		 * under a newly allocated root and makes recovery reject the same children
+		 * as duplicates.  A cold boot still restores the durable SQL image. */
+		if (!is_copyover_boot())
+		{
+			fprintf(stderr, "-- Player corpses\n");
+			logit(LOG_STATUS, "Reloading Player corpses.");
+			restoreCorpses();
+		}
 
 		logit(LOG_STATUS, "Reloading SavedItems.");
 		restoreSavedItems();

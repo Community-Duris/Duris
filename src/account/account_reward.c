@@ -225,6 +225,32 @@ static bool promote_reward_contents(P_obj container)
 	return true;
 }
 
+/** Retire one persisted reward before removing its live duplicate.
+ *
+ * extract_obj() intentionally has no persistence side effects.  Reward
+ * deduplication is a real destruction transition, so it must retire custody and
+ * remove the matching player projection in one transaction before extraction.
+ */
+static bool retire_saved_reward_instance(P_char ch, P_obj obj)
+{
+	if (!ch || !obj || !obj->obj_uid)
+		return ch && obj;
+	const uint64_t uid = obj->obj_uid;
+	if (!sql_begin_transaction())
+		return false;
+	bool ok = item_transfer_repository_revoke_roots_preserving_children(DB, &uid, 1) &&
+		  qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id SET child.container_id=reward.container_id WHERE reward.pid=%d AND reward.obj_uid=%llu",
+		      GET_PID(ch), (unsigned long long)uid) &&
+		  qry("DELETE FROM player_items WHERE pid=%d AND obj_uid=%llu", GET_PID(ch),
+		      (unsigned long long)uid);
+	if (!ok || !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
+	return true;
+}
+
 static std::string human_duration(long long seconds, bool round_up = false)
 {
 	char text[96];
@@ -596,6 +622,7 @@ static P_obj existing_character_instance(P_char ch, const RewardGrant &grant,
 					 bool remove_duplicates)
 {
 	P_obj keep = NULL;
+	bool removed_duplicate = false;
 	for (P_obj obj = object_list, next; obj; obj = next)
 	{
 		next = obj->next;
@@ -606,14 +633,21 @@ static P_obj existing_character_instance(P_char ch, const RewardGrant &grant,
 			keep = obj;
 		else if (remove_duplicates)
 		{
-			if (promote_reward_contents(obj))
+			if (promote_reward_contents(obj) && retire_saved_reward_instance(ch, obj))
+			{
 				extract_obj(obj);
+				removed_duplicate = true;
+			}
 			else
 				logit(LOG_WIZ,
-				      "divineclaim: duplicate reward #%llu retained because its contents could not be released safely",
+				      "divineclaim: duplicate reward #%llu retained because its contents or custody could not be released safely",
 				      grant.id);
 		}
 	}
+	if (removed_duplicate && !do_save_silent(ch, 1))
+		logit(LOG_WIZ,
+		      "divineclaim: failed to save duplicate cleanup for reward #%llu on %s",
+		      grant.id, GET_NAME(ch));
 	return keep;
 }
 
@@ -883,6 +917,16 @@ static void dismiss_player_grant(P_char ch, const RewardGrant &selected)
 				   instance->short_description :
 				   (selected.display_name.empty() ? "your divine reward" :
 								    selected.display_name);
+	if (!retire_saved_reward_instance(ch, instance))
+	{
+		logit(LOG_WIZ,
+		      "divineclaim: failed to retire dismissed reward #%llu for %s",
+		      selected.id, GET_NAME(ch));
+		send_to_char(
+			"The divine records could not release that reward safely. Nothing was removed; please try again later.\r\n",
+			ch);
+		return;
+	}
 	extract_obj(instance);
 	bool saved = do_save_silent(ch, 1);
 	long long remaining = cooldown_remaining(selected.id, GET_PID(ch));

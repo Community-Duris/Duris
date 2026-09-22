@@ -2433,9 +2433,14 @@ void game_loop(int port, int sslport)
 	}
 	else if (copyover_boot)
 	{
-		// copyover mode but recovery failed - can't bind new sockets because old ones still open
-		logit(LOG_STATUS, "FATAL: copyover recovery failed, cannot continue");
-		exit(1);
+		/* The inherited listeners are still open, so this process cannot safely
+		 * bind replacements.  Return through normal shutdown to join every worker;
+		 * exit(1) here left joinable std::threads and turned a rejected copyover into
+		 * SIGABRT plus a core dump.  The supervisor then performs a cold restart. */
+		logit(LOG_STATUS,
+		      "FATAL: copyover recovery failed; requesting graceful cold restart");
+		_reboot = 1;
+		return;
 	}
 	else
 	{
