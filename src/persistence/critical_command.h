@@ -7,11 +7,16 @@
 #include <vector>
 
 constexpr uint32_t CRITICAL_COMMAND_SCHEMA_VERSION = 1;
+constexpr uint32_t CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION = 2;
+constexpr size_t CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES = 8192;
 constexpr size_t CRITICAL_COMMAND_ID_BYTES = 16;
 constexpr size_t CRITICAL_COMMAND_ID_HEX_SIZE = 33;
 constexpr size_t CRITICAL_COMMAND_MAX_KEYS = 3003;
 constexpr size_t CRITICAL_COMMAND_MAX_PAYLOAD_BYTES = 384 * 1024;
 constexpr size_t CRITICAL_COMMAND_MAX_ENCODED_BYTES = 512 * 1024;
+static_assert(52 + CRITICAL_COMMAND_MAX_KEYS * 40 + CRITICAL_COMMAND_MAX_PAYLOAD_BYTES + 4 +
+		      CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES <=
+	      CRITICAL_COMMAND_MAX_ENCODED_BYTES);
 
 struct critical_operation_id
 {
@@ -135,6 +140,8 @@ struct critical_command
 	std::vector<critical_entity_key> keys;
 	std::vector<critical_expected_revision> expected_revisions;
 	std::vector<uint8_t> payload;
+	// Schema 2 wire evidence only until a typed accounting executor is connected.
+	std::vector<uint8_t> accounting_intent = {};
 };
 
 enum class critical_command_codec_result : uint8_t
@@ -158,6 +165,9 @@ bool critical_operation_id_from_hex(const char *input, critical_operation_id *op
 bool critical_entity_key_less(const critical_entity_key &left, const critical_entity_key &right);
 bool critical_entity_key_equal(const critical_entity_key &left, const critical_entity_key &right);
 bool critical_command_normalize(critical_command *command);
+// Wire validity is distinct from support by the legacy mutation entrypoints.
+bool critical_command_envelope_valid(const critical_command &command);
+bool critical_command_legacy_execution_supported(const critical_command &command);
 bool critical_command_valid(const critical_command &command);
 bool critical_command_equal(const critical_command &left, const critical_command &right);
 const char *critical_failure_stage_name(critical_failure_stage stage);
