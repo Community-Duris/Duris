@@ -111,6 +111,7 @@
 #include "persistence/maintenance_scheduler.h"
 #include "persistence/maintenance_snapshot.h"
 #include "persistence/critical_command_coordinator.h"
+#include "economy/economic_command_admission.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/corpse_lifecycle_transaction.h"
@@ -120,6 +121,7 @@
 #include "economy/shop_trade_transaction.h"
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_accounting_dispatch.h"
 #include "economy/auction_transaction.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
@@ -929,8 +931,10 @@ void run_the_game(int port, int sslport)
 	}
 	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
 	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
+	critical_extension_validator_fn critical_extension_validator =
+		economic_command_admission_supported;
 #ifdef __NO_MYSQL__
-	critical_apply = flatfile_critical_command_repository_apply_selected;
+	critical_apply = flatfile_accounting_apply_selected;
 #else
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
@@ -942,7 +946,8 @@ void run_the_game(int port, int sslport)
 		!critical_command_coordinator_init(
 			critical_journal_directory, critical_apply, NULL,
 			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-			player_death_restitution_runtime_restore_replayed_command, NULL))
+			player_death_restitution_runtime_restore_replayed_command, NULL,
+			critical_extension_validator))
 	{
 		player_death_restitution_runtime_abort_all();
 		critical_command_coordinator_shutdown();

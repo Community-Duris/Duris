@@ -282,6 +282,10 @@ OBJS =  $(SHIP_OBJS) \
 				 core/env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
+				 flatfile/flatfile_accounting_store.o \
+				 flatfile/flatfile_accounting_authority.o \
+				 flatfile/flatfile_accounting_bank_transaction.o \
+				 flatfile/flatfile_accounting_dispatch.o \
 				 flatfile/flatfile_account_repository.o \
 				 flatfile/flatfile_account_delete.o \
 				 flatfile/flatfile_account_reward_summon_repository.o \
@@ -327,6 +331,8 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
+				 persistence/economic_accounting_repository.o \
+				 persistence/economic_sql_bank_transaction.o \
 				 persistence/critical_command_repository.o \
 				 persistence/player_death_restitution_command.o \
 				 persistence/player_death_restitution_repository.o \
@@ -348,6 +354,11 @@ OBJS =  $(SHIP_OBJS) \
 				 world/epic_transaction.o \
 				 economy/currency_command.o \
 				 economy/coin_transfer_command.o \
+				 economy/economic_accounting_types.o \
+				 economy/economic_accounting_plan.o \
+				 economy/economic_accounting_intent.o \
+				 economy/economic_command_admission.o \
+				 economy/economic_currency_adapter.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \
 				 economy/auction_transaction.o \
