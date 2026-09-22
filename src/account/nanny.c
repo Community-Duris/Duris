@@ -933,7 +933,7 @@ void load_obj_to_newbies(P_char ch)
    free.
    -JAB */
 
-bool _parse_name(char *arg, char *name)
+bool _parse_name(char *arg, char *name, bool character_name)
 {
 	int i;
 	const char *smart_ass[] = { "someone",	 "somebody",  "me",	   "self",	"all",
@@ -981,6 +981,12 @@ bool _parse_name(char *arg, char *name)
 	if (search_block(name, smart_ass, TRUE) >= 0)
 		return TRUE;
 	if (sub_string_set(name, rude_ass))
+		return TRUE;
+
+	/* do_start_impl() makes an OVERLORD of any character named on god_list, so
+	 * no character may take one of those names, even after a wipe frees it.
+	 * Account names grant nothing and skip this check. */
+	if (character_name && god_check(name))
 		return TRUE;
 
 	return FALSE;
@@ -2154,7 +2160,7 @@ void select_name(P_desc d, char *arg, int flag)
 		//  close_socket(d);
 		return;
 	}
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal name, please try another.\r\n", d);
 		SEND_TO_Q("Name: ", d);
