@@ -1,0 +1,856 @@
+{
+  "schema_version": 1,
+  "status": "draft",
+  "source_commit": "48c0aedd8e094eee37285111e46e735e4cf12320",
+  "denomination_copper": [
+    1,
+    10,
+    100,
+    1000
+  ],
+  "integer_min": -9223372036854775808,
+  "integer_max": 9223372036854775807,
+  "account_kinds": [
+    {
+      "id": "wallet",
+      "number": 1,
+      "sign": "ordinary",
+      "identity": "Durable player lifetime mapping; never a display name or a recycled PID alone."
+    },
+    {
+      "id": "bank",
+      "number": 2,
+      "sign": "ordinary",
+      "identity": "Durable shared bank mapping plus race-war scope; renamed accounts retain the mapping."
+    },
+    {
+      "id": "pile",
+      "number": 3,
+      "sign": "ordinary",
+      "identity": "Persistent item UID in its durable lineage; custody does not multiply its coin content."
+    },
+    {
+      "id": "auction_escrow",
+      "number": 4,
+      "sign": "ordinary",
+      "identity": "Durable auction lifetime identity; holds the current reserved bid."
+    },
+    {
+      "id": "pending_claim",
+      "number": 5,
+      "sign": "ordinary",
+      "identity": "Stable claim holding with typed origin and original source-operation attribution. Existing aggregate claim storage is allowed with explicit operation links; payee PID alone is insufficient provenance."
+    },
+    {
+      "id": "treasury",
+      "number": 6,
+      "sign": "ordinary",
+      "identity": "A real durable domain holding only; never invent finite NPC or shop money."
+    },
+    {
+      "id": "issuance",
+      "number": 7,
+      "sign": "debit_only",
+      "identity": "Named, typed issuance policy and durable source event; no mutable global total."
+    },
+    {
+      "id": "sink",
+      "number": 8,
+      "sign": "credit_only",
+      "identity": "Named, typed expense or destruction policy; no mutable global total."
+    },
+    {
+      "id": "opening",
+      "number": 9,
+      "sign": "either",
+      "identity": "Opening equity for a single exact baseline epoch; not a gameplay writer."
+    },
+    {
+      "id": "restitution",
+      "number": 10,
+      "sign": "debit_only",
+      "identity": "Separately authorized new issuance, distinguishable from a transfer reversal."
+    }
+  ],
+  "reasons": [
+    {
+      "id": "bank_transfer",
+      "number": 1,
+      "domain": "currency",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "wallet_transfer",
+      "number": 2,
+      "domain": "currency",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "coin_transfer",
+      "number": 3,
+      "domain": "currency",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "group_split",
+      "number": 4,
+      "domain": "currency",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "quest_reward",
+      "number": 5,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "npc_reward",
+      "number": 6,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "chaos_reward",
+      "number": 7,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "starter_reward",
+      "number": 8,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "boon_reward",
+      "number": 9,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "achievement_reward",
+      "number": 10,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "service_cost",
+      "number": 11,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "training_cost",
+      "number": 12,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "locker_cost",
+      "number": 13,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "shipping_cost",
+      "number": 14,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "insurance_cost",
+      "number": 15,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "guild_cost",
+      "number": 16,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "crafting_cost",
+      "number": 17,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "gambling_stake",
+      "number": 18,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "gambling_payout",
+      "number": 19,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "refund",
+      "number": 20,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": true,
+      "actor": "domain",
+      "system_signs": {
+        "sink": "debit_only"
+      },
+      "original_operation_required": true
+    },
+    {
+      "id": "shop_buy",
+      "number": 21,
+      "domain": "shop",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "shop_sell",
+      "number": 22,
+      "domain": "shop",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "shop_cleanup",
+      "number": 23,
+      "domain": "shop",
+      "account_kinds": [],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "collector_purchase",
+      "number": 24,
+      "domain": "collector",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "collector_custody",
+      "number": 25,
+      "domain": "collector",
+      "account_kinds": [],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "auction_listing",
+      "number": 26,
+      "domain": "auction",
+      "account_kinds": [
+        "wallet",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "auction_bid",
+      "number": 27,
+      "domain": "auction",
+      "account_kinds": [
+        "wallet",
+        "auction_escrow",
+        "pending_claim",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "auction_outbid",
+      "number": 28,
+      "domain": "auction",
+      "account_kinds": [
+        "wallet",
+        "auction_escrow",
+        "pending_claim",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "auction_cancel",
+      "number": 29,
+      "domain": "auction",
+      "account_kinds": [
+        "wallet",
+        "auction_escrow",
+        "pending_claim",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "auction_settle",
+      "number": 30,
+      "domain": "auction",
+      "account_kinds": [
+        "wallet",
+        "auction_escrow",
+        "pending_claim",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "auction_claim",
+      "number": 31,
+      "domain": "auction",
+      "account_kinds": [
+        "wallet",
+        "auction_escrow",
+        "pending_claim",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "item_move",
+      "number": 32,
+      "domain": "items",
+      "account_kinds": [],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "item_create",
+      "number": 33,
+      "domain": "items",
+      "account_kinds": [
+        "pile",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "item_destroy",
+      "number": 34,
+      "domain": "items",
+      "account_kinds": [
+        "pile",
+        "sink"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "first_admission",
+      "number": 35,
+      "domain": "world",
+      "account_kinds": [
+        "wallet",
+        "pile",
+        "issuance"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "death_transfer",
+      "number": 36,
+      "domain": "death",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "corpse_restore",
+      "number": 37,
+      "domain": "death",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury"
+      ],
+      "source_event_required": false,
+      "actor": "domain"
+    },
+    {
+      "id": "baseline",
+      "number": 38,
+      "domain": "baseline",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury",
+        "opening"
+      ],
+      "source_event_required": true,
+      "actor": "operator"
+    },
+    {
+      "id": "correction",
+      "number": 39,
+      "domain": "correction",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury"
+      ],
+      "source_event_required": true,
+      "actor": "operator"
+    },
+    {
+      "id": "restitution",
+      "number": 40,
+      "domain": "correction",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury",
+        "restitution"
+      ],
+      "source_event_required": true,
+      "actor": "operator"
+    },
+    {
+      "id": "lifecycle_retirement",
+      "number": 41,
+      "domain": "lifecycle",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": true,
+      "actor": "operator"
+    },
+    {
+      "id": "epoch_transition",
+      "number": 42,
+      "domain": "lifecycle",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "pile",
+        "auction_escrow",
+        "pending_claim",
+        "treasury",
+        "opening"
+      ],
+      "source_event_required": true,
+      "actor": "operator"
+    }
+  ],
+  "domains": [
+    "currency",
+    "issuance",
+    "expenses",
+    "items",
+    "shop",
+    "collector",
+    "auction",
+    "world",
+    "death",
+    "baseline",
+    "correction",
+    "lifecycle"
+  ],
+  "item_actions": [
+    "create",
+    "admit",
+    "move",
+    "destroy",
+    "baseline"
+  ],
+  "limits": {
+    "intent_bytes": 8192,
+    "explicit_accounts": 64,
+    "explicit_postings": 64,
+    "child_links": 64,
+    "item_ranges": 32,
+    "realized_accounts": 3072,
+    "realized_postings": 6144,
+    "realized_items": 3000,
+    "realized_bytes": 4194304,
+    "evidence_page_rows": 256,
+    "recovery_batch_operations": 32,
+    "item_witnesses": 6000
+  },
+  "coverage_states": [
+    "legacy",
+    "observed",
+    "enforced",
+    "unsupported",
+    "projection"
+  ],
+  "errors": [
+    "invalid_version",
+    "invalid_identity",
+    "invalid_reason",
+    "unauthorized",
+    "unbalanced",
+    "overflow",
+    "negative_holding",
+    "capacity",
+    "duplicate_event",
+    "payload_conflict",
+    "stale_revision",
+    "topology",
+    "incomplete_coverage",
+    "unresolved",
+    "corrupt_evidence"
+  ],
+  "source_event_policy": "Typed writer-specific durable source event, unique within lineage/policy. A fresh ID on ambiguous retry is forbidden.",
+  "system_policy": "Account kind and balanced arithmetic alone never authorize issuance. Writer capability, source event and exact domain effects must agree.",
+  "source_kinds": [
+    {
+      "id": "quest_completion",
+      "number": 1
+    },
+    {
+      "id": "npc_generation",
+      "number": 2
+    },
+    {
+      "id": "starter_grant",
+      "number": 3
+    },
+    {
+      "id": "boon",
+      "number": 4
+    },
+    {
+      "id": "achievement",
+      "number": 5
+    },
+    {
+      "id": "gambling_round",
+      "number": 6
+    },
+    {
+      "id": "world_generation",
+      "number": 7
+    },
+    {
+      "id": "crafting",
+      "number": 8
+    },
+    {
+      "id": "administrator",
+      "number": 9
+    },
+    {
+      "id": "baseline",
+      "number": 10
+    },
+    {
+      "id": "legacy_import",
+      "number": 11
+    },
+    {
+      "id": "shop_stock",
+      "number": 12
+    },
+    {
+      "id": "auction",
+      "number": 13
+    },
+    {
+      "id": "corpse",
+      "number": 14
+    },
+    {
+      "id": "correction",
+      "number": 15
+    },
+    {
+      "id": "lifecycle",
+      "number": 16
+    },
+    {
+      "id": "service",
+      "number": 17
+    }
+  ],
+  "plan_encoding": {
+    "magic": "EAP1",
+    "version": 1,
+    "byte_order": "little_endian",
+    "header_bytes": 256,
+    "account_effect_bytes": 120,
+    "posting_bytes": 48,
+    "child_link_bytes": 32,
+    "item_snapshot_bytes": 64,
+    "item_event_bytes": 128,
+    "source_event_bytes": 48,
+    "reserved": "must be zero",
+    "digest": "SHA-256 of complete canonical plan bytes"
+  },
+  "intent_encoding": {
+    "magic": "EAI1",
+    "version": 1,
+    "header_bytes": 256,
+    "maximum_bytes": 8192,
+    "maximum_fact_bytes": 7936,
+    "facts_version": 1,
+    "command_binding_tag": "DURIS-ECONOMIC-COMMAND-V1",
+    "domain_digest_tag": "DURIS-ECONOMIC-DOMAIN-V1",
+    "intent_digest_tag": "DURIS-ECONOMIC-INTENT-V1",
+    "tag_delimiter": "NUL",
+    "legacy_schema": 1,
+    "accounting_schema": 2,
+    "maximum_envelope_bytes": 521584,
+    "execution": "Typed SQL and flatfile bank owners and coordinator admission are implemented; gameplay, baseline execution and activation remain pending."
+  },
+  "typed_writers": [
+    {
+      "id": "baseline_batch",
+      "number": 4,
+      "reason": "baseline",
+      "facts_version": 1,
+      "policy": "Operator baseline genesis only: zero accounting balances open against epoch equity; native values/revisions and item custody remain unchanged. Exact boundary, coverage and native-source fingerprints are bound. Lifecycle owner must prove authority, complete coverage and unique account/epoch opening.",
+      "execution": "Pure preparation, bound commands and private flatfile retention implemented; lifecycle admission, SQL baseline storage, maintenance boundary and activation pending.",
+      "intent_bytes": 256,
+      "holding_witness_bytes": 112,
+      "item_witness_bytes": 82,
+      "command_envelope": "Compact EBC1 witness reference in schema-2 economic_baseline; execution refused.",
+      "preparation_intent_preimage_bytes": 178,
+      "facts_bytes": 0,
+      "command_payload_bytes": 48
+    }
+  ],
+  "baseline_preparation": {
+    "version": 1,
+    "operation_domain": 1111577413,
+    "maximum_holdings": 3071,
+    "maximum_item_witnesses": 6000,
+    "opening_accounting_revision": 1,
+    "native_revision": "Retained unchanged in canonical witness; never overwritten with opening accounting revision.",
+    "intent_tag": "DURIS-ECONOMIC-BASELINE-INTENT-V1",
+    "domain_tag": "DURIS-ECONOMIC-BASELINE-DOMAIN-V1",
+    "tag_delimiter": "NUL",
+    "witness_encoding": {
+      "magic": "EAB1",
+      "version": 1,
+      "header_bytes": 192,
+      "holding_bytes": 112,
+      "item_bytes": 88,
+      "maximum_bytes": 872144,
+      "byte_order": "little_endian",
+      "reserved": "must be zero",
+      "storage": "Private flatfile baseline stage combines complete witness, reservations and common receipt under the existing journal; lifecycle caller and SQL counterpart pending."
+    },
+    "command_binding": {
+      "type": 20,
+      "name": "economic_baseline",
+      "schema_version": 2,
+      "payload_version": 1,
+      "payload_magic": "EBC1",
+      "payload_bytes": 48,
+      "witness_digest": "SHA256 of complete canonical EAB1 bytes",
+      "intent": "EAI1 v1; metadata from preparation; empty writer facts; domain binds EBC1 payload",
+      "fence": {
+        "type": "system",
+        "id": 4990920009594262341
+      },
+      "execution": "Legacy execution and coordinator admission refuse; lifecycle persistence and activation pending."
+    },
+    "flatfile_retention": {
+      "version": 1,
+      "reservation_buckets": 16,
+      "maximum_bucket_records": 65536,
+      "maximum_index_bytes": 2097240,
+      "maximum_stage_operations": 20,
+      "initialization_operations": 17,
+      "files": [
+        "baseline-*.ebc",
+        "baseline-*.ebi",
+        "baseline-*.eab"
+      ],
+      "execution": "Private lifecycle storage seam; no production caller, native-source proof or activation."
+    }
+  }
+}
