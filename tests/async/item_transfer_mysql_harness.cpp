@@ -1,5 +1,6 @@
 #include "persistence/critical_command_repository.h"
 #include "item/item_transfer_command.h"
+#include "item/item_transfer_repository.h"
 #include "item/item_uid_allocator.h"
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_codec.h"
@@ -715,6 +716,39 @@ int main()
 	assert(scalar(connection, ("SELECT COUNT(*) FROM player_items WHERE obj_uid=" +
 				   std::to_string(child_uid) + " AND container_id IS NULL")
 					  .c_str()) == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner own LEFT JOIN player_items payload "
+		      "ON payload.obj_uid=own.item_uid AND payload.pid=own.owner_id WHERE "
+		      "own.owner_type=1 AND own.state=1 AND payload.id IS NULL") == 0);
+
+	// Administrative removal of a durable container must advance custody before
+	// its saved projection disappears. Its contents are detached, not destroyed.
+	execute(connection, "START TRANSACTION");
+	const bool revoked = item_transfer_repository_revoke_roots_preserving_children(
+		connection, &container_uid, 1);
+	assert(revoked);
+	execute(connection,
+		("UPDATE player_items child JOIN player_items reward ON "
+		 "child.container_id=reward.id SET child.container_id=reward.container_id WHERE "
+		 "reward.obj_uid=" +
+		 std::to_string(container_uid)));
+	execute(connection,
+		"DELETE FROM player_items WHERE obj_uid=" + std::to_string(container_uid));
+	execute(connection, "COMMIT");
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				   std::to_string(container_uid) + " AND owner_type=8 AND state=2")
+					  .c_str()) == 1);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (" +
+		       std::to_string(root_uid) + "," + std::to_string(nested_created_uid) +
+		       ") AND owner_type=1 AND owner_id=4000000001 AND state=1 AND "
+		       "root_item_uid=item_uid AND parent_item_uid IS NULL")
+			      .c_str()) == 2);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM player_items WHERE obj_uid IN (" +
+		       std::to_string(root_uid) + "," + std::to_string(nested_created_uid) +
+		       ") AND pid=4000000001 AND container_id IS NULL")
+			      .c_str()) == 2);
 	assert(scalar(connection,
 		      "SELECT COUNT(*) FROM item_current_owner own LEFT JOIN player_items payload "
 		      "ON payload.obj_uid=own.item_uid AND payload.pid=own.owner_id WHERE "

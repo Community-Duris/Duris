@@ -2,9 +2,11 @@
 #include "core/defines.h"
 #include "player/player_snapshot_codec.h"
 #include "core/structs.h"
+#include "persistence/critical_command_repository.h"
 
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <cstdlib>
 #include <limits>
@@ -21,6 +23,13 @@
 namespace
 {
 using mysql_null_indicator = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+
+uint64_t wall_now_usec()
+{
+	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+					     std::chrono::system_clock::now().time_since_epoch())
+					     .count());
+}
 
 struct current_item
 {
@@ -1891,17 +1900,203 @@ bool item_transfer_repository_destroy_owners(MYSQL *connection, const item_owner
 			errno = EINVAL;
 			return false;
 		}
+		command.accepted_at_usec = wall_now_usec();
 		item_transfer_result result = {};
 		unsigned int result_code = 0;
 		bool mutation_applied = false;
-		if (!item_transfer_repository_execute(connection, command, &result, &result_code,
+		if (!critical_command_repository_begin_inbox_in_transaction(connection, command) ||
+		    !item_transfer_repository_execute(connection, command, &result, &result_code,
 						      &mutation_applied) ||
-		    result_code || !mutation_applied)
+		    result_code || !mutation_applied ||
+		    !critical_command_repository_finish_item_transfer_in_transaction(
+			    connection, command, result))
 		{
 			if (result_code)
 				errno = static_cast<int>(result_code);
 			return false;
 		}
+	}
+	return true;
+}
+
+bool item_transfer_repository_revoke_roots_preserving_children(MYSQL *connection,
+							       const uint64_t *item_uids,
+							       size_t item_count)
+{
+	if (!connection || (!item_uids && item_count))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	auto submit = [&](item_transfer_payload *payload) -> bool
+	{
+		if (!payload)
+			return false;
+		if (!ensure_owner(connection, payload->from_owner) ||
+		    !ensure_owner(connection, payload->to_owner))
+			return false;
+		if (item_owner_identity_equal(payload->from_owner, payload->to_owner))
+		{
+			if (!lock_owner(connection, payload->from_owner,
+					&payload->expected_from_revision))
+				return false;
+			payload->expected_to_revision = payload->expected_from_revision;
+		}
+		else if (owner_less(payload->from_owner, payload->to_owner))
+		{
+			if (!lock_owner(connection, payload->from_owner,
+					&payload->expected_from_revision) ||
+			    !lock_owner(connection, payload->to_owner,
+					&payload->expected_to_revision))
+				return false;
+		}
+		else if (!lock_owner(connection, payload->to_owner,
+				     &payload->expected_to_revision) ||
+			 !lock_owner(connection, payload->from_owner,
+				     &payload->expected_from_revision))
+			return false;
+
+		critical_operation_id operation_id = {};
+		critical_command command = {};
+		if (!critical_operation_id_generate(&operation_id) ||
+		    !item_transfer_command_build(&command, operation_id, *payload,
+						 critical_source_site::operator_repair,
+						 critical_deadline_class::terminal))
+		{
+			errno = EINVAL;
+			return false;
+		}
+		command.accepted_at_usec = wall_now_usec();
+		item_transfer_result result = {};
+		unsigned int result_code = 0;
+		bool mutation_applied = false;
+		if (!critical_command_repository_begin_inbox_in_transaction(connection, command) ||
+		    !item_transfer_repository_execute(connection, command, &result, &result_code,
+						      &mutation_applied) ||
+		    result_code || !mutation_applied ||
+		    !critical_command_repository_finish_item_transfer_in_transaction(
+			    connection, command, result))
+		{
+			if (result_code)
+				errno = static_cast<int>(result_code);
+			return false;
+		}
+		return true;
+	};
+
+	for (size_t requested = 0; requested < item_count; ++requested)
+	{
+		if (!item_uids[requested])
+			continue;
+		current_item reward = {};
+		bool found = false;
+		if (!load_item(connection, item_uids[requested], &reward, &found))
+			return false;
+		if (!found || reward.state == static_cast<uint8_t>(item_custody_state::destroyed))
+			continue;
+		if (reward.state != static_cast<uint8_t>(item_custody_state::active))
+		{
+			errno = ESTALE;
+			return false;
+		}
+		const item_owner_identity owner = { static_cast<item_owner_type>(reward.owner_type),
+						    reward.owner_id, reward.owner_context_id };
+		if (!item_owner_identity_valid(owner) ||
+		    item_owner_identity_equal(owner, destruction))
+		{
+			errno = EINVAL;
+			return false;
+		}
+
+		for (;;)
+		{
+			std::vector<current_item> tree;
+			if (!load_root(connection, reward.root_item_uid, &tree))
+				return false;
+			auto direct_child = std::find_if(
+				tree.begin(), tree.end(), [&](const current_item &candidate)
+				{ return candidate.parent_item_uid == reward.item_uid; });
+			if (direct_child == tree.end())
+				break;
+
+			item_transfer_payload reparent = {};
+			reparent.from_owner = owner;
+			reparent.to_owner = owner;
+			reparent.reason = item_transfer_reason::operator_repair;
+			reparent.reason_id = static_cast<int64_t>(reward.item_uid);
+			reparent.selected_item_uid = direct_child->item_uid;
+			reparent.target_parent_item_uid = reward.parent_item_uid;
+			reparent.target_root_item_uid = reward.parent_item_uid ?
+								reward.root_item_uid :
+								direct_child->item_uid;
+			if (reward.parent_item_uid)
+			{
+				auto parent = std::find_if(
+					tree.begin(), tree.end(), [&](const current_item &candidate)
+					{ return candidate.item_uid == reward.parent_item_uid; });
+				if (parent == tree.end())
+				{
+					errno = ESTALE;
+					return false;
+				}
+				reparent.expected_target_parent_revision = parent->item_revision;
+			}
+			for (const current_item &candidate : tree)
+			{
+				uint64_t ancestor = candidate.item_uid;
+				bool selected = false;
+				for (size_t depth = 0; depth <= tree.size(); ++depth)
+				{
+					if (ancestor == direct_child->item_uid)
+					{
+						selected = true;
+						break;
+					}
+					auto parent = std::find_if(tree.begin(), tree.end(),
+								   [&](const current_item &entry) {
+									   return entry.item_uid ==
+										  ancestor;
+								   });
+					if (parent == tree.end() || !parent->parent_item_uid)
+						break;
+					ancestor = parent->parent_item_uid;
+				}
+				if (!selected)
+					continue;
+				if (reparent.item_count == ITEM_TRANSFER_MAX_ITEMS)
+				{
+					errno = E2BIG;
+					return false;
+				}
+				reparent.items[reparent.item_count++] = {
+					candidate.item_uid,
+					candidate.root_item_uid,
+					candidate.parent_item_uid,
+					candidate.item_revision,
+					candidate.vnum,
+					static_cast<item_custody_state>(candidate.state)
+				};
+			}
+			if (!reparent.item_count || !submit(&reparent))
+				return false;
+		}
+
+		if (!load_item(connection, reward.item_uid, &reward, &found) || !found)
+			return false;
+		item_transfer_payload retire = {};
+		retire.from_owner = owner;
+		retire.to_owner = destruction;
+		retire.reason = item_transfer_reason::destruction;
+		retire.reason_id = static_cast<int64_t>(reward.item_uid);
+		retire.selected_item_uid = reward.item_uid;
+		retire.item_count = 1;
+		retire.items[0] = {
+			reward.item_uid,      reward.root_item_uid, reward.parent_item_uid,
+			reward.item_revision, reward.vnum,	    item_custody_state::active
+		};
+		if (!submit(&retire))
+			return false;
 	}
 	return true;
 }
