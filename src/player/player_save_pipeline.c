@@ -706,12 +706,32 @@ void player_save_pipeline_pulse(void)
 		}
 	}
 	for (size_t index = 0; index < custody_mismatch_count; ++index)
-		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
-				  "custody_payload_mismatch_rejected",
-				  "pid=%d revision=%llu components=%llu destructive_write=0",
-				  custody_mismatches[index].pid,
-				  (unsigned long long)custody_mismatches[index].revision,
-				  (unsigned long long)custody_mismatches[index].components);
+	{
+		bool recapture_scheduled = false;
+		for (P_char ch = character_list; ch; ch = ch->next)
+			if (IS_PC(ch) && GET_PID(ch) == custody_mismatches[index].pid &&
+			    GET_STAT(ch) != STAT_DEAD &&
+			    !IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+			{
+				/* Custody may advance after a snapshot is sealed (for example,
+				 * an item granted during login).  Preserve the rejection, then
+				 * capture the current graph instead of retrying stale bytes or
+				 * requiring the player to issue a manual save. */
+				persistence_schedule_character_save(
+					ch, RENT_CRASH, 2, "custody-mismatch-recapture");
+				recapture_scheduled = true;
+				break;
+			}
+		persistence_alert(
+			AVATAR, "player_save", "redacted", "none", "none",
+			"custody_payload_mismatch_rejected",
+			"pid=%d revision=%llu components=%llu destructive_write=0 "
+			"recapture_scheduled=%d",
+			custody_mismatches[index].pid,
+			(unsigned long long)custody_mismatches[index].revision,
+			(unsigned long long)custody_mismatches[index].components,
+			recapture_scheduled ? 1 : 0);
+	}
 	for (size_t index = 0; index < missing_baseline_count; ++index)
 	{
 		const int32_t pid = missing_baseline[index];
