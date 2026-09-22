@@ -6,6 +6,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -108,9 +109,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 30)
+        self.assertEqual(len(manifest.migrations), 31)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0030_telemetry_quarantine")
+                         "0031_economy_accounting")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -291,6 +292,26 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
             with self.assertRaisesRegex(runner.MigrationContractError,
                                         "does not identify"):
                 runner.validate_production_backup(backup, "other")
+
+    def test_socket_adapter_keeps_no_defaults_first_and_overrides_routing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            client = Path(temporary) / "mysql-arguments"
+            client.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+            client.chmod(0o700)
+            environment = dict(os.environ, DURIS_REAL_MYSQL_CLIENT=str(client),
+                               DB_SOCKET="/tmp/synthetic-restore.sock")
+            for defaults in ([], ["--no-defaults"]):
+                with self.subTest(defaults=defaults):
+                    result = subprocess.run([
+                        "bash", str(ROOT / "scripts/mysql_socket_bin/mysql"),
+                        *defaults, "-h", "ignored-host", "-P3307", "--protocol=tcp",
+                        "--socket=/tmp/ignored.sock", "--user=restore", "-N", "-B",
+                        "duris_restore", "-e", "SELECT 1",
+                    ], env=environment, capture_output=True, text=True, check=True)
+                    self.assertEqual(result.stdout.splitlines(), [
+                        *defaults, "--protocol=socket", "--socket=/tmp/synthetic-restore.sock",
+                        "--user=restore", "-N", "-B", "duris_restore", "-e", "SELECT 1",
+                    ])
 
     def test_local_unix_socket_is_explicit_and_reaches_sealed_verifiers(self):
         manifest = runner.load_manifest()

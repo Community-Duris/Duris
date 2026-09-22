@@ -121,6 +121,12 @@ bool artifact_guild_repository_execute(MYSQL *connection, const critical_command
 				       artifact_guild_result *result, unsigned int *result_code,
 				       bool *mutation_applied)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !result || !result_code || !mutation_applied)
 		return false;
 	artifact_guild_payload payload = {};
