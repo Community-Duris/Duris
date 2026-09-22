@@ -5,6 +5,8 @@
 
 #include <mysql/mysql.h>
 
+struct item_transfer_result;
+
 constexpr size_t CRITICAL_COMMAND_RESULT_MAX_BYTES = 4096;
 constexpr size_t CRITICAL_OUTBOX_PAYLOAD_MAX_BYTES = 65535;
 
@@ -25,5 +27,12 @@ bool critical_command_repository_finish_inbox(
 	MYSQL *connection, const critical_command &command, uint64_t durable_revision,
 	unsigned int result_code, const uint8_t *payload, size_t payload_size,
 	critical_failure_stage failure_stage = critical_failure_stage::none);
+// Transaction-scoped support for compound administrative item operations. The
+// caller owns START/COMMIT/ROLLBACK; these preserve the normal inbox and outbox
+// audit contract around a nested item-transfer repository call.
+bool critical_command_repository_begin_inbox_in_transaction(MYSQL *connection,
+							    const critical_command &command);
+bool critical_command_repository_finish_item_transfer_in_transaction(
+	MYSQL *connection, const critical_command &command, const item_transfer_result &result);
 
 #endif

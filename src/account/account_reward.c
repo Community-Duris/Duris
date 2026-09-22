@@ -4,6 +4,7 @@
 #include "core/utils.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
+#include "item/item_transfer_repository.h"
 #include "account/account_reward.h"
 #include "account/account_reward_config.h"
 #include "account/account_reward_snapshot.h"
@@ -14,6 +15,7 @@
 #include "sql/sql_player.h"
 #endif
 
+#include <algorithm>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -442,6 +444,25 @@ static bool clear_saved_grant(const RewardGrant &grant)
 	snprintf(stable_marker, sizeof(stable_marker), "%s%llu:%s ", ACCOUNT_REWARD_MARKER,
 		 grant.id, grant.account.c_str());
 	std::string stable_q = escape_sql(stable_marker);
+	std::vector<uint64_t> custody_uids;
+	for (P_obj obj = object_list; obj; obj = obj->next)
+		if (grant_marker_matches(obj, grant) && obj->obj_uid)
+			custody_uids.push_back(obj->obj_uid);
+	auto collect_saved_uids = [&](MYSQL_RES *rows) -> bool
+	{
+		if (!rows)
+			return false;
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(rows)) != NULL)
+			if (row[0])
+			{
+				uint64_t uid = strtoull(row[0], NULL, 10);
+				if (uid)
+					custody_uids.push_back(uid);
+			}
+		mysql_free_result(rows);
+		return true;
+	};
 	if (grant.template_version == 0)
 	{
 		char legacy_marker[256];
@@ -449,6 +470,17 @@ static bool clear_saved_grant(const RewardGrant &grant)
 			 grant.account.c_str());
 		std::string legacy_q = escape_sql(legacy_marker),
 			    account_q = escape_sql(grant.account.c_str());
+		if (!collect_saved_uids(db_query(
+			    "SELECT pi.obj_uid FROM player_items pi JOIN player_data pd ON pd.pid=pi.pid WHERE (pd.account_name='%s' OR EXISTS (SELECT 1 FROM account_characters ac WHERE ac.char_name=pd.name AND ac.account_name='%s')) AND (LEFT(pi.name,CHAR_LENGTH('%s'))='%s' OR LEFT(pi.name,CHAR_LENGTH('%s'))='%s') AND pi.vnum=%d FOR UPDATE",
+			    account_q.c_str(), account_q.c_str(), stable_q.c_str(),
+			    stable_q.c_str(), legacy_q.c_str(), legacy_q.c_str(), grant.vnum)))
+			return false;
+		std::sort(custody_uids.begin(), custody_uids.end());
+		custody_uids.erase(std::unique(custody_uids.begin(), custody_uids.end()),
+				   custody_uids.end());
+		if (!item_transfer_repository_revoke_roots_preserving_children(
+			    DB, custody_uids.data(), custody_uids.size()))
+			return false;
 		if (!qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id JOIN player_data pd ON pd.pid=reward.pid SET child.container_id=reward.container_id WHERE (pd.account_name='%s' OR EXISTS (SELECT 1 FROM account_characters ac WHERE ac.char_name=pd.name AND ac.account_name='%s')) AND (LEFT(reward.name,CHAR_LENGTH('%s'))='%s' OR LEFT(reward.name,CHAR_LENGTH('%s'))='%s') AND reward.vnum=%d",
 			 account_q.c_str(), account_q.c_str(), stable_q.c_str(), stable_q.c_str(),
 			 legacy_q.c_str(), legacy_q.c_str(), grant.vnum))
@@ -458,6 +490,16 @@ static bool clear_saved_grant(const RewardGrant &grant)
 			account_q.c_str(), account_q.c_str(), stable_q.c_str(), stable_q.c_str(),
 			legacy_q.c_str(), legacy_q.c_str(), grant.vnum);
 	}
+	if (!collect_saved_uids(db_query(
+		    "SELECT obj_uid FROM player_items WHERE LEFT(name,CHAR_LENGTH('%s'))='%s' FOR UPDATE",
+		    stable_q.c_str(), stable_q.c_str())))
+		return false;
+	std::sort(custody_uids.begin(), custody_uids.end());
+	custody_uids.erase(std::unique(custody_uids.begin(), custody_uids.end()),
+			   custody_uids.end());
+	if (!item_transfer_repository_revoke_roots_preserving_children(DB, custody_uids.data(),
+								       custody_uids.size()))
+		return false;
 	if (!qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id SET child.container_id=reward.container_id WHERE LEFT(reward.name,CHAR_LENGTH('%s'))='%s'",
 		 stable_q.c_str(), stable_q.c_str()))
 		return false;
