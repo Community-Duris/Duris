@@ -450,7 +450,7 @@ bool load_world_corpse_items(MYSQL *connection, const corpse_lifecycle_payload &
 			item.money_item = item.item_type == ITEM_MONEY ||
 					  (item.item_type < 0 && item.vnum == VOBJ_COINS);
 			item.transient = (item.extra_flags & ITEM_TRANSIENT) != 0;
-			item.skipped = item.source_root || item.money_item || item.transient;
+			item.skipped = item.source_root || item.transient;
 			item.artifact = !item.skipped && (item.extra_flags & ITEM_ARTIFACT) != 0;
 			item.adjusted_weight = item.weight;
 			items->push_back(item);
@@ -636,9 +636,9 @@ const physical_item *find_physical_uid(const std::vector<physical_item> &items, 
 	return found == items.end() ? nullptr : &*found;
 }
 
-bool world_item_discarded(const physical_item &item, bool hostile)
+bool world_item_discarded(const physical_item &item)
 {
-	return hostile || item.skipped;
+	return item.skipped;
 }
 
 bool world_item_descends_from(const std::vector<physical_item> &items,
@@ -669,7 +669,7 @@ size_t world_item_depth(const std::vector<physical_item> &items, const physical_
 }
 
 bool fill_world_transfer_items(const std::vector<physical_item> &items,
-			       item_transfer_payload *transfer, bool discarded, bool hostile,
+			       item_transfer_payload *transfer, bool discarded,
 			       uint64_t subtree_uid = 0)
 {
 	std::vector<item_transfer_entry> selected;
@@ -680,7 +680,7 @@ bool fill_world_transfer_items(const std::vector<physical_item> &items,
 		{
 			if (subtree_uid && !world_item_descends_from(items, item, subtree_uid))
 				continue;
-			if (!subtree_uid && world_item_discarded(item, hostile) != discarded)
+			if (!subtree_uid && world_item_discarded(item) != discarded)
 				continue;
 			selected.push_back({ item.item_uid, item.root_item_uid,
 					     item.parent_item_uid, item.item_revision, item.vnum,
@@ -1933,8 +1933,7 @@ bool execute_world_corpse_raise(
 				*result_code = EILSEQ;
 				return rollback_domain(connection);
 			}
-			if (world_item_discarded(item, hostile) !=
-			    world_item_discarded(*parent, hostile))
+			if (world_item_discarded(item) != world_item_discarded(*parent))
 				boundaries.emplace_back(world_item_depth(physical, item),
 							item.item_uid);
 		}
@@ -1959,7 +1958,7 @@ bool execute_world_corpse_raise(
 		detach.expected_from_revision = *room_revision;
 		detach.expected_to_revision = *room_revision;
 		detach.selected_item_uid = boundary_uid;
-		if (!fill_world_transfer_items(physical, &detach, false, hostile, boundary_uid) ||
+		if (!fill_world_transfer_items(physical, &detach, false, boundary_uid) ||
 		    !detach.item_count ||
 		    event_offset > static_cast<uint32_t>(UINT16_MAX) - detach.item_count)
 		{
@@ -1990,7 +1989,7 @@ bool execute_world_corpse_raise(
 	durable.expected_from_revision = *room_revision;
 	durable.expected_to_revision = hostile ? 0 : *pet_revision;
 	durable.multi_root = true;
-	if (!hostile && !fill_world_transfer_items(physical, &durable, false, false))
+	if (!hostile && !fill_world_transfer_items(physical, &durable, false))
 		return false;
 	collector_item_boundary_repository_plan collector_plan;
 	if (!hostile && durable.item_count &&
@@ -2034,6 +2033,17 @@ bool execute_world_corpse_raise(
 		durable_result.from_owner_revision = *room_revision;
 		durable_result.to_owner_revision = *pet_revision;
 	}
+	else
+	{
+		durable_result.from_owner_revision = *room_revision;
+		for (const physical_item &item : physical)
+			if (!world_item_discarded(item))
+			{
+				++durable_result.item_count;
+				durable_result.max_item_revision =
+					std::max(durable_result.max_item_revision, item.item_revision);
+			}
+	}
 
 	item_transfer_payload discarded = {};
 	discarded.from_owner = room;
@@ -2043,7 +2053,7 @@ bool execute_world_corpse_raise(
 	discarded.expected_from_revision = *room_revision;
 	discarded.expected_to_revision = *destruction_revision;
 	discarded.multi_root = true;
-	if (!fill_world_transfer_items(physical, &discarded, true, hostile) ||
+	if (!fill_world_transfer_items(physical, &discarded, true) ||
 	    !discarded.item_count ||
 	    event_offset > static_cast<uint32_t>(UINT16_MAX) - discarded.item_count)
 	{

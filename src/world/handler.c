@@ -3625,7 +3625,7 @@ bool validate_corpse_release_items(P_obj corpse, const corpse_lifecycle_result &
 
 bool collect_world_corpse_raise_items(P_obj item, const item_owner_identity &room_owner,
 				      uint64_t source_uid, uint64_t parent_uid, bool root,
-				      bool hostile, std::vector<uint64_t> *durable,
+				      std::vector<uint64_t> *durable,
 				      std::vector<uint64_t> *discarded)
 {
 	if (!item || !item->obj_uid || !durable || !discarded)
@@ -3636,8 +3636,7 @@ bool collect_world_corpse_raise_items(P_obj item, const item_owner_identity &roo
 	    runtime.root_item_uid != source_uid || runtime.parent_item_uid != parent_uid ||
 	    runtime.state != item_custody_state::active || runtime.vnum != OBJ_VNUM(item))
 		return false;
-	const bool destroy = root || hostile || GET_ITEM_TYPE(item) == ITEM_MONEY ||
-			     IS_SET(item->extra_flags, ITEM_TRANSIENT);
+	const bool destroy = root || IS_SET(item->extra_flags, ITEM_TRANSIENT);
 	try
 	{
 		(destroy ? discarded : durable)->push_back(item->obj_uid);
@@ -3648,12 +3647,12 @@ bool collect_world_corpse_raise_items(P_obj item, const item_owner_identity &roo
 	}
 	for (P_obj child = item->contains; child; child = child->next_content)
 		if (!collect_world_corpse_raise_items(child, room_owner, source_uid,
-						 item->obj_uid, false, hostile, durable, discarded))
+						 item->obj_uid, false, durable, discarded))
 			return false;
 	return true;
 }
 
-bool collect_world_corpse_raise_items(P_obj corpse, int32_t room_vnum, bool hostile,
+bool collect_world_corpse_raise_items(P_obj corpse, int32_t room_vnum,
 				      std::vector<uint64_t> *durable,
 				      std::vector<uint64_t> *discarded,
 				      item_ownership_runtime_entry *root_runtime)
@@ -3670,7 +3669,7 @@ bool collect_world_corpse_raise_items(P_obj corpse, int32_t room_vnum, bool host
 	    root_runtime->root_item_uid != corpse->obj_uid || root_runtime->parent_item_uid ||
 	    root_runtime->state != item_custody_state::active)
 		return false;
-	if (!collect_world_corpse_raise_items(corpse, room, corpse->obj_uid, 0, true, hostile,
+	if (!collect_world_corpse_raise_items(corpse, room, corpse->obj_uid, 0, true,
 					      durable, discarded))
 		return false;
 	std::sort(durable->begin(), durable->end());
@@ -4093,7 +4092,7 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	const bool source_items_valid =
 		corpse &&
 		(world_raise ?
-			 collect_world_corpse_raise_items(corpse, payload.room_vnum, context.hostile,
+			 collect_world_corpse_raise_items(corpse, payload.room_vnum,
 						  &durable_uids, &discarded_uids,
 						  &root_runtime) &&
 				 durable_uids.size() == result.item_count &&
@@ -4144,7 +4143,7 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	complete_corpse_raise_after_commit(caster, follower, corpse, context.kind, context.level,
 				   context.variant, context.message, payload.pet_uid,
 				   context.hostile, payload.pet_charm_duration,
-				   payload.pet_restore_state, world_raise && context.hostile);
+				   payload.pet_restore_state, world_raise);
 }
 
 P_obj find_resurrection_item(P_char target, const item_owner_identity &owner)
@@ -4714,7 +4713,7 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 						     static_cast<uint64_t>(GET_PID(caster)), 0 };
 		uint64_t player_revision = 0;
 		uint64_t room_revision = 0;
-		if (!collect_world_corpse_raise_items(corpse, world[corpse_room].number, hostile,
+		if (!collect_world_corpse_raise_items(corpse, world[corpse_room].number,
 						      &durable_uids, &discarded_uids,
 						      &root_runtime) ||
 		    !item_ownership_runtime_owner_revision(root_runtime.owner, &room_revision) ||

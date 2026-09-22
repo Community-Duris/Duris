@@ -1665,8 +1665,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 	    expected_items.size() != durable_uids.size() + discarded_uids.size() ||
 	    !expected_sorted || !sorted_unique_uids(durable_uids) ||
 	    !sorted_unique_uids(discarded_uids) ||
-	    !std::binary_search(discarded_uids.begin(), discarded_uids.end(), source_uid) ||
-	    (hostile && !durable_uids.empty()))
+	    !std::binary_search(discarded_uids.begin(), discarded_uids.end(), source_uid))
 		return flatfile_item_repository_result::invalid;
 	*mutation = {};
 	for (size_t index = 0; index < expected_items.size(); ++index)
@@ -1879,6 +1878,19 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 		++pet_owner->revision;
 		durable_result.from_owner_revision = room_owner->revision;
 		durable_result.to_owner_revision = pet_owner->revision;
+	}
+	else
+	{
+		durable_result.from_owner_revision = room_owner->revision;
+		durable_result.item_count = static_cast<uint16_t>(durable_uids.size());
+		for (uint64_t uid : durable_uids)
+		{
+			const auto *item = find_item(&catalog, uid);
+			if (!item || !item_owner_identity_equal(item->owner, room))
+				return flatfile_item_repository_result::invalid;
+			durable_result.max_item_revision =
+				std::max(durable_result.max_item_revision, item->item_revision);
+		}
 	}
 
 	item_transfer_payload discarded = {};

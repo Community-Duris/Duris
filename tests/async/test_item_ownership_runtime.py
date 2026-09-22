@@ -363,7 +363,7 @@ int main()
 	world_raised.catalog_revision = 7;
 	world_raised.corpse_owner_revision = 7;
 	world_raised.pet_owner_revision = 1;
-	world_raised.max_item_revision = 5;
+	world_raised.max_item_revision = 6;
 	world_raised.item_count = 2;
 	world_raised.destruction_owner_revision = 3;
 	world_raised.max_discarded_item_revision = 7;
@@ -382,7 +382,7 @@ int main()
 	       absent.owner_revision == 1);
 	assert(item_ownership_runtime_lookup(1002, &absent) &&
 	       item_owner_identity_equal(absent.owner, world_pet) && absent.root_item_uid == 1001 &&
-	       absent.parent_item_uid == 1001 && absent.item_revision == 5);
+	       absent.parent_item_uid == 1001 && absent.item_revision == 6);
 	assert(item_ownership_runtime_lookup(1000, &absent) &&
 	       item_owner_identity_equal(absent.owner, destruction) &&
 	       absent.state == item_custody_state::destroyed && absent.item_revision == 2);
@@ -403,26 +403,36 @@ int main()
 		  item_custody_state::active },
 		{ 1101, 1100, 1100, hostile_world_room, 5, 4, 5,
 		  item_custody_state::active },
+		{ 1102, 1100, 1101, hostile_world_room, 7, 4, 7,
+		  item_custody_state::active },
 	};
-	assert(item_ownership_runtime_hydrate_batch(hostile_world_items, 2));
+	assert(item_ownership_runtime_hydrate_batch(hostile_world_items, 3));
 	corpse_lifecycle_result hostile_world_raised = {};
 	hostile_world_raised.save_id = 1100;
 	hostile_world_raised.action = corpse_lifecycle_action::raise_world_follower;
-	hostile_world_raised.catalog_revision = 5;
-	hostile_world_raised.corpse_owner_revision = 5;
+	hostile_world_raised.catalog_revision = 7;
+	hostile_world_raised.corpse_owner_revision = 7;
 	hostile_world_raised.destruction_owner_revision = 1;
-	hostile_world_raised.max_discarded_item_revision = 6;
+	hostile_world_raised.max_item_revision = 6;
+	hostile_world_raised.item_count = 1;
+	hostile_world_raised.max_discarded_item_revision = 9;
 	hostile_world_raised.discarded_item_count = 2;
 	assert(item_ownership_runtime_apply_world_corpse_raise(
-		1100, 801, 76, 0, {}, { 1100, 1101 }, hostile_world_raised));
+		1100, 801, 76, 0, { 1101 }, { 1100, 1102 }, hostile_world_raised));
 	assert(item_ownership_runtime_lookup(1100, &absent) &&
 	       item_owner_identity_equal(absent.owner, destruction) &&
 	       absent.state == item_custody_state::destroyed && absent.item_revision == 3);
 	assert(item_ownership_runtime_lookup(1101, &absent) &&
+	       item_owner_identity_equal(absent.owner, hostile_world_room) &&
+	       absent.state == item_custody_state::active && absent.root_item_uid == 1101 &&
+	       absent.parent_item_uid == 0 && absent.item_revision == 6 &&
+	       absent.owner_revision == 7);
+	assert(item_ownership_runtime_lookup(1102, &absent) &&
 	       item_owner_identity_equal(absent.owner, destruction) &&
-	       absent.state == item_custody_state::destroyed && absent.item_revision == 6);
+	       absent.state == item_custody_state::destroyed && absent.root_item_uid == 1102 &&
+	       absent.parent_item_uid == 0 && absent.item_revision == 9);
 	assert(item_ownership_runtime_owner_revision(hostile_world_room, &owner_revision) &&
-	       owner_revision == 5);
+	       owner_revision == 7);
 
 	item_ownership_runtime_reset();
 	const item_owner_identity nested_corpse = {

@@ -784,13 +784,13 @@ void test_equipped_world_corpse_raise()
 	const critical_command command = command_for(payload);
 	const applied_corpse applied = apply_success(command);
 	assert(applied.result.action == corpse_lifecycle_action::raise_world_follower &&
-	       applied.result.catalog_revision == 5 &&
-	       applied.result.corpse_owner_revision == 5 &&
-	       applied.result.pet_owner_revision == 1 && applied.result.item_count == 3 &&
+		       applied.result.catalog_revision == 6 &&
+		       applied.result.corpse_owner_revision == 6 &&
+		       applied.result.pet_owner_revision == 1 && applied.result.item_count == 4 &&
 	       applied.result.max_item_revision == 7 &&
 	       applied.result.destruction_owner_revision ==
 		       owner_revision({ item_owner_type::destruction, 0, 0 }) &&
-	       applied.result.discarded_item_count == 3 &&
+	       applied.result.discarded_item_count == 2 &&
 	       applied.result.max_discarded_item_revision == 7 &&
 	       !applied.result.wallet_revision && !applied.result.player_owner_revision);
 	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid BETWEEN " +
@@ -802,7 +802,9 @@ void test_equipped_world_corpse_raise()
 		      std::to_string(PLAYER) + " AND pet_uid=" + std::to_string(ROOT_UID)) == 1);
 	assert(scalar("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid IN (" +
 		      std::to_string(ORDINARY_UID) + "," + std::to_string(NO_TAKE_UID) + "," +
-		      std::to_string(NO_SHOW_UID) + ")") == 3);
+		      std::to_string(NO_SHOW_UID) + "," + std::to_string(MONEY_UID) + ")") == 4);
+	assert(text("SELECT CONCAT(value0,':',value1,':',value2,':',value3) FROM "
+		    "player_pet_items WHERE obj_uid=" + std::to_string(MONEY_UID)) == "1:2:3:4");
 	assert(text("SELECT CONCAT(root_item_uid,':',COALESCE(parent_item_uid,0),':',"
 		    "owner_type,':',owner_id,':',owner_context_id,':',item_revision,':',state) "
 		    "FROM item_current_owner WHERE item_uid=" +
@@ -821,7 +823,7 @@ void test_equipped_world_corpse_raise()
 		    "item_revision) ORDER BY item_uid) FROM item_current_owner WHERE item_uid IN (" +
 		    std::to_string(ROOT_UID) + "," + std::to_string(TRANSIENT_UID) + "," +
 		    std::to_string(MONEY_UID) + ")") ==
-	       "900000001:8:2:6,900000005:8:2:7,900000006:8:2:6");
+	       "900000001:8:2:6,900000005:8:2:7,900000006:11:1:7");
 	assert_exact_replay(command, applied);
 	assert_outbox(command, false);
 }
@@ -830,7 +832,7 @@ void test_hostile_equipped_world_corpse_raise()
 {
 	constexpr uint32_t PLAYER = 2147000612U;
 	constexpr int32_t ROOM = 4112;
-	constexpr uint64_t ROOT_UID = 901000001, GEAR_UID = 901000002;
+	constexpr uint64_t ROOT_UID = 901000001, GEAR_UID = 901000002, MONEY_UID = 901000003;
 	const item_owner_identity room_owner = { item_owner_type::room, ROOM, 0 };
 	const item_owner_identity player_owner = { item_owner_type::player, PLAYER, 0 };
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
@@ -847,8 +849,13 @@ void test_hostile_equipped_world_corpse_raise()
 		"weight,wear_flags,name,short_descr) VALUES('hostile-world-raise-gear'," +
 		std::to_string(ROOM) + ",5,9," + std::to_string(root_row) + "," +
 		std::to_string(GEAR_UID) + ",2,0,'no-take armor','some no-take armor')");
+	execute("INSERT INTO saved_items(item_key,room_vnum,vnum,item_type,container_id,obj_uid,"
+		"weight,value0,value1,value2,value3,name,short_descr) VALUES('hostile-world-coins'," +
+		std::to_string(ROOM) + ",3,20," + std::to_string(root_row) + "," +
+		std::to_string(MONEY_UID) + ",0,9,8,7,6,'coins','some coins')");
 	seed_authority(ROOT_UID, ROOT_UID, 0, 2, room_owner, INITIAL_ITEM_REVISION);
 	seed_authority(GEAR_UID, ROOT_UID, ROOT_UID, 5, room_owner, INITIAL_ITEM_REVISION);
+	seed_authority(MONEY_UID, ROOT_UID, ROOT_UID, 3, room_owner, INITIAL_ITEM_REVISION);
 	const uint64_t destruction_before = owner_revision(destruction);
 
 	corpse_lifecycle_payload payload = {};
@@ -864,14 +871,21 @@ void test_hostile_equipped_world_corpse_raise()
 	const critical_command command = command_for(payload);
 	const applied_corpse applied = apply_success(command);
 	assert(applied.result.action == corpse_lifecycle_action::raise_world_follower &&
-	       applied.result.catalog_revision == 2 &&
-	       applied.result.corpse_owner_revision == 2 && !applied.result.pet_owner_revision &&
-	       !applied.result.item_count && !applied.result.max_item_revision &&
+	       applied.result.catalog_revision == 4 &&
+	       applied.result.corpse_owner_revision == 4 && !applied.result.pet_owner_revision &&
+	       applied.result.item_count == 2 &&
+	       applied.result.max_item_revision == INITIAL_ITEM_REVISION + 1 &&
 	       applied.result.destruction_owner_revision == destruction_before + 1 &&
-	       applied.result.discarded_item_count == 2 &&
+	       applied.result.discarded_item_count == 1 &&
 	       applied.result.max_discarded_item_revision == INITIAL_ITEM_REVISION + 1);
-	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid IN (" +
-		      std::to_string(ROOT_UID) + "," + std::to_string(GEAR_UID) + ")") == 0);
+	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid=" +
+		      std::to_string(ROOT_UID)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid=" +
+		      std::to_string(GEAR_UID) + " AND container_id IS NULL AND room_vnum=" +
+		      std::to_string(ROOM)) == 1);
+	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid=" +
+		      std::to_string(MONEY_UID) + " AND container_id IS NULL AND room_vnum=" +
+		      std::to_string(ROOM) + " AND value0=9 AND value1=8 AND value2=7 AND value3=6") == 1);
 	assert(scalar("SELECT COUNT(*) FROM player_pets WHERE owner_pid=" +
 		      std::to_string(PLAYER)) == 0);
 	assert(scalar("SELECT COUNT(*) FROM player_items WHERE obj_uid=" +
@@ -879,9 +893,12 @@ void test_hostile_equipped_world_corpse_raise()
 	assert(scalar("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid=" +
 		      std::to_string(GEAR_UID)) == 0);
 	assert(text("SELECT GROUP_CONCAT(CONCAT(item_uid,':',owner_type,':',state,':',"
-		    "item_revision) ORDER BY item_uid) FROM item_current_owner WHERE item_uid IN (" +
-		    std::to_string(ROOT_UID) + "," + std::to_string(GEAR_UID) + ")") ==
-	       "901000001:8:2:6,901000002:8:2:6");
+		    "item_revision,':',root_item_uid,':',parent_item_uid) ORDER BY item_uid) "
+		    "FROM item_current_owner WHERE item_uid IN (" +
+		    std::to_string(ROOT_UID) + "," + std::to_string(GEAR_UID) + "," +
+		    std::to_string(MONEY_UID) + ")") ==
+	       "901000001:8:2:6:901000001:0,901000002:3:1:6:901000002:0,"
+	       "901000003:3:1:6:901000003:0");
 	assert_exact_replay(command, applied);
 	assert_outbox(command, false);
 }

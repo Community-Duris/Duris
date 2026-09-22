@@ -205,10 +205,12 @@ assert "(!payload.destination_player_pid && world[room].number != payload.room_v
 assert "publish_corpse_wallet" in raise_publication
 assert "publish_corpse_wallet" in resurrection_publication
 assert "publish_corpse_wallet" in nested_publication
-assert "discard_nested_money" in raise_completion
+assert "discard_nested_raise_exclusions" in raise_completion
+assert "preserve_coin_piles" in raise_completion
 assert "corpse_raise_exceeds_carry_capacity" in raise_completion
 assert "The recovered equipment leaves you overburdened" in raise_completion
-assert "obj_to_char_at_end(item, pet_uid ? follower : caster)" in raise_completion
+assert "obj_to_char_at_end(item, (pet_uid || hostile) ? follower : caster)" in raise_completion
+assert "else if (destroy_equipment)" not in raise_completion
 assert "writeCharacter(caster, RENT_CRASH" in raise_completion
 assert "source_items_valid" in raise_publication
 assert "recover_corpse_raise_items" in HANDLER
