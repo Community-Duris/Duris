@@ -2715,6 +2715,11 @@ void death_extract_retry_pulse(void)
 static void hold_for_death_extract_retry(P_char ch)
 {
 	GET_HIT(ch) = 1;
+	// The real corpse already represents this death in the room. Keep the
+	// fail-closed player state alive for persistence recovery, but do not leave a
+	// second, lootable-looking body in the world while the terminal save retries.
+	if (ch->in_room != NOWHERE)
+		char_from_room(ch);
 	SET_POS(ch, GET_POS(ch) + STAT_DEAD);
 }
 

@@ -107,6 +107,15 @@ checks.append((
     die.index("persistence_save_character_terminal(ch, RENT_DEATH)") <
     die.index("GET_HIT(ch) = 1;")
 ))
+checks.append((
+    "the retained recovery state is hidden behind the real corpse",
+    contains(body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{"),
+             "if (ch->in_room != NOWHERE)\n\t\tchar_from_room(ch);") and
+    body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{").index(
+        "char_from_room(ch);") <
+    body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{").index(
+        "SET_POS(ch, GET_POS(ch) + STAT_DEAD);")
+))
 schedule = body(
     fight,
     "static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)",
@@ -319,7 +328,7 @@ fallback_source.write_text(r"""
 #include <cstdint>
 #include <cstddef>
 struct pc_only_data { uint64_t death_retry_corpse_uid = 0, death_retry_due_usec = 0; int death_retry_delay = 0; };
-struct char_data { struct { pc_only_data *pc; } only; char_data *next = nullptr; int hit = 0, stat = 0; };
+struct char_data { struct { pc_only_data *pc; } only; char_data *next = nullptr; int hit = 0, stat = 0, in_room = 7; };
 using P_char = char_data *;
 using P_obj = void *;
 using nevent_schedule_result = bool;
@@ -331,6 +340,7 @@ using nevent_schedule_result = bool;
 #define SET_POS(ch, value) ((ch)->stat = (value))
 #define STAT_NORMAL 0
 #define STAT_DEAD 1
+#define NOWHERE -1
 #define AVATAR 0
 #define WAIT_SEC 4
 #define DEATH_EXTRACT_RETRY_INITIAL 4
@@ -340,6 +350,7 @@ uint64_t persistence_observability_now_usec() { return now_usec; }
 bool accept_event = false;
 bool add_event(void (*)(P_char,P_char,P_obj,void*), int, P_char, P_char, P_obj, int, const void*, size_t) { return accept_event; }
 void persistence_alert(int, const char*, const char*, const char*, const char*, const char*, const char*, ...) {}
+void char_from_room(P_char ch) { ch->in_room = NOWHERE; }
 P_char character_list = nullptr;
 struct death_extract_retry_context { int delay; uint64_t corpse_uid; };
 static bool death_retry_fallback_pending = false;
@@ -360,7 +371,7 @@ int main() {
     char_data ch{{&pc}};
     character_list = &ch;
     schedule_death_extract_retry(&ch, 999, 4);
-    assert(ch.stat == STAT_DEAD && death_retry_fallback_pending);
+    assert(ch.stat == STAT_DEAD && ch.in_room == NOWHERE && death_retry_fallback_pending);
     death_extract_retry_pulse();
     assert(attempts == 0);
     now_usec += 1000000;
