@@ -2367,7 +2367,7 @@ void AddDeadChar(P_char);
 void AddDeadObj(P_obj);
 void game_loop(int, int);
 void game_up_message(int);
-void run_the_game(int, int);
+int run_the_game(int, int);
 
 /* sparser.c */
 
