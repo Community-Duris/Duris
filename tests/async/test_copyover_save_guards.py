@@ -65,8 +65,11 @@ checks = {
         "exit(1);" not in comm[comm.index("else if (copyover_boot)"):
                                comm.index("else", comm.index("else if (copyover_boot)") + 5)],
     "copyover defers SQL corpse restoration":
-        "if (!is_copyover_boot())" in db[db.index("-- Player corpses") - 500:
-                                          db.index("Reloading SavedItems")],
+        "if (!copyover_boot)" in db[db.index("-- Player corpses") - 500:
+                                     db.index("Reloading SavedItems")],
+    "copyover defers SQL saved-ground restoration":
+        "if (!copyover_boot)" in db[db.index("Saved ground/storage objects"):
+                                     db.index("-- Shopkeepers")],
     "shutdown drain is fail closed": "!player_save_pipeline_drain(3000)" in comm and
                                       "pipeline_drain_failed" in comm,
     "no destructive restart fallback": "refusing fallback exit" in comm,

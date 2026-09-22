@@ -723,21 +723,25 @@ void boot_db(int mini_mode)
 		 * corpses.  Loading SQL corpses first materializes their stable child UIDs
 		 * under a newly allocated root and makes recovery reject the same children
 		 * as duplicates.  A cold boot still restores the durable SQL image. */
-		if (!is_copyover_boot())
+		if (!copyover_boot)
 		{
 			fprintf(stderr, "-- Player corpses\n");
 			logit(LOG_STATUS, "Reloading Player corpses.");
 			restoreCorpses();
 		}
 
-		logit(LOG_STATUS, "Reloading SavedItems.");
-		restoreSavedItems();
+		/* Saved ground/storage objects are in the same copyover world graph. */
+		if (!copyover_boot)
+		{
+			logit(LOG_STATUS, "Reloading SavedItems.");
+			restoreSavedItems();
+		}
 
 		fprintf(stderr, "-- Shopkeepers\n");
 		logit(LOG_STATUS, "Reloading Shopkeepers.");
 		// Current copyovers commit full shop stock before handoff. Legacy files
 		// only have their live NPC inventory; Redis never stores shop stock.
-		if (!is_copyover_boot() || copyover_has_durable_shopkeepers() ||
+		if (!copyover_boot || copyover_has_durable_shopkeepers() ||
 		    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 			restore_shopkeepers();
 		remember_boot_shopkeepers();
@@ -752,7 +756,7 @@ void boot_db(int mini_mode)
 		logit(LOG_STATUS, "Setting up player-side artifact list.");
 		setupMortArtiList_sql();
 		// skip loading artifacts from db during copyover - they're restored from copyover.dat
-		if (!is_copyover_boot())
+		if (!copyover_boot)
 		{
 			/* Redis recovery owns floor materialization when its validated generation
 			 * is active. Loading the legacy vnum-only artifact row first would create
