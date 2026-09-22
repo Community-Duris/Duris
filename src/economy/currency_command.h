@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 
 constexpr uint16_t CURRENCY_COMMAND_PAYLOAD_VERSION = 1;
 constexpr size_t CURRENCY_ACCOUNT_NAME_MAX_BYTES = 50;
@@ -58,6 +59,48 @@ struct currency_command_result
 	uint64_t wallet_revision;
 	uint64_t bank_revision;
 };
+
+// Preserve each backend's existing revision policy while sharing arithmetic.
+enum class currency_revision_policy : uint8_t
+{
+	sql_legacy,
+	flatfile_legacy,
+};
+
+class currency_prepared_mutation
+{
+    public:
+	const currency_command_payload &payload() const { return payload_; }
+	const currency_command_result &before() const { return before_; }
+	const currency_command_result &after() const { return after_; }
+
+    private:
+	currency_command_payload payload_;
+	currency_command_result before_;
+	currency_command_result after_;
+	currency_prepared_mutation(const currency_command_payload &payload,
+				   const currency_command_result &before,
+				   const currency_command_result &after)
+		: payload_(payload)
+		, before_(before)
+		, after_(after)
+	{
+	}
+	friend unsigned int currency_prepare_mutation(const currency_command_payload &,
+						      const currency_command_result &, uint64_t,
+						      uint64_t, currency_revision_policy,
+						      std::optional<currency_prepared_mutation> *);
+};
+
+// Pure preparation after identity checks and authoritative reads. Returns an
+// errno-style policy result; failure leaves output unchanged. Both revisions
+// advance on success, including the balance with no denomination change.
+unsigned int currency_prepare_mutation(const currency_command_payload &payload,
+				       const currency_command_result &before,
+				       uint64_t expected_wallet_revision,
+				       uint64_t expected_bank_revision,
+				       currency_revision_policy revision_policy,
+				       std::optional<currency_prepared_mutation> *prepared);
 
 bool currency_account_key(const char *account_name, uint8_t racewar, critical_entity_key *key);
 bool currency_command_is_rebasable_wallet_reward(const currency_command_payload &payload);

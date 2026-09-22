@@ -12,9 +12,15 @@ if [[ "$DB_SOCKET" != /* ]]; then
   exit 2
 fi
 
+# MySQL/MariaDB require --no-defaults before connection options.
+defaults=()
 arguments=()
 while (( $# > 0 )); do
   case "$1" in
+    --no-defaults)
+      defaults=(--no-defaults)
+      shift
+      ;;
     -h|-P|--host|--port|--protocol|--socket)
       if (( $# < 2 )); then
         echo "mysql connection option is missing its value" >&2
@@ -32,5 +38,5 @@ while (( $# > 0 )); do
   esac
 done
 
-exec "$DURIS_REAL_MYSQL_CLIENT" --protocol=socket --socket="$DB_SOCKET" \
+exec "$DURIS_REAL_MYSQL_CLIENT" "${defaults[@]}" --protocol=socket --socket="$DB_SOCKET" \
   "${arguments[@]}"
