@@ -1385,6 +1385,12 @@ bool player_death_restitution_repository_execute(MYSQL *connection, const critic
 						 player_death_restitution_result *result,
 						 unsigned int *result_code, bool *mutation_applied)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !result || !result_code || !mutation_applied)
 		return false;
 	*result = {};
@@ -1598,6 +1604,9 @@ critical_apply_result
 player_death_restitution_repository_apply_in_transaction(MYSQL *connection,
 							 const critical_command &command)
 {
+	if (!critical_command_legacy_execution_supported(command))
+		return { critical_apply_outcome::retryable_failure, 0, EPROTONOSUPPORT };
+
 	player_death_restitution_result result = {};
 	unsigned int result_code = 0;
 	bool mutation_applied = false;

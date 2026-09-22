@@ -478,6 +478,16 @@
       "verify": "immutable/0030_telemetry_quarantine.sh",
       "verify_checksum": "5c85232132f1e1e0d05e469f5d752454e07361e50360b387635d200cc060e1cf",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0031_economy_accounting",
+      "sequence": 31,
+      "description": "Add economic evidence and retained epoch and account lifetime identities",
+      "apply": "immutable/0031_economy_accounting.sql",
+      "apply_checksum": "f19f74eecbb63b7986613a0eb1ad79f96c3f9e7ab5c654afb69a18430a1f4e95",
+      "verify": "immutable/0031_economy_accounting.sh",
+      "verify_checksum": "674b39f13915320eeddc158cc47ad88128ec38fb8ba05afb619972d4af8ad911",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }
