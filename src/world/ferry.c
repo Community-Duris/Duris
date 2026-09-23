@@ -109,16 +109,18 @@ void Ferry::init()
 
 			if (!automat)
 			{
-				logit(LOG_DEBUG, "Can't find ferry ticket automat object (%d)!",
-				      FERRY_AUTOMAT_OBJ);
-				break;
+				fprintf(stderr,
+					"   %s        %s-> can't find ferry ticket automat object (%d)!\r\n",
+					name.c_str(), route[i].name(), FERRY_AUTOMAT_OBJ);
 			}
-
-			automat->value[0] = id;
-			automat->value[1] = ticket_price;
-			automat->value[2] = i;
-			obj_to_room(automat, route[i].dest_room);
-			obj_index[automat->R_num].func.obj = ferry_automat_proc;
+			else
+			{
+				automat->value[0] = id;
+				automat->value[1] = ticket_price;
+				automat->value[2] = i;
+				obj_to_room(automat, route[i].dest_room);
+				obj_index[automat->R_num].func.obj = ferry_automat_proc;
+			}
 		}
 
 		bool found_path = dijkstra(route[i].dest_room,
