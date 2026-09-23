@@ -30,12 +30,13 @@ listener, no tunnel and no website Redis.
 - Players connect to `mud.duris.sbs:4000` for plain telnet and
   `mud.duris.sbs:4001` for TLS. `.env` sets `DURIS_PRODUCTION_PORT=4000`,
   `DURIS_TLS_PORT=4001` and `LISTEN_ADDRESS=178.156.165.10`.
-- The checkout is `/home/duris-staging/duris`, on the local branch
-  `codex/rollback-sbs-20260923`. That branch is `a6a2124c1` plus these
-  cherry-picks:
-  - `0695680df`: the port change
-  - `01f401b5a`: the login mode banner (`be50f6c0e` on `master`)
-  - `dbc3e5e34`, `4958a654f` and `afdee58cc`: the Stromvok ferry from #618
+- The checkout is `/home/duris-staging/duris`, on `master` at the tag
+  `staging-2026-09-23-1248` since 12:59. Staging deploys tagged `master`
+  commits; the steps are in
+  [2026-09-23-master-vs-master-stable.md](2026-09-23-master-vs-master-stable.md#staging-deploy).
+  Before that it ran the local branch `codex/rollback-sbs-20260923`, now
+  archived as the tag `archive/staging-20260923`: `a6a2124c1` plus
+  cherry-picks of the port change, the login banner and the Stromvok ferry.
 - `.env` sets `DURIS_STAGING=TRUE`, so the login screen shows
   `*** STAGING | CHAOS | ALL-RACES | ALL-CLASSES ***`, blinking, above the
   account-name prompt. The server is built with

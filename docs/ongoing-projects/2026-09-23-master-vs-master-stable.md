@@ -1,173 +1,262 @@
 # `master` and `codex/master-stable`: branch history and staging
 
-Status: findings and plan, 2026-09-23, updated about 11:30. This explains which
-code staging and production run, how staging came to run `codex/master-stable`
-instead of `master`, and how to bring the lines back together. Times are UTC.
-Liskin's commits are recorded at -0600 and have been converted.
+Status: done for staging, 2026-09-23. `codex/master-stable` was merged into
+`master` through [#625](https://github.com/Community-Duris/Duris/pull/625), and
+staging has run the tag `staging-2026-09-23-1248` since 12:59. Production is
+on hold. Times are UTC; Liskin's commit timestamps use -0600 and have been
+converted.
 
 The staging move itself is recorded in
 [2026-09-23-server-environments.md](2026-09-23-server-environments.md).
 
-## The two branches
+## Summary
 
-- **`master`** is the shared main line where PRs land. Production deploys from
-  it. Production's checkout is still `440248b17`, dated 2026-09-18, which is 144
-  commits behind `master` (as of `33837a300`).
-- **`codex/master-stable`** is Liskin's stabilization branch.
-  - It starts with `b839cadbd` at 2026-09-22 02:24 and runs through
-    `72238a8f5` at 2026-09-23 04:37.
-  - It holds 27 commits by Liskin, 24 regular commits and 3 merges, plus two
-    cherry-picks from `master`: the port change `f2a1bcf18` and the banner
-    `3403c1db9`.
-  - Almost all of Liskin's commits concern item custody, copyover and death
-    recovery: atomic item transfers, corpse custody across copyover, recapturing
-    saves after custody races, and disputed-death handling.
-  - It has merged `master` twice: `e30e4a8e0` at 2026-09-22 12:43 and
-    `16582e101` at 2026-09-23 03:56.
-  - None of Liskin's commits has reached `master`, and none went through a PR.
-    The branch is effectively staging's code line.
+- Four code lines had drifted apart: `master`, Liskin's `codex/master-stable`,
+  staging's local rollback branch and production's old checkout.
+- The way back was one merge of `codex/master-stable` into `master`. Staging
+  now runs tagged `master` commits, and production follows when the owner
+  decides.
+- The open incidents, #621, #622 and #623, were already present in the code
+  staging ran. The merge covers only the death-path part of #622 and makes
+  none of them worse. They block production, not the staging deploy.
 
-## What staging ran on Plesk
+## Progress
 
-These events come from the Plesk checkout's reflog, `bin/server/history` and the
-incident records under `~/.local/state/duris-incidents`. The reflog does not say
-who ran each step.
+- [x] Archive staging's exact head on `origin` as the tag
+  `archive/staging-20260923` (`afdee58cc`, tree `c0686f32d`, the same tree as
+  the staging checkout).
+- [x] Find out why the `72238a8f5` build was held. See
+  [The held build](#the-held-build).
+- [x] Merge `codex/master-stable` into `master` on `integrate/master-stable`,
+  resolve the eight conflicts and format the merged code.
+- [x] Review the commits that staging hasn't run yet.
+- [x] Validate locally: build, `make test-all`, `make test-db` and the extra
+  database legs. See [Validation](#validation).
+- [x] Merge [#625](https://github.com/Community-Duris/Duris/pull/625). It
+  landed at 12:48 as a fast-forward, so `master` is `36e44f172` and contains
+  all of `codex/master-stable`.
+- [x] Deploy the tag `staging-2026-09-23-1248` (`36e44f172`) to staging and
+  smoke-test it. See [Staging deploy](#staging-deploy).
+- [x] Production decision: hold. See [Production](#production).
 
-| When | What happened |
-| --- | --- |
-| 2026-09-22, before 12:47 | Staging ran `master`. At 05:30, `feed29391` ("Ignore private/ incident recovery working sets") was committed on the staging checkout and later reached `master`. |
-| 2026-09-22 06:37–06:55 | Staging crashed with SIGABRT on reboot twice: the `20260922-reboot-sigabrt` and `20260922-final-legacy-reboot-sigabrt` incident records, each with a gdb backtrace. A custody recovery was also performed: `20260922-custody-recovery`. |
-| 2026-09-22 12:47 | The checkout switched from `master` to `codex/master-stable` at `e30e4a8e0`, four minutes after Liskin merged `master` into it. |
-| 2026-09-22 13:25–18:30 | The checkout followed the branch through six fast-forwards: `4cb743b6a`, `3b337ee36`, `8eb9bf9ec`, `fc59cb570`, `eff289c76` and `a6a2124c1`. `bin/server/history` shows restarts at 16:22 and 18:40. |
-| 2026-09-22 18:40 | `a6a2124c1` ("Preserve item text across copyover") started. This process ran until the staging move at 2026-09-23 07:37. Overnight it produced the custody save failures in #622, and its world snapshots stopped completing (#623). |
-| 2026-09-23 05:27 | The checkout fast-forwarded to `72238a8f5`, which includes Liskin's disputed-death fixes `c555ecca1` and `72238a8f5`. |
-| 2026-09-23 05:28 | That build was made and then held back instead of deployed. It is kept as `bin/server/history/dms_new.72238a8f5.rollback-held`. |
-| 2026-09-23 05:33 | A local branch, `codex/rollback-sbs-20260923`, was created at `a6a2124c1`, matching the running binary. No reason for the hold is recorded. |
+## The branches as audited
 
-The fixes aimed at the overnight custody failures were built but never ran on
-staging.
-
-The checkout also carries two stashes from 2026-09-22: "server runtime manifest
-worktree recovery" and "server shutdown-fix worktree recovery". Their purpose is
-not recorded. Both came along with the move.
-
-## What staging runs now
-
-The staging move kept the checkout exactly as it was, on
-`codex/rollback-sbs-20260923` at `a6a2124c1`, so as not to undo the hold.
-Cherry-picks have been added since:
-
-- `0695680df`: the configurable production-role port. It is `a7644b9f0` on
-  `master` and `f2a1bcf18` on `codex/master-stable`.
-- `01f401b5a`: the login mode banner. It is `be50f6c0e` on `master` and
-  `3403c1db9` on `codex/master-stable`.
-- `dbc3e5e34`, `4958a654f` and `afdee58cc`: the Stromvok ferry from #618,
-  deployed at 2026-09-23 11:12. On `master` they are `e5c49f739`, `86fd07c15` and
-  `89332a35f`. They reach `codex/master-stable` only when Liskin next merges
-  `master`. If staging moves to the head of `codex/master-stable` before then,
-  the ferry drops out until they do.
-
-That branch exists only on the staging host, not on GitHub.
-
-## Four code lines
-
-As of about 11:30, four places run four different lines of code:
+The audit pinned `master` at `66e787027` and `codex/master-stable` at
+`3403c1db9`. Their merge base is `c6e94be85`.
 
 | Where | Commit | Code |
 | --- | --- | --- |
-| `master` | `33837a300` | Everything merged through PRs, plus the port change, banner and ferry. None of Liskin's 27 commits. |
-| `codex/master-stable` | `3403c1db9` | `master` as of `c6e94be85`, Liskin's 27 commits, and the port change and banner. It lacks 23 regular commits from `master`, including the ferry. |
-| Staging (`duris-staging` on the production host) | `afdee58cc` | `a6a2124c1`, the port change, banner and ferry. It exists only on the staging host. |
-| Production | `440248b17` | `master` from 2026-09-18, 144 commits behind. |
+| `master` | `66e787027` | The shared line, with the port change, login banner and Stromvok ferry. None of Liskin's commits. |
+| `codex/master-stable` | `3403c1db9` | `master` through `c6e94be85`, plus Liskin's 27 commits (24 regular, 3 merges) and cherry-picks of the port change and banner. |
+| Staging (`duris-staging` on the production host) | `afdee58cc` | `a6a2124c1` from `codex/master-stable`, plus cherry-picks of the port change, banner and ferry. |
+| Production | `440248b17` | `master` from 2026-09-18, 145 commits behind `66e787027`. |
 
-Staging lacks 13 commits that `codex/master-stable` has, and carries the three
-ferry commits that it doesn't have yet. The missing 13 are:
+- Liskin's commits run from `b839cadbd` (2026-09-22 02:24) to `72238a8f5`
+  (2026-09-23 04:37). Almost all concern item custody, copyover and death
+  recovery. None went through a PR. The branch merged `master` twice:
+  `e30e4a8e0` and `16582e101`.
+- Staging has 18 of the 27. It lacks Liskin's last nine and four `master`
+  commits that came in through `16582e101`: the Frost Beam fix (#617) and two
+  god-list changes.
+- `master` has 24 regular commits that the stable branch lacks. They cover the
+  port change and banner (already there as cherry-picks), the ferry, test
+  maintenance, an epic-zone seed refresh, dependency bumps and documentation.
 
-- Liskin's last nine, including the corpse-custody and disputed-death fixes:
-  `d7098aa77`, `13641d24e`, `6380a4bc3`, `e08b0f63d`, `cb8abae92`, `16582e101`,
-  `42877643c`, `c555ecca1` and `72238a8f5`
-- four from `master`, merged in through `16582e101`: the Frost Beam fix (#617,
-  `c6e94be85` and `dd4d97fc4`), and the god-list changes `ad1639842` and
-  `a71fdfee7`
+The running executables matched their checkouts' `bin/server/dms`:
+staging `170fb0dd1629a886…` and production `9d0ca409e44f289f…`.
 
-On the other side, `master` has 23 regular commits that `codex/master-stable`
-lacks:
+## What staging ran on Plesk
 
-- the port change and banner, which are already on `codex/master-stable` as
-  identical cherry-picks
-- the three ferry commits
-- test and contract maintenance: `843ee795b`, `63e2ae065`, `72fa2ffeb`,
-  `260c63994` and `a270967b6`
-- the epic-zone seed refresh `33b19169a`
-- dependency and CI bumps
-- documentation
+These events come from the Plesk checkout's reflog, `bin/server/history`,
+the game logs and the incident records under `~/.local/state/duris-incidents`.
 
-## Merging `codex/master-stable` into `master`
+| When | What happened |
+| --- | --- |
+| 2026-09-22, before 12:47 | Staging ran `master`. |
+| 2026-09-22 06:37–06:55 | Two SIGABRT crashes on reboot, with gdb backtraces (`20260922-reboot-sigabrt`, `20260922-final-legacy-reboot-sigabrt`), and a custody recovery (`20260922-custody-recovery`). |
+| 2026-09-22 12:47 | The checkout switched to `codex/master-stable` at `e30e4a8e0`, four minutes after Liskin merged `master` into it. |
+| 2026-09-22 13:25–18:30 | Six fast-forwards along the branch, ending at `a6a2124c1`. |
+| 2026-09-22 18:40 | The `a6a2124c1` process started. It ran until the move at 2026-09-23 07:37 and hit the save rejections in #622 and the failing world captures in #623. |
+| 2026-09-23 05:26–05:33 | A deploy of `72238a8f5` was started and called off. See below. |
 
-A trial merge (`git merge-tree`, no refs changed) of `3403c1db9` into
-`33837a300` touches 82 files (+2,322/−367) and conflicts in 8. The merge base is
-`c6e94be85`. The port change and banner exist on both sides as identical
-changes and do not conflict.
+### The held build
 
-| Conflicting file | `master` commits | `codex/master-stable` commits | What resolves it |
+The records show a planned reboot that was postponed, not a rejected build:
+
+- 05:26: a copy of the running binary was saved as `~/rollback-dms-a6a2124c1`.
+- 05:26:00: the staff character Veldrion, connected from the Plesk host itself,
+  announced "Planned maintenance reboot in 5 minutes". Veldrion is the staff
+  character of staging's test account, so the deploy was run from the host
+  with that account, not by a player.
+- 05:27–05:28: the checkout fast-forwarded to `72238a8f5` and the server was
+  built. The binary is kept as
+  `bin/server/history/dms_new.72238a8f5.rollback-held`.
+- 05:29:55: Veldrion announced "Maintenance reboot postponed. Please continue
+  playing".
+- 05:33: the checkout moved to a new local branch,
+  `codex/rollback-sbs-20260923`, at the running `a6a2124c1`.
+
+No record gives a reason. At the time, one character's saves had failed 293
+times in a row, a death recovery had waited about four hours, and every world
+capture had failed since 03:10. A restart then would most likely have hit the
+#621 SIGKILL and lost progress. Nothing found faults `72238a8f5` itself, so the
+integration includes it after review.
+
+The two stashes that came along with the move need nothing further:
+"server shutdown-fix worktree recovery" is the same patch as `0bd954789`,
+already on both branches, and "server runtime manifest worktree recovery" holds
+only an old copy of the compatibility manifest from before `0029`. Both stay in
+the staging checkout. The held binary and older executables stay on Plesk.
+
+## Integration
+
+The branch `integrate/master-stable` starts at `66e787027`:
+
+- `d94d81387` merges `3403c1db9`. It has eight conflicts:
+  - In five files, `master` had only the clang-format sweep `843ee795b`:
+    `necromancy.h`, `flatfile_world_item_repository.c`,
+    `item_ownership_runtime.c` and the two corpse repository harnesses. They
+    take the stable content, clang-formatted. clang-format 18 turns the merge
+    base's versions into exactly `master`'s, so no `master` change is lost.
+  - `handler.c` takes the stable corpse-custody changes and keeps the ferry's
+    `ferry_forget_object(obj)` call in `extract_obj()`. That line was
+    `master`'s only change there apart from whitespace.
+  - `test_difficulty_dials.py` and `test_kingdom_contract.py` keep `master`'s
+    checks. The merged files are identical to `master`'s.
+  - Every other file that both sides changed matches the stable content
+    (ignoring whitespace), plus `master`'s ferry declarations and one harness
+    stub.
+- `706832694` formats eight stable files that merged cleanly. In
+  `reset_zone()`, a ternary that clang-format split becomes an equivalent `if`.
+- `36e44f172` drops a harness stub that both branches had added to
+  `test_death_field_runtime.py`, which left it defined twice.
+
+### What reaches staging
+
+Compared with staging's `afdee58cc`, five of Liskin's commits change runtime
+code. The other four are tests and a merge. From `master` come the Frost Beam
+fix, the god list, the format sweep and a corrected seed hash for
+`earthp.zon`. No migration files change, so the staging database needs no
+migration.
+
+| Commit | Change | Review |
+| --- | --- | --- |
+| `d7098aa77` | Copyover refuses to run unless every live connection is a playing plain-Telnet session. A hostile raise detaches durable items before deleting the corpse row, instead of letting the foreign key cascade them away. A decayed corpse keeps its coins in the room. | Fails closed. While anyone is on TLS or at the login menu, copyover refuses, so deploys use a cold restart. |
+| `6380a4bc3` | Live custody follows the committed corpse outcome: coins stay, transient items are discarded, and the runtime ownership map is updated on every corpse path. | Consistent with the database side of `d7098aa77`. |
+| `42877643c` | A dead character in the private recovery hold is re-held instead of abandoned when `update_pos()` turns it to sleeping. The legacy importer adds the offline-message identity column and index idempotently. The migration runner reports the last error line. | The legacy importer doesn't run at boot. |
+| `c555ecca1` | A death save checks the stored items against its corpse payload instead of the live-inventory custody check. | Addresses the death-recovery waits in #622. |
+| `72238a8f5` | A disputed death waits for database acknowledgement instead of accepting a journal write, so a reconnect can't race an unapplied death. | Fails closed. A slow database keeps the character in the hold longer. |
+
+### Validation
+
+On the workstation, at the merged head `36e44f172` unless noted:
+
+- `make test-all` ran on the merge and formatting commits before the two fixes
+  (`3e77812ae`, which is not on `master`): 660 passed and 3 failed.
+  - Two failures were caused by the merge, and both are fixed:
+    `test_death_field_runtime.py` (both branches had added the same harness
+    stub) and `test_issue_552_local_shop_contract.py` (clang-format split the
+    call the contract looks for, so `reset_zone()` now uses an equivalent
+    `if`).
+  - `test_account_recovery_journey.py` failed because `db.c` was edited while
+    its server build was compiling. It passes on its own.
+  - All three pass at `36e44f172`, and so do the 21 shop tests.
+- The production-profile MariaDB server
+  (`make -C src PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production`) and the
+  flat-file server both build.
+- `./scripts/format.sh --all --check` passes on all 1,070 files.
+- These database legs passed at `3e77812ae`. Its runtime code matches
+  `36e44f172` except for the `if` above:
+  - `make test-db` (17 suites)
+  - `run_player_death_disposition_mysql.sh` on MariaDB 10.11 and on MySQL 8.0
+  - `run_corpse_lifecycle_repository_schema_mysql.sh` on MySQL 8.0
+  - `run_runtime_compatibility_mysql.sh` on MariaDB 10.11
+
+## Known incidents
+
+| Issue | After the merge |
+| --- | --- |
+| [#621](https://github.com/Community-Duris/Duris/issues/621) service stop ends in SIGKILL | Unchanged. Workaround: stop when the in-flight world capture is 200–235 seconds old. |
+| [#622](https://github.com/Community-Duris/Duris/issues/622) custody-mismatch saves stay rejected | The death path is covered by `c555ecca1` and `72238a8f5`. Ordinary saves still get only one recapture. |
+| [#623](https://github.com/Community-Duris/Duris/issues/623) world captures stop completing after long uptime | Unchanged. Staging already runs world-recovery schema 13. On the new host a capture takes 285–295 seconds of its 300-second limit. During this deploy's build one expired, and every later publish failed until the restart ([details](https://github.com/Community-Duris/Duris/issues/623#issuecomment-5795324937)). |
+
+## Production
+
+Production stays on `440248b17` for now, 177 commits behind `master`. Moving
+it needs the owner's go-ahead for two reasons. `master` applies migrations
+`0029_critical_failure_stage` and `0030_telemetry_quarantine` to production's
+MySQL 8.0 at boot, and #621, #622 and #623 should be fixed first. Production's
+website, WebSocket and systemd setup also differ from staging's.
+
+## Staging deploy
+
+The checkout `/home/duris-staging/duris` is on `master`, tracking
+`origin/master`. This deploy used these steps; later ones can repeat them.
+
+1. Tag the `master` commit, for example `staging-2026-09-23-1248`, and push the
+   tag.
+2. On staging, run `git fetch origin --tags`, then
+   `git switch -C master <tag>` and `git branch -u origin/master master`.
+3. Build with
+   `nice -n 19 make -C src PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production -j3`.
+   This took 5 minutes and didn't slow production, but staging's own game loop
+   slowed, so restart soon after the build (#623).
+4. Copy the running binary (`cp -L bin/server/dms`), `bin/server/.dms-backend`,
+   `lib/misc/event_names` and `bin/server/maintenance-scheduler.state` to
+   `~/deploy-rollback/<old commit>/`, and check the binary's SHA-256.
+5. If anyone is online, warn them five minutes ahead:
+   `echoa *** Server update: restart in about 5 minutes... ***` from the
+   staff test character.
+6. Run `systemctl --user restart duris-mud-production` when the in-flight world
+   capture is 205–230 seconds old, going by the last
+   `starting bounded world recovery capture` line in `logs/log/sys`.
+   `cycle_mud.sh` then moves `bin/server/dms_new` and its `.dms_new-backend`
+   stamp into place, keeps the old binary in `bin/server/history`, and
+   regenerates `lib/misc/event_names`.
+7. Check that `/proc/<pid>/exe` matches the build, that 4000 and 4001 are
+   listening, that the boot log and the first world capture are clean, and that
+   the test account can log in and quit over plain telnet and over TLS.
+
+This deploy, at 12:59, stopped in 3 seconds, entered the game loop at 12:59:37,
+and passed every check in step 7. The first capture was acknowledged at 13:04.
+The boot was a full zone boot rather than a world restore. The old process
+couldn't record a clean-shutdown marker, because its world publishes had been
+failing since 12:45 (#623).
+
+To roll back:
+
+1. Switch the checkout to `codex/rollback-sbs-20260923`, which is the tag
+   `archive/staging-20260923`.
+2. Copy `~/deploy-rollback/afdee58cc/dms` to `bin/server/dms_new` and
+   `dms.backend` to `bin/server/.dms_new-backend`.
+3. Restart the same way.
+
+Both builds use the same database schema and world-recovery format.
+
+## Rules from here
+
+- Code reaches `master` through PRs.
+- Staging deploys only tagged `master` commits.
+- Every deploy, hold or rollback gets a line in the deploy log below.
+
+## Deploy log
+
+| UTC | Where | Event | Source |
 | --- | --- | --- | --- |
-| `src/world/handler.c` | `843ee795b` (clang-format sweep), `89332a35f` (ferry ship pointer) | `6380a4bc3`, `fb0c112dd`, `a6dd863a8` | A real code decision: keep the ferry fix and Liskin's corpse-custody changes together |
-| `src/item/item_ownership_runtime.c` | `843ee795b` | `6380a4bc3`, `fb0c112dd` | Formatting only on `master`: take Liskin's version, re-run clang-format |
-| `src/flatfile/flatfile_world_item_repository.c` | `843ee795b` | `fb0c112dd` | Formatting only |
-| `src/classes/necromancy.h` | `843ee795b` | `fb0c112dd` | Formatting only |
-| `tests/async/corpse_lifecycle_repository_mysql_harness.cpp` | `843ee795b` | `13641d24e`, `d7098aa77`, `fb0c112dd`, `0da7c6bbe` | Formatting only |
-| `tests/async/flatfile_corpse_repository_harness.cpp` | `843ee795b` | `fb0c112dd` | Formatting only |
-| `tests/async/test_difficulty_dials.py` | `72fa2ffeb` (contract values) | `42877643c` | Test contract: reconcile the assertions |
-| `tests/async/test_kingdom_contract.py` | `260c63994` (refactored item code) | `42877643c` | Test contract: reconcile the assertions |
+| 2026-09-23 05:28 | Plesk staging | Built, then held; the announced reboot was postponed | `72238a8f5` |
+| 2026-09-23 05:33 | Plesk staging | Checkout set back to the running code | `a6a2124c1` |
+| 2026-09-23 07:52 | Staging | First boot on the new host | `0695680df` |
+| 2026-09-23 09:33 | Staging | Login mode banner | `01f401b5a` |
+| 2026-09-23 10:11 | Staging | Timed restart test, same binary | `01f401b5a` |
+| 2026-09-23 11:12 | Staging | Stromvok ferry, binary `170fb0dd1629a886…` | `afdee58cc` |
+| 2026-09-23 12:59 | Staging | `master` after #625, tag `staging-2026-09-23-1248`, binary `ec6d362be5e06197…`; full zone boot (#623) | `36e44f172` |
 
-Six of the eight conflicts come from `master`'s clang-format sweep `843ee795b`
-and can be resolved mechanically. The real decisions are `handler.c` and the two
-contract tests. Every day the lines stay apart, both keep rewriting the same
-custody and item code, and this list grows.
+## Reproducing the audit
 
-## Process problems found
-
-- **No review.** 27 commits were deployed to a public server with no PR or
-  review. None of them is on `master`.
-- **Live iteration.** Several commits fix commits from hours earlier, and one
-  title appears twice: `3b337ee36` and `742cefbd6` ("Fix divine claim custody
-  revocation").
-- **No deploy record.** The 05:27–05:33 build, hold and rollback left no note.
-  The deployed branch was never pushed, and the two stashes are unexplained.
-- **Leftovers on Plesk.**
-  - Stale automation was left running: orphaned `tail`/`ugrep` processes and a
-    `pgrep` loop that matches its own command line and never exits.
-  - The staging database could only be administered by Plesk's `duris` login.
-- **Overnight impact on staging (#622).**
-  - 12 characters had saves refused, and six of them kept failing repeatedly.
-  - Two lost hours of progress.
-  - Logouts were refused up to 96 times an hour, and the service's shutdown
-    cancelled itself and ended in a SIGKILL (#621).
-  - The fix was built and then held without a note.
-
-## Plan
-
-1. **Stop the drift.** Nothing more is deployed from `codex/master-stable`.
-   Changes reach `master` through PRs only.
-2. **One PR from `codex/master-stable` into `master`.**
-   - Resolve the eight conflicts above: six mechanically, then `handler.c` and
-     the two contract tests by judgement.
-   - Run CI, review and merge.
-   - Settle the held `72238a8f5` in that PR.
-3. **One chain after that.** PR, then `master`, then a tagged staging deploy,
-   then production when chosen. Staging runs plain `master`; only its `.env`
-   differs.
-4. **Guardrails.**
-   - Tag and push every staging deploy, for example `staging-2026-09-23-1112`.
-   - Keep a deploy log with one line per deploy, hold or rollback: who, which
-     commit and why.
-
-## Decisions needed
-
-- **Who resolves the conflicts.** Either Liskin, who knows the intent behind the
-  conflicting hunks, or someone else with Liskin reviewing.
-- **Why `72238a8f5` was held.** Ask Liskin before it reaches staging or `master`.
-- **Production.** When to deploy. Production is 144 commits behind `master`.
-- **Rebuilding staging's branch.** Until staging tracks `master`, its branch
-  exists only on the staging host. If the checkout is lost, recreate it as
-  `a6a2124c1` plus the cherry-picks above, or push it to `origin`.
+```bash
+audit_master=66e787027d30f7855b8a3604b41ab41a7d910b67
+audit_stable=3403c1db9b2a4649ace4383aa923fb0e05a3bf83
+git merge-base "$audit_master" "$audit_stable"            # c6e94be85
+git rev-list --left-right --count "$audit_master...$audit_stable"   # 29 29
+git merge-tree --write-tree --name-only "$audit_master" "$audit_stable"
+```
