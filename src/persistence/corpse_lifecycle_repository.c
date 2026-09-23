@@ -188,8 +188,9 @@ const physical_item *find_physical(const std::vector<physical_item> &items, uint
 	return found == items.end() ? nullptr : &*found;
 }
 
-bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<physical_item> *items,
-			 std::array<int32_t, 4> *money, unsigned int *result_code)
+bool load_physical_items(MYSQL *connection, uint32_t corpse_id, bool preserve_coins,
+			 std::vector<physical_item> *items, std::array<int32_t, 4> *money,
+			 unsigned int *result_code)
 {
 	if (!execute(connection,
 		     "SELECT id,COALESCE(container_id,0),vnum,weight,extra_flags,value0,value1,"
@@ -237,7 +238,7 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<phys
 				}
 			item.money_item = item.vnum == VOBJ_COINS;
 			item.transient = (item.extra_flags & ITEM_TRANSIENT) != 0;
-			item.skipped = item.money_item || item.transient;
+			item.skipped = (item.money_item && !preserve_coins) || item.transient;
 			item.artifact = !item.skipped && (item.extra_flags & ITEM_ARTIFACT) != 0;
 			item.adjusted_weight = item.weight;
 			if (item.money_item)
@@ -1738,7 +1739,41 @@ bool materialize_world_pet_items(MYSQL *connection, const std::vector<physical_i
 				 uint32_t pet_row_id, bool hostile)
 {
 	if (hostile)
-		return pet_row_id == 0;
+	{
+		if (pet_row_id)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		// A hostile raise leaves durable corpse contents in the room. Detach each
+		// durable subtree before deleting the corpse; otherwise the saved_items
+		// foreign key cascades the equipment away with its former container.
+		for (const physical_item &item : items)
+		{
+			if (item.skipped || !item.parent_id)
+				continue;
+			const physical_item *parent = find_physical(items, item.parent_id);
+			if (!parent || !parent->skipped)
+				continue;
+			if (!execute(connection,
+				     "UPDATE saved_items SET container_id=NULL WHERE id=" +
+					     std::to_string(item.id) + " AND container_id=" +
+					     std::to_string(item.parent_id)) ||
+			    mysql_affected_rows(connection) != 1)
+				return false;
+		}
+		std::string discarded;
+		for (const physical_item &item : items)
+		{
+			if (!item.skipped || item.source_root)
+				continue;
+			discarded += discarded.empty() ? "" : ",";
+			discarded += std::to_string(item.id);
+		}
+		return discarded.empty() ||
+		       execute(connection,
+			       "DELETE FROM saved_items WHERE id IN (" + discarded + ")");
+	}
 	if (!pet_row_id)
 	{
 		errno = EINVAL;
@@ -2170,7 +2205,11 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	std::vector<physical_item> physical;
 	item_transfer_payload transient_transfer = {};
 	std::array<int32_t, 4> corpse_money = {};
-	if (!load_physical_items(connection, identity.id, &physical, &corpse_money, result_code))
+	const bool preserve_coins = payload.action == corpse_lifecycle_action::release ||
+				    (payload.action == corpse_lifecycle_action::release_nested &&
+				     !payload.destination_player_pid);
+	if (!load_physical_items(connection, identity.id, preserve_coins, &physical, &corpse_money,
+				 result_code))
 		return false;
 	if (*result_code)
 		return true;

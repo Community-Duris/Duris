@@ -428,6 +428,34 @@ void test_room_release()
 	       catalog_before + 1);
 }
 
+void test_room_release_preserves_coin_pile()
+{
+	constexpr int32_t ROOM = 4121;
+	constexpr uint64_t ROOT_UID = 811000001, CHILD_UID = 811000002, COIN_UID = 811000003;
+	const corpse_fixture fixture =
+		seed_corpse(1011, ROOM, 1901, ROOT_UID, CHILD_UID, 1, false, false);
+	execute("INSERT INTO corpse_items(corpse_id,vnum,item_type,container_id,weight,"
+		"value0,value1,value2,value3,name,short_descr,obj_uid) VALUES(" +
+		std::to_string(fixture.corpse_id) + ",3,11," + std::to_string(fixture.root_row_id) +
+		",2,1,2,3,4,'coins','some coins'," + std::to_string(COIN_UID) + ")");
+	seed_authority(COIN_UID, ROOT_UID, ROOT_UID, 3,
+		       { item_owner_type::corpse, fixture.owner_id, 0 }, INITIAL_ITEM_REVISION);
+	seed_owner({ item_owner_type::room, ROOM, 0 }, 2);
+
+	corpse_lifecycle_payload payload = payload_for(fixture, corpse_lifecycle_action::release);
+	payload.expected_room_revision = 2;
+	const applied_corpse applied = apply_success(command_for(payload));
+	assert(applied.result.item_count == 3 && applied.result.discarded_item_count == 0);
+	assert(text("SELECT CONCAT(owner_type,':',owner_id,':',state) FROM "
+		    "item_current_owner WHERE item_uid=" +
+		    std::to_string(COIN_UID)) == "3:4121:1");
+	assert(text("SELECT CONCAT(coin.vnum,':',coin.value0,':',coin.value1,':',"
+		    "coin.value2,':',coin.value3,':',coin.container_id=root.id) FROM "
+		    "saved_items coin JOIN saved_items root ON root.obj_uid=" +
+		    std::to_string(ROOT_UID) + " WHERE coin.obj_uid=" + std::to_string(COIN_UID)) ==
+	       "3:1:2:3:4:1");
+}
+
 void test_destruction()
 {
 	constexpr int32_t ROOM = 4102;
@@ -893,7 +921,8 @@ void test_hostile_equipped_world_corpse_raise()
 	assert(scalar("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid=" +
 		      std::to_string(GEAR_UID)) == 0);
 	assert(text("SELECT GROUP_CONCAT(CONCAT(item_uid,':',owner_type,':',state,':',"
-		    "item_revision,':',root_item_uid,':',parent_item_uid) ORDER BY item_uid) "
+		    "item_revision,':',root_item_uid,':',COALESCE(parent_item_uid,0)) "
+		    "ORDER BY item_uid) "
 		    "FROM item_current_owner WHERE item_uid IN (" +
 		    std::to_string(ROOT_UID) + "," + std::to_string(GEAR_UID) + "," +
 		    std::to_string(MONEY_UID) + ")") ==
@@ -1010,6 +1039,7 @@ int main()
 		static_cast<unsigned int>(strtoul(getenv("DB_PORT"), nullptr, 10)), nullptr, 0));
 	execute("UPDATE collector_catalog_state SET next_listing=100000 WHERE state_id=1");
 	test_room_release();
+	test_room_release_preserves_coin_pile();
 	test_destruction();
 	test_resurrection();
 	test_raise_follower();
@@ -1023,7 +1053,7 @@ int main()
 	test_stale_corpse_owner_missing_is_quarantined();
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=" +
 		      std::to_string(static_cast<unsigned int>(
-			      critical_command_type::corpse_lifecycle))) == 12);
+			      critical_command_type::corpse_lifecycle))) == 13);
 	mysql_close(database);
 	return 0;
 }

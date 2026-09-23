@@ -171,6 +171,15 @@ def run(binary, compressed, nonroot=False):
             print(f'{compressed=}: failed open kept transport and save worker usable', flush=True)
             path.parent.mkdir()
             if nonroot: os.chown(path.parent, 10001, 10001)
+            with socket.create_connection(('127.0.0.1', port), timeout=10) as idle:
+                idle.settimeout(10)
+                idle.recv(65536)
+                client.send('shutdown copyover')
+                client.expect('Copyover cancelled: a connection cannot survive this handoff', timeout=30)
+                assert process.poll() is None and not path.exists()
+                client.send('look'); client.expect('The Regression Arena')
+                idle.sendall(b'\n')
+                assert idle.recv(65536), 'copyover closed a non-preservable connection'
             client.send('shutdown copyover'); client.expect('Copyover complete!', timeout=90)
             client.send('look'); client.expect('The Regression Arena')
             client.send('save'); client.expect(f'Save complete for {journey.CHARACTER}.', timeout=30)

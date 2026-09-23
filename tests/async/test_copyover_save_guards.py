@@ -35,6 +35,9 @@ execute = body.index("execl(")
 
 checks = {
     "copyover returns failure": body.count("return false;") >= 10,
+    "copyover refuses sessions that cannot survive exec before any save or close":
+        body.index("non-preservable connection") < save and
+        body.index("non-preservable connection") < close,
     "ships precede characters": body.index("drain_pending_ship_saves") < save,
     "lockers precede characters": body.index("locker_async_drain") < save,
     "connected saves precede remaining flush": save < flush,
