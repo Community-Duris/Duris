@@ -395,6 +395,11 @@ The character-creation settings affect the menus and validation paths; they do
 not change the underlying race/class data or make restricted choices suitable
 for production.
 
+Above the account-name prompt, the login screen shows one blinking line naming
+each enabled mode: `STAGING`, `CHAOS`, `ALL-RACES` and `ALL-CLASSES`. It shows
+nothing when none is enabled. `DURIS_STAGING` exists only for this banner; set it
+to `TRUE` (case-insensitive) on a public staging server.
+
 Chaos is a separate, deliberately selected server-wide ruleset. Its values are
 read at process start and are case-sensitive:
 
