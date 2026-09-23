@@ -2077,7 +2077,7 @@ void select_terminal(P_desc d, const char *arg)
 #else
 	//  account stuff instead of name
 	STATE(d) = CON_GET_ACCT_NAME;
-	SEND_TO_Q("Please enter your account name: ", d);
+	send_account_name_prompt(d);
 #endif
 }
 
