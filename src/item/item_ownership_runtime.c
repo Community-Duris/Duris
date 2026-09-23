@@ -1031,7 +1031,11 @@ bool item_ownership_runtime_apply_corpse_discarded(uint32_t owner_pid, uint32_t 
 						   const std::vector<uint64_t> &item_uids,
 						   const corpse_lifecycle_result &result)
 {
-	if (result.action != corpse_lifecycle_action::raise_follower ||
+	if ((result.action != corpse_lifecycle_action::release &&
+	     result.action != corpse_lifecycle_action::release_nested &&
+	     result.action != corpse_lifecycle_action::destroy &&
+	     result.action != corpse_lifecycle_action::resurrect &&
+	     result.action != corpse_lifecycle_action::raise_follower) ||
 	    result.owner_pid != owner_pid || result.save_id != save_id ||
 	    item_uids.size() != result.discarded_item_count)
 		return false;

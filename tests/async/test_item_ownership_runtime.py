@@ -208,6 +208,65 @@ int main()
 	       owner_revision == 1);
 
 	item_ownership_runtime_reset();
+	const item_owner_identity mixed_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(44, 22), 0
+	};
+	const item_owner_identity mixed_room = { item_owner_type::room, 502, 0 };
+	const item_owner_identity mixed_destruction = { item_owner_type::destruction, 0, 0 };
+	const item_ownership_runtime_entry mixed_items[] = {
+		{ 310, 310, 0, mixed_corpse, 4, 2, 20, item_custody_state::active },
+		{ 311, 311, 0, mixed_corpse, 5, 2, 3, item_custody_state::active },
+		{ 312, 312, 0, mixed_corpse, 6, 2, 21, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(mixed_items, 3));
+	assert(item_ownership_runtime_hydrate_owner(mixed_room, 4));
+	assert(item_ownership_runtime_hydrate_owner(mixed_destruction, 7));
+	corpse_lifecycle_result mixed_release = {};
+	mixed_release.owner_pid = 44;
+	mixed_release.save_id = 22;
+	mixed_release.action = corpse_lifecycle_action::release;
+	mixed_release.corpse_owner_revision = 4;
+	mixed_release.room_owner_revision = 5;
+	mixed_release.destruction_owner_revision = 8;
+	mixed_release.max_item_revision = 6;
+	mixed_release.item_count = 2;
+	mixed_release.max_discarded_item_revision = 7;
+	mixed_release.discarded_item_count = 1;
+	assert(item_ownership_runtime_apply_corpse_discarded(44, 22, { 312 }, mixed_release));
+	assert(item_ownership_runtime_apply_corpse_release(44, 22, 502, mixed_release));
+	assert(item_ownership_runtime_lookup(310, &absent) &&
+	       item_owner_identity_equal(absent.owner, mixed_room));
+	assert(item_ownership_runtime_lookup(311, &absent) &&
+	       item_owner_identity_equal(absent.owner, mixed_room));
+	assert(item_ownership_runtime_lookup(312, &absent) &&
+	       item_owner_identity_equal(absent.owner, mixed_destruction) &&
+	       absent.state == item_custody_state::destroyed);
+
+	item_ownership_runtime_reset();
+	const item_owner_identity transient_only_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(45, 23), 0
+	};
+	const item_owner_identity transient_only_room = { item_owner_type::room, 503, 0 };
+	const item_ownership_runtime_entry transient_only[] = {
+		{ 313, 313, 0, transient_only_corpse, 4, 2, 22, item_custody_state::active },
+		{ 314, 314, 0, transient_only_corpse, 5, 2, 23, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(transient_only, 2));
+	assert(item_ownership_runtime_hydrate_owner(transient_only_room, 4));
+	assert(item_ownership_runtime_hydrate_owner(mixed_destruction, 7));
+	mixed_release.owner_pid = 45;
+	mixed_release.save_id = 23;
+	mixed_release.item_count = 0;
+	mixed_release.max_item_revision = 0;
+	mixed_release.discarded_item_count = 2;
+	mixed_release.max_discarded_item_revision = 6;
+	assert(item_ownership_runtime_apply_corpse_discarded(
+		45, 23, { 313, 314 }, mixed_release));
+	assert(item_ownership_runtime_apply_corpse_release(45, 23, 503, mixed_release));
+	assert(item_ownership_runtime_owner_revision(transient_only_room, &owner_revision) &&
+	       owner_revision == 5);
+
+	item_ownership_runtime_reset();
 	const item_owner_identity destroyed_corpse = {
 		item_owner_type::corpse, item_corpse_owner_id(50, 30), 0
 	};

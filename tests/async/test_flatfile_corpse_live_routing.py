@@ -116,6 +116,10 @@ assert "submit_corpse_release(corpse)" in deferred_release
 assert "OBJ_INSIDE(corpse) ? submit_corpse_nested_release(corpse)" in deferred_release
 assert "corpse_lifecycle_transaction_release(payload, publish_corpse_release)" in HANDLER
 assert "item_ownership_runtime_apply_corpse_release" in release_publication
+assert "validate_corpse_release_items(corpse, result, true)" in release_publication
+assert "apply_corpse_discarded_runtime(corpse, result, true)" in release_publication
+assert release_publication.index("discard_corpse_transient_items(corpse)") < \
+       release_publication.index("obj_to_room(item, room)")
 assert release_publication.index("item_ownership_runtime_apply_corpse_release") < \
        release_publication.index("obj_from_obj(item)")
 assert release_publication.index("obj_from_obj(item)") < \
@@ -129,6 +133,8 @@ assert "expected_target_parent_revision" in nested_submission
 assert "corpse_lifecycle_transaction_release(payload, publish_corpse_nested_release)" in \
        nested_submission
 assert "item_ownership_runtime_apply_corpse_nested_release" in nested_publication
+assert "apply_corpse_discarded_runtime(corpse, result," in nested_publication
+assert "discard_corpse_transient_items(corpse)" in nested_publication
 assert nested_publication.index("item_ownership_runtime_apply_corpse_nested_release") < \
        nested_publication.index("obj_from_obj(item)")
 assert nested_publication.index("obj_to_obj(item, parent)") < \
@@ -137,6 +143,7 @@ assert "discard_corpse_release_money" in nested_publication
 assert "writeCharacter(carrier, RENT_CRASH" in nested_publication
 assert "corpse_lifecycle_transaction_destroy" in HANDLER
 assert "item_ownership_runtime_apply_corpse_destruction" in destruction_publication
+assert "apply_corpse_discarded_runtime(corpse, result, false)" in destruction_publication
 assert destruction_publication.index("item_ownership_runtime_apply_corpse_destruction") < \
        destruction_publication.index("extract_obj(corpse, TRUE)")
 assert "durable_corpse_lifecycle_enabled()" in deferred_destruction
@@ -177,6 +184,7 @@ for resurrection_spell in (resurrect, lesser_resurrect):
            resurrection_spell.index("stop_fighting(t_ch)")
 assert "corpse_lifecycle_transaction_resurrect" in HANDLER
 assert "item_ownership_runtime_apply_corpse_resurrection" in resurrection_publication
+assert "apply_corpse_discarded_runtime(corpse, result, false)" in resurrection_publication
 assert "target->in_room != context.old_room" not in resurrection_publication
 assert "caster->in_room != corpse_room" not in resurrection_publication
 assert "actor->in_room != context.old_room" not in resurrection_item_publication
@@ -195,6 +203,7 @@ for raise_spell in (raise_undead, call_titan, create_dracolich, create_golem,
            raise_spell.index("create_saved_corpse")
 assert "corpse_lifecycle_transaction_raise_follower" in HANDLER
 assert "item_ownership_runtime_apply_corpse_raise" in raise_publication
+assert "apply_corpse_discarded_runtime(corpse, result, false)" in raise_publication
 assert "caster->in_room != corpse_room" not in raise_publication
 assert raise_publication.index("item_ownership_runtime_apply_corpse_raise") < \
        raise_publication.index("complete_corpse_raise_after_commit")
