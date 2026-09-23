@@ -48,7 +48,8 @@ while (( $# > 0 )); do
       ;;
     --help|-h)
       echo "Usage: $0 [--dev] [--minimal] [--production] [--check-config]"
-      echo "  --production  Require ENVIRONMENT=production and use the port 7777 role."
+      echo "  --production  Require ENVIRONMENT=production and use the production port role"
+      echo "                (DURIS_PRODUCTION_PORT, default 7777)."
       echo "  --minimal  Use the tracked areas_mini dataset (implies --dev)."
       echo "  --check-config  Validate persistence configuration without starting the game."
       exit 0
@@ -68,15 +69,20 @@ fi
 if (( MINIMAL_MODE == 1 )); then
   echo "Running in minimal world mode from areas_mini"
 fi
-MUD_PORT=7777
+PRODUCTION_PORT="${DURIS_PRODUCTION_PORT:-7777}"
+if ! [[ "$PRODUCTION_PORT" =~ ^[1-9][0-9]{0,4}$ ]] || (( PRODUCTION_PORT > 65535 )); then
+  echo "DURIS_PRODUCTION_PORT must be a decimal port from 1 through 65535" >&2
+  exit 1
+fi
+MUD_PORT=$PRODUCTION_PORT
 if [ $DEV_MODE -eq 1 ]; then
   MUD_PORT="${DURIS_DEV_PORT:-4000}"
   if ! [[ "$MUD_PORT" =~ ^[0-9]+$ ]] || (( MUD_PORT < 1 || MUD_PORT > 65535 )); then
     echo "DURIS_DEV_PORT must be a decimal port from 1 through 65535" >&2
     exit 1
   fi
-  if (( MUD_PORT == 7777 )); then
-    echo "DURIS_DEV_PORT must not use production port 7777" >&2
+  if (( MUD_PORT == PRODUCTION_PORT )); then
+    echo "DURIS_DEV_PORT must not use production port $PRODUCTION_PORT" >&2
     exit 1
   fi
 fi
@@ -137,8 +143,8 @@ if (( DEV_MODE == 1 )) && [[ "$ENVIRONMENT" != "local" ]]; then
   echo "--dev and --minimal require ENVIRONMENT=local" >&2
   exit 1
 fi
-if [[ "$ENVIRONMENT" == "production" && $MUD_PORT -ne 7777 ]]; then
-  echo "Production mode requires port 7777" >&2
+if [[ "$ENVIRONMENT" == "production" && $MUD_PORT -ne $PRODUCTION_PORT ]]; then
+  echo "Production mode requires port $PRODUCTION_PORT" >&2
   exit 1
 fi
 if [[ "$ENVIRONMENT" == "production" ]]; then
@@ -176,7 +182,7 @@ if (( DATABASE_REQUIRED == 1 )); then
     exit 1
   fi
   EFFECTIVE_DB_NAME="$DB_NAME"
-  if [[ $MUD_PORT -ne 7777 && ( "$DB_NAME" == "duris" || "$DB_NAME" == "duris_prod" ) ]]; then
+  if [[ $MUD_PORT -ne $PRODUCTION_PORT && ( "$DB_NAME" == "duris" || "$DB_NAME" == "duris_prod" ) ]]; then
     EFFECTIVE_DB_NAME="duris_dev"
   fi
   case ",$DB_ALLOWED_TARGETS," in
