@@ -48,6 +48,40 @@ listener, no tunnel and no website Redis.
   `178.156.165.10`. Its certificate is renewed by DNS-01 through the Cloudflare
   token in `.env`, and it is valid until 2026-11-28.
 
+### Access for the staging account
+
+- **SSH.** `duris-staging` accepts `~/.ssh/duris_ed25519` plus the two other
+  ed25519 keys copied from Plesk's `duris` account. One has no comment; the other
+  is labelled `hermes-agent duris@plesk.luminarimud.com 2026-08-31`. The account
+  has no sudo. Host-level work, such as `ufw` rules, packages and the system
+  journal, goes through `duris-prod`.
+- **MariaDB admin.** `'duris-staging'@'localhost'` has
+  `ALL PRIVILEGES ON *.* WITH GRANT OPTION` through `unix_socket`, so no password
+  is needed:
+  `~/.local/opt/mariadb/usr/bin/mariadb --no-defaults --socket=$HOME/.local/state/duris-mariadb/mariadb.sock`.
+  The MUD itself connects over TCP as `duris_prod`, which has full rights on its
+  schemas only. The `root@localhost` and `duris@localhost` accounts from Plesk
+  are unusable here. The service runs in a systemd user namespace, which shows
+  every other local user, root included, as `nobody` to socket authentication.
+- **Redis admin.** The `duris-admin` ACL user (`+@all ~* &*`) has its password in
+  `~/.config/redis/admin.pass` (mode `0600`):
+  `REDISCLI_AUTH="$(cat ~/.config/redis/admin.pass)" redis-cli -p 6381 --user duris-admin`.
+  The MUD still uses its own restricted ACL users.
+- **Everything else** belongs to the account and needs no root:
+  - the checkout and `.env`
+  - the user units, including restarts
+  - the MariaDB and Redis configuration and data
+  - the certbot directory and hooks
+  - the backup policy and generations
+  - core files, which are written to the MUD's working directory (`core.%e.%p`)
+  - the user journal
+  - `crontab`
+- **Restarts.** Stop the MUD when the in-flight world snapshot is about
+  200–235 seconds old: find the latest `starting bounded world recovery capture`
+  line in `logs/log/sys`. It then stops in 2–3 seconds instead of risking the
+  #621 SIGKILL. Restarting `duris-mariadb` or `duris-redis` also restarts the
+  MUD, because the MUD unit `Requires=` both.
+
 The former Plesk install (`duris-plesk`) has every Duris and DurisWeb user unit
 stopped and disabled, including the `duris.sbs` website and both tunnels. Its
 data is untouched.
