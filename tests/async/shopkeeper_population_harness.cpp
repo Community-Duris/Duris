@@ -340,8 +340,7 @@ int number(int low, int)
 void apply_zone_modifier(P_char) {}
 void reset_mobile(int force_item_repop, bool expect_skip)
 {
-	int zone = 0, last_cmd = 1, last_mob_load = 1, configured_shop = -1,
-	    replicated_shop = -1;
+	int zone = 0, last_cmd = 1, last_mob_load = 1, configured_shop = -1, replicated_shop = -1;
 	P_char mob = character_list, last_mob = mob, tmp_mob = mob, last_mob_followable = mob;
 	(void)zone;
 	(void)last_cmd;

@@ -238,11 +238,12 @@ static bool retire_saved_reward_instance(P_char ch, P_obj obj)
 	const uint64_t uid = obj->obj_uid;
 	if (!sql_begin_transaction())
 		return false;
-	bool ok = item_transfer_repository_revoke_roots_preserving_children(DB, &uid, 1) &&
-		  qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id SET child.container_id=reward.container_id WHERE reward.pid=%d AND reward.obj_uid=%llu",
-		      GET_PID(ch), (unsigned long long)uid) &&
-		  qry("DELETE FROM player_items WHERE pid=%d AND obj_uid=%llu", GET_PID(ch),
-		      (unsigned long long)uid);
+	bool ok =
+		item_transfer_repository_revoke_roots_preserving_children(DB, &uid, 1) &&
+		qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id SET child.container_id=reward.container_id WHERE reward.pid=%d AND reward.obj_uid=%llu",
+		    GET_PID(ch), (unsigned long long)uid) &&
+		qry("DELETE FROM player_items WHERE pid=%d AND obj_uid=%llu", GET_PID(ch),
+		    (unsigned long long)uid);
 	if (!ok || !sql_commit())
 	{
 		sql_rollback();
@@ -919,8 +920,7 @@ static void dismiss_player_grant(P_char ch, const RewardGrant &selected)
 								    selected.display_name);
 	if (!retire_saved_reward_instance(ch, instance))
 	{
-		logit(LOG_WIZ,
-		      "divineclaim: failed to retire dismissed reward #%llu for %s",
+		logit(LOG_WIZ, "divineclaim: failed to retire dismissed reward #%llu for %s",
 		      selected.id, GET_NAME(ch));
 		send_to_char(
 			"The divine records could not release that reward safely. Nothing was removed; please try again later.\r\n",

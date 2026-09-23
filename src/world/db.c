@@ -3521,9 +3521,9 @@ void reset_zone(int zone, int force_item_repop)
 					ZCMD.arg2; // set the limit from zone file
 				configured_shop =
 					configured_shopkeeper_for_room(ZCMD.arg1, ZCMD.arg3);
-				replicated_shop = configured_shop >= 0 && is_replicated_shop(configured_shop) ?
-							  configured_shop :
-							  -1;
+				replicated_shop = -1;
+				if (configured_shop >= 0 && is_replicated_shop(configured_shop))
+					replicated_shop = configured_shop;
 
 				// Replicated shop identities are room-scoped: the same mobile prototype
 				// may legitimately have one keeper in each configured shop room. A fixed

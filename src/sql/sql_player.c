@@ -3612,8 +3612,7 @@ bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 	if (pet_room_vnum == NOWHERE)
 		return false;
 	player_snapshot snapshot = {};
-	if (player_snapshot_capture(ch, 1, PLAYER_COMPONENT_PETS, save_type,
-				    pet_room_vnum,
+	if (player_snapshot_capture(ch, 1, PLAYER_COMPONENT_PETS, save_type, pet_room_vnum,
 				    &snapshot) != player_snapshot_capture_result::ok)
 		return false;
 	const bool own_transaction = !sql_in_transaction();

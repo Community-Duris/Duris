@@ -2079,8 +2079,8 @@ bool execute_world_corpse_raise(MYSQL *connection, const critical_command &comma
 			if (!world_item_discarded(item))
 			{
 				++durable_result.item_count;
-				durable_result.max_item_revision =
-					std::max(durable_result.max_item_revision, item.item_revision);
+				durable_result.max_item_revision = std::max(
+					durable_result.max_item_revision, item.item_revision);
 			}
 	}
 
@@ -2092,8 +2092,7 @@ bool execute_world_corpse_raise(MYSQL *connection, const critical_command &comma
 	discarded.expected_from_revision = *room_revision;
 	discarded.expected_to_revision = *destruction_revision;
 	discarded.multi_root = true;
-	if (!fill_world_transfer_items(physical, &discarded, true) ||
-	    !discarded.item_count ||
+	if (!fill_world_transfer_items(physical, &discarded, true) || !discarded.item_count ||
 	    event_offset > static_cast<uint32_t>(UINT16_MAX) - discarded.item_count)
 	{
 		*result_code = E2BIG;
@@ -2217,8 +2216,7 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	if (*result_code)
 		return true;
 	if (!build_transfer_entries(connection, corpse_owner_id, &physical, &transfer,
-				    &transient_transfer,
-				    false, result_code))
+				    &transient_transfer, false, result_code))
 		return false;
 	if (*result_code)
 		return true;

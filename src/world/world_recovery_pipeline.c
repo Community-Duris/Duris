@@ -316,7 +316,8 @@ bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t 
 		entry.values[index] = object->value[index];
 	for (int index = 0; index < 6; ++index)
 		entry.timers[index] = static_cast<int64_t>(object->timer[index]);
-	auto copy_text = [](char *destination, size_t capacity, const char *source) {
+	auto copy_text = [](char *destination, size_t capacity, const char *source)
+	{
 		if (!source)
 			return true;
 		const size_t length = strnlen(source, capacity);

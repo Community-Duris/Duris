@@ -715,7 +715,8 @@ void player_save_pipeline_pulse(void)
 			{
 				custody_mismatches[custody_mismatch_count] = completions[index];
 				custody_recapture_allowed[custody_mismatch_count] =
-					custody_recapture_armed.insert(completions[index].pid).second;
+					custody_recapture_armed.insert(completions[index].pid)
+						.second;
 				++custody_mismatch_count;
 			}
 		}
@@ -733,20 +734,19 @@ void player_save_pipeline_pulse(void)
 				 * an item granted during login).  Preserve the rejection, then
 				 * capture the current graph instead of retrying stale bytes or
 				 * requiring the player to issue a manual save. */
-				persistence_schedule_character_save(
-					ch, RENT_CRASH, 2, "custody-mismatch-recapture");
+				persistence_schedule_character_save(ch, RENT_CRASH, 2,
+								    "custody-mismatch-recapture");
 				recapture_scheduled = true;
 				break;
 			}
-		persistence_alert(
-			AVATAR, "player_save", "redacted", "none", "none",
-			"custody_payload_mismatch_rejected",
-			"pid=%d revision=%llu components=%llu destructive_write=0 "
-			"recapture_scheduled=%d",
-			custody_mismatches[index].pid,
-			(unsigned long long)custody_mismatches[index].revision,
-			(unsigned long long)custody_mismatches[index].components,
-			recapture_scheduled ? 1 : 0);
+		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
+				  "custody_payload_mismatch_rejected",
+				  "pid=%d revision=%llu components=%llu destructive_write=0 "
+				  "recapture_scheduled=%d",
+				  custody_mismatches[index].pid,
+				  (unsigned long long)custody_mismatches[index].revision,
+				  (unsigned long long)custody_mismatches[index].components,
+				  recapture_scheduled ? 1 : 0);
 	}
 	for (size_t index = 0; index < missing_baseline_count; ++index)
 	{

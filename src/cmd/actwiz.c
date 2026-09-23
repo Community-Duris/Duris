@@ -4445,7 +4445,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			break;
 
 		case TimedShutdownData::COPYOVER:
-			snprintf(buf, 500, "\r\n%s begins a copyover; your connection will be preserved.\r\n",
+			snprintf(buf, 500,
+				 "\r\n%s begins a copyover; your connection will be preserved.\r\n",
 				 shutdownData.IssuedBy);
 			send_to_all(buf);
 			logit(LOG_STATUS, "%s", buf);
