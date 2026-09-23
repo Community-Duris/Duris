@@ -683,6 +683,14 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 				   out.number<uint16_t>(row.level);
 				   for (uint64_t bitvector : row.bitvectors)
 					   out.number<uint64_t>(bitvector);
+				   out.number<uint64_t>(row.ward_source_uid);
+				   out.number<int32_t>(row.ward_full_duration);
+				   out.number<int64_t>(row.ward_capacity);
+				   out.number<int64_t>(row.ward_capacity_max);
+				   out.number<int32_t>(row.ward_refresh_remaining);
+				   out.number<uint8_t>(row.ward_source_type);
+				   out.number<uint8_t>(row.ward_source_worn);
+				   out.number<uint8_t>(row.ward_active);
 				   out.string(row.wear_off_character);
 				   out.string(row.wear_off_room);
 			   });
@@ -754,9 +762,9 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (!in.number(snapshot.schema_version))
 			return in.result;
 		const uint32_t wire_version = snapshot.schema_version;
-		if (wire_version == 1 || wire_version == 3 || wire_version == 5)
+		if (wire_version == 1 || wire_version == 3 || wire_version == 5 || wire_version == 7)
 			snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
-		if (wire_version == 2 || wire_version == 4 || wire_version == 6)
+		if (wire_version == 2 || wire_version == 4 || wire_version == 6 || wire_version == 8)
 			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
@@ -823,6 +831,16 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       for (uint64_t &bitvector : row.bitvectors)
 					       if (!in.number(bitvector))
 						       return false;
+				       if (wire_version >= 9 &&
+					   (!in.number(row.ward_source_uid) ||
+					    !in.number(row.ward_full_duration) ||
+					    !in.number(row.ward_capacity) ||
+					    !in.number(row.ward_capacity_max) ||
+					    !in.number(row.ward_refresh_remaining) ||
+					    !in.number(row.ward_source_type) ||
+					    !in.number(row.ward_source_worn) ||
+					    !in.number(row.ward_active)))
+					       return false;
 				       return in.string(row.wear_off_character) &&
 					      in.string(row.wear_off_room);
 			       }) ||

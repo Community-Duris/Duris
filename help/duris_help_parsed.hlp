@@ -9685,10 +9685,13 @@ Globe of Invulnerability - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Cumulative:     No
 * Duration:       Dependent on proficiency of caster
 * Type of spell:  Protection
-"Globe of Invulnerability" encases the victim in a powerful energy barrier
-which is capable of blocking a great deal of spells. The number of blocked
-attacks upon the globe has no affect on its duration, and the globe
-provides no protection at all from physical assault.
+"Globe of Invulnerability" encases the victim in a powerful, renewable
+energy barrier which blocks eligible spells of circles 1 through 6. A cast
+globe normally lasts 8 ticks; Conjurers receive 15 ticks, Summoners 12 ticks,
+and other casters receive 8 ticks. It has a finite damage budget (400 damage
+per normal tick by default), so sufficiently heavy spell damage can break it
+and continue through to the victim. It provides no protection from physical
+assault, and a group globe gives each recipient an independent ward.
 See also:Minor Globe of Invulnerability|minor globe of invulnerability ,Group Globe of Invulnerability|group globe of invulnerability
 The following help topics also matched your search:
  Group Globe of Invulnerability
@@ -10768,8 +10771,10 @@ Greater Spirit Ward - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Cumulative:     No
 * Duration:       Dependent on proficiency of caster
 * Type of spell:  Spiritual
-"Greater Spirit Ward" protects the victim from lower circle spells and
-gives slight protection against (un)holy word.
+"Greater Spirit Ward" protects the victim from spells of circles 1 through 5
+and gives slight protection against (un)holy word. It has a finite damage
+budget (300 damage per normal tick by default); eligible spell damage wears
+down that budget, while ordinary expiry still follows the spell duration.
 ==See also==
 Spirit Ward
 #0
@@ -10985,7 +10990,9 @@ Group Globe of Invulnerability - Last Edited: 2007-04-20 14:02:09 by Unknown
 * * Type of spell:  Protection
 This spell is identical to Globe of Invulnerability, the only difference
 being that the casting of the spell encases everyone in the caster's group
-inside a globe.
+inside a globe. Each group member receives an independent duration and
+damage budget; damage absorbed by one member never consumes another member's
+ward.
 ==See also==
 * Minor Globe of Invulnerability
 #0
@@ -14765,10 +14772,11 @@ Minor Globe of Invulnerability - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Cumulative:     No
 * Duration:       Dependent on proficiency of caster
 * Type of spell:  Protection
-This spell encases the victim in a weak energy barrier which is capable of
-blocking low level spells. The number of blocked attacks upon the globe has
-no bearing on its duration and the globe provides no protection at all from
-physic l assault.
+This spell encases the victim in a renewable weak energy barrier which blocks
+eligible spells of circles 1 through 3. A cast minor globe lasts 6 ticks and
+has a finite damage budget (150 damage per normal tick by default); eligible
+spell damage wears it down and overflow continues normally. It provides no
+protection at all from physical assault.
 	See also:Globe of Invulnerability|globe of invulnerability ,Group Globe of Invulnerability|group globe of invulnerability
 #0
 

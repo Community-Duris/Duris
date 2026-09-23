@@ -33,6 +33,7 @@
 #include "combat/guard.h"
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
+#include "combat/spell_wards.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "kingdom/kingdom_store_piece.h"
@@ -1529,6 +1530,11 @@ void all_affects(P_char ch, int mode)
 	if (ch == NULL) /* replaced call to SanityCheck with this */
 		return;
 
+	/* Keep relative ward deadlines current before an equipment transition or
+	 * a full affect rebuild.  The equipment sync below only runs on the apply
+	 * pass so the raw object bits are never reintroduced as permanent wards. */
+	spell_ward_sync_timers(ch);
+
 	bzero(&TmpAffs, sizeof(struct hold_data));
 
 	for (i = 0; i < MAX_WEAR; i++)
@@ -1556,11 +1562,18 @@ void all_affects(P_char ch, int mode)
 			continue;
 		}
 		// Below commented code is to hunt bad object affects.
+		unsigned long equipment_bits[5] = {ch->equipment[i]->bitvector,
+							   ch->equipment[i]->bitvector2,
+							   ch->equipment[i]->bitvector3,
+							   ch->equipment[i]->bitvector4,
+							   ch->equipment[i]->bitvector5};
+		if (IS_PC(ch))
+			spell_ward_mask_equipment_bits(equipment_bits);
 		for (j = 0; j < MAX_OBJ_AFFECT; j++)
 		{
 			affect_modify(ch->equipment[i]->affected[j].location,
 				      ch->equipment[i]->affected[j].modifier,
-				      &(ch->equipment[i]->bitvector), TRUE);
+				      equipment_bits, TRUE);
 		}
 		affect_modify(APPLY_AC, -(apply_ac(ch, i)), NULL, FALSE);
 	}
@@ -1570,6 +1583,9 @@ void all_affects(P_char ch, int mode)
 
 	/* This is where we handle damroll cap via level. Now 240 at 56. */
 	TmpAffs.Dam = MIN(GET_LEVEL(ch) * 4 + 16, TmpAffs.Dam);
+
+	if (mode)
+		spell_ward_equipment_sync(ch);
 
 	for (af = ch->affected; af; af = af->next)
 	{
@@ -1838,6 +1854,12 @@ void event_short_affect(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 	if (!af)
 		return;
 
+	if (spell_ward_is_managed(af))
+	{
+		spell_ward_expire(ch, af);
+		return;
+	}
+
 	wear_off_message(ch, af);
 	affect_remove(ch, af);
 }
@@ -2023,6 +2045,8 @@ void affect_remove(P_char ch, struct affected_type *af)
 	 * remove structure *af from linked list
 	 */
 
+	if (spell_ward_is_managed(af))
+		spell_ward_cancel_events(ch, af);
 	all_affects(ch, FALSE);
 	// If af is at the head of list
 	if (ch->affected == af)
@@ -2113,7 +2137,8 @@ void affect_from_char(P_char ch, int skill)
 	for (hjp = ch->affected; hjp; hjp = tmp)
 	{
 		tmp = hjp->next;
-		if (hjp->type == skill)
+		if (hjp->type == skill &&
+		    !(spell_ward_is_equipment(hjp) && IS_SET(hjp->flags, AFFTYPE_NODISPEL)))
 		{
 			affect_remove(ch, hjp);
 		}
@@ -2135,7 +2160,9 @@ struct affected_type *get_spell_from_char(P_char ch, int spell, void *context, i
 
 	for (hjp = ch->affected; hjp; hjp = hjp->next)
 	{
-		if (hjp->type == spell && (context == NULL || hjp->context == context) &&
+		if (hjp->type == spell &&
+		    (!spell_ward_is_managed(hjp) || spell_ward_is_active(hjp)) &&
+		    (context == NULL || hjp->context == context) &&
 		    (flagMask == 0 || (hjp->flags & flagMask) != 0))
 		{
 			return hjp;
@@ -2149,7 +2176,8 @@ bool affected_by_spell(P_char ch, int skill)
 	struct affected_type *hjp;
 
 	for (hjp = ch->affected; hjp; hjp = hjp->next)
-		if (hjp->type == skill)
+		if (hjp->type == skill &&
+		    (!spell_ward_is_managed(hjp) || spell_ward_is_active(hjp)))
 			return (TRUE);
 
 	return (FALSE);
@@ -2161,7 +2189,8 @@ int affected_by_spell_count(P_char ch, int skill)
 	struct affected_type *hjp;
 
 	for (hjp = ch->affected; hjp; hjp = hjp->next)
-		if (hjp->type == skill)
+		if (hjp->type == skill &&
+		    (!spell_ward_is_managed(hjp) || spell_ward_is_active(hjp)))
 			count++;
 
 	return count;

@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 7;
-constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 8;
+constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 9;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 10;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
@@ -145,6 +145,14 @@ struct player_affect_snapshot
 	uint8_t location;
 	uint16_t level;
 	std::array<uint64_t, 5> bitvectors;
+	uint64_t ward_source_uid;
+	int32_t ward_full_duration;
+	int64_t ward_capacity;
+	int64_t ward_capacity_max;
+	int32_t ward_refresh_remaining;
+	uint8_t ward_source_type;
+	uint8_t ward_source_worn;
+	uint8_t ward_active;
 	std::string wear_off_character;
 	std::string wear_off_room;
 };

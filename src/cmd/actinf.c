@@ -42,6 +42,7 @@ using namespace std;
 #include "combat/guard.h"
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
+#include "combat/spell_wards.h"
 #include "world/map.h"
 #include "world/zone_story_quest_runtime.h"
 #include "economy/nexus_stones.h"
@@ -6514,6 +6515,15 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 	{
 		send_to_char("Protected by:   ", ch);
 		send_to_char(buf, ch);
+		send_to_char("\n", ch);
+	}
+
+	char ward_status[512];
+	spell_ward_status(ch, ward_status, sizeof(ward_status));
+	if (*ward_status)
+	{
+		send_to_char("Ward status:     ", ch);
+		send_to_char(ward_status, ch);
 		send_to_char("\n", ch);
 	}
 	buf[0] = 0;

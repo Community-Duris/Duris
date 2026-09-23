@@ -2,7 +2,7 @@
 
 Duris has two deliberately separate histories:
 
-- `migrations/run_migration.sh` is the legacy additive upgrade path. Its 145 progress
+- `migrations/run_migration.sh` is the legacy additive upgrade path. Its 146 progress
   steps and `mud_schema_migrations` data-copy markers are not complete historical
   execution evidence and are never backfilled as if they were.
 - `migrations/migration_manifest.json` is the authoritative immutable history after
