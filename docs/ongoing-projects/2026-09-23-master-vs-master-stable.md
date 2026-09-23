@@ -61,7 +61,7 @@ Cherry-picks have been added since:
   deployed at 2026-09-23 11:12. On `master` they are `e5c49f739`, `86fd07c15` and
   `89332a35f`. They reach `codex/master-stable` the next time Liskin merges
   `master`. If staging moves to the head of `codex/master-stable` before then,
-  the ferry drops out until he does.
+  the ferry drops out until they do.
 
 That branch exists only on the staging host, not on GitHub.
 
