@@ -238,7 +238,7 @@ bool sql_load_player_shapechanges(P_char ch)
 {
 	return false;
 }
-bool sql_save_player_pets(P_char ch, int save_type)
+bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 {
 	return false;
 }
@@ -1264,7 +1264,7 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
-	if (!sql_save_player_pets(ch, type))
+	if (!sql_save_player_pets(ch, type, room))
 	{
 		logit(LOG_DEBUG, "sql_save_player: component=pets outcome=failure");
 		sql_rollback();
@@ -3613,13 +3613,21 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 }
 
 // pet save - save all player's pets with equipment
-bool sql_save_player_pets(P_char ch, int save_type)
+bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 {
-	if (!ch || !IS_PC(ch) || !DB || ch->in_room < 0)
+	if (!ch || !IS_PC(ch) || !DB)
+		return false;
+	// New-character baseline saves run before enter_game places the character in
+	// the world. writeCharacter has already resolved a durable birthplace/home
+	// vnum for that save, so use it when no live room is available. Without this
+	// fallback, even an empty pet set rejects every new-character baseline.
+	int pet_room_vnum = save_room_vnum;
+	if (ch->in_room >= 0 && ch->in_room <= top_of_world)
+		pet_room_vnum = world[ch->in_room].number;
+	if (pet_room_vnum == NOWHERE)
 		return false;
 	player_snapshot snapshot = {};
-	if (player_snapshot_capture(ch, 1, PLAYER_COMPONENT_PETS, save_type,
-				    world[ch->in_room].number,
+	if (player_snapshot_capture(ch, 1, PLAYER_COMPONENT_PETS, save_type, pet_room_vnum,
 				    &snapshot) != player_snapshot_capture_result::ok)
 		return false;
 	const bool own_transaction = !sql_in_transaction();

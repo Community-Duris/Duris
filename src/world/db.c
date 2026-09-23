@@ -719,18 +719,29 @@ void boot_db(int mini_mode)
 
 	if (!mini_mode)
 	{
-		fprintf(stderr, "-- Player corpses\n");
-		logit(LOG_STATUS, "Reloading Player corpses.");
-		restoreCorpses();
+		/* Copyover carries the complete live ground-object graph, including player
+		 * corpses.  Loading SQL corpses first materializes their stable child UIDs
+		 * under a newly allocated root and makes recovery reject the same children
+		 * as duplicates.  A cold boot still restores the durable SQL image. */
+		if (!copyover_boot)
+		{
+			fprintf(stderr, "-- Player corpses\n");
+			logit(LOG_STATUS, "Reloading Player corpses.");
+			restoreCorpses();
+		}
 
-		logit(LOG_STATUS, "Reloading SavedItems.");
-		restoreSavedItems();
+		/* Saved ground/storage objects are in the same copyover world graph. */
+		if (!copyover_boot)
+		{
+			logit(LOG_STATUS, "Reloading SavedItems.");
+			restoreSavedItems();
+		}
 
 		fprintf(stderr, "-- Shopkeepers\n");
 		logit(LOG_STATUS, "Reloading Shopkeepers.");
 		// Current copyovers commit full shop stock before handoff. Legacy files
 		// only have their live NPC inventory; Redis never stores shop stock.
-		if (!is_copyover_boot() || copyover_has_durable_shopkeepers() ||
+		if (!copyover_boot || copyover_has_durable_shopkeepers() ||
 		    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 			restore_shopkeepers();
 		remember_boot_shopkeepers();
@@ -745,7 +756,7 @@ void boot_db(int mini_mode)
 		logit(LOG_STATUS, "Setting up player-side artifact list.");
 		setupMortArtiList_sql();
 		// skip loading artifacts from db during copyover - they're restored from copyover.dat
-		if (!is_copyover_boot())
+		if (!copyover_boot)
 		{
 			/* Redis recovery owns floor materialization when its validated generation
 			 * is active. Loading the legacy vnum-only artifact row first would create
@@ -3228,16 +3239,30 @@ static bool room_has_shopkeeper(int mobile_rnum, int room_rnum)
 	return false;
 }
 
-static int replicated_shopkeeper_for_room(int mobile_rnum, int room_rnum)
+static int configured_shopkeeper_for_room(int mobile_rnum, int room_rnum)
 {
 	if (!shop_index || number_of_shops <= 0 || room_rnum < 0 || room_rnum > top_of_world)
 		return -1;
 	const int room = world[room_rnum].number;
+	int match = -1;
 	for (int shop = 0; shop < number_of_shops; ++shop)
-		if (shop_index[shop].keeper == mobile_rnum && shop_index[shop].in_room == room &&
-		    is_replicated_shop(shop))
-			return shop;
-	return -1;
+		if (shop_index[shop].keeper == mobile_rnum && shop_index[shop].in_room == room)
+		{
+			if (match >= 0)
+				return -1;
+			match = shop;
+		}
+	return match;
+}
+
+static bool live_shopkeeper_for_identity(int shop)
+{
+	if (!shop_index || shop < 0 || shop >= number_of_shops)
+		return false;
+	for (P_char keeper = character_list; keeper; keeper = keeper->next)
+		if (singleton_shop_id(keeper) == shop)
+			return true;
+	return false;
 }
 
 /* execute the reset command table of a given zone */
@@ -3246,7 +3271,7 @@ void reset_zone(int zone, int force_item_repop)
 {
 	const int respawn = get_property("artifact.respawn", 0);
 	int cmd_no, last_cmd = 1, last_mob_load = 0;
-	int temp, ival, replicated_shop;
+	int temp, ival, configured_shop, replicated_shop;
 	P_char mob = NULL, last_mob = NULL, tmp_mob = NULL, last_mob_followable = NULL;
 	P_obj obj, obj_to;
 	arti_data artidata;
@@ -3494,12 +3519,18 @@ void reset_zone(int zone, int force_item_repop)
 			case 'M': /* read a mobile */
 				mob_index[ZCMD.arg1].limit =
 					ZCMD.arg2; // set the limit from zone file
-				replicated_shop =
-					replicated_shopkeeper_for_room(ZCMD.arg1, ZCMD.arg3);
+				configured_shop =
+					configured_shopkeeper_for_room(ZCMD.arg1, ZCMD.arg3);
+				replicated_shop = -1;
+				if (configured_shop >= 0 && is_replicated_shop(configured_shop))
+					replicated_shop = configured_shop;
 
 				// Replicated shop identities are room-scoped: the same mobile prototype
-				// may legitimately have one keeper in each configured shop room.
+				// may legitimately have one keeper in each configured shop room. A fixed
+				// keeper that has walked away from home still owns its global identity.
 				if (room_has_shopkeeper(ZCMD.arg1, ZCMD.arg3) ||
+				    (configured_shop >= 0 && replicated_shop < 0 &&
+				     live_shopkeeper_for_identity(configured_shop)) ||
 				    !((replicated_shop >= 0 && ZCMD.arg2 > 0 && ZCMD.arg4 == 100) ||
 				      (mob_index[ZCMD.arg1].number < ZCMD.arg2 &&
 				       ZCMD.arg4 == 100) ||
@@ -3548,8 +3579,8 @@ void reset_zone(int zone, int force_item_repop)
 				}
 				GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 				apply_zone_modifier(mob);
-				if (replicated_shop >= 0)
-					bind_shopkeeper(mob, replicated_shop);
+				if (configured_shop >= 0)
+					bind_shopkeeper(mob, configured_shop);
 				char_to_room(mob, ZCMD.arg3, -2);
 				last_cmd = last_mob_load = 1;
 				break;

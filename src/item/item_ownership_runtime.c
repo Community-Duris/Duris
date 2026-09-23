@@ -1031,7 +1031,11 @@ bool item_ownership_runtime_apply_corpse_discarded(uint32_t owner_pid, uint32_t 
 						   const std::vector<uint64_t> &item_uids,
 						   const corpse_lifecycle_result &result)
 {
-	if (result.action != corpse_lifecycle_action::raise_follower ||
+	if ((result.action != corpse_lifecycle_action::release &&
+	     result.action != corpse_lifecycle_action::release_nested &&
+	     result.action != corpse_lifecycle_action::destroy &&
+	     result.action != corpse_lifecycle_action::resurrect &&
+	     result.action != corpse_lifecycle_action::raise_follower) ||
 	    result.owner_pid != owner_pid || result.save_id != save_id ||
 	    item_uids.size() != result.discarded_item_count)
 		return false;
@@ -1105,10 +1109,11 @@ bool item_ownership_runtime_apply_corpse_discarded(uint32_t owner_pid, uint32_t 
 	return true;
 }
 
-bool item_ownership_runtime_apply_world_corpse_raise(
-	uint64_t source_uid, int32_t room_vnum, uint32_t player_pid, uint64_t pet_uid,
-	const std::vector<uint64_t> &durable_uids, const std::vector<uint64_t> &discarded_uids,
-	const corpse_lifecycle_result &result)
+bool item_ownership_runtime_apply_world_corpse_raise(uint64_t source_uid, int32_t room_vnum,
+						     uint32_t player_pid, uint64_t pet_uid,
+						     const std::vector<uint64_t> &durable_uids,
+						     const std::vector<uint64_t> &discarded_uids,
+						     const corpse_lifecycle_result &result)
 {
 	const uint64_t result_source = (static_cast<uint64_t>(result.owner_pid) << 32) |
 				       static_cast<uint64_t>(result.save_id);
@@ -1118,13 +1123,12 @@ bool item_ownership_runtime_apply_world_corpse_raise(
 	    !result.corpse_owner_revision || result.room_owner_revision ||
 	    result.player_owner_revision || result.wallet_revision || result.bank_revision ||
 	    result.item_count != durable_uids.size() ||
-	    result.discarded_item_count != discarded_uids.size() ||
-	    !result.discarded_item_count ||
+	    result.discarded_item_count != discarded_uids.size() || !result.discarded_item_count ||
 	    (pet_uid ? (!result.pet_owner_revision || pet_uid != source_uid) :
-		       (result.pet_owner_revision || !durable_uids.empty())))
+		       result.pet_owner_revision))
 		return false;
-	const item_owner_identity room = { item_owner_type::room,
-					   static_cast<uint64_t>(room_vnum), 0 };
+	const item_owner_identity room = { item_owner_type::room, static_cast<uint64_t>(room_vnum),
+					   0 };
 	const item_owner_identity pet = { item_owner_type::pet, pet_uid, player_pid };
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 	std::unordered_set<uint64_t> durable;
@@ -1161,11 +1165,12 @@ bool item_ownership_runtime_apply_world_corpse_raise(
 		return false;
 	for (const auto &[uid, entry] : entries)
 	{
-		if (!item_owner_identity_equal(entry.owner, room) || entry.root_item_uid != source_uid)
+		if (!item_owner_identity_equal(entry.owner, room) ||
+		    entry.root_item_uid != source_uid)
 			continue;
 		const bool destroy = discarded.contains(uid);
-		if ((!destroy && !durable.contains(uid)) || entry.state != item_custody_state::active ||
-		    entry.item_revision == UINT64_MAX)
+		if ((!destroy && !durable.contains(uid)) ||
+		    entry.state != item_custody_state::active || entry.item_revision == UINT64_MAX)
 			return false;
 		const bool parent_selected = entry.parent_item_uid &&
 					     (durable.contains(entry.parent_item_uid) ||
@@ -1175,6 +1180,19 @@ bool item_ownership_runtime_apply_world_corpse_raise(
 		const bool parent_destroyed = discarded.contains(entry.parent_item_uid);
 		const bool boundary = entry.parent_item_uid && parent_destroyed != destroy;
 		boundary_count += boundary ? 1 : 0;
+		bool detached = false;
+		uint64_t ancestor_uid = entry.parent_item_uid;
+		for (size_t depth = 0; ancestor_uid; ++depth)
+		{
+			if (depth > durable.size() + discarded.size())
+				return false;
+			const auto ancestor = entries.find(ancestor_uid);
+			if (ancestor == entries.end())
+				return false;
+			if (discarded.contains(ancestor_uid) != destroy)
+				detached = true;
+			ancestor_uid = ancestor->second.parent_item_uid;
+		}
 		uint64_t root = uid;
 		uint64_t parent = entry.parent_item_uid;
 		if (parent && (destroy ? discarded.contains(parent) : durable.contains(parent)))
@@ -1186,7 +1204,8 @@ bool item_ownership_runtime_apply_world_corpse_raise(
 				if (ancestor == entries.end())
 					return false;
 				const uint64_t next = ancestor->second.parent_item_uid;
-				if (!next || !(destroy ? discarded.contains(next) : durable.contains(next)))
+				if (!next ||
+				    !(destroy ? discarded.contains(next) : durable.contains(next)))
 					break;
 				root = next;
 				if (depth == durable.size() + discarded.size())
@@ -1195,7 +1214,8 @@ bool item_ownership_runtime_apply_world_corpse_raise(
 		}
 		else
 			parent = 0;
-		const uint64_t revision = entry.item_revision + (boundary ? 2 : 1);
+		const uint64_t revision =
+			entry.item_revision + (detached ? 1 : 0) + ((destroy || pet_uid) ? 1 : 0);
 		if (revision < entry.item_revision)
 			return false;
 		if (destroy)
@@ -1217,7 +1237,7 @@ bool item_ownership_runtime_apply_world_corpse_raise(
 	if ((source_revision == owner_revisions.end() ? 0 : source_revision->second) !=
 		    result.corpse_owner_revision - source_steps ||
 	    (pet_uid && (pet_revision == owner_revisions.end() ? 0 : pet_revision->second) !=
-			result.pet_owner_revision - 1) ||
+				result.pet_owner_revision - 1) ||
 	    (destroy_revision != owner_revisions.end() &&
 	     destroy_revision->second != result.destruction_owner_revision - 1))
 		return false;
@@ -1237,10 +1257,10 @@ bool item_ownership_runtime_apply_world_corpse_raise(
 		found->second.root_item_uid = change.root;
 		found->second.parent_item_uid = change.parent;
 		found->second.item_revision = change.revision;
-		found->second.owner = change.destroy ? destruction : pet;
-		found->second.owner_revision = change.destroy ?
-						 result.destruction_owner_revision :
-						 result.pet_owner_revision;
+		found->second.owner = change.destroy ? destruction : (pet_uid ? pet : room);
+		found->second.owner_revision = change.destroy ? result.destruction_owner_revision :
+					       pet_uid	      ? result.pet_owner_revision :
+								result.corpse_owner_revision;
 		if (change.destroy)
 			found->second.state = item_custody_state::destroyed;
 	}

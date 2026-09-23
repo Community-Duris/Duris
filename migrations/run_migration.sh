@@ -228,7 +228,32 @@ UPDATE log_entries SET date='1970-01-01 00:00:01' WHERE date < '1970-01-01 00:00
 UPDATE offline_messages SET date='1970-01-01 00:00:01' WHERE date < '1970-01-01 00:00:01' OR date = '0000-00-00 00:00:00';
 UPDATE ping SET TIMESTAMP='1970-01-01 00:00:01' WHERE TIMESTAMP < '1970-01-01 00:00:01' OR TIMESTAMP = '0000-00-00 00:00:00';
 UPDATE pkill_event SET stamp='1970-01-01 00:00:01' WHERE stamp < '1970-01-01 00:00:01' OR stamp = '0000-00-00 00:00:00';
-UPDATE progress SET stamp='1970-01-01 00:00:01' WHERE stamp < '1970-01-01 00:00:01' OR stamp = '0000-00-00 00:00:00';"
+UPDATE progress SET stamp='1970-01-01 00:00:01' WHERE stamp < '1970-01-01 00:00:01' OR stamp = '0000-00-00 00:00:00';
+SET SESSION sql_mode='';
+SET @offline_message_id_sql = IF(
+    EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema=DATABASE() AND table_name='offline_messages'
+          AND column_name='message_id'
+    ),
+    'SELECT 1',
+    'ALTER TABLE offline_messages ADD COLUMN message_id BINARY(16) NULL DEFAULT NULL AFTER pid'
+);
+PREPARE offline_message_id_stmt FROM @offline_message_id_sql;
+EXECUTE offline_message_id_stmt;
+DEALLOCATE PREPARE offline_message_id_stmt;
+SET @offline_message_identity_index_sql = IF(
+    EXISTS (
+        SELECT 1 FROM information_schema.statistics
+        WHERE table_schema=DATABASE() AND table_name='offline_messages'
+          AND index_name='uq_offline_message_identity'
+    ),
+    'SELECT 1',
+    'ALTER TABLE offline_messages ADD UNIQUE KEY uq_offline_message_identity (pid,message_id)'
+);
+PREPARE offline_message_identity_index_stmt FROM @offline_message_identity_index_sql;
+EXECUTE offline_message_identity_index_stmt;
+DEALLOCATE PREPARE offline_message_identity_index_stmt;"
 
 convert_tables_to_innodb_if_present "convert legacy MyISAM tables to InnoDB" \
     artifact_bind artifacts artifacts_mortal boons boons_progress boons_shop \
@@ -2577,7 +2602,9 @@ CREATE TABLE IF NOT EXISTS offline_messages (
     date DATETIME NOT NULL,
     pid INT NOT NULL DEFAULT 0,
     message TEXT NOT NULL
-);"
+);
+SET SESSION sql_mode='';
+ALTER TABLE offline_messages MODIFY COLUMN message MEDIUMTEXT NOT NULL;"
 
 run_sql "create outposts table" "
 CREATE TABLE IF NOT EXISTS outposts (

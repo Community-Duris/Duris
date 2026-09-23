@@ -9,6 +9,7 @@ import tempfile
 root = Path(__file__).resolve().parents[2]
 copyover = (SRC / "copyover.c").read_text()
 comm = (SRC / "comm.c").read_text()
+db = (SRC / "db.c").read_text()
 
 body = copyover[copyover.index("bool copyover_save("):copyover.index(
     "static P_char copyover_load_player", copyover.index("bool copyover_save(")
@@ -34,6 +35,9 @@ execute = body.index("execl(")
 
 checks = {
     "copyover returns failure": body.count("return false;") >= 10,
+    "copyover refuses sessions that cannot survive exec before any save or close":
+        body.index("non-preservable connection") < save and
+        body.index("non-preservable connection") < close,
     "ships precede characters": body.index("drain_pending_ship_saves") < save,
     "lockers precede characters": body.index("locker_async_drain") < save,
     "connected saves precede remaining flush": save < flush,
@@ -58,6 +62,17 @@ checks = {
     "legacy raw workers are not stopped at shutdown": "persistence_stop_scalar_event_worker();" not in
                                                        comm,
     "failure resumes game loop": "goto resume_game_loop;" in comm,
+    "failed recovery uses graceful shutdown":
+        "copyover recovery failed; requesting graceful cold restart" in comm and
+        "_reboot = 1;" in comm and
+        "exit(1);" not in comm[comm.index("else if (copyover_boot)"):
+                               comm.index("else", comm.index("else if (copyover_boot)") + 5)],
+    "copyover defers SQL corpse restoration":
+        "if (!copyover_boot)" in db[db.index("-- Player corpses") - 500:
+                                     db.index("Reloading SavedItems")],
+    "copyover defers SQL saved-ground restoration":
+        "if (!copyover_boot)" in db[db.index("Saved ground/storage objects"):
+                                     db.index("-- Shopkeepers")],
     "shutdown drain is fail closed": "!player_save_pipeline_drain(3000)" in comm and
                                       "pipeline_drain_failed" in comm,
     "no destructive restart fallback": "refusing fallback exit" in comm,

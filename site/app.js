@@ -178,6 +178,7 @@ if (diagrams.length) {
                   startOnLoad: false,
                   securityLevel: "strict",
                   theme: "dark",
+                  layout: "dagre",
                   fontFamily: "Inter, sans-serif",
                   themeVariables: {
                     primaryColor: "#243a2e",

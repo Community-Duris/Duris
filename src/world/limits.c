@@ -1747,6 +1747,11 @@ void point_update(void)
 		i_next = i->next;
 		if (IS_NPC(i))
 			continue;
+		// A failed death save deliberately retains the character in memory until
+		// its durable retry succeeds. It is not an idle/linkdead player and must
+		// not enter the competing RENT_LINKDEAD void loop.
+		if (GET_STAT(i) == STAT_DEAD)
+			continue;
 
 		if (i->desc && (i->desc->connected != CON_PLAYING))
 			continue;
