@@ -5137,6 +5137,62 @@ bool persistence_defer_corpse_destruction(P_obj corpse)
  * object decay and be extracted.  Mainly for use on corpses of course,
  * but other objects may be handled in the same way.
  */
+namespace
+{
+struct room_decay_context
+{
+	uint64_t item_uid;
+	int room;
+};
+
+bool ordinary_room_leaf_decay_eligible(P_obj item, int room)
+{
+	return item && room >= 0 && room <= top_of_world && OBJ_IN_ROOM(item, room) &&
+	       item->R_num >= 0 && item->R_num <= top_of_objt && !item->contains &&
+	       item->type != ITEM_MONEY && item->type != ITEM_CORPSE && item->type != ITEM_SHIP &&
+	       item->type != ITEM_BOAT && !IS_ARTIFACT(item) &&
+	       item->R_num != real_object(VOBJ_WALLS) && !obj_index[item->R_num].func.obj;
+}
+
+bool publish_room_leaf_decay(P_char actor, bool committed, const item_transfer_result &,
+			     unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	room_decay_context context = {};
+	if (actor || !encoded || encoded_size != sizeof(context))
+		return false;
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		logit(LOG_FILE, "item decay did not commit uid=%llu",
+		      (unsigned long long)context.item_uid);
+		return true;
+	}
+	P_obj item = nullptr;
+	for (P_obj candidate = object_list; candidate; candidate = candidate->next)
+		if (candidate->obj_uid == context.item_uid)
+		{
+			item = candidate;
+			break;
+		}
+	if (!item)
+		return true;
+	if (!ordinary_room_leaf_decay_eligible(item, context.room))
+		return false;
+	if (world[context.room].people)
+	{
+		act("$p crumbles to dust and blows away.", TRUE, world[context.room].people, item,
+		    0, TO_ROOM);
+		act("$p crumbles to dust and blows away.", TRUE, world[context.room].people, item,
+		    0, TO_CHAR);
+	}
+	extract_obj(item, TRUE);
+	for (P_obj candidate = object_list; candidate; candidate = candidate->next)
+		if (candidate->obj_uid == context.item_uid)
+			return false;
+	return true;
+}
+} // namespace
+
 void Decay(P_obj obj)
 {
 	P_char carrier = NULL;
@@ -5152,6 +5208,36 @@ void Decay(P_obj obj)
 	}
 	if (persistence_defer_corpse_room_release(obj))
 		return;
+	if (item_tree_has_active_custody(obj))
+	{
+		item_ownership_runtime_entry runtime = {};
+		const bool room_leaf =
+			OBJ_ROOM(obj) && ordinary_room_leaf_decay_eligible(obj, obj->loc.room) &&
+			item_ownership_runtime_lookup(obj->obj_uid, &runtime) &&
+			runtime.state == item_custody_state::active &&
+			runtime.root_item_uid == obj->obj_uid && !runtime.parent_item_uid &&
+			runtime.owner.type == item_owner_type::room &&
+			runtime.owner.id == static_cast<uint64_t>(world[obj->loc.room].number);
+		if (room_leaf)
+		{
+			const item_owner_identity destruction = { item_owner_type::destruction, 0,
+								  0 };
+			const room_decay_context context = { obj->obj_uid, obj->loc.room };
+			item_movement_reject reject = item_movement_reject::none;
+			if (item_movement_transaction_submit(
+				    nullptr, obj, nullptr, runtime.owner, destruction,
+				    item_transfer_reason::destruction, OBJ_VNUM(obj), nullptr,
+				    &context, sizeof(context), nullptr, &reject,
+				    publish_room_leaf_decay))
+				return;
+			logit(LOG_FILE, "item decay retained uid=%llu reason=%s",
+			      (unsigned long long)obj->obj_uid, item_movement_reject_name(reject));
+		}
+		else
+			logit(LOG_FILE, "item decay deferred for complex active tree uid=%llu",
+			      (unsigned long long)obj->obj_uid);
+		return;
+	}
 
 	if (OBJ_ROOM(obj))
 	{

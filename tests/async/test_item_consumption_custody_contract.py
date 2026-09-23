@@ -12,6 +12,7 @@ MOVEMENT = (ROOT / "src/item/item_movement_transaction.c").read_text(
     encoding="utf-8"
 )
 JANITOR = (ROOT / "src/specs/specs.winterhaven.c").read_text(encoding="utf-8")
+HANDLER = (ROOT / "src/world/handler.c").read_text(encoding="utf-8")
 
 
 def body(source: str, signature: str) -> str:
@@ -94,6 +95,21 @@ class ItemConsumptionCustodyContract(unittest.TestCase):
         self.assertLess(janitor.index("item_tree_has_active_custody(o)"),
                         janitor.index("obj_from_room(o);"))
         self.assertIn("!IS_ARTIFACT(o) && !item_tree_has_active_custody(o)", janitor)
+
+    def test_room_leaf_decay_commits_destruction_before_extraction(self) -> None:
+        decay = body(HANDLER, "void Decay(P_obj obj)")
+        publish = body(HANDLER, "bool publish_room_leaf_decay(")
+        eligible = body(HANDLER, "bool ordinary_room_leaf_decay_eligible(")
+        self.assertLess(decay.index("if (item_tree_has_active_custody(obj))"),
+                        decay.index("if (OBJ_ROOM(obj))"))
+        self.assertIn("item_movement_transaction_submit(", decay)
+        self.assertIn("item_transfer_reason::destruction", decay)
+        self.assertIn("publish_room_leaf_decay", decay)
+        self.assertIn("ordinary_room_leaf_decay_eligible(obj, obj->loc.room)", decay)
+        self.assertIn("OBJ_IN_ROOM(item, room)", eligible)
+        self.assertIn("!item->contains", eligible)
+        self.assertLess(publish.index("!ordinary_room_leaf_decay_eligible(item, context.room)"),
+                        publish.index("extract_obj(item, TRUE)"))
 
 
 if __name__ == "__main__":

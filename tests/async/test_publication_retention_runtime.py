@@ -40,6 +40,7 @@ static std::vector<item_transfer_reason> adoption_reasons;
 static item_transfer_reason expected_adoption_reason = item_transfer_reason::destruction;
 static int adoption_publications = 0;
 static int adoption_completions = 0;
+static int room_decay_publications = 0;
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
 
 void obj_to_obj(P_obj, P_obj) {}
@@ -189,6 +190,14 @@ void adoption_completion(P_char actor, bool committed, const item_transfer_resul
 {
     assert(actor && committed && adoption_publications == 1);
     ++adoption_completions;
+}
+
+bool room_decay_publication(P_char actor, bool committed, const item_transfer_result &result,
+                            unsigned int, const uint8_t *, size_t)
+{
+    assert(!actor && committed && result.item_count == 1);
+    ++room_decay_publications;
+    return room_decay_publications >= 2;
 }
 
 int main(int argc, char **argv)
@@ -343,6 +352,44 @@ int main(int argc, char **argv)
     target_runtime = {};
     simulate_adoption = false;
     runtime_entry = previous_runtime;
+
+    // Autonomous room decay retains the room/item fences when its live
+    // publication cannot finish, then retries without a player actor.
+    room_data rooms[2] = {};
+    rooms[0].number = 123;
+    world = rooms;
+    object.loc_p = LOC_ROOM;
+    object.loc.room = 0;
+    runtime_entry.owner = {item_owner_type::room, 123, 0};
+    assert(item_movement_transaction_submit(
+        nullptr, &object, nullptr, runtime_entry.owner, destruction,
+        item_transfer_reason::destruction, 42, nullptr, nullptr, 0, nullptr,
+        &reject, room_decay_publication));
+    bool room_completion_seen = false;
+    for (int spin = 0; spin < 1000 && !room_completion_seen; ++spin)
+    {
+        const size_t count = critical_command_coordinator_pulse(completions, 8);
+        if (count)
+        {
+            item_movement_transaction_handle_completions(completions, count);
+            room_completion_seen = true;
+        }
+        else
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(room_completion_seen && room_decay_publications == 1);
+    assert(item_movement_transaction_health_copy().pending == 1);
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::room, 123}, nullptr));
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(room_decay_publications == 2);
+    assert(item_movement_transaction_health_copy().pending == 0);
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::room, 123}, nullptr));
+    runtime_entry = previous_runtime;
+    object.loc_p = LOC_CARRIED;
+    object.loc.carrying = &actor;
+    world = nullptr;
 
     // Exhausted uncertainty must not invoke the command callback as failure,
     // and must not checkpoint away the only durable retry/reconciliation record.

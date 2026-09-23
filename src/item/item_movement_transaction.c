@@ -1249,7 +1249,8 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	{
 		// Chained commands need their original actor after acknowledgement. A
 		// pulse may retry the ACK while that actor is disconnected.
-		if (!actor && (entry.completion || (entry.adopting && !entry.adoption_only)))
+		if (!actor && (entry.actor_pid || entry.actor_runtime_id) &&
+		    (entry.completion || (entry.adopting && !entry.adoption_only)))
 		{
 			account_health();
 			return;
@@ -1344,7 +1345,7 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	}
 	if (entry.publication)
 	{
-		if (!actor)
+		if (!actor && (entry.actor_pid || entry.actor_runtime_id))
 		{
 			account_health();
 			return;
@@ -1570,7 +1571,15 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				  reason == item_transfer_reason::mobile_claim &&
 				  !target_container && !corpse_context &&
 				  item_owner_identity_equal(from_owner, to_owner);
-	if ((!player_actor && !mobile_actor) || !root || !root->obj_uid ||
+	const bool room_destruction =
+		!actor && root && publication && !target_container && !corpse_context &&
+		reason == item_transfer_reason::destruction &&
+		from_owner.type == item_owner_type::room &&
+		to_owner.type == item_owner_type::destruction && OBJ_ROOM(root) &&
+		root->loc.room >= 0 && root->loc.room <= top_of_world &&
+		world[root->loc.room].number > 0 &&
+		from_owner.id == static_cast<uint64_t>(world[root->loc.room].number);
+	if ((!player_actor && !mobile_actor && !room_destruction) || !root || !root->obj_uid ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
 	    corpse_transfer != (corpse_context != NULL))
 		return reject_with(reject, item_movement_reject::invalid_request);
@@ -1580,6 +1589,9 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
 	const bool adopted = item_ownership_runtime_lookup(root->obj_uid, &runtime);
+	if (room_destruction && (!adopted || runtime.state != item_custody_state::active ||
+				 runtime.root_item_uid != root->obj_uid || runtime.parent_item_uid))
+		return reject_with(reject, item_movement_reject::topology_mismatch);
 	const item_owner_identity effective_from = adopted ? from_owner : system_owner_identity;
 	const item_owner_identity effective_to = adopted ? to_owner : from_owner;
 	const bool admission_handoff = !adopted && !item_owner_identity_equal(from_owner, to_owner);
@@ -1665,12 +1677,14 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	    !collector_death_enrollment_attach(actor, corpse_context, operation_id, snapshots,
 					       &payload) ||
 	    !item_transfer_command_build(&command, operation_id, payload,
-					 critical_source_site::command,
-					 critical_deadline_class::interactive))
+					 room_destruction ? critical_source_site::zone_event :
+							    critical_source_site::command,
+					 room_destruction ? critical_deadline_class::background :
+							    critical_deadline_class::interactive))
 		return reject_with(reject, item_movement_reject::command_build_failure);
 	pending_movement entry = {
 		.actor_pid = player_actor ? static_cast<uint32_t>(GET_PID(actor)) : 0,
-		.actor_runtime_id = actor->runtime_id,
+		.actor_runtime_id = actor ? actor->runtime_id : 0,
 		.payload = payload,
 		.requested_to_owner = to_owner,
 		.requested_target_parent_uid = target_container ? target_container->obj_uid : 0,
@@ -2288,7 +2302,11 @@ void retry_publications(void)
 			continue;
 		}
 		if (!found->second.actor_pid)
+		{
+			if (!found->second.actor_runtime_id)
+				publish(found, nullptr);
 			continue;
+		}
 		if (P_char actor = find_live_player(found->second.actor_pid))
 			publish(found, actor);
 	}
@@ -2339,6 +2357,8 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			// fence. Publishing with a null actor deliberately skips the callback's
 			// live move.
 			publish(found, find_live_mobile(found->second.actor_runtime_id));
+		else
+			publish(found, nullptr);
 	}
 	pump_creation_grants();
 	account_health();

@@ -89,6 +89,9 @@ struct item_movement_health
 	uint64_t publication_ack_pending;
 };
 
+// A null actor is accepted only for an already-adopted room root being
+// destroyed with an opt-in publication callback. This lets autonomous decay
+// commit custody before freeing the live room object.
 bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_container,
 				      const item_owner_identity &from_owner,
 				      const item_owner_identity &to_owner,
