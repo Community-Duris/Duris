@@ -43,7 +43,7 @@ using P_obj = object *;
 struct character {
     struct { pc_data *pc; } only;
     bool npc = false, trusted = false, arena = false;
-    int stat = 1, cash[4] = {1, 0, 0, 0};
+    int stat = 1, in_room = -1, cash[4] = {1, 0, 0, 0};
     const char *name = "Walletfixture";
     P_obj carrying = nullptr;
 };
@@ -54,11 +54,12 @@ using P_char = character *;
 #define CHAR_IN_ARENA(ch) ((ch)->arena)
 #define GET_NAME(ch) ((ch)->name)
 #define GET_STAT(ch) ((ch)->stat)
+#define GET_ROOM(ch) ((ch)->in_room)
 #define GET_COPPER(ch) ((ch)->cash[0])
 #define GET_SILVER(ch) ((ch)->cash[1])
 #define GET_GOLD(ch) ((ch)->cash[2])
 #define GET_PLATINUM(ch) ((ch)->cash[3])
-constexpr int STAT_DEAD = 1, AVATAR = 0, RENT_DEATH = 4;
+constexpr int NOWHERE = -1, STAT_DEAD = 1, AVATAR = 0, RENT_DEATH = 4;
 constexpr int DEATH_EXTRACT_RETRY_INITIAL = 4;
 enum class persistence_severity { info, alert };
 template<class... T> void persistence_report(T...) {}
@@ -86,6 +87,7 @@ void collector_death_enrollment_end(P_obj) { ++enrollment_ends; }
 void release_after_terminal_death(P_char, const char *) { ++releases; }
 struct death_extract_retry_context { int delay; uint64_t corpse_uid; };
 void schedule_death_extract_retry(P_char, uint64_t, int delay) { ++schedules; last_delay = delay; }
+static void hold_for_death_extract_retry(P_char ch) { ch->stat = STAT_DEAD; }
 __TRACKER__
 __PENDING__
 static void start_wallet_conversion(P_char ch) { __ADMISSION__ }

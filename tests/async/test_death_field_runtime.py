@@ -356,7 +356,10 @@ def main():
     ]
     with tempfile.TemporaryDirectory(prefix='death-field-', dir=build) as directory:
         source, binary = Path(directory) / 'harness.cpp', Path(directory) / 'harness'
-        source.write_text('\n'.join([PRELUDE, *[extract_function(*f) for f in functions], DRIVER]))
+        aura_stub = "const char *elemental_aura_failure_message(P_char) { return nullptr; }"
+        source.write_text(
+            '\n'.join([PRELUDE, aura_stub, *[extract_function(*f) for f in functions], DRIVER])
+        )
         subprocess.run(['g++', '-std=c++20', '-g', '-O1', '-fsanitize=address,undefined',
                         '-Isrc', '-D__NO_MYSQL__', '-Isrc/no_mysql', str(source), '-o', str(binary)], cwd=ROOT, check=True, timeout=120)
         subprocess.run([str(binary)], check=True, timeout=30)

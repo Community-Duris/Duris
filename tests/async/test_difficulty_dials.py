@@ -122,7 +122,8 @@ def test_table_enum_and_properties_agree() -> None:
         assert member == "DIFFICULTY_" + key.upper().replace(".", "_"), (key, member)
     section = PROPERTIES[PROPERTIES.index("[difficulty]"):].splitlines()
     for key in keys:
-        assert f"difficulty.dial.{key}=5.000" in section, key
+        expected = "1.000" if key == "player.recovery" else "5.000"
+        assert f"difficulty.dial.{key}={expected}" in section, key
     for setting in (1, 2, 3, 4, 6, 7, 8, 9, 10):
         assert any(line.startswith(f"difficulty.curve.{setting:02d}=") for line in section)
     # 5 has no key: it is always 1.0.

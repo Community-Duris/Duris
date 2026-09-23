@@ -2736,13 +2736,20 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch) || !ch->only.pc)
 		return;
 
-	if (GET_STAT(ch) != STAT_DEAD || CHAR_IN_ARENA(ch))
+	if (ch->in_room != NOWHERE && (CHAR_IN_ARENA(ch) || GET_STAT(ch) != STAT_DEAD))
 	{
 		clear_corpse_transfer_dispute(ch);
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
-				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
+				  "death_recovery_abandoned", "stat=%d room=%d", GET_STAT(ch),
+				  ch->in_room);
 		return;
 	}
+	// update_pos() derives a sleeping state from the retained 1 HP between
+	// pulses. NOWHERE is the private recovery hold, so restore its dead marker;
+	// a genuinely resumed character has been placed back in a room and took the
+	// abandonment branch above.
+	if (GET_STAT(ch) != STAT_DEAD)
+		hold_for_death_extract_retry(ch);
 
 	const bool items_busy = item_movement_transaction_player_busy(ch);
 	const bool currency_busy = currency_transaction_player_busy(ch);

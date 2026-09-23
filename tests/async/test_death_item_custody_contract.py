@@ -144,7 +144,18 @@ checks.append((
     retry.index("item_movement_transaction_player_busy(ch)") <
     retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") and
     contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid,") and
-    contains(retry, "GET_STAT(ch) != STAT_DEAD")
+    contains(retry, "ch->in_room != NOWHERE") and
+    contains(retry, "CHAR_IN_ARENA(ch) || GET_STAT(ch) != STAT_DEAD")
+))
+checks.append((
+    "the private NOWHERE hold survives ordinary position normalization",
+    contains(retry, "if (GET_STAT(ch) != STAT_DEAD)\n\t\thold_for_death_extract_retry(ch);") and
+    retry.index("ch->in_room != NOWHERE") <
+    retry.index("hold_for_death_extract_retry(ch);")
+))
+checks.append((
+    "the private NOWHERE hold never indexes arena room state",
+    retry.index("ch->in_room != NOWHERE") < retry.index("CHAR_IN_ARENA(ch)")
 ))
 # The busy test is read into named booleans so the poll's log line can report
 # which subsystem is holding the death; the branch itself is unchanged.
@@ -371,7 +382,7 @@ int main() {
     char_data ch{{&pc}};
     character_list = &ch;
     schedule_death_extract_retry(&ch, 999, 4);
-    assert(ch.stat == STAT_DEAD && ch.in_room == NOWHERE && death_retry_fallback_pending);
+    assert(ch.hit == 1 && ch.stat == STAT_DEAD && ch.in_room == NOWHERE && death_retry_fallback_pending);
     death_extract_retry_pulse();
     assert(attempts == 0);
     now_usec += 1000000;
@@ -381,7 +392,7 @@ int main() {
     now_usec += 1000000;
     death_extract_retry_pulse();
     assert(attempts == 2 && !pc.death_retry_due_usec && !death_retry_fallback_pending);
-    assert(ch.stat == STAT_DEAD);
+    assert(ch.hit == 1 && ch.stat == STAT_DEAD);
     death_extract_retry_pulse();
     assert(attempts == 2);
 }
