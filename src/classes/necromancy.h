@@ -104,7 +104,7 @@ bool prepare_corpse_raise_pet_state(P_obj corpse, P_char caster, P_char follower
 void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj corpse,
 					corpse_raise_kind kind, int level, int variant,
 					const char *message, uint64_t pet_uid, bool hostile,
-					int32_t prepared_duration,
-					const std::string &restore_state, bool destroy_equipment);
+					int32_t prepared_duration, const std::string &restore_state,
+					bool destroy_equipment);
 
 #endif // __NECROMANCY_H__

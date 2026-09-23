@@ -1637,8 +1637,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 	const std::string &root, const flatfile_authority_lock &lock,
 	const corpse_lifecycle_payload &payload,
 	const std::vector<flatfile_corpse_custody_item> &expected_items,
-	const std::vector<uint64_t> &durable_uids,
-	const std::vector<uint64_t> &discarded_uids,
+	const std::vector<uint64_t> &durable_uids, const std::vector<uint64_t> &discarded_uids,
 	flatfile_item_corpse_release_mutation *mutation, std::string *error)
 {
 	const uint64_t source_uid = (static_cast<uint64_t>(payload.owner_pid) << 32) |
@@ -1654,8 +1653,9 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 			       [](const auto &left, const auto &right)
 			       { return left.item_uid < right.item_uid; }) &&
 		std::adjacent_find(expected_items.begin(), expected_items.end(),
-				   [](const auto &left, const auto &right)
-				   { return left.item_uid == right.item_uid; }) == expected_items.end();
+				   [](const auto &left, const auto &right) {
+					   return left.item_uid == right.item_uid;
+				   }) == expected_items.end();
 	if (!mutation || !lock.matches(root) ||
 	    payload.action != corpse_lifecycle_action::raise_world_follower || !source_uid ||
 	    payload.room_vnum <= 0 || !payload.destination_player_pid ||
@@ -1672,14 +1672,13 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 	for (size_t index = 0; index < expected_items.size(); ++index)
 	{
 		const auto &item = expected_items[index];
-		const bool durable = std::binary_search(durable_uids.begin(), durable_uids.end(),
-							item.item_uid);
+		const bool durable =
+			std::binary_search(durable_uids.begin(), durable_uids.end(), item.item_uid);
 		const bool discarded = std::binary_search(discarded_uids.begin(),
-							  discarded_uids.end(),
-							  item.item_uid);
+							  discarded_uids.end(), item.item_uid);
 		if (!item.item_uid || item.vnum <= 0 || item.root_item_uid != source_uid ||
 		    (item.item_uid == source_uid ? item.parent_item_uid != 0 :
-						     item.parent_item_uid == 0) ||
+						   item.parent_item_uid == 0) ||
 		    durable == discarded ||
 		    (index && expected_items[index - 1].item_uid == item.item_uid))
 			return flatfile_item_repository_result::invalid;
@@ -1718,15 +1717,17 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 	for (const auto &item : catalog.items)
 	{
 		if (item.state != item_custody_state::active ||
-		    !item_owner_identity_equal(item.owner, room) || item.root_item_uid != source_uid)
+		    !item_owner_identity_equal(item.owner, room) ||
+		    item.root_item_uid != source_uid)
 			continue;
 		if (matched >= expected_items.size())
 			return flatfile_item_repository_result::invalid;
 		const auto &expected = expected_items[matched++];
 		if (item.item_uid != expected.item_uid ||
 		    item.root_item_uid != expected.root_item_uid ||
-		    item.parent_item_uid != expected.parent_item_uid || item.vnum != expected.vnum ||
-		    !item.item_revision || item.item_revision == UINT64_MAX)
+		    item.parent_item_uid != expected.parent_item_uid ||
+		    item.vnum != expected.vnum || !item.item_revision ||
+		    item.item_revision == UINT64_MAX)
 			return flatfile_item_repository_result::invalid;
 	}
 	const auto *source = find_item(&catalog, source_uid);
@@ -1736,10 +1737,9 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 
 	auto expected_by_uid = [&](uint64_t uid) -> const flatfile_corpse_custody_item *
 	{
-		auto found = std::lower_bound(
-			expected_items.begin(), expected_items.end(), uid,
-			[](const flatfile_corpse_custody_item &item, uint64_t value)
-			{ return item.item_uid < value; });
+		auto found = std::lower_bound(expected_items.begin(), expected_items.end(), uid,
+					      [](const flatfile_corpse_custody_item &item,
+						 uint64_t value) { return item.item_uid < value; });
 		return found != expected_items.end() && found->item_uid == uid ? &*found : nullptr;
 	};
 	std::vector<std::pair<size_t, uint64_t>> boundaries;
@@ -1769,7 +1769,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 			boundaries.emplace_back(depth, item.item_uid);
 		}
 		std::sort(boundaries.begin(), boundaries.end(),
-			  [](const auto &left, const auto &right) { return left.first > right.first; });
+			  [](const auto &left, const auto &right)
+			  { return left.first > right.first; });
 		mutation->collector_items.reserve(durable_uids.size());
 	}
 	catch (const std::bad_alloc &)
@@ -1777,8 +1778,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 		return flatfile_item_repository_result::io_error;
 	}
 
-	auto descends_from = [&](const flatfile_item_ownership_record &candidate,
-				 uint64_t ancestor_uid)
+	auto descends_from =
+		[&](const flatfile_item_ownership_record &candidate, uint64_t ancestor_uid)
 	{
 		uint64_t current_uid = candidate.item_uid;
 		for (size_t depth = 0; depth <= expected_items.size(); ++depth)
@@ -1793,8 +1794,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 		return false;
 	};
 	auto fill_transfer = [&](item_transfer_payload *transfer,
-				 const std::vector<uint64_t> *selected_uids,
-				 uint64_t subtree_uid)
+				 const std::vector<uint64_t> *selected_uids, uint64_t subtree_uid)
 	{
 		if (!transfer)
 			return false;
@@ -1804,18 +1804,20 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 			if (item.state != item_custody_state::active ||
 			    !item_owner_identity_equal(item.owner, room))
 				continue;
-			const bool selected = subtree_uid ? descends_from(item, subtree_uid) :
-						 selected_uids && std::binary_search(
-									 selected_uids->begin(),
-									 selected_uids->end(),
-									 item.item_uid);
+			const bool selected =
+				subtree_uid ?
+					descends_from(item, subtree_uid) :
+					selected_uids && std::binary_search(selected_uids->begin(),
+									    selected_uids->end(),
+									    item.item_uid);
 			if (!selected)
 				continue;
 			if (count >= transfer->items.size())
 				return false;
-			transfer->items[count++] = { item.item_uid, item.root_item_uid,
-						     item.parent_item_uid, item.item_revision,
-						     item.vnum, item_custody_state::active };
+			transfer->items[count++] = {
+				item.item_uid,	    item.root_item_uid, item.parent_item_uid,
+				item.item_revision, item.vnum,		item_custody_state::active
+			};
 		}
 		transfer->item_count = static_cast<uint16_t>(count);
 		return count != 0;
@@ -1892,7 +1894,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 	if (!fill_transfer(&discarded, &discarded_uids, 0))
 		return flatfile_item_repository_result::invalid;
 	item_transfer_result discarded_result = {};
-	const unsigned int discarded_applied = apply_transfer(&catalog, discarded, &discarded_result);
+	const unsigned int discarded_applied =
+		apply_transfer(&catalog, discarded, &discarded_result);
 	if (discarded_applied)
 		return discarded_applied == ENOMEM ? flatfile_item_repository_result::io_error :
 						     flatfile_item_repository_result::invalid;

@@ -696,9 +696,9 @@ void test_equipped_world_corpse_raise()
 {
 	constexpr uint32_t PLAYER = 2147000611U;
 	constexpr int32_t ROOM = 4111;
-	constexpr uint64_t ROOT_UID = 900000001, ORDINARY_UID = 900000002,
-			   NO_TAKE_UID = 900000003, NO_SHOW_UID = 900000004,
-			   TRANSIENT_UID = 900000005, MONEY_UID = 900000006;
+	constexpr uint64_t ROOT_UID = 900000001, ORDINARY_UID = 900000002, NO_TAKE_UID = 900000003,
+			   NO_SHOW_UID = 900000004, TRANSIENT_UID = 900000005,
+			   MONEY_UID = 900000006;
 	const item_owner_identity room_owner = { item_owner_type::room, ROOM, 0 };
 	const item_owner_identity player_owner = { item_owner_type::player, PLAYER, 0 };
 	seed_player(PLAYER, "WorldRaiseHarness", "corpse_world_raise", {});
@@ -723,8 +723,7 @@ void test_equipped_world_corpse_raise()
 	execute("INSERT INTO saved_items(item_key,room_vnum,vnum,container_id,obj_uid,weight,"
 		"extra_flags,wear_flags,name,short_descr) VALUES('world-raise-no-show'," +
 		std::to_string(ROOM) + ",5," + std::to_string(no_take_row) + "," +
-		std::to_string(NO_SHOW_UID) +
-		",1,2050,0,'no-show token','a no-show token')");
+		std::to_string(NO_SHOW_UID) + ",1,2050,0,'no-show token','a no-show token')");
 	const uint64_t no_show_row = mysql_insert_id(database);
 	execute("INSERT INTO saved_items(item_key,room_vnum,vnum,container_id,obj_uid,weight,"
 		"extra_flags,wear_flags,name,short_descr) VALUES('world-raise-transient'," +
@@ -739,8 +738,7 @@ void test_equipped_world_corpse_raise()
 		std::to_string(no_take_row) + ",1,7)");
 	execute("INSERT INTO saved_item_extra_descr(item_id,keyword,description) VALUES(" +
 		std::to_string(no_show_row) + ",'restricted-mark','A restricted mark.')");
-	for (const auto &[uid, parent, vnum] :
-	     std::array<std::array<uint64_t, 3>, 6>{ {
+	for (const auto &[uid, parent, vnum] : std::array<std::array<uint64_t, 3>, 6>{ {
 		     { ROOT_UID, 0, 2 },
 		     { ORDINARY_UID, ROOT_UID, 48 },
 		     { NO_TAKE_UID, ORDINARY_UID, 48 },
@@ -769,22 +767,21 @@ void test_equipped_world_corpse_raise()
 	const critical_command command = command_for(payload);
 	const applied_corpse applied = apply_success(command);
 	assert(applied.result.action == corpse_lifecycle_action::raise_world_follower &&
-	       applied.result.catalog_revision == 5 &&
-	       applied.result.corpse_owner_revision == 5 &&
+	       applied.result.catalog_revision == 5 && applied.result.corpse_owner_revision == 5 &&
 	       applied.result.pet_owner_revision == 1 && applied.result.item_count == 3 &&
 	       applied.result.max_item_revision == 7 &&
 	       applied.result.destruction_owner_revision ==
 		       owner_revision({ item_owner_type::destruction, 0, 0 }) &&
 	       applied.result.discarded_item_count == 3 &&
-	       applied.result.max_discarded_item_revision == 7 &&
-	       !applied.result.wallet_revision && !applied.result.player_owner_revision);
+	       applied.result.max_discarded_item_revision == 7 && !applied.result.wallet_revision &&
+	       !applied.result.player_owner_revision);
 	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid BETWEEN " +
 		      std::to_string(ROOT_UID) + " AND " + std::to_string(MONEY_UID)) == 0);
 	assert(scalar("SELECT COUNT(*) FROM player_items WHERE obj_uid IN (" +
 		      std::to_string(ORDINARY_UID) + "," + std::to_string(NO_TAKE_UID) + "," +
 		      std::to_string(NO_SHOW_UID) + ")") == 0);
-	assert(scalar("SELECT COUNT(*) FROM player_pets WHERE owner_pid=" +
-		      std::to_string(PLAYER) + " AND pet_uid=" + std::to_string(ROOT_UID)) == 1);
+	assert(scalar("SELECT COUNT(*) FROM player_pets WHERE owner_pid=" + std::to_string(PLAYER) +
+		      " AND pet_uid=" + std::to_string(ROOT_UID)) == 1);
 	assert(scalar("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid IN (" +
 		      std::to_string(ORDINARY_UID) + "," + std::to_string(NO_TAKE_UID) + "," +
 		      std::to_string(NO_SHOW_UID) + ")") == 3);
@@ -849,9 +846,9 @@ void test_hostile_equipped_world_corpse_raise()
 	const critical_command command = command_for(payload);
 	const applied_corpse applied = apply_success(command);
 	assert(applied.result.action == corpse_lifecycle_action::raise_world_follower &&
-	       applied.result.catalog_revision == 2 &&
-	       applied.result.corpse_owner_revision == 2 && !applied.result.pet_owner_revision &&
-	       !applied.result.item_count && !applied.result.max_item_revision &&
+	       applied.result.catalog_revision == 2 && applied.result.corpse_owner_revision == 2 &&
+	       !applied.result.pet_owner_revision && !applied.result.item_count &&
+	       !applied.result.max_item_revision &&
 	       applied.result.destruction_owner_revision == destruction_before + 1 &&
 	       applied.result.discarded_item_count == 2 &&
 	       applied.result.max_discarded_item_revision == INITIAL_ITEM_REVISION + 1);

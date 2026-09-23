@@ -1921,7 +1921,8 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
 			{
 				if (item.parent_index < 0 ||
-				    static_cast<size_t>(item.parent_index) >= selected->items.size())
+				    static_cast<size_t>(item.parent_index) >=
+					    selected->items.size())
 					return flatfile_world_item_result::invalid;
 				parent_uid = selected->items[static_cast<size_t>(item.parent_index)]
 						     .object_uid;
@@ -1929,8 +1930,7 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 			bool reaches_source = index == selected_root;
 			int32_t parent_index = item.parent_index;
 			for (size_t depth = 0;
-			     !reaches_source && parent_index != PLAYER_SNAPSHOT_NO_PARENT;
-			     ++depth)
+			     !reaches_source && parent_index != PLAYER_SNAPSHOT_NO_PARENT; ++depth)
 			{
 				if (depth >= selected->items.size() || parent_index < 0 ||
 				    static_cast<size_t>(parent_index) >= selected->items.size())
@@ -1943,7 +1943,8 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 				return flatfile_world_item_result::conflict;
 			mutation->expected_items.push_back(
 				{ item.object_uid, item.vnum, source_uid, parent_uid });
-			discarded[index] = hostile || index == selected_root || item.type == ITEM_MONEY ||
+			discarded[index] = hostile || index == selected_root ||
+					   item.type == ITEM_MONEY ||
 					   (item.extra_flags & ITEM_TRANSIENT) != 0;
 			if ((item.extra_flags & ITEM_ARTIFACT) != 0)
 				return flatfile_world_item_result::conflict;
@@ -1974,11 +1975,12 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 		{
 			if (discarded[index])
 				continue;
-			auto &pet_item = mutation->pet_items[static_cast<size_t>(pet_indexes[index])];
+			auto &pet_item =
+				mutation->pet_items[static_cast<size_t>(pet_indexes[index])];
 			const int32_t parent = selected->items[index].parent_index;
 			pet_item.parent_index =
 				parent == PLAYER_SNAPSHOT_NO_PARENT ||
-					discarded[static_cast<size_t>(parent)] ?
+						discarded[static_cast<size_t>(parent)] ?
 					PLAYER_SNAPSHOT_NO_PARENT :
 					pet_indexes[static_cast<size_t>(parent)];
 		}
@@ -1997,8 +1999,9 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 				{
 					auto &pet_parent = mutation->pet_items[static_cast<size_t>(
 						pet_indexes[parent_index])];
-					const int64_t adjusted = static_cast<int64_t>(pet_parent.weight) -
-							 selected->items[skipped].weight;
+					const int64_t adjusted =
+						static_cast<int64_t>(pet_parent.weight) -
+						selected->items[skipped].weight;
 					if (adjusted < INT32_MIN || adjusted > INT32_MAX)
 						return flatfile_world_item_result::conflict;
 					pet_parent.weight = static_cast<int32_t>(adjusted);
@@ -2017,10 +2020,9 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 	{
 		return flatfile_world_item_result::io_error;
 	}
-	if (mutation->discarded_uids.empty() ||
-	    mutation->discarded_uids.front() > source_uid ||
-	    !std::binary_search(mutation->discarded_uids.begin(),
-				mutation->discarded_uids.end(), source_uid))
+	if (mutation->discarded_uids.empty() || mutation->discarded_uids.front() > source_uid ||
+	    !std::binary_search(mutation->discarded_uids.begin(), mutation->discarded_uids.end(),
+				source_uid))
 		return flatfile_world_item_result::invalid;
 	++catalog.revision;
 	mutation->after_image.filename = catalog_filename;

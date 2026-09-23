@@ -1129,14 +1129,12 @@ int main(int argc, char **argv)
 	world_corpse.room_vnum = 501;
 	world_corpse.revision = 1;
 	world_corpse.items = {
-		world_item(world_corpse_uid, PLAYER_SNAPSHOT_NO_PARENT, 2, ITEM_CORPSE, 0, 0,
-			   12, "an ordinary corpse"),
-		world_item(9201, 0, 48, ITEM_CONTAINER, ITEM_TAKE, 0, 5,
-			   "an ordinary backpack"),
+		world_item(world_corpse_uid, PLAYER_SNAPSHOT_NO_PARENT, 2, ITEM_CORPSE, 0, 0, 12,
+			   "an ordinary corpse"),
+		world_item(9201, 0, 48, ITEM_CONTAINER, ITEM_TAKE, 0, 5, "an ordinary backpack"),
 		world_item(9202, 1, 5, ITEM_ARMOR, 0, 0, 2, "a no-take token"),
 		world_item(9203, 2, 5, ITEM_ARMOR, 0, 2050, 1, "a no-show token"),
-		world_item(9204, 1, 5, ITEM_ARMOR, ITEM_TAKE, ITEM_TRANSIENT, 1,
-			   "a fading token"),
+		world_item(9204, 1, 5, ITEM_ARMOR, ITEM_TAKE, ITEM_TRANSIENT, 1, "a fading token"),
 		world_item(9205, 0, 3, ITEM_MONEY, ITEM_TAKE, 0, 2, "some coins"),
 	};
 	require(flatfile_world_item_establish(world_raise_root.string(), {}, { world_corpse },
@@ -1162,8 +1160,7 @@ int main(int argc, char **argv)
 	const item_owner_identity world_player_owner = { item_owner_type::player, 73, 0 };
 	require(flatfile_item_repository_establish_owner(
 			world_raise_root.string(), world_player_owner,
-			{ { 9300, 9300, 0, world_player_owner, 1, 5,
-			    item_custody_state::active } },
+			{ { 9300, 9300, 0, world_player_owner, 1, 5, item_custody_state::active } },
 			&error) == flatfile_item_baseline_result::applied,
 		"could not establish NPC-corpse caster custody: " + error);
 	corpse_lifecycle_payload world_raise_payload = {};
@@ -1200,8 +1197,7 @@ int main(int argc, char **argv)
 			result.pet_owner_revision == 1 && result.wallet_revision == 0 &&
 			result.max_item_revision == 3 && result.item_count == 3 &&
 			result.destruction_owner_revision == 1 &&
-			result.max_discarded_item_revision == 3 &&
-			result.discarded_item_count == 3,
+			result.max_discarded_item_revision == 3 && result.discarded_item_count == 3,
 		"equipped NPC-corpse raise did not expose the split custody revisions");
 	corpses.clear();
 	saved.clear();
@@ -1263,7 +1259,8 @@ int main(int argc, char **argv)
 				world_raise_root.string(), reconciliation_lock, 73,
 				world_player_items, &stale_world_raise,
 				&error) == flatfile_shop_trade_materialization_result::ok &&
-				stale_world_raise.items.empty() && stale_world_raise.pets.size() == 1 &&
+				stale_world_raise.items.empty() &&
+				stale_world_raise.pets.size() == 1 &&
 				stale_world_raise.pets[0].pet_uid == world_corpse_uid &&
 				stale_world_raise.pets[0].items.size() == 3 &&
 				stale_world_raise.pets[0].items[0].parent_index ==
@@ -1284,13 +1281,13 @@ int main(int argc, char **argv)
 	hostile_world_corpse.room_vnum = 502;
 	hostile_world_corpse.revision = 1;
 	hostile_world_corpse.items = {
-		world_item(hostile_corpse_uid, PLAYER_SNAPSHOT_NO_PARENT, 2, ITEM_CORPSE, 0, 0,
-			   10, "a hostile corpse"),
+		world_item(hostile_corpse_uid, PLAYER_SNAPSHOT_NO_PARENT, 2, ITEM_CORPSE, 0, 0, 10,
+			   "a hostile corpse"),
 		world_item(9401, 0, 5, ITEM_ARMOR, 0, 0, 2, "some no-take armor"),
 	};
 	require(flatfile_world_item_establish(hostile_world_raise_root.string(), {},
-					      { hostile_world_corpse }, &error) ==
-			flatfile_world_item_result::ok,
+					      { hostile_world_corpse },
+					      &error) == flatfile_world_item_result::ok,
 		"could not establish hostile equipped NPC corpse: " + error);
 	const item_owner_identity hostile_room_owner = { item_owner_type::room, 502, 0 };
 	require(flatfile_item_repository_establish_owner(
@@ -1320,17 +1317,16 @@ int main(int argc, char **argv)
 	auto hostile_world_command = command(31, hostile_world_raise);
 	hostile_world_command.accepted_at_usec = 31000000;
 	applied = flatfile_corpse_repository_apply(hostile_world_raise_root.string(),
-						  hostile_world_command);
+						   hostile_world_command);
 	result = {};
 	require(applied.outcome == critical_apply_outcome::applied &&
 			corpse_lifecycle_command_decode_result(applied.result_payload.data(),
-						       applied.result_size, &result) &&
+							       applied.result_size, &result) &&
 			result.action == corpse_lifecycle_action::raise_world_follower &&
 			result.catalog_revision == 2 && result.corpse_owner_revision == 2 &&
 			result.pet_owner_revision == 0 && result.item_count == 0 &&
 			result.max_item_revision == 0 && result.destruction_owner_revision == 1 &&
-			result.max_discarded_item_revision == 2 &&
-			result.discarded_item_count == 2,
+			result.max_discarded_item_revision == 2 && result.discarded_item_count == 2,
 		"hostile NPC-corpse raise did not retire its complete graph");
 	corpses.clear();
 	saved.clear();
@@ -1340,10 +1336,10 @@ int main(int argc, char **argv)
 		"hostile NPC-corpse raise retained the saved world graph");
 	world_destruction_revision = 0;
 	destroyed_world_items.clear();
-	require(flatfile_item_repository_load_owner(
-			hostile_world_raise_root.string(), destruction_owner,
-			&world_destruction_revision, &destroyed_world_items,
-			&error) == flatfile_item_repository_result::ok &&
+	require(flatfile_item_repository_load_owner(hostile_world_raise_root.string(),
+						    destruction_owner, &world_destruction_revision,
+						    &destroyed_world_items, &error) ==
+				flatfile_item_repository_result::ok &&
 			world_destruction_revision == 1 && destroyed_world_items.empty(),
 		"hostile NPC-corpse raise did not advance destruction custody");
 	{
@@ -1361,7 +1357,7 @@ int main(int argc, char **argv)
 			"hostile NPC-corpse graph did not retain destroyed tombstones");
 	}
 	applied = flatfile_corpse_repository_apply(hostile_world_raise_root.string(),
-						  hostile_world_command);
+						   hostile_world_command);
 	require(applied.outcome == critical_apply_outcome::already_applied,
 		"hostile NPC-corpse replay was not idempotent");
 	std::cout << "flat-file corpse lifecycle repository passed\n";
