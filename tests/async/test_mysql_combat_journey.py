@@ -2,8 +2,9 @@
 """Real account/character combat and death on an isolated MariaDB schema.
 
 Set TEST_DB_HOST (loopback), TEST_DB_USER and TEST_DB_PASSWORD for a disposable
-server. No checkout .env or existing schema is used. --server selects a freshly
-built MariaDB executable; by default this script builds bin/server/dms_new.
+server; TEST_DB_PORT defaults to 3306. No checkout .env or existing schema is
+used. --server selects a freshly built MariaDB executable; by default this
+script builds bin/server/dms_new.
 """
 from pathlib import Path
 import argparse
@@ -22,10 +23,11 @@ ROOT = Path(__file__).resolve().parents[2]
 def run(server, reset_coins=False, boons=False):
     database = 'corpse_journey_test_' + uuid.uuid4().hex[:12]
     host = os.environ['TEST_DB_HOST']
+    port = os.environ.get('TEST_DB_PORT', '3306')
     assert host in ('127.0.0.1', 'localhost'), 'use a disposable loopback database'
     environment = {
         'PATH': os.environ.get('PATH', '/usr/bin:/bin'),
-        'ENVIRONMENT': 'local', 'DB_HOST': host, 'DB_PORT': '3306',
+        'ENVIRONMENT': 'local', 'DB_HOST': host, 'DB_PORT': port,
         'DB_NAME': database, 'DB_USER': os.environ['TEST_DB_USER'],
         'DB_PASSWD': os.environ['TEST_DB_PASSWORD'],
         'DB_ALLOWED_TARGETS': host+'/'+database,
@@ -36,7 +38,8 @@ def run(server, reset_coins=False, boons=False):
     }
     if 'LD_LIBRARY_PATH' in os.environ:
         environment['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
-    mysql = ['mysql', '--protocol=tcp', '-h', host, '-u', environment['DB_USER'], '-N', '-B']
+    mysql = ['mysql', '--protocol=tcp', '-h', host, '-P', port,
+             '-u', environment['DB_USER'], '-N', '-B']
 
     def sql(text, selected=True):
         return subprocess.check_output(mysql+([database] if selected else []), input=text,
