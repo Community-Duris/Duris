@@ -156,10 +156,19 @@ def run(server, reset_coins=False, boons=False):
                     journey.attack_until_death(client)
                     client.expect('ACCOUNT MENU',timeout=45)
                     client.send('0'); client.close(); client=None
-                    logs=journey.runtime_logs(runtime)
+                    # The account menu may follow a durable journal handoff
+                    # before the asynchronous MariaDB worker acknowledges it.
+                    deadline=time.monotonic()+20
+                    while True:
+                        logs=journey.runtime_logs(runtime)
+                        disposition_count=number(f'SELECT COUNT(*) FROM player_death_disposition WHERE pid={pid}')
+                        if ('load_item_payload_gap_disposition' in logs and
+                            'death_disposition_completed' in logs and disposition_count==1):
+                            break
+                        assert time.monotonic()<deadline, 'death disposition did not reach MariaDB after journal handoff'
+                        time.sleep(.05)
                     assert 'load_item_payload_gap_disposition' in logs
                     assert logs.index('death_disposition_recorded')<logs.index('death_disposition_completed')
-                    assert number(f'SELECT COUNT(*) FROM player_death_disposition WHERE pid={pid}')==1
                     assert number(f'SELECT COUNT(*) FROM player_death_custody WHERE pid={pid} AND item_uid={banana} AND owner_type=1')==1
                     assert number(f'SELECT COUNT(*) FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND state=1')==0
                     assert number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')==before_deaths+1
