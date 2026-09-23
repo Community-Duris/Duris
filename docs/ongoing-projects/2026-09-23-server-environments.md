@@ -31,8 +31,12 @@ listener, no tunnel and no website Redis.
   `mud.duris.sbs:4001` for TLS. `.env` sets `DURIS_PRODUCTION_PORT=4000`,
   `DURIS_TLS_PORT=4001` and `LISTEN_ADDRESS=178.156.165.10`.
 - The checkout is `/home/duris-staging/duris`, on the local branch
-  `codex/rollback-sbs-20260923`. That branch is `a6a2124c1` plus `0695680df`,
-  the cherry-picked port change. The server is built with
+  `codex/rollback-sbs-20260923`. That branch is `a6a2124c1` plus two
+  cherry-picks: `0695680df` (the port change) and `01f401b5a` (the login mode
+  banner, `be50f6c0e` on `master`).
+- `.env` sets `DURIS_STAGING=TRUE`, so the login screen shows
+  `*** STAGING | CHAOS | ALL-RACES | ALL-CLASSES ***`, blinking, above the
+  account-name prompt. The server is built with
   `make -C src PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production`.
 - Everything runs as `systemctl --user` units, with lingering enabled:
   - `duris-mud-production`, which runs `cycle_mud.sh --production`
@@ -202,3 +206,97 @@ first. Deleting the Plesk data waits for the owner's OK.
 
 Players: plain telnet is now `mud.duris.sbs:4000`. TLS stays on
 `mud.duris.sbs:4001`.
+
+## Post-move review (2026-09-23, about 08:40 UTC)
+
+Staging is healthy, and nothing depends on the Duris install on Plesk. That
+install is stopped and disabled, so it won't start again after a reboot.
+Deleting its data is a separate decision; see the list at the end.
+
+### Checked
+
+- **Services.** The MUD, MariaDB and Redis are active with no restarts. The
+  backup and certbot timers are active, lingering is on and no user units have
+  failed.
+- **Logs.**
+  - Redis is connected on 6381, and world snapshots publish about every 4
+    minutes. There are no persistence alerts or errors.
+  - The only noise is a charset warning from the `mysql` command-line client
+    at each boot. The unpacked MariaDB client reads MySQL 8's
+    `/usr/share/mysql/charsets`, which is cosmetic.
+- **Logins.** The test account logged in over plain telnet and TLS. Two other
+  characters also logged in; one entered at level 56, the Chaos rebuild level.
+- **Data.** The last Plesk backup and the first backup on the new host share
+  the runtime schema hash and have identical locker receipts.
+- **Backups.** The minute-by-minute status checks return `ok`, and the policy
+  creates a generation every hour.
+- **TLS renewal.** `certbot renew --dry-run` succeeded from the new host.
+- **DNS.**
+  - `mud.duris.sbs` resolves to `178.156.165.10` at four public resolvers and
+    at Cloudflare's authoritative server. No record points at `74.208.126.44`.
+  - `duris.sbs`, `www` and `ws` are CNAMEs to the stopped Plesk tunnels and
+    return Cloudflare 1033. That is expected, because staging has no website.
+- **Configuration.** Mail is off (`MAIL_ENABLED` is unset, as it was on Plesk).
+  No code reads the I3 or Ollama settings.
+- **Production.**
+  - The MUD has the same PID, health is `healthy`, the website returns 200 and
+    the journal has no warnings.
+  - Its average tick was 8.2 ms before the move and 9.5 ms after, against a
+    250 ms budget. Ticks of 1–2 s occur both before and after.
+  - Production's MySQL uses about one core continuously, which predates the
+    move.
+- **Repository and workstation.** No CI workflow or script references Plesk.
+
+### Findings
+
+1. **Stops can end in SIGKILL ([#621](https://github.com/Community-Duris/Duris/issues/621)).**
+   This existing behavior also hit production at 05:40:41 today, ending in a
+   SIGKILL at 05:42:11. After the players are saved, a shutdown cancels itself if a
+   player save fails. It also cancels if a world snapshot can't finish within
+   3 seconds (`src/net/comm.c:2598`). systemd then kills the process after 90
+   seconds.
+   - The Plesk stop hit the failed-save case. The new host wasn't tested,
+     because a player was online.
+   - The certbot deploy hook restarts the MUD at renewal, around October 29,
+     and that restart goes through the same path.
+2. **Custody-mismatch saves stay rejected
+   ([#622](https://github.com/Community-Duris/Duris/issues/622)).** This
+   affects `a6a2124c1`, the code staging runs now; production's older build is
+   not affected. Overnight on Plesk:
+   - 1,115 rejections across 12 characters
+   - 489 failed terminal saves, mostly refused logouts
+   - death recovery waited up to 6.4 hours
+   - two characters were still being rejected at the stop, and their progress
+     since 06:26:50 and 01:15:35 was lost
+
+   The fixes (`e998ffd5e`, `fc59cb570`, `c555ecca1`, `72238a8f5`) exist only
+   on `codex/master-stable`, with no PRs.
+3. **World snapshots stop completing after long uptime
+   ([#623](https://github.com/Community-Duris/Duris/issues/623)).** On Plesk
+   the last good snapshot was at 03:05:26. The next 73 attempts all failed:
+   - 14 hit the 300-second age limit
+   - 52 hit the 64 MiB size limit
+   - 7 failed to publish
+
+   Snapshots on the new host already take about 250 seconds. A restart clears
+   the failures, and they affect only world-state crash recovery, not player
+   data.
+4. **One saved item tree was held back at boot.** It is kept in the database
+   but not placed in the world. This is most likely from the SIGKILL on Plesk.
+5. **Maintenance scheduler state started fresh**, because `bin/` wasn't
+   copied. The recurring jobs restart their passes, which is harmless.
+
+### Only on Plesk
+
+These are lost if the Plesk `duris` account is deleted:
+
+- `~/.duris-backups` (2.9 GB): backup history and pre-upgrade dumps
+- `~/private` (0.9 GB): incident working sets
+- `~/.local/state/durisweb-backups` (1.2 GB)
+- `~/durisweb` (0.6 GB)
+- `~/duris-bag-recovery-20260920`, `~/duris-deploy-20260918T115716Z` and
+  `~/.local/state/duris-migrations`
+
+Leftover processes from an earlier session are also still running there:
+orphaned `tail` and `ugrep` processes, a stale `pgrep` loop and a VS Code
+server.
