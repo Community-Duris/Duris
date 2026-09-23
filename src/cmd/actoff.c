@@ -41,6 +41,7 @@
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "cmd/divine_refusal_policy.h"
+#include "cmd/divine_refusal_content.h"
 #include "core/utils.h"
 #include "telemetry/telemetry_runtime.h"
 #include <ctype.h>
@@ -2077,8 +2078,18 @@ static bool divine_refusal_command_blocked(P_char pet, int cmd)
 	       !cmd_allowed_while_casting(pet, cmd);
 }
 
-static void show_new_divine_refusal(P_char master, P_char pet)
+static void show_new_divine_refusal(P_char master, P_char pet,
+				    const DivineRefusalContentEntry *content_entry)
 {
+	char rendered_line[DIVINE_REFUSAL_CONTENT_MAX_MESSAGE + 1];
+	char escaped_line[(DIVINE_REFUSAL_CONTENT_MAX_MESSAGE * 2) + 1];
+	char public_message[(DIVINE_REFUSAL_CONTENT_MAX_MESSAGE * 2) + 32];
+	char controller_message[(DIVINE_REFUSAL_CONTENT_MAX_MESSAGE * 2) + 32];
+	divine_refusal_content_render(content_entry, rendered_line, sizeof(rendered_line));
+	escape_act_dollars(escaped_line, sizeof(escaped_line), rendered_line);
+	snprintf(public_message, sizeof(public_message), "$n says '%s'", escaped_line);
+	snprintf(controller_message, sizeof(controller_message), "$N says '%s'", escaped_line);
+
 	const bool pet_can_speak = !is_silent(pet, false) && CAN_SPEAK(pet);
 	const bool master_can_hear =
 		master->specials.z_cord == pet->specials.z_cord &&
@@ -2087,11 +2098,9 @@ static void show_new_divine_refusal(P_char master, P_char pet)
 
 	if (pet_can_speak)
 	{
-		act("$n says 'My deity has warned me against completing that action.'", TRUE, pet,
-		    0, master, TO_NOTVICT | ACT_SILENCEABLE);
+		act(public_message, TRUE, pet, 0, master, TO_NOTVICT | ACT_SILENCEABLE);
 		if (master_can_hear)
-			act("$N says 'My deity has warned me against completing that action.'",
-			    FALSE, master, 0, pet, TO_CHAR | ACT_SILENCEABLE);
+			act(controller_message, FALSE, master, 0, pet, TO_CHAR | ACT_SILENCEABLE);
 		else
 			act("$N refuses your order with a solemn shake of $S head.", FALSE, master,
 			    0, pet, TO_CHAR);
@@ -2105,23 +2114,37 @@ static void show_new_divine_refusal(P_char master, P_char pet)
 	}
 }
 
-static bool divine_refusal_blocks_order(P_char master, P_char pet,
-					const divine_refusal_config &config, int cmd,
-					bool *new_refusal)
+static bool divine_refusal_blocks_order(
+	P_char master, P_char pet, const divine_refusal_config &config, int cmd,
+	const std::shared_ptr<const DivineRefusalContentSnapshot> &content_snapshot,
+	bool *new_refusal)
 {
 	if (new_refusal)
 		*new_refusal = false;
+
+	const DivineRefusalContentEntry *content_entry = nullptr;
+	if (content_snapshot && pet && IS_NPC(pet))
+		content_entry = content_snapshot->find(GET_VNUM(pet));
+	divine_refusal_config effective_config = config;
+	if (content_entry)
+	{
+		if (content_entry->has_enabled && !content_entry->enabled)
+			effective_config.enabled = false;
+		if (content_entry->has_percent)
+			effective_config.percent = content_entry->percent;
+	}
 
 	const bool recognized = cmd > CMD_NONE && cmd < MAX_CMD;
 	const bool exempt = cmd == CMD_ABORT || cmd == CMD_FLEE;
 	const bool blocked = recognized && divine_refusal_command_blocked(pet, cmd);
 	const divine_refusal_outcome outcome = divine_refusal_decide(
-		config, divine_refusal_eligible(master, pet, config), recognized, exempt, blocked,
-		ne_event_tick, &pet->specials.divine_refusal_until_pulse, number);
+		effective_config, divine_refusal_eligible(master, pet, effective_config),
+		recognized, exempt, blocked, ne_event_tick,
+		&pet->specials.divine_refusal_until_pulse, number);
 
 	if (outcome == divine_refusal_outcome::refused_new)
 	{
-		show_new_divine_refusal(master, pet);
+		show_new_divine_refusal(master, pet, content_entry);
 		if (new_refusal)
 			*new_refusal = true;
 		return true;
@@ -2246,9 +2269,39 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 
 		/*    ch_inroom[i] = NULL;*/
 		const divine_refusal_config refusal_config = current_divine_refusal_config();
+		const auto refusal_content_snapshot = divine_refusal_content_registry().snapshot();
 		const int refusal_cmd = ordered_command_number(message);
-		const bool refusal_can_apply =
+		bool refusal_can_apply =
 			divine_refusal_order_candidate(ch, refusal_config, refusal_cmd);
+		// A template percentage override can make a group order eligible even
+		// when the shared percentage is zero. Keep the legacy early
+		// acknowledgement ordering unless one of the room's exact-vnum rows can
+		// actually participate.
+		if (!refusal_can_apply && refusal_config.enabled && refusal_content_snapshot)
+		{
+			for (int content_index = 0; content_index < numb_ch; ++content_index)
+			{
+				P_char content_candidate = ch_inroom[content_index];
+				if (!content_candidate || !IS_NPC(content_candidate))
+					continue;
+				const auto *content_entry =
+					refusal_content_snapshot->find(GET_VNUM(content_candidate));
+				divine_refusal_config effective_config = refusal_config;
+				if (content_entry)
+				{
+					if (content_entry->has_enabled && !content_entry->enabled)
+						effective_config.enabled = false;
+					if (content_entry->has_percent)
+						effective_config.percent = content_entry->percent;
+				}
+				if (divine_refusal_order_candidate(ch, effective_config,
+								   refusal_cmd))
+				{
+					refusal_can_apply = true;
+					break;
+				}
+			}
+		}
 
 		if (victim)
 		{
@@ -2286,8 +2339,9 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 				if (CAN_ACT(victim))
 				{
 					bool new_refusal = false;
-					if (divine_refusal_blocks_order(ch, victim, refusal_config,
-									refusal_cmd, &new_refusal))
+					if (divine_refusal_blocks_order(
+						    ch, victim, refusal_config, refusal_cmd,
+						    refusal_content_snapshot, &new_refusal))
 					{
 						CharWait(ch, new_refusal ? PULSE_VIOLENCE : 2);
 						return;
@@ -2366,6 +2420,7 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 										    ch, k,
 										    refusal_config,
 										    refusal_cmd,
+										    refusal_content_snapshot,
 										    &new_refusal))
 									{
 										refused = TRUE;
