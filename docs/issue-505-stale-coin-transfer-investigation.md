@@ -2,13 +2,24 @@
 
 ## Conclusion
 
-No causal source/destination publication defect was proven from the available source,
-SQL fixture, or prior incident evidence. The change in this branch is therefore a
-preventive diagnostic, not a claim that it recreates or fixes the historical failure.
-It records a bounded revision-gate stage on future `coin_transfer` ESTALE receipts
-without recording operation IDs, entity IDs, amounts, or command payloads.
+The initiating gameplay path for the historical incident cannot honestly be recovered
+from the retained evidence, but the current code exposed a concrete mechanism that
+could turn one wallet/bank conflict into repeated `ESTALE` failures. Standalone
+currency commands preserve the authoritative balances and revisions read under lock
+and publish them on a terminal conflict. The enclosing `coin_transfer` path instead
+discarded that same result and returned an empty receipt. The live character therefore
+kept the rejected expected revision and could build the next transfer from the same
+stale state.
 
-The historical acceptance criterion cannot honestly close from this evidence alone:
+This change closes that recurrence mechanism without weakening optimistic concurrency.
+The original transfer is still rejected and both endpoint mutations are still rolled
+back. For a classified wallet/bank revision conflict only, the durable receipt retains
+the versioned 83-byte currency authority already read under the failed endpoint's row
+locks. The game thread publishes only the stale wallet and/or bank domain, with the
+existing monotonic-revision guards. It does not automatically retry the transfer.
+Item, owner, parent, payload, rebase, and unknown conflicts remain diagnostic-only.
+
+The historical initiating path remains unresolved:
 the prior incident record has no failed command payload or binary provenance, and no
 currency loss was established. A subsequent authorized read-only check matched 889
 historical ESTALE coin-transfer receipts in a fresh production-derived clone. The
@@ -21,7 +32,8 @@ evidence. The diagnostic change does not backfill or infer a historical failure 
 
 The relevant path has three authority boundaries. Admission prepares an immutable
 command; persistence is the only place that mutates durable wallet/item state; live
-objects are published only from a committed completion.
+objects are published from committed completions or from a validated terminal
+stale-authority completion that changes no durable state.
 
 ### Wallet endpoint preparation
 
@@ -78,8 +90,9 @@ For a `coin_transfer`, the repository:
 4. applies child mutations and ledger/item events only after the corresponding
    fences pass;
 5. on a terminal `ESTALE`, rolls back the savepoint so an earlier source mutation
-   is not retained, finishes the inbox with the error and bounded stage, and commits
-   the receipt with an empty result payload; and
+   is not retained, then preserves a current currency result only when the bounded
+   stage proves that one wallet endpoint's wallet and/or bank revision was stale;
+   all non-currency stale receipts remain payload-free;
 6. on replay, returns the stored command-hash-matched receipt without reapplying
    the mutation.
 
@@ -105,14 +118,18 @@ critical-command migration and schema verifier before compiling the harness.
 The harness uses a fresh schema in the task-owned MySQL container; it does not use
 the parent #504/#507 database.
 
-The regression covers two distinct stale gates:
+The SQL and game-thread regressions cover the refusal and repair boundaries:
 
 - a destination coin-payload mismatch returns terminal `ESTALE`, persists
   `coin_destination_coin_payload_revision`, leaves the wallet and pile unchanged,
   leaves `result_payload` empty, and replays with the same stage/error;
 - a source wallet revision mismatch returns terminal `ESTALE`, persists
-  `coin_source_wallet_revision`, leaves the wallet/ledger unchanged, leaves
-  `result_payload` empty, and replays with the same stage/error.
+  `coin_source_wallet_revision`, leaves the wallet/ledger unchanged, persists exactly
+  the current locked currency authority, and replays byte-for-byte with the same
+  stage/error/result; and
+- source wallet+bank and destination-wallet completion tests repair only the stale
+  live endpoint, do not debit or credit the rejected transfer, do not auto-submit a
+  second operation, and prove that a later command is built from the repaired state.
 
 The same harness also retains the existing SQL fault/rollback and interrupted
 transaction probe. A race where the pause finishes before `KILL CONNECTION` is
@@ -140,10 +157,10 @@ The prior local #505 result records ESTALE observations during the cited inciden
 window, no auction activity in the examined period, and no established currency
 loss. It also records that the available dump did not contain the failed command
 payload or binary provenance. The local issue corpus does not contain an independent
-#505 issue payload. Those facts support instrumentation and prevention, but do not
-identify whether the historical refusal was a source wallet fence, destination
-wallet fence, item owner fence, item revision, parent revision, payload mismatch,
-or an upstream admission/publication problem.
+#505 issue payload. Those facts support the recurrence repair and future
+classification, but do not identify whether the historical refusal was a source wallet
+fence, destination wallet fence, item owner fence, item revision, parent revision,
+payload mismatch, or an upstream admission/publication problem.
 
 The new stage is only populated when this code path executes after the migration;
 it cannot reconstruct a pre-migration failure. It also cannot distinguish a failure

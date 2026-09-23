@@ -75,6 +75,21 @@ bool retain_unresolved_publication(pending_currency &entry, const char *reason, 
 	return false;
 }
 
+bool publish_stale_bank(const currency_command_payload &endpoint,
+			const currency_command_result &current)
+{
+	for (int64_t amount : current.bank.amount)
+		if (amount < 0 || amount > INT_MAX)
+			return false;
+	const AccountBankBalances balances = { static_cast<int>(current.bank.amount[0]),
+					       static_cast<int>(current.bank.amount[1]),
+					       static_cast<int>(current.bank.amount[2]),
+					       static_cast<int>(current.bank.amount[3]) };
+	publish_account_bank_balances_revision(endpoint.account_name.data(), endpoint.racewar,
+					       &balances, current.bank_revision);
+	return true;
+}
+
 bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator found, P_char actor)
 {
 	auto &entry = found->second;
@@ -87,6 +102,40 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 						 completed.result_size, &result))
 	{
 		return retain_unresolved_publication(entry, "invalid_coin_result", true);
+	}
+	coin_transfer_stale_result stale = {};
+	const bool stale_receipt_expected =
+		!committed && completed.error_code == ESTALE &&
+		coin_transfer_command_stale_result_expected(*entry.coin, completed.failure_stage);
+	const bool stale_authority =
+		stale_receipt_expected && completed.result_size &&
+		coin_transfer_command_decode_stale_result(*entry.coin, completed.failure_stage,
+							  completed.result_payload.data(),
+							  completed.result_size, &stale);
+	if (stale_receipt_expected && !stale_authority)
+		return retain_unresolved_publication(entry, "invalid_coin_stale_result", true);
+	if (!committed && completed.result_size && !stale_authority)
+		return retain_unresolved_publication(entry, "unexpected_coin_terminal_result",
+						     true);
+	if (stale_authority && !entry.coin_wallets_published)
+	{
+		const coin_transfer_endpoint &endpoint =
+			stale.endpoint_index ? entry.coin->destination : entry.coin->source;
+		currency_command_payload wallet;
+		if (!currency_command_decode_payload(endpoint.change, &wallet))
+			return retain_unresolved_publication(entry, "invalid_stale_coin_endpoint",
+							     true);
+		P_char character = find_player_by_pid(wallet.pid);
+		if ((stale.wallet_stale && character &&
+		     !currency_transaction_publish_wallet(character, stale.current.wallet,
+							  stale.current.wallet_revision)) ||
+		    (stale.bank_stale && !publish_stale_bank(wallet, stale.current)))
+			return retain_unresolved_publication(entry, "invalid_stale_coin_authority",
+							     true);
+		// The original transfer remains rejected. Only the live projection read
+		// under the failed endpoint's row locks is repaired; offline players load
+		// the same authority on re-entry.
+		entry.coin_wallets_published = true;
 	}
 	if (committed && !entry.coin_wallets_published)
 	{
@@ -437,7 +486,8 @@ bool currency_transaction_player_busy(P_char character)
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
 	const uint8_t racewar = static_cast<uint8_t>(GET_RACEWAR(character));
 	return std::any_of(pending.begin(), pending.end(),
-			   [pid, racewar, account_known, account_name](const auto &item) {
+			   [pid, racewar, account_known, account_name](const auto &item)
+			   {
 				   return pending_affects_character(item.second, pid, racewar,
 								    account_known, account_name);
 			   });
