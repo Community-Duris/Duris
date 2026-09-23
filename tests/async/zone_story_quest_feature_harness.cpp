@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <tuple>
 
 namespace
 {
@@ -225,9 +226,38 @@ int main()
 		"achievement renderer did not honor color preference");
 	const std::string summary_output = tracker.render_summary(7, 42, "Alice", false);
 	require(summary_output.find("The Ember Coast") != std::string::npos &&
-			summary_output.find("The Dusk Archive") != std::string::npos &&
+			summary_output.find("The Dusk Archive") == std::string::npos &&
 			summary_output.find("Zone 900") == std::string::npos,
-		"personal achievement summary did not use proper area names");
+		"personal achievement summary did not filter zero-progress zones");
+
+	zone_story_quest_catalog::catalog list_catalog = catalog;
+	zone_story_quest_tracking::quest_definition unnamed_empty_zone =
+		definition("zone-story:902:001", 902);
+	unnamed_empty_zone.zone_name.clear();
+	list_catalog.definitions.push_back(unnamed_empty_zone);
+	service list_tracker(list_catalog);
+	for (const auto &[transaction_id, quest_id, zone_number, completed_at] :
+		std::vector<std::tuple<const char *, const char *, int, int64_t>>{
+			{ "tx-list-900-1", "zone-story:900:001", 900, 172801000 },
+			{ "tx-list-900-2", "zone-story:900:002", 900, 172801100 },
+			{ "tx-list-901-1", "zone-story:901:001", 901, 172801200 } })
+	{
+		const completion_event event =
+			completion(transaction_id, quest_id, zone_number, 42, completed_at, { 42 });
+		require(list_tracker.record_completion(event, &error) == result::applied,
+			"zone-list completion fixture was not applied");
+	}
+	list_tracker.remember_character(7, 42, "Alice");
+	const personal_summary list_summary = list_tracker.summary_for(7, 42);
+	const std::string list_output = list_tracker.render_summary(7, 42, "Alice", false);
+	require(list_summary.zones.size() == 2 && list_summary.zones[0].zone_number == 900 &&
+			list_summary.zones[0].completed == 2 &&
+			list_summary.zones[1].zone_number == 901 &&
+			list_summary.zones[1].completed == 1 &&
+			list_output.find("This area") == std::string::npos &&
+			list_output.find("The Ember Coast: 2 unique quests") <
+				list_output.find("The Dusk Archive: 1 unique quests"),
+		"zone achievement list was not filtered and sorted by completed quests");
 
 	daily_policy policy;
 	policy.enabled = true;
