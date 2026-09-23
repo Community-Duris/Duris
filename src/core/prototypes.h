@@ -2075,7 +2075,7 @@ void create_denied_file(const char *, char *);
 int getNewPCidNumb(void);
 void setNewPCidNumbfromFile(void);
 char *statstr(int);
-bool _parse_name(char *, char *);
+bool _parse_name(char *, char *, bool);
 bool has_avail_class(P_desc);
 void display_classtable(P_desc);
 extern int invitemode;

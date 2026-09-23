@@ -567,7 +567,7 @@ void select_accountname(P_desc d, char *arg)
 		return;
 	}
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, false))
 	{
 		SEND_TO_Q("Illegal account name, please try another.\r\n", d);
 		SEND_TO_Q("Account Name: ", d);
@@ -2579,7 +2579,7 @@ void account_new_char_name(P_desc d, char *arg)
 	for (; isspace(*arg); arg++)
 		;
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal character name, please try another.\r\n", d);
 		account_new_char(d, NULL);
