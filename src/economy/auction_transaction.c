@@ -21,11 +21,15 @@ namespace
 {
 struct pending_auction
 {
-	uint32_t actor_pid;
-	auction_command_payload payload;
-	auction_completion_fn completion;
-	bool completion_ready;
-	critical_completion completed;
+	uint32_t actor_pid = 0;
+	auction_command_payload payload = {};
+	auction_completion_fn completion = nullptr;
+	bool completion_ready = false;
+	bool wallet_published = false;
+	bool source_owner_published = false;
+	size_t next_item_publication = 0;
+	bool publication_alerted = false;
+	critical_completion completed = {};
 };
 
 std::unordered_map<std::string, pending_auction> pending;
@@ -62,17 +66,18 @@ bool publish(std::unordered_map<std::string, pending_auction>::iterator found, P
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
-	if (committed && character && result.wallet_revision &&
-	    !currency_transaction_publish_balances(
-		    character, entry.payload.account_name.data(), entry.payload.racewar,
-		    result.wallet, result.bank, result.wallet_revision, result.bank_revision))
+	const char *failure = nullptr;
+	if (committed && character && result.wallet_revision && !entry.wallet_published)
 	{
-		if (entry.completion)
-			entry.completion(character, false, {}, ERANGE, entry.payload);
-		pending.erase(found);
-		return false;
+		if (!currency_transaction_publish_balances(
+			    character, entry.payload.account_name.data(), entry.payload.racewar,
+			    result.wallet, result.bank, result.wallet_revision,
+			    result.bank_revision))
+			failure = "wallet";
+		else
+			entry.wallet_published = true;
 	}
-	if (committed && result.item_count)
+	if (!failure && committed && result.item_count && !entry.source_owner_published)
 	{
 		// Settlement advances both owners. Updating only the destination leaves
 		// the seller's next inventory or coin transfer fenced by a stale revision.
@@ -90,12 +95,12 @@ bool publish(std::unordered_map<std::string, pending_auction>::iterator found, P
 							   &current_source_revision) ||
 		    !item_ownership_runtime_hydrate_owner(
 			    source_owner, std::max(current_source_revision, source_revision)))
-		{
-			if (entry.completion)
-				entry.completion(character, false, {}, ESTALE, entry.payload);
-			pending.erase(found);
-			return false;
-		}
+			failure = "source_owner";
+		else
+			entry.source_owner_published = true;
+	}
+	if (!failure && committed && result.item_count)
+	{
 		const item_owner_identity owner = {
 			result.action == auction_action::list ? item_owner_type::auction :
 								item_owner_type::player,
@@ -105,19 +110,34 @@ bool publish(std::unordered_map<std::string, pending_auction>::iterator found, P
 		const uint64_t owner_revision = result.action == auction_action::list ?
 							result.auction_owner_revision :
 							result.player_owner_revision;
-		for (size_t index = 0; index < result.item_count; ++index)
+		for (; entry.next_item_publication < result.item_count;
+		     ++entry.next_item_publication)
+		{
+			const size_t index = entry.next_item_publication;
 			if (!item_ownership_runtime_hydrate(
 				    { result.item_uids[index], result.item_uids[index], 0, owner,
 				      result.item_revisions[index], owner_revision,
 				      entry.payload.items[index].vnum,
 				      item_custody_state::active }))
 			{
-				if (entry.completion)
-					entry.completion(character, false, {}, ESTALE,
-							 entry.payload);
-				pending.erase(found);
-				return false;
+				failure = "item_owner";
+				break;
 			}
+		}
+	}
+	if (!failure &&
+	    !critical_command_coordinator_acknowledge_publication(entry.completed.operation_id))
+		failure = "acknowledgement";
+	if (failure)
+	{
+		if (!entry.publication_alerted)
+		{
+			logit(LOG_FILE,
+			      "auction: committed publication retained actor_pid=%u phase=%s",
+			      entry.actor_pid, failure);
+			entry.publication_alerted = true;
+		}
+		return false;
 	}
 	if (entry.completion)
 		entry.completion(character, committed, decoded ? result : auction_command_result{},
@@ -141,9 +161,7 @@ bool submit(P_char character, const auction_command_payload &payload,
 		return false;
 	pending_auction entry = { .actor_pid = payload.actor_pid,
 				  .payload = payload,
-				  .completion = completion,
-				  .completion_ready = false,
-				  .completed = {} };
+				  .completion = completion };
 	const std::string key = operation_key(operation_id);
 	try
 	{
@@ -154,7 +172,7 @@ bool submit(P_char character, const auction_command_payload &payload,
 		return false;
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		critical_command_coordinator_submit_for_publication(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
@@ -189,11 +207,17 @@ void auction_transaction_handle_completions(const critical_completion *completio
 			continue;
 		found->second.completed = completions[index];
 		found->second.completion_ready = true;
-		P_char character = found->second.actor_pid ?
-					   find_player_by_pid(found->second.actor_pid) :
+	}
+	for (auto found = pending.begin(); found != pending.end();)
+	{
+		auto current = found++;
+		if (!current->second.completion_ready)
+			continue;
+		P_char character = current->second.actor_pid ?
+					   find_player_by_pid(current->second.actor_pid) :
 					   nullptr;
-		if (!found->second.actor_pid || character)
-			publish(found, character);
+		if (!current->second.actor_pid || character)
+			publish(current, character);
 	}
 }
 
@@ -214,9 +238,11 @@ bool auction_transaction_player_busy(P_char character)
 {
 	if (!character || IS_NPC(character))
 		return false;
-	return std::any_of(
-		pending.begin(), pending.end(), [&](const auto &entry)
-		{ return entry.second.actor_pid == static_cast<uint32_t>(GET_PID(character)); });
+	return std::any_of(pending.begin(), pending.end(),
+			   [&](const auto &entry) {
+				   return entry.second.actor_pid ==
+					  static_cast<uint32_t>(GET_PID(character));
+			   });
 }
 
 critical_outbox_delivery_result

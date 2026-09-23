@@ -20,6 +20,10 @@ struct pending_trade
 	shop_trade_payload payload = {};
 	shop_trade_completion_fn completion = nullptr;
 	bool completion_ready = false;
+	bool balances_published = false;
+	bool ownership_published = false;
+	bool shop_revision_published = false;
+	bool publication_alerted = false;
 	critical_completion completed = {};
 };
 
@@ -122,30 +126,60 @@ bool publish(std::unordered_map<std::string, pending_trade>::iterator found, P_c
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
-	bool published =
-		decoded &&
-		(!committed || shop_trade_runtime_can_advance(entry.payload.shop_id,
-							      entry.payload.expected_shop_revision,
-							      result.shop_revision));
-	if (published)
-		published = currency_transaction_publish_balances(
-			character, entry.payload.account_name.data(), entry.payload.racewar,
-			result.wallet, result.bank, result.wallet_revision, result.bank_revision);
-	if (published && committed)
-		published = publish_ownership(entry.payload, result);
-	if (published && committed)
-		published = shop_trade_runtime_advance(entry.payload.shop_id,
-						       entry.payload.expected_shop_revision,
-						       result.shop_revision);
+	const char *failure = nullptr;
+	if (committed && !entry.shop_revision_published &&
+	    !shop_trade_runtime_can_advance(entry.payload.shop_id,
+					    entry.payload.expected_shop_revision,
+					    result.shop_revision))
+		failure = "shop_revision";
+	if (!failure && committed && !entry.balances_published)
+	{
+		if (!currency_transaction_publish_balances(
+			    character, entry.payload.account_name.data(), entry.payload.racewar,
+			    result.wallet, result.bank, result.wallet_revision,
+			    result.bank_revision))
+			failure = "balances";
+		else
+			entry.balances_published = true;
+	}
+	if (!failure && committed && !entry.ownership_published)
+	{
+		if (!publish_ownership(entry.payload, result))
+			failure = "ownership";
+		else
+			entry.ownership_published = true;
+	}
+	if (!failure && committed && !entry.shop_revision_published)
+	{
+		if (!shop_trade_runtime_advance(entry.payload.shop_id,
+						entry.payload.expected_shop_revision,
+						result.shop_revision))
+			failure = "shop_revision";
+		else
+			entry.shop_revision_published = true;
+	}
+	if (!failure &&
+	    !critical_command_coordinator_acknowledge_publication(entry.completed.operation_id))
+		failure = "acknowledgement";
+	if (failure)
+	{
+		if (!entry.publication_alerted)
+		{
+			logit(LOG_FILE,
+			      "shop_trade: committed publication retained shop=%u pid=%u phase=%s",
+			      entry.payload.shop_id, entry.player_pid, failure);
+			entry.publication_alerted = true;
+		}
+		return false;
+	}
 	const auto completion = entry.completion;
 	const shop_trade_payload payload = entry.payload;
 	const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
 	pending.erase(found);
 	if (completion)
-		completion(character, committed && published,
-			   decoded ? result : shop_trade_result{}, published ? error_code : ESTALE,
+		completion(character, committed, decoded ? result : shop_trade_result{}, error_code,
 			   payload);
-	return committed && published;
+	return committed;
 }
 } // namespace
 
@@ -166,14 +200,16 @@ bool shop_trade_transaction_submit(P_char character, const shop_trade_payload &p
 	const std::string key = operation_key(operation_id);
 	try
 	{
-		pending.emplace(
-			key, pending_trade{ payload.player_pid, payload, completion, false, {} });
+		pending.emplace(key, pending_trade{ .player_pid = payload.player_pid,
+						    .payload = payload,
+						    .completion = completion });
 	}
 	catch (const std::bad_alloc &)
 	{
 		return false;
 	}
-	const auto submitted = critical_command_coordinator_submit(std::move(command));
+	const auto submitted =
+		critical_command_coordinator_submit_for_publication(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
@@ -193,8 +229,13 @@ void shop_trade_transaction_handle_completions(const critical_completion *comple
 			continue;
 		found->second.completed = completions[index];
 		found->second.completion_ready = true;
-		if (P_char character = find_player_by_pid(found->second.player_pid))
-			publish(found, character);
+	}
+	for (auto found = pending.begin(); found != pending.end();)
+	{
+		auto current = found++;
+		if (current->second.completion_ready)
+			if (P_char character = find_player_by_pid(current->second.player_pid))
+				publish(current, character);
 	}
 }
 
@@ -202,19 +243,12 @@ void shop_trade_transaction_player_ready(P_char character)
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
 		return;
-	for (;;)
+	for (auto found = pending.begin(); found != pending.end();)
 	{
-		auto found = std::find_if(pending.begin(), pending.end(),
-					  [&](const auto &entry)
-					  {
-						  return entry.second.player_pid ==
-								 static_cast<uint32_t>(
-									 GET_PID(character)) &&
-							 entry.second.completion_ready;
-					  });
-		if (found == pending.end())
-			break;
-		publish(found, character);
+		auto current = found++;
+		if (current->second.player_pid == static_cast<uint32_t>(GET_PID(character)) &&
+		    current->second.completion_ready)
+			publish(current, character);
 	}
 }
 

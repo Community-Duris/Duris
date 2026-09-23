@@ -77,8 +77,8 @@ if not callback.index("shop_trade_runtime_object_matches_payload") < cleanup_bra
 ):
     raise SystemExit("invalid shop stock is extracted before committed snapshot revalidation")
 if not TRANSACTION.index("currency_transaction_publish_balances(") < TRANSACTION.index(
-    "completion(character, committed && published"
-):
+    "critical_command_coordinator_acknowledge_publication("
+) < TRANSACTION.index("completion(character, committed, decoded ?"):
     raise SystemExit("shop callback can run before authoritative runtime publication")
 for token in (
     "transfer.target_root_item_uid = payload.target_root_item_uid",

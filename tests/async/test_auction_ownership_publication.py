@@ -35,6 +35,11 @@ harness = r'''
 #include <string>
 #include <unordered_map>
 
+static bool ack_ok = true;
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &) {
+    return ack_ok;
+}
+void logit(const char *, const char *, ...) {}
 bool currency_transaction_publish_balances(P_char, const char *, uint8_t,
     const currency_vector &, const currency_vector &, uint64_t, uint64_t) { return true; }
 ''' + declarations + publication + r'''
@@ -94,6 +99,35 @@ int main() {
     assert(item_ownership_runtime_hydrate_owner(buyer, 4));
     acknowledge(auction_action::list, 43, 2, 3, 4);
     assert(revision(buyer) == 4 && revision(auction) == 3);
+    pending_auction retained = {};
+    retained.actor_pid = 43;
+    retained.payload.action = auction_action::list;
+    retained.payload.actor_pid = 43;
+    retained.payload.items[0] = {200, 4, 391};
+    retained.payload.item_count = 1;
+    auction_command_result retry_result = {};
+    retry_result.action = auction_action::list;
+    retry_result.auction_id = 7;
+    retry_result.player_owner_revision = 5;
+    retry_result.auction_owner_revision = 4;
+    retry_result.item_count = 1;
+    retry_result.item_uids[0] = 200;
+    retry_result.item_revisions[0] = 5;
+    std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> retry_bytes;
+    assert(auction_command_encode_result(retry_result, &retry_bytes));
+    retained.completed.outcome = critical_apply_outcome::applied;
+    retained.completed.result_size = retry_bytes.size();
+    std::copy(retry_bytes.begin(), retry_bytes.end(), retained.completed.result_payload.begin());
+    pending.emplace("retry", retained);
+    char_data retry_character = {};
+    ack_ok = false;
+    assert(!publish(pending.find("retry"), &retry_character));
+    assert(pending.count("retry") == 1);
+    assert(pending.at("retry").source_owner_published);
+    assert(pending.at("retry").next_item_publication == 1);
+    ack_ok = true;
+    assert(publish(pending.find("retry"), &retry_character));
+    assert(pending.empty());
     item_ownership_runtime_reset();
     puts("auction source/destination custody publication: ok");
 }

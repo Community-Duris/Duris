@@ -22,6 +22,12 @@ bool shop_revision_published = false;
 bool completion_called = false;
 bool completion_committed = false;
 unsigned int completion_error = 0;
+bool acknowledge_ok = true;
+bool acknowledged = false;
+bool fail_ownership_once = false;
+int balance_calls = 0;
+int ownership_calls = 0;
+int shop_revision_calls = 0;
 
 shop_trade_payload trade(shop_trade_action action, uint64_t uid)
 {
@@ -102,11 +108,20 @@ void completed(P_char completed_character, bool committed, const shop_trade_resu
 }
 } // namespace
 
-critical_submit_result critical_command_coordinator_submit(critical_command command)
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
 {
 	submitted_command = std::move(command);
 	return critical_submit_result::accepted;
 }
+
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id)
+{
+	assert(operation_id.bytes == submitted_command.operation_id.bytes);
+	acknowledged = acknowledge_ok;
+	return acknowledge_ok;
+}
+
+void logit(const char *, const char *, ...) {}
 
 P_char find_player_by_pid(int pid)
 {
@@ -121,12 +136,19 @@ bool currency_transaction_publish_balances(P_char published_character, const cha
 	assert(published_character == &character && !strcmp(account_name, "shop-account") &&
 	       racewar == 1 && wallet_revision == 3 && bank_revision == 4);
 	currency_published = true;
+	++balance_calls;
 	return true;
 }
 
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result)
 {
+	++ownership_calls;
+	if (fail_ownership_once)
+	{
+		fail_ownership_once = false;
+		return false;
+	}
 	published_transfer = payload;
 	published_transfer_result = result;
 	ownership_published = true;
@@ -141,6 +163,7 @@ bool shop_trade_runtime_can_advance(uint32_t shop_id, uint64_t expected_revision
 
 bool shop_trade_runtime_advance(uint32_t shop_id, uint64_t expected_revision, uint64_t new_revision)
 {
+	++shop_revision_calls;
 	shop_revision_published =
 		shop_trade_runtime_can_advance(shop_id, expected_revision, new_revision);
 	return shop_revision_published;
@@ -167,7 +190,7 @@ int main()
 		completion(result(shop_trade_action::buy_produced, 300, 8, 6));
 	shop_trade_transaction_handle_completions(&produced_completion, 1);
 	assert(currency_published && ownership_published && shop_revision_published &&
-	       completion_called && completion_committed && completion_error == 0 &&
+	       acknowledged && completion_called && completion_committed && completion_error == 0 &&
 	       published_transfer.from_owner.type == item_owner_type::system &&
 	       published_transfer.to_owner.type == item_owner_type::player &&
 	       published_transfer.target_root_item_uid == 700 &&
@@ -190,7 +213,7 @@ int main()
 	player_online = true;
 	shop_trade_transaction_player_ready(&character);
 	assert(currency_published && ownership_published && shop_revision_published &&
-	       completion_called && completion_committed &&
+	       acknowledged && completion_called && completion_committed &&
 	       published_transfer.from_owner.type == item_owner_type::player &&
 	       published_transfer.to_owner.type == item_owner_type::destruction &&
 	       published_transfer_result.from_owner_revision == 9 &&
@@ -205,12 +228,46 @@ int main()
 		completion(result(shop_trade_action::discard_invalid, 302, 10, 3));
 	shop_trade_transaction_handle_completions(&cleanup_completion, 1);
 	assert(currency_published && ownership_published && shop_revision_published &&
-	       completion_called && completion_committed &&
+	       acknowledged && completion_called && completion_committed &&
 	       published_transfer.from_owner.type == item_owner_type::shopkeeper &&
 	       published_transfer.to_owner.type == item_owner_type::destruction &&
 	       published_transfer_result.from_owner_revision == 10 &&
 	       published_transfer_result.to_owner_revision == 3 &&
 	       !shop_trade_transaction_player_busy(&character));
+
+	const shop_trade_payload retry = trade(shop_trade_action::sell_store, 303);
+	completion_called = false;
+	acknowledged = false;
+	const int before_balances = balance_calls;
+	fail_ownership_once = true;
+	assert(shop_trade_transaction_submit(&character, retry, completed));
+	critical_completion retry_completion =
+		completion(result(shop_trade_action::sell_store, 303, 11, 4));
+	shop_trade_transaction_handle_completions(&retry_completion, 1);
+	assert(shop_trade_transaction_player_busy(&character) && !completion_called &&
+	       balance_calls == before_balances + 1 && !acknowledged);
+	shop_trade_transaction_handle_completions(nullptr, 0);
+	assert(!shop_trade_transaction_player_busy(&character) && completion_called &&
+	       completion_committed && balance_calls == before_balances + 1);
+
+	completion_called = false;
+	acknowledged = false;
+	acknowledge_ok = false;
+	const int before_ownership = ownership_calls;
+	const int before_revision = shop_revision_calls;
+	const shop_trade_payload ack_retry = trade(shop_trade_action::sell_store, 304);
+	assert(shop_trade_transaction_submit(&character, ack_retry, completed));
+	critical_completion ack_completion =
+		completion(result(shop_trade_action::sell_store, 304, 12, 5));
+	shop_trade_transaction_handle_completions(&ack_completion, 1);
+	assert(shop_trade_transaction_player_busy(&character) && !completion_called &&
+	       ownership_calls == before_ownership + 1 &&
+	       shop_revision_calls == before_revision + 1);
+	acknowledge_ok = true;
+	shop_trade_transaction_handle_completions(nullptr, 0);
+	assert(!shop_trade_transaction_player_busy(&character) && completion_called &&
+	       completion_committed && acknowledged && ownership_calls == before_ownership + 1 &&
+	       shop_revision_calls == before_revision + 1);
 
 	shop_trade_transaction_reset_for_tests();
 }
