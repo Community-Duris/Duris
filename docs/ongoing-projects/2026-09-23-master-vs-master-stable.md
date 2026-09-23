@@ -50,24 +50,30 @@ not recorded. Both came along with the move.
 ## What staging runs now
 
 The staging move kept the checkout exactly as it was, on
-`codex/rollback-sbs-20260923` at `a6a2124c1`, so as not to undo the hold. Two
-cherry-picks were added:
+`codex/rollback-sbs-20260923` at `a6a2124c1`, so as not to undo the hold.
+Cherry-picks have been added since:
 
 - `0695680df`: the configurable production-role port. It is `a7644b9f0` on
   `master` and `f2a1bcf18` on `codex/master-stable`.
 - `01f401b5a`: the login mode banner. It is `be50f6c0e` on `master` and
   `3403c1db9` on `codex/master-stable`.
+- `dbc3e5e34`, `4958a654f` and `afdee58cc`: the Stromvok ferry from #618,
+  deployed at 2026-09-23 11:12. On `master` they are `e5c49f739`, `86fd07c15` and
+  `89332a35f`. They reach `codex/master-stable` the next time Liskin merges
+  `master`. If staging moves to the head of `codex/master-stable` before then,
+  the ferry drops out until he does.
 
 That branch exists only on the staging host, not on GitHub.
 
 | Where | Code |
 | --- | --- |
-| `master` | The port change and banner; none of Liskin's 27 commits |
+| `master` | The port change, banner and ferry (#618); none of Liskin's 27 commits |
 | `codex/master-stable` | `master` as of `c6e94be85`, Liskin's 27 commits, the port change and banner |
-| Staging (`duris-staging` on the production host) | `a6a2124c1`, the port change and banner |
+| Staging (`duris-staging` on the production host) | `a6a2124c1`, the port change, banner and ferry |
 | Production | `440248b17` (`master`, 2026-09-18) |
 
-Staging is 13 commits behind `codex/master-stable`:
+Staging lacks 13 commits that `codex/master-stable` has, and carries the three
+ferry commits that it doesn't have yet. The missing 13 are:
 
 - Liskin's last nine, including the corpse-custody and disputed-death fixes:
   `d7098aa77`, `13641d24e`, `6380a4bc3`, `e08b0f63d`, `cb8abae92`, `16582e101`,
@@ -87,5 +93,5 @@ Staging is 13 commits behind `codex/master-stable`:
 - **Production.** Production is 136 commits behind `master`, and its next
   deploy is a separate decision.
 - **Rebuilding staging's branch.** The branch isn't on GitHub. If the checkout
-  is lost, recreate it as `a6a2124c1` plus the two cherry-picks above, or push it
-  to `origin`.
+  is lost, recreate it as `a6a2124c1` plus the cherry-picks above, or push it to
+  `origin`.
