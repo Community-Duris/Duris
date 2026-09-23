@@ -13,7 +13,8 @@ return the first match.  Ticket control, announcements, "look out", and
 "disembark" only reach the rooms a ferry lists, so those must be exactly the
 rooms a passenger can walk to from the boarding room: the WaveDancer once
 listed 47003-47010 only, and its hold and cabins (47012-47023) were a free
-ride.  Every stop must be a room valid_ship_edge() lets a
+ride.  test_ferry_ship_lifetime.py checks that create_ferry() lists each room
+once.  Every stop must be a room valid_ship_edge() lets a
 ship enter, or that leg can never be routed.  Every ferry also puts a ticket
 automat (FERRY_AUTOMAT_OBJ) at each stop, and the automat sells tickets
 (FERRY_TICKET_VNUM) that ticket control looks for, so both objects must be in
