@@ -101,11 +101,13 @@ harness = r'''
 using P_char = void *;
 struct TimedShutdownData {
     time_t reboot_time;
-    enum { NONE, OK, PWIPE, REBOOT } eShutdownType;
+    enum { NONE, OK, REBOOT, COPYOVER, AUTOREBOOT, AUTOREBOOT_COPYOVER, PWIPE } eShutdownType;
 } shutdownData;
 std::string message;
 void send_to_char(const char *text, P_char) { message = text; }
-''' + body(actwiz, "void displayShutdownMsg(", "void do_shutdown(") + r'''
+''' + body(actwiz, "static const char *scheduled_shutdown_type_name(",
+           "/** Execute an immediate shutdown") + \
+    body(actwiz, "void displayShutdownMsg(", "void do_shutdown(") + r'''
 bool would_autoreboot() {
     int autoreboot_delay_minutes = 60;
 ''' + autoreboot + r'''
@@ -127,6 +129,10 @@ int main() {
     assert(would_autoreboot());
     shutdownData.reboot_time = time(nullptr) + 60;
     assert(!would_autoreboot());
+    shutdownData.eShutdownType = TimedShutdownData::COPYOVER;
+    displayShutdownMsg(nullptr);
+    assert(message.find("COPYOVER") != std::string::npos);
+    assert(message.find("REBOOT") == std::string::npos);
     shutdownData.eShutdownType = TimedShutdownData::NONE;
     message.clear();
     displayShutdownMsg(nullptr);

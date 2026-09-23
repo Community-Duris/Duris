@@ -1736,7 +1736,8 @@ int nexus(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int to_room;
 	char Gbuf1[MAX_STRING_LENGTH];
-	P_char t_ch;
+	P_char t_ch, dummy;
+	P_obj target = NULL;
 
 	/*
 	   check for periodic event calls
@@ -1758,8 +1759,16 @@ int nexus(P_obj obj, P_char ch, int cmd, char *arg)
 		return (FALSE);
 	}
 	one_argument(arg, Gbuf1);
+	/* "enter 2.portal" and a god's "enter <vnum>" name this portal without the
+	   bare keyword.  Resolve them as check_item_teleport() does; otherwise they
+	   fall through to it and land in the fixed value[0] room. */
 	if (!isname(Gbuf1, obj->name))
-		return (FALSE);
+	{
+		generic_find(arg, FIND_OBJ_INV | FIND_OBJ_EQUIP | FIND_OBJ_ROOM, ch, &dummy,
+			     &target);
+		if (target != obj)
+			return (FALSE);
+	}
 
 	act("As you step into the $o, there is a blinding flash of light!", FALSE, ch, obj, 0,
 	    TO_CHAR);

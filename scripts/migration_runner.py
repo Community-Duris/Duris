@@ -277,9 +277,13 @@ def run_pending(manifest: Manifest, executor: Executor) -> list[str]:
         executor.require_baseline(manifest)
         pending = validate_applied_prefix(manifest, executor.applied())
         for migration in pending:
-            executor.apply(migration)
-            executor.verify(migration)
-            executor.record(migration, manifest.runner_version)
+            try:
+                executor.apply(migration)
+                executor.verify(migration)
+                executor.record(migration, manifest.runner_version)
+            except MigrationContractError as error:
+                raise MigrationContractError(
+                    f"migration {migration.migration_id} failed: {error}") from error
             completed.append(migration.migration_id)
         return completed
     finally:
@@ -353,7 +357,10 @@ class MysqlExecutor:
                                                 else []), input=input_payload,
                                 capture_output=True, env=environment, check=False)
         if result.returncode:
-            raise MigrationContractError("database migration command failed")
+            detail = result.stderr.decode(errors="replace").strip().splitlines()
+            raise MigrationContractError(
+                "database migration command failed" +
+                (f": {detail[-1]}" if detail else ""))
         return result.stdout.decode().strip()
 
     def acquire_lock(self) -> None:
@@ -431,7 +438,10 @@ class MysqlExecutor:
         result = subprocess.run([str(migration.verify_path)], capture_output=True,
                                 env=environment, check=False)
         if result.returncode:
-            raise MigrationContractError("migration verifier failed")
+            detail = (result.stderr or result.stdout).decode(errors="replace").strip().splitlines()
+            raise MigrationContractError(
+                "migration verifier failed" +
+                (f": {detail[-1]}" if detail else ""))
 
     def record(self, migration: Migration, runner_version: int) -> None:
         description_hex = migration.description.encode("utf-8").hex()

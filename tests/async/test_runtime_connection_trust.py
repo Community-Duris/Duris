@@ -63,6 +63,14 @@ assert "strtol(port, &end, 10)" in runtime
 assert "parsed < 1 || parsed > 65535" in runtime
 assert "sql_target_is_allowed(DB_HOST, database)" in runtime
 assert "production role requires the production port" in runtime
+assert "RUNNING_PORT != production_port" in runtime
+assert "DURIS_PRODUCTION_PORT is invalid" in runtime
+production_port = section(sql, "static int sql_production_port(void)", "static bool sql_runtime_config_valid")
+assert 'getenv("DURIS_PRODUCTION_PORT")' in production_port
+assert "return DFLT_PORT;" in production_port
+assert "parsed < 1 || parsed > 65535" in production_port
+db_name = section(sql, "const char *sql_persistence_db_name(void)", "int initialize_mysql()")
+assert "RUNNING_PORT != sql_production_port()" in db_name
 
 constructor = section(
     sql,
@@ -152,6 +160,9 @@ assert "CREATE TABLE IF NOT EXISTS server_reboots" not in cycle
 assert "[ -L .env ]" in cycle
 assert "Resolved database target is not allow-listed" in cycle
 assert 'EFFECTIVE_DB_NAME="duris_dev"' in cycle
+assert 'PRODUCTION_PORT="${DURIS_PRODUCTION_PORT:-7777}"' in cycle
+assert "$MUD_PORT -ne $PRODUCTION_PORT" in cycle
+assert "DURIS_PRODUCTION_PORT=\n" in example
 assert "--ssl-verify-server-cert" in cycle
 assert 'mysql "${MYSQL_CONNECTION_ARGS[@]}" "$EFFECTIVE_DB_NAME"' in cycle
 assert 'export MYSQL_PWD="$DB_PASSWD"' in cycle

@@ -775,6 +775,19 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			"\r\n*** Copyover cancelled: starter equipment is still being granted; retry after completion. ***\r\n");
 		return false;
 	}
+	// Only playing plain-Telnet descriptors can survive exec. Leave every
+	// connection on the live process if even one would be dropped.
+	for (d = descriptor_list; d; d = d->next)
+		if (d->descriptor >= 0 &&
+		    (d->connected != CON_PLAYING || !d->character || d->websocket || d->sslses))
+		{
+			logit(LOG_STATUS,
+			      "copyover: non-preservable connection fd=%d state=%d ws=%d ssl=%d; aborting",
+			      d->descriptor, d->connected, d->websocket, d->sslses ? 1 : 0);
+			notify_copyover_failure(
+				"\r\n*** Copyover cancelled: a connection cannot survive this handoff; server remains live. ***\r\n");
+			return false;
+		}
 
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
@@ -899,7 +912,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!fp)
 	{
 		logit(LOG_STATUS, "copyover: cant open %s for writing", copyover_tmp);
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}
 
@@ -920,7 +933,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	    fwrite(&ws_desc, sizeof(int), 1, fp) != 1)
 	{
 		logit(LOG_STATUS, "copyover: failed to write header/sockets");
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
 		return false;
@@ -938,7 +951,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				      "copyover: failed to write descriptor entry for %s host=%s term_type=%d",
 				      GET_NAME(d->character), d->host, d->term_type);
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -952,7 +965,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!write_telemetry_copyover_state(fp, num_descs))
 	{
 		logit(LOG_STATUS, "copyover: failed to write telemetry session handoff state");
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
 		return false;
@@ -971,7 +984,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				logit(LOG_STATUS, "copyover: failed to write mob entry for %s",
 				      GET_NAME(ch));
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -997,7 +1010,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				logit(LOG_STATUS, "copyover: failed to write object entry vnum %d",
 				      OBJ_VNUM(obj));
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -1019,7 +1032,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 					      "copyover: failed to write room door %d/%d", room,
 					      dir);
 					notify_copyover_failure(
-						"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+						"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 					fclose(fp);
 					unlink(copyover_tmp);
 					return false;
@@ -1032,7 +1045,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: failed to close %s: %s", copyover_tmp,
 		      strerror(errno));
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		unlink(copyover_tmp);
 		return false;
 	}
@@ -1040,7 +1053,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: failed to publish %s as %s: %s", copyover_tmp,
 		      COPYOVER_FILE, strerror(errno));
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		unlink(copyover_tmp);
 		return false;
 	}

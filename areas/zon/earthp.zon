@@ -298,34 +298,34 @@ F 1 1121 13 131369 100 0 0 0       * (mob type not in this .mob file) (following
 F 1 1121 13 131369 100 0 0 0       * (mob type not in this .mob file) (following)
 F 1 1121 13 131369 100 0 0 0       * (mob type not in this .mob file) (following)
 F 1 1121 13 131369 100 0 0 0       * (mob type not in this .mob file) (following)
-M 0 131203 12 131370 100 0 0 0     * A dust mephit
-E 1 131205 24 16 100 0 0 0         *   a stone dagger
-E 1 131205 24 17 100 0 0 0         *   a stone dagger
-G 1 22936 12 0 100 0 0 0           *    (object type not in this .obj file)
-G 1 22936 12 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 131228 6 131370 100 0 0 0      * a pillar of earth
 E 1 131226 20 16 100 0 0 0         *   no-show 3x earthen grasp proc
 E 1 131226 20 17 100 0 0 0         *   no-show 3x earthen grasp proc
-M 0 131203 12 131371 100 0 0 0     * A dust mephit
+F 1 131203 12 131370 100 0 0 0     * A dust mephit (following)
 E 1 131205 24 16 100 0 0 0         *   a stone dagger
 E 1 131205 24 17 100 0 0 0         *   a stone dagger
+G 1 22936 12 0 100 0 0 0           *    (object type not in this .obj file)
 G 1 22936 12 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 131228 6 131371 100 0 0 0      * a pillar of earth
 E 1 131226 20 16 100 0 0 0         *   no-show 3x earthen grasp proc
 E 1 131226 20 17 100 0 0 0         *   no-show 3x earthen grasp proc
-M 0 131203 12 131372 100 0 0 0     * A dust mephit
-E 1 131205 24 16 100 0 0 0         *   a stone dagger
-E 1 131205 24 17 100 0 0 0         *   a stone dagger
-M 0 131228 6 131372 100 0 0 0      * a pillar of earth
-E 1 131226 20 16 100 0 0 0         *   no-show 3x earthen grasp proc
-E 1 131226 20 17 100 0 0 0         *   no-show 3x earthen grasp proc
-M 0 131203 12 131373 100 0 0 0     * A dust mephit
+F 1 131203 12 131371 100 0 0 0     * A dust mephit (following)
 E 1 131205 24 16 100 0 0 0         *   a stone dagger
 E 1 131205 24 17 100 0 0 0         *   a stone dagger
 G 1 22936 12 0 100 0 0 0           *    (object type not in this .obj file)
+M 0 131228 6 131372 100 0 0 0      * a pillar of earth
+E 1 131226 20 16 100 0 0 0         *   no-show 3x earthen grasp proc
+E 1 131226 20 17 100 0 0 0         *   no-show 3x earthen grasp proc
+F 1 131203 12 131372 100 0 0 0     * A dust mephit (following)
+E 1 131205 24 16 100 0 0 0         *   a stone dagger
+E 1 131205 24 17 100 0 0 0         *   a stone dagger
 M 0 131228 6 131373 100 0 0 0      * a pillar of earth
 E 1 131226 20 16 100 0 0 0         *   no-show 3x earthen grasp proc
 E 1 131226 20 17 100 0 0 0         *   no-show 3x earthen grasp proc
+F 1 131203 12 131373 100 0 0 0     * A dust mephit (following)
+E 1 131205 24 16 100 0 0 0         *   a stone dagger
+E 1 131205 24 17 100 0 0 0         *   a stone dagger
+G 1 22936 12 0 100 0 0 0           *    (object type not in this .obj file)
 M 0 131204 10 131376 100 0 0 0     * A small earth elemental
 M 0 131204 10 131376 100 0 0 0     * A small earth elemental
 M 0 131204 10 131376 100 0 0 0     * A small earth elemental
@@ -386,6 +386,7 @@ M 0 131208 6 131376 100 0 0 0      * A xorn
 E 1 131216 6 16 100 0 0 0          *   no-show blink + heal proc
 G 1 400104 18 0 100 0 0 0          *    (object type not in this .obj file)
 M 0 131202 32 131376 100 0 0 0     * a dao guardian
+E 1 131207 2 14 100 0 0 0          *   an earthen bracer
 E 1 131212 36 16 100 0 0 0         *   a heavy, earthen flail
 F 1 131202 32 131376 100 0 0 0     * a dao guardian (following)
 E 1 131212 36 16 100 0 0 0         *   a heavy, earthen flail
@@ -394,6 +395,7 @@ E 1 131212 36 16 100 0 0 0         *   a heavy, earthen flail
 F 1 131202 32 131376 100 0 0 0     * a dao guardian (following)
 E 1 131212 36 16 100 0 0 0         *   a heavy, earthen flail
 M 0 131202 32 131376 100 0 0 0     * a dao guardian
+E 1 131207 2 14 100 0 0 0          *   an earthen bracer
 E 1 131212 36 16 100 0 0 0         *   a heavy, earthen flail
 F 1 131202 32 131376 100 0 0 0     * a dao guardian (following)
 E 1 131212 36 16 100 0 0 0         *   a heavy, earthen flail

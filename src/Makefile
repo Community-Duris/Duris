@@ -122,6 +122,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/account_reward_config.o \
 				 world/hardcore_config.o \
 				 account/creation_availability_config.o \
+				 account/login_mode_banner.o \
 				 combat/frag_cap_config.o \
 				 cmd/actcomm.o \
 				 cmd/actinf.o \

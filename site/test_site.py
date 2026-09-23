@@ -108,6 +108,19 @@ class PagesTests(unittest.TestCase):
         self.assertIn('make test-all', ''.join(self.pages[OUTPUT / 'docs/quick-start/index.html'].text))
         self.assertIn('class="code-block"', html)
 
+    def test_mermaid_keeps_dagre_layout_and_patched_lodash(self):
+        # Mermaid 12 defaults to ELK, which rearranges the existing flowcharts and
+        # makes every diagram page download a 1.5 MB layout chunk.
+        self.assertIn('layout:"dagre"', (OUTPUT / "assets/app.js").read_text())
+        # chevrotain 11.1.2 pins lodash-es 4.17.23 (GHSA-r5fr-rjxr-66jc and
+        # GHSA-f23m-r3pf-42rh); package.json overrides it with a fixed release.
+        lock = json.loads((ROOT / "site/package-lock.json").read_text())
+        versions = [entry["version"] for name, entry in lock["packages"].items()
+                    if name.rsplit("node_modules/", 1)[-1] == "lodash-es"]
+        self.assertTrue(versions)
+        for version in versions:
+            self.assertGreaterEqual(tuple(map(int, version.split("."))), (4, 18, 0))
+
     def test_diagrams_category_embeds_every_original_without_changes(self):
         self.assertIn(f"{BASE}diagrams/", self.pages[OUTPUT / "index.html"].links)
         gallery = self.pages[OUTPUT / "diagrams/index.html"]

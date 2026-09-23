@@ -9,7 +9,7 @@ comm = (SRC / "comm.c").read_text()
 
 assert "persistence_prepare_pwipe" in prototypes
 assert "persistence_prepare_pwipe" in utility
-pwipe_start = actwiz.index("case TimedShutdownData::PWIPE:")
+pwipe_start = actwiz.rindex("case TimedShutdownData::PWIPE:")
 pwipe_case = actwiz[pwipe_start:actwiz.index("default:", pwipe_start)]
 assert "shutdownflag = _pwipe = 1" in pwipe_case
 assert pwipe_case.index("shutdownflag = _pwipe = 1") < pwipe_case.index("persistence_prepare_pwipe")

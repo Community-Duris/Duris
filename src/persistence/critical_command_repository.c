@@ -2075,6 +2075,31 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	return applied;
 }
 
+bool critical_command_repository_begin_inbox_in_transaction(MYSQL *connection,
+							    const critical_command &command)
+{
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
+	if (!connection || !critical_command_valid(command) ||
+	    !command_hashes(command, &command_hash, &keys_hash))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	return insert_inbox(connection, command, command_hash, keys_hash);
+}
+
+bool critical_command_repository_finish_item_transfer_in_transaction(
+	MYSQL *connection, const critical_command &command, const item_transfer_result &result)
+{
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded = {};
+	const uint64_t durable_revision = std::max(
+		{ result.from_owner_revision, result.to_owner_revision, result.max_item_revision });
+	return connection && item_transfer_command_encode_result(result, &encoded) &&
+	       insert_outbox(connection, command, encoded.data(), encoded.size()) &&
+	       finish_inbox(connection, command, durable_revision, 0, encoded.data(),
+			    encoded.size());
+}
+
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context)
 {

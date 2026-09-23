@@ -2499,9 +2499,15 @@ def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
         "after the item is known to fit that slot -- not once per item per slot",
         f"slot test {slot_test}, silent call {silent[0] if silent else -1}",
     )
-    remove = function_bodies(read("src/magic/magic.c"), r"\bvoid\s+remove_soulbind\s*\(")
+    # remove_soulbind() delegates to remove_soulbind_except(), which owns the loop.
+    magic = read("src/magic/magic.c")
+    remove = function_bodies(magic, r"\bvoid\s+remove_soulbind\s*\(")
+    remove_except = function_bodies(magic, r"\bstatic\s+void\s+remove_soulbind_except\s*\(")
     check(
-        len(remove) == 1 and "!kingdom_store_bound(obj)" in strip_comments(remove[0]),
+        len(remove) == 1
+        and "remove_soulbind_except(ch, 0)" in strip_comments(remove[0])
+        and len(remove_except) == 1
+        and "!kingdom_store_bound(obj)" in strip_comments(remove_except[0]),
         "remove_soulbind() never touches a store piece",
     )
     make = function_bodies(

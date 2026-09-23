@@ -155,6 +155,7 @@ P_char stack_area(P_char, int, int) { return nullptr; }
 void zone_spellmessage(int, bool, const char *, const char *) { ++announcements; }
 void CharWait(P_char, int) {}
 bool cast_common_generic(P_char, int) { return true; }
+const char *elemental_aura_failure_message(P_char) { return nullptr; }
 void StopCasting(P_char ch) { REMOVE_BIT(ch->specials.affected_by2, AFF2_CASTING); }
 void appear(P_char, bool) {}
 int BOUNDED(int low, int val, int high) { return std::clamp(val, low, high); }

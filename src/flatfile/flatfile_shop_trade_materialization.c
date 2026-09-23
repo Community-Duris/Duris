@@ -774,10 +774,9 @@ flatfile_shop_trade_materialization_result flatfile_corpse_resurrection_material
 	flatfile_shop_trade_materialization_mutation *mutation, std::string *error)
 {
 	const uint32_t player_pid = payload.destination_player_pid;
-	const bool pet_raise =
-		(payload.action == corpse_lifecycle_action::raise_follower ||
-		 payload.action == corpse_lifecycle_action::raise_world_follower) &&
-		payload.pet_uid;
+	const bool pet_raise = (payload.action == corpse_lifecycle_action::raise_follower ||
+				payload.action == corpse_lifecycle_action::raise_world_follower) &&
+			       payload.pet_uid;
 	if (root.empty() || !lock.matches(root) || critical_operation_id_is_zero(operation_id) ||
 	    !player_pid || !mutation)
 		return flatfile_shop_trade_materialization_result::invalid;

@@ -7,10 +7,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 12;
+constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 13;
 constexpr uint32_t WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED = 1U << 0;
 constexpr size_t WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024;
-constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 512 * 1024;
+constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 2 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_ITEM_TREE = 512;
 constexpr size_t WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768;
@@ -54,10 +54,12 @@ struct world_recovery_item_snapshot
 	uint32_t flags;
 	int32_t values[8];
 	int64_t timers[6];
-	char name[80];
-	char short_description[80];
-	char description[160];
-	char action_description[160];
+	// SQL accepts 512-byte item names and short descriptions. Keep room for the
+	// terminator so copyover never turns a valid persisted value into a prefix.
+	char name[513];
+	char short_description[513];
+	char description[1025];
+	char action_description[1025];
 	uint32_t wear_flags;
 	uint32_t extra_flags;
 	uint32_t anti_flags;

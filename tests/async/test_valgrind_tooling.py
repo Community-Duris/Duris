@@ -60,12 +60,14 @@ helped = run("--help")
 assert helped.returncode == 0 and "--tool" in helped.stdout
 
 # src/sql.c redirects to the development database only when RUNNING_PORT
-# differs from DFLT_PORT, so the refused port must stay in step with config.h.
+# differs from the production port, which is DFLT_PORT unless
+# DURIS_PRODUCTION_PORT is set, so the refused port must stay in step with config.h.
 dflt_port = re.search(r"#define DFLT_PORT\s+(\d+)", (SRC / "config.h").read_text())
 assert dflt_port and dflt_port.group(1) == "7777", (
     "DFLT_PORT changed -- update the production-port guard in scripts/valgrind_mud.sh"
 )
-assert re.search(r"RUNNING_PORT != DFLT_PORT", (SRC / "sql.c").read_text()), (
+sql_text = (SRC / "sql.c").read_text()
+assert "RUNNING_PORT != sql_production_port()" in sql_text and "return DFLT_PORT;" in sql_text, (
     "src/sql.c no longer picks the database by port -- recheck the runner's guard"
 )
 

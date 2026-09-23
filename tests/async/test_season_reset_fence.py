@@ -59,7 +59,8 @@ assert "REDIS_SHARED_SCOPE_MAINTENANCE" in MAINTENANCE
 assert "REDIS_SHARED_COMMAND_READ" in MAINTENANCE
 assert 'context, "PING"' in MAINTENANCE
 
-pwipe_case = section(ACTWIZ, "case TimedShutdownData::PWIPE:", "default:")
+pwipe_start = ACTWIZ.rindex("case TimedShutdownData::PWIPE:")
+pwipe_case = ACTWIZ[pwipe_start:ACTWIZ.index("default:", pwipe_start)]
 failure = pwipe_case[pwipe_case.index("if (!sql_pwipe(1723699))"):]
 assert failure.index("sql_pwipe_crossed_boundary()") < failure.index(
     "shutdownflag = _pwipe = 0"

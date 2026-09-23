@@ -144,8 +144,8 @@ void spell_frost_beam(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 	act("A &+GBeam&n of &+BF&+Br&+Bo&+bs&+BT&n streams from $n's hands, striking $N square in the torso!",
 	    FALSE, ch, 0, victim, TO_NOTVICT);
 
-	if (ch && victim)
-		engage(ch, victim);
+	// if (ch && victim)
+	//	engage(ch, victim);
 
 	int dam = GET_LEVEL(ch) * 14 + number(10, 20);
 

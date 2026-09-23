@@ -90,10 +90,13 @@ for record in records[1:]:
     normalized[35] = "N"
     assert normalized == template, "local dealer records must differ only by identity and room"
 
-assert "static int replicated_shopkeeper_for_room" in DB
-assert "replicated_shopkeeper_for_room(ZCMD.arg1, ZCMD.arg3)" in DB
-assert "bind_shopkeeper(mob, replicated_shop)" in DB
-assert "is_replicated_shop(shop)" in DB
+assert "static int configured_shopkeeper_for_room" in DB
+assert "configured_shopkeeper_for_room(ZCMD.arg1, ZCMD.arg3)" in DB
+assert "static bool live_shopkeeper_for_identity" in DB
+assert "singleton_shop_id(keeper) == shop" in DB
+assert "live_shopkeeper_for_identity(configured_shop)" in DB
+assert "bind_shopkeeper(mob, configured_shop)" in DB
+assert "is_replicated_shop(configured_shop)" in DB
 assert "bool is_replicated_shop(int shop)" in SINGLETONS
 assert "SET_BIT(keeper->specials.act, ACT_SENTINEL)" in SINGLETONS
 assert "read_mobile(shop_index[shop].keeper, REAL)" in SINGLETONS

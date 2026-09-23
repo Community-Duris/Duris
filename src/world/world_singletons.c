@@ -151,6 +151,10 @@ bool snapshot_shopkeepers_for_copyover()
 			continue;
 		if (keeper->in_room < 0 || keeper->in_room > top_of_world)
 			return false;
+		// singleton_shop_id() can recover a fixed keeper's identity from its
+		// configured birthplace after game mechanics move it away from home.
+		// Carry that resolved identity into the SQL guard before snapshotting.
+		bind_shopkeeper(keeper, shop);
 		// Never silently choose between duplicate live inventories at handoff.
 		if (!saved.insert(shop).second || !sql_save_shopkeeper(keeper, shop))
 			return false;
