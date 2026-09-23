@@ -1,8 +1,9 @@
 # `master` and `codex/master-stable`: branch history and staging
 
-Status: findings, 2026-09-23. This explains which code staging and production run
-and how staging came to run `codex/master-stable` instead of `master`. Times are
-UTC. Liskin's commits are recorded at -0600 and have been converted.
+Status: findings and plan, 2026-09-23, updated about 11:30. This explains which
+code staging and production run, how staging came to run `codex/master-stable`
+instead of `master`, and how to bring the lines back together. Times are UTC.
+Liskin's commits are recorded at -0600 and have been converted.
 
 The staging move itself is recorded in
 [2026-09-23-server-environments.md](2026-09-23-server-environments.md).
@@ -10,18 +11,21 @@ The staging move itself is recorded in
 ## The two branches
 
 - **`master`** is the shared main line where PRs land. Production deploys from
-  it. Production's checkout is still `440248b17`, dated 2026-09-18, which is 136
-  commits behind `master` (as of `69bf3ead5`).
+  it. Production's checkout is still `440248b17`, dated 2026-09-18, which is 144
+  commits behind `master` (as of `33837a300`).
 - **`codex/master-stable`** is Liskin's stabilization branch.
   - It starts with `b839cadbd` at 2026-09-22 02:24 and runs through
     `72238a8f5` at 2026-09-23 04:37.
-  - It holds 27 commits by Liskin. Almost all of them concern item custody,
-    copyover and death recovery: atomic item transfers, corpse custody across
-    copyover, recapturing saves after custody races, and disputed-death handling.
+  - It holds 27 commits by Liskin, 24 regular commits and 3 merges, plus two
+    cherry-picks from `master`: the port change `f2a1bcf18` and the banner
+    `3403c1db9`.
+  - Almost all of Liskin's commits concern item custody, copyover and death
+    recovery: atomic item transfers, corpse custody across copyover, recapturing
+    saves after custody races, and disputed-death handling.
   - It has merged `master` twice: `e30e4a8e0` at 2026-09-22 12:43 and
     `16582e101` at 2026-09-23 03:56.
-  - Nothing has gone back to `master`, and none of the 27 commits went through
-    a PR. The branch is effectively staging's code line.
+  - None of Liskin's commits has reached `master`, and none went through a PR.
+    The branch is effectively staging's code line.
 
 ## What staging ran on Plesk
 
@@ -59,18 +63,22 @@ Cherry-picks have been added since:
   `3403c1db9` on `codex/master-stable`.
 - `dbc3e5e34`, `4958a654f` and `afdee58cc`: the Stromvok ferry from #618,
   deployed at 2026-09-23 11:12. On `master` they are `e5c49f739`, `86fd07c15` and
-  `89332a35f`. They reach `codex/master-stable` the next time Liskin merges
+  `89332a35f`. They reach `codex/master-stable` only when Liskin next merges
   `master`. If staging moves to the head of `codex/master-stable` before then,
   the ferry drops out until they do.
 
 That branch exists only on the staging host, not on GitHub.
 
-| Where | Code |
-| --- | --- |
-| `master` | The port change, banner and ferry (#618); none of Liskin's 27 commits |
-| `codex/master-stable` | `master` as of `c6e94be85`, Liskin's 27 commits, the port change and banner |
-| Staging (`duris-staging` on the production host) | `a6a2124c1`, the port change, banner and ferry |
-| Production | `440248b17` (`master`, 2026-09-18) |
+## Four code lines
+
+As of about 11:30, four places run four different lines of code:
+
+| Where | Commit | Code |
+| --- | --- | --- |
+| `master` | `33837a300` | Everything merged through PRs, plus the port change, banner and ferry. None of Liskin's 27 commits. |
+| `codex/master-stable` | `3403c1db9` | `master` as of `c6e94be85`, Liskin's 27 commits, and the port change and banner. It lacks 23 regular commits from `master`, including the ferry. |
+| Staging (`duris-staging` on the production host) | `afdee58cc` | `a6a2124c1`, the port change, banner and ferry. It exists only on the staging host. |
+| Production | `440248b17` | `master` from 2026-09-18, 144 commits behind. |
 
 Staging lacks 13 commits that `codex/master-stable` has, and carries the three
 ferry commits that it doesn't have yet. The missing 13 are:
@@ -82,16 +90,84 @@ ferry commits that it doesn't have yet. The missing 13 are:
   `c6e94be85` and `dd4d97fc4`), and the god-list changes `ad1639842` and
   `a71fdfee7`
 
-## Open questions
+On the other side, `master` has 23 regular commits that `codex/master-stable`
+lacks:
 
-- **Why was `72238a8f5` held?** Ask Liskin before moving staging to the head of
-  `codex/master-stable`. Moving would bring in the #622 fixes and the four
-  `master` commits.
-- **Converging the lines.** #622 asks for Liskin's custody commits to reach
-  `master` through PRs, so that `master`, staging and eventually production stop
-  drifting apart.
-- **Production.** Production is 136 commits behind `master`, and its next
-  deploy is a separate decision.
-- **Rebuilding staging's branch.** The branch isn't on GitHub. If the checkout
-  is lost, recreate it as `a6a2124c1` plus the cherry-picks above, or push it to
-  `origin`.
+- the port change and banner, which are already on `codex/master-stable` as
+  identical cherry-picks
+- the three ferry commits
+- test and contract maintenance: `843ee795b`, `63e2ae065`, `72fa2ffeb`,
+  `260c63994` and `a270967b6`
+- the epic-zone seed refresh `33b19169a`
+- dependency and CI bumps
+- documentation
+
+## Merging `codex/master-stable` into `master`
+
+A trial merge (`git merge-tree`, no refs changed) of `3403c1db9` into
+`33837a300` touches 82 files (+2,322/−367) and conflicts in 8. The merge base is
+`c6e94be85`. The port change and banner exist on both sides as identical
+changes and do not conflict.
+
+| Conflicting file | `master` commits | `codex/master-stable` commits | What resolves it |
+| --- | --- | --- | --- |
+| `src/world/handler.c` | `843ee795b` (clang-format sweep), `89332a35f` (ferry ship pointer) | `6380a4bc3`, `fb0c112dd`, `a6dd863a8` | A real code decision: keep the ferry fix and Liskin's corpse-custody changes together |
+| `src/item/item_ownership_runtime.c` | `843ee795b` | `6380a4bc3`, `fb0c112dd` | Formatting only on `master`: take Liskin's version, re-run clang-format |
+| `src/flatfile/flatfile_world_item_repository.c` | `843ee795b` | `fb0c112dd` | Formatting only |
+| `src/classes/necromancy.h` | `843ee795b` | `fb0c112dd` | Formatting only |
+| `tests/async/corpse_lifecycle_repository_mysql_harness.cpp` | `843ee795b` | `13641d24e`, `d7098aa77`, `fb0c112dd`, `0da7c6bbe` | Formatting only |
+| `tests/async/flatfile_corpse_repository_harness.cpp` | `843ee795b` | `fb0c112dd` | Formatting only |
+| `tests/async/test_difficulty_dials.py` | `72fa2ffeb` (contract values) | `42877643c` | Test contract: reconcile the assertions |
+| `tests/async/test_kingdom_contract.py` | `260c63994` (refactored item code) | `42877643c` | Test contract: reconcile the assertions |
+
+Six of the eight conflicts come from `master`'s clang-format sweep `843ee795b`
+and can be resolved mechanically. The real decisions are `handler.c` and the two
+contract tests. Every day the lines stay apart, both keep rewriting the same
+custody and item code, and this list grows.
+
+## Process problems found
+
+- **No review.** 27 commits were deployed to a public server with no PR or
+  review. None of them is on `master`.
+- **Live iteration.** Several commits fix commits from hours earlier, and one
+  title appears twice: `3b337ee36` and `742cefbd6` ("Fix divine claim custody
+  revocation").
+- **No deploy record.** The 05:27–05:33 build, hold and rollback left no note.
+  The deployed branch was never pushed, and the two stashes are unexplained.
+- **Leftovers on Plesk.**
+  - Stale automation was left running: orphaned `tail`/`ugrep` processes and a
+    `pgrep` loop that matches its own command line and never exits.
+  - The staging database could only be administered by Plesk's `duris` login.
+- **Overnight impact on staging (#622).**
+  - 12 characters had saves refused, and six of them kept failing repeatedly.
+  - Two lost hours of progress.
+  - Logouts were refused up to 96 times an hour, and the service's shutdown
+    cancelled itself and ended in a SIGKILL (#621).
+  - The fix was built and then held without a note.
+
+## Plan
+
+1. **Stop the drift.** Nothing more is deployed from `codex/master-stable`.
+   Changes reach `master` through PRs only.
+2. **One PR from `codex/master-stable` into `master`.**
+   - Resolve the eight conflicts above: six mechanically, then `handler.c` and
+     the two contract tests by judgement.
+   - Run CI, review and merge.
+   - Settle the held `72238a8f5` in that PR.
+3. **One chain after that.** PR, then `master`, then a tagged staging deploy,
+   then production when chosen. Staging runs plain `master`; only its `.env`
+   differs.
+4. **Guardrails.**
+   - Tag and push every staging deploy, for example `staging-2026-09-23-1112`.
+   - Keep a deploy log with one line per deploy, hold or rollback: who, which
+     commit and why.
+
+## Decisions needed
+
+- **Who resolves the conflicts.** Either Liskin, who knows the intent behind the
+  conflicting hunks, or someone else with Liskin reviewing.
+- **Why `72238a8f5` was held.** Ask Liskin before it reaches staging or `master`.
+- **Production.** When to deploy. Production is 144 commits behind `master`.
+- **Rebuilding staging's branch.** Until staging tracks `master`, its branch
+  exists only on the staging host. If the checkout is lost, recreate it as
+  `a6a2124c1` plus the cherry-picks above, or push it to `origin`.
