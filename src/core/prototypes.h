@@ -1039,6 +1039,10 @@ bool check_nevents();
 // epic.c
 void refund_epic_skills(P_char ch);
 
+/* ferryact.c */
+bool is_ferry_object(P_obj);
+void ferry_forget_object(P_obj);
+
 /* fight.c */
 bool rapier_dirk(P_char, P_char);
 int calculate_thac_zero(P_char, int);

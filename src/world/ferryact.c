@@ -33,6 +33,7 @@ using namespace std;
 
 /* external variables */
 extern P_room world;
+extern P_index obj_index;
 
 // all created Ferrys
 list<Ferry *> ferry_list;
@@ -66,13 +67,15 @@ Ferry *create_ferry(const struct ferry_definition *fd)
 		fd->board_room_vnum); // the room num of the room passengers board/disembark from
 	wd->ticket_price = fd->ticket_price;
 
-	// all rooms on ship
+	// all rooms on ship, each once: the range may contain the boarding room, and a room
+	// listed twice gets every announcement twice
 	wd->rooms.push_back(real_room0(fd->board_room_vnum));
 	int start_room = fd->other_rooms[0];
 	int end_room = fd->other_rooms[1];
 	for (int room_num = start_room; room_num <= end_room; room_num++)
 	{
-		wd->rooms.push_back(real_room0(room_num));
+		if (room_num != fd->board_room_vnum)
+			wd->rooms.push_back(real_room0(room_num));
 	}
 
 	wd->speed = fd->speed; // number of seconds to wait between moves. 0 == move every step
@@ -91,7 +94,7 @@ Ferry *create_ferry(const struct ferry_definition *fd)
 	return wd;
 }
 
-static int wave_dancer_rooms[] = { 47003, 47010, 0 };
+static int wave_dancer_rooms[] = { 47003, 47023, 0 };
 static struct ferry_definition::stop_info wave_dancer_stops[] = {
 	{ 635261, "&+gKhomani-Khan&N" },
 	{ 76654, "&+gThe &+GJade &+gEmpire&N" },
@@ -127,6 +130,11 @@ static struct ferry_definition::stop_info rickety_ferry_stops[] = {
 	{ 550723, "&+bMenden-of-the-Deep&N" },
 	{}
 };
+static int stromvok_rooms[] = { 47199, 47215, 0 };
+static struct ferry_definition::stop_info stromvok_stops[] = { { 22445, "&+WSto&+Lrm Port&N" },
+							       { 66688, "&+YTorrhan&N" },
+							       { 30929, "&+WStrathor&N" },
+							       {} };
 
 static const struct ferry_definition ferries[] = {
 	{ "&+yThe &+WWave&+BDancer&N", // name
@@ -189,6 +197,16 @@ static const struct ferry_definition ferries[] = {
 	  60, // depart notice time
 	  5000, // ticket price
 	  rickety_ferry_stops }, // stops
+	{ "&+RThe Str&+Lom&+Rvok&N", // name
+	  7, // id
+	  47018, // shop object
+	  47198, // boarding room vnum
+	  stromvok_rooms, // other rooms
+	  2, // speed
+	  180, // wait time
+	  60, // depart notice time
+	  10000, // ticket price
+	  stromvok_stops }, // stops
 	{}
 };
 
@@ -267,13 +285,45 @@ Ferry *get_ferry_from_obj(int obj_num)
 {
 	for (list<Ferry *>::iterator it = ferry_list.begin(); it != ferry_list.end(); it++)
 	{
-		if (*it)
+		if (*it && (*it)->obj)
 		{
 			if ((*it)->obj->R_num == obj_num)
 				return (*it);
 		}
 	}
 	return (NULL);
+}
+
+// a zone purge must leave ferry ships and ticket automats in place: only init_ferries()
+// loads them, and each Ferry keeps a pointer to its ship
+bool is_ferry_object(P_obj obj)
+{
+	if (!obj)
+		return false;
+
+	if (obj->R_num >= 0 && obj_index[obj->R_num].func.obj == ferry_automat_proc)
+		return true;
+
+	for (list<Ferry *>::iterator it = ferry_list.begin(); it != ferry_list.end(); it++)
+	{
+		if (*it && (*it)->obj == obj)
+			return true;
+	}
+	return false;
+}
+
+// extract_obj() is about to free obj: a ferry whose ship it is can no longer sail, so
+// put its passengers ashore and drop the pointer
+void ferry_forget_object(P_obj obj)
+{
+	for (list<Ferry *>::iterator it = ferry_list.begin(); it != ferry_list.end(); it++)
+	{
+		if (*it && (*it)->obj == obj)
+		{
+			(*it)->panic();
+			(*it)->obj = NULL;
+		}
+	}
 }
 
 int ferry_room_proc(int room_num, P_char ch, int cmd, char *arg)
@@ -283,24 +333,18 @@ int ferry_room_proc(int room_num, P_char ch, int cmd, char *arg)
 
 	Ferry *ferry = get_ferry_from_room(room_num);
 
-	if (!ferry)
+	// without its ship the ferry has nowhere to look out at or disembark to
+	if (!ferry || !ferry->obj)
 		return FALSE;
 
 	if (cmd == CMD_LOOK)
 	{
-		if (!arg || !(*arg) || str_cmp(arg, " out"))
+		if (!arg || !(*arg) || str_cmp(skip_spaces(arg), "out"))
 			return FALSE;
 
-		// i think this is a hack-y way to do this, but following
-		// foo's lead from newships. this basically transfers the
-		// player temporarily to the outside room which triggers
-		// the show room function and then transfers them immediately back
-		int old_room_id = ch->in_room;
-		char_from_room(ch);
-		char_to_room(ch, ferry->obj->loc.room, -1);
-		char_from_room(ch);
-		ch->specials.z_cord = 0;
-		char_to_room(ch, old_room_id, -2);
+		// show the room the ferry is in without moving the passenger:
+		// char_from_room() would run its departure logic in both rooms
+		new_look(ch, 0, CMD_LOOKOUT, ferry->obj->loc.room);
 		return (TRUE);
 	}
 
