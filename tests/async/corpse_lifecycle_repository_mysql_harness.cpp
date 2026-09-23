@@ -456,6 +456,41 @@ void test_room_release_preserves_coin_pile()
 	       "3:1:2:3:4:1");
 }
 
+void test_room_release_with_only_transient_custody()
+{
+	constexpr int32_t ROOM = 4122;
+	constexpr uint64_t ROOT_UID = 811000101, CHILD_UID = 811000102, THIRD_UID = 811000103;
+	const corpse_fixture fixture =
+		seed_corpse(1012, ROOM, 1904, ROOT_UID, CHILD_UID, 1, false, false);
+	execute("UPDATE corpse_items SET extra_flags=" + std::to_string(ITEM_TRANSIENT) +
+		" WHERE corpse_id=" + std::to_string(fixture.corpse_id));
+	execute("UPDATE corpse_items SET container_id=NULL WHERE id=" +
+		std::to_string(fixture.child_row_id));
+	execute("UPDATE item_current_owner SET root_item_uid=item_uid,parent_item_uid=NULL "
+		"WHERE item_uid=" +
+		std::to_string(CHILD_UID));
+	execute("INSERT INTO corpse_items(corpse_id,vnum,extra_flags,obj_uid) VALUES(" +
+		std::to_string(fixture.corpse_id) + ",1906," + std::to_string(ITEM_TRANSIENT) +
+		"," + std::to_string(THIRD_UID) + ")");
+	seed_authority(THIRD_UID, THIRD_UID, 0, 1906,
+		       { item_owner_type::corpse, fixture.owner_id, 0 }, INITIAL_ITEM_REVISION);
+	seed_owner({ item_owner_type::room, ROOM, 0 }, 20);
+
+	corpse_lifecycle_payload payload = payload_for(fixture, corpse_lifecycle_action::release);
+	payload.expected_room_revision = 20;
+	const applied_corpse applied = apply_success(command_for(payload));
+	assert(applied.result.item_count == 0 && applied.result.discarded_item_count == 3);
+	assert(scalar("SELECT COUNT(*) FROM corpses WHERE id=" +
+		      std::to_string(fixture.corpse_id)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM saved_items WHERE obj_uid IN (" +
+		      std::to_string(ROOT_UID) + "," + std::to_string(CHILD_UID) + "," +
+		      std::to_string(THIRD_UID) + ")") == 0);
+	assert(text("SELECT GROUP_CONCAT(CONCAT(owner_type,':',state) ORDER BY item_uid) "
+		    "FROM item_current_owner WHERE item_uid IN (" +
+		    std::to_string(ROOT_UID) + "," + std::to_string(CHILD_UID) + "," +
+		    std::to_string(THIRD_UID) + ")") == "8:2,8:2,8:2");
+}
+
 void test_destruction()
 {
 	constexpr int32_t ROOM = 4102;
@@ -1040,6 +1075,7 @@ int main()
 	execute("UPDATE collector_catalog_state SET next_listing=100000 WHERE state_id=1");
 	test_room_release();
 	test_room_release_preserves_coin_pile();
+	test_room_release_with_only_transient_custody();
 	test_destruction();
 	test_resurrection();
 	test_raise_follower();
@@ -1053,7 +1089,7 @@ int main()
 	test_stale_corpse_owner_missing_is_quarantined();
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=" +
 		      std::to_string(static_cast<unsigned int>(
-			      critical_command_type::corpse_lifecycle))) == 13);
+			      critical_command_type::corpse_lifecycle))) == 14);
 	mysql_close(database);
 	return 0;
 }
