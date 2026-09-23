@@ -41,6 +41,7 @@
 #include "combat/training_dummy.h"
 #include "net/gmcp.h"
 #include "item/item_ownership_runtime.h"
+#include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
 #include "item/encumbrance_policy.h"
 #include "combat/justice.h"
@@ -3481,6 +3482,7 @@ struct corpse_resurrection_item_context
 {
 	uint64_t corpse_key = 0;
 	uint64_t item_uid = 0;
+	bool destroy = false;
 };
 
 struct corpse_raise_context
@@ -3650,8 +3652,8 @@ bool collect_world_corpse_raise_items(P_obj item, const item_owner_identity &roo
 		return false;
 	}
 	for (P_obj child = item->contains; child; child = child->next_content)
-		if (!collect_world_corpse_raise_items(child, room_owner, source_uid,
-						 item->obj_uid, false, durable, discarded))
+		if (!collect_world_corpse_raise_items(child, room_owner, source_uid, item->obj_uid,
+						      false, durable, discarded))
 			return false;
 	return true;
 }
@@ -3666,15 +3668,15 @@ bool collect_world_corpse_raise_items(P_obj corpse, int32_t room_vnum,
 		return false;
 	durable->clear();
 	discarded->clear();
-	const item_owner_identity room = { item_owner_type::room,
-					   static_cast<uint64_t>(room_vnum), 0 };
+	const item_owner_identity room = { item_owner_type::room, static_cast<uint64_t>(room_vnum),
+					   0 };
 	if (!item_ownership_runtime_lookup(corpse->obj_uid, root_runtime) ||
 	    !item_owner_identity_equal(root_runtime->owner, room) ||
 	    root_runtime->root_item_uid != corpse->obj_uid || root_runtime->parent_item_uid ||
 	    root_runtime->state != item_custody_state::active)
 		return false;
-	if (!collect_world_corpse_raise_items(corpse, room, corpse->obj_uid, 0, true,
-					      durable, discarded))
+	if (!collect_world_corpse_raise_items(corpse, room, corpse->obj_uid, 0, true, durable,
+					      discarded))
 		return false;
 	std::sort(durable->begin(), durable->end());
 	std::sort(discarded->begin(), discarded->end());
@@ -3783,10 +3785,9 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 	if (committed && result.collector_catalog_changed)
 		collector_catalog_cache_invalidate();
 	const bool world_raise = payload.action == corpse_lifecycle_action::raise_world_follower;
-	const uint64_t key = world_raise ?
-				     (static_cast<uint64_t>(payload.owner_pid) << 32) |
-					     static_cast<uint64_t>(payload.save_id) :
-				     item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	const uint64_t key = world_raise ? (static_cast<uint64_t>(payload.owner_pid) << 32) |
+						   static_cast<uint64_t>(payload.save_id) :
+					   item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	corpse_unmaking_context unmaking_context = {};
 	const auto unmaking = corpse_unmakings.find(key);
 	const bool unmade = unmaking != corpse_unmakings.end();
@@ -4099,12 +4100,10 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 {
 	if (committed && result.collector_catalog_changed)
 		collector_catalog_cache_invalidate();
-	const bool world_raise =
-		payload.action == corpse_lifecycle_action::raise_world_follower;
-	const uint64_t key = world_raise ?
-				     (static_cast<uint64_t>(payload.owner_pid) << 32) |
-					     static_cast<uint64_t>(payload.save_id) :
-				     item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	const bool world_raise = payload.action == corpse_lifecycle_action::raise_world_follower;
+	const uint64_t key = world_raise ? (static_cast<uint64_t>(payload.owner_pid) << 32) |
+						   static_cast<uint64_t>(payload.save_id) :
+					   item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	auto found = corpse_raises.find(key);
 	if (found == corpse_raises.end())
 		return;
@@ -4118,7 +4117,7 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
 	P_char follower = find_live_character(context.follower, context.follower_runtime_id);
 	P_obj corpse = world_raise ? find_live_world_corpse(key) :
-				    find_live_corpse(payload.owner_pid, payload.save_id);
+				     find_live_corpse(payload.owner_pid, payload.save_id);
 	int corpse_room = NOWHERE;
 	std::vector<uint64_t> durable_uids;
 	std::vector<uint64_t> discarded_uids;
@@ -4170,23 +4169,24 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	corpse_raises.erase(found);
 	corpse_release_side_effect_guard guard;
 	complete_corpse_raise_after_commit(caster, follower, corpse, context.kind, context.level,
-				   context.variant, context.message, payload.pet_uid,
-				   context.hostile, payload.pet_charm_duration,
-				   payload.pet_restore_state, world_raise);
+					   context.variant, context.message, payload.pet_uid,
+					   context.hostile, payload.pet_charm_duration,
+					   payload.pet_restore_state, world_raise);
 }
 
-P_obj find_resurrection_item(P_char target, const item_owner_identity &owner)
+P_obj find_resurrection_item(P_char target)
 {
 	if (!target)
 		return nullptr;
 	auto durable = [&](P_obj item)
 	{
-		if (!item || GET_ITEM_TYPE(item) == ITEM_MONEY ||
-		    IS_SET(item->extra_flags, ITEM_TRANSIENT))
+		if (!item || GET_ITEM_TYPE(item) == ITEM_MONEY)
 			return false;
-		item_ownership_runtime_entry runtime = {};
-		return item->obj_uid && (!item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
-					 item_owner_identity_equal(runtime.owner, owner));
+		if (IS_SET(item->extra_flags, ITEM_TRANSIENT))
+			return item_tree_has_durable_ownership(item);
+		// A mismatched active row must be submitted and rejected, never swept
+		// into the room by the final raw cleanup.
+		return item->obj_uid != 0 || item_tree_has_durable_ownership(item);
 	};
 	for (P_obj item = target->carrying; item; item = item->next_content)
 		if (durable(item))
@@ -4199,28 +4199,29 @@ P_obj find_resurrection_item(P_char target, const item_owner_identity &owner)
 
 void continue_corpse_resurrection(uint64_t key);
 
-void publish_corpse_resurrection_item(P_char actor, bool committed, const item_transfer_result &,
+bool publish_corpse_resurrection_item(P_char actor, bool committed, const item_transfer_result &,
 				      unsigned int error_code, const uint8_t *encoded,
 				      size_t encoded_size)
 {
 	if (!encoded || encoded_size != sizeof(corpse_resurrection_item_context))
-		return;
+		return false;
 	corpse_resurrection_item_context item_context = {};
 	memcpy(&item_context, encoded, sizeof(item_context));
 	auto found = corpse_resurrections.find(item_context.corpse_key);
-	if (!committed || !actor || found == corpse_resurrections.end())
+	if (!committed)
 	{
 		if (found != corpse_resurrections.end())
 			fail_corpse_resurrection(item_context.corpse_key,
 						 error_code == ESTALE ? "item_revision_stale" :
 									"item_move_failed");
-		return;
+		return true;
 	}
+	if (!actor || found == corpse_resurrections.end())
+		return false;
 	const corpse_resurrection_context &context = found->second;
 	if (actor != context.target || actor->runtime_id != context.target_runtime_id)
 	{
-		fail_corpse_resurrection(item_context.corpse_key, "target_moved_during_item_drop");
-		return;
+		return false;
 	}
 	P_obj item = nullptr;
 	for (P_obj candidate = object_list; candidate; candidate = candidate->next)
@@ -4230,10 +4231,9 @@ void publish_corpse_resurrection_item(P_char actor, bool committed, const item_t
 			break;
 		}
 	if (!item)
-	{
-		fail_corpse_resurrection(item_context.corpse_key, "dropped_item_missing");
-		return;
-	}
+		return item_context.destroy;
+	if (!item_context.destroy && OBJ_ROOM(item) && item->loc.room == context.old_room)
+		return true;
 	if (OBJ_CARRIED_BY(item, actor))
 		obj_from_char(item);
 	else if (OBJ_WORN_BY(item, actor))
@@ -4243,28 +4243,36 @@ void publish_corpse_resurrection_item(P_char actor, bool committed, const item_t
 			++slot;
 		if (slot == MAX_WEAR || unequip_char(actor, slot) != item)
 		{
-			fail_corpse_resurrection(item_context.corpse_key, "equipped_item_mismatch");
-			return;
+			return false;
 		}
 	}
 	else
 	{
-		fail_corpse_resurrection(item_context.corpse_key, "dropped_item_topology_stale");
-		return;
+		return false;
 	}
+	if (item_context.destroy)
+		extract_obj(item, TRUE);
+	else
 	{
 		corpse_release_side_effect_guard guard;
 		obj_to_room(item, context.old_room);
-	}
-	if (!OBJ_ROOM(item) || item->loc.room != context.old_room)
-	{
-		fail_corpse_resurrection(item_context.corpse_key, "item_drop_publish_failed");
-		return;
+		if (!OBJ_ROOM(item) || item->loc.room != context.old_room)
+			return false;
 	}
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
-	continue_corpse_resurrection(item_context.corpse_key);
+	return true;
+}
+
+void complete_corpse_resurrection_item(P_char, bool committed, const item_transfer_result &,
+				       unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	if (!committed || !encoded || encoded_size != sizeof(corpse_resurrection_item_context))
+		return;
+	corpse_resurrection_item_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	continue_corpse_resurrection(context.corpse_key);
 }
 
 void publish_corpse_resurrection(bool committed, const corpse_lifecycle_result &result,
@@ -4344,13 +4352,20 @@ void continue_corpse_resurrection(uint64_t key)
 	const item_owner_identity room = { item_owner_type::room,
 					   static_cast<uint64_t>(world[context.old_room].number),
 					   0 };
-	if (P_obj item = find_resurrection_item(target, player))
+	if (P_obj item = find_resurrection_item(target))
 	{
-		const corpse_resurrection_item_context item_context = { key, item->obj_uid };
+		const bool destroy = IS_SET(item->extra_flags, ITEM_TRANSIENT);
+		const corpse_resurrection_item_context item_context = { key, item->obj_uid,
+									destroy };
 		if (!item_movement_transaction_submit(
-			    target, item, nullptr, player, room, item_transfer_reason::player_drop,
-			    world[context.old_room].number, publish_corpse_resurrection_item,
-			    &item_context, sizeof(item_context)))
+			    target, item, nullptr, player,
+			    destroy ? item_owner_identity{ item_owner_type::destruction, 0, 0 } :
+				      room,
+			    destroy ? item_transfer_reason::destruction :
+				      item_transfer_reason::player_drop,
+			    world[context.old_room].number, complete_corpse_resurrection_item,
+			    &item_context, sizeof(item_context), NULL, NULL,
+			    publish_corpse_resurrection_item))
 			fail_corpse_resurrection(key, "item_drop_submission_failed");
 		return;
 	}

@@ -31,6 +31,7 @@
 #include "world/weather.h"
 #include "kingdom/kingdom.h"
 #include "item/item_movement_transaction.h"
+#include "item/item_command_policy.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_revision_state.h"
@@ -67,6 +68,7 @@ void send_movement_noise(P_char ch, int num);
 struct key_break_context
 {
 	uint64_t item_uid;
+	bool lockpick;
 };
 
 static P_obj find_key_break_object(uint64_t item_uid)
@@ -87,7 +89,9 @@ static bool publish_key_break(P_char actor, bool committed, const item_transfer_
 		return false;
 	if (!committed)
 	{
-		send_to_char("Your key cracks, but remains intact.\r\n", actor);
+		send_to_char(context.lockpick ? "Your pick remains intact.\r\n" :
+						"Your key cracks, but remains intact.\r\n",
+			     actor);
 		return true;
 	}
 
@@ -102,8 +106,17 @@ static bool publish_key_break(P_char actor, bool committed, const item_transfer_
 		return false;
 	}
 
-	act("Damn!  You broke your key!", FALSE, actor, 0, 0, TO_CHAR);
-	act("$n's key breaks off in the lock!", FALSE, actor, 0, 0, TO_ROOM);
+	if (context.lockpick)
+	{
+		act("Damn!  But you broke your $p!", FALSE, actor, key, 0, TO_CHAR);
+		act("$n begins cursing under $s breath as $s $p snaps.", FALSE, actor, key, 0,
+		    TO_ROOM);
+	}
+	else
+	{
+		act("Damn!  You broke your key!", FALSE, actor, 0, 0, TO_CHAR);
+		act("$n's key breaks off in the lock!", FALSE, actor, 0, 0, TO_ROOM);
+	}
 	if (actor->equipment[HOLD] == key)
 		unequip_char(actor, HOLD);
 	extract_obj(key, TRUE);
@@ -113,14 +126,23 @@ static bool publish_key_break(P_char actor, bool committed, const item_transfer_
 	return true;
 }
 
-static bool break_key(P_char actor, P_obj key)
+static bool break_held_item(P_char actor, P_obj key, bool lockpick)
 {
 	if (!actor || !key)
 		return false;
-	if (IS_NPC(actor) || !key->obj_uid)
+	if (IS_NPC(actor) || !item_command_uses_durable_ownership(key))
 	{
-		act("Damn!  You broke your key!", FALSE, actor, 0, 0, TO_CHAR);
-		act("$n's key breaks off in the lock!", FALSE, actor, 0, 0, TO_ROOM);
+		if (lockpick)
+		{
+			act("Damn!  But you broke your $p!", FALSE, actor, key, 0, TO_CHAR);
+			act("$n begins cursing under $s breath as $s $p snaps.", FALSE, actor, key,
+			    0, TO_ROOM);
+		}
+		else
+		{
+			act("Damn!  You broke your key!", FALSE, actor, 0, 0, TO_CHAR);
+			act("$n's key breaks off in the lock!", FALSE, actor, 0, 0, TO_ROOM);
+		}
 		if (actor->equipment[HOLD] == key)
 			unequip_char(actor, HOLD);
 		extract_obj(key, TRUE);
@@ -135,12 +157,14 @@ static bool break_key(P_char actor, P_obj key)
 	{
 		persistence_alert(AVATAR, "item_movement", "key_break", "none", "none",
 				  "owner_mismatch", "item_uid=%llu", key->obj_uid);
-		send_to_char("Your key cracks, but remains intact.\r\n", actor);
+		send_to_char(lockpick ? "Your pick remains intact.\r\n" :
+					"Your key cracks, but remains intact.\r\n",
+			     actor);
 		return false;
 	}
 
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
-	const key_break_context context = { key->obj_uid };
+	const key_break_context context = { key->obj_uid, lockpick };
 	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit(actor, key, NULL, player_owner, destruction,
 					      item_transfer_reason::destruction, OBJ_VNUM(key),
@@ -149,10 +173,17 @@ static bool break_key(P_char actor, P_obj key)
 	{
 		persistence_alert(AVATAR, "item_movement", "key_break", "none", "none",
 				  item_movement_reject_name(reject), "item_uid=%llu", key->obj_uid);
-		send_to_char("Your key cracks, but remains intact.\r\n", actor);
+		send_to_char(lockpick ? "Your pick remains intact.\r\n" :
+					"Your key cracks, but remains intact.\r\n",
+			     actor);
 		return false;
 	}
 	return true;
+}
+
+static bool break_key(P_char actor, P_obj key)
+{
+	return break_held_item(actor, key, false);
 }
 
 static void telemetry_gameplay_context_changed(P_char ch)
@@ -3344,12 +3375,7 @@ void do_pick(P_char ch, char *argument, int /*cmd*/)
 
 	if (pick->value[1] > number(0, 99))
 	{
-		act("Damn!  But you broke your $p!", FALSE, ch, pick, 0, TO_CHAR);
-		act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch, pick, 0,
-		    TO_ROOM);
-		if (ch->equipment[HOLD] && (ch->equipment[HOLD] == pick))
-			unequip_char(ch, HOLD);
-		extract_obj(pick, TRUE); // Not that there are any artifact lockpicks, but ok.
+		break_held_item(ch, pick, true);
 	}
 }
 

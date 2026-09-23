@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <unordered_map>
 #include <vector>
 #include "world/achievements.h"
 #include "guild/assocs.h"
@@ -3198,7 +3199,7 @@ struct trusted_steal_movement_context
 
 static_assert(sizeof(trusted_steal_movement_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
 
-static P_obj find_trusted_steal_item(uint64_t item_uid)
+static P_obj find_actoth_item(uint64_t item_uid)
 {
 	for (P_obj object = object_list; object; object = object->next)
 		if (object->obj_uid == item_uid)
@@ -3323,7 +3324,7 @@ static void trusted_steal_completion(P_char thief, bool committed, const item_tr
 		return;
 	}
 
-	P_obj object = find_trusted_steal_item(context.item_uid);
+	P_obj object = find_actoth_item(context.item_uid);
 	/* A linkdead character remains the authoritative live holder until extraction. */
 	P_char victim = find_trusted_steal_player(context.victim_pid);
 	if (!object)
@@ -3394,7 +3395,7 @@ static void trusted_steal_completion(P_char thief, bool committed, const item_tr
 		return;
 	}
 
-	object = find_trusted_steal_item(context.item_uid);
+	object = find_actoth_item(context.item_uid);
 	if (!object)
 	{
 		persistence_alert(AVATAR, "item_movement", "steal_publish", "none", "none",
@@ -3416,7 +3417,7 @@ static void trusted_steal_completion(P_char thief, bool committed, const item_tr
 	/* obj_to_char is ownership-checked; re-find after it so a refusal/crumble is never dereferenced. */
 	if (!OBJ_CARRIED_BY(object, thief))
 		obj_to_char(object, thief);
-	object = find_trusted_steal_item(context.item_uid);
+	object = find_actoth_item(context.item_uid);
 	if (!object || !OBJ_CARRIED_BY(object, thief))
 	{
 		persistence_alert(AVATAR, "item_movement", "steal_publish", "none", "none",
@@ -4620,11 +4621,115 @@ void do_area(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
+namespace
+{
+struct quaff_context
+{
+	uint64_t item_uid;
+	P_obj local_item;
+	int vnum;
+	int values[5];
+	bool spilled;
+	bool no_magic;
+};
+
+static_assert(sizeof(quaff_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+void apply_quaff_effects(P_char actor, const quaff_context &context)
+{
+	if (context.vnum == VOBJ_EPIC_BOTTLE_EPICS)
+	{
+		gain_epic(actor, EPIC_BOTTLE, 0, 75);
+		send_to_char("&+CYou suddenly feel.. epic!\r\n", actor);
+		return;
+	}
+	if (context.values[4] > 0 &&
+	    spell_damage(actor, actor, context.values[4], SPLDAM_GENERIC, 0, 0))
+		return;
+	if (context.no_magic)
+	{
+		send_to_char("You feel a slight gathering of magic within you, but it fades.\r\n",
+			     actor);
+		return;
+	}
+	struct affected_type af;
+	memset(&af, 0, sizeof(af));
+	af.type = TAG_POTION_TIMER;
+	af.duration = 3;
+	af.flags = AFFTYPE_NODISPEL;
+	affect_to_char(actor, &af);
+	for (int index = 1; index < 4; ++index)
+	{
+		const int spell = context.values[index];
+		if (spell < 1 || spell == -1 || skills[spell].spell_pointer == NULL ||
+		    IS_SET(skills[spell].targets, TAR_AREA | TAR_OFFAREA))
+			continue;
+		((*skills[spell].spell_pointer)(context.values[0], actor, 0, SPELL_TYPE_POTION,
+						actor, 0));
+		if (!char_in_list(actor))
+			break;
+	}
+}
+
+bool quaff_publication(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+		       const uint8_t *encoded, size_t encoded_size)
+{
+	quaff_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return false;
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("The potion remains intact; its consumption did not commit.\r\n",
+			     actor);
+		return true;
+	}
+	P_obj bottle = context.item_uid ? find_actoth_item(context.item_uid) : context.local_item;
+	if (!bottle)
+		return true;
+	if (!OBJ_CARRIED_BY(bottle, actor) &&
+	    !(OBJ_WORN_BY(bottle, actor) && actor->equipment[HOLD] == bottle))
+		return false;
+	if (context.spilled)
+	{
+		act("Whoops!  You spilled it!", TRUE, actor, 0, 0, TO_CHAR);
+		act("$n attempts to quaff $p, but spills it instead!", TRUE, actor, bottle, 0,
+		    TO_ROOM);
+	}
+	else
+	{
+		act("$n &+yquaffs&n $p.", TRUE, actor, bottle, 0, TO_ROOM);
+		act("As you quaff $p, the vial disappears in a bright &+Wflash of light!&n", FALSE,
+		    actor, bottle, 0, TO_CHAR);
+		CharWait(actor, PULSE_VIOLENCE);
+	}
+	if (actor->equipment[HOLD] == bottle)
+		if (unequip_char(actor, HOLD) != bottle)
+			return false;
+	extract_obj(bottle);
+	if (IS_PC(actor))
+		mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
+	return !context.item_uid || find_actoth_item(context.item_uid) == nullptr;
+}
+
+void quaff_completed(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+		     const uint8_t *encoded, size_t encoded_size)
+{
+	quaff_context context = {};
+	if (!actor || !committed || !encoded || encoded_size != sizeof(context))
+		return;
+	memcpy(&context, encoded, sizeof(context));
+	if (!context.spilled)
+		apply_quaff_effects(actor, context);
+}
+} // namespace
+
 void do_quaff(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj bottle;
 	int i, j, chance;
-	bool equipped;
 	char Gbuf1[MAX_STRING_LENGTH];
 	struct affected_type *af2;
 	struct affected_type *next;
@@ -4632,14 +4737,11 @@ void do_quaff(P_char ch, char *argument, int /*cmd*/)
 	if (!IS_ALIVE(ch))
 		return;
 
-	equipped = FALSE;
-
 	one_argument(argument, Gbuf1);
 
 	if (!(bottle = get_obj_in_list_vis(ch, Gbuf1, ch->carrying)))
 	{
 		bottle = ch->equipment[HOLD];
-		equipped = TRUE;
 
 		if ((bottle == NULL) || !isname(Gbuf1, bottle->name))
 		{
@@ -4704,92 +4806,60 @@ void do_quaff(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
+	quaff_context context = {};
+	context.item_uid = bottle->obj_uid;
+	context.local_item = bottle;
+	context.vnum = OBJ_VNUM(bottle);
+	for (int index = 0; index < 5; ++index)
+		context.values[index] = bottle->value[index];
+	context.no_magic = IS_ROOM(ch->in_room, ROOM_NO_MAGIC);
 	if (IS_FIGHTING(ch))
 	{
 		chance = 50;
-
 		chance += ((GET_C_DEX(ch) + (GET_C_AGI(ch) / 2)) - 75) / 4;
-
 		if (GET_C_LUK(ch) / 2 > number(0, 100))
 			chance = (int)(chance * 1.1);
-
 		if (has_innate(ch, INNATE_QUICK_THINKING) ||
 		    affected_by_spell(ch, SPELL_COMBAT_MIND))
 			chance = (int)(chance * 1.25);
-
-		if (number(0, 99) >= chance && OBJ_VNUM(bottle) != VOBJ_EPIC_BOTTLE_EPICS &&
-		    OBJ_VNUM(bottle) != VOBJ_EPIC_TOCORPSE_POTION)
+		context.spilled = number(0, 99) >= chance &&
+				  context.vnum != VOBJ_EPIC_BOTTLE_EPICS &&
+				  context.vnum != VOBJ_EPIC_TOCORPSE_POTION;
+	}
+	if (item_command_uses_durable_ownership(bottle))
+	{
+		if (!IS_PC(ch) || GET_PID(ch) <= 0)
 		{
-			act("Whoops!  You spilled it!", TRUE, ch, 0, 0, TO_CHAR);
-			act("$n attempts to quaff $p, but spills it instead!", TRUE, ch, bottle, 0,
-			    TO_ROOM);
-			extract_obj(bottle);
+			send_to_char("That potion cannot be consumed safely right now.\r\n", ch);
 			return;
 		}
-	}
-
-	act("$n &+yquaffs&n $p.", TRUE, ch, bottle, 0, TO_ROOM);
-	act("As you quaff $p, the vial disappears in a bright &+Wflash of light!&n", FALSE, ch,
-	    bottle, 0, TO_CHAR);
-
-	CharWait(ch, PULSE_VIOLENCE);
-
-	if (equipped)
-		unequip_char(ch, HOLD);
-
-	// epic potion
-	if (OBJ_VNUM(bottle) == VOBJ_EPIC_BOTTLE_EPICS)
-	{
-		gain_epic(ch, EPIC_BOTTLE, 0, 75);
-		send_to_char("&+CYou suddenly feel.. epic!\r\n", ch);
-		extract_obj(bottle);
+		const item_owner_identity player = { item_owner_type::player,
+						     static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+		context.local_item = NULL; // Durable callbacks re-resolve the UID after commit.
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(
+			    ch, bottle, NULL, player, destruction,
+			    item_transfer_reason::destruction, context.vnum, quaff_completed,
+			    &context, sizeof(context), NULL, &reject, quaff_publication))
+		{
+			send_to_char("The potion could not be consumed; it remains with you.\r\n",
+				     ch);
+			logit(LOG_FILE, "item_movement: command=quaff outcome=%s actor=%s uid=%llu",
+			      item_movement_reject_name(reject), J_NAME(ch),
+			      (unsigned long long)bottle->obj_uid);
+		}
 		return;
 	}
-
-	// value[4] specifies damage player takes from potion - considered non-magical
-	if (bottle->value[4] > 0)
+	if (item_tree_has_durable_ownership(bottle))
 	{
-		if (spell_damage(ch, ch, bottle->value[4], SPLDAM_GENERIC, 0, 0))
-		{
-			extract_obj(bottle);
-			return;
-		}
+		send_to_char("That potion cannot be consumed safely right now.\r\n", ch);
+		return;
 	}
-
-	if (IS_ROOM(ch->in_room, ROOM_NO_MAGIC))
-	{
-		send_to_char("You feel a slight gathering of magic within you, but it fades.\r\n",
-			     ch);
-	}
-	else
-	{
-		struct affected_type af;
-		memset(&af, 0, sizeof(af));
-		af.type = TAG_POTION_TIMER;
-		af.duration = 3;
-		af.flags = AFFTYPE_NODISPEL;
-		affect_to_char(ch, &af);
-
-		for (i = 1; i < 4; i++)
-		{
-			if (bottle->value[i] >= 1)
-			{
-				j = bottle->value[i];
-				if ((j != -1) && (skills[j].spell_pointer != NULL))
-				{
-					// We don't do area spells via potions unless the quaffer explodes.
-					if (IS_SET(skills[j].targets, TAR_AREA | TAR_OFFAREA))
-						continue;
-					((*skills[j].spell_pointer)((int)bottle->value[0], ch, 0,
-								    SPELL_TYPE_POTION, ch, 0));
-					if (!char_in_list(ch))
-						break;
-				}
-			}
-		}
-	}
-
-	extract_obj(bottle);
+	if (quaff_publication(ch, true, {}, 0, reinterpret_cast<const uint8_t *>(&context),
+			      sizeof(context)))
+		quaff_completed(ch, true, {}, 0, reinterpret_cast<const uint8_t *>(&context),
+				sizeof(context));
 }
 
 /** Recite a carried scroll and apply its spells to the selected target. */
@@ -6487,6 +6557,123 @@ void try_to_hide(P_char ch, P_obj obj_object)
 
 #define IN_WELL_ROOM(x) (world[(x)->in_room].number == WELL_ROOM)
 
+namespace
+{
+struct donation_context
+{
+	uint64_t item_uid;
+	uint64_t well_uid;
+	int room;
+	bool destroy;
+};
+
+struct donation_batch
+{
+	std::vector<uint64_t> item_uids;
+	size_t next = 0;
+};
+
+std::unordered_map<uint32_t, donation_batch> donation_batches;
+
+void announce_donation(P_char actor, P_obj item, P_obj well)
+{
+	if (IS_TRUSTED(actor))
+	{
+		wizlog(GET_LEVEL(actor), "%s donated %s into %s [%d]", J_NAME(actor),
+		       item->short_description, well->short_description,
+		       world[well->loc.room].number);
+		logit(LOG_WIZ, "%s donated %s into %s [%d]", J_NAME(actor), item->short_description,
+		      well->short_description, world[well->loc.room].number);
+		sql_log(actor, WIZLOG, "Donated %s into %s", item->short_description,
+			well->short_description);
+	}
+	else
+	{
+		wizlog(MINLVLIMMORTAL, "%s donated %s into %s [%d]", J_NAME(actor),
+		       item->short_description, well->short_description,
+		       world[well->loc.room].number);
+		logit(LOG_PLAYER, "%s donated %s into %s [%d]", J_NAME(actor),
+		      item->short_description, well->short_description,
+		      world[well->loc.room].number);
+		sql_log(actor, PLAYERLOG, "Donated %s into %s", item->short_description,
+			well->short_description);
+	}
+	act("You donate $p - thank you!", FALSE, actor, item, 0, TO_CHAR);
+}
+
+bool publish_donation_live(P_char actor, P_obj item, P_obj well, bool destroy)
+{
+	if (!actor || !item || !well || !OBJ_CARRIED_BY(item, actor))
+		return false;
+	if (destroy)
+	{
+		announce_donation(actor, item, well);
+		extract_obj(item);
+	}
+	else
+	{
+		obj_from_char(item);
+		obj_to_obj(item, well);
+		if (!OBJ_INSIDE_OBJ(item, well))
+			return false;
+		announce_donation(actor, item, well);
+	}
+	if (IS_PC(actor))
+		mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
+	return true;
+}
+
+bool donation_publication(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			  const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(donation_context))
+		return false;
+	donation_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("The donation did not commit; the item remains with you.\r\n", actor);
+		return true;
+	}
+	P_obj item = find_actoth_item(context.item_uid);
+	if (context.destroy && !item)
+		return true;
+	P_obj well = find_actoth_item(context.well_uid);
+	if (!well || !OBJ_ROOM(well) || well->loc.room != context.room)
+		return false;
+	if (!context.destroy && item && OBJ_INSIDE_OBJ(item, well))
+		return true;
+	return publish_donation_live(actor, item, well, context.destroy);
+}
+
+bool submit_donation(P_char actor, P_obj item);
+
+void continue_donation_batch(P_char actor)
+{
+	if (!actor || IS_NPC(actor))
+		return;
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
+	auto found = donation_batches.find(pid);
+	if (found == donation_batches.end())
+		return;
+	while (found->second.next < found->second.item_uids.size())
+	{
+		P_obj item = find_actoth_item(found->second.item_uids[found->second.next++]);
+		if (item && OBJ_CARRIED_BY(item, actor) && submit_donation(actor, item))
+			return;
+	}
+	donation_batches.erase(found);
+}
+
+void donation_completed(P_char actor, bool, const item_transfer_result &, unsigned int,
+			const uint8_t *, size_t)
+{
+	continue_donation_batch(actor);
+}
+} // namespace
+
 void do_donate(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj_object;
@@ -6500,6 +6687,12 @@ void do_donate(P_char ch, char *argument, int /*cmd*/)
 	if (!IN_WELL_ROOM(ch))
 	{
 		send_to_char("Sorry but you cannot donate here.\r\n", ch);
+		return;
+	}
+	if (IS_PC(ch) && (donation_batches.count(static_cast<uint32_t>(GET_PID(ch))) ||
+			  item_movement_transaction_player_busy(ch)))
+	{
+		send_to_char("A donation or item move is already in progress.\r\n", ch);
 		return;
 	}
 	one_argument(argument, Gbuf1);
@@ -6548,20 +6741,30 @@ void do_donate(P_char ch, char *argument, int /*cmd*/)
 	 * Donate all, or Donate all.<object>
 	 */
 
+	std::vector<uint64_t> durable_items;
 	for (obj_object = ch->carrying; obj_object; obj_object = next_obj)
 	{
 		next_obj = obj_object->next_content;
 
-		if ((isname(Gbuf2, obj_object->name)) || (str_cmp(Gbuf1, "all") == 0))
+		if ((str_cmp(Gbuf1, "all") == 0) || isname(Gbuf2, obj_object->name))
 		{
 			/*
 			 * If name matches, or just 'all' was entered. Try to donate
 			 * it.
 			 */
 
-			try_to_donate(ch, obj_object);
+			if (item_command_uses_durable_ownership(obj_object))
+				durable_items.push_back(obj_object->obj_uid);
+			else
+				(void)submit_donation(ch, obj_object);
 			tried = TRUE;
 		}
+	}
+	if (!durable_items.empty() && IS_PC(ch))
+	{
+		const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
+		donation_batches.emplace(pid, donation_batch{ std::move(durable_items), 0 });
+		continue_donation_batch(ch);
 	}
 
 	if (!tried)
@@ -6590,7 +6793,9 @@ void do_donate(P_char ch, char *argument, int /*cmd*/)
  *                                                               *
  ****************************************************************/
 
-void try_to_donate(P_char ch, P_obj obj_to_put)
+namespace
+{
+bool submit_donation(P_char ch, P_obj obj_to_put)
 {
 	P_obj obj_object, next_object, sub_object;
 	int dupes_in_well = 0;
@@ -6608,7 +6813,7 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 	if (!sub_object)
 	{
 		send_to_char("You see no well here in which to donate.\n\r", ch);
-		return;
+		return false;
 	}
 
 	// If not-droppable
@@ -6618,13 +6823,13 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 			 "Donating %s?  How thoughtful....too bad it's CURSED!\r\n",
 			 obj_to_put->short_description);
 		send_to_char(Gbuf3, ch);
-		return;
+		return false;
 	}
 
 	if (IS_ARTIFACT(obj_to_put))
 	{
 		send_to_char("Donate an artifact?  What a waste!\r\n", ch);
-		return;
+		return false;
 	}
 
 	if (GET_ITEM_TYPE(obj_to_put) == ITEM_FOOD)
@@ -6635,14 +6840,14 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 			 "%s?  Donate equipment! - give food to the Homeless!\r\n",
 			 obj_to_put->short_description);
 		send_to_char(Gbuf3, ch);
-		return;
+		return false;
 	}
 	if (GET_ITEM_TYPE(obj_to_put) == ITEM_CORPSE || GET_ITEM_TYPE(obj_to_put) == ITEM_TRASH)
 	{
 		snprintf(Gbuf3, MAX_STRING_LENGTH, "%s isn't too valuable - just bury it!\r\n",
 			 obj_to_put->short_description);
 		send_to_char(Gbuf3, ch);
-		return;
+		return false;
 	}
 	/*
 	 * If item is a container with stuff in it
@@ -6655,7 +6860,7 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 			 "You have to empty the %s before donating it.\r\n",
 			 FirstWord(obj_to_put->name));
 		send_to_char(Gbuf3, ch);
-		return;
+		return false;
 	}
 	/*
 	 * Check to see how many of the same objects are in well already
@@ -6676,51 +6881,63 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 		}
 	}
 
-	/*
-	 * Remove item from player's inventory
-	 */
-	obj_from_char(obj_to_put);
+	const bool destroy = dupes_in_well >= MAX_DUPES_IN_WELL;
+	if (!item_command_uses_durable_ownership(obj_to_put))
+	{
+		if (item_tree_has_durable_ownership(obj_to_put))
+		{
+			send_to_char("That donation contains an owned item and cannot proceed.\r\n",
+				     ch);
+			return false;
+		}
+		(void)publish_donation_live(ch, obj_to_put, sub_object, destroy);
+		return false;
+	}
+	if (!IS_PC(ch) || !obj_to_put->obj_uid || !sub_object->obj_uid)
+	{
+		send_to_char("That donation lacks authoritative ownership.\r\n", ch);
+		return false;
+	}
+	const item_owner_identity source = { item_owner_type::player,
+					     static_cast<uint64_t>(GET_PID(ch)), 0 };
+	item_owner_identity destination = { item_owner_type::destruction, 0, 0 };
+	if (!destroy)
+	{
+		item_ownership_runtime_entry well_owner = {};
+		if (!item_ownership_runtime_lookup(sub_object->obj_uid, &well_owner) ||
+		    well_owner.state != item_custody_state::active ||
+		    well_owner.owner.type != item_owner_type::room ||
+		    well_owner.owner.id != static_cast<uint64_t>(world[ch->in_room].number) ||
+		    well_owner.root_item_uid != sub_object->obj_uid ||
+		    well_owner.parent_item_uid != 0)
+		{
+			send_to_char("The well cannot receive an owned item right now.\r\n", ch);
+			return false;
+		}
+		destination = well_owner.owner;
+	}
+	const donation_context context = { obj_to_put->obj_uid, sub_object->obj_uid, ch->in_room,
+					   destroy };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit(
+		    ch, obj_to_put, destroy ? NULL : sub_object, source, destination,
+		    destroy ? item_transfer_reason::destruction : item_transfer_reason::player_put,
+		    static_cast<int64_t>(sub_object->obj_uid), donation_completed, &context,
+		    sizeof(context), NULL, &reject, donation_publication))
+	{
+		send_to_char("The donation could not start; the item remains with you.\r\n", ch);
+		logit(LOG_FILE, "item_movement: command=donate outcome=%s actor=%s uid=%llu",
+		      item_movement_reject_name(reject), J_NAME(ch),
+		      (unsigned long long)obj_to_put->obj_uid);
+		return false;
+	}
+	return true;
+}
+} // namespace
 
-	/*
-	 * Send donate message to player.
-	 */
-	if (IS_TRUSTED(ch))
-	{
-		wizlog(GET_LEVEL(ch), "%s donated %s into %s [%d]", J_NAME(ch),
-		       obj_to_put->short_description, sub_object->short_description,
-		       world[ch->in_room].number);
-		logit(LOG_WIZ, "%s donated %s into %s [%d]", J_NAME(ch),
-		      obj_to_put->short_description, sub_object->short_description,
-		      world[ch->in_room].number);
-		sql_log(ch, WIZLOG, "Donated %s into %s", obj_to_put->short_description,
-			sub_object->short_description);
-	}
-	else
-	{
-		wizlog(MINLVLIMMORTAL, "%s donated %s into %s [%d]", J_NAME(ch),
-		       obj_to_put->short_description, sub_object->short_description,
-		       world[ch->in_room].number);
-		logit(LOG_PLAYER, "%s donated %s into %s [%d]", J_NAME(ch),
-		      obj_to_put->short_description, sub_object->short_description,
-		      world[ch->in_room].number);
-		sql_log(ch, PLAYERLOG, "Donated %s into %s", obj_to_put->short_description,
-			sub_object->short_description);
-	}
-
-	act("You donate $p - thank you!", FALSE, ch, obj_to_put, 0, TO_CHAR);
-
-	/*
-	 * If max_dupes in well not exceeded then put in well, otherwise nuke
-	 * object
-	 */
-	if (dupes_in_well < MAX_DUPES_IN_WELL)
-	{
-		obj_to_obj(obj_to_put, sub_object);
-	}
-	else
-	{
-		extract_obj(obj_to_put);
-	}
+void try_to_donate(P_char ch, P_obj obj_to_put)
+{
+	(void)submit_donation(ch, obj_to_put);
 }
 
 void do_fly(P_char ch, char *argument, int /*cmd*/)

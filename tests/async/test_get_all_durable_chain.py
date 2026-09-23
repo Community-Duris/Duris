@@ -39,7 +39,8 @@ adoption_completion = function_body(
 start_floor = function_body(ACTOBJ, "static void start_floor_bulk_get(")
 start_container = function_body(ACTOBJ, "static void start_container_bulk_get(")
 select_item = function_body(ACTOBJ, "static bool select_bulk_get_item(")
-completion = function_body(ACTOBJ, "static void bulk_get_completion(")
+completion = function_body(ACTOBJ, "static bool bulk_get_publication(")
+after_publication = function_body(ACTOBJ, "static void bulk_get_after_publication(")
 after_commit = function_body(ACTOBJ, "static bool finish_bulk_get_after_commit(")
 finish = function_body(ACTOBJ, "static void report_bulk_get(")
 single_get = function_body(ACTOBJ, "void get(P_char ch")
@@ -128,13 +129,16 @@ ok &= check(
     < publication,
 )
 ok &= check(
-    "currency and lifecycle-owned roots wait until durable commit succeeds",
+    "currency and lifecycle-owned roots wait until durable publication is acknowledged",
     "std::vector<synchronous_get_item> synchronous_items" in ACTOBJ
-    and "finish_bulk_get_after_commit(actor, state, container)" in completion
+    and "finish_bulk_get_after_commit(actor, found->second, container)"
+    in after_publication
+    and "bulk_get_after_publication," in continue_bulk
+    and "finish_bulk_get_after_commit" not in completion
     and "do_get_finalize_room_item" in after_commit
     and "do_get_finalize_container_success" in after_commit
-    and completion.index("if (!committed)")
-    < completion.index("finish_bulk_get_after_commit(actor, state, container)"),
+    and after_publication.index("if (!actor || !committed")
+    < after_publication.index("finish_bulk_get_after_commit("),
 )
 ok &= check(
     "coin completions resume the existing selected-item list",

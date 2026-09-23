@@ -20,6 +20,7 @@
 #include "world/graph.h"
 #include "combat/justice.h"
 #include "item/objmisc.h"
+#include "item/item_command_policy.h"
 #include "combat/range.h"
 #include "classes/reavers.h"
 #include "world/specs.prototypes.h"
@@ -1618,7 +1619,7 @@ int welfare_well(int /*room*/, P_char ch, int cmd, char *arg)
 
 int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
-	P_obj o, next_obj, o_1, well;
+	P_obj o, next_obj, o_1, well = NULL;
 	P_nevent ev = NULL;
 	hunt_data data = {};
 	bool found_well, dumped;
@@ -1634,6 +1635,8 @@ int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	for (o = world[ch->in_room].contents; o; o = o->next_content)
 	{
 		if (o->type == ITEM_SWITCH || o->type == ITEM_KEY || o->type == ITEM_TRASH)
+			continue;
+		if (item_tree_has_active_custody(o))
 			continue;
 
 		if (!CAN_GET_OBJ(ch, o, rider))
@@ -1695,7 +1698,7 @@ int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 		for (o = ch->carrying; o; o = next_obj)
 		{
 			next_obj = o->next_content;
-			if (!IS_ARTIFACT(o))
+			if (!IS_ARTIFACT(o) && !item_tree_has_active_custody(o))
 				extract_obj(o, TRUE);
 			// obj_from_char(o, FALSE);
 			// obj_to_obj(o, well);

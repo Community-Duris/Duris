@@ -51,10 +51,11 @@ ownership_filter_body = ownership_filter[
     ownership_filter.index("{") + 1 : ownership_filter.rindex("}")
 ]
 start_drop = function_body(ACTOBJ, "void start_bulk_drop(")
-drop_completion = function_body(ACTOBJ, "void bulk_drop_completion(")
+drop_completion = function_body(ACTOBJ, "bool bulk_drop_publication(")
 drop_finish = function_body(ACTOBJ, "void finish_bulk_drop_after_commit(")
 start_put = function_body(ACTOBJ, "void start_bulk_put(")
-put_completion = function_body(ACTOBJ, "void bulk_put_completion(")
+put_completion = function_body(ACTOBJ, "bool bulk_put_publication(")
+put_after_publication = function_body(ACTOBJ, "void bulk_put_after_publication(")
 put_finish = function_body(ACTOBJ, "void finish_bulk_put_after_commit(")
 put_preflight = function_body(ACTOBJ, "bool bulk_put_permitted(")
 batch_submit = function_body(
@@ -153,8 +154,11 @@ ok &= check(
     < put_completion.index("for (P_obj object : objects)"),
 )
 ok &= check(
-    "transient put paths run only after the durable commit",
-    "finish_bulk_put_after_commit(actor, state, container);" in put_completion
+    "transient put paths run after the durable publication acknowledgement",
+    "finish_bulk_put_after_commit(actor, found->second, container);"
+    in put_after_publication
+    and "bulk_put_after_publication, &context" in start_put
+    and "finish_bulk_put_after_commit" not in put_completion
     # The split is chosen once, in start_bulk_put(). Re-deriving it here from
     # item_command_uses_durable_ownership() would strand an item whose runtime ownership
     # row activates while the batch commits: neither pass would claim it.

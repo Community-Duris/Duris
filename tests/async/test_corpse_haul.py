@@ -119,7 +119,9 @@ static bool item_movement_reject_is_transient(item_movement_reject r) { return r
 static const char *item_movement_reject_name(item_movement_reject) { return "refused"; }
 static void report_batch_movement_reject(P_char ch,item_movement_reject,const char *,const char *s) { send_to_char(s,ch); }
 using callback = void(*)(P_char,bool,const item_transfer_result &,unsigned,const uint8_t *,size_t);
+using publication = bool(*)(P_char,bool,const item_transfer_result &,unsigned,const uint8_t *,size_t);
 static callback held=nullptr;
+static publication held_publication=nullptr;
 static std::vector<uint8_t> held_context;
 template<typename T> static bool hold(T cb,const void *data,size_t size) {
  if(!admitted) return false;
@@ -130,8 +132,11 @@ static bool item_movement_transaction_submit(P_char,P_obj,P_obj,item_owner_ident
  *r=item_movement_reject::busy; return hold(cb,data,size);
 }
 static bool item_movement_transaction_submit_batch(P_char,P_obj *,size_t,P_obj,item_owner_identity,item_owner_identity,
- item_transfer_reason,int64_t,callback cb,const void *data,size_t size,P_obj,item_movement_reject *r) {
- *r=item_movement_reject::busy; return hold(cb,data,size);
+ item_transfer_reason,int64_t,callback cb,const void *data,size_t size,P_obj,item_movement_reject *r,publication pub) {
+ *r=item_movement_reject::busy;
+ if(!admitted) return false;
+ ++submissions; held=cb; held_publication=pub;
+ held_context.assign((const uint8_t*)data,(const uint8_t*)data+size); return true;
 }
 static bool isname(const char *a,const char *b) { return !strcmp(a,b); }
 static bool account_bound_reward_owner(P_char,P_obj) { return false; }
@@ -174,11 +179,17 @@ static void reset() {
  bulk_gets.clear(); objects.clear(); rooms.clear(); output.clear();
  submissions=alerts=coin_attempts=scrap_attempts=0; coin_options_seen=false; last_coin_options={};
  admitted=owned=pile_ok=true; fail_delivery=false;
- held=nullptr; held_context.clear();
+ held=nullptr; held_publication=nullptr; held_context.clear();
 }
 static void acknowledge(P_char actor,bool ok=true) {
- auto cb=held; auto context=held_context; assert(cb);
- held=nullptr; cb(actor,ok,{},0,context.data(),context.size());
+ auto cb=held; auto pub=held_publication; auto context=held_context; assert(cb||pub);
+ held=nullptr; held_publication=nullptr;
+ if(pub) {
+  if(!actor || !pub(actor,ok,{},0,context.data(),context.size())) {
+   held=cb; held_publication=pub; held_context=context;
+  }
+  else if(cb) cb(actor,ok,{},0,context.data(),context.size());
+ } else cb(actor,ok,{},0,context.data(),context.size());
 }
 static void setup(P_char ch,P_obj corpse,P_obj dagger,P_obj coins) {
  ch->in_room=1; corpse->obj_uid=50; corpse->type=ITEM_CORPSE;
@@ -296,14 +307,15 @@ int main() {
   if(missing==1) corpse.loc.room=3;
   if(missing==2) dagger.loc.inside=nullptr;
   acknowledge(&actor); assert(alerts==1 && !OBJ_CARRIED_BY(&dagger,&actor));
-  assert(output.find("Nothing acquired.")!=std::string::npos && output.find("  a dagger")==std::string::npos);
+  assert(held_publication && !bulk_gets.empty());
+  assert(output.find("  a dagger")==std::string::npos);
  }
  // Failure is terminal and buffered after the completion, without fake loot.
  reset(); setup(&actor,&corpse,&dagger,nullptr); start_bulk_get(&actor,&corpse,nullptr,false);
  acknowledge(&actor,false); assert(output.find("sorting")<output.find("did not commit"));
- // A disconnected actor releases only transient reporting state.
+ // A disconnected actor retains committed work for publication after reconnect.
  reset(); setup(&actor,&corpse,&dagger,nullptr); start_bulk_get(&actor,&corpse,nullptr,false);
- acknowledge(nullptr); assert(bulk_gets.empty());
+ acknowledge(nullptr); assert(held_publication && !bulk_gets.empty());
  // A failed live delivery is never listed in the haul.
  reset(); setup(&actor,&corpse,&dagger,nullptr); start_bulk_get(&actor,&corpse,nullptr,false);
  fail_delivery=true; acknowledge(&actor); assert(output.find("  a dagger")==std::string::npos);
@@ -361,7 +373,8 @@ for name in ['static bool bulk_get_source_matches(', 'static bool bulk_get_sourc
              'static bool bulk_get_corpse_source_available(',
              'static void report_bulk_get(', 'static void finish_bulk_get(', 'static void fail_bulk_get(',
              'static void reject_bulk_get_admission(', 'static P_obj resolve_synchronous_get_item(',
-             'static bool finish_bulk_get_after_commit(', 'static void bulk_get_completion(']:
+             'static bool finish_bulk_get_after_commit(', 'static bool bulk_get_publication(',
+             'static void bulk_get_after_publication(']:
     parts.append(take(name))
 parts += ['static void continue_bulk_get(P_char actor,uint32_t actor_pid);',
           take('static void bulk_get_adoption_completion(')]

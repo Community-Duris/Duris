@@ -33,7 +33,13 @@ P_index obj_index = nullptr;
 extern const int top_of_world = 1;
 
 static item_ownership_runtime_entry runtime_entry = {};
+static item_ownership_runtime_entry target_runtime = {};
 static int publication_attempts = 0;
+static bool simulate_adoption = false;
+static std::vector<item_transfer_reason> adoption_reasons;
+static item_transfer_reason expected_adoption_reason = item_transfer_reason::destruction;
+static int adoption_publications = 0;
+static int adoption_completions = 0;
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
 
 void obj_to_obj(P_obj, P_obj) {}
@@ -57,10 +63,19 @@ void player_load_item_graph_materialize_creation(const item_transfer_payload &, 
 
 bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry)
 {
-    if (item_uid != runtime_entry.item_uid || !entry)
+    if (!entry)
         return false;
-    *entry = runtime_entry;
-    return true;
+    if (item_uid == runtime_entry.item_uid)
+    {
+        *entry = runtime_entry;
+        return true;
+    }
+    if (target_runtime.item_uid && item_uid == target_runtime.item_uid)
+    {
+        *entry = target_runtime;
+        return true;
+    }
+    return false;
 }
 
 bool item_ownership_runtime_owner_revision(const item_owner_identity &, uint64_t *revision)
@@ -71,8 +86,20 @@ bool item_ownership_runtime_owner_revision(const item_owner_identity &, uint64_t
     return true;
 }
 
-bool item_ownership_runtime_apply(const item_transfer_payload &, const item_transfer_result &)
+bool item_ownership_runtime_apply(const item_transfer_payload &payload, const item_transfer_result &)
 {
+    if (simulate_adoption)
+    {
+        runtime_entry.item_uid = payload.selected_item_uid;
+        runtime_entry.root_item_uid = payload.selected_item_uid;
+        runtime_entry.parent_item_uid = 0;
+        runtime_entry.owner = payload.to_owner;
+        runtime_entry.item_revision = 1;
+        runtime_entry.owner_revision = 1;
+        runtime_entry.vnum = 42;
+        runtime_entry.state = payload.to_owner.type == item_owner_type::destruction ?
+            item_custody_state::destroyed : item_custody_state::active;
+    }
     return true;
 }
 
@@ -113,6 +140,12 @@ critical_apply_result apply_transfer(const critical_command &command, void *)
 {
     item_transfer_payload payload = {};
     assert(item_transfer_command_decode_payload(command, &payload));
+    if (simulate_adoption)
+    {
+        adoption_reasons.push_back(payload.reason);
+        assert(payload.target_parent_item_uid ==
+               (adoption_reasons.size() == 1 ? 0 : target_runtime.item_uid));
+    }
     item_transfer_result result = {};
     result.root_item_uid = payload.selected_item_uid;
     result.item_count = payload.item_count;
@@ -138,6 +171,24 @@ bool publication_callback(P_char actor, bool committed, const item_transfer_resu
         return false;
     ++publication_attempts;
     return publication_attempts >= 2;
+}
+
+bool adoption_publication(P_char actor, bool committed, const item_transfer_result &,
+                          unsigned int, const uint8_t *, size_t)
+{
+    assert(actor && committed);
+    assert(adoption_reasons.size() == 2);
+    assert(adoption_reasons[0] == item_transfer_reason::creation);
+    assert(adoption_reasons[1] == expected_adoption_reason);
+    ++adoption_publications;
+    return true;
+}
+
+void adoption_completion(P_char actor, bool committed, const item_transfer_result &,
+                         unsigned int, const uint8_t *, size_t)
+{
+    assert(actor && committed && adoption_publications == 1);
+    ++adoption_completions;
 }
 
 int main(int argc, char **argv)
@@ -229,6 +280,69 @@ int main(int argc, char **argv)
         {critical_entity_type::item, object.obj_uid}, nullptr));
     assert(!critical_command_coordinator_is_fenced(
         {critical_entity_type::player, 1001}, nullptr));
+
+    // An absent item's admission must finish before its requested destruction.
+    // The caller's publication and completion run only for the second command.
+    const item_ownership_runtime_entry previous_runtime = runtime_entry;
+    runtime_entry.item_uid = 0;
+    simulate_adoption = true;
+    const item_owner_identity player_owner = {item_owner_type::player, 1001, 0};
+    const item_owner_identity destruction = {item_owner_type::destruction, 0, 0};
+    assert(item_movement_transaction_submit(
+        &actor, &object, nullptr, player_owner, destruction,
+        item_transfer_reason::destruction, 42, adoption_completion, nullptr, 0,
+        nullptr, &reject, adoption_publication));
+    bool adoption_done = false;
+    for (int spin = 0; spin < 1000 && !adoption_done; ++spin)
+    {
+        const size_t count = critical_command_coordinator_pulse(completions, 8);
+        item_movement_transaction_handle_completions(completions, count);
+        adoption_done = adoption_completions == 1;
+        if (!adoption_done)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(adoption_done && adoption_publications == 1);
+    assert(adoption_reasons.size() == 2);
+    assert(item_movement_transaction_health_copy().pending == 0);
+
+    // Admission for a cross-owner put must not name the destination parent
+    // until the second transfer has moved the item into that owner's domain.
+    obj_data well = {};
+    well.obj_uid = 6001;
+    object.next = &well;
+    target_runtime.item_uid = well.obj_uid;
+    target_runtime.root_item_uid = well.obj_uid;
+    target_runtime.parent_item_uid = 0;
+    target_runtime.owner = {item_owner_type::room, 123, 0};
+    target_runtime.item_revision = 1;
+    target_runtime.owner_revision = 1;
+    target_runtime.vnum = 42;
+    target_runtime.state = item_custody_state::active;
+    runtime_entry.item_uid = 0;
+    adoption_reasons.clear();
+    adoption_publications = 0;
+    adoption_completions = 0;
+    expected_adoption_reason = item_transfer_reason::player_put;
+    assert(item_movement_transaction_submit(
+        &actor, &object, &well, player_owner, target_runtime.owner,
+        item_transfer_reason::player_put, well.obj_uid, adoption_completion,
+        nullptr, 0, nullptr, &reject, adoption_publication));
+    adoption_done = false;
+    for (int spin = 0; spin < 1000 && !adoption_done; ++spin)
+    {
+        const size_t count = critical_command_coordinator_pulse(completions, 8);
+        item_movement_transaction_handle_completions(completions, count);
+        adoption_done = adoption_completions == 1;
+        if (!adoption_done)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(adoption_done && adoption_publications == 1);
+    assert(adoption_reasons.size() == 2);
+    assert(item_movement_transaction_health_copy().pending == 0);
+    object.next = nullptr;
+    target_runtime = {};
+    simulate_adoption = false;
+    runtime_entry = previous_runtime;
 
     // Exhausted uncertainty must not invoke the command callback as failure,
     // and must not checkpoint away the only durable retry/reconciliation record.

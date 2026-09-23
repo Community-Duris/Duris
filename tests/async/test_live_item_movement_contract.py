@@ -60,11 +60,11 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("item_get_ack_publication", actobj)
         self.assertIn("item_put_ack_publication", actobj)
         self.assertIn("start_container_bulk_get", actobj)
-        self.assertIn("bulk_get_completion", actobj)
+        self.assertIn("bulk_get_publication", actobj)
         self.assertIn("start_bulk_drop", actobj)
-        self.assertIn("bulk_drop_completion", actobj)
+        self.assertIn("bulk_drop_publication", actobj)
         self.assertIn("start_bulk_put", actobj)
-        self.assertIn("bulk_put_completion", actobj)
+        self.assertIn("bulk_put_publication", actobj)
         self.assertIn("item_movement_transaction_submit_batch", actobj)
         # Each core bulk movement publishes one durable forest only after its
         # shared commit.
@@ -135,12 +135,25 @@ class LiveItemMovementContractTests(unittest.TestCase):
     def test_give_completion_can_publish_to_a_linkdead_recipient(self):
         actobj = (SRC / "actobj.c").read_text()
         helper = actobj[actobj.index("P_char find_live_player_pid"):]
-        helper = helper[:helper.index("void item_get_completion")]
+        helper = helper[:helper.index("bool item_get_publication")]
         self.assertIn("character_list", helper)
-        give = actobj[actobj.index("void item_give_completion"):]
-        give = give[:give.index("void item_put_completion")]
+        give = actobj[actobj.index("bool item_give_publication"):]
+        give = give[:give.index("bool item_put_publication")]
         self.assertIn("find_live_player_pid(context.recipient_pid)", give)
         self.assertNotIn("find_player_by_pid(context.recipient_pid)", give)
+        self.assertIn("return false;", give)
+
+    def test_common_moves_retain_failed_live_publication(self):
+        actobj = (SRC / "actobj.c").read_text()
+        movement = (SRC / "item_movement_transaction.c").read_text()
+        for action in ("item_get", "item_drop", "item_give", "item_put",
+                       "bulk_get", "bulk_drop", "bulk_put"):
+            self.assertIn(f"bool {action}_publication(", actobj)
+            self.assertGreaterEqual(actobj.count(f"{action}_publication"), 2)
+        self.assertIn("retain_publication_failure(current->second, \"callback\")",
+                      movement)
+        self.assertIn("critical_command_coordinator_acknowledge_publication(",
+                      movement)
 
     def test_same_owner_reparenting_is_authoritative(self):
         command = (SRC / "item_transfer_command.c").read_text()

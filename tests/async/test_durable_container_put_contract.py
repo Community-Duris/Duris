@@ -119,6 +119,15 @@ class DurableContainerPutContractTests(unittest.TestCase):
         self.assertIn("That container lacks authoritative ownership", failure)
         self.assertIn("return true;", failure)
 
+    def test_owned_item_cannot_enter_uidless_container(self):
+        actobj = (SRC / "actobj.c").read_text()
+        body = function_body(actobj, "bool defer_durable_put(",
+                             "\nbool submit_player_drop(")
+        self.assertIn("if (!container->obj_uid)", body)
+        self.assertIn("That container cannot hold an owned item", body)
+        self.assertLess(body.index("if (!container->obj_uid)"),
+                        body.index("item_command_resolve_put_destination"))
+
     def test_single_item_put_records_the_same_topology_as_bulk_put(self):
         actobj = (SRC / "actobj.c").read_text()
         movement = (SRC / "item_movement_transaction.c").read_text()
@@ -199,15 +208,15 @@ class DurableContainerPutContractTests(unittest.TestCase):
         self.assertLess(consent_start, durable_start)
         self.assertEqual(durable_give.count("item_movement_transaction_submit("), 1)
         self.assertIn("item_transfer_reason::player_give", durable_give)
-        self.assertIn("item_give_completion", durable_give)
+        self.assertIn("item_give_publication", durable_give)
 
     def test_populated_give_captures_and_publishes_the_tree_after_commit(self):
         movement = (SRC / "item_movement_transaction.c").read_text()
         actobj = (SRC / "actobj.c").read_text()
         capture = function_body(movement, "bool capture(P_obj object",
                                 "\nbool capture_absent(")
-        completion = function_body(actobj, "void item_give_completion(",
-                                   "\nvoid item_put_completion(")
+        completion = function_body(actobj, "bool item_give_publication(",
+                                   "\nbool item_put_publication(")
         self.assertIn("for (P_obj child = object->contains", capture)
         self.assertIn("capture(child, root_uid, object->obj_uid, items)", capture)
         self.assertLess(completion.index("!committed"),

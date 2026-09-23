@@ -76,8 +76,8 @@ class ItemCommandPipelineContractTests(unittest.TestCase):
         self.assertNotIn("obj_to_obj(", POLICY_C)
         self.assertNotIn("obj_to_room(", POLICY_C)
         self.assertIn("item_movement_transaction_submit", ACTOBJ)
-        self.assertIn("item_put_completion", ACTOBJ)
-        self.assertIn("item_drop_completion", ACTOBJ)
+        self.assertIn("item_put_publication", ACTOBJ)
+        self.assertIn("item_drop_publication", ACTOBJ)
         self.assertIn("completion callback publishes", DOC)
 
     def test_parser_runtime_forms(self):

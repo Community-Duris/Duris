@@ -68,7 +68,7 @@ lesser_resurrect = body(MAGIC, "void spell_lesser_resurrect(",
                         "void spell_mass_invisibility(")
 resurrection_publication = body(HANDLER, "void publish_corpse_resurrection(",
                                 "void continue_corpse_resurrection(")
-resurrection_item_publication = body(HANDLER, "void publish_corpse_resurrection_item(",
+resurrection_item_publication = body(HANDLER, "bool publish_corpse_resurrection_item(",
                                      "void publish_corpse_resurrection(")
 raise_publication = body(HANDLER, "void publish_corpse_raise(",
                          "P_obj find_resurrection_item(")
@@ -188,6 +188,11 @@ assert "apply_corpse_discarded_runtime(corpse, result, false)" in resurrection_p
 assert "target->in_room != context.old_room" not in resurrection_publication
 assert "caster->in_room != corpse_room" not in resurrection_publication
 assert "actor->in_room != context.old_room" not in resurrection_item_publication
+assert "if (IS_SET(item->extra_flags, ITEM_TRANSIENT))\n\t\t\treturn item_tree_has_durable_ownership(item);" in HANDLER
+assert "destroy ? item_transfer_reason::destruction" in HANDLER
+assert "complete_corpse_resurrection_item" in HANDLER
+assert "publish_corpse_resurrection_item" in HANDLER
+assert "IS_SET(t_obj->extra_flags, ITEM_TRANSIENT)" in MAGIC
 assert resurrection_publication.index("item_ownership_runtime_apply_corpse_resurrection") < \
        resurrection_publication.index("complete_player_resurrection_after_commit")
 assert HANDLER.index("item_movement_transaction_submit(",

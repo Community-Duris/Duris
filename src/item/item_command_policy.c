@@ -20,6 +20,32 @@ bool item_command_uses_durable_ownership(P_obj object)
 	       ownership.state == item_custody_state::active;
 }
 
+bool item_tree_has_durable_ownership(P_obj root)
+{
+	if (!root)
+		return false;
+	if (item_command_uses_durable_ownership(root))
+		return true;
+	for (P_obj child = root->contains; child; child = child->next_content)
+		if (item_tree_has_durable_ownership(child))
+			return true;
+	return false;
+}
+
+bool item_tree_has_active_custody(P_obj root)
+{
+	if (!root)
+		return false;
+	item_ownership_runtime_entry runtime = {};
+	if (root->obj_uid && item_ownership_runtime_lookup(root->obj_uid, &runtime) &&
+	    runtime.state == item_custody_state::active)
+		return true;
+	for (P_obj child = root->contains; child; child = child->next_content)
+		if (item_tree_has_active_custody(child))
+			return true;
+	return false;
+}
+
 bool item_command_object_is_takeable(P_char actor, P_obj object)
 {
 	return actor && object &&

@@ -37,7 +37,10 @@ using item_movement_completion_fn = void (*)(P_char actor, bool committed,
 					     unsigned int error_code, const uint8_t *context,
 					     size_t context_size);
 // Opt-in callbacks are the publication boundary: returning false retains the
-// movement entry and the coordinator's entity fences for a later attempt.
+// movement entry and the coordinator's entity fences for a later attempt. If
+// both publication and completion are supplied, completion runs once after
+// successful publication acknowledgement and after the pending entry is
+// released, so it may submit the next operation in a chain.
 using item_movement_publication_fn = bool (*)(P_char actor, bool committed,
 					      const item_transfer_result &result,
 					      unsigned int error_code, const uint8_t *context,

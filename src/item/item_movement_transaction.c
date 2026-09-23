@@ -1188,6 +1188,41 @@ void retain_publication_failure(pending_movement &entry, const char *reason)
 					   publication_state::retrying;
 }
 
+/** Admission of an absent item is a separate command; continue the requested move
+ * only after that command's publication fence has been released. */
+void continue_adopted_movement(std::unordered_map<std::string, pending_movement>::iterator found,
+			       P_char actor)
+{
+	const pending_movement &entry = found->second;
+	const uint64_t root_uid = entry.payload.selected_item_uid;
+	const item_owner_identity source = entry.payload.to_owner;
+	const item_owner_identity destination = entry.requested_to_owner;
+	const uint64_t target_parent_uid = entry.requested_target_parent_uid;
+	const item_transfer_reason reason = entry.requested_reason;
+	const int64_t reason_id = entry.requested_reason_id;
+	const uint64_t corpse_uid = entry.requested_corpse_uid;
+	const item_movement_completion_fn completion_fn = entry.completion;
+	const item_movement_publication_fn publication_fn = entry.publication;
+	const size_t context_size = entry.context_size;
+	const auto context = entry.context;
+	pending.erase(found);
+	++health.committed;
+	P_obj root = find_item(root_uid);
+	P_obj target_parent = target_parent_uid ? find_item(target_parent_uid) : NULL;
+	P_obj corpse = corpse_uid ? find_item(corpse_uid) : NULL;
+	if (!root || (target_parent_uid && !target_parent) || (corpse_uid && !corpse) ||
+	    !item_movement_transaction_submit(actor, root, target_parent, source, destination,
+					      reason, reason_id, completion_fn, context.data(),
+					      context_size, corpse, NULL, publication_fn))
+	{
+		++health.submission_failures;
+		if (publication_fn)
+			publication_fn(actor, false, {}, EAGAIN, context.data(), context_size);
+		if (completion_fn)
+			completion_fn(actor, false, {}, EAGAIN, context.data(), context_size);
+	}
+}
+
 /** Publish a completion, retaining committed work if the live registry cannot advance. */
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
@@ -1212,15 +1247,37 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 					     critical_apply_outcome::already_applied;
 	if (entry.publication && entry.publication_status == publication_state::ack_pending)
 	{
+		// Chained commands need their original actor after acknowledgement. A
+		// pulse may retry the ACK while that actor is disconnected.
+		if (!actor && (entry.completion || (entry.adopting && !entry.adoption_only)))
+		{
+			account_health();
+			return;
+		}
 		if (critical_command_coordinator_acknowledge_publication(
 			    entry.completed.operation_id))
 		{
+			if (entry.adopting && !entry.adoption_only && committed &&
+			    entry.registry_applied)
+			{
+				continue_adopted_movement(found, actor);
+				account_health();
+				return;
+			}
 			const bool was_committed = committed;
+			const item_movement_completion_fn completion_fn = entry.completion;
+			const auto context = entry.context;
+			const size_t context_size = entry.context_size;
+			const unsigned int error_code = decoded ? entry.completed.error_code :
+								  EBADMSG;
 			pending.erase(found);
 			if (was_committed)
 				++health.committed;
 			else
 				++health.rejected;
+			if (completion_fn)
+				completion_fn(actor, was_committed, result, error_code,
+					      context.data(), context_size);
 		}
 		account_health();
 		return;
@@ -1272,6 +1329,19 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
+	if (entry.publication && entry.adopting && committed && !entry.adoption_only)
+	{
+		if (!critical_command_coordinator_acknowledge_publication(
+			    entry.completed.operation_id))
+		{
+			entry.publication_status = publication_state::ack_pending;
+			account_health();
+			return;
+		}
+		continue_adopted_movement(found, actor);
+		account_health();
+		return;
+	}
 	if (entry.publication)
 	{
 		if (!actor)
@@ -1309,11 +1379,17 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
+		const item_movement_completion_fn completion_fn = current->second.completion;
+		const auto completed_context = current->second.context;
+		const size_t completed_context_size = current->second.context_size;
 		pending.erase(current);
 		if (committed)
 			++health.committed;
 		else
 			++health.rejected;
+		if (completion_fn)
+			completion_fn(actor, committed, result, error_code,
+				      completed_context.data(), completed_context_size);
 		account_health();
 		return;
 	}
@@ -1415,31 +1491,7 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
-		const uint64_t root_uid = entry.payload.selected_item_uid;
-		const item_owner_identity source = entry.payload.to_owner;
-		const item_owner_identity destination = entry.requested_to_owner;
-		const uint64_t target_parent_uid = entry.requested_target_parent_uid;
-		const item_transfer_reason reason = entry.requested_reason;
-		const int64_t reason_id = entry.requested_reason_id;
-		const uint64_t corpse_uid = entry.requested_corpse_uid;
-		const item_movement_completion_fn completion_fn = entry.completion;
-		const size_t context_size = entry.context_size;
-		const auto context = entry.context;
-		pending.erase(found);
-		++health.committed;
-		P_obj root = find_item(root_uid);
-		P_obj target_parent = target_parent_uid ? find_item(target_parent_uid) : NULL;
-		P_obj corpse = corpse_uid ? find_item(corpse_uid) : NULL;
-		if (!root || (target_parent_uid && !target_parent) || (corpse_uid && !corpse) ||
-		    !item_movement_transaction_submit(actor, root, target_parent, source,
-						      destination, reason, reason_id, completion_fn,
-						      context.data(), context_size, corpse))
-		{
-			++health.submission_failures;
-			if (completion_fn)
-				completion_fn(actor, false, {}, EAGAIN, context.data(),
-					      context_size);
-		}
+		continue_adopted_movement(found, actor);
 		account_health();
 		return;
 	}
@@ -1530,6 +1582,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	const bool adopted = item_ownership_runtime_lookup(root->obj_uid, &runtime);
 	const item_owner_identity effective_from = adopted ? from_owner : system_owner_identity;
 	const item_owner_identity effective_to = adopted ? to_owner : from_owner;
+	const bool admission_handoff = !adopted && !item_owner_identity_equal(from_owner, to_owner);
+	P_obj stage_target_container = admission_handoff ? NULL : target_container;
 	// A mobile claim is evidence about an already-authoritative item. Treating an
 	// absent item as creation would erase that evidence and could leave a collector
 	// candidate live after the mobile received it.
@@ -1560,7 +1614,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	if (!(adopted ? capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items) :
 			capture_absent(root, root->obj_uid, 0, &items)))
 		return reject_with(reject, item_movement_reject::topology_mismatch);
-	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
+	std::sort(items.begin(), items.end(),
+		  [](const auto &left, const auto &right)
 		  { return left.item_uid < right.item_uid; });
 	uint64_t system_revision = 0;
 	if (!adopted &&
@@ -1574,11 +1629,12 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.expected_from_revision = adopted ? from_revision : system_revision,
 		.expected_to_revision = adopted ? to_revision : from_revision,
 		.selected_item_uid = root->obj_uid,
-		.target_root_item_uid = target_container ? target_runtime.root_item_uid :
-							   root->obj_uid,
-		.target_parent_item_uid = target_container ? target_container->obj_uid : 0,
-		.expected_target_parent_revision = target_container ? target_runtime.item_revision :
-								      0,
+		.target_root_item_uid = stage_target_container ? target_runtime.root_item_uid :
+								 root->obj_uid,
+		.target_parent_item_uid = stage_target_container ? stage_target_container->obj_uid :
+								   0,
+		.expected_target_parent_revision =
+			stage_target_container ? target_runtime.item_revision : 0,
 		.multi_root = false,
 		.item_count = static_cast<uint16_t>(items.size()),
 		.items = {},
@@ -1775,9 +1831,11 @@ bool item_movement_transaction_submit_batch(
 	}
 	if (items.empty() || items.size() != snapshots.size())
 		return reject_with(reject, item_movement_reject::snapshot_failure);
-	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
+	std::sort(items.begin(), items.end(),
+		  [](const auto &left, const auto &right)
 		  { return left.item_uid < right.item_uid; });
-	if (std::adjacent_find(items.begin(), items.end(), [](const auto &left, const auto &right)
+	if (std::adjacent_find(items.begin(), items.end(),
+			       [](const auto &left, const auto &right)
 			       { return left.item_uid == right.item_uid; }) != items.end())
 		return reject_with(reject, item_movement_reject::topology_mismatch);
 
@@ -2226,7 +2284,7 @@ void retry_publications(void)
 			continue;
 		if (found->second.publication_status == publication_state::ack_pending)
 		{
-			publish(found, nullptr);
+			publish(found, find_live_player(found->second.actor_pid));
 			continue;
 		}
 		if (!found->second.actor_pid)
@@ -2262,7 +2320,7 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 		}
 		if (found->second.publication &&
 		    found->second.publication_status == publication_state::ack_pending)
-			publish(found, nullptr);
+			publish(found, find_live_player(found->second.actor_pid));
 		else if (found->second.actor_pid)
 		{
 			P_char actor = find_live_player(found->second.actor_pid);
@@ -2356,9 +2414,11 @@ bool item_movement_transaction_player_busy(P_char actor)
 				return true;
 	}
 	const item_owner_identity owner = { item_owner_type::player, pid, 0 };
-	return std::any_of(
-		pending.begin(), pending.end(), [pid, &owner](const auto &entry)
-		{ return entry.second.actor_pid == pid || owner_conflicts(entry.second, owner); });
+	return std::any_of(pending.begin(), pending.end(),
+			   [pid, &owner](const auto &entry) {
+				   return entry.second.actor_pid == pid ||
+					  owner_conflicts(entry.second, owner);
+			   });
 }
 
 item_movement_health item_movement_transaction_health_copy(void)

@@ -52,7 +52,7 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
         )
         self.assertIn("uint64_t item_uid", actoth)
         self.assertIn("uint32_t victim_pid", actoth)
-        self.assertIn("find_trusted_steal_item(context.item_uid)", completion)
+        self.assertIn("find_actoth_item(context.item_uid)", completion)
         self.assertLess(completion.index("if (!committed)"), completion.index("obj_from_char"))
         self.assertLess(completion.index("if (!committed)"), completion.index("unequip_char"))
         self.assertLess(completion.index("OBJ_CARRIED_BY(object, thief)"),
