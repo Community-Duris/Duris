@@ -2611,18 +2611,16 @@ static bool save_disputed_death_disposition(P_char ch, uint64_t corpse_uid)
 		if (!wallet_pile)
 			return false;
 	}
-	bool allow_journal_handoff = true;
-#ifdef __NO_MYSQL__
-	allow_journal_handoff = false;
-#endif
+	// A journaled death can still be rejected by the database's custody checks.
+	// Keep the character in its private recovery hold until MariaDB acknowledges
+	// the disposition; otherwise reconnect could race an unapplied death.
 	const player_save_terminal_result saved = player_save_pipeline_terminal_death(
 		ch, corpse, wallet_pile, operation,
 		calculate_save_room(ch, RENT_DEATH, ch->in_room), DEATH_DISPOSITION_TIMEOUT_MSEC,
-		allow_journal_handoff);
+		false);
 	if (wallet_pile)
 		extract_obj(wallet_pile, FALSE);
-	const bool durable = saved == player_save_terminal_result::database_acknowledged ||
-			     saved == player_save_terminal_result::journal_durable;
+	const bool durable = saved == player_save_terminal_result::database_acknowledged;
 	persistence_report(durable ? persistence_severity::ok : persistence_severity::alert, AVATAR,
 			   "player_save", "death", "none", "none",
 			   durable ? "death_disposition_recorded" : "death_disposition_failed",

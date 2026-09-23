@@ -153,7 +153,20 @@ def run(server, reset_coins=False, boons=False):
                         time.sleep(.01)
                     assert number(f'SELECT COUNT(*) FROM item_current_owner WHERE item_uid={ghost} AND owner_type=1 AND owner_id={pid} AND state=1')==1
                     before_deaths=number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')
+                    # A newly discovered payload outside the captured corpse
+                    # must reject this death without releasing the character on
+                    # the strength of a journal append alone. Repair the stray
+                    # row, then let the same in-game recovery finish normally.
+                    stray=ghost+1
+                    sql(f'INSERT INTO player_items (pid,vnum,equip_slot,container_id,quantity,item_type,obj_uid) VALUES ({pid},15,0,NULL,1,0,{stray})')
                     journey.attack_until_death(client)
+                    deadline=time.monotonic()+15
+                    while 'custody_payload_mismatch_rejected' not in journey.runtime_logs(runtime):
+                        assert time.monotonic()<deadline, 'uncaptured payload was not rejected'
+                        time.sleep(.05)
+                    assert 'death_disposition_completed' not in journey.runtime_logs(runtime)
+                    assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid={stray}')==1
+                    sql(f'DELETE FROM player_items WHERE pid={pid} AND obj_uid={stray}')
                     client.expect('ACCOUNT MENU',timeout=45)
                     client.send('0'); client.close(); client=None
                     # The account menu may follow a durable journal handoff

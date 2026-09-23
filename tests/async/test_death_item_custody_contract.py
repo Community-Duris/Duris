@@ -240,10 +240,11 @@ checks.append((
     contains(disposition, "DEATH_DISPOSITION_TIMEOUT_MSEC")
 ))
 checks.append((
-    "a disposition neither backend accepted keeps the live character and its assets",
+    "a disputed death waits for database acknowledgement before releasing the character",
     contains(disposition, "return durable;") and
     contains(disposition, "player_save_terminal_result::database_acknowledged") and
-    contains(disposition, "player_save_terminal_result::journal_durable")
+    contains(disposition, "DEATH_DISPOSITION_TIMEOUT_MSEC,\n\t\tfalse);") and
+    not contains(disposition, "player_save_terminal_result::journal_durable")
 ))
 checks.append((
     "die() defers to the recovery event while a dispute is outstanding",
