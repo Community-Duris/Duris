@@ -1065,6 +1065,12 @@ bool currency_repository_execute(MYSQL *connection, const critical_command &comm
 				 currency_command_result *result, unsigned int *result_code,
 				 bool *mutation_applied)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	return execute_currency_state(connection, command, result, result_code, mutation_applied);
 }
 
@@ -2103,6 +2109,9 @@ bool critical_command_repository_finish_item_transfer_in_transaction(
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context)
 {
+	if (!critical_command_legacy_execution_supported(command))
+		return { critical_apply_outcome::retryable_failure, 0, EPROTONOSUPPORT };
+
 	(void)context;
 	if (sql_worker_thread_init() != 0)
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
@@ -2165,6 +2174,12 @@ bool critical_command_repository_finish_inbox(MYSQL *connection, const critical_
 					      const uint8_t *payload, size_t payload_size,
 					      critical_failure_stage failure_stage)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	return finish_inbox(connection, command, durable_revision, result_code, payload,
 			    payload_size, failure_stage);
 }

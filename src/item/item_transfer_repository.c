@@ -1402,6 +1402,12 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 						unsigned int *result_code, bool *mutation_applied,
 						item_transfer_failure_stage *failure_stage)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	item_transfer_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
 	    !item_transfer_command_decode_payload(command, &payload))
@@ -1697,6 +1703,12 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 					   bool *mutation_applied,
 					   item_transfer_failure_stage *failure_stage)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	item_transfer_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
 	    !item_transfer_command_decode_payload(command, &payload) || payload.item_count != 1 ||
