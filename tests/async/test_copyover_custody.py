@@ -262,6 +262,6 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
                    "src/player/pet_restore_state.c",
                             "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",
-                            "-lz", "-pthread", "-lgnutls", "-o", str(temp / "fixture")],
+                            "-lz", "-pthread", "-lgnutls", "-lbsd", "-o", str(temp / "fixture")],
                    cwd=ROOT, check=True)
     subprocess.run([str(temp / "fixture")], cwd=temp, check=True, timeout=60)

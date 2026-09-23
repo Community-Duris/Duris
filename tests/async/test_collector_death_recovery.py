@@ -55,6 +55,9 @@ bool submit_next_corpse_item(P_char, P_obj) { ++item_submissions; return true; }
 bool persistence_save_character_terminal(P_char, int) { ++terminal_saves; return terminal_ok; }
 void release_after_terminal_death(P_char, const char *) { ++releases; }
 void schedule_death_extract_retry(P_char, uint64_t, int) { ++schedules; }
+static void hold_for_death_extract_retry(P_char ch) {
+    SET_POS(ch, GET_POS(ch) + STAT_DEAD);
+}
 __RETRY__
 
 bool enrolled(P_char character, P_obj corpse) {
@@ -71,6 +74,7 @@ int main() {
     character.only.pc = &player;
     character.player.name = const_cast<char *>("Collectorfixture");
     character.specials.position = STAT_DEAD;
+    character.in_room = NOWHERE;
     player.pid = 42;
     corpse.obj_uid = 900;
     corpse.type = ITEM_CORPSE;

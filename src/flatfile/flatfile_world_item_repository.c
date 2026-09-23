@@ -1943,8 +1943,7 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 				return flatfile_world_item_result::conflict;
 			mutation->expected_items.push_back(
 				{ item.object_uid, item.vnum, source_uid, parent_uid });
-			discarded[index] = hostile || index == selected_root ||
-					   item.type == ITEM_MONEY ||
+			discarded[index] = index == selected_root ||
 					   (item.extra_flags & ITEM_TRANSIENT) != 0;
 			if ((item.extra_flags & ITEM_ARTIFACT) != 0)
 				return flatfile_world_item_result::conflict;
@@ -2014,7 +2013,19 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 			  { return left.item_uid < right.item_uid; });
 		std::sort(mutation->durable_uids.begin(), mutation->durable_uids.end());
 		std::sort(mutation->discarded_uids.begin(), mutation->discarded_uids.end());
-		catalog.saved_items.erase(selected);
+		if (hostile && !mutation->pet_items.empty())
+		{
+			const size_t boundary_count = static_cast<size_t>(std::count_if(
+				mutation->pet_items.begin(), mutation->pet_items.end(),
+				[](const player_item_snapshot &item)
+				{ return item.parent_index == PLAYER_SNAPSHOT_NO_PARENT; }));
+			if (payload.expected_room_revision > UINT64_MAX - boundary_count - 1)
+				return flatfile_world_item_result::conflict;
+			selected->revision = payload.expected_room_revision + boundary_count + 1;
+			selected->items = mutation->pet_items;
+		}
+		else
+			catalog.saved_items.erase(selected);
 	}
 	catch (const std::bad_alloc &)
 	{

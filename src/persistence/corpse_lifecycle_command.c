@@ -247,9 +247,7 @@ bool valid_result(const corpse_lifecycle_result &result)
 	if ((!result.discarded_item_count &&
 	     (result.destruction_owner_revision || result.max_discarded_item_revision)) ||
 	    (result.discarded_item_count &&
-	     (!result.destruction_owner_revision || !result.max_discarded_item_revision)) ||
-	    (result.action != corpse_lifecycle_action::raise_follower && !world_raise &&
-	     result.discarded_item_count))
+	     (!result.destruction_owner_revision || !result.max_discarded_item_revision)))
 		return false;
 	if (result.action == corpse_lifecycle_action::upsert)
 		return !result.collector_catalog_changed && result.corpse_revision &&
@@ -299,7 +297,6 @@ bool valid_result(const corpse_lifecycle_result &result)
 		       !result.wallet_revision && !result.bank_revision &&
 		       result.discarded_item_count && result.destruction_owner_revision &&
 		       result.max_discarded_item_revision && item_result &&
-		       (result.pet_owner_revision || !result.item_count) &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	if (result.action != corpse_lifecycle_action::release_nested || result.corpse_revision ||

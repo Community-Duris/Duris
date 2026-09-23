@@ -2611,18 +2611,16 @@ static bool save_disputed_death_disposition(P_char ch, uint64_t corpse_uid)
 		if (!wallet_pile)
 			return false;
 	}
-	bool allow_journal_handoff = true;
-#ifdef __NO_MYSQL__
-	allow_journal_handoff = false;
-#endif
+	// A journaled death can still be rejected by the database's custody checks.
+	// Keep the character in its private recovery hold until MariaDB acknowledges
+	// the disposition; otherwise reconnect could race an unapplied death.
 	const player_save_terminal_result saved = player_save_pipeline_terminal_death(
 		ch, corpse, wallet_pile, operation,
 		calculate_save_room(ch, RENT_DEATH, ch->in_room), DEATH_DISPOSITION_TIMEOUT_MSEC,
-		allow_journal_handoff);
+		false);
 	if (wallet_pile)
 		extract_obj(wallet_pile, FALSE);
-	const bool durable = saved == player_save_terminal_result::database_acknowledged ||
-			     saved == player_save_terminal_result::journal_durable;
+	const bool durable = saved == player_save_terminal_result::database_acknowledged;
 	persistence_report(durable ? persistence_severity::ok : persistence_severity::alert, AVATAR,
 			   "player_save", "death", "none", "none",
 			   durable ? "death_disposition_recorded" : "death_disposition_failed",
@@ -2715,6 +2713,11 @@ void death_extract_retry_pulse(void)
 static void hold_for_death_extract_retry(P_char ch)
 {
 	GET_HIT(ch) = 1;
+	// The real corpse already represents this death in the room. Keep the
+	// fail-closed player state alive for persistence recovery, but do not leave a
+	// second, lootable-looking body in the world while the terminal save retries.
+	if (ch->in_room != NOWHERE)
+		char_from_room(ch);
 	SET_POS(ch, GET_POS(ch) + STAT_DEAD);
 }
 
@@ -2731,13 +2734,20 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch) || !ch->only.pc)
 		return;
 
-	if (GET_STAT(ch) != STAT_DEAD || CHAR_IN_ARENA(ch))
+	if (ch->in_room != NOWHERE && (CHAR_IN_ARENA(ch) || GET_STAT(ch) != STAT_DEAD))
 	{
 		clear_corpse_transfer_dispute(ch);
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
-				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
+				  "death_recovery_abandoned", "stat=%d room=%d", GET_STAT(ch),
+				  ch->in_room);
 		return;
 	}
+	// update_pos() derives a sleeping state from the retained 1 HP between
+	// pulses. NOWHERE is the private recovery hold, so restore its dead marker;
+	// a genuinely resumed character has been placed back in a room and took the
+	// abandonment branch above.
+	if (GET_STAT(ch) != STAT_DEAD)
+		hold_for_death_extract_retry(ch);
 
 	const bool items_busy = item_movement_transaction_player_busy(ch);
 	const bool currency_busy = currency_transaction_player_busy(ch);
