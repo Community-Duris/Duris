@@ -502,10 +502,9 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 			    payload.reason_id != static_cast<int64_t>(payload.from_owner.id))) ||
 	    ((pet_give || pet_return) && (payload.multi_root || payload.target_parent_item_uid)))
 		return false;
-	const bool corpse_context_required = payload_version >=
-						     ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
-					     (corpse_create || corpse_loot ||
-					      (corpse_raise_pet && !world_corpse_raise_pet));
+	const bool corpse_context_required =
+		payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
+		(corpse_create || corpse_loot || (corpse_raise_pet && !world_corpse_raise_pet));
 	if (corpse_context_required != payload.corpse.present ||
 	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
 			       payload.to_owner.type != item_owner_type::corpse)) ||

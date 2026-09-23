@@ -25,7 +25,10 @@
 #include "core/safe_format.h"
 #include "account/account.h"
 #include "account/account_recovery.h"
+#include "account/creation_availability_config.h"
+#include "account/login_mode_banner.h"
 #include "account/password_hash.h"
+#include "combat/chaos_config.h"
 #include <ctype.h>
 #include <math.h>
 #include <openssl/crypto.h>
@@ -477,6 +480,16 @@ void close_account_sessions_named(const char *acct_name, P_desc except, const ch
 	}
 }
 
+void send_account_name_prompt(P_desc d)
+{
+	const std::string banner = login_mode_banner(duris_staging_enabled(), chaos_mud_enabled(),
+						     creation_all_races_enabled(),
+						     creation_all_classes_enabled());
+	if (!banner.empty())
+		SEND_TO_Q(banner.c_str(), d);
+	SEND_TO_Q("Please enter your account name: ", d);
+}
+
 void send_account_password_prompt(P_desc d)
 {
 	SEND_TO_Q(account_recovery_enabled() ?
@@ -567,7 +580,7 @@ void select_accountname(P_desc d, char *arg)
 		return;
 	}
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, false))
 	{
 		SEND_TO_Q("Illegal account name, please try another.\r\n", d);
 		SEND_TO_Q("Account Name: ", d);
@@ -1199,7 +1212,7 @@ void verify_new_account_information(P_desc d, char *arg)
 		SEND_TO_Q("Ok, starting over!\r\n", d);
 		d->account = free_account(d->account);
 		STATE(d) = CON_GET_ACCT_NAME;
-		SEND_TO_Q("Please enter your account name: ", d);
+		send_account_name_prompt(d);
 		return;
 	}
 	else
@@ -2579,7 +2592,7 @@ void account_new_char_name(P_desc d, char *arg)
 	for (; isspace(*arg); arg++)
 		;
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal character name, please try another.\r\n", d);
 		account_new_char(d, NULL);

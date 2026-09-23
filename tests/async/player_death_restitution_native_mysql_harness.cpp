@@ -227,7 +227,8 @@ fixture make_fixture(uint8_t operation_seed)
 void seed_database(MYSQL *connection, const fixture &value)
 {
 	const std::string death_operation = operation_hex(value.plan.death_operation_id);
-	query_or_fail(connection, "INSERT INTO player_data(pid,save_revision) VALUES(43,1)");
+	query_or_fail(connection, "INSERT INTO player_data(pid,name,save_revision) VALUES"
+				  "(43,'RestitutionRecipient',1)");
 	query_or_fail(
 		connection,
 		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) "

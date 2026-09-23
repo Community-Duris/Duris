@@ -596,7 +596,7 @@ def test_configuration_and_ownership() -> None:
 def test_comm_wiring() -> None:
     check('#include "account/account_recovery.h"' in comm, "comm.c includes account_recovery.h")
     # run_the_game() owns boot, the game_loop() call and the shutdown chain (main() delegates).
-    run_the_game = body_of(comm, r"\bvoid\s+run_the_game\s*\(", "comm.c run_the_game")
+    run_the_game = body_of(comm, r"\bint\s+run_the_game\s*\(", "comm.c run_the_game")
     check(
         ordered(run_the_game, "player_load_pipeline_init()", "account_recovery_init()",
                 "game_booted = TRUE"),

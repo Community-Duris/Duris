@@ -30,5 +30,11 @@ bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_
 					    uint64_t prior_revision);
 bool item_transfer_repository_destroy_owners(MYSQL *connection, const item_owner_identity *owners,
 					     size_t owner_count);
+// Retire selected container/item roots while preserving their contents with the
+// current owner.  The caller owns the enclosing SQL transaction and its physical
+// projection changes; this function advances authoritative custody and ledger rows.
+bool item_transfer_repository_revoke_roots_preserving_children(MYSQL *connection,
+							       const uint64_t *item_uids,
+							       size_t item_count);
 
 #endif

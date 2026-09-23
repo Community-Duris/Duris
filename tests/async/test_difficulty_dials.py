@@ -121,8 +121,14 @@ def test_table_enum_and_properties_agree() -> None:
     for key, member in zip(keys, members):
         assert member == "DIFFICULTY_" + key.upper().replace(".", "_"), (key, member)
     section = PROPERTIES[PROPERTIES.index("[difficulty]"):].splitlines()
+    # The shipped file carries live tuning, so a dial need not sit at 5; it must be
+    # present exactly once as a whole number from 1 to 10, as the 'difficulty' command allows.
     for key in keys:
-        assert f"difficulty.dial.{key}=5.000" in section, key
+        values = [line.split("=", 1)[1] for line in section
+                  if line.startswith(f"difficulty.dial.{key}=")]
+        assert len(values) == 1, key
+        setting = float(values[0])
+        assert setting.is_integer() and 1 <= setting <= 10, (key, values[0])
     for setting in (1, 2, 3, 4, 6, 7, 8, 9, 10):
         assert any(line.startswith(f"difficulty.curve.{setting:02d}=") for line in section)
     # 5 has no key: it is always 1.0.

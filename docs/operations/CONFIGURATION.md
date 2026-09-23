@@ -145,7 +145,7 @@ per-operation authority transfer is not supported.
 | `MAINTENANCE_STATE_FILE` | Optional; `bin/server/maintenance-scheduler.state` | Durable scheduler cursor/completion state; parent directory must be server-user controlled. |
 
 `scripts/cycle_mud.sh --check-config` validates the selected mode without starting the
-server. Add `--production` to require `ENVIRONMENT=production` and the port-7777
+server. Add `--production` to require `ENVIRONMENT=production` and the production-port
 runtime role; the production systemd unit always supplies that flag. `--production`
 cannot be combined with `--dev` or `--minimal`. In `flatfile-primary`, the launcher
 does not require database settings, run migrations or schema checks, invoke MySQL
@@ -161,9 +161,10 @@ closes sessions left active by an interrupted prior run and refuses corrupt IP h
 
 `DB_NAME` selects the requested database and `DB_ALLOWED_TARGETS` authorizes the
 resolved target. The listen port is an additional guard, not the primary selector.
-Production role requires port `7777`; on any other port an explicitly production-like
-name (`duris` or `duris_prod`) is redirected to `duris_dev` before the allow-list check.
-Use a separate database account, target, and non-`7777` port for development. The
+Production role requires the production port, `7777` unless `DURIS_PRODUCTION_PORT`
+selects another; on any other port an explicitly production-like name (`duris` or
+`duris_prod`) is redirected to `duris_dev` before the allow-list check. Use a separate
+database account, target, and non-production port for development. The
 redirect does not make a production credential safe to reuse locally.
 
 Every connection has 10-second connect/read/write deadlines and disables automatic
@@ -394,6 +395,11 @@ The character-creation settings affect the menus and validation paths; they do
 not change the underlying race/class data or make restricted choices suitable
 for production.
 
+Above the account-name prompt, the login screen shows one blinking line naming
+each enabled mode: `STAGING`, `CHAOS`, `ALL-RACES` and `ALL-CLASSES`. It shows
+nothing when none is enabled. `DURIS_STAGING` exists only for this banner; set it
+to `TRUE` (case-insensitive) on a public staging server.
+
 Chaos is a separate, deliberately selected server-wide ruleset. Its values are
 read at process start and are case-sensitive:
 
@@ -418,7 +424,8 @@ craft-pouch contract is in [CHAOS_MODE.md](../reference/CHAOS_MODE.md).
 | Variable | Meaning |
 | --- | --- |
 | `LISTEN_ADDRESS` | Numeric IPv4 or IPv6 address applied to telnet, TLS telnet, and WebSocket listeners. Use `127.0.0.1` or `::1` for local development. |
-| `DURIS_DEV_PORT` | Plain-telnet port selected by `--dev` and `--minimal`. It defaults to `4000`; values must be decimal ports from 1 through 65535 and must not be the production port `7777`. |
+| `DURIS_DEV_PORT` | Plain-telnet port selected by `--dev` and `--minimal`. It defaults to `4000`; values must be decimal ports from 1 through 65535 and must not be the production port. |
+| `DURIS_PRODUCTION_PORT` | Optional plain-telnet port for the production role (`--production`). It defaults to `7777`; set it only when a second production-role install shares a host. Values must be decimal ports from 1 through 65535. |
 | `DURIS_TLS_PORT` | Optional independent TLS telnet port. It defaults to `7778`, or to the plain-telnet port plus one when a custom plain port is supplied. Values must be decimal ports from 1 through 65535 and must differ from the plain port. |
 | `DURIS_WEBSOCKET_PORT` | WebSocket and HTTP health-listener port. It defaults to `4050`; values must be decimal ports from 1 through 65535. |
 | `DURIS_WEBSOCKET_LISTEN_ADDRESS` | WebSocket-only numeric listener address; defaults to `LISTEN_ADDRESS`, and to `127.0.0.1` when neither is set. Production requires exact loopback so a local TLS reverse proxy owns the public endpoint. |

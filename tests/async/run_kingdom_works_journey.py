@@ -3,13 +3,14 @@
 
 This boots the FULL world (a kingdom needs the overhead map and the guildhall
 zone, neither of which the minimal world has), so `make world` must have been
-run first. A disposable character named Tyrus is created; character creation
-makes that name an OVERLORD, which lets the journey found a guild, go where it
-needs to, and load the harvest nodes a realm would otherwise take days to find.
-Its coins come from a pile a zone reset places in a room, because coins a god
-conjures are refused by the currency path.
+run first. A disposable character named Workswarden is created and raised to
+OVERLORD while the server is down, as creation refuses the god_list names that
+once did this. That lets the journey found a guild, go where it needs to, and
+load the harvest nodes a realm would otherwise take days to find. Its coins
+come from a pile a zone reset places in a room, because coins a god conjures
+are refused by the currency path.
 
-The journey founds a guild with Tyrus as leader, finds a legal realm seat with
+The journey founds a guild with Workswarden as leader, finds a legal realm seat with
 `kingdom prospect`, raises a main hall there and converts the guild to a
 kingdom. With too little in the treasury it is refused a forge, and checks
 that nothing was built and nothing charged. It funds the treasury, is refused
@@ -17,17 +18,17 @@ a store before any workshop and a second forge, and builds a forge and a store
 (checking the treasury paid for both). Before any harvest the store refuses a
 purchase the realm's stores cannot supply, taking nothing. It harvests mineral
 and wood into the realm, then in the store lists and buys a pair of
-vambraces. It checks they were made at level 56 (Tyrus is above the cap) with
+vambraces. It checks they were made at level 56 (Workswarden is above the cap) with
 the level-56 armour class and strength, that they are CRAFTED and STOREITEM
 but neither SOULBIND nor NOSELL, that they are worth 5,800 copper -- a tenth of
 the 58p they cost -- that their keywords carry neither the buyer's name nor the
 maker's mark (the mark lives in the action description, where no command
-reaches it, and a name there would answer to `get tyrus` wherever the piece
-lay), that the realm's stores fell by exactly the bill, and that Tyrus's
+reaches it, and a name there would answer to `get workswarden` wherever the piece
+lay), that the realm's stores fell by exactly the bill, and that Workswarden's
 platinum fell by the price while the treasury did not rise.
 
 Then who may wear it. Anyone may carry, loot or sell store gear, but only its
-buyer may WEAR it (ruled 2026-09-17). Tyrus wears the piece, takes it off, puts
+buyer may WEAR it (ruled 2026-09-17). Workswarden wears the piece, takes it off, puts
 it in a basket and leaves the basket for two characters on other accounts --
 one NAMED "Vambraces", a word on the piece, and one with an ordinary name. Each
 sheds its starter kit (a new character starts over its carrying limit), takes
@@ -57,7 +58,7 @@ import test_flatfile_combat_journey as journey
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 ACCOUNT = "Worksacct"
-CHARACTER = "Tyrus"
+CHARACTER = "Workswarden"
 EMAIL = "works@example.invalid"
 PROMPTS = ("Pos: standing >", "<>")
 GUILD = "Ringfort"
@@ -77,7 +78,7 @@ PIECE_SHORT = "steel vambraces"
 # would be ambiguous -- `get vambraces bag` looks in the kit's own bag.
 BASKET_VNUM = 387
 BASKET = "basket"
-# Characters who take Tyrus's piece and wear it. Nothing binds store gear, so
+# Characters who take Workswarden's piece and wear it. Nothing binds store gear, so
 # both must manage it. "Vambraces" is a word on the piece and no mob's keyword,
 # so character creation allows it; it stays here as the name most likely to
 # trip a stray name check, being the one the old soulbind test let through.
@@ -120,12 +121,6 @@ def create_account(client: journey.MudClient, account: str, email: str) -> None:
     client.send("y")
     client.expect("PRESS RETURN")
     client.send("")
-
-
-def create_god(client: journey.MudClient) -> None:
-    """Tyrus: character creation makes that name an OVERLORD."""
-    create_account(client, ACCOUNT, EMAIL)
-    create_character(client, CHARACTER)
 
 
 def create_character(client: journey.MudClient, name: str) -> None:
@@ -238,7 +233,7 @@ def wait_for(probe, predicate, what: str, timeout: float = 20):
 
 
 def harvest_until(client: journey.MudClient, node_vnum: int, resource: str, want: int) -> None:
-    """Load a node where Tyrus stands and work it until the realm holds `want`
+    """Load a node where Workswarden stands and work it until the realm holds `want`
     of `resource`, loading a fresh node whenever one is worked out."""
     command(client, f"load obj {node_vnum}", "")
     for _ in range(40):
@@ -281,7 +276,7 @@ def find_seat(client: journey.MudClient) -> int:
 
 
 def refused_the_piece(other: journey.MudClient, name: str) -> None:
-    """`name` takes Tyrus's piece out of the basket at their feet, is refused
+    """`name` takes Workswarden's piece out of the basket at their feet, is refused
     it when they try to wear it, and puts it back.
 
     Ruled 2026-09-17: anyone may carry, loot or sell store gear, but only the
@@ -322,9 +317,9 @@ def refused_the_piece(other: journey.MudClient, name: str) -> None:
     # would print; the require then says which it was.
     _, reply = command_any(other, f"wear {PIECE}", ("another's measure", PIECE_SHORT))
     reply = plain(reply)
-    require("another's measure" in reply, f"{name} was not refused Tyrus's piece:\n{reply}")
+    require("another's measure" in reply, f"{name} was not refused {CHARACTER}'s piece:\n{reply}")
     worn = plain(command(other, "equipment", ""))
-    require(PIECE_SHORT not in worn, f"{name} is wearing Tyrus's piece:\n{worn}")
+    require(PIECE_SHORT not in worn, f"{name} is wearing {CHARACTER}'s piece:\n{worn}")
     require(PIECE_SHORT in inventory(), f"{name} no longer holds the piece after the refusal")
     # `wear all` must not refuse it aloud: that call walks every carried item
     # for every empty slot, so a spoken refusal would arrive once per slot per
@@ -395,22 +390,46 @@ def run(binary: pathlib.Path) -> None:
             # routines, and the guild store IS one -- its room proc answers
             # `list` and `buy`, and under -s they fall through to "you cannot
             # do that here". The guildhall door and the node procs want them too.
-            process = subprocess.Popen([str(binary), "-d", str(run_root), str(plain_port)],
-                                       cwd=run_root, env=environment, text=True,
-                                       stdout=output, stderr=subprocess.STDOUT)
+            def start() -> subprocess.Popen:
+                return subprocess.Popen([str(binary), "-d", str(run_root), str(plain_port)],
+                                        cwd=run_root, env=environment, text=True,
+                                        stdout=output, stderr=subprocess.STDOUT)
+
+            def wait_for_boot(boots: int) -> None:
+                deadline = time.monotonic() + 900
+                while time.monotonic() < deadline and output_path.read_text(errors="replace").count("Entering game loop.") < boots:
+                    require(process.poll() is None, "server exited during boot:\n" + output_path.read_text(errors="replace")[-6000:])
+                    time.sleep(0.5)
+                require(output_path.read_text(errors="replace").count("Entering game loop.") >= boots,
+                        "server did not boot in time")
+
+            process = start()
             client = None
             others: list[journey.MudClient] = []
             try:
-                deadline = time.monotonic() + 900
-                while time.monotonic() < deadline and "Entering game loop." not in output_path.read_text(errors="replace"):
-                    require(process.poll() is None, "server exited during boot:\n" + output_path.read_text(errors="replace")[-6000:])
-                    time.sleep(0.5)
-                require("Entering game loop." in output_path.read_text(errors="replace"), "server did not boot in time")
+                wait_for_boot(1)
                 print("booted the full world", flush=True)
                 client = journey.MudClient(plain_port)
-                create_god(client)
+                create_account(client, ACCOUNT, EMAIL)
+                create_character(client, CHARACTER)
+                # Creation refuses god_list names, so the god is an ordinary
+                # character raised to OVERLORD while the server is down.
+                command(client, "save", f"Save complete for {CHARACTER}.")
+                client.send("quit")
+                client.expect("ACCOUNT MENU", timeout=30)
+                client.close()
+                client = None
+                process.send_signal(signal.SIGTERM)
+                process.wait(timeout=60)
+                journey.make_overlord(state_root, CHARACTER)
+                process = start()
+                wait_for_boot(2)
+                print(f"rebooted the full world with {CHARACTER} an OVERLORD", flush=True)
+                client = journey.reconnect_character(plain_port, expected_room=None,
+                                                     account=ACCOUNT, character=CHARACTER)
+                client.expect_any(PROMPTS, timeout=60)
 
-                # A guild, led by Tyrus.
+                # A guild, led by Workswarden.
                 command(client, f"supervise found {CHARACTER} n {GUILD}", "")
                 require(GUILD in plain(command(client, "society", GUILD)), "the guild was not founded")
 
@@ -426,7 +445,7 @@ def run(binary: pathlib.Path) -> None:
                 require("The realm of" in status and "Works      : none" in status, f"not a realm:\n{status}")
                 print(f"realm founded on map vnum {seat}", flush=True)
 
-                # Coins for Tyrus, and a treasury funded through a bank.
+                # Coins for Workswarden, and a treasury funded through a bank.
                 # Coins a god conjures with `load` are refused by the currency
                 # path ("The coin transfer did not commit"), so the purse is
                 # filled the way a player's is: from the pile a zone reset
@@ -549,10 +568,10 @@ def run(binary: pathlib.Path) -> None:
                 require(re.search(r"Affects:\s*\S+\s+By\s+2\b", stat) is not None,
                         f"level-56 vambraces strength is not +2:\n{stat}")
                 # The buyer's name is not a keyword: gear circulates, so one
-                # would answer to `get tyrus` in front of Tyrus himself.
+                # would answer to `get workswarden` in front of its buyer.
                 keywords_line = next((line for line in stat.splitlines() if "Keywords:" in line), "")
                 require(keywords_line != "", f"stat obj printed no keywords:\n{stat}")
-                require("tyrus" not in keywords_line.lower(),
+                require(CHARACTER.lower() not in keywords_line.lower(),
                         f"the buyer's name is still a keyword:\n{keywords_line}")
                 # The binding token is the piece's action description, which no
                 # command targets and `stat obj` does not print. What must be
@@ -606,7 +625,7 @@ def run(binary: pathlib.Path) -> None:
                     create_character(other, name)
                     command(client, f"transfer {name.lower()}", "")
                     refused_the_piece(other, name)
-                    print(f"{name} could carry but not wear Tyrus's piece", flush=True)
+                    print(f"{name} could carry but not wear {CHARACTER}'s piece", flush=True)
                 for other in others:
                     other.close()
                 others.clear()

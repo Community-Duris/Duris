@@ -107,6 +107,25 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     if checked.returncode != 0 or "database-independent configuration" not in checked.stdout:
         raise AssertionError("valid production secret was rejected:\n" + checked.stdout)
 
+    shared_host_env = dict(production_check_env)
+    shared_host_env["DURIS_PRODUCTION_PORT"] = "14000"
+    checked = run(script, shared_host_env, "--production", "--check-config")
+    if checked.returncode != 0 or "database-independent configuration" not in checked.stdout:
+        raise AssertionError("configured production port was rejected:\n" + checked.stdout)
+
+    for invalid_production_port in ("0", "04000", "65536", "not-a-port"):
+        invalid_production_env = dict(production_check_env)
+        invalid_production_env["DURIS_PRODUCTION_PORT"] = invalid_production_port
+        rejected = run(script, invalid_production_env, "--production", "--check-config")
+        if rejected.returncode == 0 or "DURIS_PRODUCTION_PORT must be a decimal port" not in rejected.stdout:
+            raise AssertionError(f"production launcher accepted port {invalid_production_port!r}")
+
+    colliding_dev_env = dict(flat_env)
+    colliding_dev_env.update({"DURIS_PRODUCTION_PORT": "14000", "DURIS_DEV_PORT": "14000"})
+    rejected = run(script, colliding_dev_env, "--dev", "--check-config")
+    if rejected.returncode == 0 or "must not use production port 14000" not in rejected.stdout:
+        raise AssertionError("development launcher accepted the configured production port")
+
     placeholder_secret_env = dict(production_check_env)
     placeholder_secret_env["DURISWEB_SECRET"] = "put-secret-here"
     rejected = run(script, placeholder_secret_env, "--production", "--check-config")
@@ -147,6 +166,26 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     checked = run(script, valid_db_env, "--check-config")
     if checked.returncode != 0 or "explicit database configuration" not in checked.stdout:
         raise AssertionError("valid MariaDB config was rejected:\n" + checked.stdout)
+
+    shared_host_db_env = dict(valid_db_env)
+    shared_host_db_env.update(
+        {
+            "ENVIRONMENT": "production",
+            "DURISWEB_SECRET": "0123456789abcdef0123456789abcdef",
+            "DURIS_PRODUCTION_PORT": "14000",
+            "DB_NAME": "duris",
+            "DB_ALLOWED_TARGETS": "127.0.0.1/duris",
+        }
+    )
+    checked = run(script, shared_host_db_env, "--production", "--check-config")
+    if checked.returncode != 0 or "explicit database configuration" not in checked.stdout:
+        raise AssertionError("configured production port redirected its database:\n" + checked.stdout)
+
+    redirected_dev_env = dict(shared_host_db_env)
+    redirected_dev_env.update({"ENVIRONMENT": "local", "DURIS_DEV_PORT": "14001"})
+    rejected = run(script, redirected_dev_env, "--dev", "--check-config")
+    if rejected.returncode == 0 or "Resolved database target is not allow-listed" not in rejected.stdout:
+        raise AssertionError("non-production port kept a production database name")
 
     fallback_env = dict(flat_env)
     fallback_env["PERSISTENCE_MODE"] = "mariadb-primary-flatfile-fallback"

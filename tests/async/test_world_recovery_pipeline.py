@@ -683,9 +683,12 @@ int main()
     corpse.weight = 53;
     bag.obj_uid = 901; bag.type = ITEM_CONTAINER; bag.weight = 13;
     gloves.obj_uid = 902; gloves.type = ITEM_ARMOR; gloves.weight = 3;
-    gloves.name = const_cast<char *>("boreal hardwood gloves");
-    gloves.short_description = const_cast<char *>("some boreal hardwood gloves");
-    gloves.description = const_cast<char *>("Some boreal hardwood gloves are here.");
+    const std::string long_name = "boreal " + std::string(120, 'k') + " gloves";
+    const std::string long_short = "some " + std::string(140, 's') + " gloves";
+    const std::string long_description = "Some " + std::string(180, 'd') + " gloves are here.";
+    gloves.name = const_cast<char *>(long_name.c_str());
+    gloves.short_description = const_cast<char *>(long_short.c_str());
+    gloves.description = const_cast<char *>(long_description.c_str());
     gloves.wear_flags = ITEM_TAKE | ITEM_WEAR_HANDS;
     gloves.extra_flags = ITEM_GLOW; gloves.anti_flags = 7; gloves.anti2_flags = 9;
     gloves.extra2_flags = 11; gloves.material = 3; gloves.cost = 1234;
@@ -960,7 +963,7 @@ print("[PASS] failed recovery and forced zone reset restore exactly one owned gr
 
 for token in (
     "WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024",
-    "WORLD_RECOVERY_MAX_RECORD_BYTES = 512 * 1024",
+    "WORLD_RECOVERY_MAX_RECORD_BYTES = 2 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768",
     "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 1024",
