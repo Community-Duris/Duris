@@ -2159,6 +2159,12 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 					 bool *mutation_applied, uint64_t *collector_revision,
 					 std::vector<collector_command_result> *collector_events)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !result || !result_code || !mutation_applied || !collector_revision ||
 	    !collector_events)
 	{

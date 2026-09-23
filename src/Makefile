@@ -328,6 +328,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
+				 persistence/economic_accounting_repository.o \
 				 persistence/critical_command_repository.o \
 				 persistence/player_death_restitution_command.o \
 				 persistence/player_death_restitution_repository.o \
@@ -349,6 +350,9 @@ OBJS =  $(SHIP_OBJS) \
 				 world/epic_transaction.o \
 				 economy/currency_command.o \
 				 economy/coin_transfer_command.o \
+				 economy/economic_accounting_types.o \
+				 economy/economic_accounting_plan.o \
+				 economy/economic_accounting_intent.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \
 				 economy/auction_transaction.o \
