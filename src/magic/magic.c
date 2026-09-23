@@ -40,6 +40,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "item/objmisc.h"
 #include "item/item_movement_transaction.h"
+#include "item/item_command_policy.h"
 #include "item/item_ownership_runtime.h"
 #include "kingdom/kingdom_store_piece.h"
 #include "world/outposts.h"
@@ -22365,6 +22366,63 @@ void spell_repair_one_item(int /*level*/, P_char ch, char * /*arg*/, int /*type*
 	}
 }
 
+namespace
+{
+struct corpse_portal_move_context
+{
+	uint64_t item_uid;
+	uint64_t caster_runtime_id;
+	int source_room;
+	int target_room;
+};
+
+void announce_corpse_portal(P_char caster)
+{
+	act("&+G$n's &+gbody begins to shake violently as if possessed by some &+Gother worldly &+gpower. With a blast of &+Gghastly &+Yflames&+g a portal suddenly materializes before them.&N",
+	    TRUE, caster, 0, 0, TO_ROOM);
+	act("&+gYour body calls out to the &+Gspirit&+g realm, begging for assistance.  Every fiber within your body begins to &+Gtingle&+g as a &+Gghastly &+gessence begins to fill the room. Suddenly "
+	    "and without warning, a &+Gmystic &+gportal materializes before you, beckoning you to enter.&N",
+	    FALSE, caster, 0, 0, TO_CHAR);
+}
+
+bool publish_corpse_portal_move(P_char actor, bool committed, const item_transfer_result &,
+				unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	corpse_portal_move_context context = {};
+	if (actor || !encoded || encoded_size != sizeof(context))
+		return false;
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		if (P_char caster = find_character_by_runtime_id(context.caster_runtime_id))
+			send_to_char("The portal did not answer your call.\r\n", caster);
+		return true;
+	}
+	P_obj portal = nullptr;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == context.item_uid)
+		{
+			portal = object;
+			break;
+		}
+	if (!portal || context.source_room < 0 || context.source_room > top_of_world ||
+	    context.target_room < 0 || context.target_room > top_of_world)
+		return false;
+	if (OBJ_IN_ROOM(portal, context.target_room))
+		return true;
+	if (!OBJ_IN_ROOM(portal, context.source_room))
+		return false;
+	obj_from_room(portal);
+	obj_to_room(portal, context.target_room);
+	if (!OBJ_IN_ROOM(portal, context.target_room))
+		return false;
+	if (P_char caster = find_character_by_runtime_id(context.caster_runtime_id))
+		if (caster->in_room == context.target_room)
+			announce_corpse_portal(caster);
+	return true;
+}
+} // namespace
+
 void spell_corpse_portal(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			 P_obj /*obj*/)
 {
@@ -22393,15 +22451,40 @@ void spell_corpse_portal(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
 		return;
 	}
 
-	location = world[ch->in_room].number;
-
-	act("&+G$n's &+gbody begins to shake violently as if possessed by some &+Gother worldly &+gpower. With a blast of &+Gghastly &+Yflames&+g a portal suddenly materializes before them.&N",
-	    TRUE, ch, 0, 0, TO_ROOM);
-	act("&+gYour body calls out to the &+Gspirit&+g realm, begging for assistance.  Every fiber within your body begins to &+Gtingle&+g as a &+Gghastly &+gessence begins to fill the room. Suddenly "
-	    "and without warning, a &+Gmystic &+gportal materializes before you, beckoning you to enter.&N",
-	    FALSE, ch, 0, 0, TO_CHAR);
+	location = real_room(world[ch->in_room].number);
+	if (location == NOWHERE || location > top_of_world)
+		return;
+	if (tobj->loc.room == location)
+	{
+		announce_corpse_portal(ch);
+		return;
+	}
+	// Player corpse roots are persisted by the corpse lifecycle in the room helpers.
+	if (tobj->type == ITEM_CORPSE && IS_SET(tobj->value[CORPSE_FLAGS], PC_CORPSE))
+	{
+		announce_corpse_portal(ch);
+		obj_from_room(tobj);
+		obj_to_room(tobj, location);
+		return;
+	}
+	if (item_tree_has_durable_ownership(tobj))
+	{
+		const corpse_portal_move_context context = { tobj->obj_uid, ch->runtime_id,
+							     tobj->loc.room, location };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit_room_move(
+			    tobj, location, &context, sizeof(context), publish_corpse_portal_move,
+			    &reject))
+		{
+			logit(LOG_FILE, "corpse portal custody move refused uid=%llu reason=%s",
+			      (unsigned long long)tobj->obj_uid, item_movement_reject_name(reject));
+			send_to_char("The portal did not answer your call.\r\n", ch);
+		}
+		return;
+	}
+	announce_corpse_portal(ch);
 	obj_from_room(tobj);
-	obj_to_room(tobj, real_room(location));
+	obj_to_room(tobj, location);
 }
 
 int has_soulbind(P_char ch)

@@ -563,9 +563,14 @@ bool room_transfer(const item_transfer_payload &payload)
 			      payload.from_owner.type == item_owner_type::room &&
 			      payload.reason == item_transfer_reason::operator_repair &&
 			      !payload.target_parent_item_uid;
+	const bool move = payload.from_owner.type == item_owner_type::room &&
+			  payload.to_owner.type == item_owner_type::room &&
+			  payload.from_owner.id != payload.to_owner.id &&
+			  payload.reason == item_transfer_reason::world_room_move &&
+			  !payload.target_parent_item_uid;
 	return static_cast<unsigned int>(deposit) + static_cast<unsigned int>(withdraw) +
 		       static_cast<unsigned int>(create) + static_cast<unsigned int>(destroy) +
-		       static_cast<unsigned int>(reparent) ==
+		       static_cast<unsigned int>(reparent) + static_cast<unsigned int>(move) ==
 	       1;
 }
 
@@ -2476,6 +2481,13 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 							 result.to_owner_revision;
 		if (!room_custody_matches(catalog, room_owner, room.expected_items, room.created) ||
 		    room.room_revision != result_revision)
+			return { critical_apply_outcome::terminal_failure, catalog.revision,
+				 EILSEQ };
+		if (payload.reason == item_transfer_reason::world_room_move &&
+		    (!room_custody_matches(catalog, payload.to_owner,
+					   room.destination_expected_items,
+					   room.destination_created) ||
+		     room.destination_room_revision != result.to_owner_revision))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EILSEQ };
 		include_room = true;

@@ -1571,15 +1571,17 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				  reason == item_transfer_reason::mobile_claim &&
 				  !target_container && !corpse_context &&
 				  item_owner_identity_equal(from_owner, to_owner);
-	const bool room_destruction =
+	const bool autonomous_room_root =
 		!actor && root && publication && !target_container && !corpse_context &&
-		reason == item_transfer_reason::destruction &&
 		from_owner.type == item_owner_type::room &&
-		to_owner.type == item_owner_type::destruction && OBJ_ROOM(root) &&
-		root->loc.room >= 0 && root->loc.room <= top_of_world &&
+		((reason == item_transfer_reason::destruction &&
+		  to_owner.type == item_owner_type::destruction) ||
+		 (reason == item_transfer_reason::world_room_move &&
+		  to_owner.type == item_owner_type::room && to_owner.id != from_owner.id)) &&
+		OBJ_ROOM(root) && root->loc.room >= 0 && root->loc.room <= top_of_world &&
 		world[root->loc.room].number > 0 &&
 		from_owner.id == static_cast<uint64_t>(world[root->loc.room].number);
-	if ((!player_actor && !mobile_actor && !room_destruction) || !root || !root->obj_uid ||
+	if ((!player_actor && !mobile_actor && !autonomous_room_root) || !root || !root->obj_uid ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
 	    corpse_transfer != (corpse_context != NULL))
 		return reject_with(reject, item_movement_reject::invalid_request);
@@ -1589,8 +1591,9 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
 	const bool adopted = item_ownership_runtime_lookup(root->obj_uid, &runtime);
-	if (room_destruction && (!adopted || runtime.state != item_custody_state::active ||
-				 runtime.root_item_uid != root->obj_uid || runtime.parent_item_uid))
+	if (autonomous_room_root &&
+	    (!adopted || runtime.state != item_custody_state::active ||
+	     runtime.root_item_uid != root->obj_uid || runtime.parent_item_uid))
 		return reject_with(reject, item_movement_reject::topology_mismatch);
 	const item_owner_identity effective_from = adopted ? from_owner : system_owner_identity;
 	const item_owner_identity effective_to = adopted ? to_owner : from_owner;
@@ -1677,10 +1680,11 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	    !collector_death_enrollment_attach(actor, corpse_context, operation_id, snapshots,
 					       &payload) ||
 	    !item_transfer_command_build(&command, operation_id, payload,
-					 room_destruction ? critical_source_site::zone_event :
-							    critical_source_site::command,
-					 room_destruction ? critical_deadline_class::background :
-							    critical_deadline_class::interactive))
+					 autonomous_room_root ? critical_source_site::zone_event :
+								critical_source_site::command,
+					 autonomous_room_root ?
+						 critical_deadline_class::background :
+						 critical_deadline_class::interactive))
 		return reject_with(reject, item_movement_reject::command_build_failure);
 	pending_movement entry = {
 		.actor_pid = player_actor ? static_cast<uint32_t>(GET_PID(actor)) : 0,
@@ -1743,6 +1747,44 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	++health.submitted;
 	account_health();
 	return true;
+}
+
+static bool room_move_contains_artifact(P_obj root)
+{
+	if (!root)
+		return false;
+	if (IS_ARTIFACT(root))
+		return true;
+	for (P_obj child = root->contains; child; child = child->next_content)
+		if (room_move_contains_artifact(child))
+			return true;
+	return false;
+}
+
+bool item_movement_transaction_submit_room_move(P_obj root, int target_room, const void *context,
+						size_t context_size,
+						item_movement_publication_fn publication,
+						item_movement_reject *reject)
+{
+	item_movement_reject discarded = item_movement_reject::none;
+	if (!reject)
+		reject = &discarded;
+	*reject = item_movement_reject::none;
+	if (!root || !OBJ_ROOM(root) || root->loc.room < 0 || root->loc.room > top_of_world ||
+	    target_room < 0 || target_room > top_of_world || !publication ||
+	    room_move_contains_artifact(root) || world[root->loc.room].number <= 0 ||
+	    world[target_room].number <= 0 || root->loc.room == target_room)
+		return reject_with(reject, item_movement_reject::invalid_request);
+	const item_owner_identity source = { item_owner_type::room,
+					     static_cast<uint64_t>(world[root->loc.room].number),
+					     0 };
+	const item_owner_identity destination = { item_owner_type::room,
+						  static_cast<uint64_t>(world[target_room].number),
+						  0 };
+	return item_movement_transaction_submit(nullptr, root, nullptr, source, destination,
+						item_transfer_reason::world_room_move,
+						world[target_room].number, nullptr, context,
+						context_size, nullptr, reject, publication);
 }
 
 bool item_movement_transaction_submit_batch(

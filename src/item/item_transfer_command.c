@@ -368,6 +368,7 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::trusted_steal:
 	case item_transfer_reason::soulbind:
 	case item_transfer_reason::slip:
+	case item_transfer_reason::world_room_move:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -476,7 +477,18 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
 	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
 	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool world_room_move = payload.reason == item_transfer_reason::world_room_move;
 	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (world_room_move &&
+	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::room ||
+	     payload.to_owner.type != item_owner_type::room || !payload.from_owner.id ||
+	     !payload.to_owner.id || payload.from_owner.id > INT32_MAX ||
+	     payload.to_owner.id > INT32_MAX || payload.from_owner.id == payload.to_owner.id ||
+	     payload.from_owner.context_id || payload.to_owner.context_id || payload.multi_root ||
+	     payload.target_parent_item_uid ||
+	     payload.reason_id != static_cast<int64_t>(payload.to_owner.id)))
+		return false;
 	if (player_transfer &&
 	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
 	     payload.from_owner.type != item_owner_type::player ||

@@ -41,6 +41,7 @@ static item_transfer_reason expected_adoption_reason = item_transfer_reason::des
 static int adoption_publications = 0;
 static int adoption_completions = 0;
 static int room_decay_publications = 0;
+static int room_move_publications = 0;
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
 
 void obj_to_obj(P_obj, P_obj) {}
@@ -198,6 +199,14 @@ bool room_decay_publication(P_char actor, bool committed, const item_transfer_re
     assert(!actor && committed && result.item_count == 1);
     ++room_decay_publications;
     return room_decay_publications >= 2;
+}
+
+bool room_move_publication(P_char actor, bool committed, const item_transfer_result &result,
+                           unsigned int, const uint8_t *, size_t)
+{
+    assert(!actor && committed && result.item_count == 1);
+    ++room_move_publications;
+    return room_move_publications >= 2;
 }
 
 int main(int argc, char **argv)
@@ -386,6 +395,41 @@ int main(int argc, char **argv)
     assert(item_movement_transaction_health_copy().pending == 0);
     assert(!critical_command_coordinator_is_fenced(
         {critical_entity_type::room, 123}, nullptr));
+
+    // A room-to-room move holds both owner fences until actorless publication
+    // succeeds, then releases them together after acknowledgement.
+    rooms[1].number = 456;
+    assert(item_movement_transaction_submit_room_move(
+        &object, 1, nullptr, 0, room_move_publication, &reject));
+    bool move_completion_seen = false;
+    for (int spin = 0; spin < 1000 && !move_completion_seen; ++spin)
+    {
+        const size_t count = critical_command_coordinator_pulse(completions, 8);
+        if (count)
+        {
+            item_movement_transaction_handle_completions(completions, count);
+            move_completion_seen = true;
+        }
+        else
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(move_completion_seen && room_move_publications == 1);
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::room, 123}, nullptr));
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::room, 456}, nullptr));
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(room_move_publications == 2);
+    assert(item_movement_transaction_health_copy().pending == 0);
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::room, 123}, nullptr));
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::room, 456}, nullptr));
+    object.extra_flags |= ITEM_ARTIFACT;
+    assert(!item_movement_transaction_submit_room_move(
+        &object, 1, nullptr, 0, room_move_publication, &reject));
+    assert(reject == item_movement_reject::invalid_request);
+    object.extra_flags &= ~ITEM_ARTIFACT;
     runtime_entry = previous_runtime;
     object.loc_p = LOC_CARRIED;
     object.loc.carrying = &actor;

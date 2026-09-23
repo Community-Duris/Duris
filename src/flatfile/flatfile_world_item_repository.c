@@ -1126,9 +1126,14 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 	const bool create = room_transfer_create(payload);
 	const bool destroy = room_transfer_destroy(payload);
 	const bool reparent = room_transfer_reparent(payload);
+	const bool move = payload.from_owner.type == item_owner_type::room &&
+			  payload.to_owner.type == item_owner_type::room &&
+			  payload.from_owner.id != payload.to_owner.id &&
+			  payload.reason == item_transfer_reason::world_room_move &&
+			  !payload.target_parent_item_uid;
 	if (static_cast<unsigned int>(deposit) + static_cast<unsigned int>(withdraw) +
 		    static_cast<unsigned int>(create) + static_cast<unsigned int>(destroy) +
-		    static_cast<unsigned int>(reparent) !=
+		    static_cast<unsigned int>(reparent) + static_cast<unsigned int>(move) !=
 	    1)
 		return flatfile_world_item_result::invalid;
 	const bool append = deposit || create;
@@ -1162,6 +1167,87 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 	}
 	else if (loaded != flatfile_world_item_result::ok)
 		return loaded;
+	if (move)
+	{
+		if (payload.to_owner.id > INT32_MAX || payload.to_owner.context_id ||
+		    catalog.revision == UINT64_MAX)
+			return flatfile_world_item_result::invalid;
+		flatfile_room_item_record source_key = {};
+		source_key.room_vnum = static_cast<int32_t>(payload.from_owner.id);
+		auto source = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(),
+					       source_key, room_less);
+		if (source == catalog.rooms.end() || source->room_vnum != source_key.room_vnum ||
+		    source->revision != payload.expected_from_revision ||
+		    source->revision == UINT64_MAX ||
+		    !room_custody(source->items, &mutation->expected_items))
+			return flatfile_world_item_result::conflict;
+		flatfile_room_item_record destination_key = {};
+		destination_key.room_vnum = static_cast<int32_t>(payload.to_owner.id);
+		auto destination = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(),
+						    destination_key, room_less);
+		const bool destination_found = destination != catalog.rooms.end() &&
+					       destination->room_vnum == destination_key.room_vnum;
+		if ((destination_found &&
+		     (destination->revision != payload.expected_to_revision ||
+		      destination->revision == UINT64_MAX ||
+		      !room_custody(destination->items, &mutation->destination_expected_items))) ||
+		    (!destination_found &&
+		     (payload.expected_to_revision || catalog.rooms.size() >= room_maximum)))
+			return flatfile_world_item_result::conflict;
+		std::vector<uint64_t> selected_roots;
+		std::vector<player_item_snapshot> selected;
+		std::vector<player_item_snapshot> remaining;
+		if (!item_transfer_selected_roots(payload, &selected_roots) ||
+		    selected_roots.size() != 1 ||
+		    player_item_snapshot_extract_forest(source->items, selected_roots, &selected,
+							&remaining) !=
+			    player_snapshot_codec_result::ok)
+			return flatfile_world_item_result::conflict;
+		std::vector<uint8_t> selected_blob;
+		if (player_item_snapshot_list_encode(selected, &selected_blob) !=
+			    player_snapshot_codec_result::ok ||
+		    selected_blob != exact_blob)
+			return flatfile_world_item_result::conflict;
+		try
+		{
+			for (const auto &item : selected)
+				if (destination_found &&
+				    room_item_index(destination->items, item.object_uid) !=
+					    destination->items.size())
+					return flatfile_world_item_result::conflict;
+			source->items = std::move(remaining);
+			++source->revision;
+			mutation->room_revision = source->revision;
+			mutation->destination_created = !destination_found;
+			if (!destination_found)
+			{
+				flatfile_room_item_record created = {};
+				created.room_vnum = destination_key.room_vnum;
+				created.revision = 1;
+				destination = catalog.rooms.insert(destination, std::move(created));
+			}
+			else
+				++destination->revision;
+			const int32_t offset = static_cast<int32_t>(destination->items.size());
+			for (auto item : selected)
+			{
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += offset;
+				destination->items.push_back(std::move(item));
+			}
+			mutation->destination_room_revision = destination->revision;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return flatfile_world_item_result::io_error;
+		}
+		++catalog.revision;
+		std::vector<uint8_t> encoded;
+		if (!encode_catalog(catalog, &encoded))
+			return flatfile_world_item_result::invalid;
+		mutation->after_image = { catalog_filename, std::move(encoded) };
+		return flatfile_world_item_result::ok;
+	}
 	flatfile_room_item_record key = {};
 	key.room_vnum = static_cast<int32_t>(room_owner.id);
 	auto room = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), key, room_less);

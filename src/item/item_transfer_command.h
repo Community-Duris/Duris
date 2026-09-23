@@ -80,6 +80,8 @@ enum class item_transfer_reason : uint16_t
 	// These existing-item handoffs have command-specific post-commit effects.
 	soulbind,
 	slip,
+	// Keep this value separate from extension reasons carried by other branches.
+	world_room_move = 100,
 };
 
 enum class item_custody_state : uint8_t

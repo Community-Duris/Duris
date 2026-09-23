@@ -100,6 +100,12 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      size_t context_size, P_obj corpse_context = NULL,
 				      item_movement_reject *reject = NULL,
 				      item_movement_publication_fn publication = nullptr);
+// An autonomous move of an already-adopted room root. The callback must
+// re-resolve the UID and publish the room link before acknowledging the move.
+bool item_movement_transaction_submit_room_move(P_obj root, int target_room, const void *context,
+						size_t context_size,
+						item_movement_publication_fn publication,
+						item_movement_reject *reject = nullptr);
 // A corpse_create batch validates and publishes all captured live roots before
 // invoking completion. Its callback persists/finalizes the corpse, not the moves.
 // Stale topology retains the movement and busy fence without calling completion.

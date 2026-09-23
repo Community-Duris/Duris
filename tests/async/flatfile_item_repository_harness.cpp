@@ -1631,6 +1631,130 @@ int main(int argc, char **argv)
 			room_records[0].items[2].parent_index == 0 &&
 			room_records[0].items[3].parent_index == 0,
 		"room-container batch put did not attach every root or propagate total weight");
+	const item_owner_identity moved_room = { item_owner_type::room, 9002, 0 };
+	uint64_t move_source_revision = 0;
+	owned_room_items.clear();
+	require(flatfile_item_repository_load_owner(
+			room_root.string(), room_owner, &move_source_revision, &owned_room_items,
+			&error) == flatfile_item_repository_result::ok &&
+			move_source_revision == 7 && owned_room_items.size() == 4,
+		"could not read room custody before room-to-room transfer");
+	const auto leaf_custody = std::find_if(owned_room_items.begin(), owned_room_items.end(),
+					       [](const flatfile_item_ownership_record &item)
+					       { return item.item_uid == 101; });
+	require(leaf_custody != owned_room_items.end(),
+		"detached leaf is absent from room custody");
+	std::vector<uint8_t> moved_leaf_blob;
+	require(player_item_snapshot_list_encode({ room_records[0].items[1] }, &moved_leaf_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode detached leaf room move");
+	item_transfer_payload room_move_leaf = {};
+	room_move_leaf.from_owner = room_owner;
+	room_move_leaf.to_owner = moved_room;
+	room_move_leaf.reason = item_transfer_reason::world_room_move;
+	room_move_leaf.reason_id = 9002;
+	room_move_leaf.expected_from_revision = 7;
+	room_move_leaf.expected_to_revision = 0;
+	room_move_leaf.selected_item_uid = 101;
+	room_move_leaf.target_root_item_uid = 101;
+	room_move_leaf.item_count = 1;
+	room_move_leaf.items[0] = { 101, 101,
+				    0,	 leaf_custody->item_revision,
+				    501, item_custody_state::active };
+	room_move_leaf.item_blob_size = static_cast<uint32_t>(moved_leaf_blob.size());
+	std::copy(moved_leaf_blob.begin(), moved_leaf_blob.end(), room_move_leaf.item_blob.begin());
+	critical_command room_move_leaf_command = {};
+	require(item_transfer_command_build(&room_move_leaf_command, operation(60), room_move_leaf,
+					    critical_source_site::zone_event,
+					    critical_deadline_class::background),
+		"could not build detached leaf room move");
+	room_move_leaf_command.accepted_at_usec = 60;
+	applied = flatfile_item_repository_apply(room_root.string(), room_move_leaf_command);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			result_of(applied).from_owner_revision == 8 &&
+			result_of(applied).to_owner_revision == 1,
+		"detached leaf room move did not update both owner revisions");
+	applied = flatfile_item_repository_apply(room_root.string(), room_move_leaf_command);
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"detached leaf room move was not idempotent");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records.size() == 2 && room_records[0].room_vnum == 9001 &&
+			room_records[0].revision == 8 && room_records[0].items.size() == 3 &&
+			room_records[1].room_vnum == 9002 && room_records[1].revision == 1 &&
+			room_records[1].items.size() == 1 &&
+			room_records[1].items[0].object_uid == 101,
+		"detached leaf move did not update both physical room records");
+	owned_room_items.clear();
+	require(flatfile_item_repository_load_owner(
+			room_root.string(), room_owner, &move_source_revision, &owned_room_items,
+			&error) == flatfile_item_repository_result::ok &&
+			move_source_revision == 8 && owned_room_items.size() == 3,
+		"could not read remaining source custody after leaf move");
+	std::vector<player_item_snapshot> moved_tree;
+	std::vector<player_item_snapshot> remaining_tree;
+	require(player_item_snapshot_extract_forest(room_records[0].items, { 100 }, &moved_tree,
+						    &remaining_tree) ==
+				player_snapshot_codec_result::ok &&
+			moved_tree.size() == 3 && remaining_tree.empty(),
+		"could not extract the remaining room container subtree");
+	std::vector<uint8_t> moved_tree_blob;
+	require(player_item_snapshot_list_encode(moved_tree, &moved_tree_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode room container subtree move");
+	item_transfer_payload room_move_tree = {};
+	room_move_tree.from_owner = room_owner;
+	room_move_tree.to_owner = moved_room;
+	room_move_tree.reason = item_transfer_reason::world_room_move;
+	room_move_tree.reason_id = 9002;
+	room_move_tree.expected_from_revision = 8;
+	room_move_tree.expected_to_revision = 1;
+	room_move_tree.selected_item_uid = 100;
+	room_move_tree.target_root_item_uid = 100;
+	room_move_tree.item_count = 3;
+	for (size_t index = 0; index < owned_room_items.size(); ++index)
+	{
+		const auto &item = owned_room_items[index];
+		room_move_tree.items[index] = {
+			item.item_uid,	    item.root_item_uid, item.parent_item_uid,
+			item.item_revision, item.vnum,		item_custody_state::active
+		};
+	}
+	room_move_tree.item_blob_size = static_cast<uint32_t>(moved_tree_blob.size());
+	std::copy(moved_tree_blob.begin(), moved_tree_blob.end(), room_move_tree.item_blob.begin());
+	item_transfer_payload stale_room_move = room_move_tree;
+	stale_room_move.expected_to_revision = 0;
+	critical_command stale_room_move_command = {};
+	require(item_transfer_command_build(&stale_room_move_command, operation(62),
+					    stale_room_move, critical_source_site::zone_event,
+					    critical_deadline_class::background),
+		"could not build stale destination room move");
+	stale_room_move_command.accepted_at_usec = 62;
+	applied = flatfile_item_repository_apply(room_root.string(), stale_room_move_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure,
+		"room move accepted a stale destination revision");
+	critical_command room_move_tree_command = {};
+	require(item_transfer_command_build(&room_move_tree_command, operation(61), room_move_tree,
+					    critical_source_site::zone_event,
+					    critical_deadline_class::background),
+		"could not build room container subtree move");
+	room_move_tree_command.accepted_at_usec = 61;
+	applied = flatfile_item_repository_apply(room_root.string(), room_move_tree_command);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			result_of(applied).from_owner_revision == 9 &&
+			result_of(applied).to_owner_revision == 2,
+		"room container subtree move did not update both owner revisions");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records.size() == 2 && room_records[0].revision == 9 &&
+			room_records[0].items.empty() && room_records[1].revision == 2 &&
+			room_records[1].items.size() == 4 &&
+			room_records[1].items[1].object_uid == 100 &&
+			room_records[1].items[2].parent_index == 1 &&
+			room_records[1].items[3].parent_index == 1,
+		"room container subtree move did not relocate its full topology");
 	items.clear();
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,

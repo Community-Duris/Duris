@@ -1213,15 +1213,22 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 			      payload.from_owner.type == item_owner_type::room &&
 			      payload.reason == item_transfer_reason::operator_repair &&
 			      !payload.target_parent_item_uid;
+	const bool move = payload.from_owner.type == item_owner_type::room &&
+			  payload.to_owner.type == item_owner_type::room &&
+			  payload.from_owner.id != payload.to_owner.id &&
+			  payload.reason == item_transfer_reason::world_room_move &&
+			  !payload.target_parent_item_uid;
 	if (static_cast<unsigned int>(deposit) + static_cast<unsigned int>(withdraw) +
 		    static_cast<unsigned int>(create) + static_cast<unsigned int>(destroy) +
-		    static_cast<unsigned int>(reparent) !=
+		    static_cast<unsigned int>(reparent) + static_cast<unsigned int>(move) !=
 	    1)
 		return flatfile_artifact_result::invalid;
 	const uint64_t player_id = deposit ? payload.from_owner.id : payload.to_owner.id;
 	const uint64_t room_id = deposit || create ? payload.to_owner.id : payload.from_owner.id;
+	const uint64_t destination_room_id = move ? payload.to_owner.id : room_id;
 	if (((deposit || withdraw) && (!player_id || player_id > INT32_MAX)) || !room_id ||
-	    room_id > INT32_MAX || payload.from_owner.context_id || payload.to_owner.context_id)
+	    room_id > INT32_MAX || !destination_room_id || destination_room_id > INT32_MAX ||
+	    payload.from_owner.context_id || payload.to_owner.context_id)
 		return flatfile_artifact_result::invalid;
 	std::vector<player_item_snapshot> exact_items;
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
@@ -1307,9 +1314,10 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 		}
 		else
 		{
-			record.location_type = deposit ? FLATFILE_ARTIFACT_ON_GROUND :
-							 FLATFILE_ARTIFACT_ON_PLAYER;
-			record.location = static_cast<int32_t>(deposit ? room_id : player_id);
+			record.location_type = deposit || move ? FLATFILE_ARTIFACT_ON_GROUND :
+								 FLATFILE_ARTIFACT_ON_PLAYER;
+			record.location = static_cast<int32_t>(
+				deposit || move ? destination_room_id : player_id);
 		}
 		record.last_update = event_time;
 		++record.revision;

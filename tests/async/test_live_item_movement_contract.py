@@ -86,6 +86,19 @@ class LiveItemMovementContractTests(unittest.TestCase):
             "IS_PC(ch) && item_command_uses_durable_ownership(o_obj)", get_body
         )
 
+    def test_corpse_portal_keeps_corpse_lifecycle_and_defers_room_owned_moves(self):
+        portal = extract_function("magic/magic.c", "void spell_corpse_portal(")
+        self.assertLess(
+            portal.index("PC_CORPSE"), portal.index("item_tree_has_durable_ownership")
+        )
+        self.assertIn("item_movement_transaction_submit_room_move", portal)
+        publication = extract_function(
+            "magic/magic.c", "bool publish_corpse_portal_move("
+        )
+        self.assertLess(publication.index("if (!committed)"),
+                        publication.index("obj_from_room(portal)"))
+        self.assertIn("obj_to_room(portal, context.target_room)", publication)
+
     def test_death_items_are_chained_after_ack_and_failure_is_preserved(self):
         fight = (SRC / "fight.c").read_text()
         make_corpse = fight[fight.index("P_obj make_corpse"):]

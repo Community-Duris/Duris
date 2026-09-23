@@ -77,6 +77,9 @@ struct flatfile_room_transfer_mutation
 	std::vector<flatfile_corpse_custody_item> expected_items;
 	uint64_t room_revision = 0;
 	bool created = false;
+	std::vector<flatfile_corpse_custody_item> destination_expected_items;
+	uint64_t destination_room_revision = 0;
+	bool destination_created = false;
 };
 
 struct flatfile_corpse_lifecycle_mutation
