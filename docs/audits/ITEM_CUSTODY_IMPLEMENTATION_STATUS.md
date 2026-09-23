@@ -30,7 +30,7 @@ The remaining audit rows have **not** been silently declared safe. They require 
 
 ## Verification so far
 
-- A full Docker `build` stage compiled and linked the server and area tools with the repository warning profile. Later touched files were also compiled individually in an isolated WSL scratch checkout after the final subtree and janitor edits.
+- A full Docker `build` stage compiled and linked the MariaDB server and area tools with the repository warning profile. The flatfile server also compiled and linked in that image. Touched files were compiled individually in an isolated WSL scratch checkout as the branch evolved.
 - Focused source and executable tests passed for common movement publication, absent-item handoffs, corpse haul/resurrection, bulk commands, durable put, key break, potion level gate and deferred effects, device actions, trusted steal, and shop/auction publication retries.
 - `git diff --check` passed. A live database/gameplay journey has not yet been run; no production migration or operational script was executed.
 
