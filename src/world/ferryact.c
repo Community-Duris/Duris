@@ -33,6 +33,7 @@ using namespace std;
 
 /* external variables */
 extern P_room world;
+extern P_index obj_index;
 
 // all created Ferrys
 list<Ferry *> ferry_list;
@@ -284,13 +285,45 @@ Ferry *get_ferry_from_obj(int obj_num)
 {
 	for (list<Ferry *>::iterator it = ferry_list.begin(); it != ferry_list.end(); it++)
 	{
-		if (*it)
+		if (*it && (*it)->obj)
 		{
 			if ((*it)->obj->R_num == obj_num)
 				return (*it);
 		}
 	}
 	return (NULL);
+}
+
+// a zone purge must leave ferry ships and ticket automats in place: only init_ferries()
+// loads them, and each Ferry keeps a pointer to its ship
+bool is_ferry_object(P_obj obj)
+{
+	if (!obj)
+		return false;
+
+	if (obj->R_num >= 0 && obj_index[obj->R_num].func.obj == ferry_automat_proc)
+		return true;
+
+	for (list<Ferry *>::iterator it = ferry_list.begin(); it != ferry_list.end(); it++)
+	{
+		if (*it && (*it)->obj == obj)
+			return true;
+	}
+	return false;
+}
+
+// extract_obj() is about to free obj: a ferry whose ship it is can no longer sail, so
+// put its passengers ashore and drop the pointer
+void ferry_forget_object(P_obj obj)
+{
+	for (list<Ferry *>::iterator it = ferry_list.begin(); it != ferry_list.end(); it++)
+	{
+		if (*it && (*it)->obj == obj)
+		{
+			(*it)->panic();
+			(*it)->obj = NULL;
+		}
+	}
 }
 
 int ferry_room_proc(int room_num, P_char ch, int cmd, char *arg)
@@ -300,7 +333,8 @@ int ferry_room_proc(int room_num, P_char ch, int cmd, char *arg)
 
 	Ferry *ferry = get_ferry_from_room(room_num);
 
-	if (!ferry)
+	// without its ship the ferry has nowhere to look out at or disembark to
+	if (!ferry || !ferry->obj)
 		return FALSE;
 
 	if (cmd == CMD_LOOK)

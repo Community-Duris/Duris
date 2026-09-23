@@ -200,6 +200,10 @@ void Ferry::everyone_look_out_ferry()
 // this function is called every second; determine which state the ferry is in and react accordingly
 void Ferry::activity()
 {
+	// the ship object was extracted; ferry_forget_object() has disabled this ferry
+	if (!obj)
+		return;
+
 	switch (cur_state)
 	{
 	case FRY_STATE_DISABLED:
@@ -426,19 +430,25 @@ void Ferry::panic()
 
 	for (vector<int>::iterator it = rooms.begin(); it != rooms.end(); it++)
 	{
-		if ((*it) && (*it) != NOWHERE)
+		if (!(*it) || (*it) == NOWHERE)
+			continue;
+
+		// collect first: char_to_room() links each passenger into to_room's list
+		vector<P_char> passengers;
+
+		for (P_char p = world[*it].people; p; p = p->next_in_room)
 		{
-			for (P_char p = world[*it].people; p; p = p->next_in_room)
-			{
-				if (IS_PC(p))
-				{
-					send_to_char(
-						"&+MThe ship disappears in a blinding flash of magic. As the smoke clears, you find yourself somewhere ... else.\r\n",
-						p);
-					char_from_room(p);
-					char_to_room(p, to_room, 0);
-				}
-			}
+			if (IS_PC(p))
+				passengers.push_back(p);
+		}
+
+		for (vector<P_char>::iterator jt = passengers.begin(); jt != passengers.end(); jt++)
+		{
+			send_to_char(
+				"&+MThe ship disappears in a blinding flash of magic. As the smoke clears, you find yourself somewhere ... else.\r\n",
+				*jt);
+			char_from_room(*jt);
+			char_to_room(*jt, to_room, 0);
 		}
 	}
 }

@@ -3331,6 +3331,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 	}
 	world_recovery_capture_forget_object(obj);
 	item_actions_source_leaving(obj);
+	ferry_forget_object(obj);
 
 	// remove from floor_drops if it was tracked
 	if (obj->obj_uid > 0)
