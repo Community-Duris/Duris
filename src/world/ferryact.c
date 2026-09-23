@@ -66,13 +66,15 @@ Ferry *create_ferry(const struct ferry_definition *fd)
 		fd->board_room_vnum); // the room num of the room passengers board/disembark from
 	wd->ticket_price = fd->ticket_price;
 
-	// all rooms on ship
+	// all rooms on ship, each once: the range may contain the boarding room, and a room
+	// listed twice gets every announcement twice
 	wd->rooms.push_back(real_room0(fd->board_room_vnum));
 	int start_room = fd->other_rooms[0];
 	int end_room = fd->other_rooms[1];
 	for (int room_num = start_room; room_num <= end_room; room_num++)
 	{
-		wd->rooms.push_back(real_room0(room_num));
+		if (room_num != fd->board_room_vnum)
+			wd->rooms.push_back(real_room0(room_num));
 	}
 
 	wd->speed = fd->speed; // number of seconds to wait between moves. 0 == move every step
@@ -91,7 +93,7 @@ Ferry *create_ferry(const struct ferry_definition *fd)
 	return wd;
 }
 
-static int wave_dancer_rooms[] = { 47003, 47010, 0 };
+static int wave_dancer_rooms[] = { 47003, 47023, 0 };
 static struct ferry_definition::stop_info wave_dancer_stops[] = {
 	{ 635261, "&+gKhomani-Khan&N" },
 	{ 76654, "&+gThe &+GJade &+gEmpire&N" },

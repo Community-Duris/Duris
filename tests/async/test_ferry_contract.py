@@ -9,7 +9,11 @@ until its entry is here, as happened to The Stromvok (issue #615).
 
 The ids, ship objects, and ship rooms of different ferries must not collide,
 because get_ferry(), get_ferry_from_obj(), and get_ferry_from_room() all
-return the first match.  Every stop must be a room valid_ship_edge() lets a
+return the first match.  Ticket control, announcements, "look out", and
+"disembark" only reach the rooms a ferry lists, so those must be exactly the
+rooms a passenger can walk to from the boarding room: the WaveDancer once
+listed 47003-47010 only, and its hold and cabins (47012-47023) were a free
+ride.  Every stop must be a room valid_ship_edge() lets a
 ship enter, or that leg can never be routed.  Every ferry also puts a ticket
 automat (FERRY_AUTOMAT_OBJ) at each stop, and the automat sells tickets
 (FERRY_TICKET_VNUM) that ticket control looks for, so both objects must be in
@@ -205,15 +209,25 @@ for name, ferry in zip(names, ferries):
         assert enterable, (f"{name} stop {vnum} is neither ROOM_DOCKABLE nor open water; "
                            "valid_ship_edge() never enters it")
 
-# The Stromvok is rooms 47198-47215; a passenger can reach no other room without
-# disembarking, so ticket control, "look out", and "disembark" cover the whole ship.
+# Ticket control, announcements, "look out", and "disembark" reach listed rooms only, so
+# each ship's rooms must be exactly those a passenger can walk to from the boarding room.
+for name, ferry in zip(names, ferries):
+    on_board = ship_rooms[name]
+    reached, pending = set(), [ferry["board"]]
+    while pending:
+        vnum = pending.pop()
+        if vnum in reached:
+            continue
+        reached.add(vnum)
+        for direction, to_room in rooms[vnum]["exits"].items():
+            assert to_room in on_board, (
+                f"{name} room {vnum} exit {direction} leaves the ship for room {to_room}")
+            pending.append(to_room)
+    assert reached == on_board, f"{name} lists rooms no passenger reaches: {sorted(on_board - reached)}"
+
 stromvok_rooms = ship_rooms["The Stromvok"]
 assert stromvok_rooms == set(range(47198, 47216)), sorted(stromvok_rooms)
 assert strip_color(rooms[47198]["name"]) == "The Boarding Platform of The Stromvok"
-for vnum in sorted(stromvok_rooms):
-    for direction, to_room in rooms[vnum]["exits"].items():
-        assert to_room in stromvok_rooms, (
-            f"Stromvok room {vnum} exit {direction} leaves the ship for room {to_room}")
 for vnum, _ in STROMVOK["stops"]:
     assert rooms[vnum]["flags"] & ROOM_DOCKABLE, f"Stromvok stop {vnum} is not ROOM_DOCKABLE"
 
