@@ -25,6 +25,7 @@ using namespace std;
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/epic_bonus.h"
 #include "world/epic_task_catalog.h"
 #include "world/epic_transaction.h"

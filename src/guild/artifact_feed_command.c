@@ -72,8 +72,10 @@ void show_rates(P_char ch)
 		     ch);
 }
 
-bool save_setting(P_char ch, const artifact_feed_setting &setting, double value)
+bool save_setting(P_char ch, const artifact_feed_setting &setting, double requested)
 {
+	// The properties file keeps three decimals; keep memory the same so a reboot changes nothing.
+	const double value = std::round(requested * 1000.0) / 1000.0;
 	if (!set_and_save_property(setting.property, static_cast<float>(value)))
 	{
 		send_to_char_f(ch,

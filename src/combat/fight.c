@@ -44,6 +44,7 @@
 #include "classes/disguise.h"
 #include "classes/dreadlord.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/events.h"
 #include "net/gmcp.h"
 #include "world/hardcore_config.h"

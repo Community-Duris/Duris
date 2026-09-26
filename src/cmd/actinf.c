@@ -35,6 +35,7 @@ using namespace std;
 #include "core/utils.h"
 #include "combat/ctf.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/epic_bonus.h"
 #include "world/epic_transaction.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"

@@ -10,6 +10,7 @@ using namespace std;
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/epic_transaction.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"

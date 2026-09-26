@@ -37,6 +37,7 @@
 #include "persistence/deferred_save_policy.h"
 #include "persistence/persistence_checkpoint.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/epic_transaction.h"
 #include "core/files.h"
 #include "net/gmcp.h"

@@ -9,6 +9,7 @@
 #include <string.h>
 #include "combat/damage.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/epic_transaction.h"
 #include "classes/skills.h"
 #include "magic/spells.h"
