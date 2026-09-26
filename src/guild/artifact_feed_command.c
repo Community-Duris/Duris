@@ -72,7 +72,8 @@ void show_rates(P_char ch)
 		     ch);
 }
 
-bool save_setting(P_char ch, const artifact_feed_setting &setting, double requested)
+bool save_setting(P_char ch, const artifact_feed_setting &setting, double requested,
+		  bool announce = true)
 {
 	// The properties file keeps three decimals; keep memory the same so a reboot changes nothing.
 	const double value = std::round(requested * 1000.0) / 1000.0;
@@ -86,8 +87,9 @@ bool save_setting(P_char ch, const artifact_feed_setting &setting, double reques
 	wizlog(57, "%s set %s to %.3f", GET_NAME(ch), setting.property, value);
 	logit(LOG_WIZ, "%s set %s to %.3f", GET_NAME(ch), setting.property, value);
 	sql_log(ch, WIZLOG, "Set %s to %.3f", setting.property, value);
-	send_to_char_f(ch, "%s is now %.3f, saved to lib/duris.properties.\r\n", setting.property,
-		       value);
+	if (announce)
+		send_to_char_f(ch, "%s is now %.3f, saved to lib/duris.properties.\r\n",
+			       setting.property, value);
 	return true;
 }
 } // namespace
@@ -124,14 +126,19 @@ void do_artifeed(P_char ch, char *argument, int /*cmd*/)
 	const bool reset = !strcasecmp(command, "reset");
 	if (reset && !strcasecmp(name, "all"))
 	{
+		// One line for the whole reset, so the table that follows fits on a page.
 		for (size_t index = 0; index < ARTIFACT_FEED_SOURCE_COUNT; ++index)
 			if (!save_setting(ch, ARTIFACT_FEED_SOURCES[index],
-					  ARTIFACT_FEED_SOURCES[index].default_value))
+					  ARTIFACT_FEED_SOURCES[index].default_value, false))
 				return;
-		if (save_setting(ch, ARTIFACT_FEED_POINT_SECONDS,
-				 ARTIFACT_FEED_POINT_SECONDS.default_value))
-			save_setting(ch, ARTIFACT_FEED_NONPVP_CEILING_HOURS,
-				     ARTIFACT_FEED_NONPVP_CEILING_HOURS.default_value);
+		if (!save_setting(ch, ARTIFACT_FEED_POINT_SECONDS,
+				  ARTIFACT_FEED_POINT_SECONDS.default_value, false) ||
+		    !save_setting(ch, ARTIFACT_FEED_NONPVP_CEILING_HOURS,
+				  ARTIFACT_FEED_NONPVP_CEILING_HOURS.default_value, false))
+			return;
+		send_to_char("Every feeding rate is back to its proposed value, saved to "
+			     "lib/duris.properties.\r\n",
+			     ch);
 		show_rates(ch);
 		return;
 	}

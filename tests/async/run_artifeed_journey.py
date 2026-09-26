@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Drive the 'artifeed' command through a real flat-file server.
 
-A disposable character named Tyrus is created in the minimal world; character creation
-makes that name an OVERLORD, above the Forger level the command needs to change a rate.
+A disposable character is created in the minimal world and raised to OVERLORD while the
+server is down (creation refuses god_list names), above the Forger level the command needs
+to change a rate.
 The journey lists the proposed rates, refuses unknown settings and out-of-range values,
 sets the zone rate and the non-PvP ceiling, checks both reached the live property table
 and lib/duris.properties at once, then resets everything to the proposed rates. Run it
@@ -27,7 +28,7 @@ import test_flatfile_combat_journey as journey
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 ACCOUNT = "Feedacct"
-CHARACTER = "Tyrus"
+CHARACTER = "Feedwarden"
 EMAIL = "feed@example.invalid"
 PROMPTS = ("Pos: standing >", "<>")
 
@@ -37,7 +38,7 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def create_god(client: journey.MudClient) -> None:
+def create_character(client: journey.MudClient) -> None:
     entry, _ = client.expect_any(("term type", "account name"))
     if entry == "term type":
         client.send("9")
@@ -149,17 +150,38 @@ def main() -> None:
             environment["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
         output_path = run_root / "server.out"
         with output_path.open("w", encoding="utf-8") as output:
-            process = subprocess.Popen([str(binary), "--minimal", "-s", "-d", str(run_root), str(plain_port)],
-                                       cwd=run_root, env=environment, text=True,
-                                       stdout=output, stderr=subprocess.STDOUT)
-            client = None
-            try:
+            def start() -> subprocess.Popen:
+                return subprocess.Popen([str(binary), "--minimal", "-s", "-d", str(run_root), str(plain_port)],
+                                        cwd=run_root, env=environment, text=True,
+                                        stdout=output, stderr=subprocess.STDOUT)
+
+            def wait_for_boot(boots: int) -> None:
                 deadline = time.monotonic() + 120
-                while time.monotonic() < deadline and "Entering game loop." not in output_path.read_text(errors="replace"):
+                while time.monotonic() < deadline and output_path.read_text(errors="replace").count("Entering game loop.") < boots:
                     require(process.poll() is None, "server exited during boot:\n" + output_path.read_text(errors="replace")[-6000:])
                     time.sleep(0.1)
+
+            process = start()
+            client = None
+            try:
+                wait_for_boot(1)
                 client = journey.MudClient(plain_port)
-                create_god(client)
+                create_character(client)
+                # Creation refuses god_list names, so the Forger-level character 'artifeed set'
+                # needs is an ordinary character raised to OVERLORD while the server is down.
+                command(client, "save", f"Save complete for {CHARACTER}.")
+                client.send("quit")
+                client.expect("ACCOUNT MENU", timeout=30)
+                client.close()
+                client = None
+                process.send_signal(signal.SIGTERM)
+                process.wait(timeout=30)
+                journey.make_overlord(state_root, CHARACTER)
+                process = start()
+                wait_for_boot(2)
+                client = journey.reconnect_character(plain_port, expected_room=None,
+                                                     account=ACCOUNT, character=CHARACTER)
+                client.expect_any(PROMPTS, timeout=30)
 
                 listing = command(client, "artifeed", "artifeed reset")
                 require("Artifact feeding" in listing and "Non-PvP feeds stop 72 hours ahead" in listing, listing)
