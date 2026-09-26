@@ -1089,8 +1089,7 @@ static bool submit_pvp_outcome(P_char ch, P_char victim, bool award_frags)
 		P_char participant = find_player_by_pid(entry.pid);
 		if (!participant || IS_NPC(participant) ||
 		    !artifact_guild_transaction_submit(participant, operation_id,
-						       static_cast<int>(fed),
-						       EPIC_PVP))
+						       static_cast<int>(fed), EPIC_PVP))
 			logit(LOG_FILE,
 			      "artifact_guild: component=combat_capture outcome=deferred_effect_unavailable actor=redacted");
 	}

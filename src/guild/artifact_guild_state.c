@@ -69,8 +69,8 @@ int artifact_feed_seconds(P_char character, int epics, int epic_type)
 	const double rate = artifact_feed_type_mod(epic_type);
 	if (epics <= 0 || rate <= 0.0)
 		return 0;
-	int seconds = static_cast<int>(static_cast<double>(epics) *
-				       artifact_feed_point_seconds() * rate);
+	int seconds =
+		static_cast<int>(static_cast<double>(epics) * artifact_feed_point_seconds() * rate);
 	seconds = difficulty_scale_int(seconds, difficulty_multiplier(DIFFICULTY_ARTIFACT_FEEDING));
 	if (affected_by_spell(character, TAG_PLR_RECENT_FRAG))
 		seconds = (seconds * 3) / 2;

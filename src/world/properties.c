@@ -269,11 +269,13 @@ bool set_and_save_property(const char *key, float value)
 {
 	if (!key || !*key)
 		return FALSE;
-	struct property *result = (struct property *)bsearch(
-		key, duris_properties, properties_count, sizeof(struct property), key_property_comp);
+	struct property *result =
+		(struct property *)bsearch(key, duris_properties, properties_count,
+					   sizeof(struct property), key_property_comp);
 	if (!result)
 	{
-		if (properties_count >= MAX_PROPERTIES || !persist_durisweb_hook_property(key, value))
+		if (properties_count >= MAX_PROPERTIES ||
+		    !persist_durisweb_hook_property(key, value))
 			return FALSE;
 		result = &duris_properties[properties_count++];
 		result->key = (char *)str_dup(key);

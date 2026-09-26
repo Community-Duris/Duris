@@ -21,9 +21,9 @@
  */
 struct artifact_feed_setting
 {
-	const char *name;     // the name the artifeed command uses
-	const char *label;    // what the setting is, for the display
-	int epic_type;        // the EPIC_* award type it prices, or -1 for a global setting
+	const char *name; // the name the artifeed command uses
+	const char *label; // what the setting is, for the display
+	int epic_type; // the EPIC_* award type it prices, or -1 for a global setting
 	const char *property; // the key in lib/duris.properties
 	double default_value; // the proposed rate
 	double minimum;

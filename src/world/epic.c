@@ -659,8 +659,8 @@ static void epic_award_converted(P_char ch, const epic_award_context &context)
 	    !gameplay_read_state_add_completed_zone(&ch->only.pc->gameplay_reads, context.data))
 		logit(LOG_DEBUG,
 		      "epic_award_converted: component=completed_zone outcome=unavailable actor=redacted");
-	const int64_t experience = static_cast<int64_t>(context.amount) *
-				   epic_conversion_exp_per_epic(GET_LEVEL(ch));
+	const int64_t experience =
+		static_cast<int64_t>(context.amount) * epic_conversion_exp_per_epic(GET_LEVEL(ch));
 	send_to_char_f(ch,
 		       "The power of %d epic point%s flows into you as experience; epic points "
 		       "are kept from level %d.\r\n",
@@ -1394,7 +1394,8 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 			// their award (it still feeds artifacts) but credits them no epic points.
 			touch.awards[i] = { award.amount, errand,
 					    static_cast<uint8_t>(
-						    (award.blessing ? 1 : 0) | (award.task_penalty ? 2 : 0) |
+						    (award.blessing ? 1 : 0) |
+						    (award.task_penalty ? 2 : 0) |
 						    (epic_level_can_bank(participant) ?
 							     0 :
 							     ZONE_TOUCH_AWARD_CONVERTED)) };

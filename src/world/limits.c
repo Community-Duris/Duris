@@ -639,8 +639,8 @@ static telemetry_progression_reason progression_reason_for_type(int type)
 	if (type == EXP_RESURRECT)
 		return telemetry_progression_reason::resurrection;
 	if (type == EXP_DAMAGE || type == EXP_HEALING || type == EXP_KILL || type == EXP_QUEST ||
-	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING || type == EXP_BOON ||
-	    type == EXP_EPIC)
+	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING ||
+	    type == EXP_BOON || type == EXP_EPIC)
 		return telemetry_progression_reason::earned;
 	return telemetry_progression_reason::unknown;
 }

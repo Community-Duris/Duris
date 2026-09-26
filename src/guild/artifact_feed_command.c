@@ -62,8 +62,7 @@ void show_rates(P_char ch)
 	for (size_t index = 0; index < ARTIFACT_FEED_SOURCE_COUNT; ++index)
 	{
 		const artifact_feed_setting &source = ARTIFACT_FEED_SOURCES[index];
-		show_setting_row(ch, source,
-				 point * artifact_feed_setting_value(source) * dial);
+		show_setting_row(ch, source, point * artifact_feed_setting_value(source) * dial);
 	}
 	send_to_char("\r\n", ch);
 	show_setting_row(ch, ARTIFACT_FEED_POINT_SECONDS, -1.0);
@@ -77,7 +76,8 @@ bool save_setting(P_char ch, const artifact_feed_setting &setting, double value)
 {
 	if (!set_and_save_property(setting.property, static_cast<float>(value)))
 	{
-		send_to_char_f(ch, "Could not save %s to lib/duris.properties; nothing changed.\r\n",
+		send_to_char_f(ch,
+			       "Could not save %s to lib/duris.properties; nothing changed.\r\n",
 			       setting.property);
 		return false;
 	}
@@ -108,8 +108,9 @@ void do_artifeed(P_char ch, char *argument, int /*cmd*/)
 	}
 	if (strcasecmp(command, "set") && strcasecmp(command, "reset"))
 	{
-		send_to_char("Usage: artifeed [show | set <setting> <value> | reset <setting|all>]\r\n",
-			     ch);
+		send_to_char(
+			"Usage: artifeed [show | set <setting> <value> | reset <setting|all>]\r\n",
+			ch);
 		return;
 	}
 	if (GET_LEVEL(ch) < FORGER)
@@ -136,8 +137,9 @@ void do_artifeed(P_char ch, char *argument, int /*cmd*/)
 	const artifact_feed_setting *setting = artifact_feed_setting_find(name);
 	if (!setting)
 	{
-		send_to_char_f(ch, "There is no feeding setting called '%s'; 'artifeed' lists them.\r\n",
-			       name);
+		send_to_char_f(
+			ch, "There is no feeding setting called '%s'; 'artifeed' lists them.\r\n",
+			name);
 		return;
 	}
 
@@ -149,8 +151,8 @@ void do_artifeed(P_char ch, char *argument, int /*cmd*/)
 		if (!*value_text || !end || *end || !std::isfinite(value) ||
 		    value < setting->minimum || value > setting->maximum)
 		{
-			send_to_char_f(ch, "%s takes a number from %.3f to %.3f.\r\n", setting->name,
-				       setting->minimum, setting->maximum);
+			send_to_char_f(ch, "%s takes a number from %.3f to %.3f.\r\n",
+				       setting->name, setting->minimum, setting->maximum);
 			return;
 		}
 	}
