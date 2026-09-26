@@ -6113,6 +6113,35 @@
       "dependencies": []
     },
     {
+      "id": "database:telemetry_quarantine",
+      "kind": "database_table",
+      "locator": "telemetry_quarantine",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "producer_id_and_record_sequence",
+      "technical_purpose": "Durable isolation and controlled replay of record-specific telemetry storage failures; ordinary health output excludes record payloads",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:telemetry_session",
       "kind": "database_table",
       "locator": "telemetry_session",

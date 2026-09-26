@@ -15,6 +15,7 @@ from test_account_recovery_journey import (
     ACCOUNT, OLD_PASSWORD, EMAIL, IsolatedServer, MudClient,
     build_flatfile_server, create_account, enter_account_name, require,
 )
+from test_flatfile_combat_journey import make_overlord
 
 PASSWORD_PROMPT = "Please enter your password:  "
 CONFIRM_PASSWORD = "Please re-enter the same password to confirm:  "
@@ -22,6 +23,7 @@ MENU = "Please select an option: "
 NAME_PROMPT = "Enter your new name:  "
 RACE_MENU = "Your selection: "
 KEEP = "Do you want to keep this character? (Y/N/Q)"
+STAFF = "Ostrand"
 
 
 def reply(client, answer, prompt):
@@ -127,6 +129,11 @@ def character_name_retry(client, server, *, policy=False, invalid=False):
     if invalid:
         reply(client, "123", "Illegal character name, please try another.")
         client.expect(NAME_PROMPT)
+        # A god_list name makes an OVERLORD of whoever takes it, so creation
+        # refuses one whether or not a character already holds it.
+        for god in ("Tyrus", "Zusuk"):
+            reply(client, god, "Illegal character name, please try another.")
+            client.expect(NAME_PROMPT)
     reply(client, "Taverek", "Is this correct?")
     reply(client, "?", "Please type Yes or No")
     if policy:
@@ -179,38 +186,66 @@ def creation_help_and_back(client, server):
     reply(client, "f", "H (for Hardcore), N (for Normal)")
 
 
+def reboot(server):
+    """Boot the shut-down isolated server again on the same state and port."""
+    server.output.close()
+    server.output_path = server.run_root / "restarted.out"
+    server.output = server.output_path.open("w", encoding="utf-8")
+    server.process = subprocess.Popen(
+        server.process.args, cwd=server.run_root, env=server.environment,
+        text=True, stdout=server.output, stderr=subprocess.STDOUT,
+    )
+
+
 def invitation_rejection(client, server, *, invited=False):
     create_account(client, OLD_PASSWORD)
     start_character(client)
-    # The isolated fixture's Tyrus creation path grants administrator access,
-    # allowing the real invitation-mode command without changing the binary.
-    reply(client, "Tyrus", "Is this correct?")
+    # Creation refuses god_list names, so the staff character that runs the
+    # real invitation-mode command is an ordinary one raised offline.
+    reply(client, STAFF, "Is this correct?")
     reply(client, "y", "meet these criteria?")
     reply(client, "y", RACE_MENU)
     finish_character_choices(client)
     reply(client, "y", "PRESS RETURN")
-    reply(client, "", "<>")
-    response = reply(client, "invite on", "<>")
-    require("Huh?" not in response, f"invitation command unavailable: {response}")
-    if invited:
-        # Invitation records use the legacy directory in this private runtime.
-        invitation = server.run_root / "Players/Invited/t/taverek"
-        invitation.parent.mkdir(parents=True)
-        reply(client, "invite Taverek", "Invited.")
-        client.expect("<>")
-        require(invitation.is_file(), "invitation command did not save its record")
-    reply(client, "quit", "ACCOUNT MENU")
-    client.expect(MENU)
-    start_character(client)
-    reply(client, "Taverek", "Is this correct?")
-    reply(client, "y", "meet these criteria?")
-    reply(client, "y", RACE_MENU)
-    if invited:
-        reply(client, "d", "Male or Female")
-        return
-    reply(client, "d", "only those players that have been invited")
-    client.expect(RACE_MENU)
-    reply(client, "h", "Male or Female")
+    reply(client, "", "Your starter kit is ready")
+    client.expect("Pos: standing >")
+    reply(client, "save", f"Save complete for {STAFF}.")
+    # A mortal must camp to quit, so the server stops with the character in game.
+    server.shutdown()
+    make_overlord(server.state_root, STAFF)
+    reboot(server)
+    client = MudClient(server.plain_port)
+    try:
+        enter_account_name(client)
+        client.expect("Please enter your password:")
+        reply(client, OLD_PASSWORD, "PRESS RETURN")
+        reply(client, "", MENU)
+        reply(client, "1", STAFF)
+        reply(client, "1", "(Y/N)")
+        reply(client, "y", "<>")
+        response = reply(client, "invite on", "<>")
+        require("Huh?" not in response, f"invitation command unavailable: {response}")
+        if invited:
+            # Invitation records use the legacy directory in this private runtime.
+            invitation = server.run_root / "Players/Invited/t/taverek"
+            invitation.parent.mkdir(parents=True)
+            reply(client, "invite Taverek", "Invited.")
+            client.expect("<>")
+            require(invitation.is_file(), "invitation command did not save its record")
+        reply(client, "quit", "ACCOUNT MENU")
+        client.expect(MENU)
+        start_character(client)
+        reply(client, "Taverek", "Is this correct?")
+        reply(client, "y", "meet these criteria?")
+        reply(client, "y", RACE_MENU)
+        if invited:
+            reply(client, "d", "Male or Female")
+            return
+        reply(client, "d", "only those players that have been invited")
+        client.expect(RACE_MENU)
+        reply(client, "h", "Male or Female")
+    finally:
+        client.close()
 
 
 def invitation_allowed(client, server):
@@ -316,15 +351,8 @@ def normal_after_hardcore(client, server):
     reply(client, "save", "Save complete for Taverek.")
     # A resident linkdead character reconnects immediately by design. Restart
     # the server to exercise disk reload and the saved-character confirmation.
-    command = server.process.args
     server.shutdown()
-    server.output.close()
-    server.output_path = server.run_root / "restarted.out"
-    server.output = server.output_path.open("w", encoding="utf-8")
-    server.process = subprocess.Popen(
-        command, cwd=server.run_root, env=server.environment,
-        text=True, stdout=server.output, stderr=subprocess.STDOUT,
-    )
+    reboot(server)
     other = MudClient(server.plain_port)
     try:
         enter_account_name(other)

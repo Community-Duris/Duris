@@ -112,6 +112,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic/magic.o \
 				 world/achievements.o \
 				 account/account.o \
+				 account/racewar_admission.o \
 				 account/password_hash.o \
 				 account/password_async.o \
 				 account/account_recovery.o \
@@ -121,6 +122,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/account_reward_config.o \
 				 world/hardcore_config.o \
 				 account/creation_availability_config.o \
+				 account/login_mode_banner.o \
 				 combat/frag_cap_config.o \
 				 cmd/actcomm.o \
 				 cmd/actinf.o \
@@ -335,6 +337,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \
 				 item/item_command_parser.o \
+				 item/forced_weapon_drop.o \
 				 item/item_movement_transaction.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
@@ -412,6 +415,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_death_restitution_runtime.o \
 				 player/player_death_restitution_adapter.o \
 				 player/player_death_restitution_staff.o \
+				 player/player_death_restitution_locker.o \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
@@ -549,6 +553,8 @@ OBJS =  $(SHIP_OBJS) \
 				 telemetry/telemetry_config.o \
 				 telemetry/telemetry_encounter.o \
 				 telemetry/telemetry_combat_summary.o \
+				 telemetry/telemetry_failure.o \
+				 telemetry/telemetry_health.o \
 				 telemetry/telemetry_repository.o \
 				 telemetry/telemetry_runtime.o \
 				 telemetry/telemetry_progression.o \

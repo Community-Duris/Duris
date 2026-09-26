@@ -307,6 +307,61 @@ int main()
 						      encoded_result.size(), &decoded_result));
 	assert(decoded_result.pet_owner_revision == 1 &&
 	       decoded_result.player_owner_revision == 0);
+	corpse_lifecycle_payload world_raise = {};
+	world_raise.action = corpse_lifecycle_action::raise_world_follower;
+	world_raise.owner_pid = 0;
+	world_raise.save_id = 9200;
+	world_raise.expected_corpse_revision = 1;
+	world_raise.expected_room_revision = 4;
+	world_raise.destination_player_pid = 77;
+	world_raise.expected_player_revision = 9;
+	world_raise.room_vnum = 500;
+	world_raise.owner_name = "ordinary npc corpse";
+	world_raise.pet_uid = 9200;
+	world_raise.pet_mob_vnum = 1201;
+	world_raise.pet_hit = world_raise.pet_max_hit = 50;
+	world_raise.pet_mana = world_raise.pet_max_mana = 30;
+	world_raise.pet_vitality = world_raise.pet_max_vitality = 20;
+	assert(corpse_lifecycle_command_build(&command, operation(20), world_raise,
+					      critical_source_site::command,
+					      critical_deadline_class::terminal));
+	assert(command.keys.size() == 5 && command.expected_revisions.size() == 5);
+	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
+	assert(decoded.action == corpse_lifecycle_action::raise_world_follower &&
+	       decoded.owner_pid == 0 && decoded.save_id == 9200 && decoded.pet_uid == 9200 &&
+	       decoded.expected_room_revision == 4 && decoded.expected_player_revision == 9);
+	auto unsupported_world_raise = command;
+	unsupported_world_raise.payload_version = CORPSE_LIFECYCLE_NESTED_PAYLOAD_VERSION;
+	assert(!corpse_lifecycle_command_decode_payload(unsupported_world_raise, &decoded));
+	corpse_lifecycle_result world_raise_result = {};
+	world_raise_result.owner_pid = 0;
+	world_raise_result.save_id = 9200;
+	world_raise_result.action = corpse_lifecycle_action::raise_world_follower;
+	world_raise_result.catalog_revision = 2;
+	world_raise_result.corpse_owner_revision = 5;
+	world_raise_result.pet_owner_revision = 1;
+	world_raise_result.max_item_revision = 3;
+	world_raise_result.item_count = 3;
+	world_raise_result.destruction_owner_revision = 1;
+	world_raise_result.max_discarded_item_revision = 3;
+	world_raise_result.discarded_item_count = 3;
+	assert(corpse_lifecycle_command_encode_result(world_raise_result, &encoded_result));
+	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
+						      &decoded_result));
+	assert(decoded_result.action == corpse_lifecycle_action::raise_world_follower &&
+	       decoded_result.owner_pid == 0 && decoded_result.save_id == 9200 &&
+	       decoded_result.corpse_owner_revision == 5 &&
+	       decoded_result.pet_owner_revision == 1 && decoded_result.item_count == 3 &&
+	       decoded_result.discarded_item_count == 3);
+	world_raise.pet_uid = 0;
+	world_raise.pet_mob_vnum = 0;
+	world_raise.pet_hit = world_raise.pet_max_hit = 0;
+	world_raise.pet_mana = world_raise.pet_max_mana = 0;
+	world_raise.pet_vitality = world_raise.pet_max_vitality = 0;
+	assert(corpse_lifecycle_command_build(&command, operation(21), world_raise,
+					      critical_source_site::command,
+					      critical_deadline_class::terminal));
+	assert(command.keys.size() == 4 && command.expected_revisions.size() == 4);
 	corpse_lifecycle_payload nested = release;
 	nested.action = corpse_lifecycle_action::release_nested;
 	nested.target_root_item_uid = 100;

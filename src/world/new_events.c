@@ -2103,6 +2103,10 @@ void zone_purge(int zone_number)
 			if (obj->R_num == real_object(VOBJ_WALLS))
 				continue;
 
+			// the zone reset won't load them back
+			if (is_ferry_object(obj))
+				continue;
+
 			if (obj->type == ITEM_CORPSE &&
 			    !obj->contains) // Don't purge corpses w/ contents
 			{

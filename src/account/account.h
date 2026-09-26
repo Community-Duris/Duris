@@ -4,6 +4,9 @@
 #ifndef DURIS_ACCOUNT_H
 #define DURIS_ACCOUNT_H
 
+#include "account/racewar_admission.h"
+
+#include <stddef.h>
 #include <stdint.h>
 
 #ifndef _DE_
@@ -91,6 +94,15 @@ bool account_exists(const char *dir, char *name);
 int is_valid_email(const char *email);
 bool is_email_taken(const char *email);
 
+account_racewar_admission account_check_racewar_admission(struct descriptor_data *d, int racewar,
+							  bool blocked, bool immortal);
+bool account_commit_character_admission(struct descriptor_data *d, struct char_data *character,
+					bool blocked, account_racewar_admission *result);
+void account_format_racewar_denial(const account_racewar_admission *result, char *buffer,
+				   size_t buffer_size);
+
+/* Login account-name prompt, preceded by the enabled-mode banner (login_mode_banner.h). */
+void send_account_name_prompt(struct descriptor_data *d);
 /* Login password prompt (enabled/disabled recovery variant); sets CON_GET_ACCT_PASSWD. */
 void send_account_password_prompt(struct descriptor_data *d);
 /* True while a login check is pending, including the pulse that completes it. */

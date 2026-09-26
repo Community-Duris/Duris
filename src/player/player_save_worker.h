@@ -12,6 +12,9 @@ constexpr size_t PLAYER_SAVE_WORKER_MAX_BYTES = 32 * 1024 * 1024;
 constexpr uint64_t PLAYER_SAVE_WORKER_MAX_AGE_MSEC = 5 * 60 * 1000;
 constexpr unsigned int PLAYER_SAVE_WORKER_MAX_RETRIES = 8;
 constexpr unsigned int PLAYER_SAVE_WORKER_DEFAULT_THREADS = 2;
+/* Application-specific repository error: a replacement player-item graph did
+ * not exactly match authoritative active custody. */
+constexpr unsigned int PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH = 10001;
 
 enum class player_save_apply_outcome : uint8_t
 {
@@ -72,6 +75,7 @@ struct player_save_worker_health
 	uint64_t stale;
 	uint64_t retryable_failures;
 	uint64_t terminal_failures;
+	uint64_t custody_payload_mismatches;
 	uint64_t retries_exhausted;
 	uint64_t max_capture_to_apply_usec;
 	uint64_t max_apply_usec;

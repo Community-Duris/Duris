@@ -1,4 +1,5 @@
 #include "telemetry/telemetry_repository.h"
+#include "telemetry/telemetry_failure.h"
 #include "persistence/persistence_mode.h"
 #include "sql/sql_telemetry_connection.h"
 
@@ -71,10 +72,13 @@ struct mysql_thread_guard
 MYSQL *connection = nullptr;
 std::array<telemetry_record, TELEMETRY_BATCH_MAX_RECORDS_PROPOSAL> pending{};
 std::size_t pending_count = 0;
+telemetry_failure_class last_open_failure_class = telemetry_failure_class::none;
+std::uint32_t last_open_error_code = 0U;
 
 struct sql_failure
 {
 	unsigned int code;
+	telemetry_failure_class failure_class = telemetry_failure_class::none;
 };
 using result_ptr = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
 
@@ -97,27 +101,46 @@ void disconnect()
 
 bool open_connection()
 {
+	last_open_failure_class = telemetry_failure_class::none;
+	last_open_error_code = 0U;
 	try
 	{
 		connection = sql_open_telemetry_connection();
 		if (!connection)
+		{
+			last_open_failure_class = telemetry_failure_class::transient_connection;
 			return false;
+		}
 		// A second process must not publish a later ingest ID while this
 		// connection has an unresolved commit. The lock dies with the handle.
 		auto lock = query("SELECT GET_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())),0)");
 		auto row = mysql_fetch_row(lock.get());
 		if (!row || !row[0] || std::string(row[0]) != "1")
 		{
+			last_open_failure_class = telemetry_failure_class::transient_transaction;
+			last_open_error_code = 1205U;
 			disconnect();
 			return false;
 		}
-		for (const char *table :
-		     { "telemetry_interval", "telemetry_session", "telemetry_config" })
+		for (const char *table : { "telemetry_interval", "telemetry_session",
+					   "telemetry_config", "telemetry_quarantine" })
 			query("SELECT * FROM " + std::string(table) + " LIMIT 0");
 		return true;
 	}
+	catch (const sql_failure &failure)
+	{
+		last_open_error_code = failure.code;
+		last_open_failure_class =
+			failure.failure_class != telemetry_failure_class::none ?
+				failure.failure_class :
+				telemetry_classify_sql_failure(failure.code,
+							       telemetry_sql_phase::statement);
+		disconnect();
+		return false;
+	}
 	catch (...)
 	{
+		last_open_failure_class = telemetry_failure_class::permanent_repository;
 		disconnect();
 		return false;
 	}
@@ -220,13 +243,13 @@ void encounter_fields(fields &values, const telemetry_encounter_payload &encount
 	number(values, "encounter_participant_pid", encounter.participant.pid);
 	FIELD(values, encounter, at_monotonic_usec);
 	FIELD(values, encounter, at_utc_usec);
-	FIELD(values, encounter, start_monotonic_usec);
-	FIELD(values, encounter, start_utc_usec);
+	number(values, "encounter_start_monotonic_usec", encounter.start_monotonic_usec);
+	number(values, "encounter_start_utc_usec", encounter.start_utc_usec);
 	FIELD(values, encounter, elapsed_usec);
 	FIELD(values, encounter, participant_usec);
 	FIELD(values, encounter, participant_count);
 	FIELD(values, encounter, expected_credit_count);
-	FIELD(values, encounter, quality_flags);
+	number(values, "encounter_quality_flags", encounter.quality_flags);
 }
 
 void combat_summary_fields(fields &values, const telemetry_combat_summary_payload &summary)
@@ -255,22 +278,22 @@ void combat_summary_fields(fields &values, const telemetry_combat_summary_payloa
 	number(values, "combat_opponent_power_band", summary.opponent_power_band);
 	number(values, "combat_opponent_count", summary.opponent_count);
 	number(values, "combat_modifier_flags", summary.modifier_flags);
-	FIELD(values, summary, start_monotonic_usec);
-	FIELD(values, summary, end_monotonic_usec);
-	FIELD(values, summary, start_utc_usec);
-	FIELD(values, summary, end_utc_usec);
-	FIELD(values, summary, damage_dealt);
-	FIELD(values, summary, damage_taken);
-	FIELD(values, summary, healing_attempted);
-	FIELD(values, summary, effective_healing);
-	FIELD(values, summary, overhealing);
-	FIELD(values, summary, control_applications);
-	FIELD(values, summary, casting_attempts);
-	FIELD(values, summary, casting_completions);
-	FIELD(values, summary, casting_aborts);
-	FIELD(values, summary, casting_elapsed_usec);
-	FIELD(values, summary, tanking_usec);
-	FIELD(values, summary, quality_flags);
+	number(values, "combat_start_monotonic_usec", summary.start_monotonic_usec);
+	number(values, "combat_end_monotonic_usec", summary.end_monotonic_usec);
+	number(values, "combat_start_utc_usec", summary.start_utc_usec);
+	number(values, "combat_end_utc_usec", summary.end_utc_usec);
+	number(values, "combat_damage_dealt", summary.damage_dealt);
+	number(values, "combat_damage_taken", summary.damage_taken);
+	number(values, "combat_healing_attempted", summary.healing_attempted);
+	number(values, "combat_effective_healing", summary.effective_healing);
+	number(values, "combat_overhealing", summary.overhealing);
+	number(values, "combat_control_applications", summary.control_applications);
+	number(values, "combat_casting_attempts", summary.casting_attempts);
+	number(values, "combat_casting_completions", summary.casting_completions);
+	number(values, "combat_casting_aborts", summary.casting_aborts);
+	number(values, "combat_casting_elapsed_usec", summary.casting_elapsed_usec);
+	number(values, "combat_tanking_usec", summary.tanking_usec);
+	number(values, "combat_quality_flags", summary.quality_flags);
 }
 
 fields counter_fields(const telemetry_cumulative_counters &counters)
@@ -408,19 +431,19 @@ fields record_fields(const telemetry_record &record)
 		connection_fields(values, p.connection);
 		FIELD(values, p, at_monotonic_usec);
 		FIELD(values, p, at_utc_usec);
-		FIELD(values, p, kind);
-		FIELD(values, p, source);
-		FIELD(values, p, reason);
-		FIELD(values, p, observation_status);
-		FIELD(values, p, modifier_flags);
-		FIELD(values, p, requested_xp);
-		FIELD(values, p, computed_xp);
-		FIELD(values, p, applied_xp);
-		FIELD(values, p, before_exp);
-		FIELD(values, p, after_exp);
-		FIELD(values, p, before_level);
-		FIELD(values, p, after_level);
-		FIELD(values, p, threshold_xp);
+		number(values, "progression_kind", p.kind);
+		number(values, "progression_source", p.source);
+		number(values, "progression_reason", p.reason);
+		number(values, "progression_observation_status", p.observation_status);
+		number(values, "progression_modifier_flags", p.modifier_flags);
+		number(values, "progression_requested_xp", p.requested_xp);
+		number(values, "progression_computed_xp", p.computed_xp);
+		number(values, "progression_applied_xp", p.applied_xp);
+		number(values, "progression_before_exp", p.before_exp);
+		number(values, "progression_after_exp", p.after_exp);
+		number(values, "progression_before_level", p.before_level);
+		number(values, "progression_after_level", p.after_level);
+		number(values, "progression_threshold_xp", p.threshold_xp);
 		dimension_fields(values, p.dimensions);
 		FIELD(values, p, config_id);
 		FIELD(values, p, classifier_version);
@@ -566,6 +589,43 @@ std::string signature(const telemetry_record &record)
 		break;
 	}
 	return value;
+}
+
+void quarantine_record(const telemetry_record &record, telemetry_failure_class failure_class,
+		       std::uint32_t error_code)
+{
+	const std::string canonical = signature(record);
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	SHA256(reinterpret_cast<const unsigned char *>(canonical.data()), canonical.size(), digest);
+	const std::string digest_hex = hex(digest, sizeof(digest));
+	const auto &key = record.header.key;
+	const std::string identity = "boot_id=" + std::to_string(key.producer.boot_id) +
+				     " AND process_id=" + std::to_string(key.producer.process_id) +
+				     " AND record_seq=" + std::to_string(key.record_seq);
+	auto existing =
+		query("SELECT HEX(payload_sha256),record_kind FROM telemetry_quarantine WHERE " +
+		      identity + " FOR UPDATE");
+	if (auto row = mysql_fetch_row(existing.get()))
+	{
+		if (!row[0] || !row[1] || digest_hex != row[0] ||
+		    std::to_string(static_cast<std::uint8_t>(record.header.kind)) != row[1])
+			throw sql_failure{ 0U, telemetry_failure_class::permanent_repository };
+		return;
+	}
+
+	const auto *raw = reinterpret_cast<const unsigned char *>(&record);
+	query("INSERT INTO telemetry_quarantine "
+	      "(boot_id,process_id,record_seq,schema_version,record_kind,failure_class,"
+	      "sql_error_code,gap_reason,quality_flags,payload_sha256,record_payload) VALUES (" +
+	      std::to_string(key.producer.boot_id) + ',' + std::to_string(key.producer.process_id) +
+	      ',' + std::to_string(key.record_seq) + ',' +
+	      std::to_string(record.header.schema_version) + ',' +
+	      std::to_string(static_cast<std::uint8_t>(record.header.kind)) + ',' +
+	      std::to_string(static_cast<std::uint8_t>(failure_class)) + ',' +
+	      std::to_string(error_code) + ',' +
+	      std::to_string(static_cast<std::uint8_t>(telemetry_gap_reason::record_quarantined)) +
+	      ',' + std::to_string(TELEMETRY_QUALITY_SEQUENCE_GAP) + ",UNHEX('" + digest_hex +
+	      "'),UNHEX('" + hex(raw, sizeof(record)) + "'))");
 }
 
 const telemetry_session_ref *session_of(const telemetry_record &record)
@@ -823,8 +883,14 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	return outcome;
 }
 void batch_failure(telemetry_apply_batch_result &result, const telemetry_record *records,
-		   std::size_t count, bool committing, unsigned int error)
+		   std::size_t count, bool committing, unsigned int error,
+		   telemetry_failure_class failure_class)
 {
+	/* A record-specific failure is consumed only after its quarantine write
+	 * succeeds. If it escapes that path, repository storage itself is invalid
+	 * and replaying the whole batch cannot repair it. */
+	if (!committing && failure_class == telemetry_failure_class::invalid_record)
+		failure_class = telemetry_failure_class::permanent_repository;
 	// This path must not allocate, even when failure was memory exhaustion.
 	if (connection && !committing)
 	{
@@ -838,17 +904,26 @@ void batch_failure(telemetry_apply_batch_result &result, const telemetry_record 
 	}
 	disconnect();
 	result.applied_count = result.duplicate_count = result.stale_checkpoint_count = 0;
-	result.invalid_count = result.conflict_count = 0;
+	result.invalid_count = result.conflict_count = result.quarantined_count = 0;
 	result.result_count = static_cast<std::uint16_t>(count);
+	if (committing)
+		failure_class = telemetry_failure_class::commit_ambiguous;
+	result.failure_class = failure_class;
 	result.outcome = committing ? telemetry_batch_outcome::commit_ambiguous :
+			 telemetry_failure_is_permanent(failure_class) ?
+				      telemetry_batch_outcome::permanent_failure :
 				      telemetry_batch_outcome::retryable_failure;
 	result.error_code = error;
 	for (std::size_t i = 0; i < count; ++i)
 	{
 		result.results[i] = {};
 		result.results[i].key = records[i].header.key;
-		result.results[i].outcome = committing ? telemetry_apply_outcome::commit_ambiguous :
-							 telemetry_apply_outcome::retryable_failure;
+		result.results[i].outcome = committing ?
+						    telemetry_apply_outcome::commit_ambiguous :
+					    telemetry_failure_is_permanent(failure_class) ?
+						    telemetry_apply_outcome::permanent_failure :
+						    telemetry_apply_outcome::retryable_failure;
+		result.results[i].failure_class = failure_class;
 		result.results[i].error_code = error;
 	}
 }
@@ -859,6 +934,7 @@ void batch_failure(telemetry_apply_batch_result &result, const telemetry_record 
 {
 	std::lock_guard<std::mutex> lock(health_mutex);
 	health.last_error_code = result.error_code;
+	health.last_failure_class = result.failure_class;
 	if (result.outcome == telemetry_batch_outcome::committed ||
 	    result.outcome == telemetry_batch_outcome::committed_with_rejections)
 	{
@@ -867,19 +943,53 @@ void batch_failure(telemetry_apply_batch_result &result, const telemetry_record 
 		saturating_add(health.stale_checkpoint_records, result.stale_checkpoint_count);
 		saturating_add(health.invalid_records, result.invalid_count);
 		saturating_add(health.conflict_records, result.conflict_count);
+		saturating_add(health.quarantined_records, result.quarantined_count);
 		health.last_success_monotonic_usec = now_usec();
-		health.state = result.invalid_count || result.conflict_count ?
+		health.state = result.invalid_count || result.conflict_count ||
+					       result.quarantined_count ?
 				       telemetry_health_state::degraded :
 				       telemetry_health_state::healthy;
+#ifndef __NO_MYSQL__
+		if (result.quarantined_count != 0U && result.input_count != 0U)
+		{
+			health.last_failure_producer = pending[0].header.key.producer;
+			health.last_failure_first_record_seq = result.first_record_seq;
+			health.last_failure_last_record_seq = result.last_record_seq;
+			health.last_failure_record_kind_mask = 0U;
+			for (std::size_t index = 0U; index < result.input_count; ++index)
+				if (result.results[index].outcome ==
+				    telemetry_apply_outcome::quarantined_invalid)
+					health.last_failure_record_kind_mask |= std::uint64_t{
+						1U
+					} << static_cast<std::uint8_t>(pending[index].header.kind);
+		}
+#endif
 	}
 	else
 	{
 		health.last_failure_monotonic_usec = now_usec();
-		health.state = telemetry_health_state::degraded;
+		health.state = result.outcome == telemetry_batch_outcome::permanent_failure ?
+				       telemetry_health_state::circuit_open :
+				       telemetry_health_state::degraded;
 		if (result.outcome == telemetry_batch_outcome::commit_ambiguous)
 			saturating_add(health.ambiguous_commits, 1);
 		if (result.outcome == telemetry_batch_outcome::retryable_failure)
 			saturating_add(health.retryable_failures, 1);
+		if (result.outcome == telemetry_batch_outcome::permanent_failure)
+			saturating_add(health.circuit_open_count, 1);
+#ifndef __NO_MYSQL__
+		if (result.input_count != 0U)
+		{
+			health.last_failure_producer = pending[0].header.key.producer;
+			health.last_failure_first_record_seq = result.first_record_seq;
+			health.last_failure_last_record_seq = result.last_record_seq;
+			health.last_failure_record_kind_mask = 0U;
+			for (std::size_t index = 0U; index < result.input_count; ++index)
+				health.last_failure_record_kind_mask |=
+					std::uint64_t{ 1U }
+					<< static_cast<std::uint8_t>(pending[index].header.kind);
+		}
+#endif
 	}
 	if (stop_requested.load())
 		health.state = telemetry_health_state::stopping;
@@ -933,12 +1043,20 @@ telemetry_repository_outcome telemetry_repository_init(telemetry_repository_conf
 	mysql_thread_guard thread;
 	const bool opened = thread.ready && open_connection();
 	bool usable = opened;
+	telemetry_failure_class init_failure_class =
+		thread.ready ? last_open_failure_class :
+			       telemetry_failure_class::transient_internal;
+	std::uint32_t init_error_code = thread.ready ? last_open_error_code : 0U;
 	if (opened && !freshness_verified)
 	{
-		if (check_fresh_producer() != fresh_producer_check::clear)
+		const auto fresh = check_fresh_producer();
+		if (fresh != fresh_producer_check::clear)
 		{
 			disconnect();
 			usable = false;
+			init_failure_class = fresh == fresh_producer_check::collision ?
+						     telemetry_failure_class::permanent_repository :
+						     telemetry_failure_class::transient_connection;
 		}
 		else
 			freshness_verified = true;
@@ -951,8 +1069,15 @@ telemetry_repository_outcome telemetry_repository_init(telemetry_repository_conf
 		health.state = telemetry_health_state::stopping;
 		return telemetry_repository_outcome::stopping;
 	}
-	health.state = usable ? telemetry_health_state::healthy : telemetry_health_state::degraded;
+	health.last_failure_class = usable ? telemetry_failure_class::none : init_failure_class;
+	health.last_error_code = usable ? 0U : init_error_code;
+	health.state = usable ? telemetry_health_state::healthy :
+		       telemetry_failure_is_permanent(init_failure_class) ?
+				telemetry_health_state::circuit_open :
+				telemetry_health_state::degraded;
 	return usable ? telemetry_repository_outcome::ready :
+	       telemetry_failure_is_permanent(init_failure_class) ?
+			telemetry_repository_outcome::permanent_failure :
 			telemetry_repository_outcome::unavailable;
 #endif
 }
@@ -1009,20 +1134,49 @@ telemetry_apply_batch_result telemetry_repository_apply(const telemetry_record *
 				}
 		}
 		if (!thread.ready)
-			throw sql_failure{ 0 };
+			throw sql_failure{ 0U, telemetry_failure_class::transient_internal };
 		if (!connection && !open_connection())
-			throw sql_failure{ 0 };
+			throw sql_failure{ last_open_error_code, last_open_failure_class };
 		query("START TRANSACTION");
 		for (std::size_t i = 0; i < count; ++i)
 		{
 			query("SAVEPOINT telemetry_record");
-			const auto outcome = apply_record(records[i]);
+			telemetry_apply_outcome outcome = telemetry_apply_outcome::applied;
+			telemetry_failure_class record_failure_class =
+				telemetry_failure_class::none;
+			std::uint32_t record_error_code = 0U;
+			try
+			{
+				outcome = apply_record(records[i]);
+			}
+			catch (const sql_failure &failure)
+			{
+				record_failure_class =
+					failure.failure_class != telemetry_failure_class::none ?
+						failure.failure_class :
+						telemetry_classify_sql_failure(
+							failure.code,
+							telemetry_sql_phase::statement);
+				if (record_failure_class != telemetry_failure_class::invalid_record)
+					throw sql_failure{ failure.code, record_failure_class };
+				query("ROLLBACK TO SAVEPOINT telemetry_record");
+				quarantine_record(records[i], record_failure_class, failure.code);
+				outcome = telemetry_apply_outcome::quarantined_invalid;
+				record_error_code = failure.code;
+				if (result.failure_class == telemetry_failure_class::none)
+				{
+					result.failure_class = record_failure_class;
+					result.error_code = record_error_code;
+				}
+			}
 			if (outcome == telemetry_apply_outcome::rejected_invalid ||
 			    outcome == telemetry_apply_outcome::duplicate_conflict)
 				query("ROLLBACK TO SAVEPOINT telemetry_record");
 			query("RELEASE SAVEPOINT telemetry_record");
 			result.results[i].key = records[i].header.key;
 			result.results[i].outcome = outcome;
+			result.results[i].failure_class = record_failure_class;
+			result.results[i].error_code = record_error_code;
 			++result.result_count;
 			switch (outcome)
 			{
@@ -1041,6 +1195,10 @@ telemetry_apply_batch_result telemetry_repository_apply(const telemetry_record *
 			case telemetry_apply_outcome::duplicate_conflict:
 				++result.conflict_count;
 				break;
+			case telemetry_apply_outcome::quarantined_invalid:
+				++result.invalid_count;
+				++result.quarantined_count;
+				break;
 			default:
 				break;
 			}
@@ -1054,15 +1212,25 @@ telemetry_apply_batch_result telemetry_repository_apply(const telemetry_record *
 	}
 	catch (const sql_failure &failure)
 	{
-		batch_failure(result, records, count, committing, failure.code);
+		const auto failure_class =
+			failure.failure_class != telemetry_failure_class::none ?
+				failure.failure_class :
+				telemetry_classify_sql_failure(
+					failure.code, committing ? telemetry_sql_phase::commit :
+								   telemetry_sql_phase::statement);
+		batch_failure(result, records, count, committing, failure.code, failure_class);
 	}
 	catch (const std::bad_alloc &)
 	{
-		batch_failure(result, records, count, committing, ENOMEM);
+		batch_failure(result, records, count, committing, ENOMEM,
+			      committing ? telemetry_failure_class::commit_ambiguous :
+					   telemetry_failure_class::transient_internal);
 	}
 	catch (...)
 	{
-		batch_failure(result, records, count, committing, EIO);
+		batch_failure(result, records, count, committing, EIO,
+			      committing ? telemetry_failure_class::commit_ambiguous :
+					   telemetry_failure_class::permanent_repository);
 	}
 	publish(result);
 	return result;

@@ -75,6 +75,7 @@
 #include "persistence/persistence_observability.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "item/forced_weapon_drop.h"
 #include "combat/combat_outcome_transaction.h"
 #include "persistence/gameplay_read_state.h"
 /*
@@ -2621,18 +2622,16 @@ static bool save_disputed_death_disposition(P_char ch, uint64_t corpse_uid)
 		if (!wallet_pile)
 			return false;
 	}
-	bool allow_journal_handoff = true;
-#ifdef __NO_MYSQL__
-	allow_journal_handoff = false;
-#endif
+	// A journaled death can still be rejected by the database's custody checks.
+	// Keep the character in its private recovery hold until MariaDB acknowledges
+	// the disposition; otherwise reconnect could race an unapplied death.
 	const player_save_terminal_result saved = player_save_pipeline_terminal_death(
 		ch, corpse, wallet_pile, operation,
 		calculate_save_room(ch, RENT_DEATH, ch->in_room), DEATH_DISPOSITION_TIMEOUT_MSEC,
-		allow_journal_handoff);
+		false);
 	if (wallet_pile)
 		extract_obj(wallet_pile, FALSE);
-	const bool durable = saved == player_save_terminal_result::database_acknowledged ||
-			     saved == player_save_terminal_result::journal_durable;
+	const bool durable = saved == player_save_terminal_result::database_acknowledged;
 	persistence_report(durable ? persistence_severity::ok : persistence_severity::alert, AVATAR,
 			   "player_save", "death", "none", "none",
 			   durable ? "death_disposition_recorded" : "death_disposition_failed",
@@ -2725,6 +2724,11 @@ void death_extract_retry_pulse(void)
 static void hold_for_death_extract_retry(P_char ch)
 {
 	GET_HIT(ch) = 1;
+	// The real corpse already represents this death in the room. Keep the
+	// fail-closed player state alive for persistence recovery, but do not leave a
+	// second, lootable-looking body in the world while the terminal save retries.
+	if (ch->in_room != NOWHERE)
+		char_from_room(ch);
 	SET_POS(ch, GET_POS(ch) + STAT_DEAD);
 }
 
@@ -2741,13 +2745,20 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch) || !ch->only.pc)
 		return;
 
-	if (GET_STAT(ch) != STAT_DEAD || CHAR_IN_ARENA(ch))
+	if (ch->in_room != NOWHERE && (CHAR_IN_ARENA(ch) || GET_STAT(ch) != STAT_DEAD))
 	{
 		clear_corpse_transfer_dispute(ch);
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
-				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
+				  "death_recovery_abandoned", "stat=%d room=%d", GET_STAT(ch),
+				  ch->in_room);
 		return;
 	}
+	// update_pos() derives a sleeping state from the retained 1 HP between
+	// pulses. NOWHERE is the private recovery hold, so restore its dead marker;
+	// a genuinely resumed character has been placed back in a room and took the
+	// abandonment branch above.
+	if (GET_STAT(ch) != STAT_DEAD)
+		hold_for_death_extract_retry(ch);
 
 	const bool items_busy = item_movement_transaction_player_busy(ch);
 	const bool currency_busy = currency_transaction_player_busy(ch);
@@ -3469,6 +3480,18 @@ void die(P_char ch, P_char killer)
 	if (IS_PC(ch))
 	{
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
+		if (!CHAR_IN_ARENA(ch) &&
+		    IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP))
+		{
+			// No live transfer is guaranteed to touch a payload-less custody row
+			// (it may be a separate root, or the only owned item). Route the death
+			// directly through the durable disposition instead of allowing an
+			// ordinary empty snapshot or waiting forever for a mismatch callback.
+			note_corpse_transfer_dispute(ch);
+			persistence_alert(AVATAR, "player_save", "death", "none", "none",
+					  "load_item_payload_gap_disposition",
+					  "extract_refused=1 recovery_scheduled=1");
+		}
 		if (!CHAR_IN_ARENA(ch) &&
 		    (item_movement_transaction_player_busy(ch) ||
 		     currency_transaction_player_busy(ch) || corpse_transfer_disputed(ch) ||
@@ -7518,34 +7541,26 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			if (weapon && GET_LEVEL(ch) > 1 &&
 			    !IS_SET(weapon->extra_flags, ITEM_NODROP))
 			{
-				for (pos = 0; pos < MAX_WEAR; pos++)
-					if (ch->equipment[pos] == weapon)
-						break;
-				if (pos < MAX_WEAR)
+				if (bIsQuickStepMiss)
 				{
-					P_obj weap = unequip_char(ch, pos);
+					for (pos = 0; pos < MAX_WEAR; pos++)
+						if (ch->equipment[pos] == weapon)
+							break;
+					P_obj weap = pos < MAX_WEAR ? unequip_char(ch, pos) : NULL;
 					if (weap)
 					{
-						if (bIsQuickStepMiss)
-						{
-							act("&-L&+YYou swing at your foe _really_ badly, losing control of your&n $q&-L&+Y!\r\n",
-							    FALSE, ch, weap, victim, TO_CHAR);
-							act("$n stumbles with $s attack, losing control of $s weapon!",
-							    TRUE, ch, 0, 0, TO_ROOM);
-							obj_to_char(weap, ch);
-						}
-						else
-						{
-							act("&-L&+YYou swing at your foe _really_ badly, sending your&n $q&-L&+Y flying!\r\n",
-							    FALSE, ch, weap, victim, TO_CHAR);
-							act("$n stumbles with $s attack, sending $s weapon flying!",
-							    TRUE, ch, 0, 0, TO_ROOM);
-							obj_to_room(weap, ch->in_room);
-						}
+						act("&-L&+YYou swing at your foe _really_ badly, losing control of your&n $q&-L&+Y!\r\n",
+						    FALSE, ch, weap, victim, TO_CHAR);
+						act("$n stumbles with $s attack, losing control of $s weapon!",
+						    TRUE, ch, 0, 0, TO_ROOM);
+						obj_to_char(weap, ch);
 					}
 					char_light(ch);
 					room_light(ch->in_room, REAL);
 				}
+				else
+					forced_weapon_drop(ch, weapon,
+							   forced_weapon_drop_cause::combat_fumble);
 			}
 			else
 			{
@@ -10799,17 +10814,17 @@ bool critical_disarm(P_char ch, P_char victim)
 	if (!obj || obj->type != ITEM_WEAPON || IS_SET(obj->extra_flags, ITEM_NODROP))
 		return FALSE;
 
-	obj = unequip_char(victim, pos);
-
 	if (!IS_ARTIFACT(obj) &&
 	    number(1, 100) < get_property("skill.criticalAttack.disarm.dropChance", 5))
 	{
-		obj_to_room(obj, victim->in_room);
+		return forced_weapon_drop(victim, obj, forced_weapon_drop_cause::critical_disarm) !=
+		       forced_weapon_drop_result::rejected;
 	}
-	else
-	{
-		obj_to_char(obj, victim);
-	}
+
+	obj = unequip_char(victim, pos);
+	if (!obj)
+		return FALSE;
+	obj_to_char(obj, victim);
 
 	return TRUE;
 }

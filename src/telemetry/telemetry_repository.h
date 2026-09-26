@@ -27,6 +27,7 @@ enum class telemetry_repository_outcome : std::uint8_t
 	unavailable = 4,
 	stopping = 5,
 	closed = 6,
+	permanent_failure = 7,
 };
 
 struct telemetry_repository_config
@@ -43,7 +44,8 @@ struct telemetry_record_apply_result
 {
 	telemetry_record_key key;
 	telemetry_apply_outcome outcome;
-	std::uint8_t reserved[3];
+	telemetry_failure_class failure_class;
+	std::uint8_t reserved[2];
 	std::uint32_t error_code;
 };
 
@@ -55,7 +57,8 @@ struct telemetry_record_apply_result
 struct telemetry_apply_batch_result
 {
 	telemetry_batch_outcome outcome;
-	std::uint8_t reserved[3];
+	telemetry_failure_class failure_class;
+	std::uint8_t reserved[2];
 	std::uint16_t input_count;
 	std::uint16_t result_count;
 	std::uint16_t applied_count;
@@ -63,7 +66,7 @@ struct telemetry_apply_batch_result
 	std::uint16_t stale_checkpoint_count;
 	std::uint16_t invalid_count;
 	std::uint16_t conflict_count;
-	std::uint16_t reserved2;
+	std::uint16_t quarantined_count;
 	std::uint32_t error_code;
 	telemetry_record_sequence first_record_seq;
 	telemetry_record_sequence last_record_seq;

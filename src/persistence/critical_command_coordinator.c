@@ -25,6 +25,7 @@ enum class critical_operation_phase : uint8_t
 	uncertain_admission,
 	blocked,
 	admission_failed,
+	publication_pending,
 };
 
 struct operation_state
@@ -35,8 +36,10 @@ struct operation_state
 	unsigned int attempt;
 	uint64_t attachments;
 	critical_operation_phase phase;
+	bool retain_until_publication;
 	bool admission_failure_queued;
 	critical_completion admission_failure_completion;
+	critical_completion publication_completion;
 };
 
 struct completed_state
@@ -126,6 +129,11 @@ bool operation_is_executing(const operation_state &state)
 	return state.phase == critical_operation_phase::executing;
 }
 
+bool operation_is_publication_pending(const operation_state &state)
+{
+	return state.phase == critical_operation_phase::publication_pending;
+}
+
 bool operation_is_uncertain(const operation_state &state)
 {
 	return state.phase == critical_operation_phase::uncertain_admission;
@@ -205,6 +213,7 @@ void update_depth()
 	health.queued = 0;
 	health.inflight = 0;
 	health.blocked = 0;
+	health.publication_pending = 0;
 	health.retained_bytes = 0;
 	health.awaiting_durability = 0;
 	uint64_t oldest = 0;
@@ -212,7 +221,9 @@ void update_depth()
 	for (const auto &[identity, state] : operations)
 	{
 		(void)identity;
-		if (operation_is_blocked(*state))
+		if (operation_is_publication_pending(*state))
+			++health.publication_pending;
+		else if (operation_is_blocked(*state))
 			++health.blocked;
 		else if (operation_is_executing(*state))
 			++health.inflight;
@@ -226,7 +237,8 @@ void update_depth()
 	}
 	health.oldest_age_msec = oldest && now > oldest ? (now - oldest) / 1000 : 0;
 	health.high_water_operations = std::max(health.high_water_operations,
-						health.queued + health.inflight + health.blocked);
+						health.queued + health.inflight + health.blocked +
+							health.publication_pending);
 	health.high_water_bytes = std::max(health.high_water_bytes, health.retained_bytes);
 	health.completed_cache = completed_cache.size();
 	health.admission_queue_bytes = pending_admission_bytes + admission_inflight_bytes;
@@ -697,6 +709,7 @@ void worker_main()
 		critical_command command;
 		unsigned int attempt = 0;
 		uint64_t queued_at = 0;
+		bool retain_publication = false;
 		{
 			std::unique_lock<std::mutex> lock(coordinator_mutex);
 			work_available.wait(
@@ -751,6 +764,7 @@ void worker_main()
 			}
 			attempt = state.attempt;
 			queued_at = state.queued_at_usec;
+			retain_publication = state.retain_until_publication;
 			update_depth();
 		}
 		const uint64_t started = now_usec();
@@ -763,9 +777,10 @@ void worker_main()
 		{
 			applied = { critical_apply_outcome::retryable_failure, 0, 0 };
 		}
-		if (applied.outcome == critical_apply_outcome::applied ||
-		    applied.outcome == critical_apply_outcome::already_applied ||
-		    applied.outcome == critical_apply_outcome::terminal_failure)
+		if (!retain_publication &&
+		    (applied.outcome == critical_apply_outcome::applied ||
+		     applied.outcome == critical_apply_outcome::already_applied ||
+		     applied.outcome == critical_apply_outcome::terminal_failure))
 		{
 			if (critical_command_journal_checkpoint(command.operation_id) !=
 			    critical_command_journal_result::ok)
@@ -898,7 +913,8 @@ void critical_command_coordinator_shutdown(void)
 	critical_command_journal_shutdown();
 }
 
-critical_submit_result critical_command_coordinator_submit(critical_command command)
+critical_submit_result critical_command_coordinator_submit_internal(critical_command command,
+								    bool retain_until_publication)
 {
 	const bool supplied_acceptance_time = command.accepted_at_usec != 0;
 	if (!supplied_acceptance_time)
@@ -926,6 +942,8 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 			command.accepted_at_usec = found->second->command.accepted_at_usec;
 		if (!critical_command_equal(found->second->command, command))
 			return critical_submit_result::identity_conflict;
+		if (retain_until_publication != found->second->retain_until_publication)
+			return critical_submit_result::identity_conflict;
 		++found->second->attachments;
 		++health.attached;
 		return critical_submit_result::attached;
@@ -949,6 +967,7 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 		state->attempt = 1;
 		state->attachments = 0;
 		state->phase = critical_operation_phase::awaiting_durability;
+		state->retain_until_publication = retain_until_publication;
 		state->admission_failure_queued = false;
 		operations.emplace(identity, std::move(state));
 		pending_admission.push_back(identity);
@@ -978,6 +997,16 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 	// worker must acknowledge fsync before it is moved to the execution queue.
 	admission_available.notify_one();
 	return critical_submit_result::awaiting_durability;
+}
+
+critical_submit_result critical_command_coordinator_submit(critical_command command)
+{
+	return critical_command_coordinator_submit_internal(std::move(command), false);
+}
+
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
+{
+	return critical_command_coordinator_submit_internal(std::move(command), true);
 }
 
 critical_command_durability
@@ -1048,10 +1077,39 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &ope
 	if (!completion || critical_operation_id_is_zero(operation_id))
 		return false;
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	const auto found = completed_cache.find(operation_key(operation_id));
+	const std::string identity = operation_key(operation_id);
+	auto operation = operations.find(identity);
+	if (operation != operations.end() && operation_is_publication_pending(*operation->second))
+	{
+		*completion = operation->second->publication_completion;
+		return true;
+	}
+	const auto found = completed_cache.find(identity);
 	if (found == completed_cache.end())
 		return false;
 	*completion = found->second.completion;
+	return true;
+}
+
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id)
+{
+	if (critical_operation_id_is_zero(operation_id))
+		return false;
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const std::string identity = operation_key(operation_id);
+	auto found = operations.find(identity);
+	if (found == operations.end() || !operation_is_publication_pending(*found->second))
+		return false;
+	if (critical_command_journal_checkpoint(operation_id) !=
+	    critical_command_journal_result::ok)
+		return false;
+	operation_state &state = *found->second;
+	remove_fences(identity, state.command);
+	remember_completed(identity, state.command, state.publication_completion);
+	operations.erase(found);
+	++health.completed;
+	update_depth();
+	work_available.notify_all();
 	return true;
 }
 
@@ -1105,6 +1163,17 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		completion_delivery.pop_front(critical_completion_channel::execution);
 		result_available.notify_one();
 		operation_state &state = *found->second;
+		if (state.retain_until_publication && !retryable)
+		{
+			release_keys(identity, state.command);
+			state.phase = critical_operation_phase::publication_pending;
+			state.publication_completion = completion;
+			if (completion.outcome == critical_apply_outcome::terminal_failure)
+				++health.terminal_failures;
+			if (published < capacity)
+				completions[published++] = completion;
+			continue;
+		}
 		if (retryable)
 		{
 			if (will_retry && schedule_retry_locked(identity, state, completion))
@@ -1221,8 +1290,8 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 		const critical_coordinator_health snapshot =
 			critical_command_coordinator_health_copy();
 		if (!snapshot.queued && !snapshot.inflight && !snapshot.blocked &&
-		    !snapshot.awaiting_durability && !snapshot.admission_queue_bytes &&
-		    !snapshot.append_inflight)
+		    !snapshot.publication_pending && !snapshot.awaiting_durability &&
+		    !snapshot.admission_queue_bytes && !snapshot.append_inflight)
 			return true;
 		if (std::chrono::steady_clock::now() >= deadline)
 			return false;

@@ -93,6 +93,31 @@ class CommunitySpellupContractTest(unittest.TestCase):
         ):
             self.assertIn(token, DESIGN + HELP, token)
 
+    def test_result_display_is_compact_aligned_and_colorized(self) -> None:
+        presentations = (
+            ("applied", "Applied", "&+G"),
+            ("refreshed", "Refreshed", "&+C"),
+            ("upgraded", "Upgraded", "&+M"),
+            ("unchanged", "Unchanged", "&+L"),
+            ("blocked", "Blocked", "&+Y"),
+            ("failed", "Failed", "&+R"),
+        )
+        for outcome, label, color in presentations:
+            self.assertIn(
+                f'{{ effect_outcome::{outcome}, "{label}", "{color}" }}',
+                SOURCE,
+            )
+
+        self.assertIn("COMMUNITY_SUMMARY_LABEL_WIDTH = 9", SOURCE)
+        self.assertIn("COMMUNITY_SUMMARY_LINE_WIDTH = 78", SOURCE)
+        self.assertIn("if (count <= 0)", SOURCE)
+        self.assertIn('entry += " x";', SOURCE)
+        self.assertIn('report += ",\\n&n";', SOURCE)
+        self.assertIn("Community spell-up repeat r%llu (%s) complete", SOURCE)
+        self.assertNotIn('"  %-20s applied %d, refreshed %d', SOURCE)
+        self.assertNotIn("Community spell-up repeat revision %llu", SOURCE)
+        self.assertNotIn('"Done. Blessed %d player%s.', SOURCE)
+
 
 if __name__ == "__main__":
     unittest.main()

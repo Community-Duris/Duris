@@ -89,6 +89,14 @@ checks["database terminal helper rejects journal-only durability"] = (
     "player_save_terminal_result::journal_durable" not in database_terminal_helper
 )
 
+checks["voluntary logout requires database acknowledgement"] = (
+    "if (type == RENT_INN || type == RENT_CAMPED)" in terminal_helper and
+    "persistence_save_character_terminal_with_policy(ch, type, 5000, false)" in
+        terminal_helper and
+    terminal_helper.index("if (type == RENT_INN || type == RENT_CAMPED)") <
+        terminal_helper.index("persistence_save_character_terminal_with_policy(ch, type, 2000, true)")
+)
+
 player_sql_start = files.index("if (!sql_save_player(ch, type, room))")
 player_sql_failure = files[
     player_sql_start:files.index("// Failed saves always restore", player_sql_start)
@@ -111,11 +119,14 @@ checks["flat terminal saves require the typed durable outcome"] = all(
     )
 )
 
-# Ghost extraction lives in actwiz.c and uses the shared terminal helper twice.
+# Ghost extraction shares one fail-closed terminal-save helper across the named
+# and bulk command paths, and extraction remains ordered after that save gate.
 actwiz = read("actwiz.c")
-checks["ghost extraction gate"] = actwiz.count(
-    "persistence_save_character_terminal(vict, RENT_LINKDEAD)"
-) == 2
+checks["ghost extraction gate"] = (
+    actwiz.count("persistence_save_character_terminal(vict, RENT_LINKDEAD)") == 1
+    and actwiz.index("persistence_save_character_terminal(vict, RENT_LINKDEAD)")
+    < actwiz.index("extract_char_after_terminal_save(vict)")
+)
 
 for name, passed in checks.items():
     print(f"[{'PASS' if passed else 'FAIL'}] {name}")

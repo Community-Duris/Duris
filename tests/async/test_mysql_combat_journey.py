@@ -2,12 +2,12 @@
 """Real account/character combat and death on an isolated MariaDB schema.
 
 Set TEST_DB_HOST (loopback), TEST_DB_USER and TEST_DB_PASSWORD for a disposable
-server. No checkout .env or existing schema is used. --server selects a freshly
-built MariaDB executable; by default this script builds bin/server/dms_new.
+server; TEST_DB_PORT defaults to 3306. No checkout .env or existing schema is
+used. --server selects a freshly built MariaDB executable; by default this
+script builds bin/server/dms_new.
 """
 from pathlib import Path
 import argparse
-import errno
 import os
 import signal
 import subprocess
@@ -23,10 +23,11 @@ ROOT = Path(__file__).resolve().parents[2]
 def run(server, reset_coins=False, boons=False):
     database = 'corpse_journey_test_' + uuid.uuid4().hex[:12]
     host = os.environ['TEST_DB_HOST']
+    port = os.environ.get('TEST_DB_PORT', '3306')
     assert host in ('127.0.0.1', 'localhost'), 'use a disposable loopback database'
     environment = {
         'PATH': os.environ.get('PATH', '/usr/bin:/bin'),
-        'ENVIRONMENT': 'local', 'DB_HOST': host, 'DB_PORT': '3306',
+        'ENVIRONMENT': 'local', 'DB_HOST': host, 'DB_PORT': port,
         'DB_NAME': database, 'DB_USER': os.environ['TEST_DB_USER'],
         'DB_PASSWD': os.environ['TEST_DB_PASSWORD'],
         'DB_ALLOWED_TARGETS': host+'/'+database,
@@ -37,7 +38,8 @@ def run(server, reset_coins=False, boons=False):
     }
     if 'LD_LIBRARY_PATH' in os.environ:
         environment['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
-    mysql = ['mysql', '--protocol=tcp', '-h', host, '-u', environment['DB_USER'], '-N', '-B']
+    mysql = ['mysql', '--protocol=tcp', '-h', host, '-P', port,
+             '-u', environment['DB_USER'], '-N', '-B']
 
     def sql(text, selected=True):
         return subprocess.check_output(mysql+([database] if selected else []), input=text,
@@ -136,18 +138,50 @@ def run(server, reset_coins=False, boons=False):
                     client=journey.reconnect_character(plain)
                     client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.')
                     banana=number(f'SELECT item_uid FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND state=1 AND vnum=15 LIMIT 1')
+                    client.send('quit'); client.expect('ACCOUNT MENU',timeout=30)
+                    client.send('0'); client.close(); client=None
                     # Add a durable child absent from the live object graph.
-                    # The real batch repository must refuse the incomplete tree.
+                    # A cold load must retain the valid graph read-only and route
+                    # death through its immutable disposition.
                     ghost=9000000000000000000+pid
                     sql(f'INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES({ghost},{banana},{banana},1,{pid},1,15,1)')
+                    client=journey.reconnect_character(plain)
+                    client.send('inventory'); client.expect('a banana',timeout=15)
+                    deadline=time.monotonic()+15
+                    while 'outcome=missing_payload_rows' not in journey.runtime_logs(runtime):
+                        assert time.monotonic()<deadline, 'payload gap was not reported at load'
+                        time.sleep(.01)
+                    assert number(f'SELECT COUNT(*) FROM item_current_owner WHERE item_uid={ghost} AND owner_type=1 AND owner_id={pid} AND state=1')==1
                     before_deaths=number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')
+                    # A newly discovered payload outside the captured corpse
+                    # must reject this death without releasing the character on
+                    # the strength of a journal append alone. Repair the stray
+                    # row, then let the same in-game recovery finish normally.
+                    stray=ghost+1
+                    sql(f'INSERT INTO player_items (pid,vnum,equip_slot,container_id,quantity,item_type,obj_uid) VALUES ({pid},15,0,NULL,1,0,{stray})')
                     journey.attack_until_death(client)
+                    deadline=time.monotonic()+15
+                    while 'custody_payload_mismatch_rejected' not in journey.runtime_logs(runtime):
+                        assert time.monotonic()<deadline, 'uncaptured payload was not rejected'
+                        time.sleep(.05)
+                    assert 'death_disposition_completed' not in journey.runtime_logs(runtime)
+                    assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid={stray}')==1
+                    sql(f'DELETE FROM player_items WHERE pid={pid} AND obj_uid={stray}')
                     client.expect('ACCOUNT MENU',timeout=45)
                     client.send('0'); client.close(); client=None
-                    logs=journey.runtime_logs(runtime)
-                    assert f'error={errno.EMSGSIZE} disputed=1' in logs
+                    # The account menu may follow a durable journal handoff
+                    # before the asynchronous MariaDB worker acknowledges it.
+                    deadline=time.monotonic()+20
+                    while True:
+                        logs=journey.runtime_logs(runtime)
+                        disposition_count=number(f'SELECT COUNT(*) FROM player_death_disposition WHERE pid={pid}')
+                        if ('load_item_payload_gap_disposition' in logs and
+                            'death_disposition_completed' in logs and disposition_count==1):
+                            break
+                        assert time.monotonic()<deadline, 'death disposition did not reach MariaDB after journal handoff'
+                        time.sleep(.05)
+                    assert 'load_item_payload_gap_disposition' in logs
                     assert logs.index('death_disposition_recorded')<logs.index('death_disposition_completed')
-                    assert number(f'SELECT COUNT(*) FROM player_death_disposition WHERE pid={pid}')==1
                     assert number(f'SELECT COUNT(*) FROM player_death_custody WHERE pid={pid} AND item_uid={banana} AND owner_type=1')==1
                     assert number(f'SELECT COUNT(*) FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND state=1')==0
                     assert number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')==before_deaths+1

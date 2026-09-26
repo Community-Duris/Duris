@@ -166,7 +166,7 @@ EE 0 4 0 6
 0.0.0.0 0
 8 8 0
 #131211
-grumbar lord earth br_a~
+grumbar lord earth~
 &+LGrumbar~
 &+LGrumbar&n&+y, Lord of the &n&+LEarth&n&+y Plane walks his &n&+Ychambers&n&+y here.
 ~
@@ -177,8 +177,8 @@ grumbar lord earth br_a~
 &+yof the reason when you enter his &n&+Ychambers&n&+y he looks puzzled for a moment then
 &+yproceeds to smash these bothersome insects.
 ~
-1191213130 0 0 0 436207802 1050652 0 0 -1000 S
-EE 0 289 0 7
+1191214154 0 0 0 436207802 1050652 128 0 -1000 S
+d 0 289 0 7
 60 180 -85 1d100+30000 7d6+70
 0.0.50.30 500000
 8 8 1
@@ -336,7 +336,7 @@ huge geode dragon~
 &+Lcrystalline spines shimmer and crackle with faint magic, giving
 &+Lthe dragon an aura of both beauty and danger.
 ~
-1090550058 0 0 0 956301464 1063104 128 46150656 -1000 S
+1090550058 1 0 0 956301464 1063104 128 46150656 -1000 S
 d 0 513 0 7
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -484,7 +484,7 @@ dao guard guard high~
 &+yhe loves his work and his duty, to endlessly patrol these caverns and to
 &+ysmash anything he finds thats not susposed to be here.
 ~
-1140865098 1 0 0 134217880 14546 0 37748736 -1000 S
+1140865096 1 0 0 134217880 14546 0 37748736 -1000 S
 EE 0 1 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -578,7 +578,7 @@ efreeti high guard~
 &+Yseems to relent a look of disdain. His head is bare, except
 &+Yfor a tight braid that ends in a small flame.
 ~
-1073743978 0 0 0 671088664 4208833 0 0 -800 S
+1073743976 0 0 0 671088664 4208833 0 0 -800 S
 e 0 1 2 4
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0

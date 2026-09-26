@@ -23,6 +23,7 @@
 #include "combat/justice.h"
 #include "combat/training_dummy.h"
 #include "item/objmisc.h"
+#include "item/item_movement_transaction.h"
 #include "magic/spells.h"
 #include "world/weather.h"
 /*
@@ -44,6 +45,178 @@ extern const int carve_part_flag[];
 extern P_obj object_list;
 extern P_index obj_index;
 extern P_char character_list;
+
+enum class summoned_replacement_kind : uint8_t
+{
+	book,
+	totem,
+};
+
+struct summoned_replacement_context
+{
+	uint64_t item_uid;
+	uint32_t recipient_pid;
+	uint8_t kind;
+};
+
+static_assert(sizeof(summoned_replacement_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+static P_obj new_skills_find_object_by_uid(uint64_t item_uid)
+{
+	if (!item_uid)
+		return NULL;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+static bool summoned_book_matches(P_obj object, P_char actor)
+{
+	if (!object || !object->name || !actor)
+		return false;
+	char bookname[512];
+	snprintf(bookname, sizeof(bookname), "bookof%s", actor->player.name);
+	char *suffix = strstr(object->name, bookname);
+	return suffix && strcmp(suffix, bookname) == 0;
+}
+
+static bool summoned_totem_matches(P_obj object, P_char actor)
+{
+	if (!object || !object->name || !actor)
+		return false;
+	char totemname[512];
+	snprintf(totemname, sizeof(totemname), "totem spirit %s", actor->player.name);
+	char *suffix = strstr(object->name, totemname);
+	return suffix && strcmp(suffix, totemname) == 0 && OBJ_VNUM(object) == 417;
+}
+
+static bool summoned_replacement_kind_valid(uint8_t kind)
+{
+	return kind == static_cast<uint8_t>(summoned_replacement_kind::book) ||
+	       kind == static_cast<uint8_t>(summoned_replacement_kind::totem);
+}
+
+static void retire_other_summoned_items(P_char actor, uint64_t keep_uid,
+					summoned_replacement_kind kind)
+{
+	for (P_obj object = object_list; object;)
+	{
+		P_obj next = object->next;
+		const bool matches = kind == summoned_replacement_kind::book ?
+					     summoned_book_matches(object, actor) :
+					     summoned_totem_matches(object, actor);
+		if (object->obj_uid != keep_uid && matches)
+			extract_obj(object);
+		object = next;
+	}
+}
+
+static void summoned_replacement_completed(P_char actor, bool committed,
+					   const item_transfer_result &result,
+					   unsigned int /*error_code*/, const uint8_t *encoded,
+					   size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(summoned_replacement_context) ||
+	    GET_PID(actor) <= 0)
+		return;
+
+	summoned_replacement_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (context.recipient_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+	    !summoned_replacement_kind_valid(context.kind))
+	{
+		logit(LOG_FILE,
+		      "summoned replacement completion had invalid context (uid=%llu pid=%d kind=%u)",
+		      (unsigned long long)context.item_uid, GET_PID(actor),
+		      static_cast<unsigned int>(context.kind));
+		return;
+	}
+	const summoned_replacement_kind kind = static_cast<summoned_replacement_kind>(context.kind);
+	if (!committed)
+	{
+		send_to_char(
+			kind == summoned_replacement_kind::book ?
+				"The magical spellbook could not be delivered; your existing spellbook was kept. "
+				"Please try again later.\r\n" :
+				"The magical totem could not be delivered; your existing totem was kept. "
+				"Please try again later.\r\n",
+			actor);
+		return;
+	}
+	if (result.root_item_uid != context.item_uid || !result.item_count)
+	{
+		logit(LOG_FILE,
+		      "summoned replacement completion identity mismatch (expected=%llu actual=%llu pid=%d kind=%u)",
+		      (unsigned long long)context.item_uid,
+		      (unsigned long long)result.root_item_uid, GET_PID(actor),
+		      static_cast<unsigned int>(context.kind));
+		send_to_char(
+			"The ownership authority returned an unexpected replacement; your existing item was kept.\r\n",
+			actor);
+		return;
+	}
+
+	P_obj replacement = new_skills_find_object_by_uid(context.item_uid);
+	const bool replacement_matches = kind == summoned_replacement_kind::book ?
+						 summoned_book_matches(replacement, actor) :
+						 summoned_totem_matches(replacement, actor);
+	if (!replacement || !OBJ_CARRIED_BY(replacement, actor) || !replacement_matches)
+	{
+		logit(LOG_FILE,
+		      "summoned replacement committed without live publication (uid=%llu pid=%d kind=%u)",
+		      (unsigned long long)context.item_uid, GET_PID(actor),
+		      static_cast<unsigned int>(context.kind));
+		send_to_char(
+			"The ownership authority delivered the replacement, but it is not available yet.\r\n",
+			actor);
+		return;
+	}
+
+	retire_other_summoned_items(actor, context.item_uid, kind);
+	send_to_char(
+		kind == summoned_replacement_kind::book ?
+			"&+LA magical spellbook materializes slowly in your hands.&n\r\n" :
+			"&+GMaglubiyet&n answers your call, and a magic totem slowly materializes in your hands.\r\n",
+		actor);
+}
+
+static bool submit_summoned_replacement(P_char actor, P_obj object, summoned_replacement_kind kind)
+{
+	if (!actor || !object)
+		return false;
+	if (!IS_PC(actor))
+	{
+		obj_to_char(object, actor);
+		retire_other_summoned_items(actor, object->obj_uid, kind);
+		send_to_char(
+			kind == summoned_replacement_kind::book ?
+				"&+LA magical spellbook materializes slowly in your hands.&n\r\n" :
+				"&+GMaglubiyet&n answers your call, and a magic totem slowly materializes in your hands.\r\n",
+			actor);
+		return true;
+	}
+
+	const summoned_replacement_context context = {
+		object->obj_uid,
+		static_cast<uint32_t>(GET_PID(actor)),
+		static_cast<uint8_t>(kind),
+	};
+	if (item_creation_grant_submit_to_player_with_completion(actor, object, actor,
+								 summoned_replacement_completed,
+								 &context, sizeof(context)))
+		return true;
+
+	extract_obj(object, FALSE);
+	send_to_char(
+		kind == summoned_replacement_kind::book ?
+			"The magical spellbook could not be created; your existing spellbook was kept. "
+			"Please try again later.\r\n" :
+			"The magical totem could not be created; your existing totem was kept. "
+			"Please try again later.\r\n",
+		actor);
+	return false;
+}
 
 /*
    This func contains collection of those basic checks that all
@@ -1846,19 +2019,8 @@ void event_summon_book(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*dat
 	P_obj book;
 	char bookname[512];
 	char namebuf[512];
-	char *tmp;
 
 	snprintf(bookname, 512, "bookof%s", ch->player.name);
-
-	for (book = object_list; book; book = book->next)
-	{
-		tmp = strstr(book->name, bookname);
-		if (tmp && strcmp(tmp, bookname) == 0)
-			break;
-	}
-
-	if (book)
-		extract_obj(book);
 
 	book = read_object(31, VIRTUAL);
 	if (book == NULL)
@@ -1873,9 +2035,7 @@ void event_summon_book(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*dat
 	book->extra_flags |= ITEM_NORENT;
 	book->bitvector = 0;
 
-	send_to_char("&+LA magical spellbook materializes slowly in your hands.&n\r\n", ch);
-
-	obj_to_char(book, ch);
+	submit_summoned_replacement(ch, book, summoned_replacement_kind::book);
 }
 
 void do_summon_book(P_char ch, char * /*arg*/, int /*cmd*/)
@@ -1889,20 +2049,8 @@ void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*da
 	P_obj totem;
 	char totemname[512];
 	char namebuf[512];
-	char *tmp;
 
 	snprintf(totemname, 512, "totem spirit %s", ch->player.name);
-
-	for (totem = object_list; totem; totem = totem->next)
-	{
-		tmp = strstr(totem->name, totemname);
-		if (tmp && (strcmp(tmp, totemname) == 0) &&
-		    (obj_index[totem->R_num].virtual_number == 417))
-			break;
-	}
-
-	if (totem)
-		extract_obj(totem);
 
 	totem = read_object(417, VIRTUAL);
 	if (totem == NULL)
@@ -1940,11 +2088,7 @@ void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*da
 		SET_BIT(totem->bitvector, AFF_FARSEE);
 	}
 
-	send_to_char(
-		"&+GMaglubiyet&n answers your call, and a magic totem slowly materializes in your hands.\r\n",
-		ch);
-
-	obj_to_char(totem, ch);
+	submit_summoned_replacement(ch, totem, summoned_replacement_kind::totem);
 }
 
 void do_summon_totem(P_char ch, char * /*arg*/, int /*cmd*/)

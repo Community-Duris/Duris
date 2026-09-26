@@ -12,7 +12,6 @@ from __future__ import annotations
 import server_build_artifacts
 
 import os
-import errno
 import fcntl
 import hashlib
 import json
@@ -281,15 +280,31 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         client.expect(f"Save complete for {CHARACTER}.")
         before = inspect_authority(state_root)
         banana = next(item["uid"] for item in before["player_items"] if item["vnum"] == 15)
+        client.send("quit")
+        client.expect("ACCOUNT MENU", timeout=30)
+        client.send("0")
+        client.close()
         ghost = add_death_conflict(state_root, banana)
         require(any(item["uid"] == ghost and item["parent"] == banana
                     for item in inspect_authority(state_root)["player_items"]),
                 "conflicting durable custody was not installed")
-        # Wait for the real repository refusal while the character remains live.
+        # Cold-load the partial projection. The valid graph stays visible but
+        # read-only, and death enters the disposition path without relying on a
+        # particular live root to discover the payload-less descendant.
+        client = reconnect_character(port)
+        client.send("inventory")
+        client.expect("a banana", timeout=15)
+        deadline = time.monotonic() + 15
+        while "outcome=missing_payload_rows" not in runtime_logs(run_root):
+            require(time.monotonic() < deadline, "payload gap was not reported at load")
+            time.sleep(0.01)
+        require(any(item["uid"] == ghost and item["parent"] == banana
+                    for item in inspect_authority(state_root)["player_items"]),
+                "partial load rewrote durable custody")
         attack_until_death(client)
         deadline = time.monotonic() + 15
-        while f"error={errno.EMSGSIZE} disputed=1" not in runtime_logs(run_root):
-            require(time.monotonic() < deadline, "death did not reach EMSGSIZE refusal")
+        while "load_item_payload_gap_disposition" not in runtime_logs(run_root):
+            require(time.monotonic() < deadline, "payload-gap death did not enter disposition")
             time.sleep(0.01)
         refused_at = time.monotonic()
         client.expect("ACCOUNT MENU", timeout=30)
@@ -315,7 +330,7 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         logs = runtime_logs(run_root)
         require(logs.index("death_disposition_recorded") < logs.index("death_disposition_completed"),
                 "character released before disposition durability")
-        print(f"flatfile-primary EMSGSIZE refusal-to-account-menu (n=1, isolated): {elapsed:.3f}s", flush=True)
+        print(f"flatfile-primary payload-gap disposition-to-account-menu (n=1, isolated): {elapsed:.3f}s", flush=True)
         client.send("0")
         return after
     finally:
@@ -497,6 +512,9 @@ def reconnect_character(
     port: int,
     return_message: str | None = None,
     expected_room: str | None = "The Regression Arena",
+    *,
+    account: str = ACCOUNT,
+    character: str = CHARACTER,
 ) -> MudClient:
     client = MudClient(port)
     try:
@@ -504,14 +522,14 @@ def reconnect_character(
         if entry == "term type":
             client.send("9")
             client.expect("account name")
-        client.send(ACCOUNT)
+        client.send(account)
         client.expect("enter your password")
         client.send(PASSWORD)
         client.expect("PRESS RETURN")
         client.send("")
         client.expect("Please select an option")
         client.send("1")
-        client.expect(CHARACTER)
+        client.expect(character)
         client.send("1")
         client.expect("Play as")
         client.send("y")
@@ -523,6 +541,75 @@ def reconnect_character(
     except Exception:
         client.close()
         raise
+
+
+OVERLORD_FIXTURE = r'''
+#include "flatfile/flatfile_player_snapshot_file.h"
+#include "flatfile/flatfile_store.h"
+#include "player/player_snapshot_codec.h"
+#include <cstdio>
+#include <openssl/sha.h>
+#include <strings.h>
+template<class T> void number(std::vector<uint8_t>& out, T value) {
+    for (size_t i=0; i<sizeof(T); ++i)
+        out.push_back(static_cast<uint64_t>(value) >> (i*8));
+}
+int main(int argc, char **argv) {
+    if (argc != 3) return 2;
+    const std::string root = argv[1];
+    for (int32_t pid = 1; pid <= 64; ++pid) {
+        player_snapshot snapshot; std::string error;
+        if (flatfile_player_snapshot_read(root, pid, &snapshot, &error) !=
+            flatfile_player_load_result::ok)
+            continue;
+        bool named = false;
+        for (const auto &entry : snapshot.status_strings)
+            named |= entry.field == player_status_string_field::name &&
+                     !strcasecmp(entry.value.c_str(), argv[2]);
+        if (!named) continue;
+        for (auto &field : snapshot.status_integers)
+            if (field.field == player_status_field::level ||
+                field.field == player_status_field::highest_level)
+                field.signed_value = field.unsigned_value = 62;
+        std::vector<uint8_t> payload, bytes;
+        snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+        if (player_snapshot_encode(snapshot, &payload) != player_snapshot_codec_result::ok)
+            return 1;
+        using namespace flatfile_player_snapshot_file;
+        bytes.insert(bytes.end(), player_magic.begin(), player_magic.end());
+        number(bytes, player_file_version); number<uint32_t>(bytes, payload.size());
+        number(bytes, snapshot.pid); number(bytes, snapshot.revision);
+        number(bytes, snapshot.components);
+        unsigned char digest[SHA256_DIGEST_LENGTH];
+        SHA256(payload.data(), payload.size(), digest);
+        bytes.insert(bytes.end(), digest, digest + sizeof(digest));
+        bytes.insert(bytes.end(), payload.begin(), payload.end());
+        return flatfile_atomic_write(player_directory(root), player_filename(pid), bytes,
+                                     &error) ? 0 : 1;
+    }
+    std::fprintf(stderr, "no flat-file player is named %s\n", argv[2]);
+    return 1;
+}
+'''
+
+
+def make_overlord(state_root: pathlib.Path, name: str) -> None:
+    """Raise flat-file character `name` to OVERLORD while no server runs.
+
+    Character creation refuses god_list names, the one way a new character
+    ever started as an OVERLORD, so a journey that needs a god promotes an
+    ordinary character here, as staff must after a wipe.
+    """
+    with tempfile.TemporaryDirectory(prefix="overlord-fixture-") as build:
+        source = pathlib.Path(build) / "overlord.cpp"
+        binary = pathlib.Path(build) / "overlord"
+        source.write_text(OVERLORD_FIXTURE, encoding="utf-8")
+        subprocess.run(["g++", "-std=c++20", "-Isrc", str(source),
+                        "src/player/player_snapshot_codec.c",
+                        "src/flatfile/flatfile_player_snapshot_file.c",
+                        "src/flatfile/flatfile_store.c", "-lcrypto", "-o", str(binary)],
+                       cwd=ROOT, check=True, timeout=300)
+        subprocess.run([str(binary), str(state_root), name], check=True, timeout=30)
 
 
 def verify_npc_loot_and_die(port: int) -> None:

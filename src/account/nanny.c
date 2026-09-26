@@ -57,6 +57,7 @@
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_locker.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
@@ -165,6 +166,40 @@ void ensure_pconly_pool(void)
 				  offsetof(struct pc_only_data, switched),
 				  mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
 	}
+}
+
+static void release_preentry_character(P_desc d)
+{
+	if (!d || !d->character)
+		return;
+	P_char character = d->character;
+	item_creation_grant_cancel_batch_before_entry(character);
+	d->character = NULL;
+	character->desc = NULL;
+	free_char(character);
+}
+
+static bool account_creation_side_allowed(P_desc d)
+{
+#ifdef USE_ACCOUNT
+	if (!d || !d->account || !d->character)
+		return true;
+	const account_racewar_admission admission = account_check_racewar_admission(
+		d, GET_RACEWAR(d->character), false, IS_TRUSTED(d->character));
+	if (admission.allowed)
+		return true;
+
+	char buf[512];
+	account_format_racewar_denial(&admission, buf, sizeof(buf));
+	SEND_TO_Q(buf, d);
+	release_preentry_character(d);
+	STATE(d) = CON_DISPLAY_ACCT_MENU;
+	display_account_menu(d, NULL);
+	return false;
+#else
+	(void)d;
+	return true;
+#endif
 }
 
 void swapstat(P_desc d, char *arg);
@@ -898,7 +933,7 @@ void load_obj_to_newbies(P_char ch)
    free.
    -JAB */
 
-bool _parse_name(char *arg, char *name)
+bool _parse_name(char *arg, char *name, bool character_name)
 {
 	int i;
 	const char *smart_ass[] = { "someone",	 "somebody",  "me",	   "self",	"all",
@@ -946,6 +981,12 @@ bool _parse_name(char *arg, char *name)
 	if (search_block(name, smart_ass, TRUE) >= 0)
 		return TRUE;
 	if (sub_string_set(name, rude_ass))
+		return TRUE;
+
+	/* do_start_impl() makes an OVERLORD of any character named on god_list, so
+	 * no character may take one of those names, even after a wipe frees it.
+	 * Account names grant nothing and skip this check. */
+	if (character_name && god_check(name))
 		return TRUE;
 
 	return FALSE;
@@ -1946,6 +1987,7 @@ void enter_game(P_desc d)
 
 	do_look(ch, 0, -4);
 	account_bound_reward_on_login(ch);
+	player_death_restitution_locker_notice(ch);
 
 	if (has_innate(ch, INNATE_SUMMON_BOOK))
 	{
@@ -2041,7 +2083,7 @@ void select_terminal(P_desc d, const char *arg)
 #else
 	//  account stuff instead of name
 	STATE(d) = CON_GET_ACCT_NAME;
-	SEND_TO_Q("Please enter your account name: ", d);
+	send_account_name_prompt(d);
 #endif
 }
 
@@ -2118,7 +2160,7 @@ void select_name(P_desc d, char *arg, int flag)
 		//  close_socket(d);
 		return;
 	}
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal name, please try another.\r\n", d);
 		SEND_TO_Q("Name: ", d);
@@ -3697,6 +3739,8 @@ void select_class(P_desc d, char *arg)
 		GET_RACEWAR(d->character) = RACEWAR_UNDEAD;
 	else if (IS_HARPY(d->character))
 		GET_RACEWAR(d->character) = RACEWAR_NEUTRAL;
+	if (!account_creation_side_allowed(d))
+		return;
 
 	/* pass through here, they don't get an alignment d->characterchoice. */
 
@@ -3838,6 +3882,8 @@ void select_alignment(P_desc d, char *arg)
 		GET_RACEWAR(d->character) = RACEWAR_UNDEAD;
 	else if (IS_HARPY(d->character))
 		GET_RACEWAR(d->character) = RACEWAR_NEUTRAL;
+	if (!account_creation_side_allowed(d))
+		return;
 
 	/* does this race get to choose a hometown ? */
 	home = find_hometown(GET_RACE(d->character), false);
@@ -5115,7 +5161,19 @@ void nanny(P_desc d, char *arg)
 #ifdef USE_ACCOUNT
 		if (d->character)
 		{
-			// New character entering the game for the first time
+			account_racewar_admission admission = {};
+			if (!account_commit_character_admission(d, d->character, false, &admission))
+			{
+				char buf[512];
+				account_format_racewar_denial(&admission, buf, sizeof(buf));
+				SEND_TO_Q(buf, d);
+				release_preentry_character(d);
+				STATE(d) = CON_ACCT_SELECT_CHAR;
+				display_character_list(d);
+				break;
+			}
+
+			// New character entering the game for the first time.
 			echo_on(d);
 			STATE(d) = CON_PLAYING;
 			enter_game(d);

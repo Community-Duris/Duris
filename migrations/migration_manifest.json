@@ -468,6 +468,16 @@
       "verify": "immutable/0029_critical_failure_stage.sh",
       "verify_checksum": "42126911602a6c02192a47eafcc1cea873998099452142f7758c28da3e0df0d1",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0030_telemetry_quarantine",
+      "sequence": 30,
+      "description": "Add durable quarantine for record-specific telemetry storage failures",
+      "apply": "immutable/0030_telemetry_quarantine.sql",
+      "apply_checksum": "dc2aa43b67f0851963f6dbbcf02a3257e4b99a1b2a090015849acf5e18a4909c",
+      "verify": "immutable/0030_telemetry_quarantine.sh",
+      "verify_checksum": "5c85232132f1e1e0d05e469f5d752454e07361e50360b387635d200cc060e1cf",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

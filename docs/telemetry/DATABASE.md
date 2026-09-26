@@ -2,9 +2,10 @@
 
 Migration `0014_telemetry_storage` adds exactly six InnoDB tables. The additive
 migration `0017_telemetry_rollup_support` adds the two replay-safe rollup support
-stores described below. Existing immutable migrations and the 170-table baseline
-retain their original content and checksums; the current runtime inventory is 187
-tables.
+stores described below. Migration `0030_telemetry_quarantine` adds a durable,
+operator-controlled quarantine for record-specific SQL failures. Existing
+immutable migrations retain their original content and checksums; the current
+runtime inventory is 203 tables.
 
 | Table | Grain and ownership |
 | --- | --- |
@@ -16,6 +17,7 @@ tables.
 | `telemetry_rollup_state` | Definition/generation/environment/season committed input watermark, publication state, occurrence coverage and rebuild range. |
 | `telemetry_rollup_session` | Definition/generation/environment/season/original session identity projection with greatest checkpoint revision, absolute checkpoint totals, sealed interval coverage, attribution and provisional quality. Primary key is the replay identity; `idx_rollup_session_subject` supports bounded subject keysets. |
 | `telemetry_cohort_member` | Definition/generation/environment/season/UTC-day/captured cohort dimensions/category/member contribution. `membership_kind` distinguishes one subject member (zero session identity) from one original session member; the full member identity is the replay-safe primary key. |
+| `telemetry_quarantine` | Durable isolation of a record whose SQL failure is classified as record-specific. The writer stores replay identity, a payload digest, the fixed-size record and payload-free failure metadata; only an explicit reviewed recovery action may change `recovery_state`. |
 
 The tagged fact stream stores named columns, with SQL NULL for fields absent from
 the selected kind. Allowed all-zero session and connection references remain zero
@@ -25,9 +27,12 @@ values; configuration carries its own environment/season and no session columns.
 which representation validation requires to agree. `checkpoint_revision` and
 `config_revision` distinguish the two revision meanings. `gap_reason` selects the
 gap enum; `lifecycle` selects the lifecycle enum. All other scalar names follow
-`telemetry_types.h`. There is no native-layout blob, arbitrary JSON or payload hash
-substituting for exact comparison of typed content. The configuration fingerprint
-is exactly 32 raw bytes. Named reserved fields are validated as zero and omitted.
+`telemetry_types.h`. Primary fact and configuration rows have no native-layout
+blob, arbitrary JSON or payload hash substituting for exact comparison of typed
+content. The protected quarantine is the deliberate exception: it retains the
+exact bounded record beside a semantic digest for controlled investigation and
+replay. The configuration fingerprint is exactly 32 raw bytes. Named reserved
+fields are validated as zero and omitted from primary facts.
 
 UTC labels use signed BIGINT epoch microseconds, including the explicit unknown
 sentinel. Monotonic endpoints, elapsed values, identities, sequences and revisions
@@ -60,7 +65,7 @@ may serve as a telemetry fallback.
 
 | Role | Allowed table operations |
 | --- | --- |
-| Telemetry writer | SELECT and INSERT on `telemetry_interval` and `telemetry_config`; SELECT, INSERT and UPDATE on `telemetry_session`. No aggregate writes or gameplay-table privileges. |
+| Telemetry writer | SELECT and INSERT on `telemetry_interval`, `telemetry_config` and `telemetry_quarantine`; SELECT, INSERT and UPDATE on `telemetry_session`. No quarantine UPDATE/DELETE, aggregate writes or gameplay-table privileges. |
 | External rollup | Bounded SELECT on `telemetry_interval`, `telemetry_config` and `telemetry_session`; SELECT, INSERT and UPDATE on `telemetry_player_day`, `telemetry_cohort_day`, `telemetry_rollup_session`, `telemetry_cohort_member` and `telemetry_rollup_state`. No gameplay writes or raw UPDATE/DELETE. |
 | Reports | SELECT only on reviewed aggregate/state tables or restricted views; no unrestricted raw history or gameplay access. |
 | Migration/lifecycle operator | Existing reviewed administrative workflow; distinct from runtime identities. No automatic purge is authorized. |
@@ -72,7 +77,7 @@ sequential writer with ambiguous commits resolved before later batches.
 
 ## Lifecycle and recovery
 
-All eight stores are registered in `migrations/data_lifecycle_manifest.json` with
+All nine stores are registered in `migrations/data_lifecycle_manifest.json` with
 season and terminal action `retain`, pending retention/archive/controller/export
 decisions, and destructive rules disabled. The fact/config/state stores protect
 replay and rebuild evidence. Telemetry is observational and never an economic or
@@ -82,7 +87,7 @@ retention as a controller policy.
 Scoped subject/PID facts and per-subject contributions require a reviewed subject
 processing route before activation. No account linkage is claimed or derived from
 current player rows. Aggregate disclosure also remains pending. Backup and restore
-must preserve the eight tables together, including facts, config identities,
+must preserve the nine tables together, including facts, quarantine evidence, config identities,
 projection revisions, rollup generations and cursor state. Rebuild is possible only
 while required fact detail is retained. Restored/test worlds require a fresh
 environment and producer incarnation before new observations. Copyover retains the
@@ -120,17 +125,20 @@ The private handle obtains a nonblocking, database-scoped advisory ingest lock.
 Another writer cannot claim readiness while that handle retains the lock. Losing
 the connection requires reacquiring ownership before retry. This also prevents a
 replacement writer from advancing the ingest cursor while an old connection is
-still committing. Startup probes only the three ingest-owned tables, consistent
+still committing. Startup probes only the four ingest-owned tables, consistent
 with the documented writer privileges. The full runtime schema validator owns
-compatibility for all eight stores. No main handle, pool acquisition or fallback
+compatibility for all nine stores. No main handle, pool acquisition or fallback
 path exists.
 
 Each bounded batch uses one transaction and each candidate gets a savepoint.
 Representation-invalid rows, missing configuration, scope changes and replay
-conflicts are returned individually while valid neighbors can commit. A connector
-error rolls back/discards the complete transaction and closes the private handle.
+conflicts are returned individually while valid neighbors can commit. A SQL error
+classified as record-specific is rolled back to the record savepoint, inserted in
+`telemetry_quarantine` in the same outer transaction, and represented as an
+explicit coverage gap while later records continue. Connection and transaction
+errors roll back/discard the complete transaction and close the private handle.
 A failed COMMIT acknowledgement is explicitly ambiguous. Only committed results
-contribute durable applied/duplicate/stale/rejected health counts.
+contribute durable applied/duplicate/stale/rejected/quarantined health counts.
 
 Exact replay compares the active named typed fields, including publication
 metadata; native padding and inactive union bytes are ignored. Incoming

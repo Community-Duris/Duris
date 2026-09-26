@@ -294,7 +294,35 @@ Useful checks:
 ```bash
 tail -f logs/log/status                 # boot + DB issues
 rg 'NEVENT BUDGET' logs/log/status # event-callback latency telemetry
+rg 'telemetry_health' logs/log/status  # telemetry writer state and alerts
 ```
+
+### Telemetry writer health
+
+The game loop observes only the writer's cached atomic health; it never performs
+SQL or waits for the telemetry worker. Each `telemetry_health` status line is
+metadata-only and includes the backend/schema, producer and record sequence,
+record kind, numeric error and failure class, queue/in-flight/retry state,
+advisory-lock state, counters, and coverage gaps. It never includes a player
+name, credentials, SQL text, or a record payload.
+
+A retained record with no commit progress raises a warning after two configured
+telemetry intervals and becomes critical after five minutes. An open circuit,
+permanent repository failure, queue use at or above 80%, or a dropped control
+record is critical immediately. Identical active failures produce at most one
+reminder every five minutes, while state, severity, reason, and failure-signature
+changes are logged immediately. An idle writer with no outstanding accepted
+records does not become stale merely because it has no recent commit.
+
+A trusted operator can run `world telemetry` to inspect the same live metadata
+without a debugger. Start with `state`, `reason_flags`, `failure class`, numeric
+`error`, `record_kinds`, `queue`, and `retry`; compare `last_admitted_seq` with
+`last_committed_seq` to locate the unresolved range. Fix the named schema,
+permission, connection, or storage fault rather than weakening SQL/TLS policy.
+A permanent open circuit retains its in-flight batch and requires the normal
+reviewed telemetry lifecycle restart after the dependency is repaired. Recovery
+is logged once, only after fresh commit progress, with the alert duration and
+affected producer/sequence range.
 
 ### Command and event latency
 

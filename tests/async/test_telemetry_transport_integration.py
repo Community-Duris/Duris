@@ -15,6 +15,7 @@ def main():
             str(ROOT / "tests/async/telemetry_transport_disabled_integration.cc"),
             str(ROOT / "src/telemetry/telemetry_transport.c"),
             str(ROOT / "src/telemetry/telemetry_queue.c"),
+            str(ROOT / "src/telemetry/telemetry_failure.c"),
             str(ROOT / "src/telemetry/telemetry_repository.c"),
             "-o", executable,
         ]

@@ -904,6 +904,20 @@ static const char *ws_get_race_faction(int race)
 	return "unknown";
 }
 
+static int ws_resolve_racewar_side(int race, int alignment)
+{
+	const int scaled_alignment = alignment > 0 ? 1000 : -1000;
+	if (OLD_RACE_GOOD(race, scaled_alignment))
+		return RACEWAR_GOOD;
+	if (OLD_RACE_EVIL(race, scaled_alignment))
+		return RACEWAR_EVIL;
+	if (OLD_RACE_PUNDEAD(race))
+		return RACEWAR_UNDEAD;
+	if (race == RACE_HARPY || race == RACE_GARGOYLE)
+		return RACEWAR_NEUTRAL;
+	return RACEWAR_NONE;
+}
+
 /* check if race is playable */
 static int ws_is_playable_race(int race)
 {
@@ -1267,7 +1281,8 @@ void ws_finish_login(struct descriptor_data *d, int password_valid)
 		d->account = free_account(d->account);
 		return;
 	}
-	const char *tmp_name = d->account->acct_name;
+	char tmp_name[MAX_INPUT_LENGTH];
+	strlcpy(tmp_name, d->account->acct_name, sizeof(tmp_name));
 
 	/* reconnect check: look for in-game characters from this account */
 	{
@@ -1293,6 +1308,18 @@ void ws_finish_login(struct descriptor_data *d, int password_valid)
 					break;
 				}
 				c = c->next;
+			}
+		}
+		if (online_char)
+		{
+			account_racewar_admission admission = {};
+			if (!c || !account_commit_character_admission(d, online_char, c->blocked,
+								      &admission))
+			{
+				char message[512];
+				account_format_racewar_denial(&admission, message, sizeof(message));
+				ws_send_auth_failed(d, message);
+				return;
 			}
 		}
 
@@ -1322,14 +1349,6 @@ void ws_finish_login(struct descriptor_data *d, int password_valid)
 		/* if we found an in-game character, reconnect to it */
 		if (online_char)
 		{
-			/* Match the native account flow: reconnects still honor explicit
-			 * character policy gates, but persistence recovery is not a login
-			 * admission dependency. */
-			if (!c || !can_connect(c, d))
-			{
-				ws_send_auth_failed(d, "Character is not available for login");
-				return;
-			}
 			struct descriptor_data *old_desc = online_char->desc;
 
 			/* close old descriptor if exists */
@@ -1420,6 +1439,15 @@ void ws_cmd_enter(struct descriptor_data *d, cJSON *data)
 	if (!c)
 	{
 		ws_send_text(d, "system", "Character not found");
+		return;
+	}
+	const account_racewar_admission admission = account_check_racewar_admission(
+		d, c->racewar, c->blocked, c->racewar == ACCT_IMMORTAL);
+	if (!admission.allowed)
+	{
+		char message[512];
+		account_format_racewar_denial(&admission, message, sizeof(message));
+		ws_send_system(d, "error", message);
 		return;
 	}
 
@@ -2187,6 +2215,16 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 		ws_send_system(d, "error", "That class requires evil alignment");
 		return;
 	}
+	const int resolved_racewar = ws_resolve_racewar_side(race_id, alignment);
+	const account_racewar_admission preflight =
+		account_check_racewar_admission(d, resolved_racewar, false, false);
+	if (!preflight.allowed)
+	{
+		char message[512];
+		account_format_racewar_denial(&preflight, message, sizeof(message));
+		ws_send_system(d, "error", message);
+		return;
+	}
 
 	/* store chargen options in descriptor */
 	d->chargen_hometown = hometown_id;
@@ -2268,23 +2306,8 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 	/* set alignment (1000 for good, -1000 for evil) */
 	GET_ALIGNMENT(ch) = (alignment == 1) ? 1000 : -1000;
 
-	/* set racewar based on race and alignment */
-	if (OLD_RACE_GOOD(race_id, GET_ALIGNMENT(ch)))
-	{
-		GET_RACEWAR(ch) = RACEWAR_GOOD;
-	}
-	else if (OLD_RACE_EVIL(race_id, GET_ALIGNMENT(ch)))
-	{
-		GET_RACEWAR(ch) = RACEWAR_EVIL;
-	}
-	else if (OLD_RACE_PUNDEAD(race_id))
-	{
-		GET_RACEWAR(ch) = RACEWAR_UNDEAD;
-	}
-	else if (IS_HARPY(ch))
-	{
-		GET_RACEWAR(ch) = RACEWAR_NEUTRAL;
-	}
+	/* Keep materialization identical to the side used by the admission preflight. */
+	GET_RACEWAR(ch) = resolved_racewar;
 
 	/* set hometown */
 	if (hometown_id < 0 || hometown_id > LAST_HOME)
@@ -2342,6 +2365,21 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 		schedule_chaos_new_character_kit_before_entry(ch);
 	else
 		writeCharacter(ch, RENT_QUIT, NOWHERE);
+
+	account_racewar_admission admission = {};
+	if (!account_commit_character_admission(d, ch, false, &admission))
+	{
+		char message[512];
+		account_format_racewar_denial(&admission, message, sizeof(message));
+		ws_send_system(d, "error", message);
+		item_creation_grant_cancel_batch_before_entry(ch);
+		d->character = NULL;
+		ch->desc = NULL;
+		free_char(ch);
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		ws_send_auth_success(d, d->account->acct_name);
+		return;
+	}
 
 	logit(LOG_NEW, "%s [%s] new WebSocket player.", GET_NAME(ch), d->host);
 	statuslog(ch->player.level, "%s [%s] new WebSocket player.", GET_NAME(ch), d->host);

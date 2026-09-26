@@ -2,6 +2,7 @@
 
 #include "net/comm.h"
 #include "item/item_ownership_runtime.h"
+#include "item/encumbrance_policy.h"
 #include "player/player_snapshot_codec.h"
 #include "core/prototypes.h"
 #include "magic/spells.h"
@@ -332,7 +333,7 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 			object->loc_p = LOC_WORN;
 			if (IS_PC(character) && GET_ITEM_TYPE(object) == ITEM_ARMOR)
 				character->only.pc->prestige += object->value[2];
-			GET_CARRYING_W(character) += GET_OBJ_WEIGHT(object) / 2;
+			GET_CARRYING_W(character) += encumbrance_weight(GET_OBJ_WEIGHT(object)) / 2;
 		}
 		else
 		{
@@ -345,7 +346,7 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 			object->loc.carrying = character;
 			object->loc_p = LOC_CARRIED;
 			object->z_cord = 0;
-			GET_CARRYING_W(character) += GET_OBJ_WEIGHT(object);
+			GET_CARRYING_W(character) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 			IS_CARRYING_N(character)++;
 			if (IS_PC(character) && !object->g_key && GET_LEVEL(character) < 57 &&
 			    GET_PID(character) < 10000000)

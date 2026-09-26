@@ -33,9 +33,11 @@ No new worker, persistence format, database migration or recovery queue is added
 
 ## Transient gear and ownership
 
-`ITEM_TRANSIENT` controls dissolution after dropping; `ITEM_NORENT` separately
-excludes an item from player snapshots. Eligible transient gear, including flags
-inherited from prototypes, must acquire active player custody through
+`ITEM_TRANSIENT` controls dissolution after dropping. `ITEM_NORENT` remains a
+request not to retain an unowned runtime item, but it cannot silently override an
+active durable-custody row: authoritative items are serialized until an explicit
+destruction transition retires that custody. Eligible transient gear, including
+flags inherited from prototypes, must acquire active player custody through
 `obj_to_char()` before publication. Containers and quivers are exempt from the
 legacy kit's added transient flag, but that exemption does not erase prototype
 flags or replace ownership admission.

@@ -200,6 +200,38 @@ extern P_room world;
 
 bool command_confirm;
 
+/* Confirmation-required commands normally use descriptor state to remember
+ * the pending command.  A linkdead player has no descriptor, but can still be
+ * targeted by internal command dispatch (notably `force`).  In that case an
+ * explicit `confirm` may execute immediately; an unconfirmed command must not
+ * be dispatched because there is nowhere to store or answer its prompt. */
+static bool prepare_command_confirmation(P_char character, const char *full_command,
+					 const char *command_argument)
+{
+	if (!character || !full_command || !command_argument)
+	{
+		command_confirm = FALSE;
+		return false;
+	}
+
+	command_confirm = IS_NPC(character) ||
+			  (character->desc && character->desc->confirm_state == CONFIRM_DONE) ||
+			  !strcmp(command_argument, "confirm");
+	if (command_confirm)
+	{
+		if (character->desc)
+			character->desc->confirm_state = CONFIRM_NONE;
+		return true;
+	}
+
+	if (!character->desc)
+		return false;
+
+	character->desc->confirm_state = CONFIRM_AWAIT;
+	strcpy(character->desc->last_command, full_command);
+	return true;
+}
+
 void do_prestige(P_char ch, char *argument, int cmd);
 void check_aggro_from_command(P_char exec_char);
 
@@ -1416,6 +1448,33 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_ASK:
 	case CMD_BUY:
 	case CMD_SELL:
+	case CMD_VALUE:
+	case CMD_REPAIR:
+	case CMD_APPRAISE:
+	case CMD_LORE:
+	case CMD_WRITE:
+	case CMD_ITEMMANA:
+	case CMD_AUCTION:
+	case CMD_FORGE:
+	case CMD_REFINE:
+	case CMD_ENHANCE:
+	case CMD_CRAFT:
+	case CMD_ENCRUST:
+	case CMD_SPELLBIND:
+	case CMD_FIX:
+	case CMD_MIX:
+	case CMD_MIXPOISON:
+	case CMD_SMELT:
+	case CMD_ENCHANT:
+	case CMD_MAKE:
+	case CMD_SCRIBE:
+	case CMD_DISGUISE:
+	case CMD_LOCK:
+	case CMD_UNLOCK:
+	case CMD_PICK:
+	case CMD_RENT:
+	case CMD_QUIT:
+	case CMD_CAMP:
 	case CMD_EQUIPMENT:
 	case CMD_INVENTORY:
 	case CMD_COLLECTOR:
@@ -2344,42 +2403,29 @@ void command_interpreter(P_char ch, char *argument)
 				return;
 			}
 
-			/* Record only a recognized command that survived parser, state,
-			 * permission, special-proc, and item-teleport gates.  The old comm.c
-			 * hook ran before pager/editor handling and treated rejected input as
-			 * player activity. */
-			if (cmd_info[cmd].req_confirm != 1 ||
-			    (exec_char->desc && (exec_char->desc->confirm_state == CONFIRM_DONE ||
-						 !strcmp(argument + begin + look_at, "confirm"))))
-				telemetry_record_recognized_command(ch, exec_char, cmd);
-
 			// Execute the bloody thing!!!
-			if ((cmd_info[cmd].req_confirm == 1) &&
-			    (IS_NPC(exec_char) ||
-			     (exec_char->desc->confirm_state == CONFIRM_DONE) ||
-			     !strcmp(argument + begin + look_at, "confirm")))
+			if (cmd_info[cmd].req_confirm == 1)
 			{
-				if (exec_char->desc)
-				{
-					exec_char->desc->confirm_state = CONFIRM_NONE;
-				}
-				command_confirm = TRUE;
-				((*cmd_info[cmd].command_pointer)(exec_char,
-								  argument + begin + look_at, cmd));
-			}
-			else if (cmd_info[cmd].req_confirm == 1)
-			{
-				if (exec_char->desc)
-				{
-					exec_char->desc->confirm_state = CONFIRM_AWAIT;
-				}
-				strcpy(exec_char->desc->last_command, argument);
-				command_confirm = FALSE;
+				if (!prepare_command_confirmation(exec_char, argument,
+								  argument + begin + look_at))
+					return;
+
+				/* Record only a confirmed command that survived parser, state,
+				 * permission, special-proc, and item-teleport gates. */
+				if (command_confirm)
+					telemetry_record_recognized_command(ch, exec_char, cmd);
+
 				((*cmd_info[cmd].command_pointer)(exec_char,
 								  argument + begin + look_at, cmd));
 			}
 			else
 			{
+				/* Record only a recognized command that survived parser, state,
+				 * permission, special-proc, and item-teleport gates.  The old comm.c
+				 * hook ran before pager/editor handling and treated rejected input as
+				 * player activity. */
+				telemetry_record_recognized_command(ch, exec_char, cmd);
+
 				if (exec_char->desc)
 				{
 					exec_char->desc->confirm_state = CONFIRM_NONE;
