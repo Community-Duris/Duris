@@ -10136,7 +10136,9 @@ void unmulti(P_char ch, P_obj obj)
 	if (!IS_MULTICLASS_PC(ch))
 		return;
 
-	if (GET_EPIC_POINTS(ch) < 100)
+	// Epic points are kept only from epic.bank.minLevel, so below it the offering is waived.
+	const bool waived = !epic_level_can_bank(ch);
+	if (!waived && GET_EPIC_POINTS(ch) < 100)
 	{
 		send_to_char("&+WYou must have at least 100 epic points to unmulti!\n", ch);
 		return;
@@ -10152,6 +10154,11 @@ void unmulti(P_char ch, P_obj obj)
 	    "After a few moments, $e stands up quietly.\n",
 	    FALSE, ch, obj, 0, TO_ROOM);
 
+	if (waived)
+	{
+		unmulti_committed(ch, true, {}, 0, nullptr, 0);
+		return;
+	}
 	if (!epic_transaction_submit(ch, -100, epic_reason_type::ascend_descend, 0,
 				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
 				     critical_deadline_class::interactive, unmulti_committed,

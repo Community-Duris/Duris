@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Exercise the production quaff command at the configured epic award boundary."""
+"""Exercise the production quaff command at the configured epic bank boundary.
+
+Epic potions hold epic points, which are kept only from epic.bank.minLevel.
+"""
 
 import subprocess
 import tempfile
@@ -33,7 +36,7 @@ static int awards, consumed, waits, unequips, potion_effects;
 static std::string output;
 
 float get_property(const char *key, double fallback) {
-    return !strcmp(key, "epic.gain.minLevel") ? minimum_level : fallback;
+    return !strcmp(key, "epic.bank.minLevel") ? minimum_level : fallback;
 }
 void send_to_char(const char *text, P_char) { output += text; }
 void send_to_char_f(P_char, const char *format, ...) {
@@ -63,7 +66,8 @@ P_obj unequip_char(P_char ch, int slot, bool) {
 }
 void gain_epic(P_char ch, int type, int, int amount) {
     assert(type == EPIC_BOTTLE && amount == 75);
-    if (epic_level_can_gain(ch)) ++awards;
+    (void)ch;
+    ++awards;
 }
 void extract_obj(P_obj, int) { ++consumed; }
 int spell_damage(P_char, P_char, double, int, uint, damage_messages *, int *) {
@@ -122,7 +126,7 @@ int main() {
 
 code = PRELUDE + extract_function("utility.c", "int BOUNDED(") + "\n".join(
     extract_function("epic.c", signature) for signature in (
-        "int epic_gain_min_level()", "bool epic_level_can_gain(P_char ch)"
+        "int epic_bank_min_level()", "bool epic_level_can_bank(P_char ch)"
     )
 ) + extract_function("actoth.c", "void do_quaff(") + DRIVER
 

@@ -754,7 +754,14 @@ void unspecialize(P_char ch, P_obj obj)
 		send_to_char("You pray to the &+bWater Goddess&n but you get no response.", ch);
 		return;
 	}
-	if (GET_EPIC_POINTS(ch) < 10)
+	// Epic points are kept only from epic.bank.minLevel, so below it the offering is waived.
+	if (!epic_level_can_bank(ch))
+	{
+		act("You kneel in front of $p and pray to the Water Goddess.\n", FALSE, ch, obj, 0,
+		    TO_CHAR);
+		unspecialize_committed(ch, true, {}, 0, nullptr, 0);
+	}
+	else if (GET_EPIC_POINTS(ch) < 10)
 	{
 		send_to_char("You need 10 epic points to pay for this.\n", ch);
 	}

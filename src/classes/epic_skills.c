@@ -459,8 +459,9 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	}
 
 	cost_mod = 1 + GET_CHAR_SKILL(pl, skl) / get_property("epic.progressFactor", 30);
-	// For the 2015-6 wipe, doubling cash cost and tripling the epic point cost.
-	epics_cost = 3 * (int)(cost_mod * pReward->points_cost);
+	// For the 2015-6 wipe, doubling cash cost and tripling the epic point cost. The epic
+	// multiplier is now epic.skill.costMultiplier (5), since epics are banked only at 56.
+	epics_cost = epic_skill_cost_multiplier() * (int)(cost_mod * pReward->points_cost);
 	coins_cost = 2 * (int)(cost_mod * pReward->coins);
 
 	if (IS_MULTICLASS_PC(pl) && !IS_SET(pReward->classes, pl->player.m_class) &&

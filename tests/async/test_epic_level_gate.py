@@ -3,7 +3,8 @@
 
 epic.gain.minLevel (default 50): no epic points below it, from any source.
 epic.skills.minLevel (default 56): no epic skills learned below it.
-Touch-stone level costs for 51-56 are untouched.
+Levels 51-56 cost no epic points; the epic levelling reform contract
+(test_epic_levelling_reform.py) covers banking and conversion.
 """
 
 from __future__ import annotations
@@ -101,7 +102,7 @@ def test_stones_refuse_ineligible_touchers_and_skip_ineligible_members() -> None
 def test_epic_teachers_refuse_below_the_skill_level() -> None:
     teacher = _flat(_body("classes/epic_skills.c", "int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)"))
     gate = teacher.index(_flat("if (GET_LEVEL(pl) < epic_skills_min_level())"))
-    assert gate < teacher.index(_flat("epics_cost = 3 *"))
+    assert gate < teacher.index(_flat("epics_cost = epic_skill_cost_multiplier() *"))
     assert gate < teacher.index("epic_transaction_submit(")
 
 
@@ -110,9 +111,10 @@ def test_properties_ship_the_defaults() -> None:
     section = section[: section.index("\n[", 1)].splitlines()
     assert "epic.gain.minLevel=50.000" in section
     assert "epic.skills.minLevel=56.000" in section
-    # Levels 51-56 still cost what they cost.
-    for level, cost in ((51, "1000.000"), (56, "13500.000")):
-        assert f"epic.forLevel.{level}={cost}" in section
+    assert "epic.bank.minLevel=56.000" in section
+    # Levels 51-56 are bought with experience alone; the keys stay, at zero.
+    for level in range(51, 57):
+        assert f"epic.forLevel.{level}=0.000" in section
 
 
 if __name__ == "__main__":

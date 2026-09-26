@@ -221,7 +221,8 @@ struct affected_type { int modifier; };
 struct epic_level_context { int expected_level; long experience_cost; int epic_cost; };
 struct epic_award_context { int type, data, amount; bool blessing, task_penalty; };
 static long new_exp_table[60] = {};
-static int spends = 0, payouts = 0, object_lookups = 0;
+static int spends = 0, payouts = 0, object_lookups = 0, conversions = 0;
+static void epic_award_converted(P_char, const epic_award_context &) { ++conversions; }
 static int64_t spend_delta = 0;
 static epic_level_context spend_context = {};
 int sql_level_cap(int) { return 56; }
@@ -303,6 +304,11 @@ int main()
  assert(spends==3); // existing direct object callers still use the same policy
  epic_stone_level_char(nullptr,&character);
  assert(spends==3);
+ // A member below epic.bank.minLevel is paid in experience: no epic payout, no level spend.
+ const int banked_payouts=payouts;
+ result.awards[0].flags=ZONE_TOUCH_AWARD_CONVERTED;
+ epic_publish_stone_award(&character,result,0);
+ assert(conversions==1 && payouts==banked_payouts && spends==3);
 }
 '''
 

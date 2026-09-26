@@ -87,8 +87,12 @@ class ArtifactGuildCutoverTests(unittest.TestCase):
         gain = epic[gain_start:gain_end]
         self.assertIn("epic_transaction_submit_identified", gain)
         self.assertIn("artifact_guild_transaction_submit(ch, operation_id", gain)
+        # A banked award submits its epic transaction first; an award below
+        # epic.bank.minLevel feeds from the same operation id and returns before it.
         self.assertLess(gain.index("epic_transaction_submit_identified"),
-                        gain.index("artifact_guild_transaction_submit"))
+                        gain.rindex("artifact_guild_transaction_submit"))
+        self.assertLess(gain.index("epic_award_converted(ch, context);\n\t\treturn;"),
+                        gain.index("epic_transaction_submit_identified"))
         combat = (SRC / "fight.c").read_text()
         callback = combat[combat.index("static void combat_outcome_committed"):
                           combat.index("static bool submit_pvp_outcome")]

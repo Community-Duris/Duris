@@ -56,8 +56,10 @@ bool publish(pending_touch &entry)
 			logit(LOG_FILE,
 			      "epic_stone: component=artifact_effect outcome=unavailable actor=redacted");
 		entry.published[i] = true;
-		// A reconnect can already have loaded a newer authoritative balance.
-		if (entry.result.revisions[i] >= ch->only.pc->epic_revision)
+		// A reconnect can already have loaded a newer authoritative balance, and a
+		// converted member was credited nothing.
+		if (!(entry.result.awards[i].flags & ZONE_TOUCH_AWARD_CONVERTED) &&
+		    entry.result.revisions[i] >= ch->only.pc->epic_revision)
 			epic_transaction_publish_balance(ch, entry.result.balances[i],
 							 entry.result.revisions[i]);
 		epic_publish_stone_award(ch, entry.result, i);

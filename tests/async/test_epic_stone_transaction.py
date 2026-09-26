@@ -117,8 +117,11 @@ int main()
     invalid.awards[14].amount = 0;
     assert(!zone_touch_command_build(&extra, id, invalid));
     invalid = payload;
-    invalid.awards[14].flags = 4;
+    invalid.awards[14].flags = 8; // blessing=1, task penalty=2, converted=4
     assert(!zone_touch_command_build(&extra, id, invalid));
+    invalid = payload;
+    invalid.awards[14].flags = ZONE_TOUCH_AWARD_CONVERTED | 3;
+    assert(zone_touch_command_build(&extra, id, invalid));
 
     // A stone awarded outside a qualifying zone still carries all payouts.
     payload.zone_number = 0;

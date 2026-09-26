@@ -4587,10 +4587,11 @@ void do_quaff(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (OBJ_VNUM(bottle) == VOBJ_EPIC_BOTTLE_EPICS && !epic_level_can_gain(ch))
+	// Epic potions hold points, and points are kept only from epic.bank.minLevel.
+	if (OBJ_VNUM(bottle) == VOBJ_EPIC_BOTTLE_EPICS && !epic_level_can_bank(ch))
 	{
 		send_to_char_f(ch, "You must reach level %d before you can quaff epic potions.\r\n",
-			       epic_gain_min_level());
+			       epic_bank_min_level());
 		return;
 	}
 

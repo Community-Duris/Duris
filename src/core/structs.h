@@ -972,6 +972,7 @@ struct room_data
 #define EXP_WORLD_QUEST 8
 #define EXP_TANKING 9
 #define EXP_BOON 10
+#define EXP_EPIC 11 // an epic award paid as experience below epic.bank.minLevel
 
 struct racial_data_type
 {

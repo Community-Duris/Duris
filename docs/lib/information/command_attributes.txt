@@ -9,6 +9,8 @@ GET_C_STR(ch
 GET_C_DEX(ch
 GET_C_DEX(ch
 ~
+artifeed
+~
 awareness
 GET_C_INT(ch
 GET_C_DEX(ch

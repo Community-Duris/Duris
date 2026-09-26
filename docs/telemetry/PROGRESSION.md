@@ -39,7 +39,7 @@ records retain their absent-field representation.
 | Field | Meaning |
 | --- | --- |
 | `progression_kind` | `1` observed XP storage; `2` level advanced; `3` level lost. |
-| `progression_source` | Bounded source: damage, healing, kill, death, quest, resurrect, melee, world quest, tanking, boon, administration, system, or unknown. |
+| `progression_source` | Bounded source: damage, healing, kill, death, quest, resurrect, melee, world quest, tanking, boon, administration, system, epic conversion, or unknown. |
 | `progression_reason` | `earned`, `death_loss`, `resurrection`, `level_threshold`, `administration`, `system_adjustment`, or unknown. |
 | `progression_observation_status` | H emits `observed_mutable` (`1`). `recovered_checkpoint` and `durable_reconciled` are reserved for later recovery/authority work. |
 | `progression_modifier_flags` | Fixed bit set for rested/well-rested, over-level-cap, difficulty, PvP, final per-call cap, race, and victim paths. Unknown bits are rejected. |
@@ -75,6 +75,7 @@ persisting an arbitrary type or player-controlled text:
 | `EXP_WORLD_QUEST` | world_quest | earned |
 | `EXP_TANKING` | tanking | earned |
 | `EXP_BOON` | boon | earned |
+| `EXP_EPIC` | epic_conversion | earned |
 
 The adapter marks only bounded modifier paths that it can identify at the
 existing boundary. A victim or PvP path, rested state, difficulty path, race

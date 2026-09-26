@@ -625,6 +625,8 @@ static telemetry_progression_source progression_source_for_type(int type)
 		return telemetry_progression_source::tanking;
 	case EXP_BOON:
 		return telemetry_progression_source::boon;
+	case EXP_EPIC:
+		return telemetry_progression_source::epic_conversion;
 	default:
 		return telemetry_progression_source::unknown;
 	}
@@ -637,7 +639,8 @@ static telemetry_progression_reason progression_reason_for_type(int type)
 	if (type == EXP_RESURRECT)
 		return telemetry_progression_reason::resurrection;
 	if (type == EXP_DAMAGE || type == EXP_HEALING || type == EXP_KILL || type == EXP_QUEST ||
-	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING || type == EXP_BOON)
+	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING || type == EXP_BOON ||
+	    type == EXP_EPIC)
 		return telemetry_progression_reason::earned;
 	return telemetry_progression_reason::unknown;
 }
@@ -1214,7 +1217,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	if (victim != nullptr)
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_VICTIM;
 
-	if (type == EXP_RESURRECT)
+	// Rest does not double a resurrection or an epic award paid as experience.
+	if (type == EXP_RESURRECT || type == EXP_EPIC)
 	{
 		;
 	}
@@ -1512,6 +1516,18 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			      (int)XP);
 		}
 		// debug("world quest 1 (%d)", (int)XP);
+	}
+	else if (type == EXP_EPIC)
+	{
+		// An epic award below epic.bank.minLevel: racial exp factor only, like quest exp.
+		XP = gain_exp_modifiers_race_only(ch, NULL, XP);
+		if (GET_LEVEL(ch) < MINLVLIMMORTAL)
+		{
+			logit(LOG_EXP,
+			      "EPIC EXP: %s - level %d: old exp: %d, new exp: %d, +exp: %d",
+			      GET_NAME(ch), GET_LEVEL(ch), GET_EXP(ch), GET_EXP(ch) + (int)XP,
+			      (int)XP);
+		}
 	}
 	else if (type == EXP_QUEST)
 	{
