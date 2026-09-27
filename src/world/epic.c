@@ -679,6 +679,52 @@ void epic_pay_converted_award(P_char ch, int type, int data, int amount)
 	epic_award_converted(ch, context);
 }
 
+namespace
+{
+struct epic_forfeit_context
+{
+	int64_t amount;
+	int level;
+};
+
+void epic_forfeit_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+			    const uint8_t *raw_context, size_t context_size)
+{
+	if (!ch || context_size != sizeof(epic_forfeit_context))
+		return;
+	epic_forfeit_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (!committed)
+	{
+		// The balance stays until the next login tries again.
+		logit(LOG_DEBUG,
+		      "epic_forfeit: component=bank_level outcome=deferred actor=redacted");
+		return;
+	}
+	send_to_char_f(ch,
+		       "&+rYour %lld epic point%s fade away: epic points are kept only from level "
+		       "%d.&n\r\n",
+		       static_cast<long long>(context.amount), context.amount == 1 ? "" : "s",
+		       epic_bank_min_level());
+	epiclog(56, "%s forfeited %lld epic points at level %d, below the bank level",
+		ch->player.name, static_cast<long long>(context.amount), context.level);
+}
+} // namespace
+
+void epic_forfeit_below_bank(P_char ch, critical_source_site site)
+{
+	if (!ch || !IS_PC(ch) || IS_TRUSTED(ch) || epic_level_can_bank(ch) ||
+	    ch->only.pc->epics <= 0)
+		return;
+	const epic_forfeit_context context = { ch->only.pc->epics, GET_LEVEL(ch) };
+	if (!epic_transaction_submit(ch, -context.amount, epic_reason_type::bank_level_forfeit,
+				     GET_LEVEL(ch), EPIC_COMMAND_REQUIRE_FUNDS, site,
+				     critical_deadline_class::interactive, epic_forfeit_committed,
+				     &context, sizeof(context)))
+		logit(LOG_FILE,
+		      "epic_forfeit: component=bank_level outcome=unavailable actor=redacted");
+}
+
 static bool prepare_epic_award(P_char ch, int type, int data, int amount, bool completing_task,
 			       epic_award_context *prepared)
 {

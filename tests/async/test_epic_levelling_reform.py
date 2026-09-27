@@ -218,6 +218,68 @@ def test_epic_potions_respecs_and_skill_prices_follow_the_bank_level() -> None:
     assert "points_cost*3" not in refund
 
 
+def test_no_character_below_the_bank_level_keeps_epic_points() -> None:
+    forfeit = _definition("world/epic.c", "void epic_forfeit_below_bank(P_char ch, critical_source_site site)")
+    _compile_and_run(r'''
+#include "core/prototypes.h"
+#include "core/utils.h"
+#include "world/epic_bank.h"
+#include "world/epic_transaction.h"
+#include <cstdio>
+#include <cstdlib>
+struct epic_forfeit_context { int64_t amount; int level; };
+static void epic_forfeit_committed(P_char, bool, const epic_command_result &, unsigned int,
+                                   const uint8_t *, size_t) {}
+bool epic_level_can_bank(P_char ch) { return GET_LEVEL(ch) >= 56; }
+void logit(const char *, const char *, ...) {}
+static int submits = 0;
+static int64_t last_delta = 0;
+static epic_reason_type last_reason = epic_reason_type::unknown;
+bool epic_transaction_submit(P_char, int64_t delta, epic_reason_type reason, int64_t, uint16_t flags,
+                             critical_source_site site, critical_deadline_class, epic_completion_fn,
+                             const void *context, size_t size) {
+    if (flags != EPIC_COMMAND_REQUIRE_FUNDS || site != critical_source_site::combat ||
+        size != sizeof(epic_forfeit_context) || static_cast<const epic_forfeit_context *>(context)->amount != -delta)
+        std::abort();
+    ++submits; last_delta = delta; last_reason = reason;
+    return true;
+}
+''' + forfeit + r'''
+static void check(int level, int64_t epics, bool expect_forfeit) {
+    char_data ch{};
+    pc_only_data pc{};
+    ch.only.pc = &pc;
+    ch.player.level = level;
+    pc.epics = epics;
+    const int before = submits;
+    epic_forfeit_below_bank(&ch, critical_source_site::combat);
+    if ((submits - before) != (expect_forfeit ? 1 : 0)) std::abort();
+    if (expect_forfeit && (last_delta != -epics || last_reason != epic_reason_type::bank_level_forfeit))
+        std::abort();
+}
+int main() {
+    check(55, 12500, true);    // lost level 56: the whole balance goes
+    check(50, 1, true);        // any balance below the bank level goes
+    check(56, 12500, false);   // at the bank level points are kept
+    check(55, 0, false);       // nothing to forfeit
+    check(58, 900, false);     // immortals are exempt
+    epic_forfeit_below_bank(nullptr, critical_source_site::combat);
+    std::puts("bank-level forfeit: below 56 loses everything, 56 and immortals keep, empty skipped");
+    return 0;
+}
+''')
+    lose = _flat(_definition("world/limits.c", "static void lose_level_impl("))
+    assert ("if(previous_level>=epic_bank_min_level()&&GET_LEVEL(ch)<epic_bank_min_level())"
+            "epic_forfeit_below_bank(ch,") in lose
+    assert lose.index("ch->player.level=MAX(1,ch->player.level-1);") < lose.index("epic_forfeit_below_bank(")
+    nanny = _flat(source("account/nanny.c").read_text())
+    ready = nanny.index("epic_transaction_player_ready(ch);")
+    assert ready < nanny.index("epic_forfeit_below_bank(ch,critical_source_site::login);", ready)
+    assert nanny.index("advance_to_level(ch,56);") < ready, "CHAOS characters reach 56 first"
+    codec = source("world/epic_command.c").read_text()
+    assert "reason <= epic_reason_type::bank_level_forfeit;" in codec
+
+
 # ------------------------------------------------------------------ artifact feeding
 
 FEED_DEFAULTS = {

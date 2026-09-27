@@ -2,6 +2,7 @@
 #define EPIC_BANK_H
 
 #include "core/structs.h"
+#include "persistence/critical_command.h"
 
 /*
  * Epic points are banked only from epic.bank.minLevel (default 56). From
@@ -27,6 +28,15 @@ int epic_conversion_exp_per_epic(int level);
  * fed artifacts and guild prestige from the full epic amount.
  */
 void epic_pay_converted_award(P_char ch, int type, int data, int amount);
+
+/**
+ * Epic points are never held below the bank level. A character below it with a
+ * balance -- one who lost level 56 to a death, or is found holding points at login --
+ * forfeits the whole balance through the epic ledger (reason bank_level_forfeit).
+ * Does nothing for an immortal, a character at or above the bank level, or an empty
+ * balance. A debit that cannot be queued is retried at the next login.
+ */
+void epic_forfeit_below_bank(P_char ch, critical_source_site site);
 
 /** The epic skill price multiplier, epic.skill.costMultiplier (default 5). */
 int epic_skill_cost_multiplier();
