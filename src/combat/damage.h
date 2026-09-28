@@ -1,6 +1,8 @@
 #ifndef _DAMAGE_H_
 #define _DAMAGE_H_
 
+#include "core/structs.h"
+
 #define DAM_NONEDEAD 0
 #define DAM_VICTDEAD 1
 #define DAM_CHARDEAD -1
@@ -153,5 +155,14 @@
 #define MSG_MAUL 9
 #define MSG_THRASH 10
 #define MSG_TOUCH 11
+
+bool damage(P_char ch, P_char victim, double dam, int attacktype);
+int raw_damage(P_char ch, P_char vict, double dam, uint flags, struct damage_messages *messages,
+	       int *damAccumulator = NULL);
+int check_shields(P_char ch, P_char victim, int dam, int flags);
+int spell_damage(P_char ch, P_char vict, double dam, int type, uint flags,
+		 struct damage_messages *messages, int *damAccumulator = NULL);
+int melee_damage(P_char ch, P_char vict, double dam, int flags, struct damage_messages *messages,
+		 int *damAccumulator = NULL);
 
 #endif

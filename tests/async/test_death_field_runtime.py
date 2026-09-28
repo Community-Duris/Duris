@@ -347,7 +347,7 @@ def main():
         ('utility.c', 'bool should_area_hit(P_char ch, P_char victim)'),
         ('utility.c', 'int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),\n\t\t\tint level, P_char victim, float min_chance, float /*chance_step*/,\n\t\t\tbool (*select_func)(P_char, P_char))'),
         ('utility.c', 'int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),\n\t\t\tint level, P_char victim, float min_chance, float chance_step)'),
-        ('fight.c', 'int check_damage_ward(P_char attacker,'),
+        ('combat/damage_support.c', 'int check_damage_ward(P_char attacker,'),
         ('fight.c', 'int spell_damage(P_char ch,'),
         ('psionics.c', 'void spell_single_death_field('),
         ('psionics.c', 'void spell_death_field('),

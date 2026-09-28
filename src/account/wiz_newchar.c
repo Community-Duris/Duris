@@ -426,7 +426,6 @@ void do_newchar(P_char ch, char *argument, int /*cmd*/)
 	free_char(newch);
 }
 
-
 void do_decline(P_char ch, char *arg, int /*cmd*/)
 {
 	char Gbuf2[MAX_STRING_LENGTH], f_a[MAX_STRING_LENGTH], Gbuf1[MAX_STRING_LENGTH];

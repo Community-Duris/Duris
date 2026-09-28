@@ -578,7 +578,6 @@ void spell_plane_shift(int /*level*/, P_char /*ch*/, P_char /*victim*/, P_obj /*
 	 **/
 }
 
-
 void spell_blink(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		 P_obj /*obj*/)
 {
@@ -767,7 +766,6 @@ int get_room_in_zone(int zone_room, P_char ch)
 	return (start_room);
 }
 
-
 void spell_word_of_recall(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			  P_obj /*obj*/)
 {
@@ -919,7 +917,6 @@ void spell_word_of_recall(int /*level*/, P_char ch, char * /*arg*/, int /*type*/
 	act("&+W$n suddenly fades into this reality, muttering a word of thanks.", TRUE, victim, 0,
 	    0, TO_ROOM);
 }
-
 
 bool check_item_teleport(P_char ch, char *arg, int cmd)
 {

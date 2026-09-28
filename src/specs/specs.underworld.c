@@ -8,6 +8,8 @@
  */
 
 #include "core/prototypes.h"
+#include "combat/attack_continuation.h"
+#include "combat/defense_resolution.h"
 #include "item/weapon_actions.h"
 #include "item/native_artifact_actions.h"
 #include "core/structs.h"
@@ -964,6 +966,18 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time, i, room;
 	P_char vict;
+	auto refresh_doombringer_continuation = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		vict = after_callback.target;
+		obj = after_callback.weapon;
+		return true;
+	};
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -976,7 +990,7 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	if (!IS_ALIVE(ch) || !(room = ch->in_room))
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !(room = ch->in_room))
 	{
 		return FALSE;
 	}
@@ -1014,7 +1028,8 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		vict = legacy_proc_arg<P_char>(arg);
 	}
-	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(vict) || !OBJ_WORN_BY(obj, ch))
+	if (cmd != CMD_MELEE_HIT || !vict || !char_in_list(vict) || !IS_ALIVE(vict) ||
+	    !OBJ_WORN_BY(obj, ch))
 	{
 		return FALSE;
 	}
@@ -1034,44 +1049,52 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+LFoul black &=LBLIGHTNING&+L surges forth from $q&+L...", FALSE, ch, obj,
 		    vict, TO_ROOM);
 
+		attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 		if (spell_damage(ch, vict, number(100, 200), SPLDAM_LIGHTNING,
 				 SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0) != DAM_NONEDEAD)
 		{
 			return TRUE;
 		}
+		if (!refresh_doombringer_continuation(continuation))
+			return TRUE;
 
 		act("&+LDoombringer continues to grow with a putrid power, and unleashes &=LRFIRE&+L...",
 		    FALSE, ch, obj, vict, TO_CHAR);
 		act("&+LThe blade of $q &+Lcontinues to grow with a putrid power, and unleashes &=LRFIRE&+L...",
 		    FALSE, ch, obj, vict, TO_ROOM);
+		continuation = begin_attack_continuation(ch, vict, obj);
 		if (spell_damage(ch, vict, number(100, 200), SPLDAM_FIRE,
 				 SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0) != DAM_NONEDEAD)
 		{
 			return TRUE;
 		}
+		if (!refresh_doombringer_continuation(continuation))
+			return TRUE;
 
 		act("&+LDoombringer continues to grow with a putrid power, and unleashes &=LCICE&+L...",
 		    FALSE, ch, obj, vict, TO_CHAR);
 		act("&+LSuddenly, the air surrounding $q&+L grows eerily cold, and &=LCICE&+L pours forth!",
 		    FALSE, ch, obj, vict, TO_ROOM);
 
+		continuation = begin_attack_continuation(ch, vict, obj);
 		if (spell_damage(ch, vict, number(100, 200), SPLDAM_COLD,
 				 SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0) != DAM_NONEDEAD)
 		{
 			return TRUE;
 		}
+		if (!refresh_doombringer_continuation(continuation))
+			return TRUE;
 
 		act("&+LYour $q blurs as it strikes $N.", FALSE, ch, obj, vict, TO_CHAR);
 		act("&+L$n's $q blurs as it strikes you.", FALSE, ch, obj, vict, TO_VICT);
 		act("&+L$n's $q blurs as it strikes $N.", FALSE, ch, obj, vict, TO_NOTVICT);
 
-		for (i = 0; i < 3 && IS_ALIVE(ch) && IS_ALIVE(vict); i++)
+		for (i = 0; i < 3; i++)
 		{
+			continuation = begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
-		}
-		if (!IS_ALIVE(ch) || !IS_ALIVE(vict))
-		{
-			return TRUE;
+			if (!refresh_doombringer_continuation(continuation))
+				return TRUE;
 		}
 	}
 	return FALSE;
@@ -4298,7 +4321,7 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 		obj
 	};
 
-	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch))
+	if (cmd != CMD_MELEE_HIT || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
 		return FALSE;
 	}
@@ -4306,7 +4329,7 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 	vict = legacy_proc_arg<P_char>(arg);
 	room = ch->in_room;
 
-	if (!IS_ALIVE(vict) || !room)
+	if (!char_in_list(vict) || !IS_ALIVE(vict) || !room)
 	{
 		return FALSE;
 	}
@@ -4319,9 +4342,18 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+L$n's $q blurs as it strikes you.", FALSE, ch, obj, vict, TO_VICT);
 		act("&+L$n's $q blurs as it strikes $N.", FALSE, ch, obj, vict, TO_NOTVICT);
 
-		for (i = 0; i < 2 && IS_ALIVE(ch) && IS_ALIVE(vict); i++)
+		for (i = 0; i < 2; i++)
 		{
+			const attack_continuation hit_continuation =
+				begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
+			const attack_continuation_result after_hit =
+				check_attack_continuation(hit_continuation);
+			if (!after_hit.can_continue())
+				break;
+			ch = after_hit.actor;
+			vict = after_hit.target;
+			obj = after_hit.weapon;
 		}
 		return TRUE;
 	}

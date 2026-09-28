@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "combat/attack_cadence.h"
 #include "world/world_singletons.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"

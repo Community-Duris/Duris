@@ -1,5 +1,6 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "core/utility.h"
 #include "world/db.h"
 #include "core/utils.h"
 #include "world/achievements.h"

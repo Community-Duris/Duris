@@ -2,6 +2,8 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "cmd/interp.h"
+#include "combat/defense_resolution.h"
 #include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "combat/dam_mods.h"
@@ -19,7 +21,80 @@ extern struct wis_app_type wis_app[];
 extern bool is_dragoon_mounted(P_char ch);
 extern bool innate_two_daggers(P_char ch);
 
-int WeaponSkill(P_char ch, P_obj weapon)
+static int try_riposte(P_char ch, P_char victim, P_obj wpn);
+
+/* Shared generic defensive item procedures. */
+int generic_parry_proc(P_obj obj, P_char ch, int cmd, char *arg)
+{
+	struct proc_data *data;
+	P_char vict;
+
+	if (cmd == CMD_SET_PERIODIC)
+	{
+		return FALSE;
+	}
+
+	// 1/20 chance.
+	if (cmd != CMD_GOTHIT || number(0, 19))
+	{
+		return FALSE;
+	}
+	// important! can do this cast (next line) ONLY if cmd was CMD_GOTHIT or CMD_GOTNUKED
+	if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
+	{
+		return FALSE;
+	}
+	vict = data->victim;
+	if (!IS_ALIVE(vict))
+	{
+		return FALSE;
+	}
+	act("Your $q parries $N's lunge at you.", FALSE, ch, obj, vict, TO_CHAR | ACT_NOTTERSE);
+	act("$n's $q parries your futile lunge at $m.", FALSE, ch, obj, vict,
+	    TO_VICT | ACT_NOTTERSE);
+	act("$n's $q parries $N's lunge at $n.", FALSE, ch, obj, vict, TO_NOTVICT | ACT_NOTTERSE);
+
+	return TRUE;
+}
+
+int generic_riposte_proc(P_obj obj, P_char ch, int cmd, char *arg)
+{
+	struct proc_data *data;
+	P_char victim;
+
+	if (cmd == CMD_SET_PERIODIC)
+	{
+		return FALSE;
+	}
+
+	// 1/20 chance.
+	if (cmd != CMD_GOTHIT || number(0, 19))
+	{
+		return FALSE;
+	}
+
+	if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
+	{
+		return FALSE;
+	}
+	victim = data->victim;
+	if (!IS_ALIVE(victim))
+	{
+		return FALSE;
+	}
+
+	act("$n's $q deflects $N's blow and strikes $M!", TRUE, ch, obj, victim,
+	    TO_NOTVICT | ACT_NOTTERSE);
+	act("$n's $q deflects your blow and strikes YOU!", TRUE, ch, obj, victim,
+	    TO_VICT | ACT_NOTTERSE);
+	act("Your $q deflects $N's blow and strikes $M!", TRUE, ch, obj, victim,
+	    TO_CHAR | ACT_NOTTERSE);
+	hit(ch, victim, obj);
+
+	return TRUE;
+}
+
+static int WeaponSkill(P_char ch, P_obj weapon)
 {
 	if (IS_NPC(ch))
 		return BOUNDED(0, (GET_LEVEL(ch) * 7 / 3), 98);
@@ -117,7 +192,7 @@ int dodgeSucceed(P_char char_dodger, P_char attacker, P_obj wpn)
 		   learned = (int) ((GET_CHAR_SKILL(char_dodger, SKILL_DODGE)) * 1.25) -
 		   (WeaponSkill(attacker, wpn));
 		   */
-	learned = (int)((GET_C_AGI(char_dodger)) * dam_factor[DF_DODGE_AGI_MODIFIER]) -
+	learned = (int)((GET_C_AGI(char_dodger))*dam_factor[DF_DODGE_AGI_MODIFIER]) -
 		  (WeaponSkill(attacker, wpn));
 
 	// Dwarves now get the DnD 3.5 dodgeroll bonus vs giant races
@@ -487,9 +562,12 @@ int MonkRiposte(P_char victim, P_char attacker, P_obj wpn)
 	return true;
 }
 
-bool rapier_dirk(P_char victim, P_char attacker)
+static bool rapier_dirk(P_char victim, P_char attacker)
 {
 	int chance, i, f;
+	if (!victim || !char_in_list(victim) || !IS_ALIVE(victim) || !attacker ||
+	    !char_in_list(attacker) || !IS_ALIVE(attacker))
+		return FALSE;
 
 	// The assumption made here is that the victim has 100 agi and wis.
 	chance = ((GET_C_AGI(victim) + GET_C_WIS(victim)) / 2 + GET_LEVEL(victim));
@@ -498,6 +576,18 @@ bool rapier_dirk(P_char victim, P_char attacker)
 	// there are two weapon objects.
 	P_obj wep1 = victim->equipment[PRIMARY_WEAPON];
 	P_obj wep2 = victim->equipment[SECONDARY_WEAPON];
+	auto refresh_dirk_participants = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		victim = after_callback.actor;
+		attacker = after_callback.target;
+		wep1 = after_callback.weapon;
+		return true;
+	};
 
 	// Off-hand special riposte
 	if (rapier_dirk_check(victim) && chance > number(1, 1000) &&
@@ -536,8 +626,10 @@ bool rapier_dirk(P_char victim, P_char attacker)
 			    victim, wep1, attacker, TO_CHAR);
 		}
 
+		const attack_continuation first_dirk =
+			begin_attack_continuation(victim, attacker, wep1, PRIMARY_WEAPON);
 		hit(victim, attacker, wep1);
-		if (!IS_ALIVE(victim) || !IS_ALIVE(attacker))
+		if (!refresh_dirk_participants(first_dirk))
 			return TRUE;
 
 		// if(wep1->craftsmanship == OBJCRAFT_HIGHEST &&
@@ -550,12 +642,22 @@ bool rapier_dirk(P_char victim, P_char attacker)
 
 			f = number(1, (int)(GET_LEVEL(victim) / 28));
 
-			for (i = 0; i < f && IS_ALIVE(victim) && IS_ALIVE(attacker); i++)
+			for (i = 0; i < f; i++)
+			{
+				const attack_continuation dirk_swing = begin_attack_continuation(
+					victim, attacker, wep1, PRIMARY_WEAPON);
 				hit(victim, attacker, wep1);
+				if (!refresh_dirk_participants(dirk_swing))
+					break;
+			}
 		}
 		else
 		{
+			const attack_continuation followup_dirk =
+				begin_attack_continuation(victim, attacker, wep1, PRIMARY_WEAPON);
 			hit(victim, attacker, wep1);
+			if (!refresh_dirk_participants(followup_dirk))
+				return TRUE;
 		}
 
 		return TRUE;
@@ -566,14 +668,18 @@ bool rapier_dirk(P_char victim, P_char attacker)
 
 int parrySucceed(P_char victim, P_char attacker, P_obj wpn)
 {
-	int learnedvictim = GET_CHAR_SKILL(victim, SKILL_PARRY);
+	int learnedvictim;
 	int learnedattacker;
-	int blindfightskl = GET_CHAR_SKILL(victim, SKILL_BLINDFIGHTING);
+	int blindfightskl;
 	bool npcepicparry = false;
 	int expertparry = 0;
 
-	if (!IS_ALIVE(victim) || !IS_ALIVE(attacker))
+	if (!victim || !char_in_list(victim) || !IS_ALIVE(victim) || !attacker ||
+	    !char_in_list(attacker) || !IS_ALIVE(attacker))
 		return FALSE;
+
+	learnedvictim = GET_CHAR_SKILL(victim, SKILL_PARRY);
+	blindfightskl = GET_CHAR_SKILL(victim, SKILL_BLINDFIGHTING);
 
 	if (GET_POS(victim) != POS_STANDING)
 		return FALSE;
@@ -870,7 +976,7 @@ bool mangleSucceed(P_char ch, P_char victim, P_obj weap)
 	return TRUE;
 }
 
-int try_riposte(P_char ch, P_char victim, P_obj wpn)
+static int try_riposte(P_char ch, P_char victim, P_obj wpn)
 {
 	int expertriposte = 0, victim_dead;
 	int randomnumber = number(1, 1000);

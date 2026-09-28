@@ -13,6 +13,7 @@
 #include "core/utility.h"
 #include "world/vnum.obj.h"
 #include "economy/currency_transaction.h"
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "item/forced_weapon_drop.h"
 #include "item/native_artifact_actions.h"
@@ -850,7 +851,8 @@ int cookie_monster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 #define STAT_POOL_DRINK_MAX 3
 
 static int stat_pool_common(P_obj obj, P_char ch, int cmd, sh_int *statPtr, const char *minusMsgCh,
-		     const char *minusMsgRoom, const char *plusMsgCh, const char *plusMsgRoom)
+			    const char *minusMsgRoom, const char *plusMsgCh,
+			    const char *plusMsgRoom)
 {
 	int numb, oldStat;
 	struct affected_type *af2;
@@ -1822,8 +1824,8 @@ int fumblegaunts(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 		return TRUE;
 	}
 
-	if (!OBJ_WORN_POS(obj, WEAR_HANDS) || !IS_ALIVE(ch) || ch != obj->loc.wearing ||
-	    cmd != CMD_PERIODIC)
+	if (!OBJ_WORN_POS(obj, WEAR_HANDS) || !char_in_list(ch) || !IS_ALIVE(ch) ||
+	    ch != obj->loc.wearing || cmd != CMD_PERIODIC)
 	{
 		return FALSE;
 	}
@@ -1837,7 +1839,7 @@ int fumblegaunts(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 	if (IS_FIGHTING(ch) && !number(0, 14))
 	{
 		vict = GET_OPPONENT(ch);
-		if (!IS_ALIVE(vict))
+		if (!vict || !char_in_list(vict) || !IS_ALIVE(vict))
 		{
 			return FALSE;
 		}
@@ -1853,16 +1855,27 @@ int fumblegaunts(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			act("&+L$n's $q blurs as it strikes&N $N.", FALSE, ch, obj, vict,
 			    TO_NOTVICT);
 #endif
-			if (GET_OPPONENT(ch))
-				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
-			if (GET_OPPONENT(ch))
-				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
-			if (GET_OPPONENT(ch))
-				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
-			if (GET_OPPONENT(ch))
-				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
-			if (GET_OPPONENT(ch))
-				hit(ch, GET_OPPONENT(ch), ch->equipment[PRIMARY_WEAPON]);
+			for (int strike = 0; strike < 5; ++strike)
+			{
+				if (!char_in_list(ch) || !IS_ALIVE(ch))
+					return FALSE;
+
+				vict = GET_OPPONENT(ch);
+				if (!vict || !char_in_list(vict) || !IS_ALIVE(vict))
+					break;
+
+				const attack_continuation continuation =
+					begin_attack_continuation(ch, vict);
+				hit(ch, vict, ch->equipment[PRIMARY_WEAPON]);
+
+				const attack_continuation_result after_hit =
+					check_attack_continuation(continuation);
+				if (!after_hit.can_continue())
+					return FALSE;
+
+				ch = after_hit.actor;
+				vict = after_hit.target;
+			}
 		}
 		else
 		{
@@ -6936,7 +6949,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			SET_BIT(obj->extra_flags, ITEM_NODROP);
 		}
-		if (!IS_ALIVE(ch))
+		if (!char_in_list(ch) || !IS_ALIVE(ch))
 		{
 			return FALSE;
 		}
@@ -6960,7 +6973,8 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 			}
 		}
 	}
-	if (OBJ_CARRIED(obj) && IS_ALIVE(obj->loc.carrying) && !IS_TRUSTED(obj->loc.carrying))
+	if (OBJ_CARRIED(obj) && char_in_list(obj->loc.carrying) && IS_ALIVE(obj->loc.carrying) &&
+	    !IS_TRUSTED(obj->loc.carrying))
 	{
 		ch = obj->loc.carrying;
 		good_evil_configSword(ch, obj);
@@ -7011,7 +7025,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 	}
 
-	if (!IS_ALIVE(ch))
+	if (!char_in_list(ch) || !IS_ALIVE(ch))
 	{
 		return FALSE;
 	}
@@ -7114,18 +7128,30 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		else if (!num_attacks && !number(0, 3))
 		{
 			num_attacks = number(3, 5);
+			P_char victim = GET_OPPONENT(ch);
+			if (!victim || !char_in_list(victim) || !IS_ALIVE(victim))
+				return FALSE;
+
 			act("$p &+Wflares up, slashing your opponent with incredible speed!&n",
-			    TRUE, ch, obj, GET_OPPONENT(ch), TO_CHAR);
+			    TRUE, ch, obj, victim, TO_CHAR);
 			act("&+W$n's&N $p&+W flares up, slashing $N with incredible speed!&n", TRUE,
-			    ch, obj, GET_OPPONENT(ch), TO_NOTVICT);
+			    ch, obj, victim, TO_NOTVICT);
 			act("&+W$n's&N $p&+W flares up, slashing YOU with incredible speed!&n",
-			    TRUE, ch, obj, GET_OPPONENT(ch), TO_VICT);
+			    TRUE, ch, obj, victim, TO_VICT);
 			for (i = 0; i < num_attacks; i++)
 			{
-				if (IS_ALIVE(ch) && IS_ALIVE(GET_OPPONENT(ch)))
-				{
-					hit(ch, GET_OPPONENT(ch), obj);
-				}
+				const attack_continuation continuation =
+					begin_attack_continuation(ch, victim, obj);
+				hit(ch, victim, obj);
+
+				const attack_continuation_result after_hit =
+					check_attack_continuation(continuation);
+				if (!after_hit.can_continue())
+					break;
+
+				ch = after_hit.actor;
+				victim = after_hit.target;
+				obj = after_hit.weapon;
 			}
 		}
 	}

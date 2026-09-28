@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -97,7 +98,6 @@ void spell_draconic_apotheosis(int /*level*/, P_char ch, char * /*arg*/, [[maybe
 
 	do_roar_of_heroes(ch);
 }
-
 
 void spell_animae_cicatrix(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			   P_char /*victim*/, P_obj /*obj*/)

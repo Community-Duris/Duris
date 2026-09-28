@@ -80,7 +80,6 @@ void spell_spore_cloud(int level, P_char ch, char * /*arg*/, int /*type*/, P_cha
 		return;
 }
 
-
 static void event_spore_burst(P_char, P_char, P_obj, void *);
 
 struct sb_data

@@ -1,5 +1,7 @@
 /* Combat attack cadence and per-tick violence dispatch. */
 #include "core/prototypes.h"
+#include "combat/attack_cadence.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "cmd/interp.h"
@@ -27,7 +29,7 @@ extern struct time_info_data time_info;
 extern bool is_dragoon_mounted(P_char ch);
 extern P_char misfire_check(P_char ch, P_char spell_target, int flag);
 
-bool frightening_presence(P_char ch, P_char victim)
+static bool frightening_presence(P_char ch, P_char victim)
 {
 	int chance;
 
@@ -55,7 +57,7 @@ bool frightening_presence(P_char ch, P_char victim)
 
 #define ADD_ATTACK(slot) (attacks[number_attacks++] = (slot))
 
-int calculate_attacks(P_char ch, int attacks[])
+static int calculate_attacks(P_char ch, int attacks[])
 {
 	int number_attacks = 0;
 	P_obj weapon;

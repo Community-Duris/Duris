@@ -12,8 +12,9 @@ owner can commit that derived evidence together with a format-8 request's termin
 state; it is not selected by normal gameplay. A strictly disposable `TEST_MUD`
 selector is available for the combined acceptance journey described below. The
 DB cold-load refusal and authenticated read-only recovery adapter are implemented
-below. **This is not a qualified
-death-release fix, accounting activation, or end-to-end player recovery journey.**
+below. **This is not a production-qualified death-release fix, accounting activation,
+or item restoration.** The explicitly gated disposable journey has qualified the
+limited retention-to-menu path described under "Disposable runtime qualification".
 
 Legacy format 7/8 fixture bytes are pinned to hashes measured with the pre-extension
 encoder. Formats 1–6 keep their existing decode paths. An evidence-bearing value
@@ -227,9 +228,30 @@ change custody, restore money, resolve cases, or authorize terminal extraction.
 Repository fixtures and executable callback bodies are separate from a real
 authenticated socket journey; a DB restart test is not a game restart qualification.
 
+## Disposable runtime qualification
+
+At `0499544179d338db85463391778bf528d7cbba36`, a fresh MariaDB `TEST_MUD` build
+passed the real TCP combat fixture with `--one --require-unassisted-recovery`.
+The tested variant uses ordinary coins and no boons. Healthy load/death/loot/reconnect
+was followed by an injected missing-payload/stray-row conflict and actual player
+death. The game reached an exact durable death acknowledgement and then the account
+menu without manual SQL repair. Option 9 list/detail, refused unsafe cold entry,
+full game restart and authenticated account reconnect all passed. Retained state
+was byte-identical after acknowledgement, cold-entry refusal and restart; the
+existing wallet debit matched the native coin projection rather than being mistaken
+for missing money.
+
+This is evidence for that disposable selector and variant, not normal-owner
+activation, copyover, every death/spell variant, resolved custody, or restoration.
+The ordered WIZLOG must reach `death_disposition_recorded` before
+`death_disposition_completed` with `extract_refused=0`; earlier expected refusal
+alerts alone do not establish either completion or failure. Re-run the fixture on
+any subsequent source change that invalidates this contract.
+
 ## Integration gates still open
 
-Before enabling this format in a game write or releasing a conflicted dead player:
+Before enabling this route for ordinary gameplay or expanding beyond the disposable
+selector and qualified variant:
 
 - Capture the complete physical payload and auxiliary rows under the same transaction
   as the observed authority/revision state. Check the full cascade-reachable graph,
@@ -320,6 +342,23 @@ operation and leaves cleanup for the existing rollback path. Direct physical
 transaction must have guarded that PID before their first consistent read. This
 call-order contract must be preserved by future callers. No resolution or authority
 grant is inferred from the absence of a case.
+
+The authenticated web-admin handler must also honor this boundary. In either
+SQL-primary mode, a failed `restoreCharOnly()` defers deletion without raw-PID soft
+deletion or account-list cleanup. After a successful restore, only the typed
+`character_delete_result::deleted` outcome permits account unlink/write and a
+deletion-success response. Refusal and reconciliation-required return correlated
+errors without further account cleanup. Reconciliation-required may follow a lost
+COMMIT reply or already-committed cleanup, so it must not promise that SQL account
+data was unchanged. Flatfile-primary retains its separate compatibility path.
+
+`test_ws_admin_delete_character_runtime.py` executes the actual handler and
+temporary-character cleanup with controlled stores under ASan/UBSan. It covers
+both SQL restore failures, typed refusal/reconciliation/success, auth and hook
+refusals, request correlation, and flatfile compatibility. Independent bypass
+controls must make each of the two SQL safety assertions fail. This handler test
+does not exercise WebSocket transport or substitute for the real SQL deletion
+serialization fixtures.
 
 Read cleanup is also part of the admission boundary. Failed/lost START, uncertain
 COMMIT, failed ROLLBACK, and dirty/exceptional load results cannot leave a reusable

@@ -740,7 +740,6 @@ int tharn_old_man(P_char ch, P_char pl, int cmd, char * /*arg*/)
 	return (FALSE);
 }
 
-
 int die_roller(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int i, pos = -1, numb;

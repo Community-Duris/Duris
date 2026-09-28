@@ -20,6 +20,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+#include "world/bloodstains.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -841,6 +842,9 @@ void poison_moveleak(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unuse
 void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			P_char victim, struct affected_type *af)
 {
+	uint64_t ch_runtime_id = 0;
+	uint64_t victim_runtime_id;
+	int dam_result;
 	struct damage_messages messages = {
 		"$N suddenly turns &+ggreen &nas your poison reaches $S &+Wvital &norgans.",
 		"You suddenly feel &+gsick &nas $n's poison reaches your &+Wvital &norgans.",
@@ -850,6 +854,10 @@ void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		"$N suddenly turns &+Ggreen &nholds $S throat and vomits &+Rblood &nas $S soul leaves the body forever.",
 	};
 
+	if (!char_in_list(victim) || !IS_ALIVE(victim))
+		return;
+	if (ch && !char_in_list(ch))
+		ch = NULL;
 	if (ch)
 		level = GET_LEVEL(ch);
 
@@ -867,10 +875,22 @@ void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	{
 		if (!ch)
 			ch = victim;
-		int dam_result = raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT,
-					    &messages);
+		ch_runtime_id = ch->runtime_id;
+		victim_runtime_id = victim->runtime_id;
+		af = get_spell_from_char(victim, POISON_HEART_TOXIN);
+		if (!af)
+			return;
+		dam_result = raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT,
+					&messages);
 		if (dam_result == DAM_NONEDEAD)
 		{
+			victim = find_character_by_runtime_id(victim_runtime_id);
+			if (!victim || !IS_ALIVE(victim))
+				return;
+			ch = find_character_by_runtime_id(ch_runtime_id);
+			af = get_spell_from_char(victim, POISON_HEART_TOXIN);
+			if (!af)
+				return;
 			if (!number(0, 3))
 				add_event(event_poison,
 					  IS_AFFECTED(victim, AFF_SLOW_POISON) ?
@@ -2306,7 +2326,6 @@ void unequip_char_dale(P_obj kala)
 	if (b != -1)
 		unequip_char(kala->loc.wearing, b);
 }
-
 
 void unequip_all(P_char ch)
 {

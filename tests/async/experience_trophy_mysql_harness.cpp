@@ -52,7 +52,7 @@ player_load_result load(MYSQL *connection, int pid)
 			  << " queries=" << result.metrics.query_count
 			  << " error=" << result.error_code << '\n';
 	assert(result.outcome == player_load_outcome::applied);
-	assert(result.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	assert(result.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
 	return result;
 }
 

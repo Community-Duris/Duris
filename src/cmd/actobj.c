@@ -7557,19 +7557,6 @@ int stop_or_wear(const char denied[], P_char ch, P_obj obj_object, int position,
 }
 
 /*
- * Returns TRUE if ch is wearing perm invis eq.
- */
-int wearing_invis(P_char ch)
-{
-	int found = 0, k;
-
-	for (k = 0; k < MAX_WEAR; k++)
-		if (ch->equipment[k] && IS_SET(ch->equipment[k]->bitvector, AFF_INVISIBLE))
-			found = 1;
-	return found;
-}
-
-/*
  * The receiving code should handle displaying of messages to the user.
  * - Sniktiorg 25.1.13
  * New Remove code which handles only the removing of the item.  This

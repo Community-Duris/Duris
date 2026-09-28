@@ -29,7 +29,6 @@ extern P_obj object_list;
 extern float exp_mods[EXPMOD_MAX + 1];
 extern const int top_of_world;
 
-
 void spell_unmaking(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		    P_obj obj)
 {
@@ -82,7 +81,6 @@ void spell_unmaking(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /
 		send_to_char("That is not a corpse!\n", ch);
 	}
 }
-
 
 void complete_player_resurrection_after_commit(P_char ch, P_char t_ch, P_obj obj, bool lesser,
 					       int old_room)
@@ -237,7 +235,6 @@ void complete_player_resurrection_after_commit(P_char ch, P_char t_ch, P_obj obj
 	}
 	extract_obj(obj);
 }
-
 
 void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		     P_char /*victim*/, P_obj obj)
@@ -602,7 +599,6 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 	extract_obj(obj);
 }
 
-
 void spell_preserve(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		    P_char /*victim*/, P_obj obj)
 {
@@ -654,7 +650,6 @@ void spell_preserve(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 	if (obj && (obj->type == ITEM_CORPSE) && IS_SET(obj->value[1], PC_CORPSE))
 		writeCorpse(obj);
 }
-
 
 void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			    P_char /*victim*/, P_obj obj)
@@ -944,7 +939,6 @@ void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused
 	extract_obj(obj);
 }
 
-
 void spell_mass_embalm(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		       P_char victim, P_obj obj)
 {
@@ -955,7 +949,6 @@ void spell_mass_embalm(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 	}
 }
 
-
 void spell_mass_preserve(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			 P_char victim, P_obj obj)
 {
@@ -965,7 +958,6 @@ void spell_mass_preserve(int level, P_char ch, char * /*arg*/, [[maybe_unused]] 
 			spell_preserve(level, ch, 0, 0, victim, obj);
 	}
 }
-
 
 void spell_embalm(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		  P_char /*victim*/, P_obj obj)
@@ -1012,7 +1004,6 @@ void spell_embalm(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int typ
 
 	return;
 }
-
 
 void spell_corpse_portal(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			 P_obj /*obj*/)

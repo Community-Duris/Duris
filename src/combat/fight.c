@@ -17,6 +17,7 @@
 #include "item/weapon_actions.h"
 #include "item/native_artifact_actions.h"
 #include "world/difficulty.h"
+#include "world/bloodstains.h"
 #include "core/structs.h"
 #include "core/files.h"
 #include "net/comm.h"
@@ -38,6 +39,7 @@
 #include "combat/attack_continuation.h"
 #include "combat/attack_effects.h"
 #include "combat/attack_resolution.h"
+#include "combat/death_messages.h"
 #include "economy/boon.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
@@ -126,8 +128,6 @@ extern int get_honing(P_obj);
 extern void apply_honing(P_obj, int);
 extern void holy_crusade_check(P_char, P_char);
 extern int is_wearing_necroplasm(P_char);
-extern int top_of_zone_table;
-extern int wearing_invis(P_char ch);
 
 extern bool has_dragoon_mount(P_char ch);
 extern bool is_dragoon_mounted(P_char ch);
@@ -245,80 +245,6 @@ struct attack_hit_type location_hit_text[] = { { "", " body",
 					       { " on $S head", " head", "" } };
 
 int on_front_line(P_char);
-
-// The swashbuckler is considered the victim. // May09 -Lucrot
-
-bool opposite_racewar(P_char ch, P_char victim)
-{
-	return IS_PC(ch) && IS_PC(victim) && GET_RACEWAR(ch) != GET_RACEWAR(victim);
-}
-
-void appear(P_char ch, bool removeHide)
-{
-	P_char master;
-
-	if (!ch)
-	{
-		logit(LOG_EXIT, "appear called in fight.c without ch");
-		return;
-	}
-
-	// If someone is going vis via being ordered to do something, have the person doing the ordering go vis as well.
-	if ((master = GET_MASTER(ch)) != NULL)
-	{
-		if (IS_AFFECTED5(master, AFF5_ORDERING))
-			appear(master, removeHide);
-	}
-
-	// CMD_FIRE (do_fire) handles its own hide stuff.
-	if (removeHide)
-		REMOVE_BIT(ch->specials.affected_by, AFF_HIDE);
-
-	if ((!IS_SET(ch->specials.affected_by, AFF_INVISIBLE) &&
-	     !IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT) &&
-	     !IS_SET(ch->specials.affected_by3, AFF3_ECTOPLASMIC_FORM) &&
-	     !IS_SET(ch->specials.affected_by3, AFF3_NON_DETECTION)))
-	{
-		return;
-	}
-
-	affect_from_char(ch, SPELL_CONCEALMENT);
-	affect_from_char(ch, TAG_PERMINVIS);
-	affect_from_char(ch, SPELL_INVISIBILITY);
-	affect_from_char(ch, SPELL_ECTOPLASMIC_FORM);
-
-	REMOVE_BIT(ch->specials.affected_by, AFF_INVISIBLE);
-	REMOVE_BIT(ch->specials.affected_by2, AFF2_CONCEALMENT);
-	REMOVE_BIT(ch->specials.affected_by3, AFF3_ECTOPLASMIC_FORM);
-
-	if (IS_SET(ch->specials.affected_by3, AFF3_NON_DETECTION))
-	{
-		struct affected_type *afp;
-
-		for (afp = ch->affected; afp; afp = afp->next)
-		{
-			// Need to remove the mind blank effect without removing the cooldown.
-			if (afp->type == SPELL_MIND_BLANK && afp->bitvector3 == AFF3_NON_DETECTION)
-			{
-				affect_remove(ch, afp);
-				// If you decide not to break here, for whatever reason, you need to modify the loop.
-				break;
-			}
-		}
-		REMOVE_BIT(ch->specials.affected_by3, AFF3_NON_DETECTION);
-	}
-
-	if (wearing_invis(ch))
-	{
-		act("$n flickers into visibility.", TRUE, ch, 0, 0, TO_ROOM);
-		act("You flicker into visibility.", FALSE, ch, 0, 0, TO_CHAR);
-	}
-	else
-	{
-		act("$n snaps into visibility.", TRUE, ch, 0, 0, TO_ROOM);
-		act("You snap into visibility.", FALSE, ch, 0, 0, TO_CHAR);
-	}
-}
 
 // This function figures a time for victim to sit around in heaven (and sets it).
 // Right now it has a base of level+20 sec + 3 minutes for every PvP death within the hour.
@@ -1064,70 +990,6 @@ P_obj make_corpse(P_char ch, int loss)
 	return corpse;
 }
 
-void make_bloodstain(P_char ch)
-{
-	P_obj blood, obj, next_obj;
-	char buf[MAX_STRING_LENGTH];
-	int msgnum;
-	const char *long_desc[] = { "&+rFresh blood splatters cover the area.&n",
-				    "&+rA few drops of fresh blood are scattered around the area.&n",
-				    "&+rPuddles of fresh blood cover the ground.&n",
-				    "&+rFresh blood covers everything in the area.&n" };
-
-	if (!HAS_FOOTING(ch))
-		return;
-
-	if (GET_OPPONENT(ch) && (IS_UNDEADRACE(GET_OPPONENT(ch)) || IS_ANGEL(GET_OPPONENT(ch))))
-		return;
-
-	if (IS_UNDEADRACE(ch) || IS_ANGEL(ch))
-		return;
-
-	if (world[ch->in_room].contents)
-	{
-		for (obj = world[ch->in_room].contents; obj; obj = next_obj)
-		{
-			next_obj = obj->next_content;
-			if (obj->R_num == real_object(VOBJ_BLOOD))
-			{
-				obj_from_room(obj);
-				extract_obj(obj);
-			}
-		}
-	}
-
-	blood = read_object(4, VIRTUAL);
-	if (!blood)
-		return;
-
-	blood->str_mask = (STRUNG_DESC1);
-
-	msgnum = number(0, 3);
-	blood->value[0] = msgnum;
-	blood->value[1] = BLOOD_FRESH;
-	snprintf(buf, MAX_STRING_LENGTH, "%s", long_desc[msgnum]);
-	blood->description = str_dup(buf);
-
-	// 15 minutes, changes to regular blood at 3 minutes and dry blood at 7 minutes.
-	// Becomes NOSHOW at 90 seconds.
-	set_obj_affected(blood, 3600, TAG_OBJ_DECAY, 0);
-
-	if (ch->in_room == NOWHERE)
-	{
-		if (real_room(ch->specials.was_in_room) != NOWHERE)
-			obj_to_room(blood, real_room(ch->specials.was_in_room));
-		else
-		{
-			extract_obj(blood);
-			blood = NULL;
-		}
-	}
-	else
-	{
-		obj_to_room(blood, ch->in_room);
-	}
-}
-
 /*
  * When ch kills victim
  */
@@ -1380,90 +1242,6 @@ void change_alignment(P_char ch, P_char victim)
 	GET_ALIGNMENT(ch) = BOUNDED(-1000, a_al, 1000);
 }
 
-void death_cry(P_char ch)
-{
-	int door, was_in, room;
-	char buf[MAX_INPUT_LENGTH];
-
-	switch (number(1, 5))
-	{
-	case 1:
-		act("&+rYou feel the bloodlust in your heart as you hear the death cry of&N $n.&n",
-		    FALSE, ch, 0, 0, TO_ROOM);
-		break;
-	case 2:
-		act("$n&N&+r's death cry reverberates in your head as $e falls to the ground.&n",
-		    FALSE, ch, 0, 0, TO_ROOM);
-		break;
-	case 3:
-		act("&+rThe last gasps of&n $n &n&+rcause a sickening chill to run up your spine.&n",
-		    FALSE, ch, 0, 0, TO_ROOM);
-		break;
-	case 4:
-		act("&+rThe unmistakable scent of fresh blood can be smelled as&N $n &N&+rdies in agony.&n",
-		    FALSE, ch, 0, 0, TO_ROOM);
-		break;
-	case 5:
-		act("&+rA look of horror and a silent scream are&n $n&N&+r's last actions in this world.&n",
-		    FALSE, ch, 0, 0, TO_ROOM);
-		break;
-	}
-	was_in = ch->in_room;
-
-	add_track(ch, NUM_EXITS);
-
-	if (was_in != NOWHERE)
-		for (door = 0; door <= (NUM_EXITS - 1); door++)
-		{
-			if (VIRTUAL_CAN_GO(was_in, door))
-			{
-				room = world[ch->in_room].dir_option[door]->to_room;
-				switch (number(1, 3))
-				{
-				case 1:
-					snprintf(
-						buf, MAX_INPUT_LENGTH,
-						"&+rThe unmistakable sound of something dying reverberates from nearby.\r\n");
-					break;
-				case 2:
-					snprintf(
-						buf, MAX_INPUT_LENGTH,
-						"&+rYour spine tingles as a rattling death cry reaches your senses from nearby.\r\n");
-					break;
-				case 3:
-					snprintf(
-						buf, MAX_INPUT_LENGTH,
-						"&+rA nearby death cry rings out loudly, heightening your bloodlust.\r\n");
-					break;
-				}
-				send_to_room(buf, room);
-			}
-		}
-}
-
-void death_rattle(P_char ch)
-{
-	int door, was_in, room;
-	char buf[MAX_INPUT_LENGTH];
-
-	act("&+rYou feel a carnal satisfaction as $n&+r's gurgling and choking signals $s demise.&n",
-	    FALSE, ch, 0, 0, TO_ROOM);
-	was_in = ch->in_room;
-
-	add_track(ch, NUM_EXITS);
-
-	if (was_in != NOWHERE)
-		for (door = 0; door <= (NUM_EXITS - 1); door++)
-		{
-			if (VIRTUAL_CAN_GO(was_in, door))
-			{
-				room = world[ch->in_room].dir_option[door]->to_room;
-				snprintf(buf, MAX_INPUT_LENGTH,
-					 "&+rYou hear a shrill death rattle nearby!\r\n");
-				send_to_room(buf, room);
-			}
-		}
-}
 /*
  * this routine was repeated all over, made it a function, basically
  * handles switched gods and shapechangers, so that the right body dies.
@@ -1630,28 +1408,6 @@ void perform_arti_update(P_char ch, P_char victim)
   }
 }
 */
-
-// in_their_zone is designed to stop pets/mounts/etc from dropping recipes.
-// This function returns TRUE iff a mob is in the zone that it loads in.
-bool in_their_zone(P_char mob)
-{
-	int vnum;
-
-	// PCs never in their zone.
-	if (!IS_NPC(mob))
-		return FALSE;
-
-	vnum = mob_index[GET_RNUM(mob)].virtual_number;
-
-	// If vnum falls outside the vnums for the zone it's in.
-	//  vnum too small, or mob not in last zone and vnum too big
-	if (vnum < zone_table[world[mob->in_room].zone].number * 100 ||
-	    (world[mob->in_room].zone < top_of_zone_table &&
-	     vnum > zone_table[world[mob->in_room].zone + 1].number * 100))
-		return FALSE;
-
-	return TRUE;
-}
 
 void kill_gain(P_char ch, P_char victim);
 /*
@@ -4735,9 +4491,9 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 					obj_to_room(portal, real_room(400000));
 				}
 			}
-			if (victim && killer && IS_PC(victim) && opposite_racewar(killer, victim) &&
-			    !IS_TRUSTED(killer) && !IS_TRUSTED(victim) &&
-			    (messages->type & 0xff000000))
+			if (messages && victim && killer && IS_PC(victim) &&
+			    opposite_racewar(killer, victim) && !IS_TRUSTED(killer) &&
+			    !IS_TRUSTED(victim) && (messages->type & 0xff000000))
 			{
 				DestroyStuff(victim,
 					     static_cast<int>((messages->type & 0xff000000) >> 24));
@@ -4876,87 +4632,6 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		return DAM_NONEDEAD;
 	}
 	return 0;
-}
-
-bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
-{
-	struct affected_type aff, *af;
-	struct damage_messages messages = {
-		"$N screams as you sink five fingers into soft spots in $S shoulder.",
-		"You feel on fire as $n's hard fingers strike a nerve in your shoulder.",
-		"$N screams as $n sinks five fingers into soft spots in $S shoulder.",
-		"$N dies as you sink five fingers into soft spots in $S shoulder.",
-		"You feel on fire as $n's hard fingers strike a nerve in your shoulder.",
-		"$N dies as $n sinks five fingers into soft spots in $S shoulder."
-	};
-
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || IS_CONSTRUCT(victim))
-		return FALSE;
-
-	send_to_char("You sneak in and deliver a strike to a pressure point!\r\n", ch);
-
-	if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFSNAKE) ||
-	    (GET_CLASS(ch, CLASS_MONK) && IS_NPC(ch) && GET_LEVEL(ch) > 50))
-	{
-		af = get_spell_from_char(victim, TAG_PRESSURE_POINTS);
-		if (!af)
-		{
-			memset(&aff, 0, sizeof(aff));
-			aff.type = TAG_PRESSURE_POINTS;
-			aff.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL |
-				    AFFTYPE_NOAPPLY;
-			aff.modifier = 1;
-			aff.duration = (10 * WAIT_SEC);
-			affect_to_char(victim, &aff);
-			return FALSE;
-		}
-
-		af->modifier++;
-
-		if (af->modifier == 2)
-		{
-			if (!IS_AFFECTED2(victim, AFF2_SLOW))
-			{
-				memset(&aff, 0, sizeof(aff));
-				aff.type = SPELL_SLOW;
-				aff.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL;
-				aff.duration = (4 * WAIT_SEC);
-				aff.bitvector2 = AFF2_SLOW;
-				affect_to_char(victim, &aff);
-
-				act("&+m$n &+mbegins to sllooowwww down.&n", TRUE, victim, 0, 0,
-				    TO_ROOM);
-				send_to_char("&+mYou feel yourself slowing down.\r\n", victim);
-			}
-		}
-
-		if (af->modifier == 3 && !IS_BLIND(victim))
-			blind(ch, victim, (4 * WAIT_SEC));
-
-		if (af->modifier == 4)
-		{
-			CharWait(victim, (3 * WAIT_SEC));
-			act("$n strikes you hard at the side of the neck.", TRUE, ch, 0, victim,
-			    TO_VICT);
-			act("$n deals a crippling blow to the side of $N's neck.", TRUE, ch, 0,
-			    victim, TO_NOTVICT);
-			act("You deal a crippling blow to the side of $N's neck.", TRUE, ch, 0,
-			    victim, TO_CHAR);
-		}
-
-		if (af->modifier == 5)
-		{
-			if (DAM_NONEDEAD != melee_damage(ch, victim, 240 + dice(4, 40),
-							 PHSDAM_TOUCH | RAWDAM_DEFAULT, &messages,
-							 damAccumulator))
-			{
-				return TRUE;
-			}
-		}
-		if (af->modifier == 6)
-			affect_from_char(ch, TAG_PRESSURE_POINTS);
-	}
-	return FALSE;
 }
 
 /*
@@ -5332,11 +5007,15 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	if (!weapon && affected_by_spell(ch, SPELL_VAMPIRIC_TOUCH) && !IS_UNDEADRACE(victim) &&
 	    !IS_CONSTRUCT(victim) && !NewSaves(victim, SAVING_PARA, 0))
 	{
+		const uint64_t actor_runtime_id = ch->runtime_id;
 		act("You touch $N with your bare hands, draining $S life force.", FALSE, ch, 0,
 		    victim, TO_CHAR);
 		act("$n touches you with $s bare hands, draining your life force.", FALSE, ch, 0,
 		    victim, TO_VICT);
 		damage(ch, victim, to_hit, SPELL_VAMPIRIC_TOUCH);
+		ch = find_character_by_runtime_id(actor_runtime_id);
+		if (!ch || !IS_ALIVE(ch))
+			return FALSE;
 		affect_from_char(ch, SPELL_VAMPIRIC_TOUCH);
 		vamp(ch, to_hit, static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		return FALSE;
@@ -5411,13 +5090,32 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 				      get_property("skill.notch.criticalAttack", 10)) ||
 			  (1 * GET_CHAR_SKILL(ch, SKILL_CRITICAL_ATTACK)) > number(1, 100)))
 	{
+		const attack_continuation critical_continuation =
+			begin_attack_continuation(ch, victim, weapon);
 		critical_attack(ch, victim, msg);
+		const attack_continuation_result after_critical =
+			check_attack_continuation(critical_continuation);
+		if (!after_critical.can_continue())
+			return TRUE;
+		ch = after_critical.actor;
+		victim = after_critical.target;
+		weapon = after_critical.weapon;
 	}
 
-	if (has_innate(ch, INNATE_BATTLE_FRENZY) && !number(0, 20) && IS_HUMANOID(victim) &&
-	    (battle_frenzy(ch, victim) != DAM_NONEDEAD))
+	if (has_innate(ch, INNATE_BATTLE_FRENZY) && !number(0, 20) && IS_HUMANOID(victim))
 	{
-		return FALSE;
+		const attack_continuation frenzy_continuation =
+			begin_attack_continuation(ch, victim, weapon);
+		const int frenzy_result = battle_frenzy(ch, victim);
+		if (frenzy_result != DAM_NONEDEAD)
+			return FALSE;
+		const attack_continuation_result after_frenzy =
+			check_attack_continuation(frenzy_continuation);
+		if (!after_frenzy.can_continue())
+			return FALSE;
+		ch = after_frenzy.actor;
+		victim = after_frenzy.target;
+		weapon = after_frenzy.weapon;
 	}
 
 	if (GET_CHAR_SKILL(ch, SKILL_VICIOUS_ATTACK) > 0 &&
@@ -5737,7 +5435,28 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	}
 
 	if (weapon && IS_PC(ch) && ilogb(dam) > number(5, 400))
+	{
+		const attack_continuation damage_continuation =
+			begin_attack_continuation(ch, victim, weapon);
 		DamageOneItem(ch, 1, weapon, FALSE);
+		const attack_continuation_result after_item_damage =
+			check_attack_continuation(damage_continuation);
+		if (after_item_damage.can_continue())
+		{
+			ch = after_item_damage.actor;
+			victim = after_item_damage.target;
+			weapon = after_item_damage.weapon;
+		}
+		else if (after_item_damage.outcome == attack_continuation_outcome::weapon_changed)
+		{
+			weapon = nullptr;
+		}
+		else
+		{
+			return TRUE;
+		}
+		messages.obj = weapon;
+	}
 
 	tmp = melee_death_messages_table[2 * msg + 1].attacker ? number(0, 1) : 0;
 	messages.death_attacker = melee_death_messages_table[2 * msg + tmp].attacker;
@@ -5746,9 +5465,27 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 
 	//!!!
 	// | RAWDAM_NOEXP,   // hitting yields normal exp -Odorf &messages)
+	const attack_continuation melee_continuation =
+		begin_attack_continuation(ch, victim, weapon);
 	if (melee_damage(ch, victim, dam,
 			 (msg == MSG_HIT ? PHSDAM_TOUCH : PHSDAM_HELLFIRE | PHSDAM_BATTLETIDE),
 			 &messages, damAccumulator) != DAM_NONEDEAD)
+	{
+		return TRUE;
+	}
+	const attack_continuation_result after_melee =
+		check_attack_continuation(melee_continuation);
+	if (after_melee.can_continue())
+	{
+		ch = after_melee.actor;
+		victim = after_melee.target;
+		weapon = after_melee.weapon;
+	}
+	else if (after_melee.outcome == attack_continuation_outcome::weapon_changed)
+	{
+		weapon = nullptr;
+	}
+	else
 	{
 		return TRUE;
 	}
@@ -5759,11 +5496,52 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		do_stand(victim, 0, 0);
 	}
 
-	if (reaver_hit_proc(ch, victim, weapon))
+	const attack_continuation reaver_continuation =
+		begin_attack_continuation(ch, victim, weapon);
+	const bool reaver_hit_handled = reaver_hit_proc(ch, victim, weapon);
+	if (reaver_hit_handled)
 		return TRUE;
+	const attack_continuation_result after_reaver =
+		check_attack_continuation(reaver_continuation);
+	if (after_reaver.can_continue())
+	{
+		ch = after_reaver.actor;
+		victim = after_reaver.target;
+		weapon = after_reaver.weapon;
+	}
+	else if (after_reaver.outcome == attack_continuation_outcome::weapon_changed)
+	{
+		weapon = nullptr;
+	}
+	else
+	{
+		return TRUE;
+	}
 
-	if (affected_by_spell(ch, SPELL_DREAD_BLADE) && dread_blade_proc(ch, victim))
-		return TRUE;
+	if (affected_by_spell(ch, SPELL_DREAD_BLADE))
+	{
+		const attack_continuation dread_continuation =
+			begin_attack_continuation(ch, victim, weapon);
+		const bool dread_handled = dread_blade_proc(ch, victim);
+		if (dread_handled)
+			return TRUE;
+		const attack_continuation_result after_dread =
+			check_attack_continuation(dread_continuation);
+		if (after_dread.can_continue())
+		{
+			ch = after_dread.actor;
+			victim = after_dread.target;
+			weapon = after_dread.weapon;
+		}
+		else if (after_dread.outcome == attack_continuation_outcome::weapon_changed)
+		{
+			weapon = nullptr;
+		}
+		else
+		{
+			return TRUE;
+		}
+	}
 
 	if (GET_CLASS(ch, CLASS_PALADIN) && holy_weapon_proc(ch, victim))
 		return TRUE;
@@ -5771,10 +5549,29 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	if (GET_RACE(ch) == RACE_MINOTAUR)
 		minotaur_race_proc(ch, victim);
 
-	if (affected_by_spell(ch, ACH_YOUSTRAHDME) && IS_UNDEADRACE(victim) &&
-	    lightbringer_proc(ch, victim, TRUE))
+	if (affected_by_spell(ch, ACH_YOUSTRAHDME) && IS_UNDEADRACE(victim))
 	{
-		return TRUE;
+		const attack_continuation lightbringer_continuation =
+			begin_attack_continuation(ch, victim, weapon);
+		const bool lightbringer_handled = lightbringer_proc(ch, victim, TRUE);
+		if (lightbringer_handled)
+			return TRUE;
+		const attack_continuation_result after_lightbringer =
+			check_attack_continuation(lightbringer_continuation);
+		if (after_lightbringer.can_continue())
+		{
+			ch = after_lightbringer.actor;
+			victim = after_lightbringer.target;
+			weapon = after_lightbringer.weapon;
+		}
+		else if (after_lightbringer.outcome == attack_continuation_outcome::weapon_changed)
+		{
+			weapon = nullptr;
+		}
+		else
+		{
+			return TRUE;
+		}
 	}
 
 	blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
@@ -5787,11 +5584,36 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 
 	if (weapon && weapon->value[4] != 0)
 	{
-		if (IS_POISON(weapon->value[4]))
-			(skills[weapon->value[4]].spell_pointer)(10, ch, 0, 0, victim, 0);
+		const int poison_spell = weapon->value[4];
+		const attack_continuation poison_continuation =
+			begin_attack_continuation(ch, victim, weapon);
+		if (IS_POISON(poison_spell))
+			(skills[poison_spell].spell_pointer)(10, ch, 0, 0, victim, 0);
 		else
 			poison_lifeleak(10, ch, 0, 0, victim, 0);
-		weapon->value[4] = 0; /* remove on success */
+		const attack_continuation_result after_poison =
+			check_attack_continuation(poison_continuation);
+		if (after_poison.can_continue())
+		{
+			ch = after_poison.actor;
+			victim = after_poison.target;
+			weapon = after_poison.weapon;
+			weapon->value[4] = 0; /* remove on success */
+		}
+		else
+		{
+			P_obj live_poison_weapon = nullptr;
+			for (P_obj object = object_list; object; object = object->next)
+				if (object == poison_continuation.weapon &&
+				    object->obj_uid == poison_continuation.weapon_uid)
+				{
+					live_poison_weapon = object;
+					break;
+				}
+			if (live_poison_weapon)
+				live_poison_weapon->value[4] = 0;
+			return TRUE;
+		}
 	}
 
 	if (weapon && is_char_in_room(ch, room) && is_char_in_room(victim, room) &&
@@ -5891,25 +5713,6 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 
 	}
 	*/
-
-void event_windstrom(P_char ch, P_char vict, char *args)
-{
-	int hits;
-	struct damage_messages messages = {
-		"$N &+RSCR&+rEA&+RMS &nin pain as their body is filled with a sudden rush of &+rWa&+yrm&+rth!",
-		"You howl in pain as the intense &+rWa&+yrm&+rth fills your body with intense &+MPAIN!",
-		"$N &+RSCR&+rEA&+RMS &nin pain as their body is filled with a sudden rush of &+rWa&+yrm&+rth!",
-		"$N quivers for a moment...then shatters into a thousand pieces!",
-		"The &+Bchilling &+Ccold &nproves too much for you, and your body disintegrates.",
-		"$N quivers for a moment...then shatters into a thousand pieces!"
-	};
-
-	if (sscanf(args, "%d", &hits) != 1)
-		return;
-
-	spell_damage(ch, vict, hits * GET_LEVEL(ch) / 4, SPLDAM_COLD,
-		     SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, &messages);
-}
 
 bool is_nopoof(P_obj obj)
 {

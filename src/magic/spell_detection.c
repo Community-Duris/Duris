@@ -589,7 +589,6 @@ void spell_comprehend_languages(int level, P_char /*ch*/, char * /*arg*/, [[mayb
 	send_to_char("&+WYou feel your understanding of the languages of Duris improve!\n", victim);
 }
 
-
 void spell_ether_sense(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*vict*/,
 		       P_obj /*obj*/)
 {

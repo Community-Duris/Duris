@@ -18,7 +18,7 @@ struct CDoomData
 };
 
 static void spell_single_cdoom_wave(int level, P_char ch, char *arg, int /*type*/, P_char victim,
-			     P_obj /*obj*/)
+				    P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"&+LYou send &+ma wave of &+Linsects &+mand &+Larachnids &+magainst $N!",

@@ -8,6 +8,86 @@
 #include "magic/spells.h"
 #include <strings.h>
 
+/*
+ * Returns TRUE if ch is wearing perm invis eq.
+ */
+int wearing_invis(P_char ch)
+{
+	int found = 0, k;
+
+	for (k = 0; k < MAX_WEAR; k++)
+		if (ch->equipment[k] && IS_SET(ch->equipment[k]->bitvector, AFF_INVISIBLE))
+			found = 1;
+	return found;
+}
+
+void appear(P_char ch, bool removeHide)
+{
+	P_char master;
+
+	if (!ch)
+	{
+		logit(LOG_EXIT, "appear called in spell_visibility.c without ch");
+		return;
+	}
+
+	// If someone is going vis via being ordered to do something, have the person doing the ordering go vis as well.
+	if ((master = GET_MASTER(ch)) != NULL)
+	{
+		if (IS_AFFECTED5(master, AFF5_ORDERING))
+			appear(master, removeHide);
+	}
+
+	// CMD_FIRE (do_fire) handles its own hide stuff.
+	if (removeHide)
+		REMOVE_BIT(ch->specials.affected_by, AFF_HIDE);
+
+	if ((!IS_SET(ch->specials.affected_by, AFF_INVISIBLE) &&
+	     !IS_SET(ch->specials.affected_by2, AFF2_CONCEALMENT) &&
+	     !IS_SET(ch->specials.affected_by3, AFF3_ECTOPLASMIC_FORM) &&
+	     !IS_SET(ch->specials.affected_by3, AFF3_NON_DETECTION)))
+	{
+		return;
+	}
+
+	affect_from_char(ch, SPELL_CONCEALMENT);
+	affect_from_char(ch, TAG_PERMINVIS);
+	affect_from_char(ch, SPELL_INVISIBILITY);
+	affect_from_char(ch, SPELL_ECTOPLASMIC_FORM);
+
+	REMOVE_BIT(ch->specials.affected_by, AFF_INVISIBLE);
+	REMOVE_BIT(ch->specials.affected_by2, AFF2_CONCEALMENT);
+	REMOVE_BIT(ch->specials.affected_by3, AFF3_ECTOPLASMIC_FORM);
+
+	if (IS_SET(ch->specials.affected_by3, AFF3_NON_DETECTION))
+	{
+		struct affected_type *afp;
+
+		for (afp = ch->affected; afp; afp = afp->next)
+		{
+			// Need to remove the mind blank effect without removing the cooldown.
+			if (afp->type == SPELL_MIND_BLANK && afp->bitvector3 == AFF3_NON_DETECTION)
+			{
+				affect_remove(ch, afp);
+				// If you decide not to break here, for whatever reason, you need to modify the loop.
+				break;
+			}
+		}
+		REMOVE_BIT(ch->specials.affected_by3, AFF3_NON_DETECTION);
+	}
+
+	if (wearing_invis(ch))
+	{
+		act("$n flickers into visibility.", TRUE, ch, 0, 0, TO_ROOM);
+		act("You flicker into visibility.", FALSE, ch, 0, 0, TO_CHAR);
+	}
+	else
+	{
+		act("$n snaps into visibility.", TRUE, ch, 0, 0, TO_ROOM);
+		act("You snap into visibility.", FALSE, ch, 0, 0, TO_CHAR);
+	}
+}
+
 void spell_dispel_invisible(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			    P_obj obj)
 {
@@ -393,7 +473,6 @@ void spell_pass_without_trace(int /*level*/, P_char ch, char * /*arg*/, [[maybe_
 	}
 }
 
-
 void spell_rope_trick(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		      P_char victim, P_obj /*obj*/)
 {
@@ -444,7 +523,6 @@ void spell_rope_trick(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]]
 		affect_to_char(victim, &af);
 	}
 }
-
 
 void spell_tree(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		P_obj /*obj*/)

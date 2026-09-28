@@ -15,6 +15,7 @@
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "world/weather.h"
+#include "world/bloodstains.h"
 
 extern P_room world;
 

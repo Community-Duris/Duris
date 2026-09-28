@@ -122,7 +122,6 @@ extern const char *get_function_name(void *func);
 extern void event_mob_mundane(P_char, P_char, P_obj, void *);
 extern void shopping_stat(P_char, P_char, char *, int);
 
-
 static void stat_race(P_char ch, char *arg);
 static void stat_skill(P_char ch, char *arg);
 static void stat_zone(P_char ch, char *arg);

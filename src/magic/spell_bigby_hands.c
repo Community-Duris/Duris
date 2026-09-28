@@ -31,7 +31,6 @@ void spell_bigbys_clenched_fist(int level, P_char ch, char * /*arg*/, int /*type
 	spell_damage(ch, victim, dam, SPLDAM_GENERIC, 0, &messages);
 }
 
-
 void spell_bigbys_crushing_hand(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 				P_obj /*obj*/)
 {

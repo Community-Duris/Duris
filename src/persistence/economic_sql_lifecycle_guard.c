@@ -38,7 +38,7 @@ void clear_local_authority(bool runtime, bool maintenance)
 		maintenance_authority_active() = false;
 }
 #ifndef __NO_MYSQL__
-constexpr const char *boot_lock = "duris:economic_sql_boot_maintenance";
+constexpr const char *boot_lock = ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME;
 constexpr const char *writer_lock = "duris:economic_sql_currency_writers";
 using result_ptr = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
 unsigned int mysql_error_code(MYSQL *connection)
@@ -143,7 +143,7 @@ economic_sql_lifecycle_guard::acquire_runtime(MYSQL *connection,
 		clear_local_authority(true, false);
 		return status;
 	}
-	const auto staged = staged_installation(connection);
+	const auto staged = staged_installation(connection, true);
 	if (staged)
 	{
 		unlock(connection, mysql_thread_id(connection), boot_lock);

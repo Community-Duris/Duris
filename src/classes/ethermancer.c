@@ -12,6 +12,7 @@
 #include "classes/disguise.h"
 #include "world/graph.h"
 #include "combat/justice.h"
+#include "combat/attack_continuation.h"
 #include "world/map.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -381,6 +382,10 @@ void spell_mass_fly(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /
 
 void wind_blade_attack_routine(P_char ch, P_char victim)
 {
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch) || !victim || !char_in_list(victim) ||
+	    !IS_ALIVE(victim))
+		return;
+	const uint64_t actor_runtime_id = ch->runtime_id;
 	int attacks = BOUNDED(2, number(1, GET_LEVEL(ch) / 10), 4);
 
 	P_obj obj = ch->equipment[PRIMARY_WEAPON];
@@ -412,14 +417,22 @@ void wind_blade_attack_routine(P_char ch, P_char victim)
 
 	for (; attacks; attacks--)
 	{
-		if (IS_ALIVE(victim) && IS_ALIVE(ch))
-		{
-			hit(ch, victim, obj);
-		}
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, obj, PRIMARY_WEAPON);
+		hit(ch, victim, obj);
+		const attack_continuation_result after_hit =
+			check_attack_continuation(continuation);
+		if (!after_hit.can_continue())
+			break;
+
+		ch = after_hit.actor;
+		victim = after_hit.target;
+		obj = after_hit.weapon;
 	}
 
-	if (IS_ALIVE(ch) && affected_by_spell(ch, SPELL_WIND_BLADE))
-		affect_from_char(ch, SPELL_WIND_BLADE);
+	P_char live_actor = find_character_by_runtime_id(actor_runtime_id);
+	if (live_actor && IS_ALIVE(live_actor) && affected_by_spell(live_actor, SPELL_WIND_BLADE))
+		affect_from_char(live_actor, SPELL_WIND_BLADE);
 }
 
 bool has_wind_blade_wielded(P_char ch)

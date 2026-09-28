@@ -169,9 +169,7 @@ int newbie_quest(P_char ch, P_char pl, int cmd, char *arg)
 
 // Gellz Added 060316 GELLZ
 
-
 /* THIS IS NEWBIE ZONE  STREAM OF LIFE*/
-
 
 int dragonslayer(P_obj obj, P_char ch, int cmd, char *arg)
 {

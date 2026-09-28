@@ -4,10 +4,12 @@
 #include "core/structs.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "combat/attack_continuation.h"
 #include "net/comm.h"
 #include "cmd/interp.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
+#include "world/bloodstains.h"
 #include "world/specs.prototypes.h"
 
 int lucky_weapon(P_obj obj, P_char ch, int cmd, char *arg)
@@ -22,12 +24,12 @@ int lucky_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	if (!dam || !IS_ALIVE(ch) || !(vict = legacy_proc_arg<P_char>(arg)))
+	if (!dam || !char_in_list(ch) || !IS_ALIVE(ch) || !(vict = legacy_proc_arg<P_char>(arg)))
 	{
 		return FALSE;
 	}
 	room = ch->in_room;
-	if (!IS_ALIVE(vict) || vict->in_room != room)
+	if (!char_in_list(vict) || !IS_ALIVE(vict) || vict->in_room != room)
 	{
 		return FALSE;
 	}
@@ -47,7 +49,16 @@ int lucky_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 	else if (!number(0, 100))
 	{
 		send_to_char("&=LWYou score a REALLY LUCKY round of hits!!!!!&N\n", ch);
+		const attack_continuation luck_continuation =
+			begin_attack_continuation(ch, vict, obj);
 		spell_serendipity(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+		const attack_continuation_result after_luck =
+			check_attack_continuation(luck_continuation);
+		if (!after_luck.can_continue())
+			return TRUE;
+		ch = after_luck.actor;
+		vict = after_luck.target;
+		obj = after_luck.weapon;
 		make_bloodstain(ch);
 		make_bloodstain(ch);
 		make_bloodstain(ch);
@@ -55,7 +66,16 @@ int lucky_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			if (is_char_in_room(ch, room) && is_char_in_room(vict, room))
 			{
+				const attack_continuation continuation =
+					begin_attack_continuation(ch, vict, obj);
 				hit(ch, vict, obj);
+				const attack_continuation_result after_hit =
+					check_attack_continuation(continuation);
+				if (!after_hit.can_continue())
+					break;
+				ch = after_hit.actor;
+				vict = after_hit.target;
+				obj = after_hit.weapon;
 			}
 		}
 		return TRUE;
@@ -63,13 +83,5 @@ int lucky_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 
 	return FALSE;
 }
-
-
-
-
-
-
-
-
 
 // Item for learning skills.  Not in game as of 7/4/2015

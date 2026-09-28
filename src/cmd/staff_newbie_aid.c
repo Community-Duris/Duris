@@ -148,7 +148,6 @@ void do_givepet(P_char ch, char *arg, int /*cmd*/)
 	return;
 }
 
-
 // This function toggles a player's newbie status
 void do_newbie(P_char ch, char *argument, int /*cmd*/)
 {

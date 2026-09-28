@@ -26,6 +26,7 @@
 #include "world/achievements.h"
 #include "combat/arena.h"
 #include "combat/arenadef.h"
+#include "combat/defense_resolution.h"
 #include "guild/assocs.h"
 #include "world/epic_transaction.h"
 #include "guild/guildhall.h"

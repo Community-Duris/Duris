@@ -38,7 +38,6 @@ extern bool create_walls(int room, int exit, P_char ch, int level, int type, int
 			 const char *short_desc, const char *desc, ulong flags);
 P_obj get_object_from_char(P_char owner, int vnum);
 
-
 /* Legacy raise paths do not have a corpse transaction to publish an NPC-side
  * inventory. A player caster is the durable recipient, so keep recovered
  * equipment with that player; coins retain their historical pet handling. */

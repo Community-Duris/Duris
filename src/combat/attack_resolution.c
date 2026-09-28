@@ -5,6 +5,8 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "cmd/interp.h"
+#include "combat/attack_continuation.h"
+#include "combat/defense_resolution.h"
 #include "combat/damage.h"
 #include "combat/grapple.h"
 #include "item/objmisc.h"
@@ -160,13 +162,23 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 	P_obj item;
 	struct proc_data data;
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(opponent))
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !char_in_list(opponent) || !IS_ALIVE(opponent))
 		return FALSE;
 
 	if (!SanityCheck(ch, "pv_common") || !SanityCheck(opponent, "pv_common"))
 		return FALSE;
 
 	room = ch->in_room;
+	const attack_continuation continuation = begin_attack_continuation(ch, opponent, wpn);
+	const auto refresh_attack_participants = [&]()
+	{
+		const attack_continuation_result checked = check_attack_continuation(continuation);
+		if (!checked.can_continue())
+			return false;
+		ch = checked.actor;
+		opponent = checked.target;
+		return true;
+	};
 
 	/* weapon skill notch, check for automatic defensive skills */
 	if (!((wpn_skill = required_weapon_skill(wpn)) &&
@@ -179,13 +191,36 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 		if (affected_by_spell(ch, SKILL_SHADOW_MOVEMENT))
 		{
 		}
-		else if (!IS_IMMOBILE(opponent) &&
-			 (mangleSucceed(opponent, ch, wpn) || parrySucceed(opponent, ch, wpn) ||
-			  divine_blessing_parry(opponent, ch) || blockSucceed(opponent, ch, wpn) ||
-			  dodgeSucceed(opponent, ch, wpn) || leapSucceed(opponent, ch) ||
-			  MonkRiposte(opponent, ch, wpn)))
+		else if (!IS_IMMOBILE(opponent))
 		{
-			return FALSE;
+			if (mangleSucceed(opponent, ch, wpn))
+				return FALSE;
+			if (!refresh_attack_participants())
+				return FALSE;
+			if (parrySucceed(opponent, ch, wpn))
+				return FALSE;
+			if (!refresh_attack_participants())
+				return FALSE;
+			if (divine_blessing_parry(opponent, ch))
+				return FALSE;
+			if (!refresh_attack_participants())
+				return FALSE;
+			if (blockSucceed(opponent, ch, wpn))
+				return FALSE;
+			if (!refresh_attack_participants())
+				return FALSE;
+			if (dodgeSucceed(opponent, ch, wpn))
+				return FALSE;
+			if (!refresh_attack_participants())
+				return FALSE;
+			if (leapSucceed(opponent, ch))
+				return FALSE;
+			if (!refresh_attack_participants())
+				return FALSE;
+			if (MonkRiposte(opponent, ch, wpn))
+				return FALSE;
+			if (!refresh_attack_participants())
+				return FALSE;
 		}
 	}
 	/* defensive hit hook for equipped items - Tharkun */
@@ -205,6 +240,8 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 			{
 				return FALSE;
 			}
+			if (!refresh_attack_participants())
+				return FALSE;
 		}
 	}
 
@@ -219,14 +256,22 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 		{
 			return FALSE;
 		}
+		if (!refresh_attack_participants())
+			return FALSE;
 	}
 
 	if (hit(ch, opponent, wpn, damAccumulator))
 		success = TRUE;
+	if (!refresh_attack_participants())
+		return success;
 
 	if (success && IS_ALIVE(opponent) && GET_POS(opponent) == POS_STANDING &&
 	    GET_CHAR_SKILL(opponent, SKILL_ARMLOCK))
+	{
 		armlock_check(ch, opponent);
+		if (!refresh_attack_participants())
+			return success;
+	}
 
 	if (GET_SPEC(ch, CLASS_CLERIC, SPEC_ZEALOT) && success && IS_ALIVE(ch))
 	{
@@ -254,6 +299,8 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 		{
 			if ((spell = memorize_last_spell(ch)))
 			{
+				if (!refresh_attack_participants())
+					return success;
 				char buf[256];
 				snprintf(
 					buf, 256,
@@ -264,14 +311,19 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 		}
 	}
 
-	if (!is_char_in_room(ch, room))
+	if (!refresh_attack_participants() || !is_char_in_room(ch, room))
 	{
 		return success;
 	}
-	else if (notch_skill(ch, SKILL_DOUBLE_STRIKE,
-			     get_property("skill.notch.offensive.auto", 4)) ||
-		 GET_CHAR_SKILL(ch, SKILL_DOUBLE_STRIKE) / 20 > number(0, 100) ||
-		 (affected_by_spell(ch, SKILL_WHIRLWIND) && !number(0, 2)))
+	bool double_strike_ready =
+		notch_skill(ch, SKILL_DOUBLE_STRIKE, get_property("skill.notch.offensive.auto", 4));
+	if (!refresh_attack_participants())
+		return success;
+	if (!double_strike_ready)
+		double_strike_ready = GET_CHAR_SKILL(ch, SKILL_DOUBLE_STRIKE) / 20 >
+					      number(0, 100) ||
+				      (affected_by_spell(ch, SKILL_WHIRLWIND) && !number(0, 2));
+	if (double_strike_ready)
 	{
 		double_strike(ch, opponent, wpn);
 	}

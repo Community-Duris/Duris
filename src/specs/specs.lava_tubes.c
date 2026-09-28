@@ -495,7 +495,6 @@ int spore_ball(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 
 /* Additional Lava Tubes procedures. */
 
-
 int skeleton(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char temp;

@@ -785,7 +785,6 @@ void spell_chaos_volley(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 	}
 }
 
-
 void spell_single_doom_aoe(int level, P_char ch, char * /*args*/, int /*type*/, P_char victim,
 			   P_obj /*obj*/)
 {
@@ -803,7 +802,6 @@ void spell_single_doom_aoe(int level, P_char ch, char * /*args*/, int /*type*/, 
 
 	spell_damage(ch, victim, dam, SPLDAM_GENERIC, 0, &messages);
 }
-
 
 #define RIPPLE_STUN 1
 #define RIPPLE_BLIND 2
@@ -961,7 +959,6 @@ void spell_chaotic_ripple(int level, P_char ch, char * /*arg*/, [[maybe_unused]]
 	}
 }
 
-
 void spell_anti_magic_ray(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			  P_obj obj)
 {
@@ -1001,7 +998,6 @@ void spell_anti_magic_ray(int level, P_char ch, char * /*arg*/, int /*type*/, P_
 		victim->specials.apply_saving_throw[SAVING_SPELL] = save;
 	}
 }
-
 
 void spell_harmonic_resonance(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			      P_obj /*obj*/)
@@ -1069,7 +1065,6 @@ void spell_harmonic_resonance(int level, P_char ch, char * /*arg*/, int /*type*/
 	}
 }
 
-
 void spell_recharger(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		     P_char victim, P_obj /*tar_obj*/)
 {
@@ -1131,7 +1126,6 @@ void spell_recharger(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] 
 		}
 	}
 }
-
 
 void spell_disintegrate(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			P_obj obj)
@@ -1272,7 +1266,6 @@ void spell_disintegrate(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 	} /* else dam = 0; */
 	spell_damage(ch, victim, dam, SPLDAM_NEGATIVE, noshrug, &messages);
 }
-
 
 void spell_shatter(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj obj)
 {

@@ -10,7 +10,7 @@
 // Return true for next missile if available.
 // Return false to stop barrage.
 static bool spell_solbeeps_single_missile(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
-				   P_char victim, P_obj /*tar_obj*/)
+					  P_char victim, P_obj /*tar_obj*/)
 {
 	struct damage_messages fulldam_messages = {
 		"A &+Yhuge&n missile of &+Wforce&n departs from your fingertips, making a loud &+Lthud&n as it hits $N.",

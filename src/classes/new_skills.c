@@ -19,6 +19,7 @@
 #include <string.h>
 #include <time.h>
 #include "combat/damage.h"
+#include "combat/death_messages.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
 #include "combat/training_dummy.h"
