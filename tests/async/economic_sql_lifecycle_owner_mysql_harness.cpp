@@ -267,6 +267,14 @@ int main()
 			throw std::runtime_error("mysql_library_init failed");
 		setup = connect_fixture();
 		seed(setup);
+		assert_scalar(
+			setup,
+			"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE phase IN (1,2)",
+			"0");
+		assert_scalar(
+			setup,
+			"SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL",
+			"0");
 		assert_source_registry(setup);
 		owner_connection = connect_fixture();
 		runtime_connection = connect_fixture();
@@ -563,12 +571,62 @@ int main()
 		}
 		mysql_close(legacy_connection);
 		assert_scalar(setup, "SELECT copper FROM player_data WHERE pid=21001", "7");
-		economic_sql_lifecycle_guard denied_runtime;
-		if (economic_sql_lifecycle_guard::acquire_runtime(runtime_connection,
-								  &denied_runtime) != EPERM)
-			throw std::runtime_error(
-				"runtime boot was admitted with an unactivated staged installation");
-		puts("PASS native_wallets=2 shared_banks=2 durable_mappings=4 baseline_receipt=verified partial_write_rollback=verified phase_one_resume=verified exact_replay=stable concurrent_legacy_writer=serialized legacy_gate=closed runtime_admission=closed active_epoch=NULL");
+		{
+			economic_sql_lifecycle_guard admission_probe;
+			const std::string boot_lock_free = std::string("SELECT IS_FREE_LOCK('") +
+							   ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME +
+							   "')";
+			if (economic_sql_lifecycle_guard::acquire_runtime(
+				    runtime_connection, &admission_probe) != EPERM)
+				throw std::runtime_error(
+					"runtime boot was admitted with an unactivated staged installation");
+			assert_scalar(setup, boot_lock_free, "1");
+			if (economic_sql_lifecycle_guard::acquire_runtime(
+				    runtime_connection, &admission_probe) != EPERM)
+				throw std::runtime_error(
+					"staged refusal changed the runtime guard output or local admission state");
+			assert_scalar(setup, boot_lock_free, "1");
+
+			// An active epoch with no retained installation receipt is not a legacy
+			// database: ordinary runtime admission must still fail closed.
+			execute(setup,
+				"DELETE FROM economic_sql_lifecycle_installation WHERE operation_id=" +
+					sql_id(request.operation_id));
+			execute(setup, "UPDATE economic_lineage_state SET active_epoch=" +
+					       sql_id(request.epoch) +
+					       " WHERE lineage=" + sql_id(request.lineage));
+			assert_scalar(
+				setup,
+				"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE phase IN (1,2)",
+				"0");
+			assert_scalar(
+				setup,
+				"SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL",
+				"1");
+			if (economic_sql_lifecycle_guard::acquire_runtime(
+				    runtime_connection, &admission_probe) != EPERM)
+				throw std::runtime_error(
+					"runtime boot was admitted with active_epoch and no staged installation receipt");
+			assert_scalar(setup, boot_lock_free, "1");
+			if (economic_sql_lifecycle_guard::acquire_runtime(
+				    runtime_connection, &admission_probe) != EPERM)
+				throw std::runtime_error(
+					"active-epoch refusal changed the runtime guard output or local admission state");
+			assert_scalar(setup, boot_lock_free, "1");
+			execute(setup,
+				"UPDATE economic_lineage_state SET active_epoch=NULL WHERE lineage=" +
+					sql_id(request.lineage));
+			{
+				const auto recovered =
+					economic_sql_lifecycle_guard::acquire_runtime(
+						runtime_connection, &admission_probe);
+				if (recovered)
+					throw std::runtime_error(
+						"runtime guard did not recover after refused admission: " +
+						std::to_string(recovered));
+			}
+		}
+		puts("PASS native_wallets=2 shared_banks=2 durable_mappings=4 baseline_receipt=verified partial_write_rollback=verified phase_one_resume=verified exact_replay=stable concurrent_legacy_writer=serialized legacy_gate=closed healthy_inactive_runtime=admitted staged_runtime=refused active_epoch_without_receipt=refused failure_cleanup=verified output_preserved=verified");
 		mysql_close(runtime_connection);
 		mysql_close(owner_connection);
 		mysql_close(setup);

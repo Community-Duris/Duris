@@ -76,7 +76,6 @@ int jet_black_maul(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-
 int braddistock(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	// Check for periodic event calls

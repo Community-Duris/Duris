@@ -17,6 +17,7 @@
 #include "world/handler.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "combat/justice.h"
 #include "magic/spells.h"
@@ -131,16 +132,39 @@ void hyena_bite(P_char ch, P_char victim)
 		"$n's shape blurs as $e lashes towards you and sinks $s fangs in your flesh.",
 		"$n's shape blurs as $e lashes towards $N and sinks $s fangs in $S flesh.",
 	};
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch) || !victim || !char_in_list(victim) ||
+	    !IS_ALIVE(victim))
+		return;
 
 	int level = GET_LEVEL(ch);
 
 	int dam = dice(level, 10);
+	const attack_continuation bite_continuation = begin_attack_continuation(ch, victim);
 
-	if (raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages) == DAM_NONEDEAD)
+	if (raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages) != DAM_NONEDEAD)
+		return;
+	auto refresh_bite_participants = [&](const attack_continuation &continuation)
 	{
-		int i = 1 + GET_LEVEL(ch) / 12;
-		while (i-- && !affected_by_spell(victim, SPELL_DISEASE))
-			spell_disease(GET_LEVEL(ch), ch, 0, 0, victim, 0);
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		victim = after_callback.target;
+		return true;
+	};
+	if (!refresh_bite_participants(bite_continuation))
+		return;
+
+	int i = 1 + GET_LEVEL(ch) / 12;
+	while (i-- && !affected_by_spell(victim, SPELL_DISEASE))
+	{
+		const attack_continuation disease_continuation =
+			begin_attack_continuation(ch, victim);
+		spell_disease(GET_LEVEL(ch), ch, 0, 0, victim, 0);
+		if (!refresh_bite_participants(disease_continuation))
+			return;
 	}
 }
 

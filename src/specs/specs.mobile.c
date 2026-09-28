@@ -89,7 +89,6 @@ struct obj_cost
 	bool ok;
 };
 
-
 int silver_lady_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 11302, 11303, 11304, 11305, 11307, 11308, 11310, 11312, 11314, 0 };
@@ -112,20 +111,6 @@ int realms_master_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 	return FALSE;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 int caranthazal_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32835, 32836, 0 };
@@ -137,21 +122,6 @@ int caranthazal_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 			NULL, helpers, 0, 0);
 	return FALSE;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 int shadow_demon(P_char ch, P_char tch, int cmd, char *arg)
 {
@@ -493,8 +463,6 @@ int hunt_cat(P_char ch, P_char tch, int cmd, char *arg)
 	return (FALSE);
 }
 
-
-
 #define GUILD_ITEM_START 8508
 #define GUILD_ITEM_END 8513
 #define GUILD_ITEM_POS GUILD_INSIGNIA
@@ -807,7 +775,6 @@ int thief(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	return FALSE;
 }
 
-
 struct ticket_info_data
 {
 	int in_room;
@@ -928,35 +895,15 @@ int ticket_taker(P_char ch, P_char pl, int cmd, char *arg)
 	return TRUE;
 }
 
-
 /*
  *    Fun procs - SAM 6-94
  */
-
-
-
-
-
-
-
-
-
-
 
 /*
  * If the automaton is alone in its room and the trapdoor is blocked, unblock
  * * the door, so that more people can come into their deaths...>8^)
  * * -- DTS 2/22/95
  */
-
-
-
-
-
-
-
-
-
 
 int brass_dragon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
@@ -1010,9 +957,6 @@ int janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	}
 	return (FALSE);
 }
-
-
-
 
 /*
  * A special for the Knife Shop Proprieter (mob-based)
@@ -1644,8 +1588,6 @@ int animated_skeleton(P_char ch, P_char pl, int cmd, char * /*arg*/)
 	return FALSE;
 }
 
-
-
 int bridge_troll(P_char ch, P_char pl, int cmd, char *arg)
 {
 	int gold;
@@ -2002,13 +1944,6 @@ int necro_specpet_blood(P_char /*ch*/, P_char /*pl*/, int /*cmd*/, char * /*arg*
 	return 0;
 }
 
-
-
-
-
-
-
-
 int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
@@ -2046,20 +1981,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 // When Timoro dies, a bunch of dwarven invaders led by mob vnum (above), come down
 //   from room vnum (above) to avenge the death.
 
-
-
-
-
-
-
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:74001
    *Name:Common woman
  */
-
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2067,13 +1993,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:Little brat
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7103
    *Name:Holyman
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2081,13 +2005,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:merchant
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7105    7308
    *Name:wino    wino second
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2095,13 +2017,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:watcher
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7107
    *Name:guard
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2109,15 +2029,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:squire
  */
 
-
-
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7110    7111     7112       7141
    *Name:vrock   hezrou   glabrezu   lurker
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2125,13 +2041,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:timid prisoner
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7114
    *Name:shady prisoner
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2139,13 +2053,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:sinister prisoner
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7116
    *Name:menacing prisoner
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2153,13 +2065,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:executioner
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7118
    *Name:baron
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2167,13 +2077,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:sparrow
  */
 
-
 /*
   Bloodstone Zone 71 Mob proc
    *Mob#:7121        7122
    *Name:squirrel    huge squirrel
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2181,13 +2089,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:crow
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7124
    *Name:mountainman
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2195,13 +2101,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:salesman
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7126
    *Name:nomad
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2209,13 +2113,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:insane woman
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7128
    *Name:homeless man
  */
-
 
 /*
   Bloodstone Zone 71 Mob proc
@@ -2223,14 +2125,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
   *Name:baron's servant
 */
 
-
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7140
    *Name:wolf
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2238,13 +2137,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:gnoll
  */
 
-
 /*
   Bloodstone Zone 71 Mob proc
   *Mob#:7144
   *Name:ettin
 */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2252,13 +2149,11 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:griffon
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7152
    *Name:wereboar
  */
-
 
 /*
    Bloodstone Zone 71 Mob proc
@@ -2266,21 +2161,17 @@ int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
    *Name:manticore cub
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7154
    *Name:manticore fierce
  */
 
-
 /*
    Bloodstone Zone 71 Mob proc
    *Mob#:7160
    *Name:stirge
  */
-
-
 
 int monk_remort(P_char ch, P_char pl, int cmd, char *arg)
 {

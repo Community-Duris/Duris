@@ -85,7 +85,6 @@ void spell_repair_one_item(int /*level*/, P_char ch, char * /*arg*/, int /*type*
 	}
 }
 
-
 void spell_knock(int /*cmd*/, P_char ch, char *argument, [[maybe_unused]] int type,
 		 P_char /*victim*/, P_obj obj)
 {
@@ -162,7 +161,6 @@ void spell_knock(int /*cmd*/, P_char ch, char *argument, [[maybe_unused]] int ty
 	return;
 }
 
-
 void spell_create_water(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 			P_obj obj)
 {
@@ -202,7 +200,6 @@ void spell_create_water(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 		return;
 	}
 }
-
 
 void spell_remove_curse(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			P_obj obj)

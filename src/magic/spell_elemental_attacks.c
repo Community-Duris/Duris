@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -677,7 +678,6 @@ void spell_call_lightning(int level, P_char ch, P_char victim, P_obj /*obj*/)
 	add_event(event_call_lightning, PULSE_VIOLENCE, ch, victim, NULL, 0, &clData,
 		  sizeof(struct call_lightning_data));
 }
-
 
 void spell_grow_spike(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 		      P_obj /*obj*/)

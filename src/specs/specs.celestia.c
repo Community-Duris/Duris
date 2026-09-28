@@ -157,7 +157,12 @@ int Malevolence_vapor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 		return TRUE;
 	case 4:
 	case 5:
-		for (vict = world[ch->in_room].people; vict; vict = tch)
+	{
+		const uint64_t actor_runtime_id = ch->runtime_id;
+		const int actor_room = ch->in_room;
+		const int actor_height = ch->specials.z_cord;
+
+		for (vict = world[actor_room].people; vict; vict = tch)
 		{
 			tch = vict->next_in_room;
 
@@ -170,9 +175,25 @@ int Malevolence_vapor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 			if (!CAN_SEE(ch, vict))
 				continue;
 
+			const uint64_t next_victim_runtime_id = tch ? tch->runtime_id : 0;
 			hit(ch, vict, ch->equipment[PRIMARY_WEAPON]);
+
+			ch = find_character_by_runtime_id(actor_runtime_id);
+			if (!ch || !IS_ALIVE(ch) || ch->in_room != actor_room ||
+			    ch->specials.z_cord != actor_height)
+				return TRUE;
+
+			if (next_victim_runtime_id)
+			{
+				tch = find_character_by_runtime_id(next_victim_runtime_id);
+				if (!tch || !is_char_in_room(tch, actor_room))
+					return TRUE;
+			}
+			else
+				tch = NULL;
 		}
 		return TRUE;
+	}
 	case 6:
 	case 7:
 		if (!GET_OPPONENT(ch))

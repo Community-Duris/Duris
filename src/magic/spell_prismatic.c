@@ -23,7 +23,7 @@ extern P_room world;
 /* size is the caller's real buffer size; this used to format with
    MAX_STRING_LENGTH into 512-byte buffers. */
 static void prepare_ray_messages(const char *color_string, char *ch_buffer, char *vict_buffer,
-			  char *room_buffer, size_t size)
+				 char *room_buffer, size_t size)
 {
 	snprintf(ch_buffer, size, "You send a %s shaft of light streaking towards $N!",
 		 color_string);
@@ -46,7 +46,7 @@ static void show_ray_messages(const char *color_string, P_char ch, P_char victim
 }
 
 static void spell_single_prismatic_ray(int level, P_char ch, char *arg, int /*type*/, P_char victim,
-				P_obj /*obj*/)
+				       P_obj /*obj*/)
 {
 	int dam, ray_type;
 	char char_message[512], victim_message[512], room_message[512];

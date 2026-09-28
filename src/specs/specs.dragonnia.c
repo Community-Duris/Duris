@@ -26,6 +26,7 @@
  ***************************************************************************/
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -39,6 +40,7 @@
 #include <string.h>
 #include <time.h>
 #include "world/specs.prototypes.h"
+#include "combat/death_messages.h"
 #include "magic/spells.h"
 #include "world/vnum.mob.h"
 #include "world/vnum.obj.h"

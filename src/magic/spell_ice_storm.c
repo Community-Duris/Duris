@@ -7,8 +7,8 @@
 #include "combat/damage.h"
 #include "magic/spells.h"
 
-static void spell_single_icestorm(int level, P_char ch, char * /*arg*/, int /*type*/,
-				  P_char victim, P_obj /*obj*/)
+static void spell_single_icestorm(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+				  P_obj /*obj*/)
 {
 	struct damage_messages messages = { "You crush $N with your &+Cstorm of ice.",
 					    "$n bashes you with a &+Cstorm of ice.",

@@ -15,6 +15,7 @@
 #include "net/comm.h"
 #include "cmd/interp.h"
 #include "world/db.h"
+#include "combat/death_messages.h"
 #include "world/specs.prototypes.h"
 
 extern P_room world;

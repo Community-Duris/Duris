@@ -82,17 +82,7 @@ void event_balance_affects(P_char, P_char, P_obj, void *);
 void event_object_proc(P_char, P_char, P_obj, void *);
 extern bool has_skin_spell(P_char);
 
-
-
-
 /*static void hummer(P_obj);*/
-
-
-
-
-
-
-
 
 int illithid_sack(P_obj obj, P_char ch, int cmd, char *argument)
 {
@@ -136,10 +126,6 @@ int illithid_sack(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-
-
-
-
 int death_proc(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
@@ -161,13 +147,7 @@ int death_proc(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 	return FALSE;
 }
 
-
 // pathfinder from KT
-
-
-
-
-
 
 /*void hummer (P_obj obj)
 {
@@ -471,9 +451,7 @@ int item_switch(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-
 /* 'Mayhem', chaotic sword of the night */
-
 
 int labelas(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -726,7 +704,6 @@ int labelas(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-
 int tyr_sword(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char victim = NULL, tch1, tch2;
@@ -947,7 +924,6 @@ int tyr_sword(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 // Subtract 1 from values[0] each cast.  When reaching 0, poof item.
-
 
 /* Woundhealer is in specs.undermountain.c -> woundhealer_scimitar.
 int woundhealer(P_obj obj, P_char ch, int cmd, char *arg)
@@ -1201,7 +1177,6 @@ int cursed_mirror(P_obj obj, P_char ch, int cmd, char *arg)
    * -- DTS 2/21/95
  */
 
-
 /*
    This obj proc lets a person offer a held TREASURE and receive some sort
    ** of goodie, detailed below.  The treasures are usually (presumably) gems.
@@ -1405,7 +1380,6 @@ int llyms_altar(P_obj obj, P_char ch, int cmd, char *arg)
    * -- DTS 4/4/95
  */
 
-
 int zarbon_shaper(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
@@ -1487,7 +1461,6 @@ int zarbon_shaper(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-
 int trans_tower_sword(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int dam = cmd / 1000, curr_time;
@@ -1555,11 +1528,7 @@ int trans_tower_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-
 /* object burns on all commands I can think of that involve touching it */
-
-
-
 
 int druid_sabre(P_obj /*obj*/, P_char /*ch*/, int cmd, char * /*arg*/)
 {
@@ -1567,30 +1536,6 @@ int druid_sabre(P_obj /*obj*/, P_char /*ch*/, int cmd, char * /*arg*/)
 		return FALSE;
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 int glowing_necklace(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -1761,33 +1706,7 @@ int glowing_necklace(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Procs made by Sev 2006 */
-
 
 //-------------------------------------------------
 // OK. various portals stuff here (HOOK ACTIONS)
@@ -1812,15 +1731,6 @@ int portal_race(P_char ch)
 	return 1;
 }
 
-
-
-
-
-
-
-
-
-
 void soul_taking_check(P_char ch, P_char tch)
 {
 	P_obj stiletto;
@@ -1842,6 +1752,5 @@ void soul_taking_check(P_char ch, P_char tch)
 		}
 	}
 }
-
 
 // This function prevents high level chars from entering a teleporter.

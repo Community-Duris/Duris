@@ -73,7 +73,7 @@ void astral_banishment(P_char ch, P_char victim, int hwordtype, int level)
 }
 
 static void spell_single_banish(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
-			 P_obj /*obj*/)
+				P_obj /*obj*/)
 {
 	int chance;
 
@@ -617,7 +617,6 @@ void spell_holy_word(int level, P_char ch, char * /*arg*/, int /*type*/, P_char 
 			    get_property("spell.area.minChance.holyWord", 60),
 			    get_property("spell.area.chanceStep.holyWord", 20));
 }
-
 
 void spell_pword_kill(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 		      P_obj /*obj*/)

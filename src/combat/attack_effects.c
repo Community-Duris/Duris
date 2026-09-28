@@ -5,6 +5,7 @@
 #include "core/structs.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "item/forced_weapon_drop.h"
 #include "item/native_artifact_actions.h"
@@ -33,9 +34,19 @@ struct attack_hit_type attack_hit_text[] = {
 	{ "thrash", "thrashes", "thrashed" } /* TYPE_THRASH   */
 };
 
+static bool refresh_tainted_blade_pair(P_char &ch, P_char &victim, uint64_t ch_runtime_id,
+				       uint64_t victim_runtime_id)
+{
+	ch = find_character_by_runtime_id(ch_runtime_id);
+	victim = find_character_by_runtime_id(victim_runtime_id);
+	return ch && IS_ALIVE(ch) && victim && IS_ALIVE(victim);
+}
+
 void event_tainted_blade(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
-	int blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
+	int blade_skill;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
 	struct affected_type *af;
 	struct damage_messages tainted_messages = {
 		"$N &+Lstruggles against the &+wtaint &+Lcoursing through $S body.&n",
@@ -53,8 +64,14 @@ void event_tainted_blade(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*
 		"&+LYour screams ar&+we your onl&+Wy thing ke&+weping you compa&+Lny as you fall into oblivion.&n",
 		"$N &+Lfalls to the ground thrashing wildly, $S soul finally devoured."
 	};
-	struct damage_messages *messages = GET_CLASS(ch, CLASS_AVENGER) ? &holy_messages :
-									  &tainted_messages;
+	struct damage_messages *messages;
+
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !char_in_list(victim) || !IS_ALIVE(victim))
+		return;
+	ch_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
+	blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
+	messages = GET_CLASS(ch, CLASS_AVENGER) ? &holy_messages : &tainted_messages;
 
 	af = get_spell_from_char(victim, blade_skill);
 	if (!af)
@@ -64,6 +81,11 @@ void event_tainted_blade(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*
 	//  Note: The real average is more complicated since for all X in Y: Y=dice(3, (2*lvl)/3) < 40: X = 40 or whatever.
 	if (raw_damage(ch, victim, MAX(40, dice(3, (2 * GET_LEVEL(ch)) / 3)),
 		       RAWDAM_DEFAULT ^ RAWDAM_IMPRISON, messages) != DAM_NONEDEAD)
+		return;
+	if (!refresh_tainted_blade_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+		return;
+	af = get_spell_from_char(victim, blade_skill);
+	if (!af)
 		return;
 
 	if (af->modifier-- > 0)
@@ -80,8 +102,22 @@ void event_tainted_blade(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*
 
 bool tainted_blade(P_char ch, P_char victim)
 {
-	int blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
+	int blade_skill;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
 	struct affected_type af, *old_af;
+	struct damage_messages *messages;
+	int dam_result;
+
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !char_in_list(victim) || !IS_ALIVE(victim))
+		return TRUE;
+	ch_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
+	blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
+
+	if (IS_CONSTRUCT(victim) || !ch->equipment[WIELD])
+		return FALSE;
+
 	struct damage_messages tainted_messages = {
 		"$N &+wpales &+Las your &+wtainted &+Lweapon strikes&n $M.",
 		"&+LYou &+rscream &+Las&n $n's&+L $q slams into your body.&n",
@@ -102,14 +138,16 @@ bool tainted_blade(P_char ch, P_char victim)
 		0,
 		ch->equipment[WIELD]
 	};
-	struct damage_messages *messages = GET_CLASS(ch, CLASS_AVENGER) ? &holy_messages :
-									  &tainted_messages;
+	if (GET_CLASS(ch, CLASS_AVENGER))
+		messages = &holy_messages;
+	else
+		messages = &tainted_messages;
 
-	if (IS_CONSTRUCT(victim) || !ch->equipment[WIELD])
-		return FALSE;
-
-	if (raw_damage(ch, victim, 60, RAWDAM_DEFAULT, messages) == DAM_NONEDEAD)
+	dam_result = raw_damage(ch, victim, 60, RAWDAM_DEFAULT, messages);
+	if (dam_result == DAM_NONEDEAD)
 	{
+		if (!refresh_tainted_blade_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			return TRUE;
 		if ((old_af = get_spell_from_char(victim, blade_skill)))
 		{
 			old_af->modifier = 1 + GET_CHAR_SKILL(ch, blade_skill) / 33;
@@ -346,6 +384,8 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 		{
 			if (skills[spells[count]].spell_pointer)
 			{
+				const attack_continuation continuation =
+					begin_attack_continuation(ch, victim, obj);
 				if (IS_AGG_SPELL(spells[count]))
 				{
 					((*skills[spells[count]].spell_pointer)(
@@ -358,6 +398,13 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 						(int)obj->value[6], ch, 0, SPELL_TYPE_SPELL, ch,
 						obj));
 				}
+				const attack_continuation_result after_spell =
+					check_attack_continuation(continuation);
+				if (!after_spell.can_continue())
+					return TRUE;
+				ch = after_spell.actor;
+				victim = after_spell.target;
+				obj = after_spell.weapon;
 			}
 		}
 	}
@@ -402,6 +449,100 @@ int battle_frenzy(P_char ch, P_char victim)
 		    TO_CHAR);
 	}
 	return 0;
+}
+
+bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
+{
+	struct affected_type aff, *af;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
+	struct damage_messages messages = {
+		"$N screams as you sink five fingers into soft spots in $S shoulder.",
+		"You feel on fire as $n's hard fingers strike a nerve in your shoulder.",
+		"$N screams as $n sinks five fingers into soft spots in $S shoulder.",
+		"$N dies as you sink five fingers into soft spots in $S shoulder.",
+		"You feel on fire as $n's hard fingers strike a nerve in your shoulder.",
+		"$N dies as $n sinks five fingers into soft spots in $S shoulder."
+	};
+
+	if (!char_in_list(ch) || !char_in_list(victim))
+		return TRUE;
+	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || IS_CONSTRUCT(victim))
+		return FALSE;
+	ch_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
+
+	send_to_char("You sneak in and deliver a strike to a pressure point!\r\n", ch);
+
+	if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFSNAKE) ||
+	    (GET_CLASS(ch, CLASS_MONK) && IS_NPC(ch) && GET_LEVEL(ch) > 50))
+	{
+		af = get_spell_from_char(victim, TAG_PRESSURE_POINTS);
+		if (!af)
+		{
+			memset(&aff, 0, sizeof(aff));
+			aff.type = TAG_PRESSURE_POINTS;
+			aff.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL |
+				    AFFTYPE_NOAPPLY;
+			aff.modifier = 1;
+			aff.duration = (10 * WAIT_SEC);
+			affect_to_char(victim, &aff);
+			return FALSE;
+		}
+
+		af->modifier++;
+
+		if (af->modifier == 2)
+		{
+			if (!IS_AFFECTED2(victim, AFF2_SLOW))
+			{
+				memset(&aff, 0, sizeof(aff));
+				aff.type = SPELL_SLOW;
+				aff.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL;
+				aff.duration = (4 * WAIT_SEC);
+				aff.bitvector2 = AFF2_SLOW;
+				affect_to_char(victim, &aff);
+
+				act("&+m$n &+mbegins to sllooowwww down.&n", TRUE, victim, 0, 0,
+				    TO_ROOM);
+				send_to_char("&+mYou feel yourself slowing down.\r\n", victim);
+			}
+		}
+
+		if (af->modifier == 3 && !IS_BLIND(victim))
+			blind(ch, victim, (4 * WAIT_SEC));
+
+		if (af->modifier == 4)
+		{
+			CharWait(victim, (3 * WAIT_SEC));
+			act("$n strikes you hard at the side of the neck.", TRUE, ch, 0, victim,
+			    TO_VICT);
+			act("$n deals a crippling blow to the side of $N's neck.", TRUE, ch, 0,
+			    victim, TO_NOTVICT);
+			act("You deal a crippling blow to the side of $N's neck.", TRUE, ch, 0,
+			    victim, TO_CHAR);
+		}
+
+		if (af->modifier == 5)
+		{
+			if (DAM_NONEDEAD != melee_damage(ch, victim, 240 + dice(4, 40),
+							 PHSDAM_TOUCH | RAWDAM_DEFAULT, &messages,
+							 damAccumulator))
+			{
+				return TRUE;
+			}
+			ch = find_character_by_runtime_id(ch_runtime_id);
+			victim = find_character_by_runtime_id(victim_runtime_id);
+			if (!ch || !IS_ALIVE(ch) || !victim || !IS_ALIVE(victim))
+				return TRUE;
+			af = get_spell_from_char(victim, TAG_PRESSURE_POINTS);
+			if (!af)
+				return FALSE;
+		}
+		if (af->modifier == 6)
+			affect_from_char(ch, TAG_PRESSURE_POINTS);
+	}
+	return FALSE;
 }
 
 bool critical_attack(P_char ch, P_char victim, int msg)

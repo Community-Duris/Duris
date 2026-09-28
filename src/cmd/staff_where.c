@@ -10,10 +10,10 @@
 #include "world/db.h"
 
 #define OBJ_COLOR(rnum)                                                 \
-	((obj_index[rnum].number <= 1)                           ? "+L" : \
-	 (obj_index[rnum].number - 1 > obj_index[rnum].limit)    ? "+W" : \
-	 (obj_index[rnum].number - 1 == obj_index[rnum].limit) ? "n" : \
-												 "+w")
+	((obj_index[rnum].number <= 1)			       ? "+L" : \
+	 (obj_index[rnum].number - 1 > obj_index[rnum].limit)  ? "+W" : \
+	 (obj_index[rnum].number - 1 == obj_index[rnum].limit) ? "n" :  \
+								 "+w")
 
 extern P_char character_list;
 extern P_desc descriptor_list;

@@ -4968,6 +4968,12 @@ bool spell_can_affect_char(P_char ch, int spl)
 		 (IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER)));
 }
 
+// The swashbuckler is considered the victim. // May09 -Lucrot
+bool opposite_racewar(P_char ch, P_char victim)
+{
+	return IS_PC(ch) && IS_PC(victim) && GET_RACEWAR(ch) != GET_RACEWAR(victim);
+}
+
 /* is viewee at war with viewer? */
 
 bool racewar(P_char viewer, P_char viewee)

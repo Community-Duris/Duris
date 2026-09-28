@@ -69,7 +69,7 @@ static RemoveableSpellBit mobAffects5[] = {
 };
 
 static int CheckMobRemoveableSpellBits(P_char ch, RemoveableSpellBit *spellBits, int countSpellBits,
-				ulong *bitStore, bool nosave, int saveMod, int affectVector)
+				       ulong *bitStore, bool nosave, int saveMod, int affectVector)
 {
 	int success = 0;
 
@@ -340,8 +340,6 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		}
 	}
 }
-
-
 
 void spell_dispel_good(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 		       P_obj /*obj*/)

@@ -255,11 +255,6 @@ char *where_obj(P_obj w_obj, int flag)
 	return (GS_buf1);
 }
 
-
-
-
-
-
 /* Load a player manually from save files */
 void do_read_player(P_char ch, char *arg, int /*cmd*/)
 {
@@ -382,16 +377,10 @@ void do_release(P_char ch, char *argument, int /*cmd*/)
 	send_to_char("Descriptor not found!\n", ch);
 }
 
-
-
 /*
  ** This function now allows a player to transfer anyone
  ** at or below his level
  */
-
-
-
-
 
 // No args: Lists the deathobjects vnum along with short desc.
 // With arg add: Adds to list of deathobjects and sets object's proc to kill any mortal.
@@ -544,18 +533,10 @@ void do_deathobj(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
-
-
-
-
-
-
 void do_shutdow(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char("If you want to shut something down - say so!\n", ch);
 }
-
-
 
 TimedShutdownData shutdownData = { 0, -1, TimedShutdownData::NONE, "", "" };
 
@@ -1002,8 +983,6 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 	// calling the event will start the event
 	timedShutdown(NULL, NULL, NULL, NULL);
 }
-
-
 
 namespace
 {
@@ -1751,12 +1730,6 @@ void do_reroll(P_char ch, char *argument, int /*cmd*/)
 
 #undef REROLL_SYNTAX
 
-
-
-
-
-
-
 void do_reinitphys(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char vict;
@@ -1833,10 +1806,6 @@ void do_reinitphys(P_char ch, char *arg, int /*cmd*/)
 	    TO_CHAR);
 	set_char_height_weight(vict);
 }
-
-
-
-
 
 /* Used to demote player to level 1 (and level 1 only) */
 
@@ -1926,14 +1895,6 @@ void do_demote(P_char ch, char *argument, int /*cmd*/)
 				 sizeof(context));
 }
 
-
-
-
-
-
-
-
-
 void do_secret(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj = NULL;
@@ -1963,13 +1924,6 @@ void do_secret(P_char ch, char *argument, int /*cmd*/)
  *
  * Syntax : "lookup <room | mob | obj | random> <search_string>"
  */
-
-
-
-
-
-
-
 
 // Same as GetMIA but includes seconds and no "  (" to start..
 /* clone stuff - Valkur */
@@ -2252,17 +2206,6 @@ void do_clone(P_char ch, char *argument, int /*cmd*/)
 	}
 	return;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 #if 0 /* don't do anything with this yet (neb)  */
 void do_proc(P_char ch, char *args, int cmd)
@@ -2549,8 +2492,6 @@ void do_sacrifice(P_char ch, char *argument, int /*cmd*/)
 	return;
 }
 
-
-
 int vnum_mobile(char *searchname, struct char_data *ch)
 {
 	int i, found = 0, count = 0, length = 0;
@@ -2745,8 +2686,6 @@ void do_RemoveSpecTimer(P_char ch, char *argument, int /*cmd*/)
 	REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
 	send_to_char("Thier timer has been removed.\n", ch);
 }
-
-
 
 namespace
 {
@@ -3085,19 +3024,8 @@ void do_storage(P_char ch, char *arg, int /*cmd*/)
 	}
 }
 
-
-
-
-
-
-
-
-
 // May be kinda slow since we're walking through the whole mob table and
 //   creating/destroying a mob of each type to find its race/zone/etc.
-
-
-
 
 #ifdef USE_ACCOUNT
 void show_account_info(P_char ch, P_char target)

@@ -263,6 +263,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/copyover.o \
 				 core/common.o \
 				 world/condition.o \
+				 world/bloodstains.o \
 				 core/constant.o \
 				 combat/ctf.o \
 				 combat/dam_mods.o \
@@ -304,6 +305,7 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/fight_state.o \
 				 combat/attack_effects.o \
 				 combat/attack_resolution.o \
+				 combat/death_messages.o \
 				 combat/fight.o \
 				 core/files.o \
 				 combat/fraglist.o \
@@ -526,6 +528,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \
 				 sql/sql_pool.o \
+				 sql/sql_economic_runtime.o \
 				 item/plushit.o \
 				 net/poll.o \
 				 net/prompt.o \
@@ -563,7 +566,6 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.limbo.o \
 				 specs/specs.faang.o \
 				 specs/specs.surface.o \
-				 specs/specs.wolfen.o \
 				 specs/specs.cosmic.o \
 				 specs/specs.githzer.o \
 				 specs/specs.alatorin.o \
@@ -648,7 +650,6 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.character_progression.o \
 				 specs/specs.set_equipment.o \
 				 specs/specs.artifacts.o \
-				 specs/specs.combat_equipment.o \
 				 specs/specs.cerebusp.o \
 				 specs/specs.realm.o \
 				 specs/specs.room.o \

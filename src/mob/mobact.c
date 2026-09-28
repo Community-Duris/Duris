@@ -11,6 +11,8 @@
 #undef RILDEBUG
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -25,6 +27,7 @@
 #include "world/graph.h"
 #include "combat/grapple.h"
 #include "combat/training_dummy.h"
+#include "combat/attack_continuation.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/map.h"
@@ -5710,7 +5713,7 @@ bool MobWarrior(P_char ch)
 	P_char tch, next_ch;
 	int n_atkr;
 
-	if (!IS_ALIVE(ch))
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
 		return FALSE;
 	}
@@ -5769,12 +5772,36 @@ bool MobWarrior(P_char ch)
 		for (tch = world[ch->in_room].people; tch; tch = next_ch)
 		{
 			next_ch = tch->next_in_room;
+			const uint64_t next_ch_runtime_id = next_ch ? next_ch->runtime_id : 0;
 
 			if ((tch != ch) && IS_FIGHTING(tch) &&
 			    ((GET_OPPONENT(tch) == ch) || (GET_OPPONENT(ch) == tch)))
 			{
 				if (number(0, 135) > MAX(99, ((GET_LEVEL(ch) - 10) * 9)))
+				{
+					const attack_continuation actor_continuation =
+						begin_attack_continuation(ch, ch);
 					hit(ch, tch, ch->equipment[PRIMARY_WEAPON]);
+					const attack_continuation_result after_hit =
+						check_attack_continuation(actor_continuation);
+					if (!after_hit.can_continue())
+					{
+						ch = nullptr;
+						break;
+					}
+					ch = after_hit.actor;
+
+					if (next_ch_runtime_id)
+					{
+						P_char live_next_ch = find_character_by_runtime_id(
+							next_ch_runtime_id);
+						if (!live_next_ch ||
+						    live_next_ch->in_room !=
+							    actor_continuation.room)
+							break;
+						next_ch = live_next_ch;
+					}
+				}
 			}
 		}
 		if (char_in_list(ch))

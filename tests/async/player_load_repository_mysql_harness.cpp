@@ -138,7 +138,7 @@ void verify_manifest_repository_loads(MYSQL *connection, const char *path)
 		const player_load_result result = execute_load(connection, request, request_id++);
 		if (result.outcome != player_load_outcome::applied || result.pid != pid ||
 		    result.snapshot.pid != pid ||
-		    result.metrics.query_count != PLAYER_LOAD_QUERY_MAX ||
+		    result.metrics.query_count != PLAYER_LOAD_PID_QUERY_MAX ||
 		    result.read_components != PLAYER_LOAD_SESSION04_READS)
 		{
 			const std::string category =
@@ -202,7 +202,7 @@ int main()
 	assert(result.request_id == request.request_id && result.pid == pid);
 	assert(result.snapshot.pid == pid);
 	assert(result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS);
-	assert(result.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	assert(result.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
 	assert(result.read_components == PLAYER_LOAD_SESSION04_READS);
 	assert(result.recent_pvp_deaths.size() <= GAMEPLAY_READ_RECENT_DURABLE_MAX);
 	assert(result.completed_epic_zones.size() <= GAMEPLAY_READ_COMPLETED_ZONE_MAX);
@@ -243,6 +243,7 @@ int main()
 	player_load_result name_result = player_load_repository_execute(connection, by_name);
 	assert(name_result.outcome == player_load_outcome::applied);
 	assert(name_result.pid == pid && name_result.request_id == by_name.request_id);
+	assert(name_result.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
 
 	player_load_request wrong_account = request;
 	wrong_account.request_id = 79;
@@ -398,7 +399,7 @@ int main()
 			  << " error=" << fixture.error_code << " stage="
 			  << (fixture.failed_component ? fixture.failed_component : "none") << '\n';
 	assert(fixture.outcome == player_load_outcome::applied);
-	assert(fixture.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
+	assert(fixture.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX &&
 	       fixture.snapshot.items.size() == 3);
 	assert(fixture.recent_pvp_deaths.size() == 20);
 	assert(fixture.recent_pvp_deaths.front() == 2000000000 &&
@@ -514,7 +515,7 @@ int main()
 		    "(3102,CONVERT(0x030103 USING utf8mb4),CONVERT(0x02 USING utf8mb4))");
 	player_load_result pet_fixture = execute_load(connection, request, 88);
 	assert(pet_fixture.outcome == player_load_outcome::applied);
-	assert(pet_fixture.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
+	assert(pet_fixture.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX &&
 	       pet_fixture.snapshot.pets.size() == 1);
 	assert(pet_fixture.pet_identities.size() == 1 &&
 	       pet_fixture.pet_identities[0].database_id == 3001);
@@ -609,13 +610,13 @@ int main()
 	player_load_result empty = execute_load(connection, request, 85);
 	assert(empty.outcome == player_load_outcome::applied && empty.snapshot.items.empty());
 	assert(empty.item_owner_revision == 7 &&
-	       empty.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	       empty.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
 	execute_sql(connection, "DELETE FROM item_owner_revision");
 	player_load_result never_owned = execute_load(connection, request, 86);
 	assert(never_owned.outcome == player_load_outcome::applied &&
 	       never_owned.snapshot.items.empty());
 	assert(never_owned.item_owner_revision == 0 &&
-	       never_owned.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	       never_owned.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
 
 	// Serialized payload without any custody row is the orphan that used to lock the
 	// character out for good. It is skipped and counted, and the load still applies.

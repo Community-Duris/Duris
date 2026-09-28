@@ -7,8 +7,8 @@
 #include "combat/damage.h"
 #include "magic/spells.h"
 
-static void spell_single_obtenebration(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
-				P_obj /*obj*/)
+static void spell_single_obtenebration(int level, P_char ch, char * /*arg*/, int /*type*/,
+				       P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {

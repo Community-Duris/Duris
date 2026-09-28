@@ -142,14 +142,12 @@ void spell_consecrate_land(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unu
 	}
 }
 
-
 struct airy_water_data
 {
 	int room;
 	int old_sect;
 	int readd_uw;
 };
-
 
 void spell_binding_wind(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			P_char /*victim*/, P_obj /*obj*/)
@@ -270,7 +268,6 @@ void spell_airy_water(int level, P_char ch, char * /*arg*/, int /*type*/, P_char
 	add_event(event_airy_water_dissipate, level * 10, 0, 0, 0, 0, &data, sizeof(data));
 }
 
-
 void spell_natures_call(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 			P_obj /*obj*/)
 {
@@ -279,7 +276,6 @@ void spell_natures_call(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, 
 	send_to_room("&+gThe &+Gforces of nature&+g flows through the area...&n\n", ch->in_room);
 	add_event(event_natures_call, PULSE_VIOLENCE, ch, 0, 0, 0, &room, sizeof(room));
 }
-
 
 void spell_natures_calling(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			   P_obj /*obj*/)
@@ -355,7 +351,6 @@ void spell_natures_calling(int level, P_char ch, char * /*arg*/, int /*type*/, P
 
 	return;
 }
-
 
 void event_natures_call(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {

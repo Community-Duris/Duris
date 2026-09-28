@@ -478,7 +478,6 @@ void spell_electrical_execution(int /*level*/, P_char ch, char * /*arg*/, int /*
 	}
 }
 
-
 void event_dread_wave(P_char ch, P_char vict, P_obj /*obj*/, void *data)
 {
 	int level, dam;
@@ -715,7 +714,6 @@ void spell_magma_burst(int level, P_char ch, char * /*arg*/, int type, P_char vi
 		af->modifier = (af->modifier < 3) ? 3 : af->modifier + 1;
 	}
 }
-
 
 void event_nova(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {

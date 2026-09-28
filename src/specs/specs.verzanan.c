@@ -7183,7 +7183,6 @@ int bouncer_four(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	return false;
 }
 
-
 int jester(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*

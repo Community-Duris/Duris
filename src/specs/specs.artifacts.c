@@ -192,7 +192,6 @@ int artifact_invisible(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-
 int splinter(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;

@@ -1,6 +1,7 @@
 #ifndef DURIS_ECONOMIC_SQL_LIFECYCLE_GUARD_H
 #define DURIS_ECONOMIC_SQL_LIFECYCLE_GUARD_H
 
+#include "persistence/economic_sql_lifecycle_lock_names.h"
 #include <mysql/mysql.h>
 #include <mutex>
 #include <shared_mutex>

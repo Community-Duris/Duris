@@ -162,13 +162,27 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "GET_GOLD(pet) = wallet[2];",
             "GET_PLATINUM(pet) = wallet[3];",
         }
+        # These NPC vendor resets moved out of specs.mobile.c. Keep the
+        # exceptions to their exact statements rather than exempting the new
+        # area files (which may also contain player-facing procedures).
+        moved_npc_resets = {
+            "specs/specs.clfhaven.c": {
+                "GET_PLATINUM(ch) = 0;", "GET_GOLD(ch) = 0;",
+                "GET_SILVER(ch) = 0;", "GET_COPPER(ch) = 0;",
+            },
+            "specs/specs.heavens.c": {"GET_PLATINUM(witch) = 0;"},
+        }
         violations = []
         for path in SRC.rglob("*.c"):
             if path.name in allowed:
                 continue
             relative = path.relative_to(SRC).as_posix()
+            remaining_npc_resets = set(moved_npc_resets.get(relative, ()))
             for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
                 if line.lstrip().startswith("//"):
+                    continue
+                if line.strip() in remaining_npc_resets:
+                    remaining_npc_resets.remove(line.strip())
                     continue
                 if (
                     relative == "world/generated_npc_runtime.c"

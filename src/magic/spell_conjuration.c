@@ -235,7 +235,8 @@ void spell_call_woodland_beings(int level, P_char ch, char * /*arg*/, int /*type
 	add_follower(mob, ch);
 }
 
-static void event_elemental_swarm_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
+static void event_elemental_swarm_death(P_char ch, P_char /*victim*/, P_obj /*obj*/,
+					void * /*data*/)
 {
 	act("$n &+rdisappears as &+Lquickly&+r as it came, fading back to its home plane!", TRUE,
 	    ch, 0, 0, TO_ROOM);
@@ -1774,7 +1775,6 @@ void cast_channel(int level, P_char ch, char * /*arg*/, int type, P_char /*tar_c
 	}
 }
 
-
 void spell_minor_creation(int /*level*/, P_char ch, P_char /*victim*/, P_obj obj)
 {
 	SET_BIT(obj->extra2_flags, ITEM2_STOREITEM);
@@ -1783,7 +1783,6 @@ void spell_minor_creation(int /*level*/, P_char ch, P_char /*victim*/, P_obj obj
 	act("$p &+Wsuddenly appears.", FALSE, ch, obj, 0, TO_ROOM);
 	act("$p &+Wsuddenly appears.", FALSE, ch, obj, 0, TO_CHAR);
 }
-
 
 void spell_flame_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		       P_obj /*obj*/)
@@ -1847,7 +1846,6 @@ void spell_flame_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 	obj_to_char(blade, ch);
 }
 
-
 void spell_shield(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		  P_obj /*obj*/)
 {
@@ -1872,7 +1870,6 @@ void spell_shield(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char
 	obj_to_char(shield, ch);
 }
 
-
 void spell_create_food(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		       P_obj /*obj*/)
 {
@@ -1891,7 +1888,6 @@ void spell_create_food(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 	SET_BIT(food->extra_flags, ITEM_NOSELL);
 	obj_to_room(food, ch->in_room);
 }
-
 
 void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			  P_char /*victim*/, P_obj /*obj*/)
@@ -1936,7 +1932,6 @@ void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 	af.ch = ch;
 	affect_to_room(ch->in_room, &af);
 }
-
 
 void spell_doom_blade(int /*level*/, P_char ch, char * /*arg*/, int type, P_char /*victim*/,
 		      P_obj /*obj*/)
@@ -1987,7 +1982,6 @@ void spell_doom_blade(int /*level*/, P_char ch, char * /*arg*/, int type, P_char
 	obj_to_char(weapon, ch);
 }
 
-
 static int find_dam_type(char *name)
 {
 	// If we don't have a string, or no ansi in it.
@@ -2021,7 +2015,6 @@ static int find_dam_type(char *name)
 
 	return SPLDAM_GENERIC;
 }
-
 
 void spell_sticks_to_snakes(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			    P_char victim, P_obj obj)

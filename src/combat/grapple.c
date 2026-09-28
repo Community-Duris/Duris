@@ -20,7 +20,14 @@ using namespace std;
 #include "sql/sql.h"
 
 extern P_room world;
-extern int check_shields(P_char, P_char, int, int);
+
+static bool resolve_grapple_pair(P_char &actor, P_char &victim, uint64_t actor_runtime_id,
+				 uint64_t victim_runtime_id)
+{
+	actor = find_character_by_runtime_id(actor_runtime_id);
+	victim = find_character_by_runtime_id(victim_runtime_id);
+	return actor && victim;
+}
 
 int grapple_check_entrapment(P_char ch)
 {
@@ -620,6 +627,8 @@ void do_headlock(P_char ch, char *argument, int /*cmd*/)
 void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int type = HOLD_NONE, percent, gclvl;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
 	float damage = 0.0;
 	bool knockedout = FALSE;
 	struct affected_type af, *aft;
@@ -632,8 +641,8 @@ void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		"$N stops struggling and goes limp!"
 	};
 
-	if (!victim || !IS_ALIVE(victim) || !ch || !IS_ALIVE(ch) || !CanDoFightMove(ch, victim) ||
-	    (ch->in_room != victim->in_room))
+	if (!char_in_list(victim) || !IS_ALIVE(victim) || !char_in_list(ch) || !IS_ALIVE(ch) ||
+	    !CanDoFightMove(ch, victim) || (ch->in_room != victim->in_room))
 		return;
 
 	if ((aft = get_spell_from_char(victim, SKILL_HEADLOCK)) != NULL)
@@ -738,13 +747,20 @@ void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		if (!knockedout)
 		{
 			int dam = (int)((GET_C_DEX(ch) / 7) * damage);
+			ch_runtime_id = ch->runtime_id;
+			victim_runtime_id = victim->runtime_id;
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages);
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+				return;
 			notch_skill(ch, SKILL_HEADLOCK,
 				    (int)get_property("skill.notch.headlock", 17));
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
-			if (IS_ALIVE(ch) && IS_ALIVE(victim))
-				add_event(event_headlock, PULSE_VIOLENCE / 2, ch, victim, 0, 0, 0,
-					  0);
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
+			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
+				return;
+			add_event(event_headlock, PULSE_VIOLENCE / 2, ch, victim, 0, 0, 0, 0);
 		}
 	}
 }
@@ -754,6 +770,8 @@ void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 void armlock_check(P_char attacker, P_char grappler)
 {
 	int reflextype, percent, str, gclvl, dam;
+	uint64_t attacker_runtime_id;
+	uint64_t grappler_runtime_id;
 	struct affected_type af;
 
 	struct damage_messages messages = {
@@ -773,6 +791,12 @@ void armlock_check(P_char attacker, P_char grappler)
 		"The pain is too much to bare as your arm snaps in half!",
 		"The pain was too much to bare for $N as $S arm snaps in half!"
 	};
+
+	if (!char_in_list(grappler) || !IS_ALIVE(grappler) || !char_in_list(attacker) ||
+	    !IS_ALIVE(attacker))
+		return;
+	attacker_runtime_id = attacker->runtime_id;
+	grappler_runtime_id = grappler->runtime_id;
 
 	if (!GET_CHAR_SKILL(grappler, SKILL_ARMLOCK))
 	{
@@ -824,9 +848,14 @@ void armlock_check(P_char attacker, P_char grappler)
 		dam = (int)(GET_C_DEX(grappler) / 15 * 4 *
 			    (float)get_property("grapple.armlock.dmgmod", 1.00));
 		raw_damage(grappler, attacker, dam, RAWDAM_DEFAULT, &messages);
+		if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
+					  attacker_runtime_id))
+			return;
 		check_shields(grappler, attacker, dam, RAWDAM_DEFAULT);
 
-		if (!IS_ALIVE(grappler) || !IS_ALIVE(attacker))
+		if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
+					  attacker_runtime_id) ||
+		    !IS_ALIVE(grappler) || !IS_ALIVE(attacker))
 			return;
 
 		struct affected_type *afp;
@@ -848,9 +877,14 @@ void armlock_check(P_char attacker, P_char grappler)
 				(int)(((GET_C_DEX(grappler) / 10) + str) * 4 *
 				      (float)get_property("grapple.armlock.break.dmgmod", 1.00));
 			raw_damage(grappler, attacker, break_damage, RAWDAM_DEFAULT, &breakmsg);
+			if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
+						  attacker_runtime_id))
+				return;
 			check_shields(grappler, attacker, break_damage, RAWDAM_DEFAULT);
 
-			if (!IS_ALIVE(grappler) || !IS_ALIVE(attacker))
+			if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
+						  attacker_runtime_id) ||
+			    !IS_ALIVE(grappler) || !IS_ALIVE(attacker))
 				return;
 		}
 		else
@@ -1143,6 +1177,8 @@ void do_leglock(P_char ch, char *argument, int /*cmd*/)
 void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int type = HOLD_NONE, percent, gclvl, str, legbreak;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
 	float damage = 0.0;
 	struct affected_type af, *aft;
 
@@ -1164,8 +1200,11 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		"The pain in $N's leg proved too much to bare!",
 	};
 
-	if (!victim || !IS_ALIVE(victim) || !ch || !IS_ALIVE(ch) || !CanDoFightMove(ch, victim))
+	if (!char_in_list(victim) || !IS_ALIVE(victim) || !char_in_list(ch) || !IS_ALIVE(ch) ||
+	    !CanDoFightMove(ch, victim))
 		return;
+	ch_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
 
 	if ((aft = get_spell_from_char(victim, SKILL_LEGLOCK)) != NULL)
 	{
@@ -1246,11 +1285,16 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 			int dam = (int)(((GET_C_DEX(ch) / 10) + str) * 4 *
 					(float)get_property("grapple.leglock.break.dmgmod", 1.00));
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &breakmsg);
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+				return;
 			notch_skill(ch, SKILL_LEGLOCK,
 				    (int)get_property("skill.notch.leglock", 17));
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
 
-			if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
+			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
 				return;
 
 			af.type = SKILL_GRAPPLER_COMBAT;
@@ -1271,10 +1315,15 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		{
 			int dam = (int)((GET_C_DEX(ch) / 7) * damage);
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages);
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+				return;
 			notch_skill(ch, SKILL_LEGLOCK,
 				    (int)get_property("skill.notch.leglock", 17));
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
-			if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
+			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
 				return;
 			add_event(event_leglock, PULSE_VIOLENCE / 2, ch, victim, 0, 0, 0, 0);
 		}
@@ -1284,6 +1333,8 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 void do_groundslam(P_char ch, char *argument, int /*cmd*/)
 {
 	int percent, offbalance = FALSE;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
 	P_char victim;
 	struct affected_type af, *aft;
 
@@ -1293,6 +1344,9 @@ void do_groundslam(P_char ch, char *argument, int /*cmd*/)
 					    "You pick up $N and SLAM $M to the ground!",
 					    "$n picks you up and SLAMS you on the ground!",
 					    "$n picks up $N and SLAMS $M on the ground!" };
+
+	if (!char_in_list(ch) || !IS_ALIVE(ch))
+		return;
 
 	if (!GET_CHAR_SKILL(ch, SKILL_GROUNDSLAM))
 	{
@@ -1307,6 +1361,8 @@ void do_groundslam(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("Groundslam who?\r\n", ch);
 		return;
 	}
+	if (!char_in_list(victim) || !IS_ALIVE(victim))
+		return;
 
 	if (victim == ch)
 	{
@@ -1399,9 +1455,14 @@ void do_groundslam(P_char ch, char *argument, int /*cmd*/)
 			// Add weight based damge here
 			int dam = (int)((GET_WEIGHT(ch) / 5) *
 					(float)get_property("grapple.groundslam.dmgmod", 1.00));
+			ch_runtime_id = ch->runtime_id;
+			victim_runtime_id = victim->runtime_id;
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages);
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
-			if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
+			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
 				return;
 			SET_POS(ch, POS_PRONE + GET_STAT(ch));
 			CharWait(ch, (int)(PULSE_VIOLENCE *

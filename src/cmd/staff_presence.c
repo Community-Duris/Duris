@@ -159,7 +159,6 @@ void do_inroom(P_char ch, char *args, int /*cmd*/)
 	}
 }
 
-
 /* Make oneself visible only to players above certain levels. */
 void do_vis(P_char ch, char *argument, int /*cmd*/)
 {

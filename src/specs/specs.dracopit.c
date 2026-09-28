@@ -16,7 +16,6 @@
 
 extern P_room world;
 
-
 extern void bard_dragons(int, P_char, P_char, int);
 int mace_dragondeath(P_obj obj, P_char /*ch*/, int cmd, char *arg)
 {

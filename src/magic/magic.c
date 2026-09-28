@@ -111,19 +111,11 @@ extern bool has_skin_spell(P_char ch);
 
 void affect_to_end(P_char ch, struct affected_type *af);
 
-
 void do_nothing_spell(int /*level*/, P_char /*ch*/, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		      P_obj /*obj*/)
 {
 	return;
 }
-
-
-
-
-
-
-
 
 // New function for spell components - Lucrot 31Aug2008
 int get_spell_component(P_char ch, int vnum, int max_components)
@@ -146,8 +138,6 @@ int get_spell_component(P_char ch, int vnum, int max_components)
 /*
  * Offensive Spells
  */
-
-
 
 // Old edrain below. -Lucrot Jul09
 // Shows exactly why Lucrot shouldn't have been touching code... seriously, nice commenting.
@@ -276,36 +266,14 @@ int get_spell_component(P_char ch, int vnum, int max_components)
 /* 0 - neutral terrain                                                          */
 /* 1 - good terrain for the conjurer elemental type                             */
 
-
-
-
-
-
-
-
-
 /*
  * cast_as_damage_area passes pointer to the index of hit victim as arg
  */
-
-
-
-
-
-
-
-
 
 // ch and victim is backwards so disarm will work right.
 /*
  * spells2.c - Not directly offensive spells
  */
-
-
-
-
-
-
 
 /* Seeya!
 void spell_healing_blade(int level, P_char ch, char *arg, int type,
@@ -341,7 +309,6 @@ void spell_healing_blade(int level, P_char ch, char *arg, int type,
 }
 */
 
-
 /* OLD HEAL - 21 Sep 08 -Lucrot
 {
    int      healpoints = 100;
@@ -363,15 +330,12 @@ void spell_healing_blade(int level, P_char ch, char *arg, int type,
 }
 */
 
-
 void spell_ventriloquate(int /*level*/, P_char /*ch*/, char * /*arg*/, int /*type*/,
-			 P_char /*victim*/, P_obj /*obj*/)
-{
+			 P_char /*victim*/, P_obj /*obj*/) {
 	/*
 	 * Not possible!! No argument!
 	 */
 }
-
 
 /* void spell_vigorize_light(int level, P_char ch, char *arg, int type,
                           P_char victim, P_obj obj)
@@ -390,7 +354,6 @@ void spell_ventriloquate(int /*level*/, P_char /*ch*/, char * /*arg*/, int /*typ
   send_to_char("You feel a bit more invigorated!\n", victim);
 } */
 
-
 /* void spell_vigorize_serious(int level, P_char ch, char *arg, int type,
                             P_char victim, P_obj obj)
 {
@@ -407,7 +370,6 @@ void spell_ventriloquate(int /*level*/, P_char /*ch*/, char * /*arg*/, int /*typ
 
   update_pos(victim);
 } */
-
 
 /* void spell_vigorize_critic(int level, P_char ch, char *arg, int type,
                            P_char victim, P_obj obj)
@@ -488,8 +450,6 @@ void event_plague(P_char ch, P_char vict, P_obj obj, void *data)
 
 */
 
-
-
 /*
 void spell_windstrom_blessing(int level, P_char ch, char *arg, int type,
                               P_char victim, P_obj obj)
@@ -509,7 +469,6 @@ void spell_windstrom_blessing(int level, P_char ch, char *arg, int type,
 }
 */
 
-
 /*
  * ***************************************************************************
  * *                     NPC spells..
@@ -518,6 +477,5 @@ void spell_windstrom_blessing(int level, P_char ch, char *arg, int type,
  */
 
 ;
-
 
 // end spell_feeblemind

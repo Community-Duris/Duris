@@ -10,8 +10,8 @@
 #include <string.h>
 
 extern P_room world;
-static void spell_single_chain_lightning(int level, P_char ch, char *arg, int /*type*/, P_char victim,
-				  P_obj /*obj*/)
+static void spell_single_chain_lightning(int level, P_char ch, char *arg, int /*type*/,
+					 P_char victim, P_obj /*obj*/)
 {
 	int dam, order;
 	struct damage_messages primary_messages = {
@@ -76,8 +76,8 @@ void spell_chain_lightning(int level, P_char ch, char * /*arg*/, int /*type*/, P
 	}
 }
 
-static void spell_single_lightning_ring(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
-				 P_obj /*obj*/)
+static void spell_single_lightning_ring(int level, P_char ch, char * /*arg*/, int /*type*/,
+					P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {

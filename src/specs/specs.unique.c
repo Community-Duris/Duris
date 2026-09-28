@@ -3,6 +3,7 @@
 #include <time.h>
 
 #include "core/prototypes.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -15,7 +16,6 @@
 #include "magic/spells.h"
 
 extern P_room world;
-
 
 int dranum_mask(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
@@ -58,7 +58,6 @@ int dranum_mask(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 	}
 	return FALSE;
 }
-
 
 int golem_chunk(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -134,7 +133,6 @@ int golem_chunk(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-
 int mace_of_sea(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char victim;
@@ -162,7 +160,6 @@ int mace_of_sea(P_obj obj, P_char ch, int cmd, char *arg)
 	spell_dread_wave(40, ch, NULL, 0, victim, obj);
 	return TRUE;
 }
-
 
 int serpent_blade(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -195,7 +192,6 @@ int serpent_blade(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-
 int lich_spine(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int save;
@@ -227,7 +223,6 @@ int lich_spine(P_obj obj, P_char ch, int cmd, char *arg)
 
 	return TRUE;
 }
-
 
 int demo_scimitar(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -263,7 +258,6 @@ int demo_scimitar(P_obj obj, P_char ch, int cmd, char *arg)
 
 	return TRUE;
 }
-
 
 int church_door(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -310,7 +304,6 @@ int church_door(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-
 int sword_whirlwinds(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char victim;
@@ -341,7 +334,6 @@ int sword_whirlwinds(P_obj obj, P_char ch, int cmd, char *arg)
 	spell_cyclone(46, ch, NULL, 0, victim, obj);
 	return TRUE;
 }
-
 
 int rod_of_magic(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -376,7 +368,6 @@ int rod_of_magic(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	return TRUE;
 }
-
 
 int living_necroplasm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {

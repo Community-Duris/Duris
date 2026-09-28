@@ -26,6 +26,7 @@
 #include "sql/sql.h"
 #include "sql/sql_telemetry_connection.h"
 #include "sql/sql_exclusion_guard.h"
+#include "sql/sql_economic_runtime.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
@@ -1502,6 +1503,16 @@ int initialize_mysql()
 		return -1;
 	}
 
+	if (!sql_economic_runtime_start())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: economic lifecycle authority is unavailable or not ready; aborting boot");
+		duris_sql_exclusion_guard_release();
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
+
 	logit(LOG_STATUS, "Connection established.");
 
 	sql_resetConnectTimes();
@@ -1510,6 +1521,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: required database connection/schema check failed, aborting boot");
+		sql_economic_runtime_shutdown();
 		if (DB)
 		{
 			duris_sql_exclusion_guard_release();
@@ -1522,6 +1534,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: season reset state is missing, invalid, or not active; recovery is required");
+		sql_economic_runtime_shutdown();
 		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
@@ -1531,6 +1544,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: COMPAT-E007 lookup dataset publication failed or commit outcome is ambiguous");
+		sql_economic_runtime_shutdown();
 		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
@@ -1540,6 +1554,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: could not reserve a collision-free item UID range at boot");
+		sql_economic_runtime_shutdown();
 		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
@@ -1566,6 +1581,7 @@ void shutdown_mysql(void)
 		mysql_close(persistenceDB);
 		persistenceDB = NULL;
 	}
+	sql_economic_runtime_shutdown();
 	if (DB)
 	{
 		duris_sql_exclusion_guard_release();
@@ -3474,6 +3490,19 @@ bool sql_trace_exec_at(struct persistence_query_site source_site, const char *la
 	};
 	if (drain_before)
 		sql_clear_results_on(DB);
+	if (!duris_sql_exclusion_guard_allows(DB))
+	{
+		// A lost owner fences reads/writes/COMMIT, but must not strand an
+		// already-open transaction. Only a complete literal rollback may
+		// reach the old session; stacked SQL and savepoint rollback refuse.
+		const bool rollback_only = (len == 8 || (len == 9 && sql[8] == ';')) &&
+					   !strncasecmp(sql, "ROLLBACK", 8);
+		if (!rollback_only)
+		{
+			sql_trace_panic();
+			return false;
+		}
+	}
 	uint64_t operation_id = 0;
 	if (!sql_observed_execute_at(DB, semantic_site, sql_current_context(), sql, len,
 				     &operation_id))

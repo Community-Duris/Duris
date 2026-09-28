@@ -10,6 +10,7 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
 #include "world/specs.prototypes.h"
@@ -60,7 +61,7 @@ int madman_mangler(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	if (!IS_ALIVE(ch) || !OBJ_WORN(obj) || (obj->loc.wearing != ch))
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !OBJ_WORN(obj) || (obj->loc.wearing != ch))
 	{
 		return FALSE;
 	}
@@ -80,7 +81,7 @@ int madman_mangler(P_obj obj, P_char ch, int cmd, char *arg)
 			return FALSE;
 		}
 		victim = data->victim;
-		if (!IS_ALIVE(victim))
+		if (!victim || !char_in_list(victim) || !IS_ALIVE(victim))
 		{
 			return FALSE;
 		}
@@ -106,7 +107,17 @@ int madman_mangler(P_obj obj, P_char ch, int cmd, char *arg)
 		    TO_CHAR | ACT_NOTTERSE);
 		do
 		{
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, victim, obj);
 			hit(ch, victim, obj);
+			const attack_continuation_result after_hit =
+				check_attack_continuation(continuation);
+			if (!after_hit.can_continue() || !OBJ_WORN(after_hit.weapon) ||
+			    after_hit.weapon->loc.wearing != after_hit.actor)
+				break;
+			ch = after_hit.actor;
+			victim = after_hit.target;
+			obj = after_hit.weapon;
 		} while (--ripostes && char_in_list(victim) && char_in_list(ch));
 
 		return TRUE;

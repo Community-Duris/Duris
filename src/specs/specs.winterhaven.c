@@ -16,6 +16,7 @@
 #include <strings.h>
 #include <sys/time.h>
 #include "guild/assocs.h"
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "world/graph.h"
 #include "combat/justice.h"
@@ -318,6 +319,18 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 	P_char vict;
 	int curr_time, rand;
 	struct proc_data *data;
+	auto refresh_blur_continuation = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		vict = after_callback.target;
+		obj = after_callback.weapon;
+		return true;
+	};
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -329,7 +342,7 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 		hummer(obj);
 	}
 
-	if (!IS_ALIVE(ch) || !OBJ_WORN(obj))
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !OBJ_WORN(obj))
 	{
 		return FALSE;
 	}
@@ -342,9 +355,27 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				curr_time = time(NULL);
 				vict = GET_OPPONENT(ch);
+				if (!vict || !char_in_list(vict) || !IS_ALIVE(vict))
+					return FALSE;
+
 				// 10 min timer.
 				if (obj->timer[0] + 600 <= curr_time)
 				{
+					const uint64_t blur_weapon_uid = obj->obj_uid;
+					auto set_blur_cooldown = [&]()
+					{
+						for (P_obj live_obj = object_list; live_obj;
+						     live_obj = live_obj->next)
+						{
+							if (live_obj == obj &&
+							    live_obj->obj_uid == blur_weapon_uid)
+							{
+								live_obj->timer[0] = curr_time;
+								return;
+							}
+						}
+					};
+
 					act("&+LYour $q &+Lslows down time and freezes $N &+Lin place!&n",
 					    TRUE, ch, obj, vict, TO_CHAR);
 					act("&+L...you leap at $N &+Land deal a series of &+cvicious &+Lattacks!&n",
@@ -360,17 +391,16 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 					act("&+L...$n &+Lleaps towards $N &+Land deals a series of &+cvicious &+Lattacks!&n",
 					    TRUE, ch, obj, vict, TO_NOTVICT);
 
-					if (IS_ALIVE(ch) && GET_OPPONENT(ch))
+					for (int strike = 0; strike < 3; ++strike)
 					{
-						hit(ch, GET_OPPONENT(ch), obj);
-					}
-					if (IS_ALIVE(ch) && GET_OPPONENT(ch))
-					{
-						hit(ch, GET_OPPONENT(ch), obj);
-					}
-					if (IS_ALIVE(ch) && GET_OPPONENT(ch))
-					{
-						hit(ch, GET_OPPONENT(ch), obj);
+						const attack_continuation continuation =
+							begin_attack_continuation(ch, vict, obj);
+						hit(ch, vict, obj);
+						if (!refresh_blur_continuation(continuation))
+						{
+							set_blur_cooldown();
+							return TRUE;
+						}
 					}
 
 					act("$p &+Cglows &+Las it touches your &+Csoul&+L!&n",
@@ -385,27 +415,63 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 
 						if (rand <= 15)
 						{
+							const attack_continuation continuation =
+								begin_attack_continuation(ch, vict,
+											  obj);
 							spell_frostbite(35, ch, 0, SPELL_TYPE_SPELL,
 									vict, 0);
+							if (!refresh_blur_continuation(
+								    continuation))
+							{
+								set_blur_cooldown();
+								return TRUE;
+							}
 						}
 						else
 						{
+							const attack_continuation continuation =
+								begin_attack_continuation(ch, vict,
+											  obj);
 							spell_arieks_shattering_iceball(
 								35, ch, 0, SPELL_TYPE_SPELL, vict,
 								0);
+							if (!refresh_blur_continuation(
+								    continuation))
+							{
+								set_blur_cooldown();
+								return TRUE;
+							}
 						}
 						break;
 					case 2:
+					{
+						const attack_continuation continuation =
+							begin_attack_continuation(ch, vict, obj);
 						spell_pword_stun(50, ch, 0, SPELL_TYPE_SPELL, vict,
 								 0);
-						break;
+						if (!refresh_blur_continuation(continuation))
+						{
+							set_blur_cooldown();
+							return TRUE;
+						}
+					}
+					break;
 					case 3:
+					{
+						const attack_continuation continuation =
+							begin_attack_continuation(ch, vict, obj);
 						spell_pword_blind(50, ch, 0, SPELL_TYPE_SPELL, vict,
 								  0);
-						break;
+						if (!refresh_blur_continuation(continuation))
+						{
+							set_blur_cooldown();
+							return TRUE;
+						}
+					}
+					break;
 					}
 
-					obj->timer[0] = curr_time;
+					set_blur_cooldown();
 					return TRUE;
 				}
 			}
@@ -420,7 +486,8 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 				return FALSE;
 			}
 			vict = data->victim;
-			if (!IS_ALIVE(vict) || vict != GET_OPPONENT(ch))
+			if (!vict || !char_in_list(vict) || !IS_ALIVE(vict) ||
+			    vict != GET_OPPONENT(ch))
 			{
 				return FALSE;
 			}
@@ -440,7 +507,11 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 			act("&+L...$n &+Lswiftly dodges &n$N&+L's attack and turns to deliver a &+Cvicious &+Lstrike!",
 			    TRUE, ch, obj, vict, TO_NOTVICT | ACT_NOTTERSE);
 
+			const attack_continuation hit_continuation =
+				begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
+			if (!refresh_blur_continuation(hit_continuation))
+				return TRUE;
 
 			act("$p &+Cglows &+Las it touches your &+Csoul&+L!&n", FALSE, ch, obj, NULL,
 			    TO_CHAR);
@@ -455,7 +526,11 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 				rand = number(1, 20);
 				if (rand <= 12)
 				{
+					const attack_continuation continuation =
+						begin_attack_continuation(ch, vict, obj);
 					spell_chill_touch(40, ch, 0, SPELL_TYPE_SPELL, vict, 0);
+					if (!refresh_blur_continuation(continuation))
+						return TRUE;
 					spell_chill_touch(40, ch, 0, SPELL_TYPE_SPELL, vict, 0);
 				}
 				else if (rand <= 19)

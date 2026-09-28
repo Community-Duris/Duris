@@ -116,7 +116,6 @@ void do_silence(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
-
 static void tranquilize(P_char ch, P_char victim)
 {
 	if (!victim)
@@ -189,7 +188,6 @@ void do_tranquilize(P_char ch, char *argument, int /*cmd*/)
 		}
 	}
 }
-
 
 ACMD(do_depiss)
 {

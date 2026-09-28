@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "world/db.h"
 #include "net/comm.h"
@@ -1499,7 +1500,6 @@ void spell_tranquility(int level, P_char ch, char * /*arg*/, int /*type*/, P_cha
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-
 void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
 		    P_obj /*obj*/)
 {
@@ -1595,7 +1595,6 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 	}
 }
 
-
 void spell_contain_being(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			 P_char victim, P_obj /*obj*/)
 {
@@ -1671,7 +1670,6 @@ void spell_cloak_of_fear(int level, P_char ch, char * /*arg*/, int /*type*/, P_c
 		}
 	}
 }
-
 
 void spell_pleasantry(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		      P_char victim, P_obj /*obj*/)
@@ -1848,7 +1846,6 @@ void pleasantry(P_char ch)
 	}
 	command_interpreter(ch, buf);
 }
-
 
 bool check_freedom_of_movement(P_char ch, bool clear)
 {
