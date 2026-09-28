@@ -12,6 +12,7 @@ IMAGE="${CURRENCY_DB_IMAGE:-mariadb:10.11}"
 cleanup() { docker rm -fv "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
+if [[ "$IMAGE" == mariadb:* ]]; then DB_CLIENT=mariadb; else DB_CLIENT=mysql; fi
 docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"
 published_host=127.0.0.1
@@ -20,6 +21,13 @@ container_host="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAdd
 export ENVIRONMENT=test
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 export DB_NAME=currency_coin_test CURRENCY_TEST_DB_NAME=currency_coin_test
+server_ready=0
+for _ in $(seq 1 90); do
+    if docker exec -e MYSQL_PWD "$NAME" "$DB_CLIENT" --protocol=tcp -h 127.0.0.1 \
+        -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then server_ready=1; break; fi
+    sleep 1
+done
+[[ "$server_ready" == 1 ]]
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 ready=0
 # A nested Docker/WSL caller has a different loopback namespace. Prefer the
@@ -101,7 +109,9 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/economy/economic_accounting_intent.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_accounting_plan.c \
-    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
+    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
+    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
+    "${MYSQL_LIBS[@]}" -lcrypto -lz \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
 "$ROOT/bin/tests/currency_transaction_mysql_harness"
 if [[ "${CURRENCY_TEST_ATM_ONLY:-0}" == 1 ]]; then
@@ -155,7 +165,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/coin_transfer_accounting.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_accounting_plan.c \
-    src/economy/economic_accounting_intent.c \
+    src/economy/economic_accounting_intent.c src/economy/economic_command_admission.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
-    "${MYSQL_LIBS[@]}" -lcrypto -o "$ROOT/bin/tests/item_transfer_mysql_harness"
+    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
+    "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$ROOT/bin/tests/item_transfer_mysql_harness"
 "$ROOT/bin/tests/item_transfer_mysql_harness"

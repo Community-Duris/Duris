@@ -19,8 +19,10 @@ if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mo
 MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -N -B "$DB_NAME")
 read_scalar() { "${MYSQL[@]}" -e "$1"; }
 
-collector_constraints=$(read_scalar "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+10([^0-9]|$)';")
-pet_constraints=$(read_scalar "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+11([^0-9]|$)';")
+# MariaDB may return duplicate metadata rows for a named CHECK. Count the
+# three distinct constraints, then verify their behavior with sentinel writes.
+collector_constraints=$(read_scalar "SELECT COUNT(DISTINCT constraint_name) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+10([^0-9]|$)';")
+pet_constraints=$(read_scalar "SELECT COUNT(DISTINCT constraint_name) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+11([^0-9]|$)';")
 pet_column=$(read_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='player_pets' AND column_name='pet_uid';")
 if [[ "$collector_constraints" == 3 && "$pet_constraints" == 0 ]]; then
     max_owner_type=10

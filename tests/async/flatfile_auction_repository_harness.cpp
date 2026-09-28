@@ -1,5 +1,8 @@
 #include "flatfile/flatfile_auction_repository.h"
+#include "economy/auction_item_claim_accounting.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 
 #include <cerrno>
@@ -13,6 +16,21 @@
 #include <string>
 
 namespace fs = std::filesystem;
+
+class flatfile_accounting_test_access
+{
+    public:
+	static constexpr auto bootstrap = &flatfile_accounting_authority_storage::bootstrap;
+	static constexpr auto initialize_native =
+		&flatfile_accounting_authority_storage::initialize_native_bucket;
+	static constexpr auto initialize_evidence =
+		&flatfile_accounting_authority_storage::initialize_evidence_bucket;
+	static constexpr auto create_mapping =
+		&flatfile_accounting_authority_storage::create_mapping;
+	static constexpr auto append_epoch = &flatfile_accounting_authority_storage::append_epoch;
+	static constexpr auto select_epoch = &flatfile_accounting_authority_storage::select_epoch;
+	static constexpr auto commit = &flatfile_accounting_storage::commit;
+};
 
 static void require(bool condition, const std::string &message)
 {
@@ -29,6 +47,98 @@ static critical_operation_id operation(uint8_t value)
 	id.bytes[0] = 0xc7;
 	id.bytes.back() = value;
 	return id;
+}
+
+static size_t native_bucket(uint16_t kind, uint64_t context, uint64_t pid, const std::string &name)
+{
+	std::vector<uint8_t> bytes;
+	const auto add = [&](uint64_t value, size_t width)
+	{
+		for (size_t index = 0; index < width; ++index)
+			bytes.push_back(static_cast<uint8_t>(value >> (index * 8)));
+	};
+	add(kind, 2);
+	add(context, 8);
+	add(kind, 2);
+	if (kind == 1)
+		add(pid, 8);
+	else
+		bytes.insert(bytes.end(), name.begin(), name.end());
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(bytes.data(), bytes.size(), digest.data());
+	return digest[0];
+}
+
+static void enable_accounting(const std::string &root, economic_account_key *wallet,
+			      economic_account_key *bank, std::string *error)
+{
+	fs::create_directories(fs::path(root) / "economic-evidence");
+	fs::permissions(fs::path(root) / "economic-evidence", fs::perms::owner_all,
+			fs::perm_options::replace);
+	flatfile_authority_lock lock;
+	require(lock.acquire(root, error), "could not lock auction accounting setup");
+	std::vector<flatfile_authority_operation> operations;
+	const auto commit = [&]
+	{
+		require(flatfile_accounting_test_access::commit(root, lock, operations, error) ==
+				flatfile_authority_transaction_result::ok,
+			"could not commit auction accounting setup: " + *error);
+		operations.clear();
+	};
+	const auto revision = [&]
+	{
+		flatfile_economic_control control;
+		require(flatfile_economic_control_read(root, lock, &control, error) == 0,
+			"could not read auction accounting control: " + *error);
+		return control.revision;
+	};
+	require(flatfile_accounting_test_access::bootstrap(root, lock, operation(70), operation(71),
+							   &operations, error) == 0,
+		"could not bootstrap auction accounting: " + *error);
+	commit();
+	for (const size_t bucket :
+	     { native_bucket(1, 0, 42, {}), native_bucket(2, 1, 0, "seller-account") })
+	{
+		const auto initialized = flatfile_accounting_test_access::initialize_native(
+			root, lock, revision(), bucket, operation(72), &operations, error);
+		require(initialized == 0 || initialized == EALREADY,
+			"could not initialize auction native bucket: " + *error);
+		if (!initialized)
+			commit();
+	}
+	flatfile_economic_mapping mapping;
+	require(flatfile_accounting_test_access::create_mapping(
+			root, lock, revision(), economic_account_kind::wallet, 0, { 1, 42, {} },
+			operation(73), &mapping, &operations, error) == 0,
+		"could not map auction wallet: " + *error);
+	*wallet = mapping.account;
+	commit();
+	require(flatfile_accounting_test_access::create_mapping(
+			root, lock, revision(), economic_account_kind::bank, 1,
+			{ 2, 0, "seller-account" }, operation(74), &mapping, &operations,
+			error) == 0,
+		"could not map auction bank: " + *error);
+	*bank = mapping.account;
+	commit();
+	flatfile_economic_epoch epoch;
+	epoch.epoch = operation(75);
+	epoch.creating_operation = operation(76);
+	epoch.ordinal = 1;
+	epoch.transition_kind = 1;
+	epoch.transition_digest[0] = 42;
+	require(flatfile_accounting_test_access::append_epoch(root, lock, revision(), epoch,
+							      &operations, error) == 0,
+		"could not append auction accounting epoch: " + *error);
+	commit();
+	require(flatfile_accounting_test_access::select_epoch(
+			root, lock, revision(), true, operation(77), &operations, error) == 0,
+		"could not activate auction accounting epoch: " + *error);
+	commit();
+	require(flatfile_accounting_test_access::initialize_evidence(
+			root, lock, revision(), operation(17).bytes[0], operation(78), &operations,
+			error) == 0,
+		"could not initialize auction evidence bucket: " + *error);
+	commit();
 }
 
 static flatfile_player_domain_record player(uint32_t pid, const char *account)
@@ -180,6 +290,7 @@ int main(int argc, char **argv)
 		{ 700, 700, 0, seller, 1, 1700, item_custody_state::active },
 		{ 701, 701, 0, seller, 1, 1701, item_custody_state::active },
 		{ 702, 702, 0, seller, 1, 1702, item_custody_state::active },
+		{ 703, 703, 0, seller, 1, 1703, item_custody_state::active },
 	};
 	require(flatfile_item_repository_establish_owner(root.string(), seller, seller_items,
 							 &error) ==
@@ -214,6 +325,11 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::retryable_failure &&
 			fs::exists(domains / ".critical-authority-transaction"),
 		"interrupted listing did not preserve its cross-authority intent");
+	economic_accounting_item_reference interrupted_reference = {};
+	require(flatfile_item_accounting_reference_find_by_legacy(
+			root.string(), list_command.operation_id, 0, &interrupted_reference,
+			&error) == flatfile_item_accounting_status::not_found,
+		"interrupted listing published an item reference before recovery");
 	flatfile_player_domain_record loaded_player;
 	require(flatfile_player_domain_load(root.string(), 42, "seller-account", 1, &loaded_player,
 					    &error) == flatfile_player_domain_result::ok &&
@@ -228,6 +344,14 @@ int main(int argc, char **argv)
 			listed.event_type == auction_event_type::listed && listed.auction_id != 0 &&
 			listed.item_revisions[0] == 2,
 		"recovered listing did not replay its result");
+	std::vector<economic_accounting_item_reference> listing_references;
+	require(flatfile_item_accounting_reference_find_by_operation(
+			root.string(), list_command.operation_id, &listing_references, &error) ==
+				flatfile_item_accounting_status::ok &&
+			listing_references.size() == 1 && listing_references[0].item_uid == 700 &&
+			listing_references[0].before_revision == 1 &&
+			listing_references[0].after_revision == 2,
+		"recovered listing did not atomically retain its item reference");
 	expect_event(root.string(), auction_event_type::listed, listed.auction_id, &error);
 	flatfile_auction_listing_projection listing_view;
 	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
@@ -444,6 +568,121 @@ int main(int argc, char **argv)
 				flatfile_auction_player_reference_result::clear,
 			"unreferenced player was fenced by auction authority");
 	}
+	flatfile_player_domain_record seller_account;
+	require(flatfile_player_domain_load(root_path, 42, "seller-account", 1, &seller_account,
+					    &error) == flatfile_player_domain_result::ok,
+		"could not read seller before accounted auction claim");
+	auction_command_payload accounted_listing = listing;
+	actor(&accounted_listing, 42, "seller-account", "Seller",
+	      seller_account.domains.wallet_revision, seller_account.domains.bank_revision);
+	accounted_listing.listing_fee = 0;
+	accounted_listing.buy_price = 0;
+	accounted_listing.items[0] = { 703, 1, 1703 };
+	applied = flatfile_auction_repository_apply(root_path, command(accounted_listing, 15));
+	const auction_command_result staged_listing = result_of(applied);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			staged_listing.item_revisions[0] == 2,
+		"could not stage auction item for accounted claim");
+	expect_event(root_path, auction_event_type::listed, staged_listing.auction_id, &error);
+	auction_command_payload accounted_remove = {};
+	accounted_remove.action = auction_action::remove;
+	accounted_remove.auction_id = staged_listing.auction_id;
+	actor(&accounted_remove, 42, "seller-account", "Seller", staged_listing.wallet_revision,
+	      staged_listing.bank_revision);
+	applied = flatfile_auction_repository_apply(root_path, command(accounted_remove, 16));
+	const auction_command_result staged_removal = result_of(applied);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			staged_removal.event_type == auction_event_type::removed,
+		"could not stage seller claim after auction removal");
+	expect_event(root_path, auction_event_type::removed, staged_listing.auction_id, &error);
+	economic_account_key wallet_account, bank_account;
+	enable_accounting(root_path, &wallet_account, &bank_account, &error);
+	auction_command_payload accounted_claim = {};
+	accounted_claim.action = auction_action::claim_item;
+	accounted_claim.auction_id = staged_listing.auction_id;
+	actor(&accounted_claim, 42, "seller-account", "Seller", staged_listing.wallet_revision,
+	      staged_listing.bank_revision);
+	accounted_claim.item_count = 1;
+	accounted_claim.items[0] = { 703, 2, 1703 };
+	auction_item_claim_state frozen_claim;
+	frozen_claim.auction_id = staged_listing.auction_id;
+	frozen_claim.seller_pid = 42;
+	frozen_claim.claimant_pid = 42;
+	frozen_claim.status = 3;
+	frozen_claim.custody_state = 1;
+	frozen_claim.auction_revision = staged_removal.auction_revision;
+	frozen_claim.listing_operation = operation(15);
+	frozen_claim.claim_source_operation = operation(16);
+	frozen_claim.item_count = 1;
+	frozen_claim.rows[0] = { 703, 2, 0, 1703, 42, false };
+	critical_command accounted_command = command(accounted_claim, 17);
+	require(auction_item_claim_accounting_intent(accounted_command, operation(75),
+						     wallet_account, bank_account, frozen_claim,
+						     &accounted_command.accounting_intent) ==
+			economic_accounting_error::ok,
+		"could not freeze accounted auction claim");
+	accounted_command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	auction_item_claim_state wrong_source = frozen_claim;
+	wrong_source.claim_source_operation = operation(13);
+	critical_command stale_source_command = command(accounted_claim, 18);
+	require(auction_item_claim_accounting_intent(stale_source_command, operation(75),
+						     wallet_account, bank_account, wrong_source,
+						     &stale_source_command.accounting_intent) ==
+			economic_accounting_error::ok,
+		"could not freeze mismatched auction claim source");
+	stale_source_command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	applied = flatfile_auction_repository_apply_accounted_item_claim(root_path,
+									 stale_source_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == ESTALE,
+		"accounted auction claim admitted a different staging source");
+	owned.clear();
+	require(flatfile_item_repository_load_owner(
+			root_path, { item_owner_type::auction, staged_listing.auction_id, 0 },
+			&owner_revision, &owned, &error) == flatfile_item_repository_result::ok &&
+			owned.size() == 1 && owned[0].item_uid == 703 &&
+			owned[0].item_revision == 2,
+		"mismatched auction claim source moved native custody");
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_auction_repository_apply_accounted_item_claim(root_path,
+									 accounted_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			fs::exists(domains / ".critical-authority-transaction"),
+		"accounted auction claim did not retain its interrupted journal");
+	flatfile_accounting_record retained;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root_path, &error), "could not lock auction claim lookup");
+		require(flatfile_accounting_lookup(root_path, lock, accounted_command, &retained,
+						   &error) == flatfile_accounting_status::ok &&
+				!retained.plan.empty() && retained.result_code == 0,
+			"accounted auction claim did not recover its EAP1 plan: " + error);
+	}
+	economic_accounting_plan retained_plan;
+	require(economic_plan_decode(retained.plan, &retained_plan) ==
+				economic_accounting_error::ok &&
+			retained_plan.accounts.empty() && retained_plan.postings.empty() &&
+			retained_plan.item_events.size() == 1 &&
+			retained_plan.item_events[0].uid == 703 &&
+			retained_plan.metadata.source_event &&
+			retained_plan.metadata.source_event->source.bytes == operation(16).bytes,
+		"accounted auction claim lost custody or source evidence");
+	applied = flatfile_auction_repository_apply_accounted_item_claim(root_path,
+									 accounted_command);
+	const auction_command_result accounted_result = result_of(applied);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			accounted_result.item_revisions[0] == 3,
+		"recovered accounted auction claim did not replay its result");
+	std::vector<economic_accounting_item_reference> accounted_references;
+	require(flatfile_item_accounting_reference_find_by_operation(
+			root_path, accounted_command.operation_id, &accounted_references, &error) ==
+				flatfile_item_accounting_status::ok &&
+			accounted_references.size() == 1 &&
+			accounted_references[0].child_index == 0 &&
+			accounted_references[0].item_uid == 703 &&
+			accounted_references[0].after_revision == 3,
+		"accounted auction claim did not retain its exact item reference");
 	const fs::path catalog = domains / "auction_catalog";
 	convert_catalog_to_legacy_v1(catalog);
 	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==

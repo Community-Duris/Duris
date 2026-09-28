@@ -90,3 +90,10 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		return false;
 	}
 }
+
+bool economic_flatfile_command_admission_supported(const critical_command &command) noexcept
+{
+	return (command.type == critical_command_type::account_bank ||
+		command.type == critical_command_type::item_transfer) &&
+	       economic_command_admission_supported(command);
+}

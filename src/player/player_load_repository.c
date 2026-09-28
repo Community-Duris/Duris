@@ -1954,6 +1954,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		return result;
 	}
 	// Own the read transaction: never commit a caller's work or reuse its view.
+#ifndef __NO_MYSQL__
 	if (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
 	    (connection->server_status & SERVER_STATUS_IN_TRANS))
 	{
@@ -1961,6 +1962,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		result.failed_component = "snapshot_transaction";
 		return result;
 	}
+#endif
 	int32_t locked_pid = request.pid;
 	if (locked_pid <= 0 &&
 	    !read_load_identity(connection,

@@ -96,14 +96,22 @@ class read_transaction
 	explicit read_transaction(MYSQL *connection)
 		: connection_(connection)
 	{
-		if (!connection_ || (connection_->server_status & SERVER_STATUS_IN_TRANS) ||
-		    !(connection_->server_status & SERVER_STATUS_AUTOCOMMIT))
+		if (!connection_)
 		{
 			error_ = EBUSY;
 			if (connection_)
 				sql_pool_discard_connection(connection_);
 			return;
 		}
+#ifndef __NO_MYSQL__
+		if ((connection_->server_status & SERVER_STATUS_IN_TRANS) ||
+		    !(connection_->server_status & SERVER_STATUS_AUTOCOMMIT))
+		{
+			error_ = EBUSY;
+			sql_pool_discard_connection(connection_);
+			return;
+		}
+#endif
 		if (!run_statement(connection_, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ",
 				   &error_))
 		{

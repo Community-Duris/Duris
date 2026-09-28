@@ -13,6 +13,13 @@ def main():
                "src/flatfile/flatfile_accounting_bank_transaction.c",
                "src/flatfile/flatfile_identity_repository.c",
                "src/flatfile/flatfile_player_domain_repository.c",
+               "src/economy/economic_command_admission.c",
+               "src/economy/coin_transfer_accounting.c",
+               "src/economy/item_transfer_accounting.c",
+               "src/economy/coin_transfer_command.c",
+               "src/player/player_snapshot_codec.c",
+               "src/persistence/critical_command_coordinator.c",
+               "src/persistence/critical_command_journal.c",
                "src/world/epic_command.c", "src/combat/combat_outcome_command.c", *SOURCES[1:]]
     with tempfile.TemporaryDirectory(prefix="duris-flat-bank-") as temporary:
         binary = Path(temporary) / "bank"
@@ -21,7 +28,7 @@ def main():
             "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-fno-pie", "-no-pie", "-D__NO_MYSQL__", "-DDURIS_FLATFILE_ACCOUNTING_TEST",
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc", "-Isrc/no_mysql", *sources,
-            "-Wl,--wrap=_Znwm,--wrap=_Znam", "-lcrypto", "-pthread", "-o", str(binary),
+            "-Wl,--wrap=_Znwm,--wrap=_Znam", "-lcrypto", "-lz", "-pthread", "-o", str(binary),
         ], cwd=ROOT, check=True)
         subprocess.run([str(binary), str(Path(temporary) / "state")], cwd=ROOT, check=True,
                        timeout=660,

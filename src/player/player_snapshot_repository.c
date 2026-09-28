@@ -312,8 +312,7 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_INTRODUCTIONS))
 		result = replace_rows(connection, snapshot.pid, "player_intros",
 				      "intro_index,intro_pid,intro_time", snapshot.introductions,
-				      [](auto &sql, const auto &row)
-				      {
+				      [](auto &sql, const auto &row) {
 					      sql << row.index << ',' << row.value
 						  << ",FROM_UNIXTIME(NULLIF(" << row.auxiliary
 						  << ",0))";
@@ -1549,8 +1548,13 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 	using outcome = player_death_terminal_write_outcome;
 	const auto failed = [](unsigned int code)
 	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
-	if (!connection || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
-	    request.pid <= 0 || !request.death ||
+	if (!connection)
+		return failed(EINVAL);
+#ifndef __NO_MYSQL__
+	if (!(connection->server_status & SERVER_STATUS_IN_TRANS))
+		return failed(EINVAL);
+#endif
+	if (request.pid <= 0 || !request.death ||
 	    request.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
 	    request.components != PLAYER_CHECKPOINT_COMPONENT_ALL || !request.items.empty() ||
 	    source_revision >= request.revision || !retained.death ||

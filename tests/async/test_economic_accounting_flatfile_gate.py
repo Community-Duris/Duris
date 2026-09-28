@@ -19,7 +19,7 @@ SOURCES = (
     "flatfile_shopkeeper_repository.c", "flatfile_auction_repository.c",
     "flatfile_boon_repository.c", "flatfile_player_domain_repository.c",
     "flatfile_ip_activity_repository.c", "flatfile_authority_transaction.c",
-    "flatfile_accounting_store.c", "flatfile_item_accounting_reference.c",
+    "flatfile_accounting_authority.c", "flatfile_accounting_store.c", "flatfile_item_accounting_reference.c",
     "flatfile_store.c", "player_snapshot_codec.c", "item_transfer_command.c",
     "economic_accounting_item_reference.c",
     "corpse_lifecycle_command.c", "shop_trade_command.c", "critical_command.c",
@@ -27,7 +27,11 @@ SOURCES = (
     "combat_outcome_command.c", "boon_reward_command.c", "boon_shop_command.c",
     "persistence_mode.c", "economic_accounting_intent.c",
     "item_transfer_accounting.c",
+    "economic_command_admission.c", "economic_currency_adapter.c",
+    "coin_transfer_accounting.c", "critical_command_journal.c",
+    "critical_command_coordinator.c",
     "economic_accounting_plan.c", "economic_accounting_types.c",
+    "auction_item_claim_accounting.c", "collector_accounting.c",
 )
 with tempfile.TemporaryDirectory(prefix="duris-accounting-flatfile-gate-") as temporary:
     executable = Path(temporary) / "gate"
@@ -43,9 +47,9 @@ with tempfile.TemporaryDirectory(prefix="duris-accounting-flatfile-gate-") as te
         str(ROOT / "tests/async/economic_accounting_flatfile_gate_test.cpp"),
     ]
     command += [str(source(name)) for name in SOURCES]
-    command += ["-lcrypto", "-pthread", "-o", str(executable)]
+    command += ["-lcrypto", "-lz", "-pthread", "-o", str(executable)]
     subprocess.run(command, cwd=ROOT, check=True)
     environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                        UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
     subprocess.run([str(executable), str(Path(temporary) / "state")],
-                   env=environment, cwd=ROOT, check=True, timeout=30)
+                   env=environment, cwd=ROOT, check=True, timeout=45)

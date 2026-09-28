@@ -274,7 +274,9 @@ void basic(const fs::path &root)
 	absent.revision = 99;
 	assert(flatfile_economic_control_read(f.root, f.lock, &absent, &f.error) == EILSEQ &&
 	       absent.revision == 99);
+	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == EILSEQ);
 	f.initialize();
+	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == 0);
 	auto initial = f.control();
 	assert(initial.next_mapping_id == 1 && initial.epoch_count == 0 && initial.revision == 256);
 	ops changes;
@@ -308,6 +310,7 @@ void basic(const fs::path &root)
 	assert(metadata_access::select_epoch(f.root, f.lock, f.control().revision, true, id(8),
 					     &changes, &f.error) == 0);
 	f.commit(changes);
+	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == EAGAIN);
 	assert(economic_flatfile_lock_authority(f.root, f.lock, id(1), id(50), requests, &snapshot,
 						&f.error) == 0 &&
 	       snapshot.mappings.size() == 2 && snapshot.mappings[0].account.authority_id == 1);
@@ -371,6 +374,7 @@ void basic(const fs::path &root)
 	assert(metadata_access::select_epoch(f.root, f.lock, f.control().revision, false, id(8),
 					     &changes, &f.error) == 0);
 	f.commit(changes);
+	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == 0);
 	assert(economic_flatfile_lock_authority(f.root, f.lock, id(1), id(50), requests, &snapshot,
 						&f.error) == ENODATA);
 	assert(flatfile_economic_mapping_read(f.root, f.lock, bank.account, &preserved, &f.error) ==
@@ -489,6 +493,43 @@ void basic(const fs::path &root)
 					      &f.error) == EILSEQ);
 	write(f.file("authority.eal"), control);
 	write(f.file("mapping-01.eam"), original);
+	auto escrow = f.create(economic_account_kind::auction_escrow, 0, { 4, 73, {} });
+	auto claim = f.create(economic_account_kind::pending_claim, 0, { 5, 11, {} });
+	flatfile_economic_mapping found;
+	assert(flatfile_economic_native_lookup(f.root, f.lock,
+					       economic_account_kind::auction_escrow, 0,
+					       { 4, 73, {} }, &found, &f.error) == 0 &&
+	       economic_account_key_equal(found.account, escrow.account));
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::pending_claim,
+					       0, { 5, 11, {} }, &found, &f.error) == 0 &&
+	       economic_account_key_equal(found.account, claim.account));
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::pending_claim,
+					       0, { 5, 12, {} }, &found, &f.error) == ENODATA);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::pending_claim,
+					       1, { 5, 11, {} }, &found, &f.error) == EINVAL);
+	assert(flatfile_economic_native_lookup(
+		       f.root, f.lock, economic_account_kind::auction_escrow, 0,
+		       { 4, UINT64_C(1) << 32, {} }, &found, &f.error) == EINVAL);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::pending_claim,
+					       0, { 5, 11, "forged" }, &found, &f.error) == EINVAL);
+	f.retire(escrow.account);
+	assert(flatfile_economic_native_lookup(f.root, f.lock,
+					       economic_account_kind::auction_escrow, 0,
+					       { 4, 73, {} }, &found, &f.error) == ENODATA);
+	auto recreated_escrow = f.create(economic_account_kind::auction_escrow, 0, { 4, 73, {} });
+	assert(recreated_escrow.account.authority_id != escrow.account.authority_id &&
+	       economic_account_key_equal(f.retained(escrow.account).account, escrow.account));
+	std::array<flatfile_economic_mapping_request, 2> auction_requests = {
+		{ { recreated_escrow.account, recreated_escrow.locator },
+		  { claim.account, claim.locator } }
+	};
+	assert(economic_flatfile_lock_authority(f.root, f.lock, id(1), id(51), auction_requests,
+						&snapshot, &f.error) == 0 &&
+	       snapshot.mappings.size() == 2);
+	auto wrong_auction = auction_requests;
+	wrong_auction[1].locator.native_id = 12;
+	assert(economic_flatfile_lock_authority(f.root, f.lock, id(1), id(51), wrong_auction,
+						&snapshot, &f.error) == ESTALE);
 	// Unacquired/wrong-root calls must not touch a pending corrupt journal.
 	auto pending = fs::path(f.root) / "domains/.critical-authority-transaction";
 	write(pending, { 1, 2, 3 });

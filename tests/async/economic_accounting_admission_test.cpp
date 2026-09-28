@@ -1,5 +1,8 @@
 #include "economy/economic_command_admission.h"
+#include "economy/coin_transfer_accounting.h"
 #include "economy/economic_currency_adapter.h"
+#include "economy/item_transfer_accounting.h"
+#include "item/item_transfer_command.h"
 #include "persistence/critical_command_coordinator.h"
 
 #include <atomic>
@@ -38,6 +41,61 @@ critical_command bank(bool withdraw)
 					     { id(1), economic_account_kind::bank, 2001, 1 },
 					     &command.accounting_intent) == error::ok);
 	command.schema_version = 2;
+	command.accepted_at_usec = 123;
+	return command;
+}
+critical_command coin()
+{
+	auto wallet = [](uint32_t pid, int64_t delta)
+	{
+		currency_command_payload payload = {};
+		payload.pid = pid;
+		payload.racewar = 1;
+		payload.reason = currency_reason_type::coin_transfer;
+		std::strcpy(payload.account_name.data(), "fixture");
+		payload.wallet_delta.amount[0] = delta;
+		critical_command change;
+		assert(currency_command_build(&change, id(static_cast<uint8_t>(pid)), payload, 4, 9,
+					      critical_source_site::command,
+					      critical_deadline_class::interactive));
+		return change;
+	};
+	coin_transfer_payload payload = {};
+	payload.source.before[0] = 7;
+	payload.source.after[0] = 6;
+	payload.source.change = wallet(7, -1);
+	payload.destination.before[0] = 1;
+	payload.destination.after[0] = 2;
+	payload.destination.change = wallet(8, 1);
+	critical_command command;
+	assert(coin_transfer_command_build(&command, id(11), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(coin_transfer_accounting_intent(command, id(2),
+					       { id(1), economic_account_kind::wallet, 1001, 0 },
+					       { id(1), economic_account_kind::wallet, 1002, 0 },
+					       &command.accounting_intent) == error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accepted_at_usec = 123;
+	return command;
+}
+critical_command item()
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::player, 7, 0 };
+	payload.to_owner = { item_owner_type::room, 77, 0 };
+	payload.reason = item_transfer_reason::player_drop;
+	payload.expected_from_revision = 3;
+	payload.expected_to_revision = 4;
+	payload.selected_item_uid = 500;
+	payload.target_root_item_uid = 500;
+	payload.item_count = 1;
+	payload.items[0] = { 500, 500, 0, 8, 9001, item_custody_state::active };
+	critical_command command;
+	assert(item_transfer_command_build(&command, id(12), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(command, id(1), id(2), 7,
+					       &command.accounting_intent) == error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 	command.accepted_at_usec = 123;
 	return command;
 }
@@ -142,7 +200,12 @@ critical_apply_result must_not_apply(const critical_command &, void *)
 }
 void exercise(const std::string &path, critical_command command, bool assign_acceptance = false)
 {
-	malformed(command);
+	if (command.type == critical_command_type::account_bank)
+		malformed(command);
+	else
+		assert(economic_command_admission_supported(command));
+	assert(economic_flatfile_command_admission_supported(command) ==
+	       (command.type != critical_command_type::coin_transfer));
 	if (assign_acceptance)
 		command.accepted_at_usec = 0;
 	execution state;
@@ -261,17 +324,19 @@ void exercise(const std::string &path, critical_command command, bool assign_acc
 	       critical_command_journal_result::ok);
 	critical_command_journal_shutdown();
 }
-void publication_acknowledgement(const std::string &path)
+void publication_acknowledgement(const std::string &path, critical_command command)
 {
-	auto command = bank(false);
 	execution state;
 	state.expected = command;
 	state.expected.publication_required = true;
 	state.release = true;
 	assert(critical_command_coordinator_init(path.c_str(), apply, &state, 1, nullptr, nullptr,
 						 economic_command_admission_supported));
-	assert(critical_command_coordinator_submit_for_publication(command) ==
-	       critical_submit_result::awaiting_durability);
+	const auto submitted = critical_command_coordinator_submit_for_publication(command);
+	if (submitted != critical_submit_result::awaiting_durability)
+		std::cerr << "publication admission type=" << static_cast<unsigned>(command.type)
+			  << " result=" << static_cast<unsigned>(submitted) << '\n';
+	assert(submitted == critical_submit_result::awaiting_durability);
 	critical_completion completed = {};
 	wait_for([&] { return critical_command_coordinator_pulse(&completed, 1) == 1; });
 	assert(completed.outcome == critical_apply_outcome::already_applied &&
@@ -305,6 +370,19 @@ void publication_acknowledgement(const std::string &path)
 	assert(state.calls == 1);
 	critical_command_coordinator_shutdown();
 }
+
+void flatfile_coin_refusal(const std::string &path)
+{
+	std::filesystem::create_directories(path);
+	std::filesystem::permissions(path, std::filesystem::perms::owner_all,
+				     std::filesystem::perm_options::replace);
+	assert(critical_command_coordinator_init(path.c_str(), must_not_apply, nullptr, 1, nullptr,
+						 nullptr,
+						 economic_flatfile_command_admission_supported));
+	assert(critical_command_coordinator_submit(coin()) == critical_submit_result::invalid);
+	assert(critical_command_journal_health_copy().records == 0);
+	assert(critical_command_coordinator_shutdown());
+}
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
@@ -313,7 +391,12 @@ int main(int argc, char **argv)
 	exercise(path + "/deposit", bank(false));
 	exercise(path + "/withdraw", bank(true));
 	exercise(path + "/assigned-time", bank(false), true);
-	publication_acknowledgement(path + "/publication");
+	exercise(path + "/coin", coin());
+	exercise(path + "/item", item());
+	publication_acknowledgement(path + "/bank-publication", bank(false));
+	publication_acknowledgement(path + "/coin-publication", coin());
+	publication_acknowledgement(path + "/item-publication", item());
+	flatfile_coin_refusal(path + "/flatfile-coin-refusal");
 	std::cout
-		<< "bank accounting coordinator: typed admission, backend refusal, attachment/conflict, unresolved fences, assigned timestamp replay and publication acknowledgement passed\n";
+		<< "bank, coin and item accounting coordinator: typed admission, backend refusal, attachment/conflict, unresolved fences, assigned timestamp replay and publication acknowledgement passed\n";
 }
