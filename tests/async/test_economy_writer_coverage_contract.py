@@ -158,6 +158,15 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertLess(offer, table.index("SUB_MONEY(ch, betamt"))
         self.assertIn("return FALSE;", table[periodic:offer])
 
+    def test_magic_deck_dealer_bust_uses_live_synchronous_settlement(self) -> None:
+        source = (ROOT / "src/specs/specs.gellz.c").read_text(encoding="utf-8")
+        deck = source[source.index("int magic_deck("):source.index("// End GELLZ_ magic_deck")]
+        immediate = deck[deck.index("if (dealer_total > 21)"):
+                         deck.index("else if (player_total > dealer_total)")]
+        self.assertIn("do_win(ch, bettype, 2 * betamt, 1);", immediate)
+        self.assertNotIn("game_on = BJ_DEALERSTURN", deck)
+        self.assertNotIn("if (cmd == CMD_PERIODIC", deck)
+
     def test_sql_and_flatfile_player_item_transfer_producer_is_documented_without_overstating_coverage(self) -> None:
         for route_id in ("item.command_movement", "item.bulk_movement", "item.movement_submit",
                          "item.trusted_steal", "item.creation_completion"):
@@ -456,9 +465,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2958, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9407, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9416, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10791, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10837, "sql_economy")],
                          {"recovery.saved_sql"})
 
     def test_sql_components_do_not_claim_a_playable_root(self) -> None:
@@ -724,9 +733,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10033, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10079, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11174, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11220, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -1157,7 +1166,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new conjuration item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 2249, "item_lifecycle")],
+        self.assertEqual(owners[(path, 2277, "item_lifecycle")],
                          {"spell.snakes_committed_arrow_cleanup"})
         for route_id in ("spell.room_creation_rejected_stage",
                          "spell.player_creation_rejected_stage"):
@@ -1174,7 +1183,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                             ["must_block_on_activation"])
         self.assertEqual(self.routes["spell.flame_blade_grant"]["current_critical_command_schema"]
                          ["route_mode"],
-                         "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive")
+                         "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive")
         self.assertIn("remaining detached arrows can be left unconsumed",
                       self.routes["spell.snakes_direct_arrow_sink"]["source_classification"])
 

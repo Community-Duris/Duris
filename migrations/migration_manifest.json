@@ -598,6 +598,26 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "100057903820eb762051bd96e16816eadd0f8fafdc3e91088f447f64131792ec",
       "verify_checksum": "483b53886b10a198809fec277a4f708b9c738c7b21ad9c27320fcf8e135f073c"
+    },
+    {
+      "id": "0043_shopkeeper_item_condition",
+      "sequence": 43,
+      "description": "Capture nullable SQL shopkeeper item condition at checkpoint",
+      "apply": "immutable/0043_shopkeeper_item_condition.sql",
+      "verify": "immutable/0043_shopkeeper_item_condition.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "0556c34357f6a6c1f69d1989bf3f7eede4767481f2e63157ed21e8f30c5f666f",
+      "verify_checksum": "64bd5d61c3c012858f4381cb0794ff53d4424531c437a1b58fa12dff493a4f3c"
+    },
+    {
+      "id": "0044_shopkeeper_item_properties",
+      "sequence": 44,
+      "description": "Preserve dynamic state of items in SQL shopkeeper custody",
+      "apply": "immutable/0044_shopkeeper_item_properties.sql",
+      "verify": "immutable/0044_shopkeeper_item_properties.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "dc28ae7a11669974c52b764406c8f4362c7f75c713a2c7df92da2991a613bdcd",
+      "verify_checksum": "14315e7cd18adfe3c203edbec6c071d83a782ff35d93429a6bf3031f05e5cd72"
     }
   ]
 }

@@ -511,6 +511,24 @@ int main()
 			      "0");
 		execute(setup, "UPDATE shopkeepers SET keeper_roaming=0 WHERE id=9");
 		assert_scalar(setup, "SELECT keeper_roaming FROM shopkeepers WHERE id=9", "0");
+		execute(setup,
+			"INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid,item_condition) "
+			"VALUES(91,9,501,91,NULL)");
+		economic_sql_lifecycle_receipt unknown_condition_output;
+		unknown_condition_output.operation_id = ident(212);
+		const auto unknown_condition_status =
+			economic_sql_accounting_lifecycle_transaction::install(
+				owner_connection, *maintenance, invalid_request,
+				&unknown_condition_output);
+		if (unknown_condition_status != EBUSY ||
+		    unknown_condition_output.operation_id.bytes != ident(212).bytes)
+			throw std::runtime_error(
+				"unknown keeper item condition was admitted to opening baseline");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(invalid_request.lineage),
+			      "0");
+		execute(setup, "DELETE FROM shopkeeper_items WHERE id=91");
 		execute(setup, "UPDATE item_current_owner SET coin_payload=NULL WHERE item_uid=2");
 		economic_sql_lifecycle_receipt bad_coin_output;
 		bad_coin_output.operation_id = ident(210);

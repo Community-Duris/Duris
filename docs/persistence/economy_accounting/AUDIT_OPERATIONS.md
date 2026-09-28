@@ -26,6 +26,27 @@ and `receipts`. Every collection is required and limited to 100,000 rows. A
 source snapshot larger than either limit needs a reviewed partitioning method;
 truncating and setting `complete: true` is prohibited.
 
+The partial SQL exporter also supplies `native_mapping_coverage`. It counts
+all `player_data` and `account_banks` rows, rows with no active SQL mapping in
+any lineage, native rows with multiple active mappings in the selected lineage,
+selected-lineage mappings whose native row is missing, and selected-lineage
+mappings to rows with null balance or revision fields. The reconciler emits
+coded, bounded exceptions for nonzero anomaly counts. These are database-wide
+diagnostic counts; an
+unmapped legacy row is a candidate for investigation, not proof that its
+balance belongs to the selected epoch. The remaining native classes and their
+lineage scope still require independent enumeration before `complete: true`.
+
+Its `source_claims` collection covers nonbaseline claims across the selected
+lineage, including claims from other epochs. The SQL rows carry their owning
+operation's lineage, epoch, source and outcome so the reconciler can distinguish
+a valid earlier-epoch claim from an orphan. `source_claim_coverage` counts all
+committed nonbaseline operations in that lineage with a nonnull source event,
+missing exact claims and source values reused by multiple such operations.
+The reconciler emits coded counts for the latter two. This does not yet prove
+that every other-epoch operation required a source event under its policy, and
+baseline source claims are outside this collection.
+
 - `native.holdings`: each admitted **ordinary** account key, current four-value
   denomination vector and native revision. Wallet and bank keys use retained
   mapping lifetime IDs; a pile key uses its UID. Escrow, pending claims, and
@@ -91,6 +112,37 @@ ownership/economic history, and cannot be passed to the reconciler as a clean
 release result. The disposable database runner
 `tests/async/run_economic_sql_audit_origins_mysql.py` exercises the extractor
 with a `SELECT`-only account; it requires an explicit disposable loopback flag.
+
+`scripts/economic_sql_audit_snapshot.py` now reads these origins, the retained
+nonbaseline accounting operations/effects/postings/children/item references,
+source claims and inbox receipts, mapped SQL wallet and bank rows, and current
+UID positions in **one** read-only consistent transaction. It writes a bounded
+version-1 diagnostic snapshot with `backend: sql_partial`, `complete: false`
+and a `capture_gaps` list. Pass that file to the reconciler to investigate
+observed exceptions; its nonzero `evidence_loss` result is mandatory even when
+all captured rows agree. The exporter omits baseline root effects because the
+verified EAB1 witnesses provide their terminal opening origins. Its ownership
+events are the legacy rows linked by captured accounting references, so it
+cannot detect unlinked legacy events or certify the full UID scope. Its mapping
+census can flag orphan candidates, duplicate active links and dangling links;
+it does not resolve legacy admission or lineage ownership. Coin-pile payloads,
+escrow/claim/treasury authority, postbaseline creation origins, retirement and
+cross-epoch required-source policy still need independent enumeration and
+proof. A partial snapshot cannot authorize activation or count as the Plan 5
+full SQL audit acceptance.
+
+The guarded disposable runner
+`tests/async/run_economic_sql_audit_snapshot_mysql.py` inserts a baseline and a
+committed wallet-to-bank root into a minimal InnoDB schema, checks the
+`SELECT`-only CLI export and reconciler refusal, changes a native wallet from
+another connection during the audit cut to verify repeatable-read isolation,
+and injects a missing posting, stale native wallet balance, unmapped native
+wallet, duplicate wallet mapping and dangling bank mapping. A wallet mapped to
+another lineage is excluded from the unmapped count. A prior-epoch claim is
+accepted, while a missing cross-epoch claim, reused source and orphan claim
+produce exceptions. This tests the export mapping on both SQL engines;
+fresh/upgrade schema and playable authority qualification remain separate
+release gates.
 
 ## Reconciliation and bounded views
 

@@ -1,8 +1,10 @@
 #include "persistence/economic_sql_shop_trade_transaction.h"
+#include "player/player_snapshot_codec.h"
 
 #include <mysql.h>
 
 #include <cassert>
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -10,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 namespace
 {
@@ -74,6 +77,26 @@ economic_account_key mapping(const critical_operation_id &lineage, economic_acco
 	return { lineage, kind, mysql_insert_id(connection), context };
 }
 
+player_item_snapshot produced_snapshot(uint64_t uid, int32_t vnum, int32_t parent_index)
+{
+	player_item_snapshot item = {};
+	item.parent_index = parent_index;
+	item.object_uid = uid;
+	item.vnum = vnum;
+	item.condition = 100;
+	return item;
+}
+
+void set_blob(shop_trade_payload *payload, const std::vector<player_item_snapshot> &items)
+{
+	std::vector<uint8_t> encoded;
+	assert(player_item_snapshot_list_encode(items, &encoded) ==
+	       player_snapshot_codec_result::ok);
+	assert(encoded.size() <= payload->item_blob.size());
+	payload->item_blob_size = static_cast<uint32_t>(encoded.size());
+	std::copy(encoded.begin(), encoded.end(), payload->item_blob.begin());
+}
+
 shop_trade_payload payload_for(shop_trade_action action)
 {
 	shop_trade_payload payload = {};
@@ -110,7 +133,59 @@ shop_trade_payload payload_for(shop_trade_action action)
 	}
 	payload.item_blob[0] = 1;
 	payload.item_blob_size = 1;
+	if (action == shop_trade_action::buy_produced)
+		set_blob(&payload, { produced_snapshot(PRODUCED, 77, PLAYER_SNAPSHOT_NO_PARENT) });
 	return payload;
+}
+
+critical_command command_for(shop_trade_payload payload, uint8_t operation,
+			     const critical_operation_id &epoch, const economic_account_key &wallet,
+			     const economic_account_key &bank, const economic_account_key &keeper);
+
+void produced_blob_cases(const critical_operation_id &epoch, const economic_account_key &wallet,
+			 const economic_account_key &bank, const economic_account_key &keeper)
+{
+	auto check = [&](const shop_trade_payload &payload, uint8_t operation)
+	{
+		const auto command = command_for(payload, operation, epoch, wallet, bank, keeper);
+		execute("START TRANSACTION");
+		economic_sql_shop_trade_context unchanged;
+		unchanged.keeper_id = 123;
+		assert(economic_sql_shop_trade_lock(connection, command, &unchanged) == EILSEQ &&
+		       unchanged.keeper_id == 123);
+		execute("ROLLBACK");
+	};
+	auto malformed = payload_for(shop_trade_action::buy_produced);
+	malformed.item_blob[0] = 1;
+	malformed.item_blob_size = 1;
+	check(malformed, 80);
+	auto wrong_uid = payload_for(shop_trade_action::buy_produced);
+	set_blob(&wrong_uid, { produced_snapshot(PRODUCED + 1, 77, PLAYER_SNAPSHOT_NO_PARENT) });
+	check(wrong_uid, 81);
+	auto wrong_vnum = payload_for(shop_trade_action::buy_produced);
+	set_blob(&wrong_vnum, { produced_snapshot(PRODUCED, 78, PLAYER_SNAPSHOT_NO_PARENT) });
+	check(wrong_vnum, 82);
+	auto wrong_parent = payload_for(shop_trade_action::buy_produced);
+	wrong_parent.item_count = 2;
+	wrong_parent.items[1] = { PRODUCED + 1, PRODUCED,
+				  PRODUCED,	ITEM_TRANSFER_ABSENT_REVISION,
+				  78,		item_custody_state::absent };
+	auto valid_tree = wrong_parent;
+	set_blob(&valid_tree, { produced_snapshot(PRODUCED, 77, PLAYER_SNAPSHOT_NO_PARENT),
+				produced_snapshot(PRODUCED + 1, 78, 0) });
+	const auto valid = command_for(valid_tree, 85, epoch, wallet, bank, keeper);
+	execute("START TRANSACTION");
+	economic_sql_shop_trade_context context;
+	assert(economic_sql_shop_trade_lock(connection, valid, &context) == 0 &&
+	       context.before.items_before.size() == 3);
+	execute("ROLLBACK");
+	set_blob(&wrong_parent, { produced_snapshot(PRODUCED, 77, PLAYER_SNAPSHOT_NO_PARENT),
+				  produced_snapshot(PRODUCED + 1, 78, PLAYER_SNAPSHOT_NO_PARENT) });
+	check(wrong_parent, 83);
+	auto repeated_uid = wrong_parent;
+	set_blob(&repeated_uid, { produced_snapshot(PRODUCED, 77, PLAYER_SNAPSHOT_NO_PARENT),
+				  produced_snapshot(PRODUCED, 77, 0) });
+	check(repeated_uid, 84);
 }
 
 critical_command command_for(shop_trade_payload payload, uint8_t operation,
@@ -246,6 +321,7 @@ int main()
 		mapping(lineage, economic_account_kind::treasury, 0, 6, KEEPER_ROW, bootstrap);
 	plan_case(shop_trade_action::buy_existing, 74, epoch, wallet, bank, keeper);
 	plan_case(shop_trade_action::buy_produced, 75, epoch, wallet, bank, keeper);
+	produced_blob_cases(epoch, wallet, bank, keeper);
 	const auto buy = command_for(payload_for(shop_trade_action::buy_existing), 76, epoch,
 				     wallet, bank, keeper);
 	execute("DELETE FROM shopkeeper_items WHERE id=" + std::to_string(SHOP_ITEM_ROW));

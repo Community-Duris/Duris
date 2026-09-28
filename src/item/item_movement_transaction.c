@@ -361,6 +361,95 @@ P_obj find_item(uint64_t uid)
 	return NULL;
 }
 
+bool destruction_publication_live_ready(P_char actor, const item_transfer_payload &payload)
+{
+	if (!actor || !IS_PC(actor) || GET_PID(actor) <= 0 ||
+	    payload.reason != item_transfer_reason::destruction ||
+	    payload.from_owner.type != item_owner_type::player ||
+	    payload.from_owner.id != static_cast<uint32_t>(GET_PID(actor)) ||
+	    payload.to_owner.type != item_owner_type::destruction || !payload.item_count ||
+	    payload.item_count > ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	for (size_t index = 1; index < payload.item_count; ++index)
+		if (payload.items[index - 1].item_uid >= payload.items[index].item_uid)
+			return false;
+	try
+	{
+		std::vector<uint8_t> seen(payload.item_count, 0);
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			auto found = std::lower_bound(
+				payload.items.begin(), payload.items.begin() + payload.item_count,
+				object->obj_uid, [](const item_transfer_entry &entry, uint64_t uid)
+				{ return entry.item_uid < uid; });
+			if (found != payload.items.begin() + payload.item_count &&
+			    found->item_uid == object->obj_uid &&
+			    ++seen[static_cast<size_t>(found - payload.items.begin())] != 1)
+				return false;
+		}
+		if (std::any_of(seen.begin(), seen.end(), [](uint8_t count) { return count != 1; }))
+			return false;
+
+		std::vector<item_transfer_entry> live;
+		live.reserve(payload.item_count);
+		size_t root_count = 0;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &entry = payload.items[index];
+			if (entry.parent_item_uid)
+			{
+				P_obj child = find_item(entry.item_uid);
+				P_obj parent = find_item(entry.parent_item_uid);
+				if (!child || !parent || !OBJ_INSIDE(child) ||
+				    child->loc.inside != parent)
+					return false;
+				continue;
+			}
+			P_obj root = find_item(entry.item_uid);
+			if (entry.root_item_uid != entry.item_uid || !root)
+				return false;
+			size_t listed = 0;
+			if (OBJ_CARRIED_BY(root, actor))
+			{
+				size_t scanned = 0;
+				for (P_obj held = actor->carrying; held; held = held->next_content)
+				{
+					if (++scanned > ITEM_TRANSFER_MAX_ITEMS)
+						return false;
+					listed += held == root;
+				}
+			}
+			else if (OBJ_WORN_BY(root, actor))
+				for (size_t slot = 0; slot < MAX_WEAR; ++slot)
+					listed += actor->equipment[slot] == root;
+			if (listed != 1 || !capture(root, entry.item_uid, 0, &live))
+				return false;
+			++root_count;
+		}
+		if (!root_count || live.size() != payload.item_count)
+			return false;
+		std::sort(live.begin(), live.end(), [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &actual = live[index];
+			const item_transfer_entry &expected = payload.items[index];
+			if (actual.item_uid != expected.item_uid ||
+			    actual.root_item_uid != expected.root_item_uid ||
+			    actual.parent_item_uid != expected.parent_item_uid ||
+			    actual.expected_item_revision != expected.expected_item_revision ||
+			    actual.vnum != expected.vnum ||
+			    actual.expected_state != expected.expected_state)
+				return false;
+		}
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
 P_char find_live_player(uint32_t pid)
 {
 	for (P_char character = character_list; character; character = character->next)
@@ -1290,6 +1379,22 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		}
 		account_health();
 		return;
+	}
+	if (committed && entry.publication && !entry.registry_applied &&
+	    entry.payload.reason == item_transfer_reason::destruction &&
+	    entry.payload.from_owner.type == item_owner_type::player)
+	{
+		if (!actor)
+		{
+			account_health();
+			return;
+		}
+		if (!destruction_publication_live_ready(actor, entry.payload))
+		{
+			retain_publication_failure(entry, "live_destruction_tree");
+			account_health();
+			return;
+		}
 	}
 	bool registry_applied = entry.registry_applied;
 	if (committed && !registry_applied)

@@ -8941,6 +8941,9 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 {
 	if (!obj || !DB || shopkeeper_id <= 0 || !obj->obj_uid)
 		return 0;
+	std::string properties_suffix;
+	if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
+		return 0;
 
 	int vnum = obj_index[obj->R_num].virtual_number;
 
@@ -8983,7 +8986,7 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	else
 		strcpy(action_str, "NULL");
 
-	char query[8192];
+	char query_prefix[8192];
 	// Shared helper formats wear_str, type_str, and bv1-5_str
 	// (NULL when matching the prototype) and frees the loaded prototype.
 	// See sql_format_item_diff_fields_and_free_proto().
@@ -8994,27 +8997,28 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str,
 						   bv2_str, bv3_str, bv4_str, bv5_str);
 
-	snprintf(query, sizeof(query),
-		 "INSERT INTO shopkeeper_items ("
-		 "shopkeeper_id, vnum, equip_slot, container_id, quantity, "
-		 "weight, cost, timer, extra_flags, "
-		 "value0, value1, value2, value3, value4, value5, value6, value7, "
-		 "name, short_descr, description, action_descr, "
-		 "wear_flags, item_type, item_material, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid"
-		 ") VALUES ("
-		 "%d, %d, %d, %s, 1, "
-		 "%d, %d, %ld, %lu, "
-		 "%d, %d, %d, %d, %d, %d, %d, %d, "
-		 "%s, %s, %s, %s, "
-		 "%s, %s, %s, "
-		 "%s, %s, %s, %s, %s, %lu"
-		 ")",
-		 shopkeeper_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
-		 (long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
-		 obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
-		 obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
-		 material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, obj->obj_uid);
+	const int query_length = snprintf(
+		query_prefix, sizeof(query_prefix),
+		"INSERT INTO shopkeeper_items ("
+		"shopkeeper_id, vnum, equip_slot, container_id, quantity, "
+		"weight, cost, timer, extra_flags, "
+		"value0, value1, value2, value3, value4, value5, value6, value7, "
+		"name, short_descr, description, action_descr, "
+		"wear_flags, item_type, item_material, "
+		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid, item_condition, item_properties"
+		") VALUES ("
+		"%d, %d, %d, %s, 1, "
+		"%d, %d, %ld, %lu, "
+		"%d, %d, %d, %d, %d, %d, %d, %d, "
+		"%s, %s, %s, %s, "
+		"%s, %s, %s, "
+		"%s, %s, %s, %s, %s, %lu, %d",
+		shopkeeper_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
+		(long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
+		obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
+		obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
+		material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, obj->obj_uid,
+		obj->condition);
 
 	if (esc_name)
 		free(esc_name);
@@ -9025,7 +9029,12 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	if (esc_action)
 		free(esc_action);
 
-	if (!sql_run_query(query))
+	if (query_length < 0 || static_cast<size_t>(query_length) >= sizeof(query_prefix))
+		return 0;
+	std::string query(query_prefix, static_cast<size_t>(query_length));
+	query += properties_suffix;
+	query += ')';
+	if (!sql_run_query(query.c_str()))
 		return 0;
 
 	int item_id = (int)mysql_insert_id(DB);
@@ -9656,7 +9665,7 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		"SELECT si.id, si.shopkeeper_id, si.vnum, si.equip_slot, si.weight, si.cost, si.timer, "
 		"si.extra_flags, si.value0, si.value1, si.value2, si.value3, si.value4, si.value5, "
 		"si.value6, si.value7, si.name, si.short_descr, si.description, si.action_descr, si.container_id, "
-		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5, si.obj_uid "
+		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5, si.obj_uid, si.item_condition, si.item_properties, OCTET_LENGTH(si.item_properties) "
 		"FROM shopkeeper_items si "
 		"INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
 		"WHERE (%d < 0 OR s.shop_id=%d) ORDER BY si.shopkeeper_id, si.id",
@@ -9767,6 +9776,43 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 				obj->bitvector4 = strtoul(row[27], NULL, 10);
 			if (row[28])
 				obj->bitvector5 = strtoul(row[28], NULL, 10);
+			if (row[30])
+				obj->condition = atoi(row[30]);
+			uint32_t extra2_flags = 0;
+			std::vector<player_item_dynamic_affect_snapshot> dynamic_affects;
+			bool has_item_properties = false;
+			if (player_item_properties_decode_sql_row(
+				    row[31], row[32], &extra2_flags, &dynamic_affects,
+				    &has_item_properties) != player_snapshot_codec_result::ok)
+			{
+				extract_obj(obj);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			if (has_item_properties)
+			{
+				obj->extra2_flags = extra2_flags;
+				const auto baseline =
+					std::find_if(dynamic_affects.begin(), dynamic_affects.end(),
+						     [](const auto &affect)
+						     { return affect.type == TAG_ALTERED_EXTRA2; });
+				if (baseline != dynamic_affects.end())
+					obj->extra2_flags = static_cast<ulong>(baseline->extra2);
+				for (auto affect = dynamic_affects.rbegin();
+				     affect != dynamic_affects.rend(); ++affect)
+				{
+					if (affect->type == TAG_ALTERED_EXTRA2)
+						continue;
+					if (affect->extra2)
+						set_obj_affected_extra(obj, -1, affect->type,
+								       affect->data,
+								       affect->extra2);
+					else
+						set_obj_affected(obj, -1, affect->type,
+								 affect->data);
+				}
+			}
 			bool valid_uid = true;
 			if (row[29])
 			{

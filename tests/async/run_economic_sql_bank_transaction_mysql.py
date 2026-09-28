@@ -11,13 +11,15 @@ if (os.environ.get('ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA') != '1' or
     os.environ.get('DB_HOST') != '127.0.0.1' or os.environ.get('DB_SOCKET') or
     not re.fullmatch(r'economic_schema_test_[A-Za-z0-9_]+',os.environ.get('DB_NAME',''))):
     raise SystemExit('explicit disposable loopback schema required')
-# Reuse the maintained legacy repository link set, changing only the test driver.
+# Reuse the maintained legacy repository link set and linked accounting adapters.
 script = (ROOT/'tests/async/run_currency_transaction_schema_mysql.sh').read_text()
 chunk = script.split('g++ -std=c++20',1)[1].split('"$ROOT/bin/tests/currency_transaction_mysql_harness"',1)[0]
 files = re.findall(r'(?:tests|src)/[A-Za-z0-9_/.-]+\.(?:cpp|c)',chunk)[1:]
 files += ['tests/async/economic_sql_bank_transaction_mysql_harness.cpp',
           'src/persistence/economic_accounting_repository.c',
           'src/persistence/economic_sql_bank_transaction.c',
+          'src/persistence/economic_sql_collector_transaction.c',
+          'src/economy/collector_accounting.c',
           'src/economy/economic_gameplay_authority.c',
           'src/economy/economic_currency_adapter.c','src/economy/economic_accounting_types.c',
           'src/economy/economic_accounting_plan.c','src/economy/economic_accounting_intent.c']

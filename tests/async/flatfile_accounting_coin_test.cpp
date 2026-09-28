@@ -359,13 +359,13 @@ void preexisting_pile_journey(const fs::path &path)
 	std::vector<uint8_t> payload;
 	assert(player_item_snapshot_list_encode({ coin }, &payload) ==
 	       player_snapshot_codec_result::ok);
+	write_pending_snapshot(path, 0, 1, { coin });
 	flatfile_item_ownership_record native;
 	native.item_uid = native.root_item_uid = 700;
 	native.owner = owner;
 	native.item_revision = 1;
 	native.vnum = coin.vnum;
 	native.state = item_custody_state::active;
-	native.coin_payload = payload;
 	assert(flatfile_item_repository_establish_owner(root, owner, { native }, nullptr) ==
 	       flatfile_item_baseline_result::applied);
 	flatfile_accounting_pile_baseline_source source;
@@ -452,8 +452,8 @@ void preexisting_pile_journey(const fs::path &path)
 						 id(91004), &changes, nullptr) == 0);
 		commit(root, lock, changes);
 	}
-	// The isolated fixture can now spend the opening pile. Its owner catalog
-	// retains the exact payload, so no legacy player snapshot is inferred.
+	// The isolated fixture can now spend the opening pile, resolving its exact
+	// money values from the native player snapshot under the authority lock.
 	coin_transfer_endpoint pile;
 	pile.before[0] = 1;
 	item_transfer_payload release = {};
@@ -523,6 +523,119 @@ void preexisting_pile_journey(const fs::path &path)
 	assert(flatfile_accounting_pile_state_read(negative_path.string(), negative_lock, 700,
 						   &head, nullptr) ==
 	       flatfile_accounting_status::not_found);
+}
+
+void legacy_pile_inventory(const fs::path &path)
+{
+	setup(path, false);
+	const item_owner_identity owner{ item_owner_type::player, 1, 0 };
+	player_item_snapshot coin = {};
+	coin.object_uid = 702;
+	coin.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	coin.equipment_slot = -1;
+	coin.vnum = 402014;
+	coin.type = ITEM_MONEY;
+	coin.values[0] = 2;
+	coin.name = "legacy coins";
+	coin.string_mask = 1;
+	auto ordinary = coin;
+	ordinary.object_uid = 703;
+	ordinary.vnum = 402015;
+	ordinary.type = ITEM_OTHER;
+	ordinary.values[0] = 0;
+	ordinary.name = "ordinary item";
+	write_pending_snapshot(path, 0, 1, { coin, ordinary });
+	flatfile_item_ownership_record native;
+	native.item_uid = native.root_item_uid = coin.object_uid;
+	native.owner = owner;
+	native.item_revision = 1;
+	native.vnum = coin.vnum;
+	native.state = item_custody_state::active;
+	auto ordinary_native = native;
+	ordinary_native.item_uid = ordinary_native.root_item_uid = ordinary.object_uid;
+	ordinary_native.vnum = ordinary.vnum;
+	assert(flatfile_item_repository_establish_owner(path.string(), owner,
+							{ native, ordinary_native }, nullptr) ==
+	       flatfile_item_baseline_result::applied);
+	std::vector<flatfile_coin_pile_source> piles;
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(path.string(), nullptr));
+		assert(flatfile_item_repository_list_coin_piles_locked(path.string(), lock, &piles,
+								       nullptr) ==
+		       flatfile_item_repository_result::ok);
+		assert(piles.size() == 1 && piles[0].ownership.item_uid == coin.object_uid &&
+		       piles[0].item.values[0] == 2);
+		flatfile_coin_pile_source ignored;
+		assert(flatfile_item_repository_read_coin_pile_locked(
+			       path.string(), lock, ordinary.object_uid, &ignored, nullptr) ==
+		       flatfile_item_repository_result::not_found);
+		flatfile_accounting_pile_baseline_source source;
+		assert(flatfile_accounting_pile_baseline_capture(
+			       path.string(), lock, id(90001), id(90005), id(91001),
+			       coin.object_uid, &source, nullptr) == 0);
+		assert(source.holding.balance == (economic_coin_vector{ 2, 0, 0, 0 }));
+	}
+	const auto missing_path = path.parent_path() / "missing-legacy-native";
+	setup(missing_path, false);
+	native.item_uid = native.root_item_uid = 704;
+	assert(flatfile_item_repository_establish_owner(missing_path.string(), owner, { native },
+							nullptr) ==
+	       flatfile_item_baseline_result::applied);
+	{
+		flatfile_authority_lock missing_lock;
+		assert(missing_lock.acquire(missing_path.string(), nullptr));
+		piles.clear();
+		assert(flatfile_item_repository_list_coin_piles_locked(
+			       missing_path.string(), missing_lock, &piles, nullptr) ==
+			       flatfile_item_repository_result::invalid &&
+		       piles.empty());
+	}
+	const auto pet_path = path.parent_path() / "legacy-pet-native";
+	setup(pet_path, false);
+	player_item_snapshot pet_coin = coin;
+	pet_coin.object_uid = 705;
+	pet_coin.values[0] = 3;
+	player_pet_snapshot pet = {};
+	pet.pet_uid = 1705;
+	pet.items = { pet_coin };
+	write_pending_snapshot(pet_path, 0, 1, {}, { pet });
+	const item_owner_identity pet_owner{ item_owner_type::pet, pet.pet_uid, 1 };
+	flatfile_item_ownership_record pet_native;
+	pet_native.item_uid = pet_native.root_item_uid = pet_coin.object_uid;
+	pet_native.owner = pet_owner;
+	pet_native.item_revision = 1;
+	pet_native.vnum = pet_coin.vnum;
+	pet_native.state = item_custody_state::active;
+	assert(flatfile_item_repository_establish_owner(pet_path.string(), pet_owner,
+							{ pet_native }, nullptr) ==
+	       flatfile_item_baseline_result::applied);
+	{
+		flatfile_authority_lock pet_lock;
+		assert(pet_lock.acquire(pet_path.string(), nullptr));
+		piles.clear();
+		assert(flatfile_item_repository_list_coin_piles_locked(pet_path.string(), pet_lock,
+								       &piles, nullptr) ==
+		       flatfile_item_repository_result::ok);
+		assert(piles.size() == 1 &&
+		       item_owner_identity_equal(piles[0].ownership.owner, pet_owner) &&
+		       piles[0].ownership.item_uid == pet_coin.object_uid &&
+		       piles[0].item.values[0] == 3);
+	}
+	const auto wrong_owner_path = path.parent_path() / "legacy-pet-wrong-owner";
+	setup(wrong_owner_path, false);
+	const item_owner_identity player_owner{ item_owner_type::player, 1, 0 };
+	pet_native.owner = player_owner;
+	assert(flatfile_item_repository_establish_owner(wrong_owner_path.string(), player_owner,
+							{ pet_native }, nullptr) ==
+	       flatfile_item_baseline_result::applied);
+	write_pending_snapshot(wrong_owner_path, 0, 1, {}, { pet });
+	flatfile_authority_lock wrong_owner_lock;
+	assert(wrong_owner_lock.acquire(wrong_owner_path.string(), nullptr));
+	flatfile_coin_pile_source wrong_owner_source;
+	assert(flatfile_item_repository_read_coin_pile_locked(
+		       wrong_owner_path.string(), wrong_owner_lock, pet_coin.object_uid,
+		       &wrong_owner_source, nullptr) == flatfile_item_repository_result::not_found);
 }
 
 int main(int argc, char **argv)
@@ -944,6 +1057,7 @@ int main(int argc, char **argv)
 	assert(corrupt_replay.outcome == outcome::retryable_failure &&
 	       corrupt_replay.error_code == EILSEQ);
 	preexisting_pile_journey(path / "preexisting");
+	legacy_pile_inventory(path / "legacy-inventory");
 	split_children_journey(path / "split-children");
 	std::cout
 		<< "flatfile peer coin root: native wallets, pile creation, split, merge, pickup and denomination change, shared bank revisions, balanced evidence, retained replay, stale rejection, and interrupted commit recovery passed\n";
