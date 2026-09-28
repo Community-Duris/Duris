@@ -22,6 +22,7 @@ DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 HARNESS = r'''
 #include "player/player_load_pipeline.h"
+#include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "sql/sql_pool.h"
 
@@ -32,9 +33,13 @@ HARNESS = r'''
 #include <thread>
 
 bool player_save_pipeline_save_admitted(int) { return true; }
+// This fixture isolates load-queue mechanics with a healthy save side. Actual
+// replay readiness is exercised by test_death_journal_pipeline_lifecycle.py.
+bool player_save_pipeline_loads_allowed() { return true; }
 
 extern "C" MYSQL *sql_pool_acquire(void) { return nullptr; }
 extern "C" void sql_pool_release(MYSQL *) {}
+extern "C" void sql_pool_discard_connection(MYSQL *) {}
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now)
 {
@@ -240,7 +245,9 @@ for contract in (
     "sql_pool_acquire()",
     "sql_worker_thread_init()",
     "pool_connection_guard guard",
-    "mysql_rollback(connection)",
+    "guard.discard()",
+    "connection_requires_discard(connection, result)",
+    "invalidate_uncertain_result(&result, error)",
     "selected_execute_callback()",
     "flatfile_player_load_repository_execute_selected",
 ):
@@ -248,7 +255,9 @@ for contract in (
 
 for contract in (
     "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ",
-    "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY",
+    'execute(connection, "START TRANSACTION"',
+    '" LOCK IN SHARE MODE"',
+    'if (result.pid != locked_pid)',
     'execute(connection, "COMMIT"',
     'execute(connection, "ROLLBACK"',
     "PLAYER_LOAD_QUERY_MAX",

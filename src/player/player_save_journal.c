@@ -646,8 +646,8 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			// disposed of. Only its own successful application can release it.
 			if (frame.snapshot.death)
 			{
-				if (applied.outcome == player_save_apply_outcome::stale_revision ||
-				    applied.durable_revision < frame.snapshot.revision)
+				if (!player_save_result_matches_death_request(frame.snapshot,
+									      applied))
 					return player_save_journal_result::replay_blocked;
 				if (player_save_journal_checkpoint(frame.snapshot.pid,
 								   frame.snapshot.revision) !=

@@ -41,8 +41,10 @@ extern "C"
 
 	/* Acquire a connection from the pool. Waits up to
  * SQL_POOL_ACQUIRE_TIMEOUT_MS when all connections are in use.
- * Returns NULL if the pool has not been initialised, is closing, or
- * remains exhausted at the deadline. */
+ * If only retired slots are free, attempts one validated reconnect outside
+ * the pool mutex (using the configured connection's network timeouts).
+ * Returns NULL if the pool has not been initialised, is closing, reconnect
+ * fails, or all leases remain busy at the deadline. */
 	MYSQL *sql_pool_acquire(void);
 
 	/* As above, while reporting whether an active pool existed when the
@@ -50,7 +52,14 @@ extern "C"
  * (legacy fallback is allowed) from "active pool exhausted" (fail closed). */
 	MYSQL *sql_pool_acquire_with_status(int *pool_was_active);
 
+	/* Mark a currently borrowed connection for destruction when its owner
+ * releases it. The handle remains borrowed until sql_pool_release(), avoiding
+ * freeing it before the lease owner has finished cleanup. Call only while the
+ * caller owns the lease; repeated marks before release are harmless. */
+	void sql_pool_discard_connection(MYSQL *conn);
+
 	/* Return a connection to the pool so another thread can use it.
+ * A connection marked for discard is closed and its slot retired instead.
  * Signals one waiting acquirer.  No-op when conn is NULL. */
 	void sql_pool_release(MYSQL *conn);
 

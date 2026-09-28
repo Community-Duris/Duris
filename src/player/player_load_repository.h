@@ -3,6 +3,7 @@
 
 #include "item/item_transfer_command.h"
 #include "persistence/gameplay_read_state.h"
+#include "player/player_death_recovery_query.h"
 #include "player/player_snapshot.h"
 
 #include <array>
@@ -17,9 +18,10 @@ constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 // Fixed-cost restitution table discovery and exact-state overlay, not per-item queries.
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
 constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
-constexpr size_t PLAYER_LOAD_QUERY_MAX = PLAYER_LOAD_BASE_QUERY_MAX +
-					 PLAYER_LOAD_RESTITUTION_QUERY_MAX +
-					 PLAYER_LOAD_PET_CUSTODY_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_DEATH_GATE_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_QUERY_MAX =
+	PLAYER_LOAD_BASE_QUERY_MAX + PLAYER_LOAD_RESTITUTION_QUERY_MAX +
+	PLAYER_LOAD_PET_CUSTODY_QUERY_MAX + PLAYER_LOAD_DEATH_GATE_QUERY_MAX;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 // A payload row the ownership ledger no longer backs is skipped rather than refusing the
@@ -107,6 +109,14 @@ enum class player_load_outcome : uint8_t
 	stale,
 };
 
+enum class player_load_recovery_gate : uint8_t
+{
+	not_checked,
+	clear,
+	retained_conflict,
+	unavailable,
+};
+
 // Secondary load domains may be unavailable or malformed without making the core player
 // identity unplayable. These bits travel with an admitted degraded result so the game thread
 // can quarantine the affected runtime state and prevent a partial save from overwriting the
@@ -129,6 +139,7 @@ struct player_load_request
 	std::string player_name;
 	bool include_items = true;
 	bool include_pets = true;
+	player_death_recovery_query_request death_recovery_query = {};
 };
 
 struct player_load_domain_state
@@ -159,6 +170,10 @@ struct player_load_result
 	uint64_t request_id = 0;
 	int32_t pid = 0;
 	player_load_outcome outcome = player_load_outcome::component_failure;
+	player_load_recovery_gate recovery_gate = player_load_recovery_gate::not_checked;
+	player_death_recovery_query_result death_recovery_query = {};
+	std::string request_account_name;
+	std::string request_player_name;
 	uint32_t degraded_components = 0;
 	unsigned int error_code = 0;
 	player_snapshot snapshot = {};

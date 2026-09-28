@@ -2,25 +2,38 @@
 #define ITEM_TRANSFER_REPOSITORY_H
 
 #include "item/item_transfer_command.h"
+#include "item/economic_accounting_item_reference.h"
 
 #include <mysql/mysql.h>
 
-bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
-				      item_transfer_result *result, unsigned int *result_code,
-				      bool *mutation_applied,
-				      item_transfer_failure_stage *failure_stage = nullptr);
+// Only an enclosing, admitted accounting owner may supply this context. A
+// schema-v1 inbox ID alone is not admission. Reference failure remains fatal to
+// the enclosing transaction; nullptr selects the unchanged legacy writer.
+struct item_transfer_accounting_context
+{
+	critical_operation_id root_operation_id = {};
+	uint16_t child_index = 0;
+	uint16_t line_index_base = 0;
+};
+
+bool item_transfer_repository_execute(
+	MYSQL *connection, const critical_command &command, item_transfer_result *result,
+	unsigned int *result_code, bool *mutation_applied,
+	item_transfer_failure_stage *failure_stage = nullptr,
+	const item_transfer_accounting_context *accounting_context = nullptr);
 // Compound commands may use one inbox operation for consecutive transfer
 // segments. The offset keeps their item-ledger event indexes disjoint.
 bool item_transfer_repository_execute_at_offset(
 	MYSQL *connection, const critical_command &command, uint16_t event_index_base,
 	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
-	item_transfer_failure_stage *failure_stage = nullptr);
+	item_transfer_failure_stage *failure_stage = nullptr,
+	const item_transfer_accounting_context *accounting_context = nullptr);
 // Called only inside the enclosing coin transaction; never commits independently.
-bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_command &command,
-					   const std::array<int32_t, 4> &before,
-					   item_transfer_result *result, unsigned int *result_code,
-					   bool *mutation_applied,
-					   item_transfer_failure_stage *failure_stage = nullptr);
+bool item_transfer_repository_execute_coin(
+	MYSQL *connection, const critical_command &command, const std::array<int32_t, 4> &before,
+	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
+	item_transfer_failure_stage *failure_stage = nullptr,
+	const item_transfer_accounting_context *accounting_context = nullptr);
 // Transaction-scoped owner primitives used by compound authority commands.
 // Callers must acquire every participating owner in canonical identity order.
 bool item_transfer_repository_ensure_owner(MYSQL *connection, const item_owner_identity &owner);

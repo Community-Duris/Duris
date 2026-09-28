@@ -20,6 +20,17 @@
 #include <utility>
 #include <vector>
 
+#if !defined(__NO_MYSQL__) && defined(__GNUC__)
+__attribute__((weak)) bool
+economic_accounting_item_reference_insert(MYSQL *, const economic_accounting_item_reference &)
+{
+	// Legacy callers need no reference module. An explicit accounting context
+	// must never silently succeed when that module was omitted from a harness.
+	errno = ENOTSUP;
+	return false;
+}
+#endif
+
 namespace
 {
 using mysql_null_indicator = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
@@ -29,6 +40,16 @@ uint64_t wall_now_usec()
 	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
 					     std::chrono::system_clock::now().time_since_epoch())
 					     .count());
+}
+
+bool id_is_nonzero(const critical_operation_id &id)
+{
+	for (auto byte : id.bytes)
+	{
+		if (byte != 0)
+			return true;
+	}
+	return false;
 }
 
 struct current_item
@@ -1396,11 +1417,11 @@ bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_
 	return update_owner_revision(connection, owner, prior_revision);
 }
 
-bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critical_command &command,
-						uint16_t event_index_base,
-						item_transfer_result *result,
-						unsigned int *result_code, bool *mutation_applied,
-						item_transfer_failure_stage *failure_stage)
+bool item_transfer_repository_execute_at_offset(
+	MYSQL *connection, const critical_command &command, uint16_t event_index_base,
+	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
+	item_transfer_failure_stage *failure_stage,
+	const item_transfer_accounting_context *accounting_context)
 {
 	if (!critical_command_legacy_execution_supported(command))
 	{
@@ -1420,6 +1441,16 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 	*mutation_applied = false;
 	if (failure_stage)
 		*failure_stage = item_transfer_failure_stage::none;
+	if (accounting_context &&
+	    (!id_is_nonzero(accounting_context->root_operation_id) ||
+	     accounting_context->child_index > 64 ||
+	     static_cast<size_t>(accounting_context->line_index_base) + payload.item_count > 3000))
+	{
+		// An invalid explicit context must not fall back to the legacy writer,
+		// or wrap an event index into a different accounting line.
+		errno = EINVAL;
+		return false;
+	}
 	if (static_cast<size_t>(event_index_base) + payload.item_count > UINT16_MAX)
 	{
 		*result_code = E2BIG;
@@ -1661,6 +1692,23 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 				   item_revision, from_revision + 1,
 				   same_owner ? from_revision + 1 : to_revision + 1))
 			return false;
+		if (accounting_context)
+		{
+			economic_accounting_item_reference item_ref = {};
+			item_ref.operation_id = accounting_context->root_operation_id;
+			item_ref.line_index =
+				static_cast<uint16_t>(accounting_context->line_index_base + index);
+			item_ref.event_index = item_ref.line_index;
+			item_ref.child_index = accounting_context->child_index;
+			item_ref.item_uid = payload.items[index].item_uid;
+			item_ref.before_revision = prior_revision;
+			item_ref.after_revision = item_revision;
+			item_ref.legacy_operation_id = command.operation_id;
+			item_ref.legacy_event_index =
+				static_cast<uint16_t>(event_index_base + index);
+			if (!economic_accounting_item_reference_insert(connection, item_ref))
+				return false;
+		}
 	}
 	if (!move_pet_physical_items(connection, payload))
 		return false;
@@ -1691,17 +1739,19 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
 				      item_transfer_result *result, unsigned int *result_code,
 				      bool *mutation_applied,
-				      item_transfer_failure_stage *failure_stage)
+				      item_transfer_failure_stage *failure_stage,
+				      const item_transfer_accounting_context *accounting_context)
 {
-	return item_transfer_repository_execute_at_offset(
-		connection, command, 0, result, result_code, mutation_applied, failure_stage);
+	return item_transfer_repository_execute_at_offset(connection, command, 0, result,
+							  result_code, mutation_applied,
+							  failure_stage, accounting_context);
 }
 
-bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_command &command,
-					   const std::array<int32_t, 4> &before,
-					   item_transfer_result *result, unsigned int *result_code,
-					   bool *mutation_applied,
-					   item_transfer_failure_stage *failure_stage)
+bool item_transfer_repository_execute_coin(
+	MYSQL *connection, const critical_command &command, const std::array<int32_t, 4> &before,
+	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
+	item_transfer_failure_stage *failure_stage,
+	const item_transfer_accounting_context *accounting_context)
 {
 	if (!critical_command_legacy_execution_supported(command))
 	{
@@ -1838,7 +1888,7 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 	}
 	item_transfer_failure_stage nested_stage = item_transfer_failure_stage::none;
 	if (!item_transfer_repository_execute(connection, command, result, result_code,
-					      mutation_applied, &nested_stage))
+					      mutation_applied, &nested_stage, accounting_context))
 		return false;
 	if (failure_stage && *result_code == ESTALE)
 		*failure_stage = nested_stage;

@@ -6,7 +6,7 @@ CC	= g++
 DEBUG	= -ggdb3
 #LDFLAGS	= -ggdb3
 
-HARDENING_FLAGS = -Og -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection
+HARDENING_FLAGS = -Og -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection
 WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 	-Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 \
 	-Wnull-dereference -Wduplicated-cond -Wduplicated-branches -Wlogical-op \
@@ -288,6 +288,8 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_accounting_bank_transaction.o \
 				 flatfile/flatfile_accounting_dispatch.o \
 				 flatfile/flatfile_accounting_baseline.o \
+				 flatfile/flatfile_accounting_lifecycle_transaction.o \
+				 flatfile/flatfile_item_accounting_reference.o \
 				 flatfile/flatfile_account_repository.o \
 				 flatfile/flatfile_account_delete.o \
 				 flatfile/flatfile_account_reward_summon_repository.o \
@@ -354,6 +356,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
 				 item/item_transfer_repository.o \
+				 item/economic_accounting_item_reference.o \
 				 item/item_transfer_synthetic.o \
 				 item/item_uid_allocator.o \
 				 persistence/critical_outbox.o \
@@ -361,6 +364,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/epic_transaction.o \
 				 economy/currency_command.o \
 				 economy/coin_transfer_command.o \
+				 economy/coin_transfer_accounting.o \
 				 economy/economic_accounting_types.o \
 				 economy/economic_accounting_plan.o \
 				 economy/economic_accounting_intent.o \
@@ -400,6 +404,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/session_audit_command.o \
 				 account/session_audit_repository.o \
 				 account/session_audit_transaction.o \
+				 player/player_death_recovery_query.o \
 				 player/player_load_repository.o \
 				 player/player_load_topology.o \
 				 player/player_load_pipeline.o \
@@ -438,6 +443,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
+				 player/player_death_conflict_repository.o \
 				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
 				 persistence/persistence_queue.o \

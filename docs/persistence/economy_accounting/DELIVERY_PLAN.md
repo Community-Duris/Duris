@@ -5,7 +5,85 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: read-only SQL source capture and normalization
+## Active execution priority: database backend first
+
+Updated by user direction on 2026-09-26: prioritize the SQL backend (MariaDB/MySQL).
+Flatfile catch-up is a separate, non-blocking workstream; it must not consume the
+primary implementation or validation effort. Existing flatfile work is preserved,
+not declared complete or removed. The historical phases and both-backend exit
+criteria below describe the full-feature backlog, not prerequisites for the next
+DB milestone.
+
+The active DB order is:
+
+1. Qualify the combined branch's SQL schema, transaction and custody contracts.
+   Reuse still-valid passing evidence; retry only concrete failures after each
+   coherent batch. Provision a disposable fixture for DB-required tests.
+2. Finish durable death-conflict admission, authenticated player-visible recovery
+   and unassisted terminal release, without inferring ownership from evidence,
+   deleting conflicting payloads, weakening bindings or forcing extraction.
+3. Complete SQL lifecycle/activation authority and real currency/item producers,
+   including post-commit visibility, retry, reconnect and restart recovery.
+4. Qualify corpse/raise-dead, item creation and item-flag spells against the DB
+   backend, with current-run persistence/WIZLOG review and durable read-back.
+
+Active validation uses the DB server build and focused SQL/disposable gameplay
+checks. Full flatfile builds, native flatfile regression suites and cross-backend
+parity are deferred and must be reported as deferred, never as passing. Small
+shared-type/codec checks remain applicable when they protect the DB contract.
+Accounting activation and death release still require their real acceptance
+proofs; backend reprioritization does not waive those safeguards or authorize
+production changes.
+
+### Qualified inactive-SQL restoration
+
+Legacy inbox IDs are not accounting admissions. The item/coin/auction/collector/
+corpse/restitution paths no longer manufacture accounting contexts or implicitly
+install an epoch. Their existing custody, binding, revision and transaction checks
+remain in place. Explicit accounting contexts still fail closed on malformed IDs,
+out-of-range lines, missing implementations or failed references.
+
+These six legacy dispatch routes now hold the shared maintenance/writer fence
+from before the transaction through commit, rollback or replay, and refuse both
+staged phases and any active epoch. Missing lifecycle schema also refuses writes.
+The real SQL regression first reproduced a grant committing during phase 1 before
+the fence correction, then passed on MariaDB 10.11 and MySQL 8 with native-state
+preservation, injected rollback, successful commit/replay and lock-release checks.
+This is not source-complete writer authority or permission to activate accounting.
+
+The DB build and fresh healthy death/loot/reconnect journey pass. The guarded
+death-conflict journey still fails unassisted account-menu release: existing
+payload/custody rows remain intact and the one added coin is funded by the wallet,
+but durable terminal recovery and authenticated recovery visibility are not wired.
+The dormant archive's SQL matrix, concurrent replay, lost-commit-reply recovery
+and restart read-back pass on both engines; archive durability alone does not
+authorize extraction or materializing disputed items.
+
+### Deferred flatfile catch-up
+
+Bounded catch-up was received and verified separately on
+`work/flatfile-catchup-db-priority` at
+`ee774be89114d7db5a4c0c9275737a0faf1446d3`. It remains parked, not integrated or
+published with this DB checkpoint, and is not a DB completion gate. Follow-up scope:
+
+- Validate the inherited auction, collector, shop, universal-item and item-reference
+  tests with the configured compiler; retain sanitizer/warning checks. The prior
+  merged batch failed to start these compiles because they required `g++-12`.
+- Resolve known flatfile formatting drift and subsequent native compile/test
+  failures without changing shared SQL contracts merely to make flatfile pass.
+- Bring lifetime/lifecycle, cutover and source-complete currency/item writers into
+  parity with the verified DB contract, preserving unsupported-operation refusal.
+- Implement and qualify native durable conflict recovery, authenticated recovery
+  visibility, publication acknowledgement, replay and restart behavior. SQL archive
+  retention alone does not establish a flatfile recovery implementation.
+- Recheck corpse/raise-dead, creation/flag spells and failure/recovery journeys;
+  finish with a clean flatfile build, native fault tests and explicit parity evidence.
+
+The worker's detailed `FLATFILE_FOLLOW_UP.md` is in that isolated branch. Later
+integration, full native validation and overall cross-backend qualification remain
+incomplete.
+
+## Historical increment: read-only SQL source capture and normalization
 
 Based on [PR #612](https://github.com/Community-Duris/Duris/pull/612) at `dab03b0e6`.
 Reuse bounded native capture and typed normalization from `ecfee1218f` and

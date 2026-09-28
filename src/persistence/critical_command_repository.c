@@ -1,5 +1,6 @@
 #include "persistence/critical_command_repository.h"
 #include "persistence/economic_sql_bank_transaction.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_thread_init.h"
 
 #include "economy/currency_command.h"
@@ -1244,6 +1245,18 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		if (error)
 			return root_failure(error);
 	}
+	// These schema-v1 producers have no accounting admission. Serialize their
+	// whole transaction with maintenance, and refuse staged/active accounting.
+	// Keep the guard in this root scope through every commit/rollback and replay.
+	economic_sql_currency_writer_guard legacy_writer;
+	if (item_command || coin_command || auction_command || collector_command ||
+	    corpse_command || restitution_command)
+	{
+		const auto error =
+			economic_sql_currency_writer_guard::acquire(connection, &legacy_writer);
+		if (error)
+			return root_failure(error);
+	}
 	if (!execute(connection, "START TRANSACTION"))
 		return root_failure(mysql_errno(connection));
 	if (!insert_inbox(connection, command, command_hash, keys_hash))
@@ -1375,6 +1388,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			}
 			else
 			{
+				// A legacy inbox/child ID is not an admitted accounting root.
 				ok = item_transfer_repository_execute_coin(connection, change,
 									   endpoints[index]->before,
 									   &result.piles[index],
@@ -1446,6 +1460,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			rollback(connection);
 			return failure(error);
 		}
+		// Accounting admission and epoch installation belong to the typed owner,
+		// never to a schema-v1 producer after its native children have executed.
 		if (!finish_inbox(connection, command, durable_revision, result_code, bytes.data(),
 				  result_size, failure_stage))
 		{
@@ -1697,6 +1713,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		if (repository_ok && !result_code)
 			repository_ok = collector_repository_prepare_item_boundary(
 				connection, item_payload, &boundary, &result_code);
+		// This decoder accepts schema-v1 transfers. Their inbox row is not an
+		// accounting operation; only a typed admitted owner may supply a context.
 		if (repository_ok && !result_code)
 			repository_ok = item_transfer_repository_execute(
 				connection, command, &item_result, &result_code, &mutation_applied);

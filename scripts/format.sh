@@ -173,13 +173,12 @@ if (( CHECK )); then
   # git-clang-format --diff prints the patch it would apply, or one of its
   # "nothing to do" messages, and exits 0 either way.
   out="$(git -c color.ui=false clang-format "${ARGS[@]}" ${REV:+"$REV"} || true)"
-  case "$out" in
-    ""|*"no modified files to format"*|*"clang-format did not modify any files"*)
-      check_touched_files_whole || exit 1
-      echo "Formatting OK: changed lines and touched files match .clang-format."
-      exit 0
-      ;;
-  esac
+  out_diff="$(printf '%s\n' "$out" | grep -E '^[+-]' | grep -vE '^[+-]{3}' || true)"
+  if [[ -z "$out_diff" ]] || [[ "$out" == *"no modified files to format"* ]] || [[ "$out" == *"clang-format did not modify any files"* ]]; then
+    check_touched_files_whole || exit 1
+    echo "Formatting OK: changed lines and touched files match .clang-format."
+    exit 0
+  fi
   echo "$out"
   echo
   echo "Changed lines do not match .clang-format. Fix with: ./scripts/format.sh"

@@ -37,6 +37,7 @@ typedef struct
 {
 	MYSQL *conn;
 	int in_use; /* boolean: 1 = borrowed, 0 = free */
+	int discard_on_release;
 } sql_pool_slot_t;
 
 static sql_pool_slot_t *pool = NULL;
@@ -211,6 +212,46 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 			}
 		}
 
+		/* A discarded handle must never be reused, but permanently losing its
+		 * slot would eventually strand every persistence worker. Prefer the
+		 * healthy slots above; otherwise reserve one empty slot while opening
+		 * a validated replacement outside the mutex. Shutdown counts this
+		 * reservation as a borrower and cannot free the slot underneath us. */
+		for (int i = 0; i < pool_size; i++)
+		{
+			if (!pool[i].in_use && !pool[i].conn)
+			{
+				pool[i].in_use = 1;
+				pthread_mutex_unlock(&pool_mutex);
+				try
+				{
+					conn = sql_pool_create_connection("sql_pool_acquire", i);
+				}
+				catch (...)
+				{
+					conn = NULL;
+				}
+				pthread_mutex_lock(&pool_mutex);
+				if (pool_closing || !conn)
+				{
+					if (conn)
+						mysql_close(conn);
+					pool[i].in_use = 0;
+					pthread_cond_broadcast(&pool_cond);
+					pthread_mutex_unlock(&pool_mutex);
+					return NULL;
+				}
+				pool[i].conn = conn;
+				pthread_mutex_unlock(&pool_mutex);
+				if (!duris_sql_exclusion_guard_allows(conn))
+				{
+					sql_pool_release(conn);
+					return NULL;
+				}
+				return conn;
+			}
+		}
+
 		/* All busy -- wait only until the fixed acquisition deadline. */
 		wait_result = pthread_cond_timedwait(&pool_cond, &pool_mutex, &deadline);
 		if (wait_result == ETIMEDOUT)
@@ -246,6 +287,22 @@ MYSQL *sql_pool_acquire(void)
 	return sql_pool_acquire_with_status(NULL);
 }
 
+void sql_pool_discard_connection(MYSQL *conn)
+{
+	if (!conn)
+		return;
+
+	pthread_mutex_lock(&pool_mutex);
+	if (pool)
+		for (int i = 0; i < pool_size; i++)
+			if (pool[i].conn == conn && pool[i].in_use)
+			{
+				pool[i].discard_on_release = 1;
+				break;
+			}
+	pthread_mutex_unlock(&pool_mutex);
+}
+
 void sql_pool_release(MYSQL *conn)
 {
 	if (!conn)
@@ -263,6 +320,12 @@ void sql_pool_release(MYSQL *conn)
 	{
 		if (pool[i].conn == conn)
 		{
+			if (pool[i].in_use && pool[i].discard_on_release)
+			{
+				mysql_close(pool[i].conn);
+				pool[i].conn = NULL;
+				pool[i].discard_on_release = 0;
+			}
 			pool[i].in_use = 0;
 			if (pool_closing)
 				pthread_cond_broadcast(&pool_cond);
@@ -293,7 +356,7 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 
 	for (int i = 0; i < pool_size; i++)
 	{
-		if (pool[i].conn == conn)
+		if (pool[i].conn == conn && !pool[i].discard_on_release)
 		{
 			slot = i;
 			old_conn = pool[i].conn;
@@ -309,7 +372,8 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	if (!replacement)
 	{
 		pthread_mutex_lock(&pool_mutex);
-		if (pool && slot < pool_size && pool[slot].conn == old_conn)
+		if (pool && slot < pool_size && pool[slot].conn == old_conn &&
+		    !pool[slot].discard_on_release)
 		{
 			mysql_close(pool[slot].conn);
 			pool[slot].conn = NULL;
@@ -321,7 +385,8 @@ MYSQL *sql_pool_replace_connection(MYSQL *conn)
 	}
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || pool_closing || slot >= pool_size || pool[slot].conn != old_conn)
+	if (!pool || pool_closing || slot >= pool_size || pool[slot].conn != old_conn ||
+	    pool[slot].discard_on_release)
 	{
 		pthread_mutex_unlock(&pool_mutex);
 		mysql_close(replacement);
@@ -407,6 +472,11 @@ MYSQL *sql_pool_acquire(void)
 }
 
 void sql_pool_release(MYSQL *conn)
+{
+	(void)conn;
+}
+
+void sql_pool_discard_connection(MYSQL *conn)
 {
 	(void)conn;
 }

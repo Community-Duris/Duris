@@ -58,7 +58,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/economic_accounting_types.c \
     src/economy/economic_accounting_plan.c \
     src/economy/economic_accounting_intent.c \
-    src/persistence/critical_command_repository.c \
+    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/critical_command_mysql_harness"
 "$ROOT/bin/tests/critical_command_mysql_harness"

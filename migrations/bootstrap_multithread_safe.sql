@@ -2688,6 +2688,21 @@ CREATE TABLE IF NOT EXISTS `player_death_restitution_runtime` (
       ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `player_death_conflict_evidence` (
+  `operation_id` binary(16) NOT NULL,
+  `pid` int NOT NULL,
+  `save_revision` bigint unsigned NOT NULL,
+  `source_revision` bigint unsigned NOT NULL,
+  `corpse_item_uid` bigint unsigned NOT NULL,
+  `request_hash` binary(32) NOT NULL,
+  `payload_hash` binary(32) NOT NULL,
+  `payload` mediumblob NOT NULL,
+  `recorded_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_death_conflict_revision` (`pid`,`save_revision`),
+  UNIQUE KEY `uq_death_conflict_corpse` (`pid`,`corpse_item_uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Economic accounting storage; no activation or opening balances.

@@ -13,6 +13,11 @@
 
 constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 7;
 constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 8;
+// Readable evidence envelope only. Existing capture/admission stays on version 8
+// until the atomic retention and player-visible recovery path is integrated.
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION = 10;
+constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMNS = 64;
+constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES = 64;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
@@ -239,6 +244,25 @@ struct player_death_custody_snapshot
 	uint64_t owner_revision;
 };
 
+// Raw observations are evidence, never an ownership grant or loadable inventory.
+// Preserve SQL NULL separately from empty strings and keep field bytes verbatim.
+using player_death_evidence_row = std::vector<std::optional<std::string>>;
+
+struct player_death_evidence_table
+{
+	std::vector<std::string> columns;
+	std::vector<player_death_evidence_row> rows;
+};
+
+struct player_death_conflict_evidence
+{
+	player_death_evidence_table player_items;
+	player_death_evidence_table player_item_affects;
+	player_death_evidence_table player_item_extra_descr;
+	player_death_evidence_table item_current_owner;
+	player_death_evidence_table item_owner_revision;
+};
+
 struct player_death_snapshot
 {
 	critical_operation_id operation_id;
@@ -249,6 +273,7 @@ struct player_death_snapshot
 	std::vector<player_item_snapshot> corpse;
 	std::vector<player_death_custody_snapshot> custody;
 	std::vector<critical_operation_id> unresolved_operations;
+	std::optional<player_death_conflict_evidence> conflict_evidence;
 };
 
 struct player_snapshot

@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <strings.h>
@@ -1252,7 +1253,8 @@ query_result apply_trophies(MYSQL *connection, const player_snapshot &snapshot)
 	return execute(connection, sql.str());
 }
 
-query_result apply_components(MYSQL *connection, const player_snapshot &snapshot)
+query_result apply_components(MYSQL *connection, const player_snapshot &snapshot,
+			      bool preserve_item_projections = false)
 {
 	query_result result = { true, 0 };
 	if (snapshot.components & PLAYER_COMPONENT_STATUS)
@@ -1263,10 +1265,11 @@ query_result apply_components(MYSQL *connection, const player_snapshot &snapshot
 		result = apply_skills(connection, snapshot);
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_AFFECTS))
 		result = apply_affects(connection, snapshot);
-	if (result.ok &&
+	if (result.ok && !preserve_item_projections &&
 	    (snapshot.components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY)))
 		result = apply_items(connection, snapshot);
-	if (result.ok && (snapshot.components & PLAYER_COMPONENT_PETS))
+	if (result.ok && !preserve_item_projections &&
+	    (snapshot.components & PLAYER_COMPONENT_PETS))
 		result = apply_pets(connection, snapshot);
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_SHAPECHANGES))
 		result = apply_shapes(connection, snapshot);
@@ -1288,10 +1291,22 @@ std::string hex_operation(const critical_operation_id &operation_id)
 	return hex;
 }
 
-// The refused assets exist nowhere else once the character is released, so the
-// disposition and its custody evidence commit inside the same transaction as
-// the death itself. Rewriting the same revision is how a retry stays idempotent.
-query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
+std::string hex_payload(const std::vector<uint8_t> &payload)
+{
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string output;
+	output.reserve(payload.size() * 2);
+	for (uint8_t byte : payload)
+	{
+		output.push_back(digits[byte >> 4]);
+		output.push_back(digits[byte & 15]);
+	}
+	return output;
+}
+
+// Evidence-only records use INSERT and format 10: they must not overwrite an
+// earlier disposition or enter the ordinary restitution/ownership path.
+query_result record_death(MYSQL *connection, const player_snapshot &snapshot, bool evidence_only)
 {
 	if (!snapshot.death)
 		return { true, 0 };
@@ -1302,7 +1317,8 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 	const std::string pid = std::to_string(snapshot.pid);
 	const std::string revision = std::to_string(snapshot.revision);
 	std::ostringstream sql;
-	sql << "REPLACE INTO player_death_disposition (pid,save_revision,operation_id,"
+	sql << (evidence_only ? "INSERT" : "REPLACE")
+	    << " INTO player_death_disposition (pid,save_revision,operation_id,"
 	       "corpse_item_uid,corpse_room_vnum,wallet_revision,wallet_copper,wallet_silver,"
 	       "wallet_gold,wallet_platinum,wallet_pile_uid,payload) VALUES ("
 	    << pid << ',' << revision << ",UNHEX('" << hex_operation(death.operation_id) << "'),"
@@ -1310,13 +1326,13 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 	    << death.wallet_revision;
 	for (int32_t amount : death.wallet_before)
 		sql << ',' << amount;
-	sql << ',' << death.wallet_pile_uid << ','
-	    << quote(connection, std::string(payload.begin(), payload.end())) << ')';
+	sql << ',' << death.wallet_pile_uid << ",UNHEX('" << hex_payload(payload) << "'))";
 	query_result result = execute(connection, sql.str());
 	if (!result.ok)
 		return result;
-	result = execute(connection, "DELETE FROM player_death_custody WHERE pid=" + pid +
-					     " AND save_revision=" + revision);
+	if (!evidence_only)
+		result = execute(connection, "DELETE FROM player_death_custody WHERE pid=" + pid +
+						     " AND save_revision=" + revision);
 	for (const player_death_custody_snapshot &row : death.custody)
 	{
 		if (!result.ok)
@@ -1333,8 +1349,20 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 			<< row.owner.context_id << ',' << row.owner_revision << ')';
 		result = execute(connection, custody.str());
 	}
+	return result;
+}
+
+// Ordinary death disposition behavior is unchanged. Conflict evidence has a
+// separate caller and must never execute these custody-quarantine mutations.
+query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
+{
+	if (!snapshot.death)
+		return { true, 0 };
+	query_result result = record_death(connection, snapshot, false);
 	if (!result.ok)
 		return result;
+	const std::string pid = std::to_string(snapshot.pid);
+	const std::string revision = std::to_string(snapshot.revision);
 	// A rejected handoff leaves custody with the player. Preserve those rows
 	// for recovery, but prevent a subsequent load from restoring disputed items.
 	const std::string owner =
@@ -1363,11 +1391,105 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 	return result;
 }
 
-player_save_apply_result read_durable_revision(MYSQL *connection, int pid)
+query_result verify_conflict_archive(MYSQL *connection, const player_snapshot &request,
+				     const std::vector<uint8_t> &retained_bytes,
+				     const player_revision_t *source_revision)
+{
+	std::vector<uint8_t> request_bytes;
+	if (!request.death || request.death->corpse.empty() ||
+	    player_snapshot_encode(request, &request_bytes) != player_snapshot_codec_result::ok)
+		return { false, EINVAL };
+	std::string sql =
+		"SELECT 1 FROM player_death_conflict_evidence WHERE pid=" +
+		std::to_string(request.pid) +
+		" AND save_revision=" + std::to_string(request.revision) +
+		" AND operation_id=UNHEX('" + hex_operation(request.death->operation_id) + "')" +
+		" AND corpse_item_uid=" + std::to_string(request.death->corpse.front().object_uid) +
+		" AND source_revision<save_revision AND payload=UNHEX('" +
+		hex_payload(retained_bytes) +
+		"') AND payload_hash=UNHEX(SHA2(payload,256)) AND request_hash=UNHEX(SHA2(UNHEX('" +
+		hex_payload(request_bytes) + "'),256))";
+	if (source_revision)
+		sql += " AND source_revision=" + std::to_string(*source_revision);
+	const auto query = execute(connection, sql + " LIMIT 2 FOR UPDATE");
+	if (!query.ok)
+		return query;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows)
+		return { false, mysql_errno(connection) ? mysql_errno(connection) : EIO };
+	return mysql_num_rows(rows.get()) == 1 ? query_result{ true, 0 } :
+						 query_result{ false, EILSEQ };
+}
+
+// A revision counter alone is not a death receipt. Compare the exact immutable
+// request; format-10 receipts additionally require the matching durable archive.
+query_result verify_death_receipt(MYSQL *connection, const player_snapshot &request)
+{
+	if (!request.death)
+		return { true, 0 };
+	if (request.death->corpse.empty())
+		return { false, EINVAL };
+	std::string sql =
+		"SELECT CASE WHEN OCTET_LENGTH(payload)<=" +
+		std::to_string(PLAYER_SNAPSHOT_MAX_BYTES) +
+		" THEN payload ELSE NULL END FROM player_death_disposition WHERE pid=" +
+		std::to_string(request.pid) +
+		" AND save_revision=" + std::to_string(request.revision) +
+		" AND operation_id=UNHEX('" + hex_operation(request.death->operation_id) + "')" +
+		" AND corpse_item_uid=" + std::to_string(request.death->corpse.front().object_uid) +
+		" AND corpse_room_vnum=" + std::to_string(request.death->corpse_room_vnum) +
+		" AND wallet_revision=" + std::to_string(request.death->wallet_revision) +
+		" AND wallet_pile_uid=" + std::to_string(request.death->wallet_pile_uid);
+	static constexpr const char *wallet_columns[] = { "wallet_copper", "wallet_silver",
+							  "wallet_gold", "wallet_platinum" };
+	for (size_t i = 0; i < request.death->wallet_before.size(); ++i)
+		sql += " AND " + std::string(wallet_columns[i]) + "=" +
+		       std::to_string(request.death->wallet_before[i]);
+	const auto query = execute(connection, sql + " LIMIT 2");
+	if (!query.ok)
+		return query;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows)
+		return { false, mysql_errno(connection) ? mysql_errno(connection) : EIO };
+	if (mysql_num_rows(rows.get()) != 1)
+		return { false, EILSEQ };
+	const auto row = mysql_fetch_row(rows.get());
+	const auto lengths = mysql_fetch_lengths(rows.get());
+	if (!row || !row[0] || !lengths)
+		return { false, EILSEQ };
+	std::vector<uint8_t> payload(reinterpret_cast<const uint8_t *>(row[0]),
+				     reinterpret_cast<const uint8_t *>(row[0]) + lengths[0]);
+	rows.reset();
+	player_snapshot stored;
+	if (player_snapshot_decode(payload.data(), payload.size(), &stored) !=
+		    player_snapshot_codec_result::ok ||
+	    !stored.death)
+		return { false, EILSEQ };
+	const bool evidence = stored.schema_version ==
+			      PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION;
+	if (evidence)
+	{
+		const auto archive = verify_conflict_archive(connection, request, payload, nullptr);
+		if (!archive.ok)
+			return archive;
+		stored.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+		stored.death->conflict_evidence.reset();
+	}
+	std::vector<uint8_t> expected, actual;
+	if (player_snapshot_encode(request, &expected) != player_snapshot_codec_result::ok ||
+	    player_snapshot_encode(stored, &actual) != player_snapshot_codec_result::ok ||
+	    expected != actual)
+		return { false, EILSEQ };
+	return { true, 0 };
+}
+
+player_save_apply_result read_durable_revision(MYSQL *connection, const player_snapshot &snapshot)
 {
 	const query_result query =
-		execute(connection,
-			"SELECT save_revision FROM player_data WHERE pid=" + std::to_string(pid));
+		execute(connection, "SELECT save_revision FROM player_data WHERE pid=" +
+					    std::to_string(snapshot.pid));
 	if (!query.ok)
 		return failure(query.error_code);
 	MYSQL_RES *result = mysql_store_result(connection);
@@ -1386,6 +1508,12 @@ player_save_apply_result read_durable_revision(MYSQL *connection, int pid)
 	mysql_free_result(result);
 	if (!valid)
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	if (snapshot.death && revision >= snapshot.revision)
+	{
+		const auto receipt = verify_death_receipt(connection, snapshot);
+		if (!receipt.ok)
+			return failure(receipt.error_code);
+	}
 	return { player_save_apply_outcome::already_applied, revision, 0 };
 }
 } // namespace
@@ -1393,6 +1521,90 @@ player_save_apply_result read_durable_revision(MYSQL *connection, int pid)
 bool player_snapshot_repository_write_pets(MYSQL *connection, const player_snapshot &snapshot)
 {
 	return connection && snapshot.pid > 0 && apply_pets(connection, snapshot).ok;
+}
+
+player_death_terminal_write_result
+player_snapshot_repository_write_retained_death(MYSQL *connection, const player_snapshot &request,
+						const player_snapshot &retained,
+						player_revision_t source_revision)
+{
+	using outcome = player_death_terminal_write_outcome;
+	const auto failed = [](unsigned int code)
+	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
+	if (!connection || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	    request.pid <= 0 || !request.death ||
+	    request.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
+	    request.components != PLAYER_CHECKPOINT_COMPONENT_ALL || !request.items.empty() ||
+	    source_revision >= request.revision || !retained.death ||
+	    retained.schema_version != PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION ||
+	    !retained.death->conflict_evidence)
+		return failed(EINVAL);
+	// The existing wallet transaction, not a death snapshot, owns conversion.
+	// A nonzero or stale wallet remains a hold; this writer never debits it or
+	// awards a replacement pile alongside still-spendable money.
+	if (request.death->wallet_pile_uid ||
+	    std::any_of(request.death->wallet_before.begin(), request.death->wallet_before.end(),
+			[](int32_t value) { return value != 0; }))
+		return failed(EBUSY);
+	std::vector<uint8_t> request_bytes, retained_bytes, original_bytes;
+	auto original = retained;
+	original.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+	original.death->conflict_evidence.reset();
+	if (player_snapshot_encode(request, &request_bytes) != player_snapshot_codec_result::ok ||
+	    player_snapshot_encode(retained, &retained_bytes) != player_snapshot_codec_result::ok ||
+	    player_snapshot_encode(original, &original_bytes) != player_snapshot_codec_result::ok ||
+	    request_bytes != original_bytes)
+		return failed(EILSEQ);
+	auto query = verify_conflict_archive(connection, request, retained_bytes, &source_revision);
+	if (!query.ok)
+		return failed(query.error_code);
+	query = execute(
+		connection,
+		"SELECT save_revision,wallet_revision,copper,silver,gold,platinum FROM player_data WHERE pid=" +
+			std::to_string(request.pid) + " FOR UPDATE");
+	if (!query.ok)
+		return failed(query.error_code);
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows)
+		return failed(mysql_errno(connection));
+	if (mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 6)
+		return failed(ENOENT);
+	const auto row = mysql_fetch_row(rows.get());
+	std::array<uint64_t, 6> state = {};
+	for (size_t index = 0; index < state.size(); ++index)
+		if (!row || !parse_custody_uint64(row[index], &state[index]))
+			return failed(EILSEQ);
+	rows.reset();
+	if (state[1] != request.death->wallet_revision ||
+	    std::any_of(state.begin() + 2, state.end(), [](uint64_t value) { return value != 0; }))
+		return failed(ESTALE);
+	if (state[0] == request.revision)
+	{
+		query = verify_death_receipt(connection, request);
+		return query.ok ?
+			       player_death_terminal_write_result{ outcome::already_written, 0 } :
+			       failed(query.error_code);
+	}
+	if (state[0] != source_revision)
+		return failed(ESTALE);
+	query = verify_player_death_item_payload(connection, request);
+	if (query.ok || query.error_code != PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH)
+		return failed(query.ok ? EAGAIN : query.error_code);
+	query = apply_components(connection, request, true);
+	if (query.ok)
+		query = record_death(connection, retained, true);
+	if (!query.ok)
+		return failed(query.error_code);
+	query = execute(connection,
+			"UPDATE player_data SET save_revision=" + std::to_string(request.revision) +
+				" WHERE pid=" + std::to_string(request.pid) +
+				" AND save_revision=" + std::to_string(source_revision));
+	if (!query.ok || mysql_affected_rows(connection) != 1)
+		return failed(query.ok ? EAGAIN : query.error_code);
+	query = verify_death_receipt(connection, request);
+	return query.ok ? player_death_terminal_write_result{ outcome::written, 0 } :
+			  failed(query.error_code);
 }
 
 player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
@@ -1446,12 +1658,35 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	}
 	if (durable >= snapshot.revision)
 	{
+		const auto receipt = verify_death_receipt(connection, snapshot);
 		execute(connection, "ROLLBACK");
+		if (!receipt.ok)
+			return failure(receipt.error_code);
 		return { durable == snapshot.revision ? player_save_apply_outcome::already_applied :
 							player_save_apply_outcome::stale_revision,
 			 durable, 0 };
 	}
 
+	// An unresolved case also fences later checkpoints, not just cold loads.
+	// Empty/partial live state must not overwrite preserved authoritative rows.
+	query = execute(connection,
+			"SELECT operation_id FROM player_death_conflict_evidence WHERE pid=" +
+				std::to_string(snapshot.pid) + " LIMIT 1");
+	if (!query.ok)
+	{
+		execute(connection, "ROLLBACK");
+		return failure(query.error_code);
+	}
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> cases(
+		mysql_store_result(connection), mysql_free_result);
+	if (!cases || mysql_num_rows(cases.get()))
+	{
+		const auto code = cases ? EBUSY : mysql_errno(connection);
+		cases.reset();
+		execute(connection, "ROLLBACK");
+		return failure(code ? code : EIO);
+	}
+	cases.reset();
 	query = apply_components(connection, snapshot);
 	if (query.ok)
 		query = apply_death(connection, snapshot);
@@ -1507,7 +1742,7 @@ player_save_apply_result player_snapshot_repository_apply_from_pool(const player
 	if (applied.outcome == player_save_apply_outcome::ambiguous_commit)
 	{
 		const player_save_apply_result durable =
-			read_durable_revision(connection, snapshot.pid);
+			read_durable_revision(connection, snapshot);
 		if (durable.error_code == 0)
 		{
 			if (durable.durable_revision == snapshot.revision)

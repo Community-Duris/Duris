@@ -7,7 +7,18 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_store.h"
 #include "flatfile/flatfile_world_item_repository.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "player/player_snapshot_codec.h"
+
+__attribute__((weak)) flatfile_item_accounting_status flatfile_item_accounting_reference_append(
+	const std::string &root, const economic_accounting_item_reference &ref, std::string *error)
+{
+	(void)root;
+	(void)ref;
+	if (error)
+		error->clear();
+	return flatfile_item_accounting_status::ok;
+}
 
 #include <algorithm>
 #include <array>
@@ -809,7 +820,8 @@ flatfile_collector_repository_result flatfile_collector_prepare_death_enrollment
 		{
 			auto expected = std::lower_bound(
 				payload.items.begin(), payload.items.begin() + payload.item_count,
-				uid, [](const item_transfer_entry &entry, uint64_t candidate)
+				uid,
+				[](const item_transfer_entry &entry, uint64_t candidate)
 				{ return entry.item_uid < candidate; });
 			if (expected == payload.items.begin() + payload.item_count ||
 			    expected->item_uid != uid ||
@@ -943,7 +955,8 @@ flatfile_collector_repository_result flatfile_collector_prepare_item_boundary(
 			continue;
 		const auto item = std::lower_bound(
 			payload.items.begin(), payload.items.begin() + payload.item_count,
-			listing.entry.uid, [](const item_transfer_entry &entry, uint64_t uid)
+			listing.entry.uid,
+			[](const item_transfer_entry &entry, uint64_t uid)
 			{ return entry.item_uid < uid; });
 		if (item == payload.items.begin() + payload.item_count ||
 		    item->item_uid != listing.entry.uid)
@@ -1018,7 +1031,8 @@ flatfile_collector_repository_result flatfile_collector_prepare_corpse_boundary(
 	std::string *error)
 {
 	if (root.empty() || !lock.matches(root) || !mutation || !result_code ||
-	    !std::is_sorted(items.begin(), items.end(), [](const auto &left, const auto &right)
+	    !std::is_sorted(items.begin(), items.end(),
+			    [](const auto &left, const auto &right)
 			    { return left.item_uid < right.item_uid; }))
 		return flatfile_collector_repository_result::invalid;
 	*mutation = {};
@@ -1580,6 +1594,23 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 				 committed == flatfile_authority_transaction_result::io_error ?
 					 EIO :
 					 EILSEQ) };
+	if (mutation_applied && payload.item_count > 0)
+	{
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			economic_accounting_item_reference ref = {};
+			ref.operation_id = command.operation_id;
+			ref.line_index = static_cast<uint16_t>(index);
+			ref.event_index = ref.line_index;
+			ref.child_index = 1;
+			ref.item_uid = payload.items[index].item_uid;
+			ref.before_revision = payload.items[index].expected_item_revision;
+			ref.after_revision = payload.items[index].expected_item_revision + 1;
+			ref.legacy_operation_id = command.operation_id;
+			ref.legacy_event_index = static_cast<uint16_t>(index);
+			flatfile_item_accounting_reference_append(root, ref);
+		}
+	}
 	return make_result(candidate.operations.back(), candidate.catalog_revision,
 			   critical_apply_outcome::applied);
 }

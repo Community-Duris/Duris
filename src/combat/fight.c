@@ -2597,9 +2597,17 @@ static void release_after_terminal_death(P_char ch, const char *outcome)
 /** Record the refused death disposition durably; false keeps live state for a retry. */
 static bool save_disputed_death_disposition(P_char ch, uint64_t corpse_uid)
 {
+	if (!ch)
+		return false;
+	// Resume the sealed request before allocating a new operation ID or wallet
+	// object; retries must not change the revision or item identities.
+	const player_save_terminal_result resumed = player_save_pipeline_terminal_death_resume(
+		ch, corpse_uid, DEATH_DISPOSITION_TIMEOUT_MSEC);
+	if (resumed != player_save_terminal_result::not_pending)
+		return resumed == player_save_terminal_result::database_acknowledged;
 	P_obj corpse = corpse_uid ? corpse_live_item(corpse_uid) : NULL;
 	critical_operation_id operation = {};
-	if (!ch || !corpse || !critical_operation_id_generate(&operation))
+	if (!corpse || !critical_operation_id_generate(&operation))
 		return false;
 	P_obj wallet_pile = NULL;
 	if (GET_COPPER(ch) || GET_SILVER(ch) || GET_GOLD(ch) || GET_PLATINUM(ch))
@@ -8607,7 +8615,7 @@ int dodgeSucceed(P_char char_dodger, P_char attacker, P_obj wpn)
 		   learned = (int) ((GET_CHAR_SKILL(char_dodger, SKILL_DODGE)) * 1.25) -
 		   (WeaponSkill(attacker, wpn));
 		   */
-	learned = (int)((GET_C_AGI(char_dodger)) * dam_factor[DF_DODGE_AGI_MODIFIER]) -
+	learned = (int)((GET_C_AGI(char_dodger))*dam_factor[DF_DODGE_AGI_MODIFIER]) -
 		  (WeaponSkill(attacker, wpn));
 
 	// Dwarves now get the DnD 3.5 dodgeroll bonus vs giant races

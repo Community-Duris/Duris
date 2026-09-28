@@ -165,7 +165,9 @@ bool verify_death_evidence(MYSQL *connection, const player_death_restitution_pla
 	static const char SQL[] =
 		"SELECT 1 FROM player_death_disposition WHERE pid=? AND save_revision=? "
 		"AND operation_id=? AND UNHEX(SHA2(payload,256))=? "
-		"AND FLOOR(UNIX_TIMESTAMP(recorded_at))=? FOR UPDATE";
+		"AND FLOOR(UNIX_TIMESTAMP(recorded_at))=? "
+		"AND NOT EXISTS (SELECT 1 FROM player_death_conflict_evidence conflict "
+		"WHERE conflict.pid=player_death_disposition.pid) FOR UPDATE";
 	MYSQL_STMT *statement = nullptr;
 	if (!prepare(&statement, connection, SQL))
 		return false;
@@ -1360,9 +1362,14 @@ bool insert_ownership_ledger(MYSQL *connection, const critical_command &command,
 			mysql_stmt_execute(statement) == 0 &&
 			mysql_stmt_affected_rows(statement) == 1;
 	if (!ok)
+	{
 		last_statement_error = mysql_stmt_errno(statement);
+		mysql_stmt_close(statement);
+		return false;
+	}
 	mysql_stmt_close(statement);
-	return ok;
+	// The staff-authorized legacy receipt is not an accounting admission.
+	return true;
 }
 
 } // namespace

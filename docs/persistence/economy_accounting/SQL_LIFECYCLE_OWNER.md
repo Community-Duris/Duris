@@ -40,7 +40,7 @@ if (economic_sql_currency_writer_guard::acquire(connection, &writer_guard))
 // BEGIN/updates/COMMIT or ROLLBACK; writer_guard remains in scope throughout.
 ```
 
-The owner and guard modules are included in `src/Makefile`; client-free builds expose refusing `ENOTSUP` implementations. Production boot and legacy-writer call sites are not wired by this slice. Parent boot must hold the runtime guard for process lifetime, and every affected writer must participate before these locks establish a complete runtime exclusion boundary. An available advisory lock is not proof that an older, uninstrumented MUD is stopped.
+The owner and guard modules are included in `src/Makefile`; client-free builds expose refusing `ENOTSUP` implementations. Production boot and source-complete legacy-writer coverage remain unwired. The SQL critical dispatcher now holds the legacy writer guard for schema-v1 item, coin, auction, collector, corpse and restitution commands, from before `START TRANSACTION` through commit, rollback or replay return. It refuses staged phases 1/2, any non-NULL active epoch, and missing/unreadable lifecycle schema. It does not fabricate an accounting root for a legacy inbox ID. Parent boot must still hold the runtime guard for process lifetime, and every affected writer must participate before these locks establish a complete runtime exclusion boundary. An available advisory lock is not proof that an older, uninstrumented MUD is stopped.
 
 ## Durable state and replay behavior
 
@@ -48,7 +48,7 @@ The owner and guard modules are included in `src/Makefile`; client-free builds e
 
 An exact retry verifies the same operation/request/lineage/epoch, native boundary, lifetime mappings, baseline operation ID, and retained baseline witness; it does not advance baseline revision. Reusing the operation ID with changed request fields is rejected and leaves the output object unchanged. An interrupted phase-1 operation remains fail-closed and can resume only with the same IDs/source boundary; absence of a row never authorizes overwriting existing lineage/mapping state.
 
-`economic_sql_currency_writer_guard` acquires a process-local shared lock and SQL named lock before the legacy writer begins; it holds through writer scope exit and refuses all old currency paths if a staged installation exists. `acquire_maintenance()` takes the process-local exclusive lock, then the runtime boot lock and currency-writer lock, so it waits for a participating writer's commit/rollback. Every production legacy writer must use this helper for the serialization guarantee to apply.
+`economic_sql_currency_writer_guard` acquires a process-local shared lock and SQL named lock before the legacy writer begins; it holds through writer scope exit and refuses participating old paths if a staged installation or active epoch exists. `acquire_maintenance()` takes the process-local exclusive lock, then the runtime boot lock and currency-writer lock, so it waits for a participating writer's commit/rollback. Every production legacy writer must use this helper for the serialization guarantee to apply.
 
 ## Scope limits
 

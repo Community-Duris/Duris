@@ -80,11 +80,14 @@ void unlock(MYSQL *connection, unsigned long session, const char *name)
 	if (result)
 		mysql_free_result(result);
 }
-unsigned int staged_installation(MYSQL *connection)
+unsigned int staged_installation(MYSQL *connection, bool reject_active_epoch = false)
 {
-	constexpr char query[] =
-		"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE phase IN (1,2)";
-	if (mysql_real_query(connection, query, sizeof(query) - 1))
+	const char *query =
+		reject_active_epoch ?
+			"SELECT EXISTS(SELECT 1 FROM economic_sql_lifecycle_installation WHERE phase IN (1,2)) "
+			"OR EXISTS(SELECT 1 FROM economic_lineage_state WHERE active_epoch IS NOT NULL)" :
+			"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE phase IN (1,2)";
+	if (mysql_real_query(connection, query, std::char_traits<char>::length(query)))
 		return mysql_error_code(connection);
 	result_ptr result(mysql_store_result(connection), mysql_free_result);
 	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1)
@@ -236,7 +239,7 @@ economic_sql_currency_writer_guard::acquire(MYSQL *connection,
 	const auto status = lock(connection, writer_lock, 10, &acquired);
 	if (status)
 		return status;
-	const auto staged = staged_installation(connection);
+	const auto staged = staged_installation(connection, true);
 	if (staged)
 	{
 		unlock(connection, mysql_thread_id(connection), writer_lock);

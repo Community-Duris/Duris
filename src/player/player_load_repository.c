@@ -302,6 +302,39 @@ std::string escape(MYSQL *connection, const std::string &value)
 	return escaped;
 }
 
+bool read_load_identity(MYSQL *connection, const std::string &sql, player_load_result *result,
+			int32_t *pid)
+{
+	MYSQL_RES *rows = query(connection, sql, result);
+	if (!rows)
+	{
+		result->error_code = mysql_errno(connection);
+		result->outcome = failure_outcome(result->error_code);
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	if (!row)
+	{
+		mysql_free_result(rows);
+		result->outcome = player_load_outcome::not_found;
+		return false;
+	}
+	int64_t parsed = 0;
+	const bool valid = mysql_num_fields(rows) == 1 && mysql_num_rows(rows) == 1 &&
+			   parse_signed(row[0], 1, std::numeric_limits<int32_t>::max(), &parsed);
+	const bool budget_ok = valid && add_result_budget(rows, row, result);
+	mysql_free_result(rows);
+	if (!valid || !budget_ok)
+	{
+		result->error_code = valid ? E2BIG : EINVAL;
+		result->outcome = valid ? player_load_outcome::limit_exceeded :
+					  player_load_outcome::component_failure;
+		return false;
+	}
+	*pid = static_cast<int32_t>(parsed);
+	return true;
+}
+
 bool load_status(MYSQL *connection, const player_load_request &request, player_load_result *result)
 {
 	std::ostringstream sql;
@@ -1858,10 +1891,16 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 				  request.account_name.size() <= PLAYER_LOAD_ACCOUNT_MAX;
 	const bool name_identity = request.pid == 0 && !request.player_name.empty() &&
 				   request.player_name.size() <= PLAYER_LOAD_NAME_MAX;
-	return request.schema_version == PLAYER_LOAD_SCHEMA_VERSION && request.request_id > 0 &&
-	       (pid_identity || name_identity) && request.deadline_usec > now_usec &&
-	       request.deadline_usec - now_usec <= PLAYER_LOAD_TIMEOUT_USEC &&
-	       (!request.include_pets || request.include_items);
+	if (request.schema_version != PLAYER_LOAD_SCHEMA_VERSION || !request.request_id ||
+	    request.deadline_usec <= now_usec ||
+	    request.deadline_usec - now_usec > PLAYER_LOAD_TIMEOUT_USEC)
+		return false;
+	if (request.death_recovery_query.kind != player_death_recovery_query_kind::none)
+		return pid_identity && !request.include_items && !request.include_pets &&
+		       player_death_recovery_query_request_valid(request.death_recovery_query,
+								 request.pid, request.account_name,
+								 request.player_name);
+	return (pid_identity || name_identity) && (!request.include_pets || request.include_items);
 }
 
 player_load_result player_load_repository_execute(MYSQL *connection,
@@ -1870,6 +1909,9 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	player_load_result result = {};
 	result.request_id = request.request_id;
 	result.pid = request.pid;
+	result.request_account_name = request.account_name;
+	result.request_player_name = request.player_name;
+	result.death_recovery_query.kind = request.death_recovery_query.kind;
 	const uint64_t started = persistence_observability_now_usec();
 	if (!connection || !player_load_request_valid(request, started))
 	{
@@ -1878,11 +1920,58 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 					 player_load_outcome::component_failure;
 		return result;
 	}
+	if (request.death_recovery_query.kind != player_death_recovery_query_kind::none)
+	{
+		result.death_recovery_query = player_death_recovery_query_execute(
+			connection, request.pid, request.account_name, request.player_name,
+			request.death_recovery_query);
+		result.outcome = result.death_recovery_query.outcome ==
+						 player_death_recovery_query_outcome::read ?
+					 player_load_outcome::applied :
+					 player_load_outcome::component_failure;
+		return result;
+	}
+	// Own the read transaction: never commit a caller's work or reuse its view.
+	if (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+	    (connection->server_status & SERVER_STATUS_IN_TRANS))
+	{
+		result.error_code = EBUSY;
+		result.failed_component = "snapshot_transaction";
+		return result;
+	}
+	int32_t locked_pid = request.pid;
+	if (locked_pid <= 0 &&
+	    !read_load_identity(connection,
+				"SELECT pid FROM player_data WHERE LOWER(name)=LOWER('" +
+					escape(connection, request.player_name) + "') LIMIT 1",
+				&result, &locked_pid))
+	{
+		result.failed_component = "status_identity";
+		result.metrics.transaction_usec = persistence_observability_now_usec() - started;
+		return result;
+	}
+	// Resolve names without locks, then lock only the primary key. A locking
+	// LOWER(name) scan could lock unrelated players. Revalidate this PID below.
 	if (!execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", &result) ||
-	    !execute(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY", &result))
+	    !execute(connection, "START TRANSACTION", &result))
 	{
 		result.error_code = mysql_errno(connection);
 		result.outcome = failure_outcome(result.error_code);
+		return result;
+	}
+	// Retention takes this same row FOR UPDATE before inserting a case. Start
+	// the consistent read view only AFTER this current locking read: an earlier
+	// retention commit is visible, and a later writer waits for our decision.
+	int32_t confirmed_pid = 0;
+	if (!read_load_identity(connection,
+				"SELECT pid FROM player_data WHERE pid=" +
+					std::to_string(locked_pid) + " LOCK IN SHARE MODE",
+				&result, &confirmed_pid) ||
+	    confirmed_pid != locked_pid)
+	{
+		execute(connection, "ROLLBACK", &result);
+		result.failed_component = "status_identity";
+		result.metrics.transaction_usec = persistence_observability_now_usec() - started;
 		return result;
 	}
 	result.snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
@@ -1901,6 +1990,56 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		execute(connection, "ROLLBACK", &result);
 		result.metrics.transaction_usec = persistence_observability_now_usec() - started;
 		return result;
+	}
+
+	if (result.pid != locked_pid)
+	{
+		// A name was reassigned between its nonlocking resolution and our lock.
+		// Never load components for a different, unlocked player identity.
+		result.outcome = player_load_outcome::component_failure;
+		result.error_code = ESTALE;
+		result.failed_component = "status_identity";
+		result.snapshot = {};
+		result.domains = {};
+		execute(connection, "ROLLBACK", &result);
+		result.metrics.transaction_usec = persistence_observability_now_usec() - started;
+		return result;
+	}
+
+	// Every normal load, including metadata-only confirmation reads, must refuse unresolved
+	// archive cases. The dedicated recovery query returned above and never materializes state.
+	{
+		std::vector<player_death_conflict_case> retained_cases;
+		const player_death_conflict_result recovery_check =
+			player_death_conflict_list(connection, result.pid, 0, &retained_cases);
+		++result.metrics.query_count;
+		result.metrics.row_count += static_cast<uint32_t>(retained_cases.size());
+		result.metrics.byte_count += retained_cases.size() * 48;
+		if (recovery_check.outcome == player_death_conflict_outcome::read &&
+		    retained_cases.empty())
+			result.recovery_gate = player_load_recovery_gate::clear;
+		else
+		{
+			result.recovery_gate =
+				recovery_check.outcome == player_death_conflict_outcome::read ?
+					player_load_recovery_gate::retained_conflict :
+					player_load_recovery_gate::unavailable;
+			result.failed_component = "death_recovery_gate";
+			result.error_code = recovery_check.error_code;
+			result.outcome = player_load_outcome::component_failure;
+			// Never hand status-only or partially hydrated state to materialization or a
+			// save-capable character. The archive remains the only recovery source.
+			result.snapshot = {};
+			result.domains = {};
+			clear_optional_components(&result);
+			clear_items_and_pets(&result);
+			clear_gameplay_reads(&result);
+			clear_bank(&result);
+			execute(connection, "ROLLBACK", &result);
+			result.metrics.transaction_usec =
+				persistence_observability_now_usec() - started;
+			return result;
+		}
 	}
 
 	// Status and identity are the only mandatory player-load domain. Everything below can be

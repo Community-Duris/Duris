@@ -620,6 +620,12 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 				request.operation_id.bytes != request.epoch.bytes &&
 				request.lineage.bytes != request.epoch.bytes,
 			EINVAL);
+		// Raw death-conflict archives are never opening holdings. Until a
+		// separately audited resolution path exists, every case remains open.
+		// Maintenance owns the writer fence also used by the retention writer.
+		require(scalar(connection, "SELECT COUNT(*) FROM player_death_conflict_evidence") ==
+				0,
+			EBUSY);
 		const auto expected_request_hash = request_digest(request);
 		execute(connection, "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED");
 		economic_sql_source_snapshot snapshot;

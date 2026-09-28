@@ -46,10 +46,10 @@ class CorpseLifecycleRepositoryTest(unittest.TestCase):
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()
         )
         lifecycle_entries = {entry["id"]: entry for entry in lifecycle["entries"]}
-        self.assertEqual(runtime["current_table_count"], 216)
+        self.assertEqual(runtime["current_table_count"], 217)
         self.assertIn("'corpse_catalog_state'", runtime["runtime_table_sql_list"])
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0033_economic_sql_lifecycle_owner")
+                         "0034_player_death_conflict_evidence")
         entry = lifecycle_entries["database:corpse_catalog_state"]
         self.assertEqual(entry["data_category"], "reconciliation_or_replay_record")
         self.assertEqual(entry["export_rule"]["disposition"], "exclude")
@@ -109,6 +109,7 @@ class CorpseLifecycleRepositoryTest(unittest.TestCase):
             linked.append(path.name)
             self.assertIn("src/persistence/corpse_lifecycle_command.c", source, path.name)
             self.assertIn("src/persistence/corpse_lifecycle_repository.c", source, path.name)
+            self.assertIn("src/persistence/economic_sql_lifecycle_guard.c", source, path.name)
         self.assertGreaterEqual(len(linked), 10)
 
     def test_journey_covers_all_terminal_paths_replay_and_rollback(self) -> None:

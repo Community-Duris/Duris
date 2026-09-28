@@ -7,6 +7,14 @@
 #include <iostream>
 #include <string>
 
+// These status-only fixtures must never invoke the item SQL encoder.
+// Abort instead of silently substituting a fake encoder for the real codec.
+char *sql_escape_string(const char *)
+{
+	std::cerr << "unexpected item encoder in status-only SQL fixture\n";
+	std::abort();
+}
+
 namespace
 {
 MYSQL *connect()
