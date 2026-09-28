@@ -90,6 +90,11 @@ bool sql_load_player_pets(P_char ch);
 // player delete
 // ============================================================================
 
+// SQL character deletion guard. Must be called immediately after beginning the
+// deletion transaction, before its first consistent read; the PID row lock is
+// held through commit. It checks retained unresolved evidence without locking it.
+bool sql_player_deletion_guard(int pid);
+
 // delete player from db (for pwipe, etc)
 // Transaction owners defer revision eviction until their commit is confirmed.
 bool sql_delete_player(int pid, bool forget_revision = true);

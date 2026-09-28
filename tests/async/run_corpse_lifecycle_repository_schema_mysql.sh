@@ -74,7 +74,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
 	src/economy/economic_accounting_types.c \
 	src/economy/economic_accounting_plan.c \
 	src/economy/economic_accounting_intent.c \
-    src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
+    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
 	-o "$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"
 "$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"
 printf 'corpse lifecycle authority, materialization, collector, currency, artifact, replay, and rollback transactions (%s): ok\n' \

@@ -38,6 +38,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0031_economy_accounting.sql",
     ROOT / "migrations" / "immutable" / "0032_economic_baseline.sql",
     ROOT / "migrations" / "immutable" / "0033_economic_sql_lifecycle_owner.sql",
+    ROOT / "migrations" / "immutable" / "0034_player_death_conflict_evidence.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -99,10 +100,21 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 216)
+        self.assertEqual(report["database_tables"], 217)
         self.assertEqual(report["non_database_stores"], 34)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
+
+    def test_death_conflict_evidence_is_protected_and_not_player_cascaded(self) -> None:
+        entry = self.entry("database:player_death_conflict_evidence")
+        self.assertEqual(entry["locator"], "player_death_conflict_evidence")
+        self.assertTrue(entry["protected_record"])
+        self.assertEqual(entry["season_action"], "retain")
+        self.assertEqual(entry["terminal_action"], "retain")
+        self.assertEqual(entry["dependencies"], [])
+        self.assertIn("never loadable inventory", entry["technical_purpose"])
+        self.assertIn("unresolved", entry["technical_purpose"])
+
 
     def test_missing_duplicate_unknown_and_stale_rules_fail_closed(self) -> None:
         """Each way the manifest can misdescribe the schema is refused.

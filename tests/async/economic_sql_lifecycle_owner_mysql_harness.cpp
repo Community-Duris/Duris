@@ -337,6 +337,25 @@ int main()
 		invalid_request.epoch = ident(112);
 		invalid_request.actor_id = 9001;
 		invalid_request.accepted_at_usec = 123456789;
+		// Even a damaged unresolved archive blocks source cutover; raw retained
+		// observations must never be counted as an opening inventory/holding.
+		execute(setup,
+			"INSERT INTO player_death_conflict_evidence(operation_id,pid,save_revision,source_revision,corpse_item_uid,request_hash,payload_hash,payload) VALUES(" +
+				sql_id(ident(13)) +
+				",21001,2,1,90001,UNHEX(REPEAT('00',32)),UNHEX(REPEAT('00',32)),UNHEX('01'))");
+		economic_sql_lifecycle_receipt conflict_output;
+		conflict_output.operation_id = ident(211);
+		const auto conflict_status = economic_sql_accounting_lifecycle_transaction::install(
+			owner_connection, *maintenance, invalid_request, &conflict_output);
+		if (conflict_status != EBUSY ||
+		    conflict_output.operation_id.bytes != ident(211).bytes)
+			throw std::runtime_error(
+				"unresolved death archive did not block lifecycle cutover");
+		assert_scalar(setup, "SELECT COUNT(*) FROM economic_sql_lifecycle_installation",
+			      "0");
+		assert_scalar(setup, "SELECT COUNT(*) FROM player_death_conflict_evidence", "1");
+		execute(setup, "DELETE FROM player_death_conflict_evidence WHERE operation_id=" +
+				       sql_id(ident(13)));
 		execute(setup,
 			"INSERT INTO player_data(pid,name,copper,silver,gold,platinum,wallet_revision,save_revision) VALUES(21003,'LifecycleBad',-1,0,0,0,0,0)");
 		economic_sql_lifecycle_receipt untouched;

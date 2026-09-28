@@ -33,6 +33,7 @@ struct replay_state
     std::vector<std::pair<int, player_revision_t>> applied;
     bool blocked = false;
     bool stale_death = false;
+    bool newer_death = false;
     std::vector<uint8_t> expected_death;
 };
 
@@ -45,6 +46,8 @@ player_save_apply_result replay_apply(const player_snapshot &snapshot, void *raw
         assert(bytes == state.expected_death);
         if (state.stale_death)
             return {player_save_apply_outcome::stale_revision, snapshot.revision + 1, 0};
+        if (state.newer_death)
+            return {player_save_apply_outcome::already_applied, snapshot.revision + 1, 0};
     }
     if (state.blocked)
         return {player_save_apply_outcome::retryable_failure, snapshot.revision - 1, 1205};
@@ -336,6 +339,13 @@ int main(int argc, char **argv)
     assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::replay_blocked);
     assert(player_save_journal_health_copy().records == 1);
     replay.stale_death = false;
+    replay.newer_death = true;
+    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::replay_blocked);
+    assert(player_save_journal_health_copy().records == 1);
+    player_save_journal_shutdown();
+    assert(player_save_journal_init(directory.c_str()));
+    assert(player_save_journal_health_copy().records == 1);
+    replay.newer_death = false;
     replay.blocked = true;
     assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::replay_blocked);
     assert(player_save_journal_health_copy().records == 1);

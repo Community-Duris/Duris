@@ -5,6 +5,7 @@
 #include "world/vnum.obj.h"
 
 #include <algorithm>
+#include <initializer_list>
 #include <limits>
 #include <new>
 #include <type_traits>
@@ -151,7 +152,8 @@ void encode_index_rows(encoder &out, const std::vector<player_index_value_snapsh
 bool decode_index_rows(decoder &in, std::vector<player_index_value_snapshot> &rows)
 {
 	return in.vector(rows,
-			 [&](auto &row) {
+			 [&](auto &row)
+			 {
 				 return in.number(row.index) && in.number(row.value) &&
 					in.number(row.auxiliary);
 			 });
@@ -245,7 +247,8 @@ bool decode_items(decoder &in, std::vector<player_item_snapshot> &items)
 					if (!in.number(value))
 						return false;
 			if (!in.vector(row.dynamic_affects,
-				       [&](auto &affect) {
+				       [&](auto &affect)
+				       {
 					       return in.number(affect.type) &&
 						      in.number(affect.data) &&
 						      in.number(affect.extra2);
@@ -268,7 +271,8 @@ bool decode_items(decoder &in, std::vector<player_item_snapshot> &items)
 bool valid_metadata(const player_snapshot &snapshot)
 {
 	return (snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
-		snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION) &&
+		snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
+		snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION) &&
 	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
 	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
@@ -309,6 +313,9 @@ bool valid_death(const player_snapshot &snapshot)
 			[](const auto &pet) { return pet.hold_reason == pet_hold_reason::none; }))
 		return false;
 	const auto &death = *snapshot.death;
+	if ((snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION) !=
+	    death.conflict_evidence.has_value())
+		return false;
 	if (!nonzero_operation(death.operation_id) || death.corpse_room_vnum <= 0 ||
 	    !death.wallet_revision || death.corpse.empty() ||
 	    !valid_item_relationships(death.corpse))
@@ -451,6 +458,160 @@ bool decode_death(decoder &in, player_death_snapshot &death)
 						 return false;
 				 return true;
 			 });
+}
+
+player_snapshot_codec_result validate_evidence(const player_death_conflict_evidence &evidence)
+{
+	size_t budget = PLAYER_SNAPSHOT_MAX_BYTES;
+	size_t rows = 0;
+	const auto consume = [&](size_t count)
+	{
+		if (count > budget)
+			return false;
+		budget -= count;
+		return true;
+	};
+	for (const auto *table : { &evidence.player_items, &evidence.player_item_affects,
+				   &evidence.player_item_extra_descr, &evidence.item_current_owner,
+				   &evidence.item_owner_revision })
+	{
+		if (table->columns.empty())
+			return player_snapshot_codec_result::invalid_value;
+		if (table->columns.size() > PLAYER_DEATH_EVIDENCE_MAX_COLUMNS ||
+		    table->rows.size() > PLAYER_SNAPSHOT_MAX_ROWS - rows ||
+		    !consume(2 * sizeof(uint32_t)))
+			return player_snapshot_codec_result::limit_exceeded;
+		rows += table->rows.size();
+		for (auto column = table->columns.begin(); column != table->columns.end(); ++column)
+		{
+			if (column->size() > PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES ||
+			    !consume(sizeof(uint32_t)) || !consume(column->size()))
+				return player_snapshot_codec_result::limit_exceeded;
+			if (column->empty() ||
+			    std::find(table->columns.begin(), column, *column) != column ||
+			    !std::all_of(column->begin(), column->end(),
+					 [](unsigned char value)
+					 {
+						 return (value >= 'a' && value <= 'z') ||
+							(value >= 'A' && value <= 'Z') ||
+							(value >= '0' && value <= '9') ||
+							value == '_';
+					 }))
+				return player_snapshot_codec_result::invalid_value;
+		}
+		for (const auto &row : table->rows)
+		{
+			if (row.size() != table->columns.size())
+				return player_snapshot_codec_result::invalid_value;
+			for (const auto &cell : row)
+				if (!consume(sizeof(uint8_t)) ||
+				    (cell &&
+				     (!consume(sizeof(uint32_t)) || !consume(cell->size()))))
+					return player_snapshot_codec_result::limit_exceeded;
+		}
+	}
+	const auto has_columns = [](const auto &table, std::initializer_list<const char *> required)
+	{
+		return std::all_of(required.begin(), required.end(),
+				   [&](const char *name)
+				   {
+					   return std::find(table.columns.begin(),
+							    table.columns.end(),
+							    name) != table.columns.end();
+				   });
+	};
+	if (!rows ||
+	    !has_columns(evidence.player_items,
+			 { "id", "pid", "obj_uid", "vnum", "container_id" }) ||
+	    !has_columns(evidence.player_item_affects,
+			 { "id", "item_id", "location", "modifier" }) ||
+	    !has_columns(evidence.player_item_extra_descr,
+			 { "id", "item_id", "keyword", "description" }) ||
+	    !has_columns(evidence.item_current_owner,
+			 { "item_uid", "root_item_uid", "parent_item_uid", "item_revision", "vnum",
+			   "state", "owner_type", "owner_id", "owner_context_id" }) ||
+	    !has_columns(evidence.item_owner_revision,
+			 { "owner_type", "owner_id", "owner_context_id", "revision" }))
+		return player_snapshot_codec_result::invalid_value;
+	return player_snapshot_codec_result::ok;
+}
+
+void encode_evidence(encoder &out, const player_death_conflict_evidence &evidence)
+{
+	// Fixed table order is part of version 10; these are observations, not inventory.
+	for (const auto *table : { &evidence.player_items, &evidence.player_item_affects,
+				   &evidence.player_item_extra_descr, &evidence.item_current_owner,
+				   &evidence.item_owner_revision })
+	{
+		out.vector(table->columns, [&](const auto &column)
+			   { out.string(column, PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES); });
+		out.vector(table->rows,
+			   [&](const auto &row)
+			   {
+				   for (const auto &cell : row)
+				   {
+					   out.boolean(cell.has_value());
+					   if (cell)
+						   out.string(*cell, PLAYER_SNAPSHOT_MAX_BYTES);
+				   }
+			   });
+	}
+}
+
+bool decode_evidence(decoder &in, player_death_conflict_evidence &evidence)
+{
+	for (auto *table : { &evidence.player_items, &evidence.player_item_affects,
+			     &evidence.player_item_extra_descr, &evidence.item_current_owner,
+			     &evidence.item_owner_revision })
+	{
+		uint32_t columns = 0, rows = 0;
+		if (!in.number(columns))
+			return false;
+		if (!columns || columns > PLAYER_DEATH_EVIDENCE_MAX_COLUMNS)
+		{
+			in.result = columns ? player_snapshot_codec_result::limit_exceeded :
+					      player_snapshot_codec_result::invalid_value;
+			return false;
+		}
+		table->columns.resize(columns);
+		for (auto &column : table->columns)
+			if (!in.string(column, PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES))
+				return false;
+		if (!in.number(rows))
+			return false;
+		if (rows > PLAYER_SNAPSHOT_MAX_ROWS || in.rows > PLAYER_SNAPSHOT_MAX_ROWS - rows)
+		{
+			in.result = player_snapshot_codec_result::limit_exceeded;
+			return false;
+		}
+		// Each cell needs at least a NULL/present byte. Reject impossible lengths
+		// before allocating the rectangular row vectors.
+		if (static_cast<size_t>(rows) * columns > in.size - in.offset)
+		{
+			in.result = player_snapshot_codec_result::truncated;
+			return false;
+		}
+		in.rows += rows;
+		table->rows.resize(rows);
+		for (auto &row : table->rows)
+		{
+			row.resize(columns);
+			for (auto &cell : row)
+			{
+				bool present = false;
+				if (!in.boolean(present))
+					return false;
+				if (present)
+				{
+					cell.emplace();
+					if (!in.string(*cell, PLAYER_SNAPSHOT_MAX_BYTES))
+						return false;
+				}
+			}
+		}
+	}
+	in.result = validate_evidence(evidence);
+	return in.result == player_snapshot_codec_result::ok;
 }
 } // namespace
 
@@ -632,6 +793,12 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 		encoder out;
 		if (!valid_death(snapshot))
 			return player_snapshot_codec_result::invalid_value;
+		if (snapshot.death && snapshot.death->conflict_evidence)
+		{
+			const auto valid = validate_evidence(*snapshot.death->conflict_evidence);
+			if (valid != player_snapshot_codec_result::ok)
+				return valid;
+		}
 		out.bytes.reserve(snapshot.encoded_size_bound);
 		out.number<uint32_t>(snapshot.schema_version);
 		out.number<int32_t>(snapshot.pid);
@@ -722,7 +889,11 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 		out.boolean(snapshot.recipes_are_external);
 		out.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES);
 		if (snapshot.death)
+		{
 			encode_death(out, *snapshot.death);
+			if (snapshot.death->conflict_evidence)
+				encode_evidence(out, *snapshot.death->conflict_evidence);
+		}
 		if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
 			return player_snapshot_codec_result::limit_exceeded;
 		player_snapshot validated = {};
@@ -759,7 +930,8 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (wire_version == 2 || wire_version == 4 || wire_version == 6)
 			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
-		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
+		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION &&
+		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION)
 			return player_snapshot_codec_result::unsupported_version;
 		if (!in.number(snapshot.pid) || !in.number(snapshot.revision) ||
 		    !in.number(snapshot.components) || !in.number(snapshot.save_intent) ||
@@ -809,7 +981,8 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		    !in.vector(snapshot.granted_commands,
 			       [&](int32_t &command) { return in.number(command); }) ||
 		    !in.vector(snapshot.skills,
-			       [&](auto &row) {
+			       [&](auto &row)
+			       {
 				       return in.number(row.skill_id) && in.number(row.learned) &&
 					      in.number(row.taught);
 			       }) ||
@@ -867,11 +1040,19 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (wire_version >= 5 &&
 		    !in.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES))
 			return in.result;
-		if (snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
+		if (snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
+		    snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION)
 		{
 			snapshot.death.emplace();
 			if (!decode_death(in, *snapshot.death))
 				return in.result;
+			if (snapshot.schema_version ==
+			    PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION)
+			{
+				snapshot.death->conflict_evidence.emplace();
+				if (!decode_evidence(in, *snapshot.death->conflict_evidence))
+					return in.result;
+			}
 		}
 		if (!valid_death(snapshot))
 			return player_snapshot_codec_result::invalid_value;

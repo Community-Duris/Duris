@@ -250,6 +250,10 @@ bool sql_delete_player(int pid, bool forget_revision)
 {
 	return false;
 }
+bool sql_player_deletion_guard(int pid)
+{
+	return false;
+}
 bool sql_delete_player_by_name(const char *name)
 {
 	return false;
@@ -632,6 +636,9 @@ static bool sql_save_locker_item_children(int locker_id, int chest_id, P_obj obj
 
 // track transaction state
 static bool in_transaction = false;
+// A successful deletion guard is transaction-local. It proves that the shared
+// player row was locked before the transaction's first consistent read.
+static int character_deletion_guard_pid = 0;
 // Held entirely by value: a terminal save can commit after extract_char() has
 // removed and freed the character while leaving its descriptor account menu live.
 struct pending_account_character_cache_update
@@ -668,6 +675,7 @@ bool sql_begin_transaction(void)
 	}
 
 	sql_clear_results();
+	character_deletion_guard_pid = 0;
 	if (!sql_trace_exec("sql_begin_transaction", "START TRANSACTION", 17, false, false))
 	{
 		logit(LOG_DEBUG, "sql_begin_transaction: failed");
@@ -702,6 +710,7 @@ bool sql_commit(void)
 		return false;
 	}
 
+	character_deletion_guard_pid = 0;
 	in_transaction = false;
 	if (pending_account_cache_sync)
 	{
@@ -729,11 +738,13 @@ bool sql_rollback(void)
 	if (!sql_trace_exec("sql_rollback", "ROLLBACK", 8, false, false))
 	{
 		logit(LOG_DEBUG, "sql_rollback: failed");
+		character_deletion_guard_pid = 0;
 		in_transaction = false;
 		sql_clear_account_character_cache_sync();
 		return false;
 	}
 
+	character_deletion_guard_pid = 0;
 	in_transaction = false;
 	sql_clear_account_character_cache_sync();
 	return true;
@@ -1064,6 +1075,7 @@ void sql_reset_for_child(MYSQL *child_conn)
 {
 	DB = child_conn;
 	in_transaction = false;
+	character_deletion_guard_pid = 0;
 }
 
 // player existence check
@@ -1176,16 +1188,90 @@ static bool sql_try_get_player_pid(const char *name, int *pid_out)
 
 // player delete
 
+bool sql_player_deletion_guard(int pid)
+{
+	if (!DB || pid <= 0 || !sql_in_transaction())
+		return false;
+	if (character_deletion_guard_pid)
+		return character_deletion_guard_pid == pid;
+
+	// Native death retention takes this same player_data row lock before
+	// inserting conflict evidence. Keep the lock through deletion commit so
+	// retention either becomes visible first or observes the player gone.
+	char query[256];
+	snprintf(query, sizeof(query), "SELECT pid FROM player_data WHERE pid=%d FOR UPDATE", pid);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+	{
+		sql_player_error("sql_player_deletion_guard_player_lock");
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const bool player_locked = row && row[0] && atoi(row[0]) == pid &&
+				   mysql_num_rows(result) == 1 && mysql_errno(DB) == 0;
+	mysql_free_result(result);
+	if (!player_locked)
+		return false;
+
+	// This must be the transaction's first consistent read. START TRANSACTION
+	// does not establish the REPEATABLE READ snapshot; this read follows the
+	// shared row lock above, so it sees a retention commit we waited for. Keep
+	// it nonlocking: native terminal replay can lock evidence before player_data.
+	snprintf(query, sizeof(query),
+		 "SELECT operation_id FROM player_death_conflict_evidence WHERE pid=%d LIMIT 1",
+		 pid);
+	result = db_query("%s", query);
+	if (!result)
+	{
+		sql_player_error("sql_player_deletion_guard_evidence_read");
+		return false;
+	}
+	const bool unresolved = mysql_fetch_row(result) != nullptr;
+	const bool evidence_read_ok = mysql_errno(DB) == 0;
+	mysql_free_result(result);
+	if (!evidence_read_ok || unresolved)
+		return false;
+	character_deletion_guard_pid = pid;
+	return true;
+}
+
 bool sql_delete_player(int pid, bool forget_revision)
 {
 	if (!DB || pid <= 0)
+		return false;
+
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+	if (own_txn)
+	{
+		if (!sql_player_deletion_guard(pid))
+		{
+			sql_rollback();
+			return false;
+		}
+	}
+	else if (character_deletion_guard_pid != pid)
 		return false;
 
 	char query[128];
 	snprintf(query, sizeof(query), "DELETE FROM player_data WHERE pid=%d", pid);
 
 	if (!sql_run_query(query))
+	{
+		if (own_txn)
+			sql_rollback();
 		return false;
+	}
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
 	if (forget_revision)
 		player_revision_forget(pid);
 	return true;

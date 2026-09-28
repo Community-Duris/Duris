@@ -99,6 +99,13 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         path.write_text(json.dumps(manifest))
         return path
 
+    def test_canonical_verifiers_are_executable(self):
+        """The real runner executes verifier paths directly, not through bash."""
+        for migration in runner.load_manifest().migrations:
+            with self.subTest(migration=migration.migration_id):
+                self.assertTrue(os.access(migration.verify_path, os.X_OK),
+                                f"verifier is not executable: {migration.verify_path}")
+
     def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
         """The shipped manifest still describes the sealed baseline and head.
 
@@ -109,9 +116,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 33)
+        self.assertEqual(len(manifest.migrations), 34)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0033_economic_sql_lifecycle_owner")
+                         "0034_player_death_conflict_evidence")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,

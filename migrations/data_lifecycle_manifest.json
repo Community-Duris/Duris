@@ -389,6 +389,23 @@
       "dependencies": ["database:player_death_restitution_delivery"]
     },
     {
+      "id": "database:player_death_conflict_evidence",
+      "kind": "database_table",
+      "locator": "player_death_conflict_evidence",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_pid_save_revision_and_corpse_item_uid",
+      "technical_purpose": "immutable v10 death-save conflict evidence; never loadable inventory or a save-success receipt; unresolved until a separate resolution record",
+      "controller_decision": {"status": "pending", "reference": "PENDING-CONTROLLER-DECISION"},
+      "export_rule": {"disposition": "pending", "subject_route": "direct_player", "decision": {"status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION"}, "excluded_fields": [], "shared_fields": []},
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:epic_stone_claim",
       "kind": "database_table",
       "locator": "epic_stone_claim",

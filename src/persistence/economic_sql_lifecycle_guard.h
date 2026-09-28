@@ -40,10 +40,11 @@ class economic_sql_lifecycle_guard
 	std::unique_lock<std::shared_mutex> local_exclusive_;
 };
 
-// Every legacy SQL wallet/shared-bank mutation must hold this guard from before
-// its transaction starts through COMMIT/ROLLBACK. After a staged installation
-// exists it refuses the old writer path. Missing lifecycle schema/errors fail
-// closed. The caller owns the MYSQL connection and must not reconnect it.
+// Legacy SQL currency and item writers must hold this guard from before their
+// transaction starts through COMMIT/ROLLBACK. A staged installation or active
+// epoch refuses the old writer path. Missing lifecycle schema/errors fail closed.
+// The caller owns the MYSQL connection and must not reconnect it. Integration of
+// this guard at one dispatcher does not establish source-complete writer coverage.
 class economic_sql_currency_writer_guard
 {
     public:

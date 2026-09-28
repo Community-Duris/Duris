@@ -5,8 +5,19 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/shop_trade_command.h"
+
+__attribute__((weak)) flatfile_item_accounting_status flatfile_item_accounting_reference_append(
+	const std::string &root, const economic_accounting_item_reference &ref, std::string *error)
+{
+	(void)root;
+	(void)ref;
+	if (error)
+		error->clear();
+	return flatfile_item_accounting_status::ok;
+}
 
 #include <algorithm>
 #include <array>
@@ -416,6 +427,27 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 	if (committed != flatfile_authority_transaction_result::ok)
 		return repository_failure(
 			committed == flatfile_authority_transaction_result::io_error, EILSEQ);
+	if (!result_code && items.item_count > 0)
+	{
+		for (size_t index = 0; index < items.item_count; ++index)
+		{
+			economic_accounting_item_reference ref = {};
+			ref.operation_id = command.operation_id;
+			ref.line_index = static_cast<uint16_t>(index);
+			ref.event_index = ref.line_index;
+			ref.child_index = 1;
+			ref.item_uid = items.item_uids[index];
+			ref.before_revision = index < payload.item_count ?
+						      payload.items[index].expected_item_revision :
+						      (items.item_revisions[index] > 0 ?
+							       items.item_revisions[index] - 1 :
+							       0);
+			ref.after_revision = items.item_revisions[index];
+			ref.legacy_operation_id = command.operation_id;
+			ref.legacy_event_index = static_cast<uint16_t>(index);
+			flatfile_item_accounting_reference_append(root, ref);
+		}
+	}
 	return make_result(catalog.operations.back(), catalog.revision,
 			   critical_apply_outcome::applied);
 }

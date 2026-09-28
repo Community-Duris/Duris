@@ -11,6 +11,7 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_player_snapshot_file.h"
 #include "flatfile/flatfile_world_item_repository.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_shop_trade_repository.h"
 #include "persistence/persistence_mode.h"
@@ -22,6 +23,16 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+
+__attribute__((weak)) flatfile_item_accounting_status flatfile_item_accounting_reference_append(
+	const std::string &root, const economic_accounting_item_reference &ref, std::string *error)
+{
+	(void)root;
+	(void)ref;
+	if (error)
+		error->clear();
+	return flatfile_item_accounting_status::ok;
+}
 #include <cstring>
 #include <limits>
 #include <mutex>
@@ -755,7 +766,8 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 				}
 		if (selected.size() != payload.item_count)
 			return EMSGSIZE;
-		std::sort(selected.begin(), selected.end(), [](const auto *left, const auto *right)
+		std::sort(selected.begin(), selected.end(),
+			  [](const auto *left, const auto *right)
 			  { return left->item_uid < right->item_uid; });
 		for (size_t index = 0; index < payload.item_count; ++index)
 		{
@@ -1019,7 +1031,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_collector_trans
 		*result_code = EMSGSIZE;
 		return flatfile_item_repository_result::ok;
 	}
-	std::sort(source.begin(), source.end(), [](const auto *left, const auto *right)
+	std::sort(source.begin(), source.end(),
+		  [](const auto *left, const auto *right)
 		  { return left->item_uid < right->item_uid; });
 	for (size_t index = 0; index < source.size(); ++index)
 	{
@@ -1041,7 +1054,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_collector_trans
 			return flatfile_item_repository_result::ok;
 		}
 	}
-	auto selected = std::find_if(source.begin(), source.end(), [&](const auto *item)
+	auto selected = std::find_if(source.begin(), source.end(),
+				     [&](const auto *item)
 				     { return item->item_uid == payload.selected_item_uid; });
 	if (selected == source.end())
 	{
@@ -1069,9 +1083,11 @@ flatfile_item_repository_result flatfile_item_repository_prepare_collector_trans
 					new_root = cursor->item_uid;
 					break;
 				}
-				auto parent = std::find_if(
-					source.begin(), source.end(), [&](const auto *candidate)
-					{ return candidate->item_uid == cursor->parent_item_uid; });
+				auto parent = std::find_if(source.begin(), source.end(),
+							   [&](const auto *candidate) {
+								   return candidate->item_uid ==
+									  cursor->parent_item_uid;
+							   });
 				if (parent == source.end())
 				{
 					new_root = 0;
@@ -2576,6 +2592,24 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 				 committed == flatfile_authority_transaction_result::io_error ?
 					 EIO :
 					 EILSEQ) };
+	if (!result_code && payload.item_count > 0)
+	{
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			economic_accounting_item_reference ref = {};
+			ref.operation_id = command.operation_id;
+			ref.line_index = static_cast<uint16_t>(index);
+			ref.event_index = ref.line_index;
+			ref.child_index = 1;
+			ref.item_uid = payload.items[index].item_uid;
+			ref.before_revision =
+				result.from_owner_revision > 0 ? result.from_owner_revision - 1 : 0;
+			ref.after_revision = result.from_owner_revision;
+			ref.legacy_operation_id = command.operation_id;
+			ref.legacy_event_index = static_cast<uint16_t>(index);
+			flatfile_item_accounting_reference_append(root, ref);
+		}
+	}
 	return make_result(result_code ? critical_apply_outcome::terminal_failure :
 					 critical_apply_outcome::applied,
 			   result_code, result);

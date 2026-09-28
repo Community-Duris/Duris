@@ -33,6 +33,16 @@ struct player_save_apply_result
 	unsigned int error_code;
 };
 
+// A death needs its own exact successful receipt. Leave ordinary snapshots to
+// each caller's existing policy; a newer counter alone cannot retire a death.
+inline bool player_save_result_matches_death_request(const player_snapshot &snapshot,
+						     const player_save_apply_result &result)
+{
+	return !snapshot.death || ((result.outcome == player_save_apply_outcome::applied ||
+				    result.outcome == player_save_apply_outcome::already_applied) &&
+				   result.durable_revision == snapshot.revision);
+}
+
 struct player_save_completion
 {
 	int32_t pid;

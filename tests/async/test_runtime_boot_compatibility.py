@@ -40,6 +40,26 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                 with self.assertRaises(validator.migration_runner.MigrationContractError):
                     validator.validate_death_schema(path)
 
+    def test_offline_death_conflict_schema_rejects_contract_damage(self):
+        import tempfile
+        validator = runtime
+        original = (ROOT / "migrations/immutable/0034_player_death_conflict_evidence.sql").read_text()
+        validator.validate_death_conflict_schema()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "death-conflict.sql"
+            damaged_sources = (
+                original.replace("request_hash BINARY(32)", "request_hash BINARY(31)"),
+                original.replace("UNIQUE KEY uq_death_conflict_revision (pid,save_revision),\n", ""),
+                original.replace("ENGINE=InnoDB", "ENGINE=MyISAM"),
+                original.replace(
+                    "    PRIMARY KEY (operation_id),",
+                    "    PRIMARY KEY (operation_id),\n    FOREIGN KEY (pid) REFERENCES player_data(pid),"),
+            )
+            for damaged in damaged_sources:
+                path.write_text(damaged)
+                with self.assertRaises(validator.migration_runner.MigrationContractError):
+                    validator.validate_death_conflict_schema(path)
+
     def test_manifests_and_compiled_contract_are_synchronized(self):
         """The manifest, migration ledger, and compiled header agree.
 
@@ -48,9 +68,10 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         fails here instead of at a server's boot gate.
         """
         report = runtime.validate()
-        # Includes both death recovery tables and SQL lifecycle installation state.
-        self.assertEqual(report["current_table_count"], 216)
-        for table in ("player_death_disposition", "player_death_custody"):
+        # Includes death evidence/recovery and SQL lifecycle tables.
+        self.assertEqual(report["current_table_count"], 217)
+        for table in ("player_death_disposition", "player_death_custody",
+                      "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
         for table in ("collector_catalog_state", "collector_deaths",
                       "collector_listings", "collector_ledger",
@@ -60,7 +81,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'zone_story_quest_state'", self.header)
         self.assertIn("'economic_sql_lifecycle_installation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0033_economic_sql_lifecycle_owner")
+                         "0034_player_death_conflict_evidence")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

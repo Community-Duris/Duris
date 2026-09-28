@@ -21,6 +21,19 @@
 #include <type_traits>
 #include <vector>
 
+__attribute__((weak)) unsigned int
+flatfile_economic_control_read(const std::string &root, const flatfile_authority_lock &lock,
+			       flatfile_economic_control *control, std::string *error)
+{
+	(void)root;
+	(void)lock;
+	if (control)
+		*control = {};
+	if (error)
+		error->clear();
+	return 0;
+}
+
 namespace
 {
 // Native formats 2 and 3 retain their 2048-byte receipt limit independently

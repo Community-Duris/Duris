@@ -160,10 +160,20 @@ void worker_main()
 		{
 			applied = { player_save_apply_outcome::terminal_failure, 0, EFAULT };
 		}
+		// Keep both the journal record and revision retryable when a death's
+		// claimed success belongs to a different durable revision.
+		if ((applied.outcome == player_save_apply_outcome::applied ||
+		     applied.outcome == player_save_apply_outcome::already_applied) &&
+		    !player_save_result_matches_death_request(job->snapshot, applied))
+		{
+			applied.outcome = player_save_apply_outcome::terminal_failure;
+			applied.error_code = ESTALE;
+		}
 		if ((applied.outcome == player_save_apply_outcome::applied ||
 		     applied.outcome == player_save_apply_outcome::already_applied ||
 		     applied.outcome == player_save_apply_outcome::stale_revision) &&
-		    applied.durable_revision >= job->snapshot.revision)
+		    applied.durable_revision >= job->snapshot.revision &&
+		    player_save_result_matches_death_request(job->snapshot, applied))
 		{
 			player_save_journal_ack_fn acknowledge = nullptr;
 			void *ack_context = nullptr;
@@ -192,7 +202,8 @@ void worker_main()
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
 			result_available.wait(lock,
-					      [] {
+					      []
+					      {
 						      return stop_requested ||
 							     results.size() <
 								     PLAYER_SAVE_WORKER_MAX_RESULTS;

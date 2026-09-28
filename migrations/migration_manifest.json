@@ -508,6 +508,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "375182015d29d9969f97a2696f6a49415f192e113fb9a2ea84de5b290ac10675",
       "verify_checksum": "f16a044fa69f35f6a54a5a6aad37d717d1626085c07b98fa101fa4b62b994f9f"
+    },
+    {
+      "id": "0034_player_death_conflict_evidence",
+      "sequence": 34,
+      "description": "Add immutable evidence for rejected player death-save conflicts",
+      "apply": "immutable/0034_player_death_conflict_evidence.sql",
+      "verify": "immutable/0034_player_death_conflict_evidence.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "35489b02df08627f9c03cd9cd4538f646205ee595328adced4ce2144c35ca646",
+      "verify_checksum": "6b11f5702e3c26103052c99affb5317e296de535af1813527b5bdda826d722f6"
     }
   ]
 }

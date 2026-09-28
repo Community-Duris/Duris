@@ -131,8 +131,95 @@ template <typename Predicate> void wait_until(Predicate predicate)
     }
 }
 
+struct forced_result
+{
+    player_save_apply_outcome outcome;
+    int64_t revision_delta;
+};
+
+player_save_apply_result force_result(const player_snapshot &snapshot, void *raw)
+{
+    const auto &result = *static_cast<forced_result *>(raw);
+    return {result.outcome, static_cast<player_revision_t>(
+            static_cast<int64_t>(snapshot.revision) + result.revision_delta), 0};
+}
+
+void verify_death_acknowledgements()
+{
+    struct test_case {
+        bool death;
+        player_save_apply_outcome outcome;
+        int64_t delta;
+        bool journal_ack;
+        bool completed;
+    };
+    const test_case cases[] = {
+        {true, player_save_apply_outcome::stale_revision, 0, false, false},
+        {true, player_save_apply_outcome::stale_revision, 1, false, false},
+        {true, player_save_apply_outcome::applied, -1, false, false},
+        {true, player_save_apply_outcome::applied, 1, false, false},
+        {true, player_save_apply_outcome::already_applied, 1, false, false},
+        {true, player_save_apply_outcome::applied, 0, true, true},
+        {true, player_save_apply_outcome::already_applied, 0, true, true},
+        {false, player_save_apply_outcome::stale_revision, 1, true, false},
+        {false, player_save_apply_outcome::applied, 1, true, true},
+        {false, player_save_apply_outcome::already_applied, 1, true, true},
+    };
+    for (const auto &test : cases) {
+        player_save_worker_reset_for_tests();
+        player_revision_reset_for_tests();
+        assert(player_revision_hydrate(71, 20));
+        auto snapshot = next_snapshot(71, PLAYER_CHECKPOINT_COMPONENT_ALL);
+        if (test.death) {
+            snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+            snapshot.death.emplace();
+            snapshot.death->operation_id.bytes[0] = 1;
+            snapshot.death->corpse.emplace_back();
+            snapshot.death->corpse[0].object_uid = 90000;
+            assert(player_revision_pin_terminal_death(71, snapshot.revision));
+        }
+        forced_result forced{test.outcome, test.delta};
+        journal_hook_state hooks;
+        assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &hooks));
+        assert(player_save_worker_init(force_result, &forced, 1));
+        assert(player_save_worker_submit(snapshot) == player_save_submit_result::accepted);
+        player_save_completion completion = {};
+        wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+        player_save_worker_shutdown();
+        assert(hooks.acknowledgements == static_cast<unsigned>(test.journal_ack));
+        player_revision_snapshot state = {};
+        assert(player_revision_snapshot_copy(71, &state));
+        if (test.completed) {
+            assert(state.acknowledged_revision == snapshot.revision);
+            assert(state.unacknowledged_components == 0);
+        } else {
+            assert(state.acknowledged_revision == 20);
+            assert(state.queued_revision == snapshot.revision);
+            assert(state.queued_components == snapshot.components);
+            assert(state.inflight_components == 0);
+        }
+        if (test.death && !test.completed) {
+            assert(!player_revision_mark(71, PLAYER_COMPONENT_STATUS, nullptr));
+            forced = {player_save_apply_outcome::applied, 0};
+            assert(player_save_worker_init(force_result, &forced, 1));
+            assert(player_save_worker_submit(snapshot) == player_save_submit_result::accepted);
+            wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+            player_save_worker_shutdown();
+            assert(hooks.acknowledgements == 1);
+            assert(player_revision_snapshot_copy(71, &state));
+            assert(state.acknowledged_revision == snapshot.revision);
+            assert(state.unacknowledged_components == 0);
+        }
+        if (test.death)
+            assert(player_revision_unpin_terminal_death(71, snapshot.revision));
+    }
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+}
+
 int main()
 {
+    verify_death_acknowledgements();
     player_revision_reset_for_tests();
     player_save_worker_reset_for_tests();
     apply_state state;

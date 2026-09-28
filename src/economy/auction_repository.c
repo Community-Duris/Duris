@@ -421,6 +421,7 @@ bool transition_items(MYSQL *connection, const critical_command &command,
 		      std::to_string(static_cast<unsigned int>(command.source_site)) + ")";
 		if (!execute(connection, sql))
 			return false;
+		// The legacy auction inbox is not an admitted accounting operation.
 		result->item_uids[index] = item.item_uid;
 		result->item_revisions[index] = next_item_revision;
 	}

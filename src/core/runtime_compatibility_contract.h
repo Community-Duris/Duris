@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 216;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 217;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons',"
 	"'account_bound_rewards','account_characters','account_erasure_evidence',"
@@ -47,11 +47,12 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'offline_messages','outposts','pages','persistence_item_events','persistence_scalar_events',"
 	"'personal_data_export_audit','personal_data_export_requests',"
 	"'personal_data_export_sections','ping','pkill_event','pkill_info','player_affects',"
-	"'player_data','player_death_custody','player_death_disposition',"
-	"'player_death_restitution_delivery','player_death_restitution_item',"
-	"'player_death_restitution_receipt','player_death_restitution_runtime','player_forged_items',"
-	"'player_granted_cmds','player_intros','player_item_affects','player_item_extra_descr',"
-	"'player_items','player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
+	"'player_data','player_death_conflict_evidence','player_death_custody',"
+	"'player_death_disposition','player_death_restitution_delivery',"
+	"'player_death_restitution_item','player_death_restitution_receipt',"
+	"'player_death_restitution_runtime','player_forged_items','player_granted_cmds',"
+	"'player_intros','player_item_affects','player_item_extra_descr','player_items',"
+	"'player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges','player_skills',"
 	"'player_spellbooks','player_timers','player_undead_slots','player_witnesses','poll_options',"
 	"'poll_votes','polls','prepstatement_duris_sql','private_chest_log','private_chests',"
@@ -67,9 +68,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'telemetry_session','timers','towns','world_quest_accomplished','zone_story_quest_state',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"6c48fab1c630724c01220b53276f34c487e74f644fd47c196b5a19f12d399a6e";
+	"54db962a0656d0e39f16ef108f7bed9573cf7c7a67b39f75603a7696cf6783ef";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"bbdd44973af3455f6a1445cf37558f91c7b3f4c9a749a85ecc446881d3643396";
+	"1eff2fd93cdaff10a5512fe511f497ef679352f268feecfe6a404a5a0967f518";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -85,15 +86,16 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * Migration 0031 adds retained accounting evidence and identity metadata.
  * Migration 0032 adds baseline witness retention and opening reservations.
  * Migration 0033 adds staged SQL lifecycle receipts, not gameplay activation.
+ * Migration 0034 adds retained death-conflict evidence, not capture activation.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0033_economic_sql_lifecycle_owner";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 33;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0034_player_death_conflict_evidence";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 34;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"375182015d29d9969f97a2696f6a49415f192e113fb9a2ea84de5b290ac10675";
+	"35489b02df08627f9c03cd9cd4538f646205ee595328adced4ce2144c35ca646";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"f16a044fa69f35f6a54a5a6aad37d717d1626085c07b98fa101fa4b62b994f9f";
+	"6b11f5702e3c26103052c99affb5317e296de535af1813527b5bdda826d722f6";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"f98113a49fd618ec2994b155b74776430a73ec827fe7b128ed986d4368700028";
+	"8065d081e4014d4debaab05647a2209bdd21dd7c65d5267301e5a544e6c62acc";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

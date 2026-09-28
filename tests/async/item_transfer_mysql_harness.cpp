@@ -416,6 +416,219 @@ void check_restitution_runtime_transfer(MYSQL *connection)
 }
 } // namespace
 
+std::vector<std::string> native_snapshot(MYSQL *connection)
+{
+	std::vector<std::string> snapshot;
+	for (const char *table :
+	     { "player_data", "player_items", "item_current_owner", "item_owner_revision",
+	       "item_ownership_ledger", "critical_operation_inbox", "critical_outbox" })
+	{
+		execute(connection, std::string("SELECT * FROM ") + table);
+		MYSQL_RES *rows = mysql_store_result(connection);
+		assert(rows);
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(rows)))
+		{
+			const auto *lengths = mysql_fetch_lengths(rows);
+			assert(lengths);
+			std::string encoded = table;
+			for (unsigned int index = 0; index < mysql_num_fields(rows); ++index)
+			{
+				if (!row[index])
+					encoded += ":NULL;";
+				else
+				{
+					encoded += ":" + std::to_string(lengths[index]) + ":";
+					encoded.append(row[index], lengths[index]);
+				}
+			}
+			snapshot.push_back(std::move(encoded));
+		}
+		mysql_free_result(rows);
+	}
+	std::sort(snapshot.begin(), snapshot.end());
+	return snapshot;
+}
+
+void check_staged_accounting_refusal(MYSQL *connection, const item_transfer_payload &items)
+{
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, operation(83), items,
+					   critical_source_site::operator_repair,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	const std::string inbox = "UNHEX('" + operation_hex(80) + "')";
+	const std::string lineage = "UNHEX('" + operation_hex(81) + "')";
+	const std::string epoch = "UNHEX('" + operation_hex(82) + "')";
+	// Refusal fixtures only, not valid economic admission or permission to write.
+	execute(connection,
+		"INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+		"command_type,schema_version,payload_version,status,result_payload) VALUES(" +
+			inbox + ",REPEAT(CHAR(1),32),REPEAT(CHAR(2),32)," +
+			std::to_string(static_cast<unsigned int>(command.type)) + ",1,1,1,'')");
+	execute(connection, "INSERT INTO economic_epoch(lineage,epoch,ordinal,transition_kind,"
+			    "transition_digest,creating_operation_id) VALUES(" +
+				    lineage + "," + epoch + ",1,1,REPEAT(CHAR(3),32)," + inbox +
+				    ")");
+	execute(connection, "INSERT INTO economic_lineage_state(lineage) VALUES(" + lineage + ")");
+	execute(connection,
+		"INSERT INTO economic_sql_lifecycle_installation(operation_id,lineage,epoch,"
+		"request_digest,source_capture_digest,native_boundary_digest,wallet_count,bank_count,"
+		"phase) VALUES(" +
+			inbox + "," + lineage + "," + epoch +
+			",REPEAT(CHAR(4),32),REPEAT(CHAR(5),32),REPEAT(CHAR(6),32),0,0,1)");
+	auto refused = [&](const char *phase, unsigned int expected_error = EPERM)
+	{
+		const auto before = native_snapshot(connection);
+		const auto result = critical_command_repository_apply(connection, command);
+		if (result.error_code != expected_error ||
+		    result.outcome == critical_apply_outcome::applied)
+			fprintf(stderr, "legacy admission refusal failed: phase=%s error=%u\n",
+				phase, result.error_code);
+		assert(result.error_code == expected_error &&
+		       result.outcome != critical_apply_outcome::applied);
+		assert(native_snapshot(connection) == before);
+		assert(!(connection->server_status & SERVER_STATUS_IN_TRANS));
+		assert(scalar(connection,
+			      "SELECT IS_FREE_LOCK('duris:economic_sql_currency_writers')") == 1);
+	};
+	refused("staged-1");
+	execute(connection, "UPDATE economic_sql_lifecycle_installation SET phase=2,"
+			    "selected_epoch=epoch,baseline_operation_id=operation_id,revision=1 "
+			    "WHERE operation_id=" +
+				    inbox);
+	refused("staged-2");
+	execute(connection,
+		"DELETE FROM economic_sql_lifecycle_installation WHERE operation_id=" + inbox);
+	execute(connection, "UPDATE economic_lineage_state SET active_epoch=" + epoch +
+				    " WHERE lineage=" + lineage);
+	refused("active-without-installation");
+	execute(connection, "DELETE FROM economic_lineage_state WHERE lineage=" + lineage);
+	execute(connection, "DELETE FROM economic_epoch WHERE lineage=" + lineage);
+	execute(connection, "DELETE FROM critical_operation_inbox WHERE operation_id=" + inbox);
+	execute(connection, "RENAME TABLE economic_sql_lifecycle_installation TO "
+			    "economic_sql_lifecycle_installation_admission_probe");
+	refused("missing-lifecycle-schema", 1146);
+	execute(connection, "RENAME TABLE economic_sql_lifecycle_installation_admission_probe TO "
+			    "economic_sql_lifecycle_installation");
+	puts("PASS: staged phases and active epoch refuse legacy grants without native mutations");
+}
+
+void check_dispatch_fence_commit_and_rollback(MYSQL *connection)
+{
+	const item_owner_identity system = { item_owner_type::system, 0, 0 };
+	const item_owner_identity player = { item_owner_type::player, 4000000001, 0 };
+	critical_command command = {};
+	assert(item_transfer_command_build(
+		&command, operation(84),
+		payload(system, player, item_transfer_reason::creation,
+			owner_revision(connection, system), owner_revision(connection, player),
+			ITEM_TRANSFER_ABSENT_REVISION),
+		critical_source_site::operator_repair, critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	// Observe the real transaction's maintenance lock from inside its native
+	// ledger write. Session variables survive the deliberately injected rollback.
+	execute(connection,
+		"CREATE TRIGGER legacy_writer_fence_probe BEFORE INSERT ON item_ownership_ledger "
+		"FOR EACH ROW BEGIN SET @legacy_writer_fence_seen="
+		"(IS_USED_LOCK('duris:economic_sql_currency_writers') <=> CONNECTION_ID()); "
+		"IF @legacy_writer_fence_fault THEN SIGNAL SQLSTATE '45000' "
+		"SET MYSQL_ERRNO=1644,MESSAGE_TEXT='legacy writer rollback probe'; END IF; END");
+	execute(connection, "SET @legacy_writer_fence_seen=0,@legacy_writer_fence_fault=1");
+	const auto before = native_snapshot(connection);
+	const auto failed = critical_command_repository_apply(connection, command);
+	assert(failed.outcome != critical_apply_outcome::applied && failed.error_code == 1644);
+	assert(scalar(connection, "SELECT @legacy_writer_fence_seen") == 1);
+	assert(!(connection->server_status & SERVER_STATUS_IN_TRANS));
+	assert(scalar(connection, "SELECT IS_FREE_LOCK('duris:economic_sql_currency_writers')") ==
+	       1);
+	assert(native_snapshot(connection) == before);
+	execute(connection, "SET @legacy_writer_fence_seen=0,@legacy_writer_fence_fault=0");
+	const auto committed = critical_command_repository_apply(connection, command);
+	assert(committed.outcome == critical_apply_outcome::applied && committed.error_code == 0);
+	assert(scalar(connection, "SELECT @legacy_writer_fence_seen") == 1);
+	assert(!(connection->server_status & SERVER_STATUS_IN_TRANS));
+	assert(scalar(connection, "SELECT IS_FREE_LOCK('duris:economic_sql_currency_writers')") ==
+	       1);
+	const auto committed_state = native_snapshot(connection);
+	const auto replay = critical_command_repository_apply(connection, command);
+	assert(replay.outcome == critical_apply_outcome::already_applied && replay.error_code == 0);
+	assert(native_snapshot(connection) == committed_state);
+	assert(scalar(connection, "SELECT IS_FREE_LOCK('duris:economic_sql_currency_writers')") ==
+	       1);
+	execute(connection, "DROP TRIGGER legacy_writer_fence_probe");
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") == 0);
+	puts("PASS: real dispatch holds the maintenance fence and releases it after rollback, commit and replay");
+}
+
+void check_explicit_accounting_context_rollback(MYSQL *connection)
+{
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(connection, 2));
+	root_uid = item_uid_allocator_next();
+	child_uid = item_uid_allocator_next();
+	const item_owner_identity system = { item_owner_type::system, 0, 0 };
+	const item_owner_identity player = { item_owner_type::player, 4000000001, 0 };
+	const uint64_t from_revision = owner_revision(connection, system);
+	const uint64_t to_revision = owner_revision(connection, player);
+	critical_command command = {};
+	assert(item_transfer_command_build(
+		&command, operation(91),
+		payload(system, player, item_transfer_reason::creation, from_revision, to_revision,
+			ITEM_TRANSFER_ABSENT_REVISION),
+		critical_source_site::operator_repair, critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	execute(connection, "START TRANSACTION");
+	// Supply only the legacy inbox required by the native ledger. Deliberately
+	// do not create an accounting root: its failure must roll back all custody.
+	execute(connection,
+		"INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+		"command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('" +
+			operation_hex(91) + "'),REPEAT(CHAR(1),32),REPEAT(CHAR(2),32)," +
+			std::to_string(static_cast<unsigned int>(command.type)) + ",1,1,0,'')");
+	item_transfer_accounting_context context = {};
+	item_transfer_result result = {};
+	unsigned int result_code = 0;
+	bool mutated = false;
+	assert(!item_transfer_repository_execute(connection, command, &result, &result_code,
+						 &mutated, nullptr, &context));
+	assert(errno == EINVAL && !mutated);
+	context.root_operation_id = operation(92);
+	context.child_index = 65;
+	assert(!item_transfer_repository_execute(connection, command, &result, &result_code,
+						 &mutated, nullptr, &context));
+	assert(errno == EINVAL && !mutated);
+	context.child_index = 1;
+	context.line_index_base = UINT16_MAX;
+	assert(!item_transfer_repository_execute(connection, command, &result, &result_code,
+						 &mutated, nullptr, &context));
+	assert(errno == EINVAL && !mutated);
+	context.line_index_base = 0;
+	const bool applied = item_transfer_repository_execute(
+		connection, command, &result, &result_code, &mutated, nullptr, &context);
+	const unsigned int error = errno;
+	assert(!applied && error == 1452);
+	execute(connection, "ROLLBACK");
+	assert(owner_revision(connection, system) == from_revision);
+	assert(owner_revision(connection, player) == to_revision);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (" +
+				   std::to_string(root_uid) + "," + std::to_string(child_uid) + ")")
+					  .c_str()) == 0);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM player_items WHERE obj_uid IN (" +
+				   std::to_string(root_uid) + "," + std::to_string(child_uid) + ")")
+					  .c_str()) == 0);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+		       operation_hex(91) + "')")
+			      .c_str()) == 0);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		       operation_hex(91) + "')")
+			      .c_str()) == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") == 0);
+	puts("PASS: explicit reference failure rolls back native custody, revisions and inbox");
+}
+
 int main()
 {
 	MYSQL *connection = mysql_init(nullptr);
@@ -443,6 +656,10 @@ int main()
 	const item_owner_identity destroyed = { item_owner_type::destruction, 0, 0 };
 	uint64_t system_revision = owner_revision(connection, system);
 	uint64_t player_one_revision = owner_revision(connection, player_one);
+	check_staged_accounting_refusal(connection,
+					payload(system, player_one, item_transfer_reason::creation,
+						system_revision, player_one_revision,
+						ITEM_TRANSFER_ABSENT_REVISION));
 	auto cyclic_payload = payload(system, player_one, item_transfer_reason::creation,
 				      system_revision, player_one_revision,
 				      ITEM_TRANSFER_ABSENT_REVISION);
@@ -456,6 +673,12 @@ int main()
 		      payload(system, player_one, item_transfer_reason::creation, system_revision,
 			      player_one_revision, ITEM_TRANSFER_ABSENT_REVISION));
 	assert(created.outcome == critical_apply_outcome::applied && created.error_code == 0);
+	// A legacy grant retains its native custody/inbox guarantees without inventing
+	// an accounting operation or activating an epoch. Link the real reference writer.
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_epoch") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_lineage_state") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") == 0);
 	item_transfer_result created_result = {};
 	assert(item_transfer_command_decode_result(created.result_payload.data(),
 						   created.result_size, &created_result));
@@ -755,11 +978,17 @@ int main()
 		      "own.owner_type=1 AND own.state=1 AND payload.id IS NULL") == 0);
 
 	check_restitution_runtime_transfer(connection);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_epoch") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") == 0);
+	puts("PASS: legacy grants, transfers and replay retain custody without implicit accounting");
 
 	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(connection, 2));
 	assert(item_uid_allocator_next() == allocator_start + 9);
 	assert(item_uid_allocator_next() == allocator_start + 10);
+	check_explicit_accounting_context_rollback(connection);
+	check_dispatch_fence_commit_and_rollback(connection);
 	for (uint8_t id = 1; id <= 15; ++id)
 	{
 		const std::string hex = operation_hex(id);

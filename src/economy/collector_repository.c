@@ -897,25 +897,31 @@ bool insert_item_ledger(MYSQL *connection, const critical_command &command, size
 			const item_owner_identity &to_owner, uint64_t from_revision,
 			uint64_t to_revision, item_transfer_reason reason, uint64_t listing)
 {
-	return execute(
-		connection,
-		"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,"
-		"root_item_uid,parent_item_uid,from_owner_type,from_owner_id,from_owner_context_id,"
-		"to_owner_type,to_owner_id,to_owner_context_id,item_revision,from_owner_revision,"
-		"to_owner_revision,reason_type,reason_id,source_site) VALUES(UNHEX('" +
-			operation_hex(command.operation_id) + "')," + std::to_string(event_index) +
-			"," + std::to_string(item.uid) + "," + std::to_string(root) + "," +
-			(parent ? std::to_string(parent) : "NULL") + "," +
-			std::to_string(static_cast<unsigned int>(item.owner.type)) + "," +
-			std::to_string(item.owner.id) + "," +
-			std::to_string(item.owner.context_id) + "," +
-			std::to_string(static_cast<unsigned int>(to_owner.type)) + "," +
-			std::to_string(to_owner.id) + "," + std::to_string(to_owner.context_id) +
-			"," + std::to_string(item.revision + 1) + "," +
-			std::to_string(from_revision) + "," + std::to_string(to_revision) + "," +
-			std::to_string(static_cast<unsigned int>(reason)) + "," +
-			std::to_string(listing) + "," +
-			std::to_string(static_cast<unsigned int>(command.source_site)) + ")");
+	if (!execute(
+		    connection,
+		    "INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,"
+		    "root_item_uid,parent_item_uid,from_owner_type,from_owner_id,from_owner_context_id,"
+		    "to_owner_type,to_owner_id,to_owner_context_id,item_revision,from_owner_revision,"
+		    "to_owner_revision,reason_type,reason_id,source_site) VALUES(UNHEX('" +
+			    operation_hex(command.operation_id) + "')," +
+			    std::to_string(event_index) + "," + std::to_string(item.uid) + "," +
+			    std::to_string(root) + "," +
+			    (parent ? std::to_string(parent) : "NULL") + "," +
+			    std::to_string(static_cast<unsigned int>(item.owner.type)) + "," +
+			    std::to_string(item.owner.id) + "," +
+			    std::to_string(item.owner.context_id) + "," +
+			    std::to_string(static_cast<unsigned int>(to_owner.type)) + "," +
+			    std::to_string(to_owner.id) + "," +
+			    std::to_string(to_owner.context_id) + "," +
+			    std::to_string(item.revision + 1) + "," +
+			    std::to_string(from_revision) + "," + std::to_string(to_revision) +
+			    "," + std::to_string(static_cast<unsigned int>(reason)) + "," +
+			    std::to_string(listing) + "," +
+			    std::to_string(static_cast<unsigned int>(command.source_site)) + ")"))
+		return false;
+
+	// This legacy ledger entry does not establish an accounting root.
+	return true;
 }
 
 uint64_t new_root_after_detach(const std::vector<authority_item> &items, const authority_item &item,

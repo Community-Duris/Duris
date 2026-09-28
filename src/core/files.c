@@ -2038,6 +2038,7 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 		if (sql_in_transaction() || !sql_begin_transaction())
 			return character_delete_result::refused;
 		const bool prepared =
+			sql_player_deletion_guard(GET_PID(ch)) &&
 			sql_soft_delete_character(GET_PID(ch)) && remove_all_artifacts_sql(ch) &&
 			remove_all_locker_access(ch) &&
 			(!GET_ASSOC(ch) || GET_ASSOC(ch)->save_without_member(ch)) &&
