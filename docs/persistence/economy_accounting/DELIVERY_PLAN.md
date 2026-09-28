@@ -1,6 +1,14 @@
 # Economy accounting phased delivery
 
-## Current plan: add-double-entry at 49af585c4 (2026-09-27)
+## Active branch plan (2026-09-28)
+
+Use [Finish accounting, saves, item custody, and death recovery](FINISH_ACCOUNTING_PLAN.md)
+for the execution order on `finish-accounting`, based on `main` at `d686d4c70`.
+It records current read-only checks and prioritizes a stable SQL gameplay build
+before complete accounting qualification. The older commit-specific status
+statements below are historical; verify them against current code before acting.
+
+## Prior plan baseline: add-double-entry at 49af585c4 (2026-09-27)
 
 The [remaining requirements](REMAINING_REQUIREMENTS.md) and five work plans
 below supersede the phase order later in this file. SQL is the first delivery
