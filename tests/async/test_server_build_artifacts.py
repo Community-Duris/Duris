@@ -50,6 +50,7 @@ with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
           patch.object(artifacts, "toolchain_key", return_value="compiler-v1") as compiler):
         original = artifacts.input_key({"CXXFLAGS": "-O1"})
         assert original == artifacts.input_key({"CXXFLAGS": "-O1", "PWD": "/other"})
+        assert original == artifacts.input_key({"CXXFLAGS": "-O1", "HOSTNAME": "another-container"})
         assert original != artifacts.input_key({"CXXFLAGS": "-O2"})
         assert original != artifacts.input_key({"CXXFLAGS": "-O1", "BUILD_PROFILE": "production"})
         source.write_text("modified")
