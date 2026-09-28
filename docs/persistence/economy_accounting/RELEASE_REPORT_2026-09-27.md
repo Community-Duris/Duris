@@ -959,3 +959,10 @@ The release validator still stops at `writer has no executable evidence`.
 the post-offering-ack quest crash still loses the pending reward, and most
 writer routes still lack executable release evidence. The existing stranded
 playtest character has not been modified.
+
+After merging `main` into `finish-accounting`, the default
+`run_quest_reward_ack_crash.py` acceptance case was run against the integrated
+flatfile binary. It failed as expected: `expected 1 reward after ack crash,
+found []`. This is an observed recovery failure, separate from the passing
+normal quest cold-restart journey. Quest completion must retain a durable
+reward obligation through publication acknowledgement before Step 1 can pass.
