@@ -21,11 +21,11 @@
 #include <string.h>
 #include <strings.h>
 #include <glob.h>
-#include <stdint.h>
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "world/zone_story_quest_runtime.h"
 #include <time.h>
+#include <openssl/sha.h>
 
 /* external variables */
 
@@ -189,21 +189,29 @@ bool quest_completion(struct quest_complete_data *qcp, P_char mob, P_char pl)
 	return (TRUE);
 }
 
-static uint64_t legacy_quest_reward_source_id(uint64_t offering_uid, uint32_t reward_index)
+// A consumed UID is a one-use quest instance. Bind each item reward to its
+// template and duplicate ordinal so a rebuilt grant claims the same source.
+static uint64_t quest_item_reward_source_id(uint64_t offering_uid, int vnum,
+					    uint32_t duplicate_ordinal)
 {
-	if (!offering_uid || !reward_index)
+	if (!offering_uid || vnum <= 0)
 		return 0;
-	// The consumed offering names the completion across callback retries. Mix in
-	// the reward ordinal so quests granting several items get separate claims.
-	uint64_t value = offering_uid ^
-			 (static_cast<uint64_t>(reward_index) * 0x9e3779b97f4a7c15ULL) ^
-			 0x6c65676163797175ULL;
-	value ^= value >> 30;
-	value *= 0xbf58476d1ce4e5b9ULL;
-	value ^= value >> 27;
-	value *= 0x94d049bb133111ebULL;
-	value ^= value >> 31;
-	return (value & INT64_MAX) ? value & INT64_MAX : 1;
+	uint8_t source[24] = { 'q', 'u', 'e', 's', 't', '-', 'v', '1' };
+	for (size_t index = 0; index < 8; ++index)
+		source[8 + index] = static_cast<uint8_t>(offering_uid >> (index * 8));
+	for (size_t index = 0; index < 4; ++index)
+	{
+		source[16 + index] =
+			static_cast<uint8_t>(static_cast<uint32_t>(vnum) >> (index * 8));
+		source[20 + index] = static_cast<uint8_t>(duplicate_ordinal >> (index * 8));
+	}
+	uint8_t digest[SHA256_DIGEST_LENGTH] = {};
+	SHA256(source, sizeof(source), digest);
+	uint64_t source_id = 0;
+	for (size_t index = 0; index < 8; ++index)
+		source_id = (source_id << 8) | digest[index];
+	source_id &= INT64_MAX;
+	return source_id ? source_id : 1;
 }
 
 void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl, uint64_t offering_uid)
@@ -213,7 +221,6 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl, uint64_
 	int i;
 	char Gbuf1[MAX_STRING_LENGTH];
 	int temp = 1;
-	uint32_t reward_index = 0;
 
 	wizlog(58, "%s has completed quest from %s [%d].", GET_NAME(pl), mob->player.short_descr,
 	       GET_VNUM(mob));
@@ -227,7 +234,6 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl, uint64_
 		{
 		case QUEST_GOAL_ITEM:
 		{
-			++reward_index;
 			obj = read_object(gp->number, VIRTUAL);
 
 			if (!obj)
@@ -243,20 +249,27 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl, uint64_
 				extract_obj(obj);
 				break;
 			}
-			const uint64_t source_id = legacy_quest_reward_source_id(
-				offering_uid ? offering_uid : obj->obj_uid, reward_index);
 
 			const bool to_player = (IS_CARRYING_N(pl) < CAN_CARRY_N(pl)) &&
 					       ((total_carried_weight(pl) + GET_OBJ_WEIGHT(obj)) <
 						CAN_CARRY_W(pl));
+			uint32_t duplicate_ordinal = 0;
+			for (struct goal_data *prior = qcp->receive; prior != gp;
+			     prior = prior->next)
+				if (prior->goal_type == QUEST_GOAL_ITEM &&
+				    prior->number == gp->number)
+					++duplicate_ordinal;
+			const uint64_t source_id = quest_item_reward_source_id(
+				offering_uid, gp->number, duplicate_ordinal);
+			const economic_source_kind source =
+				offering_uid ? economic_source_kind::quest_completion :
+					       economic_source_kind{};
 			const bool submitted =
 				to_player ?
-					item_creation_grant_submit_to_player(
-						pl, obj, pl, NULL,
-						economic_source_kind::quest_completion, source_id) :
+					item_creation_grant_submit_to_player(pl, obj, pl, NULL,
+									     source, source_id) :
 					item_creation_grant_submit_to_room(
-						pl, obj, pl->in_room,
-						economic_source_kind::quest_completion, NULL, source_id);
+						pl, obj, pl->in_room, source, nullptr, source_id);
 			if (!submitted)
 			{
 				extract_obj(obj, FALSE);
@@ -430,7 +443,7 @@ static P_char quest_mobile_for(const quest_durable_context &context)
 }
 
 static void finish_quest_reward(struct quest_complete_data *completion, P_char mob, P_char pl,
-				uint64_t offering_uid = 0)
+				uint64_t offering_uid)
 {
 	const int room_vnum = (world && pl->in_room >= 0) ? world[pl->in_room].number : 0;
 	std::string tracking_error;
@@ -811,7 +824,7 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 		{
 			if (quest_completion(qcp, ch, pl))
 			{
-				finish_quest_reward(qcp, ch, pl);
+				finish_quest_reward(qcp, ch, pl, 0);
 				return (TRUE);
 			}
 		}
