@@ -6,7 +6,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
 sql = (SRC / "sql_player.c").read_text()
-header = (SRC / "sql_player.h").read_text()
+header = (SRC / "sql/sql_account.h").read_text()
 bank_header = (SRC / "economy/account_bank_balances.h").read_text()
 utility = (SRC / "utility.c").read_text()
 actoth = (SRC / "actoth.c").read_text()
