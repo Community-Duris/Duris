@@ -66,8 +66,9 @@ class Client:
             raise VerificationError('database statement failed')
         return result.stdout
 
-def fingerprint(client):
-    names = ','.join("'" + name + "'" for name in TABLES)
+def fingerprint(client, tables=TABLES, item_reference_index=True):
+    names = ','.join("'" + name + "'" for name in tables)
+    legacy_index = " OR (table_name='item_ownership_ledger' AND index_name='uq_item_ledger_accounting_reference')" if item_reference_index else ""
     # Include unsignedness, nullability, lengths, defaults, generated/update
     # attributes, ordered indexes, foreign keys and CHECK expressions. Row counts,
     # AUTO_INCREMENT counters and timestamps are data and are deliberately absent.
@@ -83,7 +84,7 @@ FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN 
 UNION ALL
 SELECT CONCAT('I',CHAR(9),table_name,CHAR(9),index_name,CHAR(9),non_unique,CHAR(9),seq_in_index,
  CHAR(9),column_name,CHAR(9),COALESCE(sub_part,0),CHAR(9),index_type)
-FROM information_schema.statistics WHERE table_schema=DATABASE() AND (table_name IN ({names}) OR (table_name='item_ownership_ledger' AND index_name='uq_item_ledger_accounting_reference'))
+FROM information_schema.statistics WHERE table_schema=DATABASE() AND (table_name IN ({names}){legacy_index})
 UNION ALL
 SELECT CONCAT('F',CHAR(9),k.table_name,CHAR(9),k.constraint_name,CHAR(9),k.column_name,
  CHAR(9),k.referenced_table_name,CHAR(9),k.referenced_column_name,CHAR(9),k.ordinal_position,
@@ -99,7 +100,7 @@ WHERE t.constraint_schema=DATABASE() AND t.table_name IN ({names}) AND t.constra
 ORDER BY 1;
 """
     rows = client.sql(query)
-    if sum(line.startswith('T\t') for line in rows.splitlines()) != len(TABLES):
+    if sum(line.startswith('T\t') for line in rows.splitlines()) != len(tables):
         raise VerificationError('accounting table inventory is incomplete')
     # MySQL exposes enforcement independently of the check expression.
     version = client.sql('SELECT VERSION();').strip()

@@ -69,6 +69,8 @@ enum class critical_command_type : uint16_t
 	collector,
 	// Appended so existing durable command type numbers stay unchanged.
 	player_death_restitution,
+	// Accounting-only lifecycle command; never admitted to legacy executors.
+	economic_baseline,
 };
 
 enum class critical_source_site : uint16_t

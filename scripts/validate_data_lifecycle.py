@@ -34,6 +34,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0027_saved_item_recovery_handoff.sql",
     ROOT / "migrations" / "immutable" / "0030_telemetry_quarantine.sql",
     ROOT / "migrations" / "immutable" / "0031_economy_accounting.sql",
+    ROOT / "migrations" / "economic_baseline.sql",
 )
 
 ROOT_FIELDS = {
@@ -71,6 +72,10 @@ DESTRUCTIVE_ACTIONS = {
     "archive", "purge", "pseudonymize", "cascade", "restore_tombstone",
 }
 REQUIRED_NON_DATABASE_STORES = {
+    "file:flatfile-authority-journal": ("recovery_state", "FLATFILE_ROOT/domains/.critical-authority-transaction"),
+    "file:economic-baseline-control": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.ebc"),
+    "file:economic-baseline-reservations": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.ebi"),
+    "file:economic-baseline-witness": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.eab"),
     "file:economic-authority-control": ("recovery_state", "FLATFILE_ROOT/economic-evidence/authority.eal"),
     "file:economic-authority-epoch": ("recovery_state", "FLATFILE_ROOT/economic-evidence/epochs.eae"),
     "file:economic-authority-mapping": ("recovery_state", "FLATFILE_ROOT/economic-evidence/mapping-*.eam"),
