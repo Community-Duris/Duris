@@ -2,6 +2,7 @@
 // guild migration for pfile migration tool
 
 #include "migrate_common.h"
+#include "../../src/sql/sql_guild.h"
 
 // count guild files
 static int count_guilds(void)

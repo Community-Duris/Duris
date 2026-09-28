@@ -124,6 +124,17 @@ int fruaack_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 	return FALSE;
 }
 
+int imix_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 25450, 25430, 25410, 25415, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(ch, 100, "&+WDenizens of fire!  Come and destroy %s!", NULL,
+				      helpers, 0, 0);
+	return FALSE;
+}
+
 int charcoal_guard(P_char ch, P_char /*victim*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
@@ -137,3 +148,121 @@ int charcoal_guard(P_char ch, P_char /*victim*/, int cmd, char * /*arg*/)
 }
 
 #undef KOSSUTH_HELPER_LIMIT
+
+int ring_elemental_control(P_obj obj, P_char ch, int cmd, char *arg)
+{
+	P_char victim, next_per;
+	int pos;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+
+	if (cmd == CMD_SET_PERIODIC)
+	{
+		return FALSE;
+	}
+
+	if (cmd != CMD_RUB || !arg || !OBJ_WORN(obj) || obj->R_num != real_object(25080))
+	{
+		return FALSE;
+	}
+
+	if (!*arg)
+	{
+		send_to_char("Rub what?!\n", ch);
+		return TRUE;
+	}
+	half_chop(arg, Gbuf1, Gbuf2);
+
+	if (!strstr(obj->name, Gbuf1))
+	{
+		return FALSE;
+	}
+
+	if (IS_ROOM(ch->in_room, ROOM_NO_MAGIC))
+	{
+		send_to_char("That doesn't seem to do anything!\n", ch);
+		return FALSE;
+	}
+
+	if (*Gbuf2)
+	{
+		victim = get_char_room_vis(ch, Gbuf2);
+		if (!victim)
+		{
+			send_to_char("No one by that name here.\n", ch);
+			return TRUE;
+		}
+		if (!strstr(victim->player.name, "elemental"))
+		{
+			send_to_char("You can't charm non-elementals!\n", ch);
+			return TRUE;
+		}
+	}
+	else
+	{
+		for (victim = world[ch->in_room].people; victim; victim = next_per)
+		{
+			next_per = victim->next_in_room;
+
+			if (strstr(victim->player.name, "elemental") && !GET_MASTER(victim) &&
+			    (victim->player.level <= 55) && IS_NPC(victim))
+			{
+				break;
+			}
+		}
+	}
+
+	if (!victim)
+	{
+		send_to_char("There aren't any elementals to charm.\n", ch);
+		return TRUE;
+	}
+	if (!GET_MASTER(victim) && !GET_MASTER(ch))
+	{
+		if (circle_follow(victim, ch))
+		{
+			send_to_char("Sorry, following in circles can not be allowed.\n", ch);
+			return TRUE;
+		}
+		act("$n rubs $p.", TRUE, ch, obj, 0, TO_ROOM);
+		act("You rub $p.", TRUE, ch, obj, 0, TO_CHAR);
+
+		if (obj->value[2] > 0)
+		{
+			if (!--obj->value[2])
+			{
+				act("$p in $n's hands shatters and the pieces disappear in smoke.",
+				    TRUE, ch, obj, 0, TO_ROOM);
+				act("$p in your hands shatters and the pieces disappear in smoke.",
+				    TRUE, ch, obj, 0, TO_CHAR);
+
+				if (OBJ_WORN(obj))
+				{
+					for (pos = 0; pos < MAX_WEAR; pos++)
+					{
+						if (obj->loc.wearing->equipment[pos] == obj)
+						{
+							unequip_char(obj->loc.wearing, pos);
+							break;
+						}
+					}
+				}
+				extract_obj(obj, TRUE); // Not an arti, but 'in game.'
+				obj = NULL;
+			}
+		}
+		if (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_BREAK_CHARM))
+		{
+			send_to_char("This creature's will is too strong to be charmed.\n", ch);
+			return TRUE;
+		}
+		if (victim->following)
+		{
+			stop_follower(victim);
+		}
+
+		add_follower(victim, ch);
+		setup_pet(victim, ch, 24 * 16, 0);
+		act("Isn't $n just such a nice fellow?", FALSE, ch, 0, victim, TO_VICT);
+	}
+	return TRUE;
+}

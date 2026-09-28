@@ -71,7 +71,13 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/player_death_restitution_repository.c \
-    src/persistence/critical_command_repository.c \
+    src/persistence/economic_accounting_repository.c \
+    src/persistence/economic_sql_bank_transaction.c \
+    src/economy/economic_currency_adapter.c \
+    src/economy/economic_accounting_types.c \
+    src/economy/economic_accounting_plan.c \
+    src/economy/economic_accounting_intent.c \
+    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     "${MYSQL_LIBS[@]}" -lcrypto -o bin/tests/player_death_restitution_native_mysql_harness
 docker cp bin/tests/player_death_restitution_native_mysql_harness "$NAME:/tmp/player_death_restitution_native_mysql_harness"
 docker exec "$NAME" env DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWD="$PASSWORD" DB_NAME="$DB_NAME" \

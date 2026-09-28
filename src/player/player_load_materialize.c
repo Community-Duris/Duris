@@ -4,6 +4,7 @@
 #include "item/item_ownership_runtime.h"
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
+#include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "world/db.h"
@@ -373,6 +374,13 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 {
 	if (!ch || !ch->only.pc)
 		return false;
+	if (!player_save_pipeline_loads_allowed())
+	{
+		logit(LOG_STATUS,
+		      "player_load_materialize: refused pid=%d reason=save_journal_replay_not_ready",
+		      result.pid);
+		return false;
+	}
 	if (!valid_snapshot(result))
 	{
 		// The repository runs on a worker thread and cannot log, so this is the first

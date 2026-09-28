@@ -8,6 +8,7 @@
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
+#include "combat/range.h"
 #include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -737,4 +738,348 @@ int tharn_old_man(P_char ch, P_char pl, int cmd, char * /*arg*/)
 		}
 	}
 	return (FALSE);
+}
+
+int die_roller(P_obj obj, P_char ch, int cmd, char *arg)
+{
+	int i, pos = -1, numb;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+
+	/*
+	   check for periodic event calls
+	 */
+	if (cmd == CMD_SET_PERIODIC)
+		return FALSE;
+
+	if (!obj || !ch || cmd == CMD_PERIODIC || !IS_AWAKE(ch))
+		return (FALSE);
+
+	if (!OBJ_WORN(obj))
+		return (FALSE);
+
+	if (obj->loc.wearing != ch)
+	{
+		logit(LOG_DEBUG, "Buggy equip in die_roller(): obj->loc.wearing != ch.");
+		return (FALSE);
+	}
+	/*
+	   item must be held to work -- can modify
+	 */
+	for (i = 0; i < MAX_WEAR; i++)
+	{
+		if (obj->loc.wearing->equipment[i] == obj)
+		{
+			pos = i;
+			break;
+		}
+	}
+
+	/*
+	   temporary kludge until we get secondary-hold as we should
+	 */
+	if ((pos != HOLD) && (pos != WIELD))
+		return (FALSE);
+
+	if (cmd == CMD_ROLL)
+	{ /*
+		 roll
+	   */
+		argument_interpreter(arg, Gbuf1, Gbuf2);
+		/*
+		   item must be held to work
+		 */
+		if (isname(Gbuf1, obj->loc.wearing->equipment[pos]->name))
+		{
+			/*
+			   roll the damn die
+			 */
+			if (obj->value[0] <= 0)
+			{
+				send_to_char("error in die..  tell somebody.\n", ch);
+				return TRUE;
+			}
+
+			numb = number(1, obj->value[0]);
+
+			obj_to_room(unequip_char(ch, pos), ch->in_room);
+
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "Tossing the $q&n onto the ground, you roll a %u.", numb);
+			snprintf(Gbuf2, MAX_STRING_LENGTH,
+				 "Tossing $p&n onto the ground, $n rolls a %u.", numb);
+
+			act(Gbuf1, FALSE, ch, obj, 0, TO_CHAR);
+			act(Gbuf2, FALSE, ch, obj, 0, TO_ROOM);
+
+			return (TRUE);
+		}
+	}
+
+	return (FALSE);
+}
+
+/*
+ * Tharnadia patrols justice  - Kvark
+ *
+ * Basicly scan and track, and if enaged shout for assistence.
+ *
+ *
+ */
+
+/*
+ *Patrol leader Mob Proc
+ */
+
+/*
+
+*/
+
+int tower_data[5][6] = {
+	{ 150115, 150122, 150129, 150130, 150131, 150132 }, // Human
+	{ 150118, 150124, 150133, 150134, 0, 0 }, // Gnome
+	{ 150119, 150126, 150139, 150140, 0, 0 }, // dwarf
+	{ 150116, 150123, 150135, 150136, 0, 0 }, // barb
+	{ 150117, 150125, 150137, 150138, 0, 0 } // halfling
+};
+
+int outpost_captain(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	int direction;
+	bool CombatInRoom;
+	int distance = 10;
+	int helpers_1[6]; // 4 Elites lvl 50
+	int helpers_2[6]; // 4 elites lvl 50 + captain 55
+	int helpers_3[6];
+	int ii = 0;
+	P_desc d;
+
+	// return 0;
+	int how_many;
+	P_char tmp_ch;
+	P_char t_ch;
+	struct follow_type *k, *next_dude;
+	char buf[256];
+
+	/*
+	   check for periodic event calls
+	 */
+	if (cmd == CMD_SET_PERIODIC)
+		return FALSE;
+
+	if (cmd)
+		return FALSE;
+
+	if (GET_VITALITY(ch) < 10) /* ok dont get too tired */
+		return TRUE;
+
+	if (time_info.hour == 5)
+		distance = (int)(distance / 3) + number(1, 3);
+	else if (time_info.hour == 6)
+		distance = (int)(distance / 3) + number(1, 2);
+	else if (time_info.hour == 15)
+		distance = (int)(distance / 3) + number(1, 3);
+	else if (time_info.hour == 16)
+		distance = (int)(distance / 3) + number(1, 3);
+	else if ((time_info.hour > 17) || (time_info.hour < 7))
+	{
+		distance = (int)(distance / 3) + number(0, 1);
+		if (!number(0, 60) && !(GET_STAT(ch) == STAT_SLEEPING))
+		{
+			act("&+WThe sounds of violent snoring filter through the area.", FALSE, ch,
+			    0, 0, TO_ROOM);
+			do_sit(ch, 0, 0);
+			do_sleep(ch, 0, 0);
+			return FALSE;
+		}
+		if (!number(0, 10) && GET_STAT(ch) == STAT_SLEEPING)
+		{
+			act("&+WThe sounds of violent snoring filter through the area.", FALSE, ch,
+			    0, 0, TO_ROOM);
+			return FALSE;
+		}
+		if (GET_STAT(ch) == STAT_SLEEPING)
+			return FALSE;
+	}
+	else
+	{
+		distance = distance + number(0, 2);
+		if (GET_STAT(ch) == STAT_SLEEPING)
+		{
+			do_wake(ch, 0, 0);
+			do_stand(ch, 0, 0);
+			do_alert(ch, 0, 0);
+			if (!number(0, 3))
+				act("&+WThe sounds of snoring slowly dissipates.", FALSE, ch, 0, 0,
+				    TO_ROOM);
+			return FALSE;
+		}
+	}
+
+	/* ok check to make sure followers are not out of move */
+
+	if (ch->followers)
+	{
+		for (k = ch->followers; k; k = next_dude)
+		{
+			next_dude = k->next;
+			if (IS_NPC(k->follower) && (GET_VITALITY(k->follower) < 10))
+				return TRUE;
+		}
+	}
+
+	CombatInRoom = FALSE;
+
+	if (!ALONE(ch))
+	{
+		if (IS_FIGHTING(ch))
+			CombatInRoom = TRUE;
+		else
+		{
+			LOOP_THRU_PEOPLE(tmp_ch, ch)
+				if (IS_FIGHTING(tmp_ch))
+				{
+					CombatInRoom = TRUE;
+					break;
+				}
+		}
+	}
+	how_many = 0;
+	/* Fix this to check how many in room */
+	if (IS_FIGHTING(ch) && number(1, 3) == 1)
+	{
+		if ((IS_PC(GET_OPPONENT(ch)) && IS_RACEWAR_EVIL(GET_OPPONENT(ch))) ||
+		    (IS_RACEWAR_UNDEAD(GET_OPPONENT(ch)) && IS_PC(GET_OPPONENT(ch))))
+		{
+			LOOP_THRU_PEOPLE(t_ch, ch)
+			{
+				if ((IS_PC(t_ch) && IS_RACEWAR_EVIL(t_ch)) ||
+				    (IS_PC(t_ch) && IS_RACEWAR_UNDEAD(t_ch)))
+				{
+					if (!IS_TRUSTED(ch))
+						how_many++;
+				}
+			}
+			ii = 0;
+			if (GET_RACE(ch) == RACE_HUMAN)
+				ii = 0;
+			if (GET_RACE(ch) == RACE_GNOME)
+				ii = 1;
+			if (GET_RACE(ch) == RACE_MOUNTAIN)
+				ii = 2;
+			if (GET_RACE(ch) == RACE_BARBARIAN)
+				ii = 3;
+			if (GET_RACE(ch) == RACE_HALFLING)
+				ii = 4;
+			helpers_1[0] = tower_data[ii][number(0, 5)];
+
+			helpers_2[0] = tower_data[ii][number(0, 5)];
+			helpers_2[1] = tower_data[ii][number(0, 5)];
+
+			helpers_3[0] = tower_data[ii][number(0, 5)];
+			helpers_3[1] = tower_data[ii][number(0, 5)];
+			helpers_3[2] = tower_data[ii][number(0, 5)];
+
+			if (how_many <= 4 && how_many > 1 && !number(0, 8))
+				return shout_and_hunt(
+					ch, 100,
+					"&+WGuardians of good come aid me in vanquishing the evil invaders!",
+					NULL, helpers_1, 0, 0);
+			if (how_many > 4 && how_many <= 6 && !number(0, 5))
+				return shout_and_hunt(
+					ch, 100,
+					"&+WGuardians of good come help me destroy the evil invasion!",
+					NULL, helpers_2, 0, 0);
+			if (how_many > 6 && !number(0, 1))
+				return shout_and_hunt(
+					ch, 100,
+					"&+Wguardians of good come help me defend our homeland!",
+					NULL, helpers_3, 0, 0);
+		}
+		else if (IS_PC(GET_OPPONENT(ch)) && IS_RACEWAR_GOOD(GET_OPPONENT(ch)))
+		{
+			strcpy(buf, "You moron I am here to protect you!");
+			do_say(ch, buf, CMD_SAY);
+		}
+	}
+
+	if (!CombatInRoom && (ch->in_room != NOWHERE) && !IS_ROOM(ch->in_room, ROOM_SILENT) &&
+	    !IS_SET(zone_table[world[ch->in_room].zone].flags, ZONE_SILENT) &&
+	    (MIN_POS(ch, POS_STANDING + STAT_NORMAL)))
+	{
+		/* ok we check if there is any evils near 50 rooms, if
+		 * soo, piss it off!
+		 */
+
+		// TRACK IF EVILS
+
+		d = descriptor_list;
+		ii = 0;
+		if (number(0, 1))
+			while (d)
+			{
+				if (!d->connected &&
+				    (world[ch->in_room].zone ==
+				     world[d->character->in_room].zone) &&
+				    !(IS_ROOM(ch->in_room, ROOM_GUILD)))
+				{
+					/*found char in same zone */
+					if ((IS_PC(d->character) && IS_RACEWAR_EVIL(d->character) &&
+					     !IS_TRUSTED(d->character)) ||
+					    (IS_PC(d->character) &&
+					     IS_RACEWAR_UNDEAD(d->character) &&
+					     !IS_TRUSTED(d->character)))
+					{
+						if (how_close(ch->in_room, d->character->in_room,
+							      distance) > 0)
+							if (number(0, 11) >
+							    BOUNDED(0,
+								    how_close(ch->in_room,
+									      d->character->in_room,
+									      distance),
+								    10))
+							{ // the longer the less offen
+								ii++;
+								if (number(0, 10) < ii)
+								{ // the more in group the easier
+									remember(ch, d->character);
+									wizlog(56,
+									       "Mob(%s), starts to hunt(%s) on tharn",
+									       ch->player
+										       .short_descr,
+									       GET_NAME(
+										       d->character));
+									if (!number(0, 1))
+										act("&+WSomeone has discovered your presence and starts to track you!",
+										    FALSE,
+										    d->character, 0,
+										    0, TO_CHAR);
+								}
+							}
+					}
+				}
+				d = d->next;
+			}
+
+		// END TRACK IF EVILS!
+		/* ok we check if there is combat near */
+
+		if ((direction = range_scan(ch, NULL, 2, SCAN_COMBAT)) >= 0)
+		{
+			if (EXIT(ch, direction))
+			{
+				if ((EXIT(ch, direction))->to_room &&
+				    world[EXIT(ch, direction)->to_room].justice_area ==
+					    world[ch->in_room].justice_area)
+				{
+					ch->only.npc->last_direction = direction;
+					do_move(ch, 0, exitnumb_to_cmd(direction));
+					return TRUE;
+				}
+			}
+		}
+	}
+
+	/* seem we can try to move, since nothing else to do */
+
+	return FALSE;
 }

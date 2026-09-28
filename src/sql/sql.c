@@ -26,6 +26,7 @@
 #include "sql/sql.h"
 #include "sql/sql_telemetry_connection.h"
 #include "sql/sql_exclusion_guard.h"
+#include "sql/sql_economic_runtime.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
@@ -61,7 +62,7 @@
 #include "redis/redis_maintenance.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"
-#include "sql/sql_player.h"
+#include "sql/sql_transaction.h"
 #include "combat/frag_cap_config.h"
 #include "world/timers.h"
 #include "persistence/persistence_queue.h"
@@ -1038,6 +1039,23 @@ static bool sql_verify_session_contract(MYSQL *conn)
 	if (!valid)
 		return false;
 
+	const char *server = mysql_get_server_info(conn);
+	if (!server)
+		return false;
+	if (strstr(server, "MariaDB"))
+	{
+		const char *checks = "SELECT @@SESSION.check_constraint_checks";
+		if (mysql_real_query(conn, checks, strlen(checks)))
+			return false;
+		result = mysql_store_result(conn);
+		row = result ? mysql_fetch_row(result) : NULL;
+		valid = row && row[0] && !strcmp(row[0], "1");
+		if (result)
+			mysql_free_result(result);
+		if (!valid)
+			return false;
+	}
+
 	const char *isolation_queries[] = { "SELECT @@transaction_isolation",
 					    "SELECT @@tx_isolation" };
 	for (const char *query : isolation_queries)
@@ -1067,6 +1085,10 @@ static bool sql_apply_session_contract(MYSQL *conn)
 	for (const char *statement : statements)
 		if (!sql_connection_execute(conn, statement))
 			return false;
+	const char *server = mysql_get_server_info(conn);
+	if (!server || (strstr(server, "MariaDB") &&
+			!sql_connection_execute(conn, "SET SESSION check_constraint_checks=1")))
+		return false;
 	return sql_verify_session_contract(conn);
 }
 
@@ -1481,6 +1503,16 @@ int initialize_mysql()
 		return -1;
 	}
 
+	if (!sql_economic_runtime_start())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: economic lifecycle authority is unavailable or not ready; aborting boot");
+		duris_sql_exclusion_guard_release();
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
+
 	logit(LOG_STATUS, "Connection established.");
 
 	sql_resetConnectTimes();
@@ -1489,6 +1521,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: required database connection/schema check failed, aborting boot");
+		sql_economic_runtime_shutdown();
 		if (DB)
 		{
 			duris_sql_exclusion_guard_release();
@@ -1501,6 +1534,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: season reset state is missing, invalid, or not active; recovery is required");
+		sql_economic_runtime_shutdown();
 		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
@@ -1510,6 +1544,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: COMPAT-E007 lookup dataset publication failed or commit outcome is ambiguous");
+		sql_economic_runtime_shutdown();
 		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
@@ -1519,6 +1554,7 @@ int initialize_mysql()
 	{
 		logit(LOG_STATUS,
 		      "FATAL: could not reserve a collision-free item UID range at boot");
+		sql_economic_runtime_shutdown();
 		duris_sql_exclusion_guard_release();
 		mysql_close(DB);
 		DB = NULL;
@@ -1545,6 +1581,7 @@ void shutdown_mysql(void)
 		mysql_close(persistenceDB);
 		persistenceDB = NULL;
 	}
+	sql_economic_runtime_shutdown();
 	if (DB)
 	{
 		duris_sql_exclusion_guard_release();
@@ -2019,17 +2056,20 @@ static bool sql_verify_boot_database(void)
 		"AND column_name IN ('owner_type','owner_id','owner_context_id','revision','updated_at')) "
 		"OR (table_name='item_current_owner' AND column_name IN "
 		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
-		"'owner_context_id','item_revision','vnum','state','coin_payload','updated_at')) OR "
+		"'owner_context_id','item_revision','vnum','state','coin_payload',"
+		"'equipment_slot','updated_at')) OR "
 		"(table_name='item_ownership_baseline' AND column_name IN "
 		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
 		"'owner_context_id','opening_item_revision','vnum','source_table','source_row_id',"
-		"'captured_at')) OR (table_name='item_ownership_quarantine' AND column_name IN "
+		"'captured_at','equipment_slot')) OR (table_name='item_ownership_quarantine' "
+		"AND column_name IN "
 		"('quarantine_id','item_uid','source_table','source_row_id','conflict_code','evidence',"
 		"'detected_at','repaired_at')) OR (table_name='item_ownership_ledger' AND "
 		"column_name IN ('operation_id','event_index','item_uid','root_item_uid',"
 		"'parent_item_uid','from_owner_type','from_owner_id','from_owner_context_id',"
 		"'to_owner_type','to_owner_id','to_owner_context_id','item_revision',"
 		"'from_owner_revision','to_owner_revision','reason_type','reason_id','source_site',"
+		"'from_equipment_slot','to_equipment_slot',"
 		"'created_at')))";
 	result = db_query("%s", item_ownership_schema_probe);
 	if (!result)
@@ -2039,12 +2079,12 @@ static bool sql_verify_boot_database(void)
 	}
 	row = mysql_fetch_row(result);
 	lengths = row ? mysql_fetch_lengths(result) : NULL;
-	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 56;
+	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 60;
 	mysql_free_result(result);
 	if (!item_ownership_columns_ok)
 	{
 		logit(LOG_STATUS,
-		      "FATAL: item ownership schema is incomplete at boot (expected 56 columns).");
+		      "FATAL: item ownership schema is incomplete at boot (expected 60 columns).");
 		return false;
 	}
 	const char *item_ownership_index_probe =
@@ -2119,6 +2159,31 @@ static bool sql_verify_boot_database(void)
 
 static bool sql_verify_metadata_fingerprint(void)
 {
+	/* The sealed F rows name a referenced table but not its schema. Reject any
+	 * external redirect before hashing, including a website FK to a runtime
+	 * table. All accepted runtime FKs target this database. */
+	std::string foreign_schema_query =
+		"SELECT COUNT(*) FROM information_schema.key_column_usage k WHERE "
+		"k.constraint_schema=DATABASE() AND k.referenced_table_name IS NOT NULL "
+		"AND (k.table_name IN (";
+	foreign_schema_query += RUNTIME_TABLE_SQL_LIST;
+	foreign_schema_query += ") OR k.referenced_table_name IN (";
+	foreign_schema_query += RUNTIME_TABLE_SQL_LIST;
+	foreign_schema_query += ")) AND (k.referenced_table_schema IS NULL OR "
+				"BINARY k.referenced_table_schema <> BINARY DATABASE())";
+	if (mysql_real_query(DB, foreign_schema_query.c_str(), foreign_schema_query.size()))
+		return false;
+	MYSQL_RES *foreign_schema_result = mysql_store_result(DB);
+	if (!foreign_schema_result)
+		return false;
+	MYSQL_ROW foreign_schema_row = mysql_fetch_row(foreign_schema_result);
+	bool same_schema = foreign_schema_row && foreign_schema_row[0] &&
+			   !strcmp(foreign_schema_row[0], "0") &&
+			   !mysql_fetch_row(foreign_schema_result);
+	mysql_free_result(foreign_schema_result);
+	if (!same_schema)
+		return false;
+
 	std::string query =
 		"SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) "
 		"FROM information_schema.tables WHERE table_schema=DATABASE() AND "
@@ -2157,7 +2222,24 @@ static bool sql_verify_metadata_fingerprint(void)
 	query += RUNTIME_TABLE_SQL_LIST;
 	query += ") OR k.referenced_table_name IN (";
 	query += RUNTIME_TABLE_SQL_LIST;
-	query += ")) AND k.referenced_table_name IS NOT NULL ORDER BY 1";
+	query += ")) AND k.referenced_table_name IS NOT NULL AND NOT ("
+		 "BINARY k.table_name='user_profile_stats' AND "
+		 "BINARY k.constraint_name='user_profile_stats_ibfk_1' AND "
+		 "BINARY k.column_name='account_name' AND "
+		 "BINARY k.referenced_table_schema=BINARY DATABASE() AND "
+		 "BINARY k.referenced_table_name='accounts' AND "
+		 "BINARY k.referenced_column_name='account_name' AND "
+		 "k.ordinal_position=1 AND r.update_rule IN ('NO ACTION','RESTRICT') "
+		 "AND r.delete_rule='CASCADE')";
+	query +=
+		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation')";
+	const char *server = mysql_get_server_info(DB);
+	if (!server)
+		return false;
+	if (!strstr(server, "MariaDB"))
+		query +=
+			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation')";
+	query += " ORDER BY 1";
 	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;
 	MYSQL_RES *result = mysql_store_result(DB);
@@ -2189,7 +2271,7 @@ static bool sql_verify_metadata_fingerprint(void)
 	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
 		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
 	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
-	const char *server = mysql_get_server_info(DB);
+
 	const char *expected = server && strstr(server, "MariaDB") ?
 				       RUNTIME_MARIADB10_11_METADATA_FINGERPRINT :
 				       RUNTIME_MYSQL8_METADATA_FINGERPRINT;
@@ -3411,6 +3493,19 @@ bool sql_trace_exec_at(struct persistence_query_site source_site, const char *la
 	};
 	if (drain_before)
 		sql_clear_results_on(DB);
+	if (!duris_sql_exclusion_guard_allows(DB))
+	{
+		// A lost owner fences reads/writes/COMMIT, but must not strand an
+		// already-open transaction. Only a complete literal rollback may
+		// reach the old session; stacked SQL and savepoint rollback refuse.
+		const bool rollback_only = (len == 8 || (len == 9 && sql[8] == ';')) &&
+					   !strncasecmp(sql, "ROLLBACK", 8);
+		if (!rollback_only)
+		{
+			sql_trace_panic();
+			return false;
+		}
+	}
 	uint64_t operation_id = 0;
 	if (!sql_observed_execute_at(DB, semantic_site, sql_current_context(), sql, len,
 				     &operation_id))

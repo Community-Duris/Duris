@@ -12,10 +12,13 @@
 #include "classes/disguise.h"
 #include "world/graph.h"
 #include "combat/justice.h"
+#include "combat/attack_continuation.h"
 #include "world/map.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "item/item_movement_transaction.h"
+#include "magic/spell_item_lifecycle.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 
@@ -179,8 +182,26 @@ void spell_frost_beam(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 	}
 }
 
-void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
-			P_char victim, P_obj /*tar_obj*/)
+static size_t faerie_sight_dust_count(int level, P_char ch, P_char victim)
+{
+	const int carried = vnum_in_inv(ch, VOBJ_FORAGE_FAERIE_DUST);
+	if (carried <= 0)
+		return 0;
+	if (!affected_by_spell(victim, SPELL_FAERIE_SIGHT))
+		return 1;
+	size_t needed = 0;
+	for (struct affected_type *affect = victim->affected; affect; affect = affect->next)
+		if (affect->type == SPELL_FAERIE_SIGHT && affect->duration < level / 2 &&
+		    IS_SET(affect->bitvector2, AFF2_DETECT_MAGIC) &&
+		    needed < static_cast<size_t>(carried))
+			++needed;
+	if (!IS_AFFECTED2(victim, AFF2_DETECT_MAGIC) && needed < static_cast<size_t>(carried))
+		++needed;
+	return needed;
+}
+
+static void apply_faerie_sight(int level, P_char ch, P_char victim, size_t paid_dust,
+			       bool allow_live_consume)
 {
 	struct affected_type af;
 	P_obj t_obj;
@@ -192,7 +213,6 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		logit(LOG_EXIT, "spell_faerie_sight: bogus params.");
 		return;
 	}
-
 	if (affected_by_spell(victim, SPELL_FAERIE_SIGHT))
 	{
 		refreshed = FALSE;
@@ -202,12 +222,17 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 			if ((pAff->type == SPELL_FAERIE_SIGHT) && (pAff->duration < (level / 2)))
 			{
 				// Takes a faerie dust to refresh the detect magic/good/evil.
-				if (!IS_SET(pAff->bitvector2, AFF2_DETECT_MAGIC) ||
-				    (vnum_in_inv(ch, VOBJ_FORAGE_FAERIE_DUST) > 0))
+				if (!IS_SET(pAff->bitvector2, AFF2_DETECT_MAGIC) || paid_dust ||
+				    (allow_live_consume &&
+				     vnum_in_inv(ch, VOBJ_FORAGE_FAERIE_DUST) > 0))
 				{
 					if (IS_SET(pAff->bitvector2, AFF2_DETECT_MAGIC))
 					{
-						vnum_from_inv(ch, VOBJ_FORAGE_FAERIE_DUST, 1);
+						if (paid_dust)
+							--paid_dust;
+						else
+							vnum_from_inv(ch, VOBJ_FORAGE_FAERIE_DUST,
+								      1);
 					}
 					pAff->duration = level / 2;
 					refreshed = TRUE;
@@ -216,9 +241,13 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		}
 
 		if (!IS_AFFECTED2(victim, AFF2_DETECT_MAGIC) &&
-		    (vnum_in_inv(ch, VOBJ_FORAGE_FAERIE_DUST) > 0))
+		    (paid_dust ||
+		     (allow_live_consume && vnum_in_inv(ch, VOBJ_FORAGE_FAERIE_DUST) > 0)))
 		{
-			vnum_from_inv(ch, VOBJ_FORAGE_FAERIE_DUST, 1);
+			if (paid_dust)
+				--paid_dust;
+			else
+				vnum_from_inv(ch, VOBJ_FORAGE_FAERIE_DUST, 1);
 			memset(&af, 0, sizeof(af));
 			af.type = SPELL_FAERIE_SIGHT;
 			af.duration = level / 2;
@@ -272,18 +301,98 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	       extract_obj(used_obj[0]);
 	  }
 	*/
-	for (t_obj = ch->carrying; t_obj; t_obj = t_obj->next_content)
-	{
-		if (OBJ_VNUM(t_obj) == VOBJ_FORAGE_FAERIE_DUST)
+	if (paid_dust)
+		af.bitvector2 = AFF2_DETECT_MAGIC | AFF2_DETECT_GOOD | AFF2_DETECT_EVIL;
+	else if (allow_live_consume)
+		for (t_obj = ch->carrying; t_obj; t_obj = t_obj->next_content)
 		{
-			af.bitvector2 = AFF2_DETECT_MAGIC | AFF2_DETECT_GOOD | AFF2_DETECT_EVIL;
-			extract_obj(t_obj);
-			break;
+			if (OBJ_VNUM(t_obj) == VOBJ_FORAGE_FAERIE_DUST)
+			{
+				af.bitvector2 = AFF2_DETECT_MAGIC | AFF2_DETECT_GOOD |
+						AFF2_DETECT_EVIL;
+				extract_obj(t_obj);
+				break;
+			}
 		}
-	}
 
 	affect_to_char(victim, &af);
 	send_to_char("&+mYour eyes begin to twinkle.&n\r\n", ch);
+}
+
+struct faerie_sight_component_context
+{
+	uint64_t victim_runtime_id;
+	int32_t actor_pid;
+	int32_t level;
+	uint8_t dust_count;
+	bool self_target;
+};
+
+static_assert(sizeof(faerie_sight_component_context) <= 48);
+
+static void faerie_sight_component_completed(P_char actor, bool committed,
+					     const item_transfer_result &,
+					     unsigned int /*error_code*/, const uint8_t *encoded,
+					     size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(faerie_sight_component_context))
+		return;
+	faerie_sight_component_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!IS_PC(actor) || GET_PID(actor) != context.actor_pid || !context.dust_count ||
+	    context.dust_count > 8)
+		return;
+	if (!committed)
+	{
+		send_to_char("Your faerie dust was not consumed; the sight fades.\r\n", actor);
+		return;
+	}
+	P_char victim = context.self_target ? actor : NULL;
+	if (!victim)
+		for (P_char candidate = character_list; candidate; candidate = candidate->next)
+			if (candidate->runtime_id == context.victim_runtime_id)
+			{
+				victim = candidate;
+				break;
+			}
+	if (!victim || !IS_ALIVE(actor) || !IS_ALIVE(victim) || actor->in_room != victim->in_room)
+	{
+		send_to_char("The faerie dust is spent, but your target is no longer here.\r\n",
+			     actor);
+		return;
+	}
+	apply_faerie_sight(context.level, actor, victim, context.dust_count, false);
+}
+
+void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*tar_obj*/)
+{
+	if (!ch || !victim)
+	{
+		logit(LOG_EXIT, "spell_faerie_sight: bogus params.");
+		return;
+	}
+	const bool active = economic_gameplay_authority::active();
+	const size_t dust_count = faerie_sight_dust_count(level, ch, victim);
+	if (active && dust_count)
+	{
+		if (!IS_PC(ch) || GET_PID(ch) <= 0 || dust_count > 8 ||
+		    (victim != ch && !victim->runtime_id))
+		{
+			send_to_char("Faerie dust cannot be consumed right now.\r\n", ch);
+			return;
+		}
+		const faerie_sight_component_context context = { victim->runtime_id, GET_PID(ch),
+								 level,
+								 static_cast<uint8_t>(dust_count),
+								 victim == ch };
+		if (!spell_consume_components(ch, VOBJ_FORAGE_FAERIE_DUST, dust_count,
+					      SPELL_FAERIE_SIGHT, faerie_sight_component_completed,
+					      &context, sizeof(context), true))
+			send_to_char("Your faerie dust cannot be recorded right now.\r\n", ch);
+		return;
+	}
+	apply_faerie_sight(level, ch, victim, 0, !active);
 }
 
 void spell_cold_snap(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
@@ -381,6 +490,10 @@ void spell_mass_fly(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /
 
 void wind_blade_attack_routine(P_char ch, P_char victim)
 {
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch) || !victim || !char_in_list(victim) ||
+	    !IS_ALIVE(victim))
+		return;
+	const uint64_t actor_runtime_id = ch->runtime_id;
 	int attacks = BOUNDED(2, number(1, GET_LEVEL(ch) / 10), 4);
 
 	P_obj obj = ch->equipment[PRIMARY_WEAPON];
@@ -412,14 +525,22 @@ void wind_blade_attack_routine(P_char ch, P_char victim)
 
 	for (; attacks; attacks--)
 	{
-		if (IS_ALIVE(victim) && IS_ALIVE(ch))
-		{
-			hit(ch, victim, obj);
-		}
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, obj, PRIMARY_WEAPON);
+		hit(ch, victim, obj);
+		const attack_continuation_result after_hit =
+			check_attack_continuation(continuation);
+		if (!after_hit.can_continue())
+			break;
+
+		ch = after_hit.actor;
+		victim = after_hit.target;
+		obj = after_hit.weapon;
 	}
 
-	if (IS_ALIVE(ch) && affected_by_spell(ch, SPELL_WIND_BLADE))
-		affect_from_char(ch, SPELL_WIND_BLADE);
+	P_char live_actor = find_character_by_runtime_id(actor_runtime_id);
+	if (live_actor && IS_ALIVE(live_actor) && affected_by_spell(live_actor, SPELL_WIND_BLADE))
+		affect_from_char(live_actor, SPELL_WIND_BLADE);
 }
 
 bool has_wind_blade_wielded(P_char ch)
@@ -536,6 +657,12 @@ static void wind_blade_grant_completed(P_char actor, bool committed,
 
 void grant_wind_blade(P_char ch)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char("The winds cannot create a blade while item accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	P_obj blade;
 
 	int blade_vnum = WIND_BLADE;
@@ -590,7 +717,8 @@ void grant_wind_blade(P_char ch)
 
 	const wind_blade_grant_context context = { blade->obj_uid };
 	if (!item_creation_grant_submit_to_player_with_completion(
-		    ch, blade, ch, wind_blade_grant_completed, &context, sizeof(context)))
+		    ch, blade, ch, wind_blade_grant_completed, &context, sizeof(context), NULL,
+		    economic_source_kind::world_generation))
 	{
 		extract_obj(blade, FALSE);
 		send_to_char("The winds could not create the blade right now. Please try "

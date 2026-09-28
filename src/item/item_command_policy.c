@@ -51,16 +51,29 @@ bool item_command_resolve_put_destination(P_char actor, P_obj container,
 	}
 
 	item_ownership_runtime_entry runtime = {};
-	if (!item_ownership_runtime_lookup(container->obj_uid, &runtime) ||
-	    runtime.state != item_custody_state::active ||
-	    !item_owner_identity_valid(runtime.owner) || runtime.owner.type == item_owner_type::pet)
-		return false;
+	if (item_ownership_runtime_lookup(container->obj_uid, &runtime) &&
+	    runtime.state == item_custody_state::active &&
+	    item_owner_identity_valid(runtime.owner) && runtime.owner.type != item_owner_type::pet)
+	{
+		destination->target_container = container;
+		destination->owner = runtime.owner;
+		destination->reason = item_transfer_reason::player_put;
+		destination->reason_id = static_cast<int64_t>(container->obj_uid);
+		return true;
+	}
 
-	destination->target_container = container;
-	destination->owner = runtime.owner;
-	destination->reason = item_transfer_reason::player_put;
-	destination->reason_id = static_cast<int64_t>(container->obj_uid);
-	return true;
+	if (OBJ_ROOM(container) && actor->in_room > NOWHERE &&
+	    container->loc.room == actor->in_room)
+	{
+		destination->target_container = container;
+		destination->owner = { item_owner_type::room,
+				       static_cast<uint64_t>(world[actor->in_room].number), 0 };
+		destination->reason = item_transfer_reason::player_put;
+		destination->reason_id = static_cast<int64_t>(container->obj_uid);
+		return true;
+	}
+
+	return false;
 }
 
 bool item_command_resolve_drop_destination(P_char actor, item_owner_identity *destination,

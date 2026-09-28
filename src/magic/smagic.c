@@ -33,6 +33,7 @@
 #include "combat/justice.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/weather.h"
 
 /*
@@ -1267,6 +1268,8 @@ void spell_arieks_shattering_iceball(int level, P_char ch, char * /*arg*/, int /
 		return;
 
 	if (!IS_ALIVE(ch) || (room = ch->in_room) == NOWHERE)
+		return;
+	if (economic_gameplay_authority::active())
 		return;
 
 	if (world[room].contents)

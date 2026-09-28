@@ -113,20 +113,47 @@ def test_kill_quests_pay_one_reward_on_completion() -> None:
     assert "quest_kill_original + 1) <= 2" not in kill
     assert kill.count("quest_item_reward(ch)") == 1
     done = kill[kill.index("quest_kill_how_many - ch->only.pc->quest_kill_original == 0"):]
-    assert done.index("quest_item_reward(ch)") < done.index("grant_world_quest_reward(ch, reward)")
-    assert done.index("grant_world_quest_reward(ch, reward)") < done.index("resetQuest(ch)")
-    assert "sql_world_quest_finished(ch, reward_granted ? reward : NULL)" in done
+    assert done.index("quest_item_reward(ch)") < done.index(
+        "grant_world_quest_reward(ch, reward, FIND_AND_KILL, false)")
+    assert done.index("grant_world_quest_reward(ch, reward, FIND_AND_KILL, false)") < \
+        done.index("resetQuest(ch)")
+    assert "sql_world_quest_finished(ch, reward)" in done
 
 
 def test_reward_grant_rejection_does_not_publish_a_stale_object() -> None:
     grant = extract_function("world_quest.c", "static bool grant_world_quest_reward(")
-    assert "item_creation_grant_submit_to_player(ch, reward, ch)" in grant
+    assert "item_creation_grant_submit_to_player_with_completion(" in grant
+    assert "world_quest_reward_completed" in grant
+    assert "economic_source_kind::quest_completion" in grant
+    assert "source_id" in grant
     rejected = grant.index("extract_obj(reward, FALSE)")
     assert rejected < grant.index("return false;", rejected)
     assert "your quest reward was not created" in grant
     full = extract_function("world_quest.c", "void quest_full_reward(")
-    assert "grant_world_quest_reward(ch, reward)" in full
-    assert "sql_world_quest_finished(ch, reward_granted ? reward : NULL)" in full
+    refused = full.index("if (!grant_world_quest_reward(ch, reward, type, true))")
+    assert "return;" in full[refused:full.index("ADD_MONEY(ch, temp)")]
+    assert refused < full.index("quest_epic_reward(ch, type)")
+    assert refused < full.index("sql_world_quest_finished(ch, reward)")
+    assert refused < full.index("resetQuest(ch)")
+    assert full.index("if (economic_gameplay_authority::active())", refused) < \
+        full.index("quest_epic_reward(ch, type)")
+    kill = extract_function("world_quest.c", "void quest_kill(")
+    refused = kill.index("if (!grant_world_quest_reward(ch, reward, FIND_AND_KILL, false))")
+    assert "--ch->only.pc->quest_kill_how_many;" in kill[refused:kill.index("return;", refused)]
+    assert kill.index("return;", refused) < kill.index("gain_exp(ch, NULL, exp_gain /")
+    assert kill.index("if (economic_gameplay_authority::active())", refused) < \
+        kill.index("gain_exp(ch, NULL, exp_gain /")
+    assert refused < kill.index("ADD_MONEY(ch, temp)")
+    assert refused < kill.index("quest_epic_reward(ch, FIND_AND_KILL)")
+    assert refused < kill.index("sql_world_quest_finished(ch, reward)")
+    queue = extract_function("item/item_movement_transaction.c", "bool queue_creation_grant(")
+    assert "source == economic_source_kind::quest_completion && !source_id" in queue
+    callback = extract_function("world_quest.c", "static void world_quest_reward_completed(")
+    assert callback.index("context.source_id != world_quest_reward_source_id(ch)") < \
+        callback.index("if (!committed)")
+    assert callback.index("if (!committed)") < callback.index("quest_epic_reward(ch, context.type)")
+    assert callback.index("OBJ_CARRIED_BY(reward, ch)") < callback.index("resetQuest(ch)")
+    assert "quest_kill_how_many = ch->only.pc->quest_kill_original - 1" in callback
 
 
 def test_quests_are_unshareable_by_default() -> None:
@@ -146,7 +173,7 @@ def test_quests_are_unshareable_by_default() -> None:
 
 
 def test_bartender_fee_is_a_property() -> None:
-    mobile = source("specs.mobile.c").read_text()
+    mobile = source("specs.world_quest.c").read_text()
     assert "temp = 20 * GET_LEVEL(pl);" not in mobile
     assert '"world.quest.cost.per.level", 20.000' in mobile
 
@@ -166,6 +193,7 @@ if __name__ == "__main__":
         test_catalog_withholds_top_value_items_before_pools_and_scores,
         test_nofear_block_reads_the_fourth_affect_field,
         test_kill_quests_pay_one_reward_on_completion,
+        test_reward_grant_rejection_does_not_publish_a_stale_object,
         test_quests_are_unshareable_by_default,
         test_bartender_fee_is_a_property,
         test_properties_ship_the_documented_defaults,

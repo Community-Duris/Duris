@@ -7,6 +7,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <limits>
+#include <new>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -229,9 +230,9 @@ flatfile_read_result flatfile_read(const std::string &directory, const std::stri
 	}
 	if (!private_directory(directory_fd))
 	{
+		close(directory_fd);
 		if (error)
 			*error = "invalid authority directory metadata";
-		close(directory_fd);
 		return flatfile_read_result::invalid;
 	}
 	const int file_fd =
@@ -252,24 +253,38 @@ flatfile_read_result flatfile_read(const std::string &directory, const std::stri
 	struct stat info;
 	if (fstat(file_fd, &info) < 0)
 	{
-		set_error(error, "inspect authority file");
+		const int saved_errno = errno;
 		close(file_fd);
+		errno = saved_errno;
+		set_error(error, "inspect authority file");
 		return flatfile_read_result::io_error;
 	}
-	if (!S_ISREG(info.st_mode) || info.st_uid != geteuid() || (info.st_mode & 0077) ||
-	    info.st_size < 0 || static_cast<uintmax_t>(info.st_size) > maximum_size)
+	if (!S_ISREG(info.st_mode) || info.st_nlink != 1 || info.st_uid != geteuid() ||
+	    (info.st_mode & 0077) || info.st_size < 0 ||
+	    static_cast<uintmax_t>(info.st_size) > maximum_size)
 	{
+		close(file_fd);
 		if (error)
 			*error = "invalid authority file metadata or size";
-		close(file_fd);
 		return flatfile_read_result::invalid;
 	}
-	bytes->resize(static_cast<size_t>(info.st_size));
+	try
+	{
+		bytes->resize(static_cast<size_t>(info.st_size));
+	}
+	catch (const std::bad_alloc &)
+	{
+		close(file_fd);
+		errno = ENOMEM;
+		return flatfile_read_result::io_error;
+	}
 	if (!read_all(file_fd, bytes->data(), bytes->size()))
 	{
-		set_error(error, "read authority file");
+		const int saved_errno = errno;
 		bytes->clear();
 		close(file_fd);
+		errno = saved_errno;
+		set_error(error, "read authority file");
 		return flatfile_read_result::io_error;
 	}
 	close(file_fd);
@@ -281,6 +296,7 @@ bool flatfile_lock_acquire(const std::string &directory, const std::string &name
 {
 	if (!lock_fd || !valid_name(name))
 	{
+		errno = EINVAL;
 		if (error)
 			*error = "invalid flat-file lock request";
 		return false;
@@ -293,15 +309,19 @@ bool flatfile_lock_acquire(const std::string &directory, const std::string &name
 		set_error(error, "open lock directory");
 		return false;
 	}
-	if (!private_directory(directory_fd))
+	struct stat directory_info;
+	const int directory_status = fstat(directory_fd, &directory_info);
+	if (directory_status || !S_ISDIR(directory_info.st_mode) ||
+	    directory_info.st_uid != geteuid() || (directory_info.st_mode & 0077))
 	{
-		if (error)
-			*error = "invalid lock directory metadata";
+		const int saved_errno = directory_status ? errno : EACCES;
 		close(directory_fd);
+		errno = saved_errno;
+		set_error(error, "invalid lock directory metadata");
 		return false;
 	}
-	const int file_fd =
-		openat(directory_fd, name.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0600);
+	const int file_fd = openat(directory_fd, name.c_str(),
+				   O_RDWR | O_CREAT | O_NONBLOCK | O_CLOEXEC | O_NOFOLLOW, 0600);
 	const int open_errno = errno;
 	close(directory_fd);
 	if (file_fd < 0)
@@ -311,20 +331,24 @@ bool flatfile_lock_acquire(const std::string &directory, const std::string &name
 		return false;
 	}
 	struct stat info;
-	if (fstat(file_fd, &info) < 0 || !S_ISREG(info.st_mode) || info.st_uid != geteuid() ||
-	    (info.st_mode & 0077))
+	const int file_status = fstat(file_fd, &info);
+	if (file_status || !S_ISREG(info.st_mode) || info.st_uid != geteuid() ||
+	    (info.st_mode & 0077) || (info.st_nlink != 1 || info.st_size != 0))
 	{
-		if (error)
-			*error = "invalid authority lock metadata";
+		const int saved_errno = file_status ? errno : EINVAL;
 		close(file_fd);
+		errno = saved_errno;
+		set_error(error, "invalid authority lock metadata");
 		return false;
 	}
 	while (flock(file_fd, LOCK_EX) < 0)
 	{
 		if (errno == EINTR)
 			continue;
-		set_error(error, "lock authority");
+		const int saved_errno = errno;
 		close(file_fd);
+		errno = saved_errno;
+		set_error(error, "lock authority");
 		return false;
 	}
 	*lock_fd = file_fd;

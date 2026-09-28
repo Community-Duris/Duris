@@ -16,6 +16,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "combat/chaos_config.h"
+#include "economy/economic_gameplay_authority.h"
 #include "guild/guild.h"
 #include "world/hardcore_config.h"
 #include <stdio.h>
@@ -992,6 +993,22 @@ void prac_all_spells(P_char ch)
 		mobsay(teacher, "You have everything I will teach you scribed!");
 }
 
+static bool practice_fee_paid(P_char ch, int cost)
+{
+	if (cost < 0)
+		return false;
+	if (cost == 0)
+		return true;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Paid skill practice is unavailable while active accounting is enabled.\r\n",
+			ch);
+		return false;
+	}
+	return SUB_MONEY(ch, cost, 0) == 0;
+}
+
 void do_practice(P_char ch, char *arg, int cmd)
 {
 	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], obuf[MAX_STRING_LENGTH];
@@ -1246,7 +1263,8 @@ void do_practice(P_char ch, char *arg, int cmd)
 		/*** Can practice skill now ***/
 		if (!meming_cl || !IS_SPELL(skl))
 		{
-			SUB_MONEY(ch, SkillRaiseCost(ch, skl), 0);
+			if (!practice_fee_paid(ch, cost))
+				return;
 			/*      ch->only.pc->skills[i].taught += 3; */
 			ch->only.pc->skills[i].learned += 1;
 			if (ch->only.pc->skills[i].learned > 100)

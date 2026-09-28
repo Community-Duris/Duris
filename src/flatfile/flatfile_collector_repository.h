@@ -67,4 +67,11 @@ flatfile_collector_repository_result flatfile_collector_prepare_corpse_boundary(
 critical_apply_result flatfile_collector_repository_apply(const std::string &root,
 							  const critical_command &command);
 
+// Inactive schema-2 purchase and held-item terminal owner. Uses the same native
+// collector transaction and commits its EAP1 record and exact item reference in
+// that authority bundle.
+critical_apply_result
+flatfile_collector_repository_apply_accounted(const std::string &root,
+					      const critical_command &command);
+
 #endif

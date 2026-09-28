@@ -298,15 +298,16 @@ int main() {
 }
 '''
 
-specs = ROOT / 'src/specs/specs.object.c'
+specs = ROOT / 'src/specs/specs.heavens.c'
 signatures = ('int good_evil_stoneOrSoulshield(', 'void good_evil_procDrain(',
     'int good_evil_attemptFightProc(', 'int good_evil_fightingProc(',
-    'int good_evil_attemptDefenseProc(', 'int good_evil_defenseProc(', 'int good_evil_checkHunger(',
-    'int isWieldingVnum(', 'void good_evil_spellUp(', 'void good_evil_startBigFight(',
-    'void good_evil_coolDown(', 'int killOtherSword(', 'int attemptToDisengage(',
+    'int good_evil_attemptDefenseProc(', 'int good_evil_defenseProc(',
+    'int good_evil_checkHunger(', 'void good_evil_spellUp(',
+    'void good_evil_startBigFight(',
+    'void good_evil_coolDown(', 'int killOtherSword(',
     'void good_evil_poofSword(', 'void good_evil_configSword(', 'int good_evil_sword(')
 callbacks='\n'.join(function(specs,s) for s in signatures)
-callbacks+='\n'+function(ROOT/'src/combat/fight.c','bool weapon_proc(')
+callbacks+='\n'+function(ROOT/'src/combat/attack_effects.c','bool weapon_proc(')
 with tempfile.TemporaryDirectory(prefix='duris-swords-') as directory:
     source=Path(directory)/'harness.cpp'; binary=Path(directory)/'harness'
     source.write_text(scope['platform']+scope['fixture']+scope['boundary']+

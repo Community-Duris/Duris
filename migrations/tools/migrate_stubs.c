@@ -8,6 +8,9 @@
 #include <mysql.h>
 #include "../../src/core/structs.h"
 #include "../../src/sql/sql.h"
+#include "../../src/sql/sql_account.h"
+#include "../../src/sql/sql_guild.h"
+#include "../../src/sql/sql_ship.h"
 #include "../../src/account/account.h"
 #include "../../src/ships/ships.h"
 #include "../../src/guild/assocs.h"

@@ -28,8 +28,11 @@ direct_start = files.index("int writeShopKeeper(P_char ch)") if baseline else fi
 direct = files[direct_start:files.index("int deleteShopKeeper(", direct_start)]
 preamble = r'''
 #include "economy/shopkeeper_save_policy.h"
+#include <algorithm>
 #include <cassert>
+#include <climits>
 #include <cstdarg>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -44,6 +47,7 @@ using mob_proc = int (*)(P_char, P_char, int, char *);
 struct npc_data { int shopkeeper_shop_id = -1; };
 struct Character {
     int rnum = 0, in_room = 0, birthplace = 0;
+    int copper = 4, silver = 3, gold = 2, platinum = 1;
     bool npc = true;
     Character *next = nullptr, *next_in_room = nullptr, *master = nullptr;
     npc_data npc_storage = {};
@@ -70,6 +74,10 @@ bool DB=true;
 #define GET_NAME(ch) "fixture"
 #define GET_PLYR(ch) (ch)
 #define GET_BIRTHPLACE(ch) ((ch)->birthplace)
+#define GET_COPPER(ch) ((ch)->copper)
+#define GET_SILVER(ch) ((ch)->silver)
+#define GET_GOLD(ch) ((ch)->gold)
+#define GET_PLATINUM(ch) ((ch)->platinum)
 int singleton_shop_id(P_char keeper) {
     if (!keeper || !IS_NPC(keeper) || GET_MASTER(keeper)) return -1;
     const int bound = keeper->only.npc ? keeper->only.npc->shopkeeper_shop_id : -1;
@@ -103,9 +111,10 @@ void logit(int, const char *fmt, ...) {
     vsnprintf(buf,sizeof(buf),fmt,args); va_end(args); logs.emplace_back(buf);
 }
 int begins=0, writes=0, commits=0, rollbacks=0;
+std::vector<std::string> queries;
 bool begin_ok=true, write_ok=true, commit_ok=true, item_ok=true;
 bool sql_begin_transaction() { ++begins; return begin_ok; }
-bool sql_run_query(const char *) { ++writes; return write_ok; }
+bool sql_run_query(const char *query) { ++writes; queries.emplace_back(query); return write_ok; }
 bool sql_commit() { ++commits; return commit_ok; }
 void sql_rollback() { ++rollbacks; }
 int mysql_insert_id(bool) { return 1; }
@@ -145,11 +154,34 @@ int main() {
     assert(mob_index[0].qst_func == world_quest_proc && mob_index[0].func.mob == trainer_proc);
     assert(!shops[0].dirty && begins==1 && commits==1);
     assert(shops[0].dirty_save_retry.failure_count==0);
+    assert(!queries.empty() && queries[0].find("cash, keeper_roaming) VALUES") != std::string::npos &&
+           queries[0].find(", 1234, 0) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)") != std::string::npos &&
+           queries[0].find("keeper_roaming=VALUES(keeper_roaming)") != std::string::npos &&
+           queries[0].find("shop_revision=shop_revision+1") != std::string::npos);
+    assert(std::any_of(queries.begin(), queries.end(), [](const std::string &query) {
+        return query.find("DELETE FROM shopkeeper_items WHERE shopkeeper_id=1") != std::string::npos;
+    }));
+    assert(std::none_of(queries.begin(), queries.end(), [](const std::string &query) {
+        return query.find("DELETE FROM shopkeepers WHERE") != std::string::npos;
+    }));
     shops[0].dirty = 1;
+    shops[0].shop_is_roaming = 1;
     mob_index[0].qst_func = trainer_proc;
     assert(sql_save_dirty_shopkeepers(true));
     assert(mob_index[0].qst_func == trainer_proc && mob_index[0].func.mob == trainer_proc);
     assert(!shops[0].dirty && commits==2);
+    assert(std::any_of(queries.begin(), queries.end(), [](const std::string &query) {
+        return query.find("keeper_roaming) VALUES") != std::string::npos &&
+               query.find(", 1234, 1) ON DUPLICATE KEY UPDATE") != std::string::npos;
+    }));
+    shops[0].shop_is_roaming = 0;
+    // Invalid totals never begin a transaction or replace the durable row.
+    auto before_cash=begins;
+    keeper.copper=-1;
+    assert(!sql_save_shopkeeper(&keeper,0) && begins==before_cash);
+    keeper.copper=4; keeper.gold=INT_MAX;
+    assert(!sql_save_shopkeeper(&keeper,0) && begins==before_cash);
+    keeper.gold=2;
 
     // Invalid configured keeper must not silently discard retry state.
     shops[0].dirty=1; shops[0].keeper=-1;

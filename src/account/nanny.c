@@ -67,7 +67,8 @@
 #include "classes/epic_skills.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_account.h"
+#include "sql/sql_player_identity.h"
 #include "persistence/critical_command.h"
 #include "persistence/persistence_checkpoint.h"
 #include "world/vnum.obj.h"
@@ -419,6 +420,7 @@ static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 
 static constexpr uint32_t CHAOS_STARTER_EPIC_OPERATION_DOMAIN = 0x43484550;
 static constexpr uint32_t CHAOS_STARTER_BANK_OPERATION_DOMAIN = 0x43484250;
+static_assert(PLR3_CHAOS_STARTER_BANK_PENDING == CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG);
 
 static bool chaos_starter_operation_id(P_char ch, uint32_t domain,
 				       critical_operation_id *operation_id)
@@ -732,7 +734,8 @@ static void load_chaos_new_character_kit(P_char ch)
 	}
 
 	if (!item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),
-								     kit.count, ch))
+								     kit.count, ch,
+								     economic_source_kind::starter_grant))
 	{
 		statuslog(56, "&+RALERT&n: CHAOS starter kit grant could not be queued");
 		send_to_char(
@@ -910,7 +913,7 @@ void load_obj_to_newbies(P_char ch)
 				    return item_creation_prepare_result::failed;
 			    return ++index == plan.size() ? item_creation_prepare_result::ready :
 							    item_creation_prepare_result::more;
-		    }))
+			    }, economic_source_kind::starter_grant))
 		send_to_char("Your starter kit is being prepared...\r\n", ch);
 	else
 		send_to_char(

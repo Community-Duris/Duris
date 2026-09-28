@@ -83,6 +83,16 @@ INSERT INTO player_item_extra_descr (id,item_id,keyword,description) VALUES
 SET FOREIGN_KEY_CHECKS=1;"
 MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$BOOTSTRAP_DB" \
     < "$ROOT/migrations/legacy_schema_convergence.sql"
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$BOOTSTRAP_DB" \
+    < "$ROOT/migrations/legacy_archive_schema_reconciliation.sql"
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$BOOTSTRAP_DB" \
+    < "$ROOT/migrations/legacy_archive_material_order.sql"
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$BOOTSTRAP_DB" \
+    < "$ROOT/migrations/legacy_archive_locker_index.sql"
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$BOOTSTRAP_DB" \
+    < "$ROOT/migrations/legacy_archive_affect_index.sql"
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$BOOTSTRAP_DB" \
+    < "$ROOT/migrations/legacy_archive_character_index.sql"
 
 printf '%s\n' \
     'ENVIRONMENT=test' \
@@ -95,6 +105,22 @@ printf '%s\n' \
     'REDIS=FALSE' > "$CONFIG"
 
 MIGRATION_ENV_FILE="$CONFIG" "$ROOT/migrations/run_migration.sh"
+# The documented legacy upgrade must reach the immutable manifest head by
+# itself. Do not let the separate replay below conceal a baseline-only result.
+expected_head=$(python3 - "$ROOT/migrations/migration_manifest.json" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as source:
+    print(json.load(source)["migrations"][-1]["id"])
+PY
+)
+actual_head=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
+    "SELECT migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1")
+[[ "$actual_head" == "$expected_head" ]] || {
+    printf 'FAILED: legacy upgrade ended at %s, expected immutable head %s\n' \
+        "${actual_head:-baseline-only}" "$expected_head" >&2
+    exit 1
+}
 ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=root \
     DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB" \
     python3 "$ROOT/scripts/migration_runner.py" run

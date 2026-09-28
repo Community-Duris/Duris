@@ -368,6 +368,10 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::trusted_steal:
 	case item_transfer_reason::soulbind:
 	case item_transfer_reason::slip:
+	case item_transfer_reason::player_wear:
+	case item_transfer_reason::player_remove:
+	case item_transfer_reason::combat_fumble:
+	case item_transfer_reason::critical_disarm:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -412,7 +416,7 @@ bool valid_collector_context(const item_transfer_payload &payload, uint16_t payl
 	const item_collector_death_enrollment &collector = payload.collector;
 	if (!collector.present)
 		return collector.eligible_item_uids.empty();
-	if (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	if (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
 	    payload.reason != item_transfer_reason::corpse_create || !payload.corpse.present ||
 	    critical_operation_id_is_zero(collector.death_operation) ||
 	    !collector.beneficiary_pid || !collector.death_time ||
@@ -458,7 +462,9 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	    payload.item_blob_size > payload.item_blob.size() ||
 	    payload.from_owner.type == item_owner_type::collector ||
 	    payload.to_owner.type == item_owner_type::collector ||
-	    !valid_collector_context(payload, payload_version))
+	    !valid_collector_context(payload, payload_version) ||
+	    (payload.logical_source_id && (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+					   payload.reason != item_transfer_reason::creation)))
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
@@ -476,9 +482,35 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
 	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
 	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool equipment = payload.reason == item_transfer_reason::player_wear ||
+			       payload.reason == item_transfer_reason::player_remove;
+	const bool forced_drop = item_transfer_forced_weapon_drop(payload.reason);
 	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (forced_drop &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::room || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !find_payload_item(payload, payload.selected_item_uid) ||
+	     find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
+	if (equipment &&
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+	     payload.from_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.selected_item_uid != payload.items[0].root_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !find_payload_item(payload, payload.selected_item_uid) ||
+	     find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
 	if (player_transfer &&
-	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	    (payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION ||
 	     payload.from_owner.type != item_owner_type::player ||
 	     payload.to_owner.type != item_owner_type::player || !payload.from_owner.id ||
 	     !payload.to_owner.id || payload.from_owner.id > INT32_MAX ||
@@ -843,7 +875,7 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 		ITEM_TRANSFER_HEADER_BYTES + payload.item_count * ITEM_TRANSFER_ENTRY_BYTES;
 	const size_t payload_size = item_section_size + sizeof(uint32_t) + payload.item_blob_size +
 				    sizeof(uint32_t) + corpse_context.size() + sizeof(uint32_t) +
-				    collector_context.size();
+				    collector_context.size() + sizeof(payload.logical_source_id);
 	if (payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return false;
 	encoded->assign(payload_size, 0);
@@ -892,6 +924,9 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 		static_cast<uint32_t>(collector_context.size()));
 	std::copy(collector_context.begin(), collector_context.end(),
 		  encoded->begin() + collector_size_offset + sizeof(uint32_t));
+	put_u64(encoded->data() + collector_size_offset + sizeof(uint32_t) +
+			collector_context.size(),
+		payload.logical_source_id);
 	return true;
 }
 
@@ -900,6 +935,7 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 {
 	if (!payload || command.type != critical_command_type::item_transfer ||
 	    (command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
@@ -985,7 +1021,7 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 							   sizeof(uint32_t),
 						   corpse_size, &payload->corpse))
 				return false;
-			if (command.payload_version < ITEM_TRANSFER_PAYLOAD_VERSION)
+			if (command.payload_version < ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION)
 			{
 				if (command.payload.size() != corpse_end)
 					return false;
@@ -996,13 +1032,23 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 					return false;
 				const uint32_t collector_size =
 					get_u32(command.payload.data() + corpse_end);
+				const size_t collector_end =
+					corpse_end + sizeof(uint32_t) + collector_size;
 				if (collector_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+				    collector_end > command.payload.size() ||
 				    command.payload.size() !=
-					    corpse_end + sizeof(uint32_t) + collector_size ||
+					    collector_end +
+						    (command.payload_version >=
+								     ITEM_TRANSFER_PAYLOAD_VERSION ?
+							     sizeof(payload->logical_source_id) :
+							     0) ||
 				    !decode_collector_context(command.payload.data() + corpse_end +
 								      sizeof(uint32_t),
 							      collector_size, &payload->collector))
 					return false;
+				if (command.payload_version >= ITEM_TRANSFER_PAYLOAD_VERSION)
+					payload->logical_source_id =
+						get_u64(command.payload.data() + collector_end);
 			}
 		}
 	}

@@ -6,6 +6,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -98,6 +99,13 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         path.write_text(json.dumps(manifest))
         return path
 
+    def test_canonical_verifiers_are_executable(self):
+        """The real runner executes verifier paths directly, not through bash."""
+        for migration in runner.load_manifest().migrations:
+            with self.subTest(migration=migration.migration_id):
+                self.assertTrue(os.access(migration.verify_path, os.X_OK),
+                                f"verifier is not executable: {migration.verify_path}")
+
     def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
         """The shipped manifest still describes the sealed baseline and head.
 
@@ -108,9 +116,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 30)
+        self.assertEqual(len(manifest.migrations), 44)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0030_telemetry_quarantine")
+                         "0044_shopkeeper_item_properties")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -292,6 +300,26 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                                         "does not identify"):
                 runner.validate_production_backup(backup, "other")
 
+    def test_socket_adapter_keeps_no_defaults_first_and_overrides_routing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            client = Path(temporary) / "mysql-arguments"
+            client.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+            client.chmod(0o700)
+            environment = dict(os.environ, DURIS_REAL_MYSQL_CLIENT=str(client),
+                               DB_SOCKET="/tmp/synthetic-restore.sock")
+            for defaults in ([], ["--no-defaults"]):
+                with self.subTest(defaults=defaults):
+                    result = subprocess.run([
+                        "bash", str(ROOT / "scripts/mysql_socket_bin/mysql"),
+                        *defaults, "-h", "ignored-host", "-P3307", "--protocol=tcp",
+                        "--socket=/tmp/ignored.sock", "--user=restore", "-N", "-B",
+                        "duris_restore", "-e", "SELECT 1",
+                    ], env=environment, capture_output=True, text=True, check=True)
+                    self.assertEqual(result.stdout.splitlines(), [
+                        *defaults, "--protocol=socket", "--socket=/tmp/synthetic-restore.sock",
+                        "--user=restore", "-N", "-B", "duris_restore", "-e", "SELECT 1",
+                    ])
+
     def test_local_unix_socket_is_explicit_and_reaches_sealed_verifiers(self):
         manifest = runner.load_manifest()
         environment = {
@@ -329,7 +357,16 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertIn("verified_legacy_adoption", adoption)
         self.assertIn("migration_runner.py\" run", adoption)
         self.assertIn("verify_runtime_compatibility.sh", adoption)
-        self.assertIn("TOTAL=145", legacy)
+        self.assertIn("TOTAL=150", legacy)
+
+    def test_legacy_upgrade_verifies_schema_before_imported_character_baselines(self):
+        adoption = (ROOT / "migrations/adopt_migration_baseline.sh").read_text()
+        verifier = (ROOT / "migrations/verify_runtime_compatibility.sh").read_text()
+        importer = (ROOT / "scripts/import_legacy_dump.py").read_text()
+        self.assertIn('verify_runtime_compatibility.sh" --schema-only', adoption)
+        self.assertIn('"$SCHEMA_ONLY" == 0', verifier)
+        self.assertIn("establish_character_baselines(config)", importer)
+        self.assertIn('verifier = ROOT / "migrations/verify_runtime_compatibility.sh"', importer)
 
 
 if __name__ == "__main__":

@@ -501,7 +501,8 @@ bool merge_snapshot(const player_snapshot &incoming, player_snapshot *materializ
 }
 
 bool append_baseline_items(const std::vector<player_item_snapshot> &items,
-			   const item_owner_identity &owner, std::unordered_set<uint64_t> *seen,
+			   const item_owner_identity &owner, bool player_equipment,
+			   std::unordered_set<uint64_t> *seen,
 			   std::vector<flatfile_item_ownership_record> *records)
 {
 	if (!seen || !records)
@@ -527,8 +528,23 @@ bool append_baseline_items(const std::vector<player_item_snapshot> &items,
 				root_uid = roots[parent];
 			}
 			roots.push_back(root_uid);
-			records->push_back({ item.object_uid, root_uid, parent_uid, owner, 1,
-					     item.vnum, item_custody_state::active });
+			uint16_t equipment_slot = 0;
+			if (player_equipment && !parent_uid)
+			{
+				if (item.equipment_slot < 0 ||
+				    item.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT)
+					return false;
+				equipment_slot = static_cast<uint16_t>(item.equipment_slot);
+			}
+			records->push_back({ item.object_uid,
+					     root_uid,
+					     parent_uid,
+					     owner,
+					     1,
+					     item.vnum,
+					     item_custody_state::active,
+					     {},
+					     equipment_slot });
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -562,10 +578,10 @@ flatfile_item_baseline_result establish_item_baseline(const std::string &root,
 	{
 		return flatfile_item_baseline_result::io_error;
 	}
-	if (!append_baseline_items(snapshot.items, owner, &seen, &records))
+	if (!append_baseline_items(snapshot.items, owner, true, &seen, &records))
 		return flatfile_item_baseline_result::invalid;
 	for (const player_pet_snapshot &pet : snapshot.pets)
-		if (!append_baseline_items(pet.items, owner, &seen, &records))
+		if (!append_baseline_items(pet.items, owner, false, &seen, &records))
 			return flatfile_item_baseline_result::invalid;
 	std::sort(records.begin(), records.end(), [](const auto &left, const auto &right)
 		  { return left.item_uid < right.item_uid; });

@@ -1,6 +1,7 @@
 #include "persistence/persistence_mode.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +24,7 @@ static const char *active_flatfile_root;
 static const char *const flatfile_directories[] = {
 	"metadata",  "identities",    "identities/accounts", "identities/names",
 	"players",   "operations",    "operations/wal",	     "domains",
-	"manifests", "player-deaths",
+	"manifests", "player-deaths", "economic-evidence",
 };
 #endif
 
@@ -89,6 +90,17 @@ static bool provision_flatfile_directories(const char *root, char *error, size_t
 		if (!ensure_private_directory(path, error, error_size))
 			return false;
 	}
+	// Make the new evidence directory entry durable before any accounting journal
+	// can refer to it. Bucket initialization remains a separate lifecycle action.
+	const int directory_fd = open(root, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+	if (directory_fd < 0)
+		return fail(error, error_size, "cannot open flat-file root for directory sync");
+	const int synced = fsync(directory_fd);
+	const int sync_error = errno;
+	close(directory_fd);
+	if (synced)
+		return fail(error, error_size, "cannot sync flat-file directories: %s",
+			    strerror(sync_error));
 	return true;
 }
 #endif

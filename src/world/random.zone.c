@@ -32,6 +32,7 @@
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
+#include "economy/economic_gameplay_authority.h"
 
 /*
  * external variables
@@ -1178,6 +1179,13 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (OBJ_VNUM(obj) == VOBJ_RANDOM_ARMOR && obj->value[5] == x)
 		{
+			// The offering and the randomized reward have no shared durable
+			// completion identity. Keep the offering until they can commit together.
+			if (economic_gameplay_authority::active())
+			{
+				send_to_char("That reward is temporarily unavailable.\r\n", pl);
+				return TRUE;
+			}
 			gain_epic(pl, EPIC_RANDOM_ZONE, 0, value_pts / 100);
 
 			act("$n gives $p to $N.", 1, pl, obj, ch, TO_NOTVICT);

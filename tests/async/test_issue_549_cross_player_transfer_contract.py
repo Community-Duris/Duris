@@ -23,7 +23,7 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
         self.assertIn("case item_transfer_reason::slip:", command)
 
     def test_soulbind_admits_before_any_cross_player_mutation(self):
-        magic = source("magic/magic.c").read_text()
+        magic = source("magic/spell_item_lifecycle.c").read_text()
         soulbind = function_body(magic, r"void do_soulbind\(")
         cross_player = soulbind[soulbind.index("if (ch != victim)") :]
 
@@ -43,7 +43,7 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
         )
 
     def test_soulbind_completion_defers_metadata_until_commit_and_publication(self):
-        magic = source("magic/magic.c").read_text()
+        magic = source("magic/spell_item_lifecycle.c").read_text()
         completion = function_body(
             magic, r"static bool soulbind_transfer_publication\("
         )
@@ -96,7 +96,7 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
 
     def test_committed_player_publication_remains_retryable_for_disconnects(self):
         movement = source("item/item_movement_transaction.c").read_text()
-        magic = source("magic/magic.c").read_text()
+        magic = source("magic/spell_item_lifecycle.c").read_text()
         rogues = source("classes/rogues.c").read_text()
         soulbind = function_body(magic, r"void do_soulbind\(")
         slip = function_body(rogues, r"void do_slip\(")
@@ -127,7 +127,7 @@ class CrossPlayerTransferContractTests(unittest.TestCase):
         self.assertIn("payload.reason_id", validate)
 
     def test_sabotage_replacing_soulbind_reason_is_detected(self):
-        magic = source("magic/magic.c").read_text()
+        magic = source("magic/spell_item_lifecycle.c").read_text()
         marker = "item_transfer_reason::soulbind, GET_PID(ch)"
         self.assertIn(marker, magic)
         sabotaged = magic.replace(

@@ -100,7 +100,7 @@ using P_desc = Descriptor*;
 struct Character { struct { char *name; int level; } player; int pid=1, sex=0, frags=7;
     Guild *assoc=nullptr; Descriptor *desc=nullptr; };
 static int mode=0, fail_stage=0, stage=0, frees=0, menus=0, refreshes=0, writes=0,
-    audits=0, runtime_ships=0, loads=0, backend_calls=0;
+    audits=0, runtime_ships=0, loads=0, backend_calls=0, guard_calls=0, guard_failure=0;
 static bool in_tx=false, durable_active=true, txn_active=true, rollback_ok=true,
     commit_ok=true, refresh_ok=true, commit_landed=false;
 static int durable_cleanup=0, txn_cleanup=0;
@@ -122,6 +122,7 @@ void statuslog(int, const char *fmt,...) { if(strstr(fmt,"deleted")) { assert(!d
 void persistence_alert(int,const char*,const char*,const char*,const char*,const char*,const char*,...) {}
 bool sql_in_transaction() { return in_tx; }
 bool sql_begin_transaction() { ++backend_calls; assert(!in_tx); in_tx=true; stage=0; txn_active=durable_active; txn_cleanup=durable_cleanup; return true; }
+bool sql_player_deletion_guard(int pid) { assert(pid==1 && in_tx && stage==0); ++guard_calls; return guard_failure==0; }
 bool cleanup() { assert(in_tx); if(++stage==fail_stage) return false; ++txn_cleanup; return true; }
 bool sql_soft_delete_character(int) { if(!cleanup())return false; txn_active=false; return true; }
 bool remove_all_artifacts_sql(P_char) { return cleanup(); }
@@ -159,7 +160,7 @@ void remove_char_from_list(P_acct,char*,bool=true);
 main = r'''
 static void input(P_desc d,const char *s) { account_delete_char(d,const_cast<char*>(s)); }
 static void reset(Account &a,Descriptor &d) {
-    mode=fail_stage=stage=frees=menus=refreshes=writes=audits=runtime_ships=loads=backend_calls=0;
+    mode=fail_stage=stage=frees=menus=refreshes=writes=audits=runtime_ships=loads=backend_calls=guard_calls=guard_failure=0;
     in_tx=false; durable_active=txn_active=rollback_ok=commit_ok=refresh_ok=true;
     commit_landed=false; durable_cleanup=txn_cleanup=0;
     a.acct_character_list=(acct_chars*)calloc(1,sizeof(acct_chars));
@@ -180,14 +181,24 @@ int main() {
     for(int failure=1;failure<=7;++failure) {
         reset(a,d); fail_stage=failure; input(&d,"1"); input(&d,"yes"); released(d);
         assert(a.num_chars==1 && durable_active && durable_cleanup==0 && !audits && !runtime_ships && !writes);
-        assert(fixture_guild.member_count==1 && fixture_guild.frags.frags==7);
+        assert(guard_calls==1 && fixture_guild.member_count==1 && fixture_guild.frags.frags==7);
         assert(d.output.find("did not complete")!=std::string::npos);
         assert(d.output.find("successfully")==std::string::npos && refreshes==1);
         fail_stage=0; input(&d,"1"); input(&d,"yes"); released(d);
-        assert(!durable_active && durable_cleanup==7 && audits==2 && runtime_ships==1);
+        assert(!durable_active && durable_cleanup==7 && audits==2 && runtime_ships==1 && guard_calls==2);
         assert(!a.acct_character_list && a.num_chars==0 && !writes && refreshes==2);
         assert(!fixture_guild.members && fixture_guild.member_count==0 && fixture_guild.frags.frags==0);
         int calls=backend_calls; input(&d,"yes"); assert(backend_calls==calls && audits==2);
+        dispose(a);
+    }
+    // Unresolved evidence and any guard-read failure refuse before soft-delete,
+    // custody/binding cleanup, account projection, or guild mutation.
+    for(int failure:{1,2}) {
+        reset(a,d); guard_failure=failure; input(&d,"1"); input(&d,"yes"); released(d);
+        assert(guard_calls==1 && stage==0 && durable_active && durable_cleanup==0);
+        assert(a.num_chars==1 && a.acct_character_list && !audits && !runtime_ships && !writes);
+        assert(fixture_guild.member_count==1 && fixture_guild.frags.frags==7);
+        assert(d.output.find("did not complete")!=std::string::npos);
         dispose(a);
     }
     reset(a,d); mode=1; fail_stage=1; input(&d,"1"); input(&d,"yes"); released(d);

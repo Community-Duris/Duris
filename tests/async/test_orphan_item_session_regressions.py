@@ -36,6 +36,7 @@ capture = (SRC / "player_snapshot_capture.c").read_text()
 fight = (SRC / "fight.c").read_text()
 account_reward = (SRC / "account_reward.c").read_text()
 magic = (SRC / "magic.c").read_text()
+lifecycle = (SRC / "spell_item_lifecycle.c").read_text()
 mail = (SRC / "mail.c").read_text()
 shop = (SRC / "shop.c").read_text()
 
@@ -212,8 +213,8 @@ check("newbie item keywords are captured before asynchronous grants",
       newbie.count("add_newbie_keyword(") == 1
       and newbie.index("add_newbie_keyword(obj);") < newbie.index("return obj;")
       and newbie.index("add_newbie_keyword(obj);") < newbie.index("obj_to_char(obj, ch);"))
-soulbind = magic[magic.index("void load_soulbind("):]
-soulbind = soulbind[:soulbind.index("void spell_contain_being(")]
+soulbind = lifecycle[lifecycle.index("void load_soulbind("):]
+soulbind = soulbind[:soulbind.index("/* ---- DRAGOON SPELLS ----*/")]
 check("soulbind flags are captured before asynchronous publication",
       soulbind.index("SET_BIT(obj->extra_flags, ITEM_NOSELL);") <
       soulbind.index("obj_to_char(obj, ch);"))

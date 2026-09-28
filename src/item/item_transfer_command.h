@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 7;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 8;
+constexpr uint16_t ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION = 7;
 constexpr uint16_t ITEM_TRANSFER_BATCH_PAYLOAD_VERSION = 6;
 constexpr uint16_t ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5;
 constexpr uint16_t ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4;
@@ -28,6 +29,7 @@ constexpr size_t ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES = 512;
 constexpr size_t ITEM_TRANSFER_LEGACY_RESULT_BYTES = 40;
 constexpr size_t ITEM_TRANSFER_RESULT_BYTES = 48;
 constexpr uint64_t ITEM_TRANSFER_ABSENT_REVISION = UINT64_MAX;
+constexpr uint16_t ITEM_TRANSFER_MAX_EQUIPMENT_SLOT = 43;
 
 enum class item_owner_type : uint8_t
 {
@@ -80,7 +82,17 @@ enum class item_transfer_reason : uint16_t
 	// These existing-item handoffs have command-specific post-commit effects.
 	soulbind,
 	slip,
+	player_wear,
+	player_remove,
+	combat_fumble,
+	critical_disarm,
 };
+
+constexpr bool item_transfer_forced_weapon_drop(item_transfer_reason reason)
+{
+	return reason == item_transfer_reason::combat_fumble ||
+	       reason == item_transfer_reason::critical_disarm;
+}
 
 enum class item_custody_state : uint8_t
 {
@@ -148,6 +160,8 @@ struct item_transfer_payload
 	item_owner_identity to_owner;
 	item_transfer_reason reason;
 	int64_t reason_id;
+	// Stable issuance identity for a sourced creation; zero uses the item UID lifetime.
+	uint64_t logical_source_id = 0;
 	uint64_t expected_from_revision;
 	uint64_t expected_to_revision;
 	uint64_t selected_item_uid;

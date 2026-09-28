@@ -6,13 +6,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (SRC / "specs.mobile.c").read_text()
+SOURCE = (SRC / "specs.world_quest.c").read_text()
 
 start = SOURCE.index("int world_quest(")
-end = SOURCE.index("int newbie_quest(", start)
-world_quest = SOURCE[start:end]
+world_quest = SOURCE[start:]
 deferred_start = SOURCE.index("static void world_quest_report_creation_failure(")
-deferred = SOURCE[deferred_start:end]
+deferred = SOURCE[deferred_start:start]
 
 failure = deferred.index("else if (GET_LEVEL(pl) >= MAXLVLMORTAL)")
 refund = deferred.index("world_quest_refund_payment(pl, payment.fee);", failure)
