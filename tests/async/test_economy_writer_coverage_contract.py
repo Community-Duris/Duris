@@ -506,6 +506,23 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertFalse(next(writer for writer in registry["writers"]
                               if writer["id"] == "quest.artifact_turnin")["sites"])
 
+    def test_bandage_consumption_sites_keep_authority_and_live_projection_distinct(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/economy/tradeskill.c"
+        owners = {}
+        for writer in registry["writers"]:
+            for site in writer.get("sites", []):
+                if site[0] == path:
+                    owners.setdefault(tuple(site), set()).add(writer["id"])
+        self.assertEqual(owners[(path, 1221, "economic_submit")],
+                         {"tradeskill.bandage_durable_submission"})
+        self.assertEqual(owners[(path, 1018, "item_lifecycle")],
+                         {"tradeskill.bandage_durable_publication"})
+        self.assertEqual(owners[(path, 1237, "item_lifecycle")],
+                         {"tradeskill.bandage"})
+        self.assertTrue(self.routes["tradeskill.bandage_durable_submission"]
+                        ["blocking_policy_after_activation"]["must_block_on_activation"])
+
     def test_sql_components_do_not_claim_a_playable_root(self) -> None:
         component = self.routes["item.sql_custody_apply"]
         self.assertEqual(component["double_entry_evidence"]["status"],
