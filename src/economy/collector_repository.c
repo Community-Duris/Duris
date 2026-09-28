@@ -1492,6 +1492,12 @@ bool collector_repository_apply_item_boundary(MYSQL *connection, const critical_
 					      uint64_t *catalog_revision,
 					      std::vector<collector_command_result> *events)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !catalog_revision || !events ||
 	    (plan.entries.empty() ? plan.reason != collector::reason::none :
 				    plan.reason == collector::reason::none))
@@ -1704,6 +1710,12 @@ bool collector_repository_apply_death_enrollment(MYSQL *connection, const critic
 						 const item_transfer_result &transfer,
 						 const collector_enrollment_repository_plan &plan)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !plan.active || !payload.collector.present ||
 	    transfer.item_count != payload.item_count ||
 	    (!plan.death_exists &&
@@ -2108,6 +2120,12 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 				  collector_command_result *result, unsigned int *result_code,
 				  bool *mutation_applied)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	collector_command_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
 	    !collector_command_decode_payload(command, &payload))

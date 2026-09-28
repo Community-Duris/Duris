@@ -1425,7 +1425,8 @@ bool lock_transfer_owners(MYSQL *connection, item_transfer_payload *transfer,
 			  [](const owner_lock &left, const owner_lock &right)
 			  { return owner_less(left.owner, right.owner); });
 		if (std::adjacent_find(locks->begin(), locks->end(),
-				       [](const owner_lock &left, const owner_lock &right) {
+				       [](const owner_lock &left, const owner_lock &right)
+				       {
 					       return item_owner_identity_equal(left.owner,
 										right.owner);
 				       }) != locks->end())
@@ -2159,6 +2160,12 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 					 bool *mutation_applied, uint64_t *collector_revision,
 					 std::vector<collector_command_result> *collector_events)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !result || !result_code || !mutation_applied || !collector_revision ||
 	    !collector_events)
 	{

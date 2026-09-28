@@ -1,0 +1,1201 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "id": "wallet_bank",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "wallet": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        "bank": {
+          "kind": "bank",
+          "identity": 7,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000001",
+          "reason": "bank_transfer",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "wallet",
+              "delta": [
+                0,
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "account": "bank",
+              "delta": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        },
+        {
+          "operation_id": "00000000000000000000000000000002",
+          "reason": "bank_transfer",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "wallet",
+              "delta": [
+                0,
+                0,
+                5,
+                0
+              ]
+            },
+            {
+              "account": "bank",
+              "delta": [
+                0,
+                0,
+                5,
+                -1
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "wallet_pile_change",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "wallet": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "pile": {
+          "kind": "pile",
+          "identity": 501,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000003",
+          "reason": "coin_transfer",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "wallet",
+              "delta": [
+                3,
+                6,
+                8,
+                -1
+              ]
+            },
+            {
+              "account": "pile",
+              "delta": [
+                7,
+                3,
+                1,
+                0
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "group_split",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "leader": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        "a": {
+          "kind": "wallet",
+          "identity": 2,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "b": {
+          "kind": "wallet",
+          "identity": 3,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000004",
+          "reason": "group_split",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "leader",
+              "delta": [
+                4,
+                3,
+                -1,
+                0
+              ]
+            },
+            {
+              "account": "a",
+              "delta": [
+                3,
+                3,
+                0,
+                0
+              ]
+            },
+            {
+              "account": "b",
+              "delta": [
+                3,
+                3,
+                0,
+                0
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "reward",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "wallet": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "quest": {
+          "kind": "issuance",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000005",
+          "reason": "quest_reward",
+          "actor": "domain",
+          "source_event": "33333333333333333333333333333333",
+          "postings": [
+            {
+              "account": "quest",
+              "delta": [
+                0,
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "account": "wallet",
+              "delta": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "expense",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "wallet": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "service": {
+          "kind": "sink",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000006",
+          "reason": "service_cost",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "wallet",
+              "delta": [
+                5,
+                7,
+                8,
+                -1
+              ]
+            },
+            {
+              "account": "service",
+              "delta": [
+                5,
+                2,
+                1,
+                0
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "same_owner_container_move",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {},
+      "custody": {
+        "501": {
+          "kind": "player",
+          "identity": 1,
+          "root": 501,
+          "parent": 0
+        },
+        "502": {
+          "kind": "player",
+          "identity": 1,
+          "root": 502,
+          "parent": 0
+        }
+      },
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000007",
+          "reason": "item_move",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [],
+          "items": [
+            {
+              "uid": 502,
+              "action": "move",
+              "before": {
+                "kind": "player",
+                "identity": 1,
+                "root": 502,
+                "parent": 0
+              },
+              "after": {
+                "kind": "player",
+                "identity": 1,
+                "root": 501,
+                "parent": 501
+              },
+              "event_index": 0,
+              "operation_id": "00000000000000000000000000000007"
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "sale_100_gold_fee_5",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "buyer": {
+          "kind": "wallet",
+          "identity": 2,
+          "balance": [
+            0,
+            0,
+            0,
+            10
+          ]
+        },
+        "seller": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "fee": {
+          "kind": "sink",
+          "identity": 2,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {
+        "601": {
+          "kind": "player",
+          "identity": 1,
+          "root": 601,
+          "parent": 0
+        }
+      },
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000008",
+          "reason": "shop_buy",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "buyer",
+              "delta": [
+                0,
+                0,
+                0,
+                -10
+              ]
+            },
+            {
+              "account": "seller",
+              "delta": [
+                0,
+                0,
+                5,
+                9
+              ]
+            },
+            {
+              "account": "fee",
+              "delta": [
+                0,
+                0,
+                5,
+                0
+              ]
+            }
+          ],
+          "items": [
+            {
+              "uid": 601,
+              "action": "move",
+              "before": {
+                "kind": "player",
+                "identity": 1,
+                "root": 601,
+                "parent": 0
+              },
+              "after": {
+                "kind": "player",
+                "identity": 2,
+                "root": 601,
+                "parent": 0
+              },
+              "event_index": 0,
+              "operation_id": "00000000000000000000000000000008"
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "auction_staged",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "buyer": {
+          "kind": "wallet",
+          "identity": 2,
+          "balance": [
+            0,
+            0,
+            0,
+            12
+          ]
+        },
+        "seller": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            2,
+            0,
+            0
+          ]
+        },
+        "escrow": {
+          "kind": "auction_escrow",
+          "identity": 44,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "claim": {
+          "kind": "pending_claim",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "fee": {
+          "kind": "sink",
+          "identity": 3,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {
+        "701": {
+          "kind": "player",
+          "identity": 1,
+          "root": 701,
+          "parent": 0
+        }
+      },
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000009",
+          "reason": "auction_listing",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "seller",
+              "delta": [
+                0,
+                -2,
+                0,
+                0
+              ]
+            },
+            {
+              "account": "fee",
+              "delta": [
+                0,
+                2,
+                0,
+                0
+              ]
+            }
+          ],
+          "items": [
+            {
+              "uid": 701,
+              "action": "move",
+              "before": {
+                "kind": "player",
+                "identity": 1,
+                "root": 701,
+                "parent": 0
+              },
+              "after": {
+                "kind": "auction",
+                "identity": 44,
+                "root": 701,
+                "parent": 0
+              },
+              "event_index": 0,
+              "operation_id": "00000000000000000000000000000009"
+            }
+          ],
+          "children": []
+        },
+        {
+          "operation_id": "0000000000000000000000000000000a",
+          "reason": "auction_bid",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "buyer",
+              "delta": [
+                0,
+                0,
+                0,
+                -10
+              ]
+            },
+            {
+              "account": "escrow",
+              "delta": [
+                0,
+                0,
+                0,
+                10
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        },
+        {
+          "operation_id": "0000000000000000000000000000000b",
+          "reason": "auction_settle",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "escrow",
+              "delta": [
+                0,
+                0,
+                0,
+                -10
+              ]
+            },
+            {
+              "account": "claim",
+              "delta": [
+                0,
+                0,
+                5,
+                9
+              ]
+            },
+            {
+              "account": "fee",
+              "delta": [
+                0,
+                0,
+                5,
+                0
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        },
+        {
+          "operation_id": "0000000000000000000000000000000c",
+          "reason": "auction_claim",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "claim",
+              "delta": [
+                0,
+                0,
+                -5,
+                -9
+              ]
+            },
+            {
+              "account": "seller",
+              "delta": [
+                0,
+                0,
+                5,
+                9
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        },
+        {
+          "operation_id": "0000000000000000000000000000000d",
+          "reason": "auction_claim",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [],
+          "items": [
+            {
+              "uid": 701,
+              "action": "move",
+              "before": {
+                "kind": "auction",
+                "identity": 44,
+                "root": 701,
+                "parent": 0
+              },
+              "after": {
+                "kind": "player",
+                "identity": 2,
+                "root": 701,
+                "parent": 0
+              },
+              "event_index": 0,
+              "operation_id": "0000000000000000000000000000000d"
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "auction_outbid_refund",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "old": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "new": {
+          "kind": "wallet",
+          "identity": 2,
+          "balance": [
+            0,
+            0,
+            0,
+            2
+          ]
+        },
+        "escrow": {
+          "kind": "auction_escrow",
+          "identity": 45,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "refund": {
+          "kind": "pending_claim",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "0000000000000000000000000000000e",
+          "reason": "auction_bid",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "old",
+              "delta": [
+                0,
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "account": "escrow",
+              "delta": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        },
+        {
+          "operation_id": "0000000000000000000000000000000f",
+          "reason": "auction_outbid",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "escrow",
+              "delta": [
+                0,
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "account": "refund",
+              "delta": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            {
+              "account": "new",
+              "delta": [
+                0,
+                0,
+                5,
+                -2
+              ]
+            },
+            {
+              "account": "escrow",
+              "delta": [
+                0,
+                0,
+                5,
+                1
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        },
+        {
+          "operation_id": "00000000000000000000000000000010",
+          "reason": "auction_claim",
+          "actor": "domain",
+          "source_event": null,
+          "postings": [
+            {
+              "account": "refund",
+              "delta": [
+                0,
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "account": "old",
+              "delta": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "opening",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "wallet": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "equity": {
+          "kind": "opening",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000011",
+          "reason": "baseline",
+          "actor": "operator",
+          "source_event": "44444444444444444444444444444444",
+          "postings": [
+            {
+              "account": "wallet",
+              "delta": [
+                7,
+                3,
+                1,
+                0
+              ]
+            },
+            {
+              "account": "equity",
+              "delta": [
+                -7,
+                -3,
+                -1,
+                0
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "pile_admission_and_destruction",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "pile": {
+          "kind": "pile",
+          "identity": 801,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "spawn": {
+          "kind": "issuance",
+          "identity": 4,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "decay": {
+          "kind": "sink",
+          "identity": 4,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000012",
+          "reason": "first_admission",
+          "actor": "domain",
+          "source_event": "55555555555555555555555555555555",
+          "postings": [
+            {
+              "account": "spawn",
+              "delta": [
+                -7,
+                -3,
+                -1,
+                0
+              ]
+            },
+            {
+              "account": "pile",
+              "delta": [
+                7,
+                3,
+                1,
+                0
+              ]
+            }
+          ],
+          "items": [
+            {
+              "uid": 801,
+              "action": "admit",
+              "before": null,
+              "after": {
+                "kind": "room",
+                "identity": 1,
+                "root": 801,
+                "parent": 0
+              },
+              "event_index": 0,
+              "operation_id": "00000000000000000000000000000012"
+            }
+          ],
+          "children": []
+        },
+        {
+          "operation_id": "00000000000000000000000000000013",
+          "reason": "item_destroy",
+          "actor": "domain",
+          "source_event": "66666666666666666666666666666666",
+          "postings": [
+            {
+              "account": "pile",
+              "delta": [
+                -7,
+                -3,
+                -1,
+                0
+              ]
+            },
+            {
+              "account": "decay",
+              "delta": [
+                7,
+                3,
+                1,
+                0
+              ]
+            }
+          ],
+          "items": [
+            {
+              "uid": 801,
+              "action": "destroy",
+              "before": {
+                "kind": "room",
+                "identity": 1,
+                "root": 801,
+                "parent": 0
+              },
+              "after": null,
+              "event_index": 0,
+              "operation_id": "00000000000000000000000000000013"
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "opening_bank_contexts",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {
+        "bank1": {
+          "kind": "bank",
+          "identity": 7,
+          "context": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "bank2": {
+          "kind": "bank",
+          "identity": 7,
+          "context": 2,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "equity": {
+          "kind": "opening",
+          "identity": 1,
+          "balance": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000011",
+          "reason": "baseline",
+          "actor": "operator",
+          "source_event": "44444444444444444444444444444444",
+          "postings": [
+            {
+              "account": "bank1",
+              "delta": [
+                0,
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "account": "bank2",
+              "delta": [
+                0,
+                0,
+                2,
+                0
+              ]
+            },
+            {
+              "account": "equity",
+              "delta": [
+                0,
+                0,
+                -3,
+                0
+              ]
+            }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "nested_destruction",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "holdings": {},
+      "custody": {
+        "501": {
+          "kind": "player",
+          "identity": 1,
+          "root": 501,
+          "parent": 0
+        },
+        "502": {
+          "kind": "player",
+          "identity": 1,
+          "root": 501,
+          "parent": 501
+        }
+      },
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000007",
+          "reason": "item_destroy",
+          "actor": "domain",
+          "source_event": "77777777777777777777777777777777",
+          "postings": [],
+          "items": [
+            {
+              "uid": 501,
+              "action": "destroy",
+              "before": {
+                "kind": "player",
+                "identity": 1,
+                "root": 501,
+                "parent": 0
+              },
+              "after": null,
+              "event_index": 0,
+              "operation_id": "00000000000000000000000000000007"
+            },
+            {
+              "uid": 502,
+              "action": "destroy",
+              "before": {
+                "kind": "player",
+                "identity": 1,
+                "root": 501,
+                "parent": 501
+              },
+              "after": null,
+              "event_index": 1,
+              "operation_id": "00000000000000000000000000000007"
+            }
+          ],
+          "children": []
+        }
+      ]
+    }
+  ]
+}
