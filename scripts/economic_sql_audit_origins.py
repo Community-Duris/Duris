@@ -117,6 +117,91 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
     return holdings, items
 
 
+def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
+    """Read verified origins within a caller-owned consistent read-only cut."""
+    identity(lineage, "lineage")
+    identity(epoch, "epoch")
+    cursor.execute(
+        "SELECT TABLE_NAME AS table_name,ENGINE AS engine FROM information_schema.tables "
+        "WHERE table_schema=DATABASE() AND table_name IN "
+        "('economic_baseline_control','economic_baseline_witness',"
+        "'economic_accounting_operation','critical_operation_inbox')")
+    engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
+    if (len(engines) != 4 or any(engine != "InnoDB" for engine in engines.values())):
+        raise OriginError("SQL baseline source is missing or not InnoDB")
+    cursor.execute(
+        "SELECT opening_account,revision,last_operation_id FROM economic_baseline_control "
+        "WHERE lineage=%s AND epoch=%s", (lineage, epoch))
+    control = cursor.fetchone()
+    if control is None:
+        raise OriginError("missing SQL baseline control")
+    opening = control["opening_account"]
+    if not isinstance(opening, bytes) or len(opening) != 40:
+        raise OriginError("invalid SQL opening account")
+    opening_lineage, opening_kind, _, _ = account_key(opening.hex())
+    if opening_lineage != lineage.hex() or opening_kind != 9:
+        raise OriginError("invalid SQL opening account")
+    if type(control["revision"]) is not int or control["revision"] < 1:
+        raise OriginError("baseline has no committed opening witness")
+    cursor.execute(
+        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(canonical_witness)),0) "
+        "AS blob_bytes FROM economic_baseline_witness WHERE lineage=%s AND epoch=%s",
+        (lineage, epoch))
+    bounds = cursor.fetchone()
+    if (bounds is None or bounds["row_count"] > MAX_ROWS or
+            bounds["blob_bytes"] > MAX_INPUT_BYTES):
+        raise OriginError("baseline witness source exceeds audit input limit")
+    cursor.execute(
+        "SELECT w.operation_id,w.book_revision,w.holding_count,w.item_count,"
+        "w.witness_digest,w.canonical_witness,o.reason,o.outcome,o.result_code,"
+        "i.status AS inbox_status,i.result_code AS inbox_result "
+        "FROM economic_baseline_witness w "
+        "LEFT JOIN economic_accounting_operation o ON o.operation_id=w.operation_id "
+        "LEFT JOIN critical_operation_inbox i ON i.operation_id=w.operation_id "
+        "WHERE w.lineage=%s AND w.epoch=%s ORDER BY w.book_revision LIMIT %s",
+        (lineage, epoch, MAX_ROWS + 1))
+    witnesses = cursor.fetchall()
+    if len(witnesses) != bounds["row_count"] or control["revision"] != len(witnesses):
+        raise OriginError("baseline witness revision gap or limit exceeded")
+    holdings: list[dict] = []
+    items: list[dict] = []
+    seen_keys: set[str] = set()
+    seen_lifetimes: set[int] = set()
+    seen_uids: set[int] = set()
+    for expected_revision, row in enumerate(witnesses, 1):
+        if (row["book_revision"] != expected_revision or row["reason"] != 38 or
+                row["outcome"] != 1 or row["result_code"] != 0 or
+                row["inbox_status"] != 1 or row["inbox_result"] != 0):
+            raise OriginError("uncommitted or noncanonical baseline witness")
+        batch_holdings, batch_items = decode_witness(row, lineage, epoch, opening)
+        for holding in batch_holdings:
+            key = holding["account_key"]
+            lifetime = account_key(key)[2]
+            if key in seen_keys or lifetime in seen_lifetimes:
+                raise OriginError("duplicate baseline account across witnesses")
+            seen_keys.add(key)
+            seen_lifetimes.add(lifetime)
+            holdings.append(holding)
+        for item in batch_items:
+            uid = item["uid"]
+            if uid in seen_uids:
+                raise OriginError("duplicate baseline UID across witnesses")
+            seen_uids.add(uid)
+            items.append(item)
+        if len(holdings) > MAX_ROWS or len(items) > MAX_ROWS:
+            raise OriginError("baseline origin collection limit exceeded")
+    if (witnesses[-1]["operation_id"] if witnesses else None) != control["last_operation_id"]:
+        raise OriginError("baseline control terminal witness mismatch")
+    result = {"format": "economic_sql_audit_origins_v1", "lineage": lineage.hex(),
+              "epoch": epoch.hex(), "control_revision": control["revision"],
+              "witness_count": len(witnesses), "account_origins": holdings,
+              "item_origins": items}
+    encoded = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
+    if len(encoded) > MAX_INPUT_BYTES:
+        raise OriginError("origin export exceeds audit input limit")
+    return result
+
+
 def capture(connection, lineage: bytes, epoch: bytes) -> dict:
     """Read one bounded, consistent baseline cut; always end it with rollback."""
     identity(lineage, "lineage")
@@ -125,91 +210,12 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
     try:
         cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
-        cursor.execute(
-            "SELECT TABLE_NAME AS table_name,ENGINE AS engine FROM information_schema.tables "
-            "WHERE table_schema=DATABASE() AND table_name IN "
-            "('economic_baseline_control','economic_baseline_witness',"
-            "'economic_accounting_operation','critical_operation_inbox')")
-        engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if (len(engines) != 4 or any(engine != "InnoDB" for engine in engines.values())):
-            raise OriginError("SQL baseline source is missing or not InnoDB")
-        cursor.execute(
-            "SELECT opening_account,revision,last_operation_id FROM economic_baseline_control "
-            "WHERE lineage=%s AND epoch=%s", (lineage, epoch))
-        control = cursor.fetchone()
-        if control is None:
-            raise OriginError("missing SQL baseline control")
-        opening = control["opening_account"]
-        if not isinstance(opening, bytes) or len(opening) != 40:
-            raise OriginError("invalid SQL opening account")
-        opening_lineage, opening_kind, _, _ = account_key(opening.hex())
-        if opening_lineage != lineage.hex() or opening_kind != 9:
-            raise OriginError("invalid SQL opening account")
-        if type(control["revision"]) is not int or control["revision"] < 1:
-            raise OriginError("baseline has no committed opening witness")
-        cursor.execute(
-            "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(canonical_witness)),0) "
-            "AS blob_bytes FROM economic_baseline_witness WHERE lineage=%s AND epoch=%s",
-            (lineage, epoch))
-        bounds = cursor.fetchone()
-        if (bounds is None or bounds["row_count"] > MAX_ROWS or
-                bounds["blob_bytes"] > MAX_INPUT_BYTES):
-            raise OriginError("baseline witness source exceeds audit input limit")
-        cursor.execute(
-            "SELECT w.operation_id,w.book_revision,w.holding_count,w.item_count,"
-            "w.witness_digest,w.canonical_witness,o.reason,o.outcome,o.result_code,"
-            "i.status AS inbox_status,i.result_code AS inbox_result "
-            "FROM economic_baseline_witness w "
-            "LEFT JOIN economic_accounting_operation o ON o.operation_id=w.operation_id "
-            "LEFT JOIN critical_operation_inbox i ON i.operation_id=w.operation_id "
-            "WHERE w.lineage=%s AND w.epoch=%s ORDER BY w.book_revision LIMIT %s",
-            (lineage, epoch, MAX_ROWS + 1))
-        witnesses = cursor.fetchall()
-        if len(witnesses) != bounds["row_count"] or control["revision"] != len(witnesses):
-            raise OriginError("baseline witness revision gap or limit exceeded")
-        holdings: list[dict] = []
-        items: list[dict] = []
-        seen_keys: set[str] = set()
-        seen_lifetimes: set[int] = set()
-        seen_uids: set[int] = set()
-        for expected_revision, row in enumerate(witnesses, 1):
-            if (row["book_revision"] != expected_revision or row["reason"] != 38 or
-                    row["outcome"] != 1 or row["result_code"] != 0 or
-                    row["inbox_status"] != 1 or row["inbox_result"] != 0):
-                raise OriginError("uncommitted or noncanonical baseline witness")
-            batch_holdings, batch_items = decode_witness(row, lineage, epoch, opening)
-            for holding in batch_holdings:
-                key = holding["account_key"]
-                lifetime = account_key(key)[2]
-                if key in seen_keys or lifetime in seen_lifetimes:
-                    raise OriginError("duplicate baseline account across witnesses")
-                seen_keys.add(key)
-                seen_lifetimes.add(lifetime)
-                holdings.append(holding)
-            for item in batch_items:
-                uid = item["uid"]
-                if uid in seen_uids:
-                    raise OriginError("duplicate baseline UID across witnesses")
-                seen_uids.add(uid)
-                items.append(item)
-            if len(holdings) > MAX_ROWS or len(items) > MAX_ROWS:
-                raise OriginError("baseline origin collection limit exceeded")
-        if (witnesses[-1]["operation_id"] if witnesses else None) != control["last_operation_id"]:
-            raise OriginError("baseline control terminal witness mismatch")
-        result = {"format": "economic_sql_audit_origins_v1", "lineage": lineage.hex(),
-                  "epoch": epoch.hex(), "control_revision": control["revision"],
-                  "witness_count": len(witnesses), "account_origins": holdings,
-                  "item_origins": items}
-        encoded = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
-        if len(encoded) > MAX_INPUT_BYTES:
-            raise OriginError("origin export exceeds audit input limit")
-        return result
+        return read_origins_in_transaction(cursor, lineage, epoch)
     finally:
         try:
             connection.rollback()
         finally:
             cursor.close()
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)

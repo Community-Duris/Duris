@@ -47,12 +47,14 @@ uint64_t get_u64(std::span<const uint8_t> input, size_t offset)
 
 bool economic_account_kind_valid(economic_account_kind kind)
 {
-	return kind >= economic_account_kind::wallet && kind <= economic_account_kind::restitution;
+	return kind >= economic_account_kind::wallet &&
+	       kind <= economic_account_kind::gambling_stake;
 }
 
 bool economic_account_is_ordinary(economic_account_kind kind)
 {
-	return kind >= economic_account_kind::wallet && kind <= economic_account_kind::treasury;
+	return (kind >= economic_account_kind::wallet && kind <= economic_account_kind::treasury) ||
+	       kind == economic_account_kind::gambling_stake;
 }
 
 bool economic_account_key_valid(const economic_account_key &key)

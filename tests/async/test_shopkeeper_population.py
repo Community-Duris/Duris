@@ -18,7 +18,10 @@ restore_start = sql.index("struct shopkeeper_temp")
 restore = sql[restore_start:sql.rindex("bool sql_save_dirty_shopkeepers(", restore_start)]
 save_item_start = sql.index("static int sql_save_shopkeeper_item(")
 save_item = sql[save_item_start:sql.index("static bool sql_save_shopkeeper_affects(", save_item_start)]
+properties_start = sql.index("static bool sql_player_item_properties_value_suffix(")
+properties = sql[properties_start:sql.index("// check if object has any non-default", properties_start)]
 harness = (ROOT / "tests/async/shopkeeper_population_harness.cpp").read_text()
+harness = harness.replace("// PRODUCTION_ITEM_PROPERTIES", properties)
 harness = harness.replace("// PRODUCTION_SAVE_ITEM", save_item)
 harness = harness.replace("// PRODUCTION_HELPER", helper)
 harness = harness.replace("// PRODUCTION_RESET", reset)
@@ -34,11 +37,12 @@ with tempfile.TemporaryDirectory(prefix="shopkeeper-population-", dir=build_root
         "g++", "-std=c++20", "-g", "-Wall", "-Wextra", "-Werror",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
         "-I", str(ROOT / "src"),
-        str(source), "-o", str(binary),
+        str(source), str(ROOT / "src/player/player_snapshot_codec.c"),
+        "-o", str(binary),
     ], check=True)
     for scenario in (
         "reset", "shared", "duplicate", "duplicate_uid", "legacy_uid", "invalid_uid",
-        "cleanup", "cash", "invalid", "uid_save",
+        "cleanup", "cash", "invalid", "uid_save", "dynamic_properties",
     ):
         subprocess.run([str(binary), scenario], check=True, env={
             **os.environ, "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",

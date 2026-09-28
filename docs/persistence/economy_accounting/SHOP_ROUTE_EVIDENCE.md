@@ -76,10 +76,21 @@ keeps it, advances the UID allocator, and refuses zero, overflowed, or duplicate
 saved UIDs before publishing stock. Legacy rows with NULL UID still load with a
 new UID and remain dirty for a replacement snapshot. The population regression
 exercises the production save formatter and restore path for these cases.
+Migration 0043 adds nullable `shopkeeper_items.item_condition`. Existing stock
+rows remain unknown rather than receiving a fabricated condition. A successful
+keeper checkpoint writes each root and contained item's live condition; restore
+uses a known saved value and retains the prototype condition for legacy NULL.
+The raw SQL item-source snapshot now binds that value, and lifecycle installation
+refuses any remaining NULL keeper item condition before opening a baseline.
 `python3 tests/async/test_shopkeeper_save_runtime.py` and
 `python3 tests/async/test_shopkeeper_population.py` cover these boundaries with
-deterministic SQL doubles. Both migrations are required before deploying the
-SQL server code; neither historical cash nor roaming policy is backfilled.
+deterministic SQL doubles. Migration 0044 adds nullable
+`shopkeeper_items.item_properties`. A successful checkpoint encodes dynamic
+affects and extra flags with the player item codec; restore decodes them before
+publishing stock and refuses a malformed payload. Legacy NULL rows retain their
+prototype state. Migrations 0041 through 0044 are required before deploying the
+SQL server code; historical cash, roaming policy, item condition, and dynamic
+properties are not backfilled.
 
 The SQL source capture now includes each stable shopkeeper row, including
 nullable cash and the shop revision. Normalization reports unknown cash as a

@@ -96,6 +96,8 @@ expect_schema_rejection() {
 # Fresh schema, additive upgrade, and exact canonical replay must all verify.
 docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
     < migrations/bootstrap_multithread_safe.sql
+docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
+    < migrations/immutable/0043_shopkeeper_item_condition.sql
 verify_schema
 docker exec -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
     -e 'DROP TABLE economic_sql_global_activation'

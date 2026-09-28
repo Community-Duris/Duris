@@ -15,6 +15,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "magic/spell_item_lifecycle.h"
+#include "persistence/critical_command.h"
 
 extern P_obj object_list;
 extern P_char character_list;
@@ -33,6 +34,17 @@ static P_obj spell_item_by_uid(uint64_t uid)
 		if (object->obj_uid == uid)
 			return object;
 	return NULL;
+}
+
+static uint64_t spell_creation_source_id()
+{
+	critical_operation_id occurrence = {};
+	if (!critical_operation_id_generate(&occurrence))
+		return 0;
+	uint64_t source_id = 0;
+	for (size_t index = 0; index < sizeof(source_id); ++index)
+		source_id |= static_cast<uint64_t>(occurrence.bytes[index]) << (index * 8);
+	return source_id;
 }
 
 static void spell_room_creation_completed(P_char actor, uint64_t item_uid, bool committed,
@@ -60,9 +72,11 @@ static void spell_room_creation_completed(P_char actor, uint64_t item_uid, bool 
 
 static bool submit_spell_room_creation(P_char actor, P_obj object)
 {
-	if (item_creation_grant_submit_to_room(actor, object, actor->in_room,
+	const uint64_t source_id = IS_PC(actor) ? spell_creation_source_id() : 0;
+	if (source_id &&
+	    item_creation_grant_submit_to_room(actor, object, actor->in_room,
 					       economic_source_kind::spell_creation,
-					       spell_room_creation_completed))
+					       spell_room_creation_completed, source_id))
 		return true;
 	if (OBJ_NOWHERE(object))
 		extract_obj(object, FALSE);
@@ -128,9 +142,10 @@ static void spell_player_creation_completed(P_char actor, uint64_t item_uid, boo
 
 static bool submit_spell_player_creation(P_char actor, P_obj object)
 {
-	if (item_creation_grant_submit_to_player_with_completion(
-		    actor, object, actor, NULL, spell_player_creation_completed,
-		    economic_source_kind::spell_creation))
+	const uint64_t source_id = spell_creation_source_id();
+	if (source_id && item_creation_grant_submit_to_player_with_completion(
+				 actor, object, actor, NULL, spell_player_creation_completed,
+				 economic_source_kind::spell_creation, source_id))
 		return true;
 	if (OBJ_NOWHERE(object))
 		extract_obj(object, FALSE);
@@ -1904,6 +1919,11 @@ void cast_channel(int level, P_char ch, char * /*arg*/, int type, P_char /*tar_c
 
 void spell_minor_creation(int /*level*/, P_char ch, P_char /*victim*/, P_obj obj)
 {
+	if (economic_gameplay_authority::active() && !IS_PC(ch))
+	{
+		(void)submit_spell_room_creation(ch, obj);
+		return;
+	}
 	SET_BIT(obj->extra2_flags, ITEM2_STOREITEM);
 	obj->z_cord = ch->specials.z_cord;
 	if (economic_gameplay_authority::active() && IS_PC(ch))
@@ -1920,6 +1940,8 @@ void spell_flame_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		       P_obj /*obj*/)
 {
 	P_obj blade;
+	if (economic_gameplay_authority::active() && !IS_PC(ch))
+		return;
 
 	blade = read_object(real_object(366), REAL);
 	if (!blade)
@@ -1986,6 +2008,8 @@ void spell_shield(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char
 		  P_obj /*obj*/)
 {
 	P_obj shield;
+	if (economic_gameplay_authority::active() && !IS_PC(ch))
+		return;
 
 	shield = read_object(real_object(368), REAL);
 	/*
@@ -2014,6 +2038,8 @@ void spell_create_food(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		       P_obj /*obj*/)
 {
 	P_obj food;
+	if (economic_gameplay_authority::active() && !IS_PC(ch))
+		return;
 
 	food = read_object(real_object(364), REAL);
 
@@ -2111,6 +2137,8 @@ void spell_doom_blade(int /*level*/, P_char ch, char * /*arg*/, int type, P_char
 		      P_obj /*obj*/)
 {
 	P_obj weapon = NULL;
+	if (economic_gameplay_authority::active() && !IS_PC(ch))
+		return;
 
 	debug("doom blade (%d): Cast by: '%s' (%d).", type, J_NAME(ch), GET_ID(ch));
 

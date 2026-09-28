@@ -82,12 +82,22 @@ def goldens(include_plans=False):
                     source_kind={'baseline':'baseline','quest_reward':'quest_completion','first_admission':'world_generation',
                                  'item_destroy':'lifecycle','shop_buy':'shop_stock','auction_listing':'auction',
                                  'auction_bid':'auction','auction_outbid':'auction','auction_settle':'auction',
-                                 'auction_claim':'auction'}.get(operation['reason'],'service')
-                    source_identity=bytes.fromhex(operation['source_event'])
+                                 'auction_claim':'auction','gambling_stake':'gambling_round',
+                                 'gambling_payout':'gambling_round','gambling_loss':'gambling_round',
+                                 'gambling_interruption':'gambling_round'}.get(operation['reason'],'service')
+                    source_identity=bytes.fromhex(fixture.get('round_source',operation['source_event']))
                     if len(source_identity)!=16: raise ValueError('golden source event must be 16 bytes')
                     output.append(f'auto event=source_event(economic_source_kind::{source_kind}); '
                                   f'event.source.bytes={{{",".join(map(str,source_identity))}}}; '
                                   'plan.metadata.source_event=event;')
+                    if source_kind=='gambling_round':
+                        round_context=next(holdings[name].get('context',0) for name in names
+                                           if holdings[name]['kind']=='gambling_stake')
+                        output.append(f'plan.metadata.source_event->sequence={round_context}; '
+                                      f'plan.metadata.source_event->slot={0 if operation["reason"]=="gambling_stake" else 1};')
+                        if operation.get('original_operation_id'):
+                            original=bytes.fromhex(operation['original_operation_id'])
+                            output.append(f'plan.metadata.original_operation_id.bytes={{{",".join(map(str,original))}}};')
                 output.append('roundtrip(plan);')
             output.append('}')
     output.append('}')

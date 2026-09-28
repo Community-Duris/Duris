@@ -281,6 +281,8 @@ void source_and_policy()
 		{ economic_reason::crafting_cost, economic_source_kind::crafting },
 		{ economic_reason::gambling_stake, economic_source_kind::gambling_round },
 		{ economic_reason::gambling_payout, economic_source_kind::gambling_round },
+		{ economic_reason::gambling_loss, economic_source_kind::gambling_round },
+		{ economic_reason::gambling_interruption, economic_source_kind::gambling_round },
 		{ economic_reason::shop_buy, economic_source_kind::shop_stock },
 		{ economic_reason::shop_sell, economic_source_kind::shop_stock },
 		{ economic_reason::auction_listing, economic_source_kind::auction },
@@ -299,6 +301,10 @@ void source_and_policy()
 		meta.reason = reason;
 		CHECK(economic_operation_metadata_validate(meta) == error::invalid_identity);
 		meta.source_event = source_event(kind);
+		if (reason == economic_reason::gambling_payout ||
+		    reason == economic_reason::gambling_loss ||
+		    reason == economic_reason::gambling_interruption)
+			meta.original_operation_id = id(9);
 		CHECK(economic_operation_metadata_validate(meta) == error::ok);
 		meta.source_event->kind = economic_source_kind::administrator;
 		CHECK(economic_operation_metadata_validate(meta) == error::unauthorized);
@@ -317,6 +323,84 @@ void source_and_policy()
 	CHECK(economic_operation_metadata_validate(restitution) == error::invalid_identity);
 	restitution.original_operation_id = id(9);
 	CHECK(economic_operation_metadata_validate(restitution) == error::ok);
+}
+
+void gambling_rounds()
+{
+	auto stake = base_plan();
+	stake.metadata.reason = economic_reason::gambling_stake;
+	stake.metadata.source_event = { economic_source_kind::gambling_round, id(31), id(32), 7,
+					0 };
+	stake.accounts = {
+		{ key(economic_account_kind::wallet, 1), { 0, 10, 0, 0 }, { 0, 5, 0, 0 }, 4, 5 },
+		{ key(economic_account_kind::gambling_stake, 700, 7), {}, { 0, 5, 0, 0 }, 0, 1 }
+	};
+	stake.postings = { { 0, 0, 0, { 0, -5, 0, 0 }, -50 }, { 1, 1, 0, { 0, 5, 0, 0 }, 50 } };
+	roundtrip(stake);
+	auto changed = stake;
+	changed.metadata.source_event->slot = 1;
+	CHECK(economic_plan_validate_structure(changed) == error::unauthorized);
+	changed = stake;
+	changed.accounts[1].key.context_id = 8;
+	CHECK(economic_plan_validate_structure(changed) == error::invalid_identity);
+	changed = stake;
+	changed.accounts[0].after = { 10, 4, 0, 0 };
+	changed.postings[0] = { 0, 0, 0, { 10, -6, 0, 0 }, -50 };
+	CHECK(economic_plan_validate_structure(changed) == error::unauthorized);
+	changed = stake;
+	changed.accounts[1].key.kind = economic_account_kind::treasury;
+	CHECK(economic_plan_validate_structure(changed) == error::unauthorized);
+	changed = stake;
+	changed.accounts[0].after = { 0, 4, 0, 0 };
+	changed.accounts.push_back(
+		{ key(economic_account_kind::gambling_stake, 701, 7), {}, { 0, 1, 0, 0 }, 0, 1 });
+	changed.postings = { { 0, 0, 0, { 0, -6, 0, 0 }, -60 },
+			     { 1, 1, 0, { 0, 5, 0, 0 }, 50 },
+			     { 2, 2, 0, { 0, 1, 0, 0 }, 10 } };
+	CHECK(economic_plan_validate_structure(changed) == error::invalid_identity);
+
+	auto push = base_plan();
+	push.metadata.operation_id = id(6);
+	push.metadata.original_operation_id = stake.metadata.operation_id;
+	push.metadata.reason = economic_reason::gambling_payout;
+	push.metadata.source_event = *stake.metadata.source_event;
+	push.metadata.source_event->slot = 1;
+	push.accounts = {
+		{ key(economic_account_kind::wallet, 1), { 0, 5, 0, 0 }, { 0, 10, 0, 0 }, 5, 6 },
+		{ key(economic_account_kind::gambling_stake, 700, 7), { 0, 5, 0, 0 }, {}, 1, 2 }
+	};
+	push.postings = { { 0, 0, 0, { 0, 5, 0, 0 }, 50 }, { 1, 1, 0, { 0, -5, 0, 0 }, -50 } };
+	roundtrip(push);
+	changed = push;
+	changed.metadata.original_operation_id = {};
+	CHECK(economic_plan_validate_structure(changed) == error::invalid_identity);
+	changed = push;
+	changed.accounts[1] = { key(economic_account_kind::issuance, 1), {}, {}, 0, 0 };
+	changed.postings[1] = { 1, 1, 0, { 0, -5, 0, 0 }, -50 };
+	CHECK(economic_plan_validate_structure(changed) == error::invalid_identity);
+
+	auto win = push;
+	win.accounts[0].after = { 0, 15, 0, 0 };
+	win.accounts.insert(win.accounts.begin() + 1,
+			    { key(economic_account_kind::issuance, 1), {}, {}, 0, 0 });
+	win.postings = { { 0, 0, 0, { 0, 10, 0, 0 }, 100 },
+			 { 1, 1, 0, { 0, -5, 0, 0 }, -50 },
+			 { 2, 2, 0, { 0, -5, 0, 0 }, -50 } };
+	roundtrip(win);
+	changed = win;
+	changed.accounts[0].after = { 0, 20, 0, 0 };
+	changed.postings[0] = { 0, 0, 0, { 0, 15, 0, 0 }, 150 };
+	changed.postings[1] = { 1, 1, 0, { 0, -10, 0, 0 }, -100 };
+	CHECK(economic_plan_validate_structure(changed) == error::unauthorized);
+
+	auto loss = push;
+	loss.metadata.reason = economic_reason::gambling_loss;
+	loss.accounts = { { key(economic_account_kind::sink, 1), {}, {}, 0, 0 }, push.accounts[1] };
+	loss.postings = { { 0, 0, 0, { 0, 5, 0, 0 }, 50 }, { 1, 1, 0, { 0, -5, 0, 0 }, -50 } };
+	roundtrip(loss);
+	auto interrupted = push;
+	interrupted.metadata.reason = economic_reason::gambling_interruption;
+	roundtrip(interrupted);
 }
 
 void maximum_plan()
@@ -660,11 +744,12 @@ int main()
 	fixed_bytes_and_rejection();
 	canonical_permutations();
 	source_and_policy();
+	gambling_rounds();
 	maximum_plan();
 	command_binding();
 	frozen_intent();
 	versioned_envelopes();
 	golden_cases();
 	std::cout
-		<< "accounting plan and intent: reference bytes/digests, limits, bindings, malformed inputs and 13 goldens passed\n";
+		<< "accounting plan and intent: reference bytes/digests, limits, bindings, malformed inputs and 14 goldens passed\n";
 }

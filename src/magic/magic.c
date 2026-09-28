@@ -152,44 +152,72 @@ struct spell_component_retirement_context
 	std::array<uint8_t, 48> continuation_context = {};
 };
 
-static_assert(sizeof(spell_component_retirement_context) <=
-	      ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+static_assert(sizeof(spell_component_retirement_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
 
 P_obj spell_component_by_uid(uint64_t item_uid)
 {
+	P_obj found = NULL;
 	for (P_obj object = object_list; object; object = object->next)
 		if (object->obj_uid == item_uid)
-			return object;
-	return NULL;
+		{
+			if (found)
+				return NULL;
+			found = object;
+		}
+	return found;
 }
 
-void spell_component_retirement_completed(P_char actor, bool committed,
+bool spell_component_retirement_published(P_char actor, bool committed,
 					  const item_transfer_result &result,
 					  unsigned int error_code, const uint8_t *encoded,
 					  size_t encoded_size)
 {
-	if (!encoded || encoded_size != sizeof(spell_component_retirement_context))
-		return;
+	if (!actor || !encoded || encoded_size != sizeof(spell_component_retirement_context))
+		return false;
 	spell_component_retirement_context context = {};
 	memcpy(&context, encoded, sizeof(context));
+	if (!context.continuation || !context.item_count ||
+	    context.item_count > context.item_uids.size() ||
+	    context.continuation_context_size > context.continuation_context.size())
+		return false;
 	if (committed)
+	{
+		if (result.item_count < context.item_count)
+			return false;
 		for (size_t index = 0; index < context.item_count; ++index)
-			if (P_obj item = spell_component_by_uid(context.item_uids[index]))
-				extract_obj(item);
-	if (context.continuation)
-		context.continuation(actor, committed, result, error_code,
-				     context.continuation_context.data(),
-				     context.continuation_context_size);
+		{
+			P_obj item = spell_component_by_uid(context.item_uids[index]);
+			item_ownership_runtime_entry runtime = {};
+			if (!item || !OBJ_CARRIED_BY(item, actor) ||
+			    !item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
+			    runtime.state != item_custody_state::destroyed ||
+			    runtime.owner.type != item_owner_type::destruction ||
+			    runtime.vnum != OBJ_VNUM(item) ||
+			    runtime.root_item_uid != item->obj_uid || runtime.parent_item_uid)
+			{
+				logit(LOG_FILE,
+				      "spell component publication retained (pid=%d uid=%llu)",
+				      GET_PID(actor), (unsigned long long)context.item_uids[index]);
+				return false;
+			}
+		}
+		for (size_t index = 0; index < context.item_count; ++index)
+			extract_obj(spell_component_by_uid(context.item_uids[index]));
+	}
+	context.continuation(actor, committed, result, error_code,
+			     context.continuation_context.data(),
+			     context.continuation_context_size);
+	return true;
 }
 } // namespace
 
-bool spell_consume_components(P_char actor, int vnum, size_t max_components,
-			     uint32_t reason_id, item_movement_completion_fn continuation,
-			     const void *continuation_context, size_t continuation_context_size)
+bool spell_consume_components(P_char actor, int vnum, size_t max_components, uint32_t reason_id,
+			      item_movement_completion_fn continuation,
+			      const void *continuation_context, size_t continuation_context_size,
+			      bool require_exact_count)
 {
 	if (!actor || !IS_PC(actor) || GET_PID(actor) <= 0 || vnum < 0 || !max_components ||
-	    max_components > 8 || !reason_id || !continuation ||
-	    continuation_context_size > 48 ||
+	    max_components > 8 || !reason_id || !continuation || continuation_context_size > 48 ||
 	    (continuation_context_size && !continuation_context) ||
 	    !economic_gameplay_authority::active())
 		return false;
@@ -200,7 +228,7 @@ bool spell_consume_components(P_char actor, int vnum, size_t max_components,
 	     object = object->next_content)
 		if (obj_index[object->R_num].virtual_number == vnum)
 			selected[selected_count++] = object;
-	if (!selected_count)
+	if (!selected_count || (require_exact_count && selected_count != max_components))
 		return false;
 
 	spell_component_retirement_context context = {};
@@ -219,9 +247,9 @@ bool spell_consume_components(P_char actor, int vnum, size_t max_components,
 	item_movement_reject reject = item_movement_reject::none;
 	return item_movement_transaction_submit_batch(
 		actor, selected, selected_count, NULL, owner, destruction,
-		item_transfer_reason::destruction, static_cast<int64_t>(reason_id),
-		spell_component_retirement_completed, &context, sizeof(context), NULL, &reject,
-		nullptr, economic_source_kind::spell_consumption);
+		item_transfer_reason::destruction, static_cast<int64_t>(reason_id), nullptr,
+		&context, sizeof(context), NULL, &reject, spell_component_retirement_published,
+		economic_source_kind::spell_consumption);
 }
 
 /*

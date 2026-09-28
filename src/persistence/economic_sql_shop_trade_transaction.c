@@ -1,5 +1,7 @@
 #include "persistence/economic_sql_shop_trade_transaction.h"
 
+#include "player/player_snapshot_codec.h"
+
 #include <cerrno>
 
 #ifndef __NO_MYSQL__
@@ -115,6 +117,40 @@ item_owner_identity counterparty_owner(const shop_trade_payload &payload)
 	    payload.action == shop_trade_action::discard_invalid)
 		return { item_owner_type::destruction, 0, 0 };
 	return shop_owner(payload);
+}
+
+void produced_items(const shop_trade_payload &payload)
+{
+	if (payload.action != shop_trade_action::buy_produced)
+		return;
+	std::vector<player_item_snapshot> snapshots;
+	require(player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+						 &snapshots) == player_snapshot_codec_result::ok &&
+			snapshots.size() == payload.item_count &&
+			snapshots.front().object_uid == payload.selected_item_uid,
+		EILSEQ);
+	std::vector<bool> matched(payload.item_count, false);
+	for (size_t index = 0; index < snapshots.size(); ++index)
+	{
+		const auto &snapshot = snapshots[index];
+		const auto found = std::lower_bound(
+			payload.items.begin(), payload.items.begin() + payload.item_count,
+			snapshot.object_uid,
+			[](const shop_trade_item_entry &entry, uint64_t uid)
+			{ return entry.item_uid < uid; });
+		const uint64_t parent_uid =
+			snapshot.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				0 :
+				snapshots[static_cast<size_t>(snapshot.parent_index)].object_uid;
+		require(found != payload.items.begin() + payload.item_count &&
+				found->item_uid == snapshot.object_uid &&
+				found->vnum == snapshot.vnum &&
+				found->parent_item_uid == parent_uid && !snapshot.equipment_slot,
+			EILSEQ);
+		const auto position = static_cast<size_t>(found - payload.items.begin());
+		require(!matched[position], EILSEQ);
+		matched[position] = true;
+	}
 }
 
 uint64_t owner_revision(MYSQL *connection, const item_owner_identity &owner)
@@ -429,6 +465,7 @@ unsigned int economic_sql_shop_trade_lock(MYSQL *connection, const critical_comm
 		if (shop_trade_accounting_decode(command, &intent, &payload, &wallet, &bank,
 						 &treasury) != economic_accounting_error::ok)
 			return EPROTONOSUPPORT;
+		produced_items(payload);
 		economic_sql_shop_trade_context candidate;
 		candidate.bank_id = native_id(connection, bank.authority_id);
 		candidate.keeper_id = native_id(connection, treasury.authority_id);

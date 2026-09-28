@@ -53,6 +53,8 @@ enum class economic_reason : uint16_t
 	epoch_transition = 42,
 	item_reward = 43,
 	quest_cost = 44,
+	gambling_loss = 45,
+	gambling_interruption = 46,
 };
 
 enum class economic_actor_kind : uint8_t

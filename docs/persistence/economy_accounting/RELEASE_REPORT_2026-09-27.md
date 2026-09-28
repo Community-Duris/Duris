@@ -694,6 +694,155 @@ does not prove all reachable writers or playable backend qualification.
 `python scripts/validate_economy_accounting.py --release` still refuses with
 `writer has no executable evidence`.
 
+## Partial native SQL audit cut (2026-09-27)
+
+At source commit `5255e5dce`, the read-only SQL exporter captures EAB1
+origins, nonbaseline immutable accounting rows, mapped wallet/bank balances,
+and current UID positions within one repeatable-read transaction. It always
+sets `complete=false` and lists the native/history classes it cannot yet
+attest. The guarded disposable runner
+`tests/async/run_economic_sql_audit_snapshot_mysql.py` passed on MariaDB 10.11
+and MySQL 8.0.46 with a minimal InnoDB schema and `SELECT`-only account. A
+committed wallet-to-bank root reconciled with only the mandatory
+`evidence_loss` marker. A concurrent wallet update after origin capture was
+not visible in that cut. Injected missing-posting and stale-native-balance
+cases produced their corresponding exceptions. The CLI wrote a bounded
+diagnostic file, and the reconciler returned nonzero for its incomplete input.
+All test schemas and containers were removed. This is **not** the full SQL
+snapshot acceptance: unmapped native rows, coin piles, escrow/claims/treasury,
+unlinked ownership events, postbaseline origins, retirement and cross-epoch
+source scope remain unproven. No flatfile authority or real player journey
+was exercised by this increment.
+
+## SQL native mapping census increment (2026-09-27)
+
+At source commit `efb44efb7`, the partial SQL exporter adds a database-wide
+wallet/bank row census and counts rows with no active mapping in any lineage.
+It also counts selected-lineage native rows with duplicate active mappings,
+dangling mappings and mappings to rows with null balance or revision fields.
+The reconciler reports bounded coded exceptions with full counts. These
+diagnostics do not establish that an unmapped legacy row belongs to the
+selected epoch, and the exporter still sets `complete=false`.
+
+`python tests/async/test_reconcile_economy_accounting.py` passed 18 synthetic
+tests; `python tests/async/test_economic_sql_audit_origins.py` passed four.
+The guarded `tests/async/run_economic_sql_audit_snapshot_mysql.py` passed on
+disposable MariaDB 10.11 and MySQL 8.0.46 minimal InnoDB schemas with a
+`SELECT`-only audit account. Its new injected cases cover an unmapped wallet,
+duplicate wallet mapping, dangling bank mapping and a wallet mapped to a
+different lineage. The test containers and schemas were removed afterward.
+`python scripts/validate_economy_accounting.py` passed the contract check for
+854 routes and 2,780 candidate sites; `--release` still refused with
+`writer has no executable evidence`. No full production schema, flatfile
+authority, real player journey or release-host performance budget was tested.
+
+After merging concurrent route work at integrated commit `b9c8a6a14`, the
+18 reconciler tests, four origin tests and ordinary accounting contract check
+passed again. `make -C src` in WSL could not run with its default `g++`
+because that compiler does not recognize `-Wuse-after-free=3`. Retrying with
+`CC=g++-12` compiled many units but stopped at the missing development header
+`hiredis/hiredis_ssl.h` in `redis/redis_connection.c`. The integrated server
+build is therefore unverified; this is an environment dependency failure, not
+a claimed successful build or a diagnosed source defect.
+
+## Lineage-wide source claim audit increment (2026-09-27)
+
+At source commit `7864d4470`, the partial SQL exporter reads nonbaseline
+source claims throughout the selected lineage and records the owning
+operation's epoch, source and outcome. It counts committed source-bearing
+operations without an exact claim and source values reused by multiple
+committed operations across epochs. The reconciler accepts valid prior-epoch
+claims and reports missing, reused, orphan or rejected-operation claims.
+It still sets `complete=false`: baseline claim scope and policy-required
+source events on other-epoch operations remain unproven.
+
+`python tests/async/test_reconcile_economy_accounting.py` passed 19 synthetic
+tests, including the earlier-epoch and malformed-claim cases. The guarded
+`tests/async/run_economic_sql_audit_snapshot_mysql.py` passed on disposable
+MariaDB 10.11 and MySQL 8.0.46 minimal InnoDB schemas with a `SELECT`-only
+audit account. Its injected prior-epoch operation, missing exact claim,
+reused source and orphan claim produced the expected results. The test
+containers and schemas were removed. Four origin tests and the ordinary
+accounting contract check also passed. The `--release` validator still
+refused with `writer has no executable evidence`. No real player journey,
+full SQL schema, flatfile audit or release-host performance budget was tested.
+
+## Current dual-engine schema and replay qualification (2026-09-27)
+
+Clean Git archive `0ba143f92` passed the complete disposable
+`tests/async/run_economic_accounting_schema_mysql.sh` wrapper on MariaDB
+10.11 and MySQL 8.0.46. Each run performed fresh bootstrap, immutable
+migration run and replay through `0043`, runtime compatibility checks, 20
+accounting/baseline schema tests, SQL authority checks, flatfile and SQL bank
+transaction harnesses, sanitizer-backed SQL baseline transaction checks, and
+native SQL source snapshot checks. Both wrappers exited zero and removed their
+database containers. Only non-immutable shell line endings and the WSL Docker
+CLI path were adapted in each disposable archive; the tested tracked source
+and immutable migration bytes matched the named commit.
+
+The first clean-archive attempt found that the `0043` verifier lacked Git's
+executable bit. The next attempt advanced through schema and authority checks
+but found that the SQL bank harness did not link the collector transaction
+adapter used by its shared repository. Commits `3ddcc28fd` and `0ba143f92`
+fixed those two test-path defects before the passing runs. These wrappers do
+not exercise the partial audit exporter against a full active schema, an
+upgrade of an existing installation, flatfile restart/restore, or real player
+journeys. The integrated server build and release workload remain unverified.
+
+## Writer census reanchor after concurrent source moves (2026-09-28)
+
+At census commit `472b4b408`, 72 registry site entries and their matching
+embedded census rows were reanchored to unchanged source lines in SQL player
+recovery, special money helpers and item movement. Four writer-contract
+assertions naming old SQL lines were updated. The full 49-test writer suite
+on the preceding merged head exposed five stale-anchor failures; the five
+affected tests then passed after reanchoring. The other 44 passed before the
+edit and were not rerun afterward. `python scripts/validate_economy_accounting.py`,
+`python scripts/generate_economy_writer_coverage.py --check` and
+`python tests/async/test_writer_sites_coverage_contract.py` passed. The
+registry retains 854 routes, 2,780 lexical occurrences and 2,722 mapped
+unique sites. Its semantic `coverage_complete=false` and release `BLOCKED`
+remain accurate: mapping a lexical site does not qualify a playable writer.
+
+## Migration `0044` and shopkeeper restore census (2026-09-28)
+
+The merged `0044` shopkeeper property change added one lexical `extract_obj`
+site on a failed, unpublished restore candidate. Census commit `5c5711dbd`
+classified it under `recovery.sql_shopkeeper_stage_cleanup`, reanchored the
+moved SQL player sites, and refreshed the embedded census and matrix. The
+registry now has 854 routes, 2,781 occurrences and 2,723 mapped unique sites.
+Two focused writer tests, the ordinary accounting validator, the generated
+matrix check and 2,692 writer-site contract checks passed. The matrix still
+reports `coverage_complete=false` and release `BLOCKED`.
+
+Clean Git archive `5c5711dbd` passed the complete disposable
+`tests/async/run_economic_accounting_schema_mysql.sh` wrapper on MariaDB
+10.11 and MySQL 8.0.46. Both runs completed fresh bootstrap, immutable
+migration run and replay through `0044`, runtime compatibility, 20
+accounting/baseline schema tests, SQL authority, flatfile and SQL bank
+transactions, sanitizer-backed baseline transactions and native SQL source
+snapshot checks. Both wrappers exited zero and removed their containers.
+Only non-immutable shell line endings and the WSL Docker CLI path were adapted
+in each temporary archive. These checks do not prove an upgrade of an existing
+installation, complete SQL or flatfile audit export, playable route coverage,
+or the release workload and server-build budgets on this merged commit.
+
+## Integrated maintained builds (2026-09-28)
+
+At merged source commit `428d1e4fc`, these commands passed:
+
+```sh
+docker build --target build --tag duris-plan5-build:428d1e4fc --build-arg BUILD_JOBS=2 .
+docker run --rm duris-plan5-build:428d1e4fc make -s -C src PERSISTENCE_BACKEND=flatfile -j2 BIN_ROOT=/opt/duris/bin/plan5-flatfile-428d1e4fc
+```
+
+The first built the Ubuntu 24.04 maintained MariaDB server and area tools;
+the second built the flatfile server from that exact source image. The Docker
+build supplied the hiredis development header missing from the WSL host's
+earlier direct `make` attempt. These are build results only; no playable
+server journey, reconnect, fault replay or release-host workload budget was
+qualified at this commit.
+
 ## Remaining release gates
 
 1. Review the named routes beyond their lexical site mapping; attach
@@ -702,11 +851,11 @@ does not prove all reachable writers or playable backend qualification.
    read-only reconciler against each backend after fresh install, upgrade,
    restore and injected evidence loss. A JSON fixture cannot attest its own
    completeness or operator access.
-3. Keep the `0041` verifier, runtime manifest and compiled schema contract
-   synchronized on the eventual release commit; rerun both full disposable
-   engine wrappers after later schema changes. Qualify flatfile journal
-   interruption, restore, source/UID dedupe and receipt replay with actual
-   domain roots. Resolve any later build or harness failure on that commit.
+3. Keep the latest immutable migration verifier, runtime manifest and compiled
+   schema contract synchronized on the eventual release commit; rerun both
+   full disposable engine wrappers after later schema changes. Qualify flatfile
+   journal interruption, restore, source/UID dedupe and receipt replay with
+   actual domain roots. Resolve any later build or harness failure on that commit.
 4. Repeat both server builds on the eventual release commit and run the
    focused gameplay/fault matrix for both backends, including live
    publication, reconnect and player-visible state.

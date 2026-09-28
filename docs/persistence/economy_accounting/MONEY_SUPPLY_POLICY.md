@@ -163,7 +163,7 @@ a source event; it must bind the listing's finite source before activation.
 
 The two blackjack procedures use the same economic rule. A wager moves the
 stake from the wallet to a held-stake account. A push returns only that stake.
-A win returns the stake and issues only the net winnings. A loss, player bust,
+A win returns the stake and issues winnings equal to that stake. A loss, player bust,
 or fold expenses the held stake. The player-visible coin denomination of each
 leg must be retained, even if an equivalent copper value could be paid another
 way.
@@ -176,9 +176,22 @@ held stake as the same round's terminal restitution; it does not draw another
 hand or issue winnings. Activation must verify that no legacy stake is in
 flight. Both current blackjack entry points refuse active-epoch play until
 the held stake, round recovery, and selected backend commit are implemented.
-The legacy `magic_deck` periodic dealer-bust branch currently credits one
-stake, while its synchronous dealer-bust branch credits two. The typed route
-must resolve that path before it can claim the win policy above.
+The versioned contract now reserves account kind `gambling_stake` for a finite
+table UID and round sequence. A stake moves the named denomination from wallet
+to that holding under source slot 0. A terminal push or win returns the stake
+to the wallet, with issuance only for net winnings; a loss expenses it, and an
+interruption refunds it. Terminal roots use source slot 1 and name the original
+stake operation. Structural tests require the held account, one denomination,
+balanced postings, source stage, round sequence, and an original-operation
+reference. The backend must verify that reference against the committed stake.
+No backend yet owns or recovers this round holding, so these contracts grant no
+gameplay admission.
+The live `magic_deck` dealer-bust path settles synchronously and credits two
+stakes: the returned wager and an equal win. Its unused periodic dealer branch
+was removed: the function-local `game_on` is initialized to `BJ_PREBID` and
+assigned only `BJ_PREBID`, `BJ_POSTBID`, `BJ_POSTDEAL`, or `BJ_POSTHIT`, never
+`BJ_DEALERSTURN`. The typed payout contract rejects an issuance larger or
+smaller than the held stake.
 
 ## Current executable boundary
 
@@ -211,11 +224,20 @@ replay, and checks an exact wallet denomination change during a pile drop.
 Each split transfer has its own root receipt; flatfile does not claim separate
 receipts for the native images within one root.
 An isolated pre-existing pile journey reads the locked native ownership row and
-exact coin payload, commits its holding/item baseline witness and UID-keyed head
-with one receipt, then spends the pile through a schema-2 pickup. Complete
-flatfile UID coverage, including legacy money objects with nonstandard vnums
-and no retained coin payload, wallet/bank native capture, and lifecycle
-installation remain open before activation. These are slices of this policy.
+exact legacy player snapshot for a nonstandard money VNUM without a cached coin
+payload, commits its holding/item baseline witness and UID-keyed head with one
+receipt, then spends the pile through a schema-2 pickup. The flatfile
+inventory checks every active ownership entry against its native snapshot when
+it has no retained coin payload. It reads player and pet inventory from player
+snapshots, and room, corpse, and locker inventory from their domain stores. A
+player snapshot match must belong to the recorded player or pet; it includes
+legacy money objects even with a nonstandard VNUM and skips ordinary items only
+after matching their UID and VNUM. Missing native evidence or an owner mismatch
+fails enumeration. The native fixture covers a legacy player money item, an
+ordinary item, a pet money item, an owner mismatch, and a missing snapshot.
+Other owner stores still fail closed. Complete UID coverage across those stores,
+wallet/bank native capture, and lifecycle installation remain open before
+activation.
 A direct-assignment review found the reachable alternative
 quest cash path in `src/cmd/nq.c` and the victim-decrement path in
 `src/cmd/actoth.c`; both are now listed in the writer registry and refuse

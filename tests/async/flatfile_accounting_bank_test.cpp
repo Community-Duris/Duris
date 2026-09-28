@@ -102,7 +102,9 @@ void write(const fs::path &path, const bytes &value)
 	assert(flatfile_atomic_write(path.parent_path().string(), path.filename().string(), value,
 				     nullptr));
 }
-void write_pending_snapshot(const fs::path &path, uint64_t flags, uint64_t revision)
+void write_pending_snapshot(const fs::path &path, uint64_t flags, uint64_t revision,
+			    const std::vector<player_item_snapshot> &items = {},
+			    const std::vector<player_pet_snapshot> &pets = {})
 {
 	player_snapshot snapshot = {};
 	snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
@@ -110,6 +112,8 @@ void write_pending_snapshot(const fs::path &path, uint64_t flags, uint64_t revis
 	snapshot.revision = revision;
 	snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
 	snapshot.encoded_size_bound = 8192;
+	snapshot.items = items;
+	snapshot.pets = pets;
 	snapshot.status_integers = { { player_status_field::racewar, 1, 0, false },
 				     { player_status_field::action_flags_3, 0, flags, true } };
 	bytes payload;
