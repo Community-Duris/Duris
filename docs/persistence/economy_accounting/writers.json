@@ -1781,7 +1781,9 @@
       "test_candidates": [
         "tests/async/run_currency_transaction_schema_mysql.sh",
         "tests/async/test_currency_transaction_contract.py",
-        "tests/async/test_flatfile_first_session_currency.py"
+        "tests/async/test_flatfile_first_session_currency.py",
+        "tests/async/test_flatfile_accounting_bank.py",
+        "tests/async/test_economic_flatfile_admission_native.py"
       ],
       "sites": [],
       "evidence": []
@@ -1814,7 +1816,9 @@
       "test_candidates": [
         "tests/async/run_currency_transaction_schema_mysql.sh",
         "tests/async/test_currency_transaction_contract.py",
-        "tests/async/test_flatfile_first_session_currency.py"
+        "tests/async/test_flatfile_first_session_currency.py",
+        "tests/async/test_flatfile_accounting_bank.py",
+        "tests/async/test_economic_flatfile_admission_native.py"
       ],
       "sites": [],
       "evidence": []
@@ -1965,7 +1969,9 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_flatfile_player_domain_repository.py"
+        "tests/async/test_flatfile_player_domain_repository.py",
+        "tests/async/test_flatfile_accounting_bank.py",
+        "tests/async/test_economic_flatfile_admission_native.py"
       ],
       "sites": [],
       "evidence": []

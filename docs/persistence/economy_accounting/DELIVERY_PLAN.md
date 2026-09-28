@@ -5,7 +5,46 @@ Linked phase PRs supersede the previous one-final-PR instruction. The full featu
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Current increment: typed SQL bank admission and replay
+## Current increment: flat-file bank dispatch and admission
+
+Based on [PR #607](https://github.com/Community-Duris/Duris/pull/607) at `790665585`.
+Pair the existing bank-only validator with the native flat-file transaction owner
+at server startup. Preserve legacy dispatch and refuse unsupported schema-2 roots.
+See [BANK_ADMISSION.md](BANK_ADMISSION.md). New held schema-2 bank commands now
+restore their durable publication-retention flag on replay, with no checkpoint
+before explicit acknowledgement. This coordinator qualification is separate from
+the missing live gameplay publication/save and reconnect handoff: implement and
+test that full path before activating wallet/bank producers.
+
+## Prior increment: typed flat-file bank owner
+
+Based on [PR #606](https://github.com/Community-Duris/Duris/pull/606).
+Reuse borrowed-lock native reads from `42cacc40e` and the standalone bank owner
+from `d47c7af0b`, adapted to DURECR2 failure-stage verification. Preserve 4096-byte
+accounting results and the separate 2048-byte legacy receipt limit. See
+[FLATFILE_BANK.md](FLATFILE_BANK.md). Backend dispatch/admission follows; gameplay,
+baseline, lifecycle ownership and activation remain pending.
+
+## Prior increment: retained flat-file authority metadata
+
+Based on [PR #605](https://github.com/Community-Duris/Duris/pull/605), including its
+boot-topology test fix. Reuse `6698326e4` lineage, epoch and lifetime metadata,
+with retained epoch lookup and allocation-error preservation. Register all four
+metadata file classes for lifecycle/backup. See [FLATFILE_AUTHORITY.md](FLATFILE_AUTHORITY.md).
+Native lifecycle changes, baseline and gameplay activation remain pending.
+The next typed bank increment needs the borrowed-lock native reads from `42cacc40e`
+and the bank owner from `d47c7af0b`, adapted to DURECR2 failure-stage checks while
+preserving the separate 2048-byte legacy receipt limit.
+
+## Prior increment: bounded flat-file evidence storage
+
+Based on [PR #604](https://github.com/Community-Duris/Duris/pull/604). Reuse
+preserved bounded storage and its authority-journal bridge, including subsequent
+durability fixes. Register evidence indexes/segments for lifecycle and backup.
+See [FLATFILE_STORAGE.md](FLATFILE_STORAGE.md). Retained lifetime metadata and
+the typed flat-file bank owner follow before backend admission or activation.
+
+## Prior increment: typed SQL bank admission and replay
 
 Based on [PR #603](https://github.com/Community-Duris/Duris/pull/603). Reuse the
 bank-only coordinator extension from preserved `a89fa8f18`, pair it with the SQL

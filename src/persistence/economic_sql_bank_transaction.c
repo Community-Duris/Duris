@@ -66,6 +66,7 @@ bank_identity decode(const critical_command &command)
 	auto admission_command = command;
 	admission_command.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 	admission_command.accounting_intent.clear();
+	admission_command.publication_required = false;
 	checked(economic_bank_transfer_intent(admission_command, metadata.epoch, value.wallet,
 					      value.bank, &expected));
 	// Enforces writer/reason/source/actor/policy/facts and the complete immutable

@@ -266,6 +266,7 @@ void publication_acknowledgement(const std::string &path)
 	auto command = bank(false);
 	execution state;
 	state.expected = command;
+	state.expected.publication_required = true;
 	state.release = true;
 	assert(critical_command_coordinator_init(path.c_str(), apply, &state, 1, nullptr, nullptr,
 						 economic_command_admission_supported));

@@ -380,7 +380,9 @@ int main()
 		       left.result_payload == right.result_payload);
 	};
 	pool_enabled = true;
-	const auto pooled_command = command_for(10);
+	auto pooled_command = command_for(10);
+	pooled_command.publication_required = true;
+	assert(economic_sql_bank_command_supported(pooled_command));
 	const auto pooled_result = pooled_apply(pooled_command);
 	assert(pooled_result.outcome == critical_apply_outcome::applied);
 	const auto pooled_replayed = pooled_apply(pooled_command);

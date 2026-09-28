@@ -179,6 +179,9 @@ bool critical_command_envelope_valid(const critical_command &command)
 	     !command.accounting_intent.empty()) ||
 	    (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 	     command.accounting_intent.empty()) ||
+	    (command.publication_required &&
+	     (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	      command.type != critical_command_type::account_bank)) ||
 	    command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
@@ -280,7 +283,7 @@ critical_command_codec_result critical_command_encode(const critical_command &co
 		append_le<uint16_t>(*encoded, command.payload_version);
 		append_le<uint16_t>(*encoded, static_cast<uint16_t>(command.source_site));
 		encoded->push_back(static_cast<uint8_t>(command.deadline_class));
-		encoded->push_back(0);
+		encoded->push_back(command.publication_required ? 1 : 0);
 		append_le<uint64_t>(*encoded, command.accepted_at_usec);
 		append_le<uint32_t>(*encoded, static_cast<uint32_t>(command.keys.size()));
 		append_le<uint32_t>(*encoded,
@@ -346,8 +349,11 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 	decoded.type = static_cast<critical_command_type>(type);
 	decoded.source_site = static_cast<critical_source_site>(source);
 	decoded.deadline_class = static_cast<critical_deadline_class>(encoded[offset]);
-	if (encoded[offset + 1] != 0)
+	if (encoded[offset + 1] > 1 ||
+	    (encoded[offset + 1] &&
+	     decoded.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION))
 		return critical_command_codec_result::invalid;
+	decoded.publication_required = encoded[offset + 1] == 1;
 	offset += 2;
 	if (!read_le(encoded, size, &offset, &decoded.accepted_at_usec) ||
 	    !read_le(encoded, size, &offset, &key_count) ||
