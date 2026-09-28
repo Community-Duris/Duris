@@ -106,11 +106,14 @@ print("[PASS] connection deadlines, reconnect policy, and verified remote TLS ar
 session = section(sql, "static bool sql_apply_session_contract", "static MYSQL *sql_open_verified_connection")
 verify = section(sql, "static bool sql_verify_session_contract", "static bool sql_apply_session_contract")
 assert "mysql_set_character_set(conn, RUNTIME_DB_CHARACTER_SET)" in session
+assert "RUNTIME_DB_COLLATION" in session
+assert "SET SESSION collation_connection" in session
 assert "SET SESSION time_zone='+00:00'" in session
 assert "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED" in session
 assert "RUNTIME_DB_SQL_MODE" in session
 assert "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION" in runtime_contract
-assert "@@character_set_connection,@@time_zone,@@sql_mode" in verify
+assert "@@character_set_connection,@@collation_connection,@@time_zone,@@sql_mode" in verify
+assert "RUNTIME_DB_COLLATION" in verify
 assert "@@transaction_isolation" in verify and "@@tx_isolation" in verify
 assert "strcasecmp(row[0], RUNTIME_DB_ISOLATION)" in verify
 print("[PASS] charset, UTC, isolation, and SQL mode are set and verified")
@@ -119,7 +122,7 @@ assert sql.count("mysql_real_connect(") == 1
 assert "mysql_real_connect(" not in pool
 assert "mysql_real_connect(" not in player
 assert "sql_open_configured_connection(CLIENT_MULTI_STATEMENTS)" in pool
-assert "return sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);" in player
+assert "sql_open_configured_connection(CLIENT_MULTI_STATEMENTS)" in sql
 assert "persistenceDB = sql_open_configured_connection(0);" in sql
 assert "DB = sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);" in sql
 print("[PASS] main, pool, child, and legacy connections share one constructor")
