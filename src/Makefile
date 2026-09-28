@@ -110,6 +110,54 @@ OBJS =  $(SHIP_OBJS) \
 				 item/artifact_mana_runtime.o \
 				 item/artifact_mana_store.o \
 				 magic/magic.o \
+				 magic/spell_age.o \
+				 magic/spell_prismatic.o \
+				 magic/spell_permanent_stats.o \
+				 magic/spell_attribute_buffs.o \
+				 magic/spell_travel.o \
+				 magic/spell_protection.o \
+				 magic/spell_elemental_shields.o \
+				 magic/spell_globes.o \
+				 magic/spell_physical_armor.o \
+				 magic/spell_chaos_shield.o \
+				 magic/spell_portals.o \
+				 magic/spell_detection.o \
+				 magic/spell_identification.o \
+				 magic/spell_item_enhancement.o \
+				 magic/spell_item_lifecycle.o \
+				 magic/spell_visibility.o \
+				 magic/spell_light_darkness.o \
+				 magic/spell_direct_attacks.o \
+				 magic/spell_words_of_power.o \
+				 magic/spell_judgement.o \
+				 magic/spell_dragon_breaths.o \
+				 magic/spell_dragoon_spells.o \
+				 magic/spell_elemental_attacks.o \
+				 magic/spell_environment.o \
+				 magic/spell_bigby_hands.o \
+				 magic/spell_missile_barrage.o \
+				 magic/spell_status_control.o \
+				 magic/spell_charm.o \
+				 magic/spell_size_changes.o \
+				 magic/spell_transformations.o \
+				 magic/spell_healing.o \
+				 magic/spell_corpse_lifecycle.o \
+				 magic/spell_damage_over_time.o \
+				 magic/spell_area_doom.o \
+				 magic/spell_summon_ghasts.o \
+				 magic/spell_conjuration.o \
+				 magic/spell_life_drain.o \
+				 magic/spell_weakening.o \
+				 magic/spell_negative_energy.o \
+				 magic/spell_lightning_aoe.o \
+				 magic/spell_meteor_swarm.o \
+				 magic/spell_firestorm.o \
+				 magic/spell_ice_storm.o \
+				 magic/spell_incendiary_cloud.o \
+				 magic/spell_spore_cloud.o \
+				 magic/spell_alignment_dispel.o \
+				 magic/spell_sunray.o \
+				 magic/spell_obtenebration.o \
 				 world/achievements.o \
 				 account/account.o \
 				 account/racewar_admission.o \
@@ -134,6 +182,25 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
+				 cmd/racewar_chat.o \
+				 cmd/staff_broadcast.o \
+				 cmd/staff_where.o \
+				 cmd/staff_which.o \
+				 cmd/staff_lookup.o \
+				 cmd/staff_petitions.o \
+				 cmd/staff_moderation.o \
+				 cmd/staff_travel.o \
+				 cmd/staff_world_control.o \
+				 cmd/staff_setattr.o \
+				 cmd/staff_character_recovery.o \
+				 cmd/staff_access.o \
+				 cmd/staff_stat.o \
+				 cmd/staff_presence.o \
+				 cmd/staff_grants.o \
+				 cmd/staff_eqrate.o \
+				 cmd/staff_session_control.o \
+				 cmd/staff_newbie_aid.o \
+				 cmd/whois_lookup.o \
 				 cmd/community_spellup.o \
 				 cmd/player_death_restitution.o \
 				 net/ansi.o net/chat_presentation.o \
@@ -230,6 +297,13 @@ OBJS =  $(SHIP_OBJS) \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
+				 combat/hit_calculations.o \
+				 combat/defense_resolution.o \
+				 combat/attack_cadence.o \
+				 combat/damage_support.o \
+				 combat/fight_state.o \
+				 combat/attack_effects.o \
+				 combat/attack_resolution.o \
 				 combat/fight.o \
 				 core/files.o \
 				 combat/fraglist.o \
@@ -261,6 +335,7 @@ OBJS =  $(SHIP_OBJS) \
 				 core/memory.o \
 				 core/mm.o \
 				 mob/mobact.o \
+				 mob/pet_lifecycle.o \
 				 world/world_quest.o \
 				 world/world_quest_policy.o \
 				 combat/mobcombat.o \
@@ -363,6 +438,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/epic_command.o \
 				 world/epic_transaction.o \
 				 economy/currency_command.o \
+				 economy/currency_exchange_proc.o \
 				 economy/coin_transfer_command.o \
 				 economy/coin_transfer_accounting.o \
 				 economy/economic_accounting_types.o \
@@ -474,9 +550,27 @@ OBJS =  $(SHIP_OBJS) \
 				 mob/specials.o \
 				 classes/specializations.o \
 				 specs/specs.assign.o \
+				 specs/specs.aracguil.o \
 				 specs/specs.barovia.o \
 				 specs/specs.clwcvrn.o \
 				 specs/specs.dragonnia.o \
+				 specs/specs.unique.o \
+				 specs/specs.teleport_pools.o \
+				 specs/specs.moonshae.o \
+				 specs/specs.astral_main.o \
+				 specs/specs.ixarkon.o \
+				 specs/specs.olympus.o \
+				 specs/specs.limbo.o \
+				 specs/specs.faang.o \
+				 specs/specs.surface.o \
+				 specs/specs.wolfen.o \
+				 specs/specs.cosmic.o \
+				 specs/specs.githzer.o \
+				 specs/specs.alatorin.o \
+				 specs/specs.battlefields.o \
+				 specs/specs.bctdl.o \
+				 specs/specs.kimordril.o \
+				 specs/specs.tradeskills.o \
 				 specs/specs.eth2.o \
 				 specs/specs.halfcut.o \
 				 specs/specs.ravenloft.o \
@@ -488,9 +582,74 @@ OBJS =  $(SHIP_OBJS) \
 				 mob/studioproclib.o \
 				 specs/specs.lohrr.o \
 				 specs/specs.mobile.o \
+				 specs/specs.ghore.o \
+				 specs/specs.jin.o \
+				 specs/specs.clfhaven.o \
+				 specs/specs.stormport.o \
+				 specs/specs.tharnadian_ruin.o \
+				 specs/specs.world_quest.o \
+				 specs/specs.guards.o \
+				 specs/specs.exit_barriers.o \
+				 specs/specs.monster_attacks.o \
+				 specs/specs.monster_tracking.o \
+				 specs/specs.fooquest.o \
+				 specs/specs.elemental_bosses.o \
+				 specs/specs.elemental_swarm.o \
+				 specs/specs.braddistock.o \
+				 specs/specs.ceothia.o \
+				 specs/specs.dracopit.o \
+				 specs/specs.dungeon.o \
+				 specs/specs.foggy_woods.o \
+				 specs/specs.khildarak.o \
+				 specs/specs.knight.o \
+				 specs/specs.celestia.o \
+				 specs/specs.avernus.o \
+				 specs/specs.earth.o \
+				 specs/specs.player_castles.o \
+				 specs/specs.prison.o \
+				 specs/specs.dlsc.o \
+				 specs/specs.fourhorse.o \
+				 specs/specs.kastle.o \
+				 specs/specs.nexus_uc.o \
+				 specs/specs.seacaves.o \
+				 specs/specs.temple.o \
+				 specs/specs.torg.o \
+				 specs/specs.plane_earth.o \
+				 specs/specs.nyneth.o \
+				 specs/specs.heavens.o \
+				 specs/specs.bahamut.o \
+				 specs/specs.lava_tubes.o \
+				 specs/specs.negplane.o \
+				 specs/specs.tikitt.o \
+				 specs/specs.teka2.o \
+				 specs/specs.graves.o \
+				 specs/specs.trnsptow.o \
+				 specs/specs.kobold.o \
+				 specs/specs.patrol.o \
+				 specs/specs.newbie_guards.o \
+				 specs/specs.obsidian_citadel.o \
+				 specs/specs.raxquest.o \
+				 specs/specs.newbie2.o \
+				 specs/specs.newhope.o \
+				 specs/specs.demogorgon.o \
+				 specs/specs.wildland_trails.o \
+				 specs/specs.nw.o \
+				 specs/specs.ako.o \
+				 specs/specs.menden.o \
+				 specs/specs.minizones.o \
+				 specs/specs.scorchvalley.o \
+				 specs/specs.split_shield.o \
+				 specs/specs.harpy_hometown.o \
+				 specs/specs.bloodstone.o \
 				 specs/specs.morgs.o \
 				 specs/specs.mist.o \
 				 specs/specs.object.o \
+				 specs/specs.walls.o \
+				 specs/specs.character_progression.o \
+				 specs/specs.set_equipment.o \
+				 specs/specs.artifacts.o \
+				 specs/specs.combat_equipment.o \
+				 specs/specs.cerebusp.o \
 				 specs/specs.realm.o \
 				 specs/specs.room.o \
 				 specs/specs.snikzone.o \
@@ -546,6 +705,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/trophy.o \
 				 net/unicode.o \
 				 persistence/persistence_log.o \
+				 core/flag_formatting.o \
 				 core/utility.o \
 				 world/weather.o \
 				 world/ferry.o \

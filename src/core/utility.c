@@ -111,6 +111,53 @@ extern struct mm_ds *dead_pconly_pool;
 extern int _pwipe;
 extern const char *sector_types[];
 
+/* Format a long integer with grouping commas. */
+char *comma_string(long num)
+{
+	static char buf1[50] = { 0 }, buf2[50] = { 0 };
+	int bp1, bp2, len, j;
+
+	snprintf(buf1, 50, "%ld", num);
+
+	len = strlen(buf1);
+	bp1 = 0;
+	bp2 = 0;
+
+	if (buf1[0] == '-')
+	{
+		*(buf2 + bp2++) = *(buf1 + bp1++);
+		len--;
+	}
+	if (len < 4)
+		return (buf1); /*
+		                * doesn't need commas
+		                */
+
+	if (len % 3)
+	{
+		for (j = len % 3; j > 0; j--)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		*(buf2 + bp2++) = ',';
+	}
+	while (len)
+	{
+		for (j = 0; j < 3; j++)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		if (len)
+			*(buf2 + bp2++) = ',';
+	}
+
+	*(buf2 + bp2) = '\0';
+
+	return (buf2);
+}
+
 char GS_buf1[MAX_STRING_LENGTH];
 
 int is_ice(P_char ch, int room);

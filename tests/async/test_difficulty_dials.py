@@ -158,7 +158,7 @@ def test_every_dial_reaches_its_hook() -> None:
         ("combat/fight.c", "bool hit(P_char ch, P_char victim, P_obj weapon",
          "dam *= ch->specials.damage_mod; if (difficulty_world_npc(ch)) "
          "dam *= difficulty_multiplier(DIFFICULTY_MOB_MELEE);"),
-        ("combat/fight.c", "int chance_to_hit(",
+        ("combat/hit_calculations.c", "int chance_to_hit(",
          "return difficulty_scale_percent(hit_chance, "
          "difficulty_multiplier(DIFFICULTY_MOB_ACCURACY));"),
         ("combat/breath_weapons.c", "static float breath_damage_mod(",
@@ -188,7 +188,7 @@ def test_every_dial_reaches_its_hook() -> None:
         assert _flat(expression) in _flat(_body(name, signature)), (name, expression)
 
     # The bartender fee is scaled after it is priced and before its debit is submitted.
-    bartender = _flat(source("specs.mobile.c").read_text())
+    bartender = _flat(source("specs.world_quest.c").read_text())
     priced = bartender.index(_flat('get_property("world.quest.cost.per.level", 20.000)'))
     scaled = bartender.index(_flat("temp = difficulty_scale_world_quest_fee(temp);"), priced)
     assert scaled < bartender.index(_flat("currency_transaction_submit_wallet_value("), priced)
@@ -225,7 +225,7 @@ def test_mob_dials_skip_player_pets_and_morphs() -> None:
     convert = _body("mob/mobconv.c", "void convertMob(")
     assert "apply_mob_gold && difficulty_world_npc(ch)" in convert
     assert convert.index("difficulty_scale_coins(") > convert.index("isname(\"_nomoney_\"")
-    for name, signature in (("combat/fight.c", "int chance_to_hit("),
+    for name, signature in (("combat/hit_calculations.c", "int chance_to_hit("),
                             ("combat/fight.c", "int spell_damage("),
                             ("net/sparser.c", "bool NewSaves("),
                             ("combat/breath_weapons.c", "static float breath_damage_mod(")):
@@ -239,7 +239,7 @@ def test_pet_loaders_do_not_apply_pre_link_gold() -> None:
     checks = {
         "player/player_load_pets.c": "read_mobile(mobile_number, REAL, false)",
         "classes/innates.c": "read_mobile(DEVIL_IMP, VIRTUAL, false)",
-        "specs/specs.mobile.c": "read_mobile(real_mobile(mobnumb), REAL, false)",
+        "mob/pet_lifecycle.c": "read_mobile(real_mobile(mobnumb), REAL, false)",
         "combat/mobcombat.c": "read_mobile(1006, VIRTUAL, false)",
         "core/files.c": "convertMob(ch, false)",
     }

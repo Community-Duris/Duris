@@ -1800,122 +1800,6 @@ int nexus(P_obj obj, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-int magic_pool(P_obj obj, P_char ch, int cmd, char *arg)
-{
-	int dam = obj->value[1];
-	char Gbuf1[MAX_STRING_LENGTH];
-
-	if (cmd == CMD_SET_PERIODIC)
-	{
-		return FALSE;
-	}
-
-	if (cmd != CMD_ENTER || !OBJ_ROOM(obj) || !IS_ALIVE(ch) || !arg)
-	{
-		return FALSE;
-	}
-
-	one_argument(arg, Gbuf1);
-	// If not the right portal..
-	if (obj != get_obj_in_list(Gbuf1, world[ch->in_room].contents))
-	{
-		return FALSE;
-	}
-
-	if (real_room(obj->value[0]) == NOWHERE)
-	{
-		send_to_char("Hmm...  Looks like it's busted.  Might wanna notify a god.\n", ch);
-		return (FALSE);
-	}
-
-#if defined(CTF_MUD) && (CTF_MUD == 1)
-	if (ctf_carrying_flag(ch) == CTF_PRIMARY)
-	{
-		send_to_char("You can't carry that with you.\r\n", ch);
-		drop_ctf_flag(ch);
-	}
-#endif
-
-	act("As you step into the $o, there is a blinding flash of light!", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("You are ripped through a dark and star-filled void, pain sears through", FALSE, ch,
-	    obj, 0, TO_CHAR);
-	act("your body!  When you again open your eyes, you are elsewhere...", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("$n vanishes into the $o.", FALSE, ch, obj, 0, TO_ROOM);
-
-	if (!IS_TRUSTED(ch))
-	{
-		if (GET_HIT(ch) > dam)
-			GET_HIT(ch) -= dam;
-		else
-			GET_HIT(ch) = 1;
-		StartRegen(ch, regen_resource::hit);
-	}
-	teleport_to(ch, real_room(obj->value[0]), 0);
-
-	return (TRUE);
-}
-
-// For the gate to ardgral spell.
-int magic_map_pool(P_obj obj, P_char ch, int cmd, char *arg)
-{
-	int dam = obj->value[1];
-	char Gbuf1[MAX_STRING_LENGTH];
-	int target_room;
-
-	if (cmd == CMD_SET_PERIODIC)
-	{
-		return FALSE;
-	}
-
-	if (cmd != CMD_ENTER || !IS_ALIVE(ch) || !arg || !OBJ_ROOM(obj))
-	{
-		return FALSE;
-	}
-
-	one_argument(arg, Gbuf1);
-	// If not the right portal..
-	if (obj != get_obj_in_list(Gbuf1, world[ch->in_room].contents))
-	{
-		return FALSE;
-	}
-
-	target_room = real_room(random_map_room());
-
-	while (world[target_room].sector_type == SECT_MOUNTAIN ||
-	       world[target_room].sector_type == SECT_INSIDE ||
-	       world[target_room].sector_type == SECT_OCEAN || IS_ROOM(target_room, ROOM_NO_GATE))
-	{
-		target_room = real_room(random_map_room());
-	}
-
-	if (target_room == NOWHERE)
-	{
-		debug("magic_map_pool: Target room is NOWHERE for char '%s'.", J_NAME(ch));
-		send_to_char("Hmm...  Looks like it's busted.  Might wanna notify a god.\n", ch);
-		return FALSE;
-	}
-
-	act("As you step into the $o, there is a blinding flash of light!", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("You are ripped through a dark and star-filled void, pain sears through", FALSE, ch,
-	    obj, 0, TO_CHAR);
-	act("your body!  When you again open your eyes, you are elsewhere...", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("$n vanishes into the $o.", FALSE, ch, obj, 0, TO_ROOM);
-
-	if (!IS_TRUSTED(ch))
-	{
-		// Tighter like this.
-		GET_HIT(ch) = (GET_HIT(ch) > dam) ? GET_HIT(ch) - dam : 1;
-		StartRegen(ch, regen_resource::hit);
-	}
-	teleport_to(ch, target_room, 0);
-
-	return TRUE;
-}
-
 int random_map_room()
 {
 	return number(SURFACE_MAP_START, SURFACE_MAP_END);
@@ -4743,4 +4627,228 @@ int Einjar(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	return TRUE;
+}
+
+/* Spectral ferry procedures. */
+
+int charon(P_char ch, P_char pl, int cmd, char *arg)
+{
+	P_char tch, next_tch;
+	int to_room;
+	P_obj ship;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (cmd == CMD_ENTER)
+	{
+		arg = skip_spaces(arg);
+		if (!strcmp(arg, "galleon") || !strcmp(arg, "spectral"))
+		{
+			act("&+LA black haze surrounds you... when it clears, you are elsewhere!",
+			    FALSE, pl, 0, 0, TO_CHAR);
+			act("&+LA black haze surrounds $n&+L... when it clears, $e is gone!", FALSE,
+			    pl, 0, 0, TO_ROOM);
+			char_from_room(pl);
+			char_to_room(pl, real_room0(VROOM_UNDEAD_FERRY), 0);
+			return TRUE;
+		}
+		return FALSE;
+	}
+	if (IS_FIGHTING(ch))
+	{
+		/* Open a SERIOUS can o' whoopass! */
+		act("&+W$n&+W's jaw gapes as &+Lblackness&+W pours out of his eyes and mouth.&n",
+		    FALSE, ch, 0, 0, TO_ROOM);
+		act("&+W$n &n&+cheaves its mighty blade through the air and brings it's wrath unto the puny beings nearby...&n",
+		    FALSE, ch, 0, 0, TO_ROOM);
+		for (tch = world[ch->in_room].people; tch; tch = next_tch)
+		{
+			next_tch = tch->next_in_room;
+			if (GET_OPPONENT(ch) == tch ||
+			    (IS_PC(tch) && !number(0, 5) && !IS_TRUSTED(tch)))
+			{
+				act("$n&+w's mighty blade cuts $N clean in half!!", FALSE, ch, 0,
+				    tch, TO_NOTVICT);
+				act("$n&+w's mighty blade cuts YOU clean in half!!", FALSE, ch, 0,
+				    tch, TO_VICT);
+				die(tch, ch);
+			}
+		}
+	}
+	else
+	{
+		if (world[ch->in_room].number != VROOM_UNDEAD_FERRY)
+		{
+			ship = get_obj_in_list_vis(ch, "galleon", world[ch->in_room].contents);
+			if (!ship || !(to_room = real_room0(VROOM_UNDEAD_FERRY)))
+				return FALSE;
+			if (ship->timer[1] == 1)
+			{
+				act("$n boards $p.", FALSE, ch, ship, 0, TO_ROOM);
+				char_from_room(ch);
+				char_to_room(ch, to_room, 0);
+				act("$n climbs aboard.", FALSE, ch, 0, 0, TO_ROOM);
+			}
+		}
+	}
+	return FALSE;
+}
+
+int charon_ship(P_obj obj, P_char ch, int cmd, char * /*argument*/)
+{
+	int curr_time, boat_room = real_room0(VROOM_UNDEAD_FERRY);
+	int to_room, old_room, spill = 0, look_out = 0;
+	int galleon_route[] = { 600586, 600986, 600987, 600988, 601388, 601389, 601789, 601790,
+				602190, 602191, 602192, 602193, 602194, 602195, 602196, 602197,
+				602198, 602199, 602200, 602600, 602601, 602602, 602603, 602604,
+				602605, 602606, 602607, 602608, 602609, 602610, 602611, 602612,
+				602613, 602614, 602615, 602616, 602617, 602618, 603018, 603019,
+				603020, 603021, 603022, 603422, 603822, 603823, 604223, 604224,
+				604624, 605024, 605424, 605425, 605825, -1 };
+	P_char tch, next_tch;
+	P_obj tobj, next_tobj;
+
+	if (cmd == CMD_SET_PERIODIC)
+	{
+		return TRUE;
+	}
+	if (cmd != CMD_PERIODIC || !obj)
+	{
+		return FALSE;
+	}
+
+	if (!(obj->timer[0]))
+	{
+		obj->timer[0] = time(NULL);
+	}
+
+	if (OBJ_ROOM(obj))
+	{
+		curr_time = time(NULL);
+		switch (obj->timer[1])
+		{
+		// Beginning state, docked.
+		case 0:
+			// If 1 minute has passed..
+			if (curr_time > obj->timer[0] + (1 * 60))
+			{
+				obj->timer[0] = time(NULL);
+				obj->timer[1] = 1;
+				send_to_room(
+					"&+LA spectral galleon hoists its anchor, preparing to depart.\n",
+					obj->loc.room);
+			}
+			break;
+		// Preparing to sail
+		case 1:
+			// If 30 sec have passed..
+			if (curr_time > obj->timer[0] + (30))
+			{
+				obj->timer[0] = time(NULL);
+				if (obj->timer[2])
+				{
+					obj->timer[1] = 3;
+				}
+				else
+				{
+					obj->timer[1] = 2;
+				}
+			}
+			break;
+		// Embark on journey, status sailing forward
+		case 2:
+			if (galleon_route[obj->timer[2] + 1] == -1)
+			{
+				obj->timer[1] = 4;
+				obj->timer[0] = time(NULL);
+				send_to_room("&+LA spectral galleon drops its anchor.\n",
+					     obj->loc.room);
+				spill = 1;
+			}
+			else if ((to_room = real_room(galleon_route[++(obj->timer[2])])))
+			{
+				send_to_room("&+LA spectral galleon sails onward.\n",
+					     obj->loc.room);
+				obj_from_room(obj);
+				obj_to_room(obj, to_room);
+				send_to_room("&+LA spectral galleon arrives.\n", obj->loc.room);
+				look_out = 1;
+			}
+			break;
+		// sailing backward
+		case 3:
+			if (!(obj->timer[2]))
+			{
+				obj->timer[1] = 4;
+				obj->timer[0] = time(NULL);
+				send_to_room("&+LA spectral galleon drops its anchor.\n",
+					     obj->loc.room);
+				spill = 1;
+			}
+			else if ((to_room = real_room(galleon_route[--(obj->timer[2])])))
+			{
+				send_to_room("&+LA spectral galleon sails onward.\n",
+					     obj->loc.room);
+				obj_from_room(obj);
+				obj_to_room(obj, to_room);
+				send_to_room("&+LA spectral galleon arrives.\n", obj->loc.room);
+				look_out = 1;
+			}
+			break;
+		// docking
+		case 4:
+			if (curr_time > obj->timer[0] + (30))
+			{
+				obj->timer[0] = time(NULL);
+				obj->timer[1] = 0;
+			}
+			break;
+		}
+
+		if (spill && boat_room)
+		{
+			send_to_room("&+LA large globe of blackness engulfs the entire room...\n",
+				     boat_room);
+			send_to_room("&+LA black mist pours out of the galleon!&n\n",
+				     obj->loc.room);
+			for (tch = world[boat_room].people; tch; tch = next_tch)
+			{
+				next_tch = tch->next_in_room;
+				char_from_room(tch);
+				char_to_room(tch, obj->loc.room, -2);
+				if (isname(GET_NAME(tch), "charon"))
+				{
+					do_action(ch, 0, CMD_GRIN);
+				}
+				send_to_char(
+					"&+w ...light slowly begins &+Wto form... and you are elsewhere!\n",
+					tch);
+			}
+			for (tobj = world[boat_room].contents; tobj; tobj = next_tobj)
+			{
+				next_tobj = tobj->next_content;
+				obj_from_room(tobj);
+				obj_to_room(tobj, obj->loc.room);
+			}
+		}
+		if (look_out)
+		{
+			for (tch = world[boat_room].people; tch; tch = next_tch)
+			{
+				next_tch = tch->next_in_room;
+
+				if (IS_NPC(tch))
+				{
+					continue;
+				}
+
+				old_room = tch->in_room;
+				char_from_room(tch);
+				char_to_room(tch, obj->loc.room, -1);
+				char_from_room(tch);
+				char_to_room(tch, old_room, -2);
+			}
+		}
+	}
+	return FALSE;
 }
