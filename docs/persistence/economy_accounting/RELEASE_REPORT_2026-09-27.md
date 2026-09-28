@@ -923,3 +923,15 @@ SQL custody and saved-item projections each held 24. The missing snapshot UID
 was a VNUM 393 bandage; `do_bandage()` directly extracted it without retiring
 its active custody row. No live player data or database rows were changed during
 this diagnosis. The save guard correctly refused a destructive checkpoint.
+
+Commit `e75e78311` changes the durable bandage path to submit a typed item
+destruction before removing the live object or starting healing. The separate
+untracked legacy branch remains direct. A fresh disposable MariaDB 10.11
+journey with an ordinary Human Druid and an incapacitated NPC passed: exactly
+one starter bandage UID became a destruction tombstone, its saved-item row was
+absent, `save` acknowledged, and a cold restart preserved that state. The SQL
+server built with GCC 13.3; the player custody guard, 15 live movement contract
+cases, movement prompt runtime, and smith tradeskill tests passed. This proves
+the new path for fresh actions. The already stranded playtest character still
+needs an individually reviewed, owner-authorized data repair or recovery path;
+the running main-branch instance has not been modified or restarted.
