@@ -12,7 +12,8 @@
 #include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_command_policy.h"
-#include "economy/economic_gameplay_authority.h"
+#include "persistence/persistence_checkpoint.h"
+#include "player/player_revision_state.h"
 #include "core/utility.h"
 #include "core/utils.h"
 #include <ctype.h>
@@ -29,6 +30,7 @@
 
 extern Skill skills[];
 extern P_char character_list;
+extern P_obj object_list;
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_room world;
@@ -360,6 +362,229 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 	}
 }
 
+// A private quest handoff consumes every required item in one durable commit.
+// The player keeps incomplete sets, so an NPC never holds an unsaved offering.
+constexpr size_t QUEST_DURABLE_MAX_OFFERINGS = 14;
+struct quest_durable_context
+{
+	int quester_id;
+	int completion_index;
+	int room;
+	uint32_t count;
+	uint64_t roots[QUEST_DURABLE_MAX_OFFERINGS];
+};
+static_assert(sizeof(quest_durable_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+static P_obj quest_object_by_uid(uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == uid)
+			return object;
+	return NULL;
+}
+
+static struct quest_complete_data *quest_completion_by_index(const quest_durable_context &context)
+{
+	if (context.quester_id < 0 || context.quester_id >= number_of_quests ||
+	    context.completion_index < 0)
+		return NULL;
+	struct quest_complete_data *completion = quest_index[context.quester_id].quest_complete;
+	for (int index = 0; completion && index < context.completion_index; ++index)
+		completion = completion->next;
+	return completion;
+}
+
+static P_char quest_mobile_for(const quest_durable_context &context)
+{
+	if (context.quester_id < 0 || context.quester_id >= number_of_quests)
+		return NULL;
+	for (P_char mobile = character_list; mobile; mobile = mobile->next)
+		if (IS_NPC(mobile) && GET_RNUM(mobile) == quest_index[context.quester_id].quester &&
+		    mobile->in_room == context.room)
+			return mobile;
+	return NULL;
+}
+
+static void finish_quest_reward(struct quest_complete_data *completion, P_char mob, P_char pl)
+{
+	const int room_vnum = (world && pl->in_room >= 0) ? world[pl->in_room].number : 0;
+	std::string tracking_error;
+	if (!zone_story_quest_runtime::record_legacy_completion(
+		    pl, completion, room_vnum, static_cast<int64_t>(time(NULL)), &tracking_error))
+		logit(LOG_DEBUG, "zone-story quest completion was not recorded: %s",
+		      tracking_error.c_str());
+	give_reward(completion, mob, pl);
+	if (!completion->disappear)
+		return;
+	act(completion->disappear_message, FALSE, mob, 0, pl,
+	    completion->echoAll ? TO_ROOM : TO_VICT);
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (mob->equipment[slot])
+			extract_obj(unequip_char(mob, slot), TRUE);
+	while (mob->carrying)
+		extract_obj(mob->carrying, TRUE);
+	extract_char(mob);
+}
+
+static bool publish_quest_offering(P_char actor, bool committed, const item_transfer_result &,
+				   unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	quest_durable_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return false;
+	memcpy(&context, encoded, sizeof(context));
+	if (!context.count || context.count > QUEST_DURABLE_MAX_OFFERINGS ||
+	    !quest_completion_by_index(context))
+		return false;
+	if (!committed)
+	{
+		send_to_char("Your quest offering could not be accepted. Please try again.\r\n",
+			     actor);
+		return true;
+	}
+	if (!quest_mobile_for(context))
+		return false;
+	P_obj roots[QUEST_DURABLE_MAX_OFFERINGS] = {};
+	size_t present = 0;
+	for (size_t index = 0; index < context.count; ++index)
+	{
+		roots[index] = quest_object_by_uid(context.roots[index]);
+		if (roots[index])
+		{
+			if (!OBJ_CARRIED_BY(roots[index], actor))
+				return false;
+			++present;
+		}
+	}
+	if (present && present != context.count)
+		return false;
+	for (size_t index = 0; index < context.count; ++index)
+		if (roots[index])
+			extract_obj(roots[index], TRUE);
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+	return true;
+}
+
+static void complete_quest_offering(P_char actor, bool committed, const item_transfer_result &,
+				    unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	quest_durable_context context = {};
+	if (!committed || !actor || !encoded || encoded_size != sizeof(context))
+		return;
+	memcpy(&context, encoded, sizeof(context));
+	struct quest_complete_data *completion = quest_completion_by_index(context);
+	P_char mob = quest_mobile_for(context);
+	if (!completion || !mob)
+	{
+		logit(LOG_DEBUG, "committed quest offering could not find its quest mobile");
+		return;
+	}
+	act(completion->message, FALSE, mob, 0, actor, completion->echoAll ? TO_ROOM : TO_VICT);
+	finish_quest_reward(completion, mob, actor);
+}
+
+static bool submit_durable_quest_offering(P_char mob, P_char actor, int quester_id, P_obj offering)
+{
+	if (quester_id < 0 || !offering)
+		return false;
+	int completion_index = 0;
+	bool matched_goal = false;
+	bool unsupported_goal = false;
+	for (struct quest_complete_data *completion = quest_index[quester_id].quest_complete;
+	     completion; completion = completion->next, ++completion_index)
+	{
+		P_obj roots[QUEST_DURABLE_MAX_OFFERINGS] = {};
+		size_t count = 0;
+		bool matching = false;
+		bool supported = true;
+		bool complete = true;
+		for (struct goal_data *goal = completion->give; goal; goal = goal->next)
+			matching = matching || (goal->goal_type == QUEST_GOAL_ITEM &&
+						OBJ_VNUM(offering) == goal->number);
+		if (!matching)
+			continue;
+		for (struct goal_data *goal = completion->give; goal; goal = goal->next)
+		{
+			if (goal->goal_type != QUEST_GOAL_ITEM ||
+			    count == QUEST_DURABLE_MAX_OFFERINGS)
+			{
+				supported = false;
+				break;
+			}
+			P_obj selected = NULL;
+			for (P_obj item = actor->carrying; item; item = item->next_content)
+			{
+				if (OBJ_VNUM(item) != goal->number)
+					continue;
+				bool used = false;
+				for (size_t index = 0; index < count; ++index)
+					used = used || roots[index] == item;
+				if (!used)
+				{
+					selected = item;
+					break;
+				}
+			}
+			if (!selected)
+			{
+				complete = false;
+				break;
+			}
+			if (!item_command_uses_durable_ownership(selected))
+			{
+				supported = false;
+				break;
+			}
+			roots[count++] = selected;
+		}
+		matched_goal = true;
+		if (!complete)
+			continue;
+		if (economic_gameplay_authority::active())
+			for (struct goal_data *reward = completion->receive; reward;
+			     reward = reward->next)
+				if (reward->goal_type == QUEST_GOAL_COINS)
+					supported = false;
+		if (!supported || !count)
+		{
+			unsupported_goal = true;
+			break;
+		}
+		quest_durable_context context = {
+			quester_id, completion_index, mob->in_room, static_cast<uint32_t>(count), {}
+		};
+		for (size_t index = 0; index < count; ++index)
+			context.roots[index] = roots[index]->obj_uid;
+		const item_owner_identity owner = { item_owner_type::player,
+						    static_cast<uint64_t>(GET_PID(actor)), 0 };
+		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit_batch(
+			    actor, roots, count, NULL, owner, destruction,
+			    item_transfer_reason::destruction, GET_VNUM(mob),
+			    complete_quest_offering, &context, sizeof(context), NULL, &reject,
+			    publish_quest_offering, economic_source_kind::intentional_destruction))
+		{
+			logit(LOG_DEBUG, "durable quest offering refused: %s",
+			      item_movement_reject_name(reject));
+			send_to_char("The quest offering service is busy. Please try again.\r\n",
+				     actor);
+		}
+		else
+			send_to_char("Your quest offering is being accepted.\r\n", actor);
+		return true;
+	}
+	if (matched_goal)
+		send_to_char(
+			unsupported_goal ?
+				"This quest cannot accept that durable item safely.\r\n" :
+				"Bring all the requested items together before offering them.\r\n",
+			actor);
+	return matched_goal;
+}
+
 void tell_quest(int id, P_char pl)
 {
 	struct quest_msg_data *qmp;
@@ -467,7 +692,6 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 	int quester_id;
 	struct quest_msg_data *qmp;
 	struct quest_complete_data *qcp;
-	struct goal_data *goal;
 	char Gbuf1[MAX_STRING_LENGTH], *temparg;
 
 	/* ask/tell "key word" or give "item" */
@@ -518,13 +742,6 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 	}
 	if (cmd == CMD_GIVE)
 	{
-		// Static quests transfer offerings to a mobile before checking their
-		// goals. They have no durable NPC custody or completion identity yet.
-		if (economic_gameplay_authority::active())
-		{
-			send_to_char("This quest cannot accept offerings right now.\r\n", pl);
-			return (TRUE);
-		}
 		/* This next chunk of code is to deal with the case where someone's
 		 * giving the quest mob money.  Need to check a different argument to
 		 * get the name.
@@ -548,34 +765,18 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 			P_obj offering = get_obj_in_list_vis(pl, offering_name, pl->carrying);
 			if (item_command_uses_durable_ownership(offering))
 			{
+				if (submit_durable_quest_offering(ch, pl, quester_id, offering))
+					return (TRUE);
 				send_to_char(
-					"This quest cannot accept a durable item until NPC custody can be saved.\r\n",
+					"This quest cannot accept that durable item safely.\r\n",
 					pl);
 				return (TRUE);
 			}
 		}
 		if (economic_gameplay_authority::active())
 		{
-			bool money_quest = giving_coins;
-			if (quester_id >= 0)
-				for (qcp = quest_index[quester_id].quest_complete; qcp;
-				     qcp = qcp->next)
-				{
-					for (goal = qcp->give; goal; goal = goal->next)
-						money_quest = money_quest ||
-							      goal->goal_type == QUEST_GOAL_COINS;
-					for (goal = qcp->receive; goal; goal = goal->next)
-						money_quest = money_quest ||
-							      goal->goal_type == QUEST_GOAL_COINS;
-				}
-			if (money_quest)
-			{
-				send_to_char(
-					"This quest's money action is unavailable while active "
-					"accounting is enabled.\r\n",
-					pl);
-				return (TRUE);
-			}
+			send_to_char("This quest cannot accept offerings right now.\r\n", pl);
+			return (TRUE);
 		}
 		do_give(pl, arg, -4); /* give item to mob */
 		if (quester_id < 0)
@@ -585,51 +786,7 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 		{
 			if (quest_completion(qcp, ch, pl))
 			{
-				const int room_vnum =
-					(world && pl->in_room >= 0) ? world[pl->in_room].number : 0;
-				std::string tracking_error;
-				if (!zone_story_quest_runtime::record_legacy_completion(
-					    pl, qcp, room_vnum, static_cast<int64_t>(time(NULL)),
-					    &tracking_error))
-					logit(LOG_DEBUG,
-					      "zone-story quest completion was not recorded: %s",
-					      tracking_error.c_str());
-				give_reward(qcp, ch, pl);
-				if (qcp->disappear)
-				{ /* mob disappear after this quest */
-					/*** Lets try this: Rather than erase quest mob, move him to void. This
-					      keeps them in game, so they dont repop every friggin update
-					 ***/
-					//        send_to_char(qcp->disappear_message, pl);
-					act(qcp->disappear_message, FALSE, ch, 0, pl,
-					    qcp->echoAll ? TO_ROOM : TO_VICT);
-
-					P_obj obj;
-
-					for (int l = 0; l < MAX_WEAR; l++)
-						if (ch->equipment[l])
-						{
-							obj = unequip_char(ch, l);
-							extract_obj(
-								obj,
-								TRUE); // Quest mob with an arti?
-						}
-
-					if (ch->carrying)
-					{
-						P_obj next_obj;
-
-						for (obj = ch->carrying; obj != NULL;
-						     obj = next_obj)
-						{
-							next_obj = obj->next_content;
-							extract_obj(
-								obj,
-								TRUE); // Quest mob with an arti?
-						}
-					}
-					extract_char(ch);
-				}
+				finish_quest_reward(qcp, ch, pl);
 				return (TRUE);
 			}
 		}
