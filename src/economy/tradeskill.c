@@ -17,6 +17,9 @@
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
+#include "item/item_command_policy.h"
+#include "persistence/persistence_checkpoint.h"
+#include "player/player_revision_state.h"
 #include "core/utility.h"
 #include "core/utils.h"
 #include "economy/tradeskill.h"
@@ -982,6 +985,82 @@ struct bandage_data
 	int maxheal;
 };
 
+struct bandage_consumption_context
+{
+	uint64_t bandage_uid;
+	uint64_t victim_runtime_id;
+	int room;
+	int maxheal;
+};
+
+void event_bandage_check(P_char ch, P_char victim, P_obj object, void *data);
+
+static P_char bandage_target(uint64_t runtime_id)
+{
+	for (P_char victim = character_list; victim; victim = victim->next)
+		if (victim->runtime_id == runtime_id)
+			return victim;
+	return NULL;
+}
+
+static bool publish_bandage_consumption(P_char actor, bool committed, const item_transfer_result &,
+					unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	bandage_consumption_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return false;
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+		return true;
+	for (P_obj object = actor->carrying; object; object = object->next_content)
+		if (object->obj_uid == context.bandage_uid)
+		{
+			extract_obj(object, TRUE);
+			break;
+		}
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_INVENTORY);
+	return true;
+}
+
+static void begin_bandaging(P_char actor, P_char victim, int maxheal)
+{
+	struct bandage_data data = { actor->in_room, 0, maxheal };
+	if (actor != victim)
+		act("You attempt to &+Wbandage&n $N.", FALSE, actor, 0, victim, TO_CHAR);
+	else
+		act("You attempt to &+Wbandage&n yourself.", FALSE, actor, 0, victim, TO_CHAR);
+	act("$n attempts to &+Wbandage&n you.", FALSE, actor, 0, victim, TO_VICT);
+	act("$n attempts to &+Wbandage&n $N", FALSE, actor, 0, victim, TO_NOTVICT);
+	add_event(event_bandage_check, PULSE_VIOLENCE, actor, victim, 0, 0, &data, sizeof(data));
+	struct affected_type af = {};
+	af.duration = 3;
+	af.type = SKILL_BANDAGE;
+	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+	affect_to_char(victim, &af);
+	CharWait(actor, 2 * PULSE_VIOLENCE);
+}
+
+static void complete_bandage_consumption(P_char actor, bool committed, const item_transfer_result &,
+					 unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	bandage_consumption_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return;
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("The bandage could not be used. Please try again.\r\n", actor);
+		return;
+	}
+	P_char victim = bandage_target(context.victim_runtime_id);
+	if (!victim || actor->in_room != context.room || victim->in_room != context.room)
+	{
+		send_to_char("Your target is no longer here to bandage.\r\n", actor);
+		return;
+	}
+	begin_bandaging(actor, victim, context.maxheal);
+}
+
 void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct bandage_data *mdata = (struct bandage_data *)data;
@@ -1061,8 +1140,6 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 
 void do_bandage(P_char ch, char *arg, int /*cmd*/)
 {
-	struct affected_type af;
-	struct bandage_data data;
 	P_char victim = NULL;
 	P_obj bandage;
 
@@ -1132,30 +1209,33 @@ void do_bandage(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	data.maxheal = bandage->value[0];
-	extract_obj(bandage, TRUE); // Not an arti, but 'in game.'
-
-	if (ch != victim)
-		act("You attempt to &+Wbandage&n $N.", FALSE, ch, 0, victim, TO_CHAR);
-	else
-		act("You attempt to &+Wbandage&n yourself.", FALSE, ch, 0, victim, TO_CHAR);
-
-	act("$n attempts to &+Wbandage&n you.", FALSE, ch, 0, victim, TO_VICT);
-	act("$n attempts to &+Wbandage&n $N", FALSE, ch, 0, victim, TO_NOTVICT);
-
-	data.room = ch->in_room;
-	data.healed = 0;
-
-	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, &data,
-		  sizeof(struct bandage_data));
-
-	bzero(&af, sizeof(af));
-	af.duration = 3;
-	af.type = SKILL_BANDAGE;
-	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
-	affect_to_char(victim, &af);
-
-	CharWait(ch, 2 * PULSE_VIOLENCE);
+	const int maxheal = bandage->value[0];
+	if (item_command_uses_durable_ownership(bandage))
+	{
+		const bandage_consumption_context context = { bandage->obj_uid, victim->runtime_id,
+							      ch->in_room, maxheal };
+		const item_owner_identity owner = { item_owner_type::player,
+						    static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(
+			    ch, bandage, NULL, owner, destruction,
+			    item_transfer_reason::destruction, SKILL_BANDAGE,
+			    complete_bandage_consumption, &context, sizeof(context), NULL, &reject,
+			    publish_bandage_consumption,
+			    economic_source_kind::intentional_destruction))
+		{
+			logit(LOG_FILE, "bandage consumption refused: %s",
+			      item_movement_reject_name(reject));
+			send_to_char("The bandage cannot be used right now. Please try again.\r\n",
+				     ch);
+		}
+		else
+			send_to_char("You begin using the bandage.\r\n", ch);
+		return;
+	}
+	extract_obj(bandage, TRUE); // Legacy untracked bandage.
+	begin_bandaging(ch, victim, maxheal);
 	return;
 }
 
