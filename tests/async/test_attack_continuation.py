@@ -1246,6 +1246,43 @@ acid_blood_followup = check_shields_compact.index(
 )
 assert thornskin_damage < thornskin_refresh < acid_blood_followup
 
+raw_damage = continuation_caller(
+    "fight.c",
+    "int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_messages *messages,",
+)
+raw_damage_compact = "".join(raw_damage.split())
+raw_actor_membership = raw_damage_compact.index("if(!char_in_list(ch))")
+raw_actor_dummy_check = raw_damage_compact.index("if(training_dummy_is(ch))")
+raw_victim_null_check = raw_damage_compact.index("if(!victim)")
+raw_victim_membership = raw_damage_compact.index("if(!char_in_list(victim))")
+raw_actor_id_capture = raw_damage_compact.index(
+    "constuint64_tch_runtime_id=ch->runtime_id"
+)
+raw_update_groupies = raw_damage_compact.index("update_groupies(ch,true)")
+raw_victim_stat = raw_damage_compact.index("GET_STAT(victim)==STAT_DEAD")
+assert (
+    raw_actor_membership
+    < raw_actor_dummy_check
+    < raw_victim_null_check
+    < raw_victim_membership
+    < raw_update_groupies
+    < raw_victim_stat
+)
+assert "if(victim&&!char_in_list(victim))returnDAM_BOTHDEAD;" in raw_damage_compact
+raw_die = raw_damage_compact.index("die(victim,ch)")
+raw_death_actor_refresh = raw_damage_compact.index(
+    "ch=find_character_by_runtime_id(ch_runtime_id)", raw_die
+)
+raw_death_room_check = raw_damage_compact.index(
+    "!is_char_in_room(ch,room)", raw_death_actor_refresh
+)
+assert (
+    raw_actor_id_capture
+    < raw_die
+    < raw_death_actor_refresh
+    < raw_death_room_check
+)
+
 melee_damage = continuation_caller(
     "fight.c",
     "int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_messages *messages,",
@@ -1263,6 +1300,10 @@ melee_ch_liveness = melee_damage_compact.index(
 melee_victim_liveness = melee_damage_compact.index(
     "constboolvictim_initially_alive=victim_listed&&IS_ALIVE(victim)"
 )
+assert (
+    "if(!ch_initially_alive)returnDAM_CHARDEAD;"
+    "if(!victim_initially_alive)returnDAM_VICTDEAD;"
+) in melee_damage_compact
 melee_raw_damage = melee_damage_compact.index(
     "result=raw_damage(ch,victim,dam,RAWDAM_DEFAULT|flags|RAWDAM_NOWARD,"
 )

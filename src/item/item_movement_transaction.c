@@ -1,6 +1,7 @@
 #include "item/item_movement_transaction.h"
 
 #include "item/item_ownership_runtime.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/currency_transaction.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_death_enrollment.h"
@@ -134,6 +135,22 @@ bool reject_with(item_movement_reject *reject, item_movement_reject reason)
 	return false;
 }
 
+bool refuse_active_item_submission(bool accounting_active, bool retained_owner_identity,
+				   bool owner_matches_request, bool new_creation,
+				   item_movement_reject *reject)
+{
+	if (!accounting_active)
+		return false;
+	if (retained_owner_identity && !owner_matches_request)
+		return reject_with(reject, item_movement_reject::owner_mismatch);
+	if (!retained_owner_identity && !new_creation)
+		return reject_with(reject, item_movement_reject::missing_owner_identity);
+	// Item movement has no authenticated schema-2 gameplay adapter yet. In
+	// particular, system-to-player creation needs a real source-admission path;
+	// UID allocation or a missing retained row cannot supply that authority.
+	return reject_with(reject, item_movement_reject::active_accounting_unsupported);
+}
+
 item_movement_reject coordinator_reject_reason(critical_submit_result result)
 {
 	switch (result)
@@ -168,7 +185,8 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry) {
+			   [&](const auto &entry)
+			   {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -1528,6 +1546,14 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
 	const bool adopted = item_ownership_runtime_lookup(root->obj_uid, &runtime);
+	const bool retained_owner_identity = adopted && item_owner_identity_valid(runtime.owner);
+	const bool owner_matches_request = retained_owner_identity &&
+					   item_owner_identity_equal(runtime.owner, from_owner);
+	if (economic_gameplay_authority::active())
+		return refuse_active_item_submission(true, retained_owner_identity,
+						     owner_matches_request,
+						     reason == item_transfer_reason::creation,
+						     reject);
 	const item_owner_identity effective_from = adopted ? from_owner : system_owner_identity;
 	const item_owner_identity effective_to = adopted ? to_owner : from_owner;
 	// A mobile claim is evidence about an already-authoritative item. Treating an
@@ -1698,6 +1724,43 @@ bool item_movement_transaction_submit_batch(
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
+	if (economic_gameplay_authority::active())
+	{
+		if (creation)
+		{
+			for (size_t index = 0; index < root_count; ++index)
+			{
+				P_obj root = roots[index];
+				item_ownership_runtime_entry runtime = {};
+				if (!root || !root->obj_uid ||
+				    item_ownership_runtime_lookup(root->obj_uid, &runtime))
+					return reject_with(reject,
+							   item_movement_reject::owner_mismatch);
+			}
+			return refuse_active_item_submission(true, false, false, true, reject);
+		}
+		bool retained_owner_identity = true;
+		bool owner_matches_request = true;
+		for (size_t index = 0; index < root_count; ++index)
+		{
+			P_obj root = roots[index];
+			item_ownership_runtime_entry runtime = {};
+			if (!root || !root->obj_uid)
+				return reject_with(reject, item_movement_reject::owner_mismatch);
+			if (!item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
+			    !item_owner_identity_valid(runtime.owner))
+			{
+				retained_owner_identity = false;
+				owner_matches_request = false;
+			}
+			else if (!item_owner_identity_equal(runtime.owner, from_owner))
+			{
+				owner_matches_request = false;
+			}
+		}
+		return refuse_active_item_submission(true, retained_owner_identity,
+						     owner_matches_request, false, reject);
+	}
 	if (movement_conflicts(from_owner, to_owner) || coordinator_item_fenced(target_container) ||
 	    coin_movement_pending(target_container))
 		return reject_with(reject, item_movement_reject::pending_conflict);
@@ -1899,6 +1962,10 @@ const char *item_movement_reject_name(item_movement_reject reason)
 		return "queue_saturated";
 	case item_movement_reject::pending_conflict:
 		return "pending_conflict";
+	case item_movement_reject::active_accounting_unsupported:
+		return "active_accounting_unsupported";
+	case item_movement_reject::missing_owner_identity:
+		return "missing_owner_identity";
 	case item_movement_reject::owner_mismatch:
 		return "owner_mismatch";
 	case item_movement_reject::missing_owner_revision:

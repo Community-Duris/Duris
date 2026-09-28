@@ -1332,6 +1332,25 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 	}
 }
 
+bool critical_command_coordinator_cutover_ready(void)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	update_depth();
+	if (!health.initialized || !health.running || health.accepting || stop_requested ||
+	    health.queued || health.inflight || health.blocked || health.publication_pending ||
+	    health.awaiting_durability || health.admission_queue_bytes || health.append_inflight ||
+	    health.fenced_keys || !operations.empty() || !pending.empty() ||
+	    !pending_admission.empty() || pending_admission_bytes || admission_inflight_bytes ||
+	    !active_keys.empty() || !fences.empty() || completion_delivery.size())
+		return false;
+
+	// The coordinator mutex prevents new submissions and preserves the admission
+	// state while the journal mutex supplies an authoritative durable-frame view.
+	// Admission workers never hold the journal mutex while acquiring this mutex.
+	const critical_command_journal_health journal = critical_command_journal_health_copy();
+	return journal.initialized && !journal.append_uncertain && !journal.records;
+}
+
 void critical_command_coordinator_set_drain_observer(critical_drain_observer_fn observer)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);

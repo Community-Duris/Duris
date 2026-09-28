@@ -4221,11 +4221,20 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		logit(LOG_EXIT, "raw_damage in fight.c called without ch");
 		return DAM_NONEDEAD;
 	}
+	if (!char_in_list(ch))
+	{
+		if (victim && !char_in_list(victim))
+			return DAM_BOTHDEAD;
+		return DAM_CHARDEAD;
+	}
 	if (training_dummy_is(ch))
 		return DAM_NONEDEAD;
 
 	if (!victim)
 		return DAM_NONEDEAD;
+	if (!char_in_list(victim))
+		return DAM_VICTDEAD;
+	const uint64_t ch_runtime_id = ch->runtime_id;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
 	if (training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim))
@@ -4743,6 +4752,7 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 			room = ch->in_room;
 
 			die(victim, ch);
+			ch = find_character_by_runtime_id(ch_runtime_id);
 			if (!is_char_in_room(ch, room))
 				return DAM_BOTHDEAD;
 			else

@@ -971,7 +971,17 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 		struct sp_action *a = &t->actions[i];
 
 		self = (cx->targ == SP_T_MOB) ? cx->self_ch : NULL;
+		if (self && !char_in_list(self))
+		{
+			cx->self_ch = NULL;
+			self = NULL;
+		}
 		actor = cx->actor;
+		if (actor && !char_in_list(actor))
+		{
+			cx->actor = NULL;
+			actor = NULL;
+		}
 		room = sp_room_of(cx);
 
 		/* self validity: never touch a dead / extracted target */
@@ -1012,7 +1022,7 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 
 		/* actions that need a live actor */
 		if ((a->op == SP_A_GIVE || a->op == SP_A_TRANSFER || a->op == SP_A_DAMAGE) &&
-		    (!actor || !IS_ALIVE(actor) || actor->in_room < 0))
+		    (!actor || !char_in_list(actor) || !IS_ALIVE(actor) || actor->in_room < 0))
 			continue;
 
 		switch (a->op)
@@ -1387,6 +1397,10 @@ static int sp_run(struct sp_rec *rec, int ev, struct sp_ctx *cx, const char *low
 	int r = 0, one;
 
 	cx->rec = rec;
+	if (cx->self_ch && !char_in_list(cx->self_ch))
+		cx->self_ch = NULL;
+	if (cx->actor && !char_in_list(cx->actor))
+		cx->actor = NULL;
 	for (t = rec->trigs; t; t = t->next)
 	{
 		if (t->event != ev)
@@ -1457,10 +1471,10 @@ static int sp_run(struct sp_rec *rec, int ev, struct sp_ctx *cx, const char *low
 		r |= one;
 		if (one & SP_X_SELFGONE)
 			break;
-		if (cx->targ == SP_T_MOB &&
-		    (!cx->self_ch || (!cx->self_dead_ok && !IS_ALIVE(cx->self_ch))))
+		if (cx->targ == SP_T_MOB && (!cx->self_ch || !char_in_list(cx->self_ch) ||
+					     (!cx->self_dead_ok && !IS_ALIVE(cx->self_ch))))
 			break;
-		if (cx->actor && !IS_ALIVE(cx->actor))
+		if (cx->actor && (!char_in_list(cx->actor) || !IS_ALIVE(cx->actor)))
 			cx->actor = NULL;
 	}
 	return r;
