@@ -799,6 +799,15 @@ void update_pos(P_char ch)
  */
 int attack_back(P_char ch, P_char victim, int physical)
 {
+	const bool attacker_in_list = ch && char_in_list(ch);
+	const bool victim_in_list = victim && char_in_list(victim);
+	if (!attacker_in_list && !victim_in_list)
+		return DAM_BOTHDEAD;
+	if (!attacker_in_list)
+		return DAM_CHARDEAD;
+	if (!victim_in_list)
+		return DAM_VICTDEAD;
+
 	if (training_dummy_is(ch) || training_dummy_is(victim))
 	{
 		if (victim && IS_NPC(ch) && !IS_PC_PET(ch) && training_dummy_is(victim))
@@ -818,11 +827,25 @@ int attack_back(P_char ch, P_char victim, int physical)
 		return DAM_VICTDEAD;
 	if (IS_FIGHTING(victim))
 		return DAM_NONEDEAD;
+	const uint64_t actor_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
 
 	if (ch->in_room != victim->in_room || ch->specials.z_cord != victim->specials.z_cord)
 	{
 		if (IS_NPC(victim))
+		{
 			MobRetaliateRange(victim, ch);
+			ch = find_character_by_runtime_id(actor_runtime_id);
+			victim = find_character_by_runtime_id(victim_runtime_id);
+			const bool attacker_alive = ch && IS_ALIVE(ch);
+			const bool victim_alive = victim && IS_ALIVE(victim);
+			if (!attacker_alive && !victim_alive)
+				return DAM_BOTHDEAD;
+			if (!attacker_alive)
+				return DAM_CHARDEAD;
+			if (!victim_alive)
+				return DAM_VICTDEAD;
+		}
 	}
 	// Can't very well attack back if either ch or victim is back ranked!
 	else if (!physical && (IS_PC(ch) || IS_PC_PET(ch)) && IS_PC(victim) &&

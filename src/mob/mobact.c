@@ -708,6 +708,10 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 		if (IS_SET(skills[spl].targets, TAR_IGNORE) ||
 		    IS_SET(skills[spl].targets, TAR_AREA))
 		{
+			const uint64_t caster_runtime_id = ch->runtime_id;
+			const int caster_room = ch->in_room;
+			const int caster_height = ch->specials.z_cord;
+
 			for (tch = world[ch->in_room].people; tch; tch = tch2)
 			{
 				tch2 = tch->next_in_room;
@@ -727,7 +731,25 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 				else if (tch->only.pc->aggressive >= 0 &&
 					 tch->only.pc->aggressive < GET_HIT(tch))
 				{
+					const uint64_t target_runtime_id = tch->runtime_id;
+					const uint64_t next_tch_runtime_id =
+						tch2 ? tch2->runtime_id : 0;
 					hit(tch, ch, tch->equipment[PRIMARY_WEAPON]);
+					ch = find_character_by_runtime_id(caster_runtime_id);
+					P_char live_target =
+						find_character_by_runtime_id(target_runtime_id);
+					if (!ch || !IS_ALIVE(ch) || ch->in_room != caster_room ||
+					    ch->specials.z_cord != caster_height || !live_target)
+						return FALSE;
+					tch = live_target;
+
+					if (next_tch_runtime_id)
+					{
+						tch2 = find_character_by_runtime_id(
+							next_tch_runtime_id);
+						if (!tch2 || tch2->in_room != caster_room)
+							return FALSE;
+					}
 				}
 
 				if (!char_in_list(ch) || !char_in_list(tch))
@@ -10154,11 +10176,22 @@ void MobRetaliateRange(P_char ch, P_char vict)
 	   int no_range_attack = TRUE; */
 	struct affected_type af;
 
+	if (!ch || !vict || !char_in_list(ch) || !char_in_list(vict))
+		return;
+
 	if (!SanityCheck(ch, "MobRetaliateRange"))
 		return;
 
-	if (!ch || !vict)
+	if (!char_in_list(ch) || !char_in_list(vict))
 		return;
+	const uint64_t ch_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = vict->runtime_id;
+	auto refresh_retaliation_participants = [&]()
+	{
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		vict = find_character_by_runtime_id(victim_runtime_id);
+		return ch && IS_ALIVE(ch) && vict && IS_ALIVE(vict);
+	};
 
 	if (IS_PC(ch))
 		return;
@@ -10217,7 +10250,11 @@ void MobRetaliateRange(P_char ch, P_char vict)
 	if (IS_AWAKE(ch) && CAN_ACT(ch) && !IS_STUNNED(ch))
 		if (IS_SET(ch->specials.act, ACT_WIMPY) && (GET_HIT(ch) < (GET_LEVEL(ch) * 6)) &&
 		    room_has_valid_exit(ch->in_room))
+		{
 			do_flee(ch, 0, 0);
+			if (!refresh_retaliation_participants())
+				return;
+		}
 
 	/* Next group will handle situation on their own */
 
@@ -10256,7 +10293,11 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		else
 		{
 			if (room_has_valid_exit(ch->in_room))
+			{
 				do_flee(ch, 0, 0);
+				if (!refresh_retaliation_participants())
+					return;
+			}
 			if ((!IS_AFFECTED3(ch, AFF3_COVER)))
 			{
 				bzero(&af, sizeof(af));

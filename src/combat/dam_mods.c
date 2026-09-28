@@ -668,7 +668,7 @@ if (get_linked_char(victim, LNK_ETHEREAL))
 else if (get_linking_char(victim, LNK_ETHEREAL))
 	eth_ch = get_linking_char(victim, LNK_ETHEREAL);
 
-if (IS_ALIVE(eth_ch))
+if (char_in_list(eth_ch) && IS_ALIVE(eth_ch))
 {
 	double localDam = damage * 0.5;
 
@@ -679,6 +679,7 @@ if (IS_ALIVE(eth_ch))
 		     eth_ch);
 
 	raw_damage(caster, eth_ch, localDam, RAWDAM_DEFAULT ^ flags, messages);
+	dam_mod->requires_participant_revalidation = true;
 
 	dam_mod->type = dam_mod_type::More;
 	dam_mod->mod += -0.5;

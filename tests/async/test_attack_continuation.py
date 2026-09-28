@@ -195,6 +195,15 @@ takedown = continuation_caller(
     "actoff.c",
     "float takedown_check(P_char ch, P_char victim, float chance, int skill, ulong applicable)",
 )
+takedown_compact = "".join(takedown.split())
+assert (
+    takedown_compact.index("!char_in_list(ch)")
+    < takedown_compact.index("!IS_ALIVE(ch)")
+)
+assert (
+    takedown_compact.index("!char_in_list(victim)")
+    < takedown_compact.index("!IS_ALIVE(victim)")
+)
 sleeping_takedown = takedown[
     takedown.index("if (GET_STAT(victim) <= STAT_SLEEPING)") :
     takedown.index("if (check_freedom_of_movement")
@@ -223,12 +232,227 @@ assert combination.rindex("find_character_by_runtime_id(actor_runtime_id)") < co
 )
 
 rush = continuation_caller("actoff.c", "void rush(P_char ch, P_char victim)")
+rush_actor_guard = rush.index("if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))")
+rush_victim_guard = rush.index("if (!victim || !char_in_list(victim) || !IS_ALIVE(victim))")
+rush_opponent_guard = rush.index("if (char_in_list(opponent) && IS_ALIVE(opponent))")
+rush_begin = rush.index("begin_attack_continuation(ch, victim)", rush_opponent_guard)
 rush_retaliation = rush.index("hit(opponent, ch,")
-rush_actor = rush.index("ch = find_character_by_runtime_id(actor_runtime_id)", rush_retaliation)
-rush_victim = rush.index("victim = find_character_by_runtime_id(victim_runtime_id)", rush_actor)
-rush_fighting = rush.index("stop_fighting(ch)", rush_victim)
+rush_check = rush.index("check_attack_continuation(continuation)", rush_retaliation)
+rush_height_guard = rush.index("checked.target->specials.z_cord != continuation.height", rush_check)
+rush_fighting = rush.index("stop_fighting(ch)", rush_height_guard)
 rush_second_hit = rush.index("hit(ch, victim, ch->equipment[PRIMARY_WEAPON])", rush_fighting)
-assert rush_retaliation < rush_actor < rush_victim < rush_fighting < rush_second_hit
+assert rush_actor_guard < rush_victim_guard < rush_opponent_guard < rush_begin
+assert rush_begin < rush_retaliation < rush_check < rush_height_guard < rush_fighting < rush_second_hit
+
+do_rush = continuation_caller("actoff.c", "void do_rush(P_char ch, char *argument, int /*cmd*/)")
+assert do_rush.index("!char_in_list(ch)") < do_rush.index("!IS_ALIVE(ch)")
+
+spell_damage = continuation_caller(
+    "fight.c", "int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,"
+)
+spell_damage_compact = "".join(spell_damage.split())
+spell_damage_actor_capture = spell_damage_compact.index("constuint64_tch_runtime_id=ch->runtime_id;")
+spell_damage_victim_capture = spell_damage_compact.index(
+    "constuint64_tvictim_runtime_id=victim->runtime_id;", spell_damage_actor_capture
+)
+spell_damage_refresh = spell_damage_compact.index(
+    "autorefresh_spell_damage_participants=[&]()", spell_damage_victim_capture
+)
+spell_damage_refresh_actor_lookup = spell_damage_compact.index(
+    "ch=find_character_by_runtime_id(ch_runtime_id)", spell_damage_refresh
+)
+spell_damage_refresh_actor_liveness = spell_damage_compact.index(
+    "constboolattacker_alive=ch&&IS_ALIVE(ch)", spell_damage_refresh_actor_lookup
+)
+spell_damage_callback = spell_damage_compact.index(
+    "spell_damage_modifiers[modifier_index](ch,victim,dam,type,flags,&dam_mod,messages);"
+)
+spell_damage_revalidation = spell_damage_compact.index(
+    "if(dam_mod.requires_participant_revalidation)", spell_damage_callback
+)
+spell_damage_refresh_call = spell_damage_compact.index(
+    "result=refresh_spell_damage_participants();", spell_damage_revalidation
+)
+spell_damage_modifier_apply = spell_damage_compact.index(
+    "switch(dam_mod.type)", spell_damage_refresh_call
+)
+assert spell_damage_actor_capture < spell_damage_victim_capture < spell_damage_refresh
+assert spell_damage_refresh_actor_lookup < spell_damage_refresh_actor_liveness
+assert spell_damage_refresh < spell_damage_callback < spell_damage_revalidation
+assert spell_damage_revalidation < spell_damage_refresh_call < spell_damage_modifier_apply
+
+spell_modifiers_source = source("dam_mods.c").read_text(encoding="utf-8")
+spell_modifiers_start = spell_modifiers_source.index("dam_mod_predicate spell_damage_modifiers[] =")
+spell_modifiers_end = spell_modifiers_source.index(
+    "static_assert(ARRAY_SIZE(spell_damage_modifiers)", spell_modifiers_start
+)
+ethereal_modifier = spell_modifiers_source[
+    spell_modifiers_source.index(
+        "if (get_linked_char(victim, LNK_ETHEREAL) ||", spell_modifiers_start
+    ) : spell_modifiers_end
+]
+ethereal_damage_call = ethereal_modifier.index("raw_damage(caster, eth_ch")
+ethereal_revalidation_flag = ethereal_modifier.index(
+    "dam_mod->requires_participant_revalidation = true"
+)
+ethereal_damage_modifier = ethereal_modifier.index("dam_mod->type = dam_mod_type::More")
+assert ethereal_modifier.index("char_in_list(eth_ch)") < ethereal_modifier.index("IS_ALIVE(eth_ch)")
+assert ethereal_damage_call < ethereal_revalidation_flag < ethereal_damage_modifier
+
+legacy_damage = continuation_caller(
+    "fight.c", "bool damage(P_char ch, P_char victim, double dam, int attacktype)"
+)
+legacy_damage_compact = "".join(legacy_damage.split())
+legacy_damage_nonspell = legacy_damage_compact.index(
+    "else{constboolactor_listed=ch&&char_in_list(ch);"
+)
+legacy_damage_actor_listed = legacy_damage_compact.index(
+    "constboolactor_listed=ch&&char_in_list(ch);", legacy_damage_nonspell
+)
+legacy_damage_victim_listed = legacy_damage_compact.index(
+    "constboolvictim_listed=victim&&char_in_list(victim);", legacy_damage_actor_listed
+)
+legacy_damage_entry_guard = legacy_damage_compact.index(
+    "if(!actor_listed||!victim_listed)returnTRUE;", legacy_damage_victim_listed
+)
+legacy_damage_actor_capture = legacy_damage_compact.index(
+    "constuint64_tactor_runtime_id=ch->runtime_id;", legacy_damage_entry_guard
+)
+assert (
+    legacy_damage_nonspell
+    < legacy_damage_actor_listed
+    < legacy_damage_victim_listed
+    < legacy_damage_entry_guard
+    < legacy_damage_actor_capture
+)
+legacy_damage_raw_call = legacy_damage_compact.index(
+    "constintraw_result=raw_damage(ch,victim,dam,RAWDAM_DEFAULT,&tmsg);"
+)
+legacy_damage_result_guard = legacy_damage_compact.index(
+    "if(raw_result!=DAM_NONEDEAD)returnTRUE;", legacy_damage_raw_call
+)
+legacy_damage_actor_resolve = legacy_damage_compact.index(
+    "ch=find_character_by_runtime_id(actor_runtime_id)", legacy_damage_result_guard
+)
+legacy_damage_victim_resolve = legacy_damage_compact.index(
+    "victim=find_character_by_runtime_id(victim_runtime_id)", legacy_damage_actor_resolve
+)
+legacy_damage_liveness_guard = legacy_damage_compact.index(
+    "if(!ch||!victim||!IS_ALIVE(ch)||!IS_ALIVE(victim))returnTRUE;",
+    legacy_damage_victim_resolve,
+)
+legacy_damage_engagement = legacy_damage_compact.index(
+    "if(!IS_FIGHTING(ch)&&(ch->in_room==victim->in_room))", legacy_damage_liveness_guard
+)
+legacy_damage_retaliation = legacy_damage_compact.index(
+    "constintretaliation_result=attack_back(ch,victim,attacktype>FIRST_SKILL);",
+    legacy_damage_engagement,
+)
+assert legacy_damage_raw_call < legacy_damage_result_guard < legacy_damage_actor_resolve
+assert legacy_damage_actor_resolve < legacy_damage_victim_resolve < legacy_damage_liveness_guard
+assert legacy_damage_liveness_guard < legacy_damage_engagement < legacy_damage_retaliation
+
+attack_back = continuation_caller(
+    "fight_state.c", "int attack_back(P_char ch, P_char victim, int physical)"
+)
+attack_back_compact = "".join(attack_back.split())
+attack_back_actor_membership = attack_back_compact.index(
+    "constboolattacker_in_list=ch&&char_in_list(ch);"
+)
+attack_back_victim_membership = attack_back_compact.index(
+    "constboolvictim_in_list=victim&&char_in_list(victim);",
+    attack_back_actor_membership,
+)
+attack_back_membership_return = attack_back_compact.index(
+    "if(!attacker_in_list&&!victim_in_list)returnDAM_BOTHDEAD;",
+    attack_back_victim_membership,
+)
+attack_back_dummy_check = attack_back_compact.index(
+    "if(training_dummy_is(ch)||training_dummy_is(victim))", attack_back_membership_return
+)
+attack_back_initial_liveness = attack_back_compact.index(
+    "if(!IS_ALIVE(ch))", attack_back_dummy_check
+)
+attack_back_actor_capture = attack_back_compact.index(
+    "constuint64_tactor_runtime_id=ch->runtime_id;", attack_back_initial_liveness
+)
+attack_back_victim_capture = attack_back_compact.index(
+    "constuint64_tvictim_runtime_id=victim->runtime_id;", attack_back_actor_capture
+)
+attack_back_retaliation = attack_back_compact.index(
+    "MobRetaliateRange(victim,ch);", attack_back_victim_capture
+)
+attack_back_actor_refresh = attack_back_compact.index(
+    "ch=find_character_by_runtime_id(actor_runtime_id)", attack_back_retaliation
+)
+attack_back_victim_refresh = attack_back_compact.index(
+    "victim=find_character_by_runtime_id(victim_runtime_id)", attack_back_actor_refresh
+)
+attack_back_post_callback_liveness = attack_back_compact.index(
+    "constboolattacker_alive=ch&&IS_ALIVE(ch)", attack_back_victim_refresh
+)
+attack_back_followup = attack_back_compact.index(
+    "if(!IS_ALIVE(ch))", attack_back_post_callback_liveness
+)
+assert attack_back_actor_membership < attack_back_victim_membership < attack_back_membership_return
+assert attack_back_membership_return < attack_back_dummy_check < attack_back_initial_liveness
+assert attack_back_initial_liveness < attack_back_actor_capture < attack_back_victim_capture
+assert attack_back_victim_capture < attack_back_retaliation < attack_back_actor_refresh
+assert attack_back_actor_refresh < attack_back_victim_refresh < attack_back_post_callback_liveness
+assert attack_back_post_callback_liveness < attack_back_followup
+
+mob_retaliate_range = continuation_caller(
+    "mobact.c", "void MobRetaliateRange(P_char ch, P_char vict)"
+)
+mob_retaliate_compact = "".join(mob_retaliate_range.split())
+mob_retaliate_entry_membership = mob_retaliate_compact.index(
+    "!ch||!vict||!char_in_list(ch)||!char_in_list(vict)"
+)
+mob_retaliate_sanity = mob_retaliate_compact.index(
+    "if(!SanityCheck(ch,\"MobRetaliateRange\"))", mob_retaliate_entry_membership
+)
+mob_retaliate_post_sanity_membership = mob_retaliate_compact.index(
+    "if(!char_in_list(ch)||!char_in_list(vict))", mob_retaliate_sanity
+)
+mob_retaliate_actor_capture = mob_retaliate_compact.index(
+    "constuint64_tch_runtime_id=ch->runtime_id;", mob_retaliate_post_sanity_membership
+)
+mob_retaliate_victim_capture = mob_retaliate_compact.index(
+    "constuint64_tvictim_runtime_id=vict->runtime_id;", mob_retaliate_actor_capture
+)
+mob_retaliate_refresh = mob_retaliate_compact.index(
+    "autorefresh_retaliation_participants=[&]()", mob_retaliate_victim_capture
+)
+mob_retaliate_flee_positions = []
+mob_retaliate_offset = 0
+while True:
+    try:
+        mob_retaliate_offset = mob_retaliate_compact.index(
+            "do_flee(ch,0,0);", mob_retaliate_offset
+        )
+    except ValueError:
+        break
+    mob_retaliate_flee_positions.append(mob_retaliate_offset)
+    mob_retaliate_offset += 1
+assert len(mob_retaliate_flee_positions) == 3
+mob_retaliate_first_flee_check = mob_retaliate_compact.index(
+    "if(!refresh_retaliation_participants())return;", mob_retaliate_flee_positions[0]
+)
+mob_retaliate_range_check = mob_retaliate_compact.index(
+    "!mob_can_range_att(ch,vict)", mob_retaliate_first_flee_check
+)
+mob_retaliate_second_flee_check = mob_retaliate_compact.index(
+    "if(!refresh_retaliation_participants())return;", mob_retaliate_flee_positions[1]
+)
+mob_retaliate_cover_check = mob_retaliate_compact.index(
+    "if((!IS_AFFECTED3(ch,AFF3_COVER)))", mob_retaliate_second_flee_check
+)
+assert mob_retaliate_entry_membership < mob_retaliate_sanity
+assert mob_retaliate_sanity < mob_retaliate_post_sanity_membership
+assert mob_retaliate_post_sanity_membership < mob_retaliate_actor_capture
+assert mob_retaliate_actor_capture < mob_retaliate_victim_capture < mob_retaliate_refresh
+assert mob_retaliate_flee_positions[0] < mob_retaliate_first_flee_check < mob_retaliate_range_check
+assert mob_retaliate_flee_positions[1] < mob_retaliate_second_flee_check < mob_retaliate_cover_check
 
 celestia = continuation_caller(
     "specs.celestia.c",
@@ -1148,6 +1372,28 @@ spell_damage = continuation_caller(
     "fight.c", "int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,"
 )
 spell_damage_compact = "".join(spell_damage.split())
+spell_null_guard = spell_damage_compact.index("if(!ch||!victim)returnDAM_NONEDEAD;")
+spell_actor_membership = spell_damage_compact.index(
+    "constboolch_listed=char_in_list(ch);", spell_null_guard
+)
+spell_victim_membership = spell_damage_compact.index(
+    "constboolvictim_listed=char_in_list(victim);", spell_actor_membership
+)
+spell_both_missing = spell_damage_compact.index(
+    "if(!ch_listed&&!victim_listed)returnDAM_BOTHDEAD;", spell_victim_membership
+)
+spell_actor_missing = spell_damage_compact.index(
+    "if(!ch_listed)returnDAM_CHARDEAD;", spell_both_missing
+)
+spell_victim_missing = spell_damage_compact.index(
+    "if(!victim_listed)returnDAM_VICTDEAD;", spell_actor_missing
+)
+spell_training_dummy = spell_damage_compact.index(
+    "if(training_dummy_is(ch))", spell_victim_missing
+)
+assert spell_null_guard < spell_actor_membership < spell_victim_membership
+assert spell_victim_membership < spell_both_missing < spell_actor_missing
+assert spell_actor_missing < spell_victim_missing < spell_training_dummy
 spell_raw_damage = spell_damage_compact.index("result=raw_damage(ch,victim,dam,")
 assert spell_damage_compact.index(
     "constuint64_tch_runtime_id=ch->runtime_id"
@@ -1398,6 +1644,13 @@ hit = continuation_caller(
     "fight.c", "bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)"
 )
 hit_compact = "".join(hit.split())
+hit_entry_membership = hit_compact.index("!char_in_list(ch)")
+hit_victim_membership = hit_compact.index("!char_in_list(victim)", hit_entry_membership)
+hit_actor_liveness = hit_compact.index("!IS_ALIVE(ch)", hit_victim_membership)
+hit_victim_liveness = hit_compact.index("!IS_ALIVE(victim)", hit_actor_liveness)
+hit_first_skill_read = hit_compact.index("GET_CHAR_SKILL(ch,SKILL_VICIOUS_STRIKE)")
+assert hit_entry_membership < hit_victim_membership < hit_actor_liveness < hit_victim_liveness
+assert hit_victim_liveness < hit_first_skill_read
 weapon_damage = hit_compact.index("DamageOneItem(ch,1,weapon,FALSE)")
 weapon_damage_guard = hit_compact.rindex(
     "begin_attack_continuation(ch,victim,weapon)", 0, weapon_damage
@@ -1728,6 +1981,113 @@ assert (
     < poison_stop
     < poison_weapon_proc
 )
+
+blood_alliance_event = continuation_caller(
+    "reavers.c",
+    "void event_blood_alliance(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)",
+)
+blood_alliance_compact = "".join(blood_alliance_event.split())
+blood_alliance_actor_guard = blood_alliance_compact.index(
+    "if(!ch||!char_in_list(ch)||!IS_ALIVE(ch))return;"
+)
+blood_alliance_link_lookup = blood_alliance_compact.index(
+    "linked=get_linking_char(ch,LNK_BLOOD_ALLIANCE);"
+)
+blood_alliance_link_guard = blood_alliance_compact.index(
+    "if(!linked||!char_in_list(linked)||!IS_ALIVE(linked))return;",
+    blood_alliance_link_lookup,
+)
+blood_alliance_room_read = blood_alliance_compact.index(
+    "if(linked->in_room!=ch->in_room)return;", blood_alliance_link_guard
+)
+blood_alliance_hit_read = blood_alliance_compact.index(
+    "if(GET_HIT(linked)<GET_MAX_HIT(linked)*0.7)return;",
+    blood_alliance_link_guard,
+)
+assert blood_alliance_actor_guard < blood_alliance_link_lookup
+assert blood_alliance_link_lookup < blood_alliance_link_guard < blood_alliance_room_read
+assert blood_alliance_link_guard < blood_alliance_hit_read
+
+mob_cast_spell = continuation_caller(
+    "mobact.c", "bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)"
+)
+mob_cast_compact = "".join(mob_cast_spell.split())
+mob_cast_room_capture = mob_cast_compact.index("constintcaster_room=ch->in_room")
+mob_cast_height_capture = mob_cast_compact.index(
+    "constintcaster_height=ch->specials.z_cord", mob_cast_room_capture
+)
+mob_cast_area_loop = mob_cast_compact.index(
+    "for(tch=world[ch->in_room].people;tch;tch=tch2)"
+)
+mob_cast_next_target_capture = mob_cast_compact.index(
+    "constuint64_tnext_tch_runtime_id=tch2?tch2->runtime_id:0;", mob_cast_area_loop
+)
+mob_cast_reactive_hit = mob_cast_compact.index(
+    "hit(tch,ch,tch->equipment[PRIMARY_WEAPON]);", mob_cast_next_target_capture
+)
+mob_cast_owner_refresh = mob_cast_compact.index(
+    "ch=find_character_by_runtime_id(caster_runtime_id)", mob_cast_reactive_hit
+)
+mob_cast_owner_guard = mob_cast_compact.index(
+    "if(!ch||!IS_ALIVE(ch)||ch->in_room!=caster_room||ch->specials.z_cord!=caster_height||!live_target)",
+    mob_cast_owner_refresh,
+)
+mob_cast_next_target_refresh = mob_cast_compact.index(
+    "tch2=find_character_by_runtime_id(next_tch_runtime_id)", mob_cast_owner_guard
+)
+assert mob_cast_room_capture < mob_cast_height_capture < mob_cast_area_loop
+assert mob_cast_area_loop < mob_cast_next_target_capture < mob_cast_reactive_hit
+assert mob_cast_reactive_hit < mob_cast_owner_refresh < mob_cast_owner_guard
+assert mob_cast_owner_guard < mob_cast_next_target_refresh
+
+assist_core = continuation_caller(
+    "actoff.c", "void do_assist_core(P_char ch, P_char victim)"
+)
+assist_core_compact = "".join(assist_core.split())
+assist_actor_capture = assist_core_compact.index(
+    "constuint64_tactor_runtime_id=ch->runtime_id;"
+)
+assist_mob_start = assist_core_compact.index(
+    "MobStartFight(ch,GET_OPPONENT(victim));", assist_actor_capture
+)
+assist_reactive_hit = assist_core_compact.index(
+    "hit(ch,GET_OPPONENT(victim),ch->equipment[PRIMARY_WEAPON]);", assist_mob_start
+)
+assist_actor_refresh = assist_core_compact.index(
+    "ch=find_character_by_runtime_id(actor_runtime_id)", assist_reactive_hit
+)
+assist_wait_guard = assist_core_compact.index(
+    "if(ch&&IS_ALIVE(ch))CharWait(ch,(int)(PULSE_VIOLENCE*0.5));",
+    assist_actor_refresh,
+)
+assert assist_actor_capture < assist_mob_start < assist_reactive_hit
+assert assist_reactive_hit < assist_actor_refresh < assist_wait_guard
+
+perform_violence = continuation_caller("attack_cadence.c", "void perform_violence(void)")
+perform_violence_compact = "".join(perform_violence.split())
+cadence_room_capture = perform_violence_compact.index("room=ch->in_room")
+cadence_guard_capture = perform_violence_compact.index(
+    "begin_attack_continuation(ch,opponent)", cadence_room_capture
+)
+cadence_attack_loop = perform_violence_compact.index(
+    "for(i=0;i<real_attacks;i++)", cadence_guard_capture
+)
+cadence_hit = perform_violence_compact.index("pv_common(ch,opponent,", cadence_attack_loop)
+cadence_revalidate = perform_violence_compact.index(
+    "check_attack_continuation(cadence_continuation)", cadence_hit
+)
+cadence_target_room_guard = perform_violence_compact.index(
+    "!is_char_in_room(after_attack.target,room)", cadence_revalidate
+)
+cadence_abort = perform_violence_compact.index(
+    "if(!cadence_can_continue)continue;", cadence_revalidate
+)
+assert cadence_room_capture < cadence_guard_capture < cadence_attack_loop
+assert cadence_attack_loop < cadence_hit < cadence_revalidate
+assert cadence_revalidate < cadence_target_room_guard < cadence_abort
+assert "ch=after_attack.actor;opponent=after_attack.target;" in perform_violence_compact[
+    cadence_revalidate:cadence_abort
+]
 
 with tempfile.TemporaryDirectory(prefix="duris-attack-continuation-") as temporary:
     source_path = Path(temporary) / "attack_continuation.cpp"

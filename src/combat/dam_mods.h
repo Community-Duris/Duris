@@ -18,6 +18,7 @@ typedef struct
 {
 	dam_mod_type type;
 	double mod;
+	bool requires_participant_revalidation = false;
 } damage_mod;
 
 typedef void (*dam_mod_predicate)(P_char, P_char, double, int, uint, damage_mod *,

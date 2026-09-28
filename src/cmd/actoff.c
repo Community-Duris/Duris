@@ -361,7 +361,7 @@ float takedown_check(P_char ch, P_char victim, float chance, int skill, ulong ap
 {
 	int cagi, vagi;
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+	if (!char_in_list(ch) || !char_in_list(victim) || !IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
 		return TAKEDOWN_CANCELLED;
 	}
@@ -3362,15 +3362,14 @@ void do_buck(P_char ch, char * /*argument*/, int /*cmd*/)
 
 void rush(P_char ch, P_char victim)
 {
-	uint64_t actor_runtime_id, victim_runtime_id;
-	int actor_room, actor_height;
-
-	if (!IS_ALIVE(ch))
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
-		if (ch)
+		if (ch && char_in_list(ch))
 			send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
+	if (!victim || !char_in_list(victim) || !IS_ALIVE(victim))
+		return;
 
 	if (!CanDoFightMove(ch, victim))
 	{
@@ -3388,11 +3387,6 @@ void rush(P_char ch, P_char victim)
 		send_to_char("Just commit suicide.\n", ch);
 		return;
 	}
-
-	actor_runtime_id = ch->runtime_id;
-	victim_runtime_id = victim->runtime_id;
-	actor_room = ch->in_room;
-	actor_height = ch->specials.z_cord;
 
 	CharWait(ch, PULSE_VIOLENCE * 2);
 
@@ -3417,16 +3411,18 @@ void rush(P_char ch, P_char victim)
 		{
 			if (char_in_list(opponent) && IS_ALIVE(opponent))
 			{
+				const attack_continuation continuation =
+					begin_attack_continuation(ch, victim);
 				// The person you are rushing away from gets a free attack.
 				hit(opponent, ch, opponent->equipment[PRIMARY_WEAPON]);
 
-				ch = find_character_by_runtime_id(actor_runtime_id);
-				victim = find_character_by_runtime_id(victim_runtime_id);
-				if (!ch || !IS_ALIVE(ch) || !victim || !IS_ALIVE(victim) ||
-				    ch->in_room != actor_room || victim->in_room != actor_room ||
-				    ch->specials.z_cord != actor_height ||
-				    victim->specials.z_cord != actor_height)
+				const attack_continuation_result checked =
+					check_attack_continuation(continuation);
+				if (!checked.can_continue() ||
+				    checked.target->specials.z_cord != continuation.height)
 					return;
+				ch = checked.actor;
+				victim = checked.target;
 			}
 
 			stop_fighting(ch);
@@ -3444,9 +3440,9 @@ void do_rush(P_char ch, char *argument, int /*cmd*/)
 	P_char target = NULL;
 	char target_name[MAX_INPUT_LENGTH];
 
-	if (!IS_ALIVE(ch))
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
-		if (ch)
+		if (ch && char_in_list(ch))
 			send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
@@ -5164,12 +5160,14 @@ void do_assist_core(P_char ch, P_char victim)
 	act("$n assists you heroically.", FALSE, ch, 0, victim, TO_VICT);
 	act("$n assists $N heroically.", FALSE, ch, 0, victim, TO_NOTVICT);
 
+	const uint64_t actor_runtime_id = ch->runtime_id;
 	if (IS_NPC(ch))
 		MobStartFight(ch, GET_OPPONENT(victim));
 	else
 		hit(ch, GET_OPPONENT(victim), ch->equipment[PRIMARY_WEAPON]);
 
-	if (char_in_list(ch))
+	ch = find_character_by_runtime_id(actor_runtime_id);
+	if (ch && IS_ALIVE(ch))
 		CharWait(ch, (int)(PULSE_VIOLENCE * 0.5));
 }
 
