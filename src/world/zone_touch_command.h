@@ -9,6 +9,14 @@ constexpr uint16_t ZONE_TOUCH_PAYLOAD_VERSION = 2;
 constexpr size_t ZONE_TOUCH_MAX_PARTICIPANTS = 15;
 constexpr size_t ZONE_TOUCH_LEGACY_RESULT_BYTES = 88;
 constexpr size_t ZONE_TOUCH_RESULT_BYTES = 512;
+constexpr uint32_t ZONE_TOUCH_AWARD_DERIVATION_DOMAIN = 0x5a544132;
+
+struct zone_touch_accounting_context
+{
+	critical_operation_id root_operation_id = {};
+	uint32_t child_index = 0;
+	uint32_t line_index_base = 0;
+};
 
 struct zone_touch_award
 {
@@ -44,6 +52,9 @@ struct zone_touch_result : zone_touch_payload
 	std::array<uint64_t, ZONE_TOUCH_MAX_PARTICIPANTS> revisions = {};
 	bool recovered_claim = false;
 };
+
+bool zone_touch_derive_award_id(const critical_operation_id &parent_op, uint32_t participant_pid,
+				critical_operation_id *derived_op);
 
 bool zone_touch_award_command(const critical_command &parent, size_t index,
 			      critical_command *award);

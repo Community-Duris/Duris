@@ -53,7 +53,7 @@ struct ferry_definition
 	{
 		int room_vnum;
 		const char *name;
-	} *stops;
+	} * stops;
 };
 
 Ferry *create_ferry(const struct ferry_definition *fd)
@@ -486,15 +486,26 @@ int ferry_automat_proc(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_BUY && isname(arg, "ticket"))
 	{
-		P_obj ticket = read_object(FERRY_TICKET_VNUM, VIRTUAL);
-
-		if (!ticket)
-			return FALSE;
-
 		if (GET_MONEY(ch) < ticket_cost)
 		{
-			extract_obj(ticket);
 			send_to_char("You don't have enough money to buy a ticket!\r\n", ch);
+			return TRUE;
+		}
+
+		if (ticket_cost > 0 && SUB_MONEY(ch, ticket_cost, 0) != 0)
+		{
+			send_to_char("You don't have enough money to buy a ticket!\r\n", ch);
+			return TRUE;
+		}
+
+		P_obj ticket = read_object(FERRY_TICKET_VNUM, VIRTUAL);
+		if (!ticket)
+		{
+			if (ticket_cost > 0)
+				ADD_MONEY(ch, ticket_cost);
+			send_to_char(
+				"&+RCan't create ticket object, please bug this right now.\r\n",
+				ch);
 			return TRUE;
 		}
 
@@ -506,7 +517,6 @@ int ferry_automat_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		ticket->short_description = str_dup(buf);
 
 		send_to_char("You put your money into the machine and receive a ticket.\r\n", ch);
-		SUB_MONEY(ch, ticket_cost, 0);
 		obj_to_char(ticket, ch);
 
 		return TRUE;

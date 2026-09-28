@@ -6,9 +6,11 @@
 #include "world/vnum.obj.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/defines.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
+#include "magic/spell_item_lifecycle.h"
 
 void spell_spore_cloud(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 		       P_obj /*obj*/)
@@ -88,6 +90,50 @@ struct sb_data
 	int spores;
 };
 
+static void spore_burst_initial_components_completed(P_char ch, bool committed,
+						     const item_transfer_result &,
+						     unsigned int /*error_code*/,
+						     const uint8_t *encoded,
+						     size_t encoded_size)
+{
+	if (!ch || !encoded || encoded_size != sizeof(sb_data))
+		return;
+	sb_data context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed || ch->in_room != context.room)
+	{
+		send_to_char("Your spell fizzles before the sphere of spores can form.\r\n", ch);
+		return;
+	}
+	send_to_room(
+		"&+cA &+ysickly yellow &+ysphere &+cstarts to grow in the center of the room..\n",
+		context.room);
+	add_event(event_spore_burst, (int)(PULSE_VIOLENCE * 1.5), ch, 0, 0, 0, &context,
+		  sizeof(context));
+	CharWait(ch, (int)2.5 * PULSE_VIOLENCE);
+}
+
+static void spore_burst_repeat_components_completed(P_char ch, bool committed,
+						    const item_transfer_result &,
+						    unsigned int /*error_code*/,
+						    const uint8_t *encoded,
+						    size_t encoded_size)
+{
+	if (!ch || !encoded || encoded_size != sizeof(sb_data))
+		return;
+	sb_data context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed || ch->in_room != context.room)
+	{
+		send_to_char("The growing sphere of spores collapses.\r\n", ch);
+		return;
+	}
+	send_to_room("&+CA mass of &+Yspores&+C coalesce into a growing sphere...\n",
+		     context.room);
+	add_event(event_spore_burst, static_cast<int>(PULSE_VIOLENCE), ch, 0, 0, 0, &context,
+		  sizeof(context));
+}
+
 void spell_spore_burst(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		       P_obj /*obj*/)
 {
@@ -106,6 +152,20 @@ void spell_spore_burst(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		break;
 	}
 
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		sbdata.room = ch->in_room;
+		sbdata.spores = 1;
+		if (!spell_consume_components(ch, VOBJ_FORAGE_GARLIC, 1, SPELL_SPORE_BURST,
+					      spore_burst_initial_components_completed, &sbdata,
+					      sizeof(sbdata)))
+		{
+			send_to_char("You must have &+Wsome garlic&n in your inventory.\n", ch);
+			act("&+W$n's&+G spell fizzles and dies before any growth can begin.\n", TRUE,
+			    ch, 0, 0, TO_ROOM);
+		}
+		return;
+	}
 	garlic = get_spell_component(ch, VOBJ_FORAGE_GARLIC, 1);
 	if (!garlic)
 	{
@@ -152,8 +212,20 @@ static void event_spore_burst(P_char ch, P_char /*victim*/, P_obj /*obj*/, void 
 
 	if (number(0, 1) && (sbdata->spores < 3))
 	{
+		if (economic_gameplay_authority::active() && IS_PC(ch))
+		{
+			sb_data next_spore = *sbdata;
+			++next_spore.spores;
+			if (spell_consume_components(ch, VOBJ_FORAGE_GARLIC, 1, SPELL_SPORE_BURST,
+						    spore_burst_repeat_components_completed,
+						    &next_spore, sizeof(next_spore)))
+				return;
+		}
+		else
+		{
 		garlic = get_spell_component(ch, VOBJ_FORAGE_GARLIC, 1);
 		sbdata->spores++;
+		}
 	}
 
 	if (garlic)

@@ -77,6 +77,7 @@ enum class economic_source_kind : uint16_t
 	correction = 15,
 	lifecycle = 16,
 	service = 17,
+	item_action = 18,
 };
 
 constexpr size_t ECONOMIC_SOURCE_EVENT_BYTES = 48;

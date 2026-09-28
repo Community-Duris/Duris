@@ -164,7 +164,8 @@ static bool submit_conjured_weapon(P_char actor, P_obj blade, conjured_weapon_ki
 	};
 	if (item_creation_grant_submit_to_player_with_completion(actor, blade, actor,
 								 conjured_weapon_grant_completed,
-								 &context, sizeof(context)))
+								 &context, sizeof(context), NULL,
+								 economic_source_kind::item_action))
 		return true;
 
 	extract_obj(blade, FALSE);
@@ -761,7 +762,8 @@ void load_soulbind(P_char ch)
 		item,
 	};
 	if (item_creation_grant_submit_to_player_with_completion(
-		    ch, obj, ch, soulbind_reload_completed, &context, sizeof(context)))
+		    ch, obj, ch, soulbind_reload_completed, &context, sizeof(context), NULL,
+		    economic_source_kind::lifecycle))
 		return;
 
 	extract_obj(obj, FALSE);

@@ -885,7 +885,7 @@ char *attrib_help(char *arg)
 string wiki_spells(string title, int type)
 {
 	string return_str;
-	int i, j;
+	int i = 0, j = 0;
 	bool found = FALSE;
 
 	if (type == WIKI_CLASS)
@@ -954,7 +954,7 @@ string wiki_spells(string title, int type)
 string wiki_skills(string title, int type)
 {
 	string return_str;
-	int i, j;
+	int i = 0, j = 0;
 	bool found = FALSE;
 
 	if (type == WIKI_CLASS)

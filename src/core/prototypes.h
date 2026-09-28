@@ -695,6 +695,7 @@ void do_account(P_char ch, char *arg, int cmd);
 #endif
 void do_newchar(P_char ch, char *arg, int cmd);
 void do_protocol(P_char ch, char *arg, int cmd);
+void do_audit(P_char ch, char *arg, int cmd);
 char *food_modifiers(P_obj food);
 
 /* artifact.c */
@@ -937,9 +938,9 @@ nevent_schedule_result add_event_owned_payload(event_func, int, P_char, P_char, 
 					       nevent_payload_destroy_type);
 
 template <typename T>
-	requires(!std::is_void_v<T>)
-inline nevent_schedule_result add_event(event_func func, int delay, P_char ch, P_char victim,
-					P_obj obj, int flag, T *data, int data_size)
+requires(!std::is_void_v<T>) inline nevent_schedule_result
+	add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag,
+		  T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use add_event_owned");
@@ -964,10 +965,9 @@ nevent_schedule_result nevent_replace_owned_payload(nevent_handle, event_func, i
 						    nevent_payload_destroy_type);
 
 template <typename T>
-	requires(!std::is_void_v<T>)
-inline nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, int delay,
-					     P_char ch, P_char victim, P_obj obj, int flag, T *data,
-					     int data_size)
+requires(!std::is_void_v<T>) inline nevent_schedule_result
+	nevent_replace(nevent_handle existing, event_func func, int delay, P_char ch, P_char victim,
+		       P_obj obj, int flag, T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use nevent_replace_owned");

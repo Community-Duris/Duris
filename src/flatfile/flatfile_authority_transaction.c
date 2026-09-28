@@ -49,6 +49,8 @@ std::string operation_directory(const std::string &root, flatfile_authority_stor
 		return root + "/player-deaths";
 	case flatfile_authority_store::economic_evidence:
 		return root + "/economic-evidence";
+	case flatfile_authority_store::item_accounting_references:
+		return root + "/accounting/item_references";
 	}
 	return {};
 }

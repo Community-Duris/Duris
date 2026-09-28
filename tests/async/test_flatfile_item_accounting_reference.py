@@ -2,6 +2,7 @@
 """Contract and storage tests for flatfile item accounting reference."""
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -18,13 +19,16 @@ class FlatfileItemAccountingReferenceContract(unittest.TestCase):
         self.assertIn("flatfile_item_accounting_reference_append", header)
         self.assertIn("flatfile_item_accounting_reference_find_by_legacy", header)
         self.assertIn("flatfile_item_accounting_reference_find_by_item", header)
+        self.assertIn("flatfile_item_accounting_reference_find_by_operation", header)
+        self.assertIn("flatfile_item_accounting_reference_find_history", header)
+
 
     def test_cpp_compilation_and_execution(self):
         with tempfile.TemporaryDirectory(prefix="duris-ff-item-ref-") as directory:
             binary = Path(directory) / "ff_item_ref_test"
             test_storage = Path(directory) / "storage"
             subprocess.run([
-                "g++-12", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                *shlex.split(os.environ.get("CXX", "g++")), "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
                 "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
                 "tests/async/flatfile_item_accounting_reference_test.cpp",

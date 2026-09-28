@@ -3,8 +3,37 @@
 
 #include "persistence/economic_sql_lifecycle_lock_names.h"
 #include <mysql/mysql.h>
+#include <cstdint>
 #include <mutex>
 #include <shared_mutex>
+
+class economic_sql_lifecycle_guard;
+class economic_sql_cutover_transaction_owner;
+
+// Opaque owner-issued proof of the composed SQL fence and coordinator lease.
+// It stores identities only, never a pointer to a guard or SQL connection.
+class economic_sql_cutover_capability final
+{
+    public:
+	economic_sql_cutover_capability() = default;
+	economic_sql_cutover_capability(const economic_sql_cutover_capability &) = delete;
+	economic_sql_cutover_capability &
+	operator=(const economic_sql_cutover_capability &) = delete;
+	economic_sql_cutover_capability(economic_sql_cutover_capability &&) = delete;
+	economic_sql_cutover_capability &operator=(economic_sql_cutover_capability &&) = delete;
+	// This checks the idle acquisition authority only. Once the transaction
+	// owner starts, validate through that exact-session owner; failed validation
+	// never releases a lease whose transaction outcome may be unresolved.
+	bool is_valid_for(const economic_sql_lifecycle_guard &) const noexcept;
+
+    private:
+	friend class economic_sql_lifecycle_guard;
+	friend class economic_sql_cutover_transaction_owner;
+	uint64_t sql_authority_id_ = 0;
+	unsigned long sql_session_ = 0;
+	uint64_t coordinator_generation_ = 0;
+	uint64_t coordinator_lease_id_ = 0;
+};
 
 // Shared runtime admission + currency-writer fence. The runtime guard is held
 // on a dedicated reconnect-disabled SQL control connection for the whole game
@@ -27,10 +56,21 @@ class economic_sql_lifecycle_guard
 	static unsigned int acquire_maintenance(MYSQL *control_connection,
 						economic_sql_lifecycle_guard *) noexcept;
 	bool is_maintenance_authority() const noexcept;
+	// A failed attempt leaves output untouched. Once coordinator acquisition
+	// starts, failure leaves admission quiesced; invalid guard/output arguments
+	// are rejected before touching coordinator state. Begin a transaction only
+	// through economic_sql_cutover_transaction_owner on this same thread/session.
+	bool acquire_cutover_capability(uint64_t drain_timeout_msec,
+					economic_sql_cutover_capability *output) noexcept;
+	bool is_valid_authority() const noexcept;
 
     private:
+	friend class economic_sql_cutover_capability;
+	friend class economic_sql_cutover_transaction_owner;
 	friend class economic_sql_accounting_lifecycle_transaction;
 	friend class economic_sql_currency_writer_guard;
+	static void clear_transferred_local_authority(bool runtime, bool maintenance) noexcept;
+	bool is_valid_cutover_capability(const economic_sql_cutover_capability &) const noexcept;
 	MYSQL *connection_ = nullptr;
 	unsigned long session_ = 0;
 	bool runtime_lock_ = false;
@@ -38,6 +78,85 @@ class economic_sql_lifecycle_guard
 	bool maintenance_ = false;
 	bool local_runtime_ = false;
 	bool local_maintenance_ = false;
+	// Bound privately by the composed owner. Ordinary SQL guard consumers do
+	// not acquire a coordinator dependency merely by releasing a SQL fence.
+	void (*coordinator_release_)(uint64_t, uint64_t) = nullptr;
+	uint64_t authority_id_ = 0;
+	uint64_t coordinator_generation_ = 0;
+	uint64_t coordinator_lease_id_ = 0;
+	std::unique_lock<std::shared_mutex> local_exclusive_;
+};
+
+// One-shot owner for the exact MYSQL session and coordinator lease. begin()
+// transfers the SQL/coordinator resources before issuing START TRANSACTION.
+// COMMIT/ROLLBACK is permitted only through this object. A failed live-session
+// validation or ambiguous terminal result retains exclusion; rollback of an
+// unresolved outcome may be retried only on the same non-reconnecting session.
+// Destroying an unresolved owner deliberately leaks the local exclusion and
+// never reopens admission.
+// Keep the MYSQL handle alive and thread-confined through terminal success;
+// use only that session for transaction statements and never commit it elsewhere.
+// An outcome is known only after the exact-session terminal SQL succeeds.
+enum class economic_sql_cutover_terminal_outcome : uint8_t
+{
+	unresolved,
+	committed,
+	rolled_back,
+};
+
+class economic_sql_cutover_transaction_owner final
+{
+    public:
+	economic_sql_cutover_transaction_owner() = default;
+	economic_sql_cutover_transaction_owner(const economic_sql_cutover_transaction_owner &) =
+		delete;
+	economic_sql_cutover_transaction_owner &
+	operator=(const economic_sql_cutover_transaction_owner &) = delete;
+	economic_sql_cutover_transaction_owner(economic_sql_cutover_transaction_owner &&) = delete;
+	economic_sql_cutover_transaction_owner &
+	operator=(economic_sql_cutover_transaction_owner &&) = delete;
+	~economic_sql_cutover_transaction_owner();
+
+	// begin() transfers the exact guard/capability resources before START TRANSACTION.
+	// A false result with outcome_uncertain()==true still owns the exclusion and
+	// requires this object and connection to remain alive; only same-session
+	// rollback/recovery is allowed. commit()/rollback() return true only after the
+	// matching SQL terminal result, SQL/local fence release, and coordinator owner
+	// release. A resolved opposite outcome is rejected without SQL or cleanup.
+	// retry_cleanup() issues only fence cleanup SQL, never COMMIT or ROLLBACK,
+	// and only releases fences after a known outcome.
+	bool begin(economic_sql_lifecycle_guard &,
+		   const economic_sql_cutover_capability &) noexcept;
+	bool is_valid() noexcept;
+	bool commit() noexcept;
+	bool rollback() noexcept;
+	bool retry_cleanup() noexcept;
+	bool outcome_uncertain() const noexcept { return outcome_uncertain_; }
+	economic_sql_cutover_terminal_outcome terminal_outcome() const noexcept
+	{
+		return terminal_outcome_;
+	}
+	bool terminal() const noexcept { return terminal_; }
+
+    private:
+	friend class economic_sql_accounting_lifecycle_transaction;
+	bool release_after_terminal() noexcept;
+	MYSQL *connection_ = nullptr;
+	unsigned long session_ = 0;
+	uint64_t sql_authority_id_ = 0;
+	uint64_t coordinator_generation_ = 0;
+	uint64_t coordinator_lease_id_ = 0;
+	bool runtime_lock_ = false;
+	bool writer_lock_ = false;
+	bool local_runtime_ = false;
+	bool local_maintenance_ = false;
+	bool active_ = false;
+	bool started_ = false;
+	bool outcome_uncertain_ = false;
+	economic_sql_cutover_terminal_outcome terminal_outcome_ =
+		economic_sql_cutover_terminal_outcome::unresolved;
+	bool sql_resources_released_ = false;
+	bool terminal_ = false;
 	std::unique_lock<std::shared_mutex> local_exclusive_;
 };
 

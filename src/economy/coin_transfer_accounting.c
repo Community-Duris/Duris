@@ -1,6 +1,7 @@
 #include "economy/coin_transfer_accounting.h"
 #include "economy/economic_accounting_intent.h"
 #include "economy/economic_accounting_plan.h"
+#include "item/economic_accounting_item_reference.h"
 
 #include <algorithm>
 #include <array>
@@ -87,6 +88,26 @@ cells read(MYSQL *connection, const std::string &sql, size_t columns)
 					      std::nullopt);
 	return values;
 }
+std::optional<cells> read_optional(MYSQL *connection, const std::string &sql, size_t columns)
+{
+	execute(connection, sql);
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+		mysql_store_result(connection), mysql_free_result);
+	require(bool(result), mysql_errno(connection) ? mysql_errno(connection) : EIO);
+	require(mysql_num_fields(result.get()) == columns && mysql_num_rows(result.get()) <= 1,
+		EILSEQ);
+	if (!mysql_num_rows(result.get()))
+		return std::nullopt;
+	auto row = mysql_fetch_row(result.get());
+	auto lengths = mysql_fetch_lengths(result.get());
+	require(row && lengths, EIO);
+	cells values;
+	for (size_t index = 0; index < columns; ++index)
+		values.push_back(row[index] ? std::optional<std::string>(
+						      std::string(row[index], lengths[index])) :
+					      std::nullopt);
+	return values;
+}
 template <typename T> T integer(const std::optional<std::string> &cell)
 {
 	require(cell.has_value());
@@ -137,6 +158,78 @@ void coin_fields(std::vector<std::pair<std::string, std::string>> *values,
 	for (size_t index = 0; index < names.size(); ++index)
 		values->emplace_back(prefix + names[index], std::to_string(coins[index]));
 }
+std::optional<economic_account_effect>
+prior_pile_effect(MYSQL *connection, const critical_operation_id &lineage,
+		  const critical_operation_id &epoch, const economic_account_key &account,
+		  const critical_operation_id &exclude_operation_id, uint64_t maximum_revision)
+{
+	std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> encoded = {};
+	checked(economic_account_key_encode(account, &encoded));
+	const auto row = read_optional(
+		connection,
+		"SELECT e.after_copper,e.after_silver,e.after_gold,e.after_platinum,e.after_revision "
+		"FROM economic_accounting_account_effect e "
+		"JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
+		"WHERE e.account_key=" +
+			hex(encoded) + " AND o.lineage=" + id(lineage) +
+			" AND o.epoch=" + id(epoch) + " AND o.outcome=1 AND o.operation_id<>" +
+			id(exclude_operation_id) +
+			" AND e.after_revision<=" + std::to_string(maximum_revision) +
+			" ORDER BY e.after_revision DESC LIMIT 1 FOR UPDATE",
+		5);
+	if (!row)
+		return std::nullopt;
+	economic_account_effect effect = {};
+	effect.key = account;
+	for (size_t index = 0; index < effect.after.size(); ++index)
+		effect.after[index] = integer<int64_t>((*row)[index]);
+	effect.after_revision = integer<uint64_t>((*row)[4]);
+	return effect;
+}
+economic_item_position current_item_position(MYSQL *connection, uint64_t uid)
+{
+	const auto row =
+		read(connection,
+		     "SELECT root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,"
+		     "item_revision,state FROM item_current_owner WHERE item_uid=" +
+			     std::to_string(uid) + " FOR UPDATE",
+		     7);
+	economic_item_position position = {};
+	position.root_uid = integer<uint64_t>(row[0]);
+	position.parent_uid = row[1] ? integer<uint64_t>(row[1]) : 0;
+	position.owner.type = static_cast<item_owner_type>(integer<uint8_t>(row[2]));
+	position.owner.id = integer<uint64_t>(row[3]);
+	position.owner.context_id = integer<uint64_t>(row[4]);
+	position.revision = integer<uint64_t>(row[5]);
+	position.state = static_cast<item_custody_state>(integer<uint8_t>(row[6]));
+	return position;
+}
+void append_item_witness(economic_accounting_plan *plan, uint64_t uid,
+			 const economic_item_position &position)
+{
+	const auto found = std::find_if(plan->items_before.begin(), plan->items_before.end(),
+					[uid](const economic_item_snapshot &item)
+					{ return item.uid == uid; });
+	if (found != plan->items_before.end())
+	{
+		require(economic_item_position_equal(found->position, position), EILSEQ);
+		return;
+	}
+	plan->items_before.push_back({ uid, position });
+	plan->items_after.push_back({ uid, position });
+}
+void append_coin_pile_ancestors(MYSQL *connection, economic_accounting_plan *plan,
+				const item_transfer_payload &pile)
+{
+	uint64_t uid = pile.items[0].parent_item_uid;
+	for (size_t depth = 0; uid && depth < ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES; ++depth)
+	{
+		const auto position = current_item_position(connection, uid);
+		append_item_witness(plan, uid, position);
+		uid = position.parent_uid;
+	}
+	require(!uid, ELOOP);
+}
 #endif
 struct identity
 {
@@ -145,6 +238,34 @@ struct identity
 	economic_account_key source, destination;
 	currency_command_payload source_change, destination_change;
 };
+economic_account_kind endpoint_account_kind(const coin_transfer_endpoint &endpoint)
+{
+	if (endpoint.change.type == critical_command_type::account_bank)
+		return economic_account_kind::wallet;
+	if (endpoint.change.type == critical_command_type::item_transfer)
+		return economic_account_kind::pile;
+	throw failure{ EACCES };
+}
+uint64_t endpoint_authority_id(const coin_transfer_endpoint &endpoint)
+{
+	if (endpoint.change.type == critical_command_type::account_bank)
+	{
+		currency_command_payload change = {};
+		require(currency_command_decode_payload(endpoint.change, &change), EINVAL);
+		return change.pid;
+	}
+	item_transfer_payload change = {};
+	require(endpoint.change.type == critical_command_type::item_transfer &&
+			item_transfer_command_decode_payload(endpoint.change, &change) &&
+			change.item_count == 1 &&
+			change.selected_item_uid == change.items[0].item_uid,
+		EINVAL);
+	return change.selected_item_uid;
+}
+economic_coin_vector coin_vector(const std::array<int32_t, 4> &values)
+{
+	return { values[0], values[1], values[2], values[3] };
+}
 critical_command admission_projection(const critical_command &root)
 {
 	auto projection = root;
@@ -161,40 +282,86 @@ identity decode(const critical_command &root)
 		EPROTONOSUPPORT);
 	identity value;
 	require(coin_transfer_command_decode_payload(root, &value.payload), EINVAL);
-	const auto &source = value.payload.source.change;
-	const auto &destination = value.payload.destination.change;
-	// A typed coin root supports only two ordinary wallet accounts. Item/pile
-	// endpoints need the separate authenticated custody/account adapter.
-	require(source.type == critical_command_type::account_bank &&
-			destination.type == critical_command_type::account_bank,
-		EACCES);
-	require(currency_command_decode_payload(source, &value.source_change) &&
-			currency_command_decode_payload(destination, &value.destination_change),
-		EINVAL);
-	for (const auto *change : { &value.source_change, &value.destination_change })
+	const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
+						      &value.payload.destination };
+	for (size_t index = 0; index < 2; ++index)
 	{
-		require(change->reason == currency_reason_type::coin_transfer, EACCES);
-		require(std::all_of(change->bank_delta.amount.begin(),
-				    change->bank_delta.amount.end(),
-				    [](int64_t amount) { return amount == 0; }),
-			EACCES);
-		require(source.expected_revisions.size() == 2 &&
-				destination.expected_revisions.size() == 2 && change->pid > 0 &&
-				change->pid <= INT32_MAX,
-			EINVAL);
+		const auto &endpoint = *endpoints[index];
+		if (endpoint_account_kind(endpoint) == economic_account_kind::wallet)
+		{
+			auto *change = index ? &value.destination_change : &value.source_change;
+			require(currency_command_decode_payload(endpoint.change, change) &&
+					change->reason == currency_reason_type::coin_transfer &&
+					change->pid > 0 && change->pid <= INT32_MAX &&
+					endpoint.change.keys.size() == 2 &&
+					endpoint.change.expected_revisions.size() == 2 &&
+					endpoint.change.keys[0].type ==
+						critical_entity_type::player &&
+					endpoint.change.keys[0].id == change->pid &&
+					endpoint.change.expected_revisions[0].revision !=
+						UINT64_MAX &&
+					endpoint.change.expected_revisions[1].revision !=
+						UINT64_MAX,
+				EINVAL);
+			require(std::all_of(change->bank_delta.amount.begin(),
+					    change->bank_delta.amount.end(),
+					    [](int64_t amount) { return amount == 0; }),
+				EACCES);
+		}
 	}
 	checked(economic_intent_decode(root.accounting_intent, &value.intent));
 	const auto &facts = value.intent.admission.facts;
-	require(facts.size() == ECONOMIC_WALLET_COIN_TRANSFER_FACT_BYTES, EINVAL);
+	require(facts.size() == ECONOMIC_COIN_TRANSFER_FACT_BYTES, EINVAL);
 	const auto &metadata = value.intent.admission.metadata;
-	value.source = { metadata.lineage, economic_account_kind::wallet, little_u64(facts, 0), 0 };
-	value.destination = { metadata.lineage, economic_account_kind::wallet, little_u64(facts, 8),
-			      0 };
+	value.source = { metadata.lineage, endpoint_account_kind(value.payload.source),
+			 little_u64(facts, 0), 0 };
+	value.destination = { metadata.lineage, endpoint_account_kind(value.payload.destination),
+			      little_u64(facts, 8), 0 };
+	if (value.source.kind == economic_account_kind::pile)
+		require(value.source.authority_id == endpoint_authority_id(value.payload.source),
+			EACCES);
+	if (value.destination.kind == economic_account_kind::pile)
+		require(value.destination.authority_id ==
+				endpoint_authority_id(value.payload.destination),
+			EACCES);
 	std::vector<uint8_t> expected;
 	checked(coin_transfer_accounting_intent(admission_projection(root), metadata.epoch,
 						value.source, value.destination, &expected));
 	require(expected == root.accounting_intent, EACCES);
 	return value;
+}
+void validate_wallet_endpoint(const coin_transfer_endpoint &endpoint, size_t index,
+			      const critical_command &destination_after_source,
+			      const currency_command_result &wallet,
+			      economic_account_effect *effect)
+{
+	require(effect && endpoint.change.type == critical_command_type::account_bank &&
+			endpoint.change.expected_revisions.size() == 2,
+		EILSEQ);
+	currency_command_payload change = {};
+	require(currency_command_decode_payload(endpoint.change, &change), EILSEQ);
+	const uint64_t expected_wallet_revision = endpoint.change.expected_revisions[0].revision;
+	const uint64_t expected_bank_revision =
+		index == 1 ? destination_after_source.expected_revisions[1].revision :
+			     endpoint.change.expected_revisions[1].revision;
+	require(expected_wallet_revision != UINT64_MAX && expected_bank_revision != UINT64_MAX,
+		EILSEQ);
+	if (index == 0)
+		require(wallet.bank_revision == endpoint.change.expected_revisions[1].revision + 1,
+			EILSEQ);
+	else
+		require(wallet.bank_revision == expected_bank_revision + 1, EILSEQ);
+	effect->before = coin_vector(endpoint.before);
+	effect->after = coin_vector(endpoint.after);
+	require(wallet.wallet_revision == expected_wallet_revision + 1 &&
+			wallet.wallet.amount == effect->after,
+		EILSEQ);
+	for (size_t denomination = 0; denomination < 4; ++denomination)
+		require(effect->after[denomination] - effect->before[denomination] ==
+				change.wallet_delta.amount[denomination],
+			EILSEQ);
+	effect->before_revision = expected_wallet_revision;
+	effect->after_revision = wallet.wallet_revision;
 }
 [[maybe_unused]] void validate_payload(const coin_transfer_payload &payload,
 				       const economic_account_key &source,
@@ -202,91 +369,135 @@ identity decode(const critical_command &root)
 				       const currency_command_result *results,
 				       economic_accounting_plan *plan)
 {
-	require(plan && results, EINVAL);
+	require(results && plan, EINVAL);
+	coin_transfer_result result = {};
+	result.wallets[0] = results[0];
+	result.wallets[1] = results[1];
+	critical_command destination_after_source = {};
+	require(coin_transfer_command_destination_after_source(payload, result,
+							       &destination_after_source),
+		EILSEQ);
 	const coin_transfer_endpoint *endpoints[] = { &payload.source, &payload.destination };
 	const economic_account_key accounts[] = { source, destination };
-	// Match the native second-child rebase; wallet fences remain on each endpoint.
-	coin_transfer_result result_pair = {};
-	result_pair.wallets[0] = results[0];
-	result_pair.wallets[1] = results[1];
+	for (size_t index = 0; index < 2; ++index)
+	{
+		economic_account_effect effect = {};
+		effect.key = accounts[index];
+		validate_wallet_endpoint(*endpoints[index], index, destination_after_source,
+					 results[index], &effect);
+		plan->accounts.push_back(effect);
+	}
+}
+#ifndef __NO_MYSQL__
+economic_accounting_plan make_plan(MYSQL *connection, const critical_command &root,
+				   const identity &value, const coin_transfer_result &result)
+{
+	require(connection, EINVAL);
+	economic_accounting_plan plan;
+	checked(economic_intent_plan_metadata(root, value.intent, &plan.metadata));
+	const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
+						      &value.payload.destination };
+	const economic_account_key accounts[] = { value.source, value.destination };
 	critical_command destination_after_source = {};
-	for (const auto *endpoint : endpoints)
-		require(endpoint->change.type == critical_command_type::account_bank &&
-				endpoint->change.keys.size() == 2 &&
-				endpoint->change.expected_revisions.size() == 2,
-			EILSEQ);
-	require(coin_transfer_command_destination_after_source(payload, result_pair,
+	require(coin_transfer_command_destination_after_source(value.payload, result,
 							       &destination_after_source),
 		EILSEQ);
 	for (size_t index = 0; index < 2; ++index)
 	{
 		const auto &endpoint = *endpoints[index];
-		const auto &result = results[index];
-		currency_command_payload change = {};
-		require(currency_command_decode_payload(endpoint.change, &change), EILSEQ);
-		const auto expected_wallet_revision =
-			endpoint.change.expected_revisions[0].revision;
-		const auto expected_bank_revision =
-			index == 1 ? destination_after_source.expected_revisions[1].revision :
-				     endpoint.change.expected_revisions[1].revision;
-		require(expected_wallet_revision != UINT64_MAX &&
-				expected_bank_revision != UINT64_MAX,
-			EILSEQ);
-		if (index == 0)
-			require(result.bank_revision ==
-					endpoint.change.expected_revisions[1].revision + 1,
-				EILSEQ);
-		else
-			require(result.bank_revision == expected_bank_revision + 1, EILSEQ);
-		require(result.wallet_revision == expected_wallet_revision + 1 &&
-				result.wallet.amount == std::array<int64_t, 4>{ endpoint.after[0],
-										endpoint.after[1],
-										endpoint.after[2],
-										endpoint.after[3] },
-			EILSEQ);
-		for (size_t denomination = 0; denomination < 4; ++denomination)
-			require(static_cast<int64_t>(endpoint.after[denomination]) -
-						static_cast<int64_t>(
-							endpoint.before[denomination]) ==
-					change.wallet_delta.amount[denomination],
-				EILSEQ);
-		plan->accounts.push_back({ accounts[index],
-					   { endpoint.before[0], endpoint.before[1],
-					     endpoint.before[2], endpoint.before[3] },
-					   { endpoint.after[0], endpoint.after[1],
-					     endpoint.after[2], endpoint.after[3] },
-					   expected_wallet_revision,
-					   result.wallet_revision });
-	}
-}
-#ifndef __NO_MYSQL__
-economic_accounting_plan make_plan(const critical_command &root, const identity &value,
-				   const coin_transfer_result &result)
-{
-	economic_accounting_plan plan;
-	checked(economic_intent_plan_metadata(root, value.intent, &plan.metadata));
-	const currency_command_result wallet_results[] = { result.wallets[0], result.wallets[1] };
-	validate_payload(value.payload, value.source, value.destination, wallet_results, &plan);
-	const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
-						      &value.payload.destination };
-	for (size_t index = 0; index < 2; ++index)
-	{
 		economic_child_link child;
-		child.operation_id = endpoints[index]->change.operation_id;
+		child.operation_id = endpoint.change.operation_id;
 		child.domain = CURRENCY_CHILD_DOMAIN;
 		child.discriminator = index;
 		plan.children.push_back(child);
-	}
-	for (size_t index = 0; index < 2; ++index)
-	{
+		economic_account_effect effect = {};
+		effect.key = accounts[index];
+		effect.before = coin_vector(endpoint.before);
+		effect.after = coin_vector(endpoint.after);
+		if (endpoint_account_kind(endpoint) == economic_account_kind::wallet)
+		{
+			validate_wallet_endpoint(endpoint, index, destination_after_source,
+						 result.wallets[index], &effect);
+		}
+		else
+		{
+			item_transfer_payload pile = {};
+			require(item_transfer_command_decode_payload(endpoint.change, &pile) &&
+					pile.item_count == 1,
+				EILSEQ);
+			const auto &entry = pile.items[0];
+			const bool creation = pile.from_owner.type == item_owner_type::system;
+			const auto &pile_result = result.piles[index];
+			const uint64_t item_revision = pile_result.max_item_revision;
+			require(pile_result.item_count == 1 &&
+					pile_result.root_item_uid == entry.item_uid &&
+					item_revision &&
+					(creation ?
+						 item_revision == 1 :
+						 entry.expected_item_revision < UINT64_MAX &&
+							 item_revision ==
+								 entry.expected_item_revision + 1),
+				EILSEQ);
+			if (creation)
+			{
+				require(effect.before == economic_coin_vector{} &&
+						!prior_pile_effect(connection,
+								   plan.metadata.lineage,
+								   plan.metadata.epoch, effect.key,
+								   plan.metadata.operation_id,
+								   item_revision - 1),
+					EEXIST);
+				effect.before_revision = 0;
+			}
+			else
+			{
+				const auto prior = prior_pile_effect(
+					connection, plan.metadata.lineage, plan.metadata.epoch,
+					effect.key, plan.metadata.operation_id,
+					entry.expected_item_revision);
+				require(prior.has_value(), ENODATA);
+				require(prior->after == effect.before, EILSEQ);
+				effect.before_revision = prior->after_revision;
+			}
+			effect.after_revision = item_revision;
+			require(effect.after_revision > effect.before_revision, EILSEQ);
+
+			uint64_t target_root = 0, target_parent = 0;
+			require(item_transfer_target_topology(pile, entry.item_uid, &target_root,
+							      &target_parent),
+				EILSEQ);
+			economic_item_position before = {};
+			if (!creation)
+			{
+				before.owner = pile.from_owner;
+				before.root_uid = entry.root_item_uid;
+				before.parent_uid = entry.parent_item_uid;
+				before.revision = entry.expected_item_revision;
+				before.state = item_custody_state::active;
+			}
+			economic_item_position after = {};
+			after.owner = pile.to_owner;
+			after.root_uid = target_root;
+			after.parent_uid = target_parent;
+			after.revision = item_revision;
+			after.state = pile.to_owner.type == item_owner_type::destruction ?
+					      item_custody_state::destroyed :
+					      item_custody_state::active;
+			plan.items_before.push_back({ entry.item_uid, before });
+			plan.items_after.push_back({ entry.item_uid, after });
+			append_coin_pile_ancestors(connection, &plan, pile);
+			plan.item_events.push_back({ static_cast<uint32_t>(plan.item_events.size()),
+						     static_cast<uint16_t>(index + 1),
+						     entry.item_uid, before, after });
+		}
+		plan.accounts.push_back(effect);
 		economic_coin_posting posting;
 		posting.event_index = index;
 		posting.account_index = index;
 		posting.child_index = static_cast<uint16_t>(index + 1);
 		for (size_t denomination = 0; denomination < 4; ++denomination)
 			posting.delta[denomination] =
-				static_cast<int64_t>(endpoints[index]->after[denomination]) -
-				static_cast<int64_t>(endpoints[index]->before[denomination]);
+				effect.after[denomination] - effect.before[denomination];
 		checked(economic_coin_value(posting.delta, &posting.copper));
 		plan.postings.push_back(posting);
 	}
@@ -327,9 +538,9 @@ operation_fields(const critical_command &root, const economic_frozen_intent &int
 		 { "account_count", plan ? std::to_string(plan->accounts.size()) : "0" },
 		 { "posting_count", plan ? std::to_string(plan->postings.size()) : "0" },
 		 { "child_count", plan ? std::to_string(plan->children.size()) : "0" },
-		 { "item_event_count", "0" },
-		 { "before_witness_count", "0" },
-		 { "after_witness_count", "0" } };
+		 { "item_event_count", plan ? std::to_string(plan->item_events.size()) : "0" },
+		 { "before_witness_count", plan ? std::to_string(plan->items_before.size()) : "0" },
+		 { "after_witness_count", plan ? std::to_string(plan->items_after.size()) : "0" } };
 }
 std::vector<std::pair<std::string, std::string>>
 effect_fields(const critical_operation_id &root, size_t index,
@@ -408,9 +619,100 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 	      plan ? plan->accounts.size() : 0);
 	count(connection, "economic_accounting_coin_posting", where,
 	      plan ? plan->postings.size() : 0);
-	for (const char *table : { "economic_accounting_item_reference",
-				   "economic_accounting_source_claim", "item_ownership_ledger" })
+	count(connection, "economic_accounting_item_reference", where,
+	      plan ? plan->item_events.size() : 0);
+	for (const char *table : { "economic_accounting_source_claim", "item_ownership_ledger" })
 		count(connection, table, where, 0);
+}
+void verify_item_reference_rows(MYSQL *connection, const critical_command &root,
+				const identity &value, const coin_transfer_result &result,
+				const economic_accounting_plan &plan, bool append)
+{
+	uint16_t line_index = 0;
+	for (size_t endpoint_index = 0; endpoint_index < 2; ++endpoint_index)
+	{
+		const auto &endpoint = endpoint_index ? value.payload.destination :
+							value.payload.source;
+		if (endpoint.change.type != critical_command_type::item_transfer)
+			continue;
+		item_transfer_payload pile = {};
+		require(item_transfer_command_decode_payload(endpoint.change, &pile) &&
+				pile.item_count == 1,
+			EILSEQ);
+		const auto &entry = pile.items[0];
+		const uint64_t after_revision = result.piles[endpoint_index].max_item_revision;
+		const uint64_t before_revision = pile.from_owner.type == item_owner_type::system ?
+							 0 :
+							 entry.expected_item_revision;
+		uint64_t target_root = 0, target_parent = 0;
+		require(after_revision &&
+				item_transfer_target_topology(pile, entry.item_uid, &target_root,
+							      &target_parent),
+			EILSEQ);
+		const auto &child_id = endpoint.change.operation_id;
+		count(connection, "item_ownership_ledger", "operation_id=" + id(child_id), 1);
+		const auto &ledger = std::vector<std::pair<std::string, std::string>>{
+			{ "operation_id", id(child_id) },
+			{ "event_index", "0" },
+			{ "item_uid", std::to_string(entry.item_uid) },
+			{ "root_item_uid", std::to_string(target_root) },
+			{ "parent_item_uid",
+			  target_parent ? std::to_string(target_parent) : "NULL" },
+			{ "from_owner_type",
+			  std::to_string(static_cast<uint8_t>(pile.from_owner.type)) },
+			{ "from_owner_id", std::to_string(pile.from_owner.id) },
+			{ "from_owner_context_id", std::to_string(pile.from_owner.context_id) },
+			{ "to_owner_type",
+			  std::to_string(static_cast<uint8_t>(pile.to_owner.type)) },
+			{ "to_owner_id", std::to_string(pile.to_owner.id) },
+			{ "to_owner_context_id", std::to_string(pile.to_owner.context_id) },
+			{ "item_revision", std::to_string(after_revision) },
+			{ "from_owner_revision",
+			  std::to_string(result.piles[endpoint_index].from_owner_revision) },
+			{ "to_owner_revision",
+			  std::to_string(result.piles[endpoint_index].to_owner_revision) },
+			{ "reason_type", std::to_string(static_cast<uint16_t>(pile.reason)) },
+			{ "reason_id", std::to_string(pile.reason_id) },
+			{ "source_site",
+			  std::to_string(static_cast<uint16_t>(endpoint.change.source_site)) }
+		};
+		count(connection, "item_ownership_ledger", predicate(ledger), 1);
+
+		economic_accounting_item_reference ref = {};
+		ref.operation_id = root.operation_id;
+		const auto event = std::find_if(plan.item_events.begin(), plan.item_events.end(),
+						[&](const economic_item_event &candidate)
+						{ return candidate.uid == entry.item_uid; });
+		require(event != plan.item_events.end() && event->event_index == line_index,
+			EILSEQ);
+		ref.line_index = static_cast<uint16_t>(event->event_index);
+		ref.event_index = event->event_index;
+		ref.child_index = event->child_index;
+		ref.item_uid = entry.item_uid;
+		ref.before_revision = before_revision;
+		ref.after_revision = after_revision;
+		ref.legacy_operation_id = child_id;
+		ref.legacy_event_index = 0;
+		require(economic_accounting_item_reference_validate(ref), EILSEQ);
+		if (append)
+			require(economic_accounting_item_reference_insert(connection, ref),
+				mysql_errno(connection) ? mysql_errno(connection) : EIO);
+		const auto reference = std::vector<std::pair<std::string, std::string>>{
+			{ "operation_id", id(ref.operation_id) },
+			{ "line_index", std::to_string(ref.line_index) },
+			{ "event_index", std::to_string(ref.event_index) },
+			{ "child_index", std::to_string(ref.child_index) },
+			{ "item_uid", std::to_string(ref.item_uid) },
+			{ "before_revision", std::to_string(ref.before_revision) },
+			{ "after_revision", std::to_string(ref.after_revision) },
+			{ "legacy_operation_id", id(ref.legacy_operation_id) },
+			{ "legacy_event_index", std::to_string(ref.legacy_event_index) }
+		};
+		count(connection, "economic_accounting_item_reference", predicate(reference), 1);
+		++line_index;
+	}
+	count(connection, "economic_accounting_item_reference",
+	      "operation_id=" + id(root.operation_id), line_index);
 }
 unsigned int error_code(const failure &error)
 {
@@ -434,63 +736,115 @@ void lock_native_wallet_before(MYSQL *connection, const coin_transfer_endpoint &
 				EILSEQ);
 	}
 }
+std::vector<economic_sql_mapping_request> wallet_mapping_requests(const identity &value)
+{
+	std::vector<economic_sql_mapping_request> requests;
+	const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
+						      &value.payload.destination };
+	const economic_account_key accounts[] = { value.source, value.destination };
+	const currency_command_payload changes[] = { value.source_change,
+						     value.destination_change };
+	for (size_t index = 0; index < 2; ++index)
+		if (endpoints[index]->change.type == critical_command_type::account_bank)
+			requests.push_back({ accounts[index], PLAYER_LOCATOR, changes[index].pid });
+	return requests;
+}
+void require_pile_account_history(MYSQL *connection, const economic_plan_metadata &metadata,
+				  const coin_transfer_endpoint &endpoint,
+				  const economic_account_key &account)
+{
+	item_transfer_payload pile = {};
+	require(endpoint.change.type == critical_command_type::item_transfer &&
+			item_transfer_command_decode_payload(endpoint.change, &pile) &&
+			pile.item_count == 1,
+		EINVAL);
+	const auto &entry = pile.items[0];
+	if (pile.from_owner.type == item_owner_type::system)
+	{
+		require(endpoint.before == std::array<int32_t, 4>{}, EILSEQ);
+		require(!prior_pile_effect(connection, metadata.lineage, metadata.epoch, account,
+					   metadata.operation_id, UINT64_MAX),
+			EEXIST);
+		return;
+	}
+	const auto prior = prior_pile_effect(connection, metadata.lineage, metadata.epoch, account,
+					     metadata.operation_id, entry.expected_item_revision);
+	require(prior.has_value(), ENODATA);
+}
 #endif
 
 } // namespace
 
 economic_accounting_error
 coin_transfer_accounting_intent(const critical_command &root, const critical_operation_id &epoch,
-				const economic_account_key &source_wallet,
-				const economic_account_key &destination_wallet,
+				const economic_account_key &source_account,
+				const economic_account_key &destination_account,
 				std::vector<uint8_t> *encoded)
 {
 	using error = economic_accounting_error;
 	if (!encoded || critical_operation_id_is_zero(epoch) ||
-	    !economic_account_key_valid(source_wallet) ||
-	    !economic_account_key_valid(destination_wallet) ||
-	    source_wallet.kind != economic_account_kind::wallet ||
-	    destination_wallet.kind != economic_account_kind::wallet || source_wallet.context_id ||
-	    destination_wallet.context_id ||
-	    source_wallet.lineage.bytes != destination_wallet.lineage.bytes ||
-	    source_wallet.authority_id == destination_wallet.authority_id)
+	    !economic_account_key_valid(source_account) ||
+	    !economic_account_key_valid(destination_account) || source_account.context_id ||
+	    destination_account.context_id ||
+	    source_account.lineage.bytes != destination_account.lineage.bytes ||
+	    economic_account_key_equal(source_account, destination_account))
 		return error::invalid_identity;
 	coin_transfer_payload payload;
-	if (!coin_transfer_command_decode_payload(root, &payload) ||
-	    payload.source.change.type != critical_command_type::account_bank ||
-	    payload.destination.change.type != critical_command_type::account_bank)
+	if (!coin_transfer_command_decode_payload(root, &payload))
 		return error::unauthorized;
-	currency_command_payload source = {}, destination = {};
-	if (!currency_command_decode_payload(payload.source.change, &source) ||
-	    !currency_command_decode_payload(payload.destination.change, &destination) ||
-	    payload.source.change.keys.size() != 2 || payload.destination.change.keys.size() != 2 ||
-	    payload.source.change.keys[0].type != critical_entity_type::player ||
-	    payload.destination.change.keys[0].type != critical_entity_type::player ||
-	    source.reason != currency_reason_type::coin_transfer ||
-	    destination.reason != currency_reason_type::coin_transfer ||
-	    source.pid != payload.source.change.keys[0].id ||
-	    destination.pid != payload.destination.change.keys[0].id ||
-	    payload.source.change.expected_revisions.size() != 2 ||
-	    payload.destination.change.expected_revisions.size() != 2 ||
-	    payload.source.change.expected_revisions[0].revision == UINT64_MAX ||
-	    payload.destination.change.expected_revisions[0].revision == UINT64_MAX ||
-	    payload.source.change.expected_revisions[1].revision == UINT64_MAX ||
-	    payload.destination.change.expected_revisions[1].revision == UINT64_MAX)
-		return error::unauthorized;
-	for (const auto *change : { &source, &destination })
-		if (std::any_of(change->bank_delta.amount.begin(), change->bank_delta.amount.end(),
-				[](int64_t amount) { return amount != 0; }))
+	const coin_transfer_endpoint *endpoints[] = { &payload.source, &payload.destination };
+	const economic_account_key *accounts[] = { &source_account, &destination_account };
+	for (size_t index = 0; index < 2; ++index)
+	{
+		const auto &endpoint = *endpoints[index];
+		const auto &account = *accounts[index];
+		const auto expected_kind =
+			endpoint.change.type == critical_command_type::account_bank ?
+				economic_account_kind::wallet :
+			endpoint.change.type == critical_command_type::item_transfer ?
+				economic_account_kind::pile :
+				economic_account_kind{};
+		if (account.kind != expected_kind ||
+		    (account.kind != economic_account_kind::wallet &&
+		     account.kind != economic_account_kind::pile))
 			return error::unauthorized;
+		if (endpoint.change.type == critical_command_type::account_bank)
+		{
+			currency_command_payload change = {};
+			if (!currency_command_decode_payload(endpoint.change, &change) ||
+			    endpoint.change.keys.size() != 2 ||
+			    endpoint.change.keys[0].type != critical_entity_type::player ||
+			    change.pid != endpoint.change.keys[0].id ||
+			    change.reason != currency_reason_type::coin_transfer ||
+			    endpoint.change.expected_revisions.size() != 2 ||
+			    endpoint.change.expected_revisions[0].revision == UINT64_MAX ||
+			    endpoint.change.expected_revisions[1].revision == UINT64_MAX ||
+			    std::any_of(change.bank_delta.amount.begin(),
+					change.bank_delta.amount.end(),
+					[](int64_t amount) { return amount != 0; }))
+				return error::unauthorized;
+		}
+		else
+		{
+			item_transfer_payload pile = {};
+			if (!item_transfer_command_decode_payload(endpoint.change, &pile) ||
+			    pile.item_count != 1 ||
+			    pile.selected_item_uid != account.authority_id ||
+			    pile.items[0].item_uid != account.authority_id)
+				return error::unauthorized;
+		}
+	}
 	try
 	{
 		economic_admission_facts facts;
-		facts.metadata.lineage = source_wallet.lineage;
+		facts.metadata.lineage = source_account.lineage;
 		facts.metadata.epoch = epoch;
 		facts.metadata.actor_kind = economic_actor_kind::domain;
-		facts.metadata.actor_id = source_wallet.authority_id;
+		facts.metadata.actor_id = source_account.authority_id;
 		facts.metadata.writer_id = ECONOMIC_WRITER_WALLET_COIN_TRANSFER;
 		facts.metadata.reason = economic_reason::coin_transfer;
-		append_u64(&facts.facts, source_wallet.authority_id);
-		append_u64(&facts.facts, destination_wallet.authority_id);
+		append_u64(&facts.facts, source_account.authority_id);
+		append_u64(&facts.facts, destination_account.authority_id);
 		return economic_intent_freeze(root, facts, encoded);
 	}
 	catch (const std::bad_alloc &)
@@ -545,12 +899,7 @@ unsigned int coin_transfer_accounting_lock(MYSQL *connection, const critical_com
 					value.payload.destination.change.operation_id.bytes,
 			EEXIST);
 		const auto &metadata = value.intent.admission.metadata;
-		std::array<economic_sql_mapping_request, 2> requests = {
-			economic_sql_mapping_request{ value.source, PLAYER_LOCATOR,
-						      value.source_change.pid },
-			economic_sql_mapping_request{ value.destination, PLAYER_LOCATOR,
-						      value.destination_change.pid }
-		};
+		const auto requests = wallet_mapping_requests(value);
 		coin_transfer_accounting_context candidate;
 		candidate.session_id = mysql_thread_id(connection);
 		const auto error = economic_sql_lock_authority(connection, metadata.lineage,
@@ -558,8 +907,12 @@ unsigned int coin_transfer_accounting_lock(MYSQL *connection, const critical_com
 							       &candidate.authority);
 		require(!error, error);
 		require(connection->server_status & SERVER_STATUS_IN_TRANS, ENOTCONN);
-		std::array<const coin_transfer_endpoint *, 2> ordered = { &payload.source,
-									  &payload.destination };
+		economic_plan_metadata plan_metadata;
+		checked(economic_intent_plan_metadata(root, value.intent, &plan_metadata));
+		std::vector<const coin_transfer_endpoint *> ordered;
+		for (const auto *endpoint : { &value.payload.source, &value.payload.destination })
+			if (endpoint->change.type == critical_command_type::account_bank)
+				ordered.push_back(endpoint);
 		std::sort(ordered.begin(), ordered.end(),
 			  [](const auto *left, const auto *right)
 			  {
@@ -569,8 +922,15 @@ unsigned int coin_transfer_accounting_lock(MYSQL *connection, const critical_com
 					  return false;
 				  return a.pid < b.pid;
 			  });
-		lock_native_wallet_before(connection, *ordered[0]);
-		lock_native_wallet_before(connection, *ordered[1]);
+		for (const auto *endpoint : ordered)
+			lock_native_wallet_before(connection, *endpoint);
+		const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
+							      &value.payload.destination };
+		const economic_account_key accounts[] = { value.source, value.destination };
+		for (size_t index = 0; index < 2; ++index)
+			if (endpoints[index]->change.type == critical_command_type::item_transfer)
+				require_pile_account_history(connection, plan_metadata,
+							     *endpoints[index], accounts[index]);
 		*context = std::move(candidate);
 		return 0;
 	}
@@ -597,12 +957,7 @@ unsigned int coin_transfer_accounting_record(MYSQL *connection, const critical_c
 		const auto value = decode(root);
 		const auto &metadata = value.intent.admission.metadata;
 		economic_sql_authority_snapshot current;
-		std::array<economic_sql_mapping_request, 2> requests = {
-			economic_sql_mapping_request{ value.source, PLAYER_LOCATOR,
-						      value.source_change.pid },
-			economic_sql_mapping_request{ value.destination, PLAYER_LOCATOR,
-						      value.destination_change.pid }
-		};
+		const auto requests = wallet_mapping_requests(value);
 		const auto lock_error = economic_sql_lock_authority(
 			connection, metadata.lineage, metadata.epoch, requests, &current);
 		require(!lock_error, lock_error);
@@ -613,23 +968,39 @@ unsigned int coin_transfer_accounting_record(MYSQL *connection, const critical_c
 			require(current.mappings[index].revision ==
 					context.authority.mappings[index].revision,
 				ESTALE);
+		economic_plan_metadata plan_metadata;
+		checked(economic_intent_plan_metadata(root, value.intent, &plan_metadata));
+		const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
+							      &value.payload.destination };
+		const economic_account_key accounts[] = { value.source, value.destination };
+		for (size_t index = 0; index < 2; ++index)
+			if (endpoints[index]->change.type == critical_command_type::item_transfer)
+				require_pile_account_history(connection, plan_metadata,
+							     *endpoints[index], accounts[index]);
 		const bool business_rejection = result_code == ESTALE || result_code == ENOSPC ||
 						result_code == ERANGE;
 		require(!result_code || business_rejection, EINVAL);
 		std::optional<economic_accounting_plan> plan;
 		if (!result_code)
 		{
-			plan = make_plan(root, value, result);
+			plan = make_plan(connection, root, value, result);
 			const auto effect_error = economic_coin_effects_validate(
 				plan->accounts, plan->postings, plan->children.size());
 			checked(effect_error);
 			checked(economic_child_links_validate(root.operation_id, plan->children));
+			checked(economic_item_effects_validate(plan->items_before,
+							       plan->items_after, plan->item_events,
+							       plan->children.size()));
 		}
 		const auto operation =
 			operation_fields(root, value.intent, result_code, plan ? &*plan : nullptr);
 		insert(connection, "economic_accounting_operation", operation);
 		count(connection, "economic_accounting_operation", predicate(operation), 1);
+		if (plan)
+			verify_item_reference_rows(connection, root, value, result, *plan, true);
 		verify_plan_rows(connection, root, plan ? &*plan : nullptr, true);
+		if (plan)
+			verify_item_reference_rows(connection, root, value, result, *plan, false);
 		verify_plan_rows(connection, root, plan ? &*plan : nullptr, false);
 		require(connection->server_status & SERVER_STATUS_IN_TRANS, ENOTCONN);
 		return 0;
@@ -664,7 +1035,7 @@ unsigned int coin_transfer_accounting_verify_retained(MYSQL *connection,
 			require(coin_transfer_command_decode_result(value.payload, result_payload,
 								    result_size, &result),
 				EILSEQ);
-			plan = make_plan(root, value, result);
+			plan = make_plan(connection, root, value, result);
 		}
 		else
 			require(result_size == 0, EILSEQ);
@@ -672,22 +1043,37 @@ unsigned int coin_transfer_accounting_verify_retained(MYSQL *connection,
 			operation_fields(root, value.intent, result_code, plan ? &*plan : nullptr);
 		count(connection, "economic_accounting_operation", predicate(operation), 1);
 		const auto where = "operation_id=" + id(root.operation_id);
+		if (plan)
+			verify_item_reference_rows(connection, root, value, result, *plan, false);
 		verify_plan_rows(connection, root, plan ? &*plan : nullptr, false);
 		if (plan)
 		{
 			for (const auto *endpoint :
 			     { &value.payload.source, &value.payload.destination })
-				count(connection, "currency_ledger",
-				      "operation_id=" + id(endpoint->change.operation_id), 1);
+				if (endpoint->change.type == critical_command_type::account_bank)
+					count(connection, "currency_ledger",
+					      "operation_id=" + id(endpoint->change.operation_id),
+					      1);
 			count(connection, "critical_outbox", where, 1);
 		}
 		else
 		{
 			count(connection, "currency_ledger", where, 0);
 			count(connection, "critical_outbox", where, 0);
+			for (const auto *endpoint :
+			     { &value.payload.source, &value.payload.destination })
+				count(connection,
+				      endpoint->change.type == critical_command_type::account_bank ?
+					      "currency_ledger" :
+					      "item_ownership_ledger",
+				      "operation_id=" + id(endpoint->change.operation_id), 0);
 		}
 		for (size_t index = 0; index < 2; ++index)
 		{
+			const auto &endpoint = index ? value.payload.destination :
+						       value.payload.source;
+			if (endpoint.change.type != critical_command_type::account_bank)
+				continue;
 			const auto &account = index ? value.destination : value.source;
 			const auto native_id = index ? value.destination_change.pid :
 						       value.source_change.pid;

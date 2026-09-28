@@ -1,6 +1,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include "economy/economic_command_admission.h"
 #include "economy/coin_transfer_accounting.h"
+#include "economy/item_transfer_accounting.h"
 
 #include <atomic>
 #include <climits>
@@ -194,29 +195,100 @@ economic_gameplay_authority::prepare_coin_transfer(critical_command *command)
 		coin_transfer_payload payload;
 		if (!coin_transfer_command_decode_payload(*command, &payload))
 			return error::corrupt_evidence;
-		if (payload.source.change.type != critical_command_type::account_bank ||
-		    payload.destination.change.type != critical_command_type::account_bank)
+		auto account_for = [&](const coin_transfer_endpoint &endpoint,
+				       economic_account_key *account) -> error
+		{
+			if (endpoint.change.type == critical_command_type::account_bank)
+			{
+				currency_command_payload wallet = {};
+				if (!currency_command_decode_payload(endpoint.change, &wallet))
+					return error::corrupt_evidence;
+				const auto found = selected->wallets.find(wallet.pid);
+				if (found == selected->wallets.end())
+					return error::incomplete_coverage;
+				*account = found->second;
+				return error::ok;
+			}
+			if (endpoint.change.type == critical_command_type::item_transfer)
+			{
+				item_transfer_payload pile = {};
+				if (!item_transfer_command_decode_payload(endpoint.change, &pile) ||
+				    pile.item_count != 1 ||
+				    pile.selected_item_uid != pile.items[0].item_uid)
+					return error::corrupt_evidence;
+				*account = { selected->lineage, economic_account_kind::pile,
+					     pile.selected_item_uid, 0 };
+				return economic_account_key_valid(*account) ?
+					       error::ok :
+					       error::invalid_identity;
+			}
 			return error::incomplete_coverage;
-		currency_command_payload source = {}, destination = {};
-		if (!currency_command_decode_payload(payload.source.change, &source) ||
-		    !currency_command_decode_payload(payload.destination.change, &destination))
-			return error::corrupt_evidence;
-		const auto source_mapping = selected->wallets.find(source.pid);
-		const auto destination_mapping = selected->wallets.find(destination.pid);
-		if (source_mapping == selected->wallets.end() ||
-		    destination_mapping == selected->wallets.end())
-			return error::incomplete_coverage;
+		};
+		economic_account_key source = {}, destination = {};
+		const auto source_result = account_for(payload.source, &source);
+		if (source_result != error::ok)
+			return source_result;
+		const auto destination_result = account_for(payload.destination, &destination);
+		if (destination_result != error::ok)
+			return destination_result;
 		critical_command frozen = *command;
 		std::vector<uint8_t> intent;
-		const auto result = coin_transfer_accounting_intent(frozen, selected->epoch,
-								    source_mapping->second,
-								    destination_mapping->second,
-								    &intent);
+		const auto result = coin_transfer_accounting_intent(frozen, selected->epoch, source,
+								    destination, &intent);
 		if (result != error::ok)
 			return result;
 		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 		frozen.accounting_intent = std::move(intent);
 		if (!supported_candidate(frozen))
+			return error::corrupt_evidence;
+		*command = std::move(frozen);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error
+economic_gameplay_authority::prepare_item_transfer(critical_command *command, uint32_t actor_pid,
+							  economic_source_kind lifecycle_source)
+{
+	using error = economic_accounting_error;
+	if (!command)
+		return error::invalid_identity;
+	try
+	{
+		auto supported_candidate = [](const critical_command &candidate)
+		{
+			auto projection = candidate;
+			if (!projection.accepted_at_usec)
+				projection.accepted_at_usec = 1;
+			return economic_command_admission_supported(projection);
+		};
+		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+			return supported_candidate(*command) &&
+					       item_transfer_accounting_command_supported(
+						       *command) ?
+				       error::ok :
+				       error::unauthorized;
+		if (!critical_command_legacy_execution_supported(*command))
+			return error::corrupt_evidence;
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected)
+			return error::ok;
+		if (command->accepted_at_usec || command->publication_required)
+			return error::unauthorized;
+		critical_command frozen = *command;
+		std::vector<uint8_t> intent;
+		const auto result = item_transfer_accounting_intent(
+			frozen, selected->lineage, selected->epoch, actor_pid, &intent, lifecycle_source);
+		if (result != error::ok)
+			return result;
+		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		frozen.accounting_intent = std::move(intent);
+		if (!supported_candidate(frozen) ||
+		    !item_transfer_accounting_command_supported(frozen))
 			return error::corrupt_evidence;
 		*command = std::move(frozen);
 		return error::ok;

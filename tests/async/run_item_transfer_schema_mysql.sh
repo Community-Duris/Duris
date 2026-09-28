@@ -42,11 +42,14 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/player_death_restitution_repository.c \
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
+    src/persistence/economic_sql_item_transfer_transaction.c \
     src/economy/economic_currency_adapter.c \
+    src/economy/item_transfer_accounting.c \
+    src/economy/coin_transfer_accounting.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_accounting_plan.c \
     src/economy/economic_accounting_intent.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"
 "$ROOT/bin/tests/item_transfer_mysql_harness"
-printf 'item creation, subtree, stale, incomplete, replay, transfer, destruction, ledger, and outbox checks passed\n'
+printf 'item creation, sourced creation claims, subtree, stale, incomplete, replay, transfer, destruction, ledger, and outbox checks passed\n'

@@ -24,12 +24,29 @@ int main()
     economic_sql_currency_writer_guard writer;
     economic_sql_lifecycle_request request;
     economic_sql_lifecycle_receipt receipt;
+    economic_sql_cutover_capability capability;
+    economic_sql_cutover_transaction_owner transaction;
+    assert(!authority.is_valid_authority());
+    assert(!authority.acquire_cutover_capability(0, &capability));
+    assert(!capability.is_valid_for(authority));
+    assert(!transaction.begin(authority, capability));
+    assert(!transaction.is_valid());
+    assert(!transaction.commit());
+    assert(!transaction.rollback());
+    assert(!transaction.retry_cleanup());
+    assert(transaction.terminal_outcome() ==
+        economic_sql_cutover_terminal_outcome::unresolved);
+    assert(!transaction.outcome_uncertain() && !transaction.terminal());
     assert(!authority.is_maintenance_authority());
     assert(economic_sql_lifecycle_guard::acquire_runtime(nullptr, &authority) == ENOTSUP);
     assert(economic_sql_lifecycle_guard::acquire_maintenance(nullptr, &authority) == ENOTSUP);
     assert(economic_sql_currency_writer_guard::acquire(nullptr, &writer) == ENOTSUP);
     assert(economic_sql_accounting_lifecycle_transaction::install(
         nullptr, authority, request, &receipt) == ENOTSUP);
+    uint64_t new_lineage_revision = 0;
+    assert(economic_sql_accounting_lifecycle_transaction::activate(
+        nullptr, transaction, request.lineage, &new_lineage_revision) == ENOTSUP);
+    assert(new_lineage_revision == 0);
     assert(!authority.is_maintenance_authority());
     assert(receipt.wallets.empty() && receipt.banks.empty());
     assert(receipt.baseline_revision == 0);
@@ -40,6 +57,7 @@ int main()
             "-I", str(ROOT / "src/no_mysql"), "-I", str(ROOT / "src"),
             str(harness),
             str(ROOT / "src/persistence/economic_sql_lifecycle_guard.c"),
+            str(ROOT / "src/persistence/economic_sql_cutover_capability.c"),
             str(ROOT / "src/persistence/economic_sql_accounting_lifecycle_transaction.c"),
             "-o", str(executable),
         ]

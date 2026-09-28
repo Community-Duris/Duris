@@ -152,6 +152,13 @@ bool zone_touch_command_decode_payload(const critical_command &command, zone_tou
 	       command.expected_revisions.empty();
 }
 
+bool zone_touch_derive_award_id(const critical_operation_id &parent_op, uint32_t participant_pid,
+				critical_operation_id *derived_op)
+{
+	return critical_operation_id_derive(parent_op, ZONE_TOUCH_AWARD_DERIVATION_DOMAIN,
+					    participant_pid, derived_op);
+}
+
 bool zone_touch_award_command(const critical_command &parent, size_t index, critical_command *award)
 {
 	zone_touch_payload payload = {};
@@ -159,8 +166,8 @@ bool zone_touch_award_command(const critical_command &parent, size_t index, crit
 	const bool built =
 		award && zone_touch_command_decode_payload(parent, &payload) && payload.stone_uid &&
 		index < payload.group_size &&
-		critical_operation_id_derive(parent.operation_id, 0x5a544132,
-					     payload.participant_pids[index], &id) &&
+		zone_touch_derive_award_id(parent.operation_id, payload.participant_pids[index],
+					   &id) &&
 		epic_command_build(award, id,
 				   { payload.participant_pids[index], payload.awards[index].amount,
 				     epic_reason_type::zone_award, 0, payload.zone_number },

@@ -78,9 +78,34 @@ void *apply_context = nullptr;
 critical_drain_observer_fn drain_observer = nullptr;
 critical_coordinator_health health = {};
 bool stop_requested = false;
+bool lifecycle_guard_active = false;
+bool lifecycle_guard_was_accepting = false;
+std::thread::id lifecycle_guard_thread;
 bool recovery_requested = false;
 uint64_t uncertain_recovery_not_before_usec = 0;
 uint64_t uncertain_recovery_delay_usec = 1000000;
+uint64_t coordinator_generation = 0;
+bool coordinator_generation_exhausted = false;
+uint64_t next_cutover_lease_id = 1;
+bool cutover_lease_ids_exhausted = false;
+uint64_t active_cutover_generation = 0;
+uint64_t active_cutover_lease_id = 0;
+enum class cutover_owner_phase : uint8_t
+{
+	none,
+	issuing,
+	lease_idle,
+	transaction_active,
+};
+cutover_owner_phase active_cutover_phase = cutover_owner_phase::none;
+std::thread::id active_cutover_thread;
+const void *active_cutover_connection = nullptr;
+unsigned long active_cutover_session = 0;
+bool cutover_reopen_allowed = false;
+bool cutover_was_accepting = false;
+bool cutover_outcome_uncertain = false;
+
+void update_depth();
 
 uint64_t now_usec()
 {
@@ -94,6 +119,43 @@ uint64_t wall_now_usec()
 	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
 					     std::chrono::system_clock::now().time_since_epoch())
 					     .count());
+}
+
+void advance_coordinator_generation()
+{
+	if (coordinator_generation_exhausted)
+		return;
+	if (coordinator_generation == UINT64_MAX)
+	{
+		coordinator_generation = 0;
+		coordinator_generation_exhausted = true;
+		return;
+	}
+	++coordinator_generation;
+}
+
+void invalidate_active_cutover_lease()
+{
+	active_cutover_generation = 0;
+	active_cutover_lease_id = 0;
+	active_cutover_phase = cutover_owner_phase::none;
+	active_cutover_thread = {};
+	active_cutover_connection = nullptr;
+	active_cutover_session = 0;
+	cutover_reopen_allowed = false;
+	cutover_was_accepting = false;
+	cutover_outcome_uncertain = false;
+}
+
+void abandon_issuing_cutover_locked()
+{
+	if (active_cutover_phase != cutover_owner_phase::issuing)
+		return;
+	invalidate_active_cutover_lease();
+	// An unsuccessful owned acquisition keeps the coordinator quiesced, as
+	// before; only explicit resume can reopen it after no owner remains.
+	health.accepting = false;
+	update_depth();
 }
 
 void defer_uncertain_recovery()
@@ -245,6 +307,10 @@ void update_depth()
 	health.admission_queue_bytes = pending_admission_bytes + admission_inflight_bytes;
 	health.admission_worker_running = admission_worker.joinable() && !stop_requested;
 	health.append_inflight = admission_inflight_bytes != 0;
+	health.cutover_issuing = active_cutover_phase == cutover_owner_phase::issuing;
+	health.cutover_transaction_active = active_cutover_phase ==
+					    cutover_owner_phase::transaction_active;
+	health.cutover_outcome_uncertain = cutover_outcome_uncertain;
 }
 
 void remember_completed(const std::string &identity, const critical_command &command,
@@ -818,6 +884,24 @@ void worker_main()
 		completion_delivery.enqueue(critical_completion_channel::execution, completion);
 	}
 }
+
+bool cutover_ready_locked()
+{
+	update_depth();
+	if (lifecycle_guard_active || !health.initialized || !health.running || health.accepting ||
+	    stop_requested || health.queued || health.inflight || health.blocked ||
+	    health.publication_pending || health.awaiting_durability ||
+	    health.admission_queue_bytes || health.append_inflight || health.fenced_keys ||
+	    !operations.empty() || !pending.empty() || !pending_admission.empty() ||
+	    pending_admission_bytes || admission_inflight_bytes || !active_keys.empty() ||
+	    !fences.empty() || completion_delivery.size())
+		return false;
+
+	// Keep journal readiness inside this coordinator-locked decision so lease
+	// issuance cannot race a new admission between preflight and ownership.
+	const critical_command_journal_health journal = critical_command_journal_health_copy();
+	return journal.initialized && !journal.append_uncertain && !journal.records;
+}
 } // namespace
 
 bool critical_command_coordinator_init(const char *journal_directory_path, critical_apply_fn apply,
@@ -829,7 +913,13 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
 	std::unique_lock<std::mutex> lock(coordinator_mutex);
-	if (health.initialized || !critical_command_journal_init(journal_directory_path))
+	if (health.initialized || lifecycle_guard_active ||
+	    active_cutover_phase != cutover_owner_phase::none)
+		return false;
+	advance_coordinator_generation();
+	invalidate_active_cutover_lease();
+	if (coordinator_generation_exhausted ||
+	    !critical_command_journal_init(journal_directory_path))
 		return false;
 	operations.clear();
 	pending.clear();
@@ -892,12 +982,45 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	return true;
 }
 
-void critical_command_coordinator_shutdown(void)
+bool critical_command_coordinator_try_acquire_lifecycle_guard(void)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none)
+		return false;
+	lifecycle_guard_active = true;
+	lifecycle_guard_was_accepting = health.accepting;
+	lifecycle_guard_thread = std::this_thread::get_id();
+	health.accepting = false;
+	return true;
+}
+
+void critical_command_coordinator_release_lifecycle_guard(void)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (!lifecycle_guard_active || lifecycle_guard_thread != std::this_thread::get_id())
+		return;
+	lifecycle_guard_active = false;
+	lifecycle_guard_thread = {};
+	if (health.initialized && !stop_requested &&
+	    active_cutover_phase == cutover_owner_phase::none)
+		health.accepting = lifecycle_guard_was_accepting;
+	lifecycle_guard_was_accepting = false;
+}
+
+bool critical_command_coordinator_shutdown(void)
 {
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		if (active_cutover_phase != cutover_owner_phase::none)
+		{
+			health.shutdown_refused = true;
+			health.accepting = false;
+			return false;
+		}
 		stop_requested = true;
 		health.accepting = false;
+		advance_coordinator_generation();
+		invalidate_active_cutover_lease();
 		work_available.notify_all();
 		result_available.notify_all();
 		admission_available.notify_all();
@@ -928,6 +1051,7 @@ void critical_command_coordinator_shutdown(void)
 	uncertain_recovery_not_before_usec = 0;
 	uncertain_recovery_delay_usec = 1000000;
 	critical_command_journal_shutdown();
+	return true;
 }
 
 critical_submit_result critical_command_coordinator_submit_internal(critical_command command,
@@ -1296,12 +1420,15 @@ void critical_command_coordinator_quiesce(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	health.accepting = false;
+	if (active_cutover_phase != cutover_owner_phase::none)
+		cutover_reopen_allowed = false;
 }
 
 void critical_command_coordinator_resume(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	if (health.initialized && !stop_requested)
+	if (health.initialized && !lifecycle_guard_active && !stop_requested &&
+	    active_cutover_phase == cutover_owner_phase::none)
 		health.accepting = true;
 }
 
@@ -1335,20 +1462,162 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 bool critical_command_coordinator_cutover_ready(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	update_depth();
-	if (!health.initialized || !health.running || health.accepting || stop_requested ||
-	    health.queued || health.inflight || health.blocked || health.publication_pending ||
-	    health.awaiting_durability || health.admission_queue_bytes || health.append_inflight ||
-	    health.fenced_keys || !operations.empty() || !pending.empty() ||
-	    !pending_admission.empty() || pending_admission_bytes || admission_inflight_bytes ||
-	    !active_keys.empty() || !fences.empty() || completion_delivery.size())
-		return false;
+	return cutover_ready_locked();
+}
 
-	// The coordinator mutex prevents new submissions and preserves the admission
-	// state while the journal mutex supplies an authoritative durable-frame view.
-	// Admission workers never hold the journal mutex while acquiring this mutex.
-	const critical_command_journal_health journal = critical_command_journal_health_copy();
-	return journal.initialized && !journal.append_uncertain && !journal.records;
+bool critical_command_coordinator_owner::acquire_cutover_lease(uint64_t timeout_msec,
+							       uint64_t *generation,
+							       uint64_t *lease_id)
+{
+	if (!generation || !lease_id)
+		return false;
+	*generation = 0;
+	*lease_id = 0;
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		if (!health.initialized || !health.running || stop_requested ||
+		    lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none)
+			return false;
+		cutover_was_accepting = health.accepting;
+		cutover_reopen_allowed = health.accepting;
+		cutover_outcome_uncertain = false;
+		active_cutover_phase = cutover_owner_phase::issuing;
+		active_cutover_thread = std::this_thread::get_id();
+		health.accepting = false;
+		update_depth();
+	}
+
+	try
+	{
+		if (!critical_command_coordinator_drain(timeout_msec))
+		{
+			std::lock_guard<std::mutex> lock(coordinator_mutex);
+			abandon_issuing_cutover_locked();
+			return false;
+		}
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		if (active_cutover_phase != cutover_owner_phase::issuing ||
+		    active_cutover_thread != std::this_thread::get_id() ||
+		    !cutover_ready_locked() || coordinator_generation_exhausted ||
+		    !coordinator_generation || cutover_lease_ids_exhausted ||
+		    !next_cutover_lease_id)
+		{
+			abandon_issuing_cutover_locked();
+			return false;
+		}
+		const uint64_t issued_lease_id = next_cutover_lease_id;
+		if (next_cutover_lease_id == UINT64_MAX)
+		{
+			next_cutover_lease_id = 0;
+			cutover_lease_ids_exhausted = true;
+		}
+		else
+			++next_cutover_lease_id;
+		active_cutover_generation = coordinator_generation;
+		active_cutover_lease_id = issued_lease_id;
+		active_cutover_phase = cutover_owner_phase::lease_idle;
+		*generation = coordinator_generation;
+		*lease_id = issued_lease_id;
+		update_depth();
+		return true;
+	}
+	catch (...)
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		abandon_issuing_cutover_locked();
+		return false;
+	}
+}
+
+bool critical_command_coordinator_owner::validate_cutover_lease(uint64_t generation,
+								uint64_t lease_id)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (!generation || !lease_id || generation != active_cutover_generation ||
+	    lease_id != active_cutover_lease_id ||
+	    active_cutover_phase != cutover_owner_phase::lease_idle ||
+	    active_cutover_thread != std::this_thread::get_id())
+		return false;
+	return cutover_ready_locked();
+}
+
+void critical_command_coordinator_owner::release_cutover_lease(uint64_t generation,
+							       uint64_t lease_id)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (!generation || !lease_id || generation != active_cutover_generation ||
+	    lease_id != active_cutover_lease_id ||
+	    active_cutover_phase != cutover_owner_phase::lease_idle ||
+	    active_cutover_thread != std::this_thread::get_id())
+		return;
+	invalidate_active_cutover_lease();
+	update_depth();
+}
+
+bool critical_command_coordinator_owner::begin_cutover_transaction(uint64_t generation,
+								   uint64_t lease_id,
+								   const void *connection,
+								   unsigned long session)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (!generation || !lease_id || !connection || !session ||
+	    generation != active_cutover_generation || lease_id != active_cutover_lease_id ||
+	    active_cutover_phase != cutover_owner_phase::lease_idle ||
+	    active_cutover_thread != std::this_thread::get_id())
+		return false;
+	active_cutover_phase = cutover_owner_phase::transaction_active;
+	active_cutover_connection = connection;
+	active_cutover_session = session;
+	cutover_outcome_uncertain = true;
+	update_depth();
+	return true;
+}
+
+bool critical_command_coordinator_owner::validate_cutover_transaction(uint64_t generation,
+								      uint64_t lease_id,
+								      const void *connection,
+								      unsigned long session)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	return generation && lease_id && connection && session &&
+	       generation == active_cutover_generation && lease_id == active_cutover_lease_id &&
+	       active_cutover_phase == cutover_owner_phase::transaction_active &&
+	       active_cutover_thread == std::this_thread::get_id() &&
+	       active_cutover_connection == connection && active_cutover_session == session;
+}
+
+void critical_command_coordinator_owner::set_cutover_outcome_uncertain(uint64_t generation,
+								       uint64_t lease_id,
+								       const void *connection,
+								       unsigned long session,
+								       bool uncertain)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (generation == active_cutover_generation && lease_id == active_cutover_lease_id &&
+	    active_cutover_phase == cutover_owner_phase::transaction_active &&
+	    active_cutover_connection == connection && active_cutover_session == session)
+		cutover_outcome_uncertain = uncertain;
+	update_depth();
+}
+
+bool critical_command_coordinator_owner::finish_cutover_transaction(uint64_t generation,
+								    uint64_t lease_id,
+								    const void *connection,
+								    unsigned long session)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	if (!generation || !lease_id || !connection || !session ||
+	    generation != active_cutover_generation || lease_id != active_cutover_lease_id ||
+	    active_cutover_phase != cutover_owner_phase::transaction_active ||
+	    active_cutover_thread != std::this_thread::get_id() ||
+	    active_cutover_connection != connection || active_cutover_session != session)
+		return false;
+	const bool reopen = cutover_was_accepting && cutover_reopen_allowed && !stop_requested;
+	invalidate_active_cutover_lease();
+	health.accepting = reopen;
+	health.shutdown_refused = false;
+	update_depth();
+	return true;
 }
 
 void critical_command_coordinator_set_drain_observer(critical_drain_observer_fn observer)
@@ -1372,7 +1641,9 @@ bool critical_command_coordinator_inject_completion_for_tests(const critical_com
 
 void critical_command_coordinator_reset_for_tests(void)
 {
-	critical_command_coordinator_shutdown();
+	if (!critical_command_coordinator_shutdown())
+		return;
+	critical_command_coordinator_release_lifecycle_guard();
 	critical_command_coordinator_set_drain_observer(nullptr);
 	critical_command_journal_reset_for_tests();
 }

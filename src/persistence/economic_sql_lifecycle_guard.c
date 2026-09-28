@@ -1,6 +1,8 @@
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include <cerrno>
 #include <charconv>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -29,6 +31,25 @@ bool &maintenance_authority_active()
 	static bool value = false;
 	return value;
 }
+#ifndef __NO_MYSQL__
+uint64_t &next_authority_id()
+{
+	static uint64_t value = 1;
+	return value;
+}
+uint64_t allocate_authority_id()
+{
+	uint64_t &next = next_authority_id();
+	if (!next)
+		return 0;
+	const uint64_t result = next;
+	if (next == std::numeric_limits<uint64_t>::max())
+		next = 0;
+	else
+		++next;
+	return result;
+}
+#endif
 void clear_local_authority(bool runtime, bool maintenance)
 {
 	std::lock_guard lock(authority_mutex());
@@ -46,6 +67,8 @@ unsigned int mysql_error_code(MYSQL *connection)
 	const auto code = mysql_errno(connection);
 	return code ? code : EIO;
 }
+// Idle-only precondition for acquiring lifecycle locks/capabilities. Do not
+// use this for a retained transaction: SERVER_STATUS_IN_TRANS is expected there.
 bool idle(MYSQL *connection)
 {
 	if (!connection || (connection->server_status & SERVER_STATUS_IN_TRANS) ||
@@ -54,6 +77,23 @@ bool idle(MYSQL *connection)
 	using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
 	flag reconnect = false;
 	return !mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) && !reconnect;
+}
+bool owns_named_lock(MYSQL *connection, const char *name, unsigned long session)
+{
+	const std::string query = "SELECT IS_USED_LOCK('" + std::string(name) + "')";
+	if (mysql_real_query(connection, query.data(), query.size()))
+		return false;
+	result_ptr result(mysql_store_result(connection), mysql_free_result);
+	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1)
+		return false;
+	const auto row = mysql_fetch_row(result.get());
+	if (!row || !row[0])
+		return false;
+	uint64_t lock_session = 0;
+	const auto length = std::char_traits<char>::length(row[0]);
+	const auto parsed = std::from_chars(row[0], row[0] + length, lock_session);
+	return parsed.ec == std::errc{} && parsed.ptr == row[0] + length &&
+	       lock_session == static_cast<uint64_t>(session);
 }
 unsigned int lock(MYSQL *connection, const char *name, unsigned int timeout, bool *acquired)
 {
@@ -105,6 +145,12 @@ unsigned int staged_installation(MYSQL *connection, bool reject_active_epoch = f
 #endif
 } // namespace
 
+void economic_sql_lifecycle_guard::clear_transferred_local_authority(bool runtime,
+								     bool maintenance) noexcept
+{
+	clear_local_authority(runtime, maintenance);
+}
+
 economic_sql_lifecycle_guard::~economic_sql_lifecycle_guard()
 {
 #ifndef __NO_MYSQL__
@@ -117,6 +163,27 @@ economic_sql_lifecycle_guard::~economic_sql_lifecycle_guard()
 		local_exclusive_.unlock();
 	if (local_runtime_ || local_maintenance_)
 		clear_local_authority(local_runtime_, local_maintenance_);
+#ifndef __NO_MYSQL__
+	// Releasing the coordinator lease is last: a no-transaction guard may
+	// reopen admission only after its SQL and in-process fences are gone.
+	if (coordinator_release_)
+	{
+		try
+		{
+			coordinator_release_(coordinator_generation_, coordinator_lease_id_);
+		}
+		catch (...)
+		{
+			// A failed release is fail-closed; never substitute another lease.
+		}
+	}
+#endif
+	coordinator_release_ = nullptr;
+	coordinator_generation_ = 0;
+	coordinator_lease_id_ = 0;
+	authority_id_ = 0;
+	session_ = 0;
+	connection_ = nullptr;
 }
 
 unsigned int
@@ -130,10 +197,14 @@ economic_sql_lifecycle_guard::acquire_runtime(MYSQL *connection,
 #else
 	if (!output || output->connection_ || !idle(connection))
 		return EINVAL;
+	uint64_t authority_id = 0;
 	{
 		std::lock_guard lock(authority_mutex());
 		if (runtime_authority_active() || maintenance_authority_active())
 			return EBUSY;
+		authority_id = allocate_authority_id();
+		if (!authority_id)
+			return EOVERFLOW;
 		runtime_authority_active() = true;
 	}
 	bool acquired = false;
@@ -155,6 +226,7 @@ economic_sql_lifecycle_guard::acquire_runtime(MYSQL *connection,
 	output->runtime_lock_ = acquired;
 	output->local_runtime_ = true;
 	output->maintenance_ = false;
+	output->authority_id_ = authority_id;
 	return 0;
 #endif
 }
@@ -173,10 +245,14 @@ economic_sql_lifecycle_guard::acquire_maintenance(MYSQL *connection,
 	std::unique_lock<std::shared_mutex> local(currency_gate(), std::try_to_lock);
 	if (!local.owns_lock())
 		return EBUSY;
+	uint64_t authority_id = 0;
 	{
 		std::lock_guard lock(authority_mutex());
 		if (runtime_authority_active() || maintenance_authority_active())
 			return EBUSY;
+		authority_id = allocate_authority_id();
+		if (!authority_id)
+			return EOVERFLOW;
 		maintenance_authority_active() = true;
 	}
 	bool boot = false, writers = false;
@@ -199,6 +275,7 @@ economic_sql_lifecycle_guard::acquire_maintenance(MYSQL *connection,
 	output->writer_lock_ = writers;
 	output->maintenance_ = true;
 	output->local_maintenance_ = true;
+	output->authority_id_ = authority_id;
 	output->local_exclusive_ = std::move(local);
 	return 0;
 #endif
@@ -208,6 +285,43 @@ bool economic_sql_lifecycle_guard::is_maintenance_authority() const noexcept
 {
 	return connection_ && runtime_lock_ && writer_lock_ && maintenance_ &&
 	       local_exclusive_.owns_lock() && mysql_thread_id(connection_) == session_;
+}
+
+bool economic_sql_lifecycle_guard::is_valid_authority() const noexcept
+{
+#ifdef __NO_MYSQL__
+	return false;
+#else
+	try
+	{
+		if (!connection_ || !authority_id_ || !session_ || !runtime_lock_)
+			return false;
+		{
+			std::lock_guard lock(authority_mutex());
+			if ((maintenance_ && !maintenance_authority_active()) ||
+			    (!maintenance_ && !runtime_authority_active()))
+				return false;
+		}
+		if (maintenance_)
+		{
+			if (!writer_lock_ || !local_maintenance_ || !local_exclusive_.owns_lock())
+				return false;
+		}
+		else if (writer_lock_ || local_maintenance_ || !local_runtime_ ||
+			 local_exclusive_.owns_lock())
+			return false;
+
+		if (mysql_thread_id(connection_) != session_ || !idle(connection_) ||
+		    mysql_ping(connection_) || mysql_thread_id(connection_) != session_ ||
+		    !owns_named_lock(connection_, boot_lock, session_))
+			return false;
+		return !maintenance_ || owns_named_lock(connection_, writer_lock, session_);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
 }
 
 economic_sql_currency_writer_guard::~economic_sql_currency_writer_guard()

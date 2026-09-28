@@ -1,7 +1,7 @@
 {
   "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
   "blockers": [
-    "All current gameplay writers are either schema-1 legs or direct legacy mutations; block them after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
+    "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
     "Current function inventory is not codebase-complete: 2,646 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
     "No route in this matrix has unified operation-level double-entry evidence; legacy currency/item/domain ledgers are not substitutes.",
     "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
@@ -16,7 +16,7 @@
     "non_writer_or_out_of_scope_candidates": 10,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 69,
-    "routes_with_schema_2_gameplay_producer": 0,
+    "routes_with_schema_2_gameplay_producer": 7,
     "routes_with_unified_double_entry_evidence": 0,
     "runtime_mutation_and_projection_routes": 100,
     "supplemental_candidates_found": 1
@@ -36,37 +36,37 @@
     "legacy_currency_ledger": "migrations/currency_ledger.sql:44-78 (wallet/bank deltas, after-vectors, revisions; not a general balancing journal)",
     "legacy_item_custody_ledger": "migrations/item_ownership_ledger.sql:113-140 (from/to custody history, not monetary postings)",
     "no_gameplay_accounting_activation": "docs/persistence/ECONOMY_ACCOUNTING.md:3-13; docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171",
-    "schema_2_limitation": "Typed SQL/flat-file bank admission and baseline pieces are partial; no gameplay source producer, complete source bindings, or playable publication/save handoff is qualified."
+    "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
     "The matrix reconciles the 115 draft rows and one newly found dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "Most 2,679 current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
-    "No production source was changed, no database/live service was used, and no backend/player journey was executed.",
+    "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2737,
-    "current_unique_path_line_family_sites": 2679,
+    "current_occurrences": 2746,
+    "current_unique_path_line_family_sites": 2688,
     "draft_registry_census_complete": false,
     "draft_source_commit": "e1357a30acf258356a5f269ce00496457e3a240a",
-    "draft_to_current_unique_sites_added": 21,
-    "draft_to_current_unique_sites_removed": 21,
-    "draft_unique_sites": 2679,
+    "draft_to_current_unique_sites_added": 437,
+    "draft_to_current_unique_sites_removed": 429,
+    "draft_unique_sites": 2680,
     "family_occurrences": {
       "coin_assignment": 148,
       "coin_bulk_mutation": 21,
-      "direct_cash_assignment": 17,
-      "economic_submit": 156,
-      "item_lifecycle": 1140,
-      "item_publication": 1057,
-      "money_helper": 158,
+      "direct_cash_assignment": 13,
+      "economic_submit": 160,
+      "item_lifecycle": 1143,
+      "item_publication": 1059,
+      "money_helper": 162,
       "sql_economy": 40
     },
     "interpretation": "Lexical occurrences are candidates, not writer routes. The 115-row draft maps only 33 unique sites; 2,646 current unique sites remain unmapped, so semantic completeness is unproven and release must remain blocked.",
-    "mapped_sites_still_present": 33,
+    "mapped_sites_still_present": 20,
     "mapped_unique_sites_from_draft_rows": 33,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
-    "unmapped_current_unique_sites": 2646
+    "unmapped_current_unique_sites": 2668
   },
   "method": {
     "candidate_source": "docs/persistence/economy_accounting/writers.json (draft registry), plus one supplemental legacy settlement writer found during source review",
@@ -108,7 +108,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -168,7 +168,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -229,7 +229,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -290,7 +290,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -350,7 +350,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "projection_only_no_new_postings",
@@ -411,7 +411,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -453,7 +453,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -468,7 +468,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -486,13 +486,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1529
+          15
         ],
-        "file": "src/specs/specs.mobile.c",
+        "file": "src/economy/currency_exchange_proc.c",
         "function": "money_changer",
         "original_draft_symbol": "money_changer"
       },
-      "source_classification": "Indexed PC cash conversion with fee sink.",
+      "source_classification": "Retired feature; coin conversion is handled by bank tellers without surcharge.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -510,7 +510,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -525,7 +525,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -543,9 +543,9 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          16123
+          60
         ],
-        "file": "src/specs/specs.mobile.c",
+        "file": "src/specs/specs.alatorin.c",
         "function": "smelter",
         "original_draft_symbol": "smelter"
       },
@@ -567,7 +567,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -582,7 +582,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -600,7 +600,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9693
+          1804
         ],
         "file": "src/specs/specs.mobile.c",
         "function": "rentacleric",
@@ -624,7 +624,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -639,7 +639,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -657,9 +657,9 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          13928
+          4762
         ],
-        "file": "src/specs/specs.mobile.c",
+        "file": "src/specs/specs.heavens.c",
         "function": "witch_doctor",
         "original_draft_symbol": "witch_doctor"
       },
@@ -681,7 +681,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -696,7 +696,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -714,9 +714,9 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          15531
+          26
         ],
-        "file": "src/specs/specs.mobile.c",
+        "file": "src/specs/specs.clfhaven.c",
         "function": "llyren",
         "original_draft_symbol": "llyren"
       },
@@ -755,7 +755,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -777,7 +777,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2111
+          2132
         ],
         "file": "src/world/handler.c",
         "function": "money_to_inventory",
@@ -816,7 +816,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -838,7 +838,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6478
+          6511
         ],
         "file": "src/world/handler.c",
         "function": "create_money",
@@ -877,7 +877,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -899,7 +899,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6332
+          6365
         ],
         "file": "src/world/handler.c",
         "function": "add_coins",
@@ -938,7 +938,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -960,7 +960,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2726
+          2759
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -984,7 +984,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -999,7 +999,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -1044,7 +1044,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -1059,7 +1059,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -1104,7 +1104,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -1119,7 +1119,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -1140,7 +1140,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          235
+          236
         ],
         "file": "src/world/world_quest.c",
         "function": "quest_full_reward",
@@ -1164,7 +1164,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -1179,7 +1179,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -1200,7 +1200,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          309
+          310
         ],
         "file": "src/world/world_quest.c",
         "function": "quest_kill",
@@ -1224,7 +1224,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -1239,7 +1239,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -1260,7 +1260,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          309
+          310
         ],
         "file": "src/world/achievements.c",
         "function": "update_achievements",
@@ -1301,7 +1301,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -1322,7 +1322,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3323
+          3356
         ],
         "file": "src/world/handler.c",
         "function": "extract_obj",
@@ -1363,7 +1363,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -1423,7 +1423,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -1483,7 +1483,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "projection_only_no_new_postings",
@@ -1529,7 +1529,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -1546,7 +1546,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -1567,7 +1567,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2598
+          1500
         ],
         "file": "src/combat/fight.c",
         "function": "save_disputed_death_disposition",
@@ -1585,15 +1585,33 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)",
+          "src/combat/fight.c:703-714 (submit the victim's captured item roots as one corpse custody batch)",
+          "src/economy/item_transfer_accounting.c (bind corpse PID/save ID to the player actor before admitting the item_move root)",
+          "tests/async/item_transfer_accounting_test.cpp (corpse batch identity and actor mismatch contracts)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
-        "route_mode": "schema_1_plus_direct_side_effects",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the current envelope. When accounting is active, the player-to-corpse item handoff is an actor-bound schema-2 item_move with exact custody references on SQL and flat-file. Wallet disposition and the separate corpse metadata lifecycle are not covered by this item child.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -1602,16 +1620,18 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "death.corpse_creation",
@@ -1629,7 +1649,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1656
+          728
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -1647,15 +1667,31 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)",
+          "src/world/handler.c:4373-4384 (persist the player-to-room item handoff through item_movement_transaction_submit)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the current envelope. The player-to-room item handoff during resurrection uses the schema-2 player-drop item path with exact custody references when accounting is active; corpse lifecycle and other resurrection publication remain separate coverage items.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_projection_route",
       "double_entry_evidence": {
@@ -1664,16 +1700,18 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "projection_only_no_new_postings",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "death.resurrection_publication",
@@ -1692,7 +1730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4268
+          4301
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -1733,7 +1771,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -1754,8 +1792,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          397,
-          10466
+          413,
+          10593
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -1796,7 +1834,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -1817,7 +1855,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4848
+          4844
         ],
         "file": "src/core/files.c",
         "function": "restoreSavedItems",
@@ -1858,7 +1896,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "projection_only_no_new_postings",
@@ -1905,7 +1943,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -1922,7 +1960,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -1983,7 +2021,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2004,7 +2042,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2013
+          2008
         ],
         "file": "src/core/files.c",
         "function": "delete_character_result",
@@ -2043,7 +2081,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2103,7 +2141,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2124,8 +2162,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          249,
-          1179
+          266,
+          1236
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -2171,8 +2209,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          547,
-          2771
+          548,
+          2787
         ],
         "file": "src/sql/sql.c",
         "function": "sql_soft_delete_character",
@@ -2211,7 +2249,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2232,8 +2270,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          274,
-          5301
+          290,
+          5428
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -2272,7 +2310,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2332,7 +2370,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2353,7 +2391,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4410
+          558
         ],
         "file": "src/cmd/actwiz.c",
         "function": "timedShutdown",
@@ -2399,7 +2437,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1907
+          1955
         ],
         "file": "src/core/utility.c",
         "function": "persistence_prepare_pwipe",
@@ -2438,7 +2476,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2459,8 +2497,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          720,
-          4720
+          721,
+          4749
         ],
         "file": "src/sql/sql.c",
         "function": "sql_pwipe",
@@ -2484,7 +2522,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -2499,7 +2537,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -2520,7 +2558,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5274
+          1050
         ],
         "file": "src/cmd/actwiz.c",
         "function": "submit_wizard_load_establish",
@@ -2559,7 +2597,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2580,7 +2618,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5397
+          1173
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_purge",
@@ -2619,7 +2657,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -2640,9 +2678,9 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6397
+          11
         ],
-        "file": "src/cmd/actwiz.c",
+        "file": "src/cmd/staff_world_control.c",
         "function": "do_zreset",
         "original_draft_symbol": "do_zreset"
       },
@@ -2664,7 +2702,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -2679,7 +2717,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -2700,7 +2738,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10385
+          2738
         ],
         "file": "src/cmd/actwiz.c",
         "function": "flat_storage_completion",
@@ -2739,7 +2777,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "offline_baseline_or_restore_evidence_only",
@@ -2797,7 +2835,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "offline_baseline_or_restore_evidence_only",
@@ -2947,7 +2985,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "offline_baseline_or_restore_evidence_only",
@@ -3175,7 +3213,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3192,7 +3230,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3214,7 +3252,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3067
+          3115
         ],
         "file": "src/core/utility.c",
         "function": "ADD_MONEY",
@@ -3239,7 +3277,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3256,7 +3294,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3278,7 +3316,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3067
+          3115
         ],
         "file": "src/core/utility.c",
         "function": "ADD_MONEY",
@@ -3303,7 +3341,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3320,7 +3358,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3342,7 +3380,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3227
+          3285
         ],
         "file": "src/core/utility.c",
         "function": "SUB_MONEY",
@@ -3367,7 +3405,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3384,7 +3422,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3406,7 +3444,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          833
+          866
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -3431,7 +3469,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3448,7 +3486,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3470,7 +3508,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          747
+          776
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -3495,7 +3533,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3512,7 +3550,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3559,7 +3597,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3576,7 +3614,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3641,7 +3679,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3667,7 +3705,7 @@
         "function": "do_split",
         "original_draft_symbol": "do_split"
       },
-      "source_classification": "Same-room visible PC or morph recipients, excluding sender; integer shares leave sender share and remainder. Current recipient credits precede sender debit.",
+      "source_classification": "Same-room visible PC or morph recipients, excluding sender; integer shares leave sender share and remainder. Sender debit precedes recipient credits to prevent unbacked money creation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -3686,7 +3724,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3703,7 +3741,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3725,7 +3763,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          798
+          827
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -3766,7 +3804,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "not_executed_in_tree",
@@ -3785,8 +3823,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          448,
-          11735
+          464,
+          11862
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -3811,7 +3849,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3828,7 +3866,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3850,7 +3888,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          976
+          1025
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -3875,7 +3913,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3892,7 +3930,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -3914,7 +3952,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1629
+          1644
         ],
         "file": "src/flatfile/flatfile_player_domain_repository.c",
         "function": "apply_currency_command",
@@ -3939,7 +3977,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -3956,7 +3994,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4003,7 +4041,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4020,7 +4058,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4067,7 +4105,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4084,7 +4122,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4131,7 +4169,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4148,7 +4186,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4195,7 +4233,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4212,7 +4250,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4259,7 +4297,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4276,7 +4314,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4323,7 +4361,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4340,7 +4378,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4362,7 +4400,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2638
+          3132
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -4380,16 +4418,31 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -4398,16 +4451,18 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.command_movement",
@@ -4443,16 +4498,31 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -4461,16 +4531,18 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.bulk_movement",
@@ -4506,16 +4578,31 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction and spell creation/component consumption, sticks-to-snakes retirement, and key-break retirement use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -4524,16 +4611,18 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction and spell component consumption/sticks-to-snakes retirement and key-break retirement use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.movement_submit",
@@ -4551,7 +4640,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1501
+          1528
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -4569,16 +4658,31 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -4587,16 +4691,18 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.trusted_steal",
@@ -4639,7 +4745,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4656,7 +4762,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4677,7 +4783,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          983
+          984
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_buy",
@@ -4702,7 +4808,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4719,7 +4825,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4740,7 +4846,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          246
+          247
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_submit_produced_continuation",
@@ -4765,7 +4871,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4782,7 +4888,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4803,7 +4909,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1320
+          1322
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -4828,7 +4934,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4845,7 +4951,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4866,7 +4972,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1320
+          1322
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -4891,7 +4997,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4908,7 +5014,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4929,7 +5035,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          292
+          293
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_route_invalid_cleanup",
@@ -4954,7 +5060,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -4971,7 +5077,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -4992,7 +5098,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          306
+          307
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_completion",
@@ -5017,7 +5123,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5034,7 +5140,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5055,7 +5161,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1835
+          1837
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_repair",
@@ -5080,7 +5186,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5097,7 +5203,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5118,7 +5224,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          262
+          273
         ],
         "file": "src/flatfile/flatfile_shop_trade_repository.c",
         "function": "flatfile_shop_trade_repository_apply",
@@ -5143,7 +5249,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5160,7 +5266,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5205,7 +5311,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5222,7 +5328,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5267,7 +5373,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5284,7 +5390,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5329,7 +5435,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5346,7 +5452,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5391,7 +5497,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5408,7 +5514,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5428,7 +5534,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1490
+          1496
         ],
         "file": "src/economy/collector_repository.c",
         "function": "collector_repository_apply_item_boundary",
@@ -5453,7 +5559,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5470,7 +5576,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5490,7 +5596,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1196
+          1210
         ],
         "file": "src/flatfile/flatfile_collector_repository.c",
         "function": "flatfile_collector_repository_apply",
@@ -5515,7 +5621,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5533,7 +5639,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5582,7 +5688,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5600,7 +5706,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5649,7 +5755,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5667,7 +5773,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5716,7 +5822,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5734,7 +5840,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5783,7 +5889,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5801,7 +5907,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5850,7 +5956,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -5868,7 +5974,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -5934,7 +6040,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -6000,7 +6106,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "not_executed_in_tree",
@@ -6044,7 +6150,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6062,7 +6168,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6085,7 +6191,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          534
+          535
         ],
         "file": "src/economy/auction_repository.c",
         "function": "auction_repository_execute",
@@ -6110,7 +6216,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6128,7 +6234,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6151,7 +6257,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          832
+          844
         ],
         "file": "src/flatfile/flatfile_auction_repository.c",
         "function": "flatfile_auction_repository_apply",
@@ -6176,7 +6282,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6191,7 +6297,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6212,7 +6318,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          119
+          118
         ],
         "file": "src/economy/boon.c",
         "function": "cash_boon_committed",
@@ -6236,7 +6342,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6251,7 +6357,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6272,7 +6378,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          482
+          483
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_craft_command",
@@ -6296,7 +6402,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6311,7 +6417,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6332,7 +6438,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1105
+          1106
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_forge_command",
@@ -6356,7 +6462,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6371,7 +6477,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6392,7 +6498,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          764
+          766
         ],
         "file": "src/economy/tradeskill.c",
         "function": "smith",
@@ -6416,7 +6522,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6431,7 +6537,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6452,7 +6558,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2399
+          2420
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_refine",
@@ -6491,7 +6597,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -6512,7 +6618,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          639
+          641
         ],
         "file": "src/economy/tradeskill.c",
         "function": "event_fish_check",
@@ -6551,7 +6657,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -6572,7 +6678,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          280
+          282
         ],
         "file": "src/economy/tradeskill.c",
         "function": "create_parchment",
@@ -6596,7 +6702,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6611,7 +6717,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6632,7 +6738,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          81
+          83
         ],
         "file": "src/economy/tradeskill.c",
         "function": "epic_store_committed",
@@ -6671,7 +6777,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -6756,16 +6862,31 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -6774,16 +6895,18 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.creation_completion",
@@ -6801,8 +6924,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1951,
-          1963
+          2060,
+          2073
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -6826,7 +6949,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6841,7 +6964,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6862,7 +6985,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1203
+          1204
         ],
         "file": "src/kingdom/kingdom_craft.c",
         "function": "kingdom_store_buy",
@@ -6886,7 +7009,7 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers.",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
         "route_mode": "schema_1_plus_direct_side_effects",
         "schema_2_gameplay_producer_connected": false
       },
@@ -6901,7 +7024,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "legacy_domain_ledger_only_not_double_entry",
@@ -6961,7 +7084,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "no_operation_level_double_entry_evidence",
@@ -7068,7 +7191,7 @@
         "required_atomic_evidence": [
           "economic_accounting_operation",
           "economic_accounting_account_effect",
-          "economic_accounting_coin_posting",
+          "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
         "status": "not_executed_in_tree",

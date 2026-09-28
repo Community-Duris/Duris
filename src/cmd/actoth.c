@@ -33,6 +33,7 @@
 #include "guild/assocs.h"
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/collector_presence.h"
 #include "persistence/deferred_save_policy.h"
 #include "persistence/persistence_checkpoint.h"
@@ -6111,6 +6112,14 @@ void do_rub(P_char /*ch*/, char * /*argument*/, int /*cmd*/)
 
 void do_split(P_char ch, char *argument, int /*cmd*/)
 {
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Money splitting is unavailable while active accounting is enabled.\r\n",
+			ch);
+		return;
+	}
+
 	char gold_str[MAX_INPUT_LENGTH], typestr[MAX_INPUT_LENGTH];
 	int group_size = 0, ctype;
 	long gold, share, given;
@@ -6228,16 +6237,29 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 
 	group_size--;
 
+	long eligible_recipients = 0;
+	for (gl = ch->group; gl; gl = gl->next)
+		if ((ch->in_room == gl->ch->in_room) && CAN_SEE(ch, gl->ch) && (ch != gl->ch) &&
+		    (IS_PC(gl->ch) || IS_MORPH(gl->ch)))
+			eligible_recipients++;
+
+	const int split_coin_value = ctype == 0 ? 1 : ctype == 1 ? 10 : ctype == 2 ? 100 : 1000;
+	const long total_to_give = share * eligible_recipients;
+
+	/* Debit the sender before distributing recipient credits. */
+	if (total_to_give > 0 && SUB_MONEY(ch, (int)(total_to_give * split_coin_value), 0) != 0)
+	{
+		logit(LOG_WIZ, "do_split: debit submission failed for pid %d", GET_PID(ch));
+		send_to_char("You don't have enough money to complete the split.\r\n", ch);
+		return;
+	}
+
 	for (gl = ch->group; gl; gl = gl->next)
 	{
 		if ((ch->in_room == gl->ch->in_room) && CAN_SEE(ch, gl->ch) && (ch != gl->ch) &&
 		    (IS_PC(gl->ch) || IS_MORPH(gl->ch)))
 		{
-			const int coin_value = ctype == 0 ? 1 :
-					       ctype == 1 ? 10 :
-					       ctype == 2 ? 100 :
-							    1000;
-			ADD_MONEY(gl->ch, (int)(share * coin_value));
+			ADD_MONEY(gl->ch, (int)(share * split_coin_value));
 			given += share;
 			snprintf(Gbuf1, MAX_STRING_LENGTH,
 				 "$n gives you your share:  %ld %s coins.", share,
@@ -6251,9 +6273,6 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 			                          */
 		}
 	}
-	const int split_coin_value = ctype == 0 ? 1 : ctype == 1 ? 10 : ctype == 2 ? 100 : 1000;
-	if (given > 0 && SUB_MONEY(ch, (int)(given * split_coin_value), 0) != 0)
-		logit(LOG_WIZ, "do_split: debit submission failed for pid %d", GET_PID(ch));
 
 	if (given == 0)
 	{

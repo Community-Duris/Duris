@@ -57,6 +57,10 @@ class economic_sql_accounting_lifecycle_transaction
 	static unsigned int install(MYSQL *, const economic_sql_lifecycle_guard &,
 				    const economic_sql_lifecycle_request &,
 				    economic_sql_lifecycle_receipt *) noexcept;
+	static unsigned int activate(MYSQL *connection,
+				     economic_sql_cutover_transaction_owner &owner,
+				     const critical_operation_id &lineage,
+				     uint64_t *new_lineage_revision = nullptr) noexcept;
 };
 
 #endif

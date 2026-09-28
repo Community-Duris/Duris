@@ -1935,7 +1935,8 @@ void obj_to_char(P_obj object, P_char ch)
 		    ownership.state != item_custody_state::active)
 		{
 			if (!has_authoritative_ownership && creation_candidate &&
-			    item_creation_grant_submit_to_player(ch, object, ch))
+			    item_creation_grant_submit_to_player(
+				    ch, object, ch, NULL, economic_source_kind::world_generation))
 				return;
 			logit(LOG_FILE,
 			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",

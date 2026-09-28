@@ -60,6 +60,20 @@ bool economic_accounting_item_reference_find_by_legacy(MYSQL *, const critical_o
 	return false;
 }
 
+bool economic_accounting_item_reference_find_by_operation(
+	MYSQL *, const critical_operation_id &, std::vector<economic_accounting_item_reference> *)
+{
+	errno = ENOTSUP;
+	return false;
+}
+
+bool economic_accounting_item_reference_find_history(
+	MYSQL *, uint64_t, std::vector<economic_accounting_item_reference> *)
+{
+	errno = ENOTSUP;
+	return false;
+}
+
 #else
 
 namespace
@@ -287,6 +301,230 @@ bool economic_accounting_item_reference_find_by_legacy(
 		ref->legacy_event_index = legacy_event_index;
 	}
 
+	return true;
+}
+
+bool economic_accounting_item_reference_find_by_operation(
+	MYSQL *connection, const critical_operation_id &operation_id,
+	std::vector<economic_accounting_item_reference> *refs)
+{
+	if (!connection || !id_is_nonzero(operation_id) || !refs)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	refs->clear();
+
+	static const char SQL[] =
+		"SELECT operation_id, line_index, event_index, child_index, "
+		"item_uid, before_revision, after_revision, legacy_operation_id, legacy_event_index "
+		"FROM economic_accounting_item_reference "
+		"WHERE operation_id=? "
+		"ORDER BY line_index ASC";
+
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL))
+		return false;
+
+	MYSQL_BIND param_binding = {};
+	unsigned long op_length = operation_id.bytes.size();
+	param_binding.buffer_type = MYSQL_TYPE_BLOB;
+	param_binding.buffer = const_cast<uint8_t *>(operation_id.bytes.data());
+	param_binding.buffer_length = op_length;
+	param_binding.length = &op_length;
+
+	if (mysql_stmt_bind_param(statement, &param_binding) != 0 ||
+	    mysql_stmt_execute(statement) != 0 || mysql_stmt_store_result(statement) != 0)
+	{
+		mysql_stmt_close(statement);
+		return false;
+	}
+
+	uint8_t op_bytes[16] = {};
+	unsigned long fetched_op_length = 0;
+	uint16_t line_index = 0;
+	uint32_t event_index = 0;
+	uint16_t child_index = 0;
+	uint64_t item_uid = 0;
+	uint64_t before_rev = 0;
+	uint64_t after_rev = 0;
+	uint8_t legacy_op_bytes[16] = {};
+	unsigned long fetched_legacy_op_length = 0;
+	uint16_t legacy_event_index = 0;
+
+	MYSQL_BIND result_bindings[9] = {};
+	result_bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	result_bindings[0].buffer = op_bytes;
+	result_bindings[0].buffer_length = sizeof(op_bytes);
+	result_bindings[0].length = &fetched_op_length;
+
+	result_bindings[1].buffer_type = MYSQL_TYPE_SHORT;
+	result_bindings[1].buffer = &line_index;
+	result_bindings[1].is_unsigned = true;
+
+	result_bindings[2].buffer_type = MYSQL_TYPE_LONG;
+	result_bindings[2].buffer = &event_index;
+	result_bindings[2].is_unsigned = true;
+
+	result_bindings[3].buffer_type = MYSQL_TYPE_SHORT;
+	result_bindings[3].buffer = &child_index;
+	result_bindings[3].is_unsigned = true;
+
+	result_bindings[4].buffer_type = MYSQL_TYPE_LONGLONG;
+	result_bindings[4].buffer = &item_uid;
+	result_bindings[4].is_unsigned = true;
+
+	result_bindings[5].buffer_type = MYSQL_TYPE_LONGLONG;
+	result_bindings[5].buffer = &before_rev;
+	result_bindings[5].is_unsigned = true;
+
+	result_bindings[6].buffer_type = MYSQL_TYPE_LONGLONG;
+	result_bindings[6].buffer = &after_rev;
+	result_bindings[6].is_unsigned = true;
+
+	result_bindings[7].buffer_type = MYSQL_TYPE_BLOB;
+	result_bindings[7].buffer = legacy_op_bytes;
+	result_bindings[7].buffer_length = sizeof(legacy_op_bytes);
+	result_bindings[7].length = &fetched_legacy_op_length;
+
+	result_bindings[8].buffer_type = MYSQL_TYPE_SHORT;
+	result_bindings[8].buffer = &legacy_event_index;
+	result_bindings[8].is_unsigned = true;
+
+	if (mysql_stmt_bind_result(statement, result_bindings) != 0)
+	{
+		mysql_stmt_close(statement);
+		return false;
+	}
+
+	while (mysql_stmt_fetch(statement) == 0)
+	{
+		economic_accounting_item_reference r = {};
+		std::copy(std::begin(op_bytes), std::end(op_bytes), r.operation_id.bytes.begin());
+		r.line_index = line_index;
+		r.event_index = event_index;
+		r.child_index = child_index;
+		r.item_uid = item_uid;
+		r.before_revision = before_rev;
+		r.after_revision = after_rev;
+		std::copy(std::begin(legacy_op_bytes), std::end(legacy_op_bytes),
+			  r.legacy_operation_id.bytes.begin());
+		r.legacy_event_index = legacy_event_index;
+		refs->push_back(r);
+	}
+
+	mysql_stmt_close(statement);
+	return true;
+}
+
+bool economic_accounting_item_reference_find_history(
+	MYSQL *connection, uint64_t item_uid,
+	std::vector<economic_accounting_item_reference> *history)
+{
+	if (!connection || item_uid == 0 || !history)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	history->clear();
+
+	static const char SQL[] =
+		"SELECT operation_id, line_index, event_index, child_index, "
+		"item_uid, before_revision, after_revision, legacy_operation_id, legacy_event_index "
+		"FROM economic_accounting_item_reference "
+		"WHERE item_uid=? "
+		"ORDER BY after_revision ASC";
+
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL))
+		return false;
+
+	MYSQL_BIND param_binding = {};
+	param_binding.buffer_type = MYSQL_TYPE_LONGLONG;
+	param_binding.buffer = &item_uid;
+	param_binding.is_unsigned = true;
+
+	if (mysql_stmt_bind_param(statement, &param_binding) != 0 ||
+	    mysql_stmt_execute(statement) != 0 || mysql_stmt_store_result(statement) != 0)
+	{
+		mysql_stmt_close(statement);
+		return false;
+	}
+
+	uint8_t op_bytes[16] = {};
+	unsigned long fetched_op_length = 0;
+	uint16_t line_index = 0;
+	uint32_t event_index = 0;
+	uint16_t child_index = 0;
+	uint64_t fetched_item_uid = 0;
+	uint64_t before_rev = 0;
+	uint64_t after_rev = 0;
+	uint8_t legacy_op_bytes[16] = {};
+	unsigned long fetched_legacy_op_length = 0;
+	uint16_t legacy_event_index = 0;
+
+	MYSQL_BIND result_bindings[9] = {};
+	result_bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	result_bindings[0].buffer = op_bytes;
+	result_bindings[0].buffer_length = sizeof(op_bytes);
+	result_bindings[0].length = &fetched_op_length;
+
+	result_bindings[1].buffer_type = MYSQL_TYPE_SHORT;
+	result_bindings[1].buffer = &line_index;
+	result_bindings[1].is_unsigned = true;
+
+	result_bindings[2].buffer_type = MYSQL_TYPE_LONG;
+	result_bindings[2].buffer = &event_index;
+	result_bindings[2].is_unsigned = true;
+
+	result_bindings[3].buffer_type = MYSQL_TYPE_SHORT;
+	result_bindings[3].buffer = &child_index;
+	result_bindings[3].is_unsigned = true;
+
+	result_bindings[4].buffer_type = MYSQL_TYPE_LONGLONG;
+	result_bindings[4].buffer = &fetched_item_uid;
+	result_bindings[4].is_unsigned = true;
+
+	result_bindings[5].buffer_type = MYSQL_TYPE_LONGLONG;
+	result_bindings[5].buffer = &before_rev;
+	result_bindings[5].is_unsigned = true;
+
+	result_bindings[6].buffer_type = MYSQL_TYPE_LONGLONG;
+	result_bindings[6].buffer = &after_rev;
+	result_bindings[6].is_unsigned = true;
+
+	result_bindings[7].buffer_type = MYSQL_TYPE_BLOB;
+	result_bindings[7].buffer = legacy_op_bytes;
+	result_bindings[7].buffer_length = sizeof(legacy_op_bytes);
+	result_bindings[7].length = &fetched_legacy_op_length;
+
+	result_bindings[8].buffer_type = MYSQL_TYPE_SHORT;
+	result_bindings[8].buffer = &legacy_event_index;
+	result_bindings[8].is_unsigned = true;
+
+	if (mysql_stmt_bind_result(statement, result_bindings) != 0)
+	{
+		mysql_stmt_close(statement);
+		return false;
+	}
+
+	while (mysql_stmt_fetch(statement) == 0)
+	{
+		economic_accounting_item_reference r = {};
+		std::copy(std::begin(op_bytes), std::end(op_bytes), r.operation_id.bytes.begin());
+		r.line_index = line_index;
+		r.event_index = event_index;
+		r.child_index = child_index;
+		r.item_uid = fetched_item_uid;
+		r.before_revision = before_rev;
+		r.after_revision = after_rev;
+		std::copy(std::begin(legacy_op_bytes), std::end(legacy_op_bytes),
+			  r.legacy_operation_id.bytes.begin());
+		r.legacy_event_index = legacy_event_index;
+		history->push_back(r);
+	}
+
+	mysql_stmt_close(statement);
 	return true;
 }
 

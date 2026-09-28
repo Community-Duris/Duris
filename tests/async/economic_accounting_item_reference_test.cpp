@@ -74,6 +74,15 @@ int main()
 	assert(!economic_accounting_item_reference_find_by_legacy(nullptr, ref.legacy_operation_id,
 								  0, nullptr));
 	assert(errno == ENOTSUP);
+
+	errno = 0;
+	assert(!economic_accounting_item_reference_find_by_operation(nullptr, ref.operation_id,
+								     nullptr));
+	assert(errno == ENOTSUP);
+
+	errno = 0;
+	assert(!economic_accounting_item_reference_find_history(nullptr, 100, nullptr));
+	assert(errno == ENOTSUP);
 #endif
 
 	return 0;

@@ -225,7 +225,8 @@ static bool grant_world_quest_reward(P_char ch, P_obj reward)
 {
 	if (!reward)
 		return false;
-	if (item_creation_grant_submit_to_player(ch, reward, ch))
+	if (item_creation_grant_submit_to_player(
+		    ch, reward, ch, NULL, economic_source_kind::quest_completion))
 		return true;
 	extract_obj(reward, FALSE);
 	send_to_char("The ownership authority is busy; your quest reward was not created.\r\n", ch);

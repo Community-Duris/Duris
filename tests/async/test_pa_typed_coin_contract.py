@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cheap source-contract checks for the typed wallet coin root."""
+"""Cheap source-contract checks for typed wallet and physical-pile coin roots."""
 from pathlib import Path
 import re
 import unittest
@@ -14,15 +14,16 @@ ACCOUNTING_FLAT = re.sub(r"\s+", " ", ACCOUNTING)
 
 
 class TypedCoinRootContract(unittest.TestCase):
-    def test_typed_root_is_wallet_only_and_uses_retained_lifetimes(self):
-        self.assertIn("source.type == critical_command_type::account_bank", ACCOUNTING)
-        self.assertIn("destination.type == critical_command_type::account_bank", ACCOUNTING)
+    def test_typed_root_uses_retained_wallets_and_uid_keyed_piles(self):
+        self.assertIn("endpoint_account_kind", ACCOUNTING)
+        self.assertIn("economic_account_kind::pile", ACCOUNTING)
+        self.assertIn("selected->lineage, economic_account_kind::pile", AUTHORITY)
         self.assertIn("economic_sql_lock_authority", ACCOUNTING)
         self.assertIn("PLAYER_LOCATOR", ACCOUNTING)
         self.assertIn("SELECT copper,silver,gold,platinum,wallet_revision FROM player_data", ACCOUNTING)
         self.assertIn(" FOR UPDATE", ACCOUNTING)
         self.assertIn(
-            "result.bank_revision == endpoint.change.expected_revisions[1].revision + 1",
+            "wallet.bank_revision == endpoint.change.expected_revisions[1].revision + 1",
             ACCOUNTING_FLAT,
         )
 
@@ -51,10 +52,19 @@ class TypedCoinRootContract(unittest.TestCase):
         self.assertIn("ROLLBACK TO SAVEPOINT coin_endpoints", apply_body)
         self.assertIn("rollback(connection);", apply_body)
 
-    def test_inactive_legacy_and_active_pile_refusal(self):
+    def test_coin_pile_requires_prior_active_epoch_evidence(self):
         self.assertIn("if (!selected)\n\t\t\treturn error::ok;", AUTHORITY)
         self.assertIn("return error::incomplete_coverage;", AUTHORITY)
-        self.assertIn("separate authenticated custody/account adapter", ACCOUNTING)
+        self.assertIn("prior_pile_effect", ACCOUNTING)
+        self.assertIn("require_pile_account_history", ACCOUNTING)
+        self.assertIn("ENODATA", ACCOUNTING)
+        self.assertIn("economic_accounting_item_reference_insert", ACCOUNTING)
+        self.assertIn("economic_item_effects_validate", ACCOUNTING)
+        record_body = ACCOUNTING[ACCOUNTING.index("unsigned int coin_transfer_accounting_record("):]
+        self.assertLess(
+            record_body.index('insert(connection, "economic_accounting_operation"'),
+            record_body.index("verify_item_reference_rows(connection, root, value, result, *plan, true)"),
+        )
         self.assertIn("COIN_TRANSFER_OPERATION_DOMAIN", COMMAND)
 
     def test_typed_coin_publication_and_restart_replay_are_retained(self):

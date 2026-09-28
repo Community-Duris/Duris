@@ -37,6 +37,7 @@ using namespace std;
 #include "economy/auction_houses.h"
 #include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/defines.h"
 #include "world/epic.h"
 #include "net/gmcp.h"
@@ -3125,6 +3126,16 @@ void ADD_MONEY(P_char ch, int amount)
 		return;
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 	{
+		if (economic_gameplay_authority::active())
+		{
+			logit(LOG_WIZ,
+			      "ADD_MONEY: refusing unsupported active wallet reward for pid %d",
+			      GET_PID(ch));
+			send_to_char(
+				"Your coin credit could not be processed while active accounting is enabled.\r\n",
+				ch);
+			return;
+		}
 		if (!currency_transaction_submit_wallet_value(
 			    ch, amount, currency_reason_type::wallet_reward, 0,
 			    critical_source_site::command, critical_deadline_class::interactive,

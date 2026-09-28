@@ -1,5 +1,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include "economy/economic_command_admission.h"
+#include "economy/item_transfer_accounting.h"
+#include "item/item_transfer_command.h"
 
 #include <array>
 #include <cassert>
@@ -50,6 +52,25 @@ critical_command transfer(currency_reason_type reason = currency_reason_type::at
 				      critical_deadline_class::interactive));
 	return command;
 }
+critical_command item_transfer()
+{
+	const item_owner_identity player = { item_owner_type::player, 7, 0 };
+	const item_owner_identity room = { item_owner_type::room, 77, 0 };
+	item_transfer_payload payload = {};
+	payload.from_owner = player;
+	payload.to_owner = room;
+	payload.reason = item_transfer_reason::player_drop;
+	payload.expected_from_revision = 3;
+	payload.expected_to_revision = 4;
+	payload.selected_item_uid = 500;
+	payload.target_root_item_uid = 500;
+	payload.item_count = 1;
+	payload.items[0] = { 500, 500, 0, 8, 9001, item_custody_state::active };
+	critical_command command;
+	assert(item_transfer_command_build(&command, id(10), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	return command;
+}
 bool candidate_equal(critical_command left, critical_command right)
 {
 	if (left.accepted_at_usec != right.accepted_at_usec)
@@ -97,6 +118,25 @@ int main()
 	auto withdraw = transfer(currency_reason_type::atm_withdraw);
 	assert(economic_gameplay_authority::prepare_currency(&withdraw) == error::ok);
 	assert(supported_candidate(withdraw));
+	auto item_drop = item_transfer();
+	assert(economic_gameplay_authority::prepare_item_transfer(&item_drop, 7) == error::ok);
+	assert(item_drop.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+	assert(supported_candidate(item_drop));
+	economic_frozen_intent item_intent;
+	assert(economic_intent_decode(item_drop.accounting_intent, &item_intent) == error::ok);
+	assert(item_intent.admission.metadata.epoch.bytes == id(2).bytes);
+	assert(item_intent.admission.metadata.actor_id == 7);
+	assert(item_intent.admission.metadata.writer_id == ECONOMIC_WRITER_ITEM_TRANSFER);
+	assert(item_intent.admission.metadata.reason == economic_reason::item_move);
+	item_drop.accepted_at_usec = 19;
+	auto retained_item_drop = item_drop;
+	assert(economic_gameplay_authority::prepare_item_transfer(&item_drop, 7) == error::ok);
+	assert(candidate_equal(item_drop, retained_item_drop));
+	auto unauthorized_item_drop = item_transfer();
+	const auto unauthorized_item_drop_before = unauthorized_item_drop;
+	assert(economic_gameplay_authority::prepare_item_transfer(&unauthorized_item_drop, 8) ==
+	       error::unauthorized);
+	assert(candidate_equal(unauthorized_item_drop, unauthorized_item_drop_before));
 
 	// Failed cache replacement must not discard a usable verified projection.
 	assert(lifecycle_access::install(id(1), {}, id(3), wallets, banks) ==

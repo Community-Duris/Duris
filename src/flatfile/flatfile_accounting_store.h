@@ -70,6 +70,7 @@ class flatfile_accounting_storage
 {
 	friend class flatfile_accounting_baseline_storage;
 	friend class flatfile_accounting_bank_transaction;
+	friend class flatfile_accounting_item_transfer_transaction;
 	friend class flatfile_accounting_lifecycle_transaction;
 	friend class flatfile_accounting_authority_storage;
 #ifdef DURIS_FLATFILE_ACCOUNTING_TEST
@@ -88,6 +89,13 @@ class flatfile_accounting_storage
 						const flatfile_accounting_record &,
 						std::vector<flatfile_authority_operation> *,
 						std::string *);
+	static flatfile_accounting_status stage_source_claim(
+		const std::string &, const flatfile_authority_lock &,
+		const flatfile_accounting_record &, std::vector<flatfile_authority_operation> *,
+		std::string *);
+	static flatfile_accounting_status verify_source_claim(
+		const std::string &, const flatfile_authority_lock &,
+		const flatfile_accounting_record &, std::string *);
 	static flatfile_authority_transaction_result
 	commit(const std::string &, const flatfile_authority_lock &,
 	       const std::vector<flatfile_authority_operation> &, std::string *);

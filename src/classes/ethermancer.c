@@ -603,7 +603,8 @@ void grant_wind_blade(P_char ch)
 
 	const wind_blade_grant_context context = { blade->obj_uid };
 	if (!item_creation_grant_submit_to_player_with_completion(
-		    ch, blade, ch, wind_blade_grant_completed, &context, sizeof(context)))
+		    ch, blade, ch, wind_blade_grant_completed, &context, sizeof(context), NULL,
+		    economic_source_kind::world_generation))
 	{
 		extract_obj(blade, FALSE);
 		send_to_char("The winds could not create the blade right now. Please try "

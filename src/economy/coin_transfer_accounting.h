@@ -7,9 +7,10 @@
 #include <mysql/mysql.h>
 
 // Stable typed writer capability. IDs 1/2 are ATM and 4 is the baseline;
-// 3 remains reserved by the historical, disconnected wallet-to-pile recorder.
+// 3 remains reserved by the historical disconnected wallet-to-pile recorder.
+// This writer supports wallet and UID-keyed physical pile endpoints.
 constexpr uint32_t ECONOMIC_WRITER_WALLET_COIN_TRANSFER = 5;
-constexpr size_t ECONOMIC_WALLET_COIN_TRANSFER_FACT_BYTES = 16;
+constexpr size_t ECONOMIC_COIN_TRANSFER_FACT_BYTES = 16;
 
 struct coin_transfer_accounting_context
 {
@@ -17,12 +18,13 @@ struct coin_transfer_accounting_context
 	unsigned long session_id = 0;
 };
 
-// Freeze a schema-2 root from two retained native wallet lifetimes. Pile/source
-// item variants are intentionally not admitted by this writer.
+// Freeze a schema-2 root from retained wallet lifetimes and/or physical coin
+// piles. Pile keys use their item UID; existing piles need a prior effect in the
+// active epoch, while a newly created pile must be funded by the other endpoint.
 economic_accounting_error
 coin_transfer_accounting_intent(const critical_command &root, const critical_operation_id &epoch,
-				const economic_account_key &source_wallet,
-				const economic_account_key &destination_wallet,
+				const economic_account_key &source_account,
+				const economic_account_key &destination_account,
 				std::vector<uint8_t> *encoded);
 
 // Structural and immutable-intent validation; no SQL or authority lookup.

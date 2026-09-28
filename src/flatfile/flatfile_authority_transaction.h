@@ -29,7 +29,8 @@ enum class flatfile_authority_store : uint8_t
 	accounts = 4,
 	metadata = 5,
 	player_deaths = 6,
-	economic_evidence = 7
+	economic_evidence = 7,
+	item_accounting_references = 8
 };
 
 enum class flatfile_authority_operation_kind : uint8_t

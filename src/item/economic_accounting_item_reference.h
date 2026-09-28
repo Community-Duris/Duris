@@ -42,4 +42,14 @@ bool economic_accounting_item_reference_find_by_legacy(
 	MYSQL *connection, const critical_operation_id &legacy_operation_id,
 	uint16_t legacy_event_index, economic_accounting_item_reference *ref);
 
+// Look up all references for a given root operation, ordered by line_index.
+bool economic_accounting_item_reference_find_by_operation(
+	MYSQL *connection, const critical_operation_id &operation_id,
+	std::vector<economic_accounting_item_reference> *refs);
+
+// Look up the full custody history for an item UID, ordered by after_revision.
+bool economic_accounting_item_reference_find_history(
+	MYSQL *connection, uint64_t item_uid,
+	std::vector<economic_accounting_item_reference> *history);
+
 #endif

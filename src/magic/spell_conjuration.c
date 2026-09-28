@@ -12,6 +12,12 @@
 #include "core/mm.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_movement_transaction.h"
+#include "magic/spell_item_lifecycle.h"
+
+extern P_obj object_list;
+extern P_char character_list;
 
 extern const struct race_names race_names_table[];
 extern P_index obj_index;
@@ -20,6 +26,117 @@ extern int get_multicast_chars(P_char leader, int m_class, int min_level);
 #include <time.h>
 
 static int conjure_terrain_check(P_char, P_char);
+
+static P_obj spell_item_by_uid(uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == uid)
+			return object;
+	return NULL;
+}
+
+static void spell_room_creation_completed(P_char actor, uint64_t item_uid, bool committed,
+					  unsigned int /*error_code*/)
+{
+	if (!actor)
+		return;
+	if (!committed)
+	{
+		send_to_char("The conjured item could not be recorded and fades away.\r\n", actor);
+		return;
+	}
+
+	P_obj object = spell_item_by_uid(item_uid);
+	if (!object || !OBJ_ROOM(object))
+		return;
+	if (actor->in_room == object->loc.room)
+	{
+		act("$p &+Wsuddenly appears.", FALSE, actor, object, 0, TO_ROOM);
+		act("$p &+Wsuddenly appears.", FALSE, actor, object, 0, TO_CHAR);
+	}
+	else
+		send_to_room("A conjured item suddenly appears.\r\n", object->loc.room);
+}
+
+static bool submit_spell_room_creation(P_char actor, P_obj object)
+{
+	if (item_creation_grant_submit_to_room(actor, object, actor->in_room,
+					       economic_source_kind::item_action,
+					       spell_room_creation_completed))
+		return true;
+	if (OBJ_NOWHERE(object))
+		extract_obj(object, FALSE);
+	send_to_char("The item cannot be created right now; please try again later.\r\n", actor);
+	return false;
+}
+
+static void announce_spell_player_item(P_char actor, P_obj object)
+{
+	if (!actor || !object)
+		return;
+	switch (OBJ_VNUM(object))
+	{
+	case 366:
+		act("$p &+Warrives in a burst of &n&+rfire.", TRUE, actor, object, 0, TO_ROOM);
+		act("$p &+Warrives in a burst of &n&+rfire.", TRUE, actor, object, 0, TO_CHAR);
+		break;
+	case 368:
+		act("$p &+Wslowly materializes.", TRUE, actor, object, 0, TO_ROOM);
+		act("$p &+Wslowly materializes.", TRUE, actor, object, 0, TO_CHAR);
+		break;
+	case 426:
+		act("As you call to the &n&+Wh&n&+Yea&n&+Wv&n&+Ye&n&+Wns&n for a weapon to slay the &n&+Lev&n&+ri&n&+Ll&n in the world, an",
+		    TRUE, actor, object, 0, TO_CHAR);
+		act("&n&+Yang&n&+We&n&+Yl&n&+Ric&n figure &n&+Lmat&n&+wer&n&+Wia&n&+wli&n&+Lzes&n before you, handing you a &n&+Ygolden&n blade. The",
+		    TRUE, actor, object, 0, TO_CHAR);
+		act("figure recites a short &n&+Yprayer&n before &n&+Wva&n&+wni&n&+Ls&n&+whi&n&+Wng&n as fast as it came.",
+		    TRUE, actor, object, 0, TO_CHAR);
+		act("As $n calls to the &n&+Wh&n&+Yea&n&+Wv&n&+Ye&n&+Wns&n for a weapon to slay the &n&+Lev&n&+ri&n&+Ll&n in the world,",
+		    TRUE, actor, object, 0, TO_ROOM);
+		act("An &n&+Yang&n&+We&n&+Yl&n&+Ric&n figure &n&+Lmat&n&+wer&n&+Wia&n&+wli&n&+Lzes&n before you, handing a &n&+Ygolden&n blade to $n.",
+		    TRUE, actor, object, 0, TO_ROOM);
+		act("The figure recites a short &n&+Yprayer&n before &n&+Wva&n&+wni&n&+Ls&n&+whi&n&+Wng&n as fast as it came.",
+		    TRUE, actor, object, 0, TO_ROOM);
+		break;
+	case 352:
+		act("$n &+wplunges $s clenched fist into the &+yground&+w and draws forth $p!&n", TRUE,
+		    actor, object, 0, TO_ROOM);
+		act("&+wYou plunge your fist into the &+yground&+w and rip out $p!&n", TRUE, actor,
+		    object, 0, TO_CHAR);
+		break;
+	default:
+		act("$p appears in your hands.", TRUE, actor, object, 0, TO_ROOM);
+		act("$p appears in your hands.", TRUE, actor, object, 0, TO_CHAR);
+		break;
+	}
+}
+
+static void spell_player_creation_completed(P_char actor, uint64_t item_uid, bool committed,
+					    unsigned int /*error_code*/)
+{
+	if (!actor)
+		return;
+	if (!committed)
+	{
+		send_to_char("The conjured item could not be delivered and fades away.\r\n", actor);
+		return;
+	}
+	P_obj object = spell_item_by_uid(item_uid);
+	if (object && OBJ_CARRIED_BY(object, actor))
+		announce_spell_player_item(actor, object);
+}
+
+static bool submit_spell_player_creation(P_char actor, P_obj object)
+{
+	if (item_creation_grant_submit_to_player_with_completion(
+		    actor, object, actor, NULL, spell_player_creation_completed,
+		    economic_source_kind::item_action))
+		return true;
+	if (OBJ_NOWHERE(object))
+		extract_obj(object, FALSE);
+	send_to_char("The item cannot be created right now; please try again later.\r\n", actor);
+	return false;
+}
 
 static bool has_air_staff_arti(P_char ch)
 {
@@ -1778,8 +1895,13 @@ void cast_channel(int level, P_char ch, char * /*arg*/, int type, P_char /*tar_c
 void spell_minor_creation(int /*level*/, P_char ch, P_char /*victim*/, P_obj obj)
 {
 	SET_BIT(obj->extra2_flags, ITEM2_STOREITEM);
-	obj_to_room(obj, ch->in_room);
 	obj->z_cord = ch->specials.z_cord;
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		(void)submit_spell_room_creation(ch, obj);
+		return;
+	}
+	obj_to_room(obj, ch->in_room);
 	act("$p &+Wsuddenly appears.", FALSE, ch, obj, 0, TO_ROOM);
 	act("$p &+Wsuddenly appears.", FALSE, ch, obj, 0, TO_CHAR);
 }
@@ -1835,14 +1957,18 @@ void spell_flame_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		SET_BIT(blade->bitvector, AFF_PROT_FIRE);
 	}
 
-	act("$p &+Warrives in a burst of &n&+rfire.", TRUE, ch, blade, 0, TO_ROOM);
-	act("$p &+Warrives in a burst of &n&+rfire.", TRUE, ch, blade, 0, TO_CHAR);
 	blade->timer[0] = 180;
 	if (IS_PC(ch))
 		blade->timer[1] = GET_PID(ch);
 	else
 		blade->timer[1] = -1;
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		(void)submit_spell_player_creation(ch, blade);
+		return;
+	}
 
+	announce_spell_player_item(ch, blade);
 	obj_to_char(blade, ch);
 }
 
@@ -1863,10 +1989,14 @@ void spell_shield(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char
 		logit(LOG_DEBUG, "spell_shield(): obj 368 not loadable");
 		return;
 	}
-	act("$p &+Wslowly materializes.", TRUE, ch, shield, 0, TO_ROOM);
-	act("$p &+Wslowly materializes.", TRUE, ch, shield, 0, TO_CHAR);
 	shield->timer[0] = 180;
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		(void)submit_spell_player_creation(ch, shield);
+		return;
+	}
 
+	announce_spell_player_item(ch, shield);
 	obj_to_char(shield, ch);
 }
 
@@ -1882,11 +2012,45 @@ void spell_create_food(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		logit(LOG_DEBUG, "spell_create_food(): obj 364 not loadable");
 		return;
 	}
+	SET_BIT(food->extra_flags, ITEM_NOSELL);
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		(void)submit_spell_room_creation(ch, food);
+		return;
+	}
+	obj_to_room(food, ch->in_room);
 	act("$p &+Wsuddenly appears.", FALSE, ch, food, 0, TO_ROOM);
 	act("$p &+Wsuddenly appears.", FALSE, ch, food, 0, TO_CHAR);
+}
 
-	SET_BIT(food->extra_flags, ITEM_NOSELL);
-	obj_to_room(food, ch->in_room);
+static void finish_summon_insects(P_char ch, int room)
+{
+	send_to_char("&+yYou summon the &+minsects&+y of the area.&n\n", ch);
+	act("&+y$n sprinkles some food around to summon the &+minsects&+y of the area.&n\n", 0,
+	    ch, 0, 0, TO_ROOM);
+	struct room_affect af = {};
+	af.type = SPELL_SUMMON_INSECTS;
+	af.duration = 250;
+	af.ch = ch;
+	affect_to_room(room, &af);
+}
+
+static void summon_insects_component_completed(P_char ch, bool committed,
+					       const item_transfer_result &,
+					       unsigned int /*error_code*/,
+					       const uint8_t *encoded,
+					       size_t encoded_size)
+{
+	if (!ch || !encoded || encoded_size != sizeof(int32_t))
+		return;
+	int32_t room = 0;
+	memcpy(&room, encoded, sizeof(room));
+	if (!committed || ch->in_room != room)
+	{
+		send_to_char("The mandrake is left intact as your spell fails.\r\n", ch);
+		return;
+	}
+	finish_summon_insects(ch, room);
 }
 
 void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -1894,7 +2058,6 @@ void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 {
 	P_obj t_obj, next_obj;
 	P_obj used_obj = NULL;
-	struct room_affect af;
 	int count;
 
 	if (!ch || get_spell_from_room(&world[ch->in_room], SPELL_SUMMON_INSECTS))
@@ -1919,18 +2082,19 @@ void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 		send_to_char("You must have &+ya mandrake root&n in your inventory.\r\n", ch);
 		return;
 	}
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		const int32_t room = ch->in_room;
+		if (!spell_consume_components(ch, VOBJ_FORAGE_MANDRAKE, 1, SPELL_SUMMON_INSECTS,
+					      summon_insects_component_completed, &room,
+					      sizeof(room)))
+			send_to_char("Your mandrake cannot be consumed right now; please try again.\r\n",
+				     ch);
+		return;
+	}
 
 	extract_obj(used_obj);
-
-	send_to_char("&+yYou summon the &+minsects&+y of the area.&n\n", ch);
-	act("&+y$n sprinkles some food around to summon the &+minsects&+y of the area.&n\n", 0, ch,
-	    0, 0, TO_ROOM);
-
-	memset(&af, 0, sizeof(struct room_affect));
-	af.type = SPELL_SUMMON_INSECTS;
-	af.duration = 250;
-	af.ch = ch;
-	affect_to_room(ch->in_room, &af);
+	finish_summon_insects(ch, ch->in_room);
 }
 
 void spell_doom_blade(int /*level*/, P_char ch, char * /*arg*/, int type, P_char /*victim*/,
@@ -1949,19 +2113,6 @@ void spell_doom_blade(int /*level*/, P_char ch, char * /*arg*/, int type, P_char
 			return;
 		}
 
-		act("As you call to the &n&+Wh&n&+Yea&n&+Wv&n&+Ye&n&+Wns&n for a weapon to slay the &n&+Lev&n&+ri&n&+Ll&n in the world, an",
-		    TRUE, ch, weapon, 0, TO_CHAR);
-		act("&n&+Yang&n&+We&n&+Yl&n&+Ric&n figure &n&+Lmat&n&+wer&n&+Wia&n&+wli&n&+Lzes&n before you, handing you a &n&+Ygolden&n blade. The",
-		    TRUE, ch, weapon, 0, TO_CHAR);
-		act("figure recites a short &n&+Yprayer&n before &n&+Wva&n&+wni&n&+Ls&n&+whi&n&+Wng&n as fast as it came.",
-		    TRUE, ch, weapon, 0, TO_CHAR);
-
-		act("As $n calls to the &n&+Wh&n&+Yea&n&+Wv&n&+Ye&n&+Wns&n for a weapon to slay the &n&+Lev&n&+ri&n&+Ll&n in the world,",
-		    TRUE, ch, weapon, 0, TO_ROOM);
-		act("An &n&+Yang&n&+We&n&+Yl&n&+Ric&n figure &n&+Lmat&n&+wer&n&+Wia&n&+wli&n&+Lzes&n before you, handing a &n&+Ygolden&n blade to $n.",
-		    TRUE, ch, weapon, 0, TO_ROOM);
-		act("The figure recites a short &n&+Yprayer&n before &n&+Wva&n&+wni&n&+Ls&n&+whi&n&+Wng&n as fast as it came.",
-		    TRUE, ch, weapon, 0, TO_ROOM);
 	}
 	else
 	{
@@ -1972,13 +2123,15 @@ void spell_doom_blade(int /*level*/, P_char ch, char * /*arg*/, int type, P_char
 			return;
 		}
 
-		act("$n &+wplunges $s clenched fist into the &+yground&+w and draws forth $p!&n",
-		    TRUE, ch, weapon, 0, TO_ROOM);
-		act("&+wYou plunge your fist into the &+yground&+w and rip out $p!&n", TRUE, ch,
-		    weapon, 0, TO_CHAR);
 		weapon->timer[0] = 1800;
 	}
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		(void)submit_spell_player_creation(ch, weapon);
+		return;
+	}
 
+	announce_spell_player_item(ch, weapon);
 	obj_to_char(weapon, ch);
 }
 
@@ -2016,11 +2169,91 @@ static int find_dam_type(char *name)
 	return SPLDAM_GENERIC;
 }
 
+struct sticks_to_snakes_context
+{
+	uint64_t victim_runtime_id;
+	uint64_t arrow_uids[7];
+	int32_t room;
+	int32_t snakes;
+	int32_t num_dice;
+	int32_t num_sides;
+	uint8_t arrow_count;
+};
+
+static_assert(sizeof(sticks_to_snakes_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+static P_char spell_character_by_runtime_id(uint64_t runtime_id)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (character->runtime_id == runtime_id)
+			return character;
+	return NULL;
+}
+
+static void sticks_to_snakes_retirement_completed(P_char caster, bool committed,
+						  const item_transfer_result &,
+						  unsigned int /*error_code*/,
+						  const uint8_t *encoded,
+						  size_t encoded_size)
+{
+	if (!encoded || encoded_size != sizeof(sticks_to_snakes_context))
+		return;
+	sticks_to_snakes_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		if (caster)
+			send_to_char("Your spell fails and the arrows remain unchanged.\r\n", caster);
+		return;
+	}
+
+	P_char victim = spell_character_by_runtime_id(context.victim_runtime_id);
+	struct damage_messages arrow_messages = {
+		"You turn $N's $q into a &+gsnake&n and send it against $M!",
+		"Your own $q turns into a &+gsnake&n and bites you, &+Lvanishing afterwards&n!",
+		"$N's own $q turns into a &+gsnake&n and bites $M, &+Lvanishing afterwards&n!",
+		"You turn $N's $q into a &+gsnake&n and it bites $M to death!",
+		"Your own $q turns into a &+gsnake&n and bites you &+rrea&+Rlly &+Lhard...",
+		"$N's own $q turns into a &+gsnake&n and it bites $M to &+rdeath&n, &+Lvanishing afterwards&n!"
+	};
+	struct damage_messages messages = {
+		"&+yYou turn a stick into a &+gsnake &+yand send it against $N!",
+		"A &+ystick&n turns into a &+gsnake &nand bites you, &+Lvanishing afterwards&n!",
+		"A &+ystick&n turns into a &+gsnake &nand bites $N, &+Lvanishing afterwards&n!",
+		"&+yYou turn a stick into a &+gsnake &+yand send it against $N!",
+		"A &+ystick&n turns into a &+gsnake &nand bites you, &+Lvanishing afterwards&n!",
+		"A &+ystick&n turns into a &+gsnake &nand bites $N, &+Lvanishing afterwards&n!"
+	};
+	for (size_t index = 0; index < context.arrow_count; ++index)
+	{
+		P_obj arrow = spell_item_by_uid(context.arrow_uids[index]);
+		if (victim && arrow && IS_ALIVE(victim) && is_char_in_room(victim, context.room))
+		{
+			arrow_messages.obj = arrow;
+			const int damage_type = find_dam_type(OBJ_SHORT(arrow));
+			spell_damage(caster, victim,
+				     5 * dice(arrow->value[1], arrow->value[2]), damage_type,
+				     SPLDAM_ALLGLOBES, &arrow_messages);
+		}
+		if (arrow)
+			extract_obj(arrow);
+	}
+	while (victim && context.snakes && IS_ALIVE(victim) &&
+	       is_char_in_room(victim, context.room))
+	{
+		spell_damage(caster, victim, dice(context.num_dice, context.num_sides),
+			     SPLDAM_GENERIC, SPLDAM_ALLGLOBES, &messages);
+		--context.snakes;
+	}
+}
+
 void spell_sticks_to_snakes(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			    P_char victim, P_obj obj)
 {
 	int snakes, arrowSnakes, room, num_dice, num_sides, dam_type;
 	P_obj arrows, inven, next_inven;
+	P_obj selected_arrows[7] = {};
+	size_t selected_arrow_count = 0;
 
 	struct damage_messages arrow_messages = {
 		"You turn $N's $q into a &+gsnake&n and send it against $M!",
@@ -2126,12 +2359,49 @@ void spell_sticks_to_snakes(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		{
 			continue;
 		}
-		obj_from_char(inven);
-		inven->next_content = arrows;
-		arrows = inven;
+		if (economic_gameplay_authority::active() && IS_PC(victim))
+			selected_arrows[selected_arrow_count++] = inven;
+		else
+		{
+			obj_from_char(inven);
+			inven->next_content = arrows;
+			arrows = inven;
+		}
 		// Allow 8 total snakes.
 		if (++arrowSnakes >= 8 - snakes)
 			break;
+	}
+	if (selected_arrow_count)
+	{
+		if (!IS_PC(ch) || GET_PID(victim) <= 0)
+		{
+			send_to_char("The spell cannot consume these arrows right now.\r\n", ch);
+			return;
+		}
+		sticks_to_snakes_context context = {};
+		context.victim_runtime_id = victim->runtime_id;
+		context.room = room;
+		context.snakes = snakes;
+		context.num_dice = num_dice;
+		context.num_sides = num_sides;
+		context.arrow_count = static_cast<uint8_t>(selected_arrow_count);
+		for (size_t index = 0; index < selected_arrow_count; ++index)
+			context.arrow_uids[index] = selected_arrows[index]->obj_uid;
+		const item_owner_identity player_owner = {
+			item_owner_type::player, static_cast<uint64_t>(GET_PID(victim)), 0 };
+		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit_batch(
+			    ch, selected_arrows, selected_arrow_count, NULL, player_owner, destruction,
+			    item_transfer_reason::destruction, SPELL_STICKS_TO_SNAKES,
+			    sticks_to_snakes_retirement_completed, &context, sizeof(context), NULL,
+			    &reject, nullptr, economic_source_kind::item_action))
+		{
+			send_to_char("Your spell fails and the arrows remain unchanged.\r\n", ch);
+			logit(LOG_FILE, "sticks-to-snakes item retirement refused (pid=%d reason=%s)",
+			      GET_PID(ch), item_movement_reject_name(reject));
+		}
+		return;
 	}
 
 	while (arrows && IS_ALIVE(victim))

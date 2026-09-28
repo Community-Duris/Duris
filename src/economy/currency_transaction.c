@@ -921,18 +921,45 @@ bool currency_transaction_restore_replayed_command(const critical_command &comma
 	if (command.type == critical_command_type::coin_transfer)
 	{
 		coin_transfer_payload coin = {};
-		currency_command_payload source = {}, destination = {};
 		if (!critical_command_envelope_valid(command) ||
 		    !coin_transfer_command_decode_payload(command, &coin) ||
-		    coin.source.change.type != critical_command_type::account_bank ||
-		    coin.destination.change.type != critical_command_type::account_bank ||
-		    !currency_command_decode_payload(coin.source.change, &source) ||
-		    !currency_command_decode_payload(coin.destination.change, &destination) ||
 		    pending.size() >= CURRENCY_PENDING_MAX)
 			return false;
-		pending_currency entry = { .pid = source.pid,
-					   .account_name = source.account_name,
-					   .racewar = source.racewar,
+		uint32_t actor_pid = 0;
+		std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1> account_name = {};
+		uint8_t racewar = 0;
+		for (const auto *endpoint : { &coin.source, &coin.destination })
+		{
+			if (endpoint->change.type == critical_command_type::account_bank)
+			{
+				currency_command_payload wallet = {};
+				if (!currency_command_decode_payload(endpoint->change, &wallet) ||
+				    wallet.reason != currency_reason_type::coin_transfer ||
+				    wallet.pid > INT32_MAX)
+					return false;
+				if (!actor_pid)
+				{
+					actor_pid = wallet.pid;
+					account_name = wallet.account_name;
+					racewar = wallet.racewar;
+				}
+				continue;
+			}
+			if (endpoint->change.type == critical_command_type::item_transfer)
+			{
+				item_transfer_payload pile = {};
+				if (!item_transfer_command_decode_payload(endpoint->change,
+									  &pile) ||
+				    pile.item_count != 1 ||
+				    pile.selected_item_uid != pile.items[0].item_uid)
+					return false;
+				continue;
+			}
+			return false;
+		}
+		pending_currency entry = { .pid = actor_pid,
+					   .account_name = account_name,
+					   .racewar = racewar,
 					   .completion = nullptr,
 					   .context = {},
 					   .context_size = 0,

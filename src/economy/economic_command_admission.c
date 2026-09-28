@@ -1,6 +1,7 @@
 #include "economy/economic_command_admission.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/coin_transfer_accounting.h"
+#include "economy/item_transfer_accounting.h"
 
 #include <new>
 
@@ -52,17 +53,33 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		}
 		else if (command.type == critical_command_type::coin_transfer)
 		{
-			if (facts.size() != ECONOMIC_WALLET_COIN_TRANSFER_FACT_BYTES)
+			if (facts.size() != ECONOMIC_COIN_TRANSFER_FACT_BYTES)
 				return false;
+			coin_transfer_payload payload = {};
+			if (!coin_transfer_command_decode_payload(admission, &payload))
+				return false;
+			auto endpoint_kind = [](const coin_transfer_endpoint &endpoint)
+			{
+				if (endpoint.change.type == critical_command_type::account_bank)
+					return economic_account_kind::wallet;
+				if (endpoint.change.type == critical_command_type::item_transfer)
+					return economic_account_kind::pile;
+				return economic_account_kind{};
+			};
 			const economic_account_key source = { meta.lineage,
-							      economic_account_kind::wallet,
+							      endpoint_kind(payload.source),
 							      little_u64(facts, 0), 0 };
-			const economic_account_key destination = { meta.lineage,
-								   economic_account_kind::wallet,
-								   little_u64(facts, 8), 0 };
+			const economic_account_key destination = {
+				meta.lineage, endpoint_kind(payload.destination),
+				little_u64(facts, 8), 0
+			};
 			if (coin_transfer_accounting_intent(admission, meta.epoch, source,
 							    destination, &expected) != error::ok)
 				return false;
+		}
+		else if (command.type == critical_command_type::item_transfer)
+		{
+			return item_transfer_accounting_command_supported(command);
 		}
 		else
 			return false;

@@ -77,6 +77,7 @@ struct pending_creation_grant
 	int32_t room;
 	bool to_room;
 	bool allow_pre_entry;
+	economic_source_kind source = {};
 	item_movement_completion_fn completion = nullptr;
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> context = {};
 	size_t context_size = 0;
@@ -86,6 +87,7 @@ struct pending_creation_grant
 struct creation_grant_queue
 {
 	item_creation_prepare_fn prepare;
+	economic_source_kind source = {};
 	std::deque<pending_creation_grant> requests;
 	std::deque<pending_creation_grant> following_requests;
 	bool active = false;
@@ -185,8 +187,7 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry)
-			   {
+			   [&](const auto &entry) {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -1001,7 +1002,7 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_moveme
 				if (candidate.to_room || candidate.target_container_uid ||
 				    !candidate.allow_pre_entry ||
 				    candidate.recipient_pid != actor_pid || !object ||
-				    !OBJ_NOWHERE(object))
+				    !OBJ_NOWHERE(object) || candidate.source != request.source)
 					return reject_with(reject,
 							   item_movement_reject::owner_mismatch);
 				objects.push_back(object);
@@ -1015,7 +1016,7 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_moveme
 			    actor, objects.data(), objects.size(), NULL, system_owner_identity,
 			    creation_grant_owner(request), item_transfer_reason::creation, 0,
 			    creation_grant_batch_completion, &actor_pid, sizeof(actor_pid), NULL,
-			    reject))
+			    reject, nullptr, request.source))
 			return false;
 		queue.active = true;
 		return true;
@@ -1031,11 +1032,11 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_moveme
 	const item_owner_identity source = adopted ? runtime.owner : owner;
 	if (!item_movement_transaction_submit(
 		    actor, object, target_container, source, owner,
-		    adopted ? item_transfer_reason::operator_repair :
-			      item_transfer_reason::creation,
-		    object->R_num >= 0 ? obj_index[object->R_num].virtual_number : 0,
-		    creation_grant_completion, &request.item_uid, sizeof(request.item_uid), NULL,
-		    reject))
+			adopted ? item_transfer_reason::operator_repair :
+				  item_transfer_reason::creation,
+			object->R_num >= 0 ? obj_index[object->R_num].virtual_number : 0,
+			creation_grant_completion, &request.item_uid, sizeof(request.item_uid), NULL,
+			reject, nullptr, adopted ? economic_source_kind{} : request.source))
 		return false;
 	queue.active = true;
 	return true;
@@ -1044,7 +1045,8 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_moveme
 bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room,
 			  P_obj target_container, bool to_room, bool allow_pre_entry,
 			  item_movement_completion_fn completion, const void *context,
-			  size_t context_size, item_creation_grant_completion_fn grant_completion)
+			  size_t context_size, item_creation_grant_completion_fn grant_completion,
+			  economic_source_kind source)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !object || !object->obj_uid ||
 	    !OBJ_NOWHERE(object) ||
@@ -1057,6 +1059,12 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	auto [found, inserted] = creation_grants.try_emplace(actor_pid);
 	creation_grant_queue &queue = found->second;
+	if (queue.batch_submission && source != queue.source)
+	{
+		if (inserted)
+			creation_grants.erase(found);
+		return false;
+	}
 	if (target_container &&
 	    (to_room || !creation_grant_target_available(queue, target_container, recipient)))
 	{
@@ -1092,6 +1100,7 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 			to_room,
 			allow_pre_entry
 		};
+		request.source = source;
 		request.completion = completion;
 		request.context_size = context_size;
 		request.grant_completion = grant_completion;
@@ -1523,7 +1532,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      item_movement_completion_fn completion, const void *context,
 				      size_t context_size, P_obj corpse_context,
 				      item_movement_reject *reject,
-				      item_movement_publication_fn publication)
+				      item_movement_publication_fn publication,
+				      economic_source_kind lifecycle_source)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1549,7 +1559,20 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	const bool retained_owner_identity = adopted && item_owner_identity_valid(runtime.owner);
 	const bool owner_matches_request = retained_owner_identity &&
 					   item_owner_identity_equal(runtime.owner, from_owner);
-	if (economic_gameplay_authority::active())
+	const bool accounting_active = economic_gameplay_authority::active();
+	const bool sourced_player_creation =
+		!adopted && reason == item_transfer_reason::creation &&
+		lifecycle_source != economic_source_kind{} &&
+		from_owner.type == item_owner_type::player &&
+		from_owner.id == static_cast<uint32_t>(GET_PID(actor)) &&
+		to_owner.type == item_owner_type::player && to_owner.id == from_owner.id;
+	const bool sourced_room_creation =
+		!adopted && reason == item_transfer_reason::creation &&
+		lifecycle_source != economic_source_kind{} &&
+		from_owner.type == item_owner_type::room && to_owner.type == item_owner_type::room &&
+		item_owner_identity_equal(from_owner, to_owner);
+	const bool sourced_creation = sourced_player_creation || sourced_room_creation;
+	if (accounting_active && (!adopted || !owner_matches_request) && !sourced_creation)
 		return refuse_active_item_submission(true, retained_owner_identity,
 						     owner_matches_request,
 						     reason == item_transfer_reason::creation,
@@ -1638,6 +1661,12 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
 		return reject_with(reject, item_movement_reject::command_build_failure);
+	if (accounting_active &&
+	    economic_gameplay_authority::prepare_item_transfer(
+		    &command, player_actor ? static_cast<uint32_t>(GET_PID(actor)) : 0,
+		    lifecycle_source) !=
+		    economic_accounting_error::ok)
+		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
 	pending_movement entry = {
 		.actor_pid = player_actor ? static_cast<uint32_t>(GET_PID(actor)) : 0,
 		.actor_runtime_id = actor->runtime_id,
@@ -1706,7 +1735,8 @@ bool item_movement_transaction_submit_batch(
 	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context,
-	item_movement_reject *reject, item_movement_publication_fn publication)
+	item_movement_reject *reject, item_movement_publication_fn publication,
+	economic_source_kind lifecycle_source)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1737,29 +1767,35 @@ bool item_movement_transaction_submit_batch(
 					return reject_with(reject,
 							   item_movement_reject::owner_mismatch);
 			}
-			return refuse_active_item_submission(true, false, false, true, reject);
+			if (lifecycle_source == economic_source_kind{} ||
+			    to_owner.id != static_cast<uint32_t>(GET_PID(actor)))
+				return refuse_active_item_submission(true, false, false, true, reject);
 		}
-		bool retained_owner_identity = true;
-		bool owner_matches_request = true;
-		for (size_t index = 0; index < root_count; ++index)
+		else
 		{
-			P_obj root = roots[index];
-			item_ownership_runtime_entry runtime = {};
-			if (!root || !root->obj_uid)
-				return reject_with(reject, item_movement_reject::owner_mismatch);
-			if (!item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
-			    !item_owner_identity_valid(runtime.owner))
+			bool retained_owner_identity = true;
+			bool owner_matches_request = true;
+			for (size_t index = 0; index < root_count; ++index)
 			{
-				retained_owner_identity = false;
-				owner_matches_request = false;
+				P_obj root = roots[index];
+				item_ownership_runtime_entry runtime = {};
+				if (!root || !root->obj_uid)
+					return reject_with(reject, item_movement_reject::owner_mismatch);
+				if (!item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
+				    !item_owner_identity_valid(runtime.owner))
+				{
+					retained_owner_identity = false;
+					owner_matches_request = false;
+				}
+				else if (!item_owner_identity_equal(runtime.owner, from_owner))
+				{
+					owner_matches_request = false;
+				}
 			}
-			else if (!item_owner_identity_equal(runtime.owner, from_owner))
-			{
-				owner_matches_request = false;
-			}
+			if (!retained_owner_identity || !owner_matches_request)
+				return refuse_active_item_submission(true, retained_owner_identity,
+							     owner_matches_request, false, reject);
 		}
-		return refuse_active_item_submission(true, retained_owner_identity,
-						     owner_matches_request, false, reject);
 	}
 	if (movement_conflicts(from_owner, to_owner) || coordinator_item_fenced(target_container) ||
 	    coin_movement_pending(target_container))
@@ -1887,6 +1923,11 @@ bool item_movement_transaction_submit_batch(
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
 		return reject_with(reject, item_movement_reject::command_build_failure);
+	if (economic_gameplay_authority::active() &&
+	    economic_gameplay_authority::prepare_item_transfer(
+		    &command, static_cast<uint32_t>(GET_PID(actor)), lifecycle_source) !=
+		    economic_accounting_error::ok)
+		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
 	pending_movement entry = {
 		.actor_pid = static_cast<uint32_t>(GET_PID(actor)),
 		.actor_runtime_id = actor->runtime_id,
@@ -2009,36 +2050,39 @@ bool item_movement_reject_is_transient(item_movement_reject reason)
 }
 
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
-					  P_obj target_container)
+						  P_obj target_container,
+						  economic_source_kind source)
 {
 	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false,
-				    false, nullptr, nullptr, 0, nullptr);
+					    false, nullptr, nullptr, 0, nullptr, source);
 }
 
 bool item_creation_grant_submit_to_player_with_completion(P_char actor, P_obj object,
 							  P_char recipient,
 							  item_movement_completion_fn completion,
 							  const void *context, size_t context_size,
-							  P_obj target_container)
+							  P_obj target_container,
+							  economic_source_kind source)
 {
 	if (!completion)
 		return false;
 	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false,
-				    false, completion, context, context_size, nullptr);
+					    false, completion, context, context_size, nullptr, source);
 }
 
 bool item_creation_grant_submit_to_player_with_completion(
 	P_char actor, P_obj object, P_char recipient, P_obj target_container,
-	item_creation_grant_completion_fn completion)
+	item_creation_grant_completion_fn completion, economic_source_kind source)
 {
 	if (!completion)
 		return false;
 	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false,
-				    false, nullptr, nullptr, 0, completion);
+					    false, nullptr, nullptr, 0, completion, source);
 }
 
 /** Reserve the player before any legacy kit objects or persistence work exist. */
-bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare)
+bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare,
+			       economic_source_kind source)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !prepare ||
 	    item_movement_transaction_player_busy(actor) ||
@@ -2049,6 +2093,7 @@ bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare)
 	{
 		creation_grant_queue queue;
 		queue.prepare = std::move(prepare);
+		queue.source = source;
 		queue.batch_submission = true;
 		queue.blocks_actor_commands = true;
 		queue.stop_on_failure = true;
@@ -2111,8 +2156,10 @@ void item_creation_grant_prepare_pulse(void)
 						result = item_creation_prepare_result::failed;
 					else
 					{
-						queue.requests.push_back({ object->obj_uid, 0, pid,
-									   NOWHERE, false, true });
+						pending_creation_grant request = { object->obj_uid, 0, pid,
+									   NOWHERE, false, true };
+						request.source = queue.source;
+						queue.requests.push_back(request);
 						object = nullptr;
 					}
 				}
@@ -2144,14 +2191,17 @@ void item_creation_grant_prepare_pulse(void)
 	pump_creation_grants();
 }
 
-bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient)
+bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
+							      P_char recipient,
+							      economic_source_kind source)
 {
 	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true, nullptr,
-				    nullptr, 0, nullptr);
+					    nullptr, 0, nullptr, source);
 }
 
 bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
-							     size_t count, P_char recipient)
+								     size_t count, P_char recipient,
+								     economic_source_kind source)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || recipient != actor || !objects ||
 	    !count || count > ITEM_CREATION_GRANT_MAX_ROOTS)
@@ -2175,11 +2225,16 @@ bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj
 		creation_grant_queue queue;
 		queue.blocks_actor_commands = true;
 		queue.batch_submission = true;
+		queue.source = source;
 		queue.announce_on_completion = true;
 		queue.stop_on_failure = true;
 		for (size_t i = 0; i < count; ++i)
-			queue.requests.push_back(
-				{ objects[i]->obj_uid, 0, actor_pid, NOWHERE, false, true });
+		{
+			pending_creation_grant request = { objects[i]->obj_uid, 0, actor_pid, NOWHERE,
+							   false, true };
+			request.source = source;
+			queue.requests.push_back(request);
+		}
 		if (!creation_grants.emplace(actor_pid, std::move(queue)).second)
 			return false;
 	}
@@ -2197,10 +2252,12 @@ bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj
 	return false;
 }
 
-bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room)
+bool item_creation_grant_submit_to_room(
+	P_char actor, P_obj object, int room, economic_source_kind source,
+	item_creation_grant_completion_fn completion)
 {
 	return queue_creation_grant(actor, object, NULL, room, NULL, true, false, nullptr, nullptr,
-				    0, nullptr);
+				    0, completion, source);
 }
 
 bool item_creation_grant_mark_blocking(P_char actor)
