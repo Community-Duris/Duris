@@ -233,6 +233,28 @@ static economic_account_key escrow_account(const std::string &root, uint32_t auc
 	return mapping.account;
 }
 
+static void expect_escrow_lifetime(const std::string &root, uint32_t auction_id,
+				   const economic_account_key &key,
+				   const critical_operation_id &retiring_operation,
+				   std::string *error)
+{
+	flatfile_authority_lock lock;
+	require(lock.acquire(root, error), "could not lock auction lifetime lookup");
+	flatfile_economic_mapping retained, active;
+	require(flatfile_economic_mapping_read(root, lock, key, &retained, error) == 0 &&
+			retained.retiring_operation.bytes == retiring_operation.bytes &&
+			retained.revision ==
+				(critical_operation_id_is_zero(retiring_operation) ? 0U : 1U),
+		"auction escrow lifetime did not retain its closure operation");
+	const auto lookup =
+		flatfile_economic_native_lookup(root, lock, economic_account_kind::auction_escrow,
+						0, { 4, auction_id, {} }, &active, error);
+	require(critical_operation_id_is_zero(retiring_operation) ?
+			lookup == 0 && active.account.authority_id == key.authority_id :
+			lookup == ENODATA,
+		"auction escrow lifetime has the wrong active native mapping");
+}
+
 static flatfile_player_domain_record player(uint32_t pid, const char *account)
 {
 	flatfile_player_domain_record record;
@@ -1151,6 +1173,8 @@ int main(int argc, char **argv)
 	require(flatfile_auction_repository_apply_accounted_bid(typed_path, buy_command).outcome ==
 			critical_apply_outcome::already_applied,
 		"accounted buy-now did not replay");
+	expect_escrow_lifetime(typed_path, expected_auction_id, typed_escrow.account,
+			       buy_command.operation_id, &error);
 	expect_event(typed_path, auction_event_type::sold, expected_auction_id, &error);
 	const uint32_t sale_auction_id = auction_id_for(operation(27));
 	initialize_auction_bucket(typed_path, sale_auction_id, 92, &error);
@@ -1257,6 +1281,8 @@ int main(int argc, char **argv)
 			typed_bidder_pickup.has_item_claim &&
 			typed_bidder_pickup.item_claim.items[0].item_uid == 902,
 		"recovered accounted sale lost seller money or winner item claim");
+	expect_escrow_lifetime(typed_path, sale_auction_id, sale_escrow, sale_command.operation_id,
+			       &error);
 	expect_event(typed_path, auction_event_type::sold, sale_auction_id, &error);
 	const uint32_t remove_auction_id = auction_id_for(operation(30));
 	initialize_auction_bucket(typed_path, remove_auction_id, 93, &error);
@@ -1355,6 +1381,7 @@ int main(int argc, char **argv)
 									   remove_command)
 					.outcome == critical_apply_outcome::already_applied,
 		"accounted removal changed claim balance or failed replay");
+	expect_escrow_lifetime(typed_path, remove_auction_id, remove_escrow, {}, &error);
 	expect_event(typed_path, auction_event_type::removed, remove_auction_id, &error);
 	const uint32_t expire_auction_id = auction_id_for(operation(33));
 	initialize_auction_bucket(typed_path, expire_auction_id, 94, &error);
@@ -1421,6 +1448,8 @@ int main(int argc, char **argv)
 									     expire_command)
 					.outcome == critical_apply_outcome::already_applied,
 		"accounted no-bid expiry lost source or custody evidence");
+	expect_escrow_lifetime(typed_path, expire_auction_id, expire_accounts.escrow,
+			       expire_command.operation_id, &error);
 	expect_event(typed_path, auction_event_type::expired, expire_auction_id, &error);
 	const fs::path source_path = typed_domains / "auction_claim_sources";
 	auto source_bytes = source_catalog_bytes(source_path);

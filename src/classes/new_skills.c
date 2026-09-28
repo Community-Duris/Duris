@@ -24,6 +24,7 @@
 #include "combat/justice.h"
 #include "combat/training_dummy.h"
 #include "item/objmisc.h"
+#include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
 #include "economy/economic_gameplay_authority.h"
 #include "magic/spells.h"
@@ -109,7 +110,17 @@ static void retire_other_summoned_items(P_char actor, uint64_t keep_uid,
 					     summoned_book_matches(object, actor) :
 					     summoned_totem_matches(object, actor);
 		if (object->obj_uid != keep_uid && matches)
-			extract_obj(object);
+		{
+			if (economic_gameplay_authority::active() &&
+			    item_command_uses_durable_ownership(object))
+			{
+				logit(LOG_FILE,
+				      "summoned item retirement withheld without item custody (uid=%llu)",
+				      (unsigned long long)object->obj_uid);
+			}
+			else
+				extract_obj(object);
+		}
 		object = next;
 	}
 }

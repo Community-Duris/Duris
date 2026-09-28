@@ -162,6 +162,8 @@ PROJECTION_ROUTES = {
     "death.resurrection_publication": "Publishes the already-committed corpse lifecycle result; not a second custody/economic commit.",
     "recovery.pet_hydration": "Projects saved durable pet identity and inventory into runtime state; not item creation.",
     "recovery.flat_corpse_coin_materialization": "Projects an existing flatfile corpse/room coin balance into a runtime pile; no new issuance is authorized.",
+    "recovery.flat_shopkeeper_cash_materialization": "Projects retained flatfile shop cash into a detached keeper before publication; no trade or new coin issuance occurs here.",
+    "recovery.sql_shopkeeper_cash_materialization": "Projects retained SQL shop cash into a staged keeper before publication; no trade or new coin issuance occurs here.",
     "item.pet_give_publication": "Projects a committed player/pet item handoff into the live object graph; stale live extraction does not destroy the durable UID.",
     "item.command_publication": "Projects committed get, drop and give handoffs into live object lists; no second owner event is authorized.",
     "item.empty_publication": "Projects a committed bulk container empty result or restores stale live topology; no new owner event is authorized.",
@@ -439,7 +441,13 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
             continue
         line_start = code.rfind("\n", 0, match.start()) + 1
         prefix = code[line_start:match.start()].strip()
-        if (not prefix and not special_member) or any(word in prefix for word in ("return", "if ", "while ", "for ", "case ", "=")):
+        if not prefix and not special_member:
+            previous_end = line_start - 1
+            previous_start = code.rfind("\n", 0, previous_end) + 1
+            previous = code[previous_start:previous_end].strip()
+            if not re.fullmatch(r"[A-Za-z_]\w*(?:::\w+)*", previous):
+                continue
+        if any(word in prefix for word in ("return", "if ", "while ", "for ", "case ", "=")):
             continue
         result.append(code.count("\n", 0, match.start()) + 1)
     return sorted(set(result))
@@ -737,6 +745,8 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
                       "player.sql_bank_live_load", "world.generated_npc_hydration",
                       "recovery.copyover_npc_gold_projection",
                       "recovery.flat_corpse_coin_materialization",
+                      "recovery.flat_shopkeeper_cash_materialization",
+                      "recovery.sql_shopkeeper_cash_materialization",
                       "item.pet_give_publication", "item.command_publication",
                       "item.empty_publication", "item.weight_relink",
                       "item.equipment_wear", "item.equipment_remove",
@@ -770,6 +780,10 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
             policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the separate selected account-bank load succeeds and wallet/bank revisions form one complete player view."
         elif route_id == "recovery.flat_corpse_coin_materialization":
             policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the selected saved corpse/room identity, exact coin vector, pile UID and complete source receipt are verified."
+        elif route_id == "recovery.flat_shopkeeper_cash_materialization":
+            policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the selected shop ID, retained cash and revision, and complete shopkeeper ownership record are verified; emit no new posting."
+        elif route_id == "recovery.sql_shopkeeper_cash_materialization":
+            policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the selected shopkeeper row, cash revision, and complete stock identity are verified; a legacy NULL cash value cannot establish retained treasury authority. Emit no new posting."
         elif route_id.startswith(("item.", "death.", "coin.", "mob.", "movement.", "locker.", "combat.", "spell.", "range.")) or route_id.startswith("recovery.sql_") or route_id in {"world.zone_reset_equip_relink", "world.copyover_item_materialization", "recovery.flat_room_item_projection", "player.flat_terminal_inventory_unload", "player.sql_terminal_inventory_unload", "recovery.legacy_object_restore", "recovery.single_item_decode", "recovery.pet_save_equipment_relink"}:
             policy = PROJECTION_ROUTES[route_id] + " Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
         else:

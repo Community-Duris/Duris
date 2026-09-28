@@ -57,6 +57,7 @@ assert "spell_damage" in weapon_effect
 assert "no health was spent" in weapon_callback
 
 reload = function_body(LIFECYCLE, "\nvoid load_soulbind(P_char ch)\n{")
+assert reload.index("economic_gameplay_authority::active()") < reload.index("read_object(")
 reload_callback = function_body(LIFECYCLE, "static void soulbind_reload_completed(")
 assert "item_creation_grant_submit_to_player_with_completion" in reload
 assert "soulbind_reload_completed" in reload

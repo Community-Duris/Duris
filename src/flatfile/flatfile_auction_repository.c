@@ -853,9 +853,10 @@ bool claim_state(const auction_catalog &catalog, const auction_command_payload &
 	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
-		const auto found = std::find_if(
-			listing->items.begin(), listing->items.end(), [&](const auction_item &item)
-			{ return item.uid == payload.items[index].item_uid; });
+		const auto found =
+			std::find_if(listing->items.begin(), listing->items.end(),
+				     [&](const auction_item &item)
+				     { return item.uid == payload.items[index].item_uid; });
 		if (found == listing->items.end())
 			return false;
 		value.rows[index] = { found->uid,
@@ -1046,9 +1047,10 @@ flatfile_auction_find_pickup(const std::string &root, uint32_t pid,
 	}
 	for (const auto &listing : catalog.listings)
 	{
-		const bool pending = std::any_of(
-			listing.items.begin(), listing.items.end(), [&](const auction_item &item)
-			{ return item.claim_pid == pid && !item.claimed; });
+		const bool pending =
+			std::any_of(listing.items.begin(), listing.items.end(),
+				    [&](const auction_item &item)
+				    { return item.claim_pid == pid && !item.claimed; });
 		if (!pending)
 			continue;
 		if (!project_listing(listing, pid, &projected.item_claim))
@@ -2243,6 +2245,37 @@ try
 				}
 				++sources.revision;
 				sources_changed = true;
+			}
+			if ((bid_accounted && result.event_type == auction_event_type::sold) ||
+			    (settlement_accounted && payload.action == auction_action::finalize))
+			{
+				const auto &escrow = bid_accounted ? bid_accounts.escrow :
+								     settlement_accounts.escrow;
+				const auto effect = std::find_if(
+					plan.accounts.begin(), plan.accounts.end(),
+					[&](const auto &entry)
+					{ return economic_account_key_equal(entry.key, escrow); });
+				const auto mapping = std::find_if(
+					authority.mappings.begin(), authority.mappings.end(),
+					[&](const auto &entry) {
+						return economic_account_key_equal(entry.account,
+										  escrow);
+					});
+				if (effect == plan.accounts.end() ||
+				    effect->after != economic_coin_vector{} ||
+				    mapping == authority.mappings.end())
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EILSEQ };
+				const auto retired =
+					flatfile_accounting_authority_storage::retire_mapping(
+						root, lock, authority.lineage_revision, escrow,
+						mapping->revision, command.operation_id,
+						&mapping_operations, &error);
+				if (retired)
+					return { retired == EIO || retired == ENOMEM ?
+							 critical_apply_outcome::retryable_failure :
+							 critical_apply_outcome::terminal_failure,
+						 catalog.revision, retired };
 			}
 			const auto encoded = economic_plan_encode(plan, &accounting_record.plan);
 			if (encoded != economic_accounting_error::ok)

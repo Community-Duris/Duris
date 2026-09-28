@@ -47,4 +47,12 @@ unsigned int economic_sql_lock_authority(MYSQL *connection, const critical_opera
 					 std::span<const economic_sql_mapping_request> requests,
 					 economic_sql_authority_snapshot *snapshot);
 
+// Retire a mapped lifetime inside the caller's transaction after its typed
+// plan proves a zero closing balance. The caller must hold the mapping lock
+// represented by snapshot and commit this change with the native mutation,
+// accounting root, and receipt. A guarded update retains the historical row.
+unsigned int economic_sql_retire_mapping(MYSQL *connection,
+					 const economic_sql_locked_mapping &mapping,
+					 const critical_operation_id &retiring_operation);
+
 #endif

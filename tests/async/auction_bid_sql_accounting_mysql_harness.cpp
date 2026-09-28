@@ -373,6 +373,24 @@ int main()
 		      std::to_string(SELLER)) == 0);
 	assert(scalar("SELECT platinum FROM player_data WHERE pid=" + std::to_string(SECOND)) ==
 	       10);
+	execute("CREATE TRIGGER fail_auction_escrow_retirement BEFORE UPDATE ON "
+		"economic_account_mapping FOR EACH ROW SIGNAL SQLSTATE '45000' "
+		"SET MESSAGE_TEXT='forced escrow retirement failure'");
+	execute("START TRANSACTION");
+	inbox(second.operation_id, static_cast<uint16_t>(second.type), 2, 0);
+	assert(economic_sql_auction_bid_lock(connection, second, &context) == 0);
+	assert(economic_sql_auction_bid_execute_and_record(connection, second, context, &result,
+							   &result_code, &mutation_applied) != 0);
+	execute("ROLLBACK");
+	execute("DROP TRIGGER fail_auction_escrow_retirement");
+	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_source WHERE "
+		      "source_operation_id=" +
+		      literal(second.operation_id)) == 0);
+	assert(scalar("SELECT cur_price FROM auctions WHERE id=" + std::to_string(auction_id)) ==
+	       3000);
+	assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=" +
+		      std::to_string(escrow.authority_id) + " AND active_native_id=" +
+		      std::to_string(auction_id) + " AND retiring_operation_id IS NULL") == 1);
 	execute("START TRANSACTION");
 	inbox(second.operation_id, static_cast<uint16_t>(second.type), 2, 0);
 	assert(economic_sql_auction_bid_lock(connection, second, &context) == 0);
@@ -418,6 +436,11 @@ int main()
 	       hex(first.operation_id.bytes.data(), first.operation_id.bytes.size()));
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=" +
 		      literal(second.operation_id)) == 1);
+	assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=" +
+		      std::to_string(escrow.authority_id) +
+		      " AND active_native_id IS NULL "
+		      "AND retiring_operation_id=" +
+		      literal(second.operation_id) + " AND revision=1") == 1);
 	auction_item_claim_state staged;
 	staged.auction_id = auction_id;
 	staged.seller_pid = SELLER;

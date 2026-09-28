@@ -154,8 +154,8 @@ class BaselineSchemaTest(unittest.TestCase):
         pairs = [
             ('ALTER TABLE economic_baseline_control MODIFY revision BIGINT NOT NULL DEFAULT 0;',
              'ALTER TABLE economic_baseline_control MODIFY revision BIGINT UNSIGNED NOT NULL DEFAULT 0;'),
-            ('ALTER TABLE economic_baseline_witness DROP INDEX uq_economic_baseline_witness_revision;',
-             'ALTER TABLE economic_baseline_witness ADD UNIQUE KEY uq_economic_baseline_witness_revision(lineage,epoch,book_revision);'),
+            ('ALTER TABLE economic_baseline_witness RENAME INDEX uq_economic_baseline_witness_revision TO uq_economic_baseline_witness_revision_drift;',
+             'ALTER TABLE economic_baseline_witness RENAME INDEX uq_economic_baseline_witness_revision_drift TO uq_economic_baseline_witness_revision;'),
         ]
         for damage, restore in pairs:
             try:

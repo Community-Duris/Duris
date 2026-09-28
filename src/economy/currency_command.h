@@ -60,11 +60,13 @@ struct currency_command_result
 	uint64_t bank_revision;
 };
 
-// Preserve each backend's existing revision policy while sharing arithmetic.
+// Preserve legacy backend revisions; typed bank-only supply changes only the
+// bank revision while reusing the same checked denomination arithmetic.
 enum class currency_revision_policy : uint8_t
 {
 	sql_legacy,
 	flatfile_legacy,
+	bank_only,
 };
 
 class currency_prepared_mutation

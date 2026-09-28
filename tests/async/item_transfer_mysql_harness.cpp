@@ -1670,18 +1670,18 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation");
 	const uint64_t actual_references =
 		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference");
-	if (actual_operations != operation_count + 20 ||
-	    actual_references != item_reference_count + 31)
+	if (actual_operations != operation_count + 21 ||
+	    actual_references != item_reference_count + 32)
 		fprintf(stderr,
 			"accounted item totals: operations=%llu expected=%llu references=%llu "
 			"expected=%llu\n",
-			static_cast<unsigned long long>(actual_operations - operation_count), 20ULL,
+			static_cast<unsigned long long>(actual_operations - operation_count), 21ULL,
 			static_cast<unsigned long long>(actual_references - item_reference_count),
-			31ULL);
-	assert(actual_operations == operation_count + 20);
-	assert(actual_references == item_reference_count + 31);
+			32ULL);
+	assert(actual_operations == operation_count + 21);
+	assert(actual_references == item_reference_count + 32);
 	mysql_close(restarted);
-	puts("PASS: sourced creation, nested transfers and native pet/locker rows, duplicate quest source refusal, theft and retirement retain exact SQL references through replay and epoch change");
+	puts("PASS: sourced creation, nested transfers and native pet/locker rows, duplicate quest and world source refusal, theft and retirement retain exact SQL references through replay and epoch change");
 }
 
 int main()
@@ -1793,6 +1793,39 @@ int main()
 	       stale.error_code == ESTALE);
 	const auto give_payload = payload(player_one, player_two, item_transfer_reason::player_give,
 					  created_result.to_owner_revision, player_two_revision, 1);
+	const uint64_t native_root_id = scalar(
+		connection,
+		("SELECT id FROM player_items WHERE obj_uid=" + std::to_string(root_uid)).c_str());
+	execute(connection, "INSERT INTO player_items(pid,vnum,container_id) VALUES(4000000001,"
+			    "1003," +
+				    std::to_string(native_root_id) + ")");
+	const uint64_t unexpected_child_id = mysql_insert_id(connection);
+	const critical_apply_result hidden_child = apply(connection, 249, give_payload);
+	assert(hidden_child.outcome == critical_apply_outcome::terminal_failure &&
+	       hidden_child.error_code == EILSEQ);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_ownership_ledger WHERE "
+				   "operation_id=UNHEX('" +
+				   operation_hex(249) + "')")
+					  .c_str()) == 0);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM player_items WHERE id=" +
+				   std::to_string(native_root_id) + " AND pid=4000000001")
+					  .c_str()) == 1);
+	execute(connection,
+		"DELETE FROM player_items WHERE id=" + std::to_string(unexpected_child_id));
+	execute(connection, "UPDATE player_items SET pid=4000000002 WHERE id=" +
+				    std::to_string(native_root_id));
+	const critical_apply_result foreign_row = apply(connection, 250, give_payload);
+	assert(foreign_row.outcome == critical_apply_outcome::terminal_failure &&
+	       foreign_row.error_code == EILSEQ);
+	execute(connection, "UPDATE player_items SET pid=4000000001 WHERE id=" +
+				    std::to_string(native_root_id));
+	execute(connection,
+		"UPDATE player_items SET vnum=1009 WHERE id=" + std::to_string(native_root_id));
+	const critical_apply_result wrong_template = apply(connection, 251, give_payload);
+	assert(wrong_template.outcome == critical_apply_outcome::terminal_failure &&
+	       wrong_template.error_code == EILSEQ);
+	execute(connection,
+		"UPDATE player_items SET vnum=1001 WHERE id=" + std::to_string(native_root_id));
 	critical_apply_result moved = apply(connection, 4, give_payload);
 	assert(moved.outcome == critical_apply_outcome::applied);
 	item_transfer_result moved_result = {};

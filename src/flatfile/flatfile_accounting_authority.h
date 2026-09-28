@@ -12,7 +12,9 @@ constexpr size_t FLATFILE_ECONOMIC_METADATA_MAX_BYTES = 2 * 1024 * 1024;
 // A name locates the current bank; only its allocated lifetime identifies it.
 struct flatfile_economic_locator
 {
-	uint16_t kind = 0; // 1: wallet PID; 2: bank name; 4: auction ID; 5: claim PID.
+	// 1: wallet PID; 2: bank name; 4: auction ID; 5: claim PID;
+	// 6: shopkeeper owner ID (shop ID + 1, including shop ID zero).
+	uint16_t kind = 0;
 	uint64_t native_id = 0;
 	std::string name;
 };

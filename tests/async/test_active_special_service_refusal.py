@@ -105,6 +105,50 @@ int main() {
 }
 '''
 
+SHIP_CLAIM_PRELUDE = r'''
+#include <cassert>
+#include <cstring>
+#include <string>
+
+#define TRUE 1
+#define LOG_SHIP 1
+struct Character { const char *name = "captain"; int wallet = 0; };
+struct Ship { const char *owner = "captain"; int money = 75; };
+using P_char = Character *;
+using P_ship = Ship *;
+#define GET_NAME(ch) ((ch)->name)
+#define SHIP_OWNER(ship) ((ship)->owner)
+#define J_NAME(ch) ((ch)->name)
+bool active_epoch = false;
+int credits = 0, logs = 0;
+std::string message;
+namespace economic_gameplay_authority { bool active() { return active_epoch; } }
+bool isname(const char *name, const char *owner) { return std::strcmp(name, owner) == 0; }
+void send_to_char(const char *text, P_char) { message = text; }
+void send_to_char_f(P_char, const char *text, ...) { message = text; }
+const char *coin_stringv(int) { return "coins"; }
+void ADD_MONEY(P_char player, int amount) { ++credits; player->wallet += amount; }
+void logit(int, const char *, ...) { ++logs; }
+'''
+
+SHIP_CLAIM_MAIN = r'''
+int main() {
+    Character captain;
+    Ship ship;
+    Character stranger;
+    stranger.name = "stranger";
+    active_epoch = true;
+    assert(claim_coffer(&stranger, &ship) == false);
+    assert(ship.money == 75 && credits == 0 && logs == 0);
+    assert(claim_coffer(&captain, &ship) == TRUE);
+    assert(message.find("unavailable") != std::string::npos);
+    assert(ship.money == 75 && captain.wallet == 0 && credits == 0 && logs == 0);
+    active_epoch = false;
+    assert(claim_coffer(&captain, &ship) == TRUE);
+    assert(ship.money == 0 && captain.wallet == 75 && credits == 1 && logs == 1);
+}
+'''
+
 
 def function_body(path: str, signature: str) -> str:
     source = (ROOT / path).read_text(encoding="utf-8")
@@ -119,6 +163,24 @@ def function_body(path: str, signature: str) -> str:
 
 
 class ActiveSpecialServiceRefusal(unittest.TestCase):
+    def test_ship_coffer_claim_refuses_before_wallet_credit_and_clear(self) -> None:
+        compiler = shlex.split(os.environ.get("CXX", "g++"))
+        if not compiler or not shutil.which(compiler[0]):
+            self.skipTest("C++ compiler unavailable")
+        body = function_body("src/ships/ship_control.c", "int claim_coffer(")
+        guard = body.index("economic_gameplay_authority::active()")
+        refusal = body.index("return TRUE;", guard)
+        self.assertLess(refusal, body.index("ADD_MONEY(ch, ship->money)"))
+        self.assertLess(refusal, body.index("ship->money = 0"))
+        source = SHIP_CLAIM_PRELUDE + body + SHIP_CLAIM_MAIN
+        with tempfile.TemporaryDirectory(prefix="active-ship-claim-") as directory:
+            program = Path(directory) / "claim.cpp"
+            binary = Path(directory) / "claim"
+            program.write_text(source, encoding="utf-8")
+            subprocess.run([*compiler, "-std=c++20", "-O0", str(program), "-o", str(binary)],
+                           check=True, timeout=60)
+            subprocess.run([str(binary)], check=True, timeout=10)
+
     def test_artifact_location_active_refusal_executes_without_payment(self) -> None:
         compiler = shlex.split(os.environ.get("CXX", "g++"))
         if not compiler or not shutil.which(compiler[0]):

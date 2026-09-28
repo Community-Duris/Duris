@@ -495,6 +495,10 @@ void basic(const fs::path &root)
 	write(f.file("mapping-01.eam"), original);
 	auto escrow = f.create(economic_account_kind::auction_escrow, 0, { 4, 73, {} });
 	auto claim = f.create(economic_account_kind::pending_claim, 0, { 5, 11, {} });
+	const uint64_t shop_zero_owner = item_shopkeeper_owner_id(0);
+	const uint64_t shop_max_owner = item_shopkeeper_owner_id(UINT32_MAX);
+	auto keeper = f.create(economic_account_kind::treasury, 0, { 6, shop_zero_owner, {} });
+	auto last_keeper = f.create(economic_account_kind::treasury, 0, { 6, shop_max_owner, {} });
 	flatfile_economic_mapping found;
 	assert(flatfile_economic_native_lookup(f.root, f.lock,
 					       economic_account_kind::auction_escrow, 0,
@@ -505,6 +509,24 @@ void basic(const fs::path &root)
 	       economic_account_key_equal(found.account, claim.account));
 	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::pending_claim,
 					       0, { 5, 12, {} }, &found, &f.error) == ENODATA);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::treasury, 0,
+					       { 6, shop_zero_owner, {} }, &found, &f.error) == 0 &&
+	       economic_account_key_equal(found.account, keeper.account) &&
+	       keeper.account.authority_id != keeper.locator.native_id);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::treasury, 0,
+					       { 6, shop_max_owner, {} }, &found, &f.error) == 0 &&
+	       economic_account_key_equal(found.account, last_keeper.account));
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::treasury, 1,
+					       { 6, shop_zero_owner, {} }, &found,
+					       &f.error) == EINVAL);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::treasury, 0,
+					       { 6, 0, {} }, &found, &f.error) == EINVAL);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::treasury, 0,
+					       { 6, shop_max_owner + 1, {} }, &found,
+					       &f.error) == EINVAL);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::treasury, 0,
+					       { 6, shop_zero_owner, "11005" }, &found,
+					       &f.error) == EINVAL);
 	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::pending_claim,
 					       1, { 5, 11, {} }, &found, &f.error) == EINVAL);
 	assert(flatfile_economic_native_lookup(
@@ -519,6 +541,14 @@ void basic(const fs::path &root)
 	auto recreated_escrow = f.create(economic_account_kind::auction_escrow, 0, { 4, 73, {} });
 	assert(recreated_escrow.account.authority_id != escrow.account.authority_id &&
 	       economic_account_key_equal(f.retained(escrow.account).account, escrow.account));
+	f.retire(keeper.account);
+	assert(flatfile_economic_native_lookup(f.root, f.lock, economic_account_kind::treasury, 0,
+					       { 6, shop_zero_owner, {} }, &found,
+					       &f.error) == ENODATA);
+	auto replacement_keeper =
+		f.create(economic_account_kind::treasury, 0, { 6, shop_zero_owner, {} });
+	assert(replacement_keeper.account.authority_id != keeper.account.authority_id &&
+	       economic_account_key_equal(f.retained(keeper.account).account, keeper.account));
 	std::array<flatfile_economic_mapping_request, 2> auction_requests = {
 		{ { recreated_escrow.account, recreated_escrow.locator },
 		  { claim.account, claim.locator } }
@@ -529,6 +559,17 @@ void basic(const fs::path &root)
 	auto wrong_auction = auction_requests;
 	wrong_auction[1].locator.native_id = 12;
 	assert(economic_flatfile_lock_authority(f.root, f.lock, id(1), id(51), wrong_auction,
+						&snapshot, &f.error) == ESTALE);
+	std::array<flatfile_economic_mapping_request, 1> keeper_request = {
+		{ { replacement_keeper.account, replacement_keeper.locator } }
+	};
+	assert(economic_flatfile_lock_authority(f.root, f.lock, id(1), id(51), keeper_request,
+						&snapshot, &f.error) == 0 &&
+	       snapshot.mappings.size() == 1 &&
+	       economic_account_key_equal(snapshot.mappings[0].account,
+					  replacement_keeper.account));
+	keeper_request[0].locator.native_id = shop_max_owner;
+	assert(economic_flatfile_lock_authority(f.root, f.lock, id(1), id(51), keeper_request,
 						&snapshot, &f.error) == ESTALE);
 	// Unacquired/wrong-root calls must not touch a pending corrupt journal.
 	auto pending = fs::path(f.root) / "domains/.critical-authority-transaction";

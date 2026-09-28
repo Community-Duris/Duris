@@ -162,6 +162,19 @@ int main()
         self.assertIn("!economic_gameplay_authority::active()",
                       publication[candidate:grant])
 
+    def test_staff_storage_refuses_unprojected_sql_mutations_before_allocation(self):
+        storage = extract_function("cmd/actwiz.c", "void do_storage(")
+        guard = storage.index("if (economic_gameplay_authority::active() &&")
+        allocation = storage.index("read_object(")
+        self.assertLess(guard, allocation)
+        self.assertIn("persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY",
+                      storage[guard:allocation])
+        for subcommand in ("new", "delete", "remove"):
+            self.assertIn(f'!strcmp(subcmd, "{subcommand}")', storage[guard:allocation])
+        self.assertIn("return;", storage[guard:allocation])
+        for mutation in ("writeSavedItem(", "obj_from_obj(", "extract_obj("):
+            self.assertLess(guard, storage.index(mutation))
+
     def test_repeatable_unsourced_grants_refuse_before_reservation_or_allocation(self):
         summon = extract_function("account/account_reward.c", "static bool summon_one(")
         self.assertLess(summon.index("economic_gameplay_authority::active()"),

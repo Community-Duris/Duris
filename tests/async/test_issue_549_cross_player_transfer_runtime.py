@@ -15,6 +15,8 @@ PRELUDE = r'''
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
 #include "net/comm.h"
 #include "persistence/persistence_checkpoint.h"
@@ -38,6 +40,12 @@ static int act_count = 0;
 static int notch_count = 0;
 static int save_count = 0;
 static bool save_succeeds = true;
+static bool active_epoch = false;
+
+bool economic_gameplay_authority::active() { return active_epoch; }
+bool item_command_uses_durable_ownership(P_obj object) {
+    return object && object->obj_uid && !IS_SET(object->extra_flags, ITEM_TRANSIENT);
+}
 
 #undef IS_TRUSTED
 #define IS_TRUSTED(ch) true

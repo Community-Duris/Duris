@@ -63,6 +63,10 @@ CLI and Ubuntu WSL, run
 `tests/async/run_auction_listing_sql_accounting_schema_windows.ps1 -Image mysql:8.4`.
 
 The route remains inactive. Common admission and publication integration is
-Plan 1 work. Auction money collection and the
-[aggregate claim source gap](AUCTION_CLAIM_SOURCE_GAP.md), escrow retirement,
-and flatfile bid/settlement parity remain in Plan 4.
+Plan 1 work. Inactive SQL and flatfile bid, settlement, item collection, and
+money collection owners now follow this listing lifetime. Successful sale and
+no-bid expiry retire the empty escrow mapping; trusted removal retains its
+funded mapping. See the [bid and settlement evidence](AUCTION_BID_ROUTE_EVIDENCE.md)
+and [pending claim source evidence](AUCTION_CLAIM_SOURCE_GAP.md). Claim-right
+assignment still needs an exact EAP1 reference, and the inactive components
+still need full live-route integration.

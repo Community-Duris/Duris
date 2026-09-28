@@ -308,10 +308,12 @@ void locator_valid(economic_account_kind kind, uint64_t context,
 {
 	if (kind == economic_account_kind::wallet ||
 	    kind == economic_account_kind::auction_escrow ||
-	    kind == economic_account_kind::pending_claim)
+	    kind == economic_account_kind::pending_claim || kind == economic_account_kind::treasury)
 	{
-		const auto limit = kind == economic_account_kind::auction_escrow ? UINT32_MAX :
-										   INT32_MAX;
+		const uint64_t limit = kind == economic_account_kind::treasury ?
+					       uint64_t{ UINT32_MAX } + 1 :
+				       kind == economic_account_kind::auction_escrow ? UINT32_MAX :
+										       INT32_MAX;
 		need(context == 0 && locator.kind == static_cast<uint16_t>(kind) &&
 			     locator.native_id > 0 && locator.native_id <= limit &&
 			     locator.name.empty(),

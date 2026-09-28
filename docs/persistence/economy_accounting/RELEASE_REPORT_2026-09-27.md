@@ -116,6 +116,93 @@ entries against that clean checkout. Some concurrent source changes are still
 uncommitted in the shared tree; regenerate and recheck the census on the final
 integrated commit before treating the matrix as current release evidence.
 
+## Runtime contract qualification on `8cf1fb544`
+
+The 0040 global activation table is now in the 220-table runtime inventory,
+and the migration head and both engine fingerprints were measured and pinned.
+The C++ boot query and shell verifier both include the activation receipt and
+global decision in detailed column-type and CHECK-clause hashing. These results
+used a disposable WSL archive of the clean `1064b2e87` base with exactly the
+eight files changed by `8cf1fb544` copied in. The archive's shell-script CRLF
+line endings were normalized only in `/tmp` so Bash could execute them.
+`8cf1fb544` was then merged with concurrent branch work and pushed as
+`eeffa27a4` to `origin/add-double-entry`.
+
+| Backend / scope | Command or method | Result and limits |
+| --- | --- | --- |
+| MariaDB 10.11, `8cf1fb544` code | `ECONOMIC_ACCOUNTING_DB_IMAGE=mariadb:10.11 bash tests/async/run_economic_accounting_schema_mysql.sh` | Fresh bootstrap, immutable migration run/replay, runtime compatibility, 10 accounting schema tests, 10 baseline schema tests, SQL authority and bank transaction stages passed. The later baseline transaction harness failed AddressSanitizer's leak check: 34,162 bytes in 438 allocations. The full wrapper did **not** pass; the source-snapshot stage was not reached. |
+| MySQL 8.0, `8cf1fb544` code | Same wrapper, with the disposable archive stopped after baseline schema tests | Fresh bootstrap, immutable migration run/replay, runtime compatibility, 10 accounting schema tests and 10 baseline schema tests passed. Authority, transaction and source-snapshot stages were not run on MySQL. |
+| Source and lifecycle contract, merged `eeffa27a4` | `python scripts/validate_runtime_compatibility.py`; `python scripts/validate_data_lifecycle.py`; `python tests/async/test_runtime_boot_compatibility.py` | Valid 220-table runtime/lifecycle inventory; nine boot-contract tests passed. The detailed fingerprint table lists in the C++ and shell queries are checked for parity. |
+| Maintained build, `8cf1fb544` code | `make -s -C src CC=g++-12 -j2 BIN_ROOT=.../bin/plan5-runtime` in the WSL archive | **Blocked by local dependency:** `hiredis/hiredis_ssl.h` is absent in that WSL installation. Focused `g++-12 -std=c++20 -Wall -Wextra -Wpedantic -Werror -fsyntax-only` on the changed `src/sql/sql.c` passed; both changed C/C++ files passed `clang-format --dry-run --Werror`. This is not a server-build pass. |
+| Writer registry, merged `eeffa27a4` | `python scripts/validate_economy_accounting.py`; `python scripts/generate_economy_writer_coverage.py --check` | Both contract checks passed, with 562 routes and 1,126 unmapped lexical sites. `coverage_complete=false` and release remains blocked. |
+
+All SQL tests above used newly named loopback Docker databases. The wrapper
+disposed its containers, and neither the configured database nor `.env` was
+used. The baseline harness leak and missing local build dependency were open
+at this checkpoint; the follow-up below tests both with the maintained build
+environment.
+
+## Follow-up qualification on `2002e7a05`
+
+The baseline transaction harness now defaults to `g++-12`, with `CXX` available
+for an explicit compiler override. The unchanged fault cases under WSL's
+default GCC 11 completed functionally but LeakSanitizer reported 34,162 bytes
+in 438 allocations. The same cases compiled with GCC 12.3 passed with leak
+detection still enabled, including 1,150 apply and 567 replay allocation
+faults. This is a compiler-dependent test result, not a waiver of sanitizer
+checking.
+
+| Backend / scope | Command or method | Result and limits |
+| --- | --- | --- |
+| MariaDB 10.11, `2002e7a05` code | Full `ECONOMIC_ACCOUNTING_DB_IMAGE=mariadb:10.11 bash tests/async/run_economic_accounting_schema_mysql.sh` | **Passed:** fresh bootstrap, migration run/replay, runtime compatibility, 20 schema tests, SQL authority, flatfile and SQL bank transaction harnesses, SQL/client-free baseline transaction with sanitizer, and SQL/client-free native source snapshot. |
+| MySQL 8.0, `2002e7a05` code | Full wrapper with `ECONOMIC_ACCOUNTING_DB_IMAGE=mysql:8.0` | **Passed:** the same complete sequence, including the bank, baseline and source-snapshot stages that the earlier MySQL schema slice did not run. |
+| Maintained MariaDB build, merged `196794731` | `docker build --target build --tag duris-plan5-build:196794731 --build-arg BUILD_JOBS=2 .` | **Passed** the Dockerfile's Ubuntu 24.04 development server and area-tools build under the maintained warning profile. Build context excluded `.env` and player data through `.dockerignore`. |
+| Maintained flatfile build, merged `196794731` | `docker run --rm duris-plan5-build:196794731 make -s -C src PERSISTENCE_BACKEND=flatfile -j2 BIN_ROOT=/opt/duris/bin/plan5-flatfile` | **Passed** in a disposable container from the same source image. |
+| Maintained MariaDB build, merged `c608f4d24` | `docker build --target build --tag duris-plan5-build:c608f4d24 --build-arg BUILD_JOBS=2 .` | **Passed** the Ubuntu 24.04 development server and area-tools build after the native player-item graph and shop trade source merge. This build predates the later shopkeeper/pet remote commits. |
+| Writer census, merged branch after `c608f4d24` | `python scripts/validate_economy_accounting.py`; `python scripts/generate_economy_writer_coverage.py --check`; `python tests/async/test_economy_writer_coverage_contract.py`; `python tests/async/test_writer_sites_coverage_contract.py` | Contract and matrix checks passed after reanchoring 34 earlier source moves, classifying four retained shopkeeper-cash assignments as a separate flatfile recovery projection, and reanchoring seven further sites moved by the latest source merge. All 48 writer tests and 1,628 writer-site checks passed. The current candidate has 563 routes, 2,776 occurrences, 2,718 unique sites, 1,659 mapped and **1,059 unmapped**. `coverage_complete=false`; `--release` still refuses `writer has no executable evidence`. |
+| SQL shopkeeper recovery census, merged branch after `15f5f3802` | Accounting validator, generated-matrix check, 48 writer contracts and writer-site coverage contract | **Passed** after reanchoring 39 moved SQL sites with unchanged source text and classifying four retained SQL keeper-cash assignments as a distinct recovery projection. The candidate has 564 routes, 2,780 occurrences, 2,722 unique sites, 1,663 mapped and **1,059 unmapped**; 1,632 writer-site checks passed. The SQL cash path still lacks selected revision and active-epoch publication proof. `coverage_complete=false`; `--release` refuses `writer has no executable evidence`. |
+| SQL shopkeeper and migration source checks, merged branch after `15f5f3802` | `test_shopkeeper_save_runtime.py`, `test_shopkeeper_population.py` and `test_immutable_migration_runner.py` in WSL | The two shopkeeper C++ harnesses passed. All 14 migration-runner tests passed from a clean Git archive after normalizing only the archive copy of the CRLF `mysql_socket_bin/mysql` wrapper. These checks do not run migration `0041` against a database. |
+| Concurrent site-mapping merge after `4ded7d758` | Accounting validator, generated-matrix check, writer-site coverage contract and full writer suite | Retained 57 additional auction, crafting and shop site mappings from the remote branch while keeping eight shopkeeper cash recovery sites in their separate flatfile and SQL projection routes. The matrix now has 564 routes, 2,780 occurrences, 2,722 unique sites, 1,720 mapped and **1,002 unmapped**; 1,689 writer-site checks and all 48 writer contracts passed. Release remains blocked. |
+| Active-epoch guard and wider mapping merge after `338fa7ba7` | Accounting validator, generated-matrix check, writer-site contract, three targeted writer contracts and four compound-refusal tests | Retained the remote combat, encounter, ship, shop and crafting mappings, reanchored shifted shop/crafting sites, and kept the eight shopkeeper cash assignments in separate recovery projection routes. The matrix has 604 routes, 2,780 occurrences, 2,722 unique sites, 1,864 mapped and **858 unmapped**; 1,833 writer-site checks passed. The full 48-test writer suite and backend journeys were not rerun on this merge. Release remains blocked. |
+
+The two full SQL runs used a fresh archive of clean `efd2186d7` with only the
+baseline runner change from `2002e7a05` copied in. Shell line endings were
+normalized only in that disposable WSL archive. Containers and databases were
+removed by the wrapper. The later merged source receives a dual-engine rerun
+below; these earlier passes do not prove complete gameplay routes, flatfile
+restart/restore, native audit reconciliation, or
+release readiness.
+
+## Integrated migration and database qualification on `6eede581a`
+
+The first clean `168594796` MariaDB run stopped at new migration `0041`:
+its verifier expected width-free `COLUMN_TYPE` strings and SQL NULL in
+`COLUMN_DEFAULT`. MariaDB 10.11 reports `int(11)`, `bigint(20) unsigned`, and
+the text `NULL` for this nullable integer default. The verifier now checks
+`DATA_TYPE`, the unsigned flag and both null-default representations; its
+sealed manifest checksum was updated. The next run exposed runtime pins still
+at migration `0040`. The runtime manifest and compiled header now pin `0041`,
+its history checksum, and metadata fingerprints measured on both disposable
+engines. No configured database was used or changed.
+
+| Scope | Result and limits |
+| --- | --- |
+| Full `run_economic_accounting_schema_mysql.sh`, MariaDB 10.11 | **Passed:** fresh bootstrap, immutable migration run/replay through `0041`, runtime compatibility, 20 accounting/baseline schema tests, SQL authority, flatfile and SQL bank transactions, SQL/client-free baseline transactions with sanitizer, and SQL/client-free native source snapshots. |
+| Full wrapper, MySQL 8.0 | **Passed** the same complete sequence on a separate disposable container and database. |
+| Static/runtime contracts in WSL | `validate_runtime_compatibility.py`, all 14 immutable migration runner tests, and all 9 runtime boot compatibility tests passed. Changed C++ header lines passed `clang-format --dry-run --Werror` on a normalized temporary copy. |
+| Maintained MariaDB server and area tools | `docker build --target build --tag duris-plan5-build:6eede581a --build-arg BUILD_JOBS=2 .` **passed** from exact code commit `6eede581a` under the Dockerfile's Ubuntu 24.04 warning profile. |
+| Maintained flatfile server | `docker run --rm duris-plan5-build:6eede581a make -s -C src PERSISTENCE_BACKEND=flatfile -j2 BIN_ROOT=/opt/duris/bin/plan5-flatfile-6eede` **passed** in a disposable container from the same source image. |
+
+Both full wrappers used a clean Git archive of `70a9c79e5` with exactly the
+five subsequent source/manifest/test changes committed as `6eede581a` copied
+in. Only non-immutable shell line endings were normalized in that disposable
+archive to execute under WSL. The wrapper removed both test containers. The
+tested source matches commit `6eede581a`, but these checks do not certify a
+gameplay route, native audit exporter, flatfile restart/restore, or release
+workload. A development
+database that already recorded the earlier `0041` verifier checksum needs
+separate migration-state assessment; none was used in these tests.
+
 ## Earlier executed evidence
 
 | Backend / scope | Command or method | Result and limits |
@@ -503,7 +590,7 @@ custody; saved-item row deletion is not by itself item destruction. The SQL item
 repository is a component of an owning item root and is not counted as another
 schema-2 gameplay producer.
 
-Seven matrix routes have a schema-2 gameplay producer and one SQL coin
+Eight matrix routes have a schema-2 gameplay producer and one SQL coin
 component has balanced postings. That component has no qualified playable
 dispatch/publication path. The matrix reports `coverage_complete=false` and
 `playable_release_status=BLOCKED`; unsupported direct writers must refuse
@@ -528,14 +615,14 @@ unverified.
    read-only reconciler against each backend after fresh install, upgrade,
    restore and injected evidence loss. A JSON fixture cannot attest its own
    completeness or operator access.
-3. Verify the now-executable `0036`–`0040` migration verifiers on a clean
-   Linux checkout, resolve the clean-head runtime metadata/state mismatch,
-   and rerun the full MySQL and MariaDB wrappers on the integrated commit.
-   Qualify flatfile journal interruption, restore, source/UID dedupe and
-   receipt replay with actual domain roots. Resolve any later build or
-   harness failure on that commit.
-4. Run both server builds and the focused gameplay/fault matrix for both
-   backends, including live publication, reconnect and player-visible state.
+3. Keep the `0041` verifier, runtime manifest and compiled schema contract
+   synchronized on the eventual release commit; rerun both full disposable
+   engine wrappers after later schema changes. Qualify flatfile journal
+   interruption, restore, source/UID dedupe and receipt replay with actual
+   domain roots. Resolve any later build or harness failure on that commit.
+4. Repeat both server builds on the eventual release commit and run the
+   focused gameplay/fault matrix for both backends, including live
+   publication, reconnect and player-visible state.
    Measure the stated operation, latency, storage, checkpoint and audit budgets.
 5. Publish a report for one exact integrated commit with the actual workload,
    route results and unsupported paths. Only then can a separate deployment

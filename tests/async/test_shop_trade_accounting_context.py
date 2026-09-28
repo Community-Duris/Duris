@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 class ShopTradeAccountingContextContract(unittest.TestCase):
     def test_repository_wiring_contract(self):
         flatfile_source = (ROOT / "src/flatfile/flatfile_shop_trade_repository.c").read_text(encoding="utf-8")
-        self.assertIn("flatfile_item_accounting_reference_append", flatfile_source)
+        self.assertIn("flatfile_item_accounting_reference_stage", flatfile_source)
+        self.assertIn("flatfile_authority_transaction_commit_operations", flatfile_source)
         self.assertIn("ref.operation_id = command.operation_id;", flatfile_source)
         self.assertIn("ref.item_uid = items.item_uids[index];", flatfile_source)
         self.assertIn("ref.after_revision = items.item_revisions[index];", flatfile_source)
@@ -27,8 +28,10 @@ class ShopTradeAccountingContextContract(unittest.TestCase):
                 "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
                 "tests/async/shop_trade_accounting_context_test.cpp",
                 "src/flatfile/flatfile_item_accounting_reference.c",
+                "src/flatfile/flatfile_authority_transaction.c",
                 "src/flatfile/flatfile_store.c",
                 "src/item/economic_accounting_item_reference.c",
+                "src/persistence/critical_command.c", "-lcrypto", "-pthread",
                 "-o", str(binary),
             ], cwd=ROOT, check=True)
             flatfile_root = Path(directory) / "flatfile_root"

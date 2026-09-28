@@ -20,6 +20,14 @@ flatfile_player_domain_record peer_state(const std::string &root)
 	return value;
 }
 
+flatfile_player_domain_record third_state(const std::string &root)
+{
+	flatfile_player_domain_record value;
+	assert(flatfile_player_domain_load(root, 3, "account-one", 1, &value, nullptr) ==
+	       flatfile_player_domain_result::ok);
+	return value;
+}
+
 void establish_peer(const std::string &root)
 {
 	int32_t pid = 0;
@@ -55,6 +63,43 @@ void establish_peer(const std::string &root)
 	commit(root, lock, changes);
 }
 
+void establish_third_player(const std::string &root)
+{
+	int32_t pid = 0;
+	assert(flatfile_identity_allocate_pid(root, &pid, nullptr) ==
+		       flatfile_identity_result::ok &&
+	       pid == 3);
+	assert(flatfile_identity_claim(root, pid, "Third", "ACCOUNT-ONE", nullptr) ==
+	       flatfile_identity_result::ok);
+	flatfile_identity_record first, second, third;
+	assert(flatfile_identity_lookup_pid(root, 1, &first, nullptr) ==
+	       flatfile_identity_result::ok);
+	assert(flatfile_identity_lookup_pid(root, 2, &second, nullptr) ==
+	       flatfile_identity_result::ok);
+	assert(flatfile_identity_lookup_pid(root, 3, &third, nullptr) ==
+	       flatfile_identity_result::ok);
+	third.racewar = 1;
+	assert(flatfile_identity_sync_account(root, "account-one", { first, second, third },
+					      nullptr) == flatfile_identity_result::ok);
+	flatfile_player_domain_record player;
+	player.pid = 3;
+	player.account_name = "account-one";
+	player.racewar = 1;
+	player.domains.bank = { 100, 20, 3, 1 };
+	assert(flatfile_player_domain_establish(root, player, nullptr) ==
+	       flatfile_player_domain_result::ok);
+	flatfile_authority_lock lock;
+	assert(lock.acquire(root, nullptr));
+	initialize_bucket(root, lock, bucket(1, 0, 3, {}));
+	flatfile_economic_mapping mapping;
+	ops changes;
+	assert(access_type::create(root, lock, control(root, lock).revision,
+				   economic_account_kind::wallet, 0, { 1, 3, {} }, id(90010),
+				   &mapping, &changes, nullptr) == 0);
+	assert(mapping.account.authority_id == 4);
+	commit(root, lock, changes);
+}
+
 coin_transfer_endpoint endpoint(uint32_t pid, const flatfile_player_domain_record &before,
 				std::array<int32_t, 4> after, uint64_t operation)
 {
@@ -75,6 +120,141 @@ coin_transfer_endpoint endpoint(uint32_t pid, const flatfile_player_domain_recor
 				      critical_source_site::command,
 				      critical_deadline_class::interactive));
 	return value;
+}
+
+critical_command split_child_command(const flatfile_player_domain_record &source,
+				     const flatfile_player_domain_record &recipient,
+				     uint32_t recipient_pid, uint64_t recipient_account_id,
+				     uint64_t operation)
+{
+	std::array<int32_t, 4> source_after = {}, recipient_after = {};
+	for (size_t index = 0; index < source_after.size(); ++index)
+	{
+		source_after[index] = static_cast<int32_t>(source.domains.wallet[index]);
+		recipient_after[index] = static_cast<int32_t>(recipient.domains.wallet[index]);
+	}
+	source_after[0] -= 3;
+	recipient_after[0] += 3;
+	coin_transfer_payload transfer;
+	transfer.source = endpoint(1, source, source_after, 82000 + operation * 2);
+	transfer.destination =
+		endpoint(recipient_pid, recipient, recipient_after, 82001 + operation * 2);
+	critical_command command;
+	assert(coin_transfer_command_build(&command, id(operation), transfer,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(coin_transfer_accounting_intent(
+		       command, id(90005), wallet(),
+		       { id(90001), economic_account_kind::wallet, recipient_account_id, 0 },
+		       &command.accounting_intent) == economic_accounting_error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accepted_at_usec = 12;
+	command.publication_required = true;
+	assert(critical_command_envelope_valid(command));
+	return command;
+}
+
+void split_children_journey(const fs::path &path)
+{
+	setup(path);
+	const auto root = path.string();
+	establish_peer(root);
+	establish_third_player(root);
+	const auto sender_before = state(root);
+	const auto first_before = peer_state(root);
+	const auto second_before = third_state(root);
+	assert(sender_before.domains.wallet[0] == 100 && first_before.domains.wallet[0] == 0 &&
+	       second_before.domains.wallet[0] == 0);
+	assert(sender_before.domains.bank_revision == first_before.domains.bank_revision &&
+	       first_before.domains.bank_revision == second_before.domains.bank_revision);
+	const auto first = split_child_command(sender_before, first_before, 2, 3, 220);
+	const auto first_applied = flatfile_accounting_coin_transaction::apply(root, first);
+	assert(first_applied.outcome == outcome::applied && !first_applied.error_code);
+	const auto after_first = state(root);
+	const auto first_recipient_after = peer_state(root);
+	assert(after_first.domains.wallet[0] == 97 && peer_state(root).domains.wallet[0] == 3 &&
+	       third_state(root).domains.wallet[0] == 0);
+	assert(after_first.domains.wallet_revision == sender_before.domains.wallet_revision + 1 &&
+	       peer_state(root).domains.wallet_revision ==
+		       first_before.domains.wallet_revision + 1 &&
+	       after_first.domains.bank_revision == sender_before.domains.bank_revision + 2 &&
+	       peer_state(root).domains.bank_revision == after_first.domains.bank_revision &&
+	       third_state(root).domains.bank_revision == after_first.domains.bank_revision);
+	const auto first_record = retained(root, first);
+	economic_accounting_plan first_plan;
+	assert(first_record.result_code == 0 &&
+	       economic_plan_decode(first_record.plan, &first_plan) ==
+		       economic_accounting_error::ok);
+	assert(first_plan.accounts.size() == 2 && first_plan.postings.size() == 2 &&
+	       !first_plan.metadata.source_event && first_plan.children.empty());
+	assert(first_plan.accounts[0].before[0] == 100 && first_plan.accounts[0].after[0] == 97 &&
+	       first_plan.accounts[0].key.authority_id == 1 &&
+	       first_plan.accounts[0].before_revision == sender_before.domains.wallet_revision &&
+	       first_plan.accounts[0].after_revision == after_first.domains.wallet_revision &&
+	       first_plan.accounts[1].before[0] == 0 && first_plan.accounts[1].after[0] == 3 &&
+	       first_plan.accounts[1].key.authority_id == 3 &&
+	       first_plan.accounts[1].before_revision == first_before.domains.wallet_revision &&
+	       first_plan.accounts[1].after_revision ==
+		       first_recipient_after.domains.wallet_revision);
+	assert(first_plan.postings[0].delta[0] == -3 && first_plan.postings[1].delta[0] == 3 &&
+	       first_plan.postings[0].copper == -3 && first_plan.postings[1].copper == 3);
+	// A later child with the old source revision is retained as a refusal.
+	const auto stale = split_child_command(sender_before, second_before, 3, 4, 221);
+	const auto rejected = flatfile_accounting_coin_transaction::apply(root, stale);
+	assert(rejected.outcome == outcome::terminal_failure && rejected.error_code == ESTALE);
+	assert(retained(root, stale).plan.empty());
+	same(rejected, flatfile_accounting_coin_transaction::apply(root, stale));
+	assert(state(root).domains.wallet[0] == 97 && peer_state(root).domains.wallet[0] == 3 &&
+	       third_state(root).domains.wallet[0] == 0);
+	const auto second = split_child_command(state(root), third_state(root), 3, 4, 222);
+	const auto second_applied = flatfile_accounting_coin_transaction::apply(root, second);
+	assert(second_applied.outcome == outcome::applied && !second_applied.error_code);
+	const auto sender_after = state(root);
+	const auto first_recipient_final = peer_state(root);
+	const auto second_after = third_state(root);
+	assert(sender_after.domains.wallet[0] == 94 &&
+	       first_recipient_final.domains.wallet[0] == 3 && second_after.domains.wallet[0] == 3);
+	assert(sender_after.domains.wallet_revision == sender_before.domains.wallet_revision + 2 &&
+	       first_recipient_final.domains.wallet_revision ==
+		       first_recipient_after.domains.wallet_revision &&
+	       second_after.domains.wallet_revision == second_before.domains.wallet_revision + 1 &&
+	       sender_after.domains.bank_revision == sender_before.domains.bank_revision + 4 &&
+	       first_recipient_final.domains.bank_revision == sender_after.domains.bank_revision &&
+	       second_after.domains.bank_revision == sender_after.domains.bank_revision &&
+	       sender_after.domains.bank == sender_before.domains.bank &&
+	       first_recipient_final.domains.bank == first_before.domains.bank &&
+	       second_after.domains.bank == second_before.domains.bank);
+	assert(sender_after.domains.wallet[0] == sender_before.domains.wallet[0] - 11 + 5 &&
+	       sender_after.domains.wallet[0] + peer_state(root).domains.wallet[0] +
+			       second_after.domains.wallet[0] ==
+		       sender_before.domains.wallet[0]);
+	const auto second_record = retained(root, second);
+	economic_accounting_plan second_plan;
+	assert(second_record.result_code == 0 &&
+	       economic_plan_decode(second_record.plan, &second_plan) ==
+		       economic_accounting_error::ok);
+	assert(second_plan.accounts.size() == 2 && second_plan.postings.size() == 2 &&
+	       !second_plan.metadata.source_event && second_plan.children.empty());
+	assert(second_plan.accounts[0].before[0] == 97 && second_plan.accounts[0].after[0] == 94 &&
+	       second_plan.accounts[0].key.authority_id == 1 &&
+	       second_plan.accounts[0].before_revision == after_first.domains.wallet_revision &&
+	       second_plan.accounts[0].after_revision == sender_after.domains.wallet_revision &&
+	       second_plan.accounts[1].before[0] == 0 && second_plan.accounts[1].after[0] == 3 &&
+	       second_plan.accounts[1].key.authority_id == 4 &&
+	       second_plan.accounts[1].before_revision == second_before.domains.wallet_revision &&
+	       second_plan.accounts[1].after_revision == second_after.domains.wallet_revision);
+	assert(second_plan.postings[0].delta[0] == -3 && second_plan.postings[1].delta[0] == 3 &&
+	       second_plan.postings[0].copper == -3 && second_plan.postings[1].copper == 3);
+	same(first_applied, flatfile_accounting_coin_transaction::apply(root, first));
+	same(second_applied, flatfile_accounting_coin_transaction::apply(root, second));
+	assert(flatfile_player_domain_restore_recover(root, nullptr) ==
+	       flatfile_player_domain_result::ok);
+	same(first_applied, flatfile_accounting_coin_transaction::apply(root, first));
+	same(second_applied, flatfile_accounting_coin_transaction::apply(root, second));
+	assert(state(root).domains.wallet[0] == 94 && peer_state(root).domains.wallet[0] == 3 &&
+	       third_state(root).domains.wallet[0] == 3);
+	std::cout
+		<< "flatfile split children: sequential roots, remainder, stale later child, replay and restart passed\n";
 }
 
 coin_transfer_endpoint room_pile(const std::string &root, uint64_t uid,
@@ -130,7 +310,8 @@ coin_transfer_endpoint room_pile(const std::string &root, uint64_t uid,
 	uint64_t item_revision = ITEM_TRANSFER_ABSENT_REVISION;
 	if (!created)
 	{
-		const auto found = std::find_if(owned.begin(), owned.end(), [uid](const auto &item)
+		const auto found = std::find_if(owned.begin(), owned.end(),
+						[uid](const auto &item)
 						{ return item.item_uid == uid; });
 		assert(found != owned.end());
 		item_revision = found->item_revision;
@@ -763,6 +944,7 @@ int main(int argc, char **argv)
 	assert(corrupt_replay.outcome == outcome::retryable_failure &&
 	       corrupt_replay.error_code == EILSEQ);
 	preexisting_pile_journey(path / "preexisting");
+	split_children_journey(path / "split-children");
 	std::cout
 		<< "flatfile peer coin root: native wallets, pile creation, split, merge, pickup and denomination change, shared bank revisions, balanced evidence, retained replay, stale rejection, and interrupted commit recovery passed\n";
 }
