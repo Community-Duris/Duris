@@ -25,6 +25,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
     src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
     src/item/item_transfer_command.c src/item/item_transfer_repository.c \
+    src/item/economic_accounting_item_reference.c \
 	 src/economy/auction_command.c src/economy/auction_repository.c \
     src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
 	 src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
@@ -39,7 +40,24 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/player_death_restitution_repository.c \
-    src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
+    src/persistence/economic_accounting_repository.c \
+    src/persistence/economic_sql_bank_transaction.c \
+    src/persistence/economic_sql_item_transfer_transaction.c \
+    src/economy/economic_currency_adapter.c \
+    src/economy/item_transfer_accounting.c \
+    src/economy/coin_transfer_accounting.c \
+    src/economy/economic_accounting_types.c \
+    src/economy/economic_accounting_plan.c \
+    src/economy/economic_accounting_intent.c src/economy/economic_command_admission.c \
+    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
+    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
+    "${MYSQL_LIBS[@]}" -lcrypto -lz \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"
+# The accounted lifecycle fixture retains many bounded item payloads in one
+# test frame. The usual 8 MiB shell stack can overflow before its SQL checks.
+if ! ulimit -s 65536; then
+    echo 'item transfer SQL harness requires a 64 MiB stack' >&2
+    exit 1
+fi
 "$ROOT/bin/tests/item_transfer_mysql_harness"
-printf 'item creation, subtree, stale, incomplete, replay, transfer, destruction, ledger, and outbox checks passed\n'
+printf 'item creation, sourced creation claims, subtree, stale, incomplete, replay, transfer, destruction, ledger, and outbox checks passed\n'

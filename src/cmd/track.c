@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -678,6 +679,15 @@ char *sickprocess(const char *arg)
 		return NULL;
 	snprintf(hmm, 20, "%c%s", tolower(arg[0]), arg + 1);
 	return hmm;
+}
+
+int tracks(P_obj /*obj*/, P_char /*ch*/, int cmd, char * /*argument*/)
+{
+	if (cmd == CMD_DECAY)
+	{
+		return TRUE;
+	}
+	return FALSE;
 }
 
 // Shows tracks / messages when appropriate to ch for tracks in room room.

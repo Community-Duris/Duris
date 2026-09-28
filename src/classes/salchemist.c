@@ -28,6 +28,8 @@
 #include "world/epic.h"
 #include "world/epic_transaction.h"
 #include "combat/justice.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "world/specs.prototypes.h"
@@ -86,7 +88,8 @@ void spellbind_committed(P_char ch, bool committed, const epic_command_result &,
 	spellbind_context context = {};
 	memcpy(&context, raw_context, sizeof(context));
 	P_obj item = carried_object_by_uid(ch, context.object_uid);
-	if (!item || IS_SET(item->extra_flags, ITEM_NOREPAIR) || item->condition <= 99)
+	if (!item || IS_SET(item->extra_flags, ITEM_NOREPAIR) || item->condition <= 99 ||
+	    (economic_gameplay_authority::active() && item_command_uses_durable_ownership(item)))
 	{
 		send_to_char(
 			"The item changed while spellbinding was pending; your epic is being refunded.\n",
@@ -968,6 +971,11 @@ void do_spellbind(P_char ch, char *argument, int /*cmd*/)
 	if (!(item = get_obj_in_list_vis(ch, arg, ch->carrying)))
 	{
 		act("What item do you do you want to spellbind?", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(item))
+	{
+		send_to_char("You cannot spellbind that item right now.\r\n", ch);
 		return;
 	}
 

@@ -23,6 +23,7 @@
 using namespace std;
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
 #include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -4782,7 +4783,7 @@ static void show_world_telemetry(P_char ch)
 		 (unsigned long long)health.retryable_failures,
 		 (unsigned long long)health.ambiguous_commits,
 		 (unsigned long long)health.circuit_open_count,
-		 (unsigned long long)(status.active_alert_duration_usec / 1'000U));
+		 (unsigned long long)(status.active_alert_duration_usec / 1000U));
 	send_to_char(line, ch);
 	snprintf(line, sizeof(line),
 		 "coverage gaps=%llu unclosed_tails=%llu attributable_us=%llu unknown_us=%llu\n",

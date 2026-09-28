@@ -14,6 +14,7 @@
 #include "core/utils.h"
 #include "item/objmisc.h"
 #include <string.h>
+#include <stdio.h>
 #include "combat/damage.h"
 
 extern P_room world; /* dyn alloc'ed array of rooms     */
@@ -21,6 +22,61 @@ extern P_room world; /* dyn alloc'ed array of rooms     */
 extern struct zone_data *zone_table;
 extern flagDef weapon_types[];
 extern const char *modenhance_names[];
+
+/* Format food effects for item catalogue and identify output. */
+char *food_modifiers(P_obj food)
+{
+	static char mod_string[MAX_STRING_LENGTH];
+	int sub, mod;
+
+	// Poison is in value[3].
+	if (food->value[3] > 0)
+	{
+		sub = snprintf(mod_string, MAX_STRING_LENGTH, "&+GPOISON&N: %d, HP_REG: %d, ",
+			       food->value[3], -food->value[3]);
+	}
+	else
+	{
+		mod_string[0] = '\0';
+		if ((mod = food->value[1]) == 0)
+		{
+			mod = 1;
+		}
+		sub = snprintf(mod_string, MAX_STRING_LENGTH, "HP_REG: %d, ", mod * 15);
+		if (food->value[2] != 0)
+		{
+			mod = food->value[2];
+		}
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "MV_REG: %d, ", mod);
+	}
+	if (food->value[4] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "STR&CON: %d, ",
+				food->value[4]);
+	}
+	if (food->value[5] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "AGI&DEX: %d, ",
+				food->value[5]);
+	}
+	if (food->value[6] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "INT&WIS: %d, ",
+				food->value[6]);
+	}
+	if (food->value[7] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "HIT&DAM: %d, ",
+				food->value[7]);
+	}
+
+	// Duration is in value[0].
+	const int tail = (sub > 0) ? sub - 2 : sub;
+	snprintf(mod_string + tail, MAX_STRING_LENGTH - tail, " for %d ticks", food->value[0]);
+
+	return mod_string;
+}
+
 /*
  * getWeaponDamType
  */

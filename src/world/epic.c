@@ -23,6 +23,7 @@ using namespace std;
 #include "economy/boon.h"
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/epic.h"
 #include "world/epic_bonus.h"
 #include "world/epic_task_catalog.h"
@@ -1492,6 +1493,13 @@ int stat_shops(int /*room*/, P_char ch, int cmd, char *arg)
 		if (!atoi(buf))
 		{
 			send_to_char("Exactly what are you trying to buy?\r\n", ch);
+			return TRUE;
+		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Stat potions are unavailable while economic accounting is active.\r\n",
+				ch);
 			return TRUE;
 		}
 		switch (atoi(buf))

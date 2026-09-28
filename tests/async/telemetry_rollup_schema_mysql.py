@@ -34,8 +34,8 @@ RUNTIME_MANIFEST = ROOT / "migrations/runtime_compatibility_manifest.json"
 RUNTIME_VERIFY = ROOT / "migrations/verify_runtime_compatibility.sh"
 VALIDATOR = ROOT / "scripts/validate_runtime_compatibility.py"
 
-BOOTSTRAP_TABLE_COUNT = 186
-RUNTIME_TABLE_COUNT = 203
+BOOTSTRAP_TABLE_COUNT = 203
+RUNTIME_TABLE_COUNT = 220
 
 NEW_TABLES = ("telemetry_cohort_member", "telemetry_rollup_session")
 SESSION_TABLE = "telemetry_rollup_session"
@@ -800,14 +800,13 @@ def setup_full_schema(engine: Engine, manifest: object) -> dict[str, object]:
     for replay in (1, 2):
         for step in manifest.migrations:
             engine.sql_file(step.apply_path)
-            # 0022 adds nullable progression fields to telemetry_interval.  The
-            # sealed 0014 verifier intentionally checks the original 154-column
-            # shape, so it is valid on the first pass but cannot describe the
-            # later shape during the second idempotence replay.  Keep applying
-            # every migration twice; later verifiers, including 0022 and 0023,
-            # validate the resulting shape on both passes.
+            # Later additive migrations change the shape checked by the sealed
+            # 0014 and 0033 verifiers. Apply every migration twice, while the
+            # later verifiers check the resulting shape on both passes.
             stale_after_later_additive = (
-                replay == 2 and step.migration_id == "0014_telemetry_storage"
+                replay == 2 and step.migration_id in {
+                    "0014_telemetry_storage", "0033_economic_sql_lifecycle_owner"
+                }
             )
             result = (
                 subprocess.CompletedProcess([], 0)
@@ -868,7 +867,10 @@ def setup_full_schema(engine: Engine, manifest: object) -> dict[str, object]:
 def install_runtime_verifier(engine: Engine, manifest_path: Path) -> str:
     verifier_path = "/tmp/duris268_verify_runtime_compatibility.sh"
     manifest_destination = "/tmp/duris268_runtime_compatibility_manifest.json"
-    engine.copy(RUNTIME_VERIFY, verifier_path)
+    with tempfile.TemporaryDirectory(prefix="duris268-verifier-") as directory:
+        normalized = Path(directory) / RUNTIME_VERIFY.name
+        normalized.write_bytes(RUNTIME_VERIFY.read_bytes().replace(b"\r\n", b"\n"))
+        engine.copy(normalized, verifier_path)
     engine.exec(["chmod", "+x", verifier_path])
     engine.copy(manifest_path, manifest_destination)
     return manifest_destination

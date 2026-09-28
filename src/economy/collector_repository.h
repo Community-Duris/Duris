@@ -3,6 +3,7 @@
 
 #include "economy/collector_command.h"
 #include "economy/collector_storage.h"
+#include "economy/economic_accounting_plan.h"
 
 #include <mysql/mysql.h>
 #include <vector>
@@ -29,6 +30,20 @@ struct collector_item_boundary_repository_plan
 	uint32_t actor_pid = 0;
 	uint64_t catalog_revision = 0;
 	std::vector<collector_item_boundary_repository_entry> entries;
+};
+
+// Values copied from rows locked by one collector command, before its first
+// native mutation. Only the accounted entry point returns this evidence, and
+// only on a successful singleton purchase or held-item transition.
+struct collector_repository_locked_before
+{
+	collector::record listing = {};
+	currency_command_result balances = {};
+	uint32_t bank_id = 0;
+	economic_item_snapshot item = {};
+	uint64_t catalog_revision = 0;
+	uint64_t from_owner_revision = 0;
+	uint64_t to_owner_revision = 0;
 };
 
 // Read-only restart bootstrap. The implementation uses bounded buffered reads
@@ -79,5 +94,14 @@ bool collector_repository_apply_item_boundary(MYSQL *connection, const critical_
 bool collector_repository_execute(MYSQL *connection, const critical_command &command,
 				  collector_command_result *result, unsigned int *result_code,
 				  bool *mutation_applied);
+
+// Schema-2 singleton purchase, expiry, and held cancellation only. The caller
+// owns the SQL transaction, locked economic lifetime mapping, accounting root,
+// receipt, outbox, and rollback on any failure. Other collector actions refuse
+// before domain mutation. The legacy entry point remains schema-1 only.
+bool collector_repository_execute_accounted(MYSQL *connection, const critical_command &command,
+					    collector_command_result *result,
+					    unsigned int *result_code, bool *mutation_applied,
+					    collector_repository_locked_before *before);
 
 #endif

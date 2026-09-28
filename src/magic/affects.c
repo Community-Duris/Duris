@@ -17,6 +17,7 @@
 #include "world/falling.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -35,6 +36,7 @@
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "item/item_command_policy.h"
 #include "kingdom/kingdom_store_piece.h"
 #include "classes/paladins.h"
 #include "combat/racewar_stat_mods.h"
@@ -3435,6 +3437,8 @@ bool make_wet(P_char ch, int duration)
 void poo(P_char ch)
 {
 	P_obj load;
+	if (economic_gameplay_authority::active())
+		return;
 
 	if (IS_PC(ch) && (IS_CENTAUR(ch) || IS_MINOTAUR(ch) || IS_GOBLIN(ch)) &&
 	    (number(0, 1000) == 42) && (load = read_object(51, VIRTUAL)))
@@ -3678,6 +3682,8 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 		// May have to do the damage here, but more likely in get()
 		return FALSE;
 	}
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(obj))
+		return FALSE;
 
 	/* Not for underwater use, or noshow objects. */
 	if (obj->z_cord < 0 || already_falling || IS_NOSHOW(obj))
@@ -4054,4 +4060,41 @@ void strip_holy_sword(P_char ch)
 		send_to_char("&+wYour weapon abruptly ceases to &+Cglow&+w with holy power.\n&n",
 			     ch);
 	}
+}
+
+/*
+ * this is utility function for area spells
+ * it checks if the room character is in is affected
+ * by the given spell cast by character or someone grouped
+ * with him. if so, it returns the P_char pointing to
+ * the original caster, otherwise it return NULL and
+ * sets affect on the room for the given duration in seconds
+ */
+P_char stack_area(P_char ch, int spell, int duration)
+{
+	struct room_affect af, *afp;
+	P_room room = &world[ch->in_room];
+
+	for (afp = room->affected; afp; afp = afp->next)
+	{
+		if (afp->type == spell && char_in_list(afp->ch) &&
+		    ((ch->group && ch->group == afp->ch->group) || ch == afp->ch))
+			return afp->ch;
+	}
+
+	memset(&af, 0, sizeof(struct room_affect));
+	af.duration = duration * WAIT_SEC;
+	af.type = spell;
+	af.ch = ch;
+	affect_to_room(ch->in_room, &af);
+
+	return NULL;
+}
+
+int KludgeDuration(P_char ch, int baselevel, int baseduration)
+{
+	/* return baseduration;
+	   this isn't really what was originally intended, but it's based on caster's
+	   level */
+	return MAX(1, (GET_LEVEL(ch) / baselevel) * baseduration);
 }

@@ -8,7 +8,20 @@
 #include "net/output_preference_codec.h"
 #include "world/db.h"
 #include "core/utils.h"
+#include "sql/sql_account.h"
+#include "sql/sql_corpse.h"
+#include "sql/sql_guild.h"
+#include "sql/sql_player_deletion.h"
 #include "sql/sql_player.h"
+#include "sql/sql_player_migration.h"
+#include "sql/sql_saved_item.h"
+#include "sql/sql_player_identity.h"
+#include "sql/sql_locker.h"
+#include "sql/sql_shopkeeper.h"
+#include "sql/sql_ship.h"
+#include "sql/sql_transaction.h"
+#include "sql/sql_player_recipes.h"
+#include "sql/sql_spellbook.h"
 #include "player/player_playtime.h"
 #include "sql/item_extra_descr_codec.h"
 #include <errno.h>
@@ -21,10 +34,13 @@
 #include <sys/time.h>
 #include <time.h>
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <new>
 #include <string>
+#include <system_error>
 #include <thread>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "account/account.h"
@@ -46,6 +62,7 @@
 #include "player/player_name.h"
 #include "account/password_hash.h"
 #include "player/player_revision_state.h"
+#include "player/player_snapshot_codec.h"
 #include "persistence/persistence_mode.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_transfer_command.h"
@@ -66,6 +83,17 @@ extern unsigned long next_obj_uid;
 extern P_Guild guild_list;
 extern Skill skills[];
 void ensure_pconly_pool(void);
+
+#ifndef __NO_MYSQL__
+static bool sql_save_player_status(P_char ch, int type, int room);
+static bool sql_save_player_skills(P_char ch);
+static bool sql_save_player_affects(P_char ch);
+static bool sql_save_player_items(P_char ch);
+static bool sql_save_player_shapechanges(P_char ch);
+static bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum);
+static bool sql_load_player_epic_bonus(P_char ch);
+static bool sql_load_player_items(P_char ch);
+#endif
 
 #ifdef __NO_MYSQL__
 
@@ -110,17 +138,9 @@ bool sql_save_player_items(P_char ch)
 {
 	return false;
 }
-bool sql_delete_player_items(int pid)
-{
-	return false;
-}
 bool sql_save_player_shapechanges(P_char ch)
 {
 	return false;
-}
-bool sql_save_player_recipes(P_char ch)
-{
-	return ch && !IS_NPC(ch) && GET_PID(ch) > 0;
 }
 bool sql_add_player_recipe(int pid, int recipe_vnum)
 {
@@ -250,11 +270,10 @@ bool sql_delete_player(int pid, bool forget_revision)
 {
 	return false;
 }
-bool sql_delete_player_by_name(const char *name)
+bool sql_player_deletion_guard(int pid)
 {
 	return false;
 }
-
 bool sql_save_account(struct acct_entry *acc)
 {
 	return false;
@@ -632,6 +651,9 @@ static bool sql_save_locker_item_children(int locker_id, int chest_id, P_obj obj
 
 // track transaction state
 static bool in_transaction = false;
+// A successful deletion guard is transaction-local. It proves that the shared
+// player row was locked before the transaction's first consistent read.
+static int character_deletion_guard_pid = 0;
 // Held entirely by value: a terminal save can commit after extract_char() has
 // removed and freed the character while leaving its descriptor account menu live.
 struct pending_account_character_cache_update
@@ -668,6 +690,7 @@ bool sql_begin_transaction(void)
 	}
 
 	sql_clear_results();
+	character_deletion_guard_pid = 0;
 	if (!sql_trace_exec("sql_begin_transaction", "START TRANSACTION", 17, false, false))
 	{
 		logit(LOG_DEBUG, "sql_begin_transaction: failed");
@@ -702,6 +725,7 @@ bool sql_commit(void)
 		return false;
 	}
 
+	character_deletion_guard_pid = 0;
 	in_transaction = false;
 	if (pending_account_cache_sync)
 	{
@@ -729,11 +753,13 @@ bool sql_rollback(void)
 	if (!sql_trace_exec("sql_rollback", "ROLLBACK", 8, false, false))
 	{
 		logit(LOG_DEBUG, "sql_rollback: failed");
+		character_deletion_guard_pid = 0;
 		in_transaction = false;
 		sql_clear_account_character_cache_sync();
 		return false;
 	}
 
+	character_deletion_guard_pid = 0;
 	in_transaction = false;
 	sql_clear_account_character_cache_sync();
 	return true;
@@ -1053,19 +1079,6 @@ static void sql_load_item_extra_descr_values(const char *db_keyword, const char 
 	ed->description = db_description ? str_dup(db_description) : NULL;
 }
 
-// for forked child process - needs its own db connection
-MYSQL *sql_create_child_connection(void)
-{
-	return sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);
-}
-
-// child swaps in its own connection after fork
-void sql_reset_for_child(MYSQL *child_conn)
-{
-	DB = child_conn;
-	in_transaction = false;
-}
-
 // player existence check
 
 bool sql_player_exists(const char *name)
@@ -1176,27 +1189,93 @@ static bool sql_try_get_player_pid(const char *name, int *pid_out)
 
 // player delete
 
+bool sql_player_deletion_guard(int pid)
+{
+	if (!DB || pid <= 0 || !sql_in_transaction())
+		return false;
+	if (character_deletion_guard_pid)
+		return character_deletion_guard_pid == pid;
+
+	// Native death retention takes this same player_data row lock before
+	// inserting conflict evidence. Keep the lock through deletion commit so
+	// retention either becomes visible first or observes the player gone.
+	char query[256];
+	snprintf(query, sizeof(query), "SELECT pid FROM player_data WHERE pid=%d FOR UPDATE", pid);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+	{
+		sql_player_error("sql_player_deletion_guard_player_lock");
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const bool player_locked = row && row[0] && atoi(row[0]) == pid &&
+				   mysql_num_rows(result) == 1 && mysql_errno(DB) == 0;
+	mysql_free_result(result);
+	if (!player_locked)
+		return false;
+
+	// This must be the transaction's first consistent read. START TRANSACTION
+	// does not establish the REPEATABLE READ snapshot; this read follows the
+	// shared row lock above, so it sees a retention commit we waited for. Keep
+	// it nonlocking: native terminal replay can lock evidence before player_data.
+	snprintf(query, sizeof(query),
+		 "SELECT operation_id FROM player_death_conflict_evidence WHERE pid=%d LIMIT 1",
+		 pid);
+	result = db_query("%s", query);
+	if (!result)
+	{
+		sql_player_error("sql_player_deletion_guard_evidence_read");
+		return false;
+	}
+	const bool unresolved = mysql_fetch_row(result) != nullptr;
+	const bool evidence_read_ok = mysql_errno(DB) == 0;
+	mysql_free_result(result);
+	if (!evidence_read_ok || unresolved)
+		return false;
+	character_deletion_guard_pid = pid;
+	return true;
+}
+
 bool sql_delete_player(int pid, bool forget_revision)
 {
 	if (!DB || pid <= 0)
+		return false;
+
+	bool own_txn = false;
+	if (!sql_in_transaction())
+	{
+		if (!sql_begin_transaction())
+			return false;
+		own_txn = true;
+	}
+	if (own_txn)
+	{
+		if (!sql_player_deletion_guard(pid))
+		{
+			sql_rollback();
+			return false;
+		}
+	}
+	else if (character_deletion_guard_pid != pid)
 		return false;
 
 	char query[128];
 	snprintf(query, sizeof(query), "DELETE FROM player_data WHERE pid=%d", pid);
 
 	if (!sql_run_query(query))
+	{
+		if (own_txn)
+			sql_rollback();
 		return false;
+	}
+	if (own_txn && !sql_commit())
+	{
+		sql_rollback();
+		return false;
+	}
 	if (forget_revision)
 		player_revision_forget(pid);
 	return true;
-}
-
-bool sql_delete_player_by_name(const char *name)
-{
-	int pid = sql_get_player_pid(name);
-	if (pid <= 0)
-		return false;
-	return sql_delete_player(pid);
 }
 
 // master save function
@@ -1334,7 +1413,7 @@ bool sql_save_player(P_char ch, int type, int room)
 // status save (main player data)
 
 /* Persist player status and establish opening ledgers for a new character. */
-bool sql_save_player_status(P_char ch, int type, int room)
+static bool sql_save_player_status(P_char ch, int type, int room)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -1977,7 +2056,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 
 // skills save - batched for performance (2 queries instead of 2000)
 
-bool sql_save_player_skills(P_char ch)
+static bool sql_save_player_skills(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -2068,7 +2147,7 @@ bool sql_save_player_skills(P_char ch)
 
 // affects save - batched for performance
 
-bool sql_save_player_affects(P_char ch)
+static bool sql_save_player_affects(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -2242,6 +2321,31 @@ static bool sql_save_item_affects(int item_id, P_obj obj)
 	return true;
 }
 
+// Build the same versioned property payload used by snapshot saves. The hex
+// literal needs no connection-specific escaping and is safe to embed directly.
+static bool sql_player_item_properties_value_suffix(P_obj obj, std::string *suffix)
+{
+	if (!obj || !suffix)
+		return false;
+	std::vector<player_item_dynamic_affect_snapshot> dynamic_affects;
+	try
+	{
+		size_t count = 0;
+		for (const obj_affect *affect = obj->affects; affect; affect = affect->next)
+		{
+			if (++count > PLAYER_SNAPSHOT_MAX_ROWS)
+				return false;
+			dynamic_affects.push_back({ affect->type, affect->data, affect->extra2 });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return player_item_properties_sql_value_suffix(obj->extra2_flags, dynamic_affects,
+						       suffix) == player_snapshot_codec_result::ok;
+}
+
 // check if object has any non-default data that needs individual handling
 static bool obj_needs_individual_save(P_obj obj)
 {
@@ -2254,6 +2358,10 @@ static bool obj_needs_individual_save(P_obj obj)
 		if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
 			return true;
 	}
+
+	// has dynamic affects persisted in item_properties
+	if (obj->affects)
+		return true;
 
 	// has extra descriptions
 	if (obj->ex_description)
@@ -2288,19 +2396,30 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 	if (simple_count == 0)
 		return 0;
 
-	// allocate batch buffer - each item needs ~300 bytes for values
-	size_t buf_size = 1024 + (simple_count * 400);
+	// The property payload for a simple row has no dynamic affects and is bounded
+	// to its version/flags header plus the SQL quoting suffix.
+	size_t buf_size = 1024 + (simple_count * 464);
 	char *batch = (char *)malloc(buf_size);
 	if (!batch)
 		return -1;
 
-	int pos = snprintf(batch, buf_size,
-			   "INSERT INTO player_items ("
-			   "pid, vnum, equip_slot, container_id, quantity, "
-			   "weight, cost, timer, extra_flags, "
-			   "value0, value1, value2, value3, value4, value5, value6, value7, "
-			   "wear_flags, item_type, item_material, obj_uid, item_condition"
-			   ") VALUES ");
+	std::string insert_header;
+	try
+	{
+		insert_header = "INSERT INTO player_items ("
+				"pid, vnum, equip_slot, container_id, quantity, "
+				"weight, cost, timer, extra_flags, "
+				"value0, value1, value2, value3, value4, value5, value6, value7, "
+				"wear_flags, item_type, item_material, obj_uid, item_condition";
+		insert_header += player_item_properties_sql_column_suffix();
+		insert_header += ") VALUES ";
+	}
+	catch (const std::bad_alloc &)
+	{
+		free(batch);
+		return -1;
+	}
+	int pos = snprintf(batch, buf_size, "%s", insert_header.c_str());
 
 	bool first = true;
 	int batch_count = 0;
@@ -2316,17 +2435,24 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 
 		int vnum = obj_index[obj->R_num].virtual_number;
 
+		std::string properties_suffix;
+		if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
+		{
+			free(batch);
+			return -1;
+		}
+
 		sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str,
 							   bv1_str, bv2_str, bv3_str, bv4_str,
 							   bv5_str);
 		int new_pos = batch_append(
 			batch, pos, buf_size,
-			"%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%lu,%d)",
+			"%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%lu,%d%s)",
 			first ? "" : ",", pid, vnum, container_id, obj->weight, obj->cost,
 			(long)obj->timer[0], obj->extra_flags, obj->value[0], obj->value[1],
 			obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
 			obj->value[7], wear_str, type_str, material_str, obj->obj_uid,
-			obj->condition);
+			obj->condition, properties_suffix.c_str());
 		if (new_pos < 0)
 		{
 			free(batch);
@@ -2346,14 +2472,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 				return -1;
 			}
 			// reset for next batch
-			pos = snprintf(
-				batch, buf_size,
-				"INSERT INTO player_items ("
-				"pid, vnum, equip_slot, container_id, quantity, "
-				"weight, cost, timer, extra_flags, "
-				"value0, value1, value2, value3, value4, value5, value6, value7, "
-				"wear_flags, item_type, item_material, obj_uid, item_condition"
-				") VALUES ");
+			pos = snprintf(batch, buf_size, "%s", insert_header.c_str());
 			first = true;
 		}
 	}
@@ -2630,6 +2749,29 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 
 	int vnum = obj_index[obj->R_num].virtual_number;
 
+	std::string properties_suffix;
+	if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
+		return 0;
+	std::vector<char> query;
+	std::string query_prefix;
+	try
+	{
+		query.resize(8192 + properties_suffix.size() + 32);
+		query_prefix = "INSERT INTO player_items ("
+			       "pid, vnum, equip_slot, container_id, quantity, "
+			       "weight, cost, timer, extra_flags, wear_flags, item_type, "
+			       "value0, value1, value2, value3, value4, value5, value6, value7, "
+			       "name, short_descr, description, action_descr, "
+			       "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+			       "item_material, obj_uid, item_condition";
+		query_prefix += player_item_properties_sql_column_suffix();
+		query_prefix += ") VALUES (";
+	}
+	catch (const std::bad_alloc &)
+	{
+		return 0;
+	}
+
 	// escape strings - only save if strung (different from prototype)
 	// STRUNG_KEYS = name, STRUNG_DESC2 = short_description,
 	// STRUNG_DESC1 = description, STRUNG_DESC3 = action_description
@@ -2686,29 +2828,19 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str,
 						   bv2_str, bv3_str, bv4_str, bv5_str);
 
-	// build the query
-	char query[8192];
-	snprintf(query, sizeof(query),
-		 "INSERT INTO player_items ("
-		 "pid, vnum, equip_slot, container_id, quantity, "
-		 "weight, cost, timer, extra_flags, wear_flags, item_type, "
-		 "value0, value1, value2, value3, value4, value5, value6, value7, "
-		 "name, short_descr, description, action_descr, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		 "item_material, obj_uid, item_condition"
-		 ") VALUES ("
-		 "%d, %d, %d, %s, 1, "
+	snprintf(query.data(), query.size(),
+		 "%s%d, %d, %d, %s, 1, "
 		 "%d, %d, %ld, %u, %s, %s, "
 		 "%d, %d, %d, %d, %d, %d, %d, %d, "
 		 "%s, %s, %s, %s, "
 		 "%s, %s, %s, %s, %s, "
-		 "%s, %lu, %d"
-		 ")",
-		 pid, vnum, equip_slot, container_str, obj->weight, obj->cost, (long)obj->timer[0],
-		 obj->extra_flags, wear_str, type_str, obj->value[0], obj->value[1], obj->value[2],
-		 obj->value[3], obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-		 name_str, short_str, desc_str, action_str, bv1_str, bv2_str, bv3_str, bv4_str,
-		 bv5_str, material_str, obj->obj_uid, obj->condition);
+		 "%s, %lu, %d%s)",
+		 query_prefix.c_str(), pid, vnum, equip_slot, container_str, obj->weight, obj->cost,
+		 (long)obj->timer[0], obj->extra_flags, wear_str, type_str, obj->value[0],
+		 obj->value[1], obj->value[2], obj->value[3], obj->value[4], obj->value[5],
+		 obj->value[6], obj->value[7], name_str, short_str, desc_str, action_str, bv1_str,
+		 bv2_str, bv3_str, bv4_str, bv5_str, material_str, obj->obj_uid, obj->condition,
+		 properties_suffix.c_str());
 
 	// free escaped strings
 	if (esc_name)
@@ -2720,7 +2852,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	if (esc_action)
 		free(esc_action);
 
-	if (!sql_run_query(query))
+	if (!sql_run_query(query.data()))
 	{
 		sql_player_error("sql_save_single_item");
 		return 0;
@@ -3003,17 +3135,27 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		return false;
 	}
 
-	const char *insert_header =
-		"INSERT INTO player_items ("
-		"pid, vnum, equip_slot, container_id, quantity, "
-		"weight, cost, timer, extra_flags, wear_flags, item_type, "
-		"value0, value1, value2, value3, value4, value5, value6, value7, "
-		"name, short_descr, description, action_descr, "
-		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		"item_material, obj_uid, item_condition"
-		") VALUES ";
+	std::string insert_header;
+	try
+	{
+		insert_header = "INSERT INTO player_items ("
+				"pid, vnum, equip_slot, container_id, quantity, "
+				"weight, cost, timer, extra_flags, wear_flags, item_type, "
+				"value0, value1, value2, value3, value4, value5, value6, value7, "
+				"name, short_descr, description, action_descr, "
+				"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+				"item_material, obj_uid, item_condition";
+		insert_header += player_item_properties_sql_column_suffix();
+		insert_header += ") VALUES ";
+	}
+	catch (const std::bad_alloc &)
+	{
+		free(batch);
+		free(flat);
+		return false;
+	}
 
-	int pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header);
+	int pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header.c_str());
 	int batch_start_idx = 0;
 	int items_in_batch = 0;
 
@@ -3021,6 +3163,13 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 	{
 		P_obj obj = flat[i].obj;
 		int vnum = obj_index[obj->R_num].virtual_number;
+		std::string properties_suffix;
+		if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
+		{
+			free(batch);
+			free(flat);
+			return false;
+		}
 
 		// Escape strung strings (same logic as sql_save_single_item_get_id)
 		char *esc_name = NULL;
@@ -3071,13 +3220,14 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		char row_buf[16384];
 		int row_len = snprintf(
 			row_buf, sizeof(row_buf),
-			"%s(%d,%d,%d,NULL,1,%d,%d,%ld,%u,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%lu,%d)",
+			"%s(%d,%d,%d,NULL,1,%d,%d,%ld,%u,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%lu,%d%s)",
 			(items_in_batch == 0) ? "" : ",", pid, vnum, flat[i].equip_slot,
 			obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags, wear_str,
 			type_str, obj->value[0], obj->value[1], obj->value[2], obj->value[3],
 			obj->value[4], obj->value[5], obj->value[6], obj->value[7], name_str,
 			short_str, desc_str, action_str, bv1_str, bv2_str, bv3_str, bv4_str,
-			bv5_str, material_str, (unsigned long)obj->obj_uid, obj->condition);
+			bv5_str, material_str, (unsigned long)obj->obj_uid, obj->condition,
+			properties_suffix.c_str());
 
 		// Free escaped strings
 		if (esc_name)
@@ -3141,7 +3291,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 			}
 
 			// Restart batch for remaining items
-			pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header);
+			pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header.c_str());
 			batch_start_idx = i;
 			items_in_batch = 0;
 
@@ -3289,7 +3439,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 	return true;
 }
 
-bool sql_save_player_items(P_char ch)
+static bool sql_save_player_items(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -3394,16 +3544,6 @@ bool sql_save_player_items(P_char ch)
 	}
 
 	return success;
-}
-
-bool sql_delete_player_items(int pid)
-{
-	if (!DB || pid <= 0)
-		return false;
-
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
-	return sql_run_query(del_query);
 }
 
 // pet item affects save
@@ -3598,7 +3738,7 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 }
 
 // pet save - save all player's pets with equipment
-bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
+static bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -3643,7 +3783,7 @@ bool sql_load_player_pets(P_char /*ch*/)
 
 // shapechange save/load
 
-bool sql_save_player_shapechanges(P_char ch)
+static bool sql_save_player_shapechanges(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -3783,17 +3923,7 @@ bool sql_load_player_shapechanges(P_char ch)
 	return true;
 }
 
-// recipe save/load
-
-bool sql_save_player_recipes(P_char ch)
-{
-	// No guard: this function is a no-op (recipes are saved individually via
-	// sql_add_player_recipe() when learned, not in bulk). It is intentionally
-	// safe to call outside a transaction - no SQL queries are issued.
-	// Still called by sql_save_player() so the transaction chain is complete.
-	(void)ch;
-	return true;
-}
+// Recipe save/load.
 
 bool sql_add_player_recipe(int pid, int recipe_vnum)
 {
@@ -4355,7 +4485,22 @@ bool sql_load_player_affects(P_char ch)
 	return true;
 }
 
-bool sql_load_player_items(P_char ch)
+static bool sql_parse_persisted_item_uid(const char *text, uint64_t *uid)
+{
+	if (!text || !*text || !uid)
+		return false;
+
+	const char *end = text + strlen(text);
+	uint64_t parsed_uid = 0;
+	const std::from_chars_result parsed = std::from_chars(text, end, parsed_uid);
+	if (parsed.ec != std::errc{} || parsed.ptr != end || !parsed_uid)
+		return false;
+
+	*uid = parsed_uid;
+	return true;
+}
+
+static bool sql_load_player_items(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 	{
@@ -4412,6 +4557,24 @@ bool sql_load_player_items(P_char ch)
 		int vnum = sql_row_int(row, col++, 0);
 		int equip_slot = sql_row_int(row, col++, 0);
 		int container_id = sql_row_int(row, col++, 0);
+		uint64_t saved_uid = 0;
+		if (!sql_parse_persisted_item_uid(row[28], &saved_uid))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_player_items: component=ownership "
+			      "outcome=missing_or_invalid_uid db_id=%d pid=%d",
+			      db_id, pid);
+			continue;
+		}
+		if (!sql_persistence_item_owner_matches(saved_uid, "player", owner_ref,
+							"sql_load_player_items"))
+		{
+			logit(LOG_FILE,
+			      "sql_load_player_items: component=ownership outcome=mismatch db_id=%d pid=%d",
+			      db_id, pid);
+			continue;
+		}
+
 		// create object from prototype
 		P_obj obj = read_object(vnum, VIRTUAL);
 		if (!obj)
@@ -4421,6 +4584,7 @@ bool sql_load_player_items(P_char ch)
 			idx++;
 			continue;
 		}
+		obj->obj_uid = saved_uid;
 
 		// override saved properties
 		obj->weight = sql_row_int(row, col++, obj->weight);
@@ -4476,18 +4640,8 @@ bool sql_load_player_items(P_char ch)
 		obj->bitvector5 = sql_row_ulong(row, col++, obj->bitvector5);
 		obj->material = sql_row_int(row, col++, obj->material);
 
-		// restore obj_uid and condition
-		unsigned long saved_uid = sql_row_ulong(row, col++, 0);
-		if (saved_uid > 0)
-			obj->obj_uid = saved_uid;
-		if (!sql_persistence_item_owner_matches(saved_uid, "player", owner_ref,
-							"sql_load_player_items"))
-		{
-			logit(LOG_FILE,
-			      "sql_load_player_items: component=ownership outcome=mismatch");
-			extract_obj(obj, FALSE);
-			continue;
-		}
+		// The persisted UID was parsed and ownership-checked before prototype allocation.
+		col++;
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		obj->condition = sql_row_int(row, col++, obj->condition);
 
@@ -4691,7 +4845,7 @@ bool sql_load_player_items(P_char ch)
 	return true;
 }
 
-bool sql_load_player_epic_bonus(P_char ch)
+static bool sql_load_player_epic_bonus(P_char ch)
 {
 	return epic_bonus_hydrate(ch);
 }
@@ -6193,6 +6347,26 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 	{
 		int item_id = atoi(row[0]);
 		int vnum = atoi(row[1]);
+		uint64_t saved_uid = 0;
+		if (!sql_parse_persisted_item_uid(row[20], &saved_uid))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: component=ownership "
+			      "outcome=missing_or_invalid_uid item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+		if (!sql_persistence_item_owner_matches_identity(
+			    saved_uid, "locker", static_cast<unsigned long long>(locker_id),
+			    static_cast<unsigned long long>(chest_id), "sql_load_locker_items"))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: component=ownership "
+			      "outcome=mismatch item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+
 		int rnum = real_object(vnum);
 		logit(LOG_DEBUG,
 		      "sql_load_locker_items_filtered: row item_id=%d locker_id=%d container_id=%d chest_id=%d vnum=%d rnum=%d depth=%d",
@@ -6213,6 +6387,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			      item_id, vnum, rnum, locker_id, chest_id, container_id);
 			continue;
 		}
+		obj->obj_uid = saved_uid;
 
 		if (row[2])
 			obj->weight = atoi(row[2]);
@@ -6270,24 +6445,6 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		if (row[27])
 			obj->material = atoi(row[27]);
 
-		if (row[20] && strlen(row[20]) > 0)
-		{
-			unsigned long saved_uid = strtoul(row[20], NULL, 10);
-			if (saved_uid > 0)
-				obj->obj_uid = saved_uid;
-			if (!sql_persistence_item_owner_matches_identity(
-				    obj->obj_uid, "locker",
-				    static_cast<unsigned long long>(locker_id),
-				    static_cast<unsigned long long>(chest_id),
-				    "sql_load_locker_items"))
-			{
-				logit(LOG_DEBUG,
-				      "sql_load_locker_items_filtered: component=ownership "
-				      "outcome=mismatch");
-				extract_obj(obj, FALSE);
-				continue;
-			}
-		}
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
 		obj->db_item_id = item_id;
@@ -7016,6 +7173,27 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	{
 		int item_id = atoi(row[0]);
 		int vnum = atoi(row[1]);
+		uint64_t saved_uid = 0;
+		if (!sql_parse_persisted_item_uid(row[20], &saved_uid))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_private_chest_items: component=ownership "
+			      "outcome=missing_or_invalid_uid item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+		if (!sql_persistence_item_owner_matches_identity(
+			    saved_uid, "locker", static_cast<unsigned long long>(locker_id),
+			    static_cast<unsigned long long>(chest_id),
+			    "sql_load_private_chest_items"))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_private_chest_items: component=ownership "
+			      "outcome=mismatch item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+
 		int rnum = real_object(vnum);
 		if (rnum < 0)
 			continue;
@@ -7023,6 +7201,7 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		P_obj obj = read_object(rnum, REAL);
 		if (!obj)
 			continue;
+		obj->obj_uid = saved_uid;
 
 		if (row[2])
 			obj->weight = atoi(row[2]);
@@ -7067,24 +7246,9 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 			obj->action_description = str_dup(row[19]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
-		// restore obj_uid and condition
-		if (row[20] && strlen(row[20]) > 0)
-		{
-			unsigned long saved_uid = strtoul(row[20], NULL, 10);
-			if (saved_uid > 0)
-				obj->obj_uid = saved_uid;
-		}
+		// restore condition; the UID was validated before prototype allocation.
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
-
-		if (!sql_persistence_item_owner_matches_identity(
-			    obj->obj_uid, "locker", static_cast<unsigned long long>(locker_id),
-			    static_cast<unsigned long long>(chest_id),
-			    "sql_load_private_chest_items"))
-		{
-			extract_obj(obj, FALSE);
-			continue;
-		}
 
 		obj->db_item_id = item_id;
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
@@ -8811,7 +8975,10 @@ static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
 
 static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot, int container_id)
 {
-	if (!obj || !DB || shopkeeper_id <= 0)
+	if (!obj || !DB || shopkeeper_id <= 0 || !obj->obj_uid)
+		return 0;
+	std::string properties_suffix;
+	if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
 		return 0;
 
 	int vnum = obj_index[obj->R_num].virtual_number;
@@ -8855,7 +9022,7 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	else
 		strcpy(action_str, "NULL");
 
-	char query[8192];
+	char query_prefix[8192];
 	// Shared helper formats wear_str, type_str, and bv1-5_str
 	// (NULL when matching the prototype) and frees the loaded prototype.
 	// See sql_format_item_diff_fields_and_free_proto().
@@ -8866,27 +9033,28 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str,
 						   bv2_str, bv3_str, bv4_str, bv5_str);
 
-	snprintf(query, sizeof(query),
-		 "INSERT INTO shopkeeper_items ("
-		 "shopkeeper_id, vnum, equip_slot, container_id, quantity, "
-		 "weight, cost, timer, extra_flags, "
-		 "value0, value1, value2, value3, value4, value5, value6, value7, "
-		 "name, short_descr, description, action_descr, "
-		 "wear_flags, item_type, item_material, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5"
-		 ") VALUES ("
-		 "%d, %d, %d, %s, 1, "
-		 "%d, %d, %ld, %lu, "
-		 "%d, %d, %d, %d, %d, %d, %d, %d, "
-		 "%s, %s, %s, %s, "
-		 "%s, %s, %s, "
-		 "%s, %s, %s, %s, %s"
-		 ")",
-		 shopkeeper_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
-		 (long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
-		 obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
-		 obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
-		 material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+	const int query_length = snprintf(
+		query_prefix, sizeof(query_prefix),
+		"INSERT INTO shopkeeper_items ("
+		"shopkeeper_id, vnum, equip_slot, container_id, quantity, "
+		"weight, cost, timer, extra_flags, "
+		"value0, value1, value2, value3, value4, value5, value6, value7, "
+		"name, short_descr, description, action_descr, "
+		"wear_flags, item_type, item_material, "
+		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid, item_condition, item_properties"
+		") VALUES ("
+		"%d, %d, %d, %s, 1, "
+		"%d, %d, %ld, %lu, "
+		"%d, %d, %d, %d, %d, %d, %d, %d, "
+		"%s, %s, %s, %s, "
+		"%s, %s, %s, "
+		"%s, %s, %s, %s, %s, %lu, %d",
+		shopkeeper_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
+		(long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
+		obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
+		obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
+		material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, obj->obj_uid,
+		obj->condition);
 
 	if (esc_name)
 		free(esc_name);
@@ -8897,7 +9065,12 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	if (esc_action)
 		free(esc_action);
 
-	if (!sql_run_query(query))
+	if (query_length < 0 || static_cast<size_t>(query_length) >= sizeof(query_prefix))
+		return 0;
+	std::string query(query_prefix, static_cast<size_t>(query_length));
+	query += properties_suffix;
+	query += ')';
+	if (!sql_run_query(query.c_str()))
 		return 0;
 
 	int item_id = (int)mysql_insert_id(DB);
@@ -8953,6 +9126,13 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 		log_shopkeeper_save_guard(ch, shop_nr, guard);
 		return false;
 	}
+	const int64_t cash = static_cast<int64_t>(GET_COPPER(ch)) +
+			     10 * static_cast<int64_t>(GET_SILVER(ch)) +
+			     100 * static_cast<int64_t>(GET_GOLD(ch)) +
+			     1000 * static_cast<int64_t>(GET_PLATINUM(ch));
+	if (GET_COPPER(ch) < 0 || GET_SILVER(ch) < 0 || GET_GOLD(ch) < 0 || GET_PLATINUM(ch) < 0 ||
+	    cash > INT_MAX)
+		return false;
 
 	// start transaction
 	if (!sql_begin_transaction())
@@ -8970,21 +9150,17 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 							      shop_index[shop_nr].in_room;
 	long save_time = time(0);
 
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM shopkeepers WHERE shop_id=%d", shop_nr);
-	if (!sql_run_query(del_query))
-	{
-		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to delete old shopkeeper %d",
-		      shop_nr);
-		sql_rollback();
-		return false;
-	}
-
-	char ins_query[256];
+	char ins_query[512];
 	snprintf(
 		ins_query, sizeof(ins_query),
-		"INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time) VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)))",
-		shop_nr, mob_vnum, room_vnum, save_time);
+		"INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time, cash, keeper_roaming) "
+		"VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), %lld, %d) "
+		"ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), mob_vnum=VALUES(mob_vnum), "
+		"room_vnum=VALUES(room_vnum), save_time=VALUES(save_time), "
+		"cash=VALUES(cash), keeper_roaming=VALUES(keeper_roaming), "
+		"shop_revision=shop_revision+1",
+		shop_nr, mob_vnum, room_vnum, save_time, static_cast<long long>(cash),
+		shop_index[shop_nr].shop_is_roaming ? 1 : 0);
 
 	if (!sql_run_query(ins_query))
 	{
@@ -8994,6 +9170,26 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	}
 
 	int shopkeeper_id = (int)mysql_insert_id(DB);
+	if (shopkeeper_id <= 0)
+	{
+		sql_rollback();
+		return false;
+	}
+	char del_query[128];
+	snprintf(del_query, sizeof(del_query),
+		 "DELETE FROM shopkeeper_affects WHERE shopkeeper_id=%d", shopkeeper_id);
+	if (!sql_run_query(del_query))
+	{
+		sql_rollback();
+		return false;
+	}
+	snprintf(del_query, sizeof(del_query),
+		 "DELETE FROM shopkeeper_items WHERE shopkeeper_id=%d", shopkeeper_id);
+	if (!sql_run_query(del_query))
+	{
+		sql_rollback();
+		return false;
+	}
 
 	if (!sql_save_shopkeeper_affects(shopkeeper_id, ch))
 	{
@@ -9338,7 +9534,7 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 
 	// query 1: load all shopkeepers
 	MYSQL_RES *result =
-		db_query("SELECT shop_id, id, mob_vnum, room_vnum FROM shopkeepers "
+		db_query("SELECT shop_id, id, mob_vnum, room_vnum, cash FROM shopkeepers "
 			 "WHERE (%d < 0 OR shop_id=%d) ORDER BY save_time DESC, id DESC",
 			 only_shop, only_shop);
 	if (!result)
@@ -9386,6 +9582,23 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			      shop_nr, mob_vnum, room_vnum);
 			continue;
 		}
+		int saved_cash = -1;
+		if (row[4])
+		{
+			char *end = NULL;
+			errno = 0;
+			const long long parsed_cash = strtoll(row[4], &end, 10);
+			if (errno || end == row[4] || *end || parsed_cash < 0 ||
+			    parsed_cash > INT_MAX)
+			{
+				logit(LOG_DEBUG,
+				      "sql_restore_shopkeepers: invalid cash for shop %d", shop_nr);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			saved_cash = static_cast<int>(parsed_cash);
+		}
 
 		P_char mob = read_mobile(mob_vnum, VIRTUAL);
 		if (!mob)
@@ -9415,6 +9628,17 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 
 		GET_BIRTHPLACE(mob) = room_vnum;
 		bind_shopkeeper(mob, shop_nr);
+		// NULL belongs to a pre-cash snapshot; keep the prototype until captured.
+		if (saved_cash >= 0)
+		{
+			int remaining = saved_cash;
+			GET_PLATINUM(mob) = remaining / 1000;
+			remaining %= 1000;
+			GET_GOLD(mob) = remaining / 100;
+			remaining %= 100;
+			GET_SILVER(mob) = remaining / 10;
+			GET_COPPER(mob) = remaining % 10;
+		}
 
 		k->next = keepers;
 		keepers = k;
@@ -9477,7 +9701,7 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		"SELECT si.id, si.shopkeeper_id, si.vnum, si.equip_slot, si.weight, si.cost, si.timer, "
 		"si.extra_flags, si.value0, si.value1, si.value2, si.value3, si.value4, si.value5, "
 		"si.value6, si.value7, si.name, si.short_descr, si.description, si.action_descr, si.container_id, "
-		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5 "
+		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5, si.obj_uid, si.item_condition, si.item_properties, OCTET_LENGTH(si.item_properties) "
 		"FROM shopkeeper_items si "
 		"INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
 		"WHERE (%d < 0 OR s.shop_id=%d) ORDER BY si.shopkeeper_id, si.id",
@@ -9588,9 +9812,62 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 				obj->bitvector4 = strtoul(row[27], NULL, 10);
 			if (row[28])
 				obj->bitvector5 = strtoul(row[28], NULL, 10);
+			if (row[30])
+				obj->condition = atoi(row[30]);
+			uint32_t extra2_flags = 0;
+			std::vector<player_item_dynamic_affect_snapshot> dynamic_affects;
+			bool has_item_properties = false;
+			if (player_item_properties_decode_sql_row(
+				    row[31], row[32], &extra2_flags, &dynamic_affects,
+				    &has_item_properties) != player_snapshot_codec_result::ok)
+			{
+				extract_obj(obj);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			if (has_item_properties)
+			{
+				obj->extra2_flags = extra2_flags;
+				const auto baseline =
+					std::find_if(dynamic_affects.begin(), dynamic_affects.end(),
+						     [](const auto &affect)
+						     { return affect.type == TAG_ALTERED_EXTRA2; });
+				if (baseline != dynamic_affects.end())
+					obj->extra2_flags = static_cast<ulong>(baseline->extra2);
+				for (auto affect = dynamic_affects.rbegin();
+				     affect != dynamic_affects.rend(); ++affect)
+				{
+					if (affect->type == TAG_ALTERED_EXTRA2)
+						continue;
+					if (affect->extra2)
+						set_obj_affected_extra(obj, -1, affect->type,
+								       affect->data,
+								       affect->extra2);
+					else
+						set_obj_affected(obj, -1, affect->type,
+								 affect->data);
+				}
+			}
+			bool valid_uid = true;
+			if (row[29])
+			{
+				char *end = NULL;
+				errno = 0;
+				const unsigned long saved_uid = strtoul(row[29], &end, 10);
+				valid_uid = !errno && end && !*end && saved_uid &&
+					    saved_uid != ULONG_MAX;
+				if (valid_uid)
+				{
+					obj->obj_uid = saved_uid;
+					if (saved_uid >= next_obj_uid)
+						next_obj_uid = saved_uid + 1;
+				}
+			}
 			obj->db_item_id = item_id;
 			REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
-			if (!sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item"))
+			if (!valid_uid ||
+			    !sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item"))
 			{
 				extract_obj(obj);
 				mysql_free_result(result);
@@ -9609,7 +9886,8 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			}
 			for (struct all_items_temp *existing = all_items; existing;
 			     existing = existing->next)
-				if (existing->item_id == item_id)
+				if (existing->item_id == item_id ||
+				    existing->obj->obj_uid == obj->obj_uid)
 				{
 					extract_obj(obj);
 					free(t);
@@ -10209,6 +10487,7 @@ static bool sql_saved_item_source_rows_match(const char *item_key, const std::ve
 		return false;
 	}
 	std::vector<int> observed;
+	std::unordered_map<int, int> parents;
 	bool graph_valid = true;
 	int roots = 0;
 	MYSQL_ROW row;
@@ -10216,6 +10495,7 @@ static bool sql_saved_item_source_rows_match(const char *item_key, const std::ve
 	{
 		const int id = atoi(row[0]);
 		observed.push_back(id);
+		parents[id] = row[1] ? atoi(row[1]) : 0;
 		if (!row[1])
 		{
 			++roots;
@@ -10230,6 +10510,24 @@ static bool sql_saved_item_source_rows_match(const char *item_key, const std::ve
 	std::vector<int> sorted = expected;
 	std::sort(sorted.begin(), sorted.end());
 	graph_valid = graph_valid && roots == 1 && observed == sorted;
+	for (int id : expected)
+	{
+		std::unordered_set<int> visited;
+		int current = id;
+		while (current != expected[0])
+		{
+			const auto parent = parents.find(current);
+			if (parent == parents.end() || !parent->second ||
+			    !visited.insert(current).second)
+			{
+				graph_valid = false;
+				break;
+			}
+			current = parent->second;
+		}
+		if (!graph_valid)
+			break;
+	}
 	for (int id : expected)
 	{
 		snprintf(
@@ -10261,7 +10559,8 @@ static bool sql_saved_item_source_ids(const char *item_key, std::vector<int> *id
 	if (!escaped)
 		return false;
 	char query[512];
-	snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE item_key='%s'", escaped);
+	snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE item_key='%s' ORDER BY id",
+		 escaped);
 	free(escaped);
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
@@ -10274,16 +10573,8 @@ static bool sql_saved_item_source_ids(const char *item_key, std::vector<int> *id
 	return true;
 }
 
-static std::string sql_saved_item_source_id_digest(const std::vector<int> &ids)
+static std::string sql_saved_item_hex_digest(const std::string &serialized)
 {
-	std::vector<int> ordered = ids;
-	std::sort(ordered.begin(), ordered.end());
-	std::string serialized;
-	for (int id : ordered)
-	{
-		serialized += std::to_string(id);
-		serialized += ',';
-	}
 	unsigned char digest[SHA256_DIGEST_LENGTH];
 	SHA256(reinterpret_cast<const unsigned char *>(serialized.data()), serialized.size(),
 	       digest);
@@ -10298,33 +10589,202 @@ static std::string sql_saved_item_source_id_digest(const std::vector<int> &ids)
 	return hex;
 }
 
-static bool sql_saved_item_collect_uids(P_obj obj, std::unordered_set<uint64_t> *uids)
+static std::string sql_saved_item_source_id_digest(const std::vector<int> &ids)
 {
-	if (!obj || !uids || !obj->obj_uid || !uids->insert(obj->obj_uid).second)
+	std::vector<int> ordered = ids;
+	std::sort(ordered.begin(), ordered.end());
+	std::string serialized;
+	for (int id : ordered)
+	{
+		serialized += std::to_string(id);
+		serialized += ',';
+	}
+	return sql_saved_item_hex_digest(serialized);
+}
+
+// Bind row content and nested metadata, including SQL IDs and parent links.
+// The two snapshots have separate digests because replacement rows get new IDs.
+static bool sql_saved_item_payload_digest(const char *item_key, std::string *digest,
+					  bool lock = false)
+{
+	if (!item_key || !digest)
+		return false;
+	char *escaped = sql_escape_string(item_key);
+	if (!escaped)
+		return false;
+	std::string serialized;
+	bool ok = true;
+	for (size_t table = 0; table < 3; ++table)
+	{
+		std::string query;
+		if (table == 0)
+			query = "SELECT s.* FROM saved_items s WHERE s.item_key='";
+		else if (table == 1)
+			query = "SELECT a.* FROM saved_item_affects a JOIN saved_items s "
+				"ON s.id=a.item_id WHERE s.item_key='";
+		else
+			query = "SELECT e.* FROM saved_item_extra_descr e JOIN saved_items s "
+				"ON s.id=e.item_id WHERE s.item_key='";
+		query += escaped;
+		query += table == 0 ? "' ORDER BY s.id" :
+			 table == 1 ? "' ORDER BY a.id" :
+				      "' ORDER BY e.id";
+		if (lock)
+			query += " FOR UPDATE";
+		MYSQL_RES *result = db_query("%s", query.c_str());
+		if (!result)
+		{
+			ok = false;
+			break;
+		}
+		serialized += std::to_string(table);
+		serialized += ':';
+		serialized += std::to_string(mysql_num_rows(result));
+		serialized += ':';
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(result)))
+		{
+			unsigned long *lengths = mysql_fetch_lengths(result);
+			if (!lengths)
+			{
+				ok = false;
+				break;
+			}
+			for (unsigned int column = 0; column < mysql_num_fields(result); ++column)
+			{
+				if (!row[column])
+				{
+					serialized += 'N';
+					continue;
+				}
+				serialized += 'V';
+				serialized += std::to_string(lengths[column]);
+				serialized += ':';
+				serialized.append(row[column], lengths[column]);
+			}
+		}
+		mysql_free_result(result);
+		if (!ok)
+			break;
+	}
+	free(escaped);
+	if (ok)
+		*digest = sql_saved_item_hex_digest(serialized);
+	return ok;
+}
+
+static bool sql_saved_item_destination_identity_matches(const std::string &key, int root_id,
+							uint64_t uid, int room_vnum)
+{
+	char *escaped = sql_escape_string(key.c_str());
+	if (!escaped)
+		return false;
+	char query[512];
+	snprintf(query, sizeof(query),
+		 "SELECT obj_uid,room_vnum FROM saved_items WHERE id=%d AND item_key='%s' "
+		 "AND container_id IS NULL",
+		 root_id, escaped);
+	free(escaped);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const bool matches = row && row[0] && row[1] && strtoull(row[0], NULL, 10) == uid &&
+			     atoi(row[1]) == room_vnum && mysql_num_rows(result) == 1;
+	mysql_free_result(result);
+	return matches;
+}
+
+static bool sql_saved_item_verified_destination(const std::string &key, int root_id, uint64_t uid,
+						int room_vnum, int source_count,
+						const std::string &expected_digest)
+{
+	char expected_key[128];
+	std::vector<int> destination_ids;
+	std::string observed_digest;
+	return uid && root_id > 0 && source_count > 0 &&
+	       sql_saved_item_uid_key(uid, expected_key, sizeof expected_key) &&
+	       key == expected_key &&
+	       sql_saved_item_destination_identity_matches(key, root_id, uid, room_vnum) &&
+	       sql_saved_item_source_ids(key.c_str(), &destination_ids) &&
+	       static_cast<int>(destination_ids.size()) == source_count &&
+	       !destination_ids.empty() && destination_ids[0] == root_id &&
+	       sql_saved_item_source_rows_match(key.c_str(), destination_ids, false) &&
+	       sql_saved_item_payload_digest(key.c_str(), &observed_digest) &&
+	       observed_digest == expected_digest;
+}
+
+static bool sql_saved_item_verified_source(const std::string &key, int root_id, int expected_count,
+					   const std::string &expected_id_digest,
+					   const std::string &expected_payload_digest)
+{
+	std::vector<int> ids;
+	std::string observed_payload_digest;
+	return root_id > 0 && expected_count > 0 && sql_saved_item_source_ids(key.c_str(), &ids) &&
+	       static_cast<int>(ids.size()) == expected_count && !ids.empty() &&
+	       ids[0] == root_id && sql_saved_item_source_id_digest(ids) == expected_id_digest &&
+	       sql_saved_item_source_rows_match(key.c_str(), ids, false) &&
+	       sql_saved_item_payload_digest(key.c_str(), &observed_payload_digest) &&
+	       observed_payload_digest == expected_payload_digest;
+}
+
+static bool sql_saved_item_custody_matches(P_obj obj, uint64_t root_uid, uint64_t parent_uid,
+					   uint64_t room_vnum, std::unordered_set<uint64_t> *uids,
+					   std::unordered_set<P_obj> *objects)
+{
+	if (!obj || !uids || !objects || !obj->obj_uid || !uids->insert(obj->obj_uid).second ||
+	    !objects->insert(obj).second)
+		return false;
+	item_ownership_runtime_entry custody = {};
+	if (!item_ownership_runtime_lookup(obj->obj_uid, &custody) ||
+	    custody.root_item_uid != root_uid || custody.parent_item_uid != parent_uid ||
+	    custody.vnum != OBJ_VNUM(obj) || custody.state != item_custody_state::active ||
+	    custody.owner.type != item_owner_type::room || custody.owner.id != room_vnum ||
+	    custody.owner.context_id)
 		return false;
 	for (P_obj child = obj->contains; child; child = child->next_content)
-		if (!sql_saved_item_collect_uids(child, uids))
+		if (!OBJ_INSIDE(child) || child->loc.inside != obj ||
+		    !sql_saved_item_custody_matches(child, root_uid, obj->obj_uid, room_vnum, uids,
+						    objects))
 			return false;
 	return true;
 }
 
-static bool sql_saved_item_handoff_receipt(uint64_t epoch, int source_root_id,
-					   int *destination_root_id, int *source_count,
-					   bool *retired, std::string *source_digest = NULL)
+enum class saved_item_handoff_status
 {
-	char query[256];
+	missing,
+	found,
+	error
+};
+
+static saved_item_handoff_status sql_saved_item_handoff_receipt(
+	uint64_t epoch, int source_root_id, int *destination_root_id, int *source_count,
+	bool *retired, std::string *source_digest = NULL, std::string *destination_key = NULL,
+	uint64_t *source_uid = NULL, int *source_room_vnum = NULL,
+	std::string *source_payload_digest = NULL, std::string *destination_payload_digest = NULL,
+	std::string *source_key = NULL)
+{
+	char query[384];
 	snprintf(query, sizeof(query),
-		 "SELECT destination_root_id, source_row_count, retired_at, HEX(source_id_digest) "
+		 "SELECT destination_root_id, source_row_count, retired_at, HEX(source_id_digest), "
+		 "destination_key, source_uid, source_room_vnum, "
+		 "HEX(source_payload_digest), HEX(destination_payload_digest), source_key "
 		 "FROM saved_item_recovery_handoff "
 		 "WHERE season_epoch=%llu AND source_root_id=%d",
 		 static_cast<unsigned long long>(epoch), source_root_id);
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
-		return false;
+		return saved_item_handoff_status::error;
 	MYSQL_ROW row = mysql_fetch_row(result);
 	const bool found = row != NULL;
 	if (found)
 	{
+		if (!row[0] || !row[1] || !row[3] || !row[4] || !row[5] || !row[6] || !row[7] ||
+		    !row[8] || !row[9])
+		{
+			mysql_free_result(result);
+			return saved_item_handoff_status::error;
+		}
 		if (destination_root_id)
 			*destination_root_id = atoi(row[0]);
 		if (source_count)
@@ -10333,9 +10793,40 @@ static bool sql_saved_item_handoff_receipt(uint64_t epoch, int source_root_id,
 			*retired = row[2] != NULL;
 		if (source_digest)
 			*source_digest = row[3] ? row[3] : "";
+		if (destination_key)
+			*destination_key = row[4];
+		if (source_uid)
+			*source_uid = strtoull(row[5], NULL, 10);
+		if (source_room_vnum)
+			*source_room_vnum = atoi(row[6]);
+		if (source_payload_digest)
+			*source_payload_digest = row[7];
+		if (destination_payload_digest)
+			*destination_payload_digest = row[8];
+		if (source_key)
+			*source_key = row[9];
 	}
 	mysql_free_result(result);
-	return found;
+	return found ? saved_item_handoff_status::found : saved_item_handoff_status::missing;
+}
+
+static saved_item_handoff_status
+sql_saved_item_destination_source(uint64_t epoch, int destination_root_id, int *source_root_id)
+{
+	MYSQL_RES *result = db_query("SELECT source_root_id FROM saved_item_recovery_handoff "
+				     "WHERE season_epoch=%llu AND destination_root_id=%d",
+				     static_cast<unsigned long long>(epoch), destination_root_id);
+	if (!result)
+		return saved_item_handoff_status::error;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const bool found = row && row[0];
+	const bool unique = mysql_num_rows(result) == 1;
+	if (found && unique && source_root_id)
+		*source_root_id = atoi(row[0]);
+	mysql_free_result(result);
+	if (!found)
+		return saved_item_handoff_status::missing;
+	return unique ? saved_item_handoff_status::found : saved_item_handoff_status::error;
 }
 
 static bool sql_retire_saved_item_source(uint64_t epoch, int source_root_id, const char *source_key,
@@ -10347,8 +10838,11 @@ static bool sql_retire_saved_item_source(uint64_t epoch, int source_root_id, con
 	int destination_root_id = 0;
 	bool retired = false;
 	std::string source_digest;
-	if (!sql_saved_item_handoff_receipt(epoch, source_root_id, &destination_root_id, NULL,
-					    &retired, &source_digest) ||
+	std::string expected_payload_digest;
+	if (sql_saved_item_handoff_receipt(epoch, source_root_id, &destination_root_id, NULL,
+					   &retired, &source_digest, NULL, NULL, NULL,
+					   &expected_payload_digest) !=
+		    saved_item_handoff_status::found ||
 	    !destination_root_id)
 		goto done;
 	if (retired)
@@ -10358,12 +10852,15 @@ static bool sql_retire_saved_item_source(uint64_t epoch, int source_root_id, con
 	}
 	{
 		std::vector<int> source_ids;
+		std::string observed_payload_digest;
 		if (!sql_saved_item_source_ids(source_key, &source_ids) ||
 		    static_cast<int>(source_ids.size()) != source_count ||
 		    std::find(source_ids.begin(), source_ids.end(), source_root_id) ==
 			    source_ids.end() ||
 		    sql_saved_item_source_id_digest(source_ids) != source_digest ||
-		    !sql_saved_item_source_rows_match(source_key, source_ids, true))
+		    !sql_saved_item_source_rows_match(source_key, source_ids, true) ||
+		    !sql_saved_item_payload_digest(source_key, &observed_payload_digest, true) ||
+		    observed_payload_digest != expected_payload_digest)
 			goto done;
 	}
 	sql_saved_item_restore_fault("before_retirement");
@@ -10406,9 +10903,13 @@ static bool sql_acknowledge_saved_item_handoff(uint64_t epoch, const char *sourc
 		return false;
 	bool ok = false;
 	int destination_root_id = 0;
+	std::string source_payload_digest;
+	std::string destination_payload_digest;
 	char *escaped_source = NULL;
 	char *escaped_destination = NULL;
 	if (!sql_saved_item_source_rows_match(source_key, source_ids, true))
+		goto done;
+	if (!sql_saved_item_payload_digest(source_key, &source_payload_digest, true))
 		goto done;
 	escaped_destination = sql_escape_string(destination_key);
 	if (!escaped_destination)
@@ -10430,6 +10931,8 @@ static bool sql_acknowledge_saved_item_handoff(uint64_t epoch, const char *sourc
 	destination_root_id = sql_save_saved_item_recursive(destination_key, room_vnum, item, 0);
 	if (destination_root_id <= 0)
 		goto done;
+	if (!sql_saved_item_payload_digest(destination_key, &destination_payload_digest))
+		goto done;
 	escaped_source = sql_escape_string(source_key);
 	if (!escaped_source)
 		goto done;
@@ -10438,13 +10941,16 @@ static bool sql_acknowledge_saved_item_handoff(uint64_t epoch, const char *sourc
 		snprintf(query, sizeof(query),
 			 "INSERT INTO saved_item_recovery_handoff "
 			 "(season_epoch,source_root_id,source_key,source_uid,source_room_vnum,"
-			 "source_row_count,source_id_digest,destination_root_id,destination_key) "
-			 "VALUES (%llu,%d,'%s',%llu,%d,%u,UNHEX('%s'),%d,'%s')",
+			 "source_row_count,source_id_digest,destination_root_id,destination_key,"
+			 "source_payload_digest,destination_payload_digest) "
+			 "VALUES (%llu,%d,'%s',%llu,%d,%u,UNHEX('%s'),%d,'%s',"
+			 "UNHEX('%s'),UNHEX('%s'))",
 			 static_cast<unsigned long long>(epoch), source_ids[0], escaped_source,
 			 static_cast<unsigned long long>(item->obj_uid), room_vnum,
 			 static_cast<unsigned int>(source_ids.size()),
 			 sql_saved_item_source_id_digest(source_ids).c_str(), destination_root_id,
-			 escaped_destination);
+			 escaped_destination, source_payload_digest.c_str(),
+			 destination_payload_digest.c_str());
 		if (!sql_run_query(query))
 			goto done;
 	}
@@ -10505,24 +11011,80 @@ void sql_restore_saved_items(void)
 		int destination_root_id = 0;
 		int source_count = 0;
 		bool retired = false;
-		if (sql_saved_item_handoff_receipt(season_epoch, item_id, &destination_root_id,
-						   &source_count, &retired))
+		std::string receipt_destination_key;
+		std::string expected_destination_digest;
+		uint64_t receipt_uid = 0;
+		int receipt_room_vnum = 0;
+		const auto handoff = sql_saved_item_handoff_receipt(
+			season_epoch, item_id, &destination_root_id, &source_count, &retired, NULL,
+			&receipt_destination_key, &receipt_uid, &receipt_room_vnum, NULL,
+			&expected_destination_digest);
+		if (handoff != saved_item_handoff_status::missing)
 		{
-			char query[128];
-			snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE id=%d",
-				 destination_root_id);
-			MYSQL_RES *destination = db_query("%s", query);
-			const bool acknowledged_payload = destination &&
-							  mysql_num_rows(destination) == 1;
-			if (destination)
-				mysql_free_result(destination);
-			if (acknowledged_payload)
+			const bool valid_destination =
+				handoff == saved_item_handoff_status::found &&
+				receipt_uid == saved_uid && receipt_room_vnum == room_vnum &&
+				sql_saved_item_verified_destination(receipt_destination_key,
+								    destination_root_id,
+								    receipt_uid, receipt_room_vnum,
+								    source_count,
+								    expected_destination_digest);
+			if (!valid_destination)
 			{
-				if (!retired &&
-				    !sql_retire_saved_item_source(season_epoch, item_id, item_key,
-								  source_count))
-					logit(LOG_SYS,
-					      "sql_restore_saved_items: acknowledged source retirement deferred");
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged destination missing or conflicting; source retained without publication");
+				continue;
+			}
+			if (!retired && !sql_retire_saved_item_source(season_epoch, item_id,
+								      item_key, source_count))
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged source retirement deferred");
+			continue;
+		}
+		int receipt_source_root_id = 0;
+		const auto destination_handoff = sql_saved_item_destination_source(
+			season_epoch, item_id, &receipt_source_root_id);
+		if (destination_handoff != saved_item_handoff_status::missing)
+		{
+			std::string destination_key;
+			std::string destination_digest;
+			std::string receipt_source_key;
+			std::string receipt_source_id_digest;
+			std::string receipt_source_payload_digest;
+			uint64_t destination_uid = 0;
+			int destination_room_vnum = 0;
+			int acknowledged_root_id = 0;
+			int acknowledged_count = 0;
+			bool receipt_retired = false;
+			const auto receipt =
+				destination_handoff == saved_item_handoff_status::found ?
+					sql_saved_item_handoff_receipt(
+						season_epoch, receipt_source_root_id,
+						&acknowledged_root_id, &acknowledged_count,
+						&receipt_retired, &receipt_source_id_digest,
+						&destination_key, &destination_uid,
+						&destination_room_vnum,
+						&receipt_source_payload_digest, &destination_digest,
+						&receipt_source_key) :
+					saved_item_handoff_status::error;
+			if (receipt != saved_item_handoff_status::found ||
+			    acknowledged_root_id != item_id || destination_key != item_key ||
+			    destination_uid != saved_uid || destination_room_vnum != room_vnum ||
+			    !sql_saved_item_verified_destination(
+				    destination_key, item_id, saved_uid, room_vnum,
+				    acknowledged_count, destination_digest))
+			{
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged destination missing or conflicting; source retained without publication");
+				continue;
+			}
+			if (!receipt_retired &&
+			    !sql_saved_item_verified_source(
+				    receipt_source_key, receipt_source_root_id, acknowledged_count,
+				    receipt_source_id_digest, receipt_source_payload_digest))
+			{
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged source payload missing or conflicting; destination withheld");
 				continue;
 			}
 		}
@@ -10665,9 +11227,20 @@ void sql_restore_saved_items(void)
 			continue;
 		}
 		std::unordered_set<uint64_t> tree_uids;
-		if (!sql_saved_item_collect_uids(obj, &tree_uids) ||
-		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
-				{ return published_uids.find(uid) != published_uids.end(); }))
+		std::unordered_set<P_obj> tree_objects;
+		if (!sql_saved_item_custody_matches(obj, obj->obj_uid, 0, room_vnum, &tree_uids,
+						    &tree_objects) ||
+		    std::any_of(tree_uids.begin(), tree_uids.end(),
+				[&published_uids](uint64_t uid)
+				{ return published_uids.find(uid) != published_uids.end(); }) ||
+		    [&]()
+		    {
+			    for (P_obj live = object_list; live; live = live->next)
+				    if (tree_objects.find(live) == tree_objects.end() &&
+					tree_uids.find(live->obj_uid) != tree_uids.end())
+					    return true;
+			    return false;
+		    }())
 		{
 			extract_obj(obj, FALSE);
 			continue;

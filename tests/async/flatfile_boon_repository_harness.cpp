@@ -2,6 +2,7 @@
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <filesystem>
@@ -257,9 +258,15 @@ int main(int argc, char **argv)
 			first.entries[1].boon_id == 2 && first.entries[1].counter == 0 &&
 			(first.entries[1].flags & BOON_RESULT_COMPLETED),
 		"first mob event did not preserve SQL boon progress semantics");
-	require(flatfile_boon_repository_apply(root.string(), first_command).outcome ==
-			critical_apply_outcome::already_applied,
-		"boon command did not replay exactly");
+	const auto replayed = flatfile_boon_repository_apply(root.string(), first_command);
+	require(replayed.outcome == critical_apply_outcome::already_applied &&
+			applied.result_size == BOON_REWARD_RESULT_BYTES &&
+			replayed.result_size == applied.result_size &&
+			std::equal(applied.result_payload.begin(),
+				   applied.result_payload.begin() + applied.result_size,
+				   replayed.result_payload.begin()) &&
+			decode_applied_result(replayed).entry_count == 2,
+		"boon command did not replay its complete result exactly");
 	double progress = 0;
 	require(flatfile_boon_load_progress(root.string(), 1, 42, &progress, &error) ==
 				flatfile_boon_result::ok &&
@@ -426,6 +433,30 @@ int main(int argc, char **argv)
 			flatfile_boon_repository_apply(overflow_root.string(), overflow_command)
 					.error_code == E2BIG,
 		"oversized boon match set was not rolled back and durably rejected");
+	// Exercise the final result entry, whose encoded fields extend beyond 2048.
+	const fs::path maximum_root = root / "maximum";
+	fs::create_directories(maximum_root / "domains");
+	fs::permissions(maximum_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(maximum_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	overflow_definitions.pop_back();
+	require(flatfile_boon_establish(maximum_root.string(), overflow_definitions, &error) ==
+			flatfile_boon_result::ok,
+		"could not establish maximum boon catalog");
+	const auto maximum_command = command(overflow, 8);
+	const auto maximum_applied =
+		flatfile_boon_repository_apply(maximum_root.string(), maximum_command);
+	const auto maximum_replayed =
+		flatfile_boon_repository_apply(maximum_root.string(), maximum_command);
+	const auto maximum_result = decode_applied_result(maximum_replayed);
+	require(maximum_applied.outcome == critical_apply_outcome::applied &&
+			maximum_replayed.outcome == critical_apply_outcome::already_applied &&
+			maximum_applied.result_size == BOON_REWARD_RESULT_BYTES &&
+			maximum_replayed.result_size == maximum_applied.result_size &&
+			maximum_replayed.result_payload == maximum_applied.result_payload &&
+			maximum_result.entry_count == BOON_REWARD_MAX_RESULTS &&
+			maximum_result.entries.back().boon_id == 131 &&
+			maximum_result.entries.back().bonus == 1,
+		"maximum boon result did not retain its final entry on replay");
 	const fs::path catalog = domains / "boon_catalog";
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);

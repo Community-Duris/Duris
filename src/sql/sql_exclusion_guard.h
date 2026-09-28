@@ -21,6 +21,7 @@
 #include "no_mysql/mysql.h"
 #else
 #include <mysql.h>
+#include "persistence/economic_sql_lifecycle_lock_names.h"
 #endif
 
 #define DURIS_SQL_EXCLUSION_LOCK_EXPRESSION "CONCAT('duris.player.death.restitution.',DATABASE())"
@@ -31,6 +32,7 @@ struct duris_sql_exclusion_guard_state
 	unsigned long connection_id;
 	pid_t process_id;
 	std::atomic<bool> lost;
+	unsigned long economic_connection_id = 0;
 };
 
 // External inline linkage gives sql.c and sql_pool.c one shared process state.
@@ -84,10 +86,18 @@ static inline bool duris_sql_exclusion_guard_validate(MYSQL *probe)
 		return false;
 	}
 
-	char query[256];
-	const int written = snprintf(query, sizeof(query),
-				     "SELECT IF(IFNULL(IS_USED_LOCK(%s),0)=%lu,1,0)",
-				     DURIS_SQL_EXCLUSION_LOCK_EXPRESSION, state.connection_id);
+	char query[512];
+	const int written =
+		state.economic_connection_id ?
+			snprintf(query, sizeof(query),
+				 "SELECT IF(IFNULL(IS_USED_LOCK(%s),0)=%lu AND "
+				 "IFNULL(IS_USED_LOCK('%s'),0)=%lu,1,0)",
+				 DURIS_SQL_EXCLUSION_LOCK_EXPRESSION, state.connection_id,
+				 ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME,
+				 state.economic_connection_id) :
+			snprintf(query, sizeof(query),
+				 "SELECT IF(IFNULL(IS_USED_LOCK(%s),0)=%lu,1,0)",
+				 DURIS_SQL_EXCLUSION_LOCK_EXPRESSION, state.connection_id);
 	if (written < 0 || (size_t)written >= sizeof(query))
 	{
 		state.lost = true;
@@ -101,6 +111,21 @@ static inline bool duris_sql_exclusion_guard_validate(MYSQL *probe)
 		return false;
 	}
 	return true;
+}
+
+// Boot-only: publish the dedicated lifecycle owner before starting workers.
+// Probes use their own SQL session; no worker touches the control connection.
+static inline bool duris_sql_exclusion_guard_bind_economic_runtime(MYSQL *control)
+{
+	auto &state = duris_sql_exclusion_guard_state_ref();
+	if (!control || !state.connection || control == state.connection || state.lost ||
+	    state.economic_connection_id || state.process_id != getpid())
+		return false;
+	const auto session = mysql_thread_id(control);
+	if (!session)
+		return false;
+	state.economic_connection_id = session;
+	return duris_sql_exclusion_guard_validate(control);
 }
 
 /* A connection may be used only while the runtime's original owner is still
@@ -141,6 +166,7 @@ static inline bool duris_sql_exclusion_guard_acquire(MYSQL *connection)
 	state.connection = connection;
 	state.connection_id = connection_id;
 	state.process_id = getpid();
+	state.economic_connection_id = 0;
 	state.lost = false;
 	if (duris_sql_exclusion_guard_validate(connection))
 		return true;
@@ -169,6 +195,7 @@ static inline void duris_sql_exclusion_guard_release()
 	state.connection = NULL;
 	state.connection_id = 0;
 	state.process_id = 0;
+	state.economic_connection_id = 0;
 	state.lost = true;
 }
 
@@ -185,6 +212,11 @@ static inline bool duris_sql_exclusion_guard_allows(MYSQL *)
 }
 
 static inline bool duris_sql_exclusion_guard_acquire(MYSQL *)
+{
+	return false;
+}
+
+static inline bool duris_sql_exclusion_guard_bind_economic_runtime(MYSQL *)
 {
 	return false;
 }

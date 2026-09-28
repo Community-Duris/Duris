@@ -1,5 +1,6 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_store.h"
 #include "player/player_snapshot_codec.h"
 #include "player/pet_restore_state.h"
@@ -470,6 +471,7 @@ struct snapshot_node
 bool normalize_items(const std::vector<player_item_snapshot> &original,
 		     const std::vector<player_item_snapshot> &additions,
 		     const std::unordered_set<uint64_t> &mentioned,
+		     const std::unordered_set<uint64_t> &accounted,
 		     const std::unordered_map<uint64_t, flatfile_item_ownership_record> &owned,
 		     const item_owner_identity &expected_owner,
 		     std::vector<player_item_snapshot> *normalized)
@@ -495,7 +497,8 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 					original[static_cast<size_t>(item.parent_index)].object_uid;
 			}
 			const auto owner = owned.find(item.object_uid);
-			if (mentioned.contains(item.object_uid))
+			if (mentioned.contains(item.object_uid) ||
+			    accounted.contains(item.object_uid))
 			{
 				if (owner == owned.end() ||
 				    !item_owner_identity_equal(owner->second.owner, expected_owner))
@@ -517,6 +520,10 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 					return false;
 				nodes.back().item = std::move(coins[0]);
 			}
+			if ((mentioned.contains(item.object_uid) ||
+			     accounted.contains(item.object_uid)) &&
+			    owner != owned.end())
+				nodes.back().item.equipment_slot = owner->second.equipment_slot;
 		}
 		for (const auto &item : additions)
 		{
@@ -526,6 +533,7 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 			    !positions.emplace(item.object_uid, nodes.size()).second)
 				return false;
 			nodes.push_back({ item, owner->second.parent_item_uid });
+			nodes.back().item.equipment_slot = owner->second.equipment_slot;
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -1049,9 +1057,71 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 	{
 		return flatfile_shop_trade_materialization_result::io_error;
 	}
+	std::unordered_set<uint64_t> accounted;
+	try
+	{
+		std::unordered_set<uint64_t> candidates;
+		candidates.reserve(reconciled.items.size());
+		auto collect_stale = [&](const std::vector<player_item_snapshot> &items,
+					 const item_owner_identity &expected_owner)
+		{
+			for (size_t index = 0; index < items.size(); ++index)
+			{
+				const auto &item = items[index];
+				if (!item.object_uid || mentioned.contains(item.object_uid))
+					continue;
+				const auto stored = owner_records.find(item.object_uid);
+				if (stored == owner_records.end())
+					continue;
+				uint64_t parent_uid = 0;
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				{
+					if (item.parent_index < 0 ||
+					    static_cast<size_t>(item.parent_index) >= index)
+						continue;
+					parent_uid = items[item.parent_index].object_uid;
+				}
+				if (!item_owner_identity_equal(stored->second.owner,
+							       expected_owner) ||
+				    stored->second.parent_item_uid != parent_uid ||
+				    (item.equipment_slot >= 0 &&
+				     stored->second.equipment_slot !=
+					     static_cast<uint16_t>(item.equipment_slot)))
+					candidates.insert(item.object_uid);
+			}
+		};
+		const item_owner_identity player_owner = { item_owner_type::player, player_pid, 0 };
+		collect_stale(reconciled.items, player_owner);
+		for (const auto &pet : reconciled.pets)
+		{
+			const item_owner_identity pet_owner =
+				pet.pet_uid ? item_owner_identity{ item_owner_type::pet,
+								   pet.pet_uid, player_pid } :
+					      player_owner;
+			collect_stale(pet.items, pet_owner);
+		}
+		accounted.reserve(candidates.size());
+		for (uint64_t uid : candidates)
+		{
+			const auto &record = owner_records.at(uid);
+			economic_accounting_item_reference reference = {};
+			const auto found = flatfile_item_accounting_reference_find_by_item(
+				root, uid, record.item_revision, &reference, error);
+			if (found == flatfile_item_accounting_status::ok)
+				accounted.insert(uid);
+			else if (found != flatfile_item_accounting_status::not_found)
+				return found == flatfile_item_accounting_status::io_error ?
+					       flatfile_shop_trade_materialization_result::io_error :
+					       flatfile_shop_trade_materialization_result::invalid;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_shop_trade_materialization_result::io_error;
+	}
 	const item_owner_identity player_owner = { item_owner_type::player, player_pid, 0 };
-	if (!normalize_items(reconciled.items, additions, mentioned, owner_records, player_owner,
-			     &reconciled.items))
+	if (!normalize_items(reconciled.items, additions, mentioned, accounted, owner_records,
+			     player_owner, &reconciled.items))
 		return flatfile_shop_trade_materialization_result::invalid;
 	for (size_t index = 0; index < reconciled.pets.size(); ++index)
 	{
@@ -1061,11 +1131,12 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 				  player_owner;
 		const auto additions_for_pet = pet_additions.find(pet_uid);
 		const std::vector<player_item_snapshot> empty;
-		if (!normalize_items(
-			    reconciled.pets[index].items,
-			    additions_for_pet == pet_additions.end() ? empty :
-								       additions_for_pet->second,
-			    mentioned, owner_records, pet_owner, &reconciled.pets[index].items))
+		if (!normalize_items(reconciled.pets[index].items,
+				     additions_for_pet == pet_additions.end() ?
+					     empty :
+					     additions_for_pet->second,
+				     mentioned, accounted, owner_records, pet_owner,
+				     &reconciled.pets[index].items))
 			return flatfile_shop_trade_materialization_result::invalid;
 	}
 	size_t total_items = reconciled.items.size();

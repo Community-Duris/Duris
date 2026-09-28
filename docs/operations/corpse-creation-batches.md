@@ -24,21 +24,26 @@ stale parent/list topology, and event/fallback wake-up without inline extraction
 
 `python3 tests/async/test_mysql_combat_journey.py` creates a unique schema on a
 disposable loopback MariaDB server and boots the normal MariaDB server binary.
-Set `TEST_DB_HOST=127.0.0.1`, `TEST_DB_USER` and `TEST_DB_PASSWORD`; the runner
-never reads the checkout's `.env` and drops only its own schema. It builds the
-server by default; `--server bin/server/dms_new` reuses an explicitly selected
-fresh build.
+Set `TEST_DB_DISPOSABLE=1`, `TEST_DB_HOST=127.0.0.1`, `TEST_DB_USER` and
+`TEST_DB_PASSWORD`; the runner never reads the checkout's `.env` and drops only
+its own schema. It builds the server by default; `--server bin/server/dms_new`
+reuses an explicitly selected fresh build.
 
 The MariaDB journey creates an account and character through the game protocol,
 fights and loots an NPC, recovers the starter inventory, and dies with multiple
 roots. It checks that all captured UIDs have corpse custody, their ledger rows
 share one corpse-create operation, and the corresponding corpse item rows
 exist. It then retrieves loot and coins through ordinary commands. A synthetic
-durable child missing from the live item tree provokes the real repository's
-`EMSGSIZE` refusal. At account-menu release the test requires the durable death
-record, captured custody evidence, no remaining active player custody, and
-exactly one increment to the death count. After restart, another login/save/quit
-must preserve wallet/revision, death count, experience/level and evidence hash.
+durable child with missing payload exercises degraded loading, and an additional
+uncaptured payload provokes disposition refusal. The default case explicitly
+removes that task-created conflict before requiring account-menu release, a
+durable death record, captured custody evidence, no remaining active player
+custody, and exactly one increment to the death count. Its PASS proves recovery
+after fixture repair, not unassisted conflict resolution. After restart, another
+login/save/quit must preserve wallet/revision, death count, experience/level and
+evidence hash. The separate
+[unassisted-conflict gate](../persistence/economy_accounting/DEATH_CONFLICT_ACCEPTANCE.md)
+retains the conflict and records full runtime/custody evidence.
 Variants cover default coins, reset-created coins and enabled boons.
 
 `python3 tests/async/test_flatfile_combat_journey.py` exercises the corresponding

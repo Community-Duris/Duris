@@ -11,6 +11,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
@@ -31,6 +32,7 @@
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
 #include "economy/collector_service.h"
+#include "economy/economic_gameplay_authority.h"
 #include "classes/avengers.h"
 #include "economy/boon.h"
 #include "world/buildings.h"
@@ -1269,7 +1271,8 @@ const char *command[MAX_CMD] = {
 	"collector",
 	"restitution",
 	"dummy",
-	"\n" /* MAX_CMD = 865, MAX_CMD_LIST = 1000 */
+	"audit",
+	"\n" /* MAX_CMD = 866, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -1696,6 +1699,15 @@ void do_confirm(P_char ch, bool yes)
 	if (strstr(ch->desc->client_str, "found_asc"))
 	{
 		char guildinfo[MAX_INPUT_LENGTH];
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Guild founding is unavailable while economic accounting is active.\r\n",
+				ch);
+			ch->desc->confirm_state = CONFIRM_DONE;
+			strcpy(ch->desc->client_str, "");
+			return;
+		}
 		if (GET_MONEY(ch) < GUILD_COST)
 		{
 			send_to_char("You dont have enough money!\r\n", ch);
@@ -1828,8 +1840,7 @@ void command_interpreter(P_char ch, char *argument)
 	if (cmd == CMD_SAY2)
 		cmd = CMD_SAY;
 
-	/* Async locker snapshot: block only this player's object-manipulation
-	 * commands while their locker is DIRTY (pre-snapshot / pre-seal). */
+	/* Keep locker object commands behind any queued or in-flight snapshot. */
 	if (IS_PC(ch) && locker_async_player_obj_locked(ch))
 	{
 		if (cmd == CMD_GET || cmd == CMD_TAKE || cmd == CMD_DROP || cmd == CMD_PUT ||
@@ -3024,6 +3035,7 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_WHICH, STAT_DEAD + POS_PRONE, do_which, IMMORTAL);
 	CMD_GRT(CMD_EQRATE, STAT_DEAD + POS_PRONE, do_eqrate, IMMORTAL);
 	CMD_GRT(CMD_RESTITUTION, STAT_DEAD + POS_PRONE, do_restitution, FORGER);
+	CMD_GRT(CMD_AUDIT, STAT_DEAD + POS_PRONE, do_audit, FORGER);
 	CMD_GRT(CMD_WIZLOCK, STAT_DEAD + POS_PRONE, do_wizlock, FORGER);
 	CMD_GRT(CMD_WIZCONNECT, STAT_DEAD + POS_PRONE, do_wizhost, GREATER_G);
 	CMD_GRT(CMD_ZRESET, STAT_DEAD + POS_PRONE, do_zreset, GREATER_G);

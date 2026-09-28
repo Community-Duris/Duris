@@ -15,6 +15,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/shop.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -56,6 +57,17 @@ extern P_obj object_list;
 struct shop_data *shop_index;
 int number_of_shops = 0;
 const char *operator_str[] = { "[({", "])}", "|+", "&*", "^'" };
+
+static bool refuse_unported_shop_mutation(P_char ch)
+{
+	if (!economic_gameplay_authority::active())
+		return false;
+	if (ch)
+		send_to_char(
+			"Shop trades and services are unavailable while economic accounting is active.\r\n",
+			ch);
+	return true;
+}
 
 struct produced_purchase_sequence
 {
@@ -193,7 +205,8 @@ static bool shop_creation_submit_grant(P_char ch, produced_purchase_sequence &se
 						 GET_ITEM_TYPE(destination) == ITEM_CONTAINER)) &&
 	       shop_trade_container_accepts(ch, selected, destination) &&
 	       item_creation_grant_submit_to_player_with_completion(ch, selected, ch, destination,
-								    shop_creation_grant_completion);
+								    shop_creation_grant_completion,
+								    economic_source_kind::shop_stock);
 }
 
 static bool shop_creation_submit_produced_continuation(P_char ch,
@@ -266,8 +279,9 @@ static bool shop_trade_submit_produced_continuation(P_char ch,
 		return false;
 	}
 	shop_trade_payload payload = {};
-	if (shop_trade_runtime_build_payload(ch, selected, stock, destination, sequence.shop_id,
-					     shop_trade_action::buy_produced, sequence.price,
+	if (shop_trade_runtime_build_payload(ch, keeper, selected, stock, destination,
+					     sequence.shop_id, shop_trade_action::buy_produced,
+					     sequence.price,
 					     &payload) != shop_trade_payload_build_result::ok ||
 	    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
 	{
@@ -283,7 +297,7 @@ static bool shop_trade_submit_invalid_cleanup(P_char ch, P_char keeper, P_obj ob
 	if (!ch || !keeper || !object || !OBJ_CARRIED_BY(object, keeper))
 		return false;
 	shop_trade_payload payload = {};
-	return shop_trade_runtime_build_payload(ch, object, NULL, NULL, shop_id,
+	return shop_trade_runtime_build_payload(ch, keeper, object, NULL, NULL, shop_id,
 						shop_trade_action::discard_invalid, 0,
 						&payload) == shop_trade_payload_build_result::ok &&
 	       shop_trade_transaction_submit(ch, payload, shop_trade_completion);
@@ -318,8 +332,17 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 	const bool selling = payload.action == shop_trade_action::sell_store ||
 			     payload.action == shop_trade_action::sell_destroy;
 	const bool cleanup = payload.action == shop_trade_action::discard_invalid;
+	const int64_t live_keeper_cash =
+		keeper ? static_cast<int64_t>(GET_COPPER(keeper)) + 10LL * GET_SILVER(keeper) +
+				 100LL * GET_GOLD(keeper) + 1000LL * GET_PLATINUM(keeper) :
+			 -1;
+	const bool cash_matches = !result.keeper_cash_recorded ||
+				  (keeper && GET_VNUM(keeper) == payload.keeper_vnum &&
+				   (live_keeper_cash == payload.expected_keeper_cash ||
+				    live_keeper_cash == result.keeper_cash));
 	const bool correct_location =
-		object && (payload.action != shop_trade_action::sell_store || keeper) &&
+		object && cash_matches &&
+		(payload.action != shop_trade_action::sell_store || keeper) &&
 		((produced && keeper && OBJ_NOWHERE(object) &&
 		  (!payload.target_parent_item_uid ||
 		   (destination && OBJ_CARRIED_BY(destination, ch) &&
@@ -368,6 +391,16 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 	}
 
 	char message[MAX_STRING_LENGTH];
+	if (keeper && result.keeper_cash_recorded && live_keeper_cash != result.keeper_cash)
+	{
+		int64_t remaining = result.keeper_cash;
+		GET_PLATINUM(keeper) = remaining / 1000;
+		remaining %= 1000;
+		GET_GOLD(keeper) = remaining / 100;
+		remaining %= 100;
+		GET_SILVER(keeper) = remaining / 10;
+		GET_COPPER(keeper) = remaining % 10;
+	}
 	if (cleanup)
 	{
 		wizlog(56, "(%s) shopkeeper durably destroyed invalid stock (%s %d).",
@@ -385,7 +418,8 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 					   shop_index[payload.shop_id].message_buy, GET_NAME(ch),
 					   coin_stringv(payload.price));
 			do_tell(keeper, message, 0);
-			ADD_MONEY(keeper, payload.price);
+			if (!result.keeper_cash_recorded && payload.price)
+				ADD_MONEY(keeper, payload.price);
 		}
 		if (!produced)
 			obj_from_char(object);
@@ -437,7 +471,8 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 				   shop_index[payload.shop_id].message_sell, GET_NAME(ch),
 				   coin_stringv(payload.price));
 		do_tell(keeper, message, 0);
-		SUB_MONEY(keeper, payload.price, 0);
+		if (!result.keeper_cash_recorded)
+			SUB_MONEY(keeper, payload.price, 0);
 	}
 	snprintf(message, MAX_STRING_LENGTH, "The shopkeeper gives you %s.\r\n",
 		 coin_stringv(payload.price));
@@ -982,6 +1017,8 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 
 void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
+	if (refuse_unported_shop_mutation(ch))
+		return;
 	char argm[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
 	P_obj temp1, gem = NULL, container;
 	int i = 0, sale;
@@ -1204,7 +1241,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		shop_trade_payload payload = {};
 		if (shop_trade_runtime_build_payload(
-			    ch, selected, produced ? temp1 : NULL, destination, shop_nr,
+			    ch, keeper, selected, produced ? temp1 : NULL, destination, shop_nr,
 			    produced ? shop_trade_action::buy_produced :
 				       shop_trade_action::buy_existing,
 			    transaction_price, &payload) != shop_trade_payload_build_result::ok ||
@@ -1305,7 +1342,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	SET_BIT(temp1->extra2_flags, ITEM2_STOREITEM);
 	container = NULL;
 	container = purchase_destination;
-	if (!item_creation_grant_submit_to_player(ch, temp1, ch, container))
+	if (!item_creation_grant_submit_to_player(ch, temp1, ch, container,
+							   economic_source_kind::shop_stock))
 	{
 		extract_obj(temp1, FALSE);
 		send_to_char(
@@ -1319,6 +1357,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
+	if (refuse_unported_shop_mutation(ch))
+		return;
 	P_obj temp1;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char argm[MAX_INPUT_LENGTH];
@@ -1439,8 +1479,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 							 shop_trade_action::sell_destroy :
 							 shop_trade_action::sell_store;
 		shop_trade_payload payload = {};
-		if (shop_trade_runtime_build_payload(ch, temp1, NULL, NULL, shop_nr, action, sale,
-						     &payload) !=
+		if (shop_trade_runtime_build_payload(ch, keeper, temp1, NULL, NULL, shop_nr, action,
+						     sale, &payload) !=
 			    shop_trade_payload_build_result::ok ||
 		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
 		{
@@ -1598,6 +1638,8 @@ void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
+	if (refuse_unported_shop_mutation(ch))
+		return;
 	char argm[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
 	P_obj temp1, gem = NULL;
@@ -1834,6 +1876,8 @@ void shopping_kill(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 
 void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
+	if (refuse_unported_shop_mutation(ch))
+		return;
 	char buf[MAX_INPUT_LENGTH], argm[MAX_INPUT_LENGTH];
 	int cost, ave;
 	P_obj obj, gem = NULL, wpn = NULL;
@@ -1952,6 +1996,10 @@ int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg)
 
 	if (!cmd)
 		return FALSE;
+	if ((cmd == CMD_BUY || cmd == CMD_SELL || cmd == CMD_PERUSE || cmd == CMD_REPAIR ||
+	     cmd == CMD_FORGE) &&
+	    refuse_unported_shop_mutation(ch))
+		return TRUE;
 
 	if (cmd == CMD_FORGE)
 		return smith(keeper, ch, cmd, arg);
@@ -2622,6 +2670,8 @@ P_obj accept_gem_for_debt(P_char ch, P_char keeper, int debt)
 
 bool transact(P_char from, P_obj merchandise, P_char to, int value)
 {
+	if (refuse_unported_shop_mutation(from))
+		return FALSE;
 	int i, gem_value, change;
 	char Gbuf4[MAX_STRING_LENGTH];
 

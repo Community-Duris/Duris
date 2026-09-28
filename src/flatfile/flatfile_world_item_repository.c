@@ -521,7 +521,8 @@ bool room_transfer_deposit(const item_transfer_payload &payload)
 {
 	return payload.from_owner.type == item_owner_type::player &&
 	       payload.to_owner.type == item_owner_type::room &&
-	       ((payload.reason == item_transfer_reason::player_drop &&
+	       (((payload.reason == item_transfer_reason::player_drop ||
+		  item_transfer_forced_weapon_drop(payload.reason)) &&
 		 !payload.target_parent_item_uid) ||
 		(payload.reason == item_transfer_reason::player_put &&
 		 payload.target_parent_item_uid));

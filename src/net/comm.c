@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "combat/attack_cadence.h"
 #include "world/world_singletons.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
@@ -93,7 +94,7 @@
 #include "account/creation_availability_config.h"
 #include "item/material_rarity.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_migration.h"
 #include "net/telnet.h"
 #include "world/timers.h"
 #include "economy/tradeskill.h"
@@ -111,6 +112,7 @@
 #include "persistence/maintenance_scheduler.h"
 #include "persistence/maintenance_snapshot.h"
 #include "persistence/critical_command_coordinator.h"
+#include "economy/economic_command_admission.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/corpse_lifecycle_transaction.h"
@@ -120,6 +122,7 @@
 #include "economy/shop_trade_transaction.h"
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_accounting_dispatch.h"
 #include "economy/auction_transaction.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
@@ -279,6 +282,15 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	boon_shop_transaction_handle_completions(completions, count);
 	zone_touch_transaction_handle_completions(completions, count);
 	player_death_restitution_runtime_handle_completions(completions, count);
+}
+
+static bool critical_gameplay_restore_replayed_command(const critical_command &command,
+						       void *context)
+{
+	// Replay runs under the coordinator mutex. Neither observer may call back
+	// into the coordinator; refusal keeps the journal and fails startup closed.
+	return player_death_restitution_runtime_restore_replayed_command(command, context) &&
+	       currency_transaction_restore_replayed_command(command);
 }
 
 #ifndef __NO_MYSQL__
@@ -647,6 +659,7 @@ int main(int argc, char **argv)
 	(void)telemetry_runtime_final_reap();
 	artifact_mana_shutdown();
 	shutdown_mysql();
+	critical_command_coordinator_release_lifecycle_guard();
 	close_cmdlog();
 
 	return game_exit_status;
@@ -929,8 +942,11 @@ int run_the_game(int port, int sslport)
 	}
 	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
 	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
+	critical_extension_validator_fn critical_extension_validator =
+		economic_command_admission_supported;
 #ifdef __NO_MYSQL__
-	critical_apply = flatfile_critical_command_repository_apply_selected;
+	critical_apply = flatfile_accounting_apply_selected;
+	critical_extension_validator = economic_flatfile_command_admission_supported;
 #else
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
@@ -939,14 +955,19 @@ int run_the_game(int port, int sslport)
 #ifndef __NO_MYSQL__
 		!critical_outbox_ready ||
 #endif
-		!critical_command_coordinator_init(
-			critical_journal_directory, critical_apply, NULL,
-			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-			player_death_restitution_runtime_restore_replayed_command, NULL))
+		!critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
+						   CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+						   critical_gameplay_restore_replayed_command, NULL,
+						   critical_extension_validator))
 	{
-		player_death_restitution_runtime_abort_all();
-		critical_command_coordinator_shutdown();
-		critical_outbox_shutdown();
+		if (critical_command_coordinator_shutdown())
+		{
+			player_death_restitution_runtime_abort_all();
+			critical_outbox_shutdown();
+		}
+		else
+			logit(LOG_STATUS,
+			      "Critical command coordinator shutdown refused; retaining dependent pipelines.");
 		logit(LOG_STATUS,
 		      "Critical command pipeline unavailable; critical gameplay fails closed.");
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
@@ -1015,9 +1036,13 @@ int run_the_game(int port, int sslport)
 	account_recovery_shutdown();
 	password_login_shutdown();
 	player_death_restitution_runtime_shutdown();
-	critical_command_coordinator_shutdown();
+	const bool critical_coordinator_stopped = critical_command_coordinator_shutdown();
+	if (!critical_coordinator_stopped)
+		logit(LOG_EXIT,
+		      "Critical coordinator refused shutdown after lifecycle guard acquisition.");
 	locker_identify_shutdown();
-	critical_outbox_shutdown();
+	if (critical_coordinator_stopped)
+		critical_outbox_shutdown();
 	if (!_pwipe)
 	{
 		locker_async_shutdown();
@@ -2309,6 +2334,26 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 	ctx.loop_us = loop_us;
 }
 
+static void refuse_lifecycle_for_active_cutover_owner(const char *operation)
+{
+	logit(LOG_STATUS, "Refusing %s while a critical SQL cutover owner retains its session.",
+	      operation);
+	persistence_alert(AVATAR, "critical_command", operation, "none", "none",
+			  "lifecycle_refused",
+			  "shutdown_cancelled=1 retry_after_owner_terminal_cleanup=1");
+	for (P_desc pending_desc = descriptor_list; pending_desc; pending_desc = pending_desc->next)
+		if (pending_desc->descriptor > 0 && pending_desc->connected == CON_PLAYING)
+			write_to_descriptor(
+				pending_desc,
+				"\r\nShutdown/copyover cancelled: an economic SQL cutover still owns its session. "
+				"Retry after terminal cleanup.\r\n");
+	shutdownflag = 0;
+	_reboot = 0;
+	_copyover = 0;
+	_autoboot = 0;
+	shutdownData.eShutdownType = TimedShutdownData::NONE;
+}
+
 /**
  * Run network and simulation pulses, including persistence deadlines
  * independent of world-event debt.
@@ -2510,6 +2555,11 @@ resume_game_loop:
 
 	if (_copyover)
 	{
+		if (!critical_command_coordinator_try_acquire_lifecycle_guard())
+		{
+			refuse_lifecycle_for_active_cutover_owner("copyover");
+			goto resume_game_loop;
+		}
 		/* Flush dirty realm records (harvested deposits) before the exec.
 		 * There are two distinct kingdom flush paths, on purpose:
 		 *   1. Normal shutdown: game_loop() returns and main() runs
@@ -2532,6 +2582,7 @@ resume_game_loop:
 			_reboot = 0;
 			_copyover = 0;
 			_autoboot = 0;
+			critical_command_coordinator_release_lifecycle_guard();
 			goto resume_game_loop;
 		}
 		return;
@@ -2548,6 +2599,11 @@ resume_game_loop:
 		goto resume_game_loop;
 	}
 
+	if (!critical_command_coordinator_try_acquire_lifecycle_guard())
+	{
+		refuse_lifecycle_for_active_cutover_owner("shutdown");
+		goto resume_game_loop;
+	}
 	critical_command_coordinator_quiesce();
 	critical_outbox_quiesce();
 	if (!_pwipe && !critical_command_coordinator_drain(3000))
@@ -2559,6 +2615,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !critical_outbox_drain(3000))
@@ -2570,6 +2627,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))
@@ -2587,6 +2645,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !player_save_pipeline_drain(3000))
@@ -2599,6 +2658,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !redis_world_recovery_drain(3000))
@@ -2611,6 +2671,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !save_dirty_shopkeepers(true))
@@ -2632,6 +2693,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 
@@ -5168,7 +5230,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 	int j, tbp, which_z, sil = type & ACT_SILENCEABLE;
 	bool ignore_zcoord = type & ACT_IGNORE_ZCOORD;
 	char *point;
-	const char *strp, *i;
+	const char *strp, *i = nullptr;
 	int terseonly = type & ACT_TERSE;
 	int notterse = type & ACT_NOTTERSE;
 	bool no_eol = type & ACT_NOEOL;
@@ -5290,6 +5352,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 				if (*strp == '$')
 				{
 					j = 0;
+					i = nullptr;
 
 					switch (*(++strp))
 					{

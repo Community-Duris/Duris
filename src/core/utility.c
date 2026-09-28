@@ -35,7 +35,9 @@ using namespace std;
 #include "core/utils.h"
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
+#include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/defines.h"
 #include "world/epic.h"
 #include "net/gmcp.h"
@@ -56,7 +58,6 @@ using namespace std;
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_pool.h"
-#include "sql/sql_player.h"
 #include "world/weather.h"
 
 /*
@@ -110,6 +111,53 @@ extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern int _pwipe;
 extern const char *sector_types[];
+
+/* Format a long integer with grouping commas. */
+char *comma_string(long num)
+{
+	static char buf1[50] = { 0 }, buf2[50] = { 0 };
+	int bp1, bp2, len, j;
+
+	snprintf(buf1, 50, "%ld", num);
+
+	len = strlen(buf1);
+	bp1 = 0;
+	bp2 = 0;
+
+	if (buf1[0] == '-')
+	{
+		*(buf2 + bp2++) = *(buf1 + bp1++);
+		len--;
+	}
+	if (len < 4)
+		return (buf1); /*
+		                * doesn't need commas
+		                */
+
+	if (len % 3)
+	{
+		for (j = len % 3; j > 0; j--)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		*(buf2 + bp2++) = ',';
+	}
+	while (len)
+	{
+		for (j = 0; j < 3; j++)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		if (len)
+			*(buf2 + bp2++) = ',';
+	}
+
+	*(buf2 + bp2) = '\0';
+
+	return (buf2);
+}
 
 char GS_buf1[MAX_STRING_LENGTH];
 
@@ -3076,6 +3124,15 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
+	if (economic_gameplay_authority::active())
+	{
+		logit(LOG_WIZ, "ADD_MONEY: refusing unsupported active cash credit");
+		if (IS_PC(ch) && GET_PID(ch) > 0)
+			send_to_char(
+				"Your coin credit could not be processed while active accounting is enabled.\r\n",
+				ch);
+		return;
+	}
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 	{
 		if (!currency_transaction_submit_wallet_value(
@@ -3180,6 +3237,8 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 	for (P_desc desc = descriptor_list; desc; desc = desc->next)
 	{
 		P_char target = desc->original ? desc->original : desc->character;
+		if (target && IS_MORPH(target))
+			target = MORPH_ORIG(target);
 		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
 		    !desc->account->acct_name ||
 		    strcasecmp(desc->account->acct_name, account_name) ||
@@ -3229,6 +3288,8 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	int t = 0;
 
 	if (amount <= 0)
+		return -1;
+	if (economic_gameplay_authority::active())
 		return -1;
 	if (amount > GET_MONEY(ch))
 		return -1;
@@ -4919,6 +4980,12 @@ bool spell_can_affect_char(P_char ch, int spl)
 		 (IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) ||
 		 (IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
 		 (IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER)));
+}
+
+// The swashbuckler is considered the victim. // May09 -Lucrot
+bool opposite_racewar(P_char ch, P_char victim)
+{
+	return IS_PC(ch) && IS_PC(victim) && GET_RACEWAR(ch) != GET_RACEWAR(victim);
 }
 
 /* is viewee at war with viewer? */

@@ -62,6 +62,9 @@ bool valid_payload(const shop_trade_payload &payload)
 	if (payload.action <= shop_trade_action::unknown ||
 	    payload.action > shop_trade_action::discard_invalid || !payload.player_pid ||
 	    !valid_name(payload.account_name) || payload.price < 0 || payload.price > INT_MAX ||
+	    payload.keeper_vnum < 0 || payload.expected_keeper_cash < 0 ||
+	    payload.expected_keeper_cash > INT_MAX || payload.keeper_roaming > 1 ||
+	    (!payload.keeper_vnum && payload.expected_keeper_cash) ||
 	    (cleanup(payload) ? payload.price != 0 : (!purchase(payload) && payload.price == 0)) ||
 	    !payload.expected_shop_revision || !payload.selected_item_uid || !payload.item_count ||
 	    payload.item_count > payload.items.size() || !payload.item_blob_size ||
@@ -215,6 +218,9 @@ bool shop_trade_command_encode_payload(const shop_trade_payload &payload,
 		append_le<uint32_t>(encoded, payload.shop_id);
 		append_le<uint8_t>(encoded, payload.racewar);
 		append_le<int64_t>(encoded, payload.price);
+		append_le<int32_t>(encoded, payload.keeper_vnum);
+		append_le<int64_t>(encoded, payload.expected_keeper_cash);
+		append_le<uint8_t>(encoded, payload.keeper_roaming);
 		append_le<uint64_t>(encoded, payload.expected_wallet_revision);
 		append_le<uint64_t>(encoded, payload.expected_bank_revision);
 		append_le<uint64_t>(encoded, payload.expected_shop_revision);
@@ -258,6 +264,7 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 	if (!payload || command.type != critical_command_type::shop_trade ||
 	    (command.payload_version != SHOP_TRADE_PAYLOAD_VERSION &&
 	     command.payload_version != SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != SHOP_TRADE_CONTAINER_PAYLOAD_VERSION &&
 	     command.payload_version != SHOP_TRADE_STOCK_PAYLOAD_VERSION &&
 	     command.payload_version != SHOP_TRADE_LEGACY_PAYLOAD_VERSION))
 		return false;
@@ -267,13 +274,19 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 	uint8_t action = 0, name_length = 0;
 	if (!read_le(&cursor, end, &action) || !read_le(&cursor, end, &payload->player_pid) ||
 	    !read_le(&cursor, end, &payload->shop_id) ||
-	    !read_le(&cursor, end, &payload->racewar) || !read_le(&cursor, end, &payload->price) ||
-	    !read_le(&cursor, end, &payload->expected_wallet_revision) ||
+	    !read_le(&cursor, end, &payload->racewar) || !read_le(&cursor, end, &payload->price))
+		return false;
+	if (command.payload_version == SHOP_TRADE_PAYLOAD_VERSION &&
+	    (!read_le(&cursor, end, &payload->keeper_vnum) ||
+	     !read_le(&cursor, end, &payload->expected_keeper_cash) ||
+	     !read_le(&cursor, end, &payload->keeper_roaming)))
+		return false;
+	if (!read_le(&cursor, end, &payload->expected_wallet_revision) ||
 	    !read_le(&cursor, end, &payload->expected_bank_revision) ||
 	    !read_le(&cursor, end, &payload->expected_shop_revision) ||
 	    !read_le(&cursor, end, &payload->selected_item_uid))
 		return false;
-	if (command.payload_version >= SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION)
+	if (command.payload_version >= SHOP_TRADE_CONTAINER_PAYLOAD_VERSION)
 	{
 		if (!read_le(&cursor, end, &payload->target_root_item_uid) ||
 		    !read_le(&cursor, end, &payload->target_parent_item_uid) ||
@@ -349,7 +362,7 @@ bool shop_trade_command_encode_result(const shop_trade_result &result,
 			return false;
 	encoded->fill(0);
 	(*encoded)[0] = static_cast<uint8_t>(result.action);
-	(*encoded)[1] = SHOP_TRADE_RESULT_VERSION;
+	(*encoded)[1] = result.keeper_cash_recorded ? SHOP_TRADE_RESULT_VERSION : 1;
 	put_u16(encoded->data() + 2, result.item_count);
 	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
 	{
@@ -368,14 +381,22 @@ bool shop_trade_command_encode_result(const shop_trade_result &result,
 		put_u64(encoded->data() + 112 + index * 16, result.item_uids[index]);
 		put_u64(encoded->data() + 120 + index * 16, result.item_revisions[index]);
 	}
+	if (result.keeper_cash_recorded)
+	{
+		if (result.keeper_cash < 0 || result.keeper_cash > INT_MAX)
+			return false;
+		put_u64(encoded->data() + SHOP_TRADE_PREVIOUS_RESULT_BYTES,
+			static_cast<uint64_t>(result.keeper_cash));
+	}
 	return true;
 }
 
 bool shop_trade_command_decode_result(const uint8_t *encoded, size_t size,
 				      shop_trade_result *result)
 {
-	if (!encoded || size != SHOP_TRADE_RESULT_BYTES || !result ||
-	    (encoded[1] && encoded[1] != SHOP_TRADE_RESULT_VERSION) || encoded[4] || encoded[5] ||
+	if (!encoded ||
+	    (size != SHOP_TRADE_RESULT_BYTES && size != SHOP_TRADE_PREVIOUS_RESULT_BYTES) ||
+	    !result || (encoded[1] > SHOP_TRADE_RESULT_VERSION) || encoded[4] || encoded[5] ||
 	    encoded[6] || encoded[7])
 		return false;
 	*result = {};
@@ -398,6 +419,16 @@ bool shop_trade_command_decode_result(const uint8_t *encoded, size_t size,
 	result->wallet_revision = get_u64(encoded + 72);
 	result->bank_revision = get_u64(encoded + 80);
 	result->shop_revision = get_u64(encoded + 88);
+	result->keeper_cash_recorded = encoded[1] == SHOP_TRADE_RESULT_VERSION;
+	if (result->keeper_cash_recorded)
+	{
+		if (size != SHOP_TRADE_RESULT_BYTES)
+			return false;
+		result->keeper_cash =
+			static_cast<int64_t>(get_u64(encoded + SHOP_TRADE_PREVIOUS_RESULT_BYTES));
+		if (result->keeper_cash < 0 || result->keeper_cash > INT_MAX)
+			return false;
+	}
 	result->player_owner_revision = get_u64(encoded + 96);
 	result->counterparty_owner_revision = get_u64(encoded + 104);
 	for (size_t index = 0; index < result->item_count; ++index)
@@ -407,7 +438,13 @@ bool shop_trade_command_decode_result(const uint8_t *encoded, size_t size,
 		if (!result->item_uids[index])
 			return false;
 	}
-	for (size_t offset = 112 + result->item_count * 16; offset < size; ++offset)
+	for (size_t offset = 112 + result->item_count * 16;
+	     offset < SHOP_TRADE_PREVIOUS_RESULT_BYTES; ++offset)
+		if (encoded[offset])
+			return false;
+	for (size_t offset = result->keeper_cash_recorded ? SHOP_TRADE_RESULT_BYTES :
+							    SHOP_TRADE_PREVIOUS_RESULT_BYTES;
+	     offset < size; ++offset)
 		if (encoded[offset])
 			return false;
 	return true;

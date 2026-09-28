@@ -348,8 +348,8 @@ int main() {
 
 callbacks = '\n'.join(function(ROOT / 'src/specs/specs.underworld.c', signature) for signature in (
     'void event_tsunamiwave(', 'int SeaKingdom_Tsunami(', 'int deflect_ioun('))
-callbacks += '\n' + function(ROOT / 'src/specs/specs.object.c', 'int living_necroplasm(')
-callbacks += '\n' + function(ROOT / 'src/magic/magic.c', 'void spell_vampire(')
+callbacks += '\n' + function(ROOT / 'src/specs/specs.unique.c', 'int living_necroplasm(')
+callbacks += '\n' + function(ROOT / 'src/magic/spell_transformations.c', 'void spell_vampire(')
 affects = '\n'.join(function(ROOT / 'src/magic/affects.c', signature) for signature in (
     'void clear_links(P_char ch, P_obj obj, int flag)',
     'void unlink_char_obj_affect(P_char ch, struct affected_type *af)'))

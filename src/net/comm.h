@@ -33,6 +33,7 @@
 extern long sentbytes;
 
 struct sockaddr_in6;
+struct OutputContext;
 bool runtime_listener_address(struct sockaddr_in6 *address);
 
 /* Resolve a client address without blocking the select() game loop. */
@@ -225,6 +226,12 @@ int io_processFDS(fd_set * rfds, fd_set * wfds, fd_set * efds);
   */
 
 #endif /* 0 */
+
+void act(const char *message, int hide_invisible, P_char actor, P_obj object, void *victim,
+	 int type);
+void act(const char *message, int hide_invisible, P_char actor, P_obj object, void *victim,
+	 int type, const OutputContext &context);
+void send_to_room(const char *message, int room);
 
 /* Escapes all '$' characters in player-controlled text to '$$' so that
  * act() interprets them as literal '$' rather than $-directives ($n, $p,

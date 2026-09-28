@@ -15,6 +15,7 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <strings.h>
@@ -25,6 +26,7 @@
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/specs.prototypes.h"
+#include "world/bloodstains.h"
 #include "specs/specs.winterhaven.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -681,6 +683,16 @@ int dump(int /*room*/, P_char ch, int cmd, char *arg)
 
 	if (!ch)
 		return (FALSE);
+	if (economic_gameplay_authority::active())
+	{
+		if (cmd == CMD_DROP)
+		{
+			send_to_char("The dump cannot accept items while accounting is active.\r\n",
+				     ch);
+			return TRUE;
+		}
+		return FALSE;
+	}
 
 	for (obj = world[ch->in_room].contents; obj; obj = next_obj)
 	{
@@ -816,6 +828,13 @@ int patrol_shops(int /*room*/, P_char ch, int cmd, char *arg)
 			send_to_char("You dont have enough money!\r\n", ch);
 			return (TRUE);
 		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Patrol hiring is unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
 		if (!(pet = read_mobile(GET_RNUM(pet), REAL)))
 		{
 			send_to_char("Sorry, we seem to be out of stock!\r\n", ch);
@@ -910,6 +929,13 @@ int pet_shops(int /*room*/, P_char ch, int cmd, char *arg)
 			send_to_char("You dont have enough money!\r\n", ch);
 			return (TRUE);
 		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Pet purchases are unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
 		if (!(pet = read_mobile(GET_RNUM(pet), REAL)))
 		{
 			send_to_char("Sorry, we seem to be out of stock!\r\n", ch);
@@ -961,6 +987,13 @@ int pet_shops(int /*room*/, P_char ch, int cmd, char *arg)
 		if (IS_FIGHTING(mount))
 		{
 			send_to_char("Yer pet is too busy fighting!\r\n", ch);
+			return TRUE;
+		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Pet rentals are unavailable while active accounting is enabled.\r\n",
+				ch);
 			return TRUE;
 		}
 		SUB_MONEY(ch, val, 0);
@@ -1053,6 +1086,13 @@ int pet_shops(int /*room*/, P_char ch, int cmd, char *arg)
 		{
 			return FALSE;
 		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Pet rentals are unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
 		snprintf(buf, sizeof buf, "%s%d", GET_NAME(ch), ticket->value[1]);
 		//    petrestore(ch, buf);
 		SUB_MONEY(ch, val, 0);
@@ -1101,6 +1141,13 @@ int pray_for_items(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 		for (ext = obj->ex_description; ext && !found; ext = ext->next)
 			if (str_cmp(Gbuf4, ext->keyword) == 0)
 			{
+				if (economic_gameplay_authority::active())
+				{
+					send_to_char(
+						"Item prayers are unavailable while active accounting is enabled.\r\n",
+						ch);
+					return TRUE;
+				}
 				if (gold == 0)
 				{
 					gold = 1;

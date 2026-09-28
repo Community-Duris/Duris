@@ -45,7 +45,7 @@ fixture = fixture.replace("// INSERT_PRODUCTION_ABORT",
 callbacks = "\n".join([
     function(ROOT / "src/specs/specs.underworld.c", "void resolve_avernus_drain("),
     function(ROOT / "src/specs/specs.underworld.c", "int avernus("),
-    function(ROOT / "src/combat/fight.c", "bool weapon_proc("),
+    function(ROOT / "src/combat/attack_effects.c", "bool weapon_proc("),
     function(ROOT / "src/item/randomeq.c", "int random_eq_proc("),
 ])
 

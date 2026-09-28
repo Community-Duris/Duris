@@ -478,6 +478,146 @@
       "verify": "immutable/0030_telemetry_quarantine.sh",
       "verify_checksum": "5c85232132f1e1e0d05e469f5d752454e07361e50360b387635d200cc060e1cf",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0031_economy_accounting",
+      "sequence": 31,
+      "description": "Add economic evidence and retained epoch and account lifetime identities",
+      "apply": "immutable/0031_economy_accounting.sql",
+      "apply_checksum": "f19f74eecbb63b7986613a0eb1ad79f96c3f9e7ab5c654afb69a18430a1f4e95",
+      "verify": "immutable/0031_economy_accounting.sh",
+      "verify_checksum": "674b39f13915320eeddc158cc47ad88128ec38fb8ba05afb619972d4af8ad911",
+      "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0032_economic_baseline",
+      "sequence": 32,
+      "description": "Add baseline witness retention and per-epoch opening reservations",
+      "apply": "immutable/0032_economic_baseline.sql",
+      "verify": "immutable/0032_economic_baseline.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "97f27800708a4492bd157b353010988811de10486c0f06ae14df370995ed5ee3",
+      "verify_checksum": "6cb06fc24dc98b3e14151fdf9676aece96e3501cd7cafe7896201dd8f1dde602"
+    },
+    {
+      "id": "0033_economic_sql_lifecycle_owner",
+      "sequence": 33,
+      "description": "Add durable SQL economic lifecycle installation receipts",
+      "apply": "immutable/0033_economic_sql_lifecycle_owner.sql",
+      "verify": "immutable/0033_economic_sql_lifecycle_owner.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "375182015d29d9969f97a2696f6a49415f192e113fb9a2ea84de5b290ac10675",
+      "verify_checksum": "f16a044fa69f35f6a54a5a6aad37d717d1626085c07b98fa101fa4b62b994f9f"
+    },
+    {
+      "id": "0034_player_death_conflict_evidence",
+      "sequence": 34,
+      "description": "Add immutable evidence for rejected player death-save conflicts",
+      "apply": "immutable/0034_player_death_conflict_evidence.sql",
+      "verify": "immutable/0034_player_death_conflict_evidence.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "35489b02df08627f9c03cd9cd4538f646205ee595328adced4ce2144c35ca646",
+      "verify_checksum": "6b11f5702e3c26103052c99affb5317e296de535af1813527b5bdda826d722f6"
+    },
+    {
+      "id": "0035_player_item_dynamic_state",
+      "sequence": 35,
+      "description": "Persist secondary item flags and complete dynamic-affect state",
+      "apply": "immutable/0035_player_item_dynamic_state.sql",
+      "verify": "immutable/0035_player_item_dynamic_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "94567314ffc8e3152c4534ef072cf87da2c4094493e43ea76f5287538b53fbe5",
+      "verify_checksum": "53236964fa334e6bc25b67b738f5d39e2ad7ab04873d26f87f0aaca479cade27"
+    },
+    {
+      "id": "0036_economic_sql_activation_receipt",
+      "sequence": 36,
+      "description": "Add durable scoped SQL economic activation receipts",
+      "apply": "immutable/0036_economic_sql_activation_receipt.sql",
+      "verify": "immutable/0036_economic_sql_activation_receipt.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "636f84e3bd147b32331c50ba95c86b01ad70e654859934b397af03a7e4d15988",
+      "verify_checksum": "5dede4d54e394d630713b8256c457989c800f1bdf9b75ff37b73541470614615"
+    },
+    {
+      "id": "0037_saved_item_handoff_payload",
+      "sequence": 37,
+      "description": "Bind saved item recovery handoffs to both payload snapshots",
+      "apply": "immutable/0037_saved_item_handoff_payload.sql",
+      "verify": "immutable/0037_saved_item_handoff_payload.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ed8171fd2b30ce866ef0eeae8a55249f0df9f061aab9677706ca1e3b81012ea1",
+      "verify_checksum": "cac78b627eb9b70ed10f208ba2ade8a80d01067b72b33dd34926aa5937273506"
+    },
+    {
+      "id": "0038_item_equipment_slot",
+      "sequence": 38,
+      "description": "Record equipment slots in item custody and event evidence",
+      "apply": "immutable/0038_item_equipment_slot.sql",
+      "verify": "immutable/0038_item_equipment_slot.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "8e41e32f25b8027fdc149fc692b96db0a1ec1076a20223e740310c3f1f993feb",
+      "verify_checksum": "015978cb36a4e33e2aac4452a77eba4b9a0984e92d25e26e347739cc5720d28b"
+    },
+    {
+      "id": "0039_economic_pending_claim_source",
+      "sequence": 39,
+      "description": "Register retained source allocation for pending money claims",
+      "apply": "immutable/0039_economic_pending_claim_source.sql",
+      "verify": "immutable/0039_economic_pending_claim_source.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "a066739e50371e0a19af5953e78fdc8300413c64a9598d45464d49f3268d3fb4",
+      "verify_checksum": "d34b1e98c3ba471b0e9b2de21fc862fd008bd9646aac7e8d91bc6ff803705cbd"
+    },
+    {
+      "id": "0040_economic_sql_global_activation",
+      "sequence": 40,
+      "description": "Add separate durable global SQL economic cutover decisions",
+      "apply": "immutable/0040_economic_sql_global_activation.sql",
+      "verify": "immutable/0040_economic_sql_global_activation.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "c98496695b3440cea9a48ed90019e82400adce20491069ee61768d1616cb7d21",
+      "verify_checksum": "69a793e258bad19514dccbba6a937695f3f640c5c667cb0283a19f24b2f6f37f"
+    },
+    {
+      "id": "0041_shopkeeper_cash_identity",
+      "sequence": 41,
+      "description": "Capture SQL shopkeeper cash and retain stable shop revisions",
+      "apply": "immutable/0041_shopkeeper_cash_identity.sql",
+      "verify": "immutable/0041_shopkeeper_cash_identity.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f",
+      "verify_checksum": "1e3187f0563854513b014129bf3e2a8bfc1a4b0a5ac0b6e196d7c0ca616a696d"
+    },
+    {
+      "id": "0042_shopkeeper_roaming_witness",
+      "sequence": 42,
+      "description": "Capture nullable durable shopkeeper roaming configuration",
+      "apply": "immutable/0042_shopkeeper_roaming_witness.sql",
+      "verify": "immutable/0042_shopkeeper_roaming_witness.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "100057903820eb762051bd96e16816eadd0f8fafdc3e91088f447f64131792ec",
+      "verify_checksum": "483b53886b10a198809fec277a4f708b9c738c7b21ad9c27320fcf8e135f073c"
+    },
+    {
+      "id": "0043_shopkeeper_item_condition",
+      "sequence": 43,
+      "description": "Capture nullable SQL shopkeeper item condition at checkpoint",
+      "apply": "immutable/0043_shopkeeper_item_condition.sql",
+      "verify": "immutable/0043_shopkeeper_item_condition.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "0556c34357f6a6c1f69d1989bf3f7eede4767481f2e63157ed21e8f30c5f666f",
+      "verify_checksum": "64bd5d61c3c012858f4381cb0794ff53d4424531c437a1b58fa12dff493a4f3c"
+    },
+    {
+      "id": "0044_shopkeeper_item_properties",
+      "sequence": 44,
+      "description": "Preserve dynamic state of items in SQL shopkeeper custody",
+      "apply": "immutable/0044_shopkeeper_item_properties.sql",
+      "verify": "immutable/0044_shopkeeper_item_properties.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "dc28ae7a11669974c52b764406c8f4362c7f75c713a2c7df92da2991a613bdcd",
+      "verify_checksum": "14315e7cd18adfe3c203edbec6c071d83a782ff35d93429a6bf3031f05e5cd72"
     }
   ]
 }

@@ -26,6 +26,9 @@ struct flatfile_shopkeeper_record
 	int32_t room_vnum = 0;
 	int64_t saved_at = 0;
 	uint64_t revision = 0;
+	// -1 marks a catalog decoded from v1, before keeper cash was retained.
+	int64_t cash = 0;
+	bool roaming = false;
 	std::vector<flatfile_shopkeeper_affect_record> affects;
 	std::vector<player_item_snapshot> items;
 };
@@ -43,6 +46,7 @@ enum class flatfile_shopkeeper_result
 struct flatfile_shopkeeper_trade_mutation
 {
 	uint64_t shop_revision = 0;
+	int64_t keeper_cash = 0;
 	flatfile_authority_after_image after_image;
 };
 

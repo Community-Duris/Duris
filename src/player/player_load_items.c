@@ -188,10 +188,14 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_TYPE) &&
 	    (item.type < ITEM_LOWEST || item.type > ITEM_LAST))
 		return metadata_validation_outcome::invalid;
-	if (complete_snapshot_state)
+	if (complete_snapshot_state ||
+	    (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS))
 		for (const auto &affect : item.dynamic_affects)
 			if (affect.extra2 > ULONG_MAX)
 				return metadata_validation_outcome::invalid;
+	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS) &&
+	    !(identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS))
+		return metadata_validation_outcome::invalid;
 	for (const auto &affect : item.affects)
 		if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS) &&
 		    (affect[0] < 0 || affect[0] > APPLY_LAST || affect[1] < INT8_MIN ||
@@ -432,6 +436,10 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 			item.extra_descriptions.size() +
 			((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS) ?
 				 item.affects.size() :
+				 0) +
+			((complete_snapshot_state ||
+			  (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS)) ?
+				 item.dynamic_affects.size() :
 				 0);
 		if (!count_operation(metrics, item_count, 2 + metadata_operations) ||
 		    !identity.database_id || !identity.item_uid ||
@@ -586,8 +594,20 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 		{
 			object->anti_flags = item.anti_flags;
 			object->anti2_flags = item.anti2_flags;
-			object->extra2_flags = item.extra2_flags;
 			object->craftsmanship = item.craftsmanship;
+		}
+		if (complete_snapshot_state ||
+		    (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS))
+			object->extra2_flags = item.extra2_flags;
+		if (complete_snapshot_state ||
+		    (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS))
+		{
+			const auto baseline =
+				std::find_if(item.dynamic_affects.begin(),
+					     item.dynamic_affects.end(), [](const auto &affect)
+					     { return affect.type == TAG_ALTERED_EXTRA2; });
+			if (baseline != item.dynamic_affects.end())
+				object->extra2_flags = static_cast<ulong>(baseline->extra2);
 			for (auto affect = item.dynamic_affects.rbegin();
 			     affect != item.dynamic_affects.rend(); ++affect)
 			{

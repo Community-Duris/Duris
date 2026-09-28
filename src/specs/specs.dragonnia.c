@@ -26,6 +26,7 @@
  ***************************************************************************/
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -33,10 +34,13 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <ctype.h>
+#include <list>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "world/specs.prototypes.h"
+#include "combat/death_messages.h"
 #include "magic/spells.h"
 #include "world/vnum.mob.h"
 #include "world/vnum.obj.h"
@@ -1269,4 +1273,112 @@ int statue(P_char ch, P_char pl, int cmd, char * /*arg*/)
 		}
 	}
 	return (FALSE);
+}
+
+int resurrect_room(P_char ch)
+{
+	P_obj obj, t_obj;
+	int i = 0;
+
+	// store a list of corpses ressed, only res once per char
+	list<int> already_ressed;
+
+	for (obj = world[ch->in_room].contents; obj; obj = t_obj)
+	{
+		t_obj = obj->next_content;
+
+		if (obj->type != ITEM_CORPSE || !IS_SET(obj->value[1], PC_CORPSE))
+			continue;
+
+		P_char t_ch = find_player_by_pid(obj->value[3]);
+
+		if (!t_ch)
+			continue;
+
+		if (!IS_TRUSTED(ch))
+		{
+			if (!is_linked_to(ch, t_ch, LNK_CONSENT))
+				continue;
+
+			// if already ressed in this room, don't res again
+			bool skip = false;
+			for (list<int>::iterator it = already_ressed.begin();
+			     it != already_ressed.end(); it++)
+			{
+				if (obj->value[3] == *it)
+				{
+					skip = true;
+					break;
+				}
+			}
+
+			if (skip)
+				continue;
+		}
+
+		spell_resurrect(56, ch, 0, 0, 0, obj);
+		already_ressed.push_back(obj->value[3]);
+
+		i++;
+	}
+
+	return (i > 0);
+}
+
+int resurrect_totem(P_obj obj, P_char ch, int cmd, char *arg)
+{
+	if (cmd == CMD_SET_PERIODIC)
+	{
+		return TRUE;
+	}
+
+	if (!OBJ_WORN(obj))
+	{
+		return FALSE;
+	}
+
+	if (cmd == CMD_PERIODIC)
+	{
+		if (!number(0, 16))
+		{
+			ch = obj->loc.wearing;
+
+			if (!IS_ALIVE(ch))
+			{
+				return FALSE;
+			}
+
+			act("Your $p &+Wshimmers&n slightly.", FALSE, ch, obj, 0, TO_CHAR);
+			act("$p &ncarried by $n &+Wshimmers&n slightly.", FALSE, ch, obj, 0,
+			    TO_ROOM);
+			spell_group_heal(50, ch, 0, 0, ch, 0);
+
+			return TRUE;
+		}
+	}
+
+	if (!OBJ_WORN_BY(obj, ch))
+	{
+		return FALSE;
+	}
+
+	if (cmd == CMD_SAY && arg)
+	{
+		if (isname(arg, "ilienze"))
+		{
+			int curr_time = time(NULL);
+			// 1 rl hour timer.
+			if (IS_TRUSTED(ch) || (obj->timer[0] + 3600 <= curr_time))
+			{
+				act("res room proc", FALSE, ch, 0, 0, TO_CHAR);
+
+				if (resurrect_room(ch))
+				{
+					obj->timer[0] = curr_time;
+				}
+				return TRUE;
+			}
+		}
+	}
+	return FALSE;
 }

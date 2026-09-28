@@ -29,7 +29,7 @@
 #include "core/files.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_transaction.h"
 #include "net/ws_handlers.h"
 using namespace std;
 

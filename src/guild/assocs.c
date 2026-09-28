@@ -20,7 +20,8 @@
 #include "kingdom/kingdom.h"
 #include "economy/nexus_stones.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_guild.h"
+#include "sql/sql_player_identity.h"
 #include "core/safe_format.h"
 
 #ifdef __NO_MYSQL__

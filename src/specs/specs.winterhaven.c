@@ -16,6 +16,7 @@
 #include <strings.h>
 #include <sys/time.h>
 #include "guild/assocs.h"
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "world/graph.h"
 #include "combat/justice.h"
@@ -318,6 +319,18 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 	P_char vict;
 	int curr_time, rand;
 	struct proc_data *data;
+	auto refresh_blur_continuation = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		vict = after_callback.target;
+		obj = after_callback.weapon;
+		return true;
+	};
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -329,7 +342,7 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 		hummer(obj);
 	}
 
-	if (!IS_ALIVE(ch) || !OBJ_WORN(obj))
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !OBJ_WORN(obj))
 	{
 		return FALSE;
 	}
@@ -342,9 +355,27 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				curr_time = time(NULL);
 				vict = GET_OPPONENT(ch);
+				if (!vict || !char_in_list(vict) || !IS_ALIVE(vict))
+					return FALSE;
+
 				// 10 min timer.
 				if (obj->timer[0] + 600 <= curr_time)
 				{
+					const uint64_t blur_weapon_uid = obj->obj_uid;
+					auto set_blur_cooldown = [&]()
+					{
+						for (P_obj live_obj = object_list; live_obj;
+						     live_obj = live_obj->next)
+						{
+							if (live_obj == obj &&
+							    live_obj->obj_uid == blur_weapon_uid)
+							{
+								live_obj->timer[0] = curr_time;
+								return;
+							}
+						}
+					};
+
 					act("&+LYour $q &+Lslows down time and freezes $N &+Lin place!&n",
 					    TRUE, ch, obj, vict, TO_CHAR);
 					act("&+L...you leap at $N &+Land deal a series of &+cvicious &+Lattacks!&n",
@@ -360,17 +391,16 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 					act("&+L...$n &+Lleaps towards $N &+Land deals a series of &+cvicious &+Lattacks!&n",
 					    TRUE, ch, obj, vict, TO_NOTVICT);
 
-					if (IS_ALIVE(ch) && GET_OPPONENT(ch))
+					for (int strike = 0; strike < 3; ++strike)
 					{
-						hit(ch, GET_OPPONENT(ch), obj);
-					}
-					if (IS_ALIVE(ch) && GET_OPPONENT(ch))
-					{
-						hit(ch, GET_OPPONENT(ch), obj);
-					}
-					if (IS_ALIVE(ch) && GET_OPPONENT(ch))
-					{
-						hit(ch, GET_OPPONENT(ch), obj);
+						const attack_continuation continuation =
+							begin_attack_continuation(ch, vict, obj);
+						hit(ch, vict, obj);
+						if (!refresh_blur_continuation(continuation))
+						{
+							set_blur_cooldown();
+							return TRUE;
+						}
 					}
 
 					act("$p &+Cglows &+Las it touches your &+Csoul&+L!&n",
@@ -385,27 +415,63 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 
 						if (rand <= 15)
 						{
+							const attack_continuation continuation =
+								begin_attack_continuation(ch, vict,
+											  obj);
 							spell_frostbite(35, ch, 0, SPELL_TYPE_SPELL,
 									vict, 0);
+							if (!refresh_blur_continuation(
+								    continuation))
+							{
+								set_blur_cooldown();
+								return TRUE;
+							}
 						}
 						else
 						{
+							const attack_continuation continuation =
+								begin_attack_continuation(ch, vict,
+											  obj);
 							spell_arieks_shattering_iceball(
 								35, ch, 0, SPELL_TYPE_SPELL, vict,
 								0);
+							if (!refresh_blur_continuation(
+								    continuation))
+							{
+								set_blur_cooldown();
+								return TRUE;
+							}
 						}
 						break;
 					case 2:
+					{
+						const attack_continuation continuation =
+							begin_attack_continuation(ch, vict, obj);
 						spell_pword_stun(50, ch, 0, SPELL_TYPE_SPELL, vict,
 								 0);
-						break;
+						if (!refresh_blur_continuation(continuation))
+						{
+							set_blur_cooldown();
+							return TRUE;
+						}
+					}
+					break;
 					case 3:
+					{
+						const attack_continuation continuation =
+							begin_attack_continuation(ch, vict, obj);
 						spell_pword_blind(50, ch, 0, SPELL_TYPE_SPELL, vict,
 								  0);
-						break;
+						if (!refresh_blur_continuation(continuation))
+						{
+							set_blur_cooldown();
+							return TRUE;
+						}
+					}
+					break;
 					}
 
-					obj->timer[0] = curr_time;
+					set_blur_cooldown();
 					return TRUE;
 				}
 			}
@@ -420,7 +486,8 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 				return FALSE;
 			}
 			vict = data->victim;
-			if (!IS_ALIVE(vict) || vict != GET_OPPONENT(ch))
+			if (!vict || !char_in_list(vict) || !IS_ALIVE(vict) ||
+			    vict != GET_OPPONENT(ch))
 			{
 				return FALSE;
 			}
@@ -440,7 +507,11 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 			act("&+L...$n &+Lswiftly dodges &n$N&+L's attack and turns to deliver a &+Cvicious &+Lstrike!",
 			    TRUE, ch, obj, vict, TO_NOTVICT | ACT_NOTTERSE);
 
+			const attack_continuation hit_continuation =
+				begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
+			if (!refresh_blur_continuation(hit_continuation))
+				return TRUE;
 
 			act("$p &+Cglows &+Las it touches your &+Csoul&+L!&n", FALSE, ch, obj, NULL,
 			    TO_CHAR);
@@ -455,7 +526,11 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 				rand = number(1, 20);
 				if (rand <= 12)
 				{
+					const attack_continuation continuation =
+						begin_attack_continuation(ch, vict, obj);
 					spell_chill_touch(40, ch, 0, SPELL_TYPE_SPELL, vict, 0);
+					if (!refresh_blur_continuation(continuation))
+						return TRUE;
 					spell_chill_touch(40, ch, 0, SPELL_TYPE_SPELL, vict, 0);
 				}
 				else if (rand <= 19)
@@ -1618,10 +1693,10 @@ int welfare_well(int /*room*/, P_char ch, int cmd, char *arg)
 
 int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
-	P_obj o, next_obj, o_1, well;
+	P_obj o, next_obj, o_1, well = NULL;
 	P_nevent ev = NULL;
 	hunt_data data = {};
-	bool found_well, dumped;
+	bool found_well = FALSE, dumped = FALSE;
 	bool loaded = FALSE;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -5041,5 +5116,684 @@ int cerberus_load(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 
 		return TRUE;
 	}
+	return FALSE;
+}
+
+/* Icecrag Keep mobile procedures */
+
+int ice_snooty_wife(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "Have you met my husband?");
+		mobsay(ch, "He's the dashingly handsome one over there!");
+		do_action(ch, 0, CMD_WINK);
+		return TRUE;
+	case 2:
+		act("The garishly dressed woman spills her drink on the floor.", TRUE, ch, 0, 0,
+		    TO_ROOM);
+		do_action(ch, 0, CMD_GIGGLE);
+		mobsay(ch, "Oops!");
+		mobsay(ch, "Mop boy!! My shoes are all wet! Clean them off this instant!");
+		do_action(ch, 0, CMD_WHATEVER);
+		mobsay(ch, "You just can't find good help these days.");
+		do_action(ch, 0, CMD_SIGH);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_cleaning_crew(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		act("The humble member of the cleaning crew quietly sweeps the floors.", TRUE, ch,
+		    0, 0, TO_ROOM);
+		return TRUE;
+	case 2:
+		do_action(ch, 0, CMD_SNEEZE);
+		do_action(ch, 0, CMD_COUGH);
+		mobsay(ch, "Does this winter never end?");
+		do_action(ch, 0, CMD_SIGH);
+		mobsay(ch, "These sniffles will be the end of me!");
+		do_action(ch, 0, CMD_GRUMBLE);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_artist(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "NO NO NO! This is all wrong!");
+		mobsay(ch, "I specifically asked for SOLID ice, not a block of frost!");
+		do_action(ch, 0, CMD_WHATEVER);
+		return TRUE;
+	case 2:
+		mobsay(ch,
+		       "There must be a way to emphasize the solitude without overpowering sorrow.");
+		do_action(ch, 0, CMD_ARCH);
+		mobsay(ch,
+		       "Yes! That's it! I'll use the negative space to create a plane of emotion heretofore unknown in human art! I'll be the toast of Verzanan!");
+		do_action(ch, 0, CMD_CACKLE);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_privates(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "Guests must stay outside of restricted areas!");
+		mobsay(ch, "The Icess will not tolerate infractions of the rules!");
+		do_action(ch, 0, CMD_PEER);
+		do_action(ch, 0, CMD_GLARE);
+		return TRUE;
+	case 2:
+		act("The private looks you over, sizing up your capabilities.", TRUE, ch, 0, 0,
+		    TO_ROOM);
+		do_action(ch, 0, CMD_CHUCKLE);
+		mobsay(ch, "Keep your nose out of restricted areas and we won't have a problem.");
+		do_action(ch, 0, CMD_PEER);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_privates2(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char leader;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || cmd || ch->following)
+		return FALSE;
+
+	LOOP_THRU_PEOPLE(leader, ch)
+	{
+		if (IS_NPC(leader) && (GET_VNUM(leader) == (97020)) &&
+		    ((GET_VNUM(ch) == (97019)) || (GET_VNUM(ch) == (97018))))
+		{
+			add_follower(ch, leader); /*
+			                           * Follow and assist leader
+			                           */
+			group_add_member(leader, ch);
+		}
+	}
+	return FALSE;
+}
+
+int ice_masha(P_char ch, P_char pl, int cmd, char *arg)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch))
+		return FALSE;
+
+	if ((cmd == CMD_GET) && pl && (pl != ch) && (isname("onion", arg) || isname("all", arg)))
+	{
+		mobsay(ch, "Unhand my onions, fiend!");
+		bash(ch, pl);
+		return TRUE;
+	}
+	if (cmd || IS_FIGHTING(ch))
+		return FALSE;
+
+	switch (number(1, 10))
+	{
+	case 1:
+		mobsay(ch, "You have to slice the onions just perfectly...");
+		act("Masha skillfully dices his onions, and pieces fly everywhere.", TRUE, ch, 0, 0,
+		    TO_ROOM);
+		mobsay(ch, "Theres nothing quite like the smell onions in the morning.");
+		do_action(ch, 0, CMD_CACKLE);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+int ice_tubby_merchant(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "Have you tried the cavier?  It's simply fabulous!");
+		act("The portly merchant dribbles wine down his shirt as he goes for another swig.",
+		    TRUE, ch, 0, 0, TO_ROOM);
+		do_action(ch, 0, CMD_SMIRK);
+		return TRUE;
+	case 2:
+		mobsay(ch,
+		       "Where is my wife? She's the one in the dreadful Calimshan garb, looks like a piece of fruit with wrinkles.");
+		do_action(ch, 0, CMD_ROFL);
+		return TRUE;
+	case 3:
+		mobsay(ch, "So can I ask where your buying your supplies?");
+		mobsay(ch, "I can offer you a sweet deal on dried goods and non-perishables.");
+		do_action(ch, 0, CMD_WINK);
+		mobsay(ch, "Pardon me while I refresh my drunk.");
+		do_action(ch, 0, CMD_GIGGLE);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_priest(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "Have you seen my speech notes?");
+		mobsay(ch, "Aha! My notes! Now lets see..where was I...");
+		mobsay(ch, " Yes, here we are, I am very grateful for this oppurtunity...");
+		mobsay(ch, "I'd like to thank all my...no no no thats too cliche");
+		do_action(ch, 0, CMD_PONDER);
+		return TRUE;
+	case 2:
+		mobsay(ch, "How much time have I to prepare before the banquet begins?");
+		mobsay(ch, "I better read over those notes I prepared.");
+		do_action(ch, 0, CMD_THINK);
+		do_action(ch, 0, CMD_FROWN);
+		do_action(ch, 0, CMD_SCRATCH);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_garden_attendant(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 30))
+	{
+	case 1:
+		act("The attendant meekly sweeps snow from the path.", TRUE, ch, 0, 0, TO_ROOM);
+		return TRUE;
+	case 2:
+		do_action(ch, 0, CMD_SPIT);
+		return TRUE;
+	case 3:
+		do_action(ch, 0, CMD_SHIVER);
+		return TRUE;
+	case 4:
+		do_action(ch, 0, CMD_COUGH);
+		return TRUE;
+	case 5:
+		do_action(ch, 0, CMD_SNEEZE);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_raucous_guest(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 8))
+	{
+	case 1:
+		mobsay(ch, "So I'm talking to this haughty Elf from Luethilspar...");
+		mobsay(ch, "And all he can talk about is the Kobold situation!");
+		act("The guest of the castle throws his hands up in disgust with the whole situation.",
+		    TRUE, ch, 0, 0, TO_ROOM);
+		return TRUE;
+	case 2:
+		mobsay(ch,
+		       "Let me tell you this joke I heard from Lord Piergeron on my last visit to Verzanan.  Did I tell you we're personal friends?");
+		mobsay(ch,
+		       "Yes yes yes, me and his Lordship go way back!  We used to go on safari in our younger days, a mighty good shot with a bow that one is.");
+		return TRUE;
+	case 3:
+		mobsay(ch, "At any rate, back to the joke.");
+		act("The raucous guest goes on with some rather uneventful tale about a dwarf in disguise as an elf in the city of Sylvandawn.",
+		    0, ch, 0, 0, TO_ROOM);
+		mobsay(ch, "So the dwarf says to the elf, 'I don't drink!'");
+		do_action(ch, 0, CMD_ROFL);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_tar(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 40))
+	{
+	case 1:
+	case 2:
+	case 3:
+	case 4:
+		act("Tar accidentally crushes another potatoe.", TRUE, ch, 0, 0, TO_ROOM);
+		return TRUE;
+	case 5:
+		do_action(ch, 0, CMD_CURSE);
+		return TRUE;
+	case 6:
+		do_action(ch, 0, CMD_SCREAM);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_commander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "Where the bloody hell did that blasted book get to...");
+		mobsay(ch, "That ragged old ancient lookin one...");
+		mobsay(ch, "I know I left it around here somewhere...");
+		do_action(ch, 0, CMD_SCRATCH);
+		do_action(ch, 0, CMD_PONDER);
+		return TRUE;
+	case 2:
+		act("The commander begins to search the room, rifling through bookcases, cabinets, his desk drawers, and virtually every container in the room.",
+		    TRUE, ch, 0, 0, TO_ROOM);
+		do_action(ch, 0, CMD_BOGGLE);
+		do_action(ch, 0, CMD_SHRUG);
+		mobsay(ch, "Guess it'll show up eventually.");
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_viscount(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "Consumption of dry goods is up this month, going to have to cut back.");
+		mobsay(ch, "Where are all these expenses coming from?");
+		do_action(ch, 0, CMD_BOGGLE);
+		return TRUE;
+	case 2:
+		mobsay(ch, "Im going to have to speak with Strife about these rising costs.");
+		mobsay(ch, "Does she think she can take over Faerun for free?");
+		do_action(ch, 0, CMD_BOGGLE);
+		mobsay(ch,
+		       "We're going to have to schedule at least twice the number of current raids on surrounding villages and towns if we even hope to come close to our goal.");
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_masonary_crew(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 3))
+	{
+	case 1:
+		act("The mason arbitrarily slaps some grout on the wall.", TRUE, ch, 0, 0, TO_ROOM);
+		return TRUE;
+	case 2:
+		act("The craftsman starts pressing tiles into the wet cement.", TRUE, ch, 0, 0,
+		    TO_ROOM);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_impatient_guest(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || IS_FIGHTING(ch) || cmd)
+		return FALSE;
+
+	switch (number(1, 15))
+	{
+	case 1:
+		mobsay(ch, "Shouldn't the banquet have started by now?!");
+		mobsay(ch, "Im really getting tired of waiting, it's been forever!");
+		mobsay(ch, "What's the hold up? Can't you people move with purpose?");
+		do_action(ch, 0, CMD_WHATEVER);
+		do_action(ch, 0, CMD_TWIDDLE);
+		return TRUE;
+	case 2:
+		mobsay(ch, "If I don't see some action in five minutes, Im leaving!");
+		mobsay(ch,
+		       "I have better things to be doing than sit around in some frozen castle waiting for a banquet!");
+		do_action(ch, 0, CMD_WHINE);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_bodyguards(P_char ch, P_char pl, int cmd, char * /*arg*/)
+{
+	P_char blockee;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || cmd || pl || !IS_AWAKE(ch))
+		return FALSE;
+
+	LOOP_THRU_PEOPLE(blockee, ch)
+		if (IS_NPC(blockee) &&
+		    (((GET_VNUM(blockee) == (97023)) && (GET_VNUM(ch) == (97040))) ||
+		     ((GET_VNUM(blockee) == (97029)) && (GET_VNUM(ch) == (97041))) ||
+		     ((GET_VNUM(blockee) == (97008)) && (GET_VNUM(ch) == (97042)))))
+		{
+			if (NumAttackers(blockee))
+			{
+				rescue(ch, blockee, FALSE);
+				return TRUE;
+			}
+		}
+	return FALSE;
+}
+
+int ice_wolf(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char i, i_next, tempchar = NULL, tempchar2 = NULL, was_fighting = NULL;
+	P_desc d;
+	P_obj item, next_item;
+	int pos;
+
+	/*
+	 * check for periodic event calls
+	 */
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch))
+		return FALSE;
+
+	/*
+	 * if it's some command besides a periodic event call, return
+	 */
+	if (cmd)
+		return FALSE;
+
+	if (IS_FIGHTING(ch))
+	{
+		was_fighting = GET_OPPONENT(ch);
+		stop_fighting(ch);
+
+		tempchar = read_mobile(97054, VIRTUAL);
+
+		if (!tempchar)
+		{
+			logit(LOG_EXIT, "assert: mob load failed in ice_wolf()");
+			return FALSE;
+		}
+		char_to_room(tempchar, ch->in_room, -2);
+		for (item = ch->carrying; item; item = next_item)
+		{
+			next_item = item->next_content;
+			obj_from_char(item);
+			obj_to_char(item, tempchar); /*
+			                              * transfer any eq and inv
+			                              */
+		}
+		for (pos = 0; pos < MAX_WEAR; pos++)
+		{
+			if (ch->equipment[pos] != NULL)
+			{
+				item = unequip_char(ch, pos);
+				equip_char(tempchar, item, pos, TRUE);
+			}
+		}
+
+		act("The $n suddenly drops to the floor, howling in pain!", 0, ch, 0, 0, TO_ROOM);
+		act("A moment later, $e trasforms into $N!", 1, ch, 0, tempchar, TO_ROOM);
+		act("$n throws back $s head, and lets out a long howl.", 0, tempchar, 0, 0,
+		    TO_ROOM);
+
+		extract_char(ch);
+		ch = NULL;
+
+		/*
+		 * Howl for help, similar to echoz
+		 */
+		for (d = descriptor_list; d; d = d->next)
+		{
+			if (d->connected == CON_PLAYING)
+			{
+				if (world[tempchar->in_room].zone ==
+				    world[d->character->in_room].zone)
+				{
+					send_to_char("A bloodcurdling howl is heard!",
+						     d->character);
+					send_to_char("\r\n", d->character);
+				}
+			}
+		}
+
+		/*
+		 * Assistants in other room change now, and begin to come help
+		 */
+		for (i = character_list; i; i = i_next)
+		{
+			i_next = i->next;
+			if (IS_NPC(i) && ((GET_VNUM(i) == 97031) || (GET_VNUM(i) == 97032)))
+			{
+				tempchar2 = read_mobile(97055, VIRTUAL);
+				if (!tempchar2)
+				{
+					logit(LOG_EXIT,
+					      "assert: second mob load failed in ice_wolf()");
+					continue;
+				}
+				act("The $n suddenly drops to the floor, howling in pain!", 0, i, 0,
+				    0, TO_ROOM);
+				act("A moment later, $e trasforms into $N!", 1, i, 0, tempchar2,
+				    TO_ROOM);
+				act("$n throws back $s head, and lets out a long howl.", 0,
+				    tempchar2, 0, 0, TO_ROOM);
+
+				char_to_room(tempchar2, i->in_room, -2);
+				if (!IS_SET(tempchar2->specials.act, ACT_HUNTER))
+					SET_BIT(tempchar2->specials.act, ACT_HUNTER);
+
+				for (item = i->carrying; item; item = next_item)
+				{
+					next_item = item->next_content;
+					obj_from_char(item);
+					obj_to_char(item, tempchar2);
+				}
+				for (pos = 0; pos < MAX_WEAR; pos++)
+				{
+					if (i->equipment[pos] != NULL)
+					{
+						item = unequip_char(i, pos);
+						equip_char(tempchar2, item, pos, TRUE);
+					}
+				}
+
+				/*
+				 * Code for memory (from set_fighting), this will make the converted
+				 * werewolves hunt.
+				 */
+
+				if (tempchar2 && was_fighting)
+				{
+					if (HAS_MEMORY(tempchar2))
+					{
+						if (IS_PC(was_fighting))
+						{
+							if (!(IS_TRUSTED(was_fighting) &&
+							      IS_SET(was_fighting->specials.act,
+								     PLR_AGGIMMUNE)))
+								if ((GET_STAT(tempchar2) >
+								     STAT_INCAP))
+									remember(tempchar2,
+										 was_fighting);
+						}
+						else if (IS_PC_PET(was_fighting) &&
+							 (GET_MASTER(was_fighting)->in_room ==
+							  was_fighting->in_room) &&
+							 CAN_SEE(tempchar2,
+								 GET_MASTER(was_fighting)))
+						{
+							if (!(IS_TRUSTED(GET_MASTER(was_fighting)) &&
+							      IS_SET(GET_MASTER(was_fighting)
+									     ->specials.act,
+								     PLR_AGGIMMUNE)))
+								if ((GET_STAT(tempchar2) >
+								     STAT_INCAP))
+									remember(
+										tempchar2,
+										was_fighting
+											->following);
+						}
+					}
+				}
+				extract_char(i); /*
+				                  * Set them hunting players, wherever they may
+				                  * be
+				                  */
+			}
+		}
+
+		if (was_fighting)
+			MobStartFight(tempchar, was_fighting);
+
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ice_malice(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char vapor, hated_one, next;
+	P_obj item, next_item;
+	int pos;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (cmd == CMD_DEATH)
+	{ /*
+	   * special die aspect
+	   */
+		vapor = read_mobile(97056, VIRTUAL);
+		if (!vapor)
+		{
+			logit(LOG_EXIT, "assert: mob load failed in ice_malice()");
+			return FALSE;
+		}
+		char_to_room(vapor, ch->in_room, 0);
+
+		for (item = ch->carrying; item; item = next_item)
+		{
+			next_item = item->next_content;
+			obj_from_char(item);
+			obj_to_char(item, vapor); /*
+			                           * transfer any eq and inv
+			                           */
+		}
+		for (pos = 0; pos < MAX_WEAR; pos++)
+		{
+			if (ch->equipment[pos] != NULL)
+			{
+				item = unequip_char(ch, pos);
+				equip_char(vapor, item, pos, TRUE);
+			}
+		}
+
+		return TRUE;
+	}
+	if (!ch || !IS_AWAKE(ch) || !IS_FIGHTING(ch) || cmd || !CAN_ACT(ch))
+		return FALSE;
+
+	/*
+	 * Malice hates clerics, and will always target them
+	 */
+
+	if (IS_FIGHTING(ch) && NumAttackers(ch) > 1)
+		for (hated_one = world[ch->in_room].people; hated_one; hated_one = next)
+		{
+			next = hated_one->next_in_room;
+			if ((ch == GET_OPPONENT(hated_one)) && IS_CLERIC(hated_one))
+				/*
+				 * A cleric is fighting him
+				 */
+				if ((hated_one != GET_OPPONENT(ch)) && CAN_SEE(ch, hated_one))
+				{
+					/*
+					 * But, he is not targeting them...
+					 */
+					attack(ch, hated_one);
+					return TRUE;
+				}
+		}
 	return FALSE;
 }

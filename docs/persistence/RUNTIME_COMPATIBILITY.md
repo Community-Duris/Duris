@@ -16,16 +16,26 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0030_telemetry_quarantine`, and the contract describes 203
+The current head is `0044_shopkeeper_item_properties`, and the contract describes 220
 current tables: the 170-table baseline plus the post-baseline runtime tables created
-by immutable migrations. Migration 0029 adds the replay-safe
-`critical_operation_inbox.failure_stage` receipt field as `SMALLINT UNSIGNED NOT
+by immutable migrations. Migration 0042 records a nullable keeper roaming policy;
+legacy rows remain unknown until a shopkeeper checkpoint. Migration 0043 records
+nullable item condition, and migration 0044 preserves dynamic properties while an
+item is held by a shopkeeper. Migration 0029 adds
+the replay-safe `critical_operation_inbox.failure_stage` receipt field as
+`SMALLINT UNSIGNED NOT
 NULL DEFAULT 0` immediately after `result_code`; it creates no table. A legacy clone
 may already contain that column from the earlier compatibility DDL. The immutable
 step is guarded and re-runnable: it verifies the existing shape, preserves all rows,
 and records sequence 29 rather than trying to alter the old immutable history.
 Migration 0030 adds the protected `telemetry_quarantine` table used to isolate and
 replay record-specific telemetry storage failures without blocking the stream.
+Migration 0041 adds nullable shopkeeper cash and a stable shop revision without
+adding a table. Its verifier accepts the equivalent MySQL 8.0 and MariaDB 10.11
+column metadata forms.
+The verifier correction changes migration 0041's recorded checksum. A database
+that already recorded the earlier checksum fails closed and needs an explicit
+clone-based reconciliation before it can use this contract.
 Fingerprints are measured on clean `mysql:8.0` and `mariadb:10.11` schemas with
 `tests/async/telemetry_rollup_schema_mysql.py --update-contract`; they must not be
 copied from a production-derived clone.
@@ -64,7 +74,7 @@ recovery replay, listener acceptance, or gameplay publication, it verifies:
 - the sealed baseline ID and table-name fingerprint;
 - immutable migration ID, sequence, apply/verifier hashes, applied count, and history
   checksum;
-- all 203 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- all 220 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
 - `utf8mb4`, UTC, READ COMMITTED, strict SQL modes, ten-second connection/read/write

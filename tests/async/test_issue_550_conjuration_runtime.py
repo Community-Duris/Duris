@@ -6,7 +6,7 @@ import subprocess
 from _paths import ROOT, extract_function, source
 
 
-MAGIC = source("magic.c").read_text(encoding="utf-8", errors="replace")
+MAGIC = source("spell_item_lifecycle.c").read_text(encoding="utf-8", errors="replace")
 SKILLS = source("classes/new_skills.c").read_text(encoding="utf-8", errors="replace")
 
 PRELUDE = r'''
@@ -15,6 +15,8 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "net/comm.h"
 #include "combat/damage.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
 
 #include <cassert>
@@ -35,6 +37,12 @@ static int damage_calls = 0;
 static double damage_amount = 0.0;
 static int binding_vnum = 9001;
 static bool actor_alive = true;
+static bool active_epoch = false;
+
+bool economic_gameplay_authority::active() { return active_epoch; }
+bool item_command_uses_durable_ownership(P_obj object) {
+    return object && object->obj_uid && !IS_SET(object->extra_flags, ITEM_TRANSIENT);
+}
 
 #undef IS_ALIVE
 #define IS_ALIVE(ch) ((ch) != nullptr && actor_alive)
@@ -79,18 +87,18 @@ FUNCTIONS = "\n".join(
         "struct summoned_replacement_context { uint64_t item_uid; uint32_t recipient_pid; uint8_t kind; };",
         "struct soulbind_reload_context { uint64_t item_uid; uint32_t recipient_pid; int32_t item_vnum; };",
         "int has_soulbind(P_char) { return binding_vnum; }",
-        extract_function("magic.c", "static int conjured_weapon_vnum("),
-        extract_function("magic.c", "static P_obj magic_find_object_by_uid("),
-        extract_function("magic.c", "static void conjured_weapon_publish_effect("),
-        extract_function("magic.c", "static void conjured_weapon_grant_completed("),
+        extract_function("spell_item_lifecycle.c", "static int conjured_weapon_vnum("),
+        extract_function("spell_item_lifecycle.c", "static P_obj magic_find_object_by_uid("),
+        extract_function("spell_item_lifecycle.c", "static void conjured_weapon_publish_effect("),
+        extract_function("spell_item_lifecycle.c", "static void conjured_weapon_grant_completed("),
         extract_function("classes/new_skills.c", "static P_obj new_skills_find_object_by_uid("),
         extract_function("classes/new_skills.c", "static bool summoned_book_matches("),
         extract_function("classes/new_skills.c", "static bool summoned_totem_matches("),
         extract_function("classes/new_skills.c", "static bool summoned_replacement_kind_valid("),
         extract_function("classes/new_skills.c", "static void retire_other_summoned_items("),
         extract_function("classes/new_skills.c", "static void summoned_replacement_completed("),
-        extract_function("magic.c", "static void remove_soulbind_except("),
-        extract_function("magic.c", "static void soulbind_reload_completed("),
+        extract_function("spell_item_lifecycle.c", "static void remove_soulbind_except("),
+        extract_function("spell_item_lifecycle.c", "static void soulbind_reload_completed("),
     ]
 )
 
@@ -299,6 +307,30 @@ int main() {
     soulbind_reload_completed(&actor, true, wrong_soul, 0,
         reinterpret_cast<const uint8_t *>(&soul), sizeof(soul));
     assert(!OBJ_NOWHERE(&old_soul) && !OBJ_NOWHERE(&new_soul));
+
+    // A late callback cannot extract an old durable item after epoch activation.
+    active_epoch = true;
+    setup_actor(actor, pc);
+    link_object(old_book, 5001, &actor, "book spellbook bookoftester");
+    link_object(new_book, 5002, &actor, "book spellbook bookoftester");
+    link_object_list(&new_book, &old_book);
+    retire_other_summoned_items(&actor, new_book.obj_uid,
+                                summoned_replacement_kind::book);
+    assert(!OBJ_NOWHERE(&old_book));
+    old_book.extra_flags |= ITEM_TRANSIENT;
+    retire_other_summoned_items(&actor, new_book.obj_uid,
+                                summoned_replacement_kind::book);
+    assert(OBJ_NOWHERE(&old_book));
+
+    setup_actor(actor, pc);
+    link_object(old_soul, 5003, &actor, "tester old soul", ITEM2_SOULBIND);
+    link_object_list(&old_soul);
+    remove_soulbind_except(&actor, 0);
+    assert(!OBJ_NOWHERE(&old_soul));
+    old_soul.extra_flags |= ITEM_TRANSIENT;
+    remove_soulbind_except(&actor, 0);
+    assert(OBJ_NOWHERE(&old_soul));
+    active_epoch = false;
 
     std::puts("Issue 550 commit-aware callbacks passed under ASan/UBSan.");
 }

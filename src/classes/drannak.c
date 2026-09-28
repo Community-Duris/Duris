@@ -24,6 +24,7 @@
 #include "world/achievements.h"
 #include "combat/arena.h"
 #include "combat/arenadef.h"
+#include "combat/death_messages.h"
 #include "combat/justice.h"
 #include "world/map.h"
 #include "core/mm.h"
@@ -31,9 +32,10 @@
 #include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "sql/sql_player.h"
+#include "sql/sql_spellbook.h"
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 
@@ -45,6 +47,7 @@
  */
 extern Skill skills[];
 extern struct zone_data *zone_table;
+extern int top_of_zone_table;
 extern const char *material_names[];
 extern P_char character_list;
 extern P_desc descriptor_list;
@@ -407,6 +410,13 @@ int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 
 		else if (strstr(arg, "1"))
 		{
+			if (economic_gameplay_authority::active())
+			{
+				send_to_char(
+					"Shard purchases are unavailable while item accounting is active.\r\n",
+					pl);
+				return TRUE;
+			}
 			// Check for SHARDS_FOR_ORB soul shards
 			if (vnum_in_inv(pl, VOBJ_SOUL_SHARD) < SHARDS_FOR_ORB)
 			{
@@ -437,17 +447,24 @@ int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 // Returns TRUE iff ch or victim or both are not in ch's room or dead.
 bool lightbringer_proc(P_char ch, P_char victim, bool phys)
 {
-	int room = ch->in_room;
+	int room;
+	uint64_t attacker_runtime_id;
+	uint64_t victim_runtime_id;
 
 	spell_func spells[5] = { spell_bigbys_crushing_hand, spell_bigbys_clenched_fist,
 				 spell_disintegrate, spell_destroy_undead, spell_flamestrike };
 
 	// If not both are alive and ready to proc..
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || room < 0 || room > top_of_world ||
-	    room != victim->in_room)
+	if (!char_in_list(ch) || !char_in_list(victim) || !IS_ALIVE(ch) || !IS_ALIVE(victim))
+		return TRUE;
+
+	room = ch->in_room;
+	if (room < 0 || room > top_of_world || room != victim->in_room)
 	{
 		return TRUE;
 	}
+	attacker_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
 	// Chance to proc - 3% from a hit, 6.25% from a spell that's cast (can not proc off of self).
 	if (phys)
 	{
@@ -479,11 +496,11 @@ bool lightbringer_proc(P_char ch, P_char victim, bool phys)
 	(spells[number(0, 4)])(number(1, GET_LEVEL(ch)), ch, 0, 0, victim, 0);
 
 	// If both are alive and haven't moved rooms.
-	if (IS_ALIVE(ch) && IS_ALIVE(victim) && ch->in_room == room && victim->in_room == room)
-	{
-		return FALSE;
-	}
-	return TRUE;
+	ch = find_character_by_runtime_id(attacker_runtime_id);
+	victim = find_character_by_runtime_id(victim_runtime_id);
+	if (!ch || !IS_ALIVE(ch) || !victim || !IS_ALIVE(victim))
+		return TRUE;
+	return ch->in_room != room || victim->in_room != room;
 }
 
 // The 'merc' is the mercenary being hit on by the 'hitter'.
@@ -817,6 +834,28 @@ void create_recipe(P_char ch, P_obj temp)
 	obj_to_char(objrecipe, ch);
 }
 
+// in_their_zone is designed to stop pets/mounts/etc from dropping recipes.
+// This function returns TRUE iff a mob is in the zone that it loads in.
+bool in_their_zone(P_char mob)
+{
+	int vnum;
+
+	// PCs never in their zone.
+	if (!IS_NPC(mob))
+		return FALSE;
+
+	vnum = mob_index[GET_RNUM(mob)].virtual_number;
+
+	// If vnum falls outside the vnums for the zone it's in.
+	//  vnum too small, or mob not in last zone and vnum too big
+	if (vnum < zone_table[world[mob->in_room].zone].number * 100 ||
+	    (world[mob->in_room].zone < top_of_zone_table &&
+	     vnum > zone_table[world[mob->in_room].zone + 1].number * 100))
+		return FALSE;
+
+	return TRUE;
+}
+
 void random_recipe(P_char ch, P_char victim)
 {
 	int chance = 1;
@@ -1093,6 +1132,15 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 		{
 			send_to_char(
 				"You must have a &+Ya &+Mgreater&+Y o&+Mr&+Bb &+Yof &+mM&+Ma&+Wg&+Mi&+mc&n in your &+Winventory&n in order to &+Ysummon&n a being of such &+Mgreat&+M power&n.\r\n",
+				ch);
+			extract_char(t_ch);
+			return;
+		}
+		if (economic_gameplay_authority::active() &&
+		    GET_LEVEL(t_ch) > CONJURE_MAXLVL_NO_ORB && !IS_TRUSTED(ch))
+		{
+			send_to_char(
+				"Orb summoning is unavailable while item accounting is active.\r\n",
 				ch);
 			extract_char(t_ch);
 			return;

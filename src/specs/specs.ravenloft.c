@@ -24,6 +24,8 @@
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
 #include "world/vnum.room.h"
+
+extern bool has_skin_spell(P_char);
 #include "world/weather.h"
 
 extern P_char character_list;
@@ -370,6 +372,53 @@ int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 				return FALSE;
 			}
 		}
+	}
+	return FALSE;
+}
+
+int artifact_shadow_shield(P_obj obj, P_char ch, int cmd, char * /*argument*/)
+{
+	int curr_time, i;
+
+	if (cmd == CMD_SET_PERIODIC)
+	{
+		return TRUE;
+	}
+
+	if (cmd != CMD_PERIODIC || !OBJ_WORN(obj))
+		return FALSE;
+
+	if (!ch)
+	{
+		if (obj->loc.wearing)
+		{
+			ch = obj->loc.wearing;
+		}
+		else
+		{
+			return FALSE;
+		}
+	}
+
+	for (i = 0; i < MAX_WEAR; i++)
+	{
+		if (ch->equipment[i] == obj)
+		{
+			if (i == WEAR_ATTACH_BELT_1 || i == WEAR_ATTACH_BELT_2 ||
+			    i == WEAR_ATTACH_BELT_3)
+			{
+				return FALSE;
+			}
+		}
+	}
+
+	curr_time = time(NULL);
+
+	if (!has_skin_spell(ch) &&
+	    obj->timer[0] + (int)get_property("timer.stoneskin.generic", 60) <= curr_time)
+	{
+		spell_shadow_shield(30, ch, 0, SPELL_TYPE_POTION, ch, 0);
+		obj->timer[0] = curr_time;
 	}
 	return FALSE;
 }

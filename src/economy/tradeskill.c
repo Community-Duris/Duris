@@ -20,12 +20,14 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "economy/tradeskill.h"
+#include "economy/economic_gameplay_authority.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include "world/achievements.h"
 #include "combat/arena.h"
 #include "combat/arenadef.h"
+#include "combat/defense_resolution.h"
 #include "guild/assocs.h"
 #include "world/epic_transaction.h"
 #include "guild/guildhall.h"
@@ -43,7 +45,7 @@
 #include "specs/specs.winterhaven.h"
 #include "specs/specs.zion.h"
 #include "magic/spells.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_recipes.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
 #include "world/weather.h"
@@ -55,7 +57,8 @@ namespace
 {
 bool grant_tradeskill_item(P_char ch, P_obj object)
 {
-	if (object && item_creation_grant_submit_to_player(ch, object, ch))
+	if (object && item_creation_grant_submit_to_player(
+		      ch, object, ch, NULL, economic_source_kind::crafting))
 		return true;
 	if (object)
 		extract_obj(object, FALSE);
@@ -784,6 +787,11 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		return FALSE;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Forging is unavailable while economic accounting is active.\r\n", pl);
+		return TRUE;
+	}
 
 	j = GET_VNUM(ch);
 	for (i = 0; smith_array[i].vnum > 0; i++)
@@ -874,14 +882,29 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 		return TRUE;
 	}
 
+	const int price = forge_prices[i - 1];
+
+	// Take money first under transactional guard
+	if (SUB_MONEY(pl, price, 0) != 0)
+	{
+		forge_describe(choice, pl);
+		while (j-- > 0)
+			obj_to_char(needed_ore[j], pl);
+		send_to_char("You don't have enough money to pay the smith.\r\n", pl);
+		return TRUE;
+	}
+
+	snprintf(buffer, sizeof buffer, "You hand $N %s.", coin_stringv(price));
+	act(buffer, FALSE, pl, 0, ch, TO_CHAR);
+
 	// Create item 'choice' for 'pl' out of material type 'material'
 	if (!(tobj = forge_create(choice, pl, needed_ore[0]->material)))
 	{
-		// Send an error message if we failed to create item.
+		// Failed to create item: refund money and ore
+		ADD_MONEY(pl, price);
 		send_to_char(
 			"&+YFailed to create the item.  Please tell an Immortal if you continue to have problems.\n\r",
 			pl);
-		// And give back the ores we pulled.
 		while (j-- > 0)
 		{
 			obj_to_char(needed_ore[j], pl);
@@ -889,12 +912,18 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 		return TRUE;
 	}
 
-	// Take their money.
-	snprintf(buffer, sizeof buffer, "You hand $N %s.", coin_stringv(forge_prices[i - 1]));
-	act(buffer, FALSE, pl, 0, ch, TO_CHAR);
-	SUB_MONEY(pl, forge_prices[i - 1], 0);
+	// Attempt ownership grant before destroying materials
+	if (!grant_tradeskill_item(pl, tobj))
+	{
+		ADD_MONEY(pl, price);
+		while (j-- > 0)
+		{
+			obj_to_char(needed_ore[j], pl);
+		}
+		return TRUE;
+	}
 
-	// And their ore.
+	// And their ore: consume only after grant succeeds
 	while (j-- > 0)
 	{
 		extract_obj(needed_ore[j], TRUE); // Ore is not an arti, but was 'in game.'
@@ -913,8 +942,6 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 	    "'&+WThere you go!&n', $n gives $N $p.",
 	    FALSE, ch, tobj, pl, TO_NOTVICT);
 
-	if (!grant_tradeskill_item(pl, tobj))
-		return TRUE;
 	return TRUE;
 }
 
@@ -2398,6 +2425,12 @@ int get_matstart(P_obj obj)
 
 void do_refine(P_char ch, char *arg, int /*cmd*/)
 {
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Refining is unavailable while economic accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	P_obj obj;
 	P_obj t_obj, nextobj;
 	int i = 0, o = 0, vnum;

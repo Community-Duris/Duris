@@ -16,9 +16,10 @@
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
+#include "economy/economic_gameplay_authority.h"
 #include "combat/chaos_materials.h"
 #include "core/utils.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_recipes.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +29,8 @@ namespace
 {
 bool grant_crafted_item(P_char ch, P_obj object)
 {
-	if (object && item_creation_grant_submit_to_player(ch, object, ch))
+	if (object && item_creation_grant_submit_to_player(
+		      ch, object, ch, NULL, economic_source_kind::crafting))
 		return true;
 	if (object)
 		extract_obj(object, FALSE);
@@ -462,6 +464,13 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd);
 
 void crafting_handle_command(P_char ch, enum crafting_mode mode, char *argument)
 {
+	// Recipe migration and input selection can write before the final item grant.
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Crafting is unavailable while economic accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	if (!crafting_mode_enabled(mode))
 	{
 		send_to_char("That crafting discipline is currently unavailable.\r\n", ch);

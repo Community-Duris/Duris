@@ -9,7 +9,10 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
+#include "item/item_command_policy.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/utility.h"
 #include "core/utils.h"
 #include <ctype.h>
@@ -224,8 +227,10 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 						CAN_CARRY_W(pl));
 			const bool submitted =
 				to_player ?
-					item_creation_grant_submit_to_player(pl, obj, pl) :
-					item_creation_grant_submit_to_room(pl, obj, pl->in_room);
+					item_creation_grant_submit_to_player(
+						pl, obj, pl, NULL, economic_source_kind::quest_completion) :
+					item_creation_grant_submit_to_room(
+						pl, obj, pl->in_room, economic_source_kind::quest_completion);
 			if (!submitted)
 			{
 				extract_obj(obj, FALSE);
@@ -462,6 +467,7 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 	int quester_id;
 	struct quest_msg_data *qmp;
 	struct quest_complete_data *qcp;
+	struct goal_data *goal;
 	char Gbuf1[MAX_STRING_LENGTH], *temparg;
 
 	/* ask/tell "key word" or give "item" */
@@ -512,6 +518,13 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 	}
 	if (cmd == CMD_GIVE)
 	{
+		// Static quests transfer offerings to a mobile before checking their
+		// goals. They have no durable NPC custody or completion identity yet.
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char("This quest cannot accept offerings right now.\r\n", pl);
+			return (TRUE);
+		}
 		/* This next chunk of code is to deal with the case where someone's
 		 * giving the quest mob money.  Need to check a different argument to
 		 * get the name.
@@ -519,15 +532,53 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 		 */
 		for (temparg = arg; isspace(*temparg); temparg++)
 			; /* skip whitespaces */
-		if (isdigit(*temparg))
+		const bool giving_coins = isdigit(*temparg);
+		if (giving_coins)
 			temparg = one_argument(arg, name);
 
 		temparg = one_argument(temparg, name);
 		one_argument(temparg, name);
 		if (!(vict = get_char_room_vis(pl, name)) || vict != ch)
 			return (FALSE);
+		quester_id = find_quester_id(GET_RNUM(ch));
+		if (!giving_coins)
+		{
+			char offering_name[MAX_INPUT_LENGTH];
+			one_argument(arg, offering_name);
+			P_obj offering = get_obj_in_list_vis(pl, offering_name, pl->carrying);
+			if (item_command_uses_durable_ownership(offering))
+			{
+				send_to_char(
+					"This quest cannot accept a durable item until NPC custody can be saved.\r\n",
+					pl);
+				return (TRUE);
+			}
+		}
+		if (economic_gameplay_authority::active())
+		{
+			bool money_quest = giving_coins;
+			if (quester_id >= 0)
+				for (qcp = quest_index[quester_id].quest_complete; qcp;
+				     qcp = qcp->next)
+				{
+					for (goal = qcp->give; goal; goal = goal->next)
+						money_quest = money_quest ||
+							      goal->goal_type == QUEST_GOAL_COINS;
+					for (goal = qcp->receive; goal; goal = goal->next)
+						money_quest = money_quest ||
+							      goal->goal_type == QUEST_GOAL_COINS;
+				}
+			if (money_quest)
+			{
+				send_to_char(
+					"This quest's money action is unavailable while active "
+					"accounting is enabled.\r\n",
+					pl);
+				return (TRUE);
+			}
+		}
 		do_give(pl, arg, -4); /* give item to mob */
-		if ((quester_id = find_quester_id(GET_RNUM(ch))) < 0)
+		if (quester_id < 0)
 			return (TRUE);
 
 		for (qcp = quest_index[quester_id].quest_complete; qcp; qcp = qcp->next)

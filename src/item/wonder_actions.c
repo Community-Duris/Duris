@@ -1,6 +1,7 @@
 #include "item/wonder_actions.h"
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
 #include "core/utils.h"
 #include "magic/spells.h"
 #include "net/comm.h"

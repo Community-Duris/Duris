@@ -93,6 +93,37 @@ def validate_death_schema(path: Path | None = None) -> None:
         raise migration_runner.MigrationContractError("offline death schema shape drift")
 
 
+def validate_death_conflict_schema(path: Path | None = None) -> None:
+    """Pin the new evidence-only table offline as well as by engine fingerprints."""
+    source = lifecycle.read_schema_source(path or (
+        ROOT / "migrations/immutable/0034_player_death_conflict_evidence.sql"))
+    tables = re.findall(
+        r"CREATE TABLE IF NOT EXISTS (\w+) \((.*?)\)\s*"
+        r"ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+        source, re.DOTALL | re.IGNORECASE)
+    definitions = {table.lower(): tuple(
+        re.sub(r"\s+", " ", line.strip()).rstrip(",").lower()
+        for line in body.strip().splitlines()) for table, body in tables}
+    expected = {"player_death_conflict_evidence": (
+        "operation_id binary(16) not null",
+        "pid int not null",
+        "save_revision bigint unsigned not null",
+        "source_revision bigint unsigned not null",
+        "corpse_item_uid bigint unsigned not null",
+        "request_hash binary(32) not null",
+        "payload_hash binary(32) not null",
+        "payload mediumblob not null",
+        "recorded_at timestamp(6) not null default current_timestamp(6)",
+        "primary key (operation_id)",
+        "unique key uq_death_conflict_revision (pid,save_revision)",
+        "unique key uq_death_conflict_corpse (pid,corpse_item_uid)",
+    )}
+    if definitions != expected or len(tables) != 1 or re.search(
+            r"\b(FOREIGN KEY|REFERENCES|ON DELETE|ON UPDATE)\b", source, re.I):
+        raise migration_runner.MigrationContractError(
+            "offline death-conflict evidence schema shape drift")
+
+
 def load() -> dict:
     """Read the runtime compatibility manifest, rejecting any shape drift.
 
@@ -109,7 +140,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 203:
+            value["current_table_count"] != 220:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -149,6 +180,7 @@ def validate() -> dict:
     MigrationContractError on any drift.
     """
     validate_death_schema()
+    validate_death_conflict_schema()
     value = load()
     migration = migration_runner.load_manifest()
     if value["baseline_id"] != migration.baseline_id or \

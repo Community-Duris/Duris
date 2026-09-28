@@ -65,7 +65,8 @@ flatfile_shopkeeper_materialize(const std::string &root, const flatfile_shopkeep
 				std::string *error)
 {
 	if (!materialized || root.empty() || record.mob_vnum <= 0 || record.room_vnum <= 0 ||
-	    !record.revision || record.saved_at < 0 || !valid_affects(record.affects))
+	    !record.revision || record.saved_at < 0 || record.cash < -1 ||
+	    record.cash > std::numeric_limits<int>::max() || !valid_affects(record.affects))
 		return flatfile_shopkeeper_materialize_result::invalid;
 	const int mobile_rnum = real_mobile(record.mob_vnum);
 	if (mobile_rnum < 0)
@@ -93,6 +94,16 @@ flatfile_shopkeeper_materialize(const std::string &root, const flatfile_shopkeep
 		return flatfile_shopkeeper_materialize_result::invalid;
 	bind_shopkeeper(character, static_cast<int>(record.shop_id));
 	GET_BIRTHPLACE(character) = record.room_vnum;
+	if (record.cash >= 0)
+	{
+		int64_t remaining = record.cash;
+		GET_PLATINUM(character) = remaining / 1000;
+		remaining %= 1000;
+		GET_GOLD(character) = remaining / 100;
+		remaining %= 100;
+		GET_SILVER(character) = remaining / 10;
+		GET_COPPER(character) = remaining % 10;
+	}
 	for (const auto &saved : record.affects)
 	{
 		struct affected_type affect = {};

@@ -61,6 +61,8 @@ elif 'SELECT VERSION()' in query:
     print('10.11-MariaDB')
 elif "engine<>'InnoDB'" in query:
     print(0)
+elif query.startswith('SELECT COUNT(*) FROM information_schema.key_column_usage k WHERE k.constraint_schema=DATABASE()') and 'k.referenced_table_schema' in query:
+    print(0)
 elif 'information_schema.tables' in query:
     print(schema['current_table_count'])
 elif 'wallet.pid IS NULL' in query:

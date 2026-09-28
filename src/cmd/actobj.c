@@ -33,6 +33,7 @@
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/collector_presence.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
@@ -3054,6 +3055,11 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 	{
 		return;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Junk is unavailable while accounting is active.\r\n", ch);
+		return;
+	}
 
 	/*
 	 * SAM 7-94, make char confirm a junk command
@@ -3653,7 +3659,10 @@ bool coin_give_completion(P_char sender, bool committed, const coin_transfer_pay
 	currency_command_payload destination;
 	if (!currency_command_decode_payload(payload.destination.change, &destination))
 		return true;
-	P_char recipient = find_player_by_pid(destination.pid);
+	P_char recipient = find_character_by_runtime_id(debit.target_runtime_id);
+	if (!recipient || !IS_PC(GET_PLYR(recipient)) ||
+	    GET_PID(GET_PLYR(recipient)) != static_cast<int>(destination.pid))
+		recipient = find_player_by_pid(destination.pid);
 	const coin_give_credit_context context = { sender ? sender->runtime_id : 0,
 						   coin_debit_value(debit),
 						   debit.amount[debit.coin_type],
@@ -3667,15 +3676,23 @@ bool coin_give_completion(P_char sender, bool committed, const coin_transfer_pay
 
 bool submit_coin_give(P_char sender, P_char recipient, const coin_debit_context &context)
 {
-	if (!sender || !recipient || sender == recipient || !IS_PC(sender) || !IS_PC(recipient) ||
+	if (!sender || !recipient || !IS_PC(sender) || !(IS_PC(recipient) || IS_MORPH(recipient)) ||
 	    context.coin_type >= CURRENCY_DENOMINATION_COUNT || recipient->in_room != context.room)
+		return false;
+	P_char recipient_wallet = GET_PLYR(recipient);
+	if (!recipient_wallet || !IS_PC(recipient_wallet) || sender == recipient_wallet ||
+	    GET_PID(recipient_wallet) <= 0)
 		return false;
 	const int64_t value = coin_debit_value(context);
 	if (value <= 0)
 		return false;
 	coin_transfer_payload payload;
-	return currency_transaction_coin_wallet(sender, -value, &payload.source) &&
-	       currency_transaction_coin_wallet(recipient, value, &payload.destination) &&
+	return currency_transaction_coin_wallet_exact(sender, context.coin_type,
+						      context.amount[context.coin_type], true,
+						      &payload.source) &&
+	       currency_transaction_coin_wallet_exact(recipient_wallet, context.coin_type,
+						      context.amount[context.coin_type], false,
+						      &payload.destination) &&
 	       currency_transaction_submit_coin(sender, payload, coin_give_completion, &context,
 						sizeof(context));
 }
@@ -4591,6 +4608,14 @@ bool submit_coin_debit(P_char actor, const coin_debit_context &context)
 	const int64_t value = coin_debit_value(context);
 	if (!actor || value <= 0)
 		return false;
+	if (context.action == coin_debit_action::give && economic_gameplay_authority::active())
+	{
+		P_char recipient = find_character_by_runtime_id(context.target_runtime_id);
+		if (!IS_PC(actor) || GET_PID(actor) <= 0 || GET_LEVEL(actor) >= MAXLVL ||
+		    !recipient || !(IS_PC(recipient) || IS_MORPH(recipient)) ||
+		    !IS_PC(GET_PLYR(recipient)) || GET_PID(GET_PLYR(recipient)) <= 0)
+			return false;
+	}
 	if (IS_PC(actor) && GET_PID(actor) > 0)
 	{
 		if (context.action == coin_debit_action::put)
@@ -4598,7 +4623,7 @@ bool submit_coin_debit(P_char actor, const coin_debit_context &context)
 		if (context.action == coin_debit_action::give)
 		{
 			P_char recipient = find_character_by_runtime_id(context.target_runtime_id);
-			if (recipient && IS_PC(recipient))
+			if (recipient && (IS_PC(recipient) || IS_MORPH(recipient)))
 				return submit_coin_give(actor, recipient, context);
 		}
 		int64_t reason_id = context.room;
@@ -5971,6 +5996,16 @@ void do_give(P_char ch, char *argument, int cmd)
 				     ch);
 			return;
 		}
+		if (economic_gameplay_authority::active() &&
+		    (!IS_PC(ch) || GET_PID(ch) <= 0 || GET_LEVEL(ch) >= MAXLVL ||
+		     !(IS_PC(vict) || IS_MORPH(vict)) || !IS_PC(GET_PLYR(vict)) ||
+		     GET_PID(GET_PLYR(vict)) <= 0))
+		{
+			send_to_char("That coin transfer is unavailable while active accounting "
+				     "is enabled.\r\n",
+				     ch);
+			return;
+		}
 
 		if (racewar(ch, vict))
 		{
@@ -6132,8 +6167,7 @@ void do_give(P_char ch, char *argument, int cmd)
 			report_movement_reject(owner, reject, "give", obj);
 		return;
 	}
-	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) &&
-	    item_command_uses_durable_ownership(obj))
+	if (IS_PC(ch) && IS_NPC(vict) && item_command_uses_durable_ownership(obj))
 	{
 		send_to_char(
 			"That item cannot be given to a pet or mob because its custody cannot be saved yet.\r\n",
@@ -7516,12 +7550,122 @@ bool check_single_artifact(P_char ch, P_obj obj)
 	return false;
 }
 
-/*
- * Helper function to cut down on massive repetition.  It executes the wear
- * call once the Controller [Wear()] has determined to do so. -Sniktiorg (Nov.16.12)
- */
+struct equipment_transition_context
+{
+	uint64_t item_uid;
+	uint16_t slot;
+	int16_t keyword;
+	uint8_t showit;
+	uint8_t wear;
+};
+
+#define REMOVE_SUCCESS 0
+#define REMOVE_CURSED 1
+#define REMOVE_BREAK_ENCHANT 2
+#define REMOVE_CANT_CARRY 3
+#define REMOVE_NOT_USING 4
+
+int remove_item(P_char ch, P_obj obj, int position);
+static bool equipment_publication_in_progress = false;
+
+static bool publish_equipment_transition(P_char actor, bool committed, const item_transfer_result &,
+					 unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(equipment_transition_context))
+		return false;
+	equipment_transition_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("Your equipment did not change; the custody update failed.\r\n",
+			     actor);
+		return true;
+	}
+	if (context.slot >= MAX_WEAR || !context.item_uid)
+		return false;
+	P_obj object = find_live_item_uid(context.item_uid);
+	if (!object)
+		return false;
+	if (context.wear)
+	{
+		if (!OBJ_CARRIED_BY(object, actor) || actor->equipment[context.slot] ||
+		    object->condition <= 0)
+			return false;
+		if (context.showit)
+			perform_wear(actor, object, context.keyword);
+		obj_from_char(object);
+		if (!OBJ_NOWHERE(object))
+			return false;
+		equip_char(actor, object, context.slot, !context.showit);
+		if (actor->equipment[context.slot] != object)
+			return false;
+	}
+	else
+	{
+		if (actor->equipment[context.slot] != object ||
+		    (IS_SET(object->extra_flags, ITEM_NODROP) && !IS_TRUSTED(actor)) ||
+		    IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) ||
+		    get_obj_affect(object, SKILL_ENCHANT) ||
+		    (context.slot == WEAR_WAIST && (actor->equipment[WEAR_ATTACH_BELT_1] ||
+						    actor->equipment[WEAR_ATTACH_BELT_2] ||
+						    actor->equipment[WEAR_ATTACH_BELT_3])) ||
+		    CAN_CARRY_N(actor) <= IS_CARRYING_N(actor))
+			return false;
+		equipment_publication_in_progress = true;
+		const bool was_invisible = IS_SET(actor->specials.affected_by, AFF_INVISIBLE) ||
+					   IS_SET(actor->specials.affected_by2, AFF2_CONCEALMENT);
+		const int removed = remove_item(actor, object, context.slot);
+		equipment_publication_in_progress = false;
+		if (removed != REMOVE_SUCCESS || !OBJ_CARRIED_BY(object, actor))
+			return false;
+		act("You stop using $p.", FALSE, actor, object, 0, TO_CHAR);
+		act("$n stops using $p.", TRUE, actor, object, 0, TO_ROOM);
+		affect_from_char(actor, SPELL_NOAUCTION);
+		struct affected_type no_auction = {};
+		no_auction.type = SPELL_NOAUCTION;
+		no_auction.duration = 2;
+		no_auction.modifier = 4000;
+		affect_to_char(actor, &no_auction);
+		if (object->R_num >= 0 && obj_index[object->R_num].virtual_number == 400218 &&
+		    !IS_MULTICLASS_PC(actor))
+			affect_from_char(actor, SPELL_BATTLEMAGE);
+		balance_affects(actor);
+		if (was_invisible && !IS_SET(actor->specials.affected_by, AFF_INVISIBLE) &&
+		    !IS_SET(actor->specials.affected_by2, AFF2_CONCEALMENT))
+		{
+			act("$n snaps into visibility.", FALSE, actor, 0, 0, TO_ROOM);
+			act("You snap into visibility.", FALSE, actor, 0, 0, TO_CHAR);
+		}
+	}
+	char_light(actor);
+	room_light(actor->in_room, REAL);
+	return true;
+}
+
+/* Execute a wear only after the same-owner slot transition commits. */
 void execute_wear(P_char ch, P_obj obj_object, int position, int keyword, bool showit)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		if (position < 0 || position >= MAX_WEAR || ch->equipment[position])
+		{
+			send_to_char("That equipment slot is occupied.\r\n", ch);
+			return;
+		}
+		const item_owner_identity owner = { item_owner_type::player,
+						    static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const equipment_transition_context context = { obj_object->obj_uid,
+							       static_cast<uint16_t>(position),
+							       static_cast<int16_t>(keyword),
+							       static_cast<uint8_t>(showit), 1 };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(
+			    ch, obj_object, NULL, owner, owner, item_transfer_reason::player_wear,
+			    position + 1, nullptr, &context, sizeof(context), NULL, &reject,
+			    publish_equipment_transition))
+			report_movement_reject(ch, reject, "wear", obj_object);
+		return;
+	}
 	if (showit) // Show the Object Wear?
 		perform_wear(ch, obj_object, keyword);
 	obj_from_char(obj_object);
@@ -7557,19 +7701,6 @@ int stop_or_wear(const char denied[], P_char ch, P_obj obj_object, int position,
 }
 
 /*
- * Returns TRUE if ch is wearing perm invis eq.
- */
-int wearing_invis(P_char ch)
-{
-	int found = 0, k;
-
-	for (k = 0; k < MAX_WEAR; k++)
-		if (ch->equipment[k] && IS_SET(ch->equipment[k]->bitvector, AFF_INVISIBLE))
-			found = 1;
-	return found;
-}
-
-/*
  * The receiving code should handle displaying of messages to the user.
  * - Sniktiorg 25.1.13
  * New Remove code which handles only the removing of the item.  This
@@ -7578,14 +7709,12 @@ int wearing_invis(P_char ch)
  * auto-replace wear code.  The procedure returns an int representing
  * the following:
  */
-#define REMOVE_SUCCESS 0
-#define REMOVE_CURSED 1
-#define REMOVE_BREAK_ENCHANT 2
-#define REMOVE_CANT_CARRY 3
-#define REMOVE_NOT_USING 4
 int remove_item(P_char ch, P_obj obj, int position)
 {
 	struct obj_affect *o_af;
+	if (economic_gameplay_authority::active() && IS_PC(ch) &&
+	    !equipment_publication_in_progress)
+		return REMOVE_NOT_USING;
 
 	// Tests if Object Exists
 	if (obj)
@@ -7648,6 +7777,42 @@ int remove_item(P_char ch, P_obj obj, int position)
 	return REMOVE_SUCCESS;
 }
 
+static void submit_equipment_remove(P_char ch, char *name)
+{
+	if (!name || !*name || !str_cmp(name, "all"))
+	{
+		send_to_char("Remove one item at a time while item accounting is active.\r\n", ch);
+		return;
+	}
+	int slot = -1;
+	P_obj object = get_object_in_equip(ch, name, &slot);
+	if (!object || slot < 0 || slot >= MAX_WEAR)
+	{
+		send_to_char("You are not using it.\r\n", ch);
+		return;
+	}
+	if ((IS_SET(object->extra_flags, ITEM_NODROP) && !IS_TRUSTED(ch)) ||
+	    IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) || get_obj_affect(object, SKILL_ENCHANT) ||
+	    (slot == WEAR_WAIST &&
+	     (ch->equipment[WEAR_ATTACH_BELT_1] || ch->equipment[WEAR_ATTACH_BELT_2] ||
+	      ch->equipment[WEAR_ATTACH_BELT_3])) ||
+	    CAN_CARRY_N(ch) <= IS_CARRYING_N(ch))
+	{
+		send_to_char("You cannot remove that item right now.\r\n", ch);
+		return;
+	}
+	const item_owner_identity owner = { item_owner_type::player,
+					    static_cast<uint64_t>(GET_PID(ch)), 0 };
+	const equipment_transition_context context = { object->obj_uid, static_cast<uint16_t>(slot),
+						       0, 1, 0 };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit(ch, object, NULL, owner, owner,
+					      item_transfer_reason::player_remove, slot + 1,
+					      nullptr, &context, sizeof(context), NULL, &reject,
+					      publish_equipment_transition))
+		report_movement_reject(ch, reject, "remove", object);
+}
+
 /*
  * Helper function which wraps about Execute_Wear() and allows for the remove
  * and replace behavior used on single location items (ie. head, arms, body, etc). -Sniktiorg (Dec.1.12)
@@ -7656,6 +7821,12 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, bool
 {
 	P_obj temp = ch->equipment[position];
 	int removed;
+	if (temp && economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		if (showit)
+			send_to_char("Remove the current item first.\r\n", ch);
+		return FALSE;
+	}
 	// Remove Item Already in Place
 	// send_to_char(snprintf("%1", MAX_STRING_LENGTH, ch->equipment[position]), ch);
 	if (temp)
@@ -7747,6 +7918,13 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 	// Scrap it. Might cause crash. Dec08 -Lucrot
 	if (obj_object->condition <= 0)
 	{
+		if (economic_gameplay_authority::active() && IS_PC(ch))
+		{
+			if (showit)
+				send_to_char("That item needs repair before it can be worn.\r\n",
+					     ch);
+			return FALSE;
+		}
 		wizlog(56, "%s wore %s that's condition 0 or less : attempting to scrap.",
 		       GET_NAME(ch), obj_object->short_description);
 		MakeScrap(ch, obj_object);
@@ -8252,6 +8430,16 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			}
 			else
 			{
+				if (economic_gameplay_authority::active() && IS_PC(ch))
+				{
+					const int slot =
+						!ch->equipment[WEAR_WRIST_L]  ? WEAR_WRIST_L :
+						!ch->equipment[WEAR_WRIST_R]  ? WEAR_WRIST_R :
+						!ch->equipment[WEAR_WRIST_LL] ? WEAR_WRIST_LL :
+										WEAR_WRIST_LR;
+					execute_wear(ch, obj_object, slot, keyword, showit);
+					return TRUE;
+				}
 				if (showit)
 				{
 					perform_wear(ch, obj_object, keyword);
@@ -8633,6 +8821,16 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			}
 			else
 			{
+				if (economic_gameplay_authority::active() && IS_PC(ch))
+				{
+					const int slot = !ch->equipment[WEAR_ATTACH_BELT_1] ?
+								 WEAR_ATTACH_BELT_1 :
+							 !ch->equipment[WEAR_ATTACH_BELT_2] ?
+								 WEAR_ATTACH_BELT_2 :
+								 WEAR_ATTACH_BELT_3;
+					execute_wear(ch, obj_object, slot, keyword, showit);
+					return TRUE;
+				}
 				if (showit)
 				{
 					perform_wear(ch, obj_object, keyword);
@@ -8846,6 +9044,11 @@ void do_wear(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	argument_interpreter(argument, Gbuf1, Gbuf2);
+	if (economic_gameplay_authority::active() && IS_PC(ch) && !str_cmp(Gbuf1, "all"))
+	{
+		send_to_char("Wear one item at a time while item accounting is active.\r\n", ch);
+		return;
+	}
 	// If there's an argument other than 'all'
 	if (*Gbuf1 && str_cmp(Gbuf1, "all"))
 	{
@@ -9101,6 +9304,11 @@ void do_remove(P_char ch, char *argument, int /*cmd*/)
 
 	// Determine Argument
 	one_argument(argument, Gbuf1);
+	if (economic_gameplay_authority::active() && IS_PC(ch) && GET_PID(ch) > 0)
+	{
+		submit_equipment_remove(ch, Gbuf1);
+		return;
+	}
 
 	// Determine Current Visibility
 	was_invis = IS_SET(ch->specials.affected_by, AFF_INVISIBLE) ||

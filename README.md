@@ -227,6 +227,14 @@ rm -f "$migration_env"
 unset migration_env
 ```
 
+The legacy command converges the schema to the immutable manifest head and
+checks the pinned structural contract. **It does not certify imported players
+for login:** opening currency, epic, and combat baselines must be established
+by the guarded importer below before its default (non-`--schema-only`)
+`verify_runtime_compatibility.sh` check can pass. Do not boot a populated clone
+or live game on the schema-only result, and do not manufacture opening rows from
+nonzero-revision or ambiguous ledger history.
+
 To replace an allow-listed local/development database directly from a private
 MySQL dump, use the guarded importer. It refuses active database connections,
 creates an owner-only backup before mutation, translates MySQL 8's `0900`

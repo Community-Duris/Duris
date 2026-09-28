@@ -2500,7 +2500,7 @@ def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
         f"slot test {slot_test}, silent call {silent[0] if silent else -1}",
     )
     # remove_soulbind() delegates to remove_soulbind_except(), which owns the loop.
-    magic = read("src/magic/magic.c")
+    magic = read("src/magic/spell_item_lifecycle.c")
     remove = function_bodies(magic, r"\bvoid\s+remove_soulbind\s*\(")
     remove_except = function_bodies(magic, r"\bstatic\s+void\s+remove_soulbind_except\s*\(")
     check(

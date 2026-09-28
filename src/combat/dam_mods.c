@@ -13,9 +13,116 @@
 #include "magic/spells.h"
 #include "core/utils.h"
 
-extern float dam_factor[LAST_DF + 1];
-extern float racial_spldam_offensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
-extern float racial_spldam_defensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
+extern const struct race_names race_names_table[];
+
+float dam_factor[LAST_DF + 1];
+float racial_spldam_offensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
+float racial_spldam_defensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
+
+// LAST_SPLDAM_TYPE == number of types, range 0 .. LAST_SPLDAM_TYPE-1
+const char *spldam_types[LAST_SPLDAM_TYPE] = { "generic", "fire",      "cold",	   "lightning",
+					       "gas",	  "acid",      "negative", "holy",
+					       "psionic", "spiritual", "sound",	   "earth" };
+
+void update_racial_dam_factors()
+{
+	char buf[256];
+	int race, type;
+
+	// Skip RACE_NONE.
+	for (race = 1; race <= LAST_RACE; race++)
+	{
+		for (type = 0; type < LAST_SPLDAM_TYPE; type++)
+		{
+			snprintf(buf, 256, "damage.spellTypeMod.offensive.racial.%s.%s",
+				 race_names_table[race].no_spaces, spldam_types[type]);
+			racial_spldam_offensive_factor[race][type] = get_property(buf, 1.00);
+
+			snprintf(buf, 256, "damage.spellTypeMod.defensive.racial.%s.%s",
+				 race_names_table[race].no_spaces, spldam_types[type]);
+			racial_spldam_defensive_factor[race][type] = get_property(buf, 1.00);
+		}
+	}
+}
+
+/* The Fight related routines */
+void update_dam_factors()
+{
+	dam_factor[DF_SWASHBUCKLER_DEFENSE] = get_property("damage.reduction.swashbuckler", 0.800);
+	dam_factor[DF_SWASHBUCKLER_OFFENSE] = get_property("damage.increase.swashbuckler", 1.25);
+	dam_factor[DF_SANC] = get_property("damage.reduction.sanctuary", 0.8);
+	dam_factor[DF_TROLLSKIN] = get_property("damage.reduction.trollskin", 0.8);
+	dam_factor[DF_BARKSKIN] = get_property("damage.reduction.barkskin", 0.90);
+	dam_factor[DF_BERSERKMELEE] = get_property("damage.reduction.berserk", 0.10);
+	dam_factor[DF_SOULMELEE] = get_property("damage.reduction.soulshield.melee", 0.8);
+	dam_factor[DF_SOULSPELL] = get_property("damage.reduction.soulshield.spell", 0.8);
+	dam_factor[DF_NEG_SHIELD_SPELL] = get_property("damage.reduction.negshield.spell", 0.8);
+	dam_factor[DF_PROTLIVING] = get_property("damage.reduction.protLiving", 0.95);
+	dam_factor[DF_PROTANIMAL] = get_property("damage.reduction.protAnimal", 0.8);
+	dam_factor[DF_PROTECTION] = get_property("damage.reduction.protElement", 0.75);
+	dam_factor[DF_PROTECTION_TROLL] = get_property("damage.reduction.protFire.Troll", 0.90);
+	dam_factor[DF_ELSHIELDRED_TROLL] =
+		get_property("damage.reduction.fireColdShield.Troll", 0.80);
+	dam_factor[DF_ELSHIELDRED] = get_property("damage.reduction.fireColdShield", 0.55);
+	dam_factor[DF_IRONWILL] = get_property("damage.reduction.towerOfIronWill", 0.5);
+	dam_factor[DF_TIGERPALM] = get_property("damage.reduction.tigerpalm", 0.65);
+	dam_factor[DF_ELAFFINITY] = get_property("damage.reduction.elementalAffinity", 0.25);
+	dam_factor[DF_COLDWRITHE] = get_property("damage.increase.coldWrithe", 2.0);
+	dam_factor[DF_BARKFIRE] = get_property("damage.increase.barkskin", 1.15);
+	dam_factor[DF_IRONWOOD] = get_property("damage.increase.ironwood", 1.80);
+	dam_factor[DF_BERSERKSPELL] = get_property("damage.increase.berserk", 1.100);
+	dam_factor[DF_BERSERKEREXTRA] = get_property("damage.increase.berserk.Berserkers", 1.100);
+	dam_factor[DF_ELEMENTALIST] = get_property("damage.increase.elementalist", 1.15);
+	dam_factor[DF_ELSHIELDINC] = get_property("damage.increase.fireColdShield", 2.0);
+	dam_factor[DF_PHANTFORM] = get_property("damage.increase.phantasmalForm", 1.100);
+	dam_factor[DF_VULNCOLD] = get_property("damage.increase.vulnCold", 2.0);
+	dam_factor[DF_VULNFIRE] = get_property("damage.increase.vulnFire", 1.15);
+	dam_factor[DF_ELSHIELDDAM] = get_property("damage.shield.fireCold", 0.5);
+	dam_factor[DF_NEGSHIELD] = get_property("damage.shield.neg", 0.25);
+	dam_factor[DF_SOULSHIELDDAM] = get_property("damage.shield.soul", 0.2);
+	dam_factor[DF_MONKVAMP] = get_property("vamping.vampiricTouch.monk", 0.05);
+	dam_factor[DF_TOUCHVAMP] = get_property("vamping.vampiricTouch", 0.4);
+	dam_factor[DF_TRANCEVAMP] = get_property("vamping.vampiricTrance", 0.2);
+	dam_factor[DF_HFIREVAMP] = get_property("vamping.hellfire", 0.14);
+	dam_factor[DF_UNDEADVAMP] = get_property("vamping.innateUndead", 0.03);
+	dam_factor[DF_NPCVAMP] = get_property("vamping.undeadNpc", 0.1);
+	dam_factor[DF_NPCTOPC] = get_property("damage.modifier.npcToPc", 1.0);
+	dam_factor[DF_WEAPON_DICE] = get_property("damage.modifier.weaponDice", 1.0);
+	dam_factor[DF_WETFIRE] = get_property("damage.reduction.wet", 0.8);
+	dam_factor[DF_BATTLETIDEVAMP] = get_property("vamping.battletide", 0.125);
+	dam_factor[DF_SLSHIELDINCREASE] = get_property("damage.soulnegshield.increase", 1.5);
+	dam_factor[DF_CHAOSSHIELD] = get_property("damage.reduction.chaosshield.mod", 0.90);
+	dam_factor[DF_BERSERKRAGE] = get_property("damage.increase.berserk.rage", 1.350);
+	dam_factor[DF_RAGED] = get_property("damage.increase.rage", 2.000);
+	dam_factor[DF_ENERGY_CONTAINMENT] =
+		get_property("damage.reduction.EnergyContainment", 0.750);
+	dam_factor[DF_GUARDIANS_BULWARK] =
+		get_property("damage.reduction.guardians.bulwark", 0.850);
+	dam_factor[DF_DAMROLL_MOD] = get_property("damroll.mod", 1.0);
+	dam_factor[DF_MELEEMASTERY] = get_property("damage.modifier.meleemastery", 1.100);
+	dam_factor[DF_DRACOLICHVAMP] = get_property("vamping.dracolich", 0.500);
+	dam_factor[DF_NEG_AC_MULT] = get_property("damage.neg.armorclass.multiplier", 0.500);
+	dam_factor[DF_DODGE_AGI_MODIFIER] = get_property("damage.dodge.agi.multiplier", 1.500);
+	dam_factor[DF_ARROWVAMP] = get_property("vamping.vampiricTouch.arrow", 0.05);
+	dam_factor[DF_ANTIPALADINVAMP] = get_property("vamping.vampiricTouch.antipaladin", 0.05);
+	dam_factor[DF_MERCENARYVAMP] = get_property("vamping.vampiricTouch.mercenary", 0.100);
+	dam_factor[DF_WARRIORVAMP] = get_property("vamping.vampiricTouch.warrior", 0.100);
+	dam_factor[DF_BERSERKERVAMP] = get_property("vamping.vampiricTouch.berserker", 0.100);
+	dam_factor[DF_ROGUEVAMP] = get_property("vamping.vampiricTouch.rogue", 0.100);
+	dam_factor[DF_PALADINVAMP] = get_property("vamping.vampiricTouch.paladin", 0.100);
+	dam_factor[DF_RANGERVAMP] = get_property("vamping.vampiricTouch.ranger", 0.100);
+	dam_factor[DF_DLORDAVGRVAMP] =
+		get_property("vamping.vampiricTouch.dreadlord.or.avenger", 0.100);
+	dam_factor[DF_GOOD_MODIFIER] = get_property("damage.modifier.good", 1.000);
+	dam_factor[DF_EVIL_MODIFIER] = get_property("damage.modifier.evil", 1.000);
+	dam_factor[DF_UNDEAD_MODIFIER] = get_property("damage.modifier.undead", 1.000);
+	dam_factor[DF_NEUTRAL_MODIFIER] = get_property("damage.modifier.neutral", 1.000);
+	dam_factor[DF_TWOHANDED_MODIFIER] = get_property("damage.modifier.twohanded", 1.500);
+	dam_factor[DF_KNEELING] = get_property("damage.modifier.kneeling", 1.150);
+	dam_factor[DF_SITTING] = get_property("damage.modifier.sitting", 1.300);
+	dam_factor[DF_PRONE] = get_property("damage.modifier.prone", 1.500);
+	dam_factor[DF_JUDICIUM_FIDEI] = get_property("damage.modifier.judicium", 1.500);
+}
 
 dam_mod_predicate spell_damage_modifiers[] = {
 	{ MAKE_DAM_MOD_PRED(){ if (get_linked_char(victim, LNK_PET) && IS_PC(caster)){
@@ -561,7 +668,7 @@ if (get_linked_char(victim, LNK_ETHEREAL))
 else if (get_linking_char(victim, LNK_ETHEREAL))
 	eth_ch = get_linking_char(victim, LNK_ETHEREAL);
 
-if (IS_ALIVE(eth_ch))
+if (char_in_list(eth_ch) && IS_ALIVE(eth_ch))
 {
 	double localDam = damage * 0.5;
 
@@ -572,6 +679,7 @@ if (IS_ALIVE(eth_ch))
 		     eth_ch);
 
 	raw_damage(caster, eth_ch, localDam, RAWDAM_DEFAULT ^ flags, messages);
+	dam_mod->requires_participant_revalidation = true;
 
 	dam_mod->type = dam_mod_type::More;
 	dam_mod->mod += -0.5;
