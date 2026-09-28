@@ -1,9 +1,14 @@
 #include "economy/economic_accounting_intent.h"
 #include "economy/coin_transfer_command.h"
+#include "economy/item_transfer_accounting.h"
+#include "flatfile/flatfile_accounting_store.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
+#include "player/player_snapshot_codec.h"
 
 #include <cassert>
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <filesystem>
@@ -11,9 +16,30 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 using inventory = std::map<std::string, std::vector<char>>;
+
+class flatfile_accounting_test_access
+{
+    public:
+	static flatfile_accounting_status initialize_item_bucket(
+		const std::string &root, const flatfile_authority_lock &lock,
+		const critical_operation_id &lineage, size_t bucket,
+		std::vector<flatfile_authority_operation> *operations, std::string *error)
+	{
+		return flatfile_accounting_storage::initialize_bucket(root, lock, lineage, bucket,
+								      operations, error);
+	}
+	static flatfile_authority_transaction_result commit(
+		const std::string &root, const flatfile_authority_lock &lock,
+		const std::vector<flatfile_authority_operation> &operations, std::string *error)
+	{
+		return flatfile_accounting_storage::commit(root, lock, operations, error);
+	}
+};
 
 static inventory contents(const fs::path &root)
 {
@@ -128,8 +154,259 @@ static critical_command accounting(critical_command command)
 static void refused(const critical_apply_result &result)
 {
 	assert(result.outcome == critical_apply_outcome::terminal_failure);
-	assert(result.error_code == EINVAL);
+	assert(result.error_code == EINVAL || result.error_code == ENOTSUP);
 	assert(result.result_size == 0);
+}
+
+static critical_operation_id accounting_id(uint8_t discriminator)
+{
+	critical_operation_id id = {};
+	id.bytes[0] = 0xa5;
+	id.bytes.back() = discriminator;
+	return id;
+}
+
+static void create_accounting_root(const fs::path &root)
+{
+	for (const auto &directory : { root, root / "domains", root / "economic-evidence",
+				       root / "accounting", root / "accounting/item_references" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+}
+
+static void initialize_item_accounting_bucket(const fs::path &root,
+					      const critical_operation_id &lineage,
+					      const critical_operation_id &operation)
+{
+	flatfile_authority_lock lock;
+	assert(lock.acquire(root.string(), nullptr));
+	std::vector<flatfile_authority_operation> operations;
+	assert(flatfile_accounting_test_access::initialize_item_bucket(
+		       root.string(), lock, lineage, operation.bytes[0], &operations, nullptr) ==
+	       flatfile_accounting_status::ok);
+	assert(flatfile_accounting_test_access::commit(root.string(), lock, operations, nullptr) ==
+	       flatfile_authority_transaction_result::ok);
+}
+
+static critical_command accounted_item_command(item_transfer_payload payload,
+					       uint8_t discriminator, uint32_t actor_pid,
+					       const critical_operation_id &lineage,
+					       const critical_operation_id &epoch,
+					       economic_source_kind source = {})
+{
+	critical_command command;
+	assert(item_transfer_command_build(&command, accounting_id(discriminator), payload,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	command.accepted_at_usec = discriminator;
+	std::vector<uint8_t> intent;
+	assert(item_transfer_accounting_intent(command, lineage, epoch, actor_pid, &intent,
+						 source) == economic_accounting_error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accounting_intent = std::move(intent);
+	assert(item_transfer_accounting_command_supported(command));
+	return command;
+}
+
+static void attach_item_blob(item_transfer_payload *payload,
+			     const std::vector<player_item_snapshot> &items)
+{
+	std::vector<uint8_t> encoded;
+	assert(payload && player_item_snapshot_list_encode(items, &encoded) ==
+			     player_snapshot_codec_result::ok &&
+	       !encoded.empty() && encoded.size() <= payload->item_blob.size());
+	payload->item_blob_size = static_cast<uint32_t>(encoded.size());
+	std::copy(encoded.begin(), encoded.end(), payload->item_blob.begin());
+}
+
+static void integrated_item_accounting(const fs::path &base)
+{
+	const critical_operation_id lineage = operation(41);
+	const critical_operation_id epoch = operation(42);
+	const fs::path root = base / "accounted-items";
+	create_accounting_root(root);
+	const item_owner_identity player = { item_owner_type::player, 42, 0 };
+	assert(flatfile_item_repository_establish_owner(
+		       root.string(), player,
+		       { { 5001, 5001, 0, player, 1, 501, item_custody_state::active } },
+		       nullptr) == flatfile_item_baseline_result::applied);
+	initialize_item_accounting_bucket(root, lineage, accounting_id(21));
+
+	item_transfer_payload give = {};
+	give.from_owner = player;
+	give.to_owner = { item_owner_type::player, 43, 0 };
+	give.reason = item_transfer_reason::player_give;
+	give.expected_from_revision = 1;
+	give.expected_to_revision = 0;
+	give.selected_item_uid = 5001;
+	give.target_root_item_uid = 5001;
+	give.item_count = 1;
+	give.items[0] = { 5001, 5001, 0, 1, 501, item_custody_state::active };
+	const auto give_command = accounted_item_command(give, 21, 42, lineage, epoch);
+	const auto given = flatfile_item_repository_apply(root.string(), give_command);
+	assert(given.outcome == critical_apply_outcome::applied);
+	assert(flatfile_item_repository_apply(root.string(), give_command).outcome ==
+	       critical_apply_outcome::already_applied);
+	economic_accounting_item_reference reference = {};
+	assert(flatfile_item_accounting_reference_find_by_legacy(
+		       root.string(), give_command.operation_id, 0, &reference, nullptr) ==
+	       flatfile_item_accounting_status::ok);
+	assert(reference.item_uid == 5001 && reference.before_revision == 1 &&
+	       reference.after_revision == 2 && reference.child_index == 0);
+	assert(flatfile_item_accounting_reference_verify_operation(
+		       root.string(), give_command.operation_id, { &reference, 1 }, nullptr) ==
+	       flatfile_item_accounting_status::ok);
+	flatfile_accounting_record retained;
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root.string(), nullptr));
+		assert(flatfile_accounting_lookup(root.string(), lock, give_command, &retained,
+						  nullptr) == flatfile_accounting_status::ok);
+	}
+	economic_accounting_plan plan;
+	assert(economic_plan_decode(retained.plan, &plan) == economic_accounting_error::ok);
+	assert(plan.item_events.size() == 1 && plan.item_events[0].uid == 5001);
+
+	const fs::path ref_file = root / "accounting/item_references/a5.bin";
+	fs::remove(ref_file);
+	const auto missing_reference_replay =
+		flatfile_item_repository_apply(root.string(), give_command);
+	assert(missing_reference_replay.outcome == critical_apply_outcome::terminal_failure &&
+	       missing_reference_replay.error_code == EILSEQ);
+	assert(flatfile_item_accounting_reference_append(root.string(), reference, nullptr) ==
+	       flatfile_item_accounting_status::ok);
+
+	item_transfer_payload creation = {};
+	creation.from_owner = { item_owner_type::system, 0, 0 };
+	creation.to_owner = player;
+	creation.reason = item_transfer_reason::creation;
+	creation.reason_id = 77;
+	creation.expected_from_revision = 0;
+	creation.expected_to_revision = 2;
+	creation.selected_item_uid = 6001;
+	creation.target_root_item_uid = 6001;
+	creation.item_count = 1;
+	creation.items[0] = { 6001, 6001, 0, ITEM_TRANSFER_ABSENT_REVISION,
+			      601, item_custody_state::absent };
+	const auto creation_command = accounted_item_command(
+		creation, 22, 42, lineage, epoch, economic_source_kind::starter_grant);
+	assert(flatfile_item_repository_apply(root.string(), creation_command).outcome ==
+	       critical_apply_outcome::applied);
+	assert(flatfile_item_repository_apply(root.string(), creation_command).outcome ==
+	       critical_apply_outcome::already_applied);
+	const auto source_claim = std::find_if(
+		fs::directory_iterator(root / "economic-evidence"),
+		fs::directory_iterator(), [](const fs::directory_entry &entry)
+		{ return entry.path().filename().string().starts_with("source-claim-"); });
+	assert(source_claim != fs::directory_iterator());
+	fs::remove(source_claim->path());
+	const auto missing_claim_replay =
+		flatfile_item_repository_apply(root.string(), creation_command);
+	assert(missing_claim_replay.outcome == critical_apply_outcome::terminal_failure &&
+	       missing_claim_replay.error_code == EILSEQ);
+
+	item_transfer_payload retirement = {};
+	retirement.from_owner = player;
+	retirement.to_owner = { item_owner_type::destruction, 0, 0 };
+	retirement.reason = item_transfer_reason::destruction;
+	retirement.reason_id = 601;
+	retirement.expected_from_revision = 3;
+	retirement.expected_to_revision = 0;
+	retirement.selected_item_uid = 6001;
+	retirement.target_root_item_uid = 6001;
+	retirement.item_count = 1;
+	retirement.items[0] = { 6001, 6001, 0, 1, 601, item_custody_state::active };
+	const auto retirement_command = accounted_item_command(
+		retirement, 24, 42, lineage, epoch, economic_source_kind::item_action);
+	const auto retired = flatfile_item_repository_apply(root.string(), retirement_command);
+	assert(retired.outcome == critical_apply_outcome::applied);
+	assert(flatfile_item_repository_apply(root.string(), retirement_command).outcome ==
+	       critical_apply_outcome::already_applied);
+	economic_accounting_item_reference retirement_reference = {};
+	assert(flatfile_item_accounting_reference_find_by_legacy(
+		       root.string(), retirement_command.operation_id, 0, &retirement_reference,
+		       nullptr) == flatfile_item_accounting_status::ok);
+	assert(retirement_reference.item_uid == 6001 &&
+	       retirement_reference.before_revision == 1 &&
+	       retirement_reference.after_revision == 2);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root.string(), nullptr));
+		assert(flatfile_accounting_lookup(root.string(), lock, retirement_command,
+						  &retained, nullptr) ==
+		       flatfile_accounting_status::ok);
+	}
+	assert(economic_plan_decode(retained.plan, &plan) == economic_accounting_error::ok);
+	assert(plan.item_events.size() == 1 && plan.item_events[0].uid == 6001 &&
+	       plan.item_events[0].after.state == item_custody_state::destroyed);
+
+	item_transfer_payload room_creation = {};
+	room_creation.from_owner = { item_owner_type::system, 0, 0 };
+	room_creation.to_owner = { item_owner_type::room, 50, 0 };
+	room_creation.reason = item_transfer_reason::creation;
+	room_creation.reason_id = 88;
+	room_creation.expected_from_revision = 1;
+	room_creation.expected_to_revision = 0;
+	room_creation.selected_item_uid = 8001;
+	room_creation.target_root_item_uid = 8001;
+	room_creation.item_count = 1;
+	room_creation.items[0] = { 8001, 8001, 0, ITEM_TRANSFER_ABSENT_REVISION, 801,
+				   item_custody_state::absent };
+	player_item_snapshot room_item = {};
+	room_item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	room_item.equipment_slot = -1;
+	room_item.object_uid = 8001;
+	room_item.vnum = 801;
+	room_item.type = 1;
+	room_item.weight = 1;
+	room_item.condition = 100;
+	attach_item_blob(&room_creation, { room_item });
+	const auto room_creation_command = accounted_item_command(
+		room_creation, 25, 42, lineage, epoch, economic_source_kind::quest_completion);
+	assert(flatfile_item_repository_apply(root.string(), room_creation_command).outcome ==
+	       critical_apply_outcome::applied);
+	assert(flatfile_item_repository_apply(root.string(), room_creation_command).outcome ==
+	       critical_apply_outcome::already_applied);
+	economic_accounting_item_reference room_reference = {};
+	assert(flatfile_item_accounting_reference_find_by_legacy(
+		       root.string(), room_creation_command.operation_id, 0, &room_reference,
+		       nullptr) == flatfile_item_accounting_status::ok);
+	assert(room_reference.item_uid == 8001 && room_reference.before_revision == 0 &&
+	       room_reference.after_revision == 1);
+
+	item_transfer_payload stale = give;
+	stale.from_owner = { item_owner_type::player, 43, 0 };
+	stale.to_owner = { item_owner_type::player, 44, 0 };
+	stale.expected_from_revision = 0;
+	stale.expected_to_revision = 0;
+	stale.items[0].expected_item_revision = 2;
+	const auto stale_command = accounted_item_command(stale, 23, 43, lineage, epoch);
+	const auto rejected = flatfile_item_repository_apply(root.string(), stale_command);
+	assert(rejected.outcome == critical_apply_outcome::terminal_failure &&
+	       rejected.error_code == ESTALE);
+	assert(flatfile_item_repository_apply(root.string(), stale_command).error_code == ESTALE);
+
+	const fs::path interrupted_root = base / "accounted-items-recovery";
+	create_accounting_root(interrupted_root);
+	assert(flatfile_item_repository_establish_owner(
+		       interrupted_root.string(), player,
+		       { { 7001, 7001, 0, player, 1, 701, item_custody_state::active } },
+		       nullptr) == flatfile_item_baseline_result::applied);
+	initialize_item_accounting_bucket(interrupted_root, lineage, accounting_id(31));
+	give.items[0] = { 7001, 7001, 0, 1, 701, item_custody_state::active };
+	give.selected_item_uid = 7001;
+	give.target_root_item_uid = 7001;
+	const auto interrupted_command = accounted_item_command(give, 31, 42, lineage, epoch);
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION", "1", 1);
+	const auto interrupted =
+		flatfile_item_repository_apply(interrupted_root.string(), interrupted_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION");
+	assert(interrupted.outcome == critical_apply_outcome::retryable_failure &&
+	       interrupted.error_code == EIO);
+	assert(flatfile_item_repository_apply(interrupted_root.string(), interrupted_command)
+		       .outcome == critical_apply_outcome::already_applied);
 }
 
 static void check(const fs::path &missing, const fs::path &seeded, const inventory &before,
@@ -209,7 +486,9 @@ int main(int argc, char **argv)
 	}
 	check(missing, seeded, before, nested(coin_command, false));
 	check(missing, seeded, before, nested(coin_command, true));
+	integrated_item_accounting(base);
 	std::cout << "flatfile gates: valid account-bank/item/coin variants rejected; "
-		     "both nested schema2 coin legs rejected; missing root absent and "
-		     "seeded authority byte inventory unchanged\n";
+		     "both nested schema2 coin legs rejected; schema2 item movement, sourced room "
+		     "creation, sourced retirement, exact references, replay and journal recovery "
+		     "passed\n";
 }

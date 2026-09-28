@@ -193,7 +193,8 @@ static bool shop_creation_submit_grant(P_char ch, produced_purchase_sequence &se
 						 GET_ITEM_TYPE(destination) == ITEM_CONTAINER)) &&
 	       shop_trade_container_accepts(ch, selected, destination) &&
 	       item_creation_grant_submit_to_player_with_completion(ch, selected, ch, destination,
-								    shop_creation_grant_completion);
+								    shop_creation_grant_completion,
+								    economic_source_kind::shop_stock);
 }
 
 static bool shop_creation_submit_produced_continuation(P_char ch,
@@ -1305,7 +1306,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	SET_BIT(temp1->extra2_flags, ITEM2_STOREITEM);
 	container = NULL;
 	container = purchase_destination;
-	if (!item_creation_grant_submit_to_player(ch, temp1, ch, container))
+	if (!item_creation_grant_submit_to_player(ch, temp1, ch, container,
+							   economic_source_kind::shop_stock))
 	{
 		extract_obj(temp1, FALSE);
 		send_to_char(

@@ -31,6 +31,9 @@ class economic_gameplay_authority
 	// rebound to the current epoch (retained exact-ID replay may be historical).
 	static economic_accounting_error prepare_currency(critical_command *command);
 	static economic_accounting_error prepare_coin_transfer(critical_command *command);
+	static economic_accounting_error prepare_item_transfer(critical_command *command,
+							       uint32_t actor_pid,
+							       economic_source_kind lifecycle_source = {});
 	static bool active();
 
     private:

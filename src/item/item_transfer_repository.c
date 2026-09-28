@@ -1,4 +1,5 @@
 #include "item/item_transfer_repository.h"
+#include "economy/item_transfer_accounting.h"
 #include "core/defines.h"
 #include "player/player_snapshot_codec.h"
 #include "core/structs.h"
@@ -64,6 +65,108 @@ struct current_item
 	int32_t vnum;
 	uint8_t state;
 };
+
+economic_item_position accounting_position(const current_item &item)
+{
+	return { { static_cast<item_owner_type>(item.owner_type), item.owner_id,
+		   item.owner_context_id },
+		 item.root_item_uid,
+		 item.parent_item_uid,
+		 item.item_revision,
+		 static_cast<item_custody_state>(item.state) };
+}
+
+economic_item_snapshot accounting_snapshot(const current_item &item)
+{
+	return { item.item_uid, accounting_position(item) };
+}
+
+bool build_custody_delta(const item_transfer_payload &payload,
+			 const std::vector<current_item> &before_items,
+			 item_transfer_custody_delta *delta)
+{
+	if (!delta || !payload.item_count)
+		return false;
+	item_transfer_custody_delta candidate;
+	try
+	{
+		if (payload.from_owner.type == item_owner_type::system)
+		{
+			candidate.before.reserve(payload.item_count);
+			candidate.after.reserve(payload.item_count);
+			for (size_t index = 0; index < payload.item_count; ++index)
+			{
+				const auto &entry = payload.items[index];
+				candidate.before.push_back({ entry.item_uid,
+							     { { item_owner_type::unknown, 0, 0 },
+							       0,
+							       0,
+							       0,
+							       item_custody_state::absent } });
+			}
+		}
+		else
+		{
+			candidate.before.reserve(before_items.size());
+			for (const auto &item : before_items)
+				candidate.before.push_back(accounting_snapshot(item));
+			std::sort(candidate.before.begin(), candidate.before.end(),
+				  [](const auto &left, const auto &right)
+				  { return left.uid < right.uid; });
+		}
+		candidate.after = candidate.before;
+		candidate.events.reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &entry = payload.items[index];
+			auto before = std::lower_bound(candidate.before.begin(),
+						       candidate.before.end(), entry.item_uid,
+						       [](const auto &value, uint64_t uid)
+						       { return value.uid < uid; });
+			if (before == candidate.before.end() || before->uid != entry.item_uid)
+				return false;
+			uint64_t root_uid = 0, parent_uid = 0;
+			if (!item_transfer_target_topology(payload, entry.item_uid, &root_uid,
+							   &parent_uid) ||
+			    before->position.revision == UINT64_MAX)
+				return false;
+			economic_item_position after = {
+				payload.to_owner, root_uid, parent_uid,
+				(payload.from_owner.type == item_owner_type::system ?
+					 0 :
+					 before->position.revision) +
+					1,
+				payload.to_owner.type == item_owner_type::destruction ?
+					item_custody_state::destroyed :
+					item_custody_state::active
+			};
+			auto after_item = std::lower_bound(candidate.after.begin(),
+							   candidate.after.end(), entry.item_uid,
+							   [](const auto &value, uint64_t uid)
+							   { return value.uid < uid; });
+			if (after_item == candidate.after.end() ||
+			    after_item->uid != entry.item_uid)
+				return false;
+			const economic_item_position before_position = before->position;
+			after_item->position = after;
+			candidate.events.push_back({ static_cast<uint32_t>(index), 0,
+						     entry.item_uid, before_position, after });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	if (economic_item_effects_validate(candidate.before, candidate.after, candidate.events,
+					   0) != economic_accounting_error::ok)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	*delta = std::move(candidate);
+	return true;
+}
 
 bool run_sql(MYSQL *connection, const std::string &sql)
 {
@@ -1421,9 +1524,12 @@ bool item_transfer_repository_execute_at_offset(
 	MYSQL *connection, const critical_command &command, uint16_t event_index_base,
 	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
 	item_transfer_failure_stage *failure_stage,
-	const item_transfer_accounting_context *accounting_context)
+	const item_transfer_accounting_context *accounting_context,
+	item_transfer_custody_delta *custody_delta)
 {
-	if (!critical_command_legacy_execution_supported(command))
+	const bool admitted_accounting_item = item_transfer_accounting_command_supported(command) &&
+					      custody_delta;
+	if (!critical_command_legacy_execution_supported(command) && !admitted_accounting_item)
 	{
 		errno = EPROTONOSUPPORT;
 		return false;
@@ -1455,6 +1561,11 @@ bool item_transfer_repository_execute_at_offset(
 	{
 		*result_code = E2BIG;
 		return true;
+	}
+	if (custody_delta && event_index_base != 0)
+	{
+		errno = EINVAL;
+		return false;
 	}
 	uint64_t from_revision = 0, to_revision = 0;
 	const bool same_owner = item_owner_identity_equal(payload.from_owner, payload.to_owner);
@@ -1538,6 +1649,15 @@ bool item_transfer_repository_execute_at_offset(
 		for (size_t index = 0; index < source_roots.size(); ++index)
 			if (!load_root(connection, source_roots[index], &current, index != 0))
 				return false;
+		if (custody_delta && payload.target_parent_item_uid)
+		{
+			const bool target_root_loaded = std::any_of(
+				current.begin(), current.end(), [&](const current_item &item)
+				{ return item.item_uid == payload.target_root_item_uid; });
+			if (!target_root_loaded &&
+			    !load_root(connection, payload.target_root_item_uid, &current, true))
+				return false;
+		}
 		std::sort(current.begin(), current.end(),
 			  [](const current_item &left, const current_item &right)
 			  { return left.item_uid < right.item_uid; });
@@ -1732,6 +1852,13 @@ bool item_transfer_repository_execute_at_offset(
 	}
 	if (!sync_restitution_runtime_payload(connection, payload))
 		return false;
+	if (custody_delta)
+	{
+		item_transfer_custody_delta candidate;
+		if (!build_custody_delta(payload, current, &candidate))
+			return false;
+		*custody_delta = std::move(candidate);
+	}
 	*mutation_applied = true;
 	return true;
 }
@@ -1740,11 +1867,13 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 				      item_transfer_result *result, unsigned int *result_code,
 				      bool *mutation_applied,
 				      item_transfer_failure_stage *failure_stage,
-				      const item_transfer_accounting_context *accounting_context)
+				      const item_transfer_accounting_context *accounting_context,
+				      item_transfer_custody_delta *custody_delta)
 {
 	return item_transfer_repository_execute_at_offset(connection, command, 0, result,
 							  result_code, mutation_applied,
-							  failure_stage, accounting_context);
+							  failure_stage, accounting_context,
+							  custody_delta);
 }
 
 bool item_transfer_repository_execute_coin(
@@ -2115,10 +2244,11 @@ bool item_transfer_repository_revoke_roots_preserving_children(MYSQL *connection
 						selected = true;
 						break;
 					}
-					auto parent = std::find_if(
-						tree.begin(), tree.end(),
-						[&](const current_item &entry)
-						{ return entry.item_uid == ancestor; });
+					auto parent = std::find_if(tree.begin(), tree.end(),
+								   [&](const current_item &entry) {
+									   return entry.item_uid ==
+										  ancestor;
+								   });
 					if (parent == tree.end() || !parent->parent_item_uid)
 						break;
 					ancestor = parent->parent_item_uid;

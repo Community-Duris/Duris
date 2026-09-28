@@ -203,6 +203,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/whois_lookup.o \
 				 cmd/community_spellup.o \
 				 cmd/player_death_restitution.o \
+				 cmd/audit.o \
 				 net/ansi.o net/chat_presentation.o \
 				 net/output_style.o \
 				 net/output_profiles.o \
@@ -415,10 +416,12 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/economic_accounting_repository.o \
 				 persistence/economic_sql_baseline_transaction.o \
 				 persistence/economic_sql_lifecycle_guard.o \
+				 persistence/economic_sql_cutover_capability.o \
 				 persistence/economic_sql_accounting_lifecycle_transaction.o \
 				 persistence/economic_sql_source_snapshot.o \
 				 economy/economic_sql_source_normalize.o \
 				 persistence/economic_sql_bank_transaction.o \
+				 persistence/economic_sql_item_transfer_transaction.o \
 				 persistence/critical_command_repository.o \
 				 persistence/player_death_restitution_command.o \
 				 persistence/player_death_restitution_repository.o \
@@ -443,6 +446,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/currency_exchange_proc.o \
 				 economy/coin_transfer_command.o \
 				 economy/coin_transfer_accounting.o \
+				 economy/item_transfer_accounting.o \
 				 economy/economic_accounting_types.o \
 				 economy/economic_accounting_plan.o \
 				 economy/economic_accounting_intent.o \

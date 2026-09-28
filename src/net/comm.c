@@ -659,6 +659,7 @@ int main(int argc, char **argv)
 	(void)telemetry_runtime_final_reap();
 	artifact_mana_shutdown();
 	shutdown_mysql();
+	critical_command_coordinator_release_lifecycle_guard();
 	close_cmdlog();
 
 	return game_exit_status;
@@ -958,9 +959,14 @@ int run_the_game(int port, int sslport)
 						   critical_gameplay_restore_replayed_command, NULL,
 						   critical_extension_validator))
 	{
-		player_death_restitution_runtime_abort_all();
-		critical_command_coordinator_shutdown();
-		critical_outbox_shutdown();
+		if (critical_command_coordinator_shutdown())
+		{
+			player_death_restitution_runtime_abort_all();
+			critical_outbox_shutdown();
+		}
+		else
+			logit(LOG_STATUS,
+			      "Critical command coordinator shutdown refused; retaining dependent pipelines.");
 		logit(LOG_STATUS,
 		      "Critical command pipeline unavailable; critical gameplay fails closed.");
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
@@ -1029,9 +1035,13 @@ int run_the_game(int port, int sslport)
 	account_recovery_shutdown();
 	password_login_shutdown();
 	player_death_restitution_runtime_shutdown();
-	critical_command_coordinator_shutdown();
+	const bool critical_coordinator_stopped = critical_command_coordinator_shutdown();
+	if (!critical_coordinator_stopped)
+		logit(LOG_EXIT,
+		      "Critical coordinator refused shutdown after lifecycle guard acquisition.");
 	locker_identify_shutdown();
-	critical_outbox_shutdown();
+	if (critical_coordinator_stopped)
+		critical_outbox_shutdown();
 	if (!_pwipe)
 	{
 		locker_async_shutdown();
@@ -2323,6 +2333,26 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 	ctx.loop_us = loop_us;
 }
 
+static void refuse_lifecycle_for_active_cutover_owner(const char *operation)
+{
+	logit(LOG_STATUS, "Refusing %s while a critical SQL cutover owner retains its session.",
+	      operation);
+	persistence_alert(AVATAR, "critical_command", operation, "none", "none",
+			  "lifecycle_refused",
+			  "shutdown_cancelled=1 retry_after_owner_terminal_cleanup=1");
+	for (P_desc pending_desc = descriptor_list; pending_desc; pending_desc = pending_desc->next)
+		if (pending_desc->descriptor > 0 && pending_desc->connected == CON_PLAYING)
+			write_to_descriptor(
+				pending_desc,
+				"\r\nShutdown/copyover cancelled: an economic SQL cutover still owns its session. "
+				"Retry after terminal cleanup.\r\n");
+	shutdownflag = 0;
+	_reboot = 0;
+	_copyover = 0;
+	_autoboot = 0;
+	shutdownData.eShutdownType = TimedShutdownData::NONE;
+}
+
 /**
  * Run network and simulation pulses, including persistence deadlines
  * independent of world-event debt.
@@ -2524,6 +2554,11 @@ resume_game_loop:
 
 	if (_copyover)
 	{
+		if (!critical_command_coordinator_try_acquire_lifecycle_guard())
+		{
+			refuse_lifecycle_for_active_cutover_owner("copyover");
+			goto resume_game_loop;
+		}
 		/* Flush dirty realm records (harvested deposits) before the exec.
 		 * There are two distinct kingdom flush paths, on purpose:
 		 *   1. Normal shutdown: game_loop() returns and main() runs
@@ -2546,6 +2581,7 @@ resume_game_loop:
 			_reboot = 0;
 			_copyover = 0;
 			_autoboot = 0;
+			critical_command_coordinator_release_lifecycle_guard();
 			goto resume_game_loop;
 		}
 		return;
@@ -2562,6 +2598,11 @@ resume_game_loop:
 		goto resume_game_loop;
 	}
 
+	if (!critical_command_coordinator_try_acquire_lifecycle_guard())
+	{
+		refuse_lifecycle_for_active_cutover_owner("shutdown");
+		goto resume_game_loop;
+	}
 	critical_command_coordinator_quiesce();
 	critical_outbox_quiesce();
 	if (!_pwipe && !critical_command_coordinator_drain(3000))
@@ -2573,6 +2614,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !critical_outbox_drain(3000))
@@ -2584,6 +2626,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))
@@ -2601,6 +2644,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !player_save_pipeline_drain(3000))
@@ -2613,6 +2657,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !redis_world_recovery_drain(3000))
@@ -2625,6 +2670,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 	if (!_pwipe && !save_dirty_shopkeepers(true))
@@ -2646,6 +2692,7 @@ resume_game_loop:
 		shutdownflag = 0;
 		_reboot = 0;
 		_autoboot = 0;
+		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
 
@@ -3449,7 +3496,7 @@ void close_socket(struct descriptor_data *d)
 		FREE(d->storage);
 
 #endif
-	/* I really don't wanna crash it  */
+		/* I really don't wanna crash it  */
 #ifdef USE_ACCOUNT
 	if (d->account)
 		d->account = free_account(d->account);
@@ -5182,7 +5229,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 	int j, tbp, which_z, sil = type & ACT_SILENCEABLE;
 	bool ignore_zcoord = type & ACT_IGNORE_ZCOORD;
 	char *point;
-	const char *strp, *i;
+	const char *strp, *i = nullptr;
 	int terseonly = type & ACT_TERSE;
 	int notterse = type & ACT_NOTTERSE;
 	bool no_eol = type & ACT_NOEOL;

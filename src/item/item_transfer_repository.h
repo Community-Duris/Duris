@@ -3,6 +3,7 @@
 
 #include "item/item_transfer_command.h"
 #include "item/economic_accounting_item_reference.h"
+#include "economy/economic_accounting_types.h"
 
 #include <mysql/mysql.h>
 
@@ -16,18 +17,30 @@ struct item_transfer_accounting_context
 	uint16_t line_index_base = 0;
 };
 
+// Locked custody evidence captured by a successful item transfer. The source
+// and target roots are included as witnesses so the accounting plan can prove
+// that moved subtrees remain well-formed across the ownership change.
+struct item_transfer_custody_delta
+{
+	std::vector<economic_item_snapshot> before;
+	std::vector<economic_item_snapshot> after;
+	std::vector<economic_item_event> events;
+};
+
 bool item_transfer_repository_execute(
 	MYSQL *connection, const critical_command &command, item_transfer_result *result,
 	unsigned int *result_code, bool *mutation_applied,
 	item_transfer_failure_stage *failure_stage = nullptr,
-	const item_transfer_accounting_context *accounting_context = nullptr);
+	const item_transfer_accounting_context *accounting_context = nullptr,
+	item_transfer_custody_delta *custody_delta = nullptr);
 // Compound commands may use one inbox operation for consecutive transfer
 // segments. The offset keeps their item-ledger event indexes disjoint.
 bool item_transfer_repository_execute_at_offset(
 	MYSQL *connection, const critical_command &command, uint16_t event_index_base,
 	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
 	item_transfer_failure_stage *failure_stage = nullptr,
-	const item_transfer_accounting_context *accounting_context = nullptr);
+	const item_transfer_accounting_context *accounting_context = nullptr,
+	item_transfer_custody_delta *custody_delta = nullptr);
 // Called only inside the enclosing coin transaction; never commits independently.
 bool item_transfer_repository_execute_coin(
 	MYSQL *connection, const critical_command &command, const std::array<int32_t, 4> &before,

@@ -1693,10 +1693,10 @@ int welfare_well(int /*room*/, P_char ch, int cmd, char *arg)
 
 int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
-	P_obj o, next_obj, o_1, well;
+	P_obj o, next_obj, o_1, well = NULL;
 	P_nevent ev = NULL;
 	hunt_data data = {};
-	bool found_well, dumped;
+	bool found_well = FALSE, dumped = FALSE;
 	bool loaded = FALSE;
 
 	if (cmd == CMD_SET_PERIODIC)

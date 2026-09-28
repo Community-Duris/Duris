@@ -342,7 +342,7 @@ void encode_valid(const economic_accounting_plan &plan, writer &output)
 bool economic_source_event_valid(const economic_source_event &event)
 {
 	return event.kind >= economic_source_kind::quest_completion &&
-	       event.kind <= economic_source_kind::service &&
+	       event.kind <= economic_source_kind::item_action &&
 	       !critical_operation_id_is_zero(event.source) &&
 	       !critical_operation_id_is_zero(event.generation);
 }

@@ -22,6 +22,8 @@
 #include "combat/justice.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
+#include "magic/spell_item_lifecycle.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/vnum.obj.h"
 
 extern P_room world;
@@ -3254,10 +3256,62 @@ bool complete_corpse_wall_of_bones(P_char caster, P_obj corpse, int level, int e
 	return true;
 }
 
+struct wall_of_bones_scales_context
+{
+	int32_t level;
+	int32_t exit_dir;
+	int32_t room;
+	int32_t multiplier;
+};
+
+static bool create_wall_of_bones_from_scales(P_char ch, int level, int exit_dir, int scales)
+{
+	if (!create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, scales, 1000,
+			   "&+La thin wall of &+gscales&n",
+			   "&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
+		return false;
+	SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
+	SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
+			     rev_dir[exit_dir])
+			->exit_info,
+		EX_BREAKABLE);
+	char message[MAX_STRING_LENGTH];
+	snprintf(message, sizeof(message),
+		 "&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n",
+		 dirs[exit_dir]);
+	send_to_room(message, ch->in_room);
+	snprintf(message, sizeof(message),
+		 "&+LA thin &+gdragonscale&+L curtain magically assembles to the %s!&n\r\n",
+		 dirs[rev_dir[exit_dir]]);
+	send_to_room(message, (world[ch->in_room].dir_option[exit_dir])->to_room);
+	return true;
+}
+
+static void wall_of_bones_scales_completed(P_char ch, bool committed,
+					   const item_transfer_result &result,
+					   unsigned int /*error_code*/,
+					   const uint8_t *encoded,
+					   size_t encoded_size)
+{
+	if (!ch || !encoded || encoded_size != sizeof(wall_of_bones_scales_context))
+		return;
+	wall_of_bones_scales_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed || ch->in_room != context.room)
+	{
+		send_to_char("The dragon scales remain intact as your spell fizzles.\r\n", ch);
+		return;
+	}
+	if (!create_wall_of_bones_from_scales(
+		    ch, context.level, context.exit_dir,
+		    static_cast<int>(result.item_count) * context.multiplier))
+		send_to_char("Something prevents you from making a wall there.\n", ch);
+}
+
 void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int type,
 			 P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
-	char arg1[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], *arg2;
+	char arg1[MAX_STRING_LENGTH], *arg2;
 	int exit_dir, clevel, scales;
 	P_obj corpse, obj_in_corpse, next_obj;
 
@@ -3347,7 +3401,20 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 	if (!corpse)
 	{
 		if ((corpse = get_object_from_char(ch, VOBJ_PILE_BONES)) == NULL)
-			scales = get_spell_component(ch, VOBJ_DRAGON_SCALE, 4) * number(1, 2);
+		{
+			if (economic_gameplay_authority::active() && IS_PC(ch))
+			{
+				const wall_of_bones_scales_context context = {
+					level, exit_dir, ch->in_room, number(1, 2) };
+				if (spell_consume_components(
+					    ch, VOBJ_DRAGON_SCALE, 4, SPELL_WALL_OF_BONES,
+					    wall_of_bones_scales_completed, &context, sizeof(context)))
+					return;
+				scales = 0;
+			}
+			else
+				scales = get_spell_component(ch, VOBJ_DRAGON_SCALE, 4) * number(1, 2);
+		}
 		else
 		{
 			clevel = corpse->value[CORPSE_LEVEL];
@@ -3378,26 +3445,8 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 
 		extract_obj(corpse, TRUE); // Empty corpse, but 'in game.'
 	}
-	else if (scales && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, scales,
-					1000, "&+La thin wall of &+gscales&n",
-					"&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
+	else if (scales && create_wall_of_bones_from_scales(ch, level, exit_dir, scales))
 	{
-		SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
-		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
-				     rev_dir[exit_dir])
-				->exit_info,
-			EX_BREAKABLE);
-
-		snprintf(
-			buf1, MAX_STRING_LENGTH,
-			"&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n",
-			dirs[exit_dir]);
-		send_to_room(buf1, ch->in_room);
-		snprintf(buf1, MAX_STRING_LENGTH,
-			 "&+LA thin &+gdragonscale&+L curtain magically assembles to the %s!&n\r\n",
-			 dirs[rev_dir[exit_dir]]);
-		send_to_room(buf1, (world[ch->in_room].dir_option[exit_dir])->to_room);
-
 		if (corpse)
 			extract_obj(corpse, TRUE); // Dragon scales.
 	}

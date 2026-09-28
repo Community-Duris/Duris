@@ -15,9 +15,11 @@ from _paths import ROOT, rel
 
 HARNESS = r'''
 #include "core/utils.h"
+#include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/economic_gameplay_authority.h"
+#include "player/player_snapshot_codec.h"
 #include "sql/sql_player.h"
 
 #include <algorithm>
@@ -47,8 +49,10 @@ public:
                         const critical_operation_id &epoch,
                         const critical_operation_id &receipt)
     {
-        const std::array wallets = { economic_gameplay_wallet_mapping{
-            42, {lineage, economic_account_kind::wallet, 42, 0}} };
+        const std::array wallets = {
+            economic_gameplay_wallet_mapping{42, {lineage, economic_account_kind::wallet, 42, 0}},
+            economic_gameplay_wallet_mapping{45, {lineage, economic_account_kind::wallet, 45, 0}}
+        };
         const std::array banks = { economic_gameplay_bank_mapping{
             "retention_account", 1, {lineage, economic_account_kind::bank, 52, 1}} };
         assert(economic_gameplay_authority::install(lineage, epoch, receipt,
@@ -177,6 +181,118 @@ int main(int argc, char **argv)
     GET_COPPER(&actor) = 5;
     online = &actor;
     currency_transaction_reset_for_tests();
+    if (scenario == "accounted_coin_producer_restart")
+    {
+        critical_operation_id lineage = {}, epoch = {}, activation = {};
+        lineage.bytes[0] = 1;
+        epoch.bytes[0] = 2;
+        activation.bytes[0] = 3;
+        economic_gameplay_authority_test_access::install(lineage, epoch, activation);
+        pc_only_data recipient_player = {};
+        recipient_player.pid = 45;
+        recipient_player.wallet_revision = 1;
+        recipient_player.bank_revision = 1;
+        char_data recipient = {};
+        recipient.only.pc = &recipient_player;
+        recipient.player.racewar = actor.player.racewar;
+        online_other = &recipient;
+        coin_transfer_payload transfer = {};
+        assert(currency_transaction_coin_wallet(&actor, -1, &transfer.source));
+        assert(currency_transaction_coin_wallet(&recipient, 1, &transfer.destination));
+        assert(currency_transaction_submit_coin(&actor, transfer, coin_completed, nullptr, 0));
+        assert(held_submissions == 1 && submissions == 0 && submitted.publication_required);
+        assert(submitted.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+        assert(critical_command_envelope_valid(submitted));
+
+        const critical_command replayed = submitted;
+        currency_transaction_reset_for_tests();
+        assert(currency_transaction_restore_replayed_command(replayed));
+        assert(currency_transaction_health_copy().pending == 1);
+        coin_transfer_result result = {};
+        const coin_transfer_endpoint *endpoints[] = { &transfer.source, &transfer.destination };
+        for (size_t index = 0; index < 2; ++index)
+        {
+            for (size_t denomination = 0; denomination < 4; ++denomination)
+                result.wallets[index].wallet.amount[denomination] =
+                    endpoints[index]->after[denomination];
+            result.wallets[index].wallet_revision =
+                endpoints[index]->change.expected_revisions[0].revision + 1;
+            result.wallets[index].bank_revision =
+                endpoints[index]->change.expected_revisions[1].revision + 1;
+        }
+        std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> bytes = {};
+        assert(coin_transfer_command_encode_result(transfer, result, &bytes));
+        critical_completion receipt = {};
+        receipt.operation_id = replayed.operation_id;
+        receipt.outcome = critical_apply_outcome::already_applied;
+        receipt.result_size = bytes.size();
+        std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(publication_acks == 1 && GET_COPPER(&actor) == 4 &&
+               GET_COPPER(&recipient) == 1);
+        assert(currency_transaction_health_copy().pending == 0 &&
+               !currency_transaction_player_busy(&actor) &&
+               !currency_transaction_player_busy(&recipient));
+
+        constexpr uint64_t pile_uid = 99001;
+        coin_transfer_payload pile_transfer = {};
+        assert(currency_transaction_coin_wallet(&actor, -1, &pile_transfer.source));
+        auto &pile_endpoint = pile_transfer.destination;
+        pile_endpoint.after = {1, 0, 0, 0};
+        item_transfer_payload pile = {};
+        pile.from_owner = {item_owner_type::system, 0, 0};
+        pile.to_owner = {item_owner_type::room, 77, 0};
+        pile.reason = item_transfer_reason::creation;
+        pile.selected_item_uid = pile_uid;
+        pile.target_root_item_uid = pile_uid;
+        pile.item_count = 1;
+        pile.items[0] = {pile_uid, pile_uid, 0, ITEM_TRANSFER_ABSENT_REVISION,
+                         402013, item_custody_state::absent};
+        player_item_snapshot snapshot = {};
+        snapshot.object_uid = pile_uid;
+        snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+        snapshot.vnum = 402013;
+        snapshot.type = ITEM_MONEY;
+        snapshot.values[0] = 1;
+        std::vector<uint8_t> item_blob;
+        assert(player_item_snapshot_list_encode({snapshot}, &item_blob) ==
+               player_snapshot_codec_result::ok);
+        pile.item_blob_size = static_cast<uint32_t>(item_blob.size());
+        std::copy(item_blob.begin(), item_blob.end(), pile.item_blob.begin());
+        critical_operation_id pile_operation = {};
+        assert(critical_operation_id_generate(&pile_operation));
+        assert(item_transfer_command_build(&pile_endpoint.change, pile_operation, pile,
+                                           critical_source_site::command,
+                                           critical_deadline_class::interactive));
+        assert(currency_transaction_submit_coin(&actor, pile_transfer, coin_completed,
+                                                nullptr, 0));
+        assert(held_submissions == 2 && submissions == 0 && submitted.publication_required);
+        assert(submitted.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+               critical_command_envelope_valid(submitted));
+        const critical_command pile_replayed = submitted;
+        currency_transaction_reset_for_tests();
+        assert(currency_transaction_restore_replayed_command(pile_replayed));
+        coin_transfer_result pile_result = {};
+        for (size_t denomination = 0; denomination < 4; ++denomination)
+            pile_result.wallets[0].wallet.amount[denomination] =
+                pile_transfer.source.after[denomination];
+        pile_result.wallets[0].wallet_revision =
+            pile_transfer.source.change.expected_revisions[0].revision + 1;
+        pile_result.wallets[0].bank_revision =
+            pile_transfer.source.change.expected_revisions[1].revision + 1;
+        pile_result.piles[1] = {pile_uid, 1, 1, 1, 1, 0};
+        assert(coin_transfer_command_encode_result(pile_transfer, pile_result, &bytes));
+        receipt = {};
+        receipt.operation_id = pile_replayed.operation_id;
+        receipt.outcome = critical_apply_outcome::already_applied;
+        receipt.result_size = bytes.size();
+        std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(publication_acks == 2 && GET_COPPER(&actor) == 3);
+        assert(currency_transaction_health_copy().pending == 0 &&
+               !currency_transaction_player_busy(&actor));
+        return 0;
+    }
     if (scenario == "active_prepared_wallet_payment" ||
         scenario == "active_prepared_bank_payment" ||
         scenario == "active_prepare_wallet_payment" ||
@@ -577,6 +693,7 @@ def main():
         "rejected_without_payload", "callback_chain", "callback_rehash", "active_rebasable",
         "blocked_rebasable", "coin_ambiguous", "coin_exhausted_retry",
         "coin_malformed_commit",
+        "accounted_coin_producer_restart",
         "accounted_bank_publication", "accounted_bank_ack_retry",
         "accounted_bank_invalid_result", "accounted_bank_restart",
         "accounted_bank_producer", "accounted_bank_producer_restart",
@@ -602,7 +719,10 @@ def main():
                 rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
                 rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
                 rel("coin_transfer_command.c"), rel("item_transfer_command.c"),
+                rel("coin_transfer_accounting.c"),
+                rel("item_transfer_accounting.c"),
                 rel("player_snapshot_codec.c"), "-Wl,--gc-sections", "-lcrypto",
+                *shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True)),
                 "-o", str(binary),
             ], cwd=ROOT, check=True)
             for scenario in scenarios:

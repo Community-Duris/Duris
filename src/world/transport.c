@@ -472,7 +472,14 @@ bool flying_transport_cmd_buy(P_char ch, P_char victim, char *arg)
 		return TRUE;
 	}
 
-	if (GET_MONEY(ch) < (transport_routes[i].cost_in_plat * 1000))
+	const int cost = transport_routes[i].cost_in_plat * 1000;
+	if (GET_MONEY(ch) < cost)
+	{
+		send_to_char("You don't have enough money!\n", ch);
+		return TRUE;
+	}
+
+	if (cost > 0 && SUB_MONEY(ch, cost, 0) != 0)
 	{
 		send_to_char("You don't have enough money!\n", ch);
 		return TRUE;
@@ -482,7 +489,6 @@ bool flying_transport_cmd_buy(P_char ch, P_char victim, char *arg)
 
 	if (ticket)
 	{
-		SUB_MONEY(ch, (transport_routes[i].cost_in_plat * 1000), 0);
 		send_to_char("Here is your ticket!\n", ch);
 		ticket->value[6] = mob_index[GET_RNUM(victim)].virtual_number;
 		ticket->value[7] = i;
@@ -490,6 +496,8 @@ bool flying_transport_cmd_buy(P_char ch, P_char victim, char *arg)
 	}
 	else
 	{
+		if (cost > 0)
+			ADD_MONEY(ch, cost);
 		send_to_char("&+RCan't create ticket object, please bug this right now.\n", ch);
 	}
 

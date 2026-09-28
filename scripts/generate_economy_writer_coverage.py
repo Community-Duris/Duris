@@ -25,6 +25,13 @@ FUNCTION_FIXES = {
     "backup.capture": "backup",
     "restore.qualification": "restore",
 }
+SOURCE_FILE_FIXES = {
+    "special.money_changer": "src/economy/currency_exchange_proc.c",
+    "special.smelter": "src/specs/specs.alatorin.c",
+    "special.witch_doctor": "src/specs/specs.heavens.c",
+    "special.llyren": "src/specs/specs.clfhaven.c",
+    "staff.zone_reset": "src/cmd/staff_world_control.c",
+}
 
 # Newly found old direct-SQL settlement implementation. No in-tree caller exists.
 SUPPLEMENTAL = {
@@ -108,6 +115,11 @@ MIXED_SCHEMA1_IDS = {
     "shop.sell_destroy", "shop.keeper_cash", "shop.repair",
     "crafting.recipe", "crafting.forge", "crafting.smith", "crafting.refine",
     "crafting.epic_store", "kingdom.store_purchase", "kingdom.store_refund",
+}
+SCHEMA2_ITEM_TRANSFER_IDS = {
+    "item.command_movement", "item.bulk_movement", "item.movement_submit",
+    "item.trusted_steal", "item.creation_completion",
+    "death.corpse_creation", "death.resurrection_publication",
 }
 BUILDER_EVIDENCE = {
     "currency": ["src/economy/currency_command.c:270"],
@@ -263,6 +275,8 @@ def schema_record(route_id: str, disposition: str) -> dict:
         mode = "schema_1_plus_direct_side_effects" if route_id in MIXED_SCHEMA1_IDS else "schema_1_typed_command_path"
         if route_id == "currency.split":
             mode = "multiple_schema_1_currency_legs_not_atomic_root"
+        elif route_id in SCHEMA2_ITEM_TRANSFER_IDS:
+            mode = "schema_1_when_inactive_schema_2_item_accounting_when_active"
     else:
         current = None
         mode = "legacy_direct_or_projection_without_a_schema_1_command_at_this_function"
@@ -271,14 +285,48 @@ def schema_record(route_id: str, disposition: str) -> dict:
     evidence.extend(["src/persistence/critical_command.h:9-10", "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"])
     if route_id == "currency.split":
         evidence.append("src/cmd/actoth.c:6232-6257 (recipient ADD_MONEY legs precede sender SUB_MONEY; no root command)")
-    interpretation = "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and no activated gameplay producers." if current == 1 else "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation." if disposition not in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"} else mode
+    schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS
+    item_action_coverage = (
+        " and spell creation/component consumption, sticks-to-snakes retirement, and key-break retirement"
+        if route_id == "item.movement_submit" else ""
+    )
+    if schema2_connected:
+        evidence.extend([
+            "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+            "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+            "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+            "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+            "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+            "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+            "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+            "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+            "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+            "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+            "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+            "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+            "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+            "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+            "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)",
+        ])
+        if route_id == "death.corpse_creation":
+            evidence.append("src/combat/fight.c:703-714 (submit the victim's captured item roots as one corpse custody batch)")
+            evidence.append("src/economy/item_transfer_accounting.c (bind corpse PID/save ID to the player actor before admitting the item_move root)")
+            evidence.append("tests/async/item_transfer_accounting_test.cpp (corpse batch identity and actor mismatch contracts)")
+        elif route_id == "death.resurrection_publication":
+            evidence.append("src/world/handler.c:4373-4384 (persist the player-to-room item handoff through item_movement_transaction_submit)")
+    if route_id == "death.corpse_creation":
+        interpretation = "Schema 1 remains the current envelope. When accounting is active, the player-to-corpse item handoff is an actor-bound schema-2 item_move with exact custody references on SQL and flat-file. Wallet disposition and the separate corpse metadata lifecycle are not covered by this item child."
+    elif route_id == "death.resurrection_publication":
+        interpretation = "Schema 1 remains the current envelope. The player-to-room item handoff during resurrection uses the schema-2 player-drop item path with exact custody references when accounting is active; corpse lifecycle and other resurrection publication remain separate coverage items."
+    else:
+        interpretation = f"Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction{item_action_coverage} use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported." if schema2_connected else "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected." if current == 1 else "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation." if disposition not in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"} else mode
     if route_id == "currency.split":
         interpretation = "do_split has no atomic root command: recipient credits are individually submitted through schema-1 currency legs before the sender debit. No schema-2 multi-party operation is connected."
     return {
         "current_schema": current,
         "route_mode": mode,
-        "accounting_intent_attached_by_current_gameplay_route": False,
-        "schema_2_gameplay_producer_connected": False,
+        "accounting_intent_attached_by_current_gameplay_route": schema2_connected,
+        "schema_2_gameplay_producer_connected": schema2_connected,
         "evidence": evidence,
         "interpretation": interpretation,
     }
@@ -291,6 +339,8 @@ def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
         status = "not_executed_in_tree"
     elif disposition == "offline_operational_writer":
         status = "offline_baseline_or_restore_evidence_only"
+    elif route_id in SCHEMA2_ITEM_TRANSFER_IDS:
+        status = "typed_schema2_item_custody_reference_without_coin_effect"
     elif route_id in PROJECTION_ROUTES:
         status = "projection_only_no_new_postings"
     elif schema["current_schema"] == 1:
@@ -298,19 +348,41 @@ def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
     else:
         status = "no_operation_level_double_entry_evidence"
     existing = []
+    item_action_coverage = (
+        " and spell component consumption/sticks-to-snakes retirement and key-break retirement"
+        if route_id == "item.movement_submit" else ""
+    )
     if route_id.startswith(("currency.", "coin.")) and route_id not in {"currency.pile_constructor", "currency.pile_add", "currency.room_pile_merge"}:
         existing.append("currency_ledger captures native wallet/bank deltas, after-vectors and revisions on applicable SQL paths; no balancing counter-account/source posting is present in this route evidence.")
     if route_id.startswith(("item.", "death.", "recovery.", "shop.", "collector.", "auction.")):
-        existing.append("item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected.")
+        if route_id in SCHEMA2_ITEM_TRANSFER_IDS:
+            existing.append("item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.")
+        else:
+            existing.append("item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected.")
+    if route_id in SCHEMA2_ITEM_TRANSFER_IDS:
+        existing.append(f"Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction{item_action_coverage} use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added.")
     if route_id.startswith("auction."):
         existing.append("Auction state/pickup rows are domain evidence, not a unified root-operation posting set.")
     return {
         "status": status,
         "unified_operation_postings_observed": False,
         "legacy_domain_evidence": existing,
-        "required_atomic_evidence": ["economic_accounting_operation", "economic_accounting_account_effect", "economic_accounting_coin_posting", "linked item event references for custody-changing roots"],
+        "required_atomic_evidence": ([
+            "economic_accounting_operation with frozen schema-2 intent",
+            "exact economic_accounting_item_reference for each item ownership event",
+            "matching item_current_owner and item_ownership_ledger rows",
+            "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+            "retained critical-command inbox/result for idempotent replay",
+        ] if route_id in SCHEMA2_ITEM_TRANSFER_IDS else [
+            "economic_accounting_operation",
+            "economic_accounting_account_effect",
+            "balanced economic_accounting_coin_posting rows where currency changes",
+            "linked item event references for custody-changing roots",
+        ]),
         "global_evidence": ["docs/persistence/ECONOMY_ACCOUNTING.md:3-13", "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": ("The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked."
+                 if route_id in SCHEMA2_ITEM_TRANSFER_IDS else
+                 "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated."),
     }
 
 
@@ -356,7 +428,7 @@ def build() -> dict:
     routes = []
     for raw in candidates:
         route_id = raw["id"]
-        file_path = raw["path"]
+        file_path = SOURCE_FILE_FIXES.get(route_id, raw["path"])
         function = FUNCTION_FIXES.get(route_id, raw["symbol"])
         if function.startswith("def "):
             function = function[4:]
@@ -471,10 +543,10 @@ def build() -> dict:
             "no_gameplay_accounting_activation": "docs/persistence/ECONOMY_ACCOUNTING.md:3-13; docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171",
             "legacy_currency_ledger": "migrations/currency_ledger.sql:44-78 (wallet/bank deltas, after-vectors, revisions; not a general balancing journal)",
             "legacy_item_custody_ledger": "migrations/item_ownership_ledger.sql:113-140 (from/to custody history, not monetary postings)",
-            "schema_2_limitation": "Typed SQL/flat-file bank admission and baseline pieces are partial; no gameplay source producer, complete source bindings, or playable publication/save handoff is qualified.",
+            "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified.",
         },
         "blockers": [
-            "All current gameplay writers are either schema-1 legs or direct legacy mutations; block them after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
+            "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
             "Current function inventory is not codebase-complete: 2,646 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
             "No route in this matrix has unified operation-level double-entry evidence; legacy currency/item/domain ledgers are not substitutes.",
             "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
@@ -490,7 +562,7 @@ def build() -> dict:
         "known_unknowns": [
             "The matrix reconciles the 115 draft rows and one newly found dormant legacy auction settlement definition; it does not establish that these are all real writers.",
             "Most 2,679 current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
-            "No production source was changed, no database/live service was used, and no backend/player journey was executed.",
+            "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
             "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests.",
         ],
         "routes": routes,

@@ -146,7 +146,8 @@ static bool break_key(P_char actor, P_obj key)
 	if (!item_movement_transaction_submit(actor, key, NULL, player_owner, destruction,
 					      item_transfer_reason::destruction, OBJ_VNUM(key),
 					      NULL, &context, sizeof(context), NULL, &reject,
-					      publish_key_break))
+					      publish_key_break,
+					      economic_source_kind::item_action))
 	{
 		persistence_alert(AVATAR, "item_movement", "key_break", "none", "none",
 				  item_movement_reject_name(reject), "item_uid=%llu", key->obj_uid);

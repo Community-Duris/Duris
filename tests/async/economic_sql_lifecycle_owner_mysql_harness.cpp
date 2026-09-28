@@ -1,7 +1,10 @@
 #include "economy/economic_baseline_adapter.h"
+#include "core/defines.h"
 #include "persistence/economic_sql_accounting_lifecycle_transaction.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "persistence/economic_sql_source_snapshot.h"
+#include "player/player_snapshot_codec.h"
+#include "world/vnum.obj.h"
 #include <mysql/mysql.h>
 
 #include <algorithm>
@@ -115,6 +118,44 @@ std::string sql_id(const critical_operation_id &value)
 	output += '\'';
 	return output;
 }
+std::string sql_account_key(const economic_account_key &account)
+{
+	std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> encoded = {};
+	if (economic_account_key_encode(account, &encoded) != economic_accounting_error::ok)
+		throw std::runtime_error("could not encode expected economic account key");
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string output = "X'";
+	for (const auto byte : encoded)
+	{
+		output += digits[byte >> 4];
+		output += digits[byte & 15];
+	}
+	output += '\'';
+	return output;
+}
+std::string coin_payload(uint64_t uid,
+			 const std::array<int32_t, 8> &values = { 12, 2, 1, 0, 0, 0, 0, 0 })
+{
+	player_item_snapshot item{};
+	item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	item.object_uid = uid;
+	item.vnum = VOBJ_COINS;
+	item.type = ITEM_MONEY;
+	item.values = values;
+	std::vector<uint8_t> payload;
+	if (player_item_snapshot_list_encode({ item }, &payload) !=
+	    player_snapshot_codec_result::ok)
+		throw std::runtime_error("could not encode fixture coin pile");
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string output = "X'";
+	for (const auto byte : payload)
+	{
+		output += digits[byte >> 4];
+		output += digits[byte & 15];
+	}
+	output += '\'';
+	return output;
+}
 critical_operation_id ident(uint8_t seed)
 {
 	critical_operation_id value{};
@@ -175,7 +216,8 @@ void assert_source_registry(MYSQL *connection)
 		throw std::runtime_error("full native source capture failed");
 	if (economic_sql_validate_sources(snapshot))
 		throw std::runtime_error("source snapshot validation failed");
-	for (const char *name : { "player_data", "account_banks", "economic_account_mapping" })
+	for (const char *name : { "player_data", "account_banks", "economic_account_mapping",
+				  "item_current_owner", "item_uid_allocator" })
 	{
 		const auto found = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
 						[&](const auto &table)
@@ -189,9 +231,12 @@ void assert_source_registry(MYSQL *connection)
 	const auto bank = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
 				       [&](const auto &table)
 				       { return table.name == "account_banks"; });
-	if (wallet->rows.size() != 2 || bank->rows.size() != 2)
+	const auto items = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+					[&](const auto &table)
+					{ return table.name == "item_current_owner"; });
+	if (wallet->rows.size() != 2 || bank->rows.size() != 2 || items->rows.size() != 3)
 		throw std::runtime_error(
-			"capture did not enumerate every native wallet and shared bank");
+			"capture did not enumerate every wallet, shared bank and current item row");
 }
 void seed(MYSQL *connection)
 {
@@ -204,6 +249,18 @@ void seed(MYSQL *connection)
 		"INSERT INTO player_data(pid,name,account_name,racewar,copper,silver,gold,platinum,wallet_revision,save_revision) VALUES"
 		"(21001,'LifecycleOne','lifecycle_a',0,4,2,0,0,6,12),"
 		"(21002,'LifecycleTwo','lifecycle_b',1,0,5,1,0,8,15)");
+	execute(connection, "UPDATE item_uid_allocator SET next_uid=6 WHERE allocator_id=1");
+	execute(connection,
+		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES(1,21001,0,7)");
+	execute(connection,
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state,coin_payload) VALUES"
+		"(2,2,NULL,1,21001,0,7," +
+			std::to_string(VOBJ_COINS) + ",1," + coin_payload(2) +
+			"),"
+			"(3,3,NULL,1,21001,0,2,501,1,NULL),"
+			"(5,5,NULL,1,21001,0,9," +
+			std::to_string(VOBJ_COINS) + ",1," +
+			coin_payload(5, { 3, 1, 0, 0, 0, 0, 0, 0 }) + ")");
 }
 void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_receipt &receipt)
 {
@@ -220,8 +277,9 @@ void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_rec
 	    !prepared)
 		throw std::runtime_error("retained baseline witness did not decode");
 	const auto &holdings = prepared->witness().holdings;
-	if (holdings.size() != 4)
-		throw std::runtime_error("baseline did not retain every wallet and bank");
+	if (holdings.size() != 6)
+		throw std::runtime_error(
+			"baseline did not retain every wallet, bank and coin pile");
 	for (const auto &wallet : receipt.wallets)
 	{
 		const auto found =
@@ -253,6 +311,21 @@ void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_rec
 		     found->native_revision != 9))
 			throw std::runtime_error("second shared-bank baseline values mismatch");
 	}
+	const auto assert_pile =
+		[&](uint64_t uid, const economic_coin_vector &balance, uint64_t revision)
+	{
+		const economic_account_key account{ receipt.lineage, economic_account_kind::pile,
+						    uid, 0 };
+		const auto pile = std::find_if(holdings.begin(), holdings.end(),
+					       [&](const auto &holding)
+					       { return same_account(holding.account, account); });
+		if (pile == holdings.end() || pile->balance != balance ||
+		    pile->native_revision != revision ||
+		    pile->source_digest == economic_sql_source_digest{})
+			throw std::runtime_error("UID-keyed coin-pile baseline values mismatch");
+	};
+	assert_pile(2, { 12, 2, 1, 0 }, 7);
+	assert_pile(5, { 3, 1, 0, 0 }, 9);
 }
 } // namespace
 
@@ -319,7 +392,8 @@ int main()
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(250));
 				const char go = 'C';
-				(void)write(fd, &go, 1);
+				if (write(fd, &go, 1) != 1)
+					std::abort();
 			});
 		const auto started = std::chrono::steady_clock::now();
 		auto maintenance = std::make_unique<economic_sql_lifecycle_guard>();
@@ -364,6 +438,43 @@ int main()
 		assert_scalar(setup, "SELECT COUNT(*) FROM player_death_conflict_evidence", "1");
 		execute(setup, "DELETE FROM player_death_conflict_evidence WHERE operation_id=" +
 				       sql_id(ident(13)));
+		execute(setup, "UPDATE item_current_owner SET coin_payload=NULL WHERE item_uid=2");
+		economic_sql_lifecycle_receipt bad_coin_output;
+		bad_coin_output.operation_id = ident(210);
+		const auto bad_coin_status = economic_sql_accounting_lifecycle_transaction::install(
+			owner_connection, *maintenance, invalid_request, &bad_coin_output);
+		if (bad_coin_status != EILSEQ ||
+		    bad_coin_output.operation_id.bytes != ident(210).bytes)
+			throw std::runtime_error(
+				"active coin pile without a valid payload was accepted or modified the receipt");
+		assert_scalar(
+			setup,
+			"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE lineage=" +
+				sql_id(invalid_request.lineage),
+			"0");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(invalid_request.lineage),
+			      "0");
+		execute(setup, "UPDATE item_current_owner SET coin_payload=" + coin_payload(2) +
+				       " WHERE item_uid=2");
+		execute(setup, "UPDATE item_current_owner SET state=3 WHERE item_uid=5");
+		economic_sql_lifecycle_receipt quarantined_coin_output;
+		quarantined_coin_output.operation_id = ident(209);
+		const auto quarantined_coin_status =
+			economic_sql_accounting_lifecycle_transaction::install(
+				owner_connection, *maintenance, invalid_request,
+				&quarantined_coin_output);
+		if (quarantined_coin_status != EBUSY ||
+		    quarantined_coin_output.operation_id.bytes != ident(209).bytes)
+			throw std::runtime_error(
+				"unresolved coin-pile custody was accepted or modified the receipt");
+		assert_scalar(
+			setup,
+			"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE lineage=" +
+				sql_id(invalid_request.lineage),
+			"0");
+		execute(setup, "UPDATE item_current_owner SET state=1 WHERE item_uid=5");
 		execute(setup,
 			"INSERT INTO player_data(pid,name,copper,silver,gold,platinum,wallet_revision,save_revision) VALUES(21003,'LifecycleBad',-1,0,0,0,0,0)");
 		economic_sql_lifecycle_receipt untouched;
@@ -460,6 +571,10 @@ int main()
 			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
 				      sql_id(request.lineage),
 			      "4");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(request.lineage) + " AND account_kind=3",
+			      "0");
 		for (const auto &wallet : receipt.wallets)
 			assert_scalar(
 				setup,
@@ -491,7 +606,17 @@ int main()
 			      "SELECT COUNT(*) FROM economic_baseline_reservation WHERE lineage=" +
 				      sql_id(request.lineage) + " AND epoch=" +
 				      sql_id(request.epoch) + " AND identity_kind=1",
-			      "4");
+			      "6");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_baseline_reservation WHERE lineage=" +
+				      sql_id(request.lineage) +
+				      " AND epoch=" + sql_id(request.epoch) +
+				      " AND identity_kind=1 AND identity_id IN (2,5)",
+			      "2");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(request.lineage) + " AND mapping_id IN (2,5)",
+			      "0");
 		assert_scalar(setup,
 			      "SELECT COUNT(*) FROM economic_baseline_witness WHERE operation_id=" +
 				      sql_id(receipt.baseline_operation_id),
@@ -512,6 +637,27 @@ int main()
 				sql_id(request.lineage),
 			"1");
 		assert_baseline_witness(setup, receipt);
+		const auto assert_pile_posting =
+			[&](uint64_t uid, const std::string &effect, const std::string &posting)
+		{
+			const economic_account_key pile_account{ request.lineage,
+								 economic_account_kind::pile, uid,
+								 0 };
+			assert_scalar(
+				setup,
+				"SELECT CONCAT(after_copper,':',after_silver,':',after_gold,':',after_platinum,':',after_revision) FROM economic_accounting_account_effect WHERE operation_id=" +
+					sql_id(receipt.baseline_operation_id) +
+					" AND account_key=" + sql_account_key(pile_account),
+				effect);
+			assert_scalar(
+				setup,
+				"SELECT CONCAT(p.delta_copper,':',p.delta_silver,':',p.delta_gold,':',p.delta_platinum,':',p.copper_value) FROM economic_accounting_coin_posting p JOIN economic_accounting_account_effect e ON e.operation_id=p.operation_id AND e.account_index=p.account_index WHERE p.operation_id=" +
+					sql_id(receipt.baseline_operation_id) +
+					" AND e.account_key=" + sql_account_key(pile_account),
+				posting);
+		};
+		assert_pile_posting(2, "12:2:1:0:1", "12:2:1:0:132");
+		assert_pile_posting(5, "3:1:0:0:1", "3:1:0:0:13");
 		const std::string clear_selected =
 			"UPDATE economic_sql_lifecycle_installation SET selected_epoch=NULL WHERE operation_id=" +
 			sql_id(request.operation_id);

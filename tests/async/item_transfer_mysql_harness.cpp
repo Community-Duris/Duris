@@ -1,4 +1,5 @@
 #include "persistence/critical_command_repository.h"
+#include "economy/item_transfer_accounting.h"
 #include "item/item_transfer_command.h"
 #include "item/item_transfer_repository.h"
 #include "item/item_uid_allocator.h"
@@ -6,6 +7,7 @@
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cerrno>
 #include <cstdio>
@@ -13,6 +15,7 @@
 #include <cstring>
 #include <limits>
 #include <mysql.h>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -47,6 +50,26 @@ std::string operation_hex(uint8_t value)
 	char output[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
 	assert(critical_operation_id_to_hex(operation(value), output, sizeof(output)));
 	return output;
+}
+
+std::string operation_hex(const critical_operation_id &value)
+{
+	char output[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+	assert(critical_operation_id_to_hex(value, output, sizeof(output)));
+	return output;
+}
+
+std::string bytes_hex(std::span<const uint8_t> bytes)
+{
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string result;
+	result.reserve(bytes.size() * 2);
+	for (uint8_t byte : bytes)
+	{
+		result.push_back(digits[byte >> 4]);
+		result.push_back(digits[byte & 0x0f]);
+	}
+	return result;
 }
 
 void execute(MYSQL *connection, const char *sql)
@@ -214,6 +237,25 @@ critical_apply_result apply(MYSQL *connection, uint8_t id, const item_transfer_p
 	return critical_command_repository_apply(connection, command);
 }
 
+critical_command accounted_item_transfer(critical_operation_id id,
+					 const item_transfer_payload &value,
+					 const critical_operation_id &lineage,
+					 const critical_operation_id &epoch, uint32_t actor_pid,
+					 economic_source_kind creation_source = {})
+{
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, id, value, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	std::vector<uint8_t> intent;
+	assert(item_transfer_accounting_intent(command, lineage, epoch, actor_pid, &intent,
+						creation_source) == economic_accounting_error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accounting_intent = std::move(intent);
+	command.accepted_at_usec = 1;
+	assert(item_transfer_accounting_command_supported(command));
+	return command;
+}
+
 player_item_snapshot runtime_item(uint64_t uid, int64_t generated_key, int64_t timer)
 {
 	player_item_snapshot item = {};
@@ -310,14 +352,16 @@ void prepare_restitution_runtime_fixture(MYSQL *connection, uint64_t uid,
 		}
 		return result;
 	}();
-	const std::string id = "UNHEX(REPEAT('a1',16))";
+	const std::string id = "UNHEX('" + operation_hex(operation(0xa1)) + "')";
+	const std::string death_operation_id =
+		"UNHEX('" + operation_hex(operation(0xb1)) + "')";
 	execute(connection,
 		"INSERT INTO player_death_restitution_receipt(restitution_id,source_pid,"
 		"death_revision,recipient_pid,death_operation_id,evidence_digest,plan_digest,"
 		"status,actor,reason) VALUES (" +
 			id +
-			",99,1,41,UNHEX(REPEAT('b1',16)),UNHEX(REPEAT('c1',32)),"
-			"UNHEX(REPEAT('d1',32)),2,'item-transfer-test','runtime update')");
+			",99,1,41," + death_operation_id + ",UNHEX(REPEAT('c1',32)),"
+			"UNHEX(SHA2(" + id + ",256)),2,'item-transfer-test','runtime update')");
 	execute(connection,
 		"INSERT INTO player_death_restitution_item(restitution_id,item_uid,vnum,"
 		"disposition,classification,metadata_digest,metadata_payload) VALUES (" +
@@ -338,7 +382,11 @@ void prepare_restitution_runtime_fixture(MYSQL *connection, uint64_t uid,
 
 void check_restitution_runtime_transfer(MYSQL *connection)
 {
-	const uint64_t uid = 9000001;
+	uint64_t uid = 0;
+	for (size_t index = 0; index < sizeof(uid); ++index)
+		uid = (uid << 8) | run_operation.bytes[index];
+	if (!uid)
+		uid = 9000001;
 	const item_owner_identity source = { item_owner_type::player, 41, 0 };
 	const item_owner_identity target = { item_owner_type::player, 42, 0 };
 	const player_item_snapshot initial = runtime_item(uid, 7, 1700000000);
@@ -348,7 +396,8 @@ void check_restitution_runtime_transfer(MYSQL *connection)
 	prepare_restitution_runtime_fixture(connection, uid, initial_payload);
 	execute(connection,
 		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
-		"owner_id,owner_context_id,item_revision,vnum,state) VALUES (9000001,9000001,NULL,1,41,0,1,1901,1)");
+		"owner_id,owner_context_id,item_revision,vnum,state) VALUES (" +
+			std::to_string(uid) + "," + std::to_string(uid) + ",NULL,1,41,0,1,1901,1)");
 	const uint64_t source_revision = owner_revision(connection, source);
 	const uint64_t target_revision = owner_revision(connection, target);
 	item_transfer_payload transfer = {};
@@ -368,7 +417,9 @@ void check_restitution_runtime_transfer(MYSQL *connection)
 	assert(moved.outcome == critical_apply_outcome::applied && moved.error_code == 0);
 	const std::vector<uint8_t> stored_payload = read_blob(
 		connection,
-		"SELECT state_payload FROM player_death_restitution_runtime WHERE item_uid=9000001");
+		("SELECT state_payload FROM player_death_restitution_runtime WHERE item_uid=" +
+		 std::to_string(uid))
+			.c_str());
 	std::vector<player_item_snapshot> stored;
 	assert(player_item_snapshot_list_decode(stored_payload.data(), stored_payload.size(),
 						&stored) == player_snapshot_codec_result::ok &&
@@ -402,17 +453,20 @@ void check_restitution_runtime_transfer(MYSQL *connection)
 		       mutated.extra_descriptions[0].description &&
 	       actual.extra_descriptions[0].spellbook == mutated.extra_descriptions[0].spellbook &&
 	       actual.extra_descriptions[0].spell_ids == mutated.extra_descriptions[0].spell_ids);
-	assert(scalar(connection,
-		      "SELECT owner_id FROM item_current_owner WHERE item_uid=9000001") == 42);
+	assert(scalar(connection, ("SELECT owner_id FROM item_current_owner WHERE item_uid=" +
+				  std::to_string(uid))
+				 .c_str()) == 42);
 	// The fixture intentionally has custody and a restitution runtime payload but no
 	// player_items row. A legitimate live give must repair that historical gap from
 	// the command's exact snapshot instead of rejecting the move as an ownership
 	// conflict or leaving the recipient with custody-only state.
-	assert(scalar(connection,
-		      "SELECT COUNT(*) FROM player_items WHERE pid=42 AND obj_uid=9000001 AND "
-		      "vnum=1901 AND cost=4567 AND timer=1900000000") == 1);
-	assert(scalar(connection,
-		      "SELECT COUNT(*) FROM player_items WHERE pid=41 AND obj_uid=9000001") == 0);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM player_items WHERE pid=42 AND obj_uid=" +
+				  std::to_string(uid) +
+				  " AND vnum=1901 AND cost=4567 AND timer=1900000000")
+				 .c_str()) == 1);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM player_items WHERE pid=41 AND obj_uid=" +
+				  std::to_string(uid))
+				 .c_str()) == 0);
 }
 } // namespace
 
@@ -516,6 +570,8 @@ void check_staged_accounting_refusal(MYSQL *connection, const item_transfer_payl
 
 void check_dispatch_fence_commit_and_rollback(MYSQL *connection)
 {
+	const uint64_t operation_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation");
 	const item_owner_identity system = { item_owner_type::system, 0, 0 };
 	const item_owner_identity player = { item_owner_type::player, 4000000001, 0 };
 	critical_command command = {};
@@ -557,12 +613,15 @@ void check_dispatch_fence_commit_and_rollback(MYSQL *connection)
 	assert(scalar(connection, "SELECT IS_FREE_LOCK('duris:economic_sql_currency_writers')") ==
 	       1);
 	execute(connection, "DROP TRIGGER legacy_writer_fence_probe");
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") ==
+	       operation_count);
 	puts("PASS: real dispatch holds the maintenance fence and releases it after rollback, commit and replay");
 }
 
 void check_explicit_accounting_context_rollback(MYSQL *connection)
 {
+	const uint64_t item_reference_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference");
 	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(connection, 2));
 	root_uid = item_uid_allocator_next();
@@ -625,8 +684,326 @@ void check_explicit_accounting_context_rollback(MYSQL *connection)
 		      ("SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
 		       operation_hex(91) + "')")
 			      .c_str()) == 0);
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") ==
+	       item_reference_count);
 	puts("PASS: explicit reference failure rolls back native custody, revisions and inbox");
+}
+
+void check_sql_accounted_item_transfer(MYSQL *connection)
+{
+	const uint64_t epoch_count = scalar(connection, "SELECT COUNT(*) FROM economic_epoch");
+	const uint64_t lineage_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_lineage_state");
+	const uint64_t operation_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation");
+	const uint64_t item_reference_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference");
+	const item_owner_identity system = { item_owner_type::system, 0, 0 };
+	const item_owner_identity player_one = { item_owner_type::player, 41, 0 };
+	const item_owner_identity player_two = { item_owner_type::player, 42, 0 };
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(connection, 2));
+	root_uid = item_uid_allocator_next();
+	child_uid = item_uid_allocator_next();
+	const auto creation = payload(system, player_one, item_transfer_reason::creation,
+				      owner_revision(connection, system),
+				      owner_revision(connection, player_one),
+				      ITEM_TRANSFER_ABSENT_REVISION, 2);
+	const critical_apply_result created = apply(connection, 127, creation);
+	assert(created.outcome == critical_apply_outcome::applied);
+	item_transfer_result created_result = {};
+	assert(item_transfer_command_decode_result(created.result_payload.data(),
+						   created.result_size, &created_result));
+
+	const critical_operation_id creator = operation(129);
+	const critical_operation_id lineage = operation(130);
+	const critical_operation_id epoch = operation(131);
+	execute(connection,
+		("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+		 "command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('" +
+		 operation_hex(creator) + "'),REPEAT(CHAR(1),32),REPEAT(CHAR(2),32),1,1,1,1,X'')")
+			.c_str());
+	execute(connection,
+		("INSERT INTO economic_epoch(lineage,epoch,ordinal,predecessor,transition_kind,"
+		 "transition_digest,creating_operation_id) VALUES(UNHEX('" +
+		 operation_hex(lineage) + "'),UNHEX('" + operation_hex(epoch) +
+		 "'),1,NULL,1,REPEAT(CHAR(0),32),UNHEX('" + operation_hex(creator) + "'))")
+			.c_str());
+	execute(connection,
+		("INSERT INTO economic_lineage_state(lineage,active_epoch,revision) VALUES(UNHEX('" +
+		 operation_hex(lineage) + "'),UNHEX('" + operation_hex(epoch) + "'),0)")
+			.c_str());
+
+	const uint64_t original_root_uid = root_uid;
+	const uint64_t original_child_uid = child_uid;
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(connection, 2));
+	root_uid = item_uid_allocator_next();
+	child_uid = item_uid_allocator_next();
+	const auto creation_payload = payload(
+		system, player_one, item_transfer_reason::creation,
+		owner_revision(connection, system), owner_revision(connection, player_one),
+		ITEM_TRANSFER_ABSENT_REVISION, 2);
+	const critical_command creation_command = accounted_item_transfer(
+		operation(137), creation_payload, lineage, epoch, 41,
+		economic_source_kind::starter_grant);
+	const critical_apply_result sourced_creation =
+		critical_command_repository_apply(connection, creation_command);
+	assert(sourced_creation.outcome == critical_apply_outcome::applied &&
+	       sourced_creation.error_code == 0);
+	item_transfer_result sourced_creation_result = {};
+	assert(item_transfer_command_decode_result(sourced_creation.result_payload.data(),
+						   sourced_creation.result_size,
+						   &sourced_creation_result));
+	economic_source_event source_event = { economic_source_kind::starter_grant,
+						creation_command.operation_id,
+						epoch,
+						root_uid,
+						77 };
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> encoded_source_event = {};
+	assert(economic_source_event_encode(source_event, &encoded_source_event) ==
+	       economic_accounting_error::ok);
+	const std::string encoded_source_event_hex = bytes_hex(encoded_source_event);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE lineage=UNHEX('" +
+		       operation_hex(lineage) + "') AND source_event=UNHEX('" +
+		       encoded_source_event_hex + "') AND operation_id=UNHEX('" +
+	       operation_hex(creation_command.operation_id) + "') AND outcome=1")
+			      .c_str()) == 1);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM economic_accounting_item_reference r JOIN "
+		       "item_ownership_ledger l ON l.operation_id=r.legacy_operation_id AND "
+	       "l.event_index=r.legacy_event_index AND l.item_uid=r.item_uid AND "
+	       "l.item_revision=r.after_revision WHERE r.operation_id=UNHEX('" +
+	       operation_hex(creation_command.operation_id) + "') AND r.item_uid IN (" +
+	       std::to_string(root_uid) + "," + std::to_string(child_uid) +
+	       ") AND r.before_revision=0 AND r.after_revision=1")
+		      .c_str()) == 2);
+	const critical_apply_result replayed_creation =
+		critical_command_repository_apply(connection, creation_command);
+	assert(replayed_creation.outcome == critical_apply_outcome::already_applied &&
+	       replayed_creation.result_size == sourced_creation.result_size);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE operation_id=UNHEX('" +
+	       operation_hex(creation_command.operation_id) + "')")
+		      .c_str()) == 1);
+	root_uid = original_root_uid;
+	child_uid = original_child_uid;
+
+	const auto give = payload(
+		player_one, player_two, item_transfer_reason::player_give,
+		owner_revision(connection, player_one), owner_revision(connection, player_two),
+		scalar(connection, ("SELECT item_revision FROM item_current_owner WHERE item_uid=" +
+				    std::to_string(root_uid))
+					   .c_str()),
+		2);
+	const critical_command admitted =
+		accounted_item_transfer(operation(133), give, lineage, epoch, 41);
+	const critical_apply_result moved = critical_command_repository_apply(connection, admitted);
+	if (moved.outcome != critical_apply_outcome::applied || moved.error_code)
+		fprintf(stderr, "accounted item transfer failed: outcome=%u error=%u\n",
+			static_cast<unsigned int>(moved.outcome), moved.error_code);
+	assert(moved.outcome == critical_apply_outcome::applied && moved.error_code == 0);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM economic_accounting_operation WHERE "
+				   "operation_id=UNHEX('" +
+				   operation_hex(admitted.operation_id) +
+				   "') AND writer_id=6 AND outcome=1 AND item_event_count=2 AND "
+				   "before_witness_count=2 AND after_witness_count=2")
+					  .c_str()) == 1);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM economic_accounting_item_reference r JOIN "
+		       "item_ownership_ledger l ON l.operation_id=r.legacy_operation_id AND "
+		       "l.event_index=r.legacy_event_index AND l.item_uid=r.item_uid AND "
+		       "l.item_revision=r.after_revision WHERE r.operation_id=UNHEX('" +
+		       operation_hex(admitted.operation_id) +
+		       "') AND r.line_index=r.event_index AND "
+		       "r.event_index IN (0,1) AND r.item_uid IN (" +
+		       std::to_string(root_uid) + "," + std::to_string(child_uid) +
+		       ") AND r.before_revision=1 AND r.after_revision=2")
+			      .c_str()) == 2);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_ownership_ledger WHERE "
+				   "operation_id=UNHEX('" +
+				   operation_hex(admitted.operation_id) + "')")
+				  .c_str()) == 2);
+
+	auto trusted_steal_payload = payload(
+		player_two, player_one, item_transfer_reason::trusted_steal,
+		owner_revision(connection, player_two), owner_revision(connection, player_one), 2, 2);
+	trusted_steal_payload.reason_id = static_cast<int64_t>(player_two.id);
+	const critical_command stolen = accounted_item_transfer(
+		operation(134), trusted_steal_payload, lineage, epoch,
+		static_cast<uint32_t>(player_one.id));
+	const critical_apply_result stolen_result =
+		critical_command_repository_apply(connection, stolen);
+	assert(stolen_result.outcome == critical_apply_outcome::applied &&
+	       stolen_result.error_code == 0);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM economic_accounting_operation WHERE "
+				   "operation_id=UNHEX('" +
+				   operation_hex(stolen.operation_id) +
+				   "') AND writer_id=6 AND outcome=1 AND item_event_count=2 AND "
+				   "before_witness_count=2 AND after_witness_count=2")
+				  .c_str()) == 1);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM economic_accounting_item_reference r JOIN "
+		       "item_ownership_ledger l ON l.operation_id=r.legacy_operation_id AND "
+		       "l.event_index=r.legacy_event_index AND l.item_uid=r.item_uid AND "
+	       "l.item_revision=r.after_revision WHERE r.operation_id=UNHEX('" +
+	       operation_hex(stolen.operation_id) +
+	       "') AND r.line_index=r.event_index AND r.event_index IN (0,1) AND "
+	       "r.item_uid IN (" + std::to_string(root_uid) + "," +
+	       std::to_string(child_uid) + ") AND r.before_revision=2 AND "
+	       "r.after_revision=3")
+		      .c_str()) == 2);
+	const critical_apply_result stolen_replay =
+		critical_command_repository_apply(connection, stolen);
+	assert(stolen_replay.outcome == critical_apply_outcome::already_applied &&
+	       stolen_replay.result_size == stolen_result.result_size);
+
+	const critical_operation_id next_creator = operation(136);
+	const critical_operation_id next_epoch = operation(132);
+	execute(connection,
+		("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+		 "command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('" +
+		 operation_hex(next_creator) +
+		 "'),REPEAT(CHAR(3),32),REPEAT(CHAR(4),32),1,1,1,1,X'')")
+			.c_str());
+	execute(connection,
+		("INSERT INTO economic_epoch(lineage,epoch,ordinal,predecessor,transition_kind,"
+		 "transition_digest,creating_operation_id) VALUES(UNHEX('" +
+		 operation_hex(lineage) + "'),UNHEX('" + operation_hex(next_epoch) +
+		 "'),2,UNHEX('" + operation_hex(epoch) + "'),1,REPEAT(CHAR(0),32),UNHEX('" +
+		 operation_hex(next_creator) + "'))")
+			.c_str());
+	execute(connection,
+		("UPDATE economic_lineage_state SET active_epoch=UNHEX('" +
+		 operation_hex(next_epoch) + "'),revision=revision+1 WHERE lineage=UNHEX('" +
+		 operation_hex(lineage) + "')")
+			.c_str());
+
+	// Reopen the SQL session before replay. Retained evidence is verified under the
+	// command's original epoch even after the active lineage advances.
+	MYSQL *restarted = mysql_init(nullptr);
+	assert(restarted);
+	assert(mysql_real_connect(
+		restarted, getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWD"),
+		getenv("ITEM_TRANSFER_TEST_DB_NAME"),
+		static_cast<unsigned int>(strtoul(getenv("DB_PORT"), nullptr, 10)), nullptr, 0));
+	const critical_apply_result replayed =
+		critical_command_repository_apply(restarted, admitted);
+	assert(replayed.outcome == critical_apply_outcome::already_applied &&
+	       replayed.result_size == moved.result_size);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM economic_accounting_item_reference WHERE "
+				  "operation_id=UNHEX('" +
+				  operation_hex(admitted.operation_id) + "')")
+					 .c_str()) == 2);
+	const auto stale_payload = payload(player_two, player_one,
+					   item_transfer_reason::player_give,
+					   owner_revision(restarted, player_two),
+					   owner_revision(restarted, player_one), 2, 1);
+	const critical_command stale_epoch =
+		accounted_item_transfer(operation(135), stale_payload, lineage, epoch, 42);
+	const critical_apply_result refused =
+		critical_command_repository_apply(restarted, stale_epoch);
+	assert(refused.outcome == critical_apply_outcome::retryable_failure &&
+	       refused.error_code == ESTALE);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM critical_operation_inbox WHERE "
+				  "operation_id=UNHEX('" +
+				  operation_hex(stale_epoch.operation_id) + "')")
+					 .c_str()) == 0);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (" +
+				  std::to_string(root_uid) + "," + std::to_string(child_uid) +
+				  ") AND owner_type=1 AND owner_id=41 AND item_revision=3")
+				 .c_str()) == 2);
+	const item_owner_identity destroyed_owner = { item_owner_type::destruction, 0, 0 };
+	const auto retirement_payload = payload(
+		player_one, destroyed_owner, item_transfer_reason::destruction,
+		owner_revision(restarted, player_one), owner_revision(restarted, destroyed_owner), 3, 2);
+	const critical_command retirement = accounted_item_transfer(
+		operation(138), retirement_payload, lineage, next_epoch, 41,
+		economic_source_kind::item_action);
+	const critical_apply_result retirement_result =
+		critical_command_repository_apply(restarted, retirement);
+	if (retirement_result.outcome != critical_apply_outcome::applied ||
+	    retirement_result.error_code)
+		fprintf(stderr, "accounted item retirement failed: outcome=%u error=%u\n",
+			static_cast<unsigned int>(retirement_result.outcome),
+			retirement_result.error_code);
+	assert(retirement_result.outcome == critical_apply_outcome::applied &&
+	       retirement_result.error_code == 0);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (" +
+				  std::to_string(root_uid) + "," + std::to_string(child_uid) +
+				  ") AND owner_type=8 AND owner_id=0 AND state=2 AND item_revision=4")
+				 .c_str()) == 2);
+	assert(scalar(restarted,
+		      ("SELECT COUNT(*) FROM economic_accounting_item_reference r JOIN "
+		       "item_ownership_ledger l ON l.operation_id=r.legacy_operation_id AND "
+	       "l.event_index=r.legacy_event_index AND l.item_uid=r.item_uid AND "
+	       "l.item_revision=r.after_revision WHERE r.operation_id=UNHEX('" +
+	       operation_hex(retirement.operation_id) +
+	       "') AND r.item_uid IN (" + std::to_string(root_uid) + "," +
+	       std::to_string(child_uid) + ") AND r.before_revision=3 AND "
+	       "r.after_revision=4")
+		      .c_str()) == 2);
+	economic_source_event retirement_source_event = {
+		economic_source_kind::item_action, retirement.operation_id, next_epoch, root_uid, 77
+	};
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> encoded_retirement_source_event = {};
+	assert(economic_source_event_encode(retirement_source_event,
+					    &encoded_retirement_source_event) ==
+	       economic_accounting_error::ok);
+	assert(scalar(restarted,
+		      ("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE lineage=UNHEX('" +
+	       operation_hex(lineage) + "') AND source_event=UNHEX('" +
+	       bytes_hex(encoded_retirement_source_event) + "') AND operation_id=UNHEX('" +
+	       operation_hex(retirement.operation_id) + "') AND outcome=1")
+		      .c_str()) == 1);
+	const critical_apply_result retirement_replay =
+		critical_command_repository_apply(restarted, retirement);
+	assert(retirement_replay.outcome == critical_apply_outcome::already_applied &&
+	       retirement_replay.result_size == retirement_result.result_size);
+	const item_owner_identity reward_room = { item_owner_type::room, 150, 0 };
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(restarted, 1));
+	const uint64_t room_reward_uid = item_uid_allocator_next();
+	root_uid = room_reward_uid;
+	const auto room_creation_payload = payload(
+		system, reward_room, item_transfer_reason::creation,
+		owner_revision(restarted, system), owner_revision(restarted, reward_room),
+		ITEM_TRANSFER_ABSENT_REVISION, 1);
+	root_uid = original_root_uid;
+	const critical_command room_creation = accounted_item_transfer(
+		operation(139), room_creation_payload, lineage, next_epoch, 41,
+		economic_source_kind::quest_completion);
+	const critical_apply_result room_created =
+		critical_command_repository_apply(restarted, room_creation);
+	assert(room_created.outcome == critical_apply_outcome::applied &&
+	       room_created.error_code == 0);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				  std::to_string(room_reward_uid) +
+				  " AND owner_type=3 AND owner_id=150 AND state=1 AND "
+				  "item_revision=1")
+				 .c_str()) == 1);
+	assert(scalar(restarted,
+		      ("SELECT COUNT(*) FROM economic_accounting_item_reference WHERE operation_id=UNHEX('" +
+	       operation_hex(room_creation.operation_id) + "') AND item_uid=" +
+	       std::to_string(room_reward_uid) + " AND before_revision=0 AND after_revision=1")
+		      .c_str()) == 1);
+	const critical_apply_result room_creation_replay =
+		critical_command_repository_apply(restarted, room_creation);
+	assert(room_creation_replay.outcome == critical_apply_outcome::already_applied &&
+	       room_creation_replay.result_size == room_created.result_size);
+	// Keep the applied roots, epochs, and custody references as retained evidence.
+	// Deactivate this test lineage so the next run starts with legacy gameplay allowed.
+	execute(connection, "DELETE FROM economic_lineage_state WHERE lineage=UNHEX('" +
+			    operation_hex(lineage) + "')");
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_epoch") == epoch_count + 2);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_lineage_state") == lineage_count);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") ==
+	       operation_count + 5);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") ==
+	       item_reference_count + 9);
+	mysql_close(restarted);
+	puts("PASS: sourced player/room item creation, transfer, trusted theft and retirement record exact SQL references and source claims, replay retained evidence, and reject stale epochs");
 }
 
 int main()
@@ -637,6 +1014,14 @@ int main()
 		connection, getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWD"),
 		getenv("ITEM_TRANSFER_TEST_DB_NAME"),
 		static_cast<unsigned int>(strtoul(getenv("DB_PORT"), nullptr, 10)), nullptr, 0));
+	const uint64_t baseline_epoch_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_epoch");
+	const uint64_t baseline_lineage_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_lineage_state");
+	const uint64_t baseline_operation_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation");
+	const uint64_t baseline_item_reference_count =
+		scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference");
 	execute(connection, "INSERT IGNORE INTO player_data(pid,name) VALUES"
 			    "(4000000001,'ItemTransferOne'),(4000000002,'ItemTransferTwo'),"
 			    "(41,'RestitutionSource'),(42,'RestitutionTarget')");
@@ -672,13 +1057,19 @@ int main()
 		apply(connection, 1,
 		      payload(system, player_one, item_transfer_reason::creation, system_revision,
 			      player_one_revision, ITEM_TRANSFER_ABSENT_REVISION));
+	if (created.outcome != critical_apply_outcome::applied || created.error_code)
+		fprintf(stderr, "initial item creation failed: outcome=%u error=%u\n",
+			static_cast<unsigned int>(created.outcome), created.error_code);
 	assert(created.outcome == critical_apply_outcome::applied && created.error_code == 0);
 	// A legacy grant retains its native custody/inbox guarantees without inventing
-	// an accounting operation or activating an epoch. Link the real reference writer.
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_epoch") == 0);
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_lineage_state") == 0);
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") == 0);
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") == 0);
+	// accounting evidence or activating a lineage. Link the real reference writer.
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_epoch") == baseline_epoch_count);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_lineage_state") ==
+	       baseline_lineage_count);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") ==
+	       baseline_operation_count);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") ==
+	       baseline_item_reference_count);
 	item_transfer_result created_result = {};
 	assert(item_transfer_command_decode_result(created.result_payload.data(),
 						   created.result_size, &created_result));
@@ -978,9 +1369,11 @@ int main()
 		      "own.owner_type=1 AND own.state=1 AND payload.id IS NULL") == 0);
 
 	check_restitution_runtime_transfer(connection);
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_epoch") == 0);
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") == 0);
-	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_epoch") == baseline_epoch_count);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_operation") ==
+	       baseline_operation_count);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_item_reference") ==
+	       baseline_item_reference_count);
 	puts("PASS: legacy grants, transfers and replay retain custody without implicit accounting");
 
 	item_uid_allocator_reset_for_tests();
@@ -989,6 +1382,7 @@ int main()
 	assert(item_uid_allocator_next() == allocator_start + 10);
 	check_explicit_accounting_context_rollback(connection);
 	check_dispatch_fence_commit_and_rollback(connection);
+	check_sql_accounted_item_transfer(connection);
 	for (uint8_t id = 1; id <= 15; ++id)
 	{
 		const std::string hex = operation_hex(id);

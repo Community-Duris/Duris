@@ -20,6 +20,7 @@ constexpr size_t index_max_bytes = header_bytes + 32 + FLATFILE_ACCOUNTING_BUCKE
 constexpr std::array<uint8_t, 8> record_magic = { 'D', 'U', 'R', 'E', 'C', 'R', '2', 0 };
 constexpr std::array<uint8_t, 8> index_magic = { 'D', 'U', 'R', 'E', 'C', 'I', '1', 0 };
 constexpr std::array<uint8_t, 8> segment_magic = { 'D', 'U', 'R', 'E', 'C', 'S', '1', 0 };
+constexpr std::array<uint8_t, 8> source_claim_magic = { 'D', 'U', 'R', 'S', 'C', 'L', '1', 0 };
 struct failure
 {
 	status code;
@@ -448,6 +449,47 @@ void append(std::vector<flatfile_authority_operation> &operations, std::string n
 			       flatfile_authority_operation_kind::write, std::move(name),
 			       std::move(bytes) });
 }
+std::string source_claim_name(const economic_operation_metadata &metadata)
+{
+	require(metadata.source_event.has_value());
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> event = {};
+	checked(economic_source_event_encode(*metadata.source_event, &event));
+	std::vector<uint8_t> key;
+	raw(key, metadata.lineage.bytes);
+	raw(key, event);
+	const auto key_digest = digest(key);
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string name = "source-claim-";
+	name.reserve(name.size() + key_digest.size() * 2 + 4);
+	for (uint8_t byte : key_digest)
+	{
+		name.push_back(digits[byte >> 4]);
+		name.push_back(digits[byte & 0x0f]);
+	}
+	name += ".bin";
+	return name;
+}
+std::vector<uint8_t> source_claim_bytes(const flatfile_accounting_record &record)
+{
+	economic_frozen_intent intent;
+	checked(economic_intent_decode(record.command.accounting_intent, &intent));
+	require(intent.admission.metadata.source_event.has_value());
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> event = {};
+	checked(economic_source_event_encode(*intent.admission.metadata.source_event, &event));
+	std::vector<uint8_t> payload;
+	raw(payload, intent.admission.metadata.lineage.bytes);
+	raw(payload, event);
+	raw(payload, record.command.operation_id.bytes);
+	number(payload, 1, 1);
+	number(payload, 0, 7);
+	return envelope(source_claim_magic, payload);
+}
+flatfile_read_result read_source_claim(const std::string &root,
+				      const economic_operation_metadata &metadata,
+				      std::vector<uint8_t> *bytes, std::string *error)
+{
+	return read(root, source_claim_name(metadata), 256, bytes, error);
+}
 void require_empty_bucket(const std::string &root, size_t bucket)
 {
 	const auto prefix = bucket_prefix(bucket);
@@ -634,6 +676,69 @@ flatfile_accounting_storage::stage(const std::string &root, const flatfile_autho
 			       std::move(encoded_segment));
 			append(result, index_name(index.bucket), std::move(encoded_index));
 			*operations = std::move(result);
+		},
+		error);
+}
+flatfile_accounting_status flatfile_accounting_storage::stage_source_claim(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_record &record,
+	std::vector<flatfile_authority_operation> *operations, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+		require(lock.owns(root) && operations);
+		economic_frozen_intent intent;
+		checked(economic_intent_decode(record.command.accounting_intent, &intent));
+		if (record.result_code || !intent.admission.metadata.source_event)
+			return;
+		require(operations->size() < flatfile_authority_transaction_maximum_operations,
+			status::capacity);
+		const std::string name = source_claim_name(intent.admission.metadata);
+		for (const auto &operation : *operations)
+			require(operation.store != flatfile_authority_store::economic_evidence ||
+				operation.filename != name);
+		std::vector<uint8_t> existing;
+		const auto read_result =
+			read_source_claim(root, intent.admission.metadata, &existing, error);
+		require(read_result == flatfile_read_result::not_found,
+			read_result == flatfile_read_result::io_error ? status::io_error :
+			read_result == flatfile_read_result::invalid ? status::invalid :
+									   status::already_exists);
+		auto encoded = source_claim_bytes(record);
+		require_room(*operations, 8 + name.size() + encoded.size());
+		append(*operations, name, std::move(encoded));
+		},
+		error);
+}
+flatfile_accounting_status flatfile_accounting_storage::verify_source_claim(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_record &record, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+		require(lock.owns(root));
+		economic_frozen_intent intent;
+		checked(economic_intent_decode(record.command.accounting_intent, &intent));
+		if (!intent.admission.metadata.source_event)
+			return;
+		std::vector<uint8_t> retained;
+		const auto read_result =
+			read_source_claim(root, intent.admission.metadata, &retained, error);
+		if (record.result_code)
+		{
+			require(read_result == flatfile_read_result::not_found,
+				read_result == flatfile_read_result::io_error ? status::io_error :
+				read_result == flatfile_read_result::invalid ? status::invalid :
+										   status::conflict);
+			return;
+		}
+		require(read_result == flatfile_read_result::ok,
+			read_result == flatfile_read_result::io_error ? status::io_error :
+			read_result == flatfile_read_result::invalid ? status::invalid :
+									   status::not_found);
+		require(retained == source_claim_bytes(record), status::conflict);
 		},
 		error);
 }

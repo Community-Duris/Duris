@@ -1,0 +1,356 @@
+#include "economy/item_transfer_accounting.h"
+#include "world/vnum.obj.h"
+
+#include <cassert>
+#include <utility>
+
+using error = economic_accounting_error;
+static_assert(static_cast<uint16_t>(economic_source_kind::item_action) == 18);
+
+critical_operation_id id(uint8_t byte)
+{
+	critical_operation_id value = {};
+	value.bytes[0] = byte;
+	return value;
+}
+
+critical_command move(item_transfer_reason reason, item_owner_identity from, item_owner_identity to)
+{
+	item_transfer_payload payload = {};
+	if (reason == item_transfer_reason::creation)
+	{
+		from = { item_owner_type::system, 0, 0 };
+		to = { item_owner_type::player, 10, 0 };
+	}
+	else if (reason == item_transfer_reason::destruction)
+		to = { item_owner_type::destruction, 0, 0 };
+	else if (reason == item_transfer_reason::trusted_steal)
+	{
+		payload.reason_id = static_cast<int64_t>(from.id);
+		to = { item_owner_type::player, 10, 0 };
+	}
+	else if (reason == item_transfer_reason::locker_deposit)
+		to = { item_owner_type::locker, 20, 0 };
+	else if (reason == item_transfer_reason::auction_list)
+		to = { item_owner_type::auction, 20, 0 };
+	payload.from_owner = from;
+	payload.to_owner = to;
+	payload.reason = reason;
+	if (reason != item_transfer_reason::trusted_steal)
+		payload.reason_id = 7;
+	payload.expected_from_revision = 3;
+	payload.expected_to_revision = 5;
+	payload.selected_item_uid = 100;
+	payload.target_root_item_uid = 100;
+	payload.item_count = 1;
+	const bool creation = reason == item_transfer_reason::creation;
+	payload.items[0] = {
+		100,  100,
+		0,    creation ? ITEM_TRANSFER_ABSENT_REVISION : 2,
+		9001, creation ? item_custody_state::absent : item_custody_state::active
+	};
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, id(3), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	return command;
+}
+
+critical_command corpse_move(item_transfer_reason reason, uint32_t actor_pid)
+{
+	constexpr uint32_t corpse_owner_pid = 10;
+	constexpr uint32_t corpse_save_id = 7;
+	const item_owner_identity corpse = { item_owner_type::corpse,
+					     item_corpse_owner_id(corpse_owner_pid, corpse_save_id),
+					     0 };
+	item_transfer_payload payload = {};
+	payload.from_owner =
+		reason == item_transfer_reason::corpse_create ?
+			item_owner_identity{ item_owner_type::player, corpse_owner_pid, 0 } :
+			corpse;
+	payload.to_owner = reason == item_transfer_reason::corpse_create ?
+				   corpse :
+				   item_owner_identity{ item_owner_type::player, actor_pid, 0 };
+	payload.reason = reason;
+	payload.reason_id = reason == item_transfer_reason::corpse_create ? corpse_save_id : 100;
+	payload.expected_from_revision = 3;
+	payload.expected_to_revision = 5;
+	payload.multi_root = true;
+	payload.item_count = 2;
+	payload.items[0] = { 100, 100, 0, 2, 9001, item_custody_state::active };
+	payload.items[1] = { 101, 101, 0, 3, 9002, item_custody_state::active };
+	payload.corpse.present = true;
+	payload.corpse.room_vnum = 50;
+	payload.corpse.weight = 10;
+	payload.corpse.values[3] = static_cast<int32_t>(corpse_owner_pid);
+	payload.corpse.values[5] = 0;
+	payload.corpse.values[6] = static_cast<int32_t>(corpse_save_id);
+	payload.corpse.owner_name = "CorpseOwner";
+	payload.corpse.short_description = "the corpse of CorpseOwner";
+	payload.corpse.description = "The corpse lies here.";
+	payload.corpse.keywords = "corpse body";
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, id(4), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	return command;
+}
+
+void ordinary_moves_are_bound_to_actor_and_payload()
+{
+	const auto lineage = id(1);
+	const auto epoch = id(2);
+	for (const auto &command :
+	     { move(item_transfer_reason::player_get, { item_owner_type::room, 50, 0 },
+		    { item_owner_type::player, 10, 0 }),
+	       move(item_transfer_reason::player_drop, { item_owner_type::player, 10, 0 },
+		    { item_owner_type::room, 50, 0 }),
+	       move(item_transfer_reason::player_put, { item_owner_type::player, 10, 0 },
+		    { item_owner_type::container, 101, 10 }),
+	       move(item_transfer_reason::player_give, { item_owner_type::player, 10, 0 },
+		    { item_owner_type::player, 11, 0 }),
+	       move(item_transfer_reason::trusted_steal, { item_owner_type::player, 11, 0 },
+		    { item_owner_type::player, 10, 0 }) })
+	{
+		std::vector<uint8_t> encoded;
+		assert(item_transfer_accounting_intent(command, lineage, epoch, 10, &encoded) ==
+		       error::ok);
+		critical_command admitted = command;
+		admitted.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		admitted.accounting_intent = encoded;
+		assert(item_transfer_accounting_command_supported(admitted));
+		economic_frozen_intent decoded;
+		assert(economic_intent_decode(encoded, &decoded) == error::ok);
+		assert(decoded.admission.metadata.lineage.bytes == lineage.bytes);
+		assert(decoded.admission.metadata.epoch.bytes == epoch.bytes);
+		assert(decoded.admission.metadata.writer_id == ECONOMIC_WRITER_ITEM_TRANSFER);
+		assert(decoded.admission.metadata.reason == economic_reason::item_move);
+		assert(decoded.admission.metadata.actor_id == 10);
+	}
+}
+
+void unsupported_or_changed_commands_fail_closed()
+{
+	const auto lineage = id(1);
+	const auto epoch = id(2);
+	auto command = move(item_transfer_reason::player_drop, { item_owner_type::player, 10, 0 },
+			    { item_owner_type::room, 50, 0 });
+	std::vector<uint8_t> encoded;
+	assert(item_transfer_accounting_intent(command, lineage, epoch, 11, &encoded) ==
+	       error::unauthorized);
+	assert(item_transfer_accounting_intent(command, lineage, epoch, 10, &encoded) == error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accounting_intent = encoded;
+	assert(item_transfer_accounting_command_supported(command));
+
+	auto altered_actor = command;
+	economic_frozen_intent intent;
+	assert(economic_intent_decode(altered_actor.accounting_intent, &intent) == error::ok);
+	intent.admission.metadata.actor_id = 11;
+	assert(economic_intent_encode(intent, &altered_actor.accounting_intent) == error::ok);
+	assert(!item_transfer_accounting_command_supported(altered_actor));
+
+	auto altered_payload = command;
+	item_transfer_payload payload = {};
+	assert(item_transfer_command_decode_payload(altered_payload, &payload));
+	payload.to_owner.id = 11;
+	assert(item_transfer_command_build(&altered_payload, id(3), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	altered_payload.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	altered_payload.accounting_intent = command.accounting_intent;
+	assert(!item_transfer_accounting_command_supported(altered_payload));
+
+	for (const auto reason :
+	     { item_transfer_reason::creation, item_transfer_reason::destruction,
+	       item_transfer_reason::auction_list, item_transfer_reason::locker_deposit })
+	{
+		auto special = move(reason,
+				    reason == item_transfer_reason::trusted_steal ?
+					    item_owner_identity{ item_owner_type::player, 11, 0 } :
+					    item_owner_identity{ item_owner_type::player, 10, 0 },
+				    { item_owner_type::room, 50, 0 });
+		assert(item_transfer_accounting_intent(special, lineage, epoch, 10, &encoded) ==
+		       error::unauthorized);
+	}
+	auto trusted_steal = move(item_transfer_reason::trusted_steal,
+				  { item_owner_type::player, 11, 0 },
+				  { item_owner_type::player, 10, 0 });
+	assert(item_transfer_accounting_intent(trusted_steal, lineage, epoch, 11, &encoded) ==
+	       error::unauthorized);
+	assert(item_transfer_accounting_intent(command, {}, epoch, 10, &encoded) ==
+	       error::invalid_identity);
+}
+
+void sourced_creation_grants_are_bound_to_the_item_event()
+{
+	const auto lineage = id(1);
+	const auto epoch = id(2);
+	auto command = move(item_transfer_reason::creation, { item_owner_type::system, 0, 0 },
+			    { item_owner_type::player, 10, 0 });
+	std::vector<uint8_t> encoded;
+	assert(item_transfer_accounting_intent(command, lineage, epoch, 10, &encoded) ==
+	       error::unauthorized);
+	assert(item_transfer_accounting_intent(command, lineage, epoch, 10, &encoded,
+					       economic_source_kind::starter_grant) == error::ok);
+	economic_frozen_intent decoded;
+	assert(economic_intent_decode(encoded, &decoded) == error::ok);
+	assert(decoded.admission.metadata.reason == economic_reason::item_create);
+	assert(decoded.admission.metadata.source_event.has_value());
+	assert(decoded.admission.metadata.source_event->kind ==
+	       economic_source_kind::starter_grant);
+	assert(decoded.admission.metadata.source_event->source.bytes == command.operation_id.bytes);
+	assert(decoded.admission.metadata.source_event->generation.bytes == epoch.bytes);
+	assert(decoded.admission.metadata.source_event->sequence == 100);
+	assert(decoded.admission.metadata.source_event->slot == 7);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accounting_intent = encoded;
+	assert(item_transfer_accounting_command_supported(command));
+
+	auto altered_source = command;
+	assert(economic_intent_decode(altered_source.accounting_intent, &decoded) == error::ok);
+	decoded.admission.metadata.source_event->slot++;
+	assert(economic_intent_encode(decoded, &altered_source.accounting_intent) == error::ok);
+	assert(!item_transfer_accounting_command_supported(altered_source));
+
+	const auto invalid_actor = move(item_transfer_reason::creation,
+					{ item_owner_type::system, 0, 0 },
+					{ item_owner_type::player, 10, 0 });
+	assert(item_transfer_accounting_intent(invalid_actor, lineage, epoch, 11, &encoded,
+					       economic_source_kind::starter_grant) ==
+	       error::unauthorized);
+}
+
+void sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events()
+{
+	const auto lineage = id(1);
+	const auto epoch = id(2);
+	std::vector<uint8_t> encoded;
+	auto room_creation = move(item_transfer_reason::creation,
+				  { item_owner_type::system, 0, 0 },
+				  { item_owner_type::player, 10, 0 });
+	item_transfer_payload creation_payload = {};
+	assert(item_transfer_command_decode_payload(room_creation, &creation_payload));
+	creation_payload.to_owner = { item_owner_type::room, 50, 0 };
+	assert(item_transfer_command_build(&room_creation, room_creation.operation_id,
+					    creation_payload, critical_source_site::command,
+					    critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(room_creation, lineage, epoch, 10, &encoded,
+					       economic_source_kind::item_action) == error::ok);
+	economic_frozen_intent decoded;
+	assert(economic_intent_decode(encoded, &decoded) == error::ok);
+	assert(decoded.admission.metadata.reason == economic_reason::item_create);
+	assert(decoded.admission.metadata.source_event->kind == economic_source_kind::item_action);
+	assert(decoded.admission.metadata.source_event->sequence == 100);
+	room_creation.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	room_creation.accounting_intent = encoded;
+	assert(item_transfer_accounting_command_supported(room_creation));
+
+	for (const auto &retirement :
+	     { move(item_transfer_reason::destruction, { item_owner_type::player, 11, 0 },
+		    { item_owner_type::room, 50, 0 }),
+	       move(item_transfer_reason::destruction, { item_owner_type::room, 50, 0 },
+		    { item_owner_type::room, 50, 0 }) })
+	{
+		assert(item_transfer_accounting_intent(retirement, lineage, epoch, 10, &encoded,
+					       economic_source_kind::item_action) == error::ok);
+		assert(economic_intent_decode(encoded, &decoded) == error::ok);
+		assert(decoded.admission.metadata.reason == economic_reason::item_destroy);
+		assert(decoded.admission.metadata.source_event->kind ==
+		       economic_source_kind::item_action);
+		auto admitted = retirement;
+		admitted.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		admitted.accounting_intent = encoded;
+		assert(item_transfer_accounting_command_supported(admitted));
+	}
+
+	auto missing_source = move(item_transfer_reason::destruction,
+				   { item_owner_type::player, 10, 0 },
+				   { item_owner_type::room, 50, 0 });
+	assert(item_transfer_accounting_intent(missing_source, lineage, epoch, 10, &encoded) ==
+	       error::unauthorized);
+	auto wrong_source = move(item_transfer_reason::destruction,
+				 { item_owner_type::player, 10, 0 },
+				 { item_owner_type::room, 50, 0 });
+	assert(item_transfer_accounting_intent(wrong_source, lineage, epoch, 10, &encoded,
+					       economic_source_kind::lifecycle) == error::unauthorized);
+	auto inactive_item = move(item_transfer_reason::destruction,
+				  { item_owner_type::player, 10, 0 },
+				  { item_owner_type::room, 50, 0 });
+	item_transfer_payload inactive_payload = {};
+	assert(item_transfer_command_decode_payload(inactive_item, &inactive_payload));
+	inactive_payload.items[0].expected_state = item_custody_state::absent;
+	inactive_payload.items[0].expected_item_revision = ITEM_TRANSFER_ABSENT_REVISION;
+	assert(!item_transfer_command_build(&inactive_item, inactive_item.operation_id,
+					     inactive_payload, critical_source_site::command,
+					     critical_deadline_class::interactive));
+
+	auto coin_creation = move(item_transfer_reason::creation,
+				  { item_owner_type::system, 0, 0 },
+				  { item_owner_type::player, 10, 0 });
+	item_transfer_payload coin_creation_payload = {};
+	assert(item_transfer_command_decode_payload(coin_creation, &coin_creation_payload));
+	coin_creation_payload.items[0].vnum = VOBJ_COINS;
+	assert(item_transfer_command_build(&coin_creation, coin_creation.operation_id,
+					    coin_creation_payload, critical_source_site::command,
+					    critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(coin_creation, lineage, epoch, 10, &encoded,
+					       economic_source_kind::starter_grant) ==
+	       error::unauthorized);
+	auto coin_retirement = move(item_transfer_reason::destruction,
+				    { item_owner_type::player, 10, 0 },
+				    { item_owner_type::destruction, 0, 0 });
+	item_transfer_payload coin_retirement_payload = {};
+	assert(item_transfer_command_decode_payload(coin_retirement, &coin_retirement_payload));
+	coin_retirement_payload.items[0].vnum = VOBJ_COINS;
+	assert(item_transfer_command_build(&coin_retirement, coin_retirement.operation_id,
+					    coin_retirement_payload, critical_source_site::command,
+					    critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(coin_retirement, lineage, epoch, 10, &encoded,
+					       economic_source_kind::item_action) ==
+	       error::unauthorized);
+}
+
+void corpse_custody_roots_bind_the_actor_and_exact_corpse()
+{
+	const auto lineage = id(1);
+	const auto epoch = id(2);
+	std::vector<uint8_t> encoded;
+	for (const auto &entry : { std::pair{ item_transfer_reason::corpse_create, uint32_t{ 10 } },
+				   std::pair{ item_transfer_reason::corpse_loot, uint32_t{ 22 } } })
+	{
+		auto command = corpse_move(entry.first, entry.second);
+		assert(item_transfer_accounting_intent(command, lineage, epoch, entry.second,
+						       &encoded) == error::ok);
+		economic_frozen_intent decoded;
+		assert(economic_intent_decode(encoded, &decoded) == error::ok);
+		assert(decoded.admission.metadata.reason == economic_reason::item_move);
+		assert(!decoded.admission.metadata.source_event);
+		command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		command.accounting_intent = encoded;
+		assert(item_transfer_accounting_command_supported(command));
+	}
+	const auto create = corpse_move(item_transfer_reason::corpse_create, 10);
+	assert(item_transfer_accounting_intent(create, lineage, epoch, 11, &encoded) ==
+	       error::unauthorized);
+	const auto loot = corpse_move(item_transfer_reason::corpse_loot, 22);
+	assert(item_transfer_accounting_intent(loot, lineage, epoch, 23, &encoded) ==
+	       error::unauthorized);
+	auto bad_revision = corpse_move(item_transfer_reason::corpse_create, 10);
+	item_transfer_payload payload = {};
+	assert(item_transfer_command_decode_payload(bad_revision, &payload));
+	payload.items[1].expected_item_revision = ITEM_TRANSFER_ABSENT_REVISION;
+	assert(item_transfer_command_build(&bad_revision, bad_revision.operation_id, payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(bad_revision, lineage, epoch, 10, &encoded) ==
+	       error::unauthorized);
+}
+
+int main()
+{
+	ordinary_moves_are_bound_to_actor_and_payload();
+	unsupported_or_changed_commands_fail_closed();
+	sourced_creation_grants_are_bound_to_the_item_event();
+	sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events();
+	corpse_custody_roots_bind_the_actor_and_exact_corpse();
+	return 0;
+}

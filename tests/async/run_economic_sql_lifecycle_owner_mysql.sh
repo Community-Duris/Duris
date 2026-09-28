@@ -150,6 +150,23 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -O1 -g \
     src/item/item_transfer_command.c \
     src/player/player_snapshot_codec.c \
     "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$TEMP/lifecycle-owner"
+# The standalone lifecycle-owner link above must remain independent of the
+# coordinator. Only this composed owner harness links the coordinator lease.
+g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -O1 -g \
+    -fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie -no-pie \
+    "${MYSQL_CFLAGS[@]}" -Isrc \
+    tests/async/economic_sql_owned_cutover_capability.cpp \
+    src/persistence/critical_command.c \
+    src/persistence/critical_command_journal.c \
+    src/persistence/critical_command_coordinator.c \
+    src/persistence/economic_sql_lifecycle_guard.c \
+    src/persistence/economic_sql_cutover_capability.c \
+    "${MYSQL_LIBS[@]}" -lcrypto -lz -Wl,--wrap=close -Wl,--wrap=mysql_commit \
+    -Wl,--wrap=mysql_rollback -Wl,--wrap=mysql_real_query -o "$TEMP/owned-cutover"
+# Run on the untouched inactive schema, before the lifecycle install probes.
+ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+    "$TEMP/owned-cutover" "$TEMP/owned-cutover-journals"
 ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
     "$TEMP/lifecycle-owner"

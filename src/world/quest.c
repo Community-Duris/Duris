@@ -224,8 +224,10 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 						CAN_CARRY_W(pl));
 			const bool submitted =
 				to_player ?
-					item_creation_grant_submit_to_player(pl, obj, pl) :
-					item_creation_grant_submit_to_room(pl, obj, pl->in_room);
+					item_creation_grant_submit_to_player(
+						pl, obj, pl, NULL, economic_source_kind::quest_completion) :
+					item_creation_grant_submit_to_room(
+						pl, obj, pl->in_room, economic_source_kind::quest_completion);
 			if (!submitted)
 			{
 				extract_obj(obj, FALSE);
