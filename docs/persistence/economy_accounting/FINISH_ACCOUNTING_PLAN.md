@@ -84,7 +84,15 @@ does not close any runtime gate. The SQL server built with GCC 13.3 using
 `make -C src -j4`. After pinning the four executable area-script checkouts to
 LF in `.gitattributes`, `make world` passed in the maintained local audit
 container. The focused quest-offering and shared publication retention harnesses
-passed. The process-restart fault reproduction remains the next step 0 task.
+passed. A later checkpoint completed the process-restart reproduction below.
+
+The normal live flatfile quest journey now grants and cold-loads an item reward
+with its original UID after three committed offerings. The post-publication-ack
+crash journey confirms the separate loss window: the offerings stay consumed
+and the reward is absent after restart. Its default recovery expectation is
+still failing. A read-only inspection of issue #10's isolated SQL playtest
+found an active bandage custody row absent from the rejected save snapshot;
+the direct bandage extraction is the next narrow save-stability repair.
 
 ## Invariants to preserve
 

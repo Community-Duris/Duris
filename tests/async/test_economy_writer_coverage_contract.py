@@ -491,12 +491,12 @@ class SplitEconomyActivationContract(unittest.TestCase):
             for site in writer.get("sites", []):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(writer["id"])
-        self.assertEqual(owners[(path, 564, "economic_submit")],
+        self.assertEqual(owners[(path, 602, "economic_submit")],
                          {"quest.durable_offering_submission"})
-        self.assertEqual(owners[(path, 463, "item_lifecycle")],
+        self.assertEqual(owners[(path, 501, "item_lifecycle")],
                          {"quest.durable_offering_publication"})
-        for line, family in ((423, "item_lifecycle"), (423, "item_publication"),
-                             (425, "item_lifecycle")):
+        for line, family in ((461, "item_lifecycle"), (461, "item_publication"),
+                             (463, "item_lifecycle")):
             self.assertEqual(owners[(path, line, family)],
                              {"quest.disappearing_npc_cleanup"})
         self.assertTrue(self.routes["quest.durable_offering_submission"]

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "d686d4c70384af9012673fa7c4db5cba356c471f",
+  "source_commit": "cde63f95e",
   "census_complete": true,
   "writers": [
     {
@@ -27805,22 +27805,22 @@
       "sites": [
         [
           "src/world/quest.c",
-          167,
+          168,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          168,
+          169,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          183,
+          184,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          184,
+          185,
           "item_lifecycle"
         ]
       ],
@@ -27866,17 +27866,17 @@
       "sites": [
         [
           "src/world/quest.c",
-          423,
+          461,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          423,
+          461,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          425,
+          463,
           "item_lifecycle"
         ]
       ],
@@ -27923,7 +27923,7 @@
       "sites": [
         [
           "src/world/quest.c",
-          463,
+          501,
           "item_lifecycle"
         ]
       ],
@@ -27969,7 +27969,7 @@
       "sites": [
         [
           "src/world/quest.c",
-          564,
+          602,
           "economic_submit"
         ]
       ],
@@ -28012,7 +28012,7 @@
       "sites": [
         [
           "src/world/quest.c",
-          172,
+          173,
           "money_helper"
         ]
       ],
@@ -28047,32 +28047,32 @@
       "sites": [
         [
           "src/world/quest.c",
-          232,
+          269,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          234,
+          271,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          281,
+          318,
           "money_helper"
         ],
         [
           "src/world/quest.c",
-          211,
+          237,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          223,
+          249,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          238,
+          275,
           "item_lifecycle"
         ]
       ],
@@ -28111,22 +28111,22 @@
       "sites": [
         [
           "src/world/quest.c",
-          610,
+          648,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          615,
+          653,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          646,
+          684,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          651,
+          689,
           "item_lifecycle"
         ]
       ],
@@ -61292,121 +61292,121 @@
     },
     {
       "path": "src/world/quest.c",
-      "line": 172,
+      "line": 173,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(mob, gp->number, 0);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 281,
+      "line": 318,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(pl, gp->number / temp);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 232,
+      "line": 269,
       "family": "economic_submit",
-      "excerpt": "item_creation_grant_submit_to_player("
+      "excerpt": "item_creation_grant_submit_to_player(pl, obj, pl, NULL,"
     },
     {
       "path": "src/world/quest.c",
-      "line": 234,
+      "line": 271,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_room("
     },
     {
       "path": "src/world/quest.c",
-      "line": 564,
+      "line": 602,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/world/quest.c",
-      "line": 168,
+      "line": 169,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Arti quest item?"
     },
     {
       "path": "src/world/quest.c",
-      "line": 184,
+      "line": 185,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Arti quest item?"
     },
     {
       "path": "src/world/quest.c",
-      "line": 211,
+      "line": 237,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 223,
+      "line": 249,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 238,
+      "line": 275,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 423,
+      "line": 461,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 425,
+      "line": 463,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(mob->carrying, TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 463,
+      "line": 501,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(roots[index], TRUE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 610,
+      "line": 648,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 615,
+      "line": 653,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 646,
+      "line": 684,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 651,
+      "line": 689,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 167,
+      "line": 168,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 183,
+      "line": 184,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 423,
+      "line": 461,
       "family": "item_publication",
       "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },

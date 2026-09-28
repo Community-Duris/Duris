@@ -48,7 +48,7 @@
     "current_occurrences": 2784,
     "current_unique_path_line_family_sites": 2726,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "d686d4c70384af9012673fa7c4db5cba356c471f",
+    "draft_source_commit": "cde63f95e",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2726,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "d686d4c70384af9012673fa7c4db5cba356c471f",
+  "repository_head": "cde63f95e",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -31386,7 +31386,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          688
+          726
         ],
         "file": "src/world/quest.c",
         "function": "quester",
@@ -31445,7 +31445,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          121
+          122
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -31505,7 +31505,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          408
+          445
         ],
         "file": "src/world/quest.c",
         "function": "finish_quest_reward",
@@ -31565,7 +31565,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          429
+          467
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -31643,7 +31643,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          488
+          526
         ],
         "file": "src/world/quest.c",
         "function": "submit_durable_quest_offering",
@@ -31703,7 +31703,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          121
+          122
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -31763,7 +31763,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          191
+          217
         ],
         "file": "src/world/quest.c",
         "function": "give_reward",
@@ -31821,7 +31821,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          588
+          626
         ],
         "file": "src/world/quest.c",
         "function": "tell_quest",
