@@ -21,6 +21,7 @@ PRELUDE = r'''
 #include "core/json_utils.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "economy/economic_gameplay_authority.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_load_items.h"
 #include <algorithm>
@@ -50,6 +51,12 @@ int top_of_objt = 0;
 extern const int top_of_world = 0;
 static uint64_t busy_coin_uid;
 static bool currency_busy;
+bool economic_gameplay_authority::active() { return false; }
+economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
+    critical_command *, uint32_t, economic_source_kind) {
+    assert(false && "inactive accounting should not prepare item transfers");
+    return economic_accounting_error::unauthorized;
+}
 bool currency_transaction_coin_item_busy(uint64_t uid) { return uid && uid == busy_coin_uid; }
 bool currency_transaction_player_busy(P_char) { return currency_busy; }
 bool collector_transaction_player_busy(P_char) { return false; }
