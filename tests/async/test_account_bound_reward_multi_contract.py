@@ -28,9 +28,11 @@ assert contains(source, "grant_marker_matches")
 assert contains(source, "reward_marker_matches(obj, grant.account.c_str(), grant.id)")
 assert contains(source, "grant.template_version == 0 && reward_marker_matches")
 summon = source[source.index("static bool summon_one"):source.index("static bool parse_positive")]
-assert contains(summon, "item_creation_grant_submit_to_player(ch,obj,ch)")
+assert contains(summon, "if(economic_gameplay_authority::active())")
+grant_submit = "item_creation_grant_submit_to_player(ch,obj,ch,NULL,economic_source_kind::boon)"
+assert contains(summon, grant_submit)
 assert index(summon, "account_bound_reward_summons") < index(
-    summon, "item_creation_grant_submit_to_player(ch,obj,ch)"
+    summon, grant_submit
 )
 assert not contains(summon, "OBJ_CARRIED(obj)")
 
