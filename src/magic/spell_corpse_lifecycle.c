@@ -29,6 +29,11 @@ extern P_obj object_list;
 extern float exp_mods[EXPMOD_MAX + 1];
 extern const int top_of_world;
 
+static bool resurrection_item_is_transient(P_obj item)
+{
+	return item && IS_SET(item->extra_flags, ITEM_TRANSIENT);
+}
+
 void spell_unmaking(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		    P_obj obj)
 {
@@ -126,7 +131,7 @@ void complete_player_resurrection_after_commit(P_char ch, P_char t_ch, P_obj obj
 	for (t_obj = t_ch->carrying; t_obj; t_obj = next_obj)
 	{
 		next_obj = t_obj->next_content;
-		if (IS_SET(obj->extra_flags, ITEM_TRANSIENT))
+		if (resurrection_item_is_transient(t_obj))
 			extract_obj(t_obj, TRUE);
 		else
 		{
@@ -439,7 +444,7 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 		for (t_obj = t_ch->carrying; t_obj != NULL; t_obj = next_obj)
 		{
 			next_obj = t_obj->next_content;
-			if (IS_SET(obj->extra_flags, ITEM_TRANSIENT))
+			if (resurrection_item_is_transient(t_obj))
 			{
 				extract_obj(t_obj, TRUE); // Transient artis?
 				t_obj = NULL;
@@ -842,7 +847,7 @@ void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused
 			next_obj = t_obj->next_content;
 			// WHY ON EARTH WOULD WE WANT TO DO THIS? - KVARK
 			//      if(IS_ROOM(t_ch->in_room, ROOM_DEATH) || IS_SET(obj->extra_flags, ITEM_TRANSIENT))
-			if (IS_SET(obj->extra_flags, ITEM_TRANSIENT))
+			if (resurrection_item_is_transient(t_obj))
 			{
 				extract_obj(t_obj, TRUE); // Transient artis?
 				t_obj = NULL;

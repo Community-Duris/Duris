@@ -3043,6 +3043,18 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 	int damage, type, flags, result;
 	struct proc_data *data;
 	struct affected_type *af1;
+	auto refresh_barb_continuation = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		vict = after_callback.target;
+		obj = after_callback.weapon;
+		return true;
+	};
 
 	static int curr_race = RACE_NONE;
 	// Whom ever did this is a very bad man; how do we know to reset when they rent/die/etc?
@@ -3250,7 +3262,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// 1/6 chance.
-	if ((cmd == CMD_GOTNUKED) &&
+	if ((cmd == CMD_GOTNUKED) && char_in_list(ch) && IS_ALIVE(ch) &&
 	    (GET_RACE(ch) == RACE_MOUNTAIN || GET_RACE(ch) == RACE_DUERGAR) && (!number(0, 5)))
 	{
 		hammer_berserk_check(ch);
@@ -3259,7 +3271,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			return FALSE;
 		}
 		vict = data->victim;
-		if (!IS_ALIVE(vict))
+		if (!vict || !char_in_list(vict) || !IS_ALIVE(vict))
 		{
 			return FALSE;
 		}
@@ -3307,6 +3319,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			act("&+c...and releases a previously stored &+Bmagical energy&+c straight back at $N!",
 			    FALSE, ch, obj, vict, TO_CHAR);
 
+			attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 			result =
 				spell_damage(ch, vict, BarbProcData.damage, BarbProcData.attacktype,
 					     BarbProcData.flags | SPLDAM_NOSHRUG | SPLDAM_NODEFLECT,
@@ -3333,7 +3346,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			}
 
 			/*      wizlog(MINLVLIMMORTAL,"setting new values, old dam = %d, new dam = %d", BarbProcData.damage, damage);*/
-			if (result == DAM_NONEDEAD)
+			if (result == DAM_NONEDEAD && refresh_barb_continuation(continuation))
 			{
 				attack_back(vict, ch, FALSE);
 			}
@@ -3368,7 +3381,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 
 	vict = legacy_proc_arg<P_char>(arg);
 
-	if (IS_ALIVE(vict))
+	if (char_in_list(ch) && IS_ALIVE(ch) && vict && char_in_list(vict) && IS_ALIVE(vict))
 	{
 		// 4% proc
 		if (!number(0, 24) && (GET_RACE(ch) == RACE_BARBARIAN) && CheckMultiProcTiming(ch))
@@ -3380,13 +3393,19 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			act("$n's $q &+Bcalls down the lightning of the barbarian kings on $N!",
 			    FALSE, obj->loc.wearing, obj, vict, TO_NOTVICT);
 
+			attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 			spell_chain_lightning(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
+			if (!refresh_barb_continuation(continuation))
+				return FALSE;
 
 			// 1/25 * 1/4 = 1/100 chance.
 			if (IS_ALIVE(ch) && IS_ALIVE(vict) && !number(0, 3))
 			{
+				continuation = begin_attack_continuation(ch, vict, obj);
 				spell_forked_lightning((int)(GET_LEVEL(ch) - 15), ch, 0,
 						       SPELL_TYPE_SPELL, vict, 0);
+				if (!refresh_barb_continuation(continuation))
+					return FALSE;
 			}
 			// 1/20 chance * ~100/500 = 1/5 chance == about 1/100 chance.
 			if (IS_ALIVE(ch) && !number(0, 19) && GET_C_LUK(ch) < number(0, 500))
@@ -3404,9 +3423,17 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			act("$n's $q &+bfills them with the &+WPOWER&+b of the ogre chieftains!",
 			    FALSE, obj->loc.wearing, obj, vict, TO_NOTVICT);
 
+			attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
+			if (!refresh_barb_continuation(continuation))
+				return FALSE;
 			if (IS_ALIVE(vict) && IS_ALIVE(ch))
+			{
+				continuation = begin_attack_continuation(ch, vict, obj);
 				hit(ch, vict, obj);
+				if (!refresh_barb_continuation(continuation))
+					return FALSE;
+			}
 			if (IS_ALIVE(vict) && IS_ALIVE(ch) && number(1, 100) <= 30)
 			{
 				if (MIN_POS(vict, POS_STANDING + STAT_NORMAL))
@@ -3425,7 +3452,10 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 				// if not standing, hit them again.
 				else
 				{
+					continuation = begin_attack_continuation(ch, vict, obj);
 					hit(ch, vict, obj);
+					if (!refresh_barb_continuation(continuation))
+						return FALSE;
 				}
 			}
 		} // 2% proc (this can stack with the regular berserker proc if wielded by a
@@ -3446,6 +3476,9 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			// bool ancestor_was_here = false;
 			if (BarbProcData.damage && IS_ALIVE(vict))
 			{
+				const uint64_t actor_runtime_id = ch->runtime_id;
+				attack_continuation continuation =
+					begin_attack_continuation(ch, vict, obj);
 				result = spell_damage(ch, vict, BarbProcData.damage,
 						      BarbProcData.attacktype, BarbProcData.flags,
 						      BarbProcData.messages_set ?
@@ -3457,9 +3490,16 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (result == DAM_VICTDEAD)
 				{
-					do_action(ch, 0, CMD_ROAR);
+					P_char live_actor =
+						find_character_by_runtime_id(actor_runtime_id);
+					if (live_actor == ch && IS_ALIVE(live_actor))
+					{
+						do_action(live_actor, 0, CMD_ROAR);
+					}
 					return DAM_VICTDEAD;
 				}
+				if (!refresh_barb_continuation(continuation))
+					return TRUE;
 			}
 			update_pos(vict);
 			/* Disabling this for now. It seems that no messages are provided.
@@ -3528,8 +3568,12 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			hammer_berserk_check(ch);
 			if (is_char_in_room(vict, ch->in_room))
 			{
+				attack_continuation continuation =
+					begin_attack_continuation(ch, vict, obj);
 				spell_damage(ch, vict, 200, SPLDAM_GENERIC,
 					     SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
+				if (!refresh_barb_continuation(continuation))
+					return FALSE;
 
 				if (!has_skin_spell(ch))
 				{

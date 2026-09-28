@@ -51,6 +51,16 @@ MANUAL_ONLY_TEST_NAMES = frozenset(
         "test_issue331_player_journey.py",
         "test_issue331_staff_recovery_journey.py",
         "test_death_resurrection_mysql_journey.py",
+        # Frozen-artifact SQL journeys are leased by the central batch runner.
+        "test_pa_runtime_sql.py",
+        "test_pa_copyover_sql.py",
+        "test_pa_copyover_account_authority.py",
+        "test_pa_necromancy_sql.py",
+        "test_pa_item_creation_sql.py",
+        "test_pa_item_flags_sql.py",
+        "test_pa_atm_publication_sql.py",
+        "test_pa_coin_sql.py",
+        "test_pa_web_recovery_sql.py",
     }
 )
 
