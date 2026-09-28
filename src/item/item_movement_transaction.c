@@ -387,6 +387,11 @@ bool destruction_publication_live_ready(P_char actor, const item_transfer_payloa
 			    ++seen[static_cast<size_t>(found - payload.items.begin())] != 1)
 				return false;
 		}
+		// A player may reconnect after the committed destruction has already
+		// removed every selected row from the saved inventory. There is then no
+		// live tree to publish; an entirely absent tree is already published.
+		if (std::all_of(seen.begin(), seen.end(), [](uint8_t count) { return count == 0; }))
+			return true;
 		if (std::any_of(seen.begin(), seen.end(), [](uint8_t count) { return count != 1; }))
 			return false;
 
@@ -1339,15 +1344,31 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 					     critical_apply_outcome::already_applied;
 	if (entry.publication && entry.publication_status == publication_state::ack_pending)
 	{
+		P_char completion_actor = actor;
+		if (entry.completion && !completion_actor)
+			completion_actor = find_live_player(entry.actor_pid);
+		if (entry.completion && !completion_actor)
+		{
+			account_health();
+			return;
+		}
 		if (critical_command_coordinator_acknowledge_publication(
 			    entry.completed.operation_id))
 		{
 			const bool was_committed = committed;
+			const item_movement_completion_fn completion_fn = entry.completion;
+			const auto context = entry.context;
+			const size_t context_size = entry.context_size;
+			const unsigned int error_code = decoded ? entry.completed.error_code :
+								  EBADMSG;
 			pending.erase(found);
 			if (was_committed)
 				++health.committed;
 			else
 				++health.rejected;
+			if (completion_fn)
+				completion_fn(completion_actor, was_committed, result, error_code,
+					      context.data(), context_size);
 		}
 		account_health();
 		return;
@@ -1452,11 +1473,15 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
+		const item_movement_completion_fn completion_fn = current->second.completion;
 		pending.erase(current);
 		if (committed)
 			++health.committed;
 		else
 			++health.rejected;
+		if (completion_fn)
+			completion_fn(actor, committed, result, error_code, context.data(),
+				      context_size);
 		account_health();
 		return;
 	}
