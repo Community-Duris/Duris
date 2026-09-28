@@ -12,7 +12,6 @@
 
 namespace
 {
-constexpr uint32_t COIN_OPERATION_DOMAIN = 0x434f494e;
 constexpr size_t ENDPOINT_HEADER_BYTES = 36;
 
 void append_u32(std::vector<uint8_t> *output, uint32_t value)
@@ -126,8 +125,8 @@ bool append_endpoint(critical_command *command, const coin_transfer_endpoint &en
 		     uint64_t index)
 {
 	critical_command change = endpoint.change;
-	if (!critical_operation_id_derive(command->operation_id, COIN_OPERATION_DOMAIN, index,
-					  &change.operation_id))
+	if (!critical_operation_id_derive(command->operation_id, COIN_TRANSFER_OPERATION_DOMAIN,
+					  index, &change.operation_id))
 		return false;
 	change.source_site = command->source_site;
 	change.deadline_class = command->deadline_class;

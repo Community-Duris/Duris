@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 # The coin failure matrix uses only synthetic data in its own disposable server.
 # Never source the checkout's .env: it may point at the live game.
+python3 tests/async/test_pa_typed_coin_contract.py
 NAME="duris-currency-$$-$RANDOM"
 PASSWORD="currency-$$-$RANDOM"
 IMAGE="${CURRENCY_DB_IMAGE:-mariadb:10.11}"
@@ -91,9 +92,10 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
     src/economy/economic_currency_adapter.c \
+    src/economy/coin_transfer_accounting.c \
+    src/economy/economic_accounting_intent.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_accounting_plan.c \
-    src/economy/economic_accounting_intent.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
 "$ROOT/bin/tests/currency_transaction_mysql_harness"

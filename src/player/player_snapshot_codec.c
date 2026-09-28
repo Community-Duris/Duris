@@ -5,6 +5,8 @@
 #include "world/vnum.obj.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cstdlib>
 #include <initializer_list>
 #include <limits>
 #include <new>
@@ -14,6 +16,8 @@
 
 namespace
 {
+constexpr uint32_t item_properties_magic = UINT32_C(0x31525049);
+
 struct encoder
 {
 	std::vector<uint8_t> bytes;
@@ -658,6 +662,184 @@ player_item_snapshot_list_decode(const uint8_t *encoded, size_t encoded_size,
 		if (in.offset != in.size || !valid_item_relationships(items))
 			return player_snapshot_codec_result::invalid_value;
 		*items_out = std::move(items);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result player_item_properties_encode(
+	uint32_t extra2_flags,
+	const std::vector<player_item_dynamic_affect_snapshot> &dynamic_affects,
+	std::string *encoded_hex_out)
+{
+	if (!encoded_hex_out)
+		return player_snapshot_codec_result::invalid_value;
+	if (dynamic_affects.size() > PLAYER_SNAPSHOT_MAX_ROWS)
+		return player_snapshot_codec_result::limit_exceeded;
+	try
+	{
+		encoder out;
+		out.number<uint32_t>(item_properties_magic);
+		out.number<uint32_t>(1);
+		out.number<uint32_t>(extra2_flags);
+		out.vector(dynamic_affects,
+			   [&](const auto &affect)
+			   {
+				   out.number<int16_t>(affect.type);
+				   out.number<int16_t>(affect.data);
+				   out.number<uint64_t>(affect.extra2);
+			   });
+		if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+			return player_snapshot_codec_result::limit_exceeded;
+		constexpr char digits[] = "0123456789abcdef";
+		std::string encoded;
+		encoded.reserve(out.bytes.size() * 2);
+		for (uint8_t byte : out.bytes)
+		{
+			encoded.push_back(digits[byte >> 4]);
+			encoded.push_back(digits[byte & 0x0f]);
+		}
+		*encoded_hex_out = std::move(encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result
+player_item_properties_decode(const std::string &encoded_hex, uint32_t *extra2_flags_out,
+			      std::vector<player_item_dynamic_affect_snapshot> *dynamic_affects_out)
+{
+	if (!extra2_flags_out || !dynamic_affects_out || encoded_hex.empty() ||
+	    (encoded_hex.size() & 1))
+		return player_snapshot_codec_result::invalid_value;
+	if (encoded_hex.size() > PLAYER_ITEM_PROPERTIES_MAX_HEX_BYTES)
+		return player_snapshot_codec_result::limit_exceeded;
+	auto nibble = [](char value) -> int
+	{
+		if (value >= '0' && value <= '9')
+			return value - '0';
+		if (value >= 'a' && value <= 'f')
+			return value - 'a' + 10;
+		if (value >= 'A' && value <= 'F')
+			return value - 'A' + 10;
+		return -1;
+	};
+	try
+	{
+		std::vector<uint8_t> bytes;
+		bytes.reserve(encoded_hex.size() / 2);
+		for (size_t index = 0; index < encoded_hex.size(); index += 2)
+		{
+			const int high = nibble(encoded_hex[index]);
+			const int low = nibble(encoded_hex[index + 1]);
+			if (high < 0 || low < 0)
+				return player_snapshot_codec_result::invalid_value;
+			bytes.push_back(static_cast<uint8_t>((high << 4) | low));
+		}
+		decoder in = { bytes.data(), bytes.size() };
+		uint32_t magic = 0;
+		uint32_t version = 0;
+		uint32_t extra2_flags = 0;
+		std::vector<player_item_dynamic_affect_snapshot> dynamic_affects;
+		if (!in.number(magic) || !in.number(version) || !in.number(extra2_flags))
+			return in.result;
+		if (magic != item_properties_magic)
+			return player_snapshot_codec_result::invalid_value;
+		if (version != 1)
+			return player_snapshot_codec_result::unsupported_version;
+		if (!in.vector(dynamic_affects,
+			       [&](auto &affect)
+			       {
+				       return in.number(affect.type) && in.number(affect.data) &&
+					      in.number(affect.extra2);
+			       }))
+			return in.result;
+		if (in.offset != in.size)
+			return player_snapshot_codec_result::invalid_value;
+		*extra2_flags_out = extra2_flags;
+		*dynamic_affects_out = std::move(dynamic_affects);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+const char *player_item_properties_sql_column_suffix()
+{
+	return ",item_properties";
+}
+
+player_snapshot_codec_result player_item_properties_sql_value_suffix(
+	uint32_t extra2_flags,
+	const std::vector<player_item_dynamic_affect_snapshot> &dynamic_affects,
+	std::string *value_suffix_out)
+{
+	if (!value_suffix_out)
+		return player_snapshot_codec_result::invalid_value;
+	std::string encoded_hex;
+	const player_snapshot_codec_result encoded =
+		player_item_properties_encode(extra2_flags, dynamic_affects, &encoded_hex);
+	if (encoded != player_snapshot_codec_result::ok)
+		return encoded;
+	try
+	{
+		std::string value_suffix;
+		value_suffix.reserve(encoded_hex.size() + 3);
+		value_suffix.append(",'");
+		value_suffix.append(encoded_hex);
+		value_suffix.push_back('\'');
+		*value_suffix_out = std::move(value_suffix);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result player_item_properties_decode_sql_row(
+	const char *encoded_hex, const char *octet_length, uint32_t *extra2_flags_out,
+	std::vector<player_item_dynamic_affect_snapshot> *dynamic_affects_out,
+	bool *has_payload_out)
+{
+	if (!extra2_flags_out || !dynamic_affects_out || !has_payload_out)
+		return player_snapshot_codec_result::invalid_value;
+	if (!encoded_hex)
+	{
+		if (octet_length)
+			return player_snapshot_codec_result::invalid_value;
+		*has_payload_out = false;
+		return player_snapshot_codec_result::ok;
+	}
+	if (!octet_length || !*octet_length || *octet_length == '-')
+		return player_snapshot_codec_result::invalid_value;
+	errno = 0;
+	char *end = nullptr;
+	const unsigned long long parsed_length = std::strtoull(octet_length, &end, 10);
+	if (errno == ERANGE || end == octet_length || *end)
+		return player_snapshot_codec_result::invalid_value;
+	if (parsed_length > PLAYER_ITEM_PROPERTIES_MAX_HEX_BYTES)
+		return player_snapshot_codec_result::limit_exceeded;
+	try
+	{
+		const std::string encoded(encoded_hex, static_cast<size_t>(parsed_length));
+		uint32_t decoded_flags = 0;
+		std::vector<player_item_dynamic_affect_snapshot> decoded_affects;
+		const player_snapshot_codec_result decoded =
+			player_item_properties_decode(encoded, &decoded_flags, &decoded_affects);
+		if (decoded != player_snapshot_codec_result::ok)
+			return decoded;
+		*extra2_flags_out = decoded_flags;
+		*dynamic_affects_out = std::move(decoded_affects);
+		*has_payload_out = true;
 	}
 	catch (const std::bad_alloc &)
 	{

@@ -66,6 +66,16 @@ constexpr source sources[] = {
 	  "mapping_id,lineage,account_kind,context_id,backend_kind,locator_kind,native_id,active_native_id,creating_operation_id,retiring_operation_id,revision",
 	  "mapping_id" },
 };
+// Durable SQL projections that can retain item UIDs outside player_items.
+// These rows are evidence inputs for baseline reconstruction, not proof that
+// every live or reset-generated world object has a durable SQL owner.
+// EIM1 binds only the raw selected rows below; owner lookup mappings are not
+// captured, so equality is not identity for the resolved ownership baseline.
+constexpr source item_sources[] = {
+	{ "player_pet_items", "id,pet_id,container_id,obj_uid,vnum", "id" },
+	{ "shopkeeper_items", "id,shopkeeper_id,container_id,obj_uid,vnum", "id" },
+	{ "siege_items", "id,room_vnum,container_id,obj_uid,vnum", "id" },
+};
 struct failure
 {
 	unsigned int code;
@@ -166,7 +176,8 @@ std::vector<uint64_t> counts(MYSQL *connection, const std::string &sql, size_t f
 	return values;
 }
 void capture(MYSQL *connection, unsigned long session, const source &input,
-	     const economic_sql_source_limits &limits, economic_sql_source_snapshot &output)
+	     const economic_sql_source_limits &limits, economic_sql_source_snapshot &output,
+	     std::vector<economic_sql_source_table> &destination)
 {
 	economic_sql_source_table table;
 	table.name = input.table;
@@ -246,7 +257,7 @@ void capture(MYSQL *connection, unsigned long session, const source &input,
 	result.reset();
 	active(connection, session);
 	table.content_digest = content.finish();
-	output.tables.push_back(std::move(table));
+	destination.push_back(std::move(table));
 }
 #endif
 }
@@ -295,33 +306,49 @@ unsigned int economic_sql_capture_sources(MYSQL *connection,
 		execute(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY");
 		active(connection, session);
 		std::string names;
-		for (const auto &s : sources)
+		auto verify_sources = [&](const auto &registry)
 		{
-			execute(connection, std::string("SELECT 1 FROM `") + s.table + "` LIMIT 0");
-			result_ptr result(mysql_store_result(connection), mysql_free_result);
-			require(bool(result),
-				mysql_errno(connection) ? mysql_errno(connection) : EIO);
-			active(connection, session);
-			if (!names.empty())
-				names += ',';
-			names += "'" + std::string(s.table) + "'";
-		}
+			for (const auto &s : registry)
+			{
+				execute(connection,
+					std::string("SELECT 1 FROM `") + s.table + "` LIMIT 0");
+				result_ptr result(mysql_store_result(connection),
+						  mysql_free_result);
+				require(bool(result),
+					mysql_errno(connection) ? mysql_errno(connection) : EIO);
+				active(connection, session);
+				if (!names.empty())
+					names += ',';
+				names += "'" + std::string(s.table) + "'";
+			}
+		};
+		verify_sources(sources);
+		verify_sources(item_sources);
 		auto metadata = counts(
 			connection,
 			"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' AND engine='InnoDB' AND table_name IN (" +
 				names + ")",
 			1);
-		require(metadata[0] == std::size(sources), ENOTSUP);
+		require(metadata[0] == std::size(sources) + std::size(item_sources), ENOTSUP);
 		economic_sql_source_snapshot captured;
 		captured.tables.reserve(std::size(sources));
+		captured.item_sources.reserve(std::size(item_sources));
 		for (const auto &s : sources)
-			capture(connection, session, s, limits, captured);
+			capture(connection, session, s, limits, captured, captured.tables);
+		for (const auto &s : item_sources)
+			capture(connection, session, s, limits, captured, captured.item_sources);
 		digest manifest;
 		manifest.text("ESM1");
 		manifest.number(captured.tables.size());
 		for (const auto &table : captured.tables)
 			manifest.bytes(table.content_digest);
 		captured.digest = manifest.finish();
+		digest item_manifest;
+		item_manifest.text("EIM1");
+		item_manifest.number(captured.item_sources.size());
+		for (const auto &table : captured.item_sources)
+			item_manifest.bytes(table.content_digest);
+		captured.item_sources_digest = item_manifest.finish();
 		active(connection, session);
 		execute(connection, "ROLLBACK");
 		require(mysql_thread_id(connection) == session &&
@@ -358,7 +385,8 @@ unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &i
 	try
 	{
 		const economic_sql_source_limits hard;
-		require(input.version == 1 && input.tables.size() == std::size(sources));
+		require(input.version == 1 && input.tables.size() == std::size(sources) &&
+			input.item_sources.size() == std::size(item_sources));
 		require(limits.maximum_rows && limits.maximum_rows <= hard.maximum_rows &&
 				limits.maximum_cells &&
 				limits.maximum_cells <= hard.maximum_cells &&
@@ -370,53 +398,65 @@ unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &i
 		uint64_t row_count = 0, cell_count = 0, byte_count = 0;
 		digest manifest;
 		manifest.text("ESM1");
-		manifest.number(input.tables.size());
-		for (size_t index = 0; index < input.tables.size(); ++index)
+		auto validate_registry =
+			[&](const auto &tables, const auto &registry, digest &registry_digest)
 		{
-			const auto &table = input.tables[index];
-			const auto &spec = sources[index];
-			require(table.name == spec.table && table.columns == columns(spec.columns));
-			add(row_count, table.rows.size(), limits.maximum_rows);
-			digest definition;
-			definition.text("ESD1");
-			definition.text(spec.table);
-			definition.text(spec.order);
-			definition.number(table.columns.size());
-			for (const auto &column : table.columns)
-				definition.text(column);
-			require(definition.finish() == table.definition_digest);
-			digest content;
-			content.text("EST1");
-			content.bytes(table.definition_digest);
-			content.number(table.rows.size());
-			for (const auto &row : table.rows)
+			require(tables.size() == std::size(registry));
+			registry_digest.number(tables.size());
+			for (size_t index = 0; index < tables.size(); ++index)
 			{
-				require(row.cells.size() == table.columns.size());
-				add(cell_count, row.cells.size(), limits.maximum_cells);
-				digest row_hash;
-				row_hash.text("ESR1");
-				row_hash.bytes(table.definition_digest);
-				for (const auto &cell : row.cells)
+				const auto &table = tables[index];
+				const auto &spec = registry[index];
+				require(table.name == spec.table &&
+					table.columns == columns(spec.columns));
+				add(row_count, table.rows.size(), limits.maximum_rows);
+				digest definition;
+				definition.text("ESD1");
+				definition.text(spec.table);
+				definition.text(spec.order);
+				definition.number(table.columns.size());
+				for (const auto &column : table.columns)
+					definition.text(column);
+				require(definition.finish() == table.definition_digest);
+				digest content;
+				content.text("EST1");
+				content.bytes(table.definition_digest);
+				content.number(table.rows.size());
+				for (const auto &row : table.rows)
 				{
-					row_hash.number(cell ? 1 : 0);
-					if (cell)
+					require(row.cells.size() == table.columns.size());
+					add(cell_count, row.cells.size(), limits.maximum_cells);
+					digest row_hash;
+					row_hash.text("ESR1");
+					row_hash.bytes(table.definition_digest);
+					for (const auto &cell : row.cells)
 					{
-						require(cell->size() <=
-								limits.maximum_single_cell_bytes,
-							E2BIG);
-						add(byte_count, cell->size(),
-						    limits.maximum_cell_bytes);
-						row_hash.text(*cell);
+						row_hash.number(cell ? 1 : 0);
+						if (cell)
+						{
+							require(cell->size() <=
+									limits.maximum_single_cell_bytes,
+								E2BIG);
+							add(byte_count, cell->size(),
+							    limits.maximum_cell_bytes);
+							row_hash.text(*cell);
+						}
 					}
+					require(row_hash.finish() == row.digest);
+					content.bytes(row.digest);
 				}
-				require(row_hash.finish() == row.digest);
-				content.bytes(row.digest);
+				require(content.finish() == table.content_digest);
+				registry_digest.bytes(table.content_digest);
 			}
-			require(content.finish() == table.content_digest);
-			manifest.bytes(table.content_digest);
-		}
-		require(manifest.finish() == input.digest && input.rows == row_count &&
-			input.cells == cell_count && input.cell_bytes == byte_count);
+		};
+		digest item_manifest;
+		item_manifest.text("EIM1");
+		validate_registry(input.tables, sources, manifest);
+		validate_registry(input.item_sources, item_sources, item_manifest);
+		require(manifest.finish() == input.digest &&
+			item_manifest.finish() == input.item_sources_digest &&
+			input.rows == row_count && input.cells == cell_count &&
+			input.cell_bytes == byte_count);
 		return 0;
 	}
 	catch (const failure &error)

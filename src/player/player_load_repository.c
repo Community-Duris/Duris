@@ -1226,75 +1226,97 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"own.item_revision,own.vnum,own.state,owner_revision.revision,"
 		"(own.coin_payload IS NOT NULL OR ((own.vnum=3 OR "
 		"(pi.item_type=20 AND own.vnum=pi.vnum)) AND own.state=2 AND "
-		"own.owner_type=8 AND own.owner_id=0 AND own.owner_context_id=0)) FROM player_items pi "
+		"own.owner_type=8 AND own.owner_id=0 AND own.owner_context_id=0)),"
+		"pi.item_properties,OCTET_LENGTH(pi.item_properties) FROM player_items pi "
 		"LEFT JOIN item_current_owner own ON own.item_uid=pi.obj_uid LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=own.owner_type "
 		"AND owner_revision.owner_id=own.owner_id AND "
 		"owner_revision.owner_context_id=own.owner_context_id WHERE pi.pid=" +
 		pid + " ORDER BY pi.id";
-	if (!load_rows(connection, item_sql, result,
-		       [&](MYSQL_ROW row)
-		       {
-			       if (row[41] && !strcmp(row[41], "1"))
-			       {
-				       uint64_t database_id = 0;
-				       if (!parse_unsigned(row[0], UINT64_MAX, &database_id))
-					       return false;
-				       // A snapshot may predate the coin commit. Its amount and
-				       // metadata must not override the authoritative payload below.
-				       // Explicitly destroyed coins are completed pickups, not
-				       // corruption to count toward the login refusal threshold.
-				       stale_database_ids.insert(database_id);
-				       return true;
-			       }
-			       if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX)
-			       {
-				       result->outcome = player_load_outcome::limit_exceeded;
-				       return false;
-			       }
-			       player_item_snapshot item = {};
-			       player_load_item_identity identity = {};
-			       const item_row_outcome parsed =
-				       parse_item_payload(row, result, &item, &identity);
-			       if (parsed == item_row_outcome::invalid)
-				       return false;
-			       if (parsed == item_row_outcome::skipped)
-			       {
-				       try
-				       {
-					       stale_database_ids.insert(identity.database_id);
-					       ++result->stale_item_rows;
-				       }
-				       catch (const std::bad_alloc &)
-				       {
-					       result->outcome =
-						       player_load_outcome::retryable_failure;
-					       return false;
-				       }
-				       return true;
-			       }
-			       if (stale_database_ids.find(identity.database_id) !=
-				   stale_database_ids.end())
-				       return false;
-			       if (item_by_database_id.find(identity.database_id) !=
-					   item_by_database_id.end() ||
-				   item_by_uid.find(identity.item_uid) != item_by_uid.end())
-				       return false;
-			       try
-			       {
-				       const size_t index = result->snapshot.items.size();
-				       item_by_database_id.emplace(identity.database_id, index);
-				       item_by_uid.emplace(identity.item_uid, index);
-				       result->snapshot.items.push_back(std::move(item));
-				       result->item_identities.push_back(identity);
-			       }
-			       catch (const std::bad_alloc &)
-			       {
-				       result->outcome = player_load_outcome::retryable_failure;
-				       return false;
-			       }
-			       return true;
-		       }))
+	if (!load_rows(
+		    connection, item_sql, result,
+		    [&](MYSQL_ROW row)
+		    {
+			    if (row[41] && !strcmp(row[41], "1"))
+			    {
+				    uint64_t database_id = 0;
+				    if (!parse_unsigned(row[0], UINT64_MAX, &database_id))
+					    return false;
+				    // A snapshot may predate the coin commit. Its amount and
+				    // metadata must not override the authoritative payload below.
+				    // Explicitly destroyed coins are completed pickups, not
+				    // corruption to count toward the login refusal threshold.
+				    stale_database_ids.insert(database_id);
+				    return true;
+			    }
+			    if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX)
+			    {
+				    result->outcome = player_load_outcome::limit_exceeded;
+				    return false;
+			    }
+			    player_item_snapshot item = {};
+			    player_load_item_identity identity = {};
+			    const item_row_outcome parsed =
+				    parse_item_payload(row, result, &item, &identity);
+			    if (parsed == item_row_outcome::invalid)
+				    return false;
+			    if (parsed == item_row_outcome::skipped)
+			    {
+				    try
+				    {
+					    stale_database_ids.insert(identity.database_id);
+					    ++result->stale_item_rows;
+				    }
+				    catch (const std::bad_alloc &)
+				    {
+					    result->outcome =
+						    player_load_outcome::retryable_failure;
+					    return false;
+				    }
+				    return true;
+			    }
+			    bool has_item_properties = false;
+			    const player_snapshot_codec_result decoded =
+				    player_item_properties_decode_sql_row(row[42], row[43],
+									  &item.extra2_flags,
+									  &item.dynamic_affects,
+									  &has_item_properties);
+			    if (decoded != player_snapshot_codec_result::ok)
+			    {
+				    if (decoded == player_snapshot_codec_result::limit_exceeded)
+					    result->outcome = player_load_outcome::limit_exceeded;
+				    else if (decoded ==
+					     player_snapshot_codec_result::allocation_failure)
+					    result->outcome =
+						    player_load_outcome::retryable_failure;
+				    return false;
+			    }
+			    if (has_item_properties)
+				    identity.override_mask |=
+					    PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS |
+					    PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS;
+			    if (stale_database_ids.find(identity.database_id) !=
+				stale_database_ids.end())
+				    return false;
+			    if (item_by_database_id.find(identity.database_id) !=
+					item_by_database_id.end() ||
+				item_by_uid.find(identity.item_uid) != item_by_uid.end())
+				    return false;
+			    try
+			    {
+				    const size_t index = result->snapshot.items.size();
+				    item_by_database_id.emplace(identity.database_id, index);
+				    item_by_uid.emplace(identity.item_uid, index);
+				    result->snapshot.items.push_back(std::move(item));
+				    result->item_identities.push_back(identity);
+			    }
+			    catch (const std::bad_alloc &)
+			    {
+				    result->outcome = player_load_outcome::retryable_failure;
+				    return false;
+			    }
+			    return true;
+		    }))
 		return false;
 
 	// Reconstruct committed piles even if the process stopped before a player

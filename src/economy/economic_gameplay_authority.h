@@ -30,6 +30,7 @@ class economic_gameplay_authority
 	// never fall back to schema 1. Already frozen commands are verified, not
 	// rebound to the current epoch (retained exact-ID replay may be historical).
 	static economic_accounting_error prepare_currency(critical_command *command);
+	static economic_accounting_error prepare_coin_transfer(critical_command *command);
 	static bool active();
 
     private:

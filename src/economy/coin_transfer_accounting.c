@@ -1,34 +1,44 @@
 #include "economy/coin_transfer_accounting.h"
+#include "economy/economic_accounting_intent.h"
 #include "economy/economic_accounting_plan.h"
-#include "economy/economic_accounting_types.h"
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cerrno>
-#include <cstring>
+#include <memory>
+#include <new>
+#include <optional>
 #include <openssl/sha.h>
 #include <string>
+#include <utility>
 #include <vector>
-
-#ifdef __NO_MYSQL__
-
-bool coin_transfer_accounting_record(MYSQL *, const critical_command &,
-				     const coin_transfer_payload &, const coin_transfer_result &)
-{
-	errno = ENOTSUP;
-	return false;
-}
-
-#else
 
 namespace
 {
+constexpr uint16_t PLAYER_LOCATOR = 1;
+constexpr uint32_t CURRENCY_CHILD_DOMAIN = COIN_TRANSFER_OPERATION_DOMAIN;
+struct failure
+{
+	unsigned int code;
+};
+void require(bool condition, unsigned int code = EILSEQ)
+{
+	if (!condition)
+		throw failure{ code };
+}
+void checked(economic_accounting_error error)
+{
+	require(error == economic_accounting_error::ok,
+		error == economic_accounting_error::capacity ? ENOMEM : EINVAL);
+}
+#ifndef __NO_MYSQL__
 std::string hex(std::span<const uint8_t> data)
 {
 	static constexpr char digits[] = "0123456789abcdef";
 	std::string value = "X'";
 	value.reserve(data.size() * 2 + 3);
-	for (auto byte : data)
+	for (const auto byte : data)
 	{
 		value += digits[byte >> 4];
 		value += digits[byte & 15];
@@ -36,299 +46,670 @@ std::string hex(std::span<const uint8_t> data)
 	value += '\'';
 	return value;
 }
-
 std::string id(const critical_operation_id &value)
 {
 	return hex(value.bytes);
 }
-
-std::array<uint8_t, 32> sha256(std::span<const uint8_t> data)
+#endif
+uint64_t little_u64(std::span<const uint8_t> bytes, size_t offset)
 {
-	std::array<uint8_t, 32> digest = {};
-	SHA256(data.data(), data.size(), digest.data());
-	return digest;
+	uint64_t value = 0;
+	for (size_t byte = 0; byte < 8; ++byte)
+		value |= uint64_t(bytes[offset + byte]) << (8 * byte);
+	return value;
 }
-
-bool execute(MYSQL *connection, const std::string &sql)
+void append_u64(std::vector<uint8_t> *bytes, uint64_t value)
 {
-	return mysql_real_query(connection, sql.data(), sql.size()) == 0;
+	for (size_t byte = 0; byte < 8; ++byte)
+		bytes->push_back(static_cast<uint8_t>(value >> (byte * 8)));
 }
-
-bool get_active_epoch(MYSQL *connection, critical_operation_id *lineage,
-		      critical_operation_id *epoch, const critical_operation_id &creating_operation)
+#ifndef __NO_MYSQL__
+void execute(MYSQL *connection, const std::string &sql)
 {
-	static const char QUERY[] =
-		"SELECT lineage, active_epoch FROM economic_lineage_state WHERE active_epoch IS NOT NULL LIMIT 1";
-	if (mysql_real_query(connection, QUERY, sizeof(QUERY) - 1) != 0)
-		return false;
-
-	MYSQL_RES *res = mysql_store_result(connection);
-	if (!res)
-		return false;
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-	if (row && row[0] && row[1])
+	if (mysql_real_query(connection, sql.data(), sql.size()))
+		throw failure{ mysql_errno(connection) ? mysql_errno(connection) : EIO };
+}
+using cells = std::vector<std::optional<std::string>>;
+cells read(MYSQL *connection, const std::string &sql, size_t columns)
+{
+	execute(connection, sql);
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+		mysql_store_result(connection), mysql_free_result);
+	require(bool(result), mysql_errno(connection) ? mysql_errno(connection) : EIO);
+	require(mysql_num_rows(result.get()) == 1, ENOENT);
+	auto row = mysql_fetch_row(result.get());
+	auto lengths = mysql_fetch_lengths(result.get());
+	require(row && lengths && mysql_num_fields(result.get()) == columns);
+	cells values;
+	for (size_t index = 0; index < columns; ++index)
+		values.push_back(row[index] ? std::optional<std::string>(
+						      std::string(row[index], lengths[index])) :
+					      std::nullopt);
+	return values;
+}
+template <typename T> T integer(const std::optional<std::string> &cell)
+{
+	require(cell.has_value());
+	T value = 0;
+	const auto parsed = std::from_chars(cell->data(), cell->data() + cell->size(), value);
+	require(parsed.ec == std::errc{} && parsed.ptr == cell->data() + cell->size());
+	return value;
+}
+void count(MYSQL *connection, const std::string &table, const std::string &where, uint64_t expected)
+{
+	require(integer<uint64_t>(read(connection,
+				       "SELECT COUNT(*) FROM " + table + " WHERE " + where,
+				       1)[0]) == expected);
+}
+std::string predicate(const std::vector<std::pair<std::string, std::string>> &values)
+{
+	std::string sql;
+	for (const auto &[name, value] : values)
 	{
-		unsigned long *lengths = mysql_fetch_lengths(res);
-		if (lengths && lengths[0] == 16 && lengths[1] == 16)
+		if (!sql.empty())
+			sql += " AND ";
+		sql += name + " <=> " + value;
+	}
+	return sql;
+}
+void insert(MYSQL *connection, const std::string &table,
+	    const std::vector<std::pair<std::string, std::string>> &values)
+{
+	std::string names, data;
+	for (const auto &[name, value] : values)
+	{
+		if (!names.empty())
 		{
-			std::memcpy(lineage->bytes.data(), row[0], 16);
-			std::memcpy(epoch->bytes.data(), row[1], 16);
-			mysql_free_result(res);
-			return true;
+			names += ',';
+			data += ',';
+		}
+		names += name;
+		data += value;
+	}
+	execute(connection, "INSERT INTO " + table + "(" + names + ") VALUES(" + data + ")");
+	require(mysql_affected_rows(connection) == 1);
+}
+void coin_fields(std::vector<std::pair<std::string, std::string>> *values,
+		 const std::string &prefix, const economic_coin_vector &coins)
+{
+	static constexpr std::array<const char *, 4> names = { "copper", "silver", "gold",
+							       "platinum" };
+	for (size_t index = 0; index < names.size(); ++index)
+		values->emplace_back(prefix + names[index], std::to_string(coins[index]));
+}
+#endif
+struct identity
+{
+	economic_frozen_intent intent;
+	coin_transfer_payload payload;
+	economic_account_key source, destination;
+	currency_command_payload source_change, destination_change;
+};
+critical_command admission_projection(const critical_command &root)
+{
+	auto projection = root;
+	projection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	projection.accounting_intent.clear();
+	projection.publication_required = false;
+	return projection;
+}
+identity decode(const critical_command &root)
+{
+	require(root.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			root.type == critical_command_type::coin_transfer &&
+			critical_command_envelope_valid(root),
+		EPROTONOSUPPORT);
+	identity value;
+	require(coin_transfer_command_decode_payload(root, &value.payload), EINVAL);
+	const auto &source = value.payload.source.change;
+	const auto &destination = value.payload.destination.change;
+	// A typed coin root supports only two ordinary wallet accounts. Item/pile
+	// endpoints need the separate authenticated custody/account adapter.
+	require(source.type == critical_command_type::account_bank &&
+			destination.type == critical_command_type::account_bank,
+		EACCES);
+	require(currency_command_decode_payload(source, &value.source_change) &&
+			currency_command_decode_payload(destination, &value.destination_change),
+		EINVAL);
+	for (const auto *change : { &value.source_change, &value.destination_change })
+	{
+		require(change->reason == currency_reason_type::coin_transfer, EACCES);
+		require(std::all_of(change->bank_delta.amount.begin(),
+				    change->bank_delta.amount.end(),
+				    [](int64_t amount) { return amount == 0; }),
+			EACCES);
+		require(source.expected_revisions.size() == 2 &&
+				destination.expected_revisions.size() == 2 && change->pid > 0 &&
+				change->pid <= INT32_MAX,
+			EINVAL);
+	}
+	checked(economic_intent_decode(root.accounting_intent, &value.intent));
+	const auto &facts = value.intent.admission.facts;
+	require(facts.size() == ECONOMIC_WALLET_COIN_TRANSFER_FACT_BYTES, EINVAL);
+	const auto &metadata = value.intent.admission.metadata;
+	value.source = { metadata.lineage, economic_account_kind::wallet, little_u64(facts, 0), 0 };
+	value.destination = { metadata.lineage, economic_account_kind::wallet, little_u64(facts, 8),
+			      0 };
+	std::vector<uint8_t> expected;
+	checked(coin_transfer_accounting_intent(admission_projection(root), metadata.epoch,
+						value.source, value.destination, &expected));
+	require(expected == root.accounting_intent, EACCES);
+	return value;
+}
+[[maybe_unused]] void validate_payload(const coin_transfer_payload &payload,
+				       const economic_account_key &source,
+				       const economic_account_key &destination,
+				       const currency_command_result *results,
+				       economic_accounting_plan *plan)
+{
+	require(plan && results, EINVAL);
+	const coin_transfer_endpoint *endpoints[] = { &payload.source, &payload.destination };
+	const economic_account_key accounts[] = { source, destination };
+	// Match the native second-child rebase; wallet fences remain on each endpoint.
+	coin_transfer_result result_pair = {};
+	result_pair.wallets[0] = results[0];
+	result_pair.wallets[1] = results[1];
+	critical_command destination_after_source = {};
+	for (const auto *endpoint : endpoints)
+		require(endpoint->change.type == critical_command_type::account_bank &&
+				endpoint->change.keys.size() == 2 &&
+				endpoint->change.expected_revisions.size() == 2,
+			EILSEQ);
+	require(coin_transfer_command_destination_after_source(payload, result_pair,
+							       &destination_after_source),
+		EILSEQ);
+	for (size_t index = 0; index < 2; ++index)
+	{
+		const auto &endpoint = *endpoints[index];
+		const auto &result = results[index];
+		currency_command_payload change = {};
+		require(currency_command_decode_payload(endpoint.change, &change), EILSEQ);
+		const auto expected_wallet_revision =
+			endpoint.change.expected_revisions[0].revision;
+		const auto expected_bank_revision =
+			index == 1 ? destination_after_source.expected_revisions[1].revision :
+				     endpoint.change.expected_revisions[1].revision;
+		require(expected_wallet_revision != UINT64_MAX &&
+				expected_bank_revision != UINT64_MAX,
+			EILSEQ);
+		if (index == 0)
+			require(result.bank_revision ==
+					endpoint.change.expected_revisions[1].revision + 1,
+				EILSEQ);
+		else
+			require(result.bank_revision == expected_bank_revision + 1, EILSEQ);
+		require(result.wallet_revision == expected_wallet_revision + 1 &&
+				result.wallet.amount == std::array<int64_t, 4>{ endpoint.after[0],
+										endpoint.after[1],
+										endpoint.after[2],
+										endpoint.after[3] },
+			EILSEQ);
+		for (size_t denomination = 0; denomination < 4; ++denomination)
+			require(static_cast<int64_t>(endpoint.after[denomination]) -
+						static_cast<int64_t>(
+							endpoint.before[denomination]) ==
+					change.wallet_delta.amount[denomination],
+				EILSEQ);
+		plan->accounts.push_back({ accounts[index],
+					   { endpoint.before[0], endpoint.before[1],
+					     endpoint.before[2], endpoint.before[3] },
+					   { endpoint.after[0], endpoint.after[1],
+					     endpoint.after[2], endpoint.after[3] },
+					   expected_wallet_revision,
+					   result.wallet_revision });
+	}
+}
+#ifndef __NO_MYSQL__
+economic_accounting_plan make_plan(const critical_command &root, const identity &value,
+				   const coin_transfer_result &result)
+{
+	economic_accounting_plan plan;
+	checked(economic_intent_plan_metadata(root, value.intent, &plan.metadata));
+	const currency_command_result wallet_results[] = { result.wallets[0], result.wallets[1] };
+	validate_payload(value.payload, value.source, value.destination, wallet_results, &plan);
+	const coin_transfer_endpoint *endpoints[] = { &value.payload.source,
+						      &value.payload.destination };
+	for (size_t index = 0; index < 2; ++index)
+	{
+		economic_child_link child;
+		child.operation_id = endpoints[index]->change.operation_id;
+		child.domain = CURRENCY_CHILD_DOMAIN;
+		child.discriminator = index;
+		plan.children.push_back(child);
+	}
+	for (size_t index = 0; index < 2; ++index)
+	{
+		economic_coin_posting posting;
+		posting.event_index = index;
+		posting.account_index = index;
+		posting.child_index = static_cast<uint16_t>(index + 1);
+		for (size_t denomination = 0; denomination < 4; ++denomination)
+			posting.delta[denomination] =
+				static_cast<int64_t>(endpoints[index]->after[denomination]) -
+				static_cast<int64_t>(endpoints[index]->before[denomination]);
+		checked(economic_coin_value(posting.delta, &posting.copper));
+		plan.postings.push_back(posting);
+	}
+	checked(economic_plan_normalize(&plan));
+	return plan;
+}
+std::vector<std::pair<std::string, std::string>>
+operation_fields(const critical_command &root, const economic_frozen_intent &intent,
+		 unsigned int result_code, const economic_accounting_plan *plan)
+{
+	economic_plan_metadata metadata;
+	checked(economic_intent_plan_metadata(root, intent, &metadata));
+	std::vector<uint8_t> encoded;
+	if (plan)
+		checked(economic_plan_encode(*plan, &encoded));
+	economic_digest plan_digest = {};
+	if (plan)
+		SHA256(encoded.data(), encoded.size(), plan_digest.data());
+	return { { "operation_id", id(root.operation_id) },
+		 { "lineage", id(metadata.lineage) },
+		 { "epoch", id(metadata.epoch) },
+		 { "original_operation_id", "NULL" },
+		 { "accounting_version", std::to_string(metadata.version) },
+		 { "writer_id", std::to_string(metadata.writer_id) },
+		 { "policy_version", std::to_string(metadata.policy_version) },
+		 { "compiler_version", std::to_string(metadata.compiler_version) },
+		 { "actor_kind", std::to_string(static_cast<uint8_t>(metadata.actor_kind)) },
+		 { "actor_id", std::to_string(metadata.actor_id) },
+		 { "reason", std::to_string(static_cast<uint16_t>(metadata.reason)) },
+		 { "source_event", "NULL" },
+		 { "intent_digest", hex(metadata.intent_digest) },
+		 { "domain_digest", hex(metadata.domain_digest) },
+		 { "plan_digest", plan ? hex(plan_digest) : "NULL" },
+		 { "canonical_intent", hex(root.accounting_intent) },
+		 { "canonical_plan", plan ? hex(encoded) : "NULL" },
+		 { "outcome", result_code ? "2" : "1" },
+		 { "result_code", std::to_string(result_code) },
+		 { "account_count", plan ? std::to_string(plan->accounts.size()) : "0" },
+		 { "posting_count", plan ? std::to_string(plan->postings.size()) : "0" },
+		 { "child_count", plan ? std::to_string(plan->children.size()) : "0" },
+		 { "item_event_count", "0" },
+		 { "before_witness_count", "0" },
+		 { "after_witness_count", "0" } };
+}
+std::vector<std::pair<std::string, std::string>>
+effect_fields(const critical_operation_id &root, size_t index,
+	      const economic_account_effect &effect)
+{
+	std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> key = {};
+	checked(economic_account_key_encode(effect.key, &key));
+	std::vector<std::pair<std::string, std::string>> values = { { "operation_id", id(root) },
+								    { "account_index",
+								      std::to_string(index) },
+								    { "account_key", hex(key) } };
+	coin_fields(&values, "before_", effect.before);
+	coin_fields(&values, "after_", effect.after);
+	values.emplace_back("before_revision", std::to_string(effect.before_revision));
+	values.emplace_back("after_revision", std::to_string(effect.after_revision));
+	return values;
+}
+std::vector<std::pair<std::string, std::string>>
+posting_fields(const critical_operation_id &root, size_t index,
+	       const economic_coin_posting &posting)
+{
+	std::vector<std::pair<std::string, std::string>> values = {
+		{ "operation_id", id(root) },
+		{ "line_index", std::to_string(index) },
+		{ "event_index", std::to_string(posting.event_index) },
+		{ "account_index", std::to_string(posting.account_index) },
+		{ "child_index", std::to_string(posting.child_index) },
+		{ "copper_value", std::to_string(posting.copper) }
+	};
+	coin_fields(&values, "delta_", posting.delta);
+	return values;
+}
+void verify_plan_rows(MYSQL *connection, const critical_command &root,
+		      const economic_accounting_plan *plan, bool append)
+{
+	const std::string where = "operation_id=" + id(root.operation_id);
+	if (plan)
+	{
+		for (size_t index = 0; index < plan->children.size(); ++index)
+		{
+			const auto &child = plan->children[index];
+			const auto values = std::vector<std::pair<std::string, std::string>>{
+				{ "operation_id", id(root.operation_id) },
+				{ "child_index", std::to_string(index + 1) },
+				{ "child_operation_id", id(child.operation_id) },
+				{ "domain_id", std::to_string(child.domain) },
+				{ "discriminator", std::to_string(child.discriminator) },
+				{ "parent_index", std::to_string(child.parent_index) },
+				{ "relationship", std::to_string(child.relationship) },
+				{ "receipt_operation_id", id(child.operation_id) }
+			};
+			if (append)
+				insert(connection, "economic_accounting_child", values);
+			count(connection, "economic_accounting_child", predicate(values), 1);
+		}
+		for (size_t index = 0; index < plan->accounts.size(); ++index)
+		{
+			const auto values =
+				effect_fields(root.operation_id, index, plan->accounts[index]);
+			if (append)
+				insert(connection, "economic_accounting_account_effect", values);
+			count(connection, "economic_accounting_account_effect", predicate(values),
+			      1);
+		}
+		for (size_t index = 0; index < plan->postings.size(); ++index)
+		{
+			const auto values =
+				posting_fields(root.operation_id, index, plan->postings[index]);
+			if (append)
+				insert(connection, "economic_accounting_coin_posting", values);
+			count(connection, "economic_accounting_coin_posting", predicate(values), 1);
 		}
 	}
-	mysql_free_result(res);
-
-	// Check if any epoch exists in economic_epoch
-	static const char QUERY_EPOCH[] = "SELECT lineage, epoch FROM economic_epoch LIMIT 1";
-	if (mysql_real_query(connection, QUERY_EPOCH, sizeof(QUERY_EPOCH) - 1) == 0)
-	{
-		MYSQL_RES *res2 = mysql_store_result(connection);
-		if (res2)
-		{
-			MYSQL_ROW row2 = mysql_fetch_row(res2);
-			if (row2 && row2[0] && row2[1])
-			{
-				unsigned long *lengths = mysql_fetch_lengths(res2);
-				if (lengths && lengths[0] == 16 && lengths[1] == 16)
-				{
-					std::memcpy(lineage->bytes.data(), row2[0], 16);
-					std::memcpy(epoch->bytes.data(), row2[1], 16);
-					mysql_free_result(res2);
-					return true;
-				}
-			}
-			mysql_free_result(res2);
-		}
-	}
-
-	// Create bootstrap lineage and epoch
-	lineage->bytes.fill(0);
-	lineage->bytes[0] = 0x01;
-	epoch->bytes.fill(0);
-	epoch->bytes[0] = 0x01;
-
-	std::string epoch_sql =
-		"INSERT IGNORE INTO economic_epoch(lineage,epoch,ordinal,predecessor,transition_kind,transition_digest,creating_operation_id) VALUES(" +
-		id(*lineage) + "," + id(*epoch) + ",1,NULL,1,REPEAT(CHAR(0),32)," +
-		id(creating_operation) + ")";
-	if (!execute(connection, epoch_sql))
-		return false;
-
-	std::string lineage_sql =
-		"INSERT INTO economic_lineage_state(lineage,active_epoch,revision) VALUES(" +
-		id(*lineage) + "," + id(*epoch) +
-		",1) ON DUPLICATE KEY UPDATE active_epoch=VALUES(active_epoch)";
-	if (!execute(connection, lineage_sql))
-		return false;
-
-	return true;
+	count(connection, "economic_accounting_child", where, plan ? plan->children.size() : 0);
+	count(connection, "economic_accounting_account_effect", where,
+	      plan ? plan->accounts.size() : 0);
+	count(connection, "economic_accounting_coin_posting", where,
+	      plan ? plan->postings.size() : 0);
+	for (const char *table : { "economic_accounting_item_reference",
+				   "economic_accounting_source_claim", "item_ownership_ledger" })
+		count(connection, table, where, 0);
 }
+unsigned int error_code(const failure &error)
+{
+	return error.code;
+}
+void lock_native_wallet_before(MYSQL *connection, const coin_transfer_endpoint &endpoint)
+{
+	currency_command_payload command = {};
+	require(currency_command_decode_payload(endpoint.change, &command), EINVAL);
+	const auto row = read(
+		connection,
+		"SELECT copper,silver,gold,platinum,wallet_revision FROM player_data WHERE pid=" +
+			std::to_string(command.pid) + " FOR UPDATE",
+		5);
+	const auto revision = integer<uint64_t>(row[4]);
+	if (revision == endpoint.change.expected_revisions[0].revision)
+	{
+		for (size_t denomination = 0; denomination < 4; ++denomination)
+			require(integer<int64_t>(row[denomination]) ==
+					endpoint.before[denomination],
+				EILSEQ);
+	}
+}
+#endif
+
 } // namespace
 
-bool coin_transfer_accounting_record(MYSQL *connection, const critical_command &root_command,
-				     const coin_transfer_payload &payload,
-				     const coin_transfer_result &result)
+economic_accounting_error
+coin_transfer_accounting_intent(const critical_command &root, const critical_operation_id &epoch,
+				const economic_account_key &source_wallet,
+				const economic_account_key &destination_wallet,
+				std::vector<uint8_t> *encoded)
 {
-	if (!connection)
+	using error = economic_accounting_error;
+	if (!encoded || critical_operation_id_is_zero(epoch) ||
+	    !economic_account_key_valid(source_wallet) ||
+	    !economic_account_key_valid(destination_wallet) ||
+	    source_wallet.kind != economic_account_kind::wallet ||
+	    destination_wallet.kind != economic_account_kind::wallet || source_wallet.context_id ||
+	    destination_wallet.context_id ||
+	    source_wallet.lineage.bytes != destination_wallet.lineage.bytes ||
+	    source_wallet.authority_id == destination_wallet.authority_id)
+		return error::invalid_identity;
+	coin_transfer_payload payload;
+	if (!coin_transfer_command_decode_payload(root, &payload) ||
+	    payload.source.change.type != critical_command_type::account_bank ||
+	    payload.destination.change.type != critical_command_type::account_bank)
+		return error::unauthorized;
+	currency_command_payload source = {}, destination = {};
+	if (!currency_command_decode_payload(payload.source.change, &source) ||
+	    !currency_command_decode_payload(payload.destination.change, &destination) ||
+	    payload.source.change.keys.size() != 2 || payload.destination.change.keys.size() != 2 ||
+	    payload.source.change.keys[0].type != critical_entity_type::player ||
+	    payload.destination.change.keys[0].type != critical_entity_type::player ||
+	    source.reason != currency_reason_type::coin_transfer ||
+	    destination.reason != currency_reason_type::coin_transfer ||
+	    source.pid != payload.source.change.keys[0].id ||
+	    destination.pid != payload.destination.change.keys[0].id ||
+	    payload.source.change.expected_revisions.size() != 2 ||
+	    payload.destination.change.expected_revisions.size() != 2 ||
+	    payload.source.change.expected_revisions[0].revision == UINT64_MAX ||
+	    payload.destination.change.expected_revisions[0].revision == UINT64_MAX ||
+	    payload.source.change.expected_revisions[1].revision == UINT64_MAX ||
+	    payload.destination.change.expected_revisions[1].revision == UINT64_MAX)
+		return error::unauthorized;
+	for (const auto *change : { &source, &destination })
+		if (std::any_of(change->bank_delta.amount.begin(), change->bank_delta.amount.end(),
+				[](int64_t amount) { return amount != 0; }))
+			return error::unauthorized;
+	try
 	{
-		errno = EINVAL;
-		return false;
+		economic_admission_facts facts;
+		facts.metadata.lineage = source_wallet.lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = source_wallet.authority_id;
+		facts.metadata.writer_id = ECONOMIC_WRITER_WALLET_COIN_TRANSFER;
+		facts.metadata.reason = economic_reason::coin_transfer;
+		append_u64(&facts.facts, source_wallet.authority_id);
+		append_u64(&facts.facts, destination_wallet.authority_id);
+		return economic_intent_freeze(root, facts, encoded);
 	}
-
-	critical_operation_id lineage = {}, epoch = {};
-	if (!get_active_epoch(connection, &lineage, &epoch, root_command.operation_id))
-		return false;
-
-	uint64_t actor_id = 0;
-	if (!payload.source.change.keys.empty())
-		actor_id = payload.source.change.keys[0].id;
-	else
-		actor_id = 1;
-
-	// Calculate copper value of transfer
-	const int64_t multipliers[4] = { 1, 10, 100, 1000 };
-	int64_t copper_value = 0;
-	economic_coin_vector delta_vector = {};
-	for (size_t i = 0; i < 4; ++i)
+	catch (const std::bad_alloc &)
 	{
-		int64_t diff = static_cast<int64_t>(payload.destination.after[i]) -
-			       payload.destination.before[i];
-		delta_vector[i] = diff;
-		copper_value += diff * multipliers[i];
+		return error::capacity;
 	}
-
-	// Build plan
-	economic_accounting_plan plan = {};
-	plan.metadata.version = 1;
-	plan.metadata.lineage = lineage;
-	plan.metadata.epoch = epoch;
-	plan.metadata.operation_id = root_command.operation_id;
-	plan.metadata.actor_kind = economic_actor_kind::domain;
-	plan.metadata.actor_id = actor_id;
-	plan.metadata.writer_id = 3; // coin_transfer / wallet_to_pile
-	plan.metadata.policy_version = 1;
-	plan.metadata.compiler_version = 1;
-	plan.metadata.reason = economic_reason::coin_transfer;
-
-	// Accounts: 0 = Wallet, 1 = Pile
-	economic_account_effect wallet_effect = {};
-	wallet_effect.key = { lineage, economic_account_kind::wallet, actor_id, 0 };
-	for (size_t i = 0; i < 4; ++i)
-	{
-		wallet_effect.before[i] = payload.source.before[i];
-		wallet_effect.after[i] = payload.source.after[i];
-	}
-	wallet_effect.before_revision =
-		result.wallets[0].wallet_revision > 0 ? result.wallets[0].wallet_revision - 1 : 0;
-	wallet_effect.after_revision = result.wallets[0].wallet_revision;
-	plan.accounts.push_back(wallet_effect);
-
-	uint64_t pile_uid = 0;
-	if (!payload.destination.change.keys.empty())
-		pile_uid = payload.destination.change.keys[0].id;
-	else
-		pile_uid = actor_id;
-
-	economic_account_effect pile_effect = {};
-	pile_effect.key = { lineage, economic_account_kind::pile, pile_uid, 0 };
-	for (size_t i = 0; i < 4; ++i)
-	{
-		pile_effect.before[i] = payload.destination.before[i];
-		pile_effect.after[i] = payload.destination.after[i];
-	}
-	pile_effect.before_revision =
-		result.piles[1].max_item_revision > 0 ? result.piles[1].max_item_revision - 1 : 0;
-	pile_effect.after_revision = result.piles[1].max_item_revision;
-	plan.accounts.push_back(pile_effect);
-
-	// Children: 1 = Source currency change, 2 = Destination item change
-	economic_child_link child1 = {};
-	child1.operation_id = payload.source.change.operation_id;
-	child1.domain = 1;
-	child1.discriminator = 1;
-	child1.parent_index = 0;
-	child1.relationship = 1;
-	plan.children.push_back(child1);
-
-	economic_child_link child2 = {};
-	child2.operation_id = payload.destination.change.operation_id;
-	child2.domain = 2;
-	child2.discriminator = 2;
-	child2.parent_index = 0;
-	child2.relationship = 1;
-	plan.children.push_back(child2);
-
-	// Postings: 0 = Wallet debit, 1 = Pile credit
-	economic_coin_posting post_wallet = {};
-	post_wallet.event_index = 0;
-	post_wallet.account_index = 0;
-	post_wallet.child_index = 1;
-	for (size_t i = 0; i < 4; ++i)
-		post_wallet.delta[i] = -delta_vector[i];
-	post_wallet.copper = -copper_value;
-	plan.postings.push_back(post_wallet);
-
-	economic_coin_posting post_pile = {};
-	post_pile.event_index = 1;
-	post_pile.account_index = 1;
-	post_pile.child_index = 2;
-	for (size_t i = 0; i < 4; ++i)
-		post_pile.delta[i] = delta_vector[i];
-	post_pile.copper = copper_value;
-	plan.postings.push_back(post_pile);
-
-	// Encode plan
-	std::vector<uint8_t> encoded_plan;
-	if (economic_plan_encode(plan, &encoded_plan) != economic_accounting_error::ok)
-		return false;
-
-	// Canonical intent (minimum 256 bytes)
-	std::vector<uint8_t> canonical_intent(256, 0);
-	std::copy(root_command.operation_id.bytes.begin(), root_command.operation_id.bytes.end(),
-		  canonical_intent.begin());
-
-	auto plan_digest = sha256(encoded_plan);
-	auto intent_digest = sha256(canonical_intent);
-	auto domain_digest = sha256(std::span<const uint8_t>(
-		reinterpret_cast<const uint8_t *>(&payload), sizeof(payload)));
-
-	// 1. Insert economic_accounting_operation
-	std::string op_sql =
-		"INSERT INTO economic_accounting_operation("
-		"operation_id,lineage,epoch,original_operation_id,accounting_version,writer_id,"
-		"policy_version,compiler_version,actor_kind,actor_id,reason,source_event,"
-		"intent_digest,domain_digest,plan_digest,canonical_intent,canonical_plan,"
-		"outcome,result_code,account_count,posting_count,child_count,item_event_count,"
-		"before_witness_count,after_witness_count) VALUES(" +
-		id(root_command.operation_id) + "," + id(lineage) + "," + id(epoch) +
-		",NULL,1,3,1,1,1," + std::to_string(actor_id) + ",3,NULL," + hex(intent_digest) +
-		"," + hex(domain_digest) + "," + hex(plan_digest) + "," + hex(canonical_intent) +
-		"," + hex(encoded_plan) + ",1,0,2,2,2,0,0,0)";
-	if (!execute(connection, op_sql))
-		return false;
-
-	// 2. Insert economic_accounting_child
-	for (size_t i = 0; i < plan.children.size(); ++i)
-	{
-		const auto &child = plan.children[i];
-		std::string child_sql =
-			"INSERT INTO economic_accounting_child("
-			"operation_id,child_index,child_operation_id,domain_id,discriminator,"
-			"parent_index,relationship,receipt_operation_id) VALUES(" +
-			id(root_command.operation_id) + "," + std::to_string(i + 1) + "," +
-			id(child.operation_id) + "," + std::to_string(child.domain) + "," +
-			std::to_string(child.discriminator) + ",0,1," + id(child.operation_id) +
-			")";
-		if (!execute(connection, child_sql))
-			return false;
-	}
-
-	// 3. Insert economic_accounting_account_effect
-	for (size_t i = 0; i < plan.accounts.size(); ++i)
-	{
-		const auto &acc = plan.accounts[i];
-		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> key_bytes = {};
-		if (economic_account_key_encode(acc.key, &key_bytes) !=
-		    economic_accounting_error::ok)
-			return false;
-
-		std::string acc_sql =
-			"INSERT INTO economic_accounting_account_effect("
-			"operation_id,account_index,account_key,before_copper,before_silver,before_gold,before_platinum,"
-			"after_copper,after_silver,after_gold,after_platinum,before_revision,after_revision) VALUES(" +
-			id(root_command.operation_id) + "," + std::to_string(i) + "," +
-			hex(key_bytes) + "," + std::to_string(acc.before[0]) + "," +
-			std::to_string(acc.before[1]) + "," + std::to_string(acc.before[2]) + "," +
-			std::to_string(acc.before[3]) + "," + std::to_string(acc.after[0]) + "," +
-			std::to_string(acc.after[1]) + "," + std::to_string(acc.after[2]) + "," +
-			std::to_string(acc.after[3]) + "," + std::to_string(acc.before_revision) +
-			"," + std::to_string(acc.after_revision) + ")";
-		if (!execute(connection, acc_sql))
-			return false;
-	}
-
-	// 4. Insert economic_accounting_coin_posting
-	for (size_t i = 0; i < plan.postings.size(); ++i)
-	{
-		const auto &post = plan.postings[i];
-		std::string post_sql =
-			"INSERT INTO economic_accounting_coin_posting("
-			"operation_id,line_index,event_index,account_index,child_index,"
-			"delta_copper,delta_silver,delta_gold,delta_platinum,copper_value) VALUES(" +
-			id(root_command.operation_id) + "," + std::to_string(i) + "," +
-			std::to_string(post.event_index) + "," +
-			std::to_string(post.account_index) + "," +
-			std::to_string(post.child_index) + "," + std::to_string(post.delta[0]) +
-			"," + std::to_string(post.delta[1]) + "," + std::to_string(post.delta[2]) +
-			"," + std::to_string(post.delta[3]) + "," + std::to_string(post.copper) +
-			")";
-		if (!execute(connection, post_sql))
-			return false;
-	}
-
-	return true;
 }
 
+bool coin_transfer_accounting_command_supported(const critical_command &root) noexcept
+{
+	try
+	{
+		(void)decode(root);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+#ifdef __NO_MYSQL__
+unsigned int coin_transfer_accounting_lock(MYSQL *, const critical_command &,
+					   const coin_transfer_payload &,
+					   coin_transfer_accounting_context *)
+{
+	return ENOTSUP;
+}
+unsigned int coin_transfer_accounting_record(MYSQL *, const critical_command &,
+					     const coin_transfer_result &, unsigned int,
+					     const coin_transfer_accounting_context &)
+{
+	return ENOTSUP;
+}
+unsigned int coin_transfer_accounting_verify_retained(MYSQL *, const critical_command &,
+						      unsigned int, const uint8_t *, size_t)
+{
+	return ENOTSUP;
+}
+#else
+unsigned int coin_transfer_accounting_lock(MYSQL *connection, const critical_command &root,
+					   const coin_transfer_payload &payload,
+					   coin_transfer_accounting_context *context)
+{
+	try
+	{
+		require(connection && context, EINVAL);
+		const auto value = decode(root);
+		require(payload.source.change.operation_id.bytes ==
+					value.payload.source.change.operation_id.bytes &&
+				payload.destination.change.operation_id.bytes ==
+					value.payload.destination.change.operation_id.bytes,
+			EEXIST);
+		const auto &metadata = value.intent.admission.metadata;
+		std::array<economic_sql_mapping_request, 2> requests = {
+			economic_sql_mapping_request{ value.source, PLAYER_LOCATOR,
+						      value.source_change.pid },
+			economic_sql_mapping_request{ value.destination, PLAYER_LOCATOR,
+						      value.destination_change.pid }
+		};
+		coin_transfer_accounting_context candidate;
+		candidate.session_id = mysql_thread_id(connection);
+		const auto error = economic_sql_lock_authority(connection, metadata.lineage,
+							       metadata.epoch, requests,
+							       &candidate.authority);
+		require(!error, error);
+		require(connection->server_status & SERVER_STATUS_IN_TRANS, ENOTCONN);
+		std::array<const coin_transfer_endpoint *, 2> ordered = { &payload.source,
+									  &payload.destination };
+		std::sort(ordered.begin(), ordered.end(),
+			  [](const auto *left, const auto *right)
+			  {
+				  currency_command_payload a = {}, b = {};
+				  if (!currency_command_decode_payload(left->change, &a) ||
+				      !currency_command_decode_payload(right->change, &b))
+					  return false;
+				  return a.pid < b.pid;
+			  });
+		lock_native_wallet_before(connection, *ordered[0]);
+		lock_native_wallet_before(connection, *ordered[1]);
+		*context = std::move(candidate);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error_code(error);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
+
+unsigned int coin_transfer_accounting_record(MYSQL *connection, const critical_command &root,
+					     const coin_transfer_result &result,
+					     unsigned int result_code,
+					     const coin_transfer_accounting_context &context)
+{
+	try
+	{
+		require(connection && (connection->server_status & SERVER_STATUS_IN_TRANS) &&
+				mysql_thread_id(connection) == context.session_id,
+			ENOTCONN);
+		const auto value = decode(root);
+		const auto &metadata = value.intent.admission.metadata;
+		economic_sql_authority_snapshot current;
+		std::array<economic_sql_mapping_request, 2> requests = {
+			economic_sql_mapping_request{ value.source, PLAYER_LOCATOR,
+						      value.source_change.pid },
+			economic_sql_mapping_request{ value.destination, PLAYER_LOCATOR,
+						      value.destination_change.pid }
+		};
+		const auto lock_error = economic_sql_lock_authority(
+			connection, metadata.lineage, metadata.epoch, requests, &current);
+		require(!lock_error, lock_error);
+		require(current.lineage_revision == context.authority.lineage_revision &&
+				current.mappings.size() == context.authority.mappings.size(),
+			ESTALE);
+		for (size_t index = 0; index < current.mappings.size(); ++index)
+			require(current.mappings[index].revision ==
+					context.authority.mappings[index].revision,
+				ESTALE);
+		const bool business_rejection = result_code == ESTALE || result_code == ENOSPC ||
+						result_code == ERANGE;
+		require(!result_code || business_rejection, EINVAL);
+		std::optional<economic_accounting_plan> plan;
+		if (!result_code)
+		{
+			plan = make_plan(root, value, result);
+			const auto effect_error = economic_coin_effects_validate(
+				plan->accounts, plan->postings, plan->children.size());
+			checked(effect_error);
+			checked(economic_child_links_validate(root.operation_id, plan->children));
+		}
+		const auto operation =
+			operation_fields(root, value.intent, result_code, plan ? &*plan : nullptr);
+		insert(connection, "economic_accounting_operation", operation);
+		count(connection, "economic_accounting_operation", predicate(operation), 1);
+		verify_plan_rows(connection, root, plan ? &*plan : nullptr, true);
+		verify_plan_rows(connection, root, plan ? &*plan : nullptr, false);
+		require(connection->server_status & SERVER_STATUS_IN_TRANS, ENOTCONN);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error_code(error);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
+
+unsigned int coin_transfer_accounting_verify_retained(MYSQL *connection,
+						      const critical_command &root,
+						      unsigned int result_code,
+						      const uint8_t *result_payload,
+						      size_t result_size)
+{
+	try
+	{
+		require(connection && (!result_size || result_payload), EINVAL);
+		const auto value = decode(root);
+		const bool business_rejection = result_code == ESTALE || result_code == ENOSPC ||
+						result_code == ERANGE;
+		require(!result_code || business_rejection, EILSEQ);
+		std::optional<economic_accounting_plan> plan;
+		coin_transfer_result result = {};
+		if (!result_code)
+		{
+			require(coin_transfer_command_decode_result(value.payload, result_payload,
+								    result_size, &result),
+				EILSEQ);
+			plan = make_plan(root, value, result);
+		}
+		else
+			require(result_size == 0, EILSEQ);
+		const auto operation =
+			operation_fields(root, value.intent, result_code, plan ? &*plan : nullptr);
+		count(connection, "economic_accounting_operation", predicate(operation), 1);
+		const auto where = "operation_id=" + id(root.operation_id);
+		verify_plan_rows(connection, root, plan ? &*plan : nullptr, false);
+		if (plan)
+		{
+			for (const auto *endpoint :
+			     { &value.payload.source, &value.payload.destination })
+				count(connection, "currency_ledger",
+				      "operation_id=" + id(endpoint->change.operation_id), 1);
+			count(connection, "critical_outbox", where, 1);
+		}
+		else
+		{
+			count(connection, "currency_ledger", where, 0);
+			count(connection, "critical_outbox", where, 0);
+		}
+		for (size_t index = 0; index < 2; ++index)
+		{
+			const auto &account = index ? value.destination : value.source;
+			const auto native_id = index ? value.destination_change.pid :
+						       value.source_change.pid;
+			count(connection, "economic_account_mapping",
+			      predicate({ { "mapping_id", std::to_string(account.authority_id) },
+					  { "lineage", id(account.lineage) },
+					  { "account_kind", "1" },
+					  { "context_id", "0" },
+					  { "backend_kind", "1" },
+					  { "locator_kind", "1" },
+					  { "native_id", std::to_string(native_id) } }),
+			      1);
+		}
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error_code(error);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
 #endif
