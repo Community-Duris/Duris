@@ -332,16 +332,26 @@ void coin_failure_matrix()
 	// A crash before the inventory snapshot leaves no player_items coin row.
 	verify_reload(900, 100);
 	// A later stale projection must not replace the committed amount or metadata.
-	execute("INSERT INTO player_items(pid,vnum,obj_uid,container_id,value0,name,item_type) VALUES(" +
-		pid_text + ",402013,900000002," + std::to_string(bag_row) + ",1,'stale coins',20)");
+	execute("UPDATE player_items SET value0=1,name='stale coins',item_type=20 WHERE pid=" +
+		pid_text + " AND obj_uid=900000002");
+	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + pid_text +
+		      " AND obj_uid=900000002") == 1);
 
 	critical_command merge = make_put(900, 100, 200);
-	assert(critical_command_repository_apply(connection, merge).outcome ==
-	       critical_apply_outcome::applied);
+	const auto merged = critical_command_repository_apply(connection, merge);
+	if (merged.outcome != critical_apply_outcome::applied)
+		fprintf(stderr,
+			"coin merge failed: outcome=%u error=%u stage=%u mysql_errno=%u errno=%d mysql=%s\n",
+			unsigned(merged.outcome), merged.error_code, unsigned(merged.failure_stage),
+			mysql_errno(connection), errno, mysql_error(connection));
+	assert(merged.outcome == critical_apply_outcome::applied);
 	// Discard the first acknowledgement, then replay its operation ID.
 	assert(critical_command_repository_apply(connection, merge).outcome ==
 	       critical_apply_outcome::already_applied);
 	assert((pile_amount(pile) == coins{ 300, 0, 0, 0 }));
+	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + pid_text +
+		      " AND obj_uid=900000002 AND value0=300 AND name='coins' AND item_type=20 AND container_id=" +
+		      std::to_string(bag_row)) == 1);
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 700);
 	verify_reload(700, 300);
 	const auto ledger_count =
@@ -665,7 +675,6 @@ int main()
 	assert(connection);
 	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
 	assert(mysql_real_connect(connection, host, user, password, database, port, nullptr, 0));
-
 	const std::string account = "currency_harness_account";
 	execute("DELETE FROM currency_wallet_baseline WHERE pid IN (SELECT pid FROM player_data "
 		"WHERE name='CurrencyHarness')");
@@ -783,6 +792,76 @@ int main()
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=UNHEX('" +
 		      operation_hex(overflow.operation_id) + "')") == 0);
 
+	// Once a wallet/bank lineage has an active epoch, an old accepted operation
+	// still replays, but a new ATM operation cannot mutate native holdings
+	// outside the double-entry root. This epoch is scoped to this disposable DB.
+	const std::string lineage = "UNHEX('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')";
+	const std::string epoch = "UNHEX('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')";
+	const std::string activation = "UNHEX('cccccccccccccccccccccccccccccccc')";
+	execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+		"command_type,schema_version,payload_version,status,result_payload) VALUES(" +
+		activation + ",REPEAT(CHAR(1),32),REPEAT(CHAR(2),32),1,1,1,1,'')");
+	execute("INSERT INTO economic_epoch(lineage,epoch,ordinal,transition_kind,"
+		"transition_digest,creating_operation_id) VALUES(" +
+		lineage + "," + epoch + ",1,1,REPEAT(CHAR(1),32)," + activation + ")");
+	execute("INSERT INTO economic_lineage_state(lineage,active_epoch) VALUES(" + lineage + "," +
+		epoch + ")");
+	execute("INSERT INTO economic_account_mapping(lineage,account_kind,context_id,"
+		"backend_kind,locator_kind,native_id,active_native_id,creating_operation_id) "
+		"VALUES(" +
+		lineage + ",1,0,1,1," + std::to_string(pid) + "," + std::to_string(pid) + "," +
+		activation + ")");
+	execute("INSERT INTO economic_account_mapping(lineage,account_kind,context_id,"
+		"backend_kind,locator_kind,native_id,active_native_id,creating_operation_id) "
+		"VALUES(" +
+		lineage + ",2,1,1,2," + std::to_string(bank_id) + "," + std::to_string(bank_id) +
+		"," + activation + ")");
+	assert(critical_command_repository_apply(connection, deposit).outcome ==
+	       critical_apply_outcome::already_applied);
+	const auto wallet_before =
+		scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid));
+	const auto bank_before =
+		scalar("SELECT bank_copper FROM account_banks WHERE id=" + std::to_string(bank_id));
+	const auto ledger_before =
+		scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + std::to_string(pid));
+	const currency_vector wallet_after_activation = { { 1, 0, 0, 0 } };
+	const currency_vector bank_after_activation = { { -1, 0, 0, 0 } };
+	const auto bypass = command_for(
+		pid, account.c_str(), wallet_after_activation, bank_after_activation,
+		currency_reason_type::atm_withdraw,
+		scalar("SELECT wallet_revision FROM player_data WHERE pid=" + std::to_string(pid)),
+		scalar("SELECT bank_revision FROM account_banks WHERE id=" +
+		       std::to_string(bank_id)));
+	const auto blocked = critical_command_repository_apply(connection, bypass);
+	if (blocked.outcome != critical_apply_outcome::retryable_failure)
+		fprintf(stderr,
+			"post-activation legacy ATM outcome=%u error=%u wallet_before=%lld wallet_after=%lld bank_before=%lld bank_after=%lld ledger_before=%lld ledger_after=%lld\n",
+			static_cast<unsigned int>(blocked.outcome), blocked.error_code,
+			wallet_before,
+			scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid)),
+			bank_before,
+			scalar("SELECT bank_copper FROM account_banks WHERE id=" +
+			       std::to_string(bank_id)),
+			ledger_before,
+			scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" +
+			       std::to_string(pid)));
+	assert(blocked.outcome == critical_apply_outcome::retryable_failure);
+	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		      operation_hex(bypass.operation_id) + "')") == 0);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid)) ==
+	       wallet_before);
+	assert(scalar("SELECT bank_copper FROM account_banks WHERE id=" +
+		      std::to_string(bank_id)) == bank_before);
+	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + std::to_string(pid)) ==
+	       ledger_before);
+	// Tear down only the synthetic activation from this disposable schema; the
+	// independent legacy coin/custody matrix below exercises its original
+	// pre-activation contract and global inbox/outbox assertions.
+	execute("DELETE FROM economic_account_mapping WHERE lineage=" + lineage);
+	execute("DELETE FROM economic_lineage_state WHERE lineage=" + lineage);
+	execute("DELETE FROM economic_epoch WHERE lineage=" + lineage);
+	execute("DELETE FROM critical_operation_inbox WHERE operation_id=" + activation);
+
 	for (const std::string &operation : operations)
 	{
 		execute("DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o "
@@ -800,7 +879,11 @@ int main()
 	execute("DELETE FROM player_data WHERE pid=" + std::to_string(pid));
 	execute("DELETE FROM account_banks WHERE id=" + std::to_string(bank_id));
 	execute("DELETE FROM accounts WHERE account_name='" + account + "'");
-	coin_failure_matrix();
+	const char *selection = std::getenv("CURRENCY_TEST_ATM_ONLY");
+	if (selection && std::strcmp(selection, "1") == 0)
+		puts("currency ATM legacy/activated/replay checks passed; coin matrix not run");
+	else
+		coin_failure_matrix();
 	mysql_close(connection);
 	return 0;
 }

@@ -498,6 +498,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "97f27800708a4492bd157b353010988811de10486c0f06ae14df370995ed5ee3",
       "verify_checksum": "6cb06fc24dc98b3e14151fdf9676aece96e3501cd7cafe7896201dd8f1dde602"
+    },
+    {
+      "id": "0033_economic_sql_lifecycle_owner",
+      "sequence": 33,
+      "description": "Add durable SQL economic lifecycle installation receipts",
+      "apply": "immutable/0033_economic_sql_lifecycle_owner.sql",
+      "verify": "immutable/0033_economic_sql_lifecycle_owner.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "375182015d29d9969f97a2696f6a49415f192e113fb9a2ea84de5b290ac10675",
+      "verify_checksum": "f16a044fa69f35f6a54a5a6aad37d717d1626085c07b98fa101fa4b62b994f9f"
     }
   ]
 }

@@ -2140,6 +2140,31 @@ static bool sql_verify_boot_database(void)
 
 static bool sql_verify_metadata_fingerprint(void)
 {
+	/* The sealed F rows name a referenced table but not its schema. Reject any
+	 * external redirect before hashing, including a website FK to a runtime
+	 * table. All accepted runtime FKs target this database. */
+	std::string foreign_schema_query =
+		"SELECT COUNT(*) FROM information_schema.key_column_usage k WHERE "
+		"k.constraint_schema=DATABASE() AND k.referenced_table_name IS NOT NULL "
+		"AND (k.table_name IN (";
+	foreign_schema_query += RUNTIME_TABLE_SQL_LIST;
+	foreign_schema_query += ") OR k.referenced_table_name IN (";
+	foreign_schema_query += RUNTIME_TABLE_SQL_LIST;
+	foreign_schema_query += ")) AND (k.referenced_table_schema IS NULL OR "
+				"BINARY k.referenced_table_schema <> BINARY DATABASE())";
+	if (mysql_real_query(DB, foreign_schema_query.c_str(), foreign_schema_query.size()))
+		return false;
+	MYSQL_RES *foreign_schema_result = mysql_store_result(DB);
+	if (!foreign_schema_result)
+		return false;
+	MYSQL_ROW foreign_schema_row = mysql_fetch_row(foreign_schema_result);
+	bool same_schema = foreign_schema_row && foreign_schema_row[0] &&
+			   !strcmp(foreign_schema_row[0], "0") &&
+			   !mysql_fetch_row(foreign_schema_result);
+	mysql_free_result(foreign_schema_result);
+	if (!same_schema)
+		return false;
+
 	std::string query =
 		"SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) "
 		"FROM information_schema.tables WHERE table_schema=DATABASE() AND "
@@ -2178,15 +2203,23 @@ static bool sql_verify_metadata_fingerprint(void)
 	query += RUNTIME_TABLE_SQL_LIST;
 	query += ") OR k.referenced_table_name IN (";
 	query += RUNTIME_TABLE_SQL_LIST;
-	query += ")) AND k.referenced_table_name IS NOT NULL";
+	query += ")) AND k.referenced_table_name IS NOT NULL AND NOT ("
+		 "BINARY k.table_name='user_profile_stats' AND "
+		 "BINARY k.constraint_name='user_profile_stats_ibfk_1' AND "
+		 "BINARY k.column_name='account_name' AND "
+		 "BINARY k.referenced_table_schema=BINARY DATABASE() AND "
+		 "BINARY k.referenced_table_name='accounts' AND "
+		 "BINARY k.referenced_column_name='account_name' AND "
+		 "k.ordinal_position=1 AND r.update_rule IN ('NO ACTION','RESTRICT') "
+		 "AND r.delete_rule='CASCADE')";
 	query +=
-		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness')";
+		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation')";
 	const char *server = mysql_get_server_info(DB);
 	if (!server)
 		return false;
 	if (!strstr(server, "MariaDB"))
 		query +=
-			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness')";
+			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation')";
 	query += " ORDER BY 1";
 	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;

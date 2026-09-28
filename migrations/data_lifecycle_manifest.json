@@ -7227,6 +7227,43 @@
         "excluded_fields": [],
         "shared_fields": []
       }
+    },
+    {
+      "id": "database:economic_sql_lifecycle_installation",
+      "kind": "database_table",
+      "locator": "economic_sql_lifecycle_installation",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Durable maintenance cutover receipt for SQL economic lifecycle installation; no gameplay activation authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox",
+        "database:economic_epoch",
+        "database:economic_lineage_state"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "request_digest",
+          "source_capture_digest",
+          "native_boundary_digest"
+        ],
+        "shared_fields": []
+      }
     }
   ]
 }

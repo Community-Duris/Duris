@@ -2,6 +2,7 @@
 #include "flatfile/currency_flatfile_mutation_writer.h"
 
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_store.h"
 #include "combat/combat_outcome_command.h"
 #include "economy/currency_command.h"
@@ -11,6 +12,7 @@
 #include <array>
 #include <cerrno>
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <mutex>
 #include <new>
@@ -1701,6 +1703,22 @@ critical_apply_result apply_currency_command(const std::string &root,
 				    result.result_payload.begin());
 			return result;
 		}
+	// Preserve exact historical replay above. Epoch selection and this read
+	// hold the same per-root lock, so no new legacy write can follow activation.
+	std::error_code metadata_error;
+	const bool evidence_exists = std::filesystem::exists(
+		std::filesystem::path(root) / "economic-evidence", metadata_error);
+	if (metadata_error)
+		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	if (evidence_exists)
+	{
+		flatfile_economic_control control;
+		const auto status = flatfile_economic_control_read(root, lock, &control, &error);
+		if (status)
+			return { critical_apply_outcome::retryable_failure, 0, status };
+		if (!critical_operation_id_is_zero(control.active_epoch))
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+	}
 	if (authority.operations.size() >= domain_maximum_operations)
 		return { critical_apply_outcome::terminal_failure,
 			 std::max(authority.record.domains.wallet_revision, bank.revision),

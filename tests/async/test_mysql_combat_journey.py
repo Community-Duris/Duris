@@ -5,10 +5,21 @@ Set TEST_DB_HOST (loopback), TEST_DB_USER and TEST_DB_PASSWORD for a disposable
 server; TEST_DB_PORT defaults to 3306. No checkout .env or existing schema is
 used. --server selects a freshly built MariaDB executable; by default this
 script builds bin/server/dms_new.
+
+TEST_DB_DISPOSABLE=1 is mandatory. The default dispute case proves recovery
+AFTER a fixture-side repair. --require-unassisted-recovery leaves that conflict
+in place and requires the server to complete death without deleting evidence.
+Use --evidence-dir to retain full logs and before/after custody observations on
+both success and failure. A passing default case does not qualify unassisted
+conflict recovery or player-visible item restitution.
 """
 from pathlib import Path
+from datetime import datetime, timezone
 import argparse
+import hashlib
+import json
 import os
+import shutil
 import signal
 import subprocess
 import tempfile
@@ -20,7 +31,10 @@ import test_flatfile_combat_journey as journey
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def run(server, reset_coins=False, boons=False):
+def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=False,
+        evidence_dir=None):
+    if os.environ.get('TEST_DB_DISPOSABLE') != '1':
+        raise RuntimeError('TEST_DB_DISPOSABLE=1 is required')
     database = 'corpse_journey_test_' + uuid.uuid4().hex[:12]
     host = os.environ['TEST_DB_HOST']
     port = os.environ.get('TEST_DB_PORT', '3306')
@@ -48,6 +62,50 @@ def run(server, reset_coins=False, boons=False):
     def number(text):
         return int(sql(text))
 
+    evidence = {
+        'database': database,
+        'server': str(server),
+        'source_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'started_utc': datetime.now(timezone.utc).isoformat(),
+        'require_unassisted_recovery': require_unassisted_recovery,
+        'reset_coins': reset_coins,
+        'boons': boons,
+        'manual_fixture_repair': False,
+        'result': 'not_completed',
+        'observations': [],
+    }
+    for label, path in (('server_sha256', server), ('test_sha256', __file__)):
+        digest = hashlib.sha256()
+        with Path(path).open('rb') as source:
+            for chunk in iter(lambda: source.read(1024 * 1024), b''):
+                digest.update(chunk)
+        evidence[label] = digest.hexdigest()
+    tracked_uids = set()
+    pid = None
+    evidence_path = None
+    if evidence_dir is not None:
+        evidence_path = Path(evidence_dir).resolve() / database
+        evidence_path.mkdir(parents=True, mode=0o700, exist_ok=False)
+
+    def record_state(stage):
+        if pid is None:
+            return
+        uids = ','.join(str(uid) for uid in sorted(tracked_uids)) or '0'
+        evidence['observations'].append({
+            'stage': stage,
+            'pid': pid,
+            'observed_utc': datetime.now(timezone.utc).isoformat(),
+            'canonical_log_bytes': (runtime/'logs/log/file').stat().st_size,
+            'player': sql(f'SELECT save_revision,wallet_revision,copper,silver,gold,platinum,numb_deaths FROM player_data WHERE pid={pid}'),
+            'inventory': sql(f'SELECT obj_uid,vnum,equip_slot,container_id,quantity FROM player_items WHERE pid={pid} ORDER BY obj_uid'),
+            'inventory_full_rows': sql(f'SELECT * FROM player_items WHERE pid={pid} ORDER BY obj_uid'),
+            'corpses_full_rows': sql(f'SELECT * FROM corpses WHERE player_name=(SELECT name FROM player_data WHERE pid={pid}) ORDER BY id'),
+            'corpse_items_full_rows': sql(f'SELECT ci.* FROM corpse_items ci JOIN corpses c ON c.id=ci.corpse_id WHERE c.player_name=(SELECT name FROM player_data WHERE pid={pid}) ORDER BY ci.corpse_id'),
+            'custody': sql(f'SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state FROM item_current_owner WHERE item_uid IN ({uids}) OR (owner_type=1 AND owner_id={pid}) ORDER BY item_uid'),
+            'death_receipts': sql(f'SELECT save_revision,HEX(operation_id),SHA2(payload,256) FROM player_death_disposition WHERE pid={pid} ORDER BY save_revision'),
+            'death_custody': sql(f'SELECT save_revision,item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,state FROM player_death_custody WHERE pid={pid} ORDER BY save_revision,item_uid'),
+        })
+
     sql('CREATE DATABASE '+database+' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci', False)
     try:
         sql((ROOT/'migrations/bootstrap_multithread_safe.sql').read_text())
@@ -58,6 +116,8 @@ def run(server, reset_coins=False, boons=False):
             runtime = Path(temporary)
             journey.make_fixture(runtime, reset_coins)
             journey.generate_certificate(runtime)
+            # SQL-mode player IDs still use SAVE_DIR/pc_idnumb during creation.
+            (runtime/'Players').mkdir(mode=0o700)
             (runtime/'logs/log').mkdir(parents=True)
             for name in ('players', 'critical'):
                 (runtime/'journals'/name).mkdir(parents=True, mode=0o700)
@@ -108,7 +168,9 @@ def run(server, reset_coins=False, boons=False):
                     client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.', timeout=30)
                     pid = number("SELECT pid FROM player_data WHERE name='"+journey.CHARACTER+"'")
                     captured = sql(f'SELECT item_uid FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND state=1 ORDER BY item_uid').splitlines()
+                    tracked_uids.update(int(uid) for uid in captured)
                     assert len(captured)>2, 'fixture did not retain a multi-root inventory'
+                    record_state('before_healthy_death')
                     before_deaths=number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')
                     began=time.monotonic(); journey.attack_until_death(client)
                     client.expect('ACCOUNT MENU',timeout=45)
@@ -144,6 +206,7 @@ def run(server, reset_coins=False, boons=False):
                     # A cold load must retain the valid graph read-only and route
                     # death through its immutable disposition.
                     ghost=9000000000000000000+pid
+                    tracked_uids.update((banana, ghost, ghost+1))
                     sql(f'INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES({ghost},{banana},{banana},1,{pid},1,15,1)')
                     client=journey.reconnect_character(plain)
                     client.send('inventory'); client.expect('a banana',timeout=15)
@@ -154,26 +217,46 @@ def run(server, reset_coins=False, boons=False):
                     assert number(f'SELECT COUNT(*) FROM item_current_owner WHERE item_uid={ghost} AND owner_type=1 AND owner_id={pid} AND state=1')==1
                     before_deaths=number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')
                     # A newly discovered payload outside the captured corpse
-                    # must reject this death without releasing the character on
-                    # the strength of a journal append alone. Repair the stray
-                    # row, then let the same in-game recovery finish normally.
+                    # must not be discarded or released on journal append alone.
+                    # The legacy guard case repairs this row explicitly. The
+                    # release-qualification case MUST recover without that edit.
                     stray=ghost+1
                     sql(f'INSERT INTO player_items (pid,vnum,equip_slot,container_id,quantity,item_type,obj_uid) VALUES ({pid},15,0,NULL,1,0,{stray})')
+                    record_state('conflict_injected')
+                    evidence['unrepresented_payload_before'] = sql(f'SELECT * FROM player_items WHERE pid={pid} AND obj_uid={stray}')
+                    conflict_log_offset = (runtime/'logs/log/file').stat().st_size
+                    evidence['conflict_log_offset'] = conflict_log_offset
                     journey.attack_until_death(client)
                     deadline=time.monotonic()+15
-                    while 'custody_payload_mismatch_rejected' not in journey.runtime_logs(runtime):
+                    while 'custody_payload_mismatch_rejected' not in (runtime/'logs/log/file').read_bytes()[conflict_log_offset:].decode(errors='replace'):
+                        if require_unassisted_recovery and 'death_disposition_completed' in (runtime/'logs/log/file').read_bytes()[conflict_log_offset:].decode(errors='replace'):
+                            break
                         assert time.monotonic()<deadline, 'uncaptured payload was not rejected'
                         time.sleep(.05)
-                    assert 'death_disposition_completed' not in journey.runtime_logs(runtime)
-                    assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid={stray}')==1
-                    sql(f'DELETE FROM player_items WHERE pid={pid} AND obj_uid={stray}')
-                    client.expect('ACCOUNT MENU',timeout=45)
+                    record_state('after_conflict_death')
+                    if not require_unassisted_recovery:
+                        conflict_logs = (runtime/'logs/log/file').read_bytes()[conflict_log_offset:].decode(errors='replace')
+                        assert 'death_disposition_completed' not in conflict_logs
+                        assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid={stray}')==1
+                        sql(f'DELETE FROM player_items WHERE pid={pid} AND obj_uid={stray}')
+                        evidence['manual_fixture_repair'] = True
+                    began = time.monotonic()
+                    try:
+                        client.expect('ACCOUNT MENU',timeout=45)
+                    except Exception:
+                        evidence['conflict_to_menu_seconds'] = time.monotonic()-began
+                        evidence['account_menu_reached'] = False
+                        record_state('blocked_before_client_close')
+                        raise
+                    evidence['conflict_to_menu_seconds'] = time.monotonic()-began
+                    evidence['account_menu_reached'] = True
+                    record_state('account_menu_reached')
                     client.send('0'); client.close(); client=None
                     # The account menu may follow a durable journal handoff
                     # before the asynchronous MariaDB worker acknowledges it.
                     deadline=time.monotonic()+20
                     while True:
-                        logs=journey.runtime_logs(runtime)
+                        logs=(runtime/'logs/log/file').read_bytes()[conflict_log_offset:].decode(errors='replace')
                         disposition_count=number(f'SELECT COUNT(*) FROM player_death_disposition WHERE pid={pid}')
                         if ('load_item_payload_gap_disposition' in logs and
                             'death_disposition_completed' in logs and disposition_count==1):
@@ -185,6 +268,11 @@ def run(server, reset_coins=False, boons=False):
                     assert number(f'SELECT COUNT(*) FROM player_death_custody WHERE pid={pid} AND item_uid={banana} AND owner_type=1')==1
                     assert number(f'SELECT COUNT(*) FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND state=1')==0
                     assert number(f'SELECT numb_deaths FROM player_data WHERE pid={pid}')==before_deaths+1
+                    if require_unassisted_recovery:
+                        # A reviewed durable reconciliation route may supersede
+                        # this retention assertion only with exact original
+                        # payload/UID read-back; completion must not erase it.
+                        assert sql(f'SELECT * FROM player_items WHERE pid={pid} AND obj_uid={stray}')==evidence['unrepresented_payload_before'], 'unrepresented payload was erased or changed instead of reconciled'
                     before=stable_state(pid)
                     stop(); process=boot()
                     client=journey.reconnect_character(plain)
@@ -193,8 +281,16 @@ def run(server, reset_coins=False, boons=False):
                     client.send('0'); client.close(); client=None
                     assert stable_state(pid)==before, 'restart duplicated death consequences or rewrote evidence'
                     stop()
-                    print(f'MariaDB disputed death: durable before release; restart stable; reset_coins={reset_coins}, boons={boons}',flush=True)
+                    assert (runtime/'Players/pc_idnumb').is_file(), 'SQL-mode player ID file was not created'
+                    fixture_logs=journey.runtime_logs(runtime)
+                    assert 'could not open pc_idnumb file for writing' not in fixture_logs
+                    assert 'sql_save_player_shapechanges failed' not in fixture_logs
+                    record_state('restart_stable')
+                    evidence['result'] = 'passed'
+                    print(f'MariaDB disputed death: durable before release; restart stable; manual_fixture_repair={evidence["manual_fixture_repair"]}; reset_coins={reset_coins}, boons={boons}',flush=True)
                 except Exception as error:
+                    evidence['result'] = 'failed'
+                    evidence['failure_type'] = type(error).__name__
                     raise AssertionError(str(error)+'\n'+output_path.read_text(errors='replace')[-10000:]+'\n'+journey.runtime_logs(runtime)) from error
                 finally:
                     if client: client.close()
@@ -202,6 +298,13 @@ def run(server, reset_coins=False, boons=False):
                         process.terminate()
                         try: process.wait(timeout=10)
                         except subprocess.TimeoutExpired: process.kill(); process.wait(timeout=10)
+                    if evidence_path is not None:
+                        evidence['finished_utc'] = datetime.now(timezone.utc).isoformat()
+                        shutil.copytree(runtime/'logs', evidence_path/'logs')
+                        shutil.copytree(runtime/'journals', evidence_path/'journals')
+                        shutil.copy2(output_path, evidence_path/'server.out')
+                        (evidence_path/'custody-evidence.json').write_text(json.dumps(evidence, indent=2)+'\n')
+                        print(f'full_runtime_evidence={evidence_path}', flush=True)
     finally:
         sql('DROP DATABASE '+database,False)
 
@@ -210,6 +313,8 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--server',type=Path)
     parser.add_argument('--one',action='store_true',help='run only the default-coin variant')
+    parser.add_argument('--require-unassisted-recovery',action='store_true',help='do not manually remove the injected payload conflict (release gate)')
+    parser.add_argument('--evidence-dir',type=Path,help='retain full runtime logs and synthetic custody evidence')
     args=parser.parse_args()
     if not os.getenv('TEST_DB_HOST'):
         print('MariaDB live combat skipped: TEST_DB_HOST is not set')
@@ -218,7 +323,9 @@ if __name__=='__main__':
         if not args.server:
             subprocess.run(['make','-C','src','-j2','PERSISTENCE_BACKEND=mariadb'],cwd=ROOT,check=True)
         server=(args.server or ROOT/'bin/server/dms_new').resolve()
-        run(server)
+        options = dict(require_unassisted_recovery=args.require_unassisted_recovery,
+                       evidence_dir=args.evidence_dir)
+        run(server, **options)
         if not args.one:
-            run(server,reset_coins=True)
-            run(server,boons=True)
+            run(server,reset_coins=True, **options)
+            run(server,boons=True, **options)

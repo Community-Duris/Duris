@@ -67,9 +67,9 @@ class CollectorCatalogSchemaTest(unittest.TestCase):
                       "collector_reconciliation_quarantine", "offline_message_receipts"):
             self.assertIn(f"'{table}'", runtime["runtime_table_sql_list"])
             self.assertIn(f"database:{table}", lifecycle_ids)
-        self.assertEqual(runtime["current_table_count"], 215)
+        self.assertEqual(runtime["current_table_count"], 216)
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0032_economic_baseline")
+                         "0033_economic_sql_lifecycle_owner")
 
 
 if __name__ == "__main__":

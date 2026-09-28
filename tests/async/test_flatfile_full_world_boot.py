@@ -532,6 +532,7 @@ with tempfile.TemporaryDirectory(prefix="full-world-build-", dir=ROOT / "bin") a
                     "operations",
                     "operations/wal",
                     "domains",
+                    "economic-evidence",
                     "manifests",
                     "player-deaths",
                 }

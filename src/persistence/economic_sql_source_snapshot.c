@@ -62,6 +62,9 @@ constexpr source sources[] = {
 	{ "critical_outbox",
 	  "outbox_id,operation_id,event_index,destination,event_type,payload_version,payload,status,attempt_count,last_error_code,delivered_at IS NOT NULL,dead_lettered_at IS NOT NULL",
 	  "outbox_id" },
+	{ "economic_account_mapping",
+	  "mapping_id,lineage,account_kind,context_id,backend_kind,locator_kind,native_id,active_native_id,creating_operation_id,retiring_operation_id,revision",
+	  "mapping_id" },
 };
 struct failure
 {

@@ -9,6 +9,7 @@
 #include "net/gmcp.h"
 #include "net/chat_presentation.h"
 #include <cjson/cJSON.h>
+#include <algorithm>
 #include <cassert>
 #include <cstdarg>
 #include <cstring>

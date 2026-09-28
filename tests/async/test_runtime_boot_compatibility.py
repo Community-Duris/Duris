@@ -48,8 +48,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         fails here instead of at a server's boot gate.
         """
         report = runtime.validate()
-        # Includes both death recovery tables, verified on both supported engines.
-        self.assertEqual(report["current_table_count"], 215)
+        # Includes both death recovery tables and SQL lifecycle installation state.
+        self.assertEqual(report["current_table_count"], 216)
         for table in ("player_death_disposition", "player_death_custody"):
             self.assertIn("'" + table + "'", self.header)
         for table in ("collector_catalog_state", "collector_deaths",
@@ -58,8 +58,9 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
             self.assertIn("'" + table + "'", self.header)
         self.assertIn("'corpse_catalog_state'", self.header)
         self.assertIn("'zone_story_quest_state'", self.header)
+        self.assertIn("'economic_sql_lifecycle_installation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0032_economic_baseline")
+                         "0033_economic_sql_lifecycle_owner")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -120,6 +121,10 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("column_type LIKE '%unsigned'", self.sql)
         self.assertIn("k.referenced_table_name IN (", self.sql)
         verifier = (ROOT / "migrations/verify_runtime_compatibility.sh").read_text()
+        for source in (self.sql, verifier):
+            self.assertIn("BINARY k.referenced_table_schema <> BINARY DATABASE()", source)
+            self.assertIn("BINARY k.table_name='user_profile_stats'", source)
+            self.assertIn("BINARY k.referenced_table_schema=BINARY DATABASE()", source)
         self.assertIn(
             "k.table_name IN ($runtime_tables) OR "
             "k.referenced_table_name IN ($runtime_tables)", verifier)

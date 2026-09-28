@@ -20,6 +20,7 @@
 #include <strings.h>
 #include <unordered_set>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace
@@ -310,7 +311,8 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_INTRODUCTIONS))
 		result = replace_rows(connection, snapshot.pid, "player_intros",
 				      "intro_index,intro_pid,intro_time", snapshot.introductions,
-				      [](auto &sql, const auto &row) {
+				      [](auto &sql, const auto &row)
+				      {
 					      sql << row.index << ',' << row.value
 						  << ",FROM_UNIXTIME(NULLIF(" << row.auxiliary
 						  << ",0))";
@@ -692,6 +694,7 @@ struct expected_player_item_custody
 	uint64_t root_item_uid;
 	uint64_t parent_item_uid;
 	int32_t vnum;
+	size_t snapshot_index;
 };
 
 bool parse_custody_uint64(const char *text, uint64_t *value)
@@ -708,17 +711,26 @@ bool parse_custody_uint64(const char *text, uint64_t *value)
 }
 
 /**
- * Prove that a complete replacement payload is an exact projection of active player
- * custody before deleting a single existing payload row.  Inline coin custody is the
- * sole exception: coin_payload is itself an authoritative, independently loadable item
- * payload and therefore does not require a player_items row.
+ * Match a complete payload to active player custody by UID and vnum. If only
+ * root/parent topology has drifted, rebuild the payload topology from the locked
+ * authoritative rows; never create/drop an item or rewrite item_current_owner.
+ * Inline coin custody is independently loadable and needs no player_items row.
  */
-query_result verify_player_item_custody(MYSQL *connection, const player_snapshot &snapshot)
+query_result reconcile_player_item_custody(MYSQL *connection, const player_snapshot &snapshot,
+					   std::vector<player_item_snapshot> *reconciled_items,
+					   bool *topology_reconciled)
 {
+	if (!reconciled_items || !topology_reconciled)
+		return { false, EINVAL };
+	reconciled_items->clear();
+	*topology_reconciled = false;
 	std::unordered_map<uint64_t, expected_player_item_custody> expected;
+	std::unordered_set<uint64_t> matched;
+	bool topology_mismatch = false;
 	try
 	{
 		expected.reserve(snapshot.items.size());
+		matched.reserve(snapshot.items.size());
 		for (size_t index = 0; index < snapshot.items.size(); ++index)
 		{
 			const player_item_snapshot &item = snapshot.items[index];
@@ -741,8 +753,9 @@ query_result verify_player_item_custody(MYSQL *connection, const player_snapshot
 				parent_item_uid = parent.object_uid;
 			}
 			if (!expected.emplace(item.object_uid,
-					      expected_player_item_custody{
-						      root_item_uid, parent_item_uid, item.vnum })
+					      expected_player_item_custody{ root_item_uid,
+									    parent_item_uid,
+									    item.vnum, index })
 				     .second)
 				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
 		}
@@ -768,40 +781,154 @@ query_result verify_player_item_custody(MYSQL *connection, const player_snapshot
 		return { false, mysql_errno(connection) };
 
 	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(rows)) != nullptr)
+	try
 	{
-		uint64_t item_uid = 0, root_item_uid = 0, parent_item_uid = 0;
-		const bool valid = parse_custody_uint64(row[0], &item_uid) && item_uid &&
-				   parse_custody_uint64(row[1], &root_item_uid) && root_item_uid &&
-				   parse_custody_uint64(row[2], &parent_item_uid) && row[3] &&
-				   row[4];
-		if (!valid)
+		while ((row = mysql_fetch_row(rows)) != nullptr)
 		{
-			mysql_free_result(rows);
-			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
-		}
+			uint64_t item_uid = 0, root_item_uid = 0, parent_item_uid = 0;
+			const bool valid =
+				parse_custody_uint64(row[0], &item_uid) && item_uid &&
+				parse_custody_uint64(row[1], &root_item_uid) && root_item_uid &&
+				parse_custody_uint64(row[2], &parent_item_uid) && row[3] && row[4];
+			if (!valid)
+			{
+				mysql_free_result(rows);
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			}
 
-		const auto found = expected.find(item_uid);
-		const bool inline_coin_payload = std::strcmp(row[4], "0") != 0;
-		if (found == expected.end())
-		{
-			if (inline_coin_payload)
-				continue;
-			mysql_free_result(rows);
-			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			auto found = expected.find(item_uid);
+			const bool inline_coin_payload = std::strcmp(row[4], "0") != 0;
+			if (found == expected.end())
+			{
+				if (inline_coin_payload)
+					continue;
+				mysql_free_result(rows);
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			}
+			expected_player_item_custody &item = found->second;
+			if (std::to_string(item.vnum) != row[3] || !matched.insert(item_uid).second)
+			{
+				mysql_free_result(rows);
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			}
+			if (item.root_item_uid != root_item_uid ||
+			    item.parent_item_uid != parent_item_uid)
+				topology_mismatch = true;
+			item.root_item_uid = root_item_uid;
+			item.parent_item_uid = parent_item_uid;
 		}
-		const expected_player_item_custody &item = found->second;
-		if (item.root_item_uid != root_item_uid ||
-		    item.parent_item_uid != parent_item_uid || std::to_string(item.vnum) != row[3])
-		{
-			mysql_free_result(rows);
-			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
-		}
-		expected.erase(found);
+	}
+	catch (const std::bad_alloc &)
+	{
+		mysql_free_result(rows);
+		return { false, ENOMEM };
 	}
 	mysql_free_result(rows);
-	return expected.empty() ? query_result{ true, 0 } :
-				  query_result{ false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+	if (matched.size() != expected.size())
+		return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+	if (!topology_mismatch)
+		return { true, 0 };
+
+	try
+	{
+		std::vector<std::vector<size_t>> children(snapshot.items.size());
+		std::vector<size_t> roots;
+		roots.reserve(snapshot.items.size());
+		for (size_t index = 0; index < snapshot.items.size(); ++index)
+		{
+			const uint64_t item_uid = snapshot.items[index].object_uid;
+			const auto item = expected.find(item_uid);
+			if (item == expected.end())
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			if (!item->second.parent_item_uid)
+			{
+				if (item->second.root_item_uid != item_uid)
+					return { false,
+						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				roots.push_back(index);
+				continue;
+			}
+			const auto parent = expected.find(item->second.parent_item_uid);
+			if (parent == expected.end() ||
+			    parent->second.root_item_uid != item->second.root_item_uid ||
+			    parent->second.snapshot_index >= snapshot.items.size())
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			children[parent->second.snapshot_index].push_back(index);
+		}
+
+		std::vector<size_t> order;
+		std::vector<size_t> stack;
+		std::vector<size_t> depths(snapshot.items.size(), 0);
+		std::vector<bool> visited(snapshot.items.size(), false);
+		order.reserve(snapshot.items.size());
+		stack.reserve(snapshot.items.size());
+		for (size_t root : roots)
+		{
+			depths[root] = 1;
+			stack.push_back(root);
+			while (!stack.empty())
+			{
+				const size_t index = stack.back();
+				stack.pop_back();
+				if (visited[index])
+					return { false,
+						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				visited[index] = true;
+				order.push_back(index);
+				for (auto child = children[index].rbegin();
+				     child != children[index].rend(); ++child)
+				{
+					const size_t child_depth = depths[index] + 1;
+					if (child_depth > PLAYER_SNAPSHOT_MAX_DEPTH)
+						return {
+							false,
+							PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH
+						};
+					depths[*child] = child_depth;
+					stack.push_back(*child);
+				}
+			}
+		}
+		if (order.size() != snapshot.items.size())
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+
+		std::unordered_map<uint64_t, int32_t> projected_index;
+		projected_index.reserve(order.size());
+		reconciled_items->reserve(order.size());
+		for (size_t original_index : order)
+		{
+			player_item_snapshot item = snapshot.items[original_index];
+			const auto custody = expected.find(item.object_uid);
+			if (custody == expected.end())
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			if (custody->second.parent_item_uid)
+			{
+				const auto parent =
+					projected_index.find(custody->second.parent_item_uid);
+				if (parent == projected_index.end())
+					return { false,
+						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				item.parent_index = parent->second;
+			}
+			else
+				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			if (reconciled_items->size() >
+				    static_cast<size_t>(std::numeric_limits<int32_t>::max()) ||
+			    !projected_index
+				     .emplace(item.object_uid,
+					      static_cast<int32_t>(reconciled_items->size()))
+				     .second)
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			reconciled_items->push_back(std::move(item));
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		reconciled_items->clear();
+		return { false, ENOMEM };
+	}
+	*topology_reconciled = true;
+	return { true, 0 };
 }
 
 // A death disposition deliberately has no active inventory snapshot: the live
@@ -859,14 +986,25 @@ query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 {
 	const bool equipment = snapshot.components & PLAYER_COMPONENT_EQUIPMENT;
 	const bool inventory = snapshot.components & PLAYER_COMPONENT_INVENTORY;
-	/* New snapshots always replace both halves together.  Keep accepting legacy
-	 * component-only journal records, but require every complete replacement to
-	 * prove its payload/custody equivalence before the destructive projection. */
+	/* New snapshots always replace both halves together. Keep accepting legacy
+	 * component-only journal records, but reconcile a complete item's topology
+	 * to locked custody before the destructive projection. UID/vnum conflicts,
+	 * missing payloads and invalid authoritative graphs still fail closed. */
+	std::vector<player_item_snapshot> reconciled_items;
+	const std::vector<player_item_snapshot> *projection_items = &snapshot.items;
 	if (equipment && inventory)
 	{
-		const query_result verified =
-			snapshot.death ? verify_player_death_item_payload(connection, snapshot) :
-					 verify_player_item_custody(connection, snapshot);
+		query_result verified = { true, 0 };
+		if (snapshot.death)
+			verified = verify_player_death_item_payload(connection, snapshot);
+		else
+		{
+			bool topology_reconciled = false;
+			verified = reconcile_player_item_custody(
+				connection, snapshot, &reconciled_items, &topology_reconciled);
+			if (verified.ok && topology_reconciled)
+				projection_items = &reconciled_items;
+		}
 		if (!verified.ok)
 			return verified;
 	}
@@ -876,10 +1014,10 @@ query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 	query_result result = execute(connection, deletion);
 	if (!result.ok)
 		return result;
-	result = insert_item_rows(connection, snapshot.items, snapshot.pid, false);
+	result = insert_item_rows(connection, *projection_items, snapshot.pid, false);
 	if (!result.ok)
 		return result;
-	return sync_restitution_runtime_state(connection, snapshot.items, snapshot.pid);
+	return sync_restitution_runtime_state(connection, *projection_items, snapshot.pid);
 }
 
 query_result verify_pet_custody(MYSQL *connection, int pid, const player_pet_snapshot &pet)
