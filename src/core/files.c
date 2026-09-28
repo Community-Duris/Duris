@@ -33,6 +33,7 @@
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "economy/account_bank_balances.h"
 #include "economy/collector_service.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_revision_state.h"
@@ -46,7 +47,15 @@
 #include "magic/spells.h"
 #include "sql/item_extra_descr_codec.h"
 #include "sql/sql.h"
+#include "sql/sql_corpse.h"
+#include "sql/sql_locker.h"
+#include "sql/sql_player_deletion.h"
 #include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
+#include "sql/sql_saved_item.h"
+#include "sql/sql_shopkeeper.h"
+#include "sql/sql_ship.h"
+#include "sql/sql_transaction.h"
 #include "item/storage_lockers.h"
 #include "item/trophy.h"
 #include "world/vnum.obj.h"
@@ -1605,15 +1614,6 @@ void delete_knownShapes(P_char ch)
 	ch->only.pc->knownShapes = NULL;
 }
 
-void writeShapechangeData(P_char ch)
-{
-	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
-	{
-		if (!sql_save_player_shapechanges(ch))
-			logit(LOG_FILE, "writeShapechangeData: shapechange save failed");
-	}
-}
-
 void readShapechangeData(P_char ch)
 {
 	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
@@ -1878,11 +1878,6 @@ int writeCharacter(P_char ch, int type, int room)
 
 	if (!is_locker_char)
 	{
-		if (!sql_save_player_shapechanges(ch))
-		{
-			logit(LOG_FILE, "sql_save_player_shapechanges failed");
-			result = 0;
-		}
 		room = calculate_save_room(ch, type, room);
 
 		// skip locker characters for sql operations
@@ -3043,7 +3038,7 @@ int restoreCharOnly(P_char ch, char *name)
 		{
 			sql_load_player_skills(ch);
 			sql_load_player_affects(ch);
-			//sql_load_player_items(ch);
+			// Item payload is loaded by the ownership-aware player-load pipeline.
 			sql_load_player_shapechanges(ch);
 			return 0;
 		}

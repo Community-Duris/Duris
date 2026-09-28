@@ -7,8 +7,6 @@
 #include <limits>
 
 #ifndef __NO_MYSQL__
-#include "sql/sql_player.h"
-
 #include <cstdlib>
 #include <mysql.h>
 #endif

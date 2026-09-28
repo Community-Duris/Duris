@@ -8,7 +8,20 @@
 #include "net/output_preference_codec.h"
 #include "world/db.h"
 #include "core/utils.h"
+#include "sql/sql_account.h"
+#include "sql/sql_corpse.h"
+#include "sql/sql_guild.h"
+#include "sql/sql_player_deletion.h"
 #include "sql/sql_player.h"
+#include "sql/sql_player_migration.h"
+#include "sql/sql_saved_item.h"
+#include "sql/sql_player_identity.h"
+#include "sql/sql_locker.h"
+#include "sql/sql_shopkeeper.h"
+#include "sql/sql_ship.h"
+#include "sql/sql_transaction.h"
+#include "sql/sql_player_recipes.h"
+#include "sql/sql_spellbook.h"
 #include "player/player_playtime.h"
 #include "sql/item_extra_descr_codec.h"
 #include <errno.h>
@@ -68,6 +81,17 @@ extern P_Guild guild_list;
 extern Skill skills[];
 void ensure_pconly_pool(void);
 
+#ifndef __NO_MYSQL__
+static bool sql_save_player_status(P_char ch, int type, int room);
+static bool sql_save_player_skills(P_char ch);
+static bool sql_save_player_affects(P_char ch);
+static bool sql_save_player_items(P_char ch);
+static bool sql_save_player_shapechanges(P_char ch);
+static bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum);
+static bool sql_load_player_epic_bonus(P_char ch);
+static bool sql_load_player_items(P_char ch);
+#endif
+
 #ifdef __NO_MYSQL__
 
 // stubs when mysql is disabled
@@ -111,17 +135,9 @@ bool sql_save_player_items(P_char ch)
 {
 	return false;
 }
-bool sql_delete_player_items(int pid)
-{
-	return false;
-}
 bool sql_save_player_shapechanges(P_char ch)
 {
 	return false;
-}
-bool sql_save_player_recipes(P_char ch)
-{
-	return ch && !IS_NPC(ch) && GET_PID(ch) > 0;
 }
 bool sql_add_player_recipe(int pid, int recipe_vnum)
 {
@@ -255,11 +271,6 @@ bool sql_player_deletion_guard(int pid)
 {
 	return false;
 }
-bool sql_delete_player_by_name(const char *name)
-{
-	return false;
-}
-
 bool sql_save_account(struct acct_entry *acc)
 {
 	return false;
@@ -1065,20 +1076,6 @@ static void sql_load_item_extra_descr_values(const char *db_keyword, const char 
 	ed->description = db_description ? str_dup(db_description) : NULL;
 }
 
-// for forked child process - needs its own db connection
-MYSQL *sql_create_child_connection(void)
-{
-	return sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);
-}
-
-// child swaps in its own connection after fork
-void sql_reset_for_child(MYSQL *child_conn)
-{
-	DB = child_conn;
-	in_transaction = false;
-	character_deletion_guard_pid = 0;
-}
-
 // player existence check
 
 bool sql_player_exists(const char *name)
@@ -1278,14 +1275,6 @@ bool sql_delete_player(int pid, bool forget_revision)
 	return true;
 }
 
-bool sql_delete_player_by_name(const char *name)
-{
-	int pid = sql_get_player_pid(name);
-	if (pid <= 0)
-		return false;
-	return sql_delete_player(pid);
-}
-
 // master save function
 
 bool sql_save_player(P_char ch, int type, int room)
@@ -1421,7 +1410,7 @@ bool sql_save_player(P_char ch, int type, int room)
 // status save (main player data)
 
 /* Persist player status and establish opening ledgers for a new character. */
-bool sql_save_player_status(P_char ch, int type, int room)
+static bool sql_save_player_status(P_char ch, int type, int room)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -2064,7 +2053,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 
 // skills save - batched for performance (2 queries instead of 2000)
 
-bool sql_save_player_skills(P_char ch)
+static bool sql_save_player_skills(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -2155,7 +2144,7 @@ bool sql_save_player_skills(P_char ch)
 
 // affects save - batched for performance
 
-bool sql_save_player_affects(P_char ch)
+static bool sql_save_player_affects(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -3447,7 +3436,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 	return true;
 }
 
-bool sql_save_player_items(P_char ch)
+static bool sql_save_player_items(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -3552,16 +3541,6 @@ bool sql_save_player_items(P_char ch)
 	}
 
 	return success;
-}
-
-bool sql_delete_player_items(int pid)
-{
-	if (!DB || pid <= 0)
-		return false;
-
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_items WHERE pid=%d", pid);
-	return sql_run_query(del_query);
 }
 
 // pet item affects save
@@ -3756,7 +3735,7 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 }
 
 // pet save - save all player's pets with equipment
-bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
+static bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -3801,7 +3780,7 @@ bool sql_load_player_pets(P_char /*ch*/)
 
 // shapechange save/load
 
-bool sql_save_player_shapechanges(P_char ch)
+static bool sql_save_player_shapechanges(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
@@ -3941,17 +3920,7 @@ bool sql_load_player_shapechanges(P_char ch)
 	return true;
 }
 
-// recipe save/load
-
-bool sql_save_player_recipes(P_char ch)
-{
-	// No guard: this function is a no-op (recipes are saved individually via
-	// sql_add_player_recipe() when learned, not in bulk). It is intentionally
-	// safe to call outside a transaction - no SQL queries are issued.
-	// Still called by sql_save_player() so the transaction chain is complete.
-	(void)ch;
-	return true;
-}
+// Recipe save/load.
 
 bool sql_add_player_recipe(int pid, int recipe_vnum)
 {
@@ -4513,7 +4482,7 @@ bool sql_load_player_affects(P_char ch)
 	return true;
 }
 
-bool sql_load_player_items(P_char ch)
+static bool sql_load_player_items(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
 	{
@@ -4849,7 +4818,7 @@ bool sql_load_player_items(P_char ch)
 	return true;
 }
 
-bool sql_load_player_epic_bonus(P_char ch)
+static bool sql_load_player_epic_bonus(P_char ch)
 {
 	return epic_bonus_hydrate(ch);
 }

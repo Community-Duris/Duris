@@ -21,7 +21,7 @@
 #include "core/mm.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
 
 extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
 extern Skill skills[];

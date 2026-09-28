@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"

@@ -14,7 +14,6 @@
 #include "combat/training_dummy.h"
 #include "world/generated_npc_state.h"
 #include "item/item_movement_transaction.h"
-#include "sql/sql_player.h"
 #include "player/pet_restore_state.h"
 #include <errno.h>
 #include <fcntl.h>

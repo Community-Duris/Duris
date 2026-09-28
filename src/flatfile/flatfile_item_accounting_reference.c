@@ -71,6 +71,48 @@ std::string item_refs_directory(const std::string &root)
 {
 	return root + "/accounting/item_references";
 }
+
+flatfile_item_accounting_status read_status(flatfile_read_result result)
+{
+	switch (result)
+	{
+	case flatfile_read_result::ok:
+		return flatfile_item_accounting_status::ok;
+	case flatfile_read_result::not_found:
+		return flatfile_item_accounting_status::not_found;
+	case flatfile_read_result::invalid:
+		return flatfile_item_accounting_status::invalid;
+	case flatfile_read_result::io_error:
+		return flatfile_item_accounting_status::io_error;
+	}
+	return flatfile_item_accounting_status::io_error;
+}
+
+bool valid_bucket(std::span<const uint8_t> bytes, uint8_t bucket,
+		  const economic_accounting_item_reference *legacy_key = nullptr,
+		  size_t *legacy_matches = nullptr)
+{
+	if (legacy_matches)
+		*legacy_matches = 0;
+	if (bytes.size() % FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+		return false;
+	for (size_t offset = 0; offset < bytes.size();
+	     offset += FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+	{
+		economic_accounting_item_reference reference = {};
+		const auto record =
+			bytes.subspan(offset, FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+		if (flatfile_item_accounting_reference_decode(record, &reference) !=
+			    flatfile_item_accounting_status::ok ||
+		    reference.legacy_operation_id.bytes[0] != bucket)
+			return false;
+		if (legacy_key && legacy_matches &&
+		    reference.legacy_operation_id.bytes == legacy_key->legacy_operation_id.bytes &&
+		    reference.legacy_event_index == legacy_key->legacy_event_index)
+			++*legacy_matches;
+	}
+	return true;
+}
 } // namespace
 
 flatfile_item_accounting_status
@@ -105,7 +147,7 @@ flatfile_item_accounting_status
 flatfile_item_accounting_reference_decode(std::span<const uint8_t> bytes,
 					  economic_accounting_item_reference *ref)
 {
-	if (!ref || bytes.size() < FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+	if (!ref || bytes.size() != FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
 		return flatfile_item_accounting_status::invalid;
 
 	reader r{ bytes, 0 };
@@ -160,9 +202,29 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_append(
 	const std::string filename = bucket_filename(ref.legacy_operation_id.bytes[0]);
 
 	std::vector<uint8_t> existing;
-	auto read_result = flatfile_read(dir, filename, 64 * 1024 * 1024, &existing, error);
-	if (read_result == flatfile_read_result::io_error)
-		return flatfile_item_accounting_status::io_error;
+	auto read_result = flatfile_read(dir, filename,
+					 FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+					 &existing, error);
+	if (read_result != flatfile_read_result::ok &&
+	    read_result != flatfile_read_result::not_found)
+		return read_status(read_result);
+	if (existing.size() % FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES)
+	{
+		if (error)
+			*error = "invalid partial item accounting reference record";
+		return flatfile_item_accounting_status::invalid;
+	}
+	if (encoded.size() > FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES - existing.size())
+		return flatfile_item_accounting_status::capacity;
+	size_t duplicate_count = 0;
+	if (!valid_bucket(existing, ref.legacy_operation_id.bytes[0], &ref, &duplicate_count))
+	{
+		if (error)
+			*error = "invalid item accounting reference bucket";
+		return flatfile_item_accounting_status::invalid;
+	}
+	if (duplicate_count)
+		return flatfile_item_accounting_status::already_exists;
 
 	existing.insert(existing.end(), encoded.begin(), encoded.end());
 
@@ -180,15 +242,25 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_find_by_legac
 	const std::string filename = bucket_filename(legacy_operation_id.bytes[0]);
 
 	std::vector<uint8_t> existing;
-	auto read_result = flatfile_read(dir, filename, 64 * 1024 * 1024, &existing, error);
+	auto read_result = flatfile_read(dir, filename,
+					 FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+					 &existing, error);
 	if (read_result == flatfile_read_result::not_found)
 		return flatfile_item_accounting_status::not_found;
 	if (read_result != flatfile_read_result::ok)
-		return flatfile_item_accounting_status::io_error;
+		return read_status(read_result);
+	if (!valid_bucket(existing, legacy_operation_id.bytes[0]))
+	{
+		if (error)
+			*error = "invalid item accounting reference bucket";
+		return flatfile_item_accounting_status::invalid;
+	}
 
 	const size_t record_size = FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES;
 	const size_t total_records = existing.size() / record_size;
 
+	bool found = false;
+	economic_accounting_item_reference retained = {};
 	for (size_t i = 0; i < total_records; ++i)
 	{
 		std::span<const uint8_t> chunk(existing.data() + i * record_size, record_size);
@@ -199,11 +271,18 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_find_by_legac
 			if (candidate.legacy_operation_id.bytes == legacy_operation_id.bytes &&
 			    candidate.legacy_event_index == legacy_event_index)
 			{
-				if (ref)
-					*ref = candidate;
-				return flatfile_item_accounting_status::ok;
+				if (found)
+					return flatfile_item_accounting_status::invalid;
+				retained = candidate;
+				found = true;
 			}
 		}
+	}
+	if (found)
+	{
+		if (ref)
+			*ref = retained;
+		return flatfile_item_accounting_status::ok;
 	}
 
 	return flatfile_item_accounting_status::not_found;
@@ -216,13 +295,25 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_find_by_item(
 	const std::string dir = item_refs_directory(root);
 	const size_t record_size = FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES;
 
+	bool found = false;
+	economic_accounting_item_reference retained = {};
 	for (unsigned int b = 0; b < 256; ++b)
 	{
 		const std::string filename = bucket_filename(static_cast<uint8_t>(b));
 		std::vector<uint8_t> existing;
-		auto read_result = flatfile_read(dir, filename, 64 * 1024 * 1024, &existing, error);
-		if (read_result != flatfile_read_result::ok)
+		auto read_result = flatfile_read(
+			dir, filename, FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+			&existing, error);
+		if (read_result == flatfile_read_result::not_found)
 			continue;
+		if (read_result != flatfile_read_result::ok)
+			return read_status(read_result);
+		if (!valid_bucket(existing, static_cast<uint8_t>(b)))
+		{
+			if (error)
+				*error = "invalid item accounting reference bucket";
+			return flatfile_item_accounting_status::invalid;
+		}
 
 		const size_t total_records = existing.size() / record_size;
 		for (size_t i = 0; i < total_records; ++i)
@@ -236,12 +327,19 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_find_by_item(
 				if (candidate.item_uid == item_uid &&
 				    candidate.after_revision == after_revision)
 				{
-					if (ref)
-						*ref = candidate;
-					return flatfile_item_accounting_status::ok;
+					if (found)
+						return flatfile_item_accounting_status::invalid;
+					retained = candidate;
+					found = true;
 				}
 			}
 		}
+	}
+	if (found)
+	{
+		if (ref)
+			*ref = retained;
+		return flatfile_item_accounting_status::ok;
 	}
 
 	return flatfile_item_accounting_status::not_found;

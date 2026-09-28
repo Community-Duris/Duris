@@ -1,4 +1,10 @@
 #include "core/structs.h"
+#include "sql/sql_corpse.h"
+#include "sql/sql_locker.h"
+#include "sql/sql_player_deletion.h"
+#include "sql/sql_player_identity.h"
+#include "sql/sql_ship.h"
+#include "sql/sql_transaction.h"
 #include <stdlib.h>
 #include <string.h>
 

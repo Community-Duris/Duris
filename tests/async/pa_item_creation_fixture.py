@@ -510,7 +510,8 @@ def _restore_wind_blade_cast_slot(client: journey.MudClient,
     client.pending.clear()
     client.send("sleep")
     client.expect("You fall asleep.", timeout=15)
-    client.expect("Pos: sleeping >", timeout=15)
+    # The normal prompt reports posture (GET_POS), not sleep status (GET_STAT);
+    # sleeping while standing therefore still displays "Pos: standing".
     client.pending.clear()
     client.send("tupor")
     client.expect("Your mind drifts into a deep meditation", timeout=30)

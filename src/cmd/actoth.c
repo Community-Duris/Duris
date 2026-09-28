@@ -57,7 +57,6 @@
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
 #include "economy/tradeskill.h"
 #include "world/vnum.obj.h"
 #include "world/vnum.room.h"
