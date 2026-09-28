@@ -277,6 +277,10 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 									      items;
 		require(holding.source.row != SIZE_MAX && holding.source.table == expected_table);
 		const auto &source = snapshot.tables[holding.source.table].rows[holding.source.row];
+		if (holding.kind == economic_sql_holding_kind::treasury)
+			require(source.cells.size() == 7 && source.cells[6] &&
+					integer<uint8_t>(source.cells[6]) <= 1,
+				EBUSY);
 		for (auto amount : *holding.balance)
 			require(amount >= 0, ERANGE);
 		holding_source native;
@@ -308,7 +312,7 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 		}
 		else if (native.account_kind == economic_account_kind::treasury)
 		{
-			require(holding.native_id <= UINT32_MAX && source.cells.size() == 6 &&
+			require(holding.native_id <= UINT32_MAX && source.cells.size() == 7 &&
 					integer<uint64_t>(source.cells[0]) == holding.native_id &&
 					integer<uint64_t>(source.cells[1]) <= UINT32_MAX &&
 					(*holding.balance)[1] == 0 && (*holding.balance)[2] == 0 &&

@@ -16,7 +16,10 @@ reset_start = db.index("case 'M': /* read a mobile */", db.index("void reset_zon
 reset = db[reset_start:db.index("case 'O':", reset_start)]
 restore_start = sql.index("struct shopkeeper_temp")
 restore = sql[restore_start:sql.rindex("bool sql_save_dirty_shopkeepers(", restore_start)]
+save_item_start = sql.index("static int sql_save_shopkeeper_item(")
+save_item = sql[save_item_start:sql.index("static bool sql_save_shopkeeper_affects(", save_item_start)]
 harness = (ROOT / "tests/async/shopkeeper_population_harness.cpp").read_text()
+harness = harness.replace("// PRODUCTION_SAVE_ITEM", save_item)
 harness = harness.replace("// PRODUCTION_HELPER", helper)
 harness = harness.replace("// PRODUCTION_RESET", reset)
 harness = harness.replace("// PRODUCTION_RESTORE", restore)
@@ -33,7 +36,10 @@ with tempfile.TemporaryDirectory(prefix="shopkeeper-population-", dir=build_root
         "-I", str(ROOT / "src"),
         str(source), "-o", str(binary),
     ], check=True)
-    for scenario in ("reset", "shared", "duplicate", "cleanup", "cash", "invalid"):
+    for scenario in (
+        "reset", "shared", "duplicate", "duplicate_uid", "legacy_uid", "invalid_uid",
+        "cleanup", "cash", "invalid", "uid_save",
+    ):
         subprocess.run([str(binary), scenario], check=True, env={
             **os.environ, "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
         })

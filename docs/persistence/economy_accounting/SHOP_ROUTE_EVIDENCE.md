@@ -61,13 +61,25 @@ lifetimes. The authority test checks lookup, identity refusal, and remapping.
 
 Migration `0041_shopkeeper_cash_identity` adds a nullable SQL keeper cash field
 and a revision. NULL distinguishes legacy rows whose cash was never captured.
+Migration `0042_shopkeeper_roaming_witness` adds nullable roaming configuration;
+NULL distinguishes legacy rows whose policy was never captured. A successful
+shopkeeper checkpoint stores the current configured roaming value with cash and
+stock. The inactive SQL lock accepts only a known 0/1 value that agrees with
+the frozen command. Source capture includes this field; normalization reports
+unknown configuration and the lifecycle owner refuses to open a treasury
+baseline from it.
 The SQL saver now captures cash with a stable `shopkeepers.id`, increments the
 revision, and replaces stock and affects inside the same transaction. Restore
 applies captured cash before publishing the keeper and rejects invalid values.
+The stock saver also persists each original `shopkeeper_items.obj_uid`; restore
+keeps it, advances the UID allocator, and refuses zero, overflowed, or duplicate
+saved UIDs before publishing stock. Legacy rows with NULL UID still load with a
+new UID and remain dirty for a replacement snapshot. The population regression
+exercises the production save formatter and restore path for these cases.
 `python3 tests/async/test_shopkeeper_save_runtime.py` and
 `python3 tests/async/test_shopkeeper_population.py` cover these boundaries with
-deterministic SQL doubles. The migration is required before deploying the SQL
-server code; no historical cash value is backfilled.
+deterministic SQL doubles. Both migrations are required before deploying the
+SQL server code; neither historical cash nor roaming policy is backfilled.
 
 The SQL source capture now includes each stable shopkeeper row, including
 nullable cash and the shop revision. Normalization reports unknown cash as a
@@ -81,18 +93,23 @@ fixtures cover a known keeper, a null-cash refusal, and treasury readback.
 An inactive SQL shop authority lock now validates the frozen three-account
 intent under the caller's transaction. It locks the active epoch and mappings,
 then the native player wallet, account bank, and keeper cash rows. It locks the
-owner revisions and selected item ownership tree; a produced item also locks
-its stocked exemplar and target ancestors. Migration 0038 supplies the
-equipment slot witness; the lock refuses an equipped item. A disposable MySQL
-fixture passes all five shop actions through this lock and the typed plan,
-checks the VNUM 11005 issuance exception and an unfunded roaming refusal, and
-rejects null or stale cash, a hidden child, an equipped item, and an inactive
-epoch. The client-free build returns `ENOTSUP`. The disposable runner can use
-MariaDB 10.11 with `bash tests/async/run_shop_trade_sql_lock_schema_mysql.sh`
+owner revisions, selected item ownership tree, and matching physical
+`shopkeeper_items` or `player_items` rows. It verifies the physical parent links,
+child counts, VNUMs, and unequipped state; a produced item also locks its
+stocked exemplar and target ancestors while proving the new UIDs absent from
+those inventories. Migration 0038 supplies the custody equipment slot witness.
+A disposable MySQL fixture passes all five shop actions and a nested stock tree
+through this lock and the typed plan. It checks the VNUM 11005 issuance
+exception and an unfunded roaming refusal. It rejects null or stale cash, a
+null or mismatched roaming policy,
+hidden custody or native child, missing stock, an equipped item, a mismatched
+physical parent, and an inactive epoch. The client-free build returns
+`ENOTSUP`. The disposable runner can use MariaDB
+10.11 with `bash tests/async/run_shop_trade_sql_lock_schema_mysql.sh`
 or MySQL 8.4 with `SHOP_TRADE_LOCK_DB_IMAGE=mysql:8.4` before that command.
 This fixture has no native shop mutation, receipt, or outbox. The SQL composite
-still needs physical item-row and gameplay shop configuration witnesses before
-the route can be activated.
+still needs restart reconciliation of shop custody into the runtime cache
+before activation.
 
 The pure accounting adapter is not yet invoked by either repository. Plan 4
 still needs a typed shop transaction that stages the plan with native state,

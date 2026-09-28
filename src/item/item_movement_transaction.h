@@ -106,7 +106,7 @@ bool item_movement_transaction_submit_batch(
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context = NULL,
 	item_movement_reject *reject = NULL, item_movement_publication_fn publication = nullptr,
-	economic_source_kind lifecycle_source = {});
+	economic_source_kind lifecycle_source = {}, uint64_t logical_source_id = 0);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL,
 					  economic_source_kind source = {}, uint64_t source_id = 0);
@@ -131,8 +131,9 @@ bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj objec
 // Admit all detached roots before starting any ownership operation. A refused
 // batch leaves every object with the caller; an accepted batch owns every root.
 bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
-								     size_t count, P_char recipient,
-								     economic_source_kind source = {});
+							     size_t count, P_char recipient,
+							     economic_source_kind source = {},
+							     uint64_t source_id = 0);
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,
 					economic_source_kind source,
 					item_creation_grant_completion_fn completion = nullptr,

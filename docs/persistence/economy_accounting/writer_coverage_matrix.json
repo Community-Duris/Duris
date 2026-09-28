@@ -48,7 +48,7 @@
     "current_occurrences": 2780,
     "current_unique_path_line_family_sites": 2722,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "49af585c4b9c8cfa5ead0ac07025f39d4720a659",
+    "draft_source_commit": "848814aee772283f2c3a37361bb7d3fcb700995b",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2722,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "49af585c4b9c8cfa5ead0ac07025f39d4720a659",
+  "repository_head": "848814aee772283f2c3a37361bb7d3fcb700995b",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -5869,7 +5869,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3460
+          3504
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -9645,7 +9645,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           465,
-          12206
+          12226
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -10213,7 +10213,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1101
+          1121
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -14230,12 +14230,12 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "The do_practice fee helper guards paid lessons before skill learning; tests/async/test_active_skill_practice_fee.py checks source order and the extracted guard. Playable backend refusal and committed root identity remain unqualified.",
       "reason": "training_cost",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          995
+          1012
         ],
         "file": "src/guild/guild.c",
         "function": "do_practice",
@@ -14294,7 +14294,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          494
+          495
         ],
         "file": "src/guild/guild.c",
         "function": "RobCash",
@@ -17080,8 +17080,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2085,
-          2097
+          2089,
+          2101
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -19579,7 +19579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2314
+          2323
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19641,7 +19641,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2144
+          2148
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20627,7 +20627,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1538
+          1539
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21456,7 +21456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1195
+          1196
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -25151,7 +25151,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2687
+          2699
         ],
         "file": "src/item/storage_lockers.c",
         "function": "locker_access_CanAdd",
@@ -25211,7 +25211,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3517
+          3529
         ],
         "file": "src/item/storage_lockers.c",
         "function": "check_for_artisInRoom",
@@ -25270,7 +25270,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1557
+          1567
         ],
         "file": "src/item/storage_lockers.c",
         "function": "LockerChest::~LockerChest",
@@ -25329,7 +25329,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3811
+          3823
         ],
         "file": "src/item/storage_lockers.c",
         "function": "locker_chestcmd",
@@ -25388,7 +25388,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1557
+          1567
         ],
         "file": "src/item/storage_lockers.c",
         "function": "LockerChest::~LockerChest",
@@ -25448,7 +25448,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          702
+          712
         ],
         "file": "src/item/storage_lockers.c",
         "function": "StorageLocker::PutInProperChest",
@@ -25567,7 +25567,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          320
+          330
         ],
         "file": "src/item/storage_lockers.c",
         "function": "locker_handle_leave",
@@ -25626,7 +25626,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1635
+          1645
         ],
         "file": "src/item/storage_lockers.c",
         "function": "PrivateChest::PrivateChest",
@@ -25685,7 +25685,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1514
+          1524
         ],
         "file": "src/item/storage_lockers.c",
         "function": "LockerChest::CreateChestObject",
@@ -25745,7 +25745,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3488
+          3500
         ],
         "file": "src/item/storage_lockers.c",
         "function": "StorageLocker::PFileToLocker",
@@ -25805,7 +25805,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3388
+          3400
         ],
         "file": "src/item/storage_lockers.c",
         "function": "StorageLocker::LockerToPFile",
@@ -25864,7 +25864,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2911
+          2923
         ],
         "file": "src/item/storage_lockers.c",
         "function": "create_new_locker",
@@ -25923,7 +25923,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1785
+          1795
         ],
         "file": "src/item/storage_lockers.c",
         "function": "storage_locker_room_hook",
@@ -31221,7 +31221,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           461,
-          12071
+          12091
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -33111,7 +33111,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10870
+          10890
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33173,7 +33173,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           410,
-          9394
+          9397
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33235,7 +33235,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           406,
-          9340
+          9343
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33712,7 +33712,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10870
+          10890
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33760,7 +33760,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10870
+          10890
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33823,7 +33823,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9482
+          9485
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33885,7 +33885,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9482
+          9485
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33932,7 +33932,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9434
+          9437
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -36276,7 +36276,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           439,
-          11648
+          11668
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36336,7 +36336,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           431,
-          11530
+          11550
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36397,7 +36397,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           427,
-          11276
+          11296
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -41232,7 +41232,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          856
+          863
         ],
         "file": "src/specs/specs.room.c",
         "function": "pet_shops",
@@ -41294,7 +41294,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1089
+          1117
         ],
         "file": "src/specs/specs.room.c",
         "function": "pray_for_items",
@@ -41526,7 +41526,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1175
+          1203
         ],
         "file": "src/specs/specs.room.c",
         "function": "feed_lock",

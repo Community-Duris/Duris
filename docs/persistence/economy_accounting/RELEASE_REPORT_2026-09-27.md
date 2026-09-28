@@ -199,8 +199,8 @@ in. Only non-immutable shell line endings were normalized in that disposable
 archive to execute under WSL. The wrapper removed both test containers. The
 tested source matches commit `6eede581a`, but these checks do not certify a
 gameplay route, native audit exporter, flatfile restart/restore, or release
-workload. A development
-database that already recorded the earlier `0041` verifier checksum needs
+workload. A development database that already recorded the earlier `0041`
+verifier checksum needs
 separate migration-state assessment; none was used in these tests.
 
 The later `68af73add` merge uses a stricter `0041` cash verifier with a
@@ -209,9 +209,47 @@ current lexical candidate sites into 854 named routes. On that merged tree,
 the accounting validator, generated-matrix check, runtime compatibility
 validator, nine boot contract tests, all 48 writer contracts and 2,691
 writer-site checks passed. The dual-engine and server-build passes above
-belong to `6eede581a`;
-they do not qualify the later merged source. The release validator still
-refuses `writer has no executable evidence`.
+belong to `6eede581a`; they do not qualify the later merged source. The
+release validator still refuses `writer has no executable evidence`.
+
+## Exact merged database snapshot `178caab0c`
+
+A clean Git archive of `178caab0c` ran the complete disposable accounting
+schema wrapper against MariaDB 10.11 and MySQL 8.0. Both runs **passed** fresh
+bootstrap, immutable migration run/replay through `0041`, runtime metadata
+and history checks, 20 accounting/baseline schema tests, SQL authority,
+flatfile and SQL bank transactions, sanitizer-backed SQL/client-free baseline
+transactions, and SQL/client-free native source snapshots. The archive kept
+immutable migration bytes unchanged; only non-immutable shell line endings
+were normalized for WSL. Each wrapper removed its test container. The same
+commit passed the Ubuntu 24.04 maintained MariaDB server and area-tools build
+with `docker build --target build --tag duris-plan5-build:178caab0c --build-arg BUILD_JOBS=2 .`.
+The maintained flatfile server build passed in a disposable container from
+that same source image, with `PERSISTENCE_BACKEND=flatfile` and two build jobs.
+
+The registry has 854 routes and maps all 2,722 current unique lexical sites,
+but `coverage_complete=false` and `playable_release_status=BLOCKED`.
+These database and build checks do not establish full native audit exports,
+flatfile restart/restore, player-visible journeys, or release workload budgets.
+
+## Focused authority journeys on `35a7ba70a`
+
+A clean archive of `35a7ba70a` passed the inactive SQL shop lock fixture
+against separate disposable MariaDB 10.11 and MySQL 8.0 schemas. Its cases
+cover five shop actions, cash exceptions, stale or unknown cash, hidden
+custody and native children, missing stock, equipped items and an inactive
+epoch. The SQL shopkeeper population harness also passed its duplicate UID,
+legacy UID, invalid UID, cleanup, cash and save cases on this source.
+
+The sanitizer-backed flatfile typed bank root journey passed on this archive
+after its runner was changed to default to `g++-12` with a `CXX` override.
+WSL's default GCC 11 had stopped at compilation of the merged C++20 atomic
+shared pointer, before any bank case ran. The executed GCC 12 journey covers
+sourced starter grant, receipt retention, concurrent shared-bank updates,
+tamper and forged-result refusal, crash recovery and 692 allocation faults.
+These are isolated fixtures, not live player journeys. The full accounting
+wrappers and both maintained server builds above belong to `178caab0c` and
+were not rerun after the later shopkeeper and bank source commits.
 
 ## Earlier executed evidence
 
@@ -616,6 +654,45 @@ audit-size sample above cannot certify the release-host mixed-authority budget.
 The limits and measurement method are specified in
 [AUDIT_OPERATIONS.md](AUDIT_OPERATIONS.md); the release performance gates remain
 unverified.
+
+## Read-only price audit increment (2026-09-27)
+
+At source commit `ca0524c44`, the JSON reconciler reports a rejected root
+carrying a realized price and refuses a negative, non-integer or out-of-range
+signed 64-bit copper price. The bounded price view includes only committed
+roots with valid copper values. `python tests/async/test_reconcile_economy_accounting.py`
+passed 17 synthetic snapshot tests; `python scripts/validate_economy_accounting.py`
+passed the contract check for 854 routes and 2,780 candidate sites. The
+`--release` validator still refused with `writer has no executable evidence`.
+These checks did not read a native SQL or flatfile snapshot and add no playable
+route qualification.
+
+## SQL EAB1 opening-origin extraction (2026-09-27)
+
+Source commit `a6456307d` adds `scripts/economic_sql_audit_origins.py`.
+`python tests/async/test_economic_sql_audit_origins.py` passed four exact
+decoder/transaction refusal tests. The disposable
+`tests/async/run_economic_sql_audit_origins_mysql.py` runner passed on
+MariaDB 10.11 and MySQL 8.0.46 using a minimal InnoDB schema, a `SELECT`-only
+audit account, the CLI output path and a corrupted-digest refusal. The CLI
+refused to overwrite an existing output file. The test containers and schemas
+were removed afterward. This proves only the EAB1 origin extraction slice;
+it does not exercise a full upgraded schema, current native holdings or UID
+authority, retained nonbaseline operations, or a complete SQL audit snapshot.
+
+## Writer census after concurrent route changes (2026-09-27)
+
+At census commit `678b7df5d`, the 854 route records reanchor all 2,722
+unique lexical sites (2,780 occurrences) to the merged source. The moved
+paid-practice debit is still classified as a legacy writer with an active-epoch
+refusal harness; that harness passed all three tests under WSL `g++-12`.
+`python scripts/generate_economy_writer_coverage.py --check`, the ordinary
+accounting validator and all 48 tests in
+`tests/async/test_economy_writer_coverage_contract.py` passed. The matrix
+continues to report `coverage_complete=false` and `BLOCKED`: lexical mapping
+does not prove all reachable writers or playable backend qualification.
+`python scripts/validate_economy_accounting.py --release` still refuses with
+`writer has no executable evidence`.
 
 ## Remaining release gates
 

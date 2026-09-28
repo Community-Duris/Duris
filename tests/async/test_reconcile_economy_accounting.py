@@ -218,6 +218,20 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["postings"][1]["copper_value"] = 3
         self.assertIn("invalid_system_posting_sign", self.codes(snapshot))
 
+    def test_realized_prices_require_a_committed_root_and_valid_copper(self):
+        snapshot = clean_snapshot()
+        self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 1)
+        snapshot["operations"][0].update(outcome="rejected", result_code=9)
+        snapshot["receipts"][0].update(status="rejected", result_code=9)
+        self.assertIn("rejected_realized_price", self.codes(snapshot))
+        self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 0)
+        snapshot = clean_snapshot()
+        snapshot["operations"][0]["realized_price_copper"] = True
+        self.assertIn("invalid_realized_price", self.codes(snapshot))
+        snapshot["operations"][0]["realized_price_copper"] = 2**63
+        self.assertIn("invalid_realized_price", self.codes(snapshot))
+        self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 0)
+
     def test_missing_creation_event(self):
         snapshot = creation_snapshot()
         snapshot["operations"][0]["item_event_count"] = 0

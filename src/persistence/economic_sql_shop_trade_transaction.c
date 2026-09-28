@@ -179,11 +179,11 @@ void balances(MYSQL *connection, const shop_trade_payload &payload, uint32_t ban
 void keeper(MYSQL *connection, const shop_trade_payload &payload, uint32_t keeper_id,
 	    shop_trade_accounting_authority *before)
 {
-	const auto row =
-		one(connection,
-		    "SELECT shop_id,mob_vnum,cash,shop_revision FROM shopkeepers WHERE id=" +
-			    std::to_string(keeper_id) + " FOR UPDATE",
-		    4);
+	const auto row = one(connection,
+			     "SELECT shop_id,mob_vnum,cash,shop_revision,keeper_roaming "
+			     "FROM shopkeepers WHERE id=" +
+				     std::to_string(keeper_id) + " FOR UPDATE",
+			     5);
 	require(number<uint64_t>(row[0]) == payload.shop_id &&
 			number<int32_t>(row[1]) == payload.keeper_vnum,
 		ESTALE);
@@ -191,14 +191,16 @@ void keeper(MYSQL *connection, const shop_trade_payload &payload, uint32_t keepe
 	const auto cash = number<int64_t>(row[2]);
 	require(cash >= 0 && cash <= INT_MAX, ERANGE);
 	const auto revision = number<uint64_t>(row[3]);
+	require(row[4].has_value(), ENODATA);
+	const auto roaming = number<uint8_t>(row[4]);
+	require(roaming <= 1, ERANGE);
 	require(cash == payload.expected_keeper_cash && revision == payload.expected_shop_revision,
 		ESTALE);
+	require(roaming == payload.keeper_roaming, ESTALE);
 	before->shop_id = payload.shop_id;
 	before->keeper_vnum = payload.keeper_vnum;
 	before->keeper_cash_before = cash;
-	// Roaming is gameplay configuration carried by the frozen command. A
-	// durable SQL configuration witness is still needed before activation.
-	before->keeper_roaming = payload.keeper_roaming != 0;
+	before->keeper_roaming = roaming != 0;
 	before->shop_revision_before = revision;
 }
 
@@ -291,6 +293,120 @@ void items(MYSQL *connection, const shop_trade_payload &payload,
 		before->item_vnums_before.push_back(entry.vnum);
 	}
 }
+
+struct native_domain
+{
+	const char *table;
+	const char *owner_column;
+	uint64_t owner_id;
+};
+
+struct native_item
+{
+	uint64_t uid = 0;
+	uint64_t row_id = 0;
+	uint64_t parent_row_id = 0;
+};
+
+uint64_t native_count(MYSQL *connection, const native_domain &domain, uint64_t uid)
+{
+	const auto row = one(connection,
+			     "SELECT COUNT(*) FROM " + std::string(domain.table) + " WHERE " +
+				     domain.owner_column + "=" + std::to_string(domain.owner_id) +
+				     " AND obj_uid=" + std::to_string(uid) + " FOR UPDATE",
+			     1);
+	return number<uint64_t>(row[0]);
+}
+
+native_item native_row(MYSQL *connection, const native_domain &domain, uint64_t uid, int32_t vnum)
+{
+	const auto row = one(connection,
+			     "SELECT id,COALESCE(container_id,0),vnum,equip_slot FROM " +
+				     std::string(domain.table) + " WHERE " + domain.owner_column +
+				     "=" + std::to_string(domain.owner_id) +
+				     " AND obj_uid=" + std::to_string(uid) + " FOR UPDATE",
+			     4, true);
+	require(!row.empty(), ESTALE);
+	require(number<int32_t>(row[2]) == vnum && number<int32_t>(row[3]) == 0, ESTALE);
+	return { uid, number<uint64_t>(row[0]), number<uint64_t>(row[1]) };
+}
+
+void physical_items(MYSQL *connection, const shop_trade_payload &payload, uint32_t keeper_id,
+		    const shop_trade_accounting_authority &before)
+{
+	const native_domain player{ "player_items", "pid", payload.player_pid };
+	const native_domain shop{ "shopkeeper_items", "shopkeeper_id", keeper_id };
+	const bool produced = payload.action == shop_trade_action::buy_produced;
+	if (produced)
+	{
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const uint64_t uid = payload.items[index].item_uid;
+			require(!native_count(connection, player, uid) &&
+					!native_count(connection, shop, uid),
+				ESTALE);
+		}
+		const auto stock =
+			native_row(connection, shop, payload.stock_item_uid, payload.stock_vnum);
+		require(stock.parent_row_id == 0, ESTALE);
+		std::vector<native_item> ancestors;
+		uint64_t uid = payload.target_parent_item_uid;
+		while (uid)
+		{
+			const auto found =
+				std::find_if(before.items_before.begin(), before.items_before.end(),
+					     [uid](const auto &entry) { return entry.uid == uid; });
+			require(found != before.items_before.end(), ESTALE);
+			const size_t index =
+				static_cast<size_t>(found - before.items_before.begin());
+			ancestors.push_back(native_row(connection, player, uid,
+						       before.item_vnums_before[index]));
+			uid = found->position.parent_uid;
+		}
+		for (size_t index = 0; index < ancestors.size(); ++index)
+			require(ancestors[index].parent_row_id ==
+					(index + 1 < ancestors.size() ?
+						 ancestors[index + 1].row_id :
+						 0),
+				ESTALE);
+		return;
+	}
+	const bool from_shop = payload.action == shop_trade_action::buy_existing ||
+			       payload.action == shop_trade_action::discard_invalid;
+	const native_domain &source = from_shop ? shop : player;
+	const native_domain &other = from_shop ? player : shop;
+	std::vector<native_item> rows;
+	rows.reserve(payload.item_count);
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &entry = payload.items[index];
+		rows.push_back(native_row(connection, source, entry.item_uid, entry.vnum));
+		require(!native_count(connection, other, entry.item_uid), ESTALE);
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &entry = payload.items[index];
+		uint64_t parent_row_id = 0;
+		if (entry.parent_item_uid)
+		{
+			const auto found =
+				std::find_if(rows.begin(), rows.end(), [&](const auto &row)
+					     { return row.uid == entry.parent_item_uid; });
+			require(found != rows.end(), ESTALE);
+			parent_row_id = found->row_id;
+		}
+		require(rows[index].parent_row_id == parent_row_id, ESTALE);
+		const size_t children = std::count_if(
+			payload.items.begin(), payload.items.begin() + payload.item_count,
+			[&](const auto &child) { return child.parent_item_uid == entry.item_uid; });
+		const auto count = one(connection,
+				       "SELECT COUNT(*) FROM " + std::string(source.table) +
+					       " WHERE container_id=" +
+					       std::to_string(rows[index].row_id) + " FOR UPDATE",
+				       1);
+		require(number<uint64_t>(count[0]) == children, EMSGSIZE);
+	}
+}
 } // namespace
 #endif
 
@@ -349,6 +465,7 @@ unsigned int economic_sql_shop_trade_lock(MYSQL *connection, const critical_comm
 		before.counterparty_owner_revision_before = primary_first ? second_revision :
 									    first_revision;
 		items(connection, payload, &before);
+		physical_items(connection, payload, candidate.keeper_id, before);
 		require(connection->server_status & SERVER_STATUS_IN_TRANS, ENOTCONN);
 		require(mysql_thread_id(connection) == candidate.session_id, ENOTCONN);
 		*context = std::move(candidate);

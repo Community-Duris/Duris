@@ -28,4 +28,12 @@ economic_sql_collector_execute_and_record(MYSQL *connection, const critical_comm
 					  collector_command_result *result,
 					  unsigned int *result_code, bool *mutation_applied);
 
+// Check a committed root against its frozen intent, canonical plan and exact
+// accounting rows. The caller checks the inbox receipt and outbox separately.
+unsigned int economic_sql_collector_verify_retained(MYSQL *connection,
+						    const critical_command &command,
+						    unsigned int result_code,
+						    const uint8_t *result_payload,
+						    size_t result_size);
+
 #endif

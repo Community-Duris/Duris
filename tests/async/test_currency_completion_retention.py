@@ -38,6 +38,7 @@ static P_char online = nullptr, online_other = nullptr;
 P_desc descriptor_list = nullptr;
 static critical_command submitted;
 static int submissions = 0, callbacks = 0, alerts = 0, bank_publications = 0;
+static AccountBankBalances last_bank_balances = {};
 static int held_submissions = 0, publication_acks = 0;
 static bool ack_available = true;
 static bool callback_committed = false, chain_after_callback = false, rehash_in_callback = false;
@@ -116,9 +117,11 @@ void persistence_alert(int, const char *, const char *, const char *operation, c
     ++alerts;
     last_alert_operation = operation ? operation : "";
 }
-void publish_account_bank_balances_revision(const char *, int, const AccountBankBalances *, uint64_t)
+void publish_account_bank_balances_revision(const char *, int,
+                                            const AccountBankBalances *balances, uint64_t)
 {
     ++bank_publications;
+    last_bank_balances = *balances;
 }
 
 bool submit_reward(P_char actor, currency_completion_fn callback)
@@ -476,6 +479,61 @@ int main(int argc, char **argv)
         assert(held_submissions == 1 && submissions == 0);
         return 0;
     }
+    if (scenario == "accounted_chaos_starter_producer")
+    {
+        critical_operation_id lineage = {}, epoch = {}, activation = {}, seed = {};
+        lineage.bytes[0] = 1;
+        epoch.bytes[0] = 2;
+        activation.bytes[0] = 3;
+        economic_gameplay_authority_test_access::install(lineage, epoch, activation);
+        std::memcpy(seed.bytes.data(), "CHAOSEED", 8);
+        seed.bytes[8] = 42;
+        critical_operation_id operation = {};
+        assert(critical_operation_id_derive(seed, 0x43484250, 1, &operation));
+        const currency_vector wallet = {};
+        const currency_vector bank = { {0, 0, 0, 1000000} };
+        auto invalid = operation;
+        invalid.bytes[0] ^= 1;
+        assert(!currency_transaction_submit_identified(
+            &actor, invalid, wallet, bank, currency_reason_type::chaos_starter_reward,
+            42, critical_source_site::login, critical_deadline_class::recovery,
+            completed, nullptr, 0));
+        assert(held_submissions == 0 && !currency_transaction_player_busy(&actor));
+        assert(currency_transaction_submit_identified(
+            &actor, operation, wallet, bank, currency_reason_type::chaos_starter_reward,
+            42, critical_source_site::login, critical_deadline_class::recovery,
+            completed, nullptr, 0));
+        assert(held_submissions == 1 && submissions == 0 && submitted.publication_required);
+        assert(submitted.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+        assert(submitted.expected_revisions[1].revision == UINT64_MAX);
+        assert(critical_command_envelope_valid(submitted));
+        economic_frozen_intent intent = {};
+        assert(economic_intent_decode(submitted.accounting_intent, &intent) ==
+               economic_accounting_error::ok);
+        assert(intent.admission.metadata.writer_id == ECONOMIC_WRITER_CHAOS_STARTER_BANK);
+        assert(intent.admission.metadata.reason == economic_reason::starter_reward);
+        assert(intent.admission.metadata.source_event &&
+               intent.admission.metadata.source_event->kind ==
+                   economic_source_kind::starter_grant);
+        critical_completion receipt = {};
+        receipt.operation_id = operation;
+        receipt.outcome = critical_apply_outcome::applied;
+        currency_command_result result = {};
+        result.wallet.amount[0] = 5;
+        result.bank.amount[3] = 1000000;
+        result.wallet_revision = 2;
+        result.bank_revision = 2;
+        std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> bytes = {};
+        assert(currency_command_encode_result(result, &bytes));
+        receipt.result_size = bytes.size();
+        std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(callbacks == 1 && callback_committed && publication_acks == 1);
+        assert(GET_COPPER(&actor) == 5 && bank_publications == 1 &&
+               last_bank_balances.platinum == 1000000);
+        assert(!currency_transaction_player_busy(&actor));
+        return 0;
+    }
     if (scenario == "accounted_bank_publication" ||
         scenario == "accounted_bank_ack_retry" ||
         scenario == "accounted_bank_invalid_result" ||
@@ -761,6 +819,7 @@ def main():
         "accounted_bank_publication", "accounted_bank_ack_retry",
         "accounted_bank_invalid_result", "accounted_bank_restart",
         "accounted_bank_producer", "accounted_bank_producer_restart",
+        "accounted_chaos_starter_producer",
         "active_prepared_wallet_payment", "active_prepared_bank_payment",
         "active_prepare_wallet_payment", "active_prepare_bank_payment",
         "legacy_prepared_wallet_payment", "legacy_prepared_bank_payment",

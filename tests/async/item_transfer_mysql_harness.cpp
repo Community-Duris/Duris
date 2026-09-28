@@ -1285,8 +1285,12 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 					next_epoch, 41, economic_source_kind::quest_completion);
 	const auto refused_duplicate_reward =
 		critical_command_repository_apply(restarted, duplicate_reward);
-	assert(refused_duplicate_reward.outcome == critical_apply_outcome::retryable_failure &&
-	       refused_duplicate_reward.error_code == 1062);
+	assert(refused_duplicate_reward.outcome == critical_apply_outcome::terminal_failure &&
+	       refused_duplicate_reward.error_code == EEXIST);
+	assert(scalar(restarted,
+		      ("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=UNHEX('" +
+		       operation_hex(duplicate_reward.operation_id) + "')")
+			      .c_str()) == 0);
 	assert(scalar(restarted, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
 				  std::to_string(retried_reward_uid))
 					 .c_str()) == 0);
@@ -1343,8 +1347,12 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 					next_epoch, 41, economic_source_kind::world_generation);
 	const auto refused_duplicate_generated =
 		critical_command_repository_apply(restarted, duplicate_generated);
-	assert(refused_duplicate_generated.outcome == critical_apply_outcome::retryable_failure &&
-	       refused_duplicate_generated.error_code == 1062);
+	assert(refused_duplicate_generated.outcome == critical_apply_outcome::terminal_failure &&
+	       refused_duplicate_generated.error_code == EEXIST);
+	assert(scalar(restarted,
+		      ("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=UNHEX('" +
+		       operation_hex(duplicate_generated.operation_id) + "')")
+			      .c_str()) == 0);
 	assert(scalar(restarted, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
 				  std::to_string(duplicate_generated_uid))
 					 .c_str()) == 0);

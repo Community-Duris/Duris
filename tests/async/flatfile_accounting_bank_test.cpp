@@ -8,6 +8,7 @@
 #include "flatfile/flatfile_store.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/economic_command_admission.h"
+#include "economy/economic_gameplay_authority.h"
 #include "player/player_snapshot_codec.h"
 #include "persistence/critical_command_coordinator.h"
 #include "world/epic_command.h"
@@ -23,6 +24,21 @@
 #include <thread>
 #include <sys/wait.h>
 #include <unistd.h>
+
+class economic_gameplay_authority_test_access
+{
+    public:
+	static economic_accounting_error
+	install(const critical_operation_id &lineage, const critical_operation_id &epoch,
+		const critical_operation_id &receipt,
+		std::span<const economic_gameplay_wallet_mapping> wallets,
+		std::span<const economic_gameplay_bank_mapping> banks)
+	{
+		return economic_gameplay_authority::install(lineage, epoch, receipt, wallets,
+							    banks);
+	}
+	static void reset() { economic_gameplay_authority::reset_for_tests(); }
+};
 
 class flatfile_accounting_test_access
 {
@@ -290,17 +306,23 @@ critical_command starter_command(const std::string &root)
 	strcpy(payload.account_name.data(), "ACCOUNT-ONE");
 	payload.bank_delta.amount[3] = 1000000;
 	critical_command result;
-	assert(currency_command_build(&result, operation_id, payload,
-				      before.domains.wallet_revision, before.domains.bank_revision,
-				      critical_source_site::login,
-				      critical_deadline_class::recovery));
-	result.accepted_at_usec = 12;
-	assert(critical_command_normalize(&result));
-	assert(economic_chaos_starter_bank_intent(result, id(90005), wallet(), bank(),
-						  &result.accounting_intent) ==
+	assert(currency_command_build(
+		&result, operation_id, payload, before.domains.wallet_revision, UINT64_MAX,
+		critical_source_site::login, critical_deadline_class::recovery));
+	const std::array wallets = { economic_gameplay_wallet_mapping{ 1, wallet() } };
+	const std::array banks = { economic_gameplay_bank_mapping{ "account-one", 1, bank() } };
+	assert(economic_gameplay_authority_test_access::install(id(90001), id(90005), id(90006),
+								wallets, banks) ==
 	       economic_accounting_error::ok);
-	result.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	assert(economic_gameplay_authority::prepare_currency(&result) ==
+	       economic_accounting_error::ok);
+	economic_gameplay_authority_test_access::reset();
+	assert(result.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+	assert(result.expected_revisions[1].revision == UINT64_MAX);
+	result.accepted_at_usec = 12;
 	result.publication_required = true;
+	assert(critical_command_envelope_valid(result) &&
+	       economic_flatfile_command_admission_supported(result));
 	return result;
 }
 void refreeze(critical_command &cmd, const critical_operation_id &epoch = id(90005))

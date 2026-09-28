@@ -828,6 +828,13 @@ int patrol_shops(int /*room*/, P_char ch, int cmd, char *arg)
 			send_to_char("You dont have enough money!\r\n", ch);
 			return (TRUE);
 		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Patrol hiring is unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
 		if (!(pet = read_mobile(GET_RNUM(pet), REAL)))
 		{
 			send_to_char("Sorry, we seem to be out of stock!\r\n", ch);
@@ -922,6 +929,13 @@ int pet_shops(int /*room*/, P_char ch, int cmd, char *arg)
 			send_to_char("You dont have enough money!\r\n", ch);
 			return (TRUE);
 		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Pet purchases are unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
 		if (!(pet = read_mobile(GET_RNUM(pet), REAL)))
 		{
 			send_to_char("Sorry, we seem to be out of stock!\r\n", ch);
@@ -973,6 +987,13 @@ int pet_shops(int /*room*/, P_char ch, int cmd, char *arg)
 		if (IS_FIGHTING(mount))
 		{
 			send_to_char("Yer pet is too busy fighting!\r\n", ch);
+			return TRUE;
+		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Pet rentals are unavailable while active accounting is enabled.\r\n",
+				ch);
 			return TRUE;
 		}
 		SUB_MONEY(ch, val, 0);
@@ -1064,6 +1085,13 @@ int pet_shops(int /*room*/, P_char ch, int cmd, char *arg)
 		if (ticket->value[2] != world[ch->in_room].number)
 		{
 			return FALSE;
+		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Pet rentals are unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
 		}
 		snprintf(buf, sizeof buf, "%s%d", GET_NAME(ch), ticket->value[1]);
 		//    petrestore(ch, buf);

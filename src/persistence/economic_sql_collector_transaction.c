@@ -13,6 +13,7 @@
 #include <cstring>
 #include <memory>
 #include <new>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -231,6 +232,83 @@ bool insert_posting(MYSQL *connection, const critical_operation_id &operation, s
 	sql += "," + std::to_string(posting.copper) + ")";
 	return execute(connection, sql);
 }
+
+bool read_row(MYSQL *connection, const std::string &sql,
+	      std::vector<std::optional<std::string>> *values)
+{
+	if (!values || !execute(connection, sql))
+		return false;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows || mysql_num_rows(rows.get()) != 1)
+	{
+		errno = mysql_errno(connection) ? static_cast<int>(mysql_errno(connection)) :
+						  EILSEQ;
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(rows.get());
+	const unsigned long *lengths = mysql_fetch_lengths(rows.get());
+	if (!row || !lengths)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	values->clear();
+	for (unsigned int index = 0; index < mysql_num_fields(rows.get()); ++index)
+	{
+		if (row[index])
+			values->emplace_back(std::string(row[index], lengths[index]));
+		else
+			values->emplace_back(std::nullopt);
+	}
+	return true;
+}
+
+bool count_matches(MYSQL *connection, const std::string &table, const std::string &where,
+		   size_t expected)
+{
+	std::vector<std::optional<std::string>> row;
+	return read_row(connection, "SELECT COUNT(*) FROM " + table + " WHERE " + where, &row) &&
+	       row.size() == 1 && row[0] && *row[0] == std::to_string(expected);
+}
+
+std::string effect_predicate(const critical_operation_id &operation, size_t index,
+			     const economic_account_effect &effect)
+{
+	std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> key = {};
+	if (economic_account_key_encode(effect.key, &key) != economic_accounting_error::ok)
+		return {};
+	std::string where = "operation_id=" + id(operation) +
+			    " AND account_index=" + std::to_string(index) +
+			    " AND account_key=" + hex(key);
+	static constexpr std::array<const char *, 4> denominations = { "copper", "silver", "gold",
+								       "platinum" };
+	for (size_t coin = 0; coin < denominations.size(); ++coin)
+	{
+		where += " AND before_" + std::string(denominations[coin]) + "=" +
+			 std::to_string(effect.before[coin]);
+		where += " AND after_" + std::string(denominations[coin]) + "=" +
+			 std::to_string(effect.after[coin]);
+	}
+	return where + " AND before_revision=" + std::to_string(effect.before_revision) +
+	       " AND after_revision=" + std::to_string(effect.after_revision);
+}
+
+std::string posting_predicate(const critical_operation_id &operation, size_t index,
+			      const economic_coin_posting &posting)
+{
+	std::string where = "operation_id=" + id(operation) +
+			    " AND line_index=" + std::to_string(index) +
+			    " AND event_index=" + std::to_string(posting.event_index) +
+			    " AND account_index=" + std::to_string(posting.account_index) +
+			    " AND child_index=" + std::to_string(posting.child_index);
+	static constexpr std::array<const char *, 4> denominations = { "copper", "silver", "gold",
+								       "platinum" };
+	for (size_t coin = 0; coin < denominations.size(); ++coin)
+		where += " AND delta_" + std::string(denominations[coin]) + "=" +
+			 std::to_string(posting.delta[coin]);
+	return where + " AND copper_value=" + std::to_string(posting.copper);
+}
 } // namespace
 #endif
 
@@ -412,6 +490,127 @@ economic_sql_collector_execute_and_record(MYSQL *connection, const critical_comm
 		reference.legacy_event_index = 0;
 		if (!economic_accounting_item_reference_insert(connection, reference))
 			return failure_code();
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+#endif
+}
+
+unsigned int economic_sql_collector_verify_retained(MYSQL *connection,
+						    const critical_command &command,
+						    unsigned int result_code,
+						    const uint8_t *result_payload,
+						    size_t result_size)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)result_code;
+	(void)result_payload;
+	(void)result_size;
+	return ENOTSUP;
+#else
+	if (!connection || !result_payload || result_size != COLLECTOR_COMMAND_RESULT_BYTES)
+		return EINVAL;
+	try
+	{
+		economic_frozen_intent intent;
+		collector_command_payload payload = {};
+		collector_command_result result = {};
+		if (!identity(command, &intent, &payload) ||
+		    !collector_command_decode_result(result_payload, result_size, &result))
+			return EILSEQ;
+		const std::string where = "operation_id=" + id(command.operation_id);
+		std::vector<std::optional<std::string>> row;
+		if (!read_row(connection,
+			      "SELECT canonical_plan FROM economic_accounting_operation WHERE " +
+				      where,
+			      &row))
+			return failure_code();
+		economic_digest intent_digest = {}, plan_digest = {};
+		if (economic_intent_digest(intent, &intent_digest) != economic_accounting_error::ok)
+			return EILSEQ;
+		economic_accounting_plan plan;
+		if (!result_code)
+		{
+			if (!row[0] || row[0]->size() > ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES ||
+			    economic_plan_decode(
+				    std::span<const uint8_t>(
+					    reinterpret_cast<const uint8_t *>(row[0]->data()),
+					    row[0]->size()),
+				    &plan) != economic_accounting_error::ok ||
+			    economic_plan_validate_structure(plan) !=
+				    economic_accounting_error::ok ||
+			    economic_plan_digest(plan, &plan_digest) !=
+				    economic_accounting_error::ok ||
+			    plan.item_events.size() != 1 || !plan.children.empty() ||
+			    !result.record_present || result.action != payload.action ||
+			    result.entry.uid != plan.item_events[0].uid)
+				return EILSEQ;
+		}
+		else if (row[0] || result.record_present)
+			return EILSEQ;
+		const auto &meta = intent.admission.metadata;
+		const std::string original =
+			critical_operation_id_is_zero(meta.original_operation_id) ?
+				"original_operation_id IS NULL" :
+				"original_operation_id=" + id(meta.original_operation_id);
+		const std::string operation_where =
+			where + " AND lineage=" + id(meta.lineage) +
+			" AND epoch=" + id(meta.epoch) + " AND " + original +
+			" AND source_event IS NULL" +
+			" AND canonical_intent=" + hex(command.accounting_intent) +
+			" AND intent_digest=" + hex(intent_digest) +
+			" AND domain_digest=" + hex(intent.domain_digest) +
+			(result_code ? " AND plan_digest IS NULL" :
+				       " AND plan_digest=" + hex(plan_digest)) +
+			" AND outcome=" + (result_code ? "2" : "1") +
+			" AND result_code=" + std::to_string(result_code) +
+			" AND account_count=" + std::to_string(plan.accounts.size()) +
+			" AND posting_count=" + std::to_string(plan.postings.size()) +
+			" AND child_count=0 AND item_event_count=" +
+			std::to_string(plan.item_events.size()) +
+			" AND before_witness_count=" + std::to_string(plan.items_before.size()) +
+			" AND after_witness_count=" + std::to_string(plan.items_after.size());
+		if (!count_matches(connection, "economic_accounting_operation", operation_where,
+				   1) ||
+		    !count_matches(connection, "economic_accounting_account_effect", where,
+				   plan.accounts.size()) ||
+		    !count_matches(connection, "economic_accounting_coin_posting", where,
+				   plan.postings.size()) ||
+		    !count_matches(connection, "economic_accounting_item_reference", where,
+				   plan.item_events.size()))
+			return mysql_errno(connection) ? mysql_errno(connection) : EILSEQ;
+		for (size_t index = 0; index < plan.accounts.size(); ++index)
+		{
+			const auto predicate =
+				effect_predicate(command.operation_id, index, plan.accounts[index]);
+			if (predicate.empty() ||
+			    !count_matches(connection, "economic_accounting_account_effect",
+					   predicate, 1))
+				return mysql_errno(connection) ? mysql_errno(connection) : EILSEQ;
+		}
+		for (size_t index = 0; index < plan.postings.size(); ++index)
+			if (!count_matches(connection, "economic_accounting_coin_posting",
+					   posting_predicate(command.operation_id, index,
+							     plan.postings[index]),
+					   1))
+				return mysql_errno(connection) ? mysql_errno(connection) : EILSEQ;
+		if (result_code)
+			return 0;
+		const auto &event = plan.item_events[0];
+		economic_accounting_item_reference reference = {};
+		if (!economic_accounting_item_reference_find_by_legacy(
+			    connection, command.operation_id, 0, &reference) ||
+		    reference.operation_id.bytes != command.operation_id.bytes ||
+		    reference.line_index != 0 || reference.event_index != 0 ||
+		    reference.child_index != 0 || reference.item_uid != event.uid ||
+		    reference.before_revision != event.before.revision ||
+		    reference.after_revision != event.after.revision)
+			return EILSEQ;
 		return 0;
 	}
 	catch (const std::bad_alloc &)

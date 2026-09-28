@@ -154,8 +154,9 @@ int main() {
     assert(mob_index[0].qst_func == world_quest_proc && mob_index[0].func.mob == trainer_proc);
     assert(!shops[0].dirty && begins==1 && commits==1);
     assert(shops[0].dirty_save_retry.failure_count==0);
-    assert(!queries.empty() && queries[0].find("cash) VALUES") != std::string::npos &&
-           queries[0].find(", 1234) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)") != std::string::npos &&
+    assert(!queries.empty() && queries[0].find("cash, keeper_roaming) VALUES") != std::string::npos &&
+           queries[0].find(", 1234, 0) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)") != std::string::npos &&
+           queries[0].find("keeper_roaming=VALUES(keeper_roaming)") != std::string::npos &&
            queries[0].find("shop_revision=shop_revision+1") != std::string::npos);
     assert(std::any_of(queries.begin(), queries.end(), [](const std::string &query) {
         return query.find("DELETE FROM shopkeeper_items WHERE shopkeeper_id=1") != std::string::npos;
@@ -164,10 +165,16 @@ int main() {
         return query.find("DELETE FROM shopkeepers WHERE") != std::string::npos;
     }));
     shops[0].dirty = 1;
+    shops[0].shop_is_roaming = 1;
     mob_index[0].qst_func = trainer_proc;
     assert(sql_save_dirty_shopkeepers(true));
     assert(mob_index[0].qst_func == trainer_proc && mob_index[0].func.mob == trainer_proc);
     assert(!shops[0].dirty && commits==2);
+    assert(std::any_of(queries.begin(), queries.end(), [](const std::string &query) {
+        return query.find("keeper_roaming) VALUES") != std::string::npos &&
+               query.find(", 1234, 1) ON DUPLICATE KEY UPDATE") != std::string::npos;
+    }));
+    shops[0].shop_is_roaming = 0;
     // Invalid totals never begin a transaction or replace the durable row.
     auto before_cash=begins;
     keeper.copper=-1;

@@ -229,6 +229,7 @@ void normalization(MYSQL *c)
 	const auto count = [&](issue code)
 	{ return report.issue_counts[static_cast<size_t>(code)]; };
 	assert(count(issue::unknown_money) == 4 && count(issue::accounting_overflow) == 1);
+	assert(count(issue::unknown_keeper_configuration) == 1);
 	assert(count(issue::negative_holding) == 2 &&
 	       count(issue::unavailable_native_revision) == 1);
 	assert(count(issue::unresolved_auction) == 1 && count(issue::quarantined_item) == 2);
@@ -422,7 +423,7 @@ int main()
 	sql(c.get(),
 	    "INSERT INTO account_banks(id,account_name,bank_copper,bank_gold,bank_revision) VALUES(7,'synthetic_shared',18446744073709551615,NULL,18446744073709551615)");
 	sql(c.get(),
-	    "INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision) VALUES(3,0,11005,100,47,9),(4,1,12000,101,NULL,1)");
+	    "INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision,keeper_roaming) VALUES(3,0,11005,100,47,9,0),(4,1,12000,101,NULL,1,NULL)");
 	sql(c.get(), "INSERT INTO ships(id,owner_name,money) VALUES(7,'synthetic_owner',NULL)");
 	sql(c.get(),
 	    "INSERT INTO auctions(id,seller_pid,status,winning_bidder_pid,cur_price,obj_blob_str) VALUES(5,11,'CLOSED',22,100,X'000102ff')");
@@ -452,7 +453,9 @@ int main()
 	assert(table(baseline, "account_banks").rows[0].cells[3] == "18446744073709551615");
 	assert(table(baseline, "shopkeepers").rows.size() == 2 &&
 	       table(baseline, "shopkeepers").rows[0].cells[4] == "47" &&
-	       !table(baseline, "shopkeepers").rows[1].cells[4]);
+	       !table(baseline, "shopkeepers").rows[1].cells[4] &&
+	       table(baseline, "shopkeepers").rows[0].cells[6] == "0" &&
+	       !table(baseline, "shopkeepers").rows[1].cells[6]);
 	assert(table(baseline, "auction_item_pickups").rows[0].cells[2] == "");
 	assert(table(baseline, "item_current_owner").rows[0].cells[9] ==
 	       std::string("\0\xff\0", 3));
@@ -462,6 +465,10 @@ int main()
 	sql(c.get(), "UPDATE shopkeepers SET cash=48,shop_revision=10 WHERE id=3");
 	assert(capture(c.get()).digest != baseline.digest);
 	sql(c.get(), "UPDATE shopkeepers SET cash=47,shop_revision=9 WHERE id=3");
+	assert(capture(c.get()) == baseline);
+	sql(c.get(), "UPDATE shopkeepers SET keeper_roaming=1 WHERE id=3");
+	assert(capture(c.get()).digest != baseline.digest);
+	sql(c.get(), "UPDATE shopkeepers SET keeper_roaming=0 WHERE id=3");
 	assert(capture(c.get()) == baseline);
 	// NULL and empty locator bytes produce distinct source/row evidence.
 	sql(c.get(), "UPDATE player_data SET account_name=NULL WHERE pid=22");

@@ -144,11 +144,15 @@ bool insert_source_claim(MYSQL *connection, const economic_operation_metadata &m
 		errno = EILSEQ;
 		return false;
 	}
-	return execute(connection,
-		       "INSERT INTO economic_accounting_source_claim(lineage,source_event,"
-		       "operation_id,outcome) VALUES(" +
-			       id(metadata.lineage) + "," + hex(encoded) + "," +
-			       id(metadata.operation_id) + ",1)");
+	if (execute(connection, "INSERT INTO economic_accounting_source_claim(lineage,source_event,"
+				"operation_id,outcome) VALUES(" +
+					id(metadata.lineage) + "," + hex(encoded) + "," +
+					id(metadata.operation_id) + ",1)"))
+		return true;
+	// A committed source already issued its item. A new command cannot retry it.
+	if (errno == 1062)
+		errno = EEXIST;
+	return false;
 }
 
 bool parse_unsigned(const std::string &text, uint64_t *value)

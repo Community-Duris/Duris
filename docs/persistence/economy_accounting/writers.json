@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "49af585c4b9c8cfa5ead0ac07025f39d4720a659",
+  "source_commit": "848814aee772283f2c3a37361bb7d3fcb700995b",
   "census_complete": true,
   "writers": [
     {
@@ -8273,22 +8273,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12051,
+          12071,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12238,
+          12258,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12319,
+          12339,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12417,
+          12437,
           "sql_economy"
         ]
       ],
@@ -8668,17 +8668,17 @@
       "sites": [
         [
           "src/persistence/critical_command_repository.c",
-          925,
+          945,
           "sql_economy"
         ],
         [
           "src/persistence/critical_command_repository.c",
-          928,
+          948,
           "sql_economy"
         ],
         [
           "src/persistence/critical_command_repository.c",
-          1109,
+          1129,
           "sql_economy"
         ]
       ],
@@ -12248,7 +12248,7 @@
       "coverage": "legacy",
       "classification": "Training service debits player wallet; fee is a named training sink.",
       "authority_boundary": "Skill result and wallet debit require one committed root.",
-      "current_support": "Legacy money-helper/source behavior only; unified accounting, both-backend parity and active-epoch refusal unverified.",
+      "current_support": "Focused source-order and extracted fee-guard harness verify refusal before a paid lesson in an active epoch. Legacy debit remains when inactive; both-backend gameplay/root evidence is unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -12263,16 +12263,18 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_active_skill_practice_fee.py"
+      ],
       "sites": [
         [
           "src/guild/guild.c",
-          1249,
+          1009,
           "money_helper"
         ]
       ],
       "evidence": [],
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "The do_practice fee helper guards paid lessons before skill learning; tests/async/test_active_skill_practice_fee.py checks source order and the extracted guard. Playable backend refusal and committed root identity remain unqualified.",
       "native_effects": {
         "holding_effect": "Training service debits player wallet; fee is a named training sink.",
         "custody_effect": "No item custody at the linked money-helper site; linked item action needs separate UID evidence.",
@@ -12311,12 +12313,12 @@
       "sites": [
         [
           "src/guild/guild.c",
-          507,
+          508,
           "money_helper"
         ],
         [
           "src/guild/guild.c",
-          513,
+          514,
           "money_helper"
         ]
       ],
@@ -14509,42 +14511,42 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1016,
+          1017,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1034,
+          1035,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2077,
+          2081,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2085,
+          2089,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2097,
+          2101,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2219,
+          2223,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2227,
+          2231,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2280,
+          2289,
           "economic_submit"
         ],
         [
@@ -17170,7 +17172,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2331,
+          2340,
           "item_lifecycle"
         ]
       ],
@@ -17207,7 +17209,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2197,
+          2201,
           "item_lifecycle"
         ]
       ],
@@ -18082,27 +18084,27 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          1471,
+          1472,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1538,
+          1539,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1685,
+          1686,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1758,
+          1759,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1947,
+          1951,
           "economic_submit"
         ],
         [
@@ -18812,12 +18814,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1202,
+          1203,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1203,
+          1204,
           "item_publication"
         ]
       ],
@@ -21972,22 +21974,22 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          2707,
+          2719,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          2708,
+          2720,
           "item_lifecycle"
         ],
         [
           "src/item/storage_lockers.c",
-          2714,
+          2726,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          2715,
+          2727,
           "item_lifecycle"
         ]
       ],
@@ -22030,12 +22032,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3530,
+          3542,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          3531,
+          3543,
           "item_publication"
         ]
       ],
@@ -22082,12 +22084,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1579,
+          1589,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          1580,
+          1590,
           "item_publication"
         ]
       ],
@@ -22129,7 +22131,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3923,
+          3939,
           "money_helper"
         ]
       ],
@@ -22177,12 +22179,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1582,
+          1592,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          1583,
+          1593,
           "item_lifecycle"
         ]
       ],
@@ -22228,7 +22230,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          711,
+          721,
           "item_publication"
         ]
       ],
@@ -22318,12 +22320,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          418,
+          428,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          419,
+          429,
           "item_publication"
         ]
       ],
@@ -22370,12 +22372,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1642,
+          1652,
           "item_lifecycle"
         ],
         [
           "src/item/storage_lockers.c",
-          2902,
+          2914,
           "item_publication"
         ]
       ],
@@ -22421,12 +22423,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1464,
+          1474,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          1518,
+          1528,
           "item_lifecycle"
         ]
       ],
@@ -22472,12 +22474,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3501,
+          3513,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          3508,
+          3520,
           "item_publication"
         ]
       ],
@@ -22523,12 +22525,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3468,
-          "item_publication"
-        ],
-        [
-          "src/item/storage_lockers.c",
-          3469,
+          3480,
           "item_publication"
         ],
         [
@@ -22538,7 +22535,12 @@
         ],
         [
           "src/item/storage_lockers.c",
-          3482,
+          3493,
+          "item_publication"
+        ],
+        [
+          "src/item/storage_lockers.c",
+          3494,
           "item_publication"
         ]
       ],
@@ -22584,7 +22586,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          2938,
+          2950,
           "item_lifecycle"
         ]
       ],
@@ -22626,7 +22628,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1990,
+          2002,
           "money_helper"
         ]
       ],
@@ -22899,7 +22901,7 @@
         ],
         [
           "src/item/item_movement_transaction.h",
-          136,
+          137,
           "economic_submit"
         ],
         [
@@ -27527,42 +27529,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12075,
+          12095,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12076,
+          12096,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12077,
+          12097,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12078,
+          12098,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12109,
+          12129,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12110,
+          12130,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12111,
+          12131,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12112,
+          12132,
           "coin_assignment"
         ]
       ],
@@ -29263,7 +29265,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10771,
+          10791,
           "sql_economy"
         ]
       ],
@@ -29301,7 +29303,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9404,
+          9407,
           "sql_economy"
         ]
       ],
@@ -29339,12 +29341,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9287,
+          9290,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          9367,
+          9370,
           "sql_economy"
         ]
       ],
@@ -29785,22 +29787,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10201,
+          10221,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10273,
+          10293,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11008,
+          11028,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11154,
+          11174,
           "item_publication"
         ]
       ],
@@ -29845,27 +29847,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11077,
+          11097,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11124,
+          11144,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11143,
+          11163,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11149,
+          11169,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11157,
+          11177,
           "item_lifecycle"
         ]
       ],
@@ -29913,22 +29915,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9587,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          9589,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          9591,
+          9590,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
           9592,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9594,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9595,
           "coin_assignment"
         ]
       ],
@@ -29973,17 +29975,17 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9693,
+          9696,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9975,
+          9995,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10013,
+          10033,
           "item_publication"
         ]
       ],
@@ -30028,37 +30030,37 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9447,
+          9450,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9453,
+          9456,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9463,
+          9466,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9705,
-          "item_lifecycle"
-        ],
-        [
-          "src/sql/sql_player.c",
-          9771,
-          "item_lifecycle"
-        ],
-        [
-          "src/sql/sql_player.c",
-          9781,
+          9708,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
           9790,
+          "item_lifecycle"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9800,
+          "item_lifecycle"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9810,
           "item_lifecycle"
         ]
       ],
@@ -32026,7 +32028,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11658,
+          11678,
           "sql_economy"
         ]
       ],
@@ -32064,7 +32066,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11579,
+          11599,
           "ship_coffer_assignment"
         ]
       ],
@@ -32101,12 +32103,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11323,
+          11343,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          11378,
+          11398,
           "sql_economy"
         ]
       ],
@@ -36266,7 +36268,7 @@
       "sites": [
         [
           "src/specs/specs.room.c",
-          836,
+          843,
           "money_helper"
         ]
       ],
@@ -36310,37 +36312,37 @@
       "sites": [
         [
           "src/specs/specs.room.c",
-          930,
+          944,
           "money_helper"
         ],
         [
           "src/specs/specs.room.c",
-          978,
+          999,
           "money_helper"
         ],
         [
           "src/specs/specs.room.c",
-          990,
+          1011,
           "item_lifecycle"
         ],
         [
           "src/specs/specs.room.c",
-          1012,
+          1033,
           "item_publication"
         ],
         [
           "src/specs/specs.room.c",
-          1070,
+          1098,
           "money_helper"
         ],
         [
           "src/specs/specs.room.c",
-          1071,
+          1099,
           "item_publication"
         ],
         [
           "src/specs/specs.room.c",
-          1072,
+          1100,
           "item_lifecycle"
         ]
       ],
@@ -36386,17 +36388,17 @@
       "sites": [
         [
           "src/specs/specs.room.c",
-          1131,
+          1159,
           "item_publication"
         ],
         [
           "src/specs/specs.room.c",
-          1135,
+          1163,
           "item_publication"
         ],
         [
           "src/specs/specs.room.c",
-          1140,
+          1168,
           "money_helper"
         ]
       ],
@@ -36645,7 +36647,7 @@
       "sites": [
         [
           "src/specs/specs.room.c",
-          1211,
+          1239,
           "item_lifecycle"
         ]
       ],
@@ -52533,21 +52535,21 @@
     },
     {
       "path": "src/guild/guild.c",
-      "line": 507,
+      "line": 508,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, wallet, 0);"
     },
     {
       "path": "src/guild/guild.c",
-      "line": 513,
+      "line": 514,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, cost, 0);"
     },
     {
       "path": "src/guild/guild.c",
-      "line": 1249,
+      "line": 1009,
       "family": "money_helper",
-      "excerpt": "SUB_MONEY(ch, SkillRaiseCost(ch, skl), 0);"
+      "excerpt": "return SUB_MONEY(ch, cost, 0) == 0;"
     },
     {
       "path": "src/guild/guildhall_cmds.c",
@@ -53025,79 +53027,79 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1016,
+      "line": 1017,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1034,
+      "line": 1035,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1471,
+      "line": 1472,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1538,
+      "line": 1539,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1685,
+      "line": 1686,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1758,
+      "line": 1759,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1947,
+      "line": 1951,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2077,
+      "line": 2081,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2085,
+      "line": 2089,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2097,
+      "line": 2101,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2219,
+      "line": 2223,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2227,
+      "line": 2231,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2280,
+      "line": 2289,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
@@ -53127,13 +53129,13 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2197,
+      "line": 2201,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2331,
+      "line": 2340,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
@@ -53175,13 +53177,13 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1202,
+      "line": 1203,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1203,
+      "line": 1204,
       "family": "item_publication",
       "excerpt": "obj_to_obj(root, corpse);"
     },
@@ -53229,7 +53231,7 @@
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 136,
+      "line": 137,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
@@ -53523,157 +53525,157 @@
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1990,
+      "line": 2002,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, temp, 0);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3923,
+      "line": 3939,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(actor, chest_cost, 0);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1518,
+      "line": 1528,
       "family": "item_lifecycle",
       "excerpt": "m_pChestObject = read_object(m_chestVnum, VIRTUAL);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1583,
+      "line": 1593,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(m_pChestObject, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1642,
+      "line": 1652,
       "family": "item_lifecycle",
       "excerpt": "m_pChestObject = read_object(m_chestVnum, VIRTUAL);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2708,
+      "line": 2720,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2715,
+      "line": 2727,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2938,
+      "line": 2950,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 418,
+      "line": 428,
       "family": "item_publication",
       "excerpt": "obj_from_room(tmp_obj);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 419,
+      "line": 429,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmp_obj, locker_exit_room(ch, room));"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 711,
+      "line": 721,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, p->GetChestObj());"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1464,
+      "line": 1474,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, m_realRoom);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1579,
+      "line": 1589,
       "family": "item_publication",
       "excerpt": "obj_from_obj(content);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1580,
+      "line": 1590,
       "family": "item_publication",
       "excerpt": "obj_to_room(content, room);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1582,
+      "line": 1592,
       "family": "item_publication",
       "excerpt": "obj_from_room(m_pChestObject);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2707,
+      "line": 2719,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(vict, i);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2714,
+      "line": 2726,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2902,
+      "line": 2914,
       "family": "item_publication",
       "excerpt": "obj_to_room(chest_obj, realRoom);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3468,
+      "line": 3480,
       "family": "item_publication",
       "excerpt": "obj_from_obj(innerObj);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3469,
+      "line": 3481,
       "family": "item_publication",
       "excerpt": "obj_to_char(innerObj, m_chLocker);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3481,
+      "line": 3493,
       "family": "item_publication",
       "excerpt": "obj_from_room(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3482,
+      "line": 3494,
       "family": "item_publication",
       "excerpt": "obj_to_char(tmp_object, m_chLocker);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3501,
+      "line": 3513,
       "family": "item_publication",
       "excerpt": "obj_from_char(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3508,
+      "line": 3520,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmp_object, m_realRoom);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3530,
+      "line": 3542,
       "family": "item_publication",
       "excerpt": "obj_from_room(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3531,
+      "line": 3543,
       "family": "item_publication",
       "excerpt": "obj_to_char(tmp_object, ch);"
     },
@@ -55377,19 +55379,19 @@
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 925,
+      "line": 945,
       "family": "sql_economy",
       "excerpt": "\"UPDATE account_banks SET bank_copper=?,bank_silver=?,bank_gold=?,bank_platinum=?,\""
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 928,
+      "line": 948,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO currency_ledger(operation_id,pid,bank_id,wallet_delta_copper,\""
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 1109,
+      "line": 1129,
       "family": "sql_economy",
       "excerpt": "\"INSERT IGNORE INTO account_banks(account_name,racewar) VALUES(?,?)\";"
     },
@@ -57657,31 +57659,31 @@
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 836,
+      "line": 843,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, temp, 0);"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 930,
+      "line": 944,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, temp, 0);"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 978,
+      "line": 999,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, val, 0);"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1070,
+      "line": 1098,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, val, 0);"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1140,
+      "line": 1168,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, gold, 0);"
     },
@@ -57699,43 +57701,43 @@
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 990,
+      "line": 1011,
       "family": "item_lifecycle",
       "excerpt": "if (!(ticket = read_object(5, VIRTUAL)))"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1072,
+      "line": 1100,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(ticket, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1211,
+      "line": 1239,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1012,
+      "line": 1033,
       "family": "item_publication",
       "excerpt": "obj_to_char(ticket, ch);"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1071,
+      "line": 1099,
       "family": "item_publication",
       "excerpt": "obj_from_char(ticket);"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1131,
+      "line": 1159,
       "family": "item_publication",
       "excerpt": "obj_from_room(obj);"
     },
     {
       "path": "src/specs/specs.room.c",
-      "line": 1135,
+      "line": 1163,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
@@ -59193,79 +59195,79 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9587,
+      "line": 9590,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = remaining / 1000;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9589,
+      "line": 9592,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = remaining / 100;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9591,
+      "line": 9594,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = remaining / 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9592,
+      "line": 9595,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = remaining % 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12075,
+      "line": 12095,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12076,
+      "line": 12096,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12077,
+      "line": 12097,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12078,
+      "line": 12098,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12109,
+      "line": 12129,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = parsed.copper;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12110,
+      "line": 12130,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = parsed.silver;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12111,
+      "line": 12131,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = parsed.gold;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12112,
+      "line": 12132,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = parsed.platinum;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11579,
+      "line": 11599,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = atoi(row[8]);"
     },
@@ -59373,43 +59375,31 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9447,
+      "line": 9450,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9453,
+      "line": 9456,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9463,
+      "line": 9466,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item->obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9693,
+      "line": 9696,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9705,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 9771,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 9781,
+      "line": 9708,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
@@ -59421,55 +59411,67 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9975,
+      "line": 9800,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 9810,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 9995,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10201,
+      "line": 10221,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10273,
+      "line": 10293,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11008,
+      "line": 11028,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11077,
+      "line": 11097,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11124,
+      "line": 11144,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11143,
+      "line": 11163,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11149,
+      "line": 11169,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11157,
+      "line": 11177,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
@@ -59541,13 +59543,13 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10013,
+      "line": 10033,
       "family": "item_publication",
       "excerpt": "equip_char(k->mob, k->equipment[slot], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11154,
+      "line": 11174,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, room);"
     },
@@ -59559,67 +59561,67 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9287,
+      "line": 9290,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO saved_items (\""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9367,
+      "line": 9370,
       "family": "sql_economy",
       "excerpt": "snprintf(del_query, sizeof(del_query), \"DELETE FROM saved_items WHERE item_key='%s'\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9404,
+      "line": 9407,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"DELETE FROM saved_items WHERE item_key='%s'\", esc_key);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10771,
+      "line": 10791,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM saved_items WHERE id=%d AND item_key='%s'\", source_root_id,"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11323,
+      "line": 11343,
       "family": "sql_economy",
       "excerpt": "\"insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11378,
+      "line": 11398,
       "family": "sql_economy",
       "excerpt": "\"update ships set owner_name='%s', ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11658,
+      "line": 11678,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"delete from ships where owner_name='%s'\", esc_owner);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12051,
+      "line": 12071,
       "family": "sql_economy",
       "excerpt": "\"insert ignore into account_banks (account_name, racewar) values ('%s', %d)\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12238,
+      "line": 12258,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper+%d, \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12319,
+      "line": 12339,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12417,
+      "line": 12437,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper-%d, \""
     },

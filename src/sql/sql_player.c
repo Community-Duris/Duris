@@ -8939,7 +8939,7 @@ static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
 
 static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot, int container_id)
 {
-	if (!obj || !DB || shopkeeper_id <= 0)
+	if (!obj || !DB || shopkeeper_id <= 0 || !obj->obj_uid)
 		return 0;
 
 	int vnum = obj_index[obj->R_num].virtual_number;
@@ -9001,20 +9001,20 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 		 "value0, value1, value2, value3, value4, value5, value6, value7, "
 		 "name, short_descr, description, action_descr, "
 		 "wear_flags, item_type, item_material, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5"
+		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid"
 		 ") VALUES ("
 		 "%d, %d, %d, %s, 1, "
 		 "%d, %d, %ld, %lu, "
 		 "%d, %d, %d, %d, %d, %d, %d, %d, "
 		 "%s, %s, %s, %s, "
 		 "%s, %s, %s, "
-		 "%s, %s, %s, %s, %s"
+		 "%s, %s, %s, %s, %s, %lu"
 		 ")",
 		 shopkeeper_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
 		 (long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
 		 obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
 		 obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
-		 material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+		 material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, obj->obj_uid);
 
 	if (esc_name)
 		free(esc_name);
@@ -9106,13 +9106,16 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	long save_time = time(0);
 
 	char ins_query[512];
-	snprintf(ins_query, sizeof(ins_query),
-		 "INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time, cash) "
-		 "VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), %lld) "
-		 "ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), mob_vnum=VALUES(mob_vnum), "
-		 "room_vnum=VALUES(room_vnum), save_time=VALUES(save_time), "
-		 "cash=VALUES(cash), shop_revision=shop_revision+1",
-		 shop_nr, mob_vnum, room_vnum, save_time, static_cast<long long>(cash));
+	snprintf(
+		ins_query, sizeof(ins_query),
+		"INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time, cash, keeper_roaming) "
+		"VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), %lld, %d) "
+		"ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), mob_vnum=VALUES(mob_vnum), "
+		"room_vnum=VALUES(room_vnum), save_time=VALUES(save_time), "
+		"cash=VALUES(cash), keeper_roaming=VALUES(keeper_roaming), "
+		"shop_revision=shop_revision+1",
+		shop_nr, mob_vnum, room_vnum, save_time, static_cast<long long>(cash),
+		shop_index[shop_nr].shop_is_roaming ? 1 : 0);
 
 	if (!sql_run_query(ins_query))
 	{
@@ -9653,7 +9656,7 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		"SELECT si.id, si.shopkeeper_id, si.vnum, si.equip_slot, si.weight, si.cost, si.timer, "
 		"si.extra_flags, si.value0, si.value1, si.value2, si.value3, si.value4, si.value5, "
 		"si.value6, si.value7, si.name, si.short_descr, si.description, si.action_descr, si.container_id, "
-		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5 "
+		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5, si.obj_uid "
 		"FROM shopkeeper_items si "
 		"INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
 		"WHERE (%d < 0 OR s.shop_id=%d) ORDER BY si.shopkeeper_id, si.id",
@@ -9764,9 +9767,25 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 				obj->bitvector4 = strtoul(row[27], NULL, 10);
 			if (row[28])
 				obj->bitvector5 = strtoul(row[28], NULL, 10);
+			bool valid_uid = true;
+			if (row[29])
+			{
+				char *end = NULL;
+				errno = 0;
+				const unsigned long saved_uid = strtoul(row[29], &end, 10);
+				valid_uid = !errno && end && !*end && saved_uid &&
+					    saved_uid != ULONG_MAX;
+				if (valid_uid)
+				{
+					obj->obj_uid = saved_uid;
+					if (saved_uid >= next_obj_uid)
+						next_obj_uid = saved_uid + 1;
+				}
+			}
 			obj->db_item_id = item_id;
 			REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
-			if (!sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item"))
+			if (!valid_uid ||
+			    !sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item"))
 			{
 				extract_obj(obj);
 				mysql_free_result(result);
@@ -9785,7 +9804,8 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			}
 			for (struct all_items_temp *existing = all_items; existing;
 			     existing = existing->next)
-				if (existing->item_id == item_id)
+				if (existing->item_id == item_id ||
+				    existing->obj->obj_uid == obj->obj_uid)
 				{
 					extract_obj(obj);
 					free(t);

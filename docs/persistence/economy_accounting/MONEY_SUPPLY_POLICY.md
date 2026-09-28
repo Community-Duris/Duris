@@ -83,8 +83,16 @@ authority lock and commits its native wallet and bank revisions, balanced plan,
 unique source claim, and receipt in one recoverable root. Its replay verifies
 the claim without rereading the pending bit. Both owners resolve current native
 revisions when this sourced reward commits, so an intervening ATM operation
-does not strand its deterministic ID. Gameplay submission remains inactive
-until the producer can prove that boundary for the selected backend.
+does not strand its deterministic ID. The gameplay currency producer now freezes
+this grant through the selected wallet and bank projection and submits the
+typed command for publication; the producer fixture covers both backend builds.
+The flatfile native fixture also commits that gameplay-frozen command with its
+wildcard bank revision, then verifies the source claim, intervening ATM rebase,
+retained replay, and crash recovery. The pooled SQL fixture takes the same
+gameplay-frozen command through the coordinator and verifies its native bank
+credit, balanced postings, source claim, receipt, and retained replay on an
+isolated MySQL 8 schema. A live player journey through each backend remains
+pending.
 
 The versioned reason registry requires a source event for service, training,
 locker, shipping, insurance, guild, crafting, gambling-stake, shop-buy,
@@ -120,6 +128,9 @@ quest, NPC, and wallet effects still need one transactional root.
 | Coin steal | Two durable player wallets and exact stolen denominations; NPC target needs a finite holding lifetime | Refuse before victim resolution, live victim decrement, or thief credit in an active epoch |
 | Smelter coin/ore give | Durable service event, NPC cash policy, and atomic ore/cash result | Refuse the special procedure at `CMD_GIVE` admission before either coin or ore mutation in an active epoch |
 | Permanent stat potion | Durable purchase ID, exact wallet expense, and permanent stat result | Refuse `stat_shops` buy before the debit or stat spell; the legacy path ignores a refused `SUB_MONEY` result |
+| Patrol hiring | Durable hire ID, exact wallet expense, and spawned patrol identity | Refuse `patrol_shops` buy before mob creation, debit, or patrol publication; listing remains available |
+| Pet purchase and stable rental | Durable purchase or rental ID, exact wallet expense, and pet or ticket state | Refuse `pet_shops` buy, rent, and ticket return before mob creation, pet storage, ticket movement, or debit; listing and rental quotes remain available |
+| Locker entry and private chest creation | Durable visit or chest purchase ID, exact wallet or bank expense, and selected locker or chest state | Refuse paid personal locker entry before locker loading and room movement; refuse private chest creation before password work or SQL insertion, and recheck when its asynchronous callback runs |
 | Item enhancement | Durable action ID, exact wallet expense, donor/material consumption, and resulting item state | Refuse `do_enhance` at command admission before either enhancement implementation runs |
 | Guild founding | Durable confirmation ID, exact wallet expense, and guild creation | Consume and refuse active founding confirmation before `found_asc` creates the guild |
 | Guildhall construction | Durable construction ID, exact wallet expense, construction-point cost, and resulting guildhall state | Refuse all six recognized `construct` actions at the shared dispatcher before a cost or structural change; keep command help available |
@@ -127,6 +138,7 @@ quest, NPC, and wallet effects still need one transactional root.
 | Item prayer collection | Durable stash item UID, exact wallet expense, and custody movement | Refuse `pray_for_items` only when a matching stash item exists, before item movement or debit; unmatched prayers remain available to other handlers |
 | Home relocation | Durable home-change ID, exact wallet expense, and saved birthplace result | Refuse `do_home` after eligibility checks but before saving home fields or debiting the wallet |
 | Epic skill training | Durable training ID, epic-point and wallet costs, and learned skill result | Refuse `epic_teacher` purchase before submitting the epic-point debit; a rejected callback coin submission requests an epic-point refund before the skill grant |
+| Ordinary skill practice | Durable lesson ID, exact wallet expense, and learned skill increment | Refuse a priced `do_practice` lesson before debit or learning in an active epoch; require a successful debit in inactive mode and keep zero-cost spell copying and price listings available |
 | Paid mail send | Durable message submission ID and exact wallet stamp expense | Refuse `postmaster_send_mail` before debit submission or message editor state; mail receipt remains available |
 | Monk remort | Durable training ID, exact wallet expense, class and spell transition | Refuse the `remort` ask branch before debit submission or class mutation |
 | Paid character rename | Durable rename request ID, exact wallet expense, character identity and ship-owner change | Refuse `mob_do_rename_hook` at named ask admission before identity changes or wallet debit |
@@ -218,6 +230,23 @@ mode. Source-order checks pin the enhancement, guild confirmation, and epic
 teacher guards before their separate native mutation or transaction submission.
 These refusals do not supply the purchase source identities or atomic adapters;
 the routes remain unavailable in an active epoch.
+The extracted patrol and pet shop fixture exercises active refusal for patrol
+hiring, pet purchase, stable rental, and ticket return before a debit or native
+service effect. It also checks that listings and rental quotes remain available
+and that all four legacy actions still execute while accounting is inactive.
+These services still need typed source events and atomic money and gameplay
+commits before activation.
+The paid locker fixture checks refusal before personal locker loading or room
+movement and before a private chest hash job or SQL insertion. The chest
+callback checks the epoch again before insertion, including when activation
+occurs after the password job was queued. Identification receipt reads and
+chest listings remain available. Paid locker services still need one source
+event and atomic fee and native state per operation.
+The ordinary skill practice fixture checks the extracted fee guard against
+active refusal, a failed inactive debit, and a successful inactive debit. The
+production command places that guard before the learned-skill increment while
+retaining zero-cost spell copying and price listings. Paid lessons still need
+a durable source and atomic wallet and skill state.
 The mail-send fixture exercises active refusal before the stamp debit and editor
 state, plus the inactive path. Source-order checks cover monk remort and both
 ticket procedures. Their separate debit, item, and class/message outcomes are

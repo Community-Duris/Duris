@@ -8,12 +8,14 @@ from test_flatfile_accounting_store import ROOT, SOURCES
 
 
 def main():
+    compiler = os.environ.get("CXX", "g++-12")
     sources = ["tests/async/flatfile_accounting_bank_test.cpp",
                "src/flatfile/flatfile_accounting_authority.c",
                "src/flatfile/flatfile_accounting_bank_transaction.c",
                "src/flatfile/flatfile_identity_repository.c",
                "src/flatfile/flatfile_player_domain_repository.c",
                "src/flatfile/flatfile_player_snapshot_file.c",
+               "src/economy/economic_gameplay_authority.c",
                "src/economy/economic_command_admission.c",
                "src/economy/coin_transfer_accounting.c",
                "src/economy/item_transfer_accounting.c",
@@ -25,10 +27,11 @@ def main():
     with tempfile.TemporaryDirectory(prefix="duris-flat-bank-") as temporary:
         binary = Path(temporary) / "bank"
         subprocess.run([
-            "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+            compiler, "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-fno-pie", "-no-pie", "-D__NO_MYSQL__", "-DDURIS_FLATFILE_ACCOUNTING_TEST",
-            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc", "-Isrc/no_mysql", *sources,
+            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+            "-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST", "-Isrc", "-Isrc/no_mysql", *sources,
             "-Wl,--wrap=_Znwm,--wrap=_Znam", "-lcrypto", "-lz", "-pthread", "-o", str(binary),
         ], cwd=ROOT, check=True)
         subprocess.run([str(binary), str(Path(temporary) / "state")], cwd=ROOT, check=True,

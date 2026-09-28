@@ -16,6 +16,8 @@ namespace
 constexpr uint32_t PLAYER = 2147000731U;
 constexpr uint32_t SHOP = 3;
 constexpr uint32_t KEEPER_ROW = 9;
+constexpr uint32_t SHOP_ITEM_ROW = 21;
+constexpr uint32_t PLAYER_ITEM_ROW = 31;
 constexpr uint64_t ITEM = 9900000731ULL;
 constexpr uint64_t PRODUCED = 9900000732ULL;
 MYSQL *connection = nullptr;
@@ -219,11 +221,14 @@ int main()
 		"bank_platinum,bank_revision) VALUES('shop_sql_player',1,2,0,0,0,7)");
 	const auto native_bank =
 		scalar("SELECT id FROM account_banks WHERE account_name='shop_sql_player'");
-	execute("INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision) "
-		"VALUES(9,3,12345,100,500,9)");
+	execute("INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision,"
+		"keeper_roaming) VALUES(9,3,12345,100,500,9,0)");
 	execute("INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
 		"owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
 		std::to_string(ITEM) + "," + std::to_string(ITEM) + ",NULL,9,4,0,4,77,1)");
+	execute("INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid,equip_slot) VALUES(" +
+		std::to_string(SHOP_ITEM_ROW) + "," + std::to_string(KEEPER_ROW) + ",77," +
+		std::to_string(ITEM) + ",0)");
 	execute("INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) "
 		"VALUES(1," +
 		std::to_string(PLAYER) + ",0,11),(9,4,0,12)");
@@ -243,10 +248,18 @@ int main()
 	plan_case(shop_trade_action::buy_produced, 75, epoch, wallet, bank, keeper);
 	const auto buy = command_for(payload_for(shop_trade_action::buy_existing), 76, epoch,
 				     wallet, bank, keeper);
-	execute("UPDATE shopkeepers SET cash=NULL WHERE id=9");
+	execute("DELETE FROM shopkeeper_items WHERE id=" + std::to_string(SHOP_ITEM_ROW));
 	execute("START TRANSACTION");
 	economic_sql_shop_trade_context unchanged;
 	unchanged.keeper_id = 123;
+	assert(economic_sql_shop_trade_lock(connection, buy, &unchanged) == ESTALE &&
+	       unchanged.keeper_id == 123);
+	execute("ROLLBACK");
+	execute("INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid,equip_slot) VALUES(" +
+		std::to_string(SHOP_ITEM_ROW) + "," + std::to_string(KEEPER_ROW) + ",77," +
+		std::to_string(ITEM) + ",0)");
+	execute("UPDATE shopkeepers SET cash=NULL WHERE id=9");
+	execute("START TRANSACTION");
 	assert(economic_sql_shop_trade_lock(connection, buy, &unchanged) == ENODATA &&
 	       unchanged.keeper_id == 123);
 	execute("ROLLBACK");
@@ -256,6 +269,22 @@ int main()
 	       unchanged.keeper_id == 123);
 	execute("ROLLBACK");
 	execute("UPDATE shopkeepers SET cash=500 WHERE id=9");
+	execute("UPDATE shopkeepers SET keeper_roaming=NULL WHERE id=9");
+	execute("START TRANSACTION");
+	assert(economic_sql_shop_trade_lock(connection, buy, &unchanged) == ENODATA &&
+	       unchanged.keeper_id == 123);
+	execute("ROLLBACK");
+	execute("UPDATE shopkeepers SET keeper_roaming=1 WHERE id=9");
+	execute("START TRANSACTION");
+	assert(economic_sql_shop_trade_lock(connection, buy, &unchanged) == ESTALE &&
+	       unchanged.keeper_id == 123);
+	execute("ROLLBACK");
+	execute("UPDATE shopkeepers SET keeper_roaming=2 WHERE id=9");
+	execute("START TRANSACTION");
+	assert(economic_sql_shop_trade_lock(connection, buy, &unchanged) == ERANGE &&
+	       unchanged.keeper_id == 123);
+	execute("ROLLBACK");
+	execute("UPDATE shopkeepers SET keeper_roaming=0 WHERE id=9");
 	execute("INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
 		"owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
 		std::to_string(ITEM + 10) + "," + std::to_string(ITEM) + "," +
@@ -265,6 +294,52 @@ int main()
 	       unchanged.keeper_id == 123);
 	execute("ROLLBACK");
 	execute("DELETE FROM item_current_owner WHERE item_uid=" + std::to_string(ITEM + 10));
+	execute("INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid,equip_slot,"
+		"container_id) VALUES(22,9,78," +
+		std::to_string(ITEM + 11) + ",0," + std::to_string(SHOP_ITEM_ROW) + ")");
+	execute("START TRANSACTION");
+	assert(economic_sql_shop_trade_lock(connection, buy, &unchanged) == EMSGSIZE &&
+	       unchanged.keeper_id == 123);
+	execute("ROLLBACK");
+	execute("DELETE FROM shopkeeper_items WHERE id=22");
+	execute("INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
+		"owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
+		std::to_string(ITEM + 20) + "," + std::to_string(ITEM) + "," +
+		std::to_string(ITEM) + ",9,4,0,2,78,1)");
+	execute("INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid,equip_slot,"
+		"container_id) VALUES(22,9,78," +
+		std::to_string(ITEM + 20) + ",0," + std::to_string(SHOP_ITEM_ROW) + ")");
+	auto nested = payload_for(shop_trade_action::buy_existing);
+	nested.item_count = 2;
+	nested.items[1] = { ITEM + 20, ITEM, ITEM, 2, 78, item_custody_state::active };
+	const auto nested_command = command_for(nested, 83, epoch, wallet, bank, keeper);
+	execute("START TRANSACTION");
+	economic_sql_shop_trade_context nested_context;
+	assert(economic_sql_shop_trade_lock(connection, nested_command, &nested_context) == 0);
+	economic_frozen_intent nested_intent;
+	assert(economic_intent_decode(nested_command.accounting_intent, &nested_intent) ==
+	       economic_accounting_error::ok);
+	auto nested_result = result_for(nested, nested_context.before);
+	nested_result.item_count = 2;
+	nested_result.item_uids[1] = ITEM + 20;
+	nested_result.item_revisions[1] = 3;
+	economic_accounting_plan nested_plan;
+	assert(shop_trade_accounting_plan(nested_command, nested_intent, nested_context.before,
+					  nested_result,
+					  &nested_plan) == economic_accounting_error::ok);
+	assert(nested_plan.item_events.size() == 2);
+	execute("ROLLBACK");
+	execute("UPDATE shopkeeper_items SET container_id=NULL WHERE id=22");
+	execute("START TRANSACTION");
+	assert(economic_sql_shop_trade_lock(connection, nested_command, &unchanged) == EMSGSIZE &&
+	       unchanged.keeper_id == 123);
+	execute("ROLLBACK");
+	execute("DELETE FROM shopkeeper_items WHERE id=22");
+	execute("DELETE FROM item_current_owner WHERE item_uid=" + std::to_string(ITEM + 20));
+	execute("DELETE FROM shopkeeper_items WHERE id=" + std::to_string(SHOP_ITEM_ROW));
+	execute("INSERT INTO player_items(id,pid,vnum,obj_uid,equip_slot) VALUES(" +
+		std::to_string(PLAYER_ITEM_ROW) + "," + std::to_string(PLAYER) + ",77," +
+		std::to_string(ITEM) + ",0)");
 	execute("UPDATE item_current_owner SET owner_type=1,owner_id=" + std::to_string(PLAYER) +
 		" WHERE item_uid=" + std::to_string(ITEM));
 	const auto sell = command_for(payload_for(shop_trade_action::sell_store), 82, epoch, wallet,
@@ -277,9 +352,15 @@ int main()
 	execute("ROLLBACK");
 	execute("UPDATE item_current_owner SET equipment_slot=0 WHERE item_uid=" +
 		std::to_string(ITEM));
+	execute("UPDATE player_items SET equip_slot=1 WHERE id=" + std::to_string(PLAYER_ITEM_ROW));
+	execute("START TRANSACTION");
+	assert(economic_sql_shop_trade_lock(connection, sell, &unchanged) == ESTALE &&
+	       unchanged.keeper_id == 123);
+	execute("ROLLBACK");
+	execute("UPDATE player_items SET equip_slot=0 WHERE id=" + std::to_string(PLAYER_ITEM_ROW));
 	plan_case(shop_trade_action::sell_store, 77, epoch, wallet, bank, keeper);
 	plan_case(shop_trade_action::sell_destroy, 78, epoch, wallet, bank, keeper);
-	execute("UPDATE shopkeepers SET cash=50,mob_vnum=11005 WHERE id=9");
+	execute("UPDATE shopkeepers SET cash=50,mob_vnum=11005,keeper_roaming=1 WHERE id=9");
 	auto exception = payload_for(shop_trade_action::sell_store);
 	exception.expected_keeper_cash = 50;
 	exception.keeper_vnum = 11005;
@@ -319,7 +400,11 @@ int main()
 					  roaming_result, &roaming_plan) ==
 	       economic_accounting_error::negative_holding);
 	execute("ROLLBACK");
-	execute("UPDATE shopkeepers SET cash=500 WHERE id=9");
+	execute("UPDATE shopkeepers SET cash=500,keeper_roaming=0 WHERE id=9");
+	execute("DELETE FROM player_items WHERE id=" + std::to_string(PLAYER_ITEM_ROW));
+	execute("INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid,equip_slot) VALUES(" +
+		std::to_string(SHOP_ITEM_ROW) + "," + std::to_string(KEEPER_ROW) + ",77," +
+		std::to_string(ITEM) + ",0)");
 	execute("UPDATE item_current_owner SET owner_type=9,owner_id=4 WHERE item_uid=" +
 		std::to_string(ITEM));
 	plan_case(shop_trade_action::discard_invalid, 79, epoch, wallet, bank, keeper);
@@ -330,6 +415,6 @@ int main()
 	       unchanged.keeper_id == 123);
 	execute("ROLLBACK");
 	mysql_close(connection);
-	std::puts("SQL shop lock: five actions, cash exceptions, stale/unknown cash, hidden "
-		  "child, equipped item, inactive epoch PASS");
+	std::puts("SQL shop lock: five actions, cash exceptions, stale/unknown cash, "
+		  "hidden custody/native child, missing stock, equipped item, inactive epoch PASS");
 }

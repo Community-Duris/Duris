@@ -28,6 +28,7 @@ struct Object
 {
 	int R_num = 0, weight = 0, cost = 0, value[8] = {}, str_mask = 0, loc_p = 0, wear_flags = 0,
 	    type = 0, material = 0, db_item_id = 0;
+	unsigned long obj_uid = 0;
 	unsigned char runtime_flags = 0;
 	long timer[1] = {};
 	unsigned long extra_flags = 0, bitvector = 0, bitvector2 = 0, bitvector3 = 0,
@@ -87,6 +88,7 @@ ShopIndex *shop_index = shop_indexes;
 int number_of_shops = 4, top_of_world = 2;
 P_char character_list = nullptr;
 std::vector<P_obj> objects;
+unsigned long next_obj_uid = 500;
 int births = 0;
 void extract_obj(P_obj obj, int = 0);
 #define GET_RNUM(ch) ((ch)->rnum)
@@ -215,6 +217,7 @@ P_obj read_object(int rnum, int)
 		return nullptr;
 	P_obj obj = new Object;
 	obj->R_num = rnum;
+	obj->obj_uid = next_obj_uid++;
 	objects.push_back(obj);
 	return obj;
 }
@@ -283,6 +286,36 @@ struct MYSQL_RES
 };
 using MYSQL_ROW = char **;
 bool DB = true;
+struct
+{
+	int virtual_number = 0;
+} obj_index[128];
+bool allow_save_queries = false;
+unsigned long next_insert_id = 1;
+std::vector<std::string> save_queries;
+char *sql_escape_string(const char *value)
+{
+	return strdup(value);
+}
+void sql_format_item_diff_fields_and_free_proto(P_obj, char *wear, char *type, char *material,
+						char *bv1, char *bv2, char *bv3, char *bv4,
+						char *bv5)
+{
+	for (char *field : { wear, type, material, bv1, bv2, bv3, bv4, bv5 })
+		strcpy(field, "NULL");
+}
+unsigned long mysql_insert_id(bool)
+{
+	return next_insert_id++;
+}
+bool sql_save_shopkeeper_item_affects(int, P_obj)
+{
+	return true;
+}
+bool sql_save_item_extra_descr(int, P_obj, const char *)
+{
+	return true;
+}
 MYSQL_RES *db_query(const char *query, ...)
 {
 	if (fail_affects_query && strstr(query, "FROM shopkeeper_affects sa"))
@@ -311,10 +344,11 @@ void mysql_free_result(MYSQL_RES *result)
 {
 	delete result;
 }
-bool sql_run_query(const char *)
+bool sql_run_query(const char *query)
 {
-	assert(false && "restore must not delete the durable snapshots");
-	return false;
+	assert(allow_save_queries && "restore must not delete the durable snapshots");
+	save_queries.emplace_back(query);
+	return true;
 }
 
 bool is_replicated_shop(int shop)
@@ -330,6 +364,7 @@ bool is_replicated_shop(int shop)
 	return false;
 }
 
+// PRODUCTION_SAVE_ITEM
 // PRODUCTION_RESTORE
 // PRODUCTION_HELPER
 
@@ -372,11 +407,12 @@ P_char spawn(int room, int rnum = 0)
 }
 void add_item(int keeper, int vnum, int slot = 0)
 {
-	std::vector<std::string> row(29, "0");
+	std::vector<std::string> row(30, "0");
 	row[0] = std::to_string(saved_items.size() + 1);
 	row[1] = std::to_string(keeper);
 	row[2] = std::to_string(vnum);
 	row[3] = std::to_string(slot);
+	row[29] = std::to_string(10000 + saved_items.size() + 1);
 	for (int i = 16; i <= 19; ++i)
 		row[i] = "";
 	saved_items.push_back(row);
@@ -387,6 +423,13 @@ bool has_item(P_char ch, int rnum)
 		if (obj->R_num == rnum)
 			return true;
 	return false;
+}
+P_obj carried_item(P_char ch, int rnum)
+{
+	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+		if (obj->R_num == rnum)
+			return obj;
+	return nullptr;
 }
 int main(int argc, char **argv)
 {
@@ -477,7 +520,10 @@ int main(int argc, char **argv)
 		assert(!second->next_in_room && world[2].people == elsewhere);
 		assert(has_item(first, 70) && has_item(first, 80) && !has_item(first, 81));
 		assert(has_item(second, 71) && has_item(second, 81) && !has_item(second, 80));
+		assert(carried_item(first, 70)->obj_uid == 10001 &&
+		       carried_item(second, 71)->obj_uid == 10002);
 		assert(second->equipment[0]->R_num == 72 && second->affects == 1);
+		assert(second->equipment[0]->obj_uid == 10003 && next_obj_uid > 10003);
 		assert(first->platinum == 1 && first->gold == 2 && first->silver == 3 &&
 		       first->copper == 4);
 		assert(second->platinum == 0 && second->gold == 0 && second->silver == 0 &&
@@ -497,6 +543,34 @@ int main(int argc, char **argv)
 		assert(has_item(world[1].people, 71) && !has_item(world[1].people, 72));
 		assert(world[1].people->silver == 2 && world[1].people->copper == 5);
 		assert(shop_index[1].dirty && !shop_index[0].dirty);
+	}
+	else if (scenario == "duplicate_uid")
+	{
+		saved_keepers = { { "0", "10", "100", "200", "25" } };
+		add_item(10, 70);
+		add_item(10, 71);
+		saved_items[1][29] = saved_items[0][29];
+		assert(!sql_restore_shopkeepers());
+		assert(objects.empty() && !character_list && !world[0].people);
+	}
+	else if (scenario == "legacy_uid")
+	{
+		saved_keepers = { { "0", "10", "100", "200", "25" } };
+		add_item(10, 70);
+		saved_items[0][29].clear();
+		assert(sql_restore_shopkeepers());
+		assert(carried_item(world[0].people, 70)->obj_uid >= 500 && shop_index[0].dirty);
+	}
+	else if (scenario == "invalid_uid")
+	{
+		saved_keepers = { { "0", "10", "100", "200", "25" } };
+		add_item(10, 70);
+		saved_items[0][29] = "0";
+		assert(!sql_restore_shopkeepers());
+		assert(objects.empty() && !character_list && !world[0].people);
+		saved_items[0][29] = std::to_string(ULONG_MAX) + "0";
+		assert(!sql_restore_shopkeepers());
+		assert(objects.empty() && !character_list && !world[0].people);
 	}
 	else if (scenario == "cleanup")
 	{
@@ -533,6 +607,26 @@ int main(int argc, char **argv)
 		assert(!sql_restore_shopkeepers());
 		assert(!character_list && objects.empty() && !world[0].people && !world[1].people &&
 		       !world[2].people && mob_index[0].number == 0);
+	}
+	else if (scenario == "uid_save")
+	{
+		obj_index[70].virtual_number = 70;
+		obj_index[71].virtual_number = 71;
+		P_obj root = read_object(70, REAL);
+		P_obj child = read_object(71, REAL);
+		root->obj_uid = 123456;
+		child->obj_uid = 123457;
+		root->contains = child;
+		allow_save_queries = true;
+		assert(sql_save_shopkeeper_item(10, root, 0, 0) == 1);
+		assert(save_queries.size() == 2);
+		assert(save_queries[0].find("obj_uid") != std::string::npos &&
+		       save_queries[0].find("123456") != std::string::npos);
+		assert(save_queries[1].find("obj_uid") != std::string::npos &&
+		       save_queries[1].find("123457") != std::string::npos &&
+		       save_queries[1].find("10, 71, 0, 1, 1") != std::string::npos);
+		root->obj_uid = 0;
+		assert(sql_save_shopkeeper_item(10, root, 0, 0) == 0 && save_queries.size() == 2);
 	}
 	else
 		assert(false);

@@ -71,9 +71,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'telemetry_session','timers','towns','world_quest_accomplished','zone_story_quest_state',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"9b603b0a7d4f6c1ca920c36eb6c300112e2b84f43f428cb1d1cd326de1a5a908";
+	"dd953da112dacfde4be951ac51fc1c0a5b0614886e1f5d0278476d05efcb289f";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"2ad1215fe37ddff3dd2402bafb1cc091486a38acecbcb5faa5f4ab28d0ada531";
+	"a7cadec3958299e6fd32c212eb976662c82f0bcc707bc785317416419a042125";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -92,16 +92,17 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * Migration 0034 adds retained death-conflict evidence, not capture activation.
  * Migration 0036 adds scoped activation receipts; migration 0040 adds the
  * separate global SQL cutover decision. Migration 0041 records shopkeeper cash
- * and a stable shop revision without adding a runtime table.
+ * and a stable shop revision; migration 0042 records nullable keeper roaming
+ * configuration. Neither adds a runtime table.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0041_shopkeeper_cash_identity";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 41;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0042_shopkeeper_roaming_witness";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 42;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f";
+	"100057903820eb762051bd96e16816eadd0f8fafdc3e91088f447f64131792ec";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"1e3187f0563854513b014129bf3e2a8bfc1a4b0a5ac0b6e196d7c0ca616a696d";
+	"483b53886b10a198809fec277a4f708b9c738c7b21ad9c27320fcf8e135f073c";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"68be1e69b695fc7d363014965309a45eecea334163d7427fd62594ff4de9c9de";
+	"55e5af81817484ad10baa07a7e075a05bdcbd83d3f0142bfe59b7a022a2522a3";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
