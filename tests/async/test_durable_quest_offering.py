@@ -9,9 +9,6 @@ from _paths import extract_function, source
 
 
 quest = source("world/quest.c").read_text(encoding="utf-8")
-grant = extract_function("world/quest.c", "void give_reward(struct quest_complete_data *qcp")
-assert grant.count("economic_source_kind::quest_completion,") == 2
-assert grant.count("source_id)") == 2
 live_ready = extract_function(
     "item/item_movement_transaction.c", "bool destruction_publication_live_ready("
 )
@@ -25,7 +22,6 @@ context_end = quest.index("static P_obj quest_object_by_uid(", context_start)
 functions = "\n".join(
     extract_function("world/quest.c", signature)
     for signature in (
-        "static uint64_t legacy_quest_reward_source_id(",
         "static P_obj quest_object_by_uid(",
         "static struct quest_complete_data *quest_completion_by_index(",
         "static P_char quest_mobile_for(",
@@ -39,8 +35,6 @@ program = r'''
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <climits>
-#include <set>
 
 struct character;
 struct object {
@@ -92,7 +86,7 @@ int number_of_quests = 1;
 P_char character_list = nullptr;
 P_obj object_list = nullptr;
 int submissions = 0, rewards = 0, messages = 0, dirty = 0, removed = 0;
-uint64_t rewarded_offering_uid = 0;
+uint64_t last_reward_source = 0;
 bool item_command_uses_durable_ownership(P_obj object) { return object != nullptr; }
 const char *item_movement_reject_name(item_movement_reject) { return "none"; }
 void logit(int, const char *, ...) {}
@@ -100,8 +94,9 @@ void send_to_char(const char *, P_char) { ++messages; }
 void act(const char *, int, P_char, int, P_char, int) { ++messages; }
 void mark_player_dirty_components(int, int) { ++dirty; }
 void finish_quest_reward(quest_complete_data *, P_char, P_char, uint64_t offering_uid) {
+    assert(offering_uid);
+    last_reward_source = offering_uid;
     ++rewards;
-    rewarded_offering_uid = offering_uid;
 }
 void extract_obj(P_obj object, int) {
     P_obj *link = &object_list;
@@ -130,18 +125,6 @@ bool item_movement_transaction_submit_batch(
 }
 ''' + quest[context_start:context_end] + "\n" + functions + r'''
 int main() {
-    const uint64_t first = legacy_quest_reward_source_id(1, 1);
-    assert(first && first <= INT64_MAX);
-    assert(first == legacy_quest_reward_source_id(1, 1));
-    assert(first != legacy_quest_reward_source_id(1, 2));
-    assert(first != legacy_quest_reward_source_id(4, 1));
-    assert(!legacy_quest_reward_source_id(0, 1));
-    std::set<uint64_t> claims;
-    for (uint64_t uid = 1; uid <= 1000; ++uid)
-        for (uint32_t reward = 1; reward <= 14; ++reward) {
-            const uint64_t source = legacy_quest_reward_source_id(uid, reward);
-            assert(source && source <= INT64_MAX && claims.insert(source).second);
-        }
     character actor{false, 7, 0, 0, 42};
     character mob{true, 0, 11, 77, 42};
     actor.next = &mob;
@@ -174,7 +157,7 @@ int main() {
     assert(publish_quest_offering(&actor, true, {}, 0, saved_context, saved_size));
     assert(removed == 3 && actor.carrying == nullptr && dirty == 1);
     complete_quest_offering(&actor, true, {}, 0, saved_context, saved_size);
-    assert(rewards == 1 && rewarded_offering_uid == 1);
+    assert(rewards == 1 && last_reward_source == a.obj_uid);
 
     // Reconnected inventory omits a previously committed destruction.
     object d{4, 101, &actor};
@@ -187,7 +170,7 @@ int main() {
     actor.carrying = object_list = nullptr;
     assert(publish_quest_offering(&actor, true, {}, 0, saved_context, saved_size));
     complete_quest_offering(&actor, true, {}, 0, saved_context, saved_size);
-    assert(rewards == 2 && removed == 3 && rewarded_offering_uid == 4);
+    assert(rewards == 2 && removed == 3 && last_reward_source == d.obj_uid);
 }
 '''
 
