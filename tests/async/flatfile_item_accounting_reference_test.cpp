@@ -107,7 +107,54 @@ int main(int argc, char *argv[])
 		flatfile_item_accounting_reference_find_by_item(temp_dir, 9999, 1, &found, &err);
 	assert(find_status == flatfile_item_accounting_status::not_found);
 
-	// A truncated final record invalidates the whole bucket. Readers must not
+	// 6. Append a 3rd reference to verify history for item 5001
+	economic_accounting_item_reference ref3 = ref1;
+	ref3.line_index = 7;
+	ref3.event_index = 7;
+	ref3.item_uid = 5001;
+	ref3.before_revision = 11;
+	ref3.after_revision = 12;
+	ref3.legacy_event_index = 4;
+	app_status = flatfile_item_accounting_reference_append(temp_dir, ref3, &err);
+	assert(app_status == flatfile_item_accounting_status::ok);
+
+	// 7. Find by operation
+	std::vector<economic_accounting_item_reference> op_refs;
+	find_status = flatfile_item_accounting_reference_find_by_operation(
+		temp_dir, ref1.operation_id, &op_refs, &err);
+	assert(find_status == flatfile_item_accounting_status::ok);
+	assert(op_refs.size() == 3);
+	assert(op_refs[0].line_index == 5);
+	assert(op_refs[1].line_index == 6);
+	assert(op_refs[2].line_index == 7);
+
+	critical_operation_id missing_op = {};
+	missing_op.bytes[0] = 0x99;
+	find_status = flatfile_item_accounting_reference_find_by_operation(temp_dir, missing_op,
+									   &op_refs, &err);
+	assert(find_status == flatfile_item_accounting_status::ok);
+	assert(op_refs.empty());
+
+	// 8. Find history by item UID
+	std::vector<economic_accounting_item_reference> history;
+	find_status =
+		flatfile_item_accounting_reference_find_history(temp_dir, 5001, &history, &err);
+	assert(find_status == flatfile_item_accounting_status::ok);
+	assert(history.size() == 2);
+	assert(history[0].after_revision == 11);
+	assert(history[1].after_revision == 12);
+
+	find_status =
+		flatfile_item_accounting_reference_find_history(temp_dir, 9999, &history, &err);
+	assert(find_status == flatfile_item_accounting_status::ok);
+	assert(history.empty());
+
+	// 9. Verify __NO_MYSQL__ stubs return false
+	assert(!economic_accounting_item_reference_find_by_operation(nullptr, ref1.operation_id,
+								     &op_refs));
+	assert(!economic_accounting_item_reference_find_history(nullptr, 5001, &history));
+
+	// 10. A truncated final record invalidates the whole bucket. Readers must not
 	// report a clean lookup, and append must not extend or replace the evidence.
 	const auto bucket = fs::path(temp_dir) / "accounting" / "item_references" / "aa.bin";
 	{
@@ -178,6 +225,34 @@ int main(int argc, char *argv[])
 	assert(flatfile_item_accounting_reference_append(temp_dir, ref2, &err) ==
 	       flatfile_item_accounting_status::capacity);
 	assert(fs::file_size(bucket) == capacity_size);
+
+	// Test verify_and_repair on a bucket with trailing partial bytes from a simulated crash
+	fs::remove(bucket);
+	assert(flatfile_item_accounting_reference_append(temp_dir, ref1, &err) ==
+	       flatfile_item_accounting_status::ok);
+	assert(fs::file_size(bucket) == FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+	// Append 17 partial trailing garbage bytes
+	{
+		std::ofstream crash_append(bucket, std::ios::binary | std::ios::app);
+		std::string partial_garbage = "partial crash bytes";
+		crash_append.write(partial_garbage.data(), 17);
+	}
+	assert(fs::file_size(bucket) == FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES + 17);
+
+	flatfile_accounting_audit_report report = {};
+	assert(flatfile_item_accounting_reference_verify_and_repair(temp_dir, &report, &err) ==
+	       flatfile_item_accounting_status::ok);
+	assert(report.total_buckets_scanned == 1);
+	assert(report.valid_records_count == 1);
+	assert(report.partial_trailing_bytes_truncated == 17);
+	assert(fs::file_size(bucket) == FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+
+	// After repair, subsequent lookups and appends succeed without error
+	found = {};
+	assert(flatfile_item_accounting_reference_find_by_item(temp_dir, ref1.item_uid,
+							       ref1.after_revision, &found, &err) ==
+	       flatfile_item_accounting_status::ok);
+	assert(found.item_uid == ref1.item_uid);
 
 	fs::remove_all(temp_dir);
 	return 0;

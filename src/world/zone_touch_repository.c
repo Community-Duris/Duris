@@ -1,6 +1,18 @@
 #include "world/zone_touch_repository.h"
 
 #include <cerrno>
+
+#ifdef __NO_MYSQL__
+
+bool zone_touch_repository_execute(MYSQL *, const critical_command &, zone_touch_result *,
+				   unsigned int *, bool *)
+{
+	errno = ENOTSUP;
+	return false;
+}
+
+#else
+
 #include <mysql.h>
 #include <string>
 
@@ -98,3 +110,5 @@ bool zone_touch_repository_execute(MYSQL *connection, const critical_command &co
 	*mutation_applied = true;
 	return true;
 }
+
+#endif

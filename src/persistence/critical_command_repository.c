@@ -8,6 +8,8 @@
 #include "economy/currency_sql_mutation_writer.h"
 #include "economy/coin_transfer_command.h"
 #include "economy/coin_transfer_accounting.h"
+#include "economy/item_transfer_accounting.h"
+#include "persistence/economic_sql_item_transfer_transaction.h"
 #include "persistence/corpse_lifecycle_command.h"
 #include "persistence/corpse_lifecycle_repository.h"
 #include "persistence/critical_outbox.h"
@@ -1022,7 +1024,7 @@ unsigned int legacy_currency_epoch_gate(MYSQL *connection)
 
 bool execute_currency_state(MYSQL *connection, const critical_command &command,
 			    currency_command_result *result, unsigned int *result_code,
-			    bool *mutation_applied)
+			    bool *mutation_applied, bool admitted_coin_root)
 {
 	static const char PLAYER_LOCK_SQL[] =
 		"SELECT account_name,racewar,copper,silver,gold,platinum,wallet_revision "
@@ -1129,7 +1131,11 @@ bool execute_currency_state(MYSQL *connection, const critical_command &command,
 	mysql_stmt_close(statement);
 	if (!bank_found)
 		return false;
-	const auto gate_error = legacy_currency_epoch_gate(connection);
+	// A typed coin-transfer root has already validated its lineage/epoch,
+	// wallet mapping and transaction session. Its child must write through the
+	// same native wallet ledger despite the active-epoch gate that blocks
+	// standalone schema-v1 currency commands.
+	const auto gate_error = admitted_coin_root ? 0 : legacy_currency_epoch_gate(connection);
 	if (gate_error)
 	{
 		errno = gate_error;
@@ -1181,7 +1187,8 @@ bool currency_repository_execute(MYSQL *connection, const critical_command &comm
 		return false;
 	}
 
-	return execute_currency_state(connection, command, result, result_code, mutation_applied);
+	return execute_currency_state(connection, command, result, result_code, mutation_applied,
+				       false);
 }
 
 critical_apply_result critical_command_repository_apply(MYSQL *connection,
@@ -1190,10 +1197,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	last_statement_error = 0;
 	const bool accounted_bank = accounted_bank_envelope(command);
 	const bool accounted_coin = accounted_coin_envelope(command);
+	const bool accounted_item = item_transfer_accounting_command_supported(command);
 	unsigned long root_session = 0;
-	auto root_failure = [accounted_bank, accounted_coin](unsigned int error)
+	auto root_failure = [accounted_bank, accounted_coin, accounted_item](unsigned int error)
 	{
-		return (accounted_bank || accounted_coin) ?
+		return (accounted_bank || accounted_coin || accounted_item) ?
 			       critical_apply_result{ critical_apply_outcome::retryable_failure, 0,
 						      error ? error : EIO } :
 			       failure(error);
@@ -1246,7 +1254,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	     !coin_command && !corpse_command && !restitution_command && !item_command &&
 	     !auction_command && !collector_command && !combat_command && !artifact_guild_command &&
 	     !boon_command && !zone_command && !audit_command) ||
-	    (!accounted_bank && !accounted_coin && !critical_command_valid(command)))
+	    (!accounted_bank && !accounted_coin && !accounted_item &&
+	     !critical_command_valid(command)))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	if (accounted_coin &&
 	    (!coin_command || !coin_transfer_accounting_command_supported(command)))
@@ -1254,7 +1263,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
 	if (!command_hashes(command, &command_hash, &keys_hash))
 		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
-	if (accounted_bank || accounted_coin)
+	if (accounted_bank || accounted_coin || accounted_item)
 	{
 		if (root_transaction_active(connection))
 			return root_failure(EBUSY);
@@ -1268,7 +1277,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	economic_sql_currency_writer_guard legacy_writer;
 	if ((item_command || coin_command || auction_command || collector_command ||
 	     corpse_command || restitution_command) &&
-	    !accounted_coin)
+	    !accounted_coin && !accounted_item)
 	{
 		const auto error =
 			economic_sql_currency_writer_guard::acquire(connection, &legacy_writer);
@@ -1291,7 +1300,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				rollback(connection);
 				return root_failure(read_error);
 			}
-			if (accounted_bank || accounted_coin)
+			if (accounted_bank || accounted_coin || accounted_item)
 			{
 				const auto error =
 					accounted_session_check(connection, &root_session, true);
@@ -1320,7 +1329,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				retained_error = coin_transfer_accounting_verify_retained(
 					connection, command, stored.result_code,
 					stored.result_payload.data(), stored.result_payload.size());
-			if (!retained_error && (accounted_bank || accounted_coin))
+			else if (accounted_item)
+				retained_error = economic_sql_item_transfer_verify_retained(
+					connection, command, stored.result_code,
+					stored.result_payload.data(), stored.result_payload.size());
+			if (!retained_error && (accounted_bank || accounted_coin || accounted_item))
 				retained_error =
 					accounted_session_check(connection, &root_session, true);
 			rollback(connection);
@@ -1400,7 +1413,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			{
 				ok = execute_currency_state(connection, change,
 							    &result.wallets[index], &result_code,
-							    &mutated);
+							    &mutated, accounted_coin);
 				if (ok && !result_code &&
 				    !std::equal(endpoints[index]->after.begin(),
 						endpoints[index]->after.end(),
@@ -1426,12 +1439,25 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			}
 			else
 			{
+				item_transfer_accounting_context child_item_accounting = {};
+				const item_transfer_accounting_context *child_context_ptr = nullptr;
+				if (accounted_coin)
+				{
+					child_item_accounting.root_operation_id =
+						command.operation_id;
+					child_item_accounting.child_index =
+						static_cast<uint16_t>(index + 1);
+					child_item_accounting.line_index_base =
+						static_cast<uint16_t>(
+							index == 0 ? 0 :
+								     result.piles[0].item_count);
+					child_context_ptr = &child_item_accounting;
+				}
 				// A legacy inbox/child ID is not an admitted accounting root.
-				ok = item_transfer_repository_execute_coin(connection, change,
-									   endpoints[index]->before,
-									   &result.piles[index],
-									   &result_code, &mutated,
-									   &item_failure_stage);
+				ok = item_transfer_repository_execute_coin(
+					connection, change, endpoints[index]->before,
+					&result.piles[index], &result_code, &mutated,
+					&item_failure_stage, child_context_ptr);
 				if (ok && result_code == ESTALE)
 					failure_stage = classify_coin_item_revision(
 						index, item_failure_stage);
@@ -1624,7 +1650,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			mutation_applied = result_code == 0;
 		}
 		else if (!execute_currency_state(connection, command, &currency_result,
-						 &result_code, &mutation_applied))
+						  &result_code, &mutation_applied, false))
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
@@ -1771,6 +1797,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	{
 		collector_enrollment_repository_plan enrollment;
 		collector_item_boundary_repository_plan boundary;
+		item_transfer_custody_delta custody_delta;
+		economic_sql_item_transfer_context item_accounting_context;
 		item_transfer_result item_result = {
 			item_transfer_result_root(item_payload), item_payload.item_count, 0, 0, 0, 0
 		};
@@ -1778,6 +1806,22 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		uint64_t collector_revision = 0;
 		unsigned int result_code = 0;
 		bool mutation_applied = false;
+		if (accounted_item)
+		{
+			const auto error = accounted_session_check(connection, &root_session, true);
+			if (error)
+			{
+				rollback(connection);
+				return root_failure(error);
+			}
+			const auto accounting_error = economic_sql_item_transfer_lock(
+				connection, command, &item_accounting_context);
+			if (accounting_error)
+			{
+				rollback(connection);
+				return root_failure(accounting_error);
+			}
+		}
 		bool repository_ok = collector_repository_prepare_death_enrollment(
 			connection, item_payload, &enrollment, &result_code);
 		if (repository_ok && !result_code)
@@ -1787,7 +1831,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		// accounting operation; only a typed admitted owner may supply a context.
 		if (repository_ok && !result_code)
 			repository_ok = item_transfer_repository_execute(
-				connection, command, &item_result, &result_code, &mutation_applied);
+				connection, command, &item_result, &result_code, &mutation_applied,
+				nullptr, nullptr, accounted_item ? &custody_delta : nullptr);
 		if (repository_ok && !result_code && mutation_applied && !boundary.entries.empty())
 		{
 			repository_ok = collector_repository_apply_item_boundary(
@@ -1812,7 +1857,18 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
 			rollback(connection);
-			return failure(error);
+			return accounted_item ? root_failure(error) : failure(error);
+		}
+		if (accounted_item)
+		{
+			const unsigned int accounting_error = economic_sql_item_transfer_record(
+				connection, command, mutation_applied ? &custody_delta : nullptr,
+				result_code, mutation_applied, item_accounting_context);
+			if (accounting_error)
+			{
+				rollback(connection);
+				return root_failure(accounting_error);
+			}
 		}
 		std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> result_payload = {};
 		uint64_t durable_revision =
@@ -1841,7 +1897,24 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
 			rollback(connection);
-			return failure(error);
+			return accounted_item ? root_failure(error ? error : EIO) :
+						failure(error ? error : EIO);
+		}
+		if (accounted_item)
+		{
+			const auto session_error =
+				accounted_session_check(connection, &root_session, true);
+			const auto verify_error =
+				session_error ?
+					session_error :
+					economic_sql_item_transfer_verify_retained(
+						connection, command, result_code,
+						result_payload.data(), result_payload.size());
+			if (verify_error)
+			{
+				rollback(connection);
+				return root_failure(verify_error);
+			}
 		}
 		if (!execute(connection, "COMMIT"))
 		{
@@ -2173,8 +2246,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				for (size_t i = 0; i < zone_payload.group_size; ++i)
 					order.push_back(i);
 				std::sort(order.begin(), order.end(),
-					  [&](size_t a, size_t b)
-					  {
+					  [&](size_t a, size_t b) {
 						  return zone_payload.participant_pids[a] <
 							 zone_payload.participant_pids[b];
 					  });

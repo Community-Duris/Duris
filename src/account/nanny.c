@@ -733,7 +733,8 @@ static void load_chaos_new_character_kit(P_char ch)
 	}
 
 	if (!item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),
-								     kit.count, ch))
+								     kit.count, ch,
+								     economic_source_kind::starter_grant))
 	{
 		statuslog(56, "&+RALERT&n: CHAOS starter kit grant could not be queued");
 		send_to_char(
@@ -911,7 +912,7 @@ void load_obj_to_newbies(P_char ch)
 				    return item_creation_prepare_result::failed;
 			    return ++index == plan.size() ? item_creation_prepare_result::ready :
 							    item_creation_prepare_result::more;
-		    }))
+			    }, economic_source_kind::starter_grant))
 		send_to_char("Your starter kit is being prepared...\r\n", ch);
 	else
 		send_to_char(

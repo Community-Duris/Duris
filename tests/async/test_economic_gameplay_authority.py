@@ -12,11 +12,15 @@ SOURCES = (
     "src/economy/economic_gameplay_authority.c",
     "src/economy/economic_command_admission.c",
     "src/economy/economic_currency_adapter.c",
+    "src/economy/coin_transfer_command.c",
+    "src/economy/coin_transfer_accounting.c",
     "src/economy/economic_accounting_intent.c",
     "src/economy/economic_accounting_plan.c",
     "src/economy/economic_accounting_types.c",
     "src/economy/currency_command.c",
+    "src/economy/item_transfer_accounting.c",
     "src/item/item_transfer_command.c",
+    "src/player/player_snapshot_codec.c",
     "src/persistence/critical_command.c",
 )
 with tempfile.TemporaryDirectory(prefix="duris-gameplay-authority-") as temporary:
@@ -24,6 +28,7 @@ with tempfile.TemporaryDirectory(prefix="duris-gameplay-authority-") as temporar
         executable = Path(temporary) / mode
         command = shlex.split(os.environ.get("CXX", "g++")) + [
             "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
+            "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
             "-pthread", "-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST", "-I" + str(ROOT / "src"),
         ]

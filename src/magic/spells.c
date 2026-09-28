@@ -15,6 +15,8 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "magic/spells.h"
+#include "magic/spell_item_lifecycle.h"
+#include "economy/economic_gameplay_authority.h"
 #include <stdio.h>
 #include <string.h>
 #include "combat/ctf.h"
@@ -1985,6 +1987,40 @@ void cast_grow(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*
 	send_to_room("&+GThe ground starts to glow with a soft green light.&n\n", ch->in_room);
 }
 
+struct vines_component_context
+{
+	int32_t level;
+	int32_t count;
+};
+
+static void vines_component_retirement_completed(P_char actor, bool committed,
+						 const item_transfer_result &,
+						 unsigned int /*error_code*/,
+						 const uint8_t *encoded,
+						 size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(vines_component_context))
+		return;
+	vines_component_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("Your green herbs remain intact as the spell fizzles.\r\n", actor);
+		return;
+	}
+	act("&+GGreen&n vines sprout up around you forming a protective shield.", FALSE, actor, 0,
+	    0, TO_CHAR);
+	act("&+GVines&n sprout up around $n forming a protective shield.", FALSE, actor, 0, 0,
+	    TO_NOTVICT);
+	struct affected_type effect = {};
+	effect.type = SPELL_VINES;
+	effect.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+	effect.bitvector5 = AFF5_VINES;
+	effect.duration = context.level / 2;
+	effect.modifier = 40 * context.count;
+	affect_to_char(actor, &effect);
+}
+
 void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char /*tar_ch*/,
 		P_obj /*tar_obj*/)
 {
@@ -2026,6 +2062,16 @@ void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			return;
 		}
 
+		if (economic_gameplay_authority::active() && IS_PC(ch))
+		{
+			const vines_component_context context = { level, count };
+			if (!spell_consume_components(ch, VOBJ_FORAGE_GREEN_HERB,
+						      static_cast<size_t>(count), SPELL_VINES,
+						      vines_component_retirement_completed,
+						      &context, sizeof(context)))
+				send_to_char("Your green herbs cannot be consumed right now.\r\n", ch);
+			return;
+		}
 		for (i = 0; i < count; i++)
 		{
 			extract_obj(used_obj[i], TRUE); // Just herb ingred, but 'in game.'

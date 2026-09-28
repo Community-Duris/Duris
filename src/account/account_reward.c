@@ -718,7 +718,8 @@ static bool summon_one(P_char ch, const RewardGrant &grant, bool explain)
 		      GET_NAME(ch));
 		return false;
 	}
-	if (!item_creation_grant_submit_to_player(ch, obj, ch))
+	if (!item_creation_grant_submit_to_player(ch, obj, ch, NULL,
+						   economic_source_kind::boon))
 	{
 		(void)qry(
 			"UPDATE account_bound_reward_summons SET recovery_ready=1 WHERE grant_id=%llu AND pid=%d",

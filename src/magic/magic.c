@@ -41,6 +41,9 @@
 #include "item/objmisc.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "magic/spell_item_lifecycle.h"
+#include "economy/economic_gameplay_authority.h"
+#include <array>
 #include "kingdom/kingdom_store_piece.h"
 #include "world/outposts.h"
 #include "world/specs.prototypes.h"
@@ -60,6 +63,7 @@ extern Skill skills[];
 extern char *spells[];
 extern P_index obj_index;
 extern P_char character_list;
+extern P_obj object_list;
 extern P_desc descriptor_list;
 extern P_char combat_list;
 extern P_obj object_list;
@@ -122,6 +126,8 @@ int get_spell_component(P_char ch, int vnum, int max_components)
 {
 	P_obj t_obj, next_obj;
 	int found = 0;
+	if (economic_gameplay_authority::active() && ch && IS_PC(ch))
+		return 0;
 
 	for (t_obj = ch->carrying; t_obj && found < max_components; t_obj = next_obj)
 	{
@@ -133,6 +139,89 @@ int get_spell_component(P_char ch, int vnum, int max_components)
 		}
 	}
 	return found;
+}
+
+namespace
+{
+struct spell_component_retirement_context
+{
+	item_movement_completion_fn continuation = nullptr;
+	std::array<uint64_t, 8> item_uids = {};
+	uint32_t continuation_context_size = 0;
+	uint8_t item_count = 0;
+	std::array<uint8_t, 48> continuation_context = {};
+};
+
+static_assert(sizeof(spell_component_retirement_context) <=
+	      ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+P_obj spell_component_by_uid(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+void spell_component_retirement_completed(P_char actor, bool committed,
+					  const item_transfer_result &result,
+					  unsigned int error_code, const uint8_t *encoded,
+					  size_t encoded_size)
+{
+	if (!encoded || encoded_size != sizeof(spell_component_retirement_context))
+		return;
+	spell_component_retirement_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (committed)
+		for (size_t index = 0; index < context.item_count; ++index)
+			if (P_obj item = spell_component_by_uid(context.item_uids[index]))
+				extract_obj(item);
+	if (context.continuation)
+		context.continuation(actor, committed, result, error_code,
+				     context.continuation_context.data(),
+				     context.continuation_context_size);
+}
+} // namespace
+
+bool spell_consume_components(P_char actor, int vnum, size_t max_components,
+			     uint32_t reason_id, item_movement_completion_fn continuation,
+			     const void *continuation_context, size_t continuation_context_size)
+{
+	if (!actor || !IS_PC(actor) || GET_PID(actor) <= 0 || vnum < 0 || !max_components ||
+	    max_components > 8 || !reason_id || !continuation ||
+	    continuation_context_size > 48 ||
+	    (continuation_context_size && !continuation_context) ||
+	    !economic_gameplay_authority::active())
+		return false;
+
+	P_obj selected[8] = {};
+	size_t selected_count = 0;
+	for (P_obj object = actor->carrying; object && selected_count < max_components;
+	     object = object->next_content)
+		if (obj_index[object->R_num].virtual_number == vnum)
+			selected[selected_count++] = object;
+	if (!selected_count)
+		return false;
+
+	spell_component_retirement_context context = {};
+	context.continuation = continuation;
+	context.continuation_context_size = static_cast<uint32_t>(continuation_context_size);
+	context.item_count = static_cast<uint8_t>(selected_count);
+	if (continuation_context_size)
+		memcpy(context.continuation_context.data(), continuation_context,
+		       continuation_context_size);
+	for (size_t index = 0; index < selected_count; ++index)
+		context.item_uids[index] = selected[index]->obj_uid;
+
+	const item_owner_identity owner = { item_owner_type::player,
+					    static_cast<uint64_t>(GET_PID(actor)), 0 };
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	item_movement_reject reject = item_movement_reject::none;
+	return item_movement_transaction_submit_batch(
+		actor, selected, selected_count, NULL, owner, destruction,
+		item_transfer_reason::destruction, static_cast<int64_t>(reason_id),
+		spell_component_retirement_completed, &context, sizeof(context), NULL, &reject,
+		nullptr, economic_source_kind::item_action);
 }
 
 /*

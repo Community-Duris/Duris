@@ -1009,7 +1009,8 @@ static bool kingdom_store_deliver(P_char ch, kingdom_realm &realm, P_Guild guild
 	grant.purchase = purchase;
 	grant.item_uid = obj->obj_uid;
 	if (!item_creation_grant_submit_to_player_with_completion(
-		    ch, obj, ch, kingdom_store_grant_completed, &grant, sizeof(grant)))
+		    ch, obj, ch, kingdom_store_grant_completed, &grant, sizeof(grant), NULL,
+		    economic_source_kind::crafting))
 	{
 		extract_obj(obj, FALSE);
 		kingdom_store_refund(ch, purchase.price);

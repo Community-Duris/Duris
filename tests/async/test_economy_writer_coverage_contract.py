@@ -41,11 +41,91 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(sum(route["disposition"] == "non_writer_candidate" for route in routes),
                          counts["non_writer_or_out_of_scope_candidates"])
 
+    def test_sql_and_flatfile_player_item_transfer_producer_is_documented_without_overstating_coverage(self) -> None:
+        for route_id in ("item.command_movement", "item.bulk_movement", "item.movement_submit",
+                         "item.trusted_steal", "item.creation_completion"):
+            route = self.routes[route_id]
+            schema = route["current_critical_command_schema"]
+            evidence = route["double_entry_evidence"]
+            self.assertTrue(schema["schema_2_gameplay_producer_connected"])
+            self.assertTrue(schema["accounting_intent_attached_by_current_gameplay_route"])
+            self.assertEqual(schema["current_schema"], 1,
+                             "the inactive accounting gate still uses the legacy schema-1 path")
+            self.assertIn("SQL and flat-file", schema["interpretation"])
+            self.assertIn("source claim", schema["interpretation"])
+            self.assertIn("exact custody references", schema["interpretation"])
+            self.assertEqual(evidence["status"],
+                             "typed_schema2_item_custody_reference_without_coin_effect")
+            self.assertFalse(evidence["unified_operation_postings_observed"],
+                             "custody-only movement must not be reported as a coin double-entry posting")
+            self.assertTrue(any("economic_accounting_item_reference" in item
+                                for item in evidence["legacy_domain_evidence"]))
+
+    def test_corpse_item_handoffs_use_actor_bound_item_references(self) -> None:
+        create = self.routes["death.corpse_creation"]
+        resurrection = self.routes["death.resurrection_publication"]
+        for route in (create, resurrection):
+            schema = route["current_critical_command_schema"]
+            evidence = route["double_entry_evidence"]
+            self.assertTrue(schema["schema_2_gameplay_producer_connected"])
+            self.assertTrue(schema["accounting_intent_attached_by_current_gameplay_route"])
+            self.assertEqual(schema["current_schema"], 1,
+                             "the inactive authority still submits the legacy envelope")
+            self.assertEqual(evidence["status"],
+                             "typed_schema2_item_custody_reference_without_coin_effect")
+            self.assertFalse(evidence["unified_operation_postings_observed"])
+            self.assertIn("exact custody references", schema["interpretation"])
+            self.assertIn("separate", schema["interpretation"])
+            self.assertTrue(any("economic_accounting_item_reference" in item
+                                for item in evidence["legacy_domain_evidence"]))
+        creation_evidence = " ".join(create["current_critical_command_schema"]["evidence"])
+        self.assertIn("src/combat/fight.c", creation_evidence)
+        self.assertIn("actor", creation_evidence)
+        self.assertIn("corpse", create["current_critical_command_schema"]["interpretation"])
+
+    def test_flatfile_item_evidence_is_journaled_with_custody(self) -> None:
+        for route_id in ("item.command_movement", "item.bulk_movement", "item.movement_submit",
+                         "item.trusted_steal", "item.creation_completion",
+                         "death.corpse_creation", "death.resurrection_publication"):
+            route = self.routes[route_id]
+            evidence = route["double_entry_evidence"]
+            self.assertIn("flat-file authority journal", " ".join(evidence["required_atomic_evidence"]))
+            self.assertIn("flat-file player transfers", " ".join(evidence["legacy_domain_evidence"]))
+
+    def test_key_break_retirement_does_not_claim_all_extraction_paths(self) -> None:
+        movement = self.routes["item.movement_submit"]
+        interpretation = movement["current_critical_command_schema"]["interpretation"]
+        self.assertIn("key-break retirement", interpretation)
+        self.assertIn("Other item destruction/extraction paths", interpretation)
+        extraction = self.routes["item.extraction"]
+        self.assertFalse(extraction["current_critical_command_schema"]
+                         ["schema_2_gameplay_producer_connected"])
+        self.assertTrue(extraction["blocking_policy_after_activation"]
+                        ["must_block_on_activation"])
+
+    def test_component_spell_retirement_uses_the_typed_item_lifecycle_route(self) -> None:
+        route = self.routes["item.movement_submit"]
+        evidence = " ".join(route["current_critical_command_schema"]["evidence"])
+        self.assertIn("src/magic/spell_conjuration.c", evidence)
+        helper = (ROOT / "src/magic/magic.c").read_text(encoding="utf-8")
+        self.assertRegex(helper, r"spell_consume_components\([\s\S]*?item_movement_transaction_submit_batch\(")
+        self.assertRegex(helper, r"item_transfer_reason::destruction[\s\S]*?economic_source_kind::item_action")
+        legacy = helper[helper.index("int get_spell_component("):helper.index("namespace\n{")]
+        self.assertRegex(legacy, r"economic_gameplay_authority::active\(\)\s*&&\s*ch\s*&&\s*IS_PC\(ch\)\)\s*return 0;")
+        consumers = (
+            "src/magic/spell_conjuration.c", "src/magic/spell_spore_cloud.c",
+            "src/magic/spells.c", "src/classes/necromancy.c",
+        )
+        for source in consumers:
+            self.assertIn("spell_consume_components(", (ROOT / source).read_text(encoding="utf-8"))
+
     def test_do_split_is_not_permitted_after_activation(self) -> None:
         route = self.routes["currency.split"]
         self.assertEqual(route["source"]["file"], "src/cmd/actoth.c")
         self.assertEqual(route["source"]["function"], "do_split")
-        self.assertEqual(route["source"]["definition_lines"], [6113])
+        self.assertEqual(route["source"]["definition_lines"],
+                         coverage.source_definition_lines(ROOT / route["source"]["file"],
+                                                          route["source"]["function"]))
         self.assertEqual(route["current_critical_command_schema"]["current_schema"], 1)
         self.assertEqual(route["current_critical_command_schema"]["route_mode"],
                          "multiple_schema_1_currency_legs_not_atomic_root")
@@ -75,7 +155,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         credit = body.find("ADD_MONEY(gl->ch")
         debit = body.find("SUB_MONEY(ch")
         self.assertGreaterEqual(credit, 0, "expected current recipient wallet mutation leg")
-        self.assertGreater(debit, credit, "sender debit currently follows recipient credits")
+        self.assertLess(debit, credit, "sender debit precedes recipient credits")
         self.assertNotRegex(body, r"(?:economic_accounting|critical_command_accounting_schema|schema_2)")
         self.assertIn("no atomic root command", route["current_critical_command_schema"]["interpretation"])
 

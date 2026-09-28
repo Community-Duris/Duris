@@ -44,6 +44,9 @@ fi
 # schemas, including the failure-stage column used by the coin ESTALE receipt.
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/critical_command_inbox_outbox.sql"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_critical_command_schema.sh"
+# The economic-accounting migration links its item reference directly to the
+# immutable custody ledger, so install that schema before the migration loop.
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/item_ownership_ledger.sql"
 # Use the current schema, including portable timestamp defaults required when
 # the loader harness creates its connection-local fixture tables on MySQL 8.
 for migration in "$ROOT"/migrations/immutable/*.sql; do
@@ -91,8 +94,10 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c src/persistence/persistence_observability.c \
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
+    src/persistence/economic_sql_item_transfer_transaction.c \
     src/economy/economic_currency_adapter.c \
-    src/economy/coin_transfer_accounting.c \
+    src/economy/economic_command_admission.c src/economy/item_transfer_accounting.c \
+    src/economy/coin_transfer_accounting.c src/item/economic_accounting_item_reference.c \
     src/economy/economic_accounting_intent.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_accounting_plan.c \

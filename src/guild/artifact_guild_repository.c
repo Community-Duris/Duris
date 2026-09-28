@@ -1,7 +1,19 @@
 #include "guild/artifact_guild_repository.h"
 
-#include <algorithm>
 #include <cerrno>
+
+#ifdef __NO_MYSQL__
+
+bool artifact_guild_repository_execute(MYSQL *, const critical_command &, artifact_guild_result *,
+				       unsigned int *, bool *)
+{
+	errno = ENOTSUP;
+	return false;
+}
+
+#else
+
+#include <algorithm>
 #include <climits>
 #include <cstdlib>
 #include <mysql.h>
@@ -10,6 +22,7 @@
 namespace
 {
 struct artifact_state
+
 {
 	int64_t timer;
 	int32_t bind_owner_pid;
@@ -273,3 +286,5 @@ bool artifact_guild_repository_execute(MYSQL *connection, const critical_command
 	*mutation_applied = true;
 	return true;
 }
+
+#endif

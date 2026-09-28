@@ -3,6 +3,7 @@
 #include "economy/economic_sql_source_normalize.h"
 #include "persistence/economic_sql_baseline_transaction.h"
 #include "persistence/economic_accounting_repository.h"
+#include "world/vnum.obj.h"
 #include <algorithm>
 #include <cerrno>
 #include <cctype>
@@ -20,6 +21,12 @@
 unsigned int economic_sql_accounting_lifecycle_transaction::install(
 	MYSQL *, const economic_sql_lifecycle_guard &, const economic_sql_lifecycle_request &,
 	economic_sql_lifecycle_receipt *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::activate(
+	MYSQL *, economic_sql_cutover_transaction_owner &, const critical_operation_id &,
+	uint64_t *) noexcept
 {
 	return ENOTSUP;
 }
@@ -69,6 +76,16 @@ economic_sql_source_digest sha(std::span<const uint8_t> bytes)
 	SHA256(bytes.data(), bytes.size(), value.data());
 	return value;
 }
+struct holding_source
+{
+	economic_account_kind account_kind = economic_account_kind::wallet;
+	uint64_t native_id = 0;
+	uint8_t racewar = 0;
+	std::string name;
+	economic_coin_vector balance = {};
+	uint64_t native_revision = 0;
+	economic_sql_source_digest digest = {};
+};
 void frame(std::vector<uint8_t> &output, std::span<const uint8_t> value)
 {
 	const uint64_t size = value.size();
@@ -92,7 +109,8 @@ economic_sql_source_digest request_digest(const economic_sql_lifecycle_request &
 	number(data, request.accepted_at_usec);
 	return sha(data);
 }
-economic_sql_source_digest native_digest(const economic_sql_source_snapshot &snapshot)
+economic_sql_source_digest native_digest(const economic_sql_source_snapshot &snapshot,
+					 const std::vector<holding_source> &holdings)
 {
 	const auto wallet = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
 					 [&](const auto &table)
@@ -104,6 +122,25 @@ economic_sql_source_digest native_digest(const economic_sql_source_snapshot &sna
 	std::vector<uint8_t> data{ 'E', 'S', 'N', '1' };
 	frame(data, wallet->content_digest);
 	frame(data, bank->content_digest);
+	std::vector<const holding_source *> piles;
+	for (const auto &holding : holdings)
+		if (holding.account_kind == economic_account_kind::pile)
+			piles.push_back(&holding);
+	if (!piles.empty())
+	{
+		auto pile_data = std::vector<uint8_t>{ 'E', 'S', 'P', '1' };
+		number(pile_data, piles.size());
+		for (const auto *pile : piles)
+		{
+			number(pile_data, pile->native_id);
+			number(pile_data, pile->native_revision);
+			for (const auto amount : pile->balance)
+				number(pile_data, static_cast<uint64_t>(amount));
+			frame(pile_data, pile->digest);
+		}
+		data[3] = '2';
+		frame(data, sha(pile_data));
+	}
 	return sha(data);
 }
 std::vector<row> query(MYSQL *connection, const std::string &sql, size_t columns)
@@ -158,45 +195,57 @@ size_t table_index(const economic_sql_source_snapshot &snapshot, std::string_vie
 	require(found != snapshot.tables.end());
 	return static_cast<size_t>(found - snapshot.tables.begin());
 }
-struct holding_source
-{
-	bool bank = false;
-	uint64_t native_id = 0;
-	uint8_t racewar = 0;
-	std::string name;
-	economic_coin_vector balance = {};
-	uint64_t native_revision = 0;
-	economic_sql_source_digest digest = {};
-};
 std::vector<holding_source> read_native_holdings(const economic_sql_source_snapshot &snapshot,
 						 const economic_sql_normalized_sources &normalized)
 {
 	const auto wallets = table_index(snapshot, "player_data");
 	const auto banks = table_index(snapshot, "account_banks");
+	const auto items = table_index(snapshot, "item_current_owner");
 	std::vector<holding_source> output;
 	std::set<std::pair<std::string, uint8_t>> bank_names;
+	uint64_t active_coin_rows = 0, unresolved_coin_rows = 0;
+	for (const auto &source : snapshot.tables[items].rows)
+	{
+		require(source.cells.size() == 10);
+		if (source.cells[7] && integer<int32_t>(source.cells[7]) == VOBJ_COINS)
+		{
+			const auto state = integer<uint8_t>(source.cells[8]);
+			if (state == static_cast<uint8_t>(item_custody_state::active))
+				++active_coin_rows;
+			else if (state != static_cast<uint8_t>(item_custody_state::destroyed))
+				++unresolved_coin_rows;
+		}
+	}
+	require(unresolved_coin_rows == 0, EBUSY);
+	uint64_t selected_coin_rows = 0;
 	for (const auto &holding : normalized.holdings)
 	{
 		if (holding.kind != economic_sql_holding_kind::wallet &&
-		    holding.kind != economic_sql_holding_kind::bank)
+		    holding.kind != economic_sql_holding_kind::bank &&
+		    holding.kind != economic_sql_holding_kind::pile)
 			continue;
 		require(holding.disposition == economic_sql_holding_disposition::current &&
 			holding.balance && holding.native_revision.has_value() &&
 			holding.native_id > 0);
-		require(holding.source.row != SIZE_MAX &&
-			(holding.kind == economic_sql_holding_kind::wallet ?
-				 holding.source.table == wallets :
-				 holding.source.table == banks));
+		const auto expected_table =
+			holding.kind == economic_sql_holding_kind::wallet ? wallets :
+			holding.kind == economic_sql_holding_kind::bank	  ? banks :
+									    items;
+		require(holding.source.row != SIZE_MAX && holding.source.table == expected_table);
 		const auto &source = snapshot.tables[holding.source.table].rows[holding.source.row];
 		for (auto amount : *holding.balance)
 			require(amount >= 0, ERANGE);
 		holding_source native;
-		native.bank = holding.kind == economic_sql_holding_kind::bank;
+		native.account_kind = holding.kind == economic_sql_holding_kind::wallet ?
+					      economic_account_kind::wallet :
+				      holding.kind == economic_sql_holding_kind::bank ?
+					      economic_account_kind::bank :
+					      economic_account_kind::pile;
 		native.native_id = holding.native_id;
 		native.balance = *holding.balance;
 		native.native_revision = *holding.native_revision;
 		native.digest = source.digest;
-		if (native.bank)
+		if (native.account_kind == economic_account_kind::bank)
 		{
 			require(holding.native_id <= UINT32_MAX && holding.native_context >= 0 &&
 					holding.native_context <= 1 && source.cells.size() == 8,
@@ -206,27 +255,42 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 			native.racewar = static_cast<uint8_t>(holding.native_context);
 			require(bank_names.emplace(native.name, native.racewar).second, EEXIST);
 		}
-		else
+		else if (native.account_kind == economic_account_kind::wallet)
 		{
 			require(holding.native_id <= UINT32_MAX && source.cells.size() == 9,
 				ERANGE);
+		}
+		else
+		{
+			require(normalized.next_uid && source.cells.size() == 10 &&
+					integer<uint64_t>(source.cells[0]) == holding.native_id &&
+					holding.native_id < *normalized.next_uid &&
+					integer<int32_t>(source.cells[7]) == VOBJ_COINS &&
+					integer<uint8_t>(source.cells[8]) ==
+						static_cast<uint8_t>(item_custody_state::active),
+				EILSEQ);
+			++selected_coin_rows;
 		}
 		output.push_back(std::move(native));
 	}
 	std::sort(output.begin(), output.end(),
 		  [](const auto &left, const auto &right)
 		  {
-			  if (left.bank != right.bank)
-				  return left.bank < right.bank;
+			  if (left.account_kind != right.account_kind)
+				  return left.account_kind < right.account_kind;
 			  return left.native_id < right.native_id;
 		  });
 	const auto wallet_rows = snapshot.tables[wallets].rows.size();
 	const auto bank_rows = snapshot.tables[banks].rows.size();
-	const auto selected_wallets = static_cast<uint64_t>(std::count_if(
-		output.begin(), output.end(), [](const auto &value) { return !value.bank; }));
-	const auto selected_banks = static_cast<uint64_t>(output.size()) - selected_wallets;
+	const auto selected_wallets = static_cast<uint64_t>(
+		std::count_if(output.begin(), output.end(), [](const auto &value)
+			      { return value.account_kind == economic_account_kind::wallet; }));
+	const auto selected_banks = static_cast<uint64_t>(
+		std::count_if(output.begin(), output.end(), [](const auto &value)
+			      { return value.account_kind == economic_account_kind::bank; }));
 	require(selected_wallets == static_cast<uint64_t>(wallet_rows) &&
-			selected_banks == static_cast<uint64_t>(bank_rows),
+			selected_banks == static_cast<uint64_t>(bank_rows) &&
+			selected_coin_rows == active_coin_rows,
 		EILSEQ);
 	return output;
 }
@@ -238,16 +302,16 @@ void reject_cutover_defects(const economic_sql_normalized_sources &normalized)
 		require(normalized.issue_counts[static_cast<size_t>(kind)] == 0, EBUSY);
 }
 economic_sql_source_digest coverage_digest(const std::vector<holding_source> &holdings,
-					   const std::vector<uint64_t> &mapping_ids)
+					   const std::vector<uint64_t> &account_ids)
 {
-	require(holdings.size() == mapping_ids.size());
+	require(holdings.size() == account_ids.size());
 	std::vector<uint8_t> data{ 'E', 'S', 'C', '1' };
 	number(data, holdings.size());
 	for (size_t index = 0; index < holdings.size(); ++index)
 	{
-		data.push_back(holdings[index].bank ? 2 : 1);
+		data.push_back(static_cast<uint8_t>(holdings[index].account_kind));
 		number(data, holdings[index].native_id);
-		number(data, mapping_ids[index]);
+		number(data, account_ids[index]);
 		data.push_back(holdings[index].racewar);
 		frame(data, holdings[index].digest);
 	}
@@ -373,23 +437,45 @@ std::vector<uint64_t> create_or_verify_mappings(MYSQL *connection,
 						const std::vector<holding_source> &holdings,
 						bool create)
 {
+	const auto mapped_count = static_cast<size_t>(
+		std::count_if(holdings.begin(), holdings.end(), [](const auto &holding)
+			      { return holding.account_kind != economic_account_kind::pile; }));
 	if (create)
 	{
+		std::set<uint64_t> pile_ids;
+		for (const auto &holding : holdings)
+			if (holding.account_kind == economic_account_kind::pile)
+				pile_ids.insert(holding.native_id);
+		auto next_mapping_id =
+			scalar(connection,
+			       "SELECT COALESCE(MAX(mapping_id),0) FROM economic_account_mapping");
+		require(next_mapping_id < std::numeric_limits<uint64_t>::max(), EOVERFLOW);
+		++next_mapping_id;
 		for (const auto &holding : holdings)
 		{
-			const uint16_t account_kind =
-				holding.bank ? static_cast<uint16_t>(economic_account_kind::bank) :
-					       static_cast<uint16_t>(economic_account_kind::wallet);
-			const uint16_t locator = holding.bank ? 2 : 1;
+			if (holding.account_kind == economic_account_kind::pile)
+				continue;
+			while (pile_ids.contains(next_mapping_id))
+			{
+				require(next_mapping_id < std::numeric_limits<uint64_t>::max(),
+					EOVERFLOW);
+				++next_mapping_id;
+			}
+			const uint16_t account_kind = static_cast<uint16_t>(holding.account_kind);
+			const bool bank = holding.account_kind == economic_account_kind::bank;
+			const uint16_t locator = bank ? 2 : 1;
 			execute(connection,
-				"INSERT INTO economic_account_mapping(lineage,account_kind,context_id,backend_kind,"
+				"INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
 				"locator_kind,native_id,active_native_id,creating_operation_id,retiring_operation_id,revision) VALUES(" +
+					std::to_string(next_mapping_id) + "," +
 					id(request.lineage) + "," + std::to_string(account_kind) +
-					"," + std::to_string(holding.bank ? holding.racewar : 0) +
-					",1," + std::to_string(locator) + "," +
+					"," + std::to_string(bank ? holding.racewar : 0) + ",1," +
+					std::to_string(locator) + "," +
 					std::to_string(holding.native_id) + "," +
 					std::to_string(holding.native_id) + "," +
 					id(request.operation_id) + ",NULL,0)");
+			require(next_mapping_id < std::numeric_limits<uint64_t>::max(), EOVERFLOW);
+			++next_mapping_id;
 		}
 	}
 	const auto rows = query(
@@ -399,23 +485,26 @@ std::vector<uint64_t> create_or_verify_mappings(MYSQL *connection,
 		"FROM economic_account_mapping WHERE lineage=" +
 			id(request.lineage) + " ORDER BY locator_kind,native_id FOR UPDATE",
 		10);
-	require(rows.size() == holdings.size(), EILSEQ);
-	std::vector<uint64_t> mapping_ids;
-	mapping_ids.reserve(rows.size());
-	for (size_t index = 0; index < rows.size(); ++index)
+	require(rows.size() == mapped_count, EILSEQ);
+	std::vector<uint64_t> account_ids(holdings.size());
+	size_t mapping_index = 0;
+	for (size_t index = 0; index < holdings.size(); ++index)
 	{
-		const auto &record = rows[index];
 		const auto &source = holdings[index];
+		if (source.account_kind == economic_account_kind::pile)
+		{
+			account_ids[index] = source.native_id;
+			continue;
+		}
+		const auto &record = rows[mapping_index++];
 		const auto account_kind = integer<uint16_t>(record[1]);
 		const auto context = integer<uint64_t>(record[2]);
 		const auto locator = integer<uint16_t>(record[4]);
-		const auto expected_kind =
-			source.bank ? static_cast<uint16_t>(economic_account_kind::bank) :
-				      static_cast<uint16_t>(economic_account_kind::wallet);
-		require(account_kind == expected_kind &&
-				context == (source.bank ? source.racewar : 0) &&
+		const bool bank = source.account_kind == economic_account_kind::bank;
+		const auto expected_kind = static_cast<uint16_t>(source.account_kind);
+		require(account_kind == expected_kind && context == (bank ? source.racewar : 0) &&
 				integer<uint8_t>(record[3]) == ECONOMIC_MAPPING_BACKEND_SQL &&
-				locator == (source.bank ? 2 : 1) &&
+				locator == (bank ? 2 : 1) &&
 				integer<uint64_t>(record[5]) == source.native_id &&
 				integer<uint64_t>(record[6]) == source.native_id &&
 				parse_id(record[7]).bytes == request.operation_id.bytes &&
@@ -423,16 +512,16 @@ std::vector<uint64_t> create_or_verify_mappings(MYSQL *connection,
 			EILSEQ);
 		const auto mapping = integer<uint64_t>(record[0]);
 		require(mapping > 0, EILSEQ);
-		mapping_ids.push_back(mapping);
+		account_ids[index] = mapping;
 	}
-	return mapping_ids;
+	return account_ids;
 }
 economic_baseline_batch make_batch(const economic_sql_lifecycle_request &request,
 				   const std::vector<holding_source> &holdings,
-				   const std::vector<uint64_t> &mapping_ids,
+				   const std::vector<uint64_t> &account_ids,
 				   const economic_sql_source_digest &native_hash)
 {
-	require(holdings.size() == mapping_ids.size());
+	require(holdings.size() == account_ids.size());
 	economic_baseline_batch batch;
 	batch.lineage = request.lineage;
 	batch.epoch = request.epoch;
@@ -441,15 +530,16 @@ economic_baseline_batch make_batch(const economic_sql_lifecycle_request &request
 	batch.batch_index = 0;
 	batch.opening_account = { request.lineage, economic_account_kind::opening, 1, 0 };
 	batch.boundary_digest = native_hash;
-	batch.coverage_digest = coverage_digest(holdings, mapping_ids);
+	batch.coverage_digest = coverage_digest(holdings, account_ids);
 	batch.holdings.reserve(holdings.size());
 	for (size_t index = 0; index < holdings.size(); ++index)
 	{
 		const auto &source = holdings[index];
 		economic_account_key account{
-			request.lineage,
-			source.bank ? economic_account_kind::bank : economic_account_kind::wallet,
-			mapping_ids[index], static_cast<uint64_t>(source.bank ? source.racewar : 0)
+			request.lineage, source.account_kind, account_ids[index],
+			static_cast<uint64_t>(source.account_kind == economic_account_kind::bank ?
+						      source.racewar :
+						      0)
 		};
 		batch.holdings.push_back(
 			{ account, source.balance, source.native_revision, source.digest });
@@ -515,7 +605,7 @@ void ensure_no_preexisting_mapping(const economic_sql_source_snapshot &snapshot,
 }
 void fill_export(const economic_sql_lifecycle_request &request,
 		 const std::vector<holding_source> &holdings,
-		 const std::vector<uint64_t> &mapping_ids, const stored_installation &stored,
+		 const std::vector<uint64_t> &account_ids, const stored_installation &stored,
 		 uint64_t revision, economic_sql_lifecycle_receipt *output)
 {
 	economic_sql_lifecycle_receipt receipt;
@@ -529,12 +619,15 @@ void fill_export(const economic_sql_lifecycle_request &request,
 	for (size_t index = 0; index < holdings.size(); ++index)
 	{
 		const auto &source = holdings[index];
+		if (source.account_kind == economic_account_kind::pile)
+			continue;
 		economic_account_key account{
-			request.lineage,
-			source.bank ? economic_account_kind::bank : economic_account_kind::wallet,
-			mapping_ids[index], static_cast<uint64_t>(source.bank ? source.racewar : 0)
+			request.lineage, source.account_kind, account_ids[index],
+			static_cast<uint64_t>(source.account_kind == economic_account_kind::bank ?
+						      source.racewar :
+						      0)
 		};
-		if (source.bank)
+		if (source.account_kind == economic_account_kind::bank)
 			receipt.banks.push_back({ source.name, source.racewar, account });
 		else
 			receipt.wallets.push_back(
@@ -638,17 +731,19 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 			normalized_result == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
 		reject_cutover_defects(normalized);
 		const auto holdings = read_native_holdings(snapshot, normalized);
-		const auto native_hash = native_digest(snapshot);
+		const auto native_hash = native_digest(snapshot, holdings);
 		const auto capture_hash = snapshot.digest;
-		const auto wallets = static_cast<uint64_t>(
-			std::count_if(holdings.begin(), holdings.end(),
-				      [](const auto &value) { return !value.bank; }));
-		const auto banks = holdings.size() - wallets;
-		require(wallets + banks == holdings.size() &&
-				wallets + banks <= ECONOMIC_BASELINE_MAX_HOLDINGS,
+		const auto wallets = static_cast<uint64_t>(std::count_if(
+			holdings.begin(), holdings.end(), [](const auto &value)
+			{ return value.account_kind == economic_account_kind::wallet; }));
+		const auto banks = static_cast<uint64_t>(std::count_if(
+			holdings.begin(), holdings.end(), [](const auto &value)
+			{ return value.account_kind == economic_account_kind::bank; }));
+		require(wallets + banks <= holdings.size() &&
+				holdings.size() <= ECONOMIC_BASELINE_MAX_HOLDINGS,
 			E2BIG);
 		const auto existing = load_installation(connection, request.lineage);
-		std::vector<uint64_t> mapping_ids;
+		std::vector<uint64_t> account_ids;
 		if (!existing.exists)
 		{
 			ensure_no_preexisting_mapping(snapshot, request.lineage);
@@ -672,20 +767,20 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 				ENOTCONN);
 			execute(connection, "COMMIT");
 			owner.started = false;
-			mapping_ids =
+			account_ids =
 				create_or_verify_mappings(connection, request, holdings, false);
 		}
 		else
 		{
 			verify_request(existing, request, expected_request_hash, native_hash,
 				       wallets, banks);
-			mapping_ids =
+			account_ids =
 				create_or_verify_mappings(connection, request, holdings, false);
 		}
 		const auto stored = load_installation(connection, request.lineage);
 		require(stored.exists);
 		verify_request(stored, request, expected_request_hash, native_hash, wallets, banks);
-		auto batch = make_batch(request, holdings, mapping_ids, native_hash);
+		auto batch = make_batch(request, holdings, account_ids, native_hash);
 		std::optional<economic_prepared_baseline> prepared;
 		require(economic_baseline_prepare(batch, &prepared) ==
 				economic_accounting_error::ok,
@@ -737,8 +832,81 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 					    receipt.durable_revision);
 		execute(connection, "COMMIT");
 		selection.started = false;
-		fill_export(request, holdings, mapping_ids, stored, receipt.durable_revision,
+		fill_export(request, holdings, account_ids, stored, receipt.durable_revision,
 			    output);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
+unsigned int economic_sql_accounting_lifecycle_transaction::activate(
+	MYSQL *connection, economic_sql_cutover_transaction_owner &owner,
+	const critical_operation_id &lineage, uint64_t *new_lineage_revision) noexcept
+{
+	try
+	{
+		require(connection != nullptr, EINVAL);
+		require(!critical_operation_id_is_zero(lineage), EINVAL);
+		require(owner.is_valid() && owner.connection_ == connection &&
+				mysql_thread_id(connection) == owner.session_,
+			EPERM);
+		require(connection->server_status & SERVER_STATUS_IN_TRANS, EBUSY);
+
+		const auto stored = load_installation(connection, lineage);
+		require(stored.exists, ENOENT);
+		require(stored.phase == 2, EILSEQ);
+		require(stored.selected_epoch.has_value() &&
+				!critical_operation_id_is_zero(*stored.selected_epoch),
+			EILSEQ);
+		require(stored.baseline_operation.has_value() &&
+				!critical_operation_id_is_zero(*stored.baseline_operation),
+			EILSEQ);
+		require(stored.revision == 1, EILSEQ);
+
+		const auto state_row = one(
+			connection,
+			"SELECT HEX(active_epoch),revision FROM economic_lineage_state WHERE lineage=" +
+				id(lineage) + " FOR UPDATE",
+			2);
+		const auto current_active_hex = state_row[0];
+		const auto current_revision = integer<uint64_t>(state_row[1]);
+
+		uint64_t final_revision = current_revision;
+		if (current_active_hex.has_value())
+		{
+			const auto current_active = parse_id(*current_active_hex);
+			if (current_active.bytes == stored.selected_epoch->bytes)
+			{
+				final_revision = current_revision;
+			}
+			else
+			{
+				throw failure{ EEXIST };
+			}
+		}
+		else
+		{
+			execute(connection, "UPDATE economic_lineage_state SET active_epoch=" +
+						    id(*stored.selected_epoch) +
+						    ",revision=revision+1 WHERE lineage=" +
+						    id(lineage) + " AND active_epoch IS NULL");
+			require(mysql_affected_rows(connection) == 1, EIO);
+			final_revision = current_revision + 1;
+		}
+
+		if (new_lineage_revision)
+			*new_lineage_revision = final_revision;
 		return 0;
 	}
 	catch (const failure &error)
