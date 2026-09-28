@@ -118,8 +118,7 @@ def run_local(server: Path, local_port: int) -> None:
                         "fresh_bootstrap"], cwd=ROOT, env=environment, check=True)
         subprocess.run(["python3", "scripts/migration_runner.py", "run"],
                        cwd=ROOT, env=environment, check=True)
-        with tempfile.TemporaryDirectory(prefix="death-resurrection-",
-                                         dir=ROOT / "bin/tests") as runtime_tmp:
+        with tempfile.TemporaryDirectory(prefix="death-resurrection-") as runtime_tmp:
             runtime = Path(runtime_tmp)
             journey.make_fixture(runtime)
             journey.generate_certificate(runtime)

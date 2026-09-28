@@ -235,8 +235,13 @@ legacy money objects even with a nonstandard VNUM and skips ordinary items only
 after matching their UID and VNUM. Missing native evidence or an owner mismatch
 fails enumeration. The native fixture covers a legacy player money item, an
 ordinary item, a pet money item, an owner mismatch, and a missing snapshot.
-Other owner stores still fail closed. Complete UID coverage across those stores,
-wallet/bank native capture, and lifecycle installation remain open before
+Other owner stores still fail closed. The native lifecycle capture now
+enumerates every player wallet and shared bank under the authority lock,
+matches wallets to retained identities, rejects active identities missing a
+wallet or bank, and binds each captured balance to its native revision and
+source digest. The native coin fixture verifies that those exact revisions and
+digests survive pure baseline preparation and command construction. Complete
+UID coverage across those stores and lifecycle installation remain open before
 activation.
 A direct-assignment review found the reachable alternative
 quest cash path in `src/cmd/nq.c` and the victim-decrement path in

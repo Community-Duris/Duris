@@ -179,7 +179,7 @@ void initialize_bucket(const std::string &root, const flatfile_authority_lock &l
 	if (!result)
 		commit(root, lock, changes);
 }
-void setup(const fs::path &path, bool activate = true)
+void setup(const fs::path &path, bool activate = true, bool initialize_accounting = true)
 {
 	const auto root = path.string();
 	for (const auto &dir :
@@ -215,6 +215,8 @@ void setup(const fs::path &path, bool activate = true)
 	player.completed_epic_zones = { 3, 5 };
 	assert(flatfile_player_domain_establish(root, player, nullptr) ==
 	       flatfile_player_domain_result::ok);
+	if (!initialize_accounting)
+		return;
 	flatfile_authority_lock lock;
 	assert(lock.acquire(root, nullptr));
 	ops changes;
