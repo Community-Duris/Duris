@@ -13,6 +13,7 @@
  * own maximum against this value at compile time.
  */
 constexpr size_t flatfile_authority_transaction_maximum_operations = 32;
+constexpr size_t flatfile_authority_transaction_maximum_bytes = 256 * 1024 * 1024;
 
 struct flatfile_authority_after_image
 {
@@ -27,7 +28,8 @@ enum class flatfile_authority_store : uint8_t
 	identities = 3,
 	accounts = 4,
 	metadata = 5,
-	player_deaths = 6
+	player_deaths = 6,
+	economic_evidence = 7
 };
 
 enum class flatfile_authority_operation_kind : uint8_t
@@ -67,6 +69,7 @@ class flatfile_authority_lock
 	struct state;
 	std::unique_ptr<state> state_;
 	bool owns(const std::string &root) const;
+	friend class flatfile_accounting_storage;
 	friend flatfile_authority_transaction_result
 	flatfile_authority_transaction_recover(const std::string &, const flatfile_authority_lock &,
 					       std::string *);

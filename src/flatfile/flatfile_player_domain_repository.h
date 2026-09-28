@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <string>
+#include <optional>
 #include <vector>
 
 struct flatfile_player_domain_record
@@ -59,6 +60,32 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 							  int8_t racewar,
 							  flatfile_player_domain_record *record,
 							  std::string *error);
+// Borrow the authority lock; never acquire domain_mutex after it. These helpers
+// recover both the authority and legacy domain journals before reading. All
+// result outputs are unchanged on failure. They neither authorize nor stage writes.
+flatfile_player_domain_result
+flatfile_player_domain_recover_locked(const std::string &root, const flatfile_authority_lock &lock,
+				      std::string *error);
+flatfile_player_domain_result
+flatfile_player_domain_load_locked(const std::string &root, const flatfile_authority_lock &lock,
+				   int32_t pid, const std::string &account_name, int8_t racewar,
+				   flatfile_player_domain_record *record, std::string *error);
+// Exact legacy evidence, with no fabricated accounting plan or inferred schema-2
+// equivalence. Lookup uses PID/operation ID before current name/epoch policy.
+// Success with an empty optional means a valid player file without this ID;
+// not_found means the player file is missing. This is not a global ID fence.
+struct flatfile_legacy_domain_receipt
+{
+	critical_operation_id operation_id = {};
+	std::array<uint8_t, 32> command_digest = {};
+	unsigned int result_code = 0;
+	uint16_t result_size = 0;
+	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result = {};
+};
+flatfile_player_domain_result flatfile_player_domain_legacy_receipt_locked(
+	const std::string &root, const flatfile_authority_lock &lock, int32_t pid,
+	const critical_operation_id &operation_id,
+	std::optional<flatfile_legacy_domain_receipt> *receipt, std::string *error);
 critical_apply_result flatfile_player_domain_apply(const std::string &root,
 						   const critical_command &command);
 flatfile_player_domain_result flatfile_player_domain_prepare_wallet(

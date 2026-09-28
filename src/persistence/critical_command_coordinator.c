@@ -347,6 +347,7 @@ bool enqueue_replayed(critical_command command, void *context)
 		state->attempt = 1;
 		state->attachments = 0;
 		state->phase = critical_operation_phase::queued;
+		state->retain_until_publication = state->command.publication_required;
 		state->admission_failure_queued = false;
 		operations.emplace(identity, std::move(state));
 		pending.push_back(identity);
@@ -932,6 +933,16 @@ void critical_command_coordinator_shutdown(void)
 critical_submit_result critical_command_coordinator_submit_internal(critical_command command,
 								    bool retain_until_publication)
 {
+	// The policy must be in the immutable journal bytes before admission/fsync.
+	// A direct submission cannot downgrade a caller-supplied publication hold.
+	if (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+	{
+		if (command.publication_required && !retain_until_publication)
+			return critical_submit_result::invalid;
+		command.publication_required = retain_until_publication;
+	}
+	else if (command.publication_required)
+		return critical_submit_result::invalid;
 	const bool supplied_acceptance_time = command.accepted_at_usec != 0;
 	if (!supplied_acceptance_time)
 		command.accepted_at_usec = wall_now_usec();

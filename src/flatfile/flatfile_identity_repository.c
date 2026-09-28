@@ -534,6 +534,38 @@ flatfile_identity_result flatfile_identity_lookup_pid(const std::string &root, i
 }
 
 flatfile_identity_result
+flatfile_identity_lookup_pid_locked(const std::string &root,
+				    const flatfile_identity_lock &identity_lock,
+				    const flatfile_authority_lock &authority_lock, int32_t pid,
+				    flatfile_identity_record *record, std::string *error)
+{
+	if (!record || pid <= 0 || !identity_lock.matches(root) || !authority_lock.matches(root))
+		return flatfile_identity_result::invalid;
+	try
+	{
+		const auto recovered =
+			flatfile_authority_transaction_recover(root, authority_lock, error);
+		if (recovered != flatfile_authority_transaction_result::ok)
+			return recovered == flatfile_authority_transaction_result::io_error ?
+				       flatfile_identity_result::io_error :
+				       flatfile_identity_result::invalid;
+		identity_catalog catalog;
+		const auto result = load_catalog(root, &catalog, error);
+		if (result != flatfile_identity_result::ok)
+			return result;
+		auto *entry = find_pid(&catalog, pid);
+		if (!entry)
+			return flatfile_identity_result::not_found;
+		*record = std::move(*entry);
+		return flatfile_identity_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_identity_result::io_error;
+	}
+}
+
+flatfile_identity_result
 flatfile_identity_list_account(const std::string &root, const std::string &account,
 			       std::vector<flatfile_identity_record> *records, std::string *error)
 {

@@ -32,6 +32,7 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		auto admission = command;
 		admission.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 		admission.accounting_intent.clear();
+		admission.publication_required = false;
 		std::vector<uint8_t> expected;
 		if (command.type == critical_command_type::account_bank)
 		{

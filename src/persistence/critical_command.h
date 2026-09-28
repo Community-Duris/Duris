@@ -142,6 +142,9 @@ struct critical_command
 	std::vector<uint8_t> payload;
 	// Schema 2 wire evidence only until a typed accounting executor is connected.
 	std::vector<uint8_t> accounting_intent = {};
+	// Schema-2 journal header bit: execution cannot retire this operation before
+	// the game thread acknowledges publication. Legacy schema-1 bytes stay zero.
+	bool publication_required = false;
 };
 
 enum class critical_command_codec_result : uint8_t

@@ -489,6 +489,7 @@ void versioned_envelopes()
 	std::vector<uint8_t> encoded;
 	CHECK(critical_command_encode(command, &encoded) == critical_command_codec_result::ok);
 	CHECK(encoded == REFERENCE_ACCOUNTING_COMMAND);
+	CHECK(legacy[31] == 0 && encoded[31] == 0); // Existing wire bytes do not move.
 	critical_command decoded;
 	CHECK(critical_command_decode(encoded.data(), encoded.size(), &decoded) ==
 	      critical_command_codec_result::ok);
@@ -496,6 +497,28 @@ void versioned_envelopes()
 	economic_frozen_intent intent;
 	CHECK(economic_intent_decode(decoded.accounting_intent, &intent) == error::ok);
 	CHECK(economic_intent_verify_binding(decoded, intent) == error::ok);
+	auto marked = command;
+	marked.publication_required = true;
+	std::vector<uint8_t> marked_bytes;
+	CHECK(critical_command_encode(marked, &marked_bytes) == critical_command_codec_result::ok);
+	CHECK(marked_bytes.size() == encoded.size() && marked_bytes[31] == 1);
+	critical_command marked_decoded;
+	CHECK(critical_command_decode(marked_bytes.data(), marked_bytes.size(), &marked_decoded) ==
+	      critical_command_codec_result::ok);
+	CHECK(marked_decoded.publication_required &&
+	      critical_command_equal(marked, marked_decoded) &&
+	      !critical_command_equal(command, marked_decoded));
+	CHECK(economic_intent_verify_binding(marked_decoded, intent) == error::ok);
+	auto malformed_flag = marked_bytes;
+	malformed_flag[31] = 2;
+	CHECK(critical_command_decode(malformed_flag.data(), malformed_flag.size(), &decoded) ==
+	      critical_command_codec_result::invalid);
+	malformed_flag = legacy;
+	malformed_flag[31] = 1;
+	CHECK(critical_command_decode(malformed_flag.data(), malformed_flag.size(), &decoded) ==
+	      critical_command_codec_result::invalid);
+	marked.type = critical_command_type::coin_transfer;
+	CHECK(!critical_command_envelope_valid(marked));
 	auto changed = decoded;
 	changed.accounting_intent.back() ^= 1;
 	CHECK(!critical_command_equal(changed, decoded));

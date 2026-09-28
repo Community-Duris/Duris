@@ -705,6 +705,7 @@ economic_accounting_error economic_command_binding_digest(const critical_command
 		auto projection = command;
 		projection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 		projection.accounting_intent.clear();
+		projection.publication_required = false;
 		// Only this binding projection uses a sentinel. Actual admission,
 		// journal bytes, exact-ID equality and durable receipts keep real time.
 		projection.accepted_at_usec = 1;
