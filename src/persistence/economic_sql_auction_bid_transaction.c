@@ -588,6 +588,23 @@ economic_sql_auction_bid_execute_and_record(MYSQL *connection, const critical_co
 				if (staged)
 					return staged;
 			}
+			const auto effect = std::find_if(
+				plan.accounts.begin(), plan.accounts.end(), [&](const auto &entry)
+				{ return economic_account_key_equal(entry.key, accounts.escrow); });
+			const auto mapping = std::find_if(
+				active.authority.mappings.begin(), active.authority.mappings.end(),
+				[&](const auto &entry) {
+					return economic_account_key_equal(entry.request.account,
+									  accounts.escrow);
+				});
+			if (effect == plan.accounts.end() ||
+			    effect->after != economic_coin_vector{} ||
+			    mapping == active.authority.mappings.end())
+				return EILSEQ;
+			const auto retired = economic_sql_retire_mapping(connection, *mapping,
+									 command.operation_id);
+			if (retired)
+				return retired;
 		}
 		return 0;
 	}

@@ -23,6 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "guild/assocs.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/shop.h"
 // #include "core/types.h"  // Not needed on modern Linux systems
 #include "core/structs.h"
@@ -2886,6 +2887,14 @@ void do_storage(P_char ch, char *arg, int /*cmd*/)
 
 	arg = one_argument(arg, subcmd);
 	arg = one_argument(arg, objarg);
+
+	if (economic_gameplay_authority::active() &&
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    (!strcmp(subcmd, "new") || !strcmp(subcmd, "delete") || !strcmp(subcmd, "remove")))
+	{
+		send_to_char("Storage changes are unavailable right now.\r\n", ch);
+		return;
+	}
 
 	if (!strcmp(subcmd, "new"))
 	{

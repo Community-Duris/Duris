@@ -7,14 +7,16 @@
 #include <array>
 #include <cstdint>
 
-constexpr uint16_t SHOP_TRADE_PAYLOAD_VERSION = 4;
-constexpr uint16_t SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION = 3;
+constexpr uint16_t SHOP_TRADE_PAYLOAD_VERSION = 5;
+constexpr uint16_t SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION = 4;
+constexpr uint16_t SHOP_TRADE_CONTAINER_PAYLOAD_VERSION = 3;
 constexpr uint16_t SHOP_TRADE_STOCK_PAYLOAD_VERSION = 2;
 constexpr uint16_t SHOP_TRADE_LEGACY_PAYLOAD_VERSION = 1;
 constexpr size_t SHOP_TRADE_MAX_ITEMS = ITEM_TRANSFER_LEGACY_MAX_ITEMS;
 constexpr size_t SHOP_TRADE_ITEM_BLOB_MAX_BYTES = 128 * 1024;
-constexpr size_t SHOP_TRADE_RESULT_BYTES = 304;
-constexpr uint8_t SHOP_TRADE_RESULT_VERSION = 1;
+constexpr size_t SHOP_TRADE_PREVIOUS_RESULT_BYTES = 304;
+constexpr size_t SHOP_TRADE_RESULT_BYTES = 312;
+constexpr uint8_t SHOP_TRADE_RESULT_VERSION = 2;
 
 enum class shop_trade_action : uint8_t
 {
@@ -44,6 +46,9 @@ struct shop_trade_payload
 	uint8_t racewar;
 	std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1> account_name;
 	int64_t price;
+	int32_t keeper_vnum;
+	int64_t expected_keeper_cash;
+	uint8_t keeper_roaming;
 	uint64_t expected_wallet_revision;
 	uint64_t expected_bank_revision;
 	uint64_t expected_shop_revision;
@@ -68,6 +73,8 @@ struct shop_trade_result
 	uint64_t wallet_revision;
 	uint64_t bank_revision;
 	uint64_t shop_revision;
+	int64_t keeper_cash;
+	bool keeper_cash_recorded;
 	uint64_t player_owner_revision;
 	uint64_t counterparty_owner_revision;
 	uint16_t item_count;

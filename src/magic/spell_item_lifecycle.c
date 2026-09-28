@@ -8,8 +8,10 @@
 #include "combat/damage.h"
 #include "world/achievements.h"
 #include "item/objmisc.h"
+#include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "economy/economic_gameplay_authority.h"
 #include "persistence/persistence_checkpoint.h"
 #include "kingdom/kingdom_store_piece.h"
 #include "magic/spells.h"
@@ -210,6 +212,14 @@ static void remove_soulbind_except(P_char ch, uint64_t keep_uid)
 		    IS_SET(obj->extra2_flags, ITEM2_SOULBIND) && !kingdom_store_bound(obj) &&
 		    isname(GET_NAME(ch), obj->name))
 		{
+			if (economic_gameplay_authority::active() &&
+			    item_command_uses_durable_ownership(obj))
+			{
+				logit(LOG_FILE,
+				      "soulbind retirement withheld without item custody (uid=%llu)",
+				      (unsigned long long)obj->obj_uid);
+				continue;
+			}
 			extract_obj(obj);
 		}
 	}
@@ -561,8 +571,22 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 			{
 				if (*gbuf2)
 				{
+					if (economic_gameplay_authority::active())
+					{
+						send_to_char(
+							"Soulbound items cannot be replaced right now.\r\n",
+							ch);
+						return;
+					}
 					replace_existing = true;
 					break;
+				}
+				if (economic_gameplay_authority::active())
+				{
+					send_to_char(
+						"Soulbound items cannot be cleared right now.\r\n",
+						ch);
+					return;
 				}
 				remove_soulbind(victim);
 				affect_remove(victim, findaf);
@@ -714,6 +738,12 @@ void load_soulbind(P_char ch)
 	int item;
 	P_obj obj;
 	char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
+
+	if (ch && economic_gameplay_authority::active())
+	{
+		send_to_char("Soulbound items cannot be restored right now.\r\n", ch);
+		return;
+	}
 
 	item = has_soulbind(ch);
 	if (item == 0)

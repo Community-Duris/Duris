@@ -406,6 +406,21 @@ class SplitEconomyActivationContract(unittest.TestCase):
             family_sites = {site for site in current if site[2] == family}
             self.assertTrue(family_sites, family)
             self.assertFalse(family_sites - mapped, family)
+        shop_restore = self.routes["recovery.flat_shopkeeper_cash_materialization"]
+        self.assertEqual(shop_restore["disposition"], "runtime_projection_route")
+        self.assertEqual(shop_restore["blocking_policy_after_activation"]["decision"],
+                         "block_until_projection_proof")
+        self.assertFalse(shop_restore["double_entry_evidence"]
+                         ["unified_operation_postings_observed"])
+        self.assertIn("retained flatfile shop cash", shop_restore["projection_rule"])
+        sql_shop_restore = self.routes["recovery.sql_shopkeeper_cash_materialization"]
+        self.assertEqual(sql_shop_restore["disposition"], "runtime_projection_route")
+        self.assertEqual(sql_shop_restore["blocking_policy_after_activation"]["decision"],
+                         "block_until_projection_proof")
+        self.assertFalse(sql_shop_restore["double_entry_evidence"]
+                         ["unified_operation_postings_observed"])
+        self.assertIn("legacy NULL cash", sql_shop_restore["blocking_policy_after_activation"]
+                      ["required_policy"])
         clear_calls = {
             ("src/mob/mobpatrol.c", 90, "money_helper"),
             ("src/combat/justice.c", 258, "money_helper"),
@@ -441,9 +456,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2958, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9384, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9404, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10723, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10771, "sql_economy")],
                          {"recovery.saved_sql"})
 
     def test_sql_components_do_not_claim_a_playable_root(self) -> None:
@@ -709,9 +724,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 9965, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10013, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11106, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11154, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",

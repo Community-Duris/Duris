@@ -9081,6 +9081,13 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 		log_shopkeeper_save_guard(ch, shop_nr, guard);
 		return false;
 	}
+	const int64_t cash = static_cast<int64_t>(GET_COPPER(ch)) +
+			     10 * static_cast<int64_t>(GET_SILVER(ch)) +
+			     100 * static_cast<int64_t>(GET_GOLD(ch)) +
+			     1000 * static_cast<int64_t>(GET_PLATINUM(ch));
+	if (GET_COPPER(ch) < 0 || GET_SILVER(ch) < 0 || GET_GOLD(ch) < 0 || GET_PLATINUM(ch) < 0 ||
+	    cash > INT_MAX)
+		return false;
 
 	// start transaction
 	if (!sql_begin_transaction())
@@ -9098,21 +9105,14 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 							      shop_index[shop_nr].in_room;
 	long save_time = time(0);
 
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM shopkeepers WHERE shop_id=%d", shop_nr);
-	if (!sql_run_query(del_query))
-	{
-		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to delete old shopkeeper %d",
-		      shop_nr);
-		sql_rollback();
-		return false;
-	}
-
-	char ins_query[256];
-	snprintf(
-		ins_query, sizeof(ins_query),
-		"INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time) VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)))",
-		shop_nr, mob_vnum, room_vnum, save_time);
+	char ins_query[512];
+	snprintf(ins_query, sizeof(ins_query),
+		 "INSERT INTO shopkeepers (shop_id, mob_vnum, room_vnum, save_time, cash) "
+		 "VALUES (%d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)), %lld) "
+		 "ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), mob_vnum=VALUES(mob_vnum), "
+		 "room_vnum=VALUES(room_vnum), save_time=VALUES(save_time), "
+		 "cash=VALUES(cash), shop_revision=shop_revision+1",
+		 shop_nr, mob_vnum, room_vnum, save_time, static_cast<long long>(cash));
 
 	if (!sql_run_query(ins_query))
 	{
@@ -9122,6 +9122,26 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	}
 
 	int shopkeeper_id = (int)mysql_insert_id(DB);
+	if (shopkeeper_id <= 0)
+	{
+		sql_rollback();
+		return false;
+	}
+	char del_query[128];
+	snprintf(del_query, sizeof(del_query),
+		 "DELETE FROM shopkeeper_affects WHERE shopkeeper_id=%d", shopkeeper_id);
+	if (!sql_run_query(del_query))
+	{
+		sql_rollback();
+		return false;
+	}
+	snprintf(del_query, sizeof(del_query),
+		 "DELETE FROM shopkeeper_items WHERE shopkeeper_id=%d", shopkeeper_id);
+	if (!sql_run_query(del_query))
+	{
+		sql_rollback();
+		return false;
+	}
 
 	if (!sql_save_shopkeeper_affects(shopkeeper_id, ch))
 	{
@@ -9466,7 +9486,7 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 
 	// query 1: load all shopkeepers
 	MYSQL_RES *result =
-		db_query("SELECT shop_id, id, mob_vnum, room_vnum FROM shopkeepers "
+		db_query("SELECT shop_id, id, mob_vnum, room_vnum, cash FROM shopkeepers "
 			 "WHERE (%d < 0 OR shop_id=%d) ORDER BY save_time DESC, id DESC",
 			 only_shop, only_shop);
 	if (!result)
@@ -9514,6 +9534,23 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			      shop_nr, mob_vnum, room_vnum);
 			continue;
 		}
+		int saved_cash = -1;
+		if (row[4])
+		{
+			char *end = NULL;
+			errno = 0;
+			const long long parsed_cash = strtoll(row[4], &end, 10);
+			if (errno || end == row[4] || *end || parsed_cash < 0 ||
+			    parsed_cash > INT_MAX)
+			{
+				logit(LOG_DEBUG,
+				      "sql_restore_shopkeepers: invalid cash for shop %d", shop_nr);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			saved_cash = static_cast<int>(parsed_cash);
+		}
 
 		P_char mob = read_mobile(mob_vnum, VIRTUAL);
 		if (!mob)
@@ -9543,6 +9580,17 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 
 		GET_BIRTHPLACE(mob) = room_vnum;
 		bind_shopkeeper(mob, shop_nr);
+		// NULL belongs to a pre-cash snapshot; keep the prototype until captured.
+		if (saved_cash >= 0)
+		{
+			int remaining = saved_cash;
+			GET_PLATINUM(mob) = remaining / 1000;
+			remaining %= 1000;
+			GET_GOLD(mob) = remaining / 100;
+			remaining %= 100;
+			GET_SILVER(mob) = remaining / 10;
+			GET_COPPER(mob) = remaining % 10;
+		}
 
 		k->next = keepers;
 		keepers = k;

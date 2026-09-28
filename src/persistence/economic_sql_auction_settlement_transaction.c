@@ -422,7 +422,8 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 	std::array<size_t, AUCTION_COMMAND_MAX_ITEMS> order = {};
 	for (size_t index = 0; index < listing.item_count; ++index)
 		order[index] = index;
-	std::sort(order.begin(), order.begin() + listing.item_count, [&](size_t left, size_t right)
+	std::sort(order.begin(), order.begin() + listing.item_count,
+		  [&](size_t left, size_t right)
 		  { return listing.items[left].uid < listing.items[right].uid; });
 	for (size_t position = 0; position < listing.item_count; ++position)
 	{
@@ -761,6 +762,26 @@ unsigned int economic_sql_auction_settlement_execute_and_record(
 				if (staged)
 					return staged;
 			}
+		}
+		if (payload.action == auction_action::finalize)
+		{
+			const auto effect = std::find_if(
+				plan.accounts.begin(), plan.accounts.end(), [&](const auto &entry)
+				{ return economic_account_key_equal(entry.key, accounts.escrow); });
+			const auto mapping = std::find_if(
+				active.authority.mappings.begin(), active.authority.mappings.end(),
+				[&](const auto &entry) {
+					return economic_account_key_equal(entry.request.account,
+									  accounts.escrow);
+				});
+			if (effect == plan.accounts.end() ||
+			    effect->after != economic_coin_vector{} ||
+			    mapping == active.authority.mappings.end())
+				return EILSEQ;
+			const auto retired = economic_sql_retire_mapping(connection, *mapping,
+									 command.operation_id);
+			if (retired)
+				return retired;
 		}
 		return 0;
 	}

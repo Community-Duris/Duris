@@ -2,23 +2,23 @@
   "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
   "blockers": [
     "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
-    "Current function inventory is not codebase-complete: 1126 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
+    "Current function inventory is not codebase-complete: 858 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
     "The SQL coin component has balanced postings, but no complete gameplay route is qualified; legacy currency/item/domain ledgers are not substitutes.",
     "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 562,
-    "function_definition_anchors_verified": 555,
-    "matrix_rows": 562,
+    "draft_registry_rows": 604,
+    "function_definition_anchors_verified": 597,
+    "matrix_rows": 604,
     "non_function_candidate_anchors": 7,
     "non_writer_or_out_of_scope_candidates": 92,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 77,
     "routes_with_schema_2_gameplay_producer": 8,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 453,
+    "runtime_mutation_and_projection_routes": 495,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
@@ -26,8 +26,8 @@
     "dormant_writer_candidate": 14,
     "non_writer_candidate": 92,
     "offline_operational_writer": 3,
-    "runtime_mutation_route": 393,
-    "runtime_projection_route": 60
+    "runtime_mutation_route": 433,
+    "runtime_projection_route": 62
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -39,21 +39,21 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 562 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
-    "Most 1126 unmapped current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
+    "The matrix reconciles 604 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "Most 858 unmapped current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2768,
-    "current_unique_path_line_family_sites": 2710,
+    "current_occurrences": 2780,
+    "current_unique_path_line_family_sites": 2722,
     "draft_registry_census_complete": false,
     "draft_source_commit": "49af585c4b9c8cfa5ead0ac07025f39d4720a659",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2710,
+    "draft_unique_sites": 2722,
     "family_occurrences": {
-      "coin_assignment": 148,
+      "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 165,
@@ -63,11 +63,11 @@
       "ship_coffer_assignment": 6,
       "sql_economy": 49
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 562-row registry maps 1584 current unique sites; 1126 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
-    "mapped_sites_still_present": 1584,
-    "mapped_unique_sites_from_draft_rows": 1584,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 604-row registry maps 1864 current unique sites; 858 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
+    "mapped_sites_still_present": 1864,
+    "mapped_unique_sites_from_draft_rows": 1864,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
-    "unmapped_current_unique_sites": 1126
+    "unmapped_current_unique_sites": 858
   },
   "method": {
     "candidate_source": "docs/persistence/economy_accounting/writers.json (source-reviewed registry, including legacy settlement definitions)",
@@ -1809,7 +1809,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10822
+          10870
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -2410,7 +2410,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          558
+          559
         ],
         "file": "src/cmd/actwiz.c",
         "function": "timedShutdown",
@@ -2578,7 +2578,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1050
+          1051
         ],
         "file": "src/cmd/actwiz.c",
         "function": "submit_wizard_load_establish",
@@ -2638,7 +2638,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1174
+          1175
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_purge",
@@ -2758,7 +2758,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2739
+          2740
         ],
         "file": "src/cmd/actwiz.c",
         "function": "flat_storage_completion",
@@ -4092,7 +4092,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           465,
-          12158
+          12206
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -5119,7 +5119,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          984
+          1018
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_buy",
@@ -5182,7 +5182,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          247
+          259
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_submit_produced_continuation",
@@ -5245,7 +5245,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1322
+          1358
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -5308,7 +5308,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1322
+          1358
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -5371,7 +5371,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          293
+          306
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_route_invalid_cleanup",
@@ -5434,7 +5434,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          307
+          320
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_completion",
@@ -5497,7 +5497,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1837
+          1877
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_repair",
@@ -5567,6 +5567,69 @@
         "original_draft_symbol": "flatfile_shop_trade_repository_apply"
       },
       "source_classification": "Wallet, stock, custody/materialization and receipt after-images.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_projection_proof",
+        "must_block_on_activation": true,
+        "required_policy": "Projects retained flatfile shop cash into a detached keeper before publication; no trade or new coin issuance occurs here. Refuse publication until the selected shop ID, retained cash and revision, and complete shopkeeper ownership record are verified; emit no new posting."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "recovery.flat_shopkeeper_cash_materialization",
+      "native_effects": {
+        "custody_effect": "The staged keeper and saved item graph are projected from the retained shopkeeper record before live room publication.",
+        "holding_effect": "Copies retained shop cash into the detached keeper denomination fields; no durable shop cash row changes or new value is created.",
+        "native_state_targets": [
+          "selected flatfile shopkeeper record cash, shop ID and revision",
+          "runtime detached keeper copper/silver/gold/platinum fields",
+          "saved shopkeeper item ownership and runtime item graph"
+        ]
+      },
+      "projection_rule": "Projects retained flatfile shop cash into a detached keeper before publication; no trade or new coin issuance occurs here.",
+      "reachability_evidence": "The flatfile shopkeeper restore path calls this materializer for a selected retained record; its staged keeper remains detached until ownership materialization succeeds and the result is released.",
+      "reason": "shop_cleanup",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          62
+        ],
+        "file": "src/flatfile/flatfile_shopkeeper_materialize.c",
+        "function": "flatfile_shopkeeper_materialize",
+        "original_draft_symbol": "flatfile_shopkeeper_materialize"
+      },
+      "source_classification": "Detached recovery projection of retained shopkeeper cash: four denominations are decoded from the selected flatfile shop record before the staged keeper is released; this is not a new trade or issuance.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -5932,7 +5995,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1995
+          1999
         ],
         "file": "src/flatfile/flatfile_collector_repository.c",
         "function": "flatfile_collector_repository_apply",
@@ -6596,7 +6659,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2426
+          2459
         ],
         "file": "src/flatfile/flatfile_auction_repository.c",
         "function": "flatfile_auction_repository_apply",
@@ -6717,7 +6780,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          483
+          491
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_craft_command",
@@ -6777,7 +6840,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1106
+          1114
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_forge_command",
@@ -6837,7 +6900,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          766
+          767
         ],
         "file": "src/economy/tradeskill.c",
         "function": "smith",
@@ -6897,7 +6960,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2420
+          2426
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_refine",
@@ -6957,7 +7020,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          641
+          642
         ],
         "file": "src/economy/tradeskill.c",
         "function": "event_fish_check",
@@ -7017,7 +7080,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          282
+          283
         ],
         "file": "src/economy/tradeskill.c",
         "function": "create_parchment",
@@ -7077,7 +7140,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          83
+          84
         ],
         "file": "src/economy/tradeskill.c",
         "function": "epic_store_committed",
@@ -8127,12 +8190,15 @@
           "player_data wallet / pending auction claim where applicable"
         ]
       },
-      "reachability_evidence": "ship_control.c dispatches the captain get-money command to claim_coffer; it credits the player before clearing ship->money.",
+      "reachability_evidence": "ship_control.c dispatches the captain get-money command to claim_coffer; the active guard precedes wallet credit and coffer clear. An extracted-function regression checks refusal and inactive claim behavior.",
       "reason": "wallet_transfer",
+      "refusal_source_evidence": [
+        "src/ships/ship_control.c:claim_coffer active-epoch guard before wallet credit or coffer clear; extracted-function regression"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1786
+          1787
         ],
         "file": "src/ships/ship_control.c",
         "function": "claim_coffer",
@@ -8311,7 +8377,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           431,
-          11482
+          11530
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -8418,7 +8484,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           427,
-          11228
+          11276
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -8479,7 +8545,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           439,
-          11600
+          11648
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -9567,7 +9633,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           461,
-          12023
+          12071
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -10127,7 +10193,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1648
+          1822
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -10375,7 +10441,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           406,
-          9320
+          9340
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -10437,7 +10503,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           410,
-          9374
+          9394
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -11153,7 +11219,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1601
+          1639
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_peruse",
@@ -11214,7 +11280,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2625
+          2671
         ],
         "file": "src/economy/shop.c",
         "function": "transact",
@@ -15192,7 +15258,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2268
+          2444
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -15548,7 +15614,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          186
+          197
         ],
         "file": "src/classes/new_skills.c",
         "function": "submit_summoned_replacement",
@@ -15786,7 +15852,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          29
+          30
         ],
         "file": "src/economy/crafting.c",
         "function": "grant_crafted_item",
@@ -15845,7 +15911,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          57
+          58
         ],
         "file": "src/economy/tradeskill.c",
         "function": "grant_tradeskill_item",
@@ -20808,7 +20874,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9414
+          9434
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -20870,13 +20936,76 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9462
+          9482
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
         "original_draft_symbol": "sql_restore_shopkeeper_catalog"
       },
       "source_classification": "Shopkeeper catalog and derived stock are rebuilt from templates; the selected shopkeeper_items query does not read obj_uid, so restored stock receives fresh runtime identities before equip/publication.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_projection_proof",
+        "must_block_on_activation": true,
+        "required_policy": "Projects retained SQL shop cash into a staged keeper before publication; no trade or new coin issuance occurs here. Refuse publication until the selected shopkeeper row, cash revision, and complete stock identity are verified; a legacy NULL cash value cannot establish retained treasury authority. Emit no new posting."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "recovery.sql_shopkeeper_cash_materialization",
+      "native_effects": {
+        "custody_effect": "The staged keeper and stock graph are rebuilt from SQL shopkeeper rows before live room publication.",
+        "holding_effect": "Copies retained SQL shop cash into staged keeper copper/silver/gold/platinum fields; no durable shop cash row changes and no new value is created.",
+        "native_state_targets": [
+          "selected SQL shopkeepers row, cash and cash_revision",
+          "runtime staged keeper denomination fields",
+          "shopkeeper_items and runtime stock graph"
+        ]
+      },
+      "projection_rule": "Projects retained SQL shop cash into a staged keeper before publication; no trade or new coin issuance occurs here.",
+      "reachability_evidence": "sql_restore_shopkeeper_catalog reads the selected shopkeepers row and projects saved cash into a newly read, staged mob; the shopkeeper is published only after catalog staging succeeds.",
+      "reason": "shop_cleanup",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          9482
+        ],
+        "file": "src/sql/sql_player.c",
+        "function": "sql_restore_shopkeeper_catalog",
+        "original_draft_symbol": "sql_restore_shopkeeper_catalog"
+      },
+      "source_classification": "Staged SQL shopkeeper recovery copies the retained non-NULL cash total into four denomination fields before live publication. A legacy NULL row keeps prototype cash and does not prove retained treasury value; this path is a projection, not a trade or issuance.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -20934,7 +21063,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10822
+          10870
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -20982,7 +21111,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10822
+          10870
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33173,6 +33302,2360 @@
         "original_draft_symbol": "good_evil_sword"
       },
       "source_classification": "The good/evil sword forces other equipped items into the same player inventory, then equips itself as primary weapon.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.shutdown_unload",
+      "native_effects": {
+        "custody_effect": "Loose objects aboard the ship are evacuated to the anchor room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "shutdown_ships iterates ship cabin rooms and extracts loose objects to the anchor room prior to database commit.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          599
+        ],
+        "file": "src/ships/ship_base.c",
+        "function": "shutdown_ships",
+        "original_draft_symbol": "shutdown_ships"
+      },
+      "source_classification": "Server shutdown relocates loose items remaining in ship cabins to the ship anchor room before saving.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.load_fixture",
+      "native_effects": {
+        "custody_effect": "Ship control panel and vehicle object are placed into world rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "load_ship links ship->panel to the bridge room and SHIP_OBJ(ship) to the world arrival room.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1057
+        ],
+        "file": "src/ships/ship_base.c",
+        "function": "load_ship",
+        "original_draft_symbol": "load_ship"
+      },
+      "source_classification": "Loading an active ship places the control panel in the bridge room and the ship vehicle object into the world room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.runtime_delete",
+      "native_effects": {
+        "custody_effect": "Ship control panel and vehicle objects are extracted and destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner lifecycle"
+        ]
+      },
+      "reachability_evidence": "delete_ship removes ship->panel and ship->shipobj from their rooms and calls extract_obj.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1169,
+          3515
+        ],
+        "file": "src/ships/ship_base.c",
+        "function": "delete_ship",
+        "original_draft_symbol": "delete_ship"
+      },
+      "source_classification": "Deleting a ship unlinks and extracts the runtime control panel and ship vehicle object from the world.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.reset_panel",
+      "native_effects": {
+        "custody_effect": "Ship control panel is transferred between bridge rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents"
+        ]
+      },
+      "reachability_evidence": "reset_ship calls obj_from_room and obj_to_room for the control panel after reconfiguring rooms.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1748
+        ],
+        "file": "src/ships/ship_base.c",
+        "function": "reset_ship",
+        "original_draft_symbol": "reset_ship"
+      },
+      "source_classification": "Resetting ship hull layout relocates the ship control panel to the new bridge room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.movement_relocation",
+      "native_effects": {
+        "custody_effect": "Physical ship object is relocated between ocean rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "ship_activity updates ship->location and transfers SHIP_OBJ(ship) between rooms.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2205
+        ],
+        "file": "src/ships/ship_base.c",
+        "function": "ship_activity",
+        "original_draft_symbol": "ship_activity"
+      },
+      "source_classification": "Periodic ship sailing activity moves the ship object across world ocean rooms.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.dock_relocation",
+      "native_effects": {
+        "custody_effect": "Ship object moves into harbor room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "dock_ship updates ship->location to the port dock and moves ship->shipobj into the room.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2898
+        ],
+        "file": "src/ships/ship_base.c",
+        "function": "dock_ship",
+        "original_draft_symbol": "dock_ship"
+      },
+      "source_classification": "Docking a ship moves the ship object into the designated harbor dock room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.summon_arrival",
+      "native_effects": {
+        "custody_effect": "Ship vehicle object arrives in harbor room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "summon_ship_event moves ship->shipobj from transit to target arrival room.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          3117
+        ],
+        "file": "src/ships/ship_base.c",
+        "function": "summon_ship_event",
+        "original_draft_symbol": "summon_ship_event"
+      },
+      "source_classification": "Completion of ship summoning event arrives the ship object at the designated destination harbor.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.maneuver_relocation",
+      "native_effects": {
+        "custody_effect": "Ship vehicle object moves between tactical ocean rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "order_maneuver moves SHIP_OBJ(ship) to the new ship->location.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          253
+        ],
+        "file": "src/ships/ship_control.c",
+        "function": "order_maneuver",
+        "original_draft_symbol": "order_maneuver"
+      },
+      "source_classification": "Navigational ship maneuver orders update ship coordinates and relocate the physical ship entity.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.cyrics_revenge_chest",
+      "native_effects": {
+        "custody_effect": "Quest core fragment and nexus key are instantiated and placed in chest.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "container contents",
+          "item_current_owner parent container"
+        ]
+      },
+      "reachability_evidence": "load_cyrics_revenge_crew reads fragment and key objects and places them inside the captain's chest.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1973
+        ],
+        "file": "src/ships/ship_npc.c",
+        "function": "load_cyrics_revenge_crew",
+        "original_draft_symbol": "load_cyrics_revenge_crew"
+      },
+      "source_classification": "Spawning Cyric's Revenge flagship populates its treasure chest with the automaton moonstone core fragment and nexus key.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.moonstone_fragment_combine",
+      "native_effects": {
+        "custody_effect": "Carried moonstone fragments extracted; assembled moonstone granted to player inventory.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "player inventory",
+          "item_current_owner character"
+        ]
+      },
+      "reachability_evidence": "moonstone_fragment extracts component parts from inventory and grants assembled moonstone.",
+      "reason": "quest_reward",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          3524
+        ],
+        "file": "src/ships/ship_shop.c",
+        "function": "moonstone_fragment",
+        "original_draft_symbol": "moonstone_fragment"
+      },
+      "source_classification": "Combining all four moonstone parts consumes the fragments and awards the assembled Automaton's Moonstone.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.moonstone_fragment_load",
+      "native_effects": {
+        "custody_effect": "Instantiates quest fragment items into world mobs and container rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "mob inventory",
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "load_moonstone_fragments instantiates fragment objects and places them on NPCs and in locker room.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          3628
+        ],
+        "file": "src/ships/ship_shop.c",
+        "function": "load_moonstone_fragments",
+        "original_draft_symbol": "load_moonstone_fragments"
+      },
+      "source_classification": "World initialization distributes moonstone fragments to Olhydra, the sea locker, and automaton mob.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.kick_off_items",
+      "native_effects": {
+        "custody_effect": "Loose objects transferred from ship interior to exterior room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "kick_everyone_off loops ship rooms and moves non-panel items to ship->location.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          388
+        ],
+        "file": "src/ships/ship_utils.c",
+        "function": "kick_everyone_off",
+        "original_draft_symbol": "kick_everyone_off"
+      },
+      "source_classification": "Evacuating a ship moves loose objects from cabin rooms to the exterior world location.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.clear_contents",
+      "native_effects": {
+        "custody_effect": "Player corpses evacuated; ordinary room items destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity and lifecycle"
+        ]
+      },
+      "reachability_evidence": "clear_ship_content preserves player corpses by moving them outside, then extracts all other objects.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          430
+        ],
+        "file": "src/ships/ship_utils.c",
+        "function": "clear_ship_content",
+        "original_draft_symbol": "clear_ship_content"
+      },
+      "source_classification": "Dismantling a ship evacuates player corpses to exterior water while destroying all other cabin contents.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.jettison_crates",
+      "native_effects": {
+        "custody_effect": "Cargo crate objects created and placed in ocean room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents"
+        ]
+      },
+      "reachability_evidence": "jettison_crates reads cargo crate template objects and places them in ship->location.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2457
+        ],
+        "file": "src/ships/ship_utils.c",
+        "function": "jettison_crates",
+        "original_draft_symbol": "jettison_crates"
+      },
+      "source_classification": "Jettisoning cargo overboard creates floating cargo crate objects in the ocean room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ship.cargo_salvage",
+      "native_effects": {
+        "custody_effect": "Floating cargo crate object extracted and converted to ship cargo units.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner lifecycle"
+        ]
+      },
+      "reachability_evidence": "salvage_cargo extracts salvageable crate objects from current room after loading into ship holds.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2663
+        ],
+        "file": "src/ships/ship_utils.c",
+        "function": "salvage_cargo",
+        "original_draft_symbol": "salvage_cargo"
+      },
+      "source_classification": "Salvaging floating cargo crates extracts the crate object and credits cargo hold units.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.disarm_inventory_relink",
+      "native_effects": {
+        "custody_effect": "Weapon moves from equipment slot to character inventory.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "character equipment",
+          "character inventory"
+        ]
+      },
+      "reachability_evidence": "critical_disarm calls unequip_char and obj_to_char on critical disarm roll.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          691
+        ],
+        "file": "src/combat/attack_effects.c",
+        "function": "critical_disarm",
+        "original_draft_symbol": "critical_disarm"
+      },
+      "source_classification": "Critical hit disarm unequips weapon and relocates it into the victim's carried inventory.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.breath_item_drop",
+      "native_effects": {
+        "custody_effect": "Items transfer from character inventory to room floor.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "character inventory",
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "breath_damage_mod and breath_weapon_paralysis drop burned or frozen objects from char to room.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          16
+        ],
+        "file": "src/combat/breath_weapons.c",
+        "function": "breath_damage_mod",
+        "original_draft_symbol": "breath_damage_mod"
+      },
+      "source_classification": "Elemental breath damage burns or freezes carried items causing them to fall to the room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.chaos_material_cleanup",
+      "native_effects": {
+        "custody_effect": "Extracted material items are destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "chaos material graph",
+          "item_current_owner lifecycle"
+        ]
+      },
+      "reachability_evidence": "extract_collected_objects extracts material items collected during chaos processing.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          366
+        ],
+        "file": "src/combat/chaos_materials.c",
+        "function": "extract_collected_objects",
+        "original_draft_symbol": "extract_collected_objects"
+      },
+      "source_classification": "Chaos material collection system destroys stale or unused material objects.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.chaos_material_probe",
+      "native_effects": {
+        "custody_effect": "Temporary probe object instantiated and immediately destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "transient template probe"
+        ]
+      },
+      "reachability_evidence": "chaos_materials_initialize instantiates and immediately extracts material objects to verify prototypes.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          510
+        ],
+        "file": "src/combat/chaos_materials.c",
+        "function": "chaos_materials_initialize",
+        "original_draft_symbol": "chaos_materials_initialize"
+      },
+      "source_classification": "Startup initialization probes chaos material template validity by instantiating and extracting test objects.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ctf.flag_load",
+      "native_effects": {
+        "custody_effect": "CTF flag objects instantiated and placed in arena base rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "load_ctf reads flag objects and places them into team base rooms.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          129
+        ],
+        "file": "src/combat/ctf.c",
+        "function": "load_ctf",
+        "original_draft_symbol": "load_ctf"
+      },
+      "source_classification": "Capture the Flag arena initialization loads team flag objects and places them in their base rooms.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ctf.flag_proc",
+      "native_effects": {
+        "custody_effect": "CTF flag object transferred between arena rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "ctf_flag_proc transfers flags between arena rooms.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          179
+        ],
+        "file": "src/combat/ctf.c",
+        "function": "ctf_flag_proc",
+        "original_draft_symbol": "ctf_flag_proc"
+      },
+      "source_classification": "CTF flag special procedure returns unattended flags or moves flags during arena interactions.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ctf.flag_drop",
+      "native_effects": {
+        "custody_effect": "Flag object placed into arena room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "drop_ctf_flag places the flag into ch->in_room.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          466
+        ],
+        "file": "src/combat/ctf.c",
+        "function": "drop_ctf_flag",
+        "original_draft_symbol": "drop_ctf_flag"
+      },
+      "source_classification": "Dropping the CTF flag places the flag object onto the carrier's current room floor.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ctf.flag_capture_respawn",
+      "native_effects": {
+        "custody_effect": "Replacement flag objects instantiated and placed into base rooms.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "check_ctf_capture respawns good and evil flags to base rooms if missing after capture.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          496
+        ],
+        "file": "src/combat/ctf.c",
+        "function": "check_ctf_capture",
+        "original_draft_symbol": "check_ctf_capture"
+      },
+      "source_classification": "Scoring a capture in CTF respawns missing team flag objects back at their base rooms.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ctf.flag_capture",
+      "native_effects": {
+        "custody_effect": "Flag object relocated from carrier room to base room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "capture_flag removes flag from current room and relocates it to the home base room.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          569
+        ],
+        "file": "src/combat/ctf.c",
+        "function": "capture_flag",
+        "original_draft_symbol": "capture_flag"
+      },
+      "source_classification": "Capturing an enemy flag returns the flag object to its home base room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ctf.flag_reload",
+      "native_effects": {
+        "custody_effect": "Flag object reloaded into arena room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "ctf_reload_flag instantiates new flag object and links to room.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          948
+        ],
+        "file": "src/combat/ctf.c",
+        "function": "ctf_reload_flag",
+        "original_draft_symbol": "ctf_reload_flag"
+      },
+      "source_classification": "Staff or timer reload of CTF arena reloads flag object into base room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "ctf.flag_delete",
+      "native_effects": {
+        "custody_effect": "CTF flag objects extracted and destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "arena game objects"
+        ]
+      },
+      "reachability_evidence": "ctf_delete_flag calls extract_obj on active CTF flags.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          75,
+          1044
+        ],
+        "file": "src/combat/ctf.c",
+        "function": "ctf_delete_flag",
+        "original_draft_symbol": "ctf_delete_flag"
+      },
+      "source_classification": "Arena shutdown extracts and destroys CTF flag objects.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.mangle_weapon_relink",
+      "native_effects": {
+        "custody_effect": "Weapon moves from wield slot into inventory.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "character equipment",
+          "character inventory"
+        ]
+      },
+      "reachability_evidence": "mangleSucceed calls unequip_char and obj_to_char on mangled limb.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          869
+        ],
+        "file": "src/combat/defense_resolution.c",
+        "function": "mangleSucceed",
+        "original_draft_symbol": "mangleSucceed"
+      },
+      "source_classification": "Successful limb mangle defense unarms victim weapon from hand into inventory.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "death.corpse_dispute_transfer",
+      "native_effects": {
+        "custody_effect": "Disputed item transferred from character into corpse.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "character inventory",
+          "corpse contents"
+        ]
+      },
+      "reachability_evidence": "clear_corpse_transfer_dispute transfers item from char into corpse container.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          591
+        ],
+        "file": "src/combat/fight.c",
+        "function": "clear_corpse_transfer_dispute",
+        "original_draft_symbol": "clear_corpse_transfer_dispute"
+      },
+      "source_classification": "Resolving a disputed death item transfer moves the item from character inventory into the corpse container.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "death.corpse_fixture_instantiation",
+      "native_effects": {
+        "custody_effect": "Corpse container instantiated and placed into room; overflow contents handled.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents",
+          "item_current_owner room identity"
+        ]
+      },
+      "reachability_evidence": "make_corpse instantiates corpse object, places it in room, and handles overflow contents.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          729
+        ],
+        "file": "src/combat/fight.c",
+        "function": "make_corpse",
+        "original_draft_symbol": "make_corpse"
+      },
+      "source_classification": "Entity death instantiates the corpse container object, publishes it to the death room or storage, and spills overflowing items.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "death.corpse_disintegration",
+      "native_effects": {
+        "custody_effect": "Corpse object unlinked from room and destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents",
+          "item_current_owner lifecycle"
+        ]
+      },
+      "reachability_evidence": "make_corpse extracts planar corpses for summoned or extraplanar races.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          729
+        ],
+        "file": "src/combat/fight.c",
+        "function": "make_corpse",
+        "original_draft_symbol": "make_corpse"
+      },
+      "source_classification": "Planar and extraplanar entity death dissolves and extracts the transient corpse object.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.death_trophy_grant",
+      "native_effects": {
+        "custody_effect": "Trophy or token item instantiated and placed in inventory.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "character inventory",
+          "item_current_owner character"
+        ]
+      },
+      "reachability_evidence": "die instantiates dragon scale, time echo, or token objects and places them on ch.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1797
+        ],
+        "file": "src/combat/fight.c",
+        "function": "die",
+        "original_draft_symbol": "die"
+      },
+      "source_classification": "Entity death awards trophy scales, time echoes, or death tokens directly to the killer or dying entity.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.shield_portal",
+      "native_effects": {
+        "custody_effect": "Portal object instantiated and linked to room.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      },
+      "reachability_evidence": "check_shields instantiates portal object 400220 and places in room 400000.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          3389
+        ],
+        "file": "src/combat/fight.c",
+        "function": "check_shields",
+        "original_draft_symbol": "check_shields"
+      },
+      "source_classification": "Epic shield defense proc spawns an escape portal object in the celestial room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.weapon_inventory_relink",
+      "native_effects": {
+        "custody_effect": "Weapon moves from wield slot to inventory.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "character equipment",
+          "character inventory"
+        ]
+      },
+      "reachability_evidence": "hit calls unequip_char and obj_to_char when weapon must be removed during hit.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          4839
+        ],
+        "file": "src/combat/fight.c",
+        "function": "hit",
+        "original_draft_symbol": "hit"
+      },
+      "source_classification": "Weapon drop/unequip during combat hit unlinks from wear slot into inventory.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "justice.guard_equipment",
+      "native_effects": {
+        "custody_effect": "Guard equipment instantiated and equipped to mob.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "mob equipment"
+        ]
+      },
+      "reachability_evidence": "justice_make_guard reads object 398 and equips it to the spawned guard.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          237
+        ],
+        "file": "src/combat/justice.c",
+        "function": "justice_make_guard",
+        "original_draft_symbol": "justice_make_guard"
+      },
+      "source_classification": "Spawning a justice guard equips them with a city lantern or baton fixture.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "justice.guard_cleanup",
+      "native_effects": {
+        "custody_effect": "Despawned guard equipment extracted and destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "mob equipment",
+          "mob inventory"
+        ]
+      },
+      "reachability_evidence": "justice_delete_guard unequips all slots and extracts items.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          367
+        ],
+        "file": "src/combat/justice.c",
+        "function": "justice_delete_guard",
+        "original_draft_symbol": "justice_delete_guard"
+      },
+      "source_classification": "Despawning a justice guard extracts and destroys all carried and equipped items.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "combat.training_dummy_cleanup",
+      "native_effects": {
+        "custody_effect": "Dummy equipment extracted and destroyed.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "training dummy equipment"
+        ]
+      },
+      "reachability_evidence": "training_dummy_refresh_description unequips and extracts dummy gear.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          104
+        ],
+        "file": "src/combat/training_dummy.c",
+        "function": "training_dummy_refresh_description",
+        "original_draft_symbol": "training_dummy_refresh_description"
+      },
+      "source_classification": "Refreshing training dummy state strips and destroys worn or carried equipment.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "mob.random_encounter_equip",
+      "native_effects": {
+        "custody_effect": "Generated items placed into mob inventory.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "mob inventory"
+        ]
+      },
+      "reachability_evidence": "randobjs_to_mob calls obj_to_char for each generated encounter item.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          229
+        ],
+        "file": "src/mob/encounters.c",
+        "function": "randobjs_to_mob",
+        "original_draft_symbol": "randobjs_to_mob"
+      },
+      "source_classification": "Attaching generated random encounter objects to a spawned mob places items into mob inventory.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "mob.random_encounter_magical",
+      "native_effects": {
+        "custody_effect": "Magical item instantiated from template.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "transient encounter loot"
+        ]
+      },
+      "reachability_evidence": "ran_magical reads template object 1295 for random magical loot.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          324
+        ],
+        "file": "src/mob/encounters.c",
+        "function": "ran_magical",
+        "original_draft_symbol": "ran_magical"
+      },
+      "source_classification": "Generating magical encounter loot instantiates random wand/staff/scroll templates.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "mob.random_encounter_loot",
+      "native_effects": {
+        "custody_effect": "Encounter loot items instantiated from templates.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "transient encounter loot"
+        ]
+      },
+      "reachability_evidence": "ran_obj reads random equipment templates for encounter mobs.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          464
+        ],
+        "file": "src/mob/encounters.c",
+        "function": "ran_obj",
+        "original_draft_symbol": "ran_obj"
+      },
+      "source_classification": "Generating non-magical encounter loot instantiates random armor, weapon, and accessory templates.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "mob.studio_script_item",
+      "native_effects": {
+        "custody_effect": "Script-driven item creation to room/actor and self-extraction.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "room contents",
+          "actor inventory",
+          "item lifecycle"
+        ]
+      },
+      "reachability_evidence": "sp_execute creates items into rooms/chars and extracts self objects on script command.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          996
+        ],
+        "file": "src/mob/studioproc.c",
+        "function": "sp_execute",
+        "original_draft_symbol": "sp_execute"
+      },
+      "source_classification": "Studio scripting virtual machine executes item spawn and destruction actions.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

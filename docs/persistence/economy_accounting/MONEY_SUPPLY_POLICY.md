@@ -42,6 +42,12 @@ is live. The named denomination is debited and credited exactly. It refuses
 ordinary NPC recipients and staff grants without a sender debit before
 submitting any active-epoch coin command.
 
+Ship coffer claims have no unified holding-to-wallet root. The captain's
+`get money` command therefore refuses in an active epoch before crediting the
+wallet or clearing the ship coffer. An extracted-function regression verifies
+that refusal and the unchanged inactive claim. Coffer reward and insurance
+sources still need their own accounting policy and admission evidence.
+
 ## Supply events
 
 An issuance, expense, or restitution uses a versioned reason and one durable
@@ -60,6 +66,14 @@ authority binding, a source claim unique for the logical event, balanced
 wallet/issuance-or-sink postings, and the native write, evidence, and receipt
 in one root. Reusing an ATM writer ID or a fresh operation ID alone does not
 qualify a grant or expense.
+
+An inactive Chaos starter bank adapter now freezes the existing deterministic
+`CHAOSEED` player identity as a `starter_grant` source, requires the exact
+1,000,000-platinum bank credit, and prepares a bank-only native revision with a
+balanced bank/issuance plan. It rejects a changed operation ID, source, amount,
+or authority witness. The SQL and flatfile commit owners must still verify the
+persisted pending grant, claim that source once, and write native state, plan,
+receipt, and publication together before the gameplay route can be admitted.
 
 The versioned reason registry requires a source event for service, training,
 locker, shipping, insurance, guild, crafting, gambling-stake, shop-buy,
@@ -110,6 +124,13 @@ quest, NPC, and wallet effects still need one transactional root.
 | Witch doctor elixir | Durable purchase ID, exact wallet expense, and persistent affect result | Refuse `witch_doctor` buys before payment or affect while leaving the free listing available |
 | Flight and ferry tickets | Durable purchase ID, exact wallet expense, ticket UID creation, and refund outcome | Refuse ticket purchase before debit submission or ticket creation, including free ticket variants lacking a source-backed item admission |
 
+The boon result is selected inside its durable repository and can contain cash.
+New boon completions therefore refuse at `boon_reward_transaction_submit` in an
+active epoch, before the completion command is queued or progress is changed.
+The executable refusal regression checks that no operation ID, command, or
+submission is created. Previously admitted boon results still require the
+activation drain before this boundary can be relied upon.
+
 Shops, auctions, collector, death, and crafting composites are handed to Plan 4
 for their native commit integration. Their cash legs still obey this source and
 counterparty policy. The inactive collector purchase component currently omits
@@ -154,13 +175,18 @@ flatfile peer fixture checks two native wallet images, the shared bank's
 per-leg revision advances, balanced evidence, exact replay, restart, and a
 retained stale-revision rejection. It also interrupts an authority commit after
 the first image and verifies that journal recovery exposes one retained root
-without a second debit or credit. The flatfile fixture also covers wallet-to-pile
-creation, full pile pickup, and pile-to-pile split and merge with the native
-items, wallets where applicable, UID-keyed pile heads, item references, and
-accounting receipt in the same authority commit. A retired pile head prevents
+without a second debit or credit. A separate three-wallet split fixture commits
+two sequential roots, checks wallet identities, balances, revisions, and
+balanced postings, retains the integer remainder, and rejects a stale later
+child without undoing the first. It replays both receipts after recovery. The
+flatfile fixture also covers wallet-to-pile creation, full pile pickup, and
+pile-to-pile split and merge with the native items, wallets where applicable,
+UID-keyed pile heads, item references, and an accounting receipt in the same
+authority commit. A retired pile head prevents
 UID reuse. The fixture checks stale pile refusal, detects a damaged head on
 replay, and checks an exact wallet denomination change during a pile drop.
-Flatfile does not claim separate child receipts for these native images.
+Each split transfer has its own root receipt; flatfile does not claim separate
+receipts for the native images within one root.
 An isolated pre-existing pile journey reads the locked native ownership row and
 exact coin payload, commits its holding/item baseline witness and UID-keyed head
 with one receipt, then spends the pile through a schema-2 pickup. Complete

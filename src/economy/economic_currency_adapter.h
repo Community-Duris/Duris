@@ -7,6 +7,7 @@
 // Stable typed writer capabilities; generic metadata numbers grant no capability.
 constexpr uint32_t ECONOMIC_WRITER_BANK_DEPOSIT = 1;
 constexpr uint32_t ECONOMIC_WRITER_BANK_WITHDRAW = 2;
+constexpr uint32_t ECONOMIC_WRITER_CHAOS_STARTER_BANK = 3;
 constexpr size_t ECONOMIC_BANK_FACT_BYTES = 24;
 
 // Populated from the repository's locked authority and retained lifetime mapping.
@@ -40,6 +41,9 @@ class economic_prepared_currency
 				       const economic_currency_authority &,
 				       currency_revision_policy,
 				       std::optional<economic_prepared_currency> *);
+	friend economic_accounting_error economic_chaos_starter_bank_prepare(
+		const critical_command &, const economic_frozen_intent &,
+		const economic_currency_authority &, std::optional<economic_prepared_currency> *);
 };
 
 // Selects reason/writer/actor internally and freezes both lifetime mappings.
@@ -56,5 +60,20 @@ economic_accounting_error economic_bank_transfer_prepare(
 	const critical_command &command, const economic_frozen_intent &intent,
 	const economic_currency_authority &authority, currency_revision_policy revision_policy,
 	std::optional<economic_prepared_currency> *prepared);
+
+// Inactive typed component for the fixed Chaos starter bank grant. Its logical
+// source is derived from the player PID, independent of this operation's epoch.
+// Backend owners must prove the persisted pending grant and claim the source in
+// the same native/accounting commit before admitting gameplay.
+economic_accounting_error economic_chaos_starter_bank_intent(const critical_command &command,
+							     const critical_operation_id &epoch,
+							     const economic_account_key &wallet,
+							     const economic_account_key &bank,
+							     std::vector<uint8_t> *encoded);
+economic_accounting_error
+economic_chaos_starter_bank_prepare(const critical_command &command,
+				    const economic_frozen_intent &intent,
+				    const economic_currency_authority &authority,
+				    std::optional<economic_prepared_currency> *prepared);
 
 #endif

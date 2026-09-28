@@ -37,7 +37,7 @@ class ItemProvenanceMysqlTest(unittest.TestCase):
                 *shlex.split(os.environ.get("CXX", "g++")), "-std=c++20", "-Wall",
                 "-Wextra", "-Wpedantic", "-Werror", "-pthread", "-Isrc", *cflags,
                 "tests/async/item_provenance_mysql_harness.cpp", *sources,
-                *libs, "-lcrypto", "-o", str(binary),
+                *libs, "-lcrypto", "-lz", "-o", str(binary),
             ], cwd=ROOT, check=True, timeout=300)
             environment = dict(os.environ,
                                ITEM_TRANSFER_TEST_DB_NAME=os.environ["DB_NAME"])

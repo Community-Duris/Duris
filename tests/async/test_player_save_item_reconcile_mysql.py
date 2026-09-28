@@ -210,13 +210,16 @@ int main(int argc, char **argv)
     const int foreign_pid = lag_pid + 2;
     const int equipment_pid = lag_pid + 3;
     const int legacy_equipment_pid = lag_pid + 4;
+    const int retired_pid = lag_pid + 5;
     constexpr uint64_t lag_root = UINT64_C(9000000000000000100);
     constexpr uint64_t lag_child = UINT64_C(9000000000000000101);
     constexpr uint64_t foreign_item = UINT64_C(9000000000000000102);
     constexpr uint64_t equipment_item = UINT64_C(9000000000000000103);
     constexpr uint64_t legacy_equipment_item = UINT64_C(9000000000000000104);
+    constexpr uint64_t retired_root = UINT64_C(9000000000000000105);
+    constexpr uint64_t retired_child = UINT64_C(9000000000000000106);
     for (uint64_t uid : {lag_root, lag_child, foreign_item, equipment_item,
-                         legacy_equipment_item})
+                         legacy_equipment_item, retired_root, retired_child})
         if (scalar(db, "SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
                            std::to_string(uid)) != 0)
         {
@@ -228,6 +231,7 @@ int main(int argc, char **argv)
     seed_player(db, foreign_pid, "ItemReconForeignFixture");
     seed_player(db, equipment_pid, "ItemReconEquipmentFixture");
     seed_player(db, legacy_equipment_pid, "ItemReconLegacyEquipFixture");
+    seed_player(db, retired_pid, "ItemReconRetiredFixture");
     exec_sql(db,
              "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
              "owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
@@ -247,6 +251,13 @@ int main(int argc, char **argv)
                  std::to_string(legacy_equipment_item) + "," +
                  std::to_string(legacy_equipment_item) + ",NULL,1," +
                  std::to_string(legacy_equipment_pid) + ",0,1,19,1)");
+    exec_sql(db, "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
+                 "owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
+                 std::to_string(retired_root) + "," + std::to_string(retired_root) +
+                 ",NULL,1," + std::to_string(retired_pid) + ",0,1,20,1),(" +
+                 std::to_string(retired_child) + "," + std::to_string(retired_root) +
+                 "," + std::to_string(retired_root) + ",1," +
+                 std::to_string(retired_pid) + ",0,1,21,1)");
     exec_sql(db,
              "INSERT INTO player_items(pid,vnum,equip_slot,container_id,obj_uid) VALUES(" +
                  std::to_string(lag_pid) + ",15,0,NULL," + std::to_string(lag_root) + "),(" +
@@ -259,6 +270,15 @@ int main(int argc, char **argv)
     exec_sql(db, "INSERT INTO player_items(pid,vnum,equip_slot,container_id,obj_uid) VALUES(" +
                  std::to_string(legacy_equipment_pid) + ",19,5,NULL," +
                  std::to_string(legacy_equipment_item) + ")");
+    exec_sql(db, "INSERT INTO player_items(pid,vnum,equip_slot,container_id,obj_uid) VALUES(" +
+                 std::to_string(retired_pid) + ",20,0,NULL," +
+                 std::to_string(retired_root) + ")");
+    const uint64_t retired_native_root = scalar(
+        db, "SELECT id FROM player_items WHERE obj_uid=" + std::to_string(retired_root));
+    exec_sql(db, "INSERT INTO player_items(pid,vnum,equip_slot,container_id,obj_uid) VALUES(" +
+                 std::to_string(retired_pid) + ",21,0," +
+                 std::to_string(retired_native_root) + "," +
+                 std::to_string(retired_child) + ")");
 
     const std::string lag_directory = journal_root + "/owner-projection-lag";
     player_snapshot lag_snapshot = make_snapshot(lag_pid, 2, {{lag_root, 15}, {lag_child, 16}});
@@ -418,6 +438,83 @@ int main(int argc, char **argv)
     all_passed &= expect(load_slot(legacy_equipment_pid, legacy_equipment_item, 802) == 5,
                          "load overwrote inactive legacy wear");
 
+    // A queued save contains a spell component forest that was later retired.
+    // Keep the stale frame for diagnosis without restoring either native row.
+    const std::string retired_directory = journal_root + "/retired-component-save";
+    player_snapshot retired_snapshot =
+        make_snapshot(retired_pid, 2, {{retired_root, 20}, {retired_child, 21}});
+    retired_snapshot.items[1].parent_index = 0;
+    open_journal(retired_directory);
+    if (player_save_journal_append(retired_snapshot) != player_save_journal_result::ok)
+        return 2;
+    player_save_journal_shutdown();
+    exec_sql(db, "UPDATE item_current_owner SET owner_type=8,owner_id=0,state=2,"
+                 "item_revision=2 WHERE item_uid IN (" + std::to_string(retired_root) +
+                 "," + std::to_string(retired_child) + ")");
+    exec_sql(db, "DELETE FROM player_items WHERE id=" +
+                 std::to_string(retired_native_root));
+    exec_sql(db, "UPDATE player_data SET account_name='ItemReconTest' WHERE pid=" +
+                 std::to_string(retired_pid));
+    exec_sql(db, "INSERT INTO item_owner_revision(owner_type,owner_id,"
+                 "owner_context_id,revision) VALUES(1," +
+                 std::to_string(retired_pid) + ",0,2)");
+    const std::string retired_owner_query =
+        "SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,"
+        "owner_id,item_revision,state FROM item_current_owner WHERE item_uid IN (" +
+        std::to_string(retired_root) + "," + std::to_string(retired_child) +
+        ") ORDER BY item_uid";
+    const auto retired_owner_before = query_rows(db, retired_owner_query);
+    auto load_retired = [&](uint64_t request_id)
+    {
+        player_load_request request{};
+        request.request_id = request_id;
+        request.pid = retired_pid;
+        request.account_name = "ItemReconTest";
+        request.deadline_usec =
+            persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+        const auto loaded = player_load_repository_execute(db, request);
+        if (loaded.outcome != player_load_outcome::applied)
+            std::cerr << "retired load outcome=" << static_cast<int>(loaded.outcome)
+                      << " stage=" << (loaded.failed_component ? loaded.failed_component : "none")
+                      << " error=" << loaded.error_code << '\n';
+        return loaded.outcome == player_load_outcome::applied &&
+               loaded.snapshot.items.empty();
+    };
+    mysql_close(db);
+    db = connect_db();
+    const bool retired_blocked = replay_case(db, retired_directory,
+        "retired_component_save", player_save_journal_result::replay_blocked);
+    const uint64_t retired_native_count = scalar(
+        db, "SELECT COUNT(*) FROM player_items WHERE obj_uid IN (" +
+            std::to_string(retired_root) + "," + std::to_string(retired_child) + ")");
+    all_passed &= expect(retired_blocked &&
+                         player_save_journal_health_copy().records == 1 &&
+                         scalar(db, "SELECT save_revision FROM player_data WHERE pid=" +
+                                    std::to_string(retired_pid)) == 1 &&
+                         retired_native_count == 0 &&
+                         query_rows(db, retired_owner_query) == retired_owner_before &&
+                         load_retired(803),
+                         "stale save resurrected a retired component");
+    player_save_journal_shutdown();
+    mysql_close(db);
+    db = connect_db();
+    open_journal(retired_directory);
+    replay_context retired_context{db};
+    const auto retired_restart = player_save_journal_replay(apply_snapshot,
+                                                            &retired_context);
+    all_passed &= expect(retired_restart == player_save_journal_result::replay_blocked &&
+                         player_save_journal_health_copy().records == 1 &&
+                         scalar(db, "SELECT COUNT(*) FROM player_items WHERE obj_uid IN (" +
+                                    std::to_string(retired_root) + "," +
+                                    std::to_string(retired_child) + ")") == 0 &&
+                         query_rows(db, retired_owner_query) == retired_owner_before &&
+                         load_retired(804),
+                         "restart lost a blocked retirement frame or restored its items");
+    std::cout << "CASE retired_component_save replay=" << describe(retired_restart)
+              << " pending_frames=" << player_save_journal_health_copy().records
+              << " projected_uids=" << retired_native_count << '\n';
+    player_save_journal_shutdown();
+
     player_snapshot incomplete_snapshot =
         make_snapshot(lag_pid, 3, {{lag_root, 15}});
     const player_save_apply_result missing_payload =
@@ -555,7 +652,12 @@ int main(int argc, char **argv)
     exec_sql(db, "DELETE FROM player_items WHERE pid IN (" + std::to_string(lag_pid) + "," +
                      std::to_string(conflict_pid) + "," +
                      std::to_string(equipment_pid) + "," +
-                     std::to_string(legacy_equipment_pid) + ")");
+                     std::to_string(legacy_equipment_pid) + "," +
+                     std::to_string(retired_pid) + ")");
+    exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid=" +
+                 std::to_string(retired_child));
+    exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid=" +
+                 std::to_string(retired_root));
     exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid=" + std::to_string(lag_child));
     exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid IN (" + std::to_string(lag_root) +
                      "," + std::to_string(foreign_item) + "," +
@@ -563,11 +665,13 @@ int main(int argc, char **argv)
                      std::to_string(legacy_equipment_item) + ")");
     exec_sql(db, "DELETE FROM item_owner_revision WHERE owner_type=1 AND owner_id IN (" +
                      std::to_string(equipment_pid) + "," +
-                     std::to_string(legacy_equipment_pid) + ")");
+                     std::to_string(legacy_equipment_pid) + "," +
+                     std::to_string(retired_pid) + ")");
     exec_sql(db, "DELETE FROM player_data WHERE pid IN (" + std::to_string(lag_pid) + "," +
                      std::to_string(conflict_pid) + "," + std::to_string(foreign_pid) +
                      "," + std::to_string(equipment_pid) + "," +
-                     std::to_string(legacy_equipment_pid) + ")");
+                     std::to_string(legacy_equipment_pid) + "," +
+                     std::to_string(retired_pid) + ")");
     mysql_close(db);
     if (!all_passed)
     {

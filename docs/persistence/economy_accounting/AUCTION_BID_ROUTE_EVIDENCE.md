@@ -91,12 +91,18 @@ setting `AUCTION_SETTLEMENT_DB_IMAGE=mysql:8.4` for MySQL.
 These components do not activate an auction route. Plan 1 still owns common
 admission, receipt/outbox ownership, and replay verification. The bid and
 settlement routes require preexisting mapped escrow and claim lifetimes. The
-remaining Plan 4 auction work includes non-auction source producers,
-immutable migration registration, and flatfile parity. Buy-now assigns
+SQL source table is registered as immutable migration 0039. Buy-now assigns
 `auction_item_custody.claim_pid` in the native row; the later item claim records
 the actual ownership transfer. Claim-right assignment itself still lacks a
-separate EAP1 exact reference. A closed auction's escrow lifetime must be
-retired by the eventual settlement/lifecycle route.
+separate EAP1 exact reference. Non-auction money producers still need source
+allocations before a mixed aggregate can be collected by the typed route.
+Successful buy-now, timed sale, and no-bid expiry retire their zero-balance
+escrow mapping in the same SQL transaction as the native closure, EAP1 plan,
+source rows, receipt, and outbox. Trusted removal retains the funded escrow;
+its eventual disposition remains a separate lifecycle decision. The SQL bid
+journey forces the retirement update to fail and verifies full rollback; the
+bid and settlement journeys passed against an isolated MySQL 8 server for this
+change. MariaDB qualification of this retirement change remains pending.
 
 Flatfile lifetime metadata now accepts native auction IDs for escrow mappings
 and player IDs for pending-claim mappings, with retained identity and tombstone
@@ -117,6 +123,7 @@ bid, an incremental raise by the same bidder, stale prior-source refusal, an
 outbid with a former-bidder pending claim, and buy-now with seller proceeds and
 a closing fee. It verifies source IDs, postings, native pickup rights, exact
 replay, and interrupted-journal recovery.
+Buy-now also retires its now-empty escrow mapping in that journal.
 
 Inactive flatfile schema-2 finalize and trusted-removal owners now decode the
 entire frozen listing and item sequence, renew the escrow, optional seller
@@ -127,8 +134,12 @@ proceeds and closing fee, interrupted sale recovery, removal with the winning
 escrow still held and no bidder refund, and no-bid expiry with no postings. It
 checks exact source links, unchanged item custody witnesses, native pickup
 rights, stale revision refusal, and replay. These owners are not wired into
-the live route. The flatfile money-claim action still needs a typed owner and
-journey, and closed escrow lifetimes still need retirement.
+the live route. Timed sale and no-bid expiry retire their empty escrow mapping
+in the closure journal; trusted removal keeps its funded mapping active. The
+inactive typed flatfile money-claim owner journals the exact source set,
+pickup clearance, wallet credit, and balanced plan. Its journey covers refund
+and multi-source proceeds collection, stale sources, corrupted source files,
+interrupted recovery, and replay.
 
 The flatfile auction and collector repositories check the retained accounting
 control under their authority lock after exact replay lookup. A new schema-1

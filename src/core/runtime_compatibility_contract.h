@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 219;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 220;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons',"
 	"'account_bound_rewards','account_characters','account_erasure_evidence',"
@@ -34,6 +34,7 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'economic_baseline_reservation','economic_baseline_witness','economic_epoch',"
 	"'economic_lineage_state','economic_pending_claim_source',"
 	"'economic_sql_activation_receipt',"
+	"'economic_sql_global_activation',"
 	"'economic_sql_lifecycle_installation','epic_balance_baseline',"
 	"'epic_bonus','epic_gain','epic_ledger','epic_stone_claim','eq_drop','frag_leaderboard',"
 	"'guild_members','guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms',"
@@ -70,9 +71,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'telemetry_session','timers','towns','world_quest_accomplished','zone_story_quest_state',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"193aa2a7a9b9265a06c6bd5cc3a8c9e089e9cfd0cb97d5f934f01c753666aee1";
+	"9b603b0a7d4f6c1ca920c36eb6c300112e2b84f43f428cb1d1cd326de1a5a908";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"a98f1012f423d0f2313b3a9e3b885c1de48d4dbb09ac4f74d3e449d46e5917f1";
+	"2ad1215fe37ddff3dd2402bafb1cc091486a38acecbcb5faa5f4ab28d0ada531";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -89,15 +90,18 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * Migration 0032 adds baseline witness retention and opening reservations.
  * Migration 0033 adds staged SQL lifecycle receipts, not gameplay activation.
  * Migration 0034 adds retained death-conflict evidence, not capture activation.
+ * Migration 0036 adds scoped activation receipts; migration 0040 adds the
+ * separate global SQL cutover decision. Migration 0041 adds retained
+ * shopkeeper cash and revision metadata.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0039_economic_pending_claim_source";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 39;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0041_shopkeeper_cash_identity";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 41;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"a066739e50371e0a19af5953e78fdc8300413c64a9598d45464d49f3268d3fb4";
+	"b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"d34b1e98c3ba471b0e9b2de21fc862fd008bd9646aac7e8d91bc6ff803705cbd";
+	"e0ad42a840f3db5f0e39dae9485b21dfbf635ab40eac3d23ddaa3e2a86287812";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"0df39af8d7a4484f6e9bf920facc974d970825c8c49f3e336dded85475ed51f0";
+	"e45b5945f48c7c6a30bfaa79c5c0dc37420ec31a2962275c9c4cd74dba7e5924";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="shopkeeper-population-", dir=build_root
         "-I", str(ROOT / "src"),
         str(source), "-o", str(binary),
     ], check=True)
-    for scenario in ("reset", "shared", "duplicate", "cleanup", "invalid"):
+    for scenario in ("reset", "shared", "duplicate", "cleanup", "cash", "invalid"):
         subprocess.run([str(binary), scenario], check=True, env={
             **os.environ, "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
         })
