@@ -42,6 +42,13 @@ economic_accounting_error auction_money_claim_accounting_intent(
 	const economic_account_key &claim_account, const auction_money_claim_state &claim,
 	std::vector<uint8_t> *encoded);
 
+// Decode frozen account identities. The source digest must be recomputed from
+// the locked native claim and source rows before any mutation.
+economic_accounting_error auction_money_claim_accounting_decode(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, economic_account_key *wallet, economic_account_key *bank,
+	economic_account_key *claim_account);
+
 economic_accounting_error auction_money_claim_accounting_plan(
 	const critical_command &command, const economic_frozen_intent &intent,
 	const auction_money_claim_authority &authority, const auction_command_result &result,

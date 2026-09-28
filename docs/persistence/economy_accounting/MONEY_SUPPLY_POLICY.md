@@ -97,6 +97,10 @@ quest, NPC, and wallet effects still need one transactional root.
 | Permanent stat potion | Durable purchase ID, exact wallet expense, and permanent stat result | Refuse `stat_shops` buy before the debit or stat spell; the legacy path ignores a refused `SUB_MONEY` result |
 | Item enhancement | Durable action ID, exact wallet expense, donor/material consumption, and resulting item state | Refuse `do_enhance` at command admission before either enhancement implementation runs |
 | Guild founding | Durable confirmation ID, exact wallet expense, and guild creation | Consume and refuse active founding confirmation before `found_asc` creates the guild |
+| Guildhall construction | Durable construction ID, exact wallet expense, construction-point cost, and resulting guildhall state | Refuse all six recognized `construct` actions at the shared dispatcher before a cost or structural change; keep command help available |
+| Epic task clearing | Durable task-clear ID, exact wallet expense, and removed epic-task affect | Refuse the paid `clear_epic_task_spec` prayer after task lookup but before affect removal or wallet debit; free task information remains available |
+| Item prayer collection | Durable stash item UID, exact wallet expense, and custody movement | Refuse `pray_for_items` only when a matching stash item exists, before item movement or debit; unmatched prayers remain available to other handlers |
+| Home relocation | Durable home-change ID, exact wallet expense, and saved birthplace result | Refuse `do_home` after eligibility checks but before saving home fields or debiting the wallet |
 | Epic skill training | Durable training ID, epic-point and wallet costs, and learned skill result | Refuse `epic_teacher` purchase before submitting the epic-point debit; a rejected callback coin submission requests an epic-point refund before the skill grant |
 | Paid mail send | Durable message submission ID and exact wallet stamp expense | Refuse `postmaster_send_mail` before debit submission or message editor state; mail receipt remains available |
 | Monk remort | Durable training ID, exact wallet expense, class and spell transition | Refuse the `remort` ask branch before debit submission or class mutation |
@@ -140,8 +144,12 @@ connection pool. They check native revisions, exact denomination effects,
 balanced postings, custody references where applicable, retained replay, and
 reconcile on disposable MariaDB 10.11 and MySQL 8.0 databases. An injected
 item-endpoint failure during pickup rolls back native state and accounting
-evidence, then succeeds with the same operation ID. The
-flatfile dispatcher supports typed ATM and wallet-to-wallet coin roots. The
+evidence, then succeeds with the same operation ID. The SQL split-child fixture
+commits two successive wallet transfers for an 11-copper split, verifies each
+root's native revisions, balanced postings, receipt, and replay, and retains
+the splitter's five-coin remainder. Morph resolution and a rejected later child
+are exercised by the extracted command fixture; full gameplay remains pending.
+The flatfile dispatcher supports typed ATM and wallet-to-wallet coin roots. The
 flatfile peer fixture checks two native wallet images, the shared bank's
 per-leg revision advances, balanced evidence, exact replay, restart, and a
 retained stale-revision rejection. It also interrupts an authority commit after
@@ -185,3 +193,11 @@ roots on each backend before their activation policy can be qualified.
 An extracted production-function harness executes paid rename refusal before
 character or ship identity changes and wallet debit, and verifies the inactive
 payment path. A typed rename source and backend gameplay journeys remain pending.
+The guild construction dispatcher harness executes active refusal for guildhall,
+room, golem, upgrade, rename, and overmax, while retaining help and inactive
+dispatch. Their wallet, construction-point, and structure changes still need
+one durable source per action and backend gameplay journeys.
+Extracted production-function harnesses execute active refusal and inactive
+behavior for epic task clearing, item prayer collection, and home relocation.
+Their affect, item, or saved-home changes still need the same durable root as
+their wallet expense and full backend gameplay journeys.

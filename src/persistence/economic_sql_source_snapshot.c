@@ -267,16 +267,24 @@ unsigned int economic_sql_capture_sources(MYSQL *, const economic_sql_source_lim
 {
 	return ENOTSUP;
 }
+unsigned int economic_sql_capture_sources_in_transaction(MYSQL *,
+							 const economic_sql_source_limits &,
+							 economic_sql_source_snapshot *) noexcept
+{
+	return ENOTSUP;
+}
 #else
-unsigned int economic_sql_capture_sources(MYSQL *connection,
-					  const economic_sql_source_limits &limits,
-					  economic_sql_source_snapshot *output) noexcept
+namespace
+{
+unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits &limits,
+			     economic_sql_source_snapshot *output, bool caller_transaction) noexcept
 {
 	bool transaction = false;
 	try
 	{
 		require(connection && output, EINVAL);
-		require(!(connection->server_status & SERVER_STATUS_IN_TRANS) &&
+		require(bool(connection->server_status & SERVER_STATUS_IN_TRANS) ==
+					caller_transaction &&
 				(connection->server_status & SERVER_STATUS_AUTOCOMMIT),
 			EBUSY);
 		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
@@ -294,16 +302,25 @@ unsigned int economic_sql_capture_sources(MYSQL *connection,
 				limits.maximum_single_cell_bytes <= hard.maximum_single_cell_bytes,
 			EINVAL);
 		const auto *version = mysql_get_server_info(connection);
+		// MariaDB's MySQL-compatible handshake can prepend 5.5.5- even when
+		// SELECT VERSION() reports the actual 10.11 server release.
+		if (version && !std::strncmp(version, "5.5.5-", 6) &&
+		    std::strstr(version, "MariaDB"))
+			version += 6;
 		require(version && ((!std::strncmp(version, "8.0.", 4) &&
 				     !std::strstr(version, "MariaDB")) ||
 				    (!std::strncmp(version, "10.11.", 6) &&
 				     std::strstr(version, "MariaDB"))),
 			ENOTSUP);
 		const auto session = mysql_thread_id(connection);
-		execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
-		// A lost START acknowledgement may still leave a transaction open.
-		transaction = true;
-		execute(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY");
+		if (!caller_transaction)
+		{
+			execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+			// A lost START acknowledgement may still leave a transaction open.
+			transaction = true;
+			execute(connection,
+				"START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY");
+		}
 		active(connection, session);
 		std::string names;
 		auto verify_sources = [&](const auto &registry)
@@ -350,11 +367,14 @@ unsigned int economic_sql_capture_sources(MYSQL *connection,
 			item_manifest.bytes(table.content_digest);
 		captured.item_sources_digest = item_manifest.finish();
 		active(connection, session);
-		execute(connection, "ROLLBACK");
-		require(mysql_thread_id(connection) == session &&
-				!(connection->server_status & SERVER_STATUS_IN_TRANS),
-			ENOTCONN);
-		transaction = false;
+		if (!caller_transaction)
+		{
+			execute(connection, "ROLLBACK");
+			require(mysql_thread_id(connection) == session &&
+					!(connection->server_status & SERVER_STATUS_IN_TRANS),
+				ENOTCONN);
+			transaction = false;
+		}
 		*output = std::move(captured);
 		return 0;
 	}
@@ -376,6 +396,20 @@ unsigned int economic_sql_capture_sources(MYSQL *connection,
 			mysql_real_query(connection, "ROLLBACK", 8);
 		return EIO;
 	}
+}
+} // namespace
+unsigned int economic_sql_capture_sources(MYSQL *connection,
+					  const economic_sql_source_limits &limits,
+					  economic_sql_source_snapshot *output) noexcept
+{
+	return capture_sources(connection, limits, output, false);
+}
+unsigned int
+economic_sql_capture_sources_in_transaction(MYSQL *connection,
+					    const economic_sql_source_limits &limits,
+					    economic_sql_source_snapshot *output) noexcept
+{
+	return capture_sources(connection, limits, output, true);
 }
 #endif
 

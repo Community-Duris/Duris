@@ -106,6 +106,22 @@ int main()
 	const auto keys = accounts(true);
 	auto before = authority(staged, keys, staged.winner_pid, 2910);
 	const auto settle = command(auction_action::finalize, 4, 300, staged, keys, before.epoch);
+	economic_frozen_intent decoded_intent;
+	auction_command_payload decoded_payload = {};
+	auction_settlement_listing decoded_listing;
+	auction_settlement_accounts decoded_accounts;
+	assert(auction_settlement_accounting_decode(settle, &decoded_intent, &decoded_payload,
+						    &decoded_listing, &decoded_accounts) ==
+	       economic_accounting_error::ok);
+	assert(decoded_listing.items[1].uid == 601 && decoded_listing.winner_pid == 20 &&
+	       decoded_payload.action == auction_action::finalize &&
+	       economic_account_key_equal(decoded_accounts.escrow, keys.escrow));
+	auto corrupt_settle = settle;
+	corrupt_settle.accounting_intent.front() ^= 1;
+	assert(auction_settlement_accounting_decode(
+		       corrupt_settle, &decoded_intent, &decoded_payload, &decoded_listing,
+		       &decoded_accounts) != economic_accounting_error::ok &&
+	       decoded_listing.items[1].uid == 601);
 	economic_frozen_intent intent;
 	assert(economic_intent_decode(settle.accounting_intent, &intent) ==
 	       economic_accounting_error::ok);

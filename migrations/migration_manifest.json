@@ -568,6 +568,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "a066739e50371e0a19af5953e78fdc8300413c64a9598d45464d49f3268d3fb4",
       "verify_checksum": "d34b1e98c3ba471b0e9b2de21fc862fd008bd9646aac7e8d91bc6ff803705cbd"
+    },
+    {
+      "id": "0040_economic_sql_global_activation",
+      "sequence": 40,
+      "description": "Add separate durable global SQL economic cutover decisions",
+      "apply": "immutable/0040_economic_sql_global_activation.sql",
+      "verify": "immutable/0040_economic_sql_global_activation.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "c98496695b3440cea9a48ed90019e82400adce20491069ee61768d1616cb7d21",
+      "verify_checksum": "69a793e258bad19514dccbba6a937695f3f640c5c667cb0283a19f24b2f6f37f"
     }
   ]
 }

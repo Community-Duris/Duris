@@ -263,6 +263,8 @@ run_image() {
         < migrations/bootstrap_multithread_safe.sql
     verify_schema
     docker_bounded exec -e MYSQL_PWD "$CONTAINER_ID" "$client" -uroot "$schema" \
+        -e 'DROP TABLE economic_sql_global_activation'
+    docker_bounded exec -e MYSQL_PWD "$CONTAINER_ID" "$client" -uroot "$schema" \
         -e 'DROP TABLE economic_sql_lifecycle_installation'
     docker_bounded exec -i -e MYSQL_PWD "$CONTAINER_ID" "$client" -uroot "$schema" \
         < migrations/immutable/0033_economic_sql_lifecycle_owner.sql
@@ -270,6 +272,8 @@ run_image() {
     docker_bounded exec -i -e MYSQL_PWD "$CONTAINER_ID" "$client" -uroot "$schema" \
         < migrations/economic_sql_lifecycle_owner.sql
     verify_schema
+    docker_bounded exec -i -e MYSQL_PWD "$CONTAINER_ID" "$client" -uroot "$schema" \
+        < migrations/immutable/0040_economic_sql_global_activation.sql
 
     db_host=127.0.0.1
     if python3 -c 'import socket; socket.gethostbyname("host.docker.internal")' >/dev/null 2>&1; then

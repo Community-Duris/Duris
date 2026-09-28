@@ -142,6 +142,42 @@ unsigned int staged_installation(MYSQL *connection, bool reject_active_epoch = f
 		return EILSEQ;
 	return count ? EPERM : 0;
 }
+unsigned int runtime_installation_state(MYSQL *connection)
+{
+	// A staged or paused lineage cannot resume legacy gameplay. An active
+	// lineage is admitted only with the same durable installation and epoch;
+	// the runtime owner reads back the baseline and builds its cache next.
+	const char *query =
+		"SELECT EXISTS(SELECT 1 FROM economic_sql_lifecycle_installation i "
+		"LEFT JOIN economic_sql_global_activation a ON a.lineage=i.lineage "
+		"LEFT JOIN economic_lineage_state l ON l.lineage=i.lineage "
+		"WHERE i.phase<>2 OR a.state IS NULL OR a.state<>1 OR "
+		"a.epoch<>i.epoch OR a.installation_operation_id<>i.operation_id OR "
+		"a.baseline_operation_id<>i.baseline_operation_id OR "
+		"l.active_epoch IS NULL OR l.active_epoch<>i.epoch) "
+		"OR EXISTS(SELECT 1 FROM economic_lineage_state l WHERE l.active_epoch IS NOT NULL "
+		"AND NOT EXISTS(SELECT 1 FROM economic_sql_global_activation a "
+		"JOIN economic_sql_lifecycle_installation i ON i.operation_id=a.installation_operation_id "
+		"WHERE a.lineage=l.lineage AND a.epoch=l.active_epoch AND a.state=1 "
+		"AND i.lineage=l.lineage AND i.epoch=l.active_epoch)) "
+		"OR EXISTS(SELECT 1 FROM economic_sql_global_activation a "
+		"LEFT JOIN economic_sql_lifecycle_installation i "
+		"ON i.operation_id=a.installation_operation_id "
+		"LEFT JOIN economic_lineage_state l ON l.lineage=a.lineage "
+		"WHERE a.state<>1 OR i.operation_id IS NULL OR i.phase<>2 OR "
+		"i.lineage<>a.lineage OR i.epoch<>a.epoch OR "
+		"i.baseline_operation_id<>a.baseline_operation_id OR "
+		"l.active_epoch IS NULL OR l.active_epoch<>a.epoch)";
+	if (mysql_real_query(connection, query, std::char_traits<char>::length(query)))
+		return mysql_error_code(connection);
+	result_ptr result(mysql_store_result(connection), mysql_free_result);
+	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1)
+		return mysql_error_code(connection);
+	const auto row = mysql_fetch_row(result.get());
+	if (!row || !row[0])
+		return EIO;
+	return std::string(row[0]) == "0" ? 0 : EPERM;
+}
 #endif
 } // namespace
 
@@ -214,7 +250,7 @@ economic_sql_lifecycle_guard::acquire_runtime(MYSQL *connection,
 		clear_local_authority(true, false);
 		return status;
 	}
-	const auto staged = staged_installation(connection, true);
+	const auto staged = runtime_installation_state(connection);
 	if (staged)
 	{
 		unlock(connection, mysql_thread_id(connection), boot_lock);

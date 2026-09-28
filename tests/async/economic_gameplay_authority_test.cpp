@@ -38,6 +38,7 @@ class economic_gameplay_authority_test_access
 			{}, lineage, epoch, receipt, wallets, banks);
 	}
 	static void reset() { economic_gameplay_authority::reset_for_tests(); }
+	static void clear_sql_runtime() { economic_gameplay_authority::clear_sql_runtime(); }
 };
 
 using error = economic_accounting_error;
@@ -527,6 +528,12 @@ int main()
 						 index % 2 ? banks : recreated) == error::ok);
 	reader.join();
 	qualified_projection_regressions();
+	lifecycle_access::clear_sql_runtime();
+	assert(economic_gameplay_authority::active());
+	lifecycle_access::reset();
+	assert(lifecycle_access::install(id(1), id(2), id(3), wallets, banks) == error::ok);
+	lifecycle_access::clear_sql_runtime();
+	assert(!economic_gameplay_authority::active());
 	std::cout
 		<< "gameplay authority admission, exact replay, fail-closed coverage and atomic cache passed\n";
 }

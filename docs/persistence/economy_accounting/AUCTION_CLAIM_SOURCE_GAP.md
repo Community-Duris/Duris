@@ -39,11 +39,18 @@ postings, and outbox entries. A pure claim regression checks balancing and rejec
 an unaccounted aggregate. The new SQL table has a re-runnable schema file and
 is included in fresh bootstrap and lifecycle inventory.
 
+The inactive flatfile bid and settlement owners now journal the same positive
+credit source rows with their native pickup and EAP1 records. The inactive
+flatfile money-claim owner requires the complete unconsumed source set to match
+the native aggregate and frozen digest. It journals wallet credit, pickup
+clearance, individual source consumption, the balanced EAP1 plan, and the first
+source's claim marker together. The focused journey checks stale sources,
+source-file corruption, interrupted recovery, replay, and collection of both
+a one-source refund and a two-source seller payout.
+
 These components are inactive. Existing non-auction writers still stage money
 without source rows and therefore prevent typed collection of that aggregate
-until they are ported or separately corrected. The migration has not yet been
-registered in the immutable manifest: the shared worktree currently removes
-the registered 0036 activation-receipt step while retaining its immutable file,
-so the next free migration sequence is unresolved. Flatfile source allocations
-and typed collection remain to be implemented. A claim is bounded to 4096
-source rows; a larger aggregate is safely refused until a batch policy exists.
+until they are ported or separately corrected. The SQL source table is
+registered as immutable migration 0039; this work did not apply migrations to
+any database. A claim is bounded to 4096 source rows; a larger aggregate is
+safely refused until a batch policy exists.

@@ -58,7 +58,8 @@ class TestAccountingInvariants(unittest.TestCase):
         fix["operations"].append(op2)
         with self.assertRaises(AuditError) as ctx:
             self.auditor.audit_fixture(fix, "replayed_source_event")
-        self.assertIn("replayed for reason", str(ctx.exception))
+        self.assertIn(f"Source event {op2['source_event']} replayed in op "
+                      f"{op2['operation_id']}", str(ctx.exception))
 
     def test_detects_conflicting_duplicate_operation(self):
         fix = copy.deepcopy(self.golden["fixtures"][0])

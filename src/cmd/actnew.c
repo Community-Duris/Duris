@@ -34,6 +34,7 @@
 #include "sql/sql.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
+#include "economy/economic_gameplay_authority.h"
 
 /*
  * external variables
@@ -4229,6 +4230,13 @@ void do_home(P_char ch, char * /*argument*/, int /*cmd*/)
 		send_to_char(
 			"You can't really see yourself living in such an awful place as this.\n",
 			ch);
+		return;
+	}
+
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Home changes are unavailable while active accounting is enabled.\r\n",
+			     ch);
 		return;
 	}
 

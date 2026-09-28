@@ -1,6 +1,8 @@
 #include "sql/sql_economic_runtime.h"
 
 #ifndef __NO_MYSQL__
+#include "economy/economic_gameplay_authority.h"
+#include "persistence/economic_sql_accounting_lifecycle_transaction.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_exclusion_guard.h"
 #include <memory>
@@ -62,6 +64,14 @@ bool sql_economic_runtime_start() noexcept
 			return false;
 		if (!duris_sql_exclusion_guard_bind_economic_runtime(connection.get()))
 			return false;
+		bool active = false;
+		if (economic_sql_accounting_lifecycle_transaction::recover_runtime(
+			    connection.get(), *authority, &active) ||
+		    active != economic_gameplay_authority::active())
+		{
+			economic_gameplay_authority::clear_sql_runtime();
+			return false;
+		}
 		runtime.connection = std::move(connection);
 		runtime.authority = std::move(authority);
 		runtime.process = getpid();
@@ -69,12 +79,14 @@ bool sql_economic_runtime_start() noexcept
 	}
 	catch (...)
 	{
+		economic_gameplay_authority::clear_sql_runtime();
 		return false;
 	}
 }
 
 void sql_economic_runtime_shutdown() noexcept
 {
+	economic_gameplay_authority::clear_sql_runtime();
 	owner().release();
 }
 #else
