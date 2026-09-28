@@ -28,7 +28,7 @@ def function(text: str, signature: str) -> str:
     raise AssertionError(f"unterminated function: {signature}")
 
 
-verify = function(repository, "query_result verify_player_item_custody(")
+verify = function(repository, "query_result reconcile_player_item_custody(")
 apply_items = function(repository, "query_result apply_items(")
 
 # The proof uses the sealed replacement graph, reconstructs every root/parent,
@@ -50,11 +50,18 @@ for token in (
 assert contains(verify, "PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH")
 assert contains(verify, "coin_payload IS NOT NULL")
 assert contains(verify, "inline_coin_payload")
-assert contains(verify, "expected.empty()")
+assert contains(verify, "matched.size() != expected.size()")
+assert contains(verify, "topology_mismatch")
+assert contains(verify, "item.root_item_uid = root_item_uid")
+assert contains(verify, "item.parent_item_uid = parent_item_uid")
+assert contains(verify, "parent->second.root_item_uid != item->second.root_item_uid")
+assert contains(verify, "PLAYER_SNAPSHOT_MAX_DEPTH")
+assert contains(verify, "order.size() != snapshot.items.size()")
+assert contains(verify, "reconciled_items->push_back")
 
 # Verification precedes the destructive projection; a rejection therefore
 # rolls back with every old payload row untouched.
-assert index(apply_items, "verify_player_item_custody") < index(
+assert index(apply_items, "reconcile_player_item_custody") < index(
     apply_items, '"DELETE FROM player_items WHERE pid="'
 )
 assert not contains(verify, "DELETE FROM")

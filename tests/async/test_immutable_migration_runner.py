@@ -109,9 +109,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 32)
+        self.assertEqual(len(manifest.migrations), 33)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0032_economic_baseline")
+                         "0033_economic_sql_lifecycle_owner")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -350,7 +350,16 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertIn("verified_legacy_adoption", adoption)
         self.assertIn("migration_runner.py\" run", adoption)
         self.assertIn("verify_runtime_compatibility.sh", adoption)
-        self.assertIn("TOTAL=145", legacy)
+        self.assertIn("TOTAL=150", legacy)
+
+    def test_legacy_upgrade_verifies_schema_before_imported_character_baselines(self):
+        adoption = (ROOT / "migrations/adopt_migration_baseline.sh").read_text()
+        verifier = (ROOT / "migrations/verify_runtime_compatibility.sh").read_text()
+        importer = (ROOT / "scripts/import_legacy_dump.py").read_text()
+        self.assertIn('verify_runtime_compatibility.sh" --schema-only', adoption)
+        self.assertIn('"$SCHEMA_ONLY" == 0', verifier)
+        self.assertIn("establish_character_baselines(config)", importer)
+        self.assertIn('verifier = ROOT / "migrations/verify_runtime_compatibility.sh"', importer)
 
 
 if __name__ == "__main__":

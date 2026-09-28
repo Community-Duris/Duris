@@ -16,6 +16,8 @@ from _paths import ROOT, rel
 HARNESS = r'''
 #include "core/utils.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_currency_adapter.h"
+#include "economy/economic_gameplay_authority.h"
 #include "sql/sql_player.h"
 
 #include <algorithm>
@@ -32,9 +34,28 @@ HARNESS = r'''
 static P_char online = nullptr, online_other = nullptr;
 static critical_command submitted;
 static int submissions = 0, callbacks = 0, alerts = 0, bank_publications = 0;
+static int held_submissions = 0, publication_acks = 0;
+static bool ack_available = true;
 static bool callback_committed = false, chain_after_callback = false, rehash_in_callback = false;
 static unsigned int callback_error = 0;
 static std::string last_alert_operation;
+
+class economic_gameplay_authority_test_access
+{
+public:
+    static void install(const critical_operation_id &lineage,
+                        const critical_operation_id &epoch,
+                        const critical_operation_id &receipt)
+    {
+        const std::array wallets = { economic_gameplay_wallet_mapping{
+            42, {lineage, economic_account_kind::wallet, 42, 0}} };
+        const std::array banks = { economic_gameplay_bank_mapping{
+            "retention_account", 1, {lineage, economic_account_kind::bank, 52, 1}} };
+        assert(economic_gameplay_authority::install(lineage, epoch, receipt,
+                                                   wallets, banks) ==
+               economic_accounting_error::ok);
+    }
+};
 
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 
@@ -54,9 +75,23 @@ bool critical_command_coordinator_is_fenced(const critical_entity_key &, critica
 }
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
+    command.accepted_at_usec = 1; // assigned by the actual coordinator at admission
     submitted = std::move(command);
     ++submissions;
     return critical_submit_result::accepted;
+}
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
+{
+    command.publication_required = true;
+    command.accepted_at_usec = 1; // assigned by the actual coordinator at admission
+    submitted = std::move(command);
+    ++held_submissions;
+    return critical_submit_result::accepted;
+}
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{
+    ++publication_acks;
+    return ack_available;
 }
 bool critical_command_coordinator_get_completed(const critical_operation_id &, critical_completion *)
 {
@@ -142,6 +177,208 @@ int main(int argc, char **argv)
     GET_COPPER(&actor) = 5;
     online = &actor;
     currency_transaction_reset_for_tests();
+    if (scenario == "active_prepared_wallet_payment" ||
+        scenario == "active_prepared_bank_payment" ||
+        scenario == "active_prepare_wallet_payment" ||
+        scenario == "active_prepare_bank_payment" ||
+        scenario == "legacy_prepared_wallet_payment" ||
+        scenario == "legacy_prepared_bank_payment" ||
+        scenario == "active_pending_prepared_payment")
+    {
+        // Exercise the real locker payment builder, including its prewritten
+        // timestamp. A timestamp is not proof that the coordinator accepted it.
+        const bool activate = !scenario.starts_with("legacy_");
+        const bool prepare_after_activation = scenario.starts_with("active_prepare_");
+        const bool retained = scenario == "active_pending_prepared_payment";
+        const bool use_bank = scenario.find("bank") != std::string::npos;
+        const int64_t cost = use_bank ? 10 : 1;
+        GET_BALANCE_COPPER(&actor) = 20;
+        critical_command command = {};
+        if (!prepare_after_activation)
+        {
+            assert(currency_transaction_prepare_identify(&actor, cost, &command));
+            assert(command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+                   command.accepted_at_usec && command.accounting_intent.empty());
+            currency_command_payload payload = {};
+            assert(currency_command_decode_payload(command, &payload));
+            assert(payload.reason == (use_bank ? currency_reason_type::bank_payment :
+                                                currency_reason_type::wallet_spend));
+            if (retained)
+                assert(currency_transaction_submit_prepared(&actor, command, completed,
+                                                            nullptr, 0));
+        }
+        if (activate)
+        {
+            critical_operation_id lineage = {}, epoch = {}, activation = {};
+            lineage.bytes[0] = 1;
+            epoch.bytes[0] = 2;
+            activation.bytes[0] = 3;
+            economic_gameplay_authority_test_access::install(lineage, epoch, activation);
+        }
+        if (prepare_after_activation || (activate && !retained))
+        {
+            if (prepare_after_activation)
+                assert(!currency_transaction_prepare_identify(&actor, cost, &command));
+            else
+                assert(!currency_transaction_submit_prepared(&actor, command, completed,
+                                                             nullptr, 0));
+            assert(submissions == 0 && held_submissions == 0 && callbacks == 0 &&
+                   publication_acks == 0 && bank_publications == 0);
+            assert(currency_transaction_health_copy().pending == 0 &&
+                   !currency_transaction_player_busy(&actor));
+            assert(GET_COPPER(&actor) == 5 && GET_BALANCE_COPPER(&actor) == 20);
+            assert(player.wallet_revision == 1 && player.bank_revision == 1);
+            return 0;
+        }
+        // Legacy mode still works. A genuinely pending command may attach after
+        // cache replacement, but must not be re-enqueued or retagged.
+        assert(currency_transaction_submit_prepared(&actor, command, completed, nullptr, 0));
+        assert(submissions == 1 && held_submissions == 0 && callbacks == 0);
+        assert(submitted.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+               submitted.accounting_intent.empty());
+        assert(GET_COPPER(&actor) == 5 && GET_BALANCE_COPPER(&actor) == 20);
+        critical_completion receipt = {};
+        receipt.operation_id = command.operation_id;
+        receipt.outcome = retained ? critical_apply_outcome::already_applied :
+                                     critical_apply_outcome::applied;
+        encode(receipt, use_bank ? 5 : 5 - cost, use_bank ? 20 - cost : 20);
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(callbacks == 1 && callback_committed && publication_acks == 0 &&
+               bank_publications == 1 && submissions == 1);
+        assert(GET_COPPER(&actor) == (use_bank ? 5 : 5 - cost) &&
+               !currency_transaction_player_busy(&actor));
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(callbacks == 1 && bank_publications == 1 && submissions == 1);
+        return 0;
+    }
+    if (scenario == "accounted_bank_producer" || scenario == "accounted_bank_producer_restart")
+    {
+        critical_operation_id lineage = {}, epoch = {}, activation = {};
+        lineage.bytes[0] = 1;
+        epoch.bytes[0] = 2;
+        activation.bytes[0] = 3;
+        economic_gameplay_authority_test_access::install(lineage, epoch, activation);
+        const currency_vector wallet = { {-1, 0, 0, 0} };
+        const currency_vector bank = { {1, 0, 0, 0} };
+        assert(currency_transaction_submit(&actor, wallet, bank,
+            currency_reason_type::atm_deposit, 0, critical_source_site::command,
+            critical_deadline_class::interactive, completed, nullptr, 0));
+        assert(held_submissions == 1 && submissions == 0 && submitted.publication_required);
+        assert(submitted.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+        assert(critical_command_envelope_valid(submitted));
+        assert(GET_COPPER(&actor) == 5 && bank_publications == 0 && callbacks == 0);
+        assert(!submit_reward(&actor, nullptr)); // active unsupported writer cannot bypass.
+        const auto operation = submitted.operation_id;
+        if (scenario == "accounted_bank_producer_restart")
+        {
+            submitted.accepted_at_usec = 1;
+            currency_transaction_reset_for_tests();
+            assert(currency_transaction_restore_replayed_command(submitted));
+            online = nullptr;
+        }
+        critical_completion receipt = {};
+        receipt.operation_id = operation;
+        receipt.outcome = critical_apply_outcome::already_applied;
+        encode(receipt, 4, 1);
+        ack_available = false;
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(callbacks == 0 && currency_transaction_player_busy(&actor));
+        if (scenario == "accounted_bank_producer_restart")
+        {
+            assert(publication_acks == 0 && GET_COPPER(&actor) == 5);
+            online = &actor;
+            currency_transaction_player_ready(&actor);
+        }
+        assert(publication_acks == 1 && GET_COPPER(&actor) == 4);
+        ack_available = true;
+        currency_transaction_player_ready(&actor);
+        assert(publication_acks == 2 && !currency_transaction_player_busy(&actor));
+        assert(callbacks == (scenario == "accounted_bank_producer_restart" ? 0 : 1));
+        assert(held_submissions == 1 && submissions == 0);
+        return 0;
+    }
+    if (scenario == "accounted_bank_publication" ||
+        scenario == "accounted_bank_ack_retry" ||
+        scenario == "accounted_bank_invalid_result" ||
+        scenario == "accounted_bank_restart")
+    {
+        critical_operation_id operation = {}, lineage = {}, epoch = {};
+        operation.bytes[0] = 3;
+        lineage.bytes[0] = 1;
+        epoch.bytes[0] = 2;
+        currency_command_payload payload = {};
+        payload.pid = 42;
+        payload.racewar = 1;
+        payload.reason = currency_reason_type::atm_deposit;
+        std::strcpy(payload.account_name.data(), "retention_account");
+        payload.wallet_delta.amount[0] = -1;
+        payload.bank_delta.amount[0] = 1;
+        critical_command command = {};
+        assert(currency_command_build(&command, operation, payload, 1, 1,
+                                      critical_source_site::command,
+                                      critical_deadline_class::interactive));
+        const economic_account_key wallet = { lineage, economic_account_kind::wallet, 42, 0 };
+        const economic_account_key bank = { lineage, economic_account_kind::bank, 52, 1 };
+        assert(economic_bank_transfer_intent(command, epoch, wallet, bank,
+                                             &command.accounting_intent) ==
+               economic_accounting_error::ok);
+        command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+        command.accepted_at_usec = 1;
+        assert(critical_command_envelope_valid(command));
+        if (scenario == "accounted_bank_restart")
+        {
+            command.publication_required = true;
+            online = nullptr;
+            assert(currency_transaction_restore_replayed_command(command));
+            assert(!currency_transaction_restore_replayed_command(command));
+            assert(currency_transaction_player_busy(&actor));
+            critical_completion receipt = {};
+            receipt.operation_id = operation;
+            receipt.outcome = critical_apply_outcome::already_applied;
+            encode(receipt, 4, 1);
+            currency_transaction_handle_completions(&receipt, 1);
+            assert(publication_acks == 0 && callbacks == 0);
+            online = &actor;
+            currency_transaction_player_ready(&actor);
+            assert(publication_acks == 1 && callbacks == 0 &&
+                   bank_publications == 1 && GET_COPPER(&actor) == 4 &&
+                   !currency_transaction_player_busy(&actor));
+            assert(held_submissions == 0 && submissions == 0);
+            return 0;
+        }
+        assert(currency_transaction_submit_prepared(&actor, command, completed, nullptr, 0));
+        assert(held_submissions == 1 && submissions == 0 &&
+               submitted.publication_required);
+        critical_completion receipt = {};
+        receipt.operation_id = operation;
+        receipt.outcome = critical_apply_outcome::applied;
+        if (scenario == "accounted_bank_invalid_result")
+            encode(receipt, static_cast<int64_t>(INT_MAX) + 1, 1);
+        else
+            encode(receipt, 4, 1);
+        if (scenario == "accounted_bank_ack_retry") ack_available = false;
+        currency_transaction_handle_completions(&receipt, 1);
+        if (scenario == "accounted_bank_invalid_result")
+        {
+            assert(publication_acks == 0 && callbacks == 0 &&
+                   currency_transaction_player_busy(&actor));
+            return 0;
+        }
+        if (scenario == "accounted_bank_ack_retry")
+        {
+            assert(publication_acks == 1 && callbacks == 0 &&
+                   currency_transaction_player_busy(&actor));
+            ack_available = true;
+            currency_transaction_player_ready(&actor);
+        }
+        assert(callbacks == 1 && callback_committed &&
+               publication_acks == (scenario == "accounted_bank_ack_retry" ? 2 : 1));
+        assert(GET_COPPER(&actor) == 4 && bank_publications >= 1);
+        assert(!currency_transaction_player_busy(&actor));
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(callbacks == 1);
+        return 0;
+    }
     assert(submit_reward(&actor, completed));
     const critical_command original = submitted;
     critical_completion receipt = {};
@@ -340,6 +577,13 @@ def main():
         "rejected_without_payload", "callback_chain", "callback_rehash", "active_rebasable",
         "blocked_rebasable", "coin_ambiguous", "coin_exhausted_retry",
         "coin_malformed_commit",
+        "accounted_bank_publication", "accounted_bank_ack_retry",
+        "accounted_bank_invalid_result", "accounted_bank_restart",
+        "accounted_bank_producer", "accounted_bank_producer_restart",
+        "active_prepared_wallet_payment", "active_prepared_bank_payment",
+        "active_prepare_wallet_payment", "active_prepare_bank_payment",
+        "legacy_prepared_wallet_payment", "legacy_prepared_bank_payment",
+        "active_pending_prepared_payment",
     )
     with tempfile.TemporaryDirectory(prefix="currency-retention-") as directory:
         source = Path(directory) / "retention.cpp"
@@ -350,9 +594,13 @@ def main():
             subprocess.run([
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
                 "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
+                "-pthread", "-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST",
                 *(["-D__NO_MYSQL__", "-Isrc/no_mysql"] if flatfile else []),
                 "-Isrc", *cflags, str(source), rel("currency_transaction.c"),
                 rel("currency_command.c"), rel("critical_command.c"),
+                rel("economic_currency_adapter.c"), rel("economic_accounting_intent.c"),
+                rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
+                rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
                 rel("coin_transfer_command.c"), rel("item_transfer_command.c"),
                 rel("player_snapshot_codec.c"), "-Wl,--gc-sections", "-lcrypto",
                 "-o", str(binary),

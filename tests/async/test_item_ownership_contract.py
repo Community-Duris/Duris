@@ -29,10 +29,13 @@ class ItemOwnershipContractTests(unittest.TestCase):
             "item_current_owner must exist before artifact_domain_state adds its foreign key",
         )
         shopkeeper_owner = (ROOT / "migrations/shopkeeper_item_owner.sql").read_text()
-        self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 3)
+        self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 6)
         self.assertIn("can never narrow", shopkeeper_owner)
         collector_owner = (ROOT / "migrations/collector_item_owner.sql").read_text()
         self.assertEqual(collector_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 6)
+        for owner_migration in (shopkeeper_owner, collector_owner):
+            self.assertEqual(owner_migration.count("IF wider_constraint=0 THEN"), 3)
+            self.assertEqual(owner_migration.count("information_schema.check_constraints"), 3)
         self.assertEqual(bootstrap.count("owner_type` between 1 and 10"), 3)
         for script in ("baseline_item_ownership.sh", "reconcile_item_ownership.sh",
                        "verify_item_ownership_schema.sh", "verify_collector_item_owner.sh"):

@@ -283,6 +283,15 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	player_death_restitution_runtime_handle_completions(completions, count);
 }
 
+static bool critical_gameplay_restore_replayed_command(const critical_command &command,
+						       void *context)
+{
+	// Replay runs under the coordinator mutex. Neither observer may call back
+	// into the coordinator; refusal keeps the journal and fails startup closed.
+	return player_death_restitution_runtime_restore_replayed_command(command, context) &&
+	       currency_transaction_restore_replayed_command(command);
+}
+
 #ifndef __NO_MYSQL__
 static critical_outbox_delivery_result
 critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *context)
@@ -943,11 +952,10 @@ int run_the_game(int port, int sslport)
 #ifndef __NO_MYSQL__
 		!critical_outbox_ready ||
 #endif
-		!critical_command_coordinator_init(
-			critical_journal_directory, critical_apply, NULL,
-			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-			player_death_restitution_runtime_restore_replayed_command, NULL,
-			critical_extension_validator))
+		!critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
+						   CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+						   critical_gameplay_restore_replayed_command, NULL,
+						   critical_extension_validator))
 	{
 		player_death_restitution_runtime_abort_all();
 		critical_command_coordinator_shutdown();

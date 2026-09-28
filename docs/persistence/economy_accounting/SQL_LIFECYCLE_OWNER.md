@@ -1,0 +1,70 @@
+# SQL wallet/shared-bank lifecycle owner
+
+This slice creates a durable SQL-owned maintenance cutover receipt and a complete baseline for SQL-native wallets and shared banks. It does **not** activate `economic_lineage_state.active_epoch` or claim item/world/currency producer coverage beyond those native SQL source rows.
+
+## Trusted boundary and call order
+
+The caller must use a dedicated, reconnect-disabled, autocommit MySQL control connection and follow this order:
+
+1. At runtime boot, acquire `economic_sql_lifecycle_guard::acquire_runtime(control_connection, &runtime_guard)` **before admitting gameplay**. Keep the guard/control connection alive until shutdown. It refuses boot when a staged lifecycle installation is present.
+2. For one-time maintenance cutover, first quiesce the MUD using the trusted boot/maintenance process, then acquire `economic_sql_lifecycle_guard::acquire_maintenance(control_connection, &maintenance_guard)`. The owner uses MySQL named locks, not a caller boolean/digest: the runtime boot lock must be free and the currency-writer lock must drain. Both controls are held for the maintenance guard lifetime.
+3. Build a stable `economic_sql_lifecycle_request`: operation ID, lineage, epoch, actor ID, and accepted timestamp must be reused exactly on retry. Call `economic_sql_accounting_lifecycle_transaction::install(control_connection, maintenance_guard, request, &receipt)` while maintenance authority remains alive.
+4. The owner captures/normalizes native source rows under the guard; verifies every SQL wallet PID and shared-bank row has one valid native locator; rejects unsupported, negative, incomplete, or over-capacity source sets; creates one durable `economic_account_mapping` lifetime per wallet/bank; persists the baseline; and reconciles/read-backs the exact critical baseline receipt/witness before moving the lifecycle receipt from phase 1 to phase 2.
+5. The receipt exports wallet and bank mapping data, not permission to activate gameplay. A future activation method inside the trusted friend owner must revalidate complete coverage before calling the private `economic_gameplay_authority::install`; an ordinary boot caller cannot invoke that private API. That cache is admission metadata, not storage authority.
+6. Do not start gameplay from this staged phase. The SQL owner intentionally leaves `economic_lineage_state.active_epoch IS NULL`; the runtime guard refuses admission while a lifecycle installation exists. Full gameplay activation requires separate verified producer/writer coverage and a parent-owned activation step.
+
+The `economic_sql_lifecycle_guard` token is tied to the exact MySQL connection/thread session that acquired the named locks. Do not reconnect, change MySQL thread, enter with an open transaction, or destroy the control connection before the guard.
+
+## Parent integration wiring
+
+The parent commit `30c9a6590` defines the private `economic_gameplay_authority::install` method and grants friendship to the `economic_sql_accounting_lifecycle_transaction` class. The cache accepts wallet `{pid, account}` and bank `{name, racewar, account}` spans. This owner exports compatible mapping data; preparing those spans does not itself authorize installation:
+
+```cpp
+std::vector<economic_gameplay_wallet_mapping> wallets;
+std::vector<economic_gameplay_bank_mapping> banks;
+for (const auto &mapping : receipt.wallets)
+    wallets.push_back({ mapping.pid, mapping.account });
+for (const auto &mapping : receipt.banks)
+    banks.push_back({ mapping.name, mapping.racewar, mapping.account });
+// No gameplay authority is installed by this staged-baseline component.
+```
+
+Any future cache-install call must be owned by the trusted friend class, after full coverage and durable authority verification and while maintenance remains held. The parent must not activate online gameplay based solely on this wallet/shared-bank receipt.
+
+For actual native currency serialization, every legacy SQL writer needs this sequence around its own database transaction:
+
+```cpp
+economic_sql_currency_writer_guard writer_guard;
+if (economic_sql_currency_writer_guard::acquire(connection, &writer_guard))
+    return fail_closed;
+// BEGIN/updates/COMMIT or ROLLBACK; writer_guard remains in scope throughout.
+```
+
+The owner and guard modules are included in `src/Makefile`; client-free builds expose refusing `ENOTSUP` implementations. Production boot and legacy-writer call sites are not wired by this slice. Parent boot must hold the runtime guard for process lifetime, and every affected writer must participate before these locks establish a complete runtime exclusion boundary. An available advisory lock is not proof that an older, uninstrumented MUD is stopped.
+
+## Durable state and replay behavior
+
+`economic_sql_lifecycle_installation` has one row per lineage and binds a request digest, source-capture digest, native-boundary digest, source counts, baseline operation ID, phase, selected epoch, and revision. Phase 1 represents the durable staged owner and mapping transaction. Phase 2 is written only after the baseline command returns an applied/already-applied result and a separate reconcile confirms the same durable baseline revision. `active_epoch` remains NULL in both states.
+
+An exact retry verifies the same operation/request/lineage/epoch, native boundary, lifetime mappings, baseline operation ID, and retained baseline witness; it does not advance baseline revision. Reusing the operation ID with changed request fields is rejected and leaves the output object unchanged. An interrupted phase-1 operation remains fail-closed and can resume only with the same IDs/source boundary; absence of a row never authorizes overwriting existing lineage/mapping state.
+
+`economic_sql_currency_writer_guard` acquires a process-local shared lock and SQL named lock before the legacy writer begins; it holds through writer scope exit and refuses all old currency paths if a staged installation exists. `acquire_maintenance()` takes the process-local exclusive lock, then the runtime boot lock and currency-writer lock, so it waits for a participating writer's commit/rollback. Every production legacy writer must use this helper for the serialization guarantee to apply.
+
+## Scope limits
+
+This boundary enumerates `player_data` wallet PIDs and `account_banks` row lifetimes only, plus the retained SQL mapping table needed to prove their mapping coverage. It is **not** complete economic-state authority for inventory item values, world piles, auctions/escrows, corpses/claims, death restitution, NPCs, quest/reward sources, or other game state. Parent tests for ATM/flatfile admission do not prove those producers are integrated into a full SQL epoch.
+
+Pending journal intents, independent lost-authority/partial-restore provenance, and global activation recovery are not qualified by this component. The writer/boot gate detects retained staged installation rows; do not interpret absent installation evidence as permission to resume legacy writes after an evidence-loss incident. No pending-intent draft is wired into the server by this slice.
+
+## Disposable validation
+
+Run the behavior test on a disposable MariaDB/MySQL container only (the runner never reads `.env`):
+
+```sh
+make test TEST_MATCH=economic_sql_lifecycle_no_mysql TEST_JOBS=1
+make test TEST_MATCH=economic_sql_lifecycle_owner_contract TEST_JOBS=1
+ECONOMIC_SQL_LIFECYCLE_DB_IMAGE=mysql:8.0 \
+  make test TEST_MATCH=economic_sql_lifecycle_owner_contract TEST_JOBS=1
+```
+
+The SQL runner imports fresh bootstrap, removes/replays the new migration to test upgrade/replay, then runs a C++ ASan/UBSan harness. It exercises complete native wallet/bank enumeration, exact mapping IDs, fail-without-partial-writes on a negative wallet, a trigger that prevents selection without the baseline receipt/witness, a concurrently paused legacy SQL currency transaction that maintenance must wait for, exact replay/conflicting replay, post-cutover writer refusal, and runtime-admission refusal with an unactivated staged receipt. The phase constraint must also reject a NULL selected epoch; SQL's UNKNOWN check result must not bypass this invariant. `active_epoch` stays NULL. The separate client-free test compiles both production modules with warnings as errors and checks that unsupported-backend calls cannot issue authority or mappings. These are component contracts, not death/spell gameplay acceptance.

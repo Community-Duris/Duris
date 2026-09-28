@@ -335,6 +335,8 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command_coordinator.o \
 				 persistence/economic_accounting_repository.o \
 				 persistence/economic_sql_baseline_transaction.o \
+				 persistence/economic_sql_lifecycle_guard.o \
+				 persistence/economic_sql_accounting_lifecycle_transaction.o \
 				 persistence/economic_sql_source_snapshot.o \
 				 economy/economic_sql_source_normalize.o \
 				 persistence/economic_sql_bank_transaction.o \
@@ -363,6 +365,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_accounting_plan.o \
 				 economy/economic_accounting_intent.o \
 				 economy/economic_command_admission.o \
+				 economy/economic_gameplay_authority.o \
 				 economy/economic_baseline_adapter.o \
 				 economy/economic_baseline_codec.o \
 				 economy/economic_baseline_command.o \

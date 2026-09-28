@@ -114,7 +114,7 @@ void initialize_bucket(const std::string &root, const flatfile_authority_lock &l
 	if (!result)
 		commit(root, lock, changes);
 }
-void setup(const fs::path &path)
+void setup(const fs::path &path, bool activate = true)
 {
 	const auto root = path.string();
 	for (const auto &dir : { path, path / "domains", path / "economic-evidence",
@@ -176,9 +176,12 @@ void setup(const fs::path &path)
 	assert(access_type::append_epoch(root, lock, control(root, lock).revision, epoch, &changes,
 					 nullptr) == 0);
 	commit(root, lock, changes);
-	assert(access_type::select_epoch(root, lock, control(root, lock).revision, true, id(90007),
-					 &changes, nullptr) == 0);
-	commit(root, lock, changes);
+	if (activate)
+	{
+		assert(access_type::select_epoch(root, lock, control(root, lock).revision, true,
+						 id(90007), &changes, nullptr) == 0);
+		commit(root, lock, changes);
+	}
 	assert(access_type::initialize_evidence(root, lock, control(root, lock).revision, 7,
 						id(90008), &changes, nullptr) == 0);
 	commit(root, lock, changes);
@@ -253,6 +256,15 @@ void basic(const std::string &root)
 {
 	auto legacy = command(root, 1, 1, false);
 	assert(flatfile_player_domain_apply(root, legacy).outcome == outcome::applied);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		ops changes;
+		assert(access_type::select_epoch(root, lock, control(root, lock).revision, true,
+						 id(90007), &changes, nullptr) == 0);
+		commit(root, lock, changes);
+	}
+	assert(flatfile_player_domain_apply(root, legacy).outcome == outcome::already_applied);
 	auto clash = legacy;
 	refreeze(clash);
 	assert(flatfile_accounting_bank_transaction::apply(root, clash).error_code == EEXIST);
@@ -677,7 +689,7 @@ int main(int argc, char **argv)
 	forged(seed, base);
 	allocations(seed, base);
 	const auto journey = base / "basic";
-	clone(seed, journey);
+	setup(journey, false);
 	basic(journey.string());
 	std::cout << "flatfile typed bank root journeys passed\n";
 }

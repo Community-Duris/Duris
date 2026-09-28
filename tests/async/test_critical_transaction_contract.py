@@ -51,8 +51,18 @@ assert "critical_command_repository_reconcile(connection, command)" in REPOSITOR
 # The per-thread setup goes through the shared helper so the client library
 # is initialised first; MySQL 8 fails mysql_thread_init() without it.
 assert "sql_worker_thread_init()" in REPOSITORY and "mysql_thread_end()" in REPOSITORY
-assert "read_operation(connection, command.operation_id, false" in REPOSITORY
-assert "error == 1205 || error == 1213" in REPOSITORY
+reconcile = REPOSITORY[REPOSITORY.index("critical_apply_result critical_command_repository_reconcile("):
+                       REPOSITORY.index("// Public narrow wrappers")]
+assert "const bool accounted_bank = accounted_bank_envelope(command);" in reconcile
+locked_lookup = "read_operation(connection, command.operation_id, accounted_bank"
+assert locked_lookup in reconcile
+assert reconcile.index('execute(connection, "START TRANSACTION")') < reconcile.index(locked_lookup)
+assert reconcile.index(locked_lookup) < reconcile.index(
+    "economic_sql_bank_verify_retained("
+) < reconcile.index("return stored_result(")
+retryable = REPOSITORY[REPOSITORY.index("bool retryable_error(unsigned int error)"):
+                       REPOSITORY.index("critical_apply_result failure(unsigned int error)")]
+assert all(f"error == {code}" in retryable for code in ("ENOMEM", "1205", "1213"))
 assert "EEXIST" in REPOSITORY and "ERANGE" in REPOSITORY
 assert "command.payload.data()" not in REPOSITORY
 assert "PREPARE " not in REPOSITORY

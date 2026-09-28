@@ -1,0 +1,571 @@
+#include "economy/economic_baseline_adapter.h"
+#include "persistence/economic_sql_accounting_lifecycle_transaction.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
+#include "persistence/economic_sql_source_snapshot.h"
+#include <mysql/mysql.h>
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cerrno>
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <vector>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+namespace
+{
+const char *required(const char *name)
+{
+	const char *value = std::getenv(name);
+	if (!value || !*value)
+		throw std::runtime_error(std::string("missing ") + name);
+	return value;
+}
+
+MYSQL *connect_fixture()
+{
+	const std::string host = required("DB_HOST");
+	const std::string schema = required("DB_NAME");
+	if ((host != "127.0.0.1" && host != "host.docker.internal") || std::getenv("DB_SOCKET") ||
+	    std::strcmp(required("ECONOMIC_SQL_LIFECYCLE_DISPOSABLE_SCHEMA"), "1") ||
+	    !schema.starts_with("economic_lifecycle_test_") ||
+	    schema.find_first_not_of(
+		    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") !=
+		    std::string::npos)
+		throw std::runtime_error("explicit disposable loopback schema required");
+	char *end = nullptr;
+	const auto port = std::strtoul(required("DB_PORT"), &end, 10);
+	if (!end || *end || !port || port > 65535)
+		throw std::runtime_error("invalid disposable DB port");
+	auto *connection = mysql_init(nullptr);
+	if (!connection)
+		throw std::runtime_error("mysql_init failed");
+	unsigned int timeout = 5, protocol = MYSQL_PROTOCOL_TCP;
+	mysql_options(connection, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
+	mysql_options(connection, MYSQL_OPT_READ_TIMEOUT, &timeout);
+	mysql_options(connection, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
+	mysql_options(connection, MYSQL_OPT_PROTOCOL, &protocol);
+	using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+	flag reconnect = false;
+	mysql_options(connection, MYSQL_OPT_RECONNECT, &reconnect);
+	if (!mysql_real_connect(connection, host.c_str(), required("DB_USER"),
+				required("DB_PASSWD"), schema.c_str(),
+				static_cast<unsigned int>(port), nullptr, 0))
+	{
+		const std::string error = mysql_error(connection);
+		mysql_close(connection);
+		throw std::runtime_error("mysql_real_connect: " + error);
+	}
+	return connection;
+}
+
+void execute(MYSQL *connection, const std::string &sql)
+{
+	if (mysql_real_query(connection, sql.data(), sql.size()))
+		throw std::runtime_error("SQL error " + std::to_string(mysql_errno(connection)) +
+					 ": " + mysql_error(connection));
+}
+
+std::vector<std::vector<std::string>> rows(MYSQL *connection, const std::string &sql)
+{
+	execute(connection, sql);
+	MYSQL_RES *result = mysql_store_result(connection);
+	if (!result)
+		throw std::runtime_error("query returned no result");
+	std::vector<std::vector<std::string>> output;
+	while (auto row = mysql_fetch_row(result))
+	{
+		auto lengths = mysql_fetch_lengths(result);
+		std::vector<std::string> values;
+		for (unsigned int i = 0; i < mysql_num_fields(result); ++i)
+			values.emplace_back(row[i] ? std::string(row[i], lengths[i]) : "<NULL>");
+		output.push_back(std::move(values));
+	}
+	mysql_free_result(result);
+	if (mysql_errno(connection))
+		throw std::runtime_error("result fetch failed");
+	return output;
+}
+std::string scalar(MYSQL *connection, const std::string &sql)
+{
+	auto result = rows(connection, sql);
+	if (result.size() != 1 || result[0].size() != 1)
+		throw std::runtime_error("expected one scalar row");
+	return result[0][0];
+}
+std::string sql_id(const critical_operation_id &value)
+{
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string output = "X'";
+	for (auto byte : value.bytes)
+	{
+		output += digits[byte >> 4];
+		output += digits[byte & 15];
+	}
+	output += '\'';
+	return output;
+}
+critical_operation_id ident(uint8_t seed)
+{
+	critical_operation_id value{};
+	for (size_t index = 0; index < value.bytes.size(); ++index)
+		value.bytes[index] = static_cast<uint8_t>(seed + index);
+	return value;
+}
+bool same_account(const economic_account_key &left, const economic_account_key &right)
+{
+	return left.lineage.bytes == right.lineage.bytes && left.kind == right.kind &&
+	       left.authority_id == right.authority_id && left.context_id == right.context_id;
+}
+void assert_scalar(MYSQL *connection, const std::string &sql, const std::string &expected)
+{
+	if (scalar(connection, sql) != expected)
+		throw std::runtime_error("SQL assertion mismatch");
+}
+void writer_child(int ready_fd, int continue_fd, uint32_t pid)
+{
+	try
+	{
+		MYSQL *connection = connect_fixture();
+		{
+			economic_sql_currency_writer_guard guard;
+			const auto status =
+				economic_sql_currency_writer_guard::acquire(connection, &guard);
+			if (status)
+				_exit(20);
+			execute(connection, "START TRANSACTION");
+			execute(connection,
+				"UPDATE player_data SET copper=copper+3,wallet_revision=wallet_revision+1 WHERE pid=" +
+					std::to_string(pid));
+			if (mysql_affected_rows(connection) != 1)
+				_exit(21);
+			const char ready = 'W';
+			if (write(ready_fd, &ready, 1) != 1)
+				_exit(22);
+			char go = 0;
+			if (read(continue_fd, &go, 1) != 1 || go != 'C')
+				_exit(23);
+			execute(connection, "COMMIT");
+		}
+		mysql_close(connection);
+		const char done = 'D';
+		if (write(ready_fd, &done, 1) != 1)
+			_exit(24);
+		_exit(0);
+	}
+	catch (...)
+	{
+		_exit(25);
+	}
+}
+void assert_source_registry(MYSQL *connection)
+{
+	economic_sql_source_snapshot snapshot;
+	if (economic_sql_capture_sources(connection, {}, &snapshot))
+		throw std::runtime_error("full native source capture failed");
+	if (economic_sql_validate_sources(snapshot))
+		throw std::runtime_error("source snapshot validation failed");
+	for (const char *name : { "player_data", "account_banks", "economic_account_mapping" })
+	{
+		const auto found = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+						[&](const auto &table)
+						{ return table.name == name; });
+		if (found == snapshot.tables.end())
+			throw std::runtime_error(std::string("source registry missing ") + name);
+	}
+	const auto wallet = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+					 [&](const auto &table)
+					 { return table.name == "player_data"; });
+	const auto bank = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+				       [&](const auto &table)
+				       { return table.name == "account_banks"; });
+	if (wallet->rows.size() != 2 || bank->rows.size() != 2)
+		throw std::runtime_error(
+			"capture did not enumerate every native wallet and shared bank");
+}
+void seed(MYSQL *connection)
+{
+	execute(connection,
+		"INSERT INTO accounts(account_name) VALUES('lifecycle_a'),('lifecycle_b')");
+	execute(connection,
+		"INSERT INTO account_banks(account_name,racewar,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision) VALUES"
+		"('lifecycle_a',0,8,1,0,0,4),('lifecycle_b',1,0,3,0,0,9)");
+	execute(connection,
+		"INSERT INTO player_data(pid,name,account_name,racewar,copper,silver,gold,platinum,wallet_revision,save_revision) VALUES"
+		"(21001,'LifecycleOne','lifecycle_a',0,4,2,0,0,6,12),"
+		"(21002,'LifecycleTwo','lifecycle_b',1,0,5,1,0,8,15)");
+}
+void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_receipt &receipt)
+{
+	const auto witness_rows =
+		rows(connection,
+		     "SELECT canonical_witness FROM economic_baseline_witness WHERE operation_id=" +
+			     sql_id(receipt.baseline_operation_id));
+	if (witness_rows.size() != 1 || witness_rows[0].size() != 1 ||
+	    witness_rows[0][0] == "<NULL>")
+		throw std::runtime_error("baseline witness receipt missing");
+	std::vector<uint8_t> bytes(witness_rows[0][0].begin(), witness_rows[0][0].end());
+	std::optional<economic_prepared_baseline> prepared;
+	if (economic_baseline_decode(bytes, &prepared) != economic_accounting_error::ok ||
+	    !prepared)
+		throw std::runtime_error("retained baseline witness did not decode");
+	const auto &holdings = prepared->witness().holdings;
+	if (holdings.size() != 4)
+		throw std::runtime_error("baseline did not retain every wallet and bank");
+	for (const auto &wallet : receipt.wallets)
+	{
+		const auto found =
+			std::find_if(holdings.begin(), holdings.end(), [&](const auto &holding)
+				     { return same_account(holding.account, wallet.account); });
+		if (found == holdings.end())
+			throw std::runtime_error("wallet mapping absent from retained baseline");
+		if (wallet.pid == 21001 && (found->balance[0] != 7 || found->balance[1] != 2 ||
+					    found->native_revision != 7))
+			throw std::runtime_error(
+				"baseline did not include the serialized legacy wallet write");
+		if (wallet.pid == 21002 && (found->balance[0] != 0 || found->balance[1] != 5 ||
+					    found->balance[2] != 1 || found->native_revision != 8))
+			throw std::runtime_error("second wallet baseline values mismatch");
+	}
+	for (const auto &bank : receipt.banks)
+	{
+		const auto found =
+			std::find_if(holdings.begin(), holdings.end(), [&](const auto &holding)
+				     { return same_account(holding.account, bank.account); });
+		if (found == holdings.end())
+			throw std::runtime_error("bank mapping absent from retained baseline");
+		if (bank.name == "lifecycle_a" &&
+		    (found->balance[0] != 8 || found->balance[1] != 1 ||
+		     found->native_revision != 4))
+			throw std::runtime_error("first shared-bank baseline values mismatch");
+		if (bank.name == "lifecycle_b" &&
+		    (found->balance[0] != 0 || found->balance[1] != 3 ||
+		     found->native_revision != 9))
+			throw std::runtime_error("second shared-bank baseline values mismatch");
+	}
+}
+} // namespace
+
+int main()
+{
+	MYSQL *setup = nullptr;
+	MYSQL *owner_connection = nullptr;
+	MYSQL *runtime_connection = nullptr;
+	try
+	{
+		if (mysql_library_init(0, nullptr, nullptr))
+			throw std::runtime_error("mysql_library_init failed");
+		setup = connect_fixture();
+		seed(setup);
+		assert_source_registry(setup);
+		owner_connection = connect_fixture();
+		runtime_connection = connect_fixture();
+		{
+			economic_sql_lifecycle_guard runtime;
+			if (economic_sql_lifecycle_guard::acquire_runtime(runtime_connection,
+									  &runtime))
+				throw std::runtime_error("runtime boot guard acquire failed");
+			economic_sql_lifecycle_guard denied;
+			if (economic_sql_lifecycle_guard::acquire_maintenance(owner_connection,
+									      &denied) != EBUSY)
+				throw std::runtime_error(
+					"maintenance was not refused while runtime authority was held");
+			economic_sql_lifecycle_guard same_connection_denied;
+			if (economic_sql_lifecycle_guard::acquire_maintenance(
+				    runtime_connection, &same_connection_denied) != EBUSY)
+				throw std::runtime_error(
+					"recursive named lock admitted maintenance on the runtime control session");
+		}
+
+		int ready_pipe[2], continue_pipe[2];
+		if (pipe(ready_pipe) || pipe(continue_pipe))
+			throw std::runtime_error("pipe setup failed");
+		const uint32_t writer_pid = 21001;
+		const pid_t child = fork();
+		if (child < 0)
+			throw std::runtime_error("fork failed");
+		if (!child)
+		{
+			close(ready_pipe[0]);
+			close(continue_pipe[1]);
+			writer_child(ready_pipe[1], continue_pipe[0], writer_pid);
+		}
+		close(ready_pipe[1]);
+		close(continue_pipe[0]);
+		char signal = 0;
+		if (read(ready_pipe[0], &signal, 1) != 1 || signal != 'W')
+			throw std::runtime_error(
+				"guarded legacy writer did not reach its uncommitted write");
+		std::thread release(
+			[fd = continue_pipe[1]]
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(250));
+				const char go = 'C';
+				(void)write(fd, &go, 1);
+			});
+		const auto started = std::chrono::steady_clock::now();
+		auto maintenance = std::make_unique<economic_sql_lifecycle_guard>();
+		const auto maintenance_status = economic_sql_lifecycle_guard::acquire_maintenance(
+			owner_connection, maintenance.get());
+		const auto elapsed = std::chrono::steady_clock::now() - started;
+		release.join();
+		if (maintenance_status || elapsed < std::chrono::milliseconds(100))
+			throw std::runtime_error(
+				"maintenance fence did not serialize behind a concurrent writer");
+		int child_status = 0;
+		if (waitpid(child, &child_status, 0) != child || !WIFEXITED(child_status) ||
+		    WEXITSTATUS(child_status) != 0)
+			throw std::runtime_error("guarded legacy writer child failed");
+		if (read(ready_pipe[0], &signal, 1) != 1 || signal != 'D')
+			throw std::runtime_error("guarded legacy writer commit was not observed");
+		close(ready_pipe[0]);
+		close(continue_pipe[1]);
+
+		economic_sql_lifecycle_request invalid_request;
+		invalid_request.operation_id = ident(12);
+		invalid_request.lineage = ident(72);
+		invalid_request.epoch = ident(112);
+		invalid_request.actor_id = 9001;
+		invalid_request.accepted_at_usec = 123456789;
+		execute(setup,
+			"INSERT INTO player_data(pid,name,copper,silver,gold,platinum,wallet_revision,save_revision) VALUES(21003,'LifecycleBad',-1,0,0,0,0,0)");
+		economic_sql_lifecycle_receipt untouched;
+		untouched.operation_id = ident(212);
+		const auto invalid_status = economic_sql_accounting_lifecycle_transaction::install(
+			owner_connection, *maintenance, invalid_request, &untouched);
+		if (invalid_status != ERANGE || untouched.operation_id.bytes != ident(212).bytes)
+			throw std::runtime_error(
+				"invalid native wallet returned " + std::to_string(invalid_status) +
+				" instead of ERANGE or modified the output receipt");
+		assert_scalar(
+			setup,
+			"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE lineage=" +
+				sql_id(invalid_request.lineage),
+			"0");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(invalid_request.lineage),
+			      "0");
+		execute(setup, "DELETE FROM player_data WHERE pid=21003");
+		// Fail after mappings and baseline control have been inserted. Session
+		// variables survive rollback and prove this reached a partial-write boundary.
+		execute(owner_connection,
+			"SET @lifecycle_partial_mappings=NULL,@lifecycle_partial_control=NULL");
+		execute(setup,
+			"CREATE TRIGGER lifecycle_installation_fault BEFORE INSERT ON economic_sql_lifecycle_installation FOR EACH ROW BEGIN SET @lifecycle_partial_mappings=(SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=NEW.lineage); SET @lifecycle_partial_control=(SELECT COUNT(*) FROM economic_baseline_control WHERE lineage=NEW.lineage); SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected lifecycle installation failure'; END");
+		const auto partial_status = economic_sql_accounting_lifecycle_transaction::install(
+			owner_connection, *maintenance, invalid_request, &untouched);
+		if (!partial_status || untouched.operation_id.bytes != ident(212).bytes)
+			throw std::runtime_error(
+				"partial installation failure was not retained unchanged");
+		assert_scalar(owner_connection, "SELECT @lifecycle_partial_mappings", "4");
+		assert_scalar(owner_connection, "SELECT @lifecycle_partial_control", "1");
+		for (const char *table :
+		     { "economic_lineage_state", "economic_epoch", "economic_account_mapping",
+		       "economic_baseline_control", "economic_sql_lifecycle_installation" })
+			assert_scalar(setup,
+				      "SELECT COUNT(*) FROM " + std::string(table) +
+					      " WHERE lineage=" + sql_id(invalid_request.lineage),
+				      "0");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=" +
+				      sql_id(invalid_request.operation_id),
+			      "0");
+		execute(setup, "DROP TRIGGER lifecycle_installation_fault");
+		execute(setup,
+			"CREATE TRIGGER lifecycle_receipt_before_selection BEFORE UPDATE ON economic_sql_lifecycle_installation FOR EACH ROW BEGIN IF NEW.phase=2 AND (NEW.baseline_operation_id IS NULL OR NOT EXISTS (SELECT 1 FROM critical_operation_inbox WHERE operation_id=NEW.baseline_operation_id AND status=1 AND result_code=0 AND failure_stage=0 AND committed_at IS NOT NULL) OR NOT EXISTS (SELECT 1 FROM economic_baseline_witness WHERE operation_id=NEW.baseline_operation_id AND lineage=NEW.lineage AND epoch=NEW.epoch)) THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='baseline receipt must precede selection'; END IF; END");
+
+		economic_sql_lifecycle_request request;
+		request.operation_id = ident(31);
+		request.lineage = ident(71);
+		request.epoch = ident(111);
+		request.actor_id = 9001;
+		request.accepted_at_usec = 123456789;
+		// Interrupt selection after the baseline is durable, then resume the exact
+		// phase-1 operation rather than minting new mappings or another baseline.
+		execute(setup,
+			"CREATE TRIGGER lifecycle_selection_fault BEFORE UPDATE ON economic_sql_lifecycle_installation FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected selection failure'");
+		economic_sql_lifecycle_receipt interrupted;
+		interrupted.operation_id = ident(212);
+		const auto interrupted_status =
+			economic_sql_accounting_lifecycle_transaction::install(
+				owner_connection, *maintenance, request, &interrupted);
+		if (!interrupted_status || interrupted.operation_id.bytes != ident(212).bytes)
+			throw std::runtime_error(
+				"interrupted selection returned success or changed output");
+		assert_scalar(
+			setup,
+			"SELECT CONCAT(phase,':',selected_epoch IS NULL,':',revision) FROM economic_sql_lifecycle_installation WHERE operation_id=" +
+				sql_id(request.operation_id),
+			"1:1:0");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_baseline_witness WHERE lineage=" +
+				      sql_id(request.lineage),
+			      "1");
+		assert_scalar(setup,
+			      "SELECT revision FROM economic_baseline_control WHERE lineage=" +
+				      sql_id(request.lineage),
+			      "1");
+		execute(setup, "DROP TRIGGER lifecycle_selection_fault");
+		economic_sql_lifecycle_receipt receipt;
+		const auto install_status = economic_sql_accounting_lifecycle_transaction::install(
+			owner_connection, *maintenance, request, &receipt);
+		if (install_status)
+			throw std::runtime_error("SQL lifecycle install failed with " +
+						 std::to_string(install_status));
+		if (receipt.wallets.size() != 2 || receipt.banks.size() != 2 ||
+		    receipt.baseline_revision != 1 ||
+		    receipt.source_capture_digest == economic_sql_source_digest{} ||
+		    receipt.native_boundary_digest == economic_sql_source_digest{})
+			throw std::runtime_error(
+				"lifecycle export did not cover the full native wallet/bank set");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(request.lineage),
+			      "4");
+		for (const auto &wallet : receipt.wallets)
+			assert_scalar(
+				setup,
+				"SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+					sql_id(request.lineage) +
+					" AND account_kind=1 AND locator_kind=1 AND native_id=" +
+					std::to_string(wallet.pid) + " AND active_native_id=" +
+					std::to_string(wallet.pid) + " AND mapping_id=" +
+					std::to_string(wallet.account.authority_id),
+				"1");
+		for (const auto &bank : receipt.banks)
+			assert_scalar(
+				setup,
+				"SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+					sql_id(request.lineage) +
+					" AND account_kind=2 AND locator_kind=2 AND context_id=" +
+					std::to_string(bank.racewar) +
+					" AND native_id=(SELECT id FROM account_banks WHERE account_name='" +
+					bank.name + "' AND racewar=" +
+					std::to_string(bank.racewar) + ") AND mapping_id=" +
+					std::to_string(bank.account.authority_id),
+				"1");
+		assert_scalar(
+			setup,
+			"SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() "
+			"AND TRIGGER_NAME='lifecycle_receipt_before_selection'",
+			"1");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_baseline_reservation WHERE lineage=" +
+				      sql_id(request.lineage) + " AND epoch=" +
+				      sql_id(request.epoch) + " AND identity_kind=1",
+			      "4");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_baseline_witness WHERE operation_id=" +
+				      sql_id(receipt.baseline_operation_id),
+			      "1");
+		assert_scalar(
+			setup,
+			"SELECT phase FROM economic_sql_lifecycle_installation WHERE operation_id=" +
+				sql_id(request.operation_id),
+			"2");
+		assert_scalar(
+			setup,
+			"SELECT selected_epoch=epoch FROM economic_sql_lifecycle_installation WHERE operation_id=" +
+				sql_id(request.operation_id),
+			"1");
+		assert_scalar(
+			setup,
+			"SELECT active_epoch IS NULL FROM economic_lineage_state WHERE lineage=" +
+				sql_id(request.lineage),
+			"1");
+		assert_baseline_witness(setup, receipt);
+		const std::string clear_selected =
+			"UPDATE economic_sql_lifecycle_installation SET selected_epoch=NULL WHERE operation_id=" +
+			sql_id(request.operation_id);
+		if (mysql_real_query(setup, clear_selected.data(), clear_selected.size()) == 0 ||
+		    std::string(mysql_error(setup)).find("ck_economic_sql_lifecycle_phase") ==
+			    std::string::npos)
+			throw std::runtime_error(
+				"phase constraint permitted a selected installation with no selected epoch");
+		assert_scalar(
+			setup,
+			"SELECT selected_epoch=epoch FROM economic_sql_lifecycle_installation WHERE operation_id=" +
+				sql_id(request.operation_id),
+			"1");
+
+		const auto before_revision = scalar(
+			setup, "SELECT revision FROM economic_baseline_control WHERE lineage=" +
+				       sql_id(request.lineage) +
+				       " AND epoch=" + sql_id(request.epoch));
+		economic_sql_lifecycle_receipt replay;
+		if (economic_sql_accounting_lifecycle_transaction::install(
+			    owner_connection, *maintenance, request, &replay))
+			throw std::runtime_error("exact lifecycle replay failed");
+		if (replay.wallets.size() != receipt.wallets.size() ||
+		    replay.banks.size() != receipt.banks.size() ||
+		    replay.baseline_operation_id.bytes != receipt.baseline_operation_id.bytes ||
+		    replay.wallets[0].account.authority_id !=
+			    receipt.wallets[0].account.authority_id ||
+		    scalar(setup, "SELECT revision FROM economic_baseline_control WHERE lineage=" +
+					  sql_id(request.lineage) +
+					  " AND epoch=" + sql_id(request.epoch)) != before_revision)
+			throw std::runtime_error(
+				"exact replay changed durable mappings or baseline revision");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_baseline_witness WHERE lineage=" +
+				      sql_id(request.lineage) +
+				      " AND epoch=" + sql_id(request.epoch),
+			      "1");
+
+		auto conflict = request;
+		++conflict.actor_id;
+		economic_sql_lifecycle_receipt unchanged;
+		unchanged.operation_id = ident(212);
+		if (economic_sql_accounting_lifecycle_transaction::install(
+			    owner_connection, *maintenance, conflict, &unchanged) != EEXIST ||
+		    unchanged.operation_id.bytes != ident(212).bytes)
+			throw std::runtime_error(
+				"same operation ID with changed request was not rejected unchanged");
+
+		MYSQL *legacy_connection = connect_fixture();
+		maintenance.reset();
+		{
+			economic_sql_currency_writer_guard denied;
+			if (economic_sql_currency_writer_guard::acquire(legacy_connection,
+									&denied) != EPERM)
+				throw std::runtime_error(
+					"legacy currency writer was not closed after baseline selection");
+		}
+		mysql_close(legacy_connection);
+		assert_scalar(setup, "SELECT copper FROM player_data WHERE pid=21001", "7");
+		economic_sql_lifecycle_guard denied_runtime;
+		if (economic_sql_lifecycle_guard::acquire_runtime(runtime_connection,
+								  &denied_runtime) != EPERM)
+			throw std::runtime_error(
+				"runtime boot was admitted with an unactivated staged installation");
+		puts("PASS native_wallets=2 shared_banks=2 durable_mappings=4 baseline_receipt=verified partial_write_rollback=verified phase_one_resume=verified exact_replay=stable concurrent_legacy_writer=serialized legacy_gate=closed runtime_admission=closed active_epoch=NULL");
+		mysql_close(runtime_connection);
+		mysql_close(owner_connection);
+		mysql_close(setup);
+		mysql_library_end();
+		return 0;
+	}
+	catch (const std::exception &error)
+	{
+		if (runtime_connection)
+			mysql_close(runtime_connection);
+		if (owner_connection)
+			mysql_close(owner_connection);
+		if (setup)
+			mysql_close(setup);
+		fprintf(stderr, "HARNESS-ERROR %s\n", error.what());
+		mysql_library_end();
+		return 2;
+	}
+}

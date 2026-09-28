@@ -973,6 +973,39 @@ bool write_currency_state(MYSQL *connection, const critical_command &command,
 	return true;
 }
 
+unsigned int legacy_currency_epoch_gate(MYSQL *connection)
+{
+	// A complete accounting cutover owns the native wallet/bank domain. Lock
+	// every lineage row until the enclosing native transaction commits, so an
+	// activation updating an existing lineage cannot overtake a legacy write.
+	unsigned long session = 0;
+	auto error = accounted_session_check(connection, &session, false);
+	if (error || !root_transaction_active(connection))
+		return error ? error : ENOTCONN;
+	if (!execute(connection,
+		     "SELECT active_epoch FROM economic_lineage_state LOCK IN SHARE MODE"))
+		return mysql_errno(connection) ? mysql_errno(connection) : EIO;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows)
+		return mysql_errno(connection) ? mysql_errno(connection) : EIO;
+	bool active = false;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(rows.get())))
+	{
+		if (!row[0])
+			continue;
+		const auto *lengths = mysql_fetch_lengths(rows.get());
+		if (!lengths || lengths[0] != critical_operation_id{}.bytes.size())
+			return EILSEQ;
+		active = true;
+	}
+	if (mysql_errno(connection))
+		return mysql_errno(connection);
+	error = accounted_session_check(connection, &session, true);
+	return error ? error : active ? EAGAIN : 0;
+}
+
 bool execute_currency_state(MYSQL *connection, const critical_command &command,
 			    currency_command_result *result, unsigned int *result_code,
 			    bool *mutation_applied)
@@ -1082,6 +1115,12 @@ bool execute_currency_state(MYSQL *connection, const critical_command &command,
 	mysql_stmt_close(statement);
 	if (!bank_found)
 		return false;
+	const auto gate_error = legacy_currency_epoch_gate(connection);
+	if (gate_error)
+	{
+		errno = gate_error;
+		return false;
+	}
 	*result = { .wallet = wallet,
 		    .bank = bank,
 		    .wallet_revision = wallet_revision,

@@ -177,6 +177,16 @@ test-db:
 	tests/async/run_corpse_lifecycle_repository_schema_mysql.sh
 	tests/async/run_lookup_dataset_mysql.sh
 	tests/async/run_runtime_compatibility_mysql.sh
+	tests/async/run_legacy_archive_columns_mysql.sh
+	ARCHIVE_COLUMN_DB_IMAGE=mariadb:10.11 tests/async/run_legacy_archive_columns_mysql.sh
+	tests/async/run_legacy_material_order_mysql.sh
+	MATERIAL_ORDER_DB_IMAGE=mariadb:10.11 tests/async/run_legacy_material_order_mysql.sh
+	tests/async/run_legacy_locker_index_mysql.sh
+	LOCKER_INDEX_DB_IMAGE=mariadb:10.11 tests/async/run_legacy_locker_index_mysql.sh
+	bash tests/async/run_legacy_affect_index_mysql.sh
+	AFFECT_INDEX_DB_IMAGE=mariadb:10.11 bash tests/async/run_legacy_affect_index_mysql.sh
+	bash tests/async/run_legacy_character_index_mysql.sh
+	CHARACTER_INDEX_DB_IMAGE=mariadb:10.11 bash tests/async/run_legacy_character_index_mysql.sh
 	tests/async/run_legacy_migration_mysql.sh
 	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mysql:8.0
 	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mariadb:11.4
