@@ -147,6 +147,7 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "quest.durable_offering_publication": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation.",
     "currency.bank_live_projection": "Publishes an already committed shared-bank balance into connected player views; no account_banks row or source balance changes here.",
     "currency.wallet_live_projection": "Publishes a committed wallet result to live PC and GMCP state with a stale-revision check; no new native value is created here.",
     "player.load_economy_projection": "Materializes wallet and bank vectors from the validated player-load result into a newly loaded PC; no new native value is created here.",
@@ -262,8 +263,12 @@ SCHEMA2_ITEM_TRANSFER_IDS = {
     "item.command_movement", "item.bulk_movement", "item.movement_submit",
     "item.trusted_steal", "item.creation_completion",
     "death.corpse_creation", "death.resurrection_publication",
+    "quest.durable_offering_submission",
 }
 SCHEMA2_SQL_COIN_COMPONENT_IDS = {"coin.sql_accounting"}
+SCHEMA2_SQL_SHOP_COMPONENT_IDS = {
+    "shop.sql_native_item_events", "shop.sql_native_balances",
+}
 SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS = {"item.sql_custody_apply"}
 MIXED_SPELL_ITEM_IDS = {
     "spell.minor_creation_fallback", "spell.flame_blade_grant",
@@ -566,6 +571,9 @@ def schema_record(route_id: str, disposition: str) -> dict:
     elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         current = 2
         mode = "typed_schema_2_sql_component_without_qualified_gameplay_route"
+    elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
+        current = 2
+        mode = "typed_schema_2_sql_shop_native_component_without_qualified_gameplay_route"
     elif route_id == "currency.split":
         current = 1
         mode = "schema_1_when_inactive_schema_2_sequential_coin_children_when_active"
@@ -600,6 +608,11 @@ def schema_record(route_id: str, disposition: str) -> dict:
         evidence.extend([
             "src/economy/coin_transfer_accounting.c:947-1017 (SQL native coin effects, balanced postings, item references, source claim and receipt)",
             "tests/async/test_coin_transfer_accounting.py (SQL component harness; not a real player journey)",
+        ])
+    if route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
+        evidence.extend([
+            "src/persistence/economic_sql_shop_trade_transaction.c (typed SQL shop root applies native balances and item custody)",
+            "tests/async/test_shop_trade_accounting_context.py (focused contract; not a full player journey)",
         ])
     schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS or route_id == "currency.split"
     item_action_coverage = (
@@ -640,6 +653,8 @@ def schema_record(route_id: str, disposition: str) -> dict:
         interpretation = "Inactive do_split uses a schema-1 sender debit followed by recipient credits. Active do_split submits one balanced schema-2 wallet-to-wallet coin child per eligible recipient, with exact denomination and retained completion. Completed shares remain transferred if a later child fails; there is no atomic multi-party split root. Full backend gameplay qualification remains pending."
     elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         interpretation = "The SQL transaction component records typed schema-2 coin effects and balanced postings. Pooled dispatch/reconcile and player-visible publication are separate qualification gates; flat-file coin accounting remains unqualified."
+    elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
+        interpretation = "This SQL component writes native shop balances or item custody within an owning typed schema-2 shop root. Complete route qualification, publication/restart proof and flat-file parity remain separate gates."
     elif route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
         interpretation = "The SQL item repository applies schema-1 commands when inactive and can apply a typed schema-2 item transfer under an owning root when active. This repository function is a component, not a gameplay producer or a complete money-valued coin route; root accounting, flat-file parity and playable acceptance remain separate gates."
     elif route_id in SOURCE_QUALIFIED_SPELL_GRANT_IDS:
@@ -741,6 +756,9 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     elif route_id == "currency.split":
         decision = "allow_sequential_schema2_coin_children"
         policy = "Under active authority, admit only identified player wallets and submit one exact-denomination balanced transfer per eligible recipient. Retain each completion before continuing; stop on failure and report that completed shares remain transferred. The legacy schema-1 branch runs only while accounting is inactive."
+    elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
+        decision = "sql_component_requires_qualified_root"
+        policy = "Apply only under the owning typed schema-2 shop root. Qualify pooled apply/reconcile, same-root native and accounting evidence, publication/restart, and flat-file parity before enabling the whole gameplay route."
     elif disposition == "dormant_writer_candidate":
         decision = "keep_unreachable_or_block_if_reactivated"
         if route_id == "currency.bank_single_projection":
@@ -757,6 +775,7 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
                       "recovery.flat_shopkeeper_cash_materialization",
                       "recovery.sql_shopkeeper_cash_materialization",
                       "item.pet_give_publication", "item.command_publication",
+                      "quest.durable_offering_publication",
                       "item.empty_publication", "item.weight_relink",
                       "item.equipment_wear", "item.equipment_remove",
                       "coin.wallet_pile_publication", "death.corpse_release_live",
@@ -818,7 +837,7 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
             policy += " Prove the NPC is provisional before this assignment or preserve its admitted source/sink and revision in one root; existing charm targets and pet restoration cannot be assumed fresh."
         if route_id.startswith("auction."):
             policy += " Keep accepted escrow, seller claim/proceeds, fee and item winner/return custody under the same auction root; no implicit reimbursement."
-    return {"decision": decision, "must_block_on_activation": decision in {"block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated"}, "required_policy": policy}
+    return {"decision": decision, "must_block_on_activation": decision in {"block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated", "sql_component_requires_qualified_root"}, "required_policy": policy}
 
 
 def build() -> dict:
@@ -950,7 +969,7 @@ def build() -> dict:
             "unmapped_current_unique_sites": len(current_sites - mapped_sites),
             "interpretation": (f"Lexical occurrences are candidates, not writer routes. The {len(registry['writers'])}-row registry maps "
                                f"{len(mapped_sites & current_sites)} current unique sites; {len(current_sites - mapped_sites)} "
-                               "current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked."),
+                               "current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness."),
         },
         "global_schema_and_accounting_evidence": {
             "critical_command_schema_1": "src/persistence/critical_command.h:9",
@@ -963,7 +982,9 @@ def build() -> dict:
         },
         "blockers": [
             "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
-            f"Current function inventory is not codebase-complete: {len(current_sites - mapped_sites)} unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
+            (f"{len(current_sites - mapped_sites)} unique lexical candidate sites remain unmapped; classify real writers vs projections/cleanup/staging before release."
+             if current_sites - mapped_sites else
+             "Every current lexical candidate is mapped, but route reachability, backend behavior and executable evidence remain unqualified."),
             "The SQL coin component has balanced postings, but no complete gameplay route is qualified; legacy currency/item/domain ledgers are not substitutes.",
             "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
             "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers.",
@@ -977,7 +998,9 @@ def build() -> dict:
         ],
         "known_unknowns": [
             f"The matrix reconciles {len(registry['writers'])} registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
-            f"Most {len(current_sites - mapped_sites)} unmapped current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
+            (f"The {len(current_sites - mapped_sites)} unmapped lexical sites may include shared helpers, staging, recovery or unrelated mutations; review each before release."
+             if current_sites - mapped_sites else
+             "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review."),
             "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
             "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests.",
         ],

@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CACHE_ENV = "DURIS_REGRESSION_BUILD_CACHE"
 # Only observation/runtime controls are excluded; build variables remain inputs.
 IGNORED_ENV = {
-    CACHE_ENV, "PWD", "OLDPWD", "SHLVL", "_",
+    CACHE_ENV, "PWD", "OLDPWD", "SHLVL", "_", "HOSTNAME",
     "DURIS_FULL_WORLD_BINARY_CACHE", "DURIS_FULL_WORLD_ARTIFACT_DIR",
     "DURIS_FULL_WORLD_REPEATS", "DURIS_FULL_WORLD_DELAY_CAMP",
     "DURIS_FULL_WORLD_CRASH_PHASE", "DURIS_NEVENT_ANALYTICS",
@@ -121,6 +121,11 @@ def toolchain_key(environment):
     for directory in sorted(directories):
         for path in sorted(Path(directory).rglob("*")):
             if path.is_file() and "__pycache__" not in path.parts:
+                # The test include directory supplies C/C++ headers. Python
+                # journey edits cannot affect the server executable and must
+                # not invalidate a verified build during fixture iteration.
+                if path.suffix == ".py" and path.is_relative_to(ROOT / "tests/async"):
+                    continue
                 add((str(path), file_hash(path)))
     libraries = re.search(r"^libraries: =(.+)$", search, re.MULTILINE)
     if not libraries:
