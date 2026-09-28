@@ -2,23 +2,23 @@
   "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
   "blockers": [
     "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
-    "Current function inventory is not codebase-complete: 0 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
+    "Every current lexical candidate is mapped, but route reachability, backend behavior and executable evidence remain unqualified.",
     "The SQL coin component has balanced postings, but no complete gameplay route is qualified; legacy currency/item/domain ledgers are not substitutes.",
     "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 854,
-    "function_definition_anchors_verified": 847,
-    "matrix_rows": 854,
+    "draft_registry_rows": 859,
+    "function_definition_anchors_verified": 852,
+    "matrix_rows": 859,
     "non_function_candidate_anchors": 7,
     "non_writer_or_out_of_scope_candidates": 92,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 77,
-    "routes_with_schema_2_gameplay_producer": 8,
+    "routes_with_schema_2_gameplay_producer": 9,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 745,
+    "runtime_mutation_and_projection_routes": 750,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
@@ -26,8 +26,8 @@
     "dormant_writer_candidate": 14,
     "non_writer_candidate": 92,
     "offline_operational_writer": 3,
-    "runtime_mutation_route": 683,
-    "runtime_projection_route": 62
+    "runtime_mutation_route": 687,
+    "runtime_projection_route": 63
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -39,33 +39,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 854 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
-    "Most 0 unmapped current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
+    "The matrix reconciles 859 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2778,
-    "current_unique_path_line_family_sites": 2720,
+    "current_occurrences": 2784,
+    "current_unique_path_line_family_sites": 2726,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "848814aee772283f2c3a37361bb7d3fcb700995b",
+    "draft_source_commit": "d686d4c70384af9012673fa7c4db5cba356c471f",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2720,
+    "draft_unique_sites": 2726,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
-      "economic_submit": 165,
-      "item_lifecycle": 1143,
+      "economic_submit": 166,
+      "item_lifecycle": 1144,
       "item_publication": 1061,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
-      "sql_economy": 49
+      "sql_economy": 53
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 854-row registry maps 2720 current unique sites; 0 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
-    "mapped_sites_still_present": 2720,
-    "mapped_unique_sites_from_draft_rows": 2720,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 859-row registry maps 2726 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2726,
+    "mapped_unique_sites_from_draft_rows": 2726,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "848814aee772283f2c3a37361bb7d3fcb700995b",
+  "repository_head": "d686d4c70384af9012673fa7c4db5cba356c471f",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -10213,7 +10213,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1121
+          1157
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -17080,8 +17080,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2194,
-          2206
+          2219,
+          2231
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17143,7 +17143,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1006
+          1011
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17205,7 +17205,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          906
+          911
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17390,7 +17390,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          787
+          792
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17573,7 +17573,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6411
+          6410
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drink",
@@ -17635,7 +17635,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10012
+          10011
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18258,7 +18258,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7713
+          7712
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18320,7 +18320,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7647
+          7646
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18444,7 +18444,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          624
+          629
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18506,7 +18506,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          631
+          636
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -18737,7 +18737,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6609
+          6608
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_eat",
@@ -19579,7 +19579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2428
+          2453
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19641,7 +19641,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2253
+          2278
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20253,7 +20253,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9732
+          9731
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20627,7 +20627,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1644
+          1669
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21056,7 +21056,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9636
+          9635
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -21456,7 +21456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1285
+          1290
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21518,7 +21518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          838
+          843
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21886,7 +21886,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          693
+          698
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -23222,7 +23222,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6240
+          6239
         ],
         "file": "src/cmd/actobj.c",
         "function": "weight_change_object",
@@ -31374,25 +31374,25 @@
       },
       "id": "quest.artifact_turnin",
       "native_effects": {
-        "custody_effect": "Equipped quest artifact extracted.",
+        "custody_effect": "Durable player offerings are destroyed by the selected item batch; quester no longer directly extracts equipped artifacts.",
         "holding_effect": "No coin balance changes.",
         "native_state_targets": [
-          "character equipment",
-          "item lifecycle"
+          "item current-owner and ownership ledger",
+          "player inventory after publication"
         ]
       },
-      "reachability_evidence": "quester unequips and extracts artifact items.",
+      "reachability_evidence": "quester calls submit_durable_quest_offering for durable player items before the inactive legacy do_give path.",
       "reason": "quest_cost",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          462
+          688
         ],
         "file": "src/world/quest.c",
         "function": "quester",
         "original_draft_symbol": "quester"
       },
-      "source_classification": "Quester mob proc consumes artifact turn-ins from player equipment.",
+      "source_classification": "Quester CMD_GIVE dispatches eligible durable player offerings to the typed batch path; the former direct equipped-artifact extraction is gone.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -31433,25 +31433,223 @@
       },
       "id": "quest.completion_consumption",
       "native_effects": {
-        "custody_effect": "Carried quest objective items extracted.",
+        "custody_effect": "NPC-carried quest objective items are extracted in the inactive legacy path.",
         "holding_effect": "No coin balance changes.",
         "native_state_targets": [
-          "player inventory",
+          "quest NPC carrying",
           "item lifecycle"
         ]
       },
-      "reachability_evidence": "quest_completion extracts turn-in quest items from carried inventory.",
+      "reachability_evidence": "quester calls quest_completion only after the inactive-mode legacy do_give path.",
       "reason": "quest_cost",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          118
+          121
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
         "original_draft_symbol": "quest_completion"
       },
-      "source_classification": "Completing a numbered quest consumes required turn-in quest items from player inventory.",
+      "source_classification": "The inactive legacy quest_completion path consumes item goals from NPC carrying after do_give.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.disappearing_npc_cleanup",
+      "native_effects": {
+        "custody_effect": "Equipment and carrying are extracted from the disappearing quest NPC.",
+        "holding_effect": "No direct coin effect in these calls.",
+        "native_state_targets": [
+          "quest NPC equipment",
+          "quest NPC carrying",
+          "item lifecycle"
+        ]
+      },
+      "reachability_evidence": "finish_quest_reward invokes these extraction calls when completion.disappear is set.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          408
+        ],
+        "file": "src/world/quest.c",
+        "function": "finish_quest_reward",
+        "original_draft_symbol": "finish_quest_reward"
+      },
+      "source_classification": "A disappearing quest NPC extracts its equipment and carried items after reward processing.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_projection_proof",
+        "must_block_on_activation": true,
+        "required_policy": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation. Current source does not prove the selected active-epoch authority and complete recovery identity, and it does not reject inconsistent decoded and legacy gold before the gold overwrite. Refuse active-epoch publication until that proof is executable; do not treat a recovery overwrite as issuance."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.durable_offering_publication",
+      "native_effects": {
+        "custody_effect": "Live player offering objects are removed after durable destruction.",
+        "holding_effect": "No new money effect.",
+        "native_state_targets": [
+          "live player inventory projection",
+          "player dirty-component save"
+        ]
+      },
+      "projection_rule": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation.",
+      "reachability_evidence": "The item movement transaction invokes publish_quest_offering after durable batch completion.",
+      "reason": "quest_cost",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          429
+        ],
+        "file": "src/world/quest.c",
+        "function": "publish_quest_offering",
+        "original_draft_symbol": "publish_quest_offering"
+      },
+      "source_classification": "Removes live offering objects only after the committed destruction batch is checked.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": true,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
+        ],
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": true
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
+        ],
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
+        ],
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.durable_offering_submission",
+      "native_effects": {
+        "custody_effect": "Player item roots and descendants move to destruction in the typed item operation.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "item_current_owner",
+          "item_ownership_ledger",
+          "economic item references"
+        ]
+      },
+      "reachability_evidence": "quester CMD_GIVE calls this function for eligible durable offerings.",
+      "reason": "quest_cost",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          488
+        ],
+        "file": "src/world/quest.c",
+        "function": "submit_durable_quest_offering",
+        "original_draft_symbol": "submit_durable_quest_offering"
+      },
+      "source_classification": "Selects item goals from the player and submits one typed batch destruction for a completed durable offering.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -31505,7 +31703,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          118
+          121
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -31565,7 +31763,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          188
+          191
         ],
         "file": "src/world/quest.c",
         "function": "give_reward",
@@ -31623,7 +31821,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          362
+          588
         ],
         "file": "src/world/quest.c",
         "function": "tell_quest",
@@ -37478,6 +37676,134 @@
         "original_draft_symbol": "shopping_list"
       },
       "source_classification": "Item extraction or retirement in src/economy/shop.c:shopping_list",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "sql_component_requires_qualified_root",
+        "must_block_on_activation": true,
+        "required_policy": "Apply only under the owning typed schema-2 shop root. Qualify pooled apply/reconcile, same-root native and accounting evidence, publication/restart, and flat-file parity before enabling the whole gameplay route."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": 2,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/persistence/economic_sql_shop_trade_transaction.c (typed SQL shop root applies native balances and item custody)",
+          "tests/async/test_shop_trade_accounting_context.py (focused contract; not a full player journey)"
+        ],
+        "interpretation": "This SQL component writes native shop balances or item custody within an owning typed schema-2 shop root. Complete route qualification, publication/restart proof and flat-file parity remain separate gates.",
+        "route_mode": "typed_schema_2_sql_shop_native_component_without_qualified_gameplay_route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "shop.sql_native_balances",
+      "native_effects": {
+        "custody_effect": "The same root also applies selected item custody through apply_item_events.",
+        "holding_effect": "Player wallet, shared-bank revision and keeper cash update for the selected trade.",
+        "native_state_targets": [
+          "player_data",
+          "account_banks",
+          "shopkeepers",
+          "item_current_owner"
+        ]
+      },
+      "reachability_evidence": "The SQL shop transaction calls apply_native_trade inside the root transaction.",
+      "reason": "shop_buy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1052
+        ],
+        "file": "src/persistence/economic_sql_shop_trade_transaction.c",
+        "function": "apply_native_trade",
+        "original_draft_symbol": "apply_native_trade"
+      },
+      "source_classification": "SQL shop root updates player wallet, bank revision and keeper cash together with item trade state.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "sql_component_requires_qualified_root",
+        "must_block_on_activation": true,
+        "required_policy": "Apply only under the owning typed schema-2 shop root. Qualify pooled apply/reconcile, same-root native and accounting evidence, publication/restart, and flat-file parity before enabling the whole gameplay route."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": 2,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/persistence/economic_sql_shop_trade_transaction.c (typed SQL shop root applies native balances and item custody)",
+          "tests/async/test_shop_trade_accounting_context.py (focused contract; not a full player journey)"
+        ],
+        "interpretation": "This SQL component writes native shop balances or item custody within an owning typed schema-2 shop root. Complete route qualification, publication/restart proof and flat-file parity remain separate gates.",
+        "route_mode": "typed_schema_2_sql_shop_native_component_without_qualified_gameplay_route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "shop.sql_native_item_events",
+      "native_effects": {
+        "custody_effect": "SQL current owner and ordered item ownership history change for the selected shop trade.",
+        "holding_effect": "No direct cash effect in this function.",
+        "native_state_targets": [
+          "item_current_owner",
+          "item_ownership_ledger"
+        ]
+      },
+      "reachability_evidence": "The SQL shop transaction calls apply_item_events inside the root transaction.",
+      "reason": "shop_buy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          852
+        ],
+        "file": "src/persistence/economic_sql_shop_trade_transaction.c",
+        "function": "apply_item_events",
+        "original_draft_symbol": "apply_item_events"
+      },
+      "source_classification": "SQL shop root inserts or updates item current ownership and appends ordered custody events for buy/sell/discard.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {

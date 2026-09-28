@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "848814aee772283f2c3a37361bb7d3fcb700995b",
+  "source_commit": "d686d4c70384af9012673fa7c4db5cba356c471f",
   "census_complete": true,
   "writers": [
     {
@@ -1498,7 +1498,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The periodic monolith proc adds a duplicate room monolith’s charge count to the survivor and extracts the duplicate.",
+      "classification": "The periodic monolith proc adds a duplicate room monolith\u2019s charge count to the survivor and extracts the duplicate.",
       "authority_boundary": "Bind both UIDs, source charge payload, resulting charge count and duplicate retirement atomically; avoid charge duplication on replay.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -1529,7 +1529,7 @@
       "reachability_evidence": "Registered object vnum 354 scans its room on CMD_PERIODIC for another object of the same template.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The periodic monolith proc adds a duplicate room monolith’s charge count to the survivor and extracts the duplicate.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u2019s charge count to the survivor and extracts the duplicate.",
         "native_state_targets": [
           "surviving monolith payload",
           "duplicate monolith UID/tombstone"
@@ -5975,7 +5975,7 @@
       "id": "combat.disarm_slot_relink",
       "symbol": "do_disarm",
       "reason": "item_move",
-      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character’s carrying list; its owner UID stays with that character.",
+      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u2019s carrying list; its owner UID stays with that character.",
       "authority_boundary": "Verify exact weapon UID, same player/NPC owner and non-stale equipment slot before live relink; do not create a second ownership event.",
       "reachability_evidence": "Registered do_disarm selects a worn weapon on victim or actor and both branches use obj_to_char(unequip_char(...)).",
       "sites": [
@@ -5992,7 +5992,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character’s carrying list; its owner UID stays with that character.",
+        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u2019s carrying list; its owner UID stays with that character.",
         "native_state_targets": [
           "same-character equipment and inventory slots",
           "selected item UID/owner"
@@ -6659,13 +6659,13 @@
       "id": "craft.make_lock_payload",
       "symbol": "make_lock",
       "reason": "item_move",
-      "classification": "A successful make lock changes an existing container’s lock flags/value or a door pair’s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+      "classification": "A successful make lock changes an existing container\u2019s lock flags/value or a door pair\u2019s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
       "authority_boundary": "Bind exact target item UID/revision or door identity with the consumed template UID and source operation; reject before altering either state.",
       "reachability_evidence": "do_make dispatches make_lock; lines 3136-3138 and 3154-3171 mutate the target immediately before yank_make_item.",
       "sites": [],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "A successful make lock changes an existing container’s lock flags/value or a door pair’s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+        "custody_effect": "A successful make lock changes an existing container\u2019s lock flags/value or a door pair\u2019s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
         "native_state_targets": [
           "live container payload or door state",
           "item payload/revision if admitted"
@@ -8672,17 +8672,17 @@
       "sites": [
         [
           "src/persistence/critical_command_repository.c",
-          945,
+          981,
           "sql_economy"
         ],
         [
           "src/persistence/critical_command_repository.c",
-          948,
+          984,
           "sql_economy"
         ],
         [
           "src/persistence/critical_command_repository.c",
-          1129,
+          1165,
           "sql_economy"
         ]
       ],
@@ -13953,7 +13953,7 @@
         ],
         [
           "src/cmd/actobj.c",
-          10384,
+          10383,
           "economic_submit"
         ]
       ],
@@ -14169,7 +14169,7 @@
         ],
         [
           "src/cmd/actobj.c",
-          6188,
+          6187,
           "economic_submit"
         ]
       ],
@@ -14515,42 +14515,42 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1106,
+          1111,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1124,
+          1129,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2186,
+          2211,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2194,
+          2219,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2206,
+          2231,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2328,
+          2353,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2336,
+          2361,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2394,
+          2419,
           "economic_submit"
         ],
         [
@@ -14617,7 +14617,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1041,
+          1046,
           "item_publication"
         ]
       ],
@@ -14654,7 +14654,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          937,
+          942,
           "item_lifecycle"
         ]
       ],
@@ -14772,7 +14772,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          792,
+          797,
           "item_lifecycle"
         ]
       ],
@@ -14924,12 +14924,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6595,
+          6594,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6596,
+          6595,
           "item_lifecycle"
         ]
       ],
@@ -14973,12 +14973,17 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          10031,
+          10030,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10034,
+          10033,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          10046,
           "item_publication"
         ],
         [
@@ -14988,27 +14993,22 @@
         ],
         [
           "src/cmd/actobj.c",
-          10048,
+          10054,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10055,
+          10056,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10057,
+          10058,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
           10059,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          10060,
           "item_publication"
         ]
       ],
@@ -15610,27 +15610,27 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          7733,
+          7732,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7737,
+          7736,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7741,
+          7740,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7754,
+          7753,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7810,
+          7809,
           "economic_submit"
         ]
       ],
@@ -15674,18 +15674,23 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          7597,
+          7596,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7600,
+          7599,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7663,
+          7662,
           "economic_submit"
+        ],
+        [
+          "src/cmd/actobj.c",
+          7671,
+          "item_publication"
         ],
         [
           "src/cmd/actobj.c",
@@ -15694,52 +15699,47 @@
         ],
         [
           "src/cmd/actobj.c",
-          7673,
+          8447,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8448,
+          8455,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8456,
+          8465,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8466,
+          8475,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8476,
+          8485,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8486,
+          8838,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8839,
+          8842,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8843,
+          8846,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8847,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          8851,
+          8850,
           "item_publication"
         ]
       ],
@@ -15835,7 +15835,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          628,
+          633,
           "item_lifecycle"
         ]
       ],
@@ -15872,7 +15872,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          641,
+          646,
           "item_lifecycle"
         ]
       ],
@@ -16070,12 +16070,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6723,
+          6722,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          6833,
+          6832,
           "item_lifecycle"
         ]
       ],
@@ -17176,7 +17176,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2445,
+          2470,
           "item_lifecycle"
         ]
       ],
@@ -17213,7 +17213,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2306,
+          2331,
           "item_lifecycle"
         ]
       ],
@@ -17578,12 +17578,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6195,
+          6194,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6202,
+          6201,
           "item_publication"
         ]
       ],
@@ -17809,7 +17809,7 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          9736,
+          9735,
           "item_lifecycle"
         ]
       ],
@@ -17916,7 +17916,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item’s description.",
+      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u2019s description.",
       "authority_boundary": "Keep the temporary template unpublished; description change belongs to the retained source UID revision.",
       "current_support": "Source review only; exclusion and caller reachability need executable proof.",
       "backends": {
@@ -17950,7 +17950,7 @@
       "reachability_evidence": "modenhance is called from enhancement command, NPC death/reset hook or boot index construction as described.",
       "native_effects": {
         "holding_effect": "Enhancement fee and material-generated usage change only where the named route includes them.",
-        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source item’s description.",
+        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source item\u2019s description.",
         "native_state_targets": [
           "player/NPC inventory and item payload",
           "item_current_owner and item_ownership_ledger for admitted UID",
@@ -18088,27 +18088,27 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          1577,
+          1602,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1644,
+          1669,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1791,
+          1816,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1864,
+          1889,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2056,
+          2081,
           "economic_submit"
         ],
         [
@@ -18453,12 +18453,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          9725,
+          9724,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          9726,
+          9725,
           "item_lifecycle"
         ]
       ],
@@ -18818,12 +18818,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1292,
+          1297,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1293,
+          1298,
           "item_publication"
         ]
       ],
@@ -18860,22 +18860,22 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          849,
+          854,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          886,
+          891,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          892,
+          897,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          896,
+          901,
           "item_publication"
         ]
       ],
@@ -19198,7 +19198,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          741,
+          746,
           "item_publication"
         ]
       ],
@@ -19692,7 +19692,7 @@
         ],
         [
           "src/cmd/actobj.c",
-          7931,
+          7930,
           "item_lifecycle"
         ],
         [
@@ -20501,32 +20501,32 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          6253,
+          6252,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6255,
+          6254,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6328,
+          6327,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6330,
+          6329,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6335,
+          6334,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          6337,
+          6336,
           "item_publication"
         ]
       ],
@@ -25646,7 +25646,7 @@
       "id": "movement.drag_room_relink",
       "symbol": "do_drag",
       "reason": "item_move",
-      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor’s new room with the same UID.",
+      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u2019s new room with the same UID.",
       "authority_boundary": "Require selected old room and new room identities, exact item UID, source movement receipt and non-stale corpse ownership before publishing the room relink.",
       "reachability_evidence": "do_drag calls command_interpreter to move the actor, then checks the object is still in the old room before direct obj_from_room/obj_to_room.",
       "sites": [
@@ -25663,7 +25663,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these call sites.",
-        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor’s new room with the same UID.",
+        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u2019s new room with the same UID.",
         "native_state_targets": [
           "old and new live room contents",
           "item_current_owner room identity and corpse location"
@@ -26930,7 +26930,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The second confiscation branch’s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+      "classification": "The second confiscation branch\u2019s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
       "authority_boundary": "Keep the disabled branch unreachable or source-classify it anew if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -26964,7 +26964,7 @@
       "reachability_evidence": "confiscate_item source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "The second confiscation branch’s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+        "custody_effect": "The second confiscation branch\u2019s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -27740,9 +27740,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Quester mob proc consumes artifact turn-ins from player equipment.",
-      "authority_boundary": "Quester artifact reward completion context.",
-      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "classification": "Quester CMD_GIVE dispatches eligible durable player offerings to the typed batch path; the former direct equipped-artifact extraction is gone.",
+      "authority_boundary": "The selected quest offering batch must commit before any live item removal or reward completion.",
+      "current_support": "Typed item destruction is submitted, but quest status and rewards after publication are not yet restart-safe.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -27761,30 +27761,14 @@
         "tests/async/test_economy_writer_coverage_contract.py"
       ],
       "evidence": [],
-      "reachability_evidence": "quester unequips and extracts artifact items.",
-      "sites": [
-        [
-          "src/world/quest.c",
-          598,
-          "item_publication"
-        ],
-        [
-          "src/world/quest.c",
-          599,
-          "item_lifecycle"
-        ],
-        [
-          "src/world/quest.c",
-          612,
-          "item_lifecycle"
-        ]
-      ],
+      "reachability_evidence": "quester calls submit_durable_quest_offering for durable player items before the inactive legacy do_give path.",
+      "sites": [],
       "native_effects": {
         "holding_effect": "No coin balance changes.",
-        "custody_effect": "Equipped quest artifact extracted.",
+        "custody_effect": "Durable player offerings are destroyed by the selected item batch; quester no longer directly extracts equipped artifacts.",
         "native_state_targets": [
-          "character equipment",
-          "item lifecycle"
+          "item current-owner and ownership ledger",
+          "player inventory after publication"
         ]
       }
     },
@@ -27796,9 +27780,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Completing a numbered quest consumes required turn-in quest items from player inventory.",
+      "classification": "The inactive legacy quest_completion path consumes item goals from NPC carrying after do_give.",
       "authority_boundary": "Require verified quest completion criteria.",
-      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "current_support": "quester guards the legacy do_give and quest_completion path when accounting is active; durable player items use the typed batch path.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -27817,35 +27801,185 @@
         "tests/async/test_economy_writer_coverage_contract.py"
       ],
       "evidence": [],
-      "reachability_evidence": "quest_completion extracts turn-in quest items from carried inventory.",
+      "reachability_evidence": "quester calls quest_completion only after the inactive-mode legacy do_give path.",
       "sites": [
         [
           "src/world/quest.c",
-          164,
+          167,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          165,
+          168,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          180,
+          183,
           "item_publication"
         ],
         [
           "src/world/quest.c",
-          181,
+          184,
           "item_lifecycle"
         ]
       ],
       "native_effects": {
         "holding_effect": "No coin balance changes.",
-        "custody_effect": "Carried quest objective items extracted.",
+        "custody_effect": "NPC-carried quest objective items are extracted in the inactive legacy path.",
         "native_state_targets": [
-          "player inventory",
+          "quest NPC carrying",
           "item lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "quest.disappearing_npc_cleanup",
+      "path": "src/world/quest.c",
+      "symbol": "finish_quest_reward",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A disappearing quest NPC extracts its equipment and carried items after reward processing.",
+      "authority_boundary": "Separate provisional NPC cleanup from admitted item retirement and prove any required destruction references before live extraction.",
+      "current_support": "Live cleanup remains direct; source and custody accounting for admitted NPC-held items are unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "finish_quest_reward invokes these extraction calls when completion.disappear is set.",
+      "sites": [
+        [
+          "src/world/quest.c",
+          423,
+          "item_lifecycle"
+        ],
+        [
+          "src/world/quest.c",
+          423,
+          "item_publication"
+        ],
+        [
+          "src/world/quest.c",
+          425,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No direct coin effect in these calls.",
+        "custody_effect": "Equipment and carrying are extracted from the disappearing quest NPC.",
+        "native_state_targets": [
+          "quest NPC equipment",
+          "quest NPC carrying",
+          "item lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "quest.durable_offering_publication",
+      "path": "src/world/quest.c",
+      "symbol": "publish_quest_offering",
+      "reason": "quest_cost",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "projection",
+      "classification": "Removes live offering objects only after the committed destruction batch is checked.",
+      "authority_boundary": "Match the committed UID set and player custody before extraction; preserve a durable reward obligation across acknowledgement.",
+      "current_support": "Committed publication exists, but the completion callback is only retained in process memory.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_publication_retention_runtime.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "The item movement transaction invokes publish_quest_offering after durable batch completion.",
+      "sites": [
+        [
+          "src/world/quest.c",
+          463,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No new money effect.",
+        "custody_effect": "Live player offering objects are removed after durable destruction.",
+        "native_state_targets": [
+          "live player inventory projection",
+          "player dirty-component save"
+        ]
+      }
+    },
+    {
+      "id": "quest.durable_offering_submission",
+      "path": "src/world/quest.c",
+      "symbol": "submit_durable_quest_offering",
+      "reason": "quest_cost",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "observed",
+      "classification": "Selects item goals from the player and submits one typed batch destruction for a completed durable offering.",
+      "authority_boundary": "Validate all selected UIDs and ownership before command admission; accepted consumption must retain reward completion.",
+      "current_support": "Typed batch submit exists; the later quest reward callback is not recoverable after process loss.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_durable_quest_offering.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "quester CMD_GIVE calls this function for eligible durable offerings.",
+      "sites": [
+        [
+          "src/world/quest.c",
+          564,
+          "economic_submit"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No direct coin effect.",
+        "custody_effect": "Player item roots and descendants move to destruction in the typed item operation.",
+        "native_state_targets": [
+          "item_current_owner",
+          "item_ownership_ledger",
+          "economic item references"
         ]
       }
     },
@@ -27878,7 +28012,7 @@
       "sites": [
         [
           "src/world/quest.c",
-          169,
+          172,
           "money_helper"
         ]
       ],
@@ -27913,32 +28047,32 @@
       "sites": [
         [
           "src/world/quest.c",
-          229,
+          232,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          231,
+          234,
           "economic_submit"
         ],
         [
           "src/world/quest.c",
-          278,
+          281,
           "money_helper"
         ],
         [
           "src/world/quest.c",
-          208,
+          211,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          220,
+          223,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          235,
+          238,
           "item_lifecycle"
         ]
       ],
@@ -27977,22 +28111,22 @@
       "sites": [
         [
           "src/world/quest.c",
-          384,
+          610,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          389,
+          615,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          420,
+          646,
           "item_lifecycle"
         ],
         [
           "src/world/quest.c",
-          425,
+          651,
           "item_lifecycle"
         ]
       ],
@@ -28432,7 +28566,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Catalog restore frees staged objects after collection allocation or partial publication failure, without retiring saved UID authority.",
-      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28533,7 +28667,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Corpse materialization frees a detached candidate graph when prototype, money or lifecycle hydration fails; saved custody is not retired.",
-      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28638,7 +28772,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "discard_staged frees candidate corpse/room objects and money piles after a failed flat-file restore attempt; saved custody stays authoritative.",
-      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28738,7 +28872,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Room-item materialization frees detached item candidates when coin-pile allocation fails; saved room custody is not retired.",
-      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28983,7 +29117,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Pet save’s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+      "classification": "Pet save\u2019s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
       "authority_boundary": "Keep the disabled extraction unreachable or require a typed retirement root if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -29017,7 +29151,7 @@
       "reachability_evidence": "writePet source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "Pet save’s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+        "custody_effect": "Pet save\u2019s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -33166,6 +33300,110 @@
       "evidence": []
     },
     {
+      "id": "shop.sql_native_balances",
+      "path": "src/persistence/economic_sql_shop_trade_transaction.c",
+      "symbol": "apply_native_trade",
+      "reason": "shop_buy",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "observed",
+      "classification": "SQL shop root updates player wallet, bank revision and keeper cash together with item trade state.",
+      "authority_boundary": "Execute inside the typed shop root with selected revisions, postings and receipt; reject partial native effects.",
+      "current_support": "Typed SQL native component exists; whole gameplay publication and backend parity remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_shop_trade_accounting_context.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "The SQL shop transaction calls apply_native_trade inside the root transaction.",
+      "sites": [
+        [
+          "src/persistence/economic_sql_shop_trade_transaction.c",
+          1072,
+          "sql_economy"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "Player wallet, shared-bank revision and keeper cash update for the selected trade.",
+        "custody_effect": "The same root also applies selected item custody through apply_item_events.",
+        "native_state_targets": [
+          "player_data",
+          "account_banks",
+          "shopkeepers",
+          "item_current_owner"
+        ]
+      }
+    },
+    {
+      "id": "shop.sql_native_item_events",
+      "path": "src/persistence/economic_sql_shop_trade_transaction.c",
+      "symbol": "apply_item_events",
+      "reason": "shop_buy",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "observed",
+      "classification": "SQL shop root inserts or updates item current ownership and appends ordered custody events for buy/sell/discard.",
+      "authority_boundary": "Execute only inside the owning typed shop transaction with exact before revisions, accounting references and receipt.",
+      "current_support": "Typed SQL native component exists; whole gameplay publication and backend parity remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_shop_trade_accounting_context.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "The SQL shop transaction calls apply_item_events inside the root transaction.",
+      "sites": [
+        [
+          "src/persistence/economic_sql_shop_trade_transaction.c",
+          885,
+          "sql_economy"
+        ],
+        [
+          "src/persistence/economic_sql_shop_trade_transaction.c",
+          905,
+          "sql_economy"
+        ],
+        [
+          "src/persistence/economic_sql_shop_trade_transaction.c",
+          938,
+          "sql_economy"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No direct cash effect in this function.",
+        "custody_effect": "SQL current owner and ordered item ownership history change for the selected shop trade.",
+        "native_state_targets": [
+          "item_current_owner",
+          "item_ownership_ledger"
+        ]
+      }
+    },
+    {
       "id": "shop.stock_cleanup",
       "path": "src/economy/shop.c",
       "symbol": "shop_trade_route_invalid_cleanup",
@@ -33920,7 +34158,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The gloves proc unequips the struck character’s weapon into the same character’s carrying list.",
+      "classification": "The gloves proc unequips the struck character\u2019s weapon into the same character\u2019s carrying list.",
       "authority_boundary": "Match the weapon UID, owner and slot before and after the live relink; do not mint or retire the item.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -33956,7 +34194,7 @@
       "reachability_evidence": "Registered object vnum 192 handles CMD_GOTHIT and can reach the non-NODROP weapon branch.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The gloves proc unequips the struck character’s weapon into the same character’s carrying list.",
+        "custody_effect": "The gloves proc unequips the struck character\u2019s weapon into the same character\u2019s carrying list.",
         "native_state_targets": [
           "victim equipment slot",
           "victim carrying list",
@@ -35058,7 +35296,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Io’s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "classification": "Io\u2019s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
       "authority_boundary": "Issue the new rose UID once and link both NPC grant and intended recipient handoff to a source-qualified root; verify do_give result.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -35094,7 +35332,7 @@
       "reachability_evidence": "Registered mob vnum 444 reaches this idle room-presence branch when Vareena is found.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "Io’s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "custody_effect": "Io\u2019s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
         "native_state_targets": [
           "fresh rose UID",
           "assistant inventory",
@@ -37318,7 +37556,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener’s inventory.",
+      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u2019s inventory.",
       "authority_boundary": "Bind chest UID, random reward count, each new potion UID and player custody to one source-qualified root.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -37354,7 +37592,7 @@
       "reachability_evidence": "Registered chest vnum 1270 and an explicit do_open caller reach the CMD_OPEN reward loop.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener’s inventory.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u2019s inventory.",
         "native_state_targets": [
           "chest UID",
           "new potion UIDs",
@@ -46834,25 +47072,25 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6188,
+      "line": 6187,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(ch, obj, NULL, source, destination,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7663,
+      "line": 7662,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7810,
+      "line": 7809,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(ch, object, NULL, owner, owner,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10384,
+      "line": 10383,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
@@ -46978,37 +47216,37 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6596,
+      "line": 6595,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6723,
+      "line": 6722,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6833,
+      "line": 6832,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7931,
+      "line": 7930,
       "family": "item_lifecycle",
       "excerpt": "MakeScrap(ch, obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9726,
+      "line": 9725,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(poison, TRUE); // Transient artifact poison?"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9736,
+      "line": 9735,
       "family": "item_lifecycle",
       "excerpt": "if (P_obj obj = read_object(i, VIRTUAL))"
     },
@@ -47212,235 +47450,235 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6195,
+      "line": 6194,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6202,
+      "line": 6201,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, vict);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6253,
+      "line": 6252,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6255,
+      "line": 6254,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, tmp_ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6328,
+      "line": 6327,
       "family": "item_publication",
       "excerpt": "unequip_char(tmp_ch, pos);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6330,
+      "line": 6329,
       "family": "item_publication",
       "excerpt": "equip_char(tmp_ch, obj, pos, TRUE);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6335,
+      "line": 6334,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6337,
+      "line": 6336,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, tmp_obj);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6595,
+      "line": 6594,
       "family": "item_publication",
       "excerpt": "obj_from_char(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7597,
+      "line": 7596,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7600,
+      "line": 7599,
       "family": "item_publication",
       "excerpt": "equip_char(actor, object, context.slot, !context.showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7672,
+      "line": 7671,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7673,
+      "line": 7672,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, position, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7733,
+      "line": 7732,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_1), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7733,
+      "line": 7732,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_1), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7737,
+      "line": 7736,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_2), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7737,
+      "line": 7736,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_2), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7741,
+      "line": 7740,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_3), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7741,
+      "line": 7740,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_3), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7754,
+      "line": 7753,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, position), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7754,
+      "line": 7753,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, position), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8448,
+      "line": 8447,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8456,
+      "line": 8455,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_L, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8466,
+      "line": 8465,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_R, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8476,
+      "line": 8475,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LL, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8486,
+      "line": 8485,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LR, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8839,
+      "line": 8838,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8843,
+      "line": 8842,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_1, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8847,
+      "line": 8846,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_2, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8851,
+      "line": 8850,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_3, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9725,
+      "line": 9724,
       "family": "item_publication",
       "excerpt": "obj_from_char(poison);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10031,
+      "line": 10030,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10034,
+      "line": 10033,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, target);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10047,
+      "line": 10046,
       "family": "item_publication",
       "excerpt": "obj_from_obj(*moved_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10048,
+      "line": 10047,
       "family": "item_publication",
       "excerpt": "obj_to_obj(*moved_object, source);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10055,
+      "line": 10054,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10057,
+      "line": 10056,
       "family": "item_publication",
       "excerpt": "obj_from_room(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10059,
+      "line": 10058,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10060,
+      "line": 10059,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, source);"
     },
@@ -53068,163 +53306,163 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1106,
+      "line": 1111,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1124,
+      "line": 1129,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1577,
+      "line": 1602,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1644,
+      "line": 1669,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1791,
+      "line": 1816,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1864,
+      "line": 1889,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2056,
+      "line": 2081,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2186,
+      "line": 2211,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2194,
+      "line": 2219,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2206,
+      "line": 2231,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2328,
+      "line": 2353,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2336,
+      "line": 2361,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2394,
+      "line": 2419,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 628,
+      "line": 633,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 641,
+      "line": 646,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(entry.object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 792,
+      "line": 797,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 937,
+      "line": 942,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2306,
+      "line": 2331,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2445,
+      "line": 2470,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 741,
+      "line": 746,
       "family": "item_publication",
       "excerpt": "obj_to_char(root, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 849,
+      "line": 854,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, request.room);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 886,
+      "line": 891,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, recipient);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 892,
+      "line": 897,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 896,
+      "line": 901,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, container);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1041,
+      "line": 1046,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1292,
+      "line": 1297,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1293,
+      "line": 1298,
       "family": "item_publication",
       "excerpt": "obj_to_obj(root, corpse);"
     },
@@ -55420,21 +55658,45 @@
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 945,
+      "line": 981,
       "family": "sql_economy",
       "excerpt": "\"UPDATE account_banks SET bank_copper=?,bank_silver=?,bank_gold=?,bank_platinum=?,\""
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 948,
+      "line": 984,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO currency_ledger(operation_id,pid,bank_id,wallet_delta_copper,\""
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 1129,
+      "line": 1165,
       "family": "sql_economy",
       "excerpt": "\"INSERT IGNORE INTO account_banks(account_name,racewar) VALUES(?,?)\";"
+    },
+    {
+      "path": "src/persistence/economic_sql_shop_trade_transaction.c",
+      "line": 885,
+      "family": "sql_economy",
+      "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,\""
+    },
+    {
+      "path": "src/persistence/economic_sql_shop_trade_transaction.c",
+      "line": 905,
+      "family": "sql_economy",
+      "excerpt": "\"UPDATE item_current_owner SET root_item_uid=\" +"
+    },
+    {
+      "path": "src/persistence/economic_sql_shop_trade_transaction.c",
+      "line": 938,
+      "family": "sql_economy",
+      "excerpt": "\"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,\""
+    },
+    {
+      "path": "src/persistence/economic_sql_shop_trade_transaction.c",
+      "line": 1072,
+      "family": "sql_economy",
+      "excerpt": "execute(connection, \"UPDATE account_banks SET bank_revision=\" +"
     },
     {
       "path": "src/persistence/player_death_restitution_repository.c",
@@ -61030,111 +61292,123 @@
     },
     {
       "path": "src/world/quest.c",
-      "line": 169,
+      "line": 172,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(mob, gp->number, 0);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 278,
+      "line": 281,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(pl, gp->number / temp);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 229,
+      "line": 232,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_player("
     },
     {
       "path": "src/world/quest.c",
-      "line": 231,
+      "line": 234,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_room("
     },
     {
       "path": "src/world/quest.c",
-      "line": 165,
+      "line": 564,
+      "family": "economic_submit",
+      "excerpt": "if (!item_movement_transaction_submit_batch("
+    },
+    {
+      "path": "src/world/quest.c",
+      "line": 168,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Arti quest item?"
     },
     {
       "path": "src/world/quest.c",
-      "line": 181,
+      "line": 184,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Arti quest item?"
     },
     {
       "path": "src/world/quest.c",
-      "line": 208,
+      "line": 211,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 220,
+      "line": 223,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 235,
+      "line": 238,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 384,
+      "line": 423,
       "family": "item_lifecycle",
-      "excerpt": "obj = read_object(gp->number, VIRTUAL);"
-    },
-    {
-      "path": "src/world/quest.c",
-      "line": 389,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/quest.c",
-      "line": 420,
-      "family": "item_lifecycle",
-      "excerpt": "obj = read_object(gp->number, VIRTUAL);"
+      "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },
     {
       "path": "src/world/quest.c",
       "line": 425,
       "family": "item_lifecycle",
+      "excerpt": "extract_obj(mob->carrying, TRUE);"
+    },
+    {
+      "path": "src/world/quest.c",
+      "line": 463,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(roots[index], TRUE);"
+    },
+    {
+      "path": "src/world/quest.c",
+      "line": 610,
+      "family": "item_lifecycle",
+      "excerpt": "obj = read_object(gp->number, VIRTUAL);"
+    },
+    {
+      "path": "src/world/quest.c",
+      "line": 615,
+      "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 599,
+      "line": 646,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj("
+      "excerpt": "obj = read_object(gp->number, VIRTUAL);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 612,
+      "line": 651,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj("
+      "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 164,
+      "line": 167,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 180,
+      "line": 183,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/quest.c",
-      "line": 598,
+      "line": 423,
       "family": "item_publication",
-      "excerpt": "obj = unequip_char(ch, l);"
+      "excerpt": "extract_obj(unequip_char(mob, slot), TRUE);"
     },
     {
       "path": "src/world/random.mob.c",

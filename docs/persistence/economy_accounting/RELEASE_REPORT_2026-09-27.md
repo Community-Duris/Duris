@@ -868,3 +868,30 @@ Correction and restitution submission are deliberately absent from the
 read-only audit tool. A later operator writer needs authenticated authority,
 expected-state checks and original-operation linkage; audit exceptions never
 cause an automatic balance or custody adjustment.
+
+## `finish-accounting` writer inventory checkpoint (2026-09-28)
+
+On branch `finish-accounting`, based on `main` at `d686d4c70`, the source
+inventory was reconciled with the current quest-offering and SQL shop code.
+It now has 859 named routes, 2,784 lexical occurrences, 2,726 unique sites,
+and zero unmapped current lexical sites. Removed direct quest extraction sites
+were retired, five current quest/shop route entries were added, and moved
+unchanged sites were reanchored. The generated matrix and normal contract
+validator pass, as do the 2,695 writer-site checks, 49 existing route tests,
+and two targeted new-route checks.
+
+The `duris-refactor-builder:20260927` image (GCC 13.3) passed `make -C src -j4`
+on this branch's unchanged C++ source. The first `make world` attempt failed
+because the Windows checkout gave `areas/m_slow` a CRLF shebang. Four area
+entry scripts now have LF checkout rules in `.gitattributes`; `make world`
+passed in `duris-release-audit-runner:local`, which has the required world
+tools. The focused durable quest offering and shared movement publication
+retention harnesses passed in that audit container. These are build and
+focused-harness results, not a cold-restart quest or live SQL gameplay pass.
+
+This is source inventory evidence. The release validator still refuses
+`writer has no executable evidence`; `coverage_complete=false` and
+`playable_release_status=BLOCKED` remain the correct report values. The next
+qualification work is the reproducible build and quest-reward restart fault
+from [the active plan](FINISH_ACCOUNTING_PLAN.md), followed by the remaining
+gameplay, native audit, backend, and workload gates above.
