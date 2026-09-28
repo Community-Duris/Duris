@@ -30,6 +30,10 @@ struct economic_sql_source_snapshot
 {
 	uint32_t version = 1;
 	std::vector<economic_sql_source_table> tables;
+	// Separate raw SQL item-source projections retain the established table/row
+	// indices used by native accounting normalization above.
+	std::vector<economic_sql_source_table> item_sources;
+	economic_sql_source_digest item_sources_digest = {};
 	economic_sql_source_digest digest = {};
 	uint64_t rows = 0, cell_bytes = 0, cells = 0;
 	bool operator==(const economic_sql_source_snapshot &) const = default;
@@ -48,11 +52,15 @@ struct economic_sql_source_limits
 // discards it after any failure (session/rollback state can be uncertain). Query/scan latency is not a
 // release budget. Temporary result streaming and retained DTO overhead are
 // additional to counted cell bytes; row/cell limits bound that overhead.
-// Selected native monetary/custody/receipt/quarantine columns only: no player
-// secrets, complete physical projections, historical ledgers or source-complete
-// coverage. Digests do NOT establish native lifetimes, global drain, a resumable
-// cutover boundary or authority to activate. This owning evidence is private;
-// names, amounts, UIDs and payloads must not be printed in public diagnostics.
+// Selected native monetary/custody/receipt/quarantine columns plus UID-bearing
+// rows from player_pet_items, shopkeeper_items, and siege_items. This is not a
+// complete physical projection, historical ledger, live-world source inventory,
+// or source-complete coverage. Digests do NOT establish native lifetimes, global
+// drain, a resumable cutover boundary or authority to activate. EIM1 binds only
+// the raw selected item rows; pet/shop owner mappings are not captured, so EIM1
+// equality is not resolved-baseline identity or stale-retry/activation authority.
+// This owning evidence is private; names, amounts, UIDs and payloads must not be
+// printed in public diagnostics.
 // Hard ceilings equal the defaults above. Return 0 on success; errno/native SQL
 // error code otherwise. No partial output on any failure, including rollback.
 unsigned int economic_sql_capture_sources(MYSQL *, const economic_sql_source_limits &,
