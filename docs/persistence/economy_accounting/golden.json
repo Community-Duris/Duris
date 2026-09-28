@@ -1196,6 +1196,59 @@
           "children": []
         }
       ]
+    },
+    {
+      "id": "blackjack_win",
+      "lineage": "11111111111111111111111111111111",
+      "epoch": "22222222222222222222222222222222",
+      "round_source": "31313131313131313131313131313131",
+      "holdings": {
+        "wallet": {
+          "kind": "wallet",
+          "identity": 1,
+          "balance": [0, 10, 0, 0]
+        },
+        "round": {
+          "kind": "gambling_stake",
+          "identity": 700,
+          "context": 7,
+          "balance": [0, 0, 0, 0]
+        },
+        "issuance": {
+          "kind": "issuance",
+          "identity": 1,
+          "balance": [0, 0, 0, 0]
+        }
+      },
+      "custody": {},
+      "operations": [
+        {
+          "operation_id": "00000000000000000000000000000031",
+          "reason": "gambling_stake",
+          "actor": "domain",
+          "source_event": "31313131313131313131313131313130",
+          "postings": [
+            { "account": "wallet", "delta": [0, -5, 0, 0] },
+            { "account": "round", "delta": [0, 5, 0, 0] }
+          ],
+          "items": [],
+          "children": []
+        },
+        {
+          "operation_id": "00000000000000000000000000000032",
+          "original_operation_id": "00000000000000000000000000000031",
+          "reason": "gambling_payout",
+          "actor": "domain",
+          "source_event": "31313131313131313131313131313131",
+          "postings": [
+            { "account": "wallet", "delta": [0, 10, 0, 0] },
+            { "account": "round", "delta": [0, -5, 0, 0] },
+            { "account": "issuance", "delta": [0, -5, 0, 0] }
+          ],
+          "items": [],
+          "children": []
+        }
+      ]
     }
   ]
 }

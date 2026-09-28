@@ -31,6 +31,8 @@ enum class economic_account_kind : uint16_t
 	sink = 8,
 	opening = 9,
 	restitution = 10,
+	// A finite blackjack round, keyed by table UID and durable round sequence.
+	gambling_stake = 11,
 };
 
 enum class economic_accounting_error : uint8_t

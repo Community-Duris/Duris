@@ -243,6 +243,12 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 	const auto banks = table_index(snapshot, "account_banks");
 	const auto shops = table_index(snapshot, "shopkeepers");
 	const auto items = table_index(snapshot, "item_current_owner");
+	const auto shop_items =
+		std::find_if(snapshot.item_sources.begin(), snapshot.item_sources.end(),
+			     [](const auto &source) { return source.name == "shopkeeper_items"; });
+	require(shop_items != snapshot.item_sources.end());
+	for (const auto &source : shop_items->rows)
+		require(source.cells.size() == 6 && source.cells[5], EBUSY);
 	std::vector<holding_source> output;
 	std::set<std::pair<std::string, uint8_t>> bank_names;
 	uint64_t active_coin_rows = 0, unresolved_coin_rows = 0;

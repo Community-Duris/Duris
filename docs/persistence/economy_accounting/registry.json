@@ -70,6 +70,12 @@
       "number": 10,
       "sign": "debit_only",
       "identity": "Separately authorized new issuance, distinguishable from a transfer reversal."
+    },
+    {
+      "id": "gambling_stake",
+      "number": 11,
+      "sign": "ordinary",
+      "identity": "Finite held wager keyed by persistent table item UID and durable round sequence; retires at one terminal outcome."
     }
   ],
   "reasons": [
@@ -299,12 +305,10 @@
     {
       "id": "gambling_stake",
       "number": 18,
-      "domain": "expenses",
+      "domain": "currency",
       "account_kinds": [
         "wallet",
-        "bank",
-        "treasury",
-        "sink"
+        "gambling_stake"
       ],
       "source_event_required": true,
       "actor": "domain"
@@ -315,9 +319,11 @@
       "domain": "issuance",
       "account_kinds": [
         "wallet",
-        "issuance"
+        "issuance",
+        "gambling_stake"
       ],
       "source_event_required": true,
+      "original_operation_required": true,
       "actor": "domain"
     },
     {
@@ -649,6 +655,30 @@
         "sink"
       ],
       "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "gambling_loss",
+      "number": 45,
+      "domain": "expenses",
+      "account_kinds": [
+        "sink",
+        "gambling_stake"
+      ],
+      "source_event_required": true,
+      "original_operation_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "gambling_interruption",
+      "number": 46,
+      "domain": "currency",
+      "account_kinds": [
+        "wallet",
+        "gambling_stake"
+      ],
+      "source_event_required": true,
+      "original_operation_required": true,
       "actor": "domain"
     }
   ],

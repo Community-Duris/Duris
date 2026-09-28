@@ -23,10 +23,12 @@ VERIFIER_PATH = ROOT / "migrations/immutable/0035_player_item_dynamic_state.sh"
 MIGRATION = MIGRATION_PATH.read_text()
 VERIFIER = VERIFIER_PATH.read_text()
 
-if SQL_PLAYER.count(
-        "sql_player_item_properties_value_suffix(obj, &properties_suffix)"
-) != 3:
-    raise SystemExit("not every synchronous player-item INSERT path writes item_properties")
+shop_start = SQL_PLAYER.index("static int sql_save_shopkeeper_item(")
+shop_end = SQL_PLAYER.index("static bool sql_save_shopkeeper_affects(", shop_start)
+shop_save = SQL_PLAYER[shop_start:shop_end]
+property_writer = "sql_player_item_properties_value_suffix(obj, &properties_suffix)"
+if SQL_PLAYER.count(property_writer) != 4 or shop_save.count(property_writer) != 1:
+    raise SystemExit("a synchronous player or shopkeeper item INSERT omits item_properties")
 if SQL_PLAYER.count("player_item_properties_sql_column_suffix()") != 3:
     raise SystemExit("not every synchronous player-item INSERT declares item_properties")
 if "if (obj->affects)" not in SQL_PLAYER:
@@ -45,7 +47,8 @@ for token in (
     if token not in SAVE:
         raise SystemExit(f"player item SQL save contract is missing: {token}")
 for token in (
-    '"pi.item_properties,OCTET_LENGTH(pi.item_properties) FROM player_items pi "',
+    '"pi.item_properties,OCTET_LENGTH(pi.item_properties),own.equipment_slot,"',
+    '"FROM player_items pi "',
     "PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS",
     "PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS",
     "player_item_properties_decode_sql_row(",

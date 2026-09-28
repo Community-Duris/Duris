@@ -45,27 +45,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2780,
-    "current_unique_path_line_family_sites": 2722,
+    "current_occurrences": 2781,
+    "current_unique_path_line_family_sites": 2723,
     "draft_registry_census_complete": true,
     "draft_source_commit": "848814aee772283f2c3a37361bb7d3fcb700995b",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2722,
+    "draft_unique_sites": 2723,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 165,
-      "item_lifecycle": 1145,
+      "item_lifecycle": 1146,
       "item_publication": 1061,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 49
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 854-row registry maps 2722 current unique sites; 0 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
-    "mapped_sites_still_present": 2722,
-    "mapped_unique_sites_from_draft_rows": 2722,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 854-row registry maps 2723 current unique sites; 0 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
+    "mapped_sites_still_present": 2723,
+    "mapped_unique_sites_from_draft_rows": 2723,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -4603,7 +4603,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          184
+          367
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_faerie_sight",
@@ -4660,7 +4660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          799
+          900
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_beacon",
@@ -4717,7 +4717,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          936
+          1037
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_bolt",
@@ -4774,7 +4774,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2325
+          2426
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_single_cosmic_rift",
@@ -5869,7 +5869,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3504
+          3525
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -9645,7 +9645,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           465,
-          12226
+          12272
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -13762,7 +13762,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          774
+          744
         ],
         "file": "src/specs/specs.gellz.c",
         "function": "do_win",
@@ -17080,8 +17080,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2089,
-          2101
+          2194,
+          2206
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17143,7 +17143,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          917
+          1006
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17205,7 +17205,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          817
+          906
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17390,7 +17390,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          698
+          787
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -18444,7 +18444,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          535
+          624
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18506,7 +18506,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          542
+          631
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -19579,7 +19579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2323
+          2428
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19641,7 +19641,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2148
+          2253
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20627,7 +20627,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1539
+          1644
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21456,7 +21456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1196
+          1285
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21518,7 +21518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          749
+          838
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21886,7 +21886,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          604
+          693
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -26593,13 +26593,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          166
+          170
         ],
         "file": "src/magic/magic.c",
-        "function": "spell_component_retirement_completed",
-        "original_draft_symbol": "spell_component_retirement_completed"
+        "function": "spell_component_retirement_published",
+        "original_draft_symbol": "spell_component_retirement_published"
       },
-      "source_classification": "Spell or ability item consumption or expiration in src/magic/magic.c:spell_component_retirement_completed",
+      "source_classification": "Spell or ability item consumption or expiration in src/magic/magic.c:spell_component_retirement_published",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -27096,23 +27096,19 @@
       },
       "id": "magic.spell_item_lifecycle_ensis_unguis",
       "native_effects": {
-        "custody_effect": "See the source-backed route detail.",
-        "holding_effect": "See the source-backed route detail.",
-        "native_state_targets": [
-          "Native function state plus existing repository/flat-file authority where applicable"
-        ]
+        "custody_effect": "Ensis Unguis creates a conjured blade. Active player grants carry a spell occurrence ID independent of the UID through the typed item grant; active NPC casts discard the unowned candidate without applying the health cost. Inactive casts retain legacy delivery."
       },
       "reason": "item_create",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          805
+          821
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_ensis_unguis",
         "original_draft_symbol": "spell_ensis_unguis"
       },
-      "source_classification": "Spell or ability runtime item instantiation in src/magic/spell_item_lifecycle.c:spell_ensis_unguis",
+      "source_classification": "Ensis Unguis creates a conjured blade. Active player grants carry a spell occurrence ID independent of the UID through the typed item grant; active NPC casts discard the unowned candidate without applying the health cost. Inactive casts retain legacy delivery.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -27153,23 +27149,19 @@
       },
       "id": "magic.spell_item_lifecycle_lancea_cineralae",
       "native_effects": {
-        "custody_effect": "See the source-backed route detail.",
-        "holding_effect": "See the source-backed route detail.",
-        "native_state_targets": [
-          "Native function state plus existing repository/flat-file authority where applicable"
-        ]
+        "custody_effect": "Lancea Cineralae creates a conjured blade. Active player grants carry a spell occurrence ID independent of the UID through the typed item grant; active NPC casts discard the unowned candidate without applying the health cost. Inactive casts retain legacy delivery."
       },
       "reason": "item_create",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          857
+          873
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_lancea_cineralae",
         "original_draft_symbol": "spell_lancea_cineralae"
       },
-      "source_classification": "Spell or ability runtime item instantiation in src/magic/spell_item_lifecycle.c:spell_lancea_cineralae",
+      "source_classification": "Lancea Cineralae creates a conjured blade. Active player grants carry a spell occurrence ID independent of the UID through the typed item grant; active NPC casts discard the unowned candidate without applying the health cost. Inactive casts retain legacy delivery.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -27220,7 +27212,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          736
+          752
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "load_soulbind",
@@ -27277,7 +27269,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          324
+          340
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "publish_nonplayer_soulbind",
@@ -27334,7 +27326,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          196
+          212
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "remove_soulbind_except",
@@ -27381,23 +27373,19 @@
       },
       "id": "magic.spell_item_lifecycle_simulacrum_anguis",
       "native_effects": {
-        "custody_effect": "See the source-backed route detail.",
-        "holding_effect": "See the source-backed route detail.",
-        "native_state_targets": [
-          "Native function state plus existing repository/flat-file authority where applicable"
-        ]
+        "custody_effect": "Simulacrum Anguis creates a conjured blade. Active player grants carry a spell occurrence ID independent of the UID through the typed item grant; active NPC casts discard the unowned candidate without applying the health cost. Inactive casts retain legacy delivery."
       },
       "reason": "item_create",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          909
+          925
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_simulacrum_anguis",
         "original_draft_symbol": "spell_simulacrum_anguis"
       },
-      "source_classification": "Spell or ability runtime item instantiation in src/magic/spell_item_lifecycle.c:spell_simulacrum_anguis",
+      "source_classification": "Simulacrum Anguis creates a conjured blade. Active player grants carry a spell occurrence ID independent of the UID through the typed item grant; active NPC casts discard the unowned candidate without applying the health cost. Inactive casts retain legacy delivery.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -27448,7 +27436,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          333
+          349
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "soulbind_transfer_publication",
@@ -27495,23 +27483,19 @@
       },
       "id": "magic.spell_item_lifecycle_submit_conjured_weapon",
       "native_effects": {
-        "custody_effect": "See the source-backed route detail.",
-        "holding_effect": "See the source-backed route detail.",
-        "native_state_targets": [
-          "Native function state plus existing repository/flat-file authority where applicable"
-        ]
+        "custody_effect": "The shared conjured-weapon helper submits active player grants with an occurrence ID independent of the UID, discards an unowned candidate for active NPC casts without applying the health cost, and keeps legacy NPC delivery while inactive."
       },
       "reason": "item_destroy",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          150
+          162
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "submit_conjured_weapon",
         "original_draft_symbol": "submit_conjured_weapon"
       },
-      "source_classification": "Spell or ability item consumption or expiration in src/magic/spell_item_lifecycle.c:submit_conjured_weapon",
+      "source_classification": "The shared conjured-weapon helper submits active player grants with an occurrence ID independent of the UID, discards an unowned candidate for active NPC casts without applying the health cost, and keeps legacy NPC delivery while inactive.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -31221,7 +31205,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           461,
-          12091
+          12137
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -33111,7 +33095,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10890
+          10936
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33173,7 +33157,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           410,
-          9397
+          9406
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33235,7 +33219,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           406,
-          9343
+          9352
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33712,7 +33696,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10890
+          10936
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33760,7 +33744,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           414,
-          10890
+          10936
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33823,7 +33807,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9485
+          9494
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33885,7 +33869,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9485
+          9494
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33932,7 +33916,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9437
+          9446
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -36276,7 +36260,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           439,
-          11668
+          11714
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36336,7 +36320,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           431,
-          11550
+          11596
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36397,7 +36381,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           427,
-          11296
+          11342
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -43654,7 +43638,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1797
+          1812
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "cast_channel",
@@ -43713,7 +43697,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1684
+          1699
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_channel",
@@ -43737,8 +43721,8 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "The active PC branch calls the shared typed schema-2 item owner, while NPC and inactive branches directly mutate live custody. That shared component does not qualify the complete spell route or its publication, replay and fallback behavior.",
-        "route_mode": "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive",
+        "interpretation": "Active PC grants retain a source ID independent of the UID through the shared typed item owner. Active NPC casts refuse item publication, while inactive casts use direct legacy delivery. Live backend and restart journeys remain unverified.",
+        "route_mode": "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -43760,7 +43744,7 @@
       },
       "id": "spell.doom_blade_grant",
       "native_effects": {
-        "custody_effect": "Doom blade selects one of two new weapon templates, submits a typed player grant for active PCs, and directly gives it to NPCs or inactive epochs.",
+        "custody_effect": "Doom blade selects one of two new weapon templates. Active PCs submit a typed player grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs use direct delivery.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "caster inventory weapon",
@@ -43772,13 +43756,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2110
+          2136
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_doom_blade",
         "original_draft_symbol": "spell_doom_blade"
       },
-      "source_classification": "Doom blade selects one of two new weapon templates, submits a typed player grant for active PCs, and directly gives it to NPCs or inactive epochs.",
+      "source_classification": "Doom blade selects one of two new weapon templates. Active PCs submit a typed player grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs use direct delivery.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -43796,8 +43780,8 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "The active PC branch calls the shared typed schema-2 item owner, while NPC and inactive branches directly mutate live custody. That shared component does not qualify the complete spell route or its publication, replay and fallback behavior.",
-        "route_mode": "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive",
+        "interpretation": "Active PC grants retain a source ID independent of the UID through the shared typed item owner. Active NPC casts refuse item publication, while inactive casts use direct legacy delivery. Live backend and restart journeys remain unverified.",
+        "route_mode": "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -43819,7 +43803,7 @@
       },
       "id": "spell.flame_blade_grant",
       "native_effects": {
-        "custody_effect": "Flame blade reads and customizes a new weapon, submits a typed player grant for active PCs, and directly gives it to NPCs or during inactive epochs.",
+        "custody_effect": "Flame blade reads and customizes a new weapon. Active PCs submit a typed player grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs use direct delivery.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "caster inventory weapon",
@@ -43831,13 +43815,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1919
+          1939
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_flame_blade",
         "original_draft_symbol": "spell_flame_blade"
       },
-      "source_classification": "Flame blade reads and customizes a new weapon, submits a typed player grant for active PCs, and directly gives it to NPCs or during inactive epochs.",
+      "source_classification": "Flame blade reads and customizes a new weapon. Active PCs submit a typed player grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs use direct delivery.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -43855,8 +43839,8 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "The active PC branch calls the shared typed schema-2 item owner, while NPC and inactive branches directly mutate live custody. That shared component does not qualify the complete spell route or its publication, replay and fallback behavior.",
-        "route_mode": "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive",
+        "interpretation": "Active PC grants retain a source ID independent of the UID through the shared typed item owner. Active NPC casts refuse item publication, while inactive casts use direct legacy delivery. Live backend and restart journeys remain unverified.",
+        "route_mode": "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -43878,7 +43862,7 @@
       },
       "id": "spell.food_grant",
       "native_effects": {
-        "custody_effect": "Create food reads a fresh item, submits a typed room grant for active PCs, and directly places it in the room for NPCs or inactive epochs.",
+        "custody_effect": "Create food reads a fresh item. Active PCs submit a typed room grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs place it directly in the room.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "room food item",
@@ -43890,13 +43874,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2013
+          2037
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_create_food",
         "original_draft_symbol": "spell_create_food"
       },
-      "source_classification": "Create food reads a fresh item, submits a typed room grant for active PCs, and directly places it in the room for NPCs or inactive epochs.",
+      "source_classification": "Create food reads a fresh item. Active PCs submit a typed room grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs place it directly in the room.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -43949,7 +43933,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2066
+          2092
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_summon_insects",
@@ -43973,8 +43957,8 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "The active PC branch calls the shared typed schema-2 item owner, while NPC and inactive branches directly mutate live custody. That shared component does not qualify the complete spell route or its publication, replay and fallback behavior.",
-        "route_mode": "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive",
+        "interpretation": "Active PC grants retain a source ID independent of the UID through the shared typed item owner. Active NPC casts refuse item publication, while inactive casts use direct legacy delivery. Live backend and restart journeys remain unverified.",
+        "route_mode": "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -43996,7 +43980,7 @@
       },
       "id": "spell.minor_creation_fallback",
       "native_effects": {
-        "custody_effect": "Minor creation receives a caller-supplied object; active PCs submit a typed room grant, while NPCs or inactive epochs directly publish the object in the room.",
+        "custody_effect": "Minor creation receives a caller-supplied candidate. Active PCs submit a typed room grant with an occurrence ID independent of the UID; active NPC casts refuse publication and discard a still-unowned candidate, while inactive epochs place it directly in the room.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "room created item",
@@ -44008,13 +43992,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1905
+          1920
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_minor_creation",
         "original_draft_symbol": "spell_minor_creation"
       },
-      "source_classification": "Minor creation receives a caller-supplied object; active PCs submit a typed room grant, while NPCs or inactive epochs directly publish the object in the room.",
+      "source_classification": "Minor creation receives a caller-supplied candidate. Active PCs submit a typed room grant with an occurrence ID independent of the UID; active NPC casts refuse publication and discard a still-unowned candidate, while inactive epochs place it directly in the room.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -44055,7 +44039,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          129
+          143
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "submit_spell_player_creation",
@@ -44097,18 +44081,18 @@
         "holding_effect": "none in this function for economy/custody scope",
         "native_state_targets": []
       },
-      "reachability_evidence": "Minor creation and create food call this helper for active PCs; extraction requires OBJ_NOWHERE after submit failure.",
+      "reachability_evidence": "Minor creation calls this helper for active PCs and NPC refusal; create food calls it for active PCs. Extraction requires OBJ_NOWHERE after rejection.",
       "reason": "item_destroy",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          61
+          73
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "submit_spell_room_creation",
         "original_draft_symbol": "submit_spell_room_creation"
       },
-      "source_classification": "Failed typed room creation frees a still-NOWHERE spell object before any room publication; no selected custody is retired.",
+      "source_classification": "A rejected active room grant, including an NPC minor-creation cast, frees only a still-NOWHERE spell candidate before room publication; no selected custody is retired.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -44126,8 +44110,8 @@
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "The active PC branch calls the shared typed schema-2 item owner, while NPC and inactive branches directly mutate live custody. That shared component does not qualify the complete spell route or its publication, replay and fallback behavior.",
-        "route_mode": "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive",
+        "interpretation": "Active PC grants retain a source ID independent of the UID through the shared typed item owner. Active NPC casts refuse item publication, while inactive casts use direct legacy delivery. Live backend and restart journeys remain unverified.",
+        "route_mode": "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -44149,7 +44133,7 @@
       },
       "id": "spell.shield_grant",
       "native_effects": {
-        "custody_effect": "Shield conjuration reads a fresh template, submits a typed player grant for active PCs, and directly gives it to NPCs or during inactive epochs.",
+        "custody_effect": "Shield conjuration reads a fresh template. Active PCs submit a typed player grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs use direct delivery.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "caster inventory shield",
@@ -44161,13 +44145,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1985
+          2007
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_shield",
         "original_draft_symbol": "spell_shield"
       },
-      "source_classification": "Shield conjuration reads a fresh template, submits a typed player grant for active PCs, and directly gives it to NPCs or during inactive epochs.",
+      "source_classification": "Shield conjuration reads a fresh template. Active PCs submit a typed player grant with an occurrence ID independent of the UID; active NPC casts refuse before allocation, while inactive epochs use direct delivery.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -44221,7 +44205,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2203
+          2231
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "sticks_to_snakes_retirement_completed",
@@ -44280,7 +44264,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2260
+          2288
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_sticks_to_snakes",
@@ -44504,7 +44488,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          557
+          658
         ],
         "file": "src/classes/ethermancer.c",
         "function": "grant_wind_blade",

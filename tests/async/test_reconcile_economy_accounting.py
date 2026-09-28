@@ -171,6 +171,55 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["item_origins"].pop()
         self.assertIn("unknown_legacy_origin", self.codes(snapshot))
 
+    def test_native_mapping_census_reports_unmapped_and_dangling_rows(self):
+        snapshot = clean_snapshot()
+        snapshot["backend"] = "sql_partial"
+        snapshot["complete"] = False
+        snapshot["native_mapping_coverage"] = {
+            "wallet_rows": 3, "bank_rows": 1,
+            "unmapped_wallet_rows": 2, "unmapped_bank_rows": 0,
+            "multiply_mapped_wallet_rows": 1, "multiply_mapped_bank_rows": 0,
+            "dangling_wallet_mappings": 0, "dangling_bank_mappings": 1,
+            "invalid_wallet_rows": 0, "invalid_bank_rows": 0,
+        }
+        report = Reconciler(1).audit(snapshot)
+        self.assertEqual(report["exception_counts"]["unmapped_native_wallet"], 2)
+        self.assertEqual(report["exception_counts"]["multiply_mapped_native_wallet"], 1)
+        self.assertEqual(report["exception_counts"]["dangling_bank_mapping"], 1)
+        self.assertEqual(len(report["exceptions"]), 1)
+        self.assertTrue(report["truncated"])
+        snapshot["native_mapping_coverage"]["wallet_rows"] = True
+        with self.assertRaisesRegex(SnapshotError, "coverage count"):
+            Reconciler().audit(snapshot)
+
+    def test_lineage_source_claim_scope(self):
+        snapshot = clean_snapshot()
+        snapshot["backend"] = "sql_partial"
+        snapshot["complete"] = False
+        prior = {"lineage": LINEAGE, "source_event": "66" * 48,
+                 "operation_id": "77" * 16, "operation_lineage": LINEAGE,
+                 "operation_epoch": "88" * 16,
+                 "operation_source_event": "66" * 48,
+                 "operation_outcome": "committed"}
+        snapshot["source_claims"].append(prior)
+        snapshot["source_claim_coverage"] = {
+            "source_operations": 2, "missing_claim_operations": 0,
+            "duplicate_source_values": 0}
+        self.assertNotIn("orphan_source_claim", self.codes(snapshot))
+        snapshot["source_claim_coverage"].update(
+            missing_claim_operations=1, duplicate_source_values=1)
+        codes = self.codes(snapshot)
+        self.assertIn("lineage_missing_source_claim", codes)
+        self.assertIn("lineage_duplicate_source_event", codes)
+        prior["operation_source_event"] = "99" * 48
+        self.assertIn("orphan_source_claim", self.codes(snapshot))
+        prior["operation_source_event"] = prior["source_event"]
+        prior["operation_outcome"] = "rejected"
+        self.assertIn("orphan_source_claim", self.codes(snapshot))
+        snapshot["source_claim_coverage"]["source_operations"] = True
+        with self.assertRaisesRegex(SnapshotError, "source claim coverage"):
+            Reconciler().audit(snapshot)
+
     def test_evidence_loss_and_unlinked_child(self):
         snapshot = clean_snapshot()
         snapshot["complete"] = False

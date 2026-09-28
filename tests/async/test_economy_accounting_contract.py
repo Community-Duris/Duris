@@ -39,6 +39,14 @@ class AccountingContractTest(unittest.TestCase):
         self.assertEqual(contract.copper(holdings['claim']['balance']),0)
         self.assertEqual(custody['701']['identity'],2)
 
+    def test_blackjack_win_returns_stake_and_issues_only_net_winnings(self):
+        holdings,_=self.validate('blackjack_win')
+        self.assertEqual(holdings['wallet']['balance'],[0,15,0,0])
+        self.assertEqual(holdings['round']['balance'],[0,0,0,0])
+        self.examples['blackjack_win']['operations'][1].pop('original_operation_id')
+        with self.assertRaisesRegex(contract.ContractError,'original operation'):
+            self.validate('blackjack_win')
+
     def test_exact_replay_does_not_repeat_effects(self):
         before=self.validate('expense')
         f=self.examples['expense'];f['operations'].append(copy.deepcopy(f['operations'][0]))

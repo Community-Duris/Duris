@@ -503,10 +503,10 @@ int main()
                         conjure.index("vnum_from_inv(ch, VOBJ_GREATER_ORB_MAGIC"))
 
         sight = extract_function("classes/ethermancer.c", "void spell_faerie_sight(")
-        sight_guard = sight.index("economic_gameplay_authority::active()")
-        self.assertLess(sight_guard, sight.index("affect_to_char(victim, &af)"))
-        self.assertLess(sight_guard, sight.index("vnum_from_inv(ch, VOBJ_FORAGE_FAERIE_DUST"))
-        self.assertLess(sight_guard, sight.index("extract_obj(t_obj)"))
+        self.assertLess(sight.index("faerie_sight_dust_count("),
+                        sight.index("spell_consume_components("))
+        self.assertLess(sight.index("spell_consume_components("),
+                        sight.index("apply_faerie_sight(level, ch, victim, 0, !active)"))
 
         salvage = extract_function("item/salvage.c", "void do_salvage(")
         salvage_guard = salvage.index("economic_gameplay_authority::active()")

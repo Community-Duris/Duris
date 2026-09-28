@@ -74,7 +74,7 @@ constexpr source sources[] = {
 // captured, so equality is not identity for the resolved ownership baseline.
 constexpr source item_sources[] = {
 	{ "player_pet_items", "id,pet_id,container_id,obj_uid,vnum", "id" },
-	{ "shopkeeper_items", "id,shopkeeper_id,container_id,obj_uid,vnum", "id" },
+	{ "shopkeeper_items", "id,shopkeeper_id,container_id,obj_uid,vnum,item_condition", "id" },
 	{ "siege_items", "id,room_vnum,container_id,obj_uid,vnum", "id" },
 };
 struct failure

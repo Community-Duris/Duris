@@ -58,7 +58,7 @@ void verify_sources(MYSQL *connection)
 	assert(!economic_sql_capture_sources(connection, {}, &snapshot));
 	assert(!economic_sql_validate_sources(snapshot));
 	assert(!(connection->server_status & SERVER_STATUS_IN_TRANS));
-	assert(snapshot.tables.size() == 19 && snapshot.item_sources.size() == 3);
+	assert(snapshot.tables.size() == 20 && snapshot.item_sources.size() == 3);
 
 	const auto &pets = table(snapshot, "player_pet_items");
 	assert((pets.columns ==
@@ -77,9 +77,10 @@ void verify_sources(MYSQL *connection)
 
 	const auto &shops = table(snapshot, "shopkeeper_items");
 	assert((shops.columns == std::vector<std::string>{ "id", "shopkeeper_id", "container_id",
-							   "obj_uid", "vnum" }));
+							   "obj_uid", "vnum", "item_condition" }));
 	assert(shops.rows.size() == 3);
-	assert(shops.rows[0].cells[1] == "201" && shops.rows[0].cells[3] == "9400");
+	assert(shops.rows[0].cells[1] == "201" && shops.rows[0].cells[3] == "9400" &&
+	       shops.rows[0].cells[5] == "37");
 	assert(shops.rows[1].cells[3] == "9600" && shops.rows[2].cells[3] == "9602");
 
 	const auto &siege = table(snapshot, "siege_items");
@@ -103,11 +104,21 @@ void verify_sources(MYSQL *connection)
 	assert(!mysql_real_query(connection, change_shop_mapping, sizeof(change_shop_mapping) - 1));
 	economic_sql_source_snapshot shop_mapping_changed;
 	assert(!economic_sql_capture_sources(connection, {}, &shop_mapping_changed));
-	assert(shop_mapping_changed.digest == snapshot.digest);
+	assert(shop_mapping_changed.digest != snapshot.digest);
 	assert(shop_mapping_changed.item_sources_digest == snapshot.item_sources_digest);
 	constexpr char restore_shop_mapping[] = "UPDATE shopkeepers SET shop_id=41 WHERE id=201";
 	assert(!mysql_real_query(connection, restore_shop_mapping,
 				 sizeof(restore_shop_mapping) - 1));
+	constexpr char change_condition[] =
+		"UPDATE shopkeeper_items SET item_condition=38 WHERE id=1";
+	assert(!mysql_real_query(connection, change_condition, sizeof(change_condition) - 1));
+	economic_sql_source_snapshot condition_changed;
+	assert(!economic_sql_capture_sources(connection, {}, &condition_changed));
+	assert(condition_changed.digest == snapshot.digest);
+	assert(condition_changed.item_sources_digest != snapshot.item_sources_digest);
+	constexpr char restore_condition[] =
+		"UPDATE shopkeeper_items SET item_condition=37 WHERE id=1";
+	assert(!mysql_real_query(connection, restore_condition, sizeof(restore_condition) - 1));
 
 	// ESM1 remains the pre-existing phase-1/2 replay identity; new raw item
 	// source rows get an independent digest without changing that identity.

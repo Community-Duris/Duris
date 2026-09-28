@@ -116,9 +116,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 42)
+        self.assertEqual(len(manifest.migrations), 44)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0042_shopkeeper_roaming_witness")
+                         "0044_shopkeeper_item_properties")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,

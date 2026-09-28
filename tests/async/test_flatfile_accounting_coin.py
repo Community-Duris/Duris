@@ -45,6 +45,7 @@ def main():
             "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-fno-pie", "-no-pie", "-D__NO_MYSQL__",
             "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+            "-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST",
             "-Isrc", "-Isrc/no_mysql", "-I" + str(work), *sources,
             "-Wl,--wrap=_Znwm,--wrap=_Znam", "-lcrypto", "-lz", "-pthread",
             "-o", str(binary),

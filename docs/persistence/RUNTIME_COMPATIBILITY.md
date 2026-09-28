@@ -16,10 +16,12 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0042_shopkeeper_roaming_witness`, and the contract describes 220
+The current head is `0044_shopkeeper_item_properties`, and the contract describes 220
 current tables: the 170-table baseline plus the post-baseline runtime tables created
 by immutable migrations. Migration 0042 records a nullable keeper roaming policy;
-legacy rows remain unknown until a shopkeeper checkpoint. Migration 0029 adds
+legacy rows remain unknown until a shopkeeper checkpoint. Migration 0043 records
+nullable item condition, and migration 0044 preserves dynamic properties while an
+item is held by a shopkeeper. Migration 0029 adds
 the replay-safe `critical_operation_inbox.failure_stage` receipt field as
 `SMALLINT UNSIGNED NOT
 NULL DEFAULT 0` immediately after `result_code`; it creates no table. A legacy clone

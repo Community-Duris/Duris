@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 import re
 import shlex
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -55,7 +54,8 @@ def install_baseline_script(temp_root):
     migrations = project / "migrations"
     migrations.mkdir(parents=True)
     copied = migrations / "baseline_item_ownership.sh"
-    shutil.copyfile(ROOT / "migrations/baseline_item_ownership.sh", copied)
+    copied.write_bytes((ROOT / "migrations/baseline_item_ownership.sh").read_bytes()
+                       .replace(b"\r\n", b"\n"))
     copied.chmod(0o700)
     keys = ("ENVIRONMENT", "DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWD", "DB_NAME")
     values = {
@@ -174,6 +174,10 @@ def main():
             raise RuntimeError("disposable source schema bootstrap failed")
         run_mysql(client.args, client.env,
                   (ROOT / "migrations/immutable/0028_pet_custody.sql").read_text())
+        run_mysql(client.args, client.env,
+                  (ROOT / "migrations/immutable/0038_item_equipment_slot.sql").read_text())
+        run_mysql(client.args, client.env,
+                  (ROOT / "migrations/immutable/0043_shopkeeper_item_condition.sql").read_text())
 
         fixture = """
 INSERT INTO player_data(pid,name) VALUES(11,'pa_source_coverage_player');
@@ -186,8 +190,8 @@ VALUES(1,101,200,NULL,9200),(2,101,201,1,9201),
       (3,102,301,1,9301),(4,103,302,NULL,9302),
       (5,101,210,NULL,9220),(6,101,211,5,9219);
 INSERT INTO shopkeepers(id,shop_id,room_vnum) VALUES(201,41,700);
-INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid)
-VALUES(1,201,400,9400),(2,201,401,9600),(3,201,402,9602);
+INSERT INTO shopkeeper_items(id,shopkeeper_id,vnum,obj_uid,item_condition)
+VALUES(1,201,400,9400,37),(2,201,401,9600,82),(3,201,402,9602,NULL);
 INSERT INTO siege_items(id,room_vnum,vnum,obj_uid)
 VALUES(1,700,500,9500),(2,701,501,9602);
 """

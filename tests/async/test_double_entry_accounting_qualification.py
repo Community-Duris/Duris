@@ -122,7 +122,7 @@ class TestDoubleEntryAccountingQualification(unittest.TestCase):
                     "operation_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
                     "reason": "shop_buy",
                     "actor": "domain",
-                    "source_event": None,
+                    "source_event": "e0000000000000000000000000000002",
                     "postings": [
                         {"account": "player_wallet", "delta": [0, 0, -2, 0]},
                         {"account": "shop_counterparty", "delta": [0, 0, 2, 0]},
@@ -154,7 +154,7 @@ class TestDoubleEntryAccountingQualification(unittest.TestCase):
                     "operation_id": "cccccccccccccccccccccccccccccccc",
                     "reason": "auction_bid",
                     "actor": "domain",
-                    "source_event": None,
+                    "source_event": "e0000000000000000000000000000003",
                     "postings": [
                         {"account": "player_wallet", "delta": [0, 0, -2, 0]},
                         {"account": "auction_vault", "delta": [0, 0, 2, 0]},
@@ -167,7 +167,7 @@ class TestDoubleEntryAccountingQualification(unittest.TestCase):
                     "operation_id": "dddddddddddddddddddddddddddddddd",
                     "reason": "auction_outbid",
                     "actor": "domain",
-                    "source_event": None,
+                    "source_event": "e0000000000000000000000000000004",
                     "postings": [
                         {"account": "auction_vault", "delta": [0, 0, -2, 0]},
                         {"account": "player_wallet", "delta": [0, 0, 2, 0]},
@@ -195,7 +195,7 @@ class TestDoubleEntryAccountingQualification(unittest.TestCase):
         stats = self.auditor.audit_fixture(journey_fixture, "e2e_qualification_journey")
         self.assertEqual(stats["operations_checked"], 5)
         self.assertEqual(stats["zero_sum_verified"], 5)
-        self.assertEqual(stats["source_events_verified"], 1)
+        self.assertEqual(stats["source_events_verified"], 4)
         self.assertEqual(stats["items_checked"], 1)
 
     def test_domain_subsystem_regression_suites(self):

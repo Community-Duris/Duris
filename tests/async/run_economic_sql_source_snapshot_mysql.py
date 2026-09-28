@@ -73,6 +73,7 @@ with tempfile.TemporaryDirectory(prefix="duris-sql-sources-") as temporary:
                                   text=True, capture_output=True, env=client.env, timeout=120)
             if boot.returncode:
                 raise RuntimeError("disposable source schema bootstrap failed")
+            client.sql((ROOT / "migrations/immutable/0043_shopkeeper_item_condition.sql").read_text())
             run_mode("sql", client.env, directory)
             run_mode("client-free", os.environ, directory)
         finally:

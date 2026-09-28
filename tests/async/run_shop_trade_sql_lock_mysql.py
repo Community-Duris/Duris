@@ -14,6 +14,7 @@ WORK.mkdir(parents=True, exist_ok=True)
 
 sources = [
     "src/persistence/economic_sql_shop_trade_transaction.c",
+    "src/player/player_snapshot_codec.c",
     "src/persistence/economic_accounting_repository.c",
     "src/economy/shop_trade_accounting.c",
     "src/economy/shop_trade_command.c",

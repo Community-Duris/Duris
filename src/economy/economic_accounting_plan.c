@@ -41,8 +41,11 @@ constexpr reason_rule RULES[] = {
 	{ economic_reason::insurance_cost, 326, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::guild_cost, 326, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::crafting_cost, 326, economic_actor_kind::domain, true, false, false },
-	{ economic_reason::gambling_stake, 326, economic_actor_kind::domain, true, false, false },
-	{ economic_reason::gambling_payout, 130, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::gambling_stake, 2050, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::gambling_payout, 2178, economic_actor_kind::domain, true, true, false },
+	{ economic_reason::gambling_loss, 2304, economic_actor_kind::domain, true, true, false },
+	{ economic_reason::gambling_interruption, 2050, economic_actor_kind::domain, true, true,
+	  false },
 	{ economic_reason::refund, 382, economic_actor_kind::domain, true, true, true },
 	{ economic_reason::shop_buy, 326, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::shop_sell, 198, economic_actor_kind::domain, true, false, false },
@@ -126,6 +129,8 @@ bool source_kind_allowed(economic_reason reason, economic_source_kind kind)
 		return kind == economic_source_kind::crafting;
 	case economic_reason::gambling_stake:
 	case economic_reason::gambling_payout:
+	case economic_reason::gambling_loss:
+	case economic_reason::gambling_interruption:
 		return kind == economic_source_kind::gambling_round;
 	case economic_reason::shop_buy:
 	case economic_reason::shop_sell:
@@ -402,6 +407,76 @@ void encode_valid(const economic_accounting_plan &plan, writer &output)
 		output.position(event.after);
 	}
 }
+
+economic_accounting_error gambling_round_structure(const economic_accounting_plan &plan)
+{
+	const auto reason = plan.metadata.reason;
+	if (reason != economic_reason::gambling_stake &&
+	    reason != economic_reason::gambling_payout &&
+	    reason != economic_reason::gambling_loss &&
+	    reason != economic_reason::gambling_interruption)
+		return economic_accounting_error::ok;
+	const bool opening = reason == economic_reason::gambling_stake;
+	if (!plan.metadata.source_event ||
+	    plan.metadata.source_event->slot != (opening ? 0U : 1U) || !plan.children.empty() ||
+	    !plan.items_before.empty() || !plan.items_after.empty() || !plan.item_events.empty())
+		return economic_accounting_error::unauthorized;
+	const economic_account_effect *held = nullptr;
+	size_t wallets = 0, sinks = 0, issuances = 0, stakes = 0;
+	for (const auto &account : plan.accounts)
+	{
+		if (account.key.kind == economic_account_kind::gambling_stake)
+		{
+			++stakes;
+			held = &account;
+		}
+		wallets += account.key.kind == economic_account_kind::wallet;
+		sinks += account.key.kind == economic_account_kind::sink;
+		issuances += account.key.kind == economic_account_kind::issuance;
+	}
+	const bool shape = reason == economic_reason::gambling_loss ?
+				   (sinks == 1 && stakes == 1 && plan.accounts.size() == 2) :
+			   reason == economic_reason::gambling_payout ?
+				   (wallets == 1 && stakes == 1 && issuances <= 1 &&
+				    plan.accounts.size() == 2 + issuances) :
+				   (wallets == 1 && stakes == 1 && plan.accounts.size() == 2);
+	if (!shape || held->key.context_id != plan.metadata.source_event->sequence ||
+	    !held->key.context_id)
+		return economic_accounting_error::invalid_identity;
+	const economic_coin_vector empty = {};
+	const auto &stake = opening ? held->after : held->before;
+	if ((opening ? held->before : held->after) != empty)
+		return economic_accounting_error::unauthorized;
+	size_t denomination = stake.size();
+	for (size_t index = 0; index < stake.size(); ++index)
+		if (stake[index])
+		{
+			if (stake[index] < 0 || denomination != stake.size())
+				return economic_accounting_error::unauthorized;
+			denomination = index;
+		}
+	if (denomination == stake.size())
+		return economic_accounting_error::unauthorized;
+	for (const auto &posting : plan.postings)
+		for (size_t index = 0; index < posting.delta.size(); ++index)
+			if (index != denomination && posting.delta[index])
+				return economic_accounting_error::unauthorized;
+	if (reason == economic_reason::gambling_payout && issuances)
+	{
+		size_t issuance_postings = 0;
+		for (const auto &posting : plan.postings)
+			if (plan.accounts[posting.account_index].key.kind ==
+			    economic_account_kind::issuance)
+			{
+				++issuance_postings;
+				if (posting.delta[denomination] != -stake[denomination])
+					return economic_accounting_error::unauthorized;
+			}
+		if (issuance_postings != 1)
+			return economic_accounting_error::unauthorized;
+	}
+	return economic_accounting_error::ok;
+}
 } // namespace
 
 bool economic_source_event_valid(const economic_source_event &event)
@@ -514,6 +589,9 @@ economic_accounting_error economic_plan_validate_structure(const economic_accoun
 		if (!economic_account_is_ordinary(kind) && posting.copper == 0)
 			return economic_accounting_error::corrupt_evidence;
 	}
+	status = gambling_round_structure(plan);
+	if (status != economic_accounting_error::ok)
+		return status;
 	return economic_item_effects_validate(plan.items_before, plan.items_after, plan.item_events,
 					      plan.children.size());
 }

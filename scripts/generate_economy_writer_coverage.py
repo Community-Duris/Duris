@@ -271,6 +271,10 @@ MIXED_SPELL_ITEM_IDS = {
     "spell.insect_mandrake_fallback_sink", "spell.doom_blade_grant",
     "spell.snakes_direct_arrow_sink",
 }
+SOURCE_QUALIFIED_SPELL_GRANT_IDS = {
+    "spell.minor_creation_fallback", "spell.flame_blade_grant",
+    "spell.shield_grant", "spell.food_grant", "spell.doom_blade_grant",
+}
 SQL_ROUTE_TARGETS = {
     "combat.sql_outcome": {
         "holding_effect": "Participant wallet reward deltas and bank revision fences with legacy currency_ledger rows; balanced reward issuance is not proven here.",
@@ -565,6 +569,9 @@ def schema_record(route_id: str, disposition: str) -> dict:
     elif route_id == "currency.split":
         current = 1
         mode = "schema_1_when_inactive_schema_2_sequential_coin_children_when_active"
+    elif route_id in SOURCE_QUALIFIED_SPELL_GRANT_IDS:
+        current = None
+        mode = "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive"
     elif route_id in MIXED_SPELL_ITEM_IDS:
         current = None
         mode = "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive"
@@ -635,6 +642,8 @@ def schema_record(route_id: str, disposition: str) -> dict:
         interpretation = "The SQL transaction component records typed schema-2 coin effects and balanced postings. Pooled dispatch/reconcile and player-visible publication are separate qualification gates; flat-file coin accounting remains unqualified."
     elif route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
         interpretation = "The SQL item repository applies schema-1 commands when inactive and can apply a typed schema-2 item transfer under an owning root when active. This repository function is a component, not a gameplay producer or a complete money-valued coin route; root accounting, flat-file parity and playable acceptance remain separate gates."
+    elif route_id in SOURCE_QUALIFIED_SPELL_GRANT_IDS:
+        interpretation = "Active PC grants retain a source ID independent of the UID through the shared typed item owner. Active NPC casts refuse item publication, while inactive casts use direct legacy delivery. Live backend and restart journeys remain unverified."
     elif route_id in MIXED_SPELL_ITEM_IDS:
         interpretation = "The active PC branch calls the shared typed schema-2 item owner, while NPC and inactive branches directly mutate live custody. That shared component does not qualify the complete spell route or its publication, replay and fallback behavior."
     return {

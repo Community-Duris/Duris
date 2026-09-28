@@ -3197,30 +3197,40 @@ static unsigned int read_legacy_coin(const std::string &root, const flatfile_aut
 				     const item_owner_identity &owner, uint64_t uid,
 				     player_item_snapshot *item, std::string *error)
 {
-	if (owner.type == item_owner_type::player)
+	if (owner.type == item_owner_type::player || owner.type == item_owner_type::pet)
 	{
-		if (!owner.id || owner.id > INT32_MAX)
+		const uint64_t player_id = owner.type == item_owner_type::pet ? owner.context_id :
+										owner.id;
+		if (!player_id || player_id > INT32_MAX ||
+		    (owner.type == item_owner_type::pet && !owner.id))
 			return EINVAL;
 		player_snapshot snapshot;
-		const auto loaded = flatfile_player_snapshot_read(root, owner.id, &snapshot, error);
+		const auto loaded =
+			flatfile_player_snapshot_read(root, player_id, &snapshot, error);
 		if (loaded != flatfile_player_load_result::ok)
 			return loaded == flatfile_player_load_result::io_error	? EIO :
 			       loaded == flatfile_player_load_result::not_found ? ENOENT :
 										  EBADMSG;
 		size_t matches = 0;
-		auto inspect = [&](const std::vector<player_item_snapshot> &items)
+		size_t owner_matches = 0;
+		auto inspect = [&](const std::vector<player_item_snapshot> &items, bool is_owner)
 		{
 			for (const auto &candidate : items)
 				if (candidate.object_uid == uid)
 				{
-					*item = candidate;
 					++matches;
+					if (is_owner)
+					{
+						*item = candidate;
+						++owner_matches;
+					}
 				}
 		};
-		inspect(snapshot.items);
+		inspect(snapshot.items, owner.type == item_owner_type::player);
 		for (const auto &pet : snapshot.pets)
-			inspect(pet.items);
-		return matches == 1 ? 0 : matches ? EMSGSIZE : ENOENT;
+			inspect(pet.items,
+				owner.type == item_owner_type::pet && pet.pet_uid == owner.id);
+		return matches > 1 ? EMSGSIZE : owner_matches == 1 ? 0 : ENOENT;
 	}
 	if (owner.type == item_owner_type::room || owner.type == item_owner_type::corpse)
 	{
@@ -3275,8 +3285,13 @@ read_coin_pile_source(const std::string &root, const flatfile_authority_lock &lo
 			candidate.item = std::move(items[0]);
 		}
 		if (candidate.item.object_uid != stored.item_uid ||
-		    candidate.item.vnum != stored.vnum || candidate.item.type != ITEM_MONEY ||
-		    std::any_of(candidate.item.values.begin(), candidate.item.values.begin() + 4,
+		    candidate.item.vnum != stored.vnum)
+			return flatfile_item_repository_result::invalid;
+		if (candidate.item.type != ITEM_MONEY)
+			return stored.coin_payload.empty() ?
+				       flatfile_item_repository_result::unchanged :
+				       flatfile_item_repository_result::invalid;
+		if (std::any_of(candidate.item.values.begin(), candidate.item.values.begin() + 4,
 				[](int32_t value) { return value < 0; }))
 			return flatfile_item_repository_result::invalid;
 		*source = std::move(candidate);
@@ -3304,8 +3319,12 @@ flatfile_item_repository_result flatfile_item_repository_read_coin_pile_locked(
 	if (loaded != flatfile_item_repository_result::ok)
 		return loaded;
 	const auto *stored = find_item(&catalog, uid);
-	return stored ? read_coin_pile_source(root, lock, *stored, source, error) :
-			flatfile_item_repository_result::not_found;
+	if (!stored)
+		return flatfile_item_repository_result::not_found;
+	const auto result = read_coin_pile_source(root, lock, *stored, source, error);
+	return result == flatfile_item_repository_result::unchanged ?
+		       flatfile_item_repository_result::not_found :
+		       result;
 }
 
 flatfile_item_repository_result flatfile_item_repository_list_coin_piles_locked(
@@ -3328,14 +3347,16 @@ flatfile_item_repository_result flatfile_item_repository_list_coin_piles_locked(
 		std::vector<flatfile_coin_pile_source> candidate;
 		for (const auto &item : catalog.items)
 		{
-			if (item.vnum != VOBJ_COINS && item.coin_payload.empty())
-				continue;
 			if (item.state == item_custody_state::destroyed)
 				continue;
 			flatfile_coin_pile_source source;
 			const auto result = read_coin_pile_source(root, lock, item, &source, error);
+			if (result == flatfile_item_repository_result::unchanged)
+				continue;
 			if (result != flatfile_item_repository_result::ok)
-				return result;
+				return result == flatfile_item_repository_result::not_found ?
+					       flatfile_item_repository_result::invalid :
+					       result;
 			candidate.push_back(std::move(source));
 		}
 		*sources = std::move(candidate);

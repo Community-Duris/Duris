@@ -27,6 +27,16 @@ TABLES = (
     "operations", "effects", "postings", "children", "item_references",
     "ownership_events", "source_claims", "account_origins", "item_origins", "receipts",
 )
+NATIVE_COVERAGE_EXCEPTIONS = {
+    "unmapped_wallet_rows": "unmapped_native_wallet",
+    "unmapped_bank_rows": "unmapped_native_bank",
+    "multiply_mapped_wallet_rows": "multiply_mapped_native_wallet",
+    "multiply_mapped_bank_rows": "multiply_mapped_native_bank",
+    "dangling_wallet_mappings": "dangling_wallet_mapping",
+    "dangling_bank_mappings": "dangling_bank_mapping",
+    "invalid_wallet_rows": "invalid_native_wallet",
+    "invalid_bank_rows": "invalid_native_bank",
+}
 REGISTRY_PATH = Path(__file__).resolve().parents[1] / "docs/persistence/economy_accounting/registry.json"
 
 
@@ -96,6 +106,11 @@ class Reconciler:
                     safe[field] = value
             self.exceptions.append({"code": code, **safe})
 
+    def emit_count(self, code: str, count: int) -> None:
+        if count:
+            self.emit(code, scope="snapshot")
+            self.counts[code] += count - 1
+
     def table(self, snapshot: dict, name: str) -> list[dict]:
         value = snapshot.get(name)
         if not isinstance(value, list) or len(value) > MAX_ROWS or any(not isinstance(row, dict) for row in value):
@@ -127,6 +142,35 @@ class Reconciler:
             raise SnapshotError("missing native authority")
         holdings = self.table(native, "holdings")
         items = self.table(native, "items")
+        coverage = snapshot.get("native_mapping_coverage")
+        if coverage is None:
+            if snapshot.get("backend") == "sql_partial":
+                self.emit("missing_native_mapping_coverage", scope="snapshot")
+        else:
+            if not isinstance(coverage, dict) or set(coverage) != (
+                    {"wallet_rows", "bank_rows"} | set(NATIVE_COVERAGE_EXCEPTIONS)):
+                raise SnapshotError("invalid native mapping coverage")
+            if any(type(value) is not int or not 0 <= value < 2**63 for value in coverage.values()):
+                raise SnapshotError("invalid native mapping coverage count")
+            for kind in ("wallet", "bank"):
+                if (coverage[f"unmapped_{kind}_rows"] > coverage[f"{kind}_rows"] or
+                        coverage[f"multiply_mapped_{kind}_rows"] > coverage[f"{kind}_rows"]):
+                    raise SnapshotError("invalid native mapping coverage total")
+            for field, code in NATIVE_COVERAGE_EXCEPTIONS.items():
+                self.emit_count(code, coverage[field])
+        claim_coverage = snapshot.get("source_claim_coverage")
+        if claim_coverage is not None:
+            if (not isinstance(claim_coverage, dict) or set(claim_coverage) !=
+                    {"source_operations", "missing_claim_operations", "duplicate_source_values"} or
+                    any(type(value) is not int or not 0 <= value < 2**63
+                        for value in claim_coverage.values()) or
+                    claim_coverage["missing_claim_operations"] > claim_coverage["source_operations"] or
+                    claim_coverage["duplicate_source_values"] > claim_coverage["source_operations"]):
+                raise SnapshotError("invalid source claim coverage")
+            self.emit_count("lineage_missing_source_claim",
+                            claim_coverage["missing_claim_operations"])
+            self.emit_count("lineage_duplicate_source_event",
+                            claim_coverage["duplicate_source_values"])
 
         operations = self.index(tables["operations"], ("operation_id",), "duplicate_operation")
         effects = self.index(tables["effects"], ("operation_id", "account_index"), "duplicate_effect")
@@ -243,7 +287,21 @@ class Reconciler:
                 self.emit("unlinked_child", operation_id=link[0], child_index=link[1])
         for claim in claims.values():
             op = operations.get((claim.get("operation_id"),))
-            if not op or op.get("source_event") != claim.get("source_event") or claim.get("lineage") != lineage:
+            linked = (op and op.get("outcome") == "committed" and
+                      op.get("source_event") == claim.get("source_event"))
+            if op and "operation_epoch" in claim:
+                linked = (linked and claim.get("operation_epoch") == epoch and
+                          claim.get("operation_lineage") == lineage and
+                          claim.get("operation_source_event") == op.get("source_event") and
+                          claim.get("operation_outcome") == op.get("outcome"))
+            if not op and "operation_epoch" in claim:
+                other_epoch = claim.get("operation_epoch")
+                linked = (isinstance(other_epoch, str) and
+                          re.fullmatch(r"[0-9a-f]{32}", other_epoch) is not None and
+                          other_epoch != epoch and claim.get("operation_lineage") == lineage and
+                          claim.get("operation_source_event") == claim.get("source_event") and
+                          claim.get("operation_outcome") == "committed")
+            if not linked or claim.get("lineage") != lineage:
                 self.emit("orphan_source_claim", operation_id=claim.get("operation_id"))
         for receipt in receipts.values():
             if (receipt.get("operation_id"),) not in operations:

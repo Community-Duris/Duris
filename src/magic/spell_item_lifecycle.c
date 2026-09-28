@@ -12,6 +12,7 @@
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "economy/economic_gameplay_authority.h"
+#include "persistence/critical_command.h"
 #include "persistence/persistence_checkpoint.h"
 #include "kingdom/kingdom_store_piece.h"
 #include "magic/spells.h"
@@ -147,11 +148,23 @@ static void conjured_weapon_grant_completed(P_char actor, bool committed,
 		actor, blade, static_cast<conjured_weapon_kind>(context.kind), context.self_damage);
 }
 
+static uint64_t conjured_weapon_source_id()
+{
+	critical_operation_id occurrence = {};
+	if (!critical_operation_id_generate(&occurrence))
+		return 0;
+	uint64_t source_id = 0;
+	for (size_t index = 0; index < sizeof(source_id); ++index)
+		source_id |= static_cast<uint64_t>(occurrence.bytes[index]) << (index * 8);
+	return source_id;
+}
+
 static bool submit_conjured_weapon(P_char actor, P_obj blade, conjured_weapon_kind kind)
 {
 	if (!actor || !blade)
 		return false;
-	if (!IS_PC(actor))
+	const bool active = economic_gameplay_authority::active();
+	if (!IS_PC(actor) && !active)
 	{
 		obj_to_char(blade, actor);
 		conjured_weapon_publish_effect(actor, blade, kind, GET_HIT(actor) * 0.10f);
@@ -164,15 +177,18 @@ static bool submit_conjured_weapon(P_char actor, P_obj blade, conjured_weapon_ki
 		GET_HIT(actor) * 0.10f,
 		static_cast<uint8_t>(kind),
 	};
-	if (item_creation_grant_submit_to_player_with_completion(
+	const uint64_t source_id = IS_PC(actor) ? conjured_weapon_source_id() : 0;
+	if (IS_PC(actor) && source_id &&
+	    item_creation_grant_submit_to_player_with_completion(
 		    actor, blade, actor, conjured_weapon_grant_completed, &context, sizeof(context),
-		    NULL, economic_source_kind::spell_creation))
+		    NULL, economic_source_kind::spell_creation, source_id))
 		return true;
 
 	extract_obj(blade, FALSE);
-	send_to_char(
-		"The conjured weapon could not be created right now; no health was spent. Please try again later.\r\n",
-		actor);
+	if (IS_PC(actor))
+		send_to_char(
+			"The conjured weapon could not be created right now; no health was spent. Please try again later.\r\n",
+			actor);
 	return false;
 }
 
