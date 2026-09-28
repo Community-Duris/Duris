@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "cde63f95e",
+  "source_commit": "e75e78311",
   "census_complete": true,
   "writers": [
     {
@@ -6849,7 +6849,7 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          688,
+          691,
           "item_lifecycle"
         ]
       ],
@@ -7078,22 +7078,22 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          277,
+          280,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          285,
+          288,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          304,
+          307,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          317,
+          320,
           "item_lifecycle"
         ]
       ],
@@ -7373,42 +7373,42 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          2499,
+          2579,
           "money_helper"
         ],
         [
           "src/economy/tradeskill.c",
-          2519,
+          2599,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          2520,
+          2600,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          2529,
+          2609,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          2530,
+          2610,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          2563,
+          2643,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          2567,
+          2647,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          2575,
+          2655,
           "item_lifecycle"
         ]
       ],
@@ -7443,57 +7443,57 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          851,
+          854,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          863,
+          866,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          874,
+          877,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          881,
+          884,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          888,
+          891,
           "money_helper"
         ],
         [
           "src/economy/tradeskill.c",
-          892,
+          895,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          904,
+          907,
           "money_helper"
         ],
         [
           "src/economy/tradeskill.c",
-          910,
+          913,
           "item_publication"
-        ],
-        [
-          "src/economy/tradeskill.c",
-          918,
-          "money_helper"
         ],
         [
           "src/economy/tradeskill.c",
           921,
+          "money_helper"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          924,
           "item_publication"
         ],
         [
           "src/economy/tradeskill.c",
-          929,
+          932,
           "item_lifecycle"
         ]
       ],
@@ -7528,22 +7528,22 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          60,
+          63,
           "economic_submit"
         ],
         [
           "src/economy/tradeskill.c",
-          64,
+          67,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          94,
+          97,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          107,
+          110,
           "item_publication"
         ]
       ],
@@ -40200,9 +40200,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Item extraction or retirement in src/economy/tradeskill.c:do_bandage",
-      "authority_boundary": "Runtime engine execution context",
-      "current_support": "Legacy runtime mutation without active double-entry ledger enforcement",
+      "classification": "Only untracked legacy bandages are extracted directly. Active durable player bandages enter a typed destruction transaction before healing starts.",
+      "authority_boundary": "Direct extraction is limited to objects without durable custody; registered player items use the bandage destruction route.",
+      "current_support": "The direct branch is limited to untracked objects; the MariaDB durable route has an executable save/restart journey.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -40218,16 +40218,110 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_economy_writer_coverage_contract.py"
+        "tests/async/run_bandage_custody_mysql_journey.py"
       ],
       "sites": [
         [
           "src/economy/tradeskill.c",
-          1136,
+          1237,
           "item_lifecycle"
         ]
       ],
-      "evidence": []
+      "evidence": [],
+      "reachability_evidence": "do_bandage takes this branch only when item_command_uses_durable_ownership is false."
+    },
+    {
+      "path": "src/economy/tradeskill.c",
+      "reason": "item_destroy",
+      "integration_issue": 480,
+      "owner": "primary / #480",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/run_bandage_custody_mysql_journey.py"
+      ],
+      "evidence": [],
+      "id": "tradeskill.bandage_durable_submission",
+      "symbol": "do_bandage",
+      "coverage": "observed",
+      "classification": "Commits a carried player bandage to destruction before scheduling the healing event.",
+      "authority_boundary": "The typed item transfer owns the consumed UID and checks player custody; refused admission leaves the item and effect unchanged.",
+      "current_support": "Disposable MariaDB player save/restart journey passed; accounting activation and other backends are unverified.",
+      "reachability_evidence": "do_bandage selects this route for a bandage with durable ownership.",
+      "sites": [
+        [
+          "src/economy/tradeskill.c",
+          1221,
+          "economic_submit"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin effect.",
+        "custody_effect": "The bandage UID moves from active player custody to a destroyed tombstone.",
+        "native_state_targets": [
+          "item_current_owner",
+          "item_ownership_ledger",
+          "economic item references"
+        ]
+      }
+    },
+    {
+      "path": "src/economy/tradeskill.c",
+      "reason": "item_destroy",
+      "integration_issue": 480,
+      "owner": "primary / #480",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/run_bandage_custody_mysql_journey.py"
+      ],
+      "evidence": [],
+      "id": "tradeskill.bandage_durable_publication",
+      "symbol": "publish_bandage_consumption",
+      "coverage": "projection",
+      "classification": "Removes the live bandage only after its destruction transaction commits.",
+      "authority_boundary": "Match the selected UID in live carrying after the committed destruction; then mark inventory dirty.",
+      "current_support": "Disposable MariaDB player save/restart journey passed; interruption replay is unverified.",
+      "reachability_evidence": "The typed bandage submit registers publish_bandage_consumption as its publication callback.",
+      "sites": [
+        [
+          "src/economy/tradeskill.c",
+          1018,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin effect.",
+        "custody_effect": "Live inventory mirrors the committed bandage tombstone.",
+        "native_state_targets": [
+          "live player inventory projection",
+          "player dirty-component save"
+        ]
+      }
     },
     {
       "id": "tradeskill.learn_recipe",
@@ -40260,32 +40354,32 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          1211,
+          1291,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          1233,
+          1313,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          1296,
+          1376,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          1306,
+          1386,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          1318,
+          1398,
           "item_lifecycle"
         ],
         [
           "src/economy/tradeskill.c",
-          1336,
+          1416,
           "item_lifecycle"
         ]
       ],
@@ -51944,211 +52038,223 @@
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 888,
+      "line": 891,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(pl, price, 0) != 0)"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 904,
+      "line": 907,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(pl, price);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 918,
+      "line": 921,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(pl, price);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2499,
+      "line": 2579,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(ch, 50000, 0) != 0)"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 60,
+      "line": 63,
       "family": "economic_submit",
       "excerpt": "if (object && item_creation_grant_submit_to_player("
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 64,
+      "line": 1221,
+      "family": "economic_submit",
+      "excerpt": "if (!item_movement_transaction_submit("
+    },
+    {
+      "path": "src/economy/tradeskill.c",
+      "line": 67,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 94,
+      "line": 97,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(context.object_vnum, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 277,
+      "line": 280,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 285,
+      "line": 288,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(PARCHMENT_VNUM, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 317,
+      "line": 320,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(1255, VIRTUAL)))"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 688,
+      "line": 691,
       "family": "item_lifecycle",
       "excerpt": "if (!(fish = read_object(fishes[random], VIRTUAL)))"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 929,
+      "line": 932,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed_ore[j], TRUE); // Ore is not an arti, but was 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1136,
+      "line": 1018,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(bandage, TRUE); // Not an arti, but 'in game.'"
+      "excerpt": "extract_obj(object, TRUE);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1211,
+      "line": 1237,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(bandage, TRUE); // Legacy untracked bandage."
+    },
+    {
+      "path": "src/economy/tradeskill.c",
+      "line": 1291,
       "family": "item_lifecycle",
       "excerpt": "tobj = read_object(recipenumber, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1233,
+      "line": 1313,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1296,
+      "line": 1376,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1306,
+      "line": 1386,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1318,
+      "line": 1398,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1336,
+      "line": 1416,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2520,
+      "line": 2600,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2530,
+      "line": 2610,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2563,
+      "line": 2643,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum + 1, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2567,
+      "line": 2647,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2575,
+      "line": 2655,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 107,
+      "line": 110,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 304,
+      "line": 307,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 851,
+      "line": 854,
       "family": "item_publication",
       "excerpt": "obj_from_char(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 863,
+      "line": 866,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 874,
+      "line": 877,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 881,
+      "line": 884,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 892,
+      "line": 895,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 910,
+      "line": 913,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 921,
+      "line": 924,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2519,
+      "line": 2599,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2529,
+      "line": 2609,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },

@@ -91,8 +91,11 @@ with its original UID after three committed offerings. The post-publication-ack
 crash journey confirms the separate loss window: the offerings stay consumed
 and the reward is absent after restart. Its default recovery expectation is
 still failing. A read-only inspection of issue #10's isolated SQL playtest
-found an active bandage custody row absent from the rejected save snapshot;
-the direct bandage extraction is the next narrow save-stability repair.
+found an active bandage custody row absent from the rejected save snapshot.
+The durable bandage path now retires custody before healing, and a disposable
+MariaDB save/restart journey passes. The already stranded player's row requires
+a separate, reviewed recovery action; no player data was changed. Quest crash
+recovery and the wider accounting route evidence remain open.
 
 ## Invariants to preserve
 
