@@ -3,6 +3,7 @@
 #include "world/falling.h"
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "magic/spells.h"

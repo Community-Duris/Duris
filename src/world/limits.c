@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
 #include "telemetry/telemetry_runtime.h"
 #include "world/difficulty.h"
 #include "core/structs.h"

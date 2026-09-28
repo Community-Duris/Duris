@@ -20,6 +20,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+#include "world/bloodstains.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +29,9 @@
 #include "combat/arena.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/collector_catalog_cache.h"
+#include "economy/economic_gameplay_authority.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_death_restitution_locker.h"
@@ -841,6 +844,9 @@ void poison_moveleak(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unuse
 void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			P_char victim, struct affected_type *af)
 {
+	uint64_t ch_runtime_id = 0;
+	uint64_t victim_runtime_id;
+	int dam_result;
 	struct damage_messages messages = {
 		"$N suddenly turns &+ggreen &nas your poison reaches $S &+Wvital &norgans.",
 		"You suddenly feel &+gsick &nas $n's poison reaches your &+Wvital &norgans.",
@@ -850,6 +856,10 @@ void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		"$N suddenly turns &+Ggreen &nholds $S throat and vomits &+Rblood &nas $S soul leaves the body forever.",
 	};
 
+	if (!char_in_list(victim) || !IS_ALIVE(victim))
+		return;
+	if (ch && !char_in_list(ch))
+		ch = NULL;
 	if (ch)
 		level = GET_LEVEL(ch);
 
@@ -867,10 +877,22 @@ void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	{
 		if (!ch)
 			ch = victim;
-		int dam_result = raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT,
-					    &messages);
+		ch_runtime_id = ch->runtime_id;
+		victim_runtime_id = victim->runtime_id;
+		af = get_spell_from_char(victim, POISON_HEART_TOXIN);
+		if (!af)
+			return;
+		dam_result = raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT,
+					&messages);
 		if (dam_result == DAM_NONEDEAD)
 		{
+			victim = find_character_by_runtime_id(victim_runtime_id);
+			if (!victim || !IS_ALIVE(victim))
+				return;
+			ch = find_character_by_runtime_id(ch_runtime_id);
+			af = get_spell_from_char(victim, POISON_HEART_TOXIN);
+			if (!af)
+				return;
 			if (!number(0, 3))
 				add_event(event_poison,
 					  IS_AFFECTED(victim, AFF_SLOW_POISON) ?
@@ -1915,7 +1937,9 @@ void obj_to_char(P_obj object, P_char ch)
 		    ownership.state != item_custody_state::active)
 		{
 			if (!has_authoritative_ownership && creation_candidate &&
-			    item_creation_grant_submit_to_player(ch, object, ch))
+			    !economic_gameplay_authority::active() &&
+			    item_creation_grant_submit_to_player(
+				    ch, object, ch, NULL, economic_source_kind::world_generation))
 				return;
 			logit(LOG_FILE,
 			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",
@@ -2293,6 +2317,18 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 
 	return (obj);
+}
+
+void unequip_char_dale(P_obj kala)
+{
+	int a, b;
+
+	b = -1;
+	for (a = 0; a < MAX_WEAR; a++)
+		if (OBJ_WORN_POS(kala, a))
+			b = a;
+	if (b != -1)
+		unequip_char(kala->loc.wearing, b);
 }
 
 void unequip_all(P_char ch)
@@ -2800,7 +2836,8 @@ void obj_to_room(P_obj object, int room)
 	}
 	if (world[room].contents && (world[room].contents->R_num == object->R_num))
 	{
-		if (obj_index[object->R_num].virtual_number == VOBJ_COINS)
+		if (obj_index[object->R_num].virtual_number == VOBJ_COINS &&
+		    !economic_gameplay_authority::active())
 		{
 			/* generic 'pile of coins' object, merge them */
 			add_coins(world[room].contents, object->value[0], object->value[1],
@@ -2823,7 +2860,8 @@ void obj_to_room(P_obj object, int room)
 		{
 			if (o->next_content && (o->next_content->R_num == object->R_num))
 			{
-				if (obj_index[object->R_num].virtual_number == VOBJ_COINS)
+				if (obj_index[object->R_num].virtual_number == VOBJ_COINS &&
+				    !economic_gameplay_authority::active())
 				{
 					/* generic 'pile of coins' object, merge them */
 					add_coins(o->next_content, object->value[0],
@@ -4598,6 +4636,8 @@ bool submit_corpse_destruction(P_obj corpse)
 	if (!corpse || !corpse->action_description || !*corpse->action_description ||
 	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
 		return false;
+	if (corpse_has_death_conflict(corpse))
+		return false;
 	int room = NOWHERE;
 	if (!corpse_release_room(corpse, &room))
 		return false;
@@ -4637,6 +4677,26 @@ void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
 	// reconnect reuses the existing live graph and therefore must not clear a
 	// fence unless a fresh authoritative snapshot was actually loaded.
 	REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
+}
+
+bool corpse_has_death_conflict(P_obj corpse)
+{
+	if (!corpse || corpse->type != ITEM_CORPSE ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	const int pid = corpse->value[CORPSE_PID];
+	if (pid <= 0)
+		return false;
+	const uint32_t save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	if (corpse_lifecycle_transaction_busy(static_cast<uint32_t>(pid), save_id))
+		return true;
+	for (P_char temp_ch = character_list; temp_ch; temp_ch = temp_ch->next)
+	{
+		if (IS_PC(temp_ch) && GET_PID(temp_ch) == pid &&
+		    corpse_raise_player_save_fenced(temp_ch))
+			return true;
+	}
+	return false;
 }
 
 namespace
@@ -4948,6 +5008,11 @@ bool persistence_defer_corpse_room_release(P_obj corpse)
 	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
+	if (corpse_has_death_conflict(corpse))
+	{
+		rearm_corpse_release(corpse);
+		return true;
+	}
 	if (corpse->value[CORPSE_PID] > 0 && corpse->value[CORPSE_SAVEID] > 0 &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
 					      static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])))
@@ -5109,6 +5174,11 @@ bool persistence_defer_corpse_destruction(P_obj corpse)
 	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
+	if (corpse_has_death_conflict(corpse))
+	{
+		rearm_corpse_release(corpse);
+		return true;
+	}
 	if (!submit_corpse_destruction(corpse))
 		persistence_alert(AVATAR, "corpse", "durable_destroy", "none", "none",
 				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);

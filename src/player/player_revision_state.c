@@ -22,6 +22,7 @@ struct player_revision_entry
 	player_component_mask_t inflight_components = 0;
 	std::array<player_revision_t, CHECKPOINT_COMPONENT_COUNT> component_revisions = {};
 	bool overflowed = false;
+	bool terminal_death_pinned = false;
 };
 
 std::unordered_map<int, player_revision_entry> revision_states;
@@ -61,6 +62,8 @@ bool player_revision_hydrate(int pid, player_revision_t durable_revision)
 	player_revision_entry *state = find_state(pid);
 	if (state)
 	{
+		if (state->terminal_death_pinned)
+			return false;
 		if (state->unacknowledged_components || state->queued_components ||
 		    state->inflight_components)
 			return durable_revision == state->acknowledged_revision;
@@ -94,7 +97,8 @@ bool player_revision_mark(int pid, player_component_mask_t components,
 			  player_revision_t *revision_out)
 {
 	player_revision_entry *state = find_state(pid);
-	if (!state || !valid_components(components) || state->overflowed)
+	if (!state || !valid_components(components) || state->overflowed ||
+	    state->terminal_death_pinned)
 		return false;
 	if (state->current_revision == std::numeric_limits<player_revision_t>::max())
 	{
@@ -196,6 +200,24 @@ bool player_revision_fail_inflight(int pid, player_revision_t revision,
 	state->inflight_components = 0;
 	state->queued_revision = state->current_revision;
 	state->queued_components = state->unacknowledged_components;
+	return true;
+}
+
+bool player_revision_pin_terminal_death(int pid, player_revision_t revision)
+{
+	player_revision_entry *state = find_state(pid);
+	if (!state || state->terminal_death_pinned || state->current_revision != revision)
+		return false;
+	state->terminal_death_pinned = true;
+	return true;
+}
+
+bool player_revision_unpin_terminal_death(int pid, player_revision_t revision)
+{
+	player_revision_entry *state = find_state(pid);
+	if (!state || !state->terminal_death_pinned || state->current_revision != revision)
+		return false;
+	state->terminal_death_pinned = false;
 	return true;
 }
 

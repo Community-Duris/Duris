@@ -1,5 +1,10 @@
 #include "economy/auction_repository.h"
 
+#include "economy/auction_accounting.h"
+#include "economy/auction_listing_accounting.h"
+#include "economy/auction_money_claim_accounting.h"
+#include "economy/auction_item_claim_accounting.h"
+#include "economy/auction_settlement_accounting.h"
 #include "item/item_transfer_command.h"
 
 #include <algorithm>
@@ -421,6 +426,7 @@ bool transition_items(MYSQL *connection, const critical_command &command,
 		      std::to_string(static_cast<unsigned int>(command.source_site)) + ")";
 		if (!execute(connection, sql))
 			return false;
+		// The typed accounting owner links this native event after the handoff.
 		result->item_uids[index] = item.item_uid;
 		result->item_revisions[index] = next_item_revision;
 	}
@@ -531,9 +537,9 @@ bool write_auction_ledger(MYSQL *connection, const critical_command &command,
 }
 } // namespace
 
-bool auction_repository_execute(MYSQL *connection, const critical_command &command,
-				auction_command_result *result, unsigned int *result_code,
-				bool *mutation_applied)
+static bool auction_repository_execute_impl(MYSQL *connection, const critical_command &command,
+					    auction_command_result *result,
+					    unsigned int *result_code, bool *mutation_applied)
 {
 	if (!connection || !result || !result_code || !mutation_applied)
 		return false;
@@ -848,4 +854,71 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		return false;
 	*mutation_applied = true;
 	return true;
+}
+
+bool auction_repository_execute(MYSQL *connection, const critical_command &command,
+				auction_command_result *result, unsigned int *result_code,
+				bool *mutation_applied)
+{
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+	return auction_repository_execute_impl(connection, command, result, result_code,
+					       mutation_applied);
+}
+
+bool auction_repository_execute_accounted(MYSQL *connection, const critical_command &command,
+					  auction_command_result *result, unsigned int *result_code,
+					  bool *mutation_applied)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)result;
+	(void)result_code;
+	(void)mutation_applied;
+	errno = ENOTSUP;
+	return false;
+#else
+	economic_frozen_intent intent;
+	auction_command_payload payload = {};
+	if (!connection || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command) ||
+	    !auction_command_decode_payload(command, &payload) ||
+	    (payload.action != auction_action::list && payload.action != auction_action::bid &&
+	     payload.action != auction_action::claim_money &&
+	     payload.action != auction_action::claim_item &&
+	     payload.action != auction_action::finalize &&
+	     payload.action != auction_action::remove) ||
+	    economic_intent_decode(command.accounting_intent, &intent) !=
+		    economic_accounting_error::ok ||
+	    economic_intent_verify_binding(command, intent) != economic_accounting_error::ok ||
+	    !((payload.action == auction_action::list &&
+	       intent.admission.metadata.writer_id == ECONOMIC_WRITER_AUCTION_LISTING &&
+	       intent.admission.metadata.reason == economic_reason::auction_listing) ||
+	      (payload.action == auction_action::bid &&
+	       intent.admission.metadata.writer_id == ECONOMIC_WRITER_AUCTION_BID &&
+	       intent.admission.metadata.reason == economic_reason::auction_bid) ||
+	      (payload.action == auction_action::claim_item &&
+	       intent.admission.metadata.writer_id == ECONOMIC_WRITER_AUCTION_ITEM_CLAIM &&
+	       intent.admission.metadata.reason == economic_reason::auction_claim) ||
+	      (payload.action == auction_action::claim_money &&
+	       intent.admission.metadata.writer_id == ECONOMIC_WRITER_AUCTION_MONEY_CLAIM &&
+	       intent.admission.metadata.reason == economic_reason::auction_claim) ||
+	      ((payload.action == auction_action::finalize ||
+		payload.action == auction_action::remove) &&
+	       intent.admission.metadata.writer_id == ECONOMIC_WRITER_AUCTION_SETTLEMENT &&
+	       intent.admission.metadata.reason == (payload.action == auction_action::remove ?
+							    economic_reason::auction_cancel :
+							    economic_reason::auction_settle))))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+	return auction_repository_execute_impl(connection, command, result, result_code,
+					       mutation_applied);
+#endif
 }

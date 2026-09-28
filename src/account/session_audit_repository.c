@@ -22,6 +22,12 @@ std::string bytes_hex(const uint8_t *bytes, size_t size)
 bool session_audit_repository_execute(MYSQL *connection, const critical_command &command,
 				      session_audit_result *result)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !result || !session_audit_command_decode_payload(command, result))
 	{
 		errno = EINVAL;

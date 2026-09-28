@@ -1,6 +1,7 @@
 /* beholder spells */
 
 #include "core/prototypes.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -9,6 +10,8 @@
 #include <string.h>
 #include <time.h>
 #include "combat/damage.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 
@@ -376,7 +379,14 @@ void spell_beholder_disintegrate(int level, P_char ch, P_char victim, P_obj obj)
 						obj = victim->equipment[i];
 
 						if (!IS_ARTIFACT(obj) &&
-						    ((obj->condition -= number(1, 10)) < 1))
+						    economic_gameplay_authority::active() &&
+						    item_command_uses_durable_ownership(obj))
+						{
+							act("$N&n's $q&n flares, but stays intact.",
+							    TRUE, ch, obj, victim, TO_VICT);
+						}
+						else if (!IS_ARTIFACT(obj) &&
+							 ((obj->condition -= number(1, 10)) < 1))
 						{
 							act("$N&n's $q&n turns red hot, disappearing in a puff of smoke!",
 							    TRUE, ch, obj, victim, TO_VICT);

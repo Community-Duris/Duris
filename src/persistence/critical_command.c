@@ -157,12 +157,38 @@ bool critical_command_normalize(critical_command *command)
 	return critical_command_valid(*command);
 }
 
+bool critical_command_legacy_execution_supported(const critical_command &command)
+{
+	return command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+	       command.accounting_intent.empty() && command.type >= critical_command_type::test &&
+	       command.type <= critical_command_type::player_death_restitution;
+}
+
 bool critical_command_valid(const critical_command &command)
 {
-	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	// Legacy mutation entrypoints stay closed to schema 2. The coordinator
+	// separately registers typed accounting admission and atomic owners.
+	return critical_command_legacy_execution_supported(command) &&
+	       critical_command_envelope_valid(command);
+}
+
+bool critical_command_envelope_valid(const critical_command &command)
+{
+	if ((command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION) ||
+	    (command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     !command.accounting_intent.empty()) ||
+	    (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	     command.accounting_intent.empty()) ||
+	    (command.publication_required &&
+	     (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	      (command.type != critical_command_type::account_bank &&
+	       command.type != critical_command_type::coin_transfer &&
+	       command.type != critical_command_type::item_transfer))) ||
+	    command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
-	    command.type > critical_command_type::player_death_restitution ||
+	    command.type > critical_command_type::economic_baseline ||
 	    command.source_site < critical_source_site::command ||
 	    command.source_site > critical_source_site::operator_repair ||
 	    command.deadline_class < critical_deadline_class::interactive ||
@@ -243,13 +269,14 @@ const char *critical_failure_stage_name(critical_failure_stage stage)
 critical_command_codec_result critical_command_encode(const critical_command &command,
 						      std::vector<uint8_t> *encoded)
 {
-	if (!encoded || !critical_command_valid(command))
+	if (!encoded || !critical_command_envelope_valid(command))
 		return critical_command_codec_result::invalid;
 	encoded->clear();
 	try
 	{
 		encoded->reserve(64 + command.keys.size() * 16 +
-				 command.expected_revisions.size() * 24 + command.payload.size());
+				 command.expected_revisions.size() * 24 + command.payload.size() +
+				 command.accounting_intent.size() + 4);
 		encoded->insert(encoded->end(), COMMAND_MAGIC,
 				COMMAND_MAGIC + sizeof(COMMAND_MAGIC));
 		append_le<uint32_t>(*encoded, command.schema_version);
@@ -259,7 +286,7 @@ critical_command_codec_result critical_command_encode(const critical_command &co
 		append_le<uint16_t>(*encoded, command.payload_version);
 		append_le<uint16_t>(*encoded, static_cast<uint16_t>(command.source_site));
 		encoded->push_back(static_cast<uint8_t>(command.deadline_class));
-		encoded->push_back(0);
+		encoded->push_back(command.publication_required ? 1 : 0);
 		append_le<uint64_t>(*encoded, command.accepted_at_usec);
 		append_le<uint32_t>(*encoded, static_cast<uint32_t>(command.keys.size()));
 		append_le<uint32_t>(*encoded,
@@ -281,6 +308,13 @@ critical_command_codec_result critical_command_encode(const critical_command &co
 			append_le<uint64_t>(*encoded, revision.revision);
 		}
 		encoded->insert(encoded->end(), command.payload.begin(), command.payload.end());
+		if (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		{
+			append_le<uint32_t>(
+				*encoded, static_cast<uint32_t>(command.accounting_intent.size()));
+			encoded->insert(encoded->end(), command.accounting_intent.begin(),
+					command.accounting_intent.end());
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -305,7 +339,8 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 	uint32_t key_count = 0, revision_count = 0, payload_size = 0;
 	if (!read_le(encoded, size, &offset, &decoded.schema_version))
 		return critical_command_codec_result::truncated;
-	if (decoded.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION)
+	if (decoded.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	    decoded.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
 		return critical_command_codec_result::unsupported_version;
 	memcpy(decoded.operation_id.bytes.data(), encoded + offset,
 	       decoded.operation_id.bytes.size());
@@ -317,8 +352,11 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 	decoded.type = static_cast<critical_command_type>(type);
 	decoded.source_site = static_cast<critical_source_site>(source);
 	decoded.deadline_class = static_cast<critical_deadline_class>(encoded[offset]);
-	if (encoded[offset + 1] != 0)
+	if (encoded[offset + 1] > 1 ||
+	    (encoded[offset + 1] &&
+	     decoded.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION))
 		return critical_command_codec_result::invalid;
+	decoded.publication_required = encoded[offset + 1] == 1;
 	offset += 2;
 	if (!read_le(encoded, size, &offset, &decoded.accepted_at_usec) ||
 	    !read_le(encoded, size, &offset, &key_count) ||
@@ -329,8 +367,20 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 	    revision_count > CRITICAL_COMMAND_MAX_KEYS ||
 	    payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return critical_command_codec_result::overflow;
-	const uint64_t required = static_cast<uint64_t>(key_count) * 16 +
-				  static_cast<uint64_t>(revision_count) * 24 + payload_size;
+	uint64_t required = static_cast<uint64_t>(key_count) * 16 +
+			    static_cast<uint64_t>(revision_count) * 24 + payload_size;
+	if (decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+	{
+		if (required > size - offset || size - offset - required < 4)
+			return critical_command_codec_result::truncated;
+		size_t intent_offset = offset + static_cast<size_t>(required);
+		uint32_t intent_size = 0;
+		if (!read_le(encoded, size, &intent_offset, &intent_size))
+			return critical_command_codec_result::truncated;
+		if (!intent_size || intent_size > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES)
+			return critical_command_codec_result::overflow;
+		required += 4 + intent_size;
+	}
 	if (required != size - offset)
 		return required > size - offset ? critical_command_codec_result::truncated :
 						  critical_command_codec_result::invalid;
@@ -364,13 +414,16 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 				return critical_command_codec_result::truncated;
 			decoded.expected_revisions.push_back(revision);
 		}
-		decoded.payload.assign(encoded + offset, encoded + size);
+		decoded.payload.assign(encoded + offset, encoded + offset + payload_size);
+		if (decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+			decoded.accounting_intent.assign(encoded + offset + payload_size + 4,
+							 encoded + size);
 	}
 	catch (const std::bad_alloc &)
 	{
 		return critical_command_codec_result::overflow;
 	}
-	if (!critical_command_valid(decoded))
+	if (!critical_command_envelope_valid(decoded))
 		return critical_command_codec_result::invalid;
 	*command = std::move(decoded);
 	return critical_command_codec_result::ok;

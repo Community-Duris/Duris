@@ -183,12 +183,15 @@ int main()
 	payload.items[0] = { 200, 200, 0, ITEM_TRANSFER_ABSENT_REVISION, 501,
 			     item_custody_state::absent };
 	payload.corpse = {};
+	payload.logical_source_id = UINT64_C(0x123456789abcdef0);
 	assert(item_transfer_command_build(&command, operation(), payload,
 					   critical_source_site::command,
 					   critical_deadline_class::interactive));
 	assert(item_transfer_command_decode_payload(command, &decoded));
 	assert(decoded.target_root_item_uid == 700 && decoded.target_parent_item_uid == 700 &&
-	       decoded.expected_target_parent_revision == 4);
+	       decoded.expected_target_parent_revision == 4 &&
+	       decoded.logical_source_id == payload.logical_source_id);
+	payload.logical_source_id = 0;
 
 	item_transfer_payload batch = {};
 	batch.from_owner = { item_owner_type::room, 50, 0 };
@@ -310,10 +313,20 @@ int main()
 	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive));
+	invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.logical_source_id = 90001;
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
 
-	// Version 6 batch commands remain replayable: v7 adds one trailing collector
-	// context length, which is absent from the older wire contract.
-	auto version_six = batch_command;
+	// Older batch commands remain replayable: v8 adds a source ID, and v7
+	// added the collector context length after the v6 payload.
+	auto version_seven = batch_command;
+	version_seven.payload_version = ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION;
+	version_seven.payload.resize(version_seven.payload.size() - sizeof(uint64_t));
+	assert(item_transfer_command_decode_payload(version_seven, &decoded));
+	assert(decoded.multi_root && decoded.item_count == 2 && !decoded.logical_source_id);
+	auto version_six = version_seven;
 	version_six.payload_version = ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;
 	version_six.payload.resize(version_six.payload.size() - sizeof(uint32_t));
 	assert(item_transfer_command_decode_payload(version_six, &decoded));
@@ -387,7 +400,7 @@ int main()
 assert (
     "command.payload.size() < item_section_size + sizeof(uint32_t)"
     in COMMAND_SOURCE
-), "v4-v7 item blob length reads must be bounds-checked"
+), "v4-v8 item blob length reads must be bounds-checked"
 
 
 with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_dir:
@@ -417,4 +430,4 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
     )
     subprocess.run([str(binary)], check=True)
 
-print("[PASS] item-transfer v2-v7 compatibility, corpse and collector contexts")
+print("[PASS] item-transfer v2-v8 compatibility, source, corpse and collector contexts")

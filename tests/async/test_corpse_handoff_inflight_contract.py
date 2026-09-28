@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[2]
 fight = (SRC / "fight.c").read_text(encoding="utf-8", errors="replace")
 movement = (SRC / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace")
-specs = (SRC / "specs.object.c").read_text(encoding="utf-8", errors="replace")
+specs = (SRC / "specs.heavens.c").read_text(encoding="utf-8", errors="replace")
 
 
 def body(text, signature):

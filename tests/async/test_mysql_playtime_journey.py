@@ -234,6 +234,10 @@ def run(server):
                     process = None
                     print(json.dumps(rows, indent=2))
                     print("[PASS] MariaDB elapsed/quiet/repeated saves, link loss, quit/restart, death/reload, crash recovery and live copyover")
+                    subprocess.run(
+                        ["python3", "tests/async/test_player_save_item_reconcile_mysql.py"],
+                        cwd=ROOT, env=environment, check=True,
+                    )
                 except Exception:
                     print(output_path.read_text()[-6000:])
                     print(journey.runtime_logs(runtime))

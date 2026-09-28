@@ -39,10 +39,11 @@
 #include "core/mm.h"
 #include "net/poll.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
 #include "player/player_name.h"
 #include "account/password_hash.h"
 #include "persistence/presence_policy.h"
+#include "persistence/persistence_mode.h"
 #include "net/websocket.h"
 #include "net/ws_auth.h"
 #include "core/utility.h"
@@ -3345,6 +3346,33 @@ static void ws_send_admin_delete_response(struct descriptor_data *d, int success
 	cJSON_Delete(result);
 }
 
+static void ws_free_admin_delete_temp_character(P_char ch)
+{
+	if (!ch)
+		return;
+	if (ch->player.name)
+		str_free(ch->player.name);
+	if (ch->player.title)
+		str_free(ch->player.title);
+	if (ch->player.short_descr)
+		str_free(ch->player.short_descr);
+	if (ch->player.long_descr)
+		str_free(ch->player.long_descr);
+	if (ch->player.description)
+		str_free(ch->player.description);
+	if (ch->only.pc)
+	{
+		if (ch->only.pc->poofIn)
+			str_free(ch->only.pc->poofIn);
+		if (ch->only.pc->poofOut)
+			str_free(ch->only.pc->poofOut);
+		if (ch->only.pc->gcmd_arr)
+			FREE(ch->only.pc->gcmd_arr);
+		free(ch->only.pc);
+	}
+	free(ch);
+}
+
 /* admin delete a character (durisweb service only) */
 void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 {
@@ -3509,7 +3537,7 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 	int restore_result = restoreCharOnly(ch, (char *)char_name);
 	if (restore_result < 0)
 	{
-		/* pfile doesn't exist or is corrupted - still clean up account and database */
+		/* A failed restore is not authority to delete SQL-backed account data. */
 		if (restore_result == -1)
 		{
 			ws_send_admin_delete_progress(
@@ -3521,8 +3549,23 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 			ws_send_admin_delete_progress(d, request_id,
 						      "Character save file corrupted", "info");
 		}
-		free(ch->only.pc);
-		free(ch);
+
+		/* In SQL-primary operation, a failed restore does not prove
+		   that the player or recoverable evidence is absent. Defer cleanup. */
+		if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			ws_free_admin_delete_temp_character(ch);
+			ws_send_admin_delete_progress(
+				d, request_id,
+				"Character deletion deferred because save data could not be loaded",
+				"error");
+			ws_send_admin_delete_response(
+				d, 0, account_name, char_name, request_id,
+				"Character save data could not be loaded; deletion was deferred");
+			free_account(target_acct);
+			return;
+		}
+		ws_free_admin_delete_temp_character(ch);
 
 		ws_send_admin_delete_progress(d, request_id,
 					      "Cleaning up orphaned character data...", "info");
@@ -3582,35 +3625,29 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 
 	ws_send_admin_delete_progress(d, request_id, "Character save file loaded", "success");
 
+	/* The core deletion result is authoritative for account-list mutation. */
+	ws_send_admin_delete_progress(d, request_id, "Deleting character save file...", "info");
+	const character_delete_result delete_result = delete_character_result(ch);
+	if (delete_result != character_delete_result::deleted)
+	{
+		const char *error =
+			delete_result == character_delete_result::refused ?
+				"Character deletion was refused; account data was not changed" :
+				"Character deletion requires reconciliation; no further account cleanup was attempted";
+		ws_free_admin_delete_temp_character(ch);
+		ws_send_admin_delete_progress(d, request_id, error, "error");
+		free_account(target_acct);
+		ws_send_admin_delete_response(d, 0, account_name, char_name, request_id, error);
+		return;
+	}
+
 	/* log the deletion - audit trail */
 	logit(LOG_PLAYER, "ADMIN: %s deleted character %s from account %s via web admin",
 	      deleted_by, char_name, account_name);
-
-	/* delete character file and free temp character */
-	ws_send_admin_delete_progress(d, request_id, "Deleting character save file...", "info");
-	deleteCharacter(ch);
 	ws_send_admin_delete_progress(d, request_id, "Character save file deleted", "success");
 
 	/* free strings allocated by restoreCharOnly */
-	if (ch->player.name)
-		str_free(ch->player.name);
-	if (ch->player.title)
-		str_free(ch->player.title);
-	if (ch->player.short_descr)
-		str_free(ch->player.short_descr);
-	if (ch->player.long_descr)
-		str_free(ch->player.long_descr);
-	if (ch->player.description)
-		str_free(ch->player.description);
-	if (ch->only.pc->poofIn)
-		str_free(ch->only.pc->poofIn);
-	if (ch->only.pc->poofOut)
-		str_free(ch->only.pc->poofOut);
-	if (ch->only.pc->gcmd_arr)
-		FREE(ch->only.pc->gcmd_arr);
-
-	free(ch->only.pc);
-	free(ch);
+	ws_free_admin_delete_temp_character(ch);
 
 	/* remove from account character list */
 	ws_send_admin_delete_progress(d, request_id, "Removing from account character list...",

@@ -20,6 +20,7 @@
 #include "core/utils.h"
 #include "item/enhance.h"
 #include "economy/tradeskill.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/objmisc.h"
 #include "combat/chaos_materials.h"
 
@@ -660,6 +661,12 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("&+yWhich &+Witem &+ywould you like to &+men&+Mhan&+mce&+y? &n\r\n"
 			     "Syntax: enhance <source item>\r\n"
 			     "        enhance <source item> <material item> &+w(legacy)\r\n",
+			     ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Enhancement is unavailable while economic accounting is active.\r\n",
 			     ch);
 		return;
 	}

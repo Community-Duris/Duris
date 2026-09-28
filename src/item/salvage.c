@@ -12,6 +12,7 @@
 #include "core/utils.h"
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
 #include <stdio.h>
@@ -24,7 +25,8 @@ namespace
 {
 bool grant_salvage_item(P_char ch, P_obj object)
 {
-	if (object && item_creation_grant_submit_to_player(ch, object, ch))
+	if (object && item_creation_grant_submit_to_player(
+		      ch, object, ch, NULL, economic_source_kind::crafting))
 		return true;
 	if (object)
 		extract_obj(object, FALSE);
@@ -173,6 +175,11 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 	if (IS_SET(item->extra_flags, ITEM_NODROP))
 	{
 		act("But your $q is so pretty.", FALSE, ch, item, 0, TO_CHAR);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Salvage is unavailable while item accounting is active.\r\n", ch);
 		return;
 	}
 

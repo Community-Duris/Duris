@@ -4,6 +4,7 @@
 #include "player/player_revision_state.h"
 #include "persistence/critical_command.h"
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
@@ -34,6 +35,7 @@ enum class player_save_terminal_result : uint8_t
 	invalid,
 	unavailable,
 	timed_out,
+	not_pending,
 };
 
 struct player_save_pipeline_health
@@ -54,6 +56,7 @@ struct player_save_pipeline_health
 	uint64_t durable_spills;
 	uint64_t completions;
 	uint64_t terminal_fences;
+	uint64_t terminal_death_requeues;
 	uint64_t terminal_database_acks;
 	uint64_t terminal_journal_handoffs;
 	uint64_t terminal_timeouts;
@@ -64,6 +67,25 @@ struct player_save_pipeline_health
 	bool dispatcher_running;
 	bool replay_complete;
 	bool replay_blocked;
+};
+
+// Publishes startup replay readiness to normal player-load callers. False
+// covers not-started, in-progress, failed, and stopped pipeline states.
+class player_save_pipeline_replay_gate
+{
+    public:
+	void begin_replay() noexcept { replay_complete_.store(false, std::memory_order_release); }
+	void finish_replay(bool succeeded) noexcept
+	{
+		replay_complete_.store(succeeded, std::memory_order_release);
+	}
+	bool loads_allowed() const noexcept
+	{
+		return replay_complete_.load(std::memory_order_acquire);
+	}
+
+    private:
+	std::atomic<bool> replay_complete_{ false };
 };
 
 bool player_save_pipeline_init(const char *journal_directory);
@@ -77,9 +99,15 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
 							  bool allow_journal_handoff);
-// Capture the immutable death disposition for ch and wait for it to become
-// durable. wallet_pile may be null; when the wallet still holds coins it must be
-// an unattached pile carrying the complete remaining wallet.
+// Resume the exact in-memory format-8 death request for corpse_uid (zero uses
+// the pinned corpse). Returns not_pending only when no pinned death exists;
+// journal durability never releases it.
+player_save_terminal_result
+player_save_pipeline_terminal_death_resume(P_char ch, uint64_t corpse_uid, uint64_t timeout_msec);
+// Capture the immutable death disposition for ch and wait for its database ACK.
+// wallet_pile may be null; when the wallet still holds coins it must be an
+// unattached pile carrying the complete remaining wallet. allow_journal_handoff
+// is retained for call compatibility; death requests never accept journal-only ACKs.
 player_save_terminal_result
 player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 				    const critical_operation_id &operation_id, int room_vnum,
@@ -89,6 +117,9 @@ void player_save_pipeline_quiesce(void);
 void player_save_pipeline_resume(void);
 bool player_save_pipeline_drain(uint64_t timeout_msec);
 player_save_pipeline_health player_save_pipeline_health_copy(void);
+// Normal account, legacy, and copyover materialization is forbidden until the
+// startup save-journal replay has completed successfully.
+bool player_save_pipeline_loads_allowed(void);
 size_t player_save_pipeline_dirty_count(void);
 bool player_save_pipeline_is_nonterminal_type(int save_intent);
 // Exact-PID save/login barrier used by offline critical commands.  A target

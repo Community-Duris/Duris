@@ -10,6 +10,7 @@
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "specs/specs.gellz.h"
 #include <ctype.h>
 #include <list>
@@ -214,6 +215,17 @@ int magic_deck(P_obj obj, P_char ch, int cmd, char *argument)
 	char buf[MAX_STRING_LENGTH];
 	char betbuf2[MAX_STRING_LENGTH];
 	char betbuf1[MAX_STRING_LENGTH];
+	if (economic_gameplay_authority::active())
+	{
+		if (cmd == CMD_OFFER && ch)
+		{
+			send_to_char(
+				"Blackjack is unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
+		return FALSE;
+	}
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -222,36 +234,6 @@ int magic_deck(P_obj obj, P_char ch, int cmd, char *argument)
 		clear_hands(2);
 		player_total = dealer_total = dealercards = bettype = betamt = 0;
 		return TRUE;
-	}
-
-	// Aaah.. the suspense! ;)
-	if (cmd == CMD_PERIODIC && game_on == BJ_DEALERSTURN)
-	{
-		if (dealer_total < 17 && dealercards < 5)
-		{
-			// This won't work yet, 'cause we have to save a pointer to ch somewhere and reference it
-			//   since ch is NULL when CMD_PERIODIC fires.
-			act("\n&+yThe &+CDealer&+y takes a new card...&n", FALSE, ch, obj, ch,
-			    TO_CHAR);
-			needcard(2, ch);
-			showhand(obj, ch, cmd, argument, 2);
-		}
-		// End game
-		else
-		{
-			if (dealer_total < 22)
-			{
-				act("\n&+yThe &+CDealer&+y decides to &+Wstay&+y with his current hand!&n\n\n",
-				    FALSE, ch, obj, ch, TO_CHAR);
-			}
-			else
-			{
-				send_to_char(
-					"&+CDealer&+R BUST&+y, so &+RY&+CO&+BU &+GW&+YI&+MN&+C!&+R!&+y&n\n",
-					ch);
-				do_win(ch, bettype, betamt, 1);
-			}
-		}
 	}
 
 	if (cmd == CMD_SAY && IS_ALIVE(ch) && IS_TRUSTED(ch))
@@ -761,6 +743,8 @@ int needcard(char whoscard, P_char ch)
 
 int do_win(P_char ch, int bettype, int betamt, int winloose)
 {
+	if (economic_gameplay_authority::active())
+		return FALSE;
 	if (winloose == 1)
 	{ // WINNING Tasks
 		static const int coin_values[] = { 1, 10, 100, 1000 };

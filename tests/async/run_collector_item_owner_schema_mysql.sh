@@ -60,4 +60,20 @@ accepted=$("${MYSQL[@]}" "$DB_NAME" -e "START TRANSACTION; INSERT INTO item_owne
 preserved=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT (SELECT COUNT(*) FROM item_owner_revision WHERE owner_type=10 AND owner_id=10001)+(SELECT COUNT(*) FROM item_current_owner WHERE item_uid=10001 AND owner_type=10)+(SELECT COUNT(*) FROM item_ownership_baseline WHERE item_uid=10002 AND owner_type=10)")
 [[ "$preserved" == 3 ]] || { echo "FAILED: older shopkeeper migration narrowed collector custody; found $preserved rows" >&2; exit 1; }
 
-printf 'collector item owner migration preserved type 9, admitted type 10, and resisted later narrowing\n'
+# A migrated staging database can already contain pet custody (type 11).
+# Replaying either older legacy step must not narrow that later authority.
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0028_pet_custody.sql"
+"${MYSQL[@]}" "$DB_NAME" -e "INSERT INTO item_owner_revision (owner_type,owner_id,owner_context_id,revision) VALUES (11,11001,0,0); INSERT INTO item_current_owner (item_uid,root_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES (11001,11001,11,11001,0,1,1,1); INSERT INTO item_ownership_baseline (item_uid,root_item_uid,owner_type,owner_id,owner_context_id,opening_item_revision,vnum,source_table,source_row_id) VALUES (11002,11002,11,11001,0,1,1,'collector_test',11002);"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/shopkeeper_item_owner.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/collector_item_owner.sql"
+"$ROOT/migrations/verify_collector_item_owner.sh"
+pet_retained=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT (SELECT COUNT(*) FROM item_owner_revision WHERE owner_type=11 AND owner_id=11001)+(SELECT COUNT(*) FROM item_current_owner WHERE item_uid=11001 AND owner_type=11)+(SELECT COUNT(*) FROM item_ownership_baseline WHERE item_uid=11002 AND owner_type=11)")
+[[ "$pet_retained" == 3 ]] || { echo "FAILED: legacy replay did not preserve all pet custody rows; found $pet_retained" >&2; exit 1; }
+pet_checks=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+11';")
+[[ "$pet_checks" == 3 ]] || { echo "FAILED: legacy replay narrowed pet custody checks; found $pet_checks" >&2; exit 1; }
+if "${MYSQL[@]}" "$DB_NAME" -e "INSERT INTO item_owner_revision (owner_type,owner_id,owner_context_id,revision) VALUES (12,12001,0,0)" >/dev/null 2>&1; then
+    echo 'FAILED: legacy replay permitted an unknown owner type 12' >&2
+    exit 1
+fi
+
+printf 'collector and shopkeeper replay preserved owner types 9, 10, and pet type 11\n'

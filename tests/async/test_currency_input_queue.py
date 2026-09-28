@@ -220,6 +220,16 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 	return critical_submit_result::accepted;
 }
 
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command)
+{
+	std::abort(); // This legacy queue fixture has no activated accounting authority.
+}
+
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{
+	std::abort(); // Held accounting publication is tested by completion_retention.
+}
+
 bool critical_command_coordinator_is_fenced(const critical_entity_key &,
 					     critical_operation_id *)
 {
@@ -1439,6 +1449,9 @@ def main(flatfile: bool = False) -> int:
                 "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
                 "-Isrc", *mysql_cflags, str(source), rel("currency_transaction.c"),
                 rel("currency_command.c"), rel("critical_command.c"),
+                rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
+                rel("economic_currency_adapter.c"), rel("economic_accounting_intent.c"),
+                rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
                 rel("coin_transfer_command.c"), rel("item_transfer_command.c"),
                 rel("player_snapshot_codec.c"), rel("item_ownership_runtime.c"),
                 "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),

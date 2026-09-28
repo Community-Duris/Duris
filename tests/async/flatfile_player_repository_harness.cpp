@@ -211,7 +211,7 @@ static player_snapshot make_status(player_revision_t revision, int level, int ro
 
 // Read existing synthetic authority without recovery or mutation. Used by the
 // full-world journey to compare item identities across real server restarts.
-static void inspect_authority(const std::string &root, int32_t pid)
+static void inspect_authority(const std::string &root, int32_t pid, bool item_only = false)
 {
 	std::string error;
 	player_snapshot snapshot;
@@ -222,10 +222,12 @@ static void inspect_authority(const std::string &root, int32_t pid)
 	require(flatfile_identity_lookup_pid(root, pid, &identity, &error) ==
 			flatfile_identity_result::ok,
 		"inspect identity: " + error);
-	flatfile_player_domain_record domains;
-	require(flatfile_player_domain_load(root, pid, identity.account, identity.racewar, &domains,
-					    &error) == flatfile_player_domain_result::ok,
-		"inspect wallet: " + error);
+	flatfile_player_domain_record domains = {};
+	if (!item_only)
+		require(flatfile_player_domain_load(root, pid, identity.account, identity.racewar,
+						    &domains,
+						    &error) == flatfile_player_domain_result::ok,
+			"inspect wallet: " + error);
 	flatfile_authority_lock lock;
 	require(lock.acquire(root, &error), "inspect authority lock: " + error);
 	std::cout << "{\"revision\":" << snapshot.revision << ",\"intent\":" << snapshot.save_intent
@@ -374,6 +376,7 @@ static void coin_player_matrix(const fs::path &path)
 			flatfile_identity_result::ok,
 		"coin player identity claim");
 	auto snapshot = make_full(1);
+	snapshot.items[0].equipment_slot = 5;
 	snapshot.items[1].vnum = VOBJ_COINS;
 	snapshot.items[1].type = ITEM_MONEY;
 	snapshot.items[1].values[0] = 50;
@@ -396,6 +399,10 @@ static void coin_player_matrix(const fs::path &path)
 							    &error) ==
 				flatfile_item_repository_result::ok,
 			"coin player custody load");
+		require(std::any_of(owned.begin(), owned.end(),
+				    [](const auto &item)
+				    { return item.item_uid == 100 && item.equipment_slot == 5; }),
+			"equipped player baseline slot missing");
 		flatfile_item_repository_load_owner(root, { item_owner_type::destruction, 0, 0 },
 						    &destroyed_revision, &destroyed, &error);
 		const auto found = std::find_if(owned.begin(), owned.end(), [](const auto &item)
@@ -636,9 +643,26 @@ int main(int argc, char **argv)
 		std::cout << item.object_uid << '\n';
 		return 0;
 	}
-	if (argc == 4 && std::string(argv[2]) == "inspect")
+	if (argc == 4 &&
+	    (std::string(argv[2]) == "inspect" || std::string(argv[2]) == "inspect-items"))
 	{
-		inspect_authority(argv[1], std::stoi(argv[3]));
+		inspect_authority(argv[1], std::stoi(argv[3]),
+				  std::string(argv[2]) == "inspect-items");
+		return 0;
+	}
+	if (argc == 4 && std::string(argv[2]) == "inspect-item")
+	{
+		flatfile_item_ownership_record item = {};
+		std::string error;
+		require(flatfile_item_repository_lookup_uid(argv[1], std::stoull(argv[3]), &item,
+							    &error) ==
+				flatfile_item_repository_result::ok,
+			"inspect item UID: " + error);
+		std::cout << "{\"uid\":" << item.item_uid << ",\"root\":" << item.root_item_uid
+			  << ",\"parent\":" << item.parent_item_uid << ",\"vnum\":" << item.vnum
+			  << ",\"revision\":" << item.item_revision
+			  << ",\"owner_type\":" << static_cast<unsigned>(item.owner.type)
+			  << ",\"state\":" << static_cast<unsigned>(item.state) << "}\n";
 		return 0;
 	}
 	require(argc == 2, "state root argument required");

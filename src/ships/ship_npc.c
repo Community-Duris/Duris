@@ -92,6 +92,7 @@
 #include "item/objmisc.h"
 #include "ships/ship_npc_ai.h"
 #include "magic/spells.h"
+#include "economy/economic_gameplay_authority.h"
 
 extern int top_of_world;
 
@@ -1712,6 +1713,9 @@ P_obj create_material(int index);
  */
 P_obj load_treasure_chest(P_ship ship, P_char captain, NPCShipCrewData *crew)
 {
+	// The chest, key, money pile and materials have no shared issuance root.
+	if (economic_gameplay_authority::active())
+		return NULL;
 	int r_num;
 	if ((r_num = real_object(crew->treasure_chest)) < 0)
 		return NULL;
@@ -1919,6 +1923,9 @@ bool nexus_to_cyrics_revenge = true;
  */
 bool load_cyrics_revenge()
 {
+	// Without its durable treasure and key, the locked hold is inaccessible.
+	if (economic_gameplay_authority::active())
+		return false;
 	if (cyrics_revenge != 0)
 		return false;
 
@@ -1965,6 +1972,8 @@ bool load_cyrics_revenge()
  */
 bool load_cyrics_revenge_crew(P_ship ship)
 {
+	if (economic_gameplay_authority::active())
+		return false;
 	NPCShipCrewData *crew_data = npcShipCrewData + CYRICS_REVENGE_CREW;
 	P_char captain = load_npc_ship_crew_member(
 		ship, world[real_room0(SHIP_ROOM_NUM(ship, 0))].number, crew_data->captain_mob, 5);
@@ -2011,6 +2020,8 @@ bool load_cyrics_revenge_crew(P_ship ship)
 	up_ex->keyword = str_dup("hatch heavy");
 
 	P_obj chest = load_treasure_chest(ship, captain, crew_data);
+	if (!chest)
+		return false;
 
 	int r_num = real_object(AUTOMATONS_MOONSTONE_CORE);
 	if (r_num < 0)

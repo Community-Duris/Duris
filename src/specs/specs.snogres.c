@@ -23,6 +23,7 @@
 #include "specs/specs.snogres.h"
 #include "magic/spells.h"
 #include "world/weather.h"
+#include "world/bloodstains.h"
 
 extern P_char character_list;
 extern P_desc descriptor_list;
