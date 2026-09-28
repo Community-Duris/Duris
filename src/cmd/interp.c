@@ -11,6 +11,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"

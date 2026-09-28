@@ -54,6 +54,10 @@ extern MYSQL *DB;
 MYSQL *sql_open_configured_connection(unsigned long client_flags);
 MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...);
 MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...);
+// Escape a string for the configured SQL connection; caller owns the result.
+char *sql_escape_string(const char *str);
+// Log a redacted player-SQL failure with a stable call-site label.
+void sql_player_error(const char *site);
 bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 			     enum persistence_query_context context, const char *sql, size_t len,
 			     uint64_t *operation_id);
@@ -62,7 +66,6 @@ int initialize_mysql();
 void shutdown_mysql(void);
 bool sql_populate_lookup_tables();
 int sql_save_player_core(P_char ch);
-bool sql_load_player_items(P_char ch);
 int sql_level_cap(int racewar_side);
 // void sql_save_progress( int pid, int delta, const char *type );
 void sql_modify_frags(P_char ch, int gain);

@@ -62,7 +62,7 @@
 #include "redis/redis_maintenance.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"
-#include "sql/sql_player.h"
+#include "sql/sql_transaction.h"
 #include "combat/frag_cap_config.h"
 #include "world/timers.h"
 #include "persistence/persistence_queue.h"

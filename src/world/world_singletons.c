@@ -3,7 +3,7 @@
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "persistence/persistence_mode.h"
-#include "sql/sql_player.h"
+#include "sql/sql_shopkeeper.h"
 #include <unordered_set>
 #include <vector>
 

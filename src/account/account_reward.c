@@ -12,7 +12,7 @@
 #include "world/vnum.obj.h"
 #ifndef __NO_MYSQL__
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_transaction.h"
 #endif
 
 #include <algorithm>

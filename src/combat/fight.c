@@ -11,6 +11,8 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
+#include "combat/death_messages.h"
 #include "telemetry/telemetry_runtime.h"
 #include "net/output_style.h"
 #include "item/item_actions.h"
@@ -63,7 +65,6 @@
 #include "classes/reavers.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
 #include "mob/studioproc.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"

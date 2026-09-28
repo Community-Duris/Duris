@@ -5,7 +5,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FILES = (ROOT / "src/core/files.c").read_text(encoding="utf-8")
 SQL_PLAYER = (ROOT / "src/sql/sql_player.c").read_text(encoding="utf-8")
-SQL_PLAYER_H = (ROOT / "src/sql/sql_player.h").read_text(encoding="utf-8")
+SQL_PLAYER_DELETION_H = (ROOT / "src/sql/sql_player_deletion.h").read_text(
+    encoding="utf-8"
+)
 DEATH_CONFLICT = (ROOT / "src/player/player_death_conflict_repository.c").read_text(
     encoding="utf-8"
 )
@@ -49,7 +51,7 @@ assert "FROM player_death_conflict_evidence WHERE pid=" in guard
 assert "LIMIT 1" in guard and "LIMIT 1 FOR UPDATE" not in guard
 assert "FOR UPDATE" in guard and "player_data WHERE pid=" in guard
 assert "if (!result)" in guard and "return false;" in guard
-assert SQL_PLAYER_H.count("sql_player_deletion_guard") >= 1
+assert SQL_PLAYER_DELETION_H.count("sql_player_deletion_guard") >= 1
 retention_admission = retain_conflict.index("economic_sql_currency_writer_guard::acquire")
 retention_player_lock = retain_conflict.index("SELECT save_revision FROM player_data WHERE pid=")
 retention_insert = retain_conflict.index("INSERT INTO player_death_conflict_evidence")
@@ -59,7 +61,7 @@ assert "economic_sql_currency_writer_guard" not in guard
 # The physical DELETE boundary independently fails closed for callers that do
 # not originate in delete_character_result(). The caller-owned outer transaction
 # retains all cleanup changes for rollback on refusal.
-assert "sql_player_deletion_guard" in SQL_PLAYER_H
+assert "sql_player_deletion_guard" in SQL_PLAYER_DELETION_H
 assert "if (!sql_player_deletion_guard(pid))" in delete_player
 assert "character_deletion_guard_pid != pid" in delete_player
 assert delete_player.index("if (!sql_player_deletion_guard(pid))") < delete_player.index('"DELETE FROM player_data')

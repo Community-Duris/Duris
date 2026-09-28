@@ -44,7 +44,7 @@
 #include "specs/specs.winterhaven.h"
 #include "specs/specs.zion.h"
 #include "magic/spells.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_recipes.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
 #include "world/weather.h"

@@ -1,6 +1,7 @@
 #include "flatfile/flatfile_item_accounting_reference.h"
 #include <cassert>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 
 namespace fs = std::filesystem;
@@ -49,6 +50,13 @@ int main(int argc, char *argv[])
 	assert(decoded.after_revision == 11);
 	assert(decoded.legacy_operation_id.bytes == ref1.legacy_operation_id.bytes);
 	assert(decoded.legacy_event_index == 2);
+	auto overlong = encoded;
+	overlong.push_back(0);
+	decoded = {};
+	decoded.item_uid = 999;
+	assert(flatfile_item_accounting_reference_decode(overlong, &decoded) ==
+	       flatfile_item_accounting_status::invalid);
+	assert(decoded.item_uid == 999);
 
 	// 3. Append to flatfile store
 	std::string err;
@@ -98,6 +106,78 @@ int main(int argc, char *argv[])
 	find_status =
 		flatfile_item_accounting_reference_find_by_item(temp_dir, 9999, 1, &found, &err);
 	assert(find_status == flatfile_item_accounting_status::not_found);
+
+	// A truncated final record invalidates the whole bucket. Readers must not
+	// report a clean lookup, and append must not extend or replace the evidence.
+	const auto bucket = fs::path(temp_dir) / "accounting" / "item_references" / "aa.bin";
+	{
+		std::ofstream duplicate(bucket, std::ios::binary | std::ios::app);
+		assert(duplicate.write(reinterpret_cast<const char *>(encoded.data()),
+				       static_cast<std::streamsize>(encoded.size())));
+	}
+	const auto duplicate_size = fs::file_size(bucket);
+	found = ref2;
+	find_status = flatfile_item_accounting_reference_find_by_legacy(
+		temp_dir, ref1.legacy_operation_id, 2, &found, &err);
+	assert(find_status == flatfile_item_accounting_status::invalid);
+	assert(found.item_uid == ref2.item_uid);
+	find_status = flatfile_item_accounting_reference_find_by_item(
+		temp_dir, ref1.item_uid, ref1.after_revision, &found, &err);
+	assert(find_status == flatfile_item_accounting_status::invalid);
+	assert(found.item_uid == ref2.item_uid);
+	assert(flatfile_item_accounting_reference_append(temp_dir, ref1, &err) ==
+	       flatfile_item_accounting_status::already_exists);
+	assert(fs::file_size(bucket) == duplicate_size);
+	{
+		std::ofstream partial(bucket, std::ios::binary | std::ios::app);
+		assert(partial && partial.put('\x7f'));
+	}
+	const auto partial_size = fs::file_size(bucket);
+	found = ref1;
+	find_status = flatfile_item_accounting_reference_find_by_legacy(
+		temp_dir, ref1.legacy_operation_id, 2, &found, &err);
+	assert(find_status == flatfile_item_accounting_status::invalid);
+	assert(found.item_uid == ref1.item_uid);
+	find_status = flatfile_item_accounting_reference_find_by_item(
+		temp_dir, ref1.item_uid, ref1.after_revision, &found, &err);
+	assert(find_status == flatfile_item_accounting_status::invalid);
+	assert(found.item_uid == ref1.item_uid);
+	assert(flatfile_item_accounting_reference_append(temp_dir, ref2, &err) ==
+	       flatfile_item_accounting_status::invalid);
+	assert(fs::file_size(bucket) == partial_size);
+
+	// A full-size but invalid record also invalidates the bucket instead of
+	// being skipped while a later matching record is returned.
+	fs::resize_file(bucket, partial_size - 1);
+	{
+		std::fstream corrupted(bucket, std::ios::binary | std::ios::in | std::ios::out);
+		assert(corrupted);
+		corrupted.put('\0');
+		assert(corrupted);
+	}
+	const auto corrupted_size = fs::file_size(bucket);
+	found = ref1;
+	find_status = flatfile_item_accounting_reference_find_by_legacy(
+		temp_dir, ref1.legacy_operation_id, 2, &found, &err);
+	assert(find_status == flatfile_item_accounting_status::invalid);
+	assert(found.item_uid == ref1.item_uid);
+	find_status = flatfile_item_accounting_reference_find_by_item(
+		temp_dir, ref1.item_uid, ref1.after_revision, &found, &err);
+	assert(find_status == flatfile_item_accounting_status::invalid);
+	assert(found.item_uid == ref1.item_uid);
+	assert(flatfile_item_accounting_reference_append(temp_dir, ref2, &err) ==
+	       flatfile_item_accounting_status::invalid);
+	assert(fs::file_size(bucket) == corrupted_size);
+
+	// Appending at the read limit must fail before making a bucket that lookups
+	// cannot load again.
+	const size_t capacity_size = (FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES /
+				      FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES) *
+				     FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES;
+	fs::resize_file(bucket, capacity_size);
+	assert(flatfile_item_accounting_reference_append(temp_dir, ref2, &err) ==
+	       flatfile_item_accounting_status::capacity);
+	assert(fs::file_size(bucket) == capacity_size);
 
 	fs::remove_all(temp_dir);
 	return 0;

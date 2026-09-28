@@ -18,7 +18,7 @@
 #include "economy/crafting.h"
 #include "combat/chaos_materials.h"
 #include "core/utils.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_recipes.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

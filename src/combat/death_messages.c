@@ -1,5 +1,6 @@
 /* Death cries and rattles sent to nearby rooms. */
-#include "core/prototypes.h"
+#include "cmd/track.h"
+#include "core/random.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "combat/death_messages.h"

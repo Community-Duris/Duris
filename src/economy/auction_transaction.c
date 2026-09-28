@@ -5,7 +5,6 @@
 #include "net/gmcp.h"
 #include "item/item_ownership_runtime.h"
 #include "core/prototypes.h"
-#include "sql/sql_player.h"
 #include "core/utils.h"
 
 #include <algorithm>

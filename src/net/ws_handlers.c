@@ -39,7 +39,7 @@
 #include "core/mm.h"
 #include "net/poll.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
 #include "player/player_name.h"
 #include "account/password_hash.h"
 #include "persistence/presence_policy.h"

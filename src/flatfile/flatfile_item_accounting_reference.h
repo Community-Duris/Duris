@@ -8,11 +8,13 @@
 #include <vector>
 
 constexpr size_t FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES = 66;
+constexpr size_t FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES = 64 * 1024 * 1024;
 
 enum class flatfile_item_accounting_status
 {
 	ok,
 	not_found,
+	already_exists,
 	invalid,
 	capacity,
 	io_error

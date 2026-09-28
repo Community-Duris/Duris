@@ -1,7 +1,7 @@
 #include "sql/item_extra_descr_codec.h"
 
 #include "core/defines.h"
-#include "sql/sql_player.h"
+#include "sql/sql.h"
 
 #include <array>
 #include <cstdio>
