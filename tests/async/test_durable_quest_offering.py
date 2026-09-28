@@ -86,13 +86,18 @@ int number_of_quests = 1;
 P_char character_list = nullptr;
 P_obj object_list = nullptr;
 int submissions = 0, rewards = 0, messages = 0, dirty = 0, removed = 0;
+uint64_t last_reward_source = 0;
 bool item_command_uses_durable_ownership(P_obj object) { return object != nullptr; }
 const char *item_movement_reject_name(item_movement_reject) { return "none"; }
 void logit(int, const char *, ...) {}
 void send_to_char(const char *, P_char) { ++messages; }
 void act(const char *, int, P_char, int, P_char, int) { ++messages; }
 void mark_player_dirty_components(int, int) { ++dirty; }
-void finish_quest_reward(quest_complete_data *, P_char, P_char) { ++rewards; }
+void finish_quest_reward(quest_complete_data *, P_char, P_char, uint64_t offering_uid) {
+    assert(offering_uid);
+    last_reward_source = offering_uid;
+    ++rewards;
+}
 void extract_obj(P_obj object, int) {
     P_obj *link = &object_list;
     while (*link && *link != object) link = &(*link)->next;
@@ -152,7 +157,7 @@ int main() {
     assert(publish_quest_offering(&actor, true, {}, 0, saved_context, saved_size));
     assert(removed == 3 && actor.carrying == nullptr && dirty == 1);
     complete_quest_offering(&actor, true, {}, 0, saved_context, saved_size);
-    assert(rewards == 1);
+    assert(rewards == 1 && last_reward_source == a.obj_uid);
 
     // Reconnected inventory omits a previously committed destruction.
     object d{4, 101, &actor};
@@ -165,7 +170,7 @@ int main() {
     actor.carrying = object_list = nullptr;
     assert(publish_quest_offering(&actor, true, {}, 0, saved_context, saved_size));
     complete_quest_offering(&actor, true, {}, 0, saved_context, saved_size);
-    assert(rewards == 2 && removed == 3);
+    assert(rewards == 2 && removed == 3 && last_reward_source == d.obj_uid);
 }
 '''
 

@@ -33,6 +33,7 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
         "test_item_movement_prompt_runtime.py",
         "test_information_cache_journey.py",
         "test_mysql_combat_journey.py",
+        "test_static_quest_reward_journey.py",
     }
 )
 
