@@ -6167,8 +6167,7 @@ void do_give(P_char ch, char *argument, int cmd)
 			report_movement_reject(owner, reject, "give", obj);
 		return;
 	}
-	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) &&
-	    item_command_uses_durable_ownership(obj))
+	if (IS_PC(ch) && IS_NPC(vict) && item_command_uses_durable_ownership(obj))
 	{
 		send_to_char(
 			"That item cannot be given to a pet or mob because its custody cannot be saved yet.\r\n",

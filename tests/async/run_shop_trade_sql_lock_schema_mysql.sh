@@ -48,9 +48,12 @@ fi
 "${mysql_client[@]}" -e \
     "CREATE DATABASE $DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 "${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/bootstrap_multithread_safe.sql"
+"${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0035_player_item_dynamic_state.sql"
 "${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0038_item_equipment_slot.sql"
 "${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0041_shopkeeper_cash_identity.sql"
 "${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0042_shopkeeper_roaming_witness.sql"
+"${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0043_shopkeeper_item_condition.sql"
+"${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0044_shopkeeper_item_properties.sql"
 cd "$ROOT"
 python3 tests/async/run_shop_trade_sql_lock_mysql.py
-printf 'Inactive shop SQL lock fixture (%s): ok\n' "$IMAGE"
+printf 'Shop SQL transaction fixture (%s): ok\n' "$IMAGE"

@@ -45,27 +45,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2781,
-    "current_unique_path_line_family_sites": 2723,
+    "current_occurrences": 2778,
+    "current_unique_path_line_family_sites": 2720,
     "draft_registry_census_complete": true,
     "draft_source_commit": "848814aee772283f2c3a37361bb7d3fcb700995b",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2723,
+    "draft_unique_sites": 2720,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 165,
-      "item_lifecycle": 1146,
+      "item_lifecycle": 1143,
       "item_publication": 1061,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 49
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 854-row registry maps 2723 current unique sites; 0 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
-    "mapped_sites_still_present": 2723,
-    "mapped_unique_sites_from_draft_rows": 2723,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 854-row registry maps 2720 current unique sites; 0 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
+    "mapped_sites_still_present": 2720,
+    "mapped_unique_sites_from_draft_rows": 2720,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -9644,8 +9644,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          465,
-          12272
+          467,
+          12308
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9837,7 +9837,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1644
+          1780
         ],
         "file": "src/flatfile/flatfile_player_domain_repository.c",
         "function": "apply_currency_command",
@@ -24933,8 +24933,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          291,
-          5429
+          293,
+          5455
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24994,8 +24994,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          267,
-          1237
+          269,
+          1239
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -31204,8 +31204,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          461,
-          12137
+          463,
+          12173
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31265,8 +31265,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          232,
-          4049
+          234,
+          4051
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -33094,8 +33094,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          414,
-          10936
+          416,
+          10972
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33156,8 +33156,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          410,
-          9406
+          412,
+          9442
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33218,8 +33218,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          406,
-          9352
+          408,
+          9388
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33345,8 +33345,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          379,
-          8266
+          381,
+          8302
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33393,8 +33393,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          379,
-          8266
+          381,
+          8302
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33441,7 +33441,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          908
+          910
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33454,7 +33454,7 @@
       "blocking_policy_after_activation": {
         "decision": "block_until_projection_proof",
         "must_block_on_activation": true,
-        "required_policy": "Restores locker_items into a locker graph; a missing saved UID currently bypasses the owner check in the recursive loader. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
+        "required_policy": "Restores locker_items only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation; invalid rows are retained and skipped. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -33490,7 +33490,7 @@
       },
       "id": "recovery.sql_locker_item_hydration",
       "native_effects": {
-        "custody_effect": "Recursive locker load restores saved objects; the ownership check is conditional on a nonempty obj_uid column, so a missing UID can become a new prototype UID.",
+        "custody_effect": "Recursive locker load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation; invalid rows are retained and skipped.",
         "holding_effect": "No new coin value should be issued during recovery; any money-object payload must equal retained native data.",
         "native_state_targets": [
           "SQL player_items/locker_items/corpse_items/shopkeeper_items/saved_items as applicable",
@@ -33498,26 +33498,26 @@
           "item_current_owner and item_ownership_ledger"
         ]
       },
-      "projection_rule": "Restores locker_items into a locker graph; a missing saved UID currently bypasses the owner check in the recursive loader.",
+      "projection_rule": "Restores locker_items only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation; invalid rows are retained and skipped.",
       "reachability_evidence": "sql_load_locker_items_filtered uses the SQL recovery or migration path; the linked branch is reviewed without claiming full source completeness.",
       "reason": "item_move",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6266
+          6292
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
         "original_draft_symbol": "sql_load_locker_items_filtered"
       },
-      "source_classification": "Recursive locker load restores saved objects; the ownership check is conditional on a nonempty obj_uid column, so a missing UID can become a new prototype UID.",
+      "source_classification": "Recursive locker load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation; invalid rows are retained and skipped.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
       "blocking_policy_after_activation": {
         "decision": "block_until_projection_proof",
         "must_block_on_activation": true,
-        "required_policy": "Restores player_items UIDs into a player graph after an owner check, but skipped rows can leave a partial inventory. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
+        "required_policy": "Restores player_items only after validating a strict positive decimal saved UID and matching the player owner before prototype allocation; unknown templates can still leave a partial inventory. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -33553,7 +33553,7 @@
       },
       "id": "recovery.sql_player_item_hydration",
       "native_effects": {
-        "custody_effect": "SQL player_items rows restore saved UIDs into inventory, equipment and nested containers; owner mismatches are discarded but unknown templates are skipped, allowing partial load success.",
+        "custody_effect": "SQL player_items restoration requires a strict positive decimal saved UID and matching player owner before prototype allocation; invalid or mismatched rows are retained and skipped, while unknown templates can still leave a partial inventory.",
         "holding_effect": "No new coin value should be issued during recovery; any money-object payload must equal retained native data.",
         "native_state_targets": [
           "SQL player_items/locker_items/corpse_items/shopkeeper_items/saved_items as applicable",
@@ -33561,27 +33561,27 @@
           "item_current_owner and item_ownership_ledger"
         ]
       },
-      "projection_rule": "Restores player_items UIDs into a player graph after an owner check, but skipped rows can leave a partial inventory.",
+      "projection_rule": "Restores player_items only after validating a strict positive decimal saved UID and matching the player owner before prototype allocation; unknown templates can still leave a partial inventory.",
       "reachability_evidence": "sql_load_player_items uses the SQL recovery or migration path; the linked branch is reviewed without claiming full source completeness.",
       "reason": "item_move",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          250,
-          4486
+          252,
+          4503
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
         "original_draft_symbol": "sql_load_player_items"
       },
-      "source_classification": "SQL player_items rows restore saved UIDs into inventory, equipment and nested containers; owner mismatches are discarded but unknown templates are skipped, allowing partial load success.",
+      "source_classification": "SQL player_items restoration requires a strict positive decimal saved UID and matching player owner before prototype allocation; invalid or mismatched rows are retained and skipped, while unknown templates can still leave a partial inventory.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
       "blocking_policy_after_activation": {
         "decision": "block_until_projection_proof",
         "must_block_on_activation": true,
-        "required_policy": "Restores a chest item after matching its locker/chest owner identity. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
+        "required_policy": "Restores a private-chest item only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation, then publishes it into the chest. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -33617,7 +33617,7 @@
       },
       "id": "recovery.sql_private_chest_hydration",
       "native_effects": {
-        "custody_effect": "Private-chest items are read from locker_items, checked against locker/chest owner and nested in the chest; mismatches are discarded.",
+        "custody_effect": "Private-chest load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation, then publishes the retained item into the chest.",
         "holding_effect": "No new coin value should be issued during recovery; any money-object payload must equal retained native data.",
         "native_state_targets": [
           "SQL player_items/locker_items/corpse_items/shopkeeper_items/saved_items as applicable",
@@ -33625,20 +33625,20 @@
           "item_current_owner and item_ownership_ledger"
         ]
       },
-      "projection_rule": "Restores a chest item after matching its locker/chest owner identity.",
+      "projection_rule": "Restores a private-chest item only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation, then publishes it into the chest.",
       "reachability_evidence": "sql_load_private_chest_items uses the SQL recovery or migration path; the linked branch is reviewed without claiming full source completeness.",
       "reason": "item_move",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          549,
-          7124
+          551,
+          7153
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
         "original_draft_symbol": "sql_load_private_chest_items"
       },
-      "source_classification": "Private-chest items are read from locker_items, checked against locker/chest owner and nested in the chest; mismatches are discarded.",
+      "source_classification": "Private-chest load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation, then publishes the retained item into the chest.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -33695,8 +33695,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          414,
-          10936
+          416,
+          10972
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33743,8 +33743,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          414,
-          10936
+          416,
+          10972
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33807,7 +33807,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9494
+          9530
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33869,7 +33869,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9494
+          9530
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33916,7 +33916,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9446
+          9482
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -33963,7 +33963,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7266
+          7302
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -36259,8 +36259,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          439,
-          11714
+          441,
+          11750
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36319,8 +36319,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          431,
-          11596
+          433,
+          11632
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36380,8 +36380,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          427,
-          11342
+          429,
+          11378
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",

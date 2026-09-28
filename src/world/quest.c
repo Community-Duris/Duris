@@ -11,6 +11,7 @@
 #include "cmd/interp.h"
 #include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
+#include "item/item_command_policy.h"
 #include "economy/economic_gameplay_authority.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -540,6 +541,19 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 		if (!(vict = get_char_room_vis(pl, name)) || vict != ch)
 			return (FALSE);
 		quester_id = find_quester_id(GET_RNUM(ch));
+		if (!giving_coins)
+		{
+			char offering_name[MAX_INPUT_LENGTH];
+			one_argument(arg, offering_name);
+			P_obj offering = get_obj_in_list_vis(pl, offering_name, pl->carrying);
+			if (item_command_uses_durable_ownership(offering))
+			{
+				send_to_char(
+					"This quest cannot accept a durable item until NPC custody can be saved.\r\n",
+					pl);
+				return (TRUE);
+			}
+		}
 		if (economic_gameplay_authority::active())
 		{
 			bool money_quest = giving_coins;

@@ -34,9 +34,11 @@
 #include <sys/time.h>
 #include <time.h>
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <new>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -4483,6 +4485,21 @@ bool sql_load_player_affects(P_char ch)
 	return true;
 }
 
+static bool sql_parse_persisted_item_uid(const char *text, uint64_t *uid)
+{
+	if (!text || !*text || !uid)
+		return false;
+
+	const char *end = text + strlen(text);
+	uint64_t parsed_uid = 0;
+	const std::from_chars_result parsed = std::from_chars(text, end, parsed_uid);
+	if (parsed.ec != std::errc{} || parsed.ptr != end || !parsed_uid)
+		return false;
+
+	*uid = parsed_uid;
+	return true;
+}
+
 static bool sql_load_player_items(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
@@ -4540,6 +4557,24 @@ static bool sql_load_player_items(P_char ch)
 		int vnum = sql_row_int(row, col++, 0);
 		int equip_slot = sql_row_int(row, col++, 0);
 		int container_id = sql_row_int(row, col++, 0);
+		uint64_t saved_uid = 0;
+		if (!sql_parse_persisted_item_uid(row[28], &saved_uid))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_player_items: component=ownership "
+			      "outcome=missing_or_invalid_uid db_id=%d pid=%d",
+			      db_id, pid);
+			continue;
+		}
+		if (!sql_persistence_item_owner_matches(saved_uid, "player", owner_ref,
+							"sql_load_player_items"))
+		{
+			logit(LOG_FILE,
+			      "sql_load_player_items: component=ownership outcome=mismatch db_id=%d pid=%d",
+			      db_id, pid);
+			continue;
+		}
+
 		// create object from prototype
 		P_obj obj = read_object(vnum, VIRTUAL);
 		if (!obj)
@@ -4549,6 +4584,7 @@ static bool sql_load_player_items(P_char ch)
 			idx++;
 			continue;
 		}
+		obj->obj_uid = saved_uid;
 
 		// override saved properties
 		obj->weight = sql_row_int(row, col++, obj->weight);
@@ -4604,18 +4640,8 @@ static bool sql_load_player_items(P_char ch)
 		obj->bitvector5 = sql_row_ulong(row, col++, obj->bitvector5);
 		obj->material = sql_row_int(row, col++, obj->material);
 
-		// restore obj_uid and condition
-		unsigned long saved_uid = sql_row_ulong(row, col++, 0);
-		if (saved_uid > 0)
-			obj->obj_uid = saved_uid;
-		if (!sql_persistence_item_owner_matches(saved_uid, "player", owner_ref,
-							"sql_load_player_items"))
-		{
-			logit(LOG_FILE,
-			      "sql_load_player_items: component=ownership outcome=mismatch");
-			extract_obj(obj, FALSE);
-			continue;
-		}
+		// The persisted UID was parsed and ownership-checked before prototype allocation.
+		col++;
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		obj->condition = sql_row_int(row, col++, obj->condition);
 
@@ -6321,6 +6347,26 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 	{
 		int item_id = atoi(row[0]);
 		int vnum = atoi(row[1]);
+		uint64_t saved_uid = 0;
+		if (!sql_parse_persisted_item_uid(row[20], &saved_uid))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: component=ownership "
+			      "outcome=missing_or_invalid_uid item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+		if (!sql_persistence_item_owner_matches_identity(
+			    saved_uid, "locker", static_cast<unsigned long long>(locker_id),
+			    static_cast<unsigned long long>(chest_id), "sql_load_locker_items"))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_locker_items_filtered: component=ownership "
+			      "outcome=mismatch item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+
 		int rnum = real_object(vnum);
 		logit(LOG_DEBUG,
 		      "sql_load_locker_items_filtered: row item_id=%d locker_id=%d container_id=%d chest_id=%d vnum=%d rnum=%d depth=%d",
@@ -6341,6 +6387,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			      item_id, vnum, rnum, locker_id, chest_id, container_id);
 			continue;
 		}
+		obj->obj_uid = saved_uid;
 
 		if (row[2])
 			obj->weight = atoi(row[2]);
@@ -6398,24 +6445,6 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		if (row[27])
 			obj->material = atoi(row[27]);
 
-		if (row[20] && strlen(row[20]) > 0)
-		{
-			unsigned long saved_uid = strtoul(row[20], NULL, 10);
-			if (saved_uid > 0)
-				obj->obj_uid = saved_uid;
-			if (!sql_persistence_item_owner_matches_identity(
-				    obj->obj_uid, "locker",
-				    static_cast<unsigned long long>(locker_id),
-				    static_cast<unsigned long long>(chest_id),
-				    "sql_load_locker_items"))
-			{
-				logit(LOG_DEBUG,
-				      "sql_load_locker_items_filtered: component=ownership "
-				      "outcome=mismatch");
-				extract_obj(obj, FALSE);
-				continue;
-			}
-		}
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
 		obj->db_item_id = item_id;
@@ -7144,6 +7173,27 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	{
 		int item_id = atoi(row[0]);
 		int vnum = atoi(row[1]);
+		uint64_t saved_uid = 0;
+		if (!sql_parse_persisted_item_uid(row[20], &saved_uid))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_private_chest_items: component=ownership "
+			      "outcome=missing_or_invalid_uid item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+		if (!sql_persistence_item_owner_matches_identity(
+			    saved_uid, "locker", static_cast<unsigned long long>(locker_id),
+			    static_cast<unsigned long long>(chest_id),
+			    "sql_load_private_chest_items"))
+		{
+			logit(LOG_DEBUG,
+			      "sql_load_private_chest_items: component=ownership "
+			      "outcome=mismatch item_id=%d locker_id=%d chest_id=%d",
+			      item_id, locker_id, chest_id);
+			continue;
+		}
+
 		int rnum = real_object(vnum);
 		if (rnum < 0)
 			continue;
@@ -7151,6 +7201,7 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		P_obj obj = read_object(rnum, REAL);
 		if (!obj)
 			continue;
+		obj->obj_uid = saved_uid;
 
 		if (row[2])
 			obj->weight = atoi(row[2]);
@@ -7195,24 +7246,9 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 			obj->action_description = str_dup(row[19]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
-		// restore obj_uid and condition
-		if (row[20] && strlen(row[20]) > 0)
-		{
-			unsigned long saved_uid = strtoul(row[20], NULL, 10);
-			if (saved_uid > 0)
-				obj->obj_uid = saved_uid;
-		}
+		// restore condition; the UID was validated before prototype allocation.
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
-
-		if (!sql_persistence_item_owner_matches_identity(
-			    obj->obj_uid, "locker", static_cast<unsigned long long>(locker_id),
-			    static_cast<unsigned long long>(chest_id),
-			    "sql_load_private_chest_items"))
-		{
-			extract_obj(obj, FALSE);
-			continue;
-		}
 
 		obj->db_item_id = item_id;
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);

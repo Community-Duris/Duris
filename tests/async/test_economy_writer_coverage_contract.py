@@ -465,9 +465,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2958, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9416, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9452, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10837, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10873, "sql_economy")],
                          {"recovery.saved_sql"})
 
     def test_sql_components_do_not_claim_a_playable_root(self) -> None:
@@ -733,9 +733,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10079, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10115, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11220, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11256, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -754,8 +754,10 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          "runtime_mutation_route")
         self.assertIn("does not read obj_uid",
                       self.routes["recovery.sql_shopkeeper_catalog"]["source_classification"])
-        self.assertIn("missing UID",
+        self.assertIn("requires a strict positive decimal saved UID",
                       self.routes["recovery.sql_locker_item_hydration"]["source_classification"])
+        self.assertIn("strict positive decimal saved UID",
+                      self.routes["recovery.sql_player_item_hydration"]["source_classification"])
 
     def test_zone_reset_item_sites_separate_unpublished_rejection_from_grant(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())

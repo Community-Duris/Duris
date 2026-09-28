@@ -8,10 +8,16 @@
 #include <string>
 #include <vector>
 
+class flatfile_identity_lock;
+
 struct flatfile_accounting_lifecycle_wallet_source
 {
 	uint32_t pid = 0;
+	std::string account_name;
+	uint8_t racewar = 0;
 	economic_coin_vector balance = {};
+	uint64_t native_revision = 0;
+	economic_digest source_digest = {};
 };
 
 struct flatfile_accounting_lifecycle_bank_source
@@ -19,6 +25,8 @@ struct flatfile_accounting_lifecycle_bank_source
 	std::string name;
 	uint8_t racewar = 0;
 	economic_coin_vector balance = {};
+	uint64_t native_revision = 0;
+	economic_digest source_digest = {};
 };
 
 struct flatfile_accounting_lifecycle_native_sources
@@ -58,9 +66,14 @@ struct flatfile_accounting_lifecycle_receipt
 class flatfile_accounting_lifecycle_transaction
 {
     public:
-	static unsigned int install(const std::string &root, const flatfile_authority_lock &lock,
+	static unsigned int capture_native_sources_locked(
+		const std::string &root, const flatfile_identity_lock &identity_lock,
+		const flatfile_authority_lock &authority_lock,
+		flatfile_accounting_lifecycle_native_sources *sources, std::string *error) noexcept;
+	static unsigned int install(const std::string &root,
+				    const flatfile_identity_lock &identity_lock,
+				    const flatfile_authority_lock &lock,
 				    const flatfile_accounting_lifecycle_request &request,
-				    const flatfile_accounting_lifecycle_native_sources &sources,
 				    const economic_account_key &opening_account,
 				    flatfile_accounting_lifecycle_receipt *receipt,
 				    std::string *error) noexcept;
