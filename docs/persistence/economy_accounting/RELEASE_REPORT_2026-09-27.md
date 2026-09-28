@@ -868,3 +868,91 @@ Correction and restitution submission are deliberately absent from the
 read-only audit tool. A later operator writer needs authenticated authority,
 expected-state checks and original-operation linkage; audit exceptions never
 cause an automatic balance or custody adjustment.
+
+## `finish-accounting` writer inventory checkpoint (2026-09-28)
+
+On branch `finish-accounting`, based on `main` at `d686d4c70`, the source
+inventory was reconciled with the current quest-offering and SQL shop code.
+It now has 859 named routes, 2,784 lexical occurrences, 2,726 unique sites,
+and zero unmapped current lexical sites. Removed direct quest extraction sites
+were retired, five current quest/shop route entries were added, and moved
+unchanged sites were reanchored. The generated matrix and normal contract
+validator pass, as do the 2,695 writer-site checks, 49 existing route tests,
+and two targeted new-route checks.
+
+The `duris-refactor-builder:20260927` image (GCC 13.3) passed `make -C src -j4`
+on this branch's unchanged C++ source. The first `make world` attempt failed
+because the Windows checkout gave `areas/m_slow` a CRLF shebang. Four area
+entry scripts now have LF checkout rules in `.gitattributes`; `make world`
+passed in `duris-release-audit-runner:local`, which has the required world
+tools. The focused durable quest offering and shared movement publication
+retention harnesses passed in that audit container. These are build and
+focused-harness results, not a cold-restart quest or live SQL gameplay pass.
+
+This is source inventory evidence. The release validator still refuses
+`writer has no executable evidence`; `coverage_complete=false` and
+`playable_release_status=BLOCKED` remain the correct report values. The next
+qualification work is the reproducible build and quest-reward restart fault
+from [the active plan](FINISH_ACCOUNTING_PLAN.md), followed by the remaining
+gameplay, native audit, backend, and workload gates above.
+
+## `finish-accounting` quest and save checkpoint (2026-09-28)
+
+Issue #8's zero-source-ID quest grant was reproduced from its code path. Commit
+`cde63f95e` derives a stable, nonzero, signed-safe item reward source from the
+consumed offering UID, reward VNUM, and duplicate ordinal. The source-ID and
+durable-offering focused tests passed. In the disposable `duris-finish-accounting-qa:local`
+container, an ordinary Human Druid gave three items to a quest NPC. The actual
+flatfile server granted one reward blade; a save and cold server restart kept
+the same reward UID and did not restore the offerings. The standalone journey
+passed from a freshly compiled cached artifact (`SERVER_BUILD built
+build=477.420s lookup=25.206s`). This establishes the normal grant and
+restart path on that fixture, not SQL qualification or interruption recovery.
+
+The manual `run_quest_reward_ack_crash.py` journey then stopped the server at
+`complete_quest_offering`, which is called after the offering publication
+acknowledgment. On a cold restart the offerings stayed consumed but no blade
+existed. Its `--confirm-loss` baseline passed; its default recovery expectation
+remains a failing acceptance case. The callback context and reward obligation
+are not yet durable across that boundary, so Step 1 and the release gate remain
+open.
+
+Issue #10 was traced read-only on the isolated main-branch playtest instance.
+The latest rejected player-save journal snapshot contained 23 items while the
+SQL custody and saved-item projections each held 24. The missing snapshot UID
+was a VNUM 393 bandage; `do_bandage()` directly extracted it without retiring
+its active custody row. No live player data or database rows were changed during
+this diagnosis. The save guard correctly refused a destructive checkpoint.
+
+Commit `e75e78311` changes the durable bandage path to submit a typed item
+destruction before removing the live object or starting healing. The separate
+untracked legacy branch remains direct. A fresh disposable MariaDB 10.11
+journey with an ordinary Human Druid and an incapacitated NPC passed: exactly
+one starter bandage UID became a destruction tombstone, its saved-item row was
+absent, `save` acknowledged, and a cold restart preserved that state. The SQL
+server built with GCC 13.3; the player custody guard, 15 live movement contract
+cases, movement prompt runtime, and smith tradeskill tests passed. This proves
+the new path for fresh actions. The already stranded playtest character still
+needs an individually reviewed, owner-authorized data repair or recovery path;
+the running main-branch instance has not been modified or restarted.
+
+## Main integration checkpoint (2026-09-28)
+
+PR #9 and PR #11 were merged to `main` as `e92a5424b` and `ab423482a`.
+Follow-up source commit `0ceb561fe` keeps the normal quest grant source bound
+to the consumed offering UID and changes the bandage branch to select durable
+custody per item. Its publication explicitly marks the player's inventory
+dirty after removing the committed bandage. The follow-up adds executable
+quest and MariaDB bandage save/restart journeys and source contracts.
+
+On that integrated source, the maintained GCC 13.3 MariaDB server build passed.
+The disposable MariaDB bandage journey passed with one consumed UID, a
+destruction custody tombstone, no saved-item row, and successful save after a
+cold restart. The quest source and durable-offering tests passed. The writer
+registry maps all 2,728 current unique lexical candidate sites across 861
+routes; the normal accounting validator and generated-matrix check pass.
+The release validator still stops at `writer has no executable evidence`.
+`coverage_complete=false` and `playable_release_status=BLOCKED` remain correct:
+the post-offering-ack quest crash still loses the pending reward, and most
+writer routes still lack executable release evidence. The existing stranded
+playtest character has not been modified.
