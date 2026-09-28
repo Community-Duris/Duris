@@ -11,8 +11,6 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-# Requested worktree/source baseline before analysis artifacts are committed.
-SOURCE_SNAPSHOT_COMMIT = "16f79bc90491772b7773d493cd9daf94dbce7676"
 REGISTRY = ROOT / "docs/persistence/economy_accounting/writers.json"
 OUTPUT = ROOT / "docs/persistence/economy_accounting/writer_coverage_matrix.json"
 VALIDATOR = ROOT / "scripts/validate_economy_accounting.py"
@@ -33,30 +31,49 @@ SOURCE_FILE_FIXES = {
     "staff.zone_reset": "src/cmd/staff_world_control.c",
 }
 
-# Newly found old direct-SQL settlement implementation. No in-tree caller exists.
-SUPPLEMENTAL = {
-    "id": "auction.finalize_legacy",
-    "path": "src/economy/auction_houses.c",
-    "symbol": "finalize_auction_legacy",
-    "reason": "auction_settle",
-    "classification": "Retained direct-SQL auction settlement implementation; definition-only in the current tree.",
-    "authority_boundary": "Legacy settlement definition has no in-tree caller; keep closed if revived.",
-    "integration_issue": 485,
-    "owner": "primary / #485",
-    "test_candidates": [],
-}
-
 OFFLINE_WRITERS = {
     "import.legacy_dump": "Guarded local import replaces native rows from a legacy dump; it is an offline migration boundary, not a gameplay credit.",
     "import.currency_baselines": "Creates opening wallet/bank baseline witnesses for an authorized cutover; it must not alter live holdings or masquerade as issuance.",
     "restore.qualification": "Restores into an isolated qualification target; it is not permission to promote that target to live authority.",
 }
 DORMANT_WRITERS = {
+    "currency.bank_single_projection": "The single-denomination bank publisher has no in-tree caller. If revived, it would change a live PC projection without a revision fence; require a committed bank identity/revision or refuse.",
     "currency.compat_sql_bank": "Direct SQL writer definition has no in-tree caller outside its own wrapper path; it is not a current gameplay route.",
     "auction.legacy_definitions": "Legacy offer mutator is definition-only in the current tree; the current offer path is separately routed.",
     "auction.finalize_legacy": "Legacy settlement mutator is definition-only in the current tree; no in-tree callsite found.",
+    "auction.bid_legacy": "Legacy bid mutator is definition-only in the current tree; no in-tree callsite found.",
+    "auction.money_claim_legacy": "Legacy pickup debits and refunds pending claims around a separate wallet credit; no in-tree caller was found.",
+    "auction.money_claim_compensation": "The rejected-credit callback is referenced only by the definition-only legacy pickup.",
+    "boon.legacy_cash_completion": "Legacy cash boon completion is definition-only in the current tree; no in-tree callsite found.",
+    "item.list_foods_debug": "The template-scanning debug function has no in-tree caller; keep its object allocations unreachable.",
+    "item.old_descend_equipment": "do_old_descend has no in-tree caller; the registered command dispatches do_descend instead.",
+    "item.quit_direct_drop": "do_quit has no in-tree caller; CMD_QUIT is registered to do_camp. Its direct drop/extract branch must stay unreachable or be fenced before revival.",
+    "world.random_disabled_chest_potions": "The random-zone chest level-potion branch is behind a literal false condition; enabling it requires a typed creation source and chest owner root.",
+    "player.confiscate_item_dormant": "Compiled rent confiscation helper has no in-tree callsite; its direct child movement and item extraction require a debt root if revived.",
+    "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "player.new_character_zero": "init_char assigns an initial zero wallet to a newly allocated PC before its first durable baseline; no existing holding is retired.",
+    "morph.new_body_zero": "morph clears the cash on a freshly read NPC body before publishing it as the player morph; the original PC wallet remains separate.",
+    "training.dummy_zero": "training_dummy_create freshly reads a template and calls training_dummy_apply_profile before room placement; the template cash is discarded before admission.",
+    "nexus.guardian_zero": "load_guardian clears cash on a freshly read guardian before room placement; no earlier admitted guardian balance is changed.",
+    "nexus.sage_zero": "load_sage clears cash on a freshly read sage before room placement; no earlier admitted sage balance is changed.",
+    "guildhall.golem_zero": "EntranceRoom::init clears cash on a freshly read golem before room placement; no earlier admitted golem balance is changed.",
+    "spell.summoned_beast_zero": "summon_beast_common clears a freshly read beast before setup_pet and room placement; no existing mob balance is changed.",
+    "special.animated_skeleton_zero": "animated_skeleton clears two freshly read undead clones before room placement; the original skeleton cash is not changed at these sites.",
+    "macro.clear_money_definition": "CLEAR_MONEY is a preprocessor definition, not an executed writer by itself; its three call sites have separate route rows.",
+    "macro.add_coins_declaration": "The add_coins prototype declares a helper; actual pile effects are classified at its definition and callers.",
+    "macro.difficulty_scale_declaration": "The two difficulty_scale_coins prototypes declare helpers; conversion and definitions are classified separately.",
+    "macro.money_helper_declarations": "The transact, ADD_MONEY, SUB_MONEY, and insert_money_pickup declarations have no executable effect; helper definitions and calls have separate routes.",
+    "macro.economic_submit_declarations": "The command-builder and typed-submit prototypes declare interfaces; executable definitions and gameplay callers have separate routes.",
+    "coin.command_builder": "Builds and validates a frozen coin command in memory; no native wallet, pile, or UID changes occur here.",
+    "currency.command_builder": "Builds a frozen currency command in memory; no native wallet or bank changes occur here.",
+    "item.command_builder": "Builds a frozen item transfer command in memory; no native UID custody changes occur here.",
+    "macro.item_constructor_declarations": "MakeScrap, create_money, and instantiate_object_template prototypes declare functions; no item is admitted at these sites.",
+    "world.object_template_allocation": "instantiate_object_template builds an unpublished object; admission occurs only when a caller assigns a live owner and source-qualified UID.",
+    "coin.pile_description_staging": "prepare_coin_pile rebuilds text on a temporary rendered object with zero added coins; no admitted pile value changes at this site.",
+    "player.bank_load_result": "Reads a bank row into the player-load result buffer; it neither changes the native account_banks row nor credits a live wallet.",
+    "ship.zero_initialization": "A newly allocated ship starts with an empty coffer; no pre-existing holding is debited or credited.",
     "lifecycle.sql_soft_delete": "Visibility/tombstone update only; the source note explicitly does not retire holdings or custody.",
     "lifecycle.quiescence": "Drain/fence preflight only; it does not change an economic holding or item owner.",
     "backup.capture": "Copies authorities and journals to backup; it does not mutate native holdings or custody.",
@@ -67,18 +84,125 @@ NON_WRITERS = {
     "lifecycle.erasure": "Erasure readiness validation only; no canonical deletion execution.",
     "item.arrow_reset_temporary": "Prototype-object/text-pointer handling only; no item transfer, durable UID custody, or economic holding change.",
     "kingdom.workshop_props": "`prop_vnum` is a data member used to materialize room props, not a source function or player-held asset route.",
+    "item.prototype_weight_probe": "obj_prototype_weight reads and frees a fresh prototype only to inspect its weight; the object never receives a live owner.",
+    "item.creation_candidate_reject": "obj_to_char frees only a still-unowned creation candidate after admission fails; an object with an authoritative ownership row is preserved for recovery.",
+    "coin.wallet_pile_stage_cleanup": "The rejected wallet-to-pile command frees its provisional pile before publication; the completion callback frees only a NOWHERE pile on rejection or when the committed owner is offline.",
+    "death.corpse_compaction_stage_cleanup": "Compaction allocates a bone pile in NOWHERE before the corpse release; rejected/stale submissions free that unpublished pile.",
+    "item.forage_doodle_probe": "The scribing/memorizing forage joke reads a fresh template solely for a message, then extracts it before any live owner is assigned.",
+    "recovery.sql_diff_proto_probe": "The SQL item diff formatter reads and frees a fresh prototype for comparison; it never publishes that object.",
+    "recovery.sql_temp_char_cleanup": "Migration frees a temporary, unpublished character graph after conversion; this does not retire selected live custody.",
+    "recovery.sql_corpse_stage_cleanup": "A corpse or item rejected by owner/hydration checks is extracted before room publication; no selected custody row is retired.",
+    "recovery.sql_shopkeeper_stage_cleanup": "Failed shopkeeper catalog restore frees only the staged NPC/item graph before publication.",
+    "recovery.sql_saved_item_stage_cleanup": "Rejected saved-item materialization is freed before publication or after a failed room placement; retained source rows remain authoritative.",
+    "world.read_object_factory": "read_object instantiates a template into NOWHERE; durable item admission occurs only in a caller with a source and selected owner.",
+    "world.zone_reset_stage_cleanup": "Reset branches free freshly allocated objects rejected by artifact, chance, destination or equipment checks before any live owner is assigned.",
+    "item.poison_recipe_probe": "Poison recipe display reads and frees sample ingredient/vial templates without giving them to a character.",
+    "item.encrust_virtual_jewel_stage": "A Chaos pouch encrust jewel is instantiated as a temporary recipe descriptor; failed preflight frees it before live publication.",
+    "item.fix_material_probe": "Fix reads and frees a sample material template to describe the required component; the carried component is consumed separately.",
+    "artifact.cache_display_probe": "Artifact cache rendering reads and frees fresh templates for names; it never publishes their UIDs.",
+    "artifact.flat_list_display_probe": "Flat-file artifact listing reads and frees fresh templates for names; loaded dummy characters are separately unloaded.",
+    "artifact.ground_restore_rejected_stage": "A freshly instantiated ground artifact is freed before placement when the saved room is invalid.",
+    "artifact.dummy_character_unload": "All in-tree nuke_eq calls pass loaded dummy characters; their temporary equipment and inventory graph is unloaded without retiring selected durable custody.",
+    "artifact.files_import_template_stage": "Import instantiates a provisional artifact and frees it when no owner is selected or no super grant is requested.",
+    "artifact.clear_template_probe": "Staff artifact clear uses a fresh template only to name the artifact; its separate tracking-row deletion is not an item retirement at this site.",
+    "artifact.poof_template_probe": "Staff artifact poof uses a fresh template only to validate and display the vnum before selecting the real artifact.",
+    "artifact.timer_template_probe": "Staff timer adjustment reads a fresh template only for validation/name display; the non-artifact return currently leaks that provisional object.",
+    "artifact.swap_first_template_probe": "Staff swap reads and frees a provisional copy of the old vnum before looking up the admitted live artifact.",
+    "artifact.swap_second_template_stage": "Staff swap instantiates a provisional replacement before all checks; several early returns leave it unowned in the global object list.",
+    "artifact.bind_template_probe": "Periodic binding maintenance reads and frees a fresh template for logging, not item custody.",
+    "artifact.fixit_template_probe": "Binding repair uses provisional templates for display; its SQL branch currently has use-after-free and double-extract paths that require repair.",
+    "artifact.npc_restore_rejected_stage": "A freshly instantiated NPC artifact is freed before placement when its saved mob vnum has no matching live mob.",
+    "artifact.player_display_probe": "Staff player artifact listings read and free fresh templates for display only.",
+    "world.random_sigil_factory": "create_sigil returns a modified but unpublished template; its caller supplies the room owner and source event.",
+    "world.lab_relic_probe": "Lab creation reads and frees a relic template only to check its vnum against artifact tracking.",
+    "world.lab_relic_stage_reject": "Lab creation frees a fresh relic candidate when artifact tracking already claims that vnum, before an NPC owner is assigned.",
+    "world.npc_recovery_candidate_stage": "NPC recovery frees fresh reset-template candidates rejected by artifact ownership, respawn or load checks before any NPC owner is assigned.",
+    "world.copyover_item_candidate_stage": "Copyover reads a provisional template and replaces its temporary UID with the saved UID before any room or parent publication.",
+    "world.copyover_item_rollback": "Copyover removes only this attempt’s staged or partly published object graph after a failed recovery plan; native custody is not retired.",
+    "world.copyover_item_stage_cleanup": "Copyover frees detached or partly linked objects when one snapshot graph cannot be materialized; selected custody remains unchanged.",
+    "recovery.flat_corpse_stage_cleanup": "Flat-file corpse/room restore frees staged candidates or rolls back a failed boot publication without retiring saved custody rows.",
+    "recovery.flat_corpse_materialization_cleanup": "Flat-file corpse materialization frees detached candidates after prototype, money or lifecycle hydration failure.",
+    "recovery.flat_room_materialization_cleanup": "Flat-file room materialization frees detached item candidates after coin-pile allocation failure.",
+    "recovery.flat_catalog_publish_rollback": "Flat-file catalog restore frees this attempt’s staged objects after allocation or publication failure, leaving saved UID authority intact.",
+    "item.enhance_base_probe": "Enhancement reads and frees a fresh prototype only to compare its unmodified stat modifier.",
+    "item.enhance_material_name_probe": "Enhancement reads and frees a fresh material template only to display its name.",
+    "item.superior_target_probe": "Superior enhancement reads and frees a fresh target template only to calculate material requirements.",
+    "item.mod_enhance_description_probe": "Modifier enhancement reads and frees a fresh prototype only to rebuild the retained source item’s description.",
+    "item.enhance_index_probe": "Boot enhancement indexing reads and frees prototype objects without publishing any of them.",
+    "player.object_save_template_probe": "Recursive item serialization reads and frees a fresh prototype only to compute differences from a retained object.",
+    "player.single_item_save_template_probe": "Single-item serialization reads and frees a fresh comparison prototype; persistent UID assignment to the passed item is classified separately.",
+    "player.confiscate_disabled_children": "The second confiscation branch’s child-relocation code is enclosed in #if 0 and has no executable effect.",
+    "recovery.pet_disabled_extract": "The pet save extraction loop is enclosed in #if 0; the active branch re-equips the pet inventory.",
+    "movement.frost_ice_stage_cleanup": "make_ice frees a fresh ice candidate only when neither the current nor saved room is valid, before any room publication.",
+    "movement.faerie_reward_candidate_reject": "Random bag reward selection frees freshly instantiated templates rejected by wear, artifact, rarity or value checks before player publication.",
+    "locker.access_check_temp_unload": "Racewar access comparison unloads item copies on a temporary restored character; selected native locker/player custody is not retired.",
+    "spell.room_creation_rejected_stage": "Failed typed room creation frees only a still-unowned NOWHERE candidate before publication.",
+    "spell.player_creation_rejected_stage": "Failed typed player creation frees only a still-unowned NOWHERE candidate before publication.",
 }
 PROJECTION_ROUTES = {
+    "currency.bank_live_projection": "Publishes an already committed shared-bank balance into connected player views; no account_banks row or source balance changes here.",
+    "currency.wallet_live_projection": "Publishes a committed wallet result to live PC and GMCP state with a stale-revision check; no new native value is created here.",
+    "player.load_economy_projection": "Materializes wallet and bank vectors from the validated player-load result into a newly loaded PC; no new native value is created here.",
+    "player.flatfile_baseline_projection": "After a new-player flat-file baseline is committed and read back, copies its wallet/bank revisions and denominations into the live PC; no second credit is created here.",
+    "player.legacy_flatfile_load": "Parses a legacy character file into a PC projection. This is an authorized load only when that file is the selected, complete native source for the active epoch.",
+    "player.sql_status_projection": "Loads SQL player wallet and initializes the bank display to zero pending a separate account-bank load; publication requires one complete selected-authority result.",
+    "player.sql_bank_live_load": "Loads an account-bank row into a PC, but clears the live bank first and one login caller ignores failure; publication requires a successful fenced load.",
+    "recovery.copyover_npc_gold_projection": "Restores the legacy copyover gold field after generated-NPC wallet decode; both sources must agree before publication.",
+    "ship.hydration": "Restores the retained ship coffer value from a flat-file record into runtime state; it is not new issuance.",
+    "ship.sql_hydration": "Restores the retained ship coffer value from a SQL row into runtime state; it is not new issuance.",
     "world.generated_npc_hydration": "Recovery projection of encoded NPC state; never fresh issuance.",
-    "world.npc_item_hydration": "Rehydrates existing NPC item identities into a live projection; no fresh creation posting.",
+    "world.copyover_item_materialization": "Projects exact saved UIDs and parent/room ownership from a selected copyover snapshot after authoritative graph validation.",
     "death.resurrection_publication": "Publishes the already-committed corpse lifecycle result; not a second custody/economic commit.",
     "recovery.pet_hydration": "Projects saved durable pet identity and inventory into runtime state; not item creation.",
+    "recovery.flat_corpse_coin_materialization": "Projects an existing flatfile corpse/room coin balance into a runtime pile; no new issuance is authorized.",
+    "item.pet_give_publication": "Projects a committed player/pet item handoff into the live object graph; stale live extraction does not destroy the durable UID.",
+    "item.command_publication": "Projects committed get, drop and give handoffs into live object lists; no second owner event is authorized.",
+    "item.empty_publication": "Projects a committed bulk container empty result or restores stale live topology; no new owner event is authorized.",
+    "item.weight_relink": "Temporarily relinks one item's runtime location while changing weight; the selected durable owner must remain unchanged.",
+    "item.equipment_wear": "Projects carried-to-equipped slot changes under the same player owner; selected slot state must be retained.",
+    "item.equipment_remove": "Projects equipped-to-carried slot changes under the same player owner; selected slot state must be retained.",
+    "coin.wallet_pile_publication": "The coin transfer callback applies the committed pile owner result before placing the live pile in the character inventory.",
+    "death.corpse_release_live": "Projects a committed corpse release into room item lists, after validating the result and applying runtime custody changes.",
+    "death.corpse_raise_recovery_live": "Projects recovered items and removes the stale corpse after an already committed raise; money piles are discarded because the wallet transaction consumed them.",
+    "death.corpse_resurrection_item_live": "Projects a committed resurrection item drop after matching actor, UID and live topology.",
+    "death.corpse_nested_release_live": "Projects committed corpse content movement into the enclosing container and removes the old corpse.",
+    "death.corpse_destruction_live": "Removes a live corpse only after the durable destruction result and runtime custody checks succeed.",
+    "death.corpse_transient_cleanup": "Removes transient corpse children after a committed release and its discarded UID result are applied.",
+    "death.corpse_committed_money_cleanup": "Removes old coin and transient copies only after the corpse wallet/custody result consumes them.",
+    "death.resurrection_committed_player_drop": "Publishes the already committed PC resurrection disposition of target inventory and equipment; transient retirement must appear in that result.",
+    "death.resurrection_committed_corpse_cleanup": "Publishes the already committed corpse content return, spent coin-pile cleanup and corpse retirement.",
+    "item.pet_teardown_unload": "Unloads live pet objects whose durable owner row remains the pet or player; no destruction event is authorized.",
+    "item.ascension_equipment_relink": "After committed ascension, worn items are moved to the same player's carrying list; no new owner event is authorized.",
+    "recovery.sql_player_item_hydration": "Restores player_items UIDs into a player graph after an owner check, but skipped rows can leave a partial inventory.",
+    "recovery.sql_locker_item_hydration": "Restores locker_items into a locker graph; a missing saved UID currently bypasses the owner check in the recursive loader.",
+    "recovery.sql_private_chest_hydration": "Restores a chest item after matching its locker/chest owner identity.",
+    "recovery.sql_corpse_hydration": "Restores corpse items and a room corpse from SQL after corpse lifecycle hydration and item owner checks.",
+    "recovery.sql_saved_item_hydration": "Restores a saved room object graph after owner, source-row and duplicate UID checks; source handoff retirement is separately acknowledged.",
+    "world.zone_reset_equip_relink": "Reset replaces an occupied NPC equipment slot by moving its previous item into the same NPC carrying list.",
+    "recovery.flat_room_item_projection": "Publishes retained flat-file room-item UIDs and owner revision from the selected room ownership catalog.",
+    "player.flat_terminal_inventory_unload": "After flat-file terminal save, unloads only the live inventory graph while selected saved item custody remains authoritative.",
+    "player.sql_terminal_inventory_unload": "SQL player save temporarily unequips items and later restores them or unloads the live graph only after terminal save succeeds.",
+    "recovery.legacy_object_restore": "Projects saved player/corpse/container items from a selected legacy record; missing saved UIDs must not become fresh active-epoch identities.",
+    "recovery.single_item_decode": "Decodes a saved item and restores its UID only when the serialized UID flag exists; publication needs selected identity proof.",
+    "recovery.pet_save_equipment_relink": "Pet serialization temporarily unequips and then re-equips the same items under the same pet owner.",
+    "movement.key_break_committed_publication": "The callback removes the exact live key only after the typed item destruction command committed; no second custody event is authorized.",
+    "movement.drag_room_relink": "Dragging relinks the same room object after a movement command; an admitted UID retains its identity while the room owner changes.",
+    "locker.chest_item_restore": "Places a loaded retained locker item into its display chest without creating a new UID or changing selected locker ownership.",
+    "locker.public_items_save_relink": "Stages public locker items on the temporary locker character for save while selected durable locker custody should remain unchanged.",
+    "locker.public_items_room_restore": "Projects saved locker items into chests or the room after load, sort or rollback; retained UID and coin-pile identity must match selected authority.",
+    "combat.disarm_slot_relink": "Moves a worn weapon into the same owner’s inventory after combat disarm or fumble; no owner event is intended.",
+    "spell.snakes_committed_arrow_cleanup": "Removes live arrow copies after the exact typed batch-retirement result commits; no second owner event is authorized.",
+    "mob.thief_weapon_relink": "NPC thief tactics move an existing weapon between carrying and equipment slots under the same NPC owner.",
+    "mob.better_object_relink": "NPC item ranking moves displaced equipment into the same NPC inventory before wearing a replacement.",
+    "mob.hunter_weapon_relink": "NPC hunt tactics move a carried backstab weapon into a slot and return displaced gear to the same NPC inventory.",
 }
 
 # Current gameplay commands still build schema 1. The named families below have
 # a source-backed typed critical-command path, sometimes alongside direct legacy
 # effects. Everything else is direct/legacy, projection, or an offline tool.
 SCHEMA1_IDS = {
+    "currency.coin_steal",
+    "ship.coffer_claim", "ship.insurance_fallback",
     "special.money_changer", "special.smelter", "special.rentacleric",
     "special.witch_doctor", "special.llyren", "quest.reward",
     "quest.requirements", "world_quest.full_reward", "world_quest.kill_reward",
@@ -103,8 +227,12 @@ SCHEMA1_IDS = {
     "crafting.forge", "crafting.smith", "crafting.refine",
     "crafting.epic_store", "kingdom.store_purchase", "kingdom.store_refund",
     "item.creation_completion",
+    "combat.sql_outcome", "collector.sql_apply", "item.sql_custody_apply",
+    "death.corpse_sql_apply", "death.restitution_sql_apply",
 }
 MIXED_SCHEMA1_IDS = {
+    "currency.coin_steal",
+    "ship.coffer_claim", "ship.insurance_fallback",
     "special.money_changer", "special.smelter", "special.rentacleric",
     "special.witch_doctor", "special.llyren", "quest.reward",
     "quest.requirements", "world_quest.full_reward", "world_quest.kill_reward",
@@ -120,6 +248,61 @@ SCHEMA2_ITEM_TRANSFER_IDS = {
     "item.command_movement", "item.bulk_movement", "item.movement_submit",
     "item.trusted_steal", "item.creation_completion",
     "death.corpse_creation", "death.resurrection_publication",
+}
+SCHEMA2_SQL_COIN_COMPONENT_IDS = {"coin.sql_accounting"}
+SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS = {"item.sql_custody_apply"}
+MIXED_SPELL_ITEM_IDS = {
+    "spell.minor_creation_fallback", "spell.flame_blade_grant",
+    "spell.shield_grant", "spell.food_grant",
+    "spell.insect_mandrake_fallback_sink", "spell.doom_blade_grant",
+    "spell.snakes_direct_arrow_sink",
+}
+SQL_ROUTE_TARGETS = {
+    "combat.sql_outcome": {
+        "holding_effect": "Participant wallet reward deltas and bank revision fences with legacy currency_ledger rows; balanced reward issuance is not proven here.",
+        "custody_effect": "None at these SQL sites.",
+        "native_state_targets": ["player_data wallet and revision", "account_banks bank_revision", "currency_ledger"],
+    },
+    "auction.money_claim_compensation": {
+        "holding_effect": "Restores a pending auction claim after asynchronous wallet credit rejection; this direct SQL credit is separate from the earlier claim debit.",
+        "custody_effect": "None at this callback site.",
+        "native_state_targets": ["auction_money_pickups.money", "pending wallet credit result"],
+    },
+    "collector.sql_apply": {
+        "holding_effect": "Purchase changes the buyer wallet and bank revision and appends currency_ledger; custody-only actions do not debit a buyer.",
+        "custody_effect": "Changes item_current_owner and appends item_ownership_ledger for the held-item transfer.",
+        "native_state_targets": ["player_data wallet", "account_banks bank_revision", "currency_ledger", "item_current_owner", "item_ownership_ledger"],
+    },
+    "item.sql_custody_apply": {
+        "holding_effect": "Updates a money object's coin_payload when the typed item transfer changes its payload; any monetary source/sink requires a matching root account effect.",
+        "custody_effect": "Creates or moves UID owner/revision rows and appends exact ownership history under the item-transfer command.",
+        "native_state_targets": ["item_current_owner owner, revision and coin_payload", "item_ownership_ledger"],
+    },
+    "death.corpse_sql_apply": {
+        "holding_effect": "Ensures the destination bank row and applies the corpse wallet plan within the lifecycle transaction; bank-row creation alone is not issuance.",
+        "custody_effect": "Materializes or retires saved-item storage while a separate typed item handoff changes UID owner/revision.",
+        "native_state_targets": ["player_data wallet", "account_banks mapping/revision", "saved_items", "item_current_owner", "item_ownership_ledger"],
+    },
+    "death.restitution_sql_apply": {
+        "holding_effect": "No coin effect at the linked SQL sites.",
+        "custody_effect": "Delivers selected UIDs to a recipient and appends item_ownership_ledger under expected revisions.",
+        "native_state_targets": ["item_current_owner", "item_ownership_ledger", "player death restitution plan"],
+    },
+    "player.death_snapshot_quarantine": {
+        "holding_effect": "No coin effect at this SQL site.",
+        "custody_effect": "Marks disputed player-held UIDs quarantined with increased owner/item revisions; retains the items rather than destroying them.",
+        "native_state_targets": ["item_current_owner.state and item_revision", "item_owner_revision", "player_death_custody"],
+    },
+    "recovery.saved_sql_store": {
+        "holding_effect": "No coin effect at these SQL sites.",
+        "custody_effect": "Replaces saved_items storage rows for an already identified room object tree; UID admission/movement must be proven by the caller.",
+        "native_state_targets": ["saved_items and child rows", "room object UID/owner source"],
+    },
+    "recovery.saved_sql_delete": {
+        "holding_effect": "No coin effect at this SQL site.",
+        "custody_effect": "Deletes a saved_items storage row; this does not establish whether the UID moved or was destroyed.",
+        "native_state_targets": ["saved_items", "item_current_owner and item_ownership_ledger expected from caller"],
+    },
 }
 BUILDER_EVIDENCE = {
     "currency": ["src/economy/currency_command.c:270"],
@@ -206,6 +389,10 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
                       if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function)
     code = mask_cpp(source)
     result: list[int] = []
+    parts = function.rsplit("::", 1)
+    special_member = (len(parts) == 2 and
+                      parts[1] in {parts[0].rsplit("::", 1)[-1],
+                                   "~" + parts[0].rsplit("::", 1)[-1]})
     for match in re.finditer(r"\b" + re.escape(function) + r"\s*\(", code):
         open_paren = code.find("(", match.start())
         depth = 0
@@ -228,11 +415,19 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
             if not qualifier:
                 break
             tail += qualifier.end()
+        if special_member and tail < len(code) and code[tail] == ":":
+            # Constructors can have a member-initializer list before the body.
+            # The scanner only needs the body anchor, not the initializer AST.
+            body = code.find("{", tail)
+            semicolon = code.find(";", tail)
+            if body < 0 or (semicolon >= 0 and semicolon < body):
+                continue
+            tail = body
         if tail >= len(code) or code[tail] != "{":
             continue
         line_start = code.rfind("\n", 0, match.start()) + 1
         prefix = code[line_start:match.start()].strip()
-        if not prefix or any(word in prefix for word in ("return", "if ", "while ", "for ", "case ", "=")):
+        if (not prefix and not special_member) or any(word in prefix for word in ("return", "if ", "while ", "for ", "case ", "=")):
             continue
         result.append(code.count("\n", 0, match.start()) + 1)
     return sorted(set(result))
@@ -242,15 +437,89 @@ def source_targets(route_id: str, disposition: str) -> dict:
     if disposition == "non_writer_candidate":
         return {"holding_effect": "none in this function for economy/custody scope", "custody_effect": "none", "native_state_targets": []}
     if disposition == "dormant_writer_candidate":
+        if route_id == "currency.bank_single_projection":
+            return {"holding_effect": "A call would change a connected PC's in-memory bank projection without changing account_banks.",
+                    "custody_effect": "None", "native_state_targets": ["in-memory PC bank denomination projection", "GMCP vitals"]}
         return {"holding_effect": "direct writer exists but no in-tree gameplay caller was found", "custody_effect": "legacy behavior if revived; not currently reached in-tree", "native_state_targets": ["legacy auction/bank persistence code; see route detail"]}
     if disposition == "offline_operational_writer":
         return {"holding_effect": OFFLINE_WRITERS[route_id], "custody_effect": "offline import/baseline/restore only; no live publication", "native_state_targets": ["explicit offline database/restore target", "opening wallet/bank/item baseline where applicable"]}
+    if route_id in SQL_ROUTE_TARGETS:
+        return SQL_ROUTE_TARGETS[route_id]
+    if route_id == "currency.bank_live_projection":
+        return {"holding_effect": "Copies an existing bank balance into connected PC/GMCP projections after a native read or committed result; no native debit, credit, or issuance.",
+                "custody_effect": "None", "native_state_targets": ["in-memory PC bank balance and bank revision projection", "GMCP vitals"]}
+    if route_id in {"currency.wallet_live_projection", "player.load_economy_projection"}:
+        return {"holding_effect": "Copies retained wallet/bank authority into the live PC projection after a committed result or validated load; no native debit, credit, or issuance.",
+                "custody_effect": "None", "native_state_targets": ["in-memory PC wallet/bank denominations and revisions", "GMCP vitals where published"]}
+    if route_id == "player.flatfile_baseline_projection":
+        return {"holding_effect": "Copies the just-committed flat-file baseline wallet/bank and revisions into the live PC after a successful authority read; no second native balance change.",
+                "custody_effect": "None at these eight assignments.",
+                "native_state_targets": ["live PC cash[0..3] and bank[0..3] projections", "wallet_revision and bank_revision"]}
+    if route_id == "player.legacy_flatfile_load":
+        return {"holding_effect": "Loads four wallet denominations from the legacy character file into a PC; the file is not automatically the selected active-epoch authority.",
+                "custody_effect": "None at these four assignments.",
+                "native_state_targets": ["loaded PC cash[0..3] projection", "legacy character file wallet payload"]}
+    if route_id == "player.sql_status_projection":
+        return {"holding_effect": "Loads SQL player wallet into the PC and clears its bank projection pending a separate bank load; no native row changes in this function.",
+                "custody_effect": "None at these eight assignments.",
+                "native_state_targets": ["PC cash[0..3] and bank[0..3] projections", "SQL player_data wallet and wallet_revision"]}
+    if route_id == "player.sql_bank_live_load":
+        return {"holding_effect": "Clears PC bank projection before an SQL read, then fills it from account_banks only on valid result; a failed read leaves the projection at zero.",
+                "custody_effect": "None at these eight assignments.",
+                "native_state_targets": ["PC bank[0..3] projection", "account_banks selected account/racewar and bank_revision"]}
+    if route_id == "recovery.copyover_npc_gold_projection":
+        return {"holding_effect": "Replaces decoded/generated NPC gold with the legacy copyover gold field in either recovery path; no persistent source row is changed here.",
+                "custody_effect": "None at these two assignments.",
+                "native_state_targets": ["runtime NPC gold projection", "legacy copyover mob gold field"]}
+    if route_id == "world.generated_npc_hydration":
+        return {"holding_effect": "Copies four decoded NPC wallet denominations onto a newly read mobile during copyover. A later legacy copyover gold assignment may replace the decoded gold.",
+                "custody_effect": "No item custody change in this function.",
+                "native_state_targets": ["runtime NPC cash[0..3] projection", "encoded generated-NPC wallet snapshot"]}
+    if route_id == "world.mobile_scaling":
+        return {"holding_effect": "Recomputes NPC denominations from level/template, then applies elite scaling, minimum coin and no-money race/name rules. read_mobile calls it before admission; restorePet calls it again after a pet status load that has cleared saved cash.",
+                "custody_effect": "No item custody change in this function.",
+                "native_state_targets": ["runtime NPC cash[0..3]", "mobile template cash"]}
+    if route_id == "pet.no_cash":
+        return {"holding_effect": "PET_NOCASH zeroes all four NPC wallet denominations; callers include newly created summons and existing charm targets, so this cannot be classified as provisional-only.",
+                "custody_effect": "The same helper links the NPC as a pet, but these four sites only change its cash.",
+                "native_state_targets": ["runtime NPC cash[0..3]"]}
+    if route_id == "recovery.pet_cash_discard":
+        return {"holding_effect": "Reads four saved pet denominations then immediately zeroes them on a newly read mobile; restorePet later recomputes template cash. Whether the saved pet cash was an admitted holding is unresolved.",
+                "custody_effect": "None at these eight assignments.",
+                "native_state_targets": ["provisional/restored NPC cash[0..3]", "legacy pet file wallet payload"]}
+    if route_id == "recovery.flat_corpse_coin_materialization":
+        return {"holding_effect": "Materializes the saved corpse/room coin vector as a runtime pile without adding value to native authority.",
+                "custody_effect": "Restores the saved pile UID and parent/room location after verifying the source record.",
+                "native_state_targets": ["flatfile corpse/room coin record", "runtime coin pile value and UID"]}
+    if route_id in {"world.patrol_clear_cash", "world.justice_guard_clear_cash", "world.zgame_zombie_clear_cash"}:
+        return {"holding_effect": "CLEAR_MONEY expands to four NPC denomination zero assignments. The call is reachable after world placement or from a recurring patrol event, so an admitted holding can be cleared.",
+                "custody_effect": "None at the macro call.",
+                "native_state_targets": ["live NPC cash[0..3]"]}
+    if route_id == "world.mobile_template":
+        return {"holding_effect": "Parses prototype NPC denominations from the mob file in two legacy format branches; read_mobile later applies conversion/scaling before return. Copyover also calls read_mobile before restoring a saved NPC.",
+                "custody_effect": "None at these eight assignments.",
+                "native_state_targets": ["newly allocated NPC cash[0..3]", "mob template cash"]}
+    if disposition == "runtime_projection_route" and route_id.startswith("ship."):
+        return {"holding_effect": "Existing retained ship coffer value is projected into runtime state; no new value is created.",
+                "custody_effect": "None", "native_state_targets": ["ships.money or flat-file ship record money", "runtime ShipData::money"]}
+    if route_id.startswith("ship."):
+        return {"holding_effect": "Durable ship coffer value, paired wallet credit, or an insurance/refund source according to the named route.",
+                "custody_effect": "None for money; ship hydration and initialization are classified separately.",
+                "native_state_targets": ["ships.money or flat-file ship record money", "runtime ShipData::money", "player_data wallet / pending auction claim where applicable"]}
+    if route_id == "currency.coin_steal":
+        return {"holding_effect": "Direct victim denomination debit followed by a separate ADD_MONEY credit to the thief; active accounting must refuse before the debit until one root owns both legs.",
+                "custody_effect": "None in the coin branch of do_steal.",
+                "native_state_targets": ["victim PC.cash[0..3] or NPC cash", "thief PC.cash[0..3] / player_data wallet", "pending auction claim on legacy credit-submission failure"]}
     if route_id.startswith("currency."):
         if route_id in {"currency.wallet_to_pile", "currency.pile_constructor", "currency.pile_add", "currency.room_pile_merge"}:
             return {"holding_effect": "Coin pile value and/or wallet-to-pile conversion; creation may be provisional until a live custody owner is published.", "custody_effect": "P_obj coin pile owner/list and durable item UID/coin payload when admitted.", "native_state_targets": ["PC.cash[0..3]", "P_obj.value[0..3]", "item_current_owner.coin_payload", "player_data.copper/silver/gold/platinum", "account_banks.bank_copper/bank_silver/bank_gold/bank_platinum"]}
         return {"holding_effect": "Player wallet denomination vector and/or shared account-bank denomination vector; preserve revisions and change-making exactly.", "custody_effect": "No item custody unless the route explicitly includes coin-pile movement.", "native_state_targets": ["PC.cash[0..3] / player_data.copper/silver/gold/platinum", "wallet_revision", "account_banks.bank_copper/bank_silver/bank_gold/bank_platinum", "bank_revision", "currency_ledger on applicable SQL paths"]}
     if route_id.startswith("coin."):
         return {"holding_effect": "Wallet denomination vector and durable coin-pile value; NPC recipient/compensation branches may still be in-memory/direct.", "custody_effect": "Coin pile UID and owner/root/parent transfer for floor/container custody.", "native_state_targets": ["PC.cash[0..3] / player_data denomination columns", "P_obj.value[0..3]", "item_current_owner.coin_payload", "item_current_owner owner/root/parent/revision", "item_ownership_ledger for covered custody path"]}
+    if route_id.startswith("nq."):
+        return {"holding_effect": "Numbered-quest reward credits a player wallet; requirement consumption reduces NPC-held cash after an earlier player give. The object allocation helper changes no coin balance.",
+                "custody_effect": "Reward item allocation/publication and required item extraction need one admitted UID history, with provisional allocation separated from live publication.",
+                "native_state_targets": ["player wallet / player_data denominations", "NPC quest actor cash", "quest item P_obj carrying and item_current_owner/item_ownership_ledger when admitted"]}
     if route_id.startswith(("item.", "death.", "recovery.")):
         return {"holding_effect": "No coin effect unless named in route detail; item value/identity remains attached to its UID.", "custody_effect": "Live object owner, equipment/container/room/corpse/player/pet/saved-item topology; distinguish transfer, recovery projection, staging rollback, and destruction.", "native_state_targets": ["P_obj carrying/equipment/room/container links", "item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,state)", "item_ownership_ledger(from_owner,to_owner,event_index,item_revision)", "player_items/corpse_items/locker_items/saved_items/player_pet_items where applicable"]}
     if route_id.startswith("auction."):
@@ -270,21 +539,37 @@ def schema_record(route_id: str, disposition: str) -> dict:
     if disposition in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"}:
         current = "not_applicable" if disposition == "non_writer_candidate" else "none"
         mode = "no live critical-command gameplay route"
+    elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
+        current = 2
+        mode = "typed_schema_2_sql_component_without_qualified_gameplay_route"
+    elif route_id in MIXED_SPELL_ITEM_IDS:
+        current = None
+        mode = "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive"
     elif route_id in SCHEMA1_IDS:
         current = 1
         mode = "schema_1_plus_direct_side_effects" if route_id in MIXED_SCHEMA1_IDS else "schema_1_typed_command_path"
+        if route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
+            mode = "schema_1_when_inactive_schema_2_item_repository_component_when_active"
         if route_id == "currency.split":
             mode = "multiple_schema_1_currency_legs_not_atomic_root"
         elif route_id in SCHEMA2_ITEM_TRANSFER_IDS:
             mode = "schema_1_when_inactive_schema_2_item_accounting_when_active"
+    elif disposition == "runtime_projection_route":
+        current = None
+        mode = "native_result_or_recovery_projection_without_new_accounting_root"
     else:
         current = None
-        mode = "legacy_direct_or_projection_without_a_schema_1_command_at_this_function"
+        mode = "legacy_direct_without_a_schema_1_command_at_this_function"
     family = route_id.split(".", 1)[0]
     evidence = list(BUILDER_EVIDENCE.get(family, [])) if current == 1 else []
     evidence.extend(["src/persistence/critical_command.h:9-10", "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"])
     if route_id == "currency.split":
         evidence.append("src/cmd/actoth.c:6232-6257 (recipient ADD_MONEY legs precede sender SUB_MONEY; no root command)")
+    if route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
+        evidence.extend([
+            "src/economy/coin_transfer_accounting.c:947-1017 (SQL native coin effects, balanced postings, item references, source claim and receipt)",
+            "tests/async/test_coin_transfer_accounting.py (SQL component harness; not a real player journey)",
+        ])
     schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS
     item_action_coverage = (
         " and spell creation/component consumption, sticks-to-snakes retirement, and key-break retirement"
@@ -319,9 +604,15 @@ def schema_record(route_id: str, disposition: str) -> dict:
     elif route_id == "death.resurrection_publication":
         interpretation = "Schema 1 remains the current envelope. The player-to-room item handoff during resurrection uses the schema-2 player-drop item path with exact custody references when accounting is active; corpse lifecycle and other resurrection publication remain separate coverage items."
     else:
-        interpretation = f"Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction{item_action_coverage} use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported." if schema2_connected else "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected." if current == 1 else "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation." if disposition not in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"} else mode
+        interpretation = f"Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction{item_action_coverage} use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported." if schema2_connected else "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected." if current == 1 else "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root." if disposition == "runtime_projection_route" else "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation." if disposition not in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"} else mode
     if route_id == "currency.split":
         interpretation = "do_split has no atomic root command: recipient credits are individually submitted through schema-1 currency legs before the sender debit. No schema-2 multi-party operation is connected."
+    elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
+        interpretation = "The SQL transaction component records typed schema-2 coin effects and balanced postings. Pooled dispatch/reconcile and player-visible publication are separate qualification gates; flat-file coin accounting remains unqualified."
+    elif route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
+        interpretation = "The SQL item repository applies schema-1 commands when inactive and can apply a typed schema-2 item transfer under an owning root when active. This repository function is a component, not a gameplay producer or a complete money-valued coin route; root accounting, flat-file parity and playable acceptance remain separate gates."
+    elif route_id in MIXED_SPELL_ITEM_IDS:
+        interpretation = "The active PC branch calls the shared typed schema-2 item owner, while NPC and inactive branches directly mutate live custody. That shared component does not qualify the complete spell route or its publication, replay and fallback behavior."
     return {
         "current_schema": current,
         "route_mode": mode,
@@ -335,10 +626,21 @@ def schema_record(route_id: str, disposition: str) -> dict:
 def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
     if disposition == "non_writer_candidate":
         return {"status": "not_applicable", "unified_operation_postings_observed": False, "existing_evidence": [], "note": NON_WRITERS[route_id]}
+    if route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
+        return {
+            "status": "sql_component_balanced_postings_without_playable_route",
+            "unified_operation_postings_observed": True,
+            "legacy_domain_evidence": ["The SQL coin component binds native wallet/pile effects, item references, postings and source claims under one root."],
+            "required_atomic_evidence": ["Pooled root dispatch/reconcile", "post-commit player publication", "equivalent flat-file evidence and replay"],
+            "global_evidence": ["src/economy/coin_transfer_accounting.c", "tests/async/test_coin_transfer_accounting.py"],
+            "note": "Observed only in a SQL component harness; no real player journey or full backend route is qualified.",
+        }
     if disposition == "dormant_writer_candidate":
         status = "not_executed_in_tree"
     elif disposition == "offline_operational_writer":
         status = "offline_baseline_or_restore_evidence_only"
+    elif route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
+        status = "typed_schema2_item_repository_component_without_gameplay_producer"
     elif route_id in SCHEMA2_ITEM_TRANSFER_IDS:
         status = "typed_schema2_item_custody_reference_without_coin_effect"
     elif route_id in PROJECTION_ROUTES:
@@ -357,6 +659,8 @@ def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
     if route_id.startswith(("item.", "death.", "recovery.", "shop.", "collector.", "auction.")):
         if route_id in SCHEMA2_ITEM_TRANSFER_IDS:
             existing.append("item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.")
+        elif route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
+            existing.append("The SQL item repository records native UID ownership and ledger events for a typed root; an owning schema-2 transaction must attach exact accounting item references. This component alone is not gameplay or flat-file proof.")
         else:
             existing.append("item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected.")
     if route_id in SCHEMA2_ITEM_TRANSFER_IDS:
@@ -373,7 +677,7 @@ def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
             "matching item_current_owner and item_ownership_ledger rows",
             "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
             "retained critical-command inbox/result for idempotent replay",
-        ] if route_id in SCHEMA2_ITEM_TRANSFER_IDS else [
+        ] if route_id in SCHEMA2_ITEM_TRANSFER_IDS | SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS else [
             "economic_accounting_operation",
             "economic_accounting_account_effect",
             "balanced economic_accounting_coin_posting rows where currency changes",
@@ -382,6 +686,8 @@ def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
         "global_evidence": ["docs/persistence/ECONOMY_ACCOUNTING.md:3-13", "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"],
         "note": ("The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked."
                  if route_id in SCHEMA2_ITEM_TRANSFER_IDS else
+                 "The SQL repository component requires an owning root and exact item-reference evidence; component execution is not a playable route."
+                 if route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS else
                  "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated."),
     }
 
@@ -392,13 +698,62 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
         policy = NON_WRITERS[route_id]
     elif disposition == "dormant_writer_candidate":
         decision = "keep_unreachable_or_block_if_reactivated"
-        policy = DORMANT_WRITERS[route_id] + " Any reactivation must route through the typed schema-2 writer before native mutation."
+        if route_id == "currency.bank_single_projection":
+            policy = DORMANT_WRITERS[route_id] + " A live publication requires the selected mapping, committed bank result and non-stale revision."
+        else:
+            policy = DORMANT_WRITERS[route_id] + " Any reactivation must route through the typed schema-2 writer before native mutation."
     elif disposition == "offline_operational_writer":
         decision = "maintenance_only_no_live_admission"
         policy = OFFLINE_WRITERS[route_id] + " Require a quiesced boundary, exact retained lineage/epoch, source snapshot witness and idempotent resume; fail closed on unknown rows."
+    elif route_id in {"player.legacy_flatfile_load", "player.sql_status_projection",
+                      "player.sql_bank_live_load", "world.generated_npc_hydration",
+                      "recovery.copyover_npc_gold_projection",
+                      "recovery.flat_corpse_coin_materialization",
+                      "item.pet_give_publication", "item.command_publication",
+                      "item.empty_publication", "item.weight_relink",
+                      "item.equipment_wear", "item.equipment_remove",
+                      "coin.wallet_pile_publication", "death.corpse_release_live",
+                      "death.corpse_raise_recovery_live", "death.corpse_resurrection_item_live",
+                      "death.corpse_nested_release_live", "death.corpse_destruction_live",
+                      "death.corpse_transient_cleanup", "death.corpse_committed_money_cleanup",
+                      "death.resurrection_committed_player_drop",
+                      "death.resurrection_committed_corpse_cleanup",
+                      "item.pet_teardown_unload", "item.ascension_equipment_relink",
+                      "recovery.sql_player_item_hydration", "recovery.sql_locker_item_hydration",
+                      "recovery.sql_private_chest_hydration", "recovery.sql_corpse_hydration",
+                      "recovery.sql_saved_item_hydration", "world.zone_reset_equip_relink",
+                      "world.copyover_item_materialization", "recovery.flat_room_item_projection",
+                      "mob.thief_weapon_relink", "mob.better_object_relink",
+                      "mob.hunter_weapon_relink", "player.flat_terminal_inventory_unload",
+                      "player.sql_terminal_inventory_unload", "recovery.legacy_object_restore",
+                      "recovery.single_item_decode", "recovery.pet_save_equipment_relink",
+                      "movement.key_break_committed_publication", "movement.drag_room_relink",
+                      "locker.chest_item_restore", "locker.public_items_save_relink",
+                      "locker.public_items_room_restore", "combat.disarm_slot_relink",
+                      "spell.snakes_committed_arrow_cleanup"}:
+        decision = "block_until_projection_proof"
+        if route_id == "player.sql_bank_live_load":
+            policy = PROJECTION_ROUTES[route_id] + " The login caller ignores a failed bank read after this function has zeroed the PC bank. Refuse publication until the selected bank result and revision are verified."
+        elif route_id == "player.sql_status_projection":
+            policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the separate selected account-bank load succeeds and wallet/bank revisions form one complete player view."
+        elif route_id == "recovery.flat_corpse_coin_materialization":
+            policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the selected saved corpse/room identity, exact coin vector, pile UID and complete source receipt are verified."
+        elif route_id.startswith(("item.", "death.", "coin.", "mob.", "movement.", "locker.", "combat.", "spell.")) or route_id.startswith("recovery.sql_") or route_id in {"world.zone_reset_equip_relink", "world.copyover_item_materialization", "recovery.flat_room_item_projection", "player.flat_terminal_inventory_unload", "player.sql_terminal_inventory_unload", "recovery.legacy_object_restore", "recovery.single_item_decode", "recovery.pet_save_equipment_relink"}:
+            policy = PROJECTION_ROUTES[route_id] + " Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
+        else:
+            policy = PROJECTION_ROUTES[route_id] + " Current source does not prove the selected active-epoch authority and complete recovery identity, and it does not reject inconsistent decoded and legacy gold before the gold overwrite. Refuse active-epoch publication until that proof is executable; do not treat a recovery overwrite as issuance."
     elif route_id in PROJECTION_ROUTES:
         decision = "allow_projection_only_with_committed_identity"
-        policy = PROJECTION_ROUTES[route_id] + " Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+        if route_id == "currency.bank_live_projection":
+            policy = PROJECTION_ROUTES[route_id] + " Require the selected account/racewar mapping and a non-stale native bank revision before publication; emit no new posting."
+        elif route_id in {"currency.wallet_live_projection", "player.load_economy_projection", "player.flatfile_baseline_projection", "player.legacy_flatfile_load"}:
+            policy = PROJECTION_ROUTES[route_id] + " Require selected native identity, complete read/receipt and non-stale revision before publication; emit no new posting."
+        elif route_id == "world.generated_npc_hydration":
+            policy = PROJECTION_ROUTES[route_id] + " Require a complete, identity-matched copyover snapshot and resolve the later legacy gold overwrite before treating the recovered wallet as authoritative; emit no new issuance posting."
+        elif route_id == "recovery.copyover_npc_gold_projection":
+            policy = PROJECTION_ROUTES[route_id] + " Refuse inconsistent decoded and legacy gold or missing source identity; emit no new issuance posting."
+        else:
+            policy = PROJECTION_ROUTES[route_id] + " Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
     else:
         decision = "block_until_typed_schema2_accounting"
         policy = "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
@@ -406,16 +761,18 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
             policy += " For lifecycle/destruction paths, distinguish true retirement from staging, unload, rollback, reset reconstruction and recovery; only true destruction gets a linked custody tombstone and explicit coin sink."
         if route_id in {"currency.split"}:
             policy += " Split all participant effects under one root operation with every player fenced/validated before any recipient credit; current separate schema-1 credits and later sender debit are not atomic."
+        if route_id in {"world.mobile_scaling", "world.mobile_template", "pet.no_cash", "recovery.pet_cash_discard"}:
+            policy += " Prove the NPC is provisional before this assignment or preserve its admitted source/sink and revision in one root; existing charm targets and pet restoration cannot be assumed fresh."
         if route_id.startswith("auction."):
             policy += " Keep accepted escrow, seller claim/proceeds, fee and item winner/return custody under the same auction root; no implicit reimbursement."
-    return {"decision": decision, "must_block_on_activation": decision in {"block_until_typed_schema2_accounting", "keep_unreachable_or_block_if_reactivated"}, "required_policy": policy}
+    return {"decision": decision, "must_block_on_activation": decision in {"block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated"}, "required_policy": policy}
 
 
 def build() -> dict:
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     validator = load_validator()
     census = validator.scan_sources(ROOT)
-    source_commit = SOURCE_SNAPSHOT_COMMIT
+    source_commit = registry["source_commit"]
     baseline_census = registry["census"]
     unique_key = lambda row: (row["path"], row["line"], row["family"])
     baseline_sites = {unique_key(row) for row in baseline_census}
@@ -424,7 +781,6 @@ def build() -> dict:
     family_counts = dict(sorted(Counter(row["family"] for row in census).items()))
 
     candidates = list(registry["writers"])
-    candidates.append(SUPPLEMENTAL)
     routes = []
     for raw in candidates:
         route_id = raw["id"]
@@ -432,10 +788,10 @@ def build() -> dict:
         function = FUNCTION_FIXES.get(route_id, raw["symbol"])
         if function.startswith("def "):
             function = function[4:]
-        if route_id == "kingdom.workshop_props":
+        if route_id in {"kingdom.workshop_props", "macro.clear_money_definition", "macro.add_coins_declaration", "macro.difficulty_scale_declaration", "macro.money_helper_declarations", "macro.economic_submit_declarations", "macro.item_constructor_declarations"}:
             function = None
         locations = source_definition_lines(ROOT / file_path, function)
-        if route_id != "kingdom.workshop_props" and not locations:
+        if route_id not in {"kingdom.workshop_props", "macro.clear_money_definition", "macro.add_coins_declaration", "macro.difficulty_scale_declaration", "macro.money_helper_declarations", "macro.economic_submit_declarations", "macro.item_constructor_declarations"} and not locations:
             raise ValueError(f"source function definition not found for {route_id}: {file_path}:{function}")
         if route_id in NON_WRITERS:
             disposition = "non_writer_candidate"
@@ -448,7 +804,8 @@ def build() -> dict:
         else:
             disposition = "runtime_mutation_route"
         schema = schema_record(route_id, disposition)
-        details = source_targets(route_id, disposition)
+        details = (raw["native_effects"] if disposition in {"runtime_mutation_route", "runtime_projection_route"} and raw.get("native_effects")
+                   else source_targets(route_id, disposition))
         if route_id == "currency.split":
             details = {
                 "holding_effect": "Issues one schema-1 currency credit leg per eligible group recipient, then submits sender debit for total given; remainder stays with sender. Recipient credits happen before sender debit, so failed debit can leave net issuance.",
@@ -476,7 +833,11 @@ def build() -> dict:
             "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census.",
         }
         if route_id in DORMANT_WRITERS:
-            route["reachability_evidence"] = "Definition exists; no in-tree callsite was found in the current source search."
+            route["reachability_evidence"] = raw.get("reachability_evidence") or "Definition exists; no in-tree callsite was found in the current source search."
+        elif raw.get("reachability_evidence"):
+            route["reachability_evidence"] = raw["reachability_evidence"]
+        if raw.get("refusal_source_evidence"):
+            route["refusal_source_evidence"] = raw["refusal_source_evidence"]
         if route_id in NON_WRITERS:
             route["exclusion_reason"] = NON_WRITERS[route_id]
         if route_id in PROJECTION_ROUTES:
@@ -486,7 +847,7 @@ def build() -> dict:
     dispositions = Counter(route["disposition"] for route in routes)
     counts = {
         "draft_registry_rows": len(registry["writers"]),
-        "supplemental_candidates_found": 1,
+        "supplemental_candidates_found": 0,
         "matrix_rows": len(routes),
         "runtime_mutation_and_projection_routes": sum(r["counts_as_runtime_writer"] for r in routes),
         "offline_operational_writer_routes": sum(r["counts_as_operational_writer"] for r in routes),
@@ -513,7 +874,7 @@ def build() -> dict:
         "coverage_complete": False,
         "playable_release_status": "BLOCKED",
         "method": {
-            "candidate_source": "docs/persistence/economy_accounting/writers.json (draft registry), plus one supplemental legacy settlement writer found during source review",
+            "candidate_source": "docs/persistence/economy_accounting/writers.json (source-reviewed registry, including legacy settlement definitions)",
             "semantic_scope": "Economy holdings, coin-pile value/custody, item custody/admission/destruction, relevant lifecycle and offline baseline/restore writers.",
             "count_rule": "Count source-function runtime mutation/projection routes separately from offline writers, dormant definitions, and non-writer/false candidates. A registry row is not proof of complete codebase coverage.",
             "false_positive_rule": "Do not count lexical helper hits, data members, reload projections, backup copies, tombstone checks, or unreferenced legacy definitions as live economic writers without a real mutation/reachable route.",
@@ -534,7 +895,9 @@ def build() -> dict:
             "mapped_unique_sites_from_draft_rows": len(mapped_sites),
             "mapped_sites_still_present": len(mapped_sites & current_sites),
             "unmapped_current_unique_sites": len(current_sites - mapped_sites),
-            "interpretation": "Lexical occurrences are candidates, not writer routes. The 115-row draft maps only 33 unique sites; 2,646 current unique sites remain unmapped, so semantic completeness is unproven and release must remain blocked.",
+            "interpretation": (f"Lexical occurrences are candidates, not writer routes. The {len(registry['writers'])}-row registry maps "
+                               f"{len(mapped_sites & current_sites)} current unique sites; {len(current_sites - mapped_sites)} "
+                               "current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked."),
         },
         "global_schema_and_accounting_evidence": {
             "critical_command_schema_1": "src/persistence/critical_command.h:9",
@@ -547,8 +910,8 @@ def build() -> dict:
         },
         "blockers": [
             "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
-            "Current function inventory is not codebase-complete: 2,646 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
-            "No route in this matrix has unified operation-level double-entry evidence; legacy currency/item/domain ledgers are not substitutes.",
+            f"Current function inventory is not codebase-complete: {len(current_sites - mapped_sites)} unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
+            "The SQL coin component has balanced postings, but no complete gameplay route is qualified; legacy currency/item/domain ledgers are not substitutes.",
             "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
             "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers.",
         ],
@@ -560,8 +923,8 @@ def build() -> dict:
             {"priority": 5, "issues": [487, 488, 489, 490], "dependency": "Complete reconciliation/corrections, lifecycle/retention and verified restore, then cross-domain fault and measured workload qualification before release."},
         ],
         "known_unknowns": [
-            "The matrix reconciles the 115 draft rows and one newly found dormant legacy auction settlement definition; it does not establish that these are all real writers.",
-            "Most 2,679 current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
+            f"The matrix reconciles {len(registry['writers'])} registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+            f"Most {len(current_sites - mapped_sites)} unmapped current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
             "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
             "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests.",
         ],
