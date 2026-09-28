@@ -14,6 +14,7 @@ using namespace std;
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "combat/grapple.h"
 #include "magic/spells.h"
@@ -21,12 +22,16 @@ using namespace std;
 
 extern P_room world;
 
-static bool resolve_grapple_pair(P_char &actor, P_char &victim, uint64_t actor_runtime_id,
-				 uint64_t victim_runtime_id)
+static bool refresh_grapple_pair(P_char &actor, P_char &victim,
+				 const attack_continuation &continuation)
 {
-	actor = find_character_by_runtime_id(actor_runtime_id);
-	victim = find_character_by_runtime_id(victim_runtime_id);
-	return actor && victim;
+	const attack_continuation_result after_callback = check_attack_continuation(continuation);
+	if (!after_callback.can_continue())
+		return false;
+
+	actor = after_callback.actor;
+	victim = after_callback.target;
+	return true;
 }
 
 int grapple_check_entrapment(P_char ch)
@@ -627,8 +632,6 @@ void do_headlock(P_char ch, char *argument, int /*cmd*/)
 void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int type = HOLD_NONE, percent, gclvl;
-	uint64_t ch_runtime_id;
-	uint64_t victim_runtime_id;
 	float damage = 0.0;
 	bool knockedout = FALSE;
 	struct affected_type af, *aft;
@@ -747,18 +750,18 @@ void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		if (!knockedout)
 		{
 			int dam = (int)((GET_C_DEX(ch) / 7) * damage);
-			ch_runtime_id = ch->runtime_id;
-			victim_runtime_id = victim->runtime_id;
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, victim);
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages);
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			if (!refresh_grapple_pair(ch, victim, continuation))
 				return;
 			notch_skill(ch, SKILL_HEADLOCK,
 				    (int)get_property("skill.notch.headlock", 17));
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			if (!refresh_grapple_pair(ch, victim, continuation))
 				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
-			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
+			if (!refresh_grapple_pair(ch, victim, continuation) || !IS_ALIVE(ch) ||
+			    !IS_ALIVE(victim))
 				return;
 			add_event(event_headlock, PULSE_VIOLENCE / 2, ch, victim, 0, 0, 0, 0);
 		}
@@ -770,8 +773,8 @@ void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 void armlock_check(P_char attacker, P_char grappler)
 {
 	int reflextype, percent, str, gclvl, dam;
-	uint64_t attacker_runtime_id;
-	uint64_t grappler_runtime_id;
+	attack_continuation continuation{};
+	attack_continuation break_continuation{};
 	struct affected_type af;
 
 	struct damage_messages messages = {
@@ -795,8 +798,6 @@ void armlock_check(P_char attacker, P_char grappler)
 	if (!char_in_list(grappler) || !IS_ALIVE(grappler) || !char_in_list(attacker) ||
 	    !IS_ALIVE(attacker))
 		return;
-	attacker_runtime_id = attacker->runtime_id;
-	grappler_runtime_id = grappler->runtime_id;
 
 	if (!GET_CHAR_SKILL(grappler, SKILL_ARMLOCK))
 	{
@@ -847,14 +848,13 @@ void armlock_check(P_char attacker, P_char grappler)
 	case ARMREFLEX_HOLD:
 		dam = (int)(GET_C_DEX(grappler) / 15 * 4 *
 			    (float)get_property("grapple.armlock.dmgmod", 1.00));
+		continuation = begin_attack_continuation(grappler, attacker);
 		raw_damage(grappler, attacker, dam, RAWDAM_DEFAULT, &messages);
-		if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
-					  attacker_runtime_id))
+		if (!refresh_grapple_pair(grappler, attacker, continuation))
 			return;
 		check_shields(grappler, attacker, dam, RAWDAM_DEFAULT);
 
-		if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
-					  attacker_runtime_id) ||
+		if (!refresh_grapple_pair(grappler, attacker, continuation) ||
 		    !IS_ALIVE(grappler) || !IS_ALIVE(attacker))
 			return;
 
@@ -876,14 +876,13 @@ void armlock_check(P_char attacker, P_char grappler)
 			int break_damage =
 				(int)(((GET_C_DEX(grappler) / 10) + str) * 4 *
 				      (float)get_property("grapple.armlock.break.dmgmod", 1.00));
+			break_continuation = begin_attack_continuation(grappler, attacker);
 			raw_damage(grappler, attacker, break_damage, RAWDAM_DEFAULT, &breakmsg);
-			if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
-						  attacker_runtime_id))
+			if (!refresh_grapple_pair(grappler, attacker, break_continuation))
 				return;
 			check_shields(grappler, attacker, break_damage, RAWDAM_DEFAULT);
 
-			if (!resolve_grapple_pair(grappler, attacker, grappler_runtime_id,
-						  attacker_runtime_id) ||
+			if (!refresh_grapple_pair(grappler, attacker, break_continuation) ||
 			    !IS_ALIVE(grappler) || !IS_ALIVE(attacker))
 				return;
 		}
@@ -1177,8 +1176,6 @@ void do_leglock(P_char ch, char *argument, int /*cmd*/)
 void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int type = HOLD_NONE, percent, gclvl, str, legbreak;
-	uint64_t ch_runtime_id;
-	uint64_t victim_runtime_id;
 	float damage = 0.0;
 	struct affected_type af, *aft;
 
@@ -1203,8 +1200,6 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 	if (!char_in_list(victim) || !IS_ALIVE(victim) || !char_in_list(ch) || !IS_ALIVE(ch) ||
 	    !CanDoFightMove(ch, victim))
 		return;
-	ch_runtime_id = ch->runtime_id;
-	victim_runtime_id = victim->runtime_id;
 
 	if ((aft = get_spell_from_char(victim, SKILL_LEGLOCK)) != NULL)
 	{
@@ -1284,17 +1279,19 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 
 			int dam = (int)(((GET_C_DEX(ch) / 10) + str) * 4 *
 					(float)get_property("grapple.leglock.break.dmgmod", 1.00));
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, victim);
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &breakmsg);
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			if (!refresh_grapple_pair(ch, victim, continuation))
 				return;
 			notch_skill(ch, SKILL_LEGLOCK,
 				    (int)get_property("skill.notch.leglock", 17));
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			if (!refresh_grapple_pair(ch, victim, continuation))
 				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
 
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
-			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
+			if (!refresh_grapple_pair(ch, victim, continuation) || !IS_ALIVE(ch) ||
+			    !IS_ALIVE(victim))
 				return;
 
 			af.type = SKILL_GRAPPLER_COMBAT;
@@ -1314,16 +1311,18 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		if (!legbreak)
 		{
 			int dam = (int)((GET_C_DEX(ch) / 7) * damage);
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, victim);
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages);
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			if (!refresh_grapple_pair(ch, victim, continuation))
 				return;
 			notch_skill(ch, SKILL_LEGLOCK,
 				    (int)get_property("skill.notch.leglock", 17));
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			if (!refresh_grapple_pair(ch, victim, continuation))
 				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
-			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
+			if (!refresh_grapple_pair(ch, victim, continuation) || !IS_ALIVE(ch) ||
+			    !IS_ALIVE(victim))
 				return;
 			add_event(event_leglock, PULSE_VIOLENCE / 2, ch, victim, 0, 0, 0, 0);
 		}
@@ -1333,8 +1332,6 @@ void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 void do_groundslam(P_char ch, char *argument, int /*cmd*/)
 {
 	int percent, offbalance = FALSE;
-	uint64_t ch_runtime_id;
-	uint64_t victim_runtime_id;
 	P_char victim;
 	struct affected_type af, *aft;
 
@@ -1455,14 +1452,14 @@ void do_groundslam(P_char ch, char *argument, int /*cmd*/)
 			// Add weight based damge here
 			int dam = (int)((GET_WEIGHT(ch) / 5) *
 					(float)get_property("grapple.groundslam.dmgmod", 1.00));
-			ch_runtime_id = ch->runtime_id;
-			victim_runtime_id = victim->runtime_id;
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, victim);
 			raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &messages);
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			if (!refresh_grapple_pair(ch, victim, continuation))
 				return;
 			check_shields(ch, victim, dam, RAWDAM_DEFAULT);
-			if (!resolve_grapple_pair(ch, victim, ch_runtime_id, victim_runtime_id) ||
-			    !IS_ALIVE(ch) || !IS_ALIVE(victim))
+			if (!refresh_grapple_pair(ch, victim, continuation) || !IS_ALIVE(ch) ||
+			    !IS_ALIVE(victim))
 				return;
 			SET_POS(ch, POS_PRONE + GET_STAT(ch));
 			CharWait(ch, (int)(PULSE_VIOLENCE *

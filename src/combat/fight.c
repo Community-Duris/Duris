@@ -3286,18 +3286,51 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 	// ugly hack - we smuggle damage_type for eq poofing messages on 8 highest bits
 	messages->type |= type << 24;
+	const uint64_t ch_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
+	auto refresh_spell_damage_participants = [&]()
+	{
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		victim = find_character_by_runtime_id(victim_runtime_id);
+		const bool attacker_alive = ch && IS_ALIVE(ch);
+		const bool victim_alive = victim && IS_ALIVE(victim);
+		if (!attacker_alive && !victim_alive)
+			return DAM_BOTHDEAD;
+		if (!victim_alive)
+			return DAM_VICTDEAD;
+		if (!attacker_alive)
+			return DAM_CHARDEAD;
+		return DAM_NONEDEAD;
+	};
 	result = raw_damage(ch, victim, dam, (RAWDAM_DEFAULT ^ flags) | RAWDAM_NOWARD, messages,
 			    damAccumulator);
 
-	if (type == SPLDAM_ACID && !number(0, 3))
-		DamageStuff(victim, SPLDAM_ACID);
+	const bool acid_item_damage = type == SPLDAM_ACID && !number(0, 3);
+	if (acid_item_damage)
+	{
+		P_char acid_victim = find_character_by_runtime_id(victim_runtime_id);
+		if (acid_victim)
+			DamageStuff(acid_victim, SPLDAM_ACID);
+	}
 
 	if (result == DAM_NONEDEAD)
 	{
+		result = refresh_spell_damage_participants();
+		if (result != DAM_NONEDEAD)
+			return result;
+
 		if (ilogb(dam) > number(3, 60))
+		{
 			DamageStuff(victim, type);
+			result = refresh_spell_damage_participants();
+			if (result != DAM_NONEDEAD)
+				return result;
+		}
 
 		attack_back(ch, victim, FALSE);
+		result = refresh_spell_damage_participants();
+		if (result != DAM_NONEDEAD)
+			return result;
 
 		if (IS_AFFECTED5(victim, AFF5_WET) && type == SPLDAM_LIGHTNING &&
 		    ilogb(dam) > number(0, 10))
@@ -3322,8 +3355,36 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 int check_shields(P_char ch, P_char victim, int dam, int flags)
 {
+	// Shield damage reverses the spell_damage roles; keep its result orientation.
+	const bool ch_listed = ch && char_in_list(ch);
+	const bool victim_listed = victim && char_in_list(victim);
+	const bool ch_initially_alive = ch_listed && IS_ALIVE(ch);
+	const bool victim_initially_alive = victim_listed && IS_ALIVE(victim);
+	if (!ch_initially_alive && !victim_initially_alive)
+		return DAM_BOTHDEAD;
+	if (!ch_initially_alive)
+		return DAM_VICTDEAD;
+	if (!victim_initially_alive)
+		return DAM_CHARDEAD;
 	if (training_dummy_is(victim))
 		return DAM_NONEDEAD;
+
+	const uint64_t ch_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
+	auto refresh_check_shields_participants = [&]()
+	{
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		victim = find_character_by_runtime_id(victim_runtime_id);
+		const bool ch_alive = ch && IS_ALIVE(ch);
+		const bool victim_alive = victim && IS_ALIVE(victim);
+		if (!ch_alive && !victim_alive)
+			return DAM_BOTHDEAD;
+		if (!ch_alive)
+			return DAM_VICTDEAD;
+		if (!victim_alive)
+			return DAM_CHARDEAD;
+		return DAM_NONEDEAD;
+	};
 
 	int result = DAM_NONEDEAD;
 	double soulshielddam = get_property("damage.shield.soulshield", 0.400);
@@ -3414,8 +3475,6 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 		"&+yAs &n$N &+Wtouches &+ythe &+Rinf&+rer&+Lnal e&+rner&+Rgies &+yaround&n $n, &+y$E falls lifeless to the ground."
 	};
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
-		return 0;
 	if (training_dummy_is(ch))
 		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
@@ -3439,6 +3498,8 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 	{
 		result = spell_damage(victim, ch, (int)(dam * negshielddam), SPLDAM_NEGATIVE,
 				      sflags | SPLDAM_GRSPIRIT, &negshield);
+		if (result == DAM_NONEDEAD)
+			result = refresh_check_shields_participants();
 	}
 	else if (IS_AFFECTED2(victim, AFF2_SOULSHIELD) &&
 		 ((IS_EVIL(ch) && IS_GOOD(victim)) || (IS_GOOD(ch) && IS_EVIL(victim)) ||
@@ -3450,6 +3511,11 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 				spell_damage(victim, ch, (int)(dam * soulshielddam), SPLDAM_HOLY,
 					     SPLDAM_NODEFLECT | RAWDAM_TRANCEVAMP | SPLDAM_GRSPIRIT,
 					     &soulshield_spec);
+			if (result != DAM_NONEDEAD)
+				return result;
+			result = refresh_check_shields_participants();
+			if (result != DAM_NONEDEAD)
+				return result;
 
 			// Little bonus for devotion. Jan08 -Lucrot
 			int rnumber = 9;
@@ -3511,6 +3577,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 							get_god_name(victim));
 						act(buf, FALSE, ch, 0, victim, TO_VICT);
 						blind(victim, ch, number(4, 8) * WAIT_SEC);
+						result = refresh_check_shields_participants();
+						if (result != DAM_NONEDEAD)
+							return result;
 						break;
 					}
 					[[fallthrough]];
@@ -3550,6 +3619,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 						act(buf, FALSE, ch, 0, victim, TO_VICT);
 						spell_silence(GET_LEVEL(victim), victim, 0, 0, ch,
 							      0);
+						result = refresh_check_shields_participants();
+						if (result != DAM_NONEDEAD)
+							return result;
 						break;
 					}
 					[[fallthrough]];
@@ -3561,6 +3633,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 					act("&+wYour god rewards your faithfulness by sending aid from the Heavens!&n",
 					    FALSE, ch, 0, victim, TO_VICT);
 					spell_flamestrike(GET_LEVEL(victim), victim, 0, 0, ch, 0);
+					result = refresh_check_shields_participants();
+					if (result != DAM_NONEDEAD)
+						return result;
 					break;
 				case 6:
 					if ((GET_VITALITY(victim) + 30) < GET_MAX_VITALITY(victim))
@@ -3573,6 +3648,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 						    FALSE, ch, 0, victim, TO_VICT);
 						spell_vigorize_critic(GET_LEVEL(victim), victim, 0,
 								      0, victim, 0);
+						result = refresh_check_shields_participants();
+						if (result != DAM_NONEDEAD)
+							return result;
 						break;
 					}
 					[[fallthrough]];
@@ -3588,6 +3666,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 						act("&+wYou muster up the nastiest look you can to scare off your foe.&n",
 						    FALSE, ch, 0, victim, TO_VICT);
 						spell_fear(GET_LEVEL(victim), victim, 0, 0, ch, 0);
+						result = refresh_check_shields_participants();
+						if (result != DAM_NONEDEAD)
+							return result;
 						break;
 					}
 					[[fallthrough]];
@@ -3610,6 +3691,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 						act(buf, FALSE, ch, 0, victim, TO_VICT);
 						spell_heal(GET_LEVEL(victim), victim, 0, 0, victim,
 							   0);
+						result = refresh_check_shields_participants();
+						if (result != DAM_NONEDEAD)
+							return result;
 						break;
 					}
 					[[fallthrough]];
@@ -3630,6 +3714,9 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 						get_god_name(victim));
 					act(buf, FALSE, ch, 0, victim, TO_VICT);
 					spell_full_harm(GET_LEVEL(victim), victim, 0, 0, ch, 0);
+					result = refresh_check_shields_participants();
+					if (result != DAM_NONEDEAD)
+						return result;
 					break;
 
 				default:
@@ -3642,6 +3729,11 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 			dam = MAX(1, (int)(dam * soulshielddam));
 			result = spell_damage(victim, ch, dam, SPLDAM_HOLY,
 					      sflags | SPLDAM_GRSPIRIT, &soulshield);
+			if (result != DAM_NONEDEAD)
+				return result;
+			result = refresh_check_shields_participants();
+			if (result != DAM_NONEDEAD)
+				return result;
 		}
 	}
 
@@ -3651,21 +3743,29 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 		result = spell_damage(victim, ch, (int)(dam * ifshield), SPLDAM_NEGATIVE,
 				      SPLDAM_GRSPIRIT | SPLDAM_NOSHRUG | SPLDAM_NODEFLECT,
 				      &infernalfury);
+		if (result == DAM_NONEDEAD)
+			result = refresh_check_shields_participants();
 	}
 	else if (result == DAM_NONEDEAD && IS_AFFECTED2(victim, AFF2_FIRESHIELD))
 	{
 		result = spell_damage(victim, ch, (int)(dam * fshield), SPLDAM_FIRE, sflags,
 				      &fireshield);
+		if (result == DAM_NONEDEAD)
+			result = refresh_check_shields_participants();
 	}
 	else if (result == DAM_NONEDEAD && IS_AFFECTED3(victim, AFF3_COLDSHIELD))
 	{
 		result = spell_damage(victim, ch, (int)(dam * cshield), SPLDAM_COLD, sflags,
 				      &coldshield);
+		if (result == DAM_NONEDEAD)
+			result = refresh_check_shields_participants();
 	}
 	else if (result == DAM_NONEDEAD && IS_AFFECTED3(victim, AFF3_LIGHTNINGSHIELD))
 	{
 		result = spell_damage(victim, ch, (int)(dam * lshield), SPLDAM_LIGHTNING, sflags,
 				      &lightningshield);
+		if (result == DAM_NONEDEAD)
+			result = refresh_check_shields_participants();
 	}
 
 	// thornskin can apply on top of other damage shields
@@ -3684,6 +3784,11 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 		}
 		result = raw_damage(victim, ch, thornDamage,
 				    RAWDAM_DEFAULT | PHSDAM_NOREDUCE | flags, &thornskin);
+		if (result != DAM_NONEDEAD)
+			return result;
+		result = refresh_check_shields_participants();
+		if (result != DAM_NONEDEAD)
+			return result;
 	}
 
 	if ((result == DAM_NONEDEAD) && has_innate(victim, INNATE_ACID_BLOOD) &&
@@ -3729,8 +3834,33 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 
 	// float    f_cur_hit, f_max_hit, f_skill = 0;  <-- ill use those for max_str later
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
-		return 0;
+	const bool ch_listed = ch && char_in_list(ch);
+	const bool victim_listed = victim && char_in_list(victim);
+	const bool ch_initially_alive = ch_listed && IS_ALIVE(ch);
+	const bool victim_initially_alive = victim_listed && IS_ALIVE(victim);
+	if (!ch_initially_alive && !victim_initially_alive)
+		return DAM_BOTHDEAD;
+	if (!ch_initially_alive)
+		return DAM_CHARDEAD;
+	if (!victim_initially_alive)
+		return DAM_VICTDEAD;
+
+	const uint64_t ch_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
+	auto refresh_melee_damage_participants = [&]()
+	{
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		victim = find_character_by_runtime_id(victim_runtime_id);
+		const bool live_ch = ch && IS_ALIVE(ch);
+		const bool live_victim = victim && IS_ALIVE(victim);
+		if (!live_ch && !live_victim)
+			return DAM_BOTHDEAD;
+		if (!live_ch)
+			return DAM_CHARDEAD;
+		if (!live_victim)
+			return DAM_VICTDEAD;
+		return DAM_NONEDEAD;
+	};
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
 
@@ -3987,6 +4117,9 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 
 	if (result != DAM_NONEDEAD)
 		return result;
+	result = refresh_melee_damage_participants();
+	if (result != DAM_NONEDEAD)
+		return result;
 
 	if (affected_by_spell(ch, SPELL_WARRING_ZEAL))
 	{
@@ -4007,10 +4140,18 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 				      &wz_messages, damAccumulator);
 		if (result != DAM_NONEDEAD)
 			return result;
+		result = refresh_melee_damage_participants();
+		if (result != DAM_NONEDEAD)
+			return result;
 	}
 
 	if (ilogb(dam) / 2 > number(1, 100))
+	{
 		DamageStuff(victim, SPLDAM_GENERIC);
+		result = refresh_melee_damage_participants();
+		if (result != DAM_NONEDEAD)
+			return result;
+	}
 
 	if (dam <= 5 || (flags & PHSDAM_NOSHIELDS))
 	{
@@ -4029,8 +4170,14 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 		return DAM_VICTDEAD;
 	else if (shld_result == DAM_VICTDEAD)
 		return DAM_CHARDEAD;
-	else if (shld_result == DAM_NONEDEAD && !(flags & PHSDAM_NOENGAGE))
-		return attack_back(ch, victim, TRUE);
+	else if (shld_result == DAM_NONEDEAD)
+	{
+		result = refresh_melee_damage_participants();
+		if (result != DAM_NONEDEAD)
+			return result;
+		if (!(flags & PHSDAM_NOENGAGE))
+			return attack_back(ch, victim, TRUE);
+	}
 
 	return shld_result;
 }

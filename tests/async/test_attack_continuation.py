@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the checked combat continuation contract under destructive callbacks."""
 
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -510,6 +511,73 @@ assert doombringer_refreshes[-1] < doombringer_compact.index(
     "for(i=0;i<3;i++)", doombringer_refreshes[-1]
 )
 
+barb = continuation_caller("specs.underworld.c", "int barb(P_obj obj, P_char ch, int cmd, char *arg)")
+barb_compact = "".join(barb.split())
+barb_melee = barb_compact[barb_compact.index("if(cmd!=CMD_MELEE_HIT)") :]
+assert barb_melee.index("char_in_list(ch)") < barb_melee.index("IS_ALIVE(ch)")
+assert barb_melee.index("char_in_list(vict)") < barb_melee.index("IS_ALIVE(vict)")
+barb_chain = barb_melee.index("spell_chain_lightning")
+barb_chain_check = barb_melee.index(
+    "refresh_barb_continuation(continuation)", barb_chain
+)
+barb_forked = barb_melee.index("spell_forked_lightning", barb_chain_check)
+barb_forked_check = barb_melee.index(
+    "refresh_barb_continuation(continuation)", barb_forked
+)
+barb_hits = [m.start() for m in re.finditer(r"hit\(ch,vict,obj\)", barb_melee)]
+assert len(barb_hits) == 3
+for hit_position in barb_hits:
+    check_position = barb_melee.index(
+        "refresh_barb_continuation(continuation)", hit_position
+    )
+    assert check_position > hit_position
+assert barb_chain < barb_chain_check < barb_forked < barb_forked_check < barb_hits[0]
+
+barb_nuked = barb_compact[
+    barb_compact.index("if((cmd==CMD_GOTNUKED)") : barb_compact.index(
+        "if(cmd!=CMD_MELEE_HIT)"
+    )
+]
+barb_nuked_damage = barb_nuked.index(
+    "result=spell_damage(ch,vict,BarbProcData.damage"
+)
+barb_attack_back = barb_nuked.index("attack_back(vict,ch,FALSE)", barb_nuked_damage)
+assert (
+    "if(result==DAM_NONEDEAD&&refresh_barb_continuation(continuation))"
+    in barb_nuked[barb_nuked_damage:barb_attack_back]
+)
+
+barb_dwarven = barb_melee[
+    barb_melee.index("elseif((!number(0,49)") : barb_melee.index(
+        "elseif(!number(0,24)&&GET_CLASS(ch,CLASS_BERSERKER)"
+    )
+]
+barb_dwarven_damage = barb_dwarven.index(
+    "result=spell_damage(ch,vict,BarbProcData.damage"
+)
+barb_dwarven_death = barb_dwarven.index(
+    "if(result==DAM_VICTDEAD)", barb_dwarven_damage
+)
+assert "find_character_by_runtime_id(actor_runtime_id)" in barb_dwarven[
+    barb_dwarven_death : barb_dwarven.index("returnDAM_VICTDEAD", barb_dwarven_death)
+]
+barb_dwarven_refresh = barb_dwarven.index(
+    "if(!refresh_barb_continuation(continuation))", barb_dwarven_damage
+)
+assert barb_dwarven_refresh > barb_dwarven_damage
+barb_dwarven_return = barb_dwarven.index("returnTRUE", barb_dwarven_refresh)
+barb_dwarven_update = barb_dwarven.index("update_pos(vict)", barb_dwarven_refresh)
+assert barb_dwarven_return < barb_dwarven_update
+
+barb_berserker = barb_melee[
+    barb_melee.index("elseif(!number(0,24)&&GET_CLASS(ch,CLASS_BERSERKER)") :
+]
+barb_berserker_damage = barb_berserker.index("spell_damage(ch,vict,200")
+barb_berserker_refresh = barb_berserker.index(
+    "if(!refresh_barb_continuation(continuation))", barb_berserker_damage
+)
+assert barb_berserker_refresh > barb_berserker_damage
+
 blur_shortsword = continuation_caller(
     "specs.winterhaven.c",
     "int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)"
@@ -965,29 +1033,37 @@ def assert_grapple_membership_before_alive(block, character_names):
         )
 
 
+grapple_refresh = continuation_caller("grapple.c", "static bool refresh_grapple_pair(")
+grapple_refresh_compact = "".join(grapple_refresh.split())
+assert "check_attack_continuation(continuation)" in grapple_refresh_compact
+assert "if(!after_callback.can_continue())returnfalse;" in grapple_refresh_compact
+assert "actor=after_callback.actor;victim=after_callback.target;" in grapple_refresh_compact
+
 headlock = continuation_caller(
     "grapple.c", "void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)"
 )
 assert_grapple_membership_before_alive(headlock, ("ch", "victim"))
 headlock_compact = "".join(headlock.split())
 headlock_damage = headlock_compact.index("raw_damage(ch,victim,")
-headlock_pair = headlock_compact.index("resolve_grapple_pair(ch,victim,", headlock_damage)
-headlock_notch = headlock_compact.index("notch_skill(ch,SKILL_HEADLOCK", headlock_pair)
-headlock_notch_pair = headlock_compact.index(
-    "resolve_grapple_pair(ch,victim,", headlock_notch
+headlock_refresh = headlock_compact.index(
+    "refresh_grapple_pair(ch,victim,continuation)", headlock_damage
 )
-headlock_shields = headlock_compact.index("check_shields(ch,victim,", headlock_notch_pair)
-headlock_shield_pair = headlock_compact.index(
-    "resolve_grapple_pair(ch,victim,", headlock_shields
+headlock_notch = headlock_compact.index("notch_skill(ch,SKILL_HEADLOCK", headlock_refresh)
+headlock_notch_refresh = headlock_compact.index(
+    "refresh_grapple_pair(ch,victim,continuation)", headlock_notch
 )
-headlock_next = headlock_compact.index("add_event(event_headlock,", headlock_shield_pair)
+headlock_shields = headlock_compact.index("check_shields(ch,victim,", headlock_notch_refresh)
+headlock_shield_refresh = headlock_compact.index(
+    "refresh_grapple_pair(ch,victim,continuation)", headlock_shields
+)
+headlock_next = headlock_compact.index("add_event(event_headlock,", headlock_shield_refresh)
 assert (
     headlock_damage
-    < headlock_pair
+    < headlock_refresh
     < headlock_notch
-    < headlock_notch_pair
+    < headlock_notch_refresh
     < headlock_shields
-    < headlock_shield_pair
+    < headlock_shield_refresh
     < headlock_next
 )
 
@@ -1006,11 +1082,13 @@ while True:
     armlock_damage_positions.append(armlock_offset)
     armlock_offset += 1
 assert len(armlock_damage_positions) == 2
-for armlock_damage in armlock_damage_positions:
-    armlock_pair = armlock_compact.index("resolve_grapple_pair(grappler,attacker,", armlock_damage)
+for index, armlock_damage in enumerate(armlock_damage_positions):
+    continuation_name = "continuation" if index == 0 else "break_continuation"
+    refresh_call = f"refresh_grapple_pair(grappler,attacker,{continuation_name})"
+    armlock_pair = armlock_compact.index(refresh_call, armlock_damage)
     armlock_shields = armlock_compact.index("check_shields(grappler,attacker,", armlock_pair)
     armlock_shield_pair = armlock_compact.index(
-        "resolve_grapple_pair(grappler,attacker,", armlock_shields
+        refresh_call, armlock_shields
     )
     assert armlock_damage < armlock_pair < armlock_shields < armlock_shield_pair
 
@@ -1030,14 +1108,16 @@ while True:
     leglock_offset += 1
 assert len(leglock_damage_positions) == 2
 for leglock_damage in leglock_damage_positions:
-    leglock_pair = leglock_compact.index("resolve_grapple_pair(ch,victim,", leglock_damage)
+    leglock_pair = leglock_compact.index(
+        "refresh_grapple_pair(ch,victim,continuation)", leglock_damage
+    )
     leglock_notch = leglock_compact.index("notch_skill(ch,SKILL_LEGLOCK", leglock_pair)
     leglock_notch_pair = leglock_compact.index(
-        "resolve_grapple_pair(ch,victim,", leglock_notch
+        "refresh_grapple_pair(ch,victim,continuation)", leglock_notch
     )
     leglock_shields = leglock_compact.index("check_shields(ch,victim,", leglock_notch_pair)
     leglock_shield_pair = leglock_compact.index(
-        "resolve_grapple_pair(ch,victim,", leglock_shields
+        "refresh_grapple_pair(ch,victim,continuation)", leglock_shields
     )
     assert (
         leglock_damage
@@ -1054,13 +1134,190 @@ assert groundslam_compact.index("!char_in_list(ch)") < groundslam_compact.index(
     "!IS_ALIVE(ch)"
 )
 groundslam_damage = groundslam_compact.index("raw_damage(ch,victim,")
-groundslam_pair = groundslam_compact.index("resolve_grapple_pair(ch,victim,", groundslam_damage)
+groundslam_pair = groundslam_compact.index(
+    "refresh_grapple_pair(ch,victim,continuation)", groundslam_damage
+)
 groundslam_shields = groundslam_compact.index("check_shields(ch,victim,", groundslam_pair)
 groundslam_shield_pair = groundslam_compact.index(
-    "resolve_grapple_pair(ch,victim,", groundslam_shields
+    "refresh_grapple_pair(ch,victim,continuation)", groundslam_shields
 )
 groundslam_position = groundslam_compact.index("SET_POS(ch,POS_PRONE+GET_STAT(ch))", groundslam_shield_pair)
 assert groundslam_damage < groundslam_pair < groundslam_shields < groundslam_shield_pair < groundslam_position
+
+spell_damage = continuation_caller(
+    "fight.c", "int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,"
+)
+spell_damage_compact = "".join(spell_damage.split())
+spell_raw_damage = spell_damage_compact.index("result=raw_damage(ch,victim,dam,")
+assert spell_damage_compact.index(
+    "constuint64_tch_runtime_id=ch->runtime_id"
+) < spell_raw_damage
+assert spell_damage_compact.index(
+    "constuint64_tvictim_runtime_id=victim->runtime_id"
+) < spell_raw_damage
+spell_acid_roll = spell_damage_compact.index(
+    "constboolacid_item_damage=type==SPLDAM_ACID&&!number(0,3)", spell_raw_damage
+)
+spell_acid_lookup = spell_damage_compact.index(
+    "P_characid_victim=find_character_by_runtime_id(victim_runtime_id)", spell_acid_roll
+)
+spell_acid_damage = spell_damage_compact.index(
+    "DamageStuff(acid_victim,SPLDAM_ACID)", spell_acid_lookup
+)
+spell_nonlethal = spell_damage_compact.index("if(result==DAM_NONEDEAD)", spell_acid_damage)
+spell_first_refresh = spell_damage_compact.index(
+    "result=refresh_spell_damage_participants()", spell_nonlethal
+)
+spell_typed_damage = spell_damage_compact.index("DamageStuff(victim,type)", spell_first_refresh)
+spell_typed_refresh = spell_damage_compact.index(
+    "result=refresh_spell_damage_participants()", spell_typed_damage
+)
+spell_attack_back = spell_damage_compact.index("attack_back(ch,victim,FALSE)", spell_typed_refresh)
+spell_attack_refresh = spell_damage_compact.index(
+    "result=refresh_spell_damage_participants()", spell_attack_back
+)
+spell_wet_effect = spell_damage_compact.index("IS_AFFECTED5(victim,AFF5_WET)", spell_attack_refresh)
+assert (
+    spell_raw_damage
+    < spell_acid_roll
+    < spell_acid_lookup
+    < spell_acid_damage
+    < spell_nonlethal
+    < spell_first_refresh
+    < spell_typed_damage
+    < spell_typed_refresh
+    < spell_attack_back
+    < spell_attack_refresh
+    < spell_wet_effect
+)
+
+check_shields = continuation_caller(
+    "fight.c", "int check_shields(P_char ch, P_char victim, int dam, int flags)"
+)
+check_shields_compact = "".join(check_shields.split())
+shields_ch_membership = check_shields_compact.index(
+    "constboolch_listed=ch&&char_in_list(ch)"
+)
+shields_victim_membership = check_shields_compact.index(
+    "constboolvictim_listed=victim&&char_in_list(victim)"
+)
+shields_ch_liveness = check_shields_compact.index(
+    "constboolch_initially_alive=ch_listed&&IS_ALIVE(ch)"
+)
+shields_victim_liveness = check_shields_compact.index(
+    "constboolvictim_initially_alive=victim_listed&&IS_ALIVE(victim)"
+)
+shields_training_dummy = check_shields_compact.index(
+    "if(training_dummy_is(victim))"
+)
+assert (
+    shields_ch_membership
+    < shields_ch_liveness
+    < shields_training_dummy
+    and shields_victim_membership
+    < shields_victim_liveness
+    < shields_training_dummy
+)
+
+negative_shield = check_shields_compact.index("&negshield)")
+negative_shield_refresh = check_shields_compact.index(
+    "result=refresh_check_shields_participants()", negative_shield
+)
+infernal_followup = check_shields_compact.index(
+    "IS_AFFECTED(victim,AFF_INFERNAL_FURY)", negative_shield_refresh
+)
+assert negative_shield < negative_shield_refresh < infernal_followup
+
+holy_soulshield = check_shields_compact.index("&soulshield_spec)")
+holy_soulshield_refresh = check_shields_compact.index(
+    "result=refresh_check_shields_participants()", holy_soulshield
+)
+holy_devotion_read = check_shields_compact.index(
+    "GET_CHAR_SKILL(ch,SKILL_DEVOTION)", holy_soulshield_refresh
+)
+assert holy_soulshield < holy_soulshield_refresh < holy_devotion_read
+
+thornskin_damage = check_shields_compact.index("result=raw_damage(victim,ch,thornDamage,")
+thornskin_refresh = check_shields_compact.index(
+    "result=refresh_check_shields_participants()", thornskin_damage
+)
+acid_blood_followup = check_shields_compact.index(
+    "has_innate(victim,INNATE_ACID_BLOOD)", thornskin_refresh
+)
+assert thornskin_damage < thornskin_refresh < acid_blood_followup
+
+melee_damage = continuation_caller(
+    "fight.c",
+    "int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_messages *messages,",
+)
+melee_damage_compact = "".join(melee_damage.split())
+melee_ch_membership = melee_damage_compact.index(
+    "constboolch_listed=ch&&char_in_list(ch)"
+)
+melee_victim_membership = melee_damage_compact.index(
+    "constboolvictim_listed=victim&&char_in_list(victim)"
+)
+melee_ch_liveness = melee_damage_compact.index(
+    "constboolch_initially_alive=ch_listed&&IS_ALIVE(ch)"
+)
+melee_victim_liveness = melee_damage_compact.index(
+    "constboolvictim_initially_alive=victim_listed&&IS_ALIVE(victim)"
+)
+melee_raw_damage = melee_damage_compact.index(
+    "result=raw_damage(ch,victim,dam,RAWDAM_DEFAULT|flags|RAWDAM_NOWARD,"
+)
+assert (
+    melee_ch_membership
+    < melee_ch_liveness
+    < melee_raw_damage
+    and melee_victim_membership
+    < melee_victim_liveness
+    < melee_raw_damage
+)
+melee_raw_guard = melee_damage_compact.index(
+    "if(result!=DAM_NONEDEAD)returnresult;", melee_raw_damage
+)
+melee_raw_refresh = melee_damage_compact.index(
+    "result=refresh_melee_damage_participants()", melee_raw_guard
+)
+melee_warring_zeal = melee_damage_compact.index(
+    "if(affected_by_spell(ch,SPELL_WARRING_ZEAL))", melee_raw_refresh
+)
+assert melee_raw_damage < melee_raw_guard < melee_raw_refresh < melee_warring_zeal
+
+melee_warring_damage = melee_damage_compact.index(
+    "result=spell_damage(ch,victim,local_dam", melee_warring_zeal
+)
+melee_warring_guard = melee_damage_compact.index(
+    "if(result!=DAM_NONEDEAD)returnresult;", melee_warring_damage
+)
+melee_warring_refresh = melee_damage_compact.index(
+    "result=refresh_melee_damage_participants()", melee_warring_guard
+)
+melee_item_damage = melee_damage_compact.index(
+    "DamageStuff(victim,SPLDAM_GENERIC)", melee_warring_refresh
+)
+melee_item_refresh = melee_damage_compact.index(
+    "result=refresh_melee_damage_participants()", melee_item_damage
+)
+melee_shields = melee_damage_compact.index("check_shields(ch,victim,dam,flags)", melee_item_refresh)
+melee_shields_refresh = melee_damage_compact.index(
+    "result=refresh_melee_damage_participants()", melee_shields
+)
+melee_attack_back = melee_damage_compact.index(
+    "returnattack_back(ch,victim,TRUE)", melee_shields_refresh
+)
+assert (
+    melee_warring_zeal
+    < melee_warring_damage
+    < melee_warring_guard
+    < melee_warring_refresh
+    < melee_item_damage
+    < melee_item_refresh
+    < melee_shields
+    < melee_shields_refresh
+    < melee_attack_back
+)
 
 monk_critic = continuation_caller(
     "attack_effects.c", "bool monk_critic(P_char ch, P_char victim, int *damAccumulator)"
