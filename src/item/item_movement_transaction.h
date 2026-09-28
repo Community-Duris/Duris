@@ -54,6 +54,8 @@ enum class item_movement_reject
 	invalid_request,
 	queue_saturated,
 	pending_conflict,
+	active_accounting_unsupported,
+	missing_owner_identity,
 	owner_mismatch,
 	missing_owner_revision,
 	topology_mismatch,
