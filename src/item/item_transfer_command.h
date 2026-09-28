@@ -28,6 +28,7 @@ constexpr size_t ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES = 512;
 constexpr size_t ITEM_TRANSFER_LEGACY_RESULT_BYTES = 40;
 constexpr size_t ITEM_TRANSFER_RESULT_BYTES = 48;
 constexpr uint64_t ITEM_TRANSFER_ABSENT_REVISION = UINT64_MAX;
+constexpr uint16_t ITEM_TRANSFER_MAX_EQUIPMENT_SLOT = 43;
 
 enum class item_owner_type : uint8_t
 {
@@ -80,7 +81,17 @@ enum class item_transfer_reason : uint16_t
 	// These existing-item handoffs have command-specific post-commit effects.
 	soulbind,
 	slip,
+	player_wear,
+	player_remove,
+	combat_fumble,
+	critical_disarm,
 };
+
+constexpr bool item_transfer_forced_weapon_drop(item_transfer_reason reason)
+{
+	return reason == item_transfer_reason::combat_fumble ||
+	       reason == item_transfer_reason::critical_disarm;
+}
 
 enum class item_custody_state : uint8_t
 {

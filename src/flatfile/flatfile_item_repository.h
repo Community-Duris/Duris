@@ -10,6 +10,7 @@
 #include "item/item_transfer_command.h"
 #include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_command.h"
+#include "economy/coin_transfer_command.h"
 
 #include <cstdint>
 #include <string>
@@ -25,6 +26,13 @@ struct flatfile_item_ownership_record
 	int32_t vnum = 0;
 	item_custody_state state = item_custody_state::absent;
 	std::vector<uint8_t> coin_payload = {};
+	uint16_t equipment_slot = 0;
+};
+
+struct flatfile_coin_pile_source
+{
+	flatfile_item_ownership_record ownership;
+	player_item_snapshot item;
 };
 
 enum class flatfile_item_repository_result
@@ -100,6 +108,27 @@ flatfile_item_repository_result flatfile_item_repository_load_coins_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<uint64_t> &uids, std::vector<flatfile_item_ownership_record> *coins,
 	std::string *error);
+// Read one active native money pile and its exact saved coin payload under the
+// authority lock. Legacy payloads are resolved from their current owner file.
+// Outputs are unchanged on failure; absence or ambiguity cannot seed a baseline.
+flatfile_item_repository_result flatfile_item_repository_read_coin_pile_locked(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t uid,
+	flatfile_coin_pile_source *source, std::string *error);
+// Enumerate catalog coin candidates under the same lock. Active entries with
+// the virtual coin vnum or a retained coin payload must decode as money;
+// unresolved custody is refused. A lifecycle owner must also inspect legacy
+// owner files for money objects with a nonstandard vnum and no retained payload.
+flatfile_item_repository_result flatfile_item_repository_list_coin_piles_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	std::vector<flatfile_coin_pile_source> *sources, std::string *error);
+// Prepare the pile endpoints of a coin root under the caller's authority lock.
+// The caller stages returned domain images with wallet images and accounting
+// evidence in one journal commit. No image or result is published on error.
+flatfile_item_repository_result flatfile_item_repository_prepare_coin_piles(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, coin_transfer_result *result,
+	std::vector<flatfile_authority_after_image> *images, unsigned int *result_code,
+	std::string *error);
 flatfile_item_repository_result flatfile_item_repository_list_collector_items_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	std::vector<item_ownership_runtime_entry> *items, std::string *error);
@@ -115,7 +144,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const auction_command_payload &payload, uint32_t auction_id, bool to_auction,
-	flatfile_item_auction_mutation *mutation, unsigned int *result_code, std::string *error);
+	bool require_isolated_roots, flatfile_item_auction_mutation *mutation,
+	unsigned int *result_code, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const shop_trade_payload &payload, flatfile_item_shop_trade_mutation *mutation,

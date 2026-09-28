@@ -1062,7 +1062,8 @@ bool submit_wizard_load_establish(P_char actor, P_obj object, bool to_room)
 	return item_movement_transaction_submit(
 		actor, object, NULL, owner, owner, item_transfer_reason::creation,
 		object->R_num >= 0 ? obj_index[object->R_num].virtual_number : 0,
-		wizard_load_completion, &context, sizeof(context));
+		wizard_load_completion, &context, sizeof(context), NULL, NULL, nullptr,
+		economic_source_kind::administrator);
 }
 } // namespace
 
@@ -2832,7 +2833,9 @@ bool submit_flat_storage_destroy(P_char actor, P_obj storage, int32_t room,
 	return item_movement_transaction_submit(actor, storage, NULL, source, destination,
 						item_transfer_reason::destruction,
 						static_cast<int64_t>(storage->obj_uid),
-						flat_storage_completion, &context, sizeof(context));
+						flat_storage_completion, &context, sizeof(context),
+						NULL, NULL, nullptr,
+						economic_source_kind::intentional_destruction);
 }
 
 bool submit_flat_storage_remove_next(P_char actor, P_obj storage, int32_t room)
@@ -2864,7 +2867,8 @@ bool submit_flat_storage_establish(P_char actor, P_obj storage, int32_t room)
 	return item_movement_transaction_submit(actor, storage, NULL, owner, owner,
 						item_transfer_reason::operator_repair,
 						world[room].number, flat_storage_completion,
-						&context, sizeof(context));
+						&context, sizeof(context), NULL, NULL, nullptr,
+						economic_source_kind::administrator);
 }
 } // namespace
 

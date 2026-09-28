@@ -30,6 +30,7 @@
 #include "classes/necromancy.h"
 #include "economy/nexus_stones.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "combat/range.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -1846,6 +1847,13 @@ int rentacleric(P_char ch, P_char vict, int cmd, char *argument)
 		argument = one_argument(argument, buf);
 		if (*buf)
 		{
+			if (economic_gameplay_authority::active())
+			{
+				send_to_char(
+					"Cleric services are unavailable while active accounting is enabled.\r\n",
+					vict);
+				return TRUE;
+			}
 			for (i = 0; prices[i].number > SPELL_RESERVED_DBC; i++)
 				if (is_abbrev(buf, prices[i].tobuy))
 				{
@@ -2224,6 +2232,13 @@ int monk_remort(P_char ch, P_char pl, int cmd, char *arg)
 	}
 	if (!strcmp(msg, "remort"))
 	{
+		if (pl && economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Monk remort is unavailable while economic accounting is active.\n",
+				pl);
+			return TRUE;
+		}
 		if (IS_TRUSTED(pl))
 		{
 			send_to_char("That would be very dumb.\n", pl);

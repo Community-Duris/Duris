@@ -11,11 +11,14 @@
 
 namespace
 {
-void ensure_directory(const std::string &dir)
+bool ensure_directory(const std::string &dir)
 {
 	std::error_code ec;
 	std::filesystem::create_directories(dir, ec);
-	chmod(dir.c_str(), 0700);
+	if (ec)
+		return false;
+	const auto parent = std::filesystem::path(dir).parent_path().string();
+	return chmod(parent.c_str(), 0700) == 0 && chmod(dir.c_str(), 0700) == 0;
 }
 
 void number(std::vector<uint8_t> &bytes, uint64_t value, size_t width)
@@ -198,7 +201,8 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_append(
 	}
 
 	const std::string dir = item_refs_directory(root);
-	ensure_directory(dir);
+	if (!ensure_directory(dir))
+		return flatfile_item_accounting_status::io_error;
 	const std::string filename = bucket_filename(ref.legacy_operation_id.bytes[0]);
 
 	std::vector<uint8_t> existing;
@@ -244,10 +248,6 @@ try
 	if (root.empty() || !lock.matches(root) || !operations ||
 	    critical_operation_id_is_zero(legacy_operation_id))
 		return flatfile_item_accounting_status::invalid;
-	if (!references.empty() &&
-	    operations->size() >= flatfile_authority_transaction_maximum_operations)
-		return flatfile_item_accounting_status::capacity;
-
 	const critical_operation_id &operation_id = legacy_operation_id;
 	const uint8_t bucket = operation_id.bytes[0];
 
@@ -271,15 +271,35 @@ try
 	}
 
 	const std::string dir = item_refs_directory(root);
+	if (!ensure_directory(dir))
+		return flatfile_item_accounting_status::io_error;
 	const std::string filename = bucket_filename(bucket);
-	ensure_directory(dir);
 	std::vector<uint8_t> existing;
-	const auto read_result = flatfile_read(dir, filename,
-					       FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
-					       &existing, error);
-	if (read_result != flatfile_read_result::ok &&
-	    read_result != flatfile_read_result::not_found)
-		return read_status(read_result);
+	size_t staged_index = operations->size();
+	for (size_t index = 0; index < operations->size(); ++index)
+		if ((*operations)[index].store ==
+			    flatfile_authority_store::item_accounting_references &&
+		    (*operations)[index].filename == filename)
+		{
+			if (staged_index != operations->size() ||
+			    (*operations)[index].kind != flatfile_authority_operation_kind::write)
+				return flatfile_item_accounting_status::invalid;
+			staged_index = index;
+		}
+	if (staged_index < operations->size())
+		existing = (*operations)[staged_index].bytes;
+	else
+	{
+		if (!references.empty() &&
+		    operations->size() >= flatfile_authority_transaction_maximum_operations)
+			return flatfile_item_accounting_status::capacity;
+		const auto read_result = flatfile_read(
+			dir, filename, FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+			&existing, error);
+		if (read_result != flatfile_read_result::ok &&
+		    read_result != flatfile_read_result::not_found)
+			return read_status(read_result);
+	}
 	if (!valid_bucket(existing, bucket))
 		return flatfile_item_accounting_status::invalid;
 	for (size_t offset = 0; offset < existing.size();
@@ -301,13 +321,14 @@ try
 	if (addition.size() > flatfile_authority_transaction_maximum_bytes - existing.size())
 		return flatfile_item_accounting_status::capacity;
 	existing.insert(existing.end(), addition.begin(), addition.end());
-	for (const auto &operation : *operations)
-		if (operation.store == flatfile_authority_store::item_accounting_references &&
-		    operation.filename == filename)
-			return flatfile_item_accounting_status::invalid;
-	operations->push_back({ flatfile_authority_store::item_accounting_references,
-				flatfile_authority_operation_kind::write, filename,
-				std::move(existing) });
+	auto candidate = *operations;
+	if (staged_index < candidate.size())
+		candidate[staged_index].bytes = std::move(existing);
+	else
+		candidate.push_back({ flatfile_authority_store::item_accounting_references,
+				      flatfile_authority_operation_kind::write, filename,
+				      std::move(existing) });
+	*operations = std::move(candidate);
 	return flatfile_item_accounting_status::ok;
 }
 catch (const std::bad_alloc &)

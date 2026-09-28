@@ -80,14 +80,14 @@ class AccountingInvariantAuditor:
             policy = self.reasons[reason_id]
 
             # Source event anti-replay invariant
-            if policy.get("source_event_required"):
-                src_event = op.get("source_event")
-                require(bool(src_event and re.fullmatch(r"[0-9a-f]{32}", src_event)),
+            src_event = op.get("source_event")
+            if policy.get("source_event_required") or src_event is not None:
+                require(isinstance(src_event, str) and
+                        bool(re.fullmatch(r"[0-9a-f]{32}", src_event)) and int(src_event, 16) != 0,
                         f"Op {op_id} missing valid 32-hex source event")
-                key = (reason_id, src_event)
-                require(key not in consumed_source_events,
-                        f"Source event {src_event} replayed for reason {reason_id} in op {op_id}")
-                consumed_source_events.add(key)
+                require(src_event not in consumed_source_events,
+                        f"Source event {src_event} replayed in op {op_id}")
+                consumed_source_events.add(src_event)
                 stats["source_events_verified"] += 1
 
             # Double-entry conservation: Postings must strictly balance to zero copper

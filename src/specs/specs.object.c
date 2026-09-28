@@ -29,6 +29,7 @@
 #include "magic/blispells.h"
 #include "combat/ctf.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "combat/damage.h"
 #include "world/graph.h"
 #include "world/handler.h"
@@ -1224,6 +1225,12 @@ int llyms_altar(P_obj obj, P_char ch, int cmd, char *arg)
 	    !OBJ_WORN_POS(treasure, HOLD) || GET_ITEM_TYPE(treasure) != ITEM_TREASURE)
 	{
 		return FALSE;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("The altar cannot accept offerings while accounting is active.\r\n",
+			     ch);
+		return TRUE;
 	}
 
 	act("You offer up $p to $P.", TRUE, ch, treasure, obj, TO_CHAR);

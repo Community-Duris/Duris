@@ -19,6 +19,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-world-item-") as temporary:
             "-Wextra",
             "-Wpedantic",
             "-Werror",
+            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
             "tests/async/flatfile_world_item_repository_harness.cpp",
             rel("flatfile_world_item_repository.c"),

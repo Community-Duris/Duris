@@ -2,6 +2,7 @@
 
 #include "economy/auction_command.h"
 #include "economy/auction_item_claim_accounting.h"
+#include "economy/auction_listing_accounting.h"
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_accounting_store.h"
 #include "flatfile/flatfile_authority_transaction.h"
@@ -906,11 +907,12 @@ class flatfile_accounting_auction_item_claim_transaction
 {
     public:
 	static critical_apply_result apply(const std::string &root, const critical_command &command,
-					   bool accounted);
+					   bool accounted, auction_action accounted_action);
 };
 
 critical_apply_result flatfile_accounting_auction_item_claim_transaction::apply(
-	const std::string &root, const critical_command &command, bool accounted)
+	const std::string &root, const critical_command &command, bool accounted,
+	auction_action accounted_action)
 try
 {
 	auction_command_payload payload = {};
@@ -925,9 +927,14 @@ try
 	economic_frozen_intent intent;
 	auction_item_claim_state frozen_claim;
 	economic_account_key wallet_account, bank_account;
-	if (accounted && auction_item_claim_accounting_decode(
-				 command, &intent, &payload, &frozen_claim, &wallet_account,
-				 &bank_account) != economic_accounting_error::ok)
+	if (accounted &&
+	    (payload.action != accounted_action ||
+	     (accounted_action == auction_action::list ?
+		      auction_listing_accounting_decode(command, &intent, &payload, &wallet_account,
+							&bank_account) :
+		      auction_item_claim_accounting_decode(
+			      command, &intent, &payload, &frozen_claim, &wallet_account,
+			      &bank_account)) != economic_accounting_error::ok))
 		return { critical_apply_outcome::terminal_failure, 0, EPROTONOSUPPORT };
 	SHA256(encoded_command.data(), encoded_command.size(), digest.data());
 	flatfile_authority_lock lock;
@@ -1012,7 +1019,10 @@ try
 	if (catalog.operations.size() >= catalog_maximum_operations ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
+	const bool listing_accounted = accounted && payload.action == auction_action::list;
 	auction_item_claim_accounting_authority accounting_before;
+	auction_listing_accounting_authority listing_before;
+	flatfile_economic_authority_snapshot authority;
 	if (accounted)
 	{
 		std::string account;
@@ -1023,7 +1033,6 @@ try
 			{ wallet_account, { 1, payload.actor_pid, {} } },
 			{ bank_account, { 2, bank_account.authority_id, account } }
 		};
-		flatfile_economic_authority_snapshot authority;
 		const unsigned int gate = economic_flatfile_lock_authority(
 			root, lock, wallet_account.lineage, intent.admission.metadata.epoch,
 			requests, &authority, &error);
@@ -1032,23 +1041,33 @@ try
 					 critical_apply_outcome::retryable_failure :
 					 critical_apply_outcome::terminal_failure,
 				 catalog.revision, gate };
-		accounting_before.epoch = intent.admission.metadata.epoch;
-		accounting_before.wallet_account = wallet_account;
-		accounting_before.bank_account = bank_account;
-		if (!claim_state(catalog, payload, &accounting_before.claim))
-			return { critical_apply_outcome::terminal_failure, catalog.revision,
-				 ESTALE };
-		critical_command projected = command;
-		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
-		projected.accounting_intent.clear();
-		projected.publication_required = false;
-		std::vector<uint8_t> expected;
-		if (auction_item_claim_accounting_intent(
-			    projected, accounting_before.epoch, wallet_account, bank_account,
-			    accounting_before.claim, &expected) != economic_accounting_error::ok ||
-		    expected != command.accounting_intent)
-			return { critical_apply_outcome::terminal_failure, catalog.revision,
-				 ESTALE };
+		if (listing_accounted)
+		{
+			listing_before.epoch = intent.admission.metadata.epoch;
+			listing_before.wallet = wallet_account;
+			listing_before.bank = bank_account;
+		}
+		else
+		{
+			accounting_before.epoch = intent.admission.metadata.epoch;
+			accounting_before.wallet_account = wallet_account;
+			accounting_before.bank_account = bank_account;
+			if (!claim_state(catalog, payload, &accounting_before.claim))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+			critical_command projected = command;
+			projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+			projected.accounting_intent.clear();
+			projected.publication_required = false;
+			std::vector<uint8_t> expected;
+			if (auction_item_claim_accounting_intent(
+				    projected, accounting_before.epoch, wallet_account,
+				    bank_account, accounting_before.claim,
+				    &expected) != economic_accounting_error::ok ||
+			    expected != command.accounting_intent)
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+		}
 	}
 
 	auction_command_result result = {};
@@ -1082,18 +1101,23 @@ try
 	}
 	if (accounted && !result_code)
 	{
-		accounting_before.balances_before.wallet = wallet.wallet;
-		accounting_before.balances_before.bank = wallet.bank;
-		accounting_before.balances_before.wallet_revision = wallet.wallet_revision;
-		accounting_before.balances_before.bank_revision = wallet.bank_revision;
+		auto &balances = listing_accounted ? listing_before.balances_before :
+						     accounting_before.balances_before;
+		balances.wallet = wallet.wallet;
+		balances.bank = wallet.bank;
+		balances.wallet_revision = wallet.wallet_revision;
+		balances.bank_revision = wallet.bank_revision;
 		const item_owner_identity auction_owner = { item_owner_type::auction,
 							    payload.auction_id, 0 };
 		const item_owner_identity player_owner = { item_owner_type::player,
 							   payload.actor_pid, 0 };
 		uint64_t auction_revision = 0, player_revision = 0;
 		std::vector<flatfile_item_ownership_record> auction_items, player_items;
-		const auto from = flatfile_item_repository_load_owner_locked(
-			root, lock, auction_owner, &auction_revision, &auction_items, &error);
+		const auto from = listing_accounted ?
+					  flatfile_item_repository_result::not_found :
+					  flatfile_item_repository_load_owner_locked(
+						  root, lock, auction_owner, &auction_revision,
+						  &auction_items, &error);
 		const auto to = flatfile_item_repository_load_owner_locked(
 			root, lock, player_owner, &player_revision, &player_items, &error);
 		if ((from != flatfile_item_repository_result::ok &&
@@ -1111,20 +1135,27 @@ try
 									 io_error ?
 						 EIO :
 						 EILSEQ) };
-		accounting_before.auction_owner_revision_before = auction_revision;
-		accounting_before.player_owner_revision_before = player_revision;
+		if (listing_accounted)
+			listing_before.player_owner_revision_before = player_revision;
+		else
+		{
+			accounting_before.auction_owner_revision_before = auction_revision;
+			accounting_before.player_owner_revision_before = player_revision;
+		}
+		const auto &source_items = listing_accounted ? player_items : auction_items;
+		auto &items_before = listing_accounted ? listing_before.items_before :
+							 accounting_before.items_before;
 		for (size_t index = 0; index < payload.item_count; ++index)
 		{
 			const auto selected = std::find_if(
-				auction_items.begin(), auction_items.end(), [&](const auto &item)
+				source_items.begin(), source_items.end(), [&](const auto &item)
 				{ return item.item_uid == payload.items[index].item_uid; });
-			if (selected == auction_items.end())
+			if (selected == source_items.end())
 				break;
-			accounting_before.items_before.push_back(
-				{ selected->item_uid,
-				  { selected->owner, selected->root_item_uid,
-				    selected->parent_item_uid, selected->item_revision,
-				    selected->state } });
+			items_before.push_back({ selected->item_uid,
+						 { selected->owner, selected->root_item_uid,
+						   selected->parent_item_uid,
+						   selected->item_revision, selected->state } });
 		}
 	}
 	flatfile_item_auction_mutation item_mutation;
@@ -1152,8 +1183,8 @@ try
 		if (!result_code)
 		{
 			const auto prepared = flatfile_item_repository_prepare_auction_transfer(
-				root, lock, payload, id, true, &item_mutation, &result_code,
-				&error);
+				root, lock, payload, id, true, listing_accounted, &item_mutation,
+				&result_code, &error);
 			if (prepared != flatfile_item_repository_result::ok)
 				return {
 					prepared == flatfile_item_repository_result::io_error ?
@@ -1390,7 +1421,7 @@ try
 		if (listing && !result_code)
 		{
 			const auto prepared = flatfile_item_repository_prepare_auction_transfer(
-				root, lock, payload, listing->id, false, &item_mutation,
+				root, lock, payload, listing->id, false, accounted, &item_mutation,
 				&result_code, &error);
 			if (prepared != flatfile_item_repository_result::ok)
 				return {
@@ -1477,6 +1508,7 @@ try
 		result.bank_revision = wallet.bank_revision;
 	}
 	flatfile_accounting_record accounting_record;
+	std::vector<flatfile_authority_operation> mapping_operations;
 	if (accounted)
 	{
 		accounting_record.command = command;
@@ -1484,11 +1516,32 @@ try
 		if (mutation_applied)
 		{
 			economic_accounting_plan plan;
-			const auto planned = auction_item_claim_accounting_plan(
-				command, intent, accounting_before, result, &plan);
-			if (planned != economic_accounting_error::ok || !plan.accounts.empty() ||
-			    !plan.postings.empty() || !plan.children.empty() ||
-			    plan.item_events.size() != payload.item_count)
+			if (listing_accounted)
+			{
+				flatfile_economic_mapping escrow;
+				const unsigned int created =
+					flatfile_accounting_authority_storage::create_mapping(
+						root, lock, authority.lineage_revision,
+						economic_account_kind::auction_escrow, 0,
+						{ 4, result.auction_id, {} }, command.operation_id,
+						&escrow, &mapping_operations, &error);
+				if (created)
+					return { created == EIO || created == ENOMEM ?
+							 critical_apply_outcome::retryable_failure :
+							 critical_apply_outcome::terminal_failure,
+						 catalog.revision, created };
+				listing_before.escrow = escrow.account;
+			}
+			const auto planned =
+				listing_accounted ?
+					auction_listing_accounting_plan(
+						command, intent, listing_before, result, &plan) :
+					auction_item_claim_accounting_plan(
+						command, intent, accounting_before, result, &plan);
+			if (planned != economic_accounting_error::ok ||
+			    (!listing_accounted &&
+			     (!plan.accounts.empty() || !plan.postings.empty())) ||
+			    !plan.children.empty() || plan.item_events.size() != payload.item_count)
 				return { planned == economic_accounting_error::capacity ?
 						 critical_apply_outcome::retryable_failure :
 						 critical_apply_outcome::terminal_failure,
@@ -1552,7 +1605,7 @@ try
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(images.size() + 1);
+		operations.reserve(images.size() + mapping_operations.size() + 3);
 		for (auto &image : images)
 			operations.push_back({ flatfile_authority_store::domains,
 					       flatfile_authority_operation_kind::write,
@@ -1623,6 +1676,10 @@ try
 											  EEXIST :
 											  EILSEQ) };
 	}
+	// The EAP stage accepts native images only; add the new mapping images
+	// afterwards so all evidence still commits in the same authority journal.
+	for (auto &mapping_operation : mapping_operations)
+		operations.push_back(std::move(mapping_operation));
 	const auto committed =
 		accounted ? flatfile_accounting_storage::commit(root, lock, operations, &error) :
 			    flatfile_authority_transaction_commit_operations(root, lock, operations,
@@ -1647,12 +1704,22 @@ catch (const std::bad_alloc &)
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command)
 {
-	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, false);
+	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, false,
+									 auction_action::list);
 }
 
 critical_apply_result
 flatfile_auction_repository_apply_accounted_item_claim(const std::string &root,
 						       const critical_command &command)
 {
-	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, true);
+	return flatfile_accounting_auction_item_claim_transaction::apply(
+		root, command, true, auction_action::claim_item);
+}
+
+critical_apply_result
+flatfile_auction_repository_apply_accounted_listing(const std::string &root,
+						    const critical_command &command)
+{
+	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, true,
+									 auction_action::list);
 }

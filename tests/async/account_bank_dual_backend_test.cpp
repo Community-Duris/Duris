@@ -1,7 +1,9 @@
 #include "economy/account_bank_balances.h"
 #include "economy/economic_currency_adapter.h"
 #include "flatfile/flatfile_accounting_bank_transaction.h"
+#include "flatfile/flatfile_accounting_coin_transaction.h"
 #include "flatfile/flatfile_accounting_dispatch.h"
+#include "flatfile/flatfile_item_repository.h"
 #include "persistence/economic_sql_bank_transaction.h"
 
 #include <cassert>
@@ -23,6 +25,15 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 								  const critical_command &)
 {
 	return { critical_apply_outcome::applied, 2, 0 };
+}
+critical_apply_result flatfile_accounting_coin_transaction::apply(const std::string &,
+								  const critical_command &)
+{
+	return { critical_apply_outcome::applied, 3, 0 };
+}
+critical_apply_result flatfile_item_repository_apply(const std::string &, const critical_command &)
+{
+	return { critical_apply_outcome::retryable_failure, 0, ENOTSUP };
 }
 
 int main()

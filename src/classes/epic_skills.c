@@ -11,6 +11,7 @@
 #include "combat/damage.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "classes/skills.h"
 #include "magic/spells.h"
 
@@ -51,7 +52,15 @@ void epic_skill_purchase_committed(P_char pl, bool committed, const epic_command
 					critical_deadline_class::recovery, nullptr, nullptr, 0);
 		return;
 	}
-	SUB_MONEY(pl, context.coins_cost, 0);
+	if (SUB_MONEY(pl, context.coins_cost, 0) != 0)
+	{
+		send_to_char("Your coin payment was declined; your epics are being refunded.\n",
+			     pl);
+		epic_transaction_submit(pl, context.epic_cost, epic_reason_type::epic_skill_refund,
+					context.skill, 0, critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
 	const int learned = MIN(100, context.expected_skill + get_property("epic.skillGain", 10));
 	pl->only.pc->skills[context.skill].taught = learned;
 	pl->only.pc->skills[context.skill].learned = learned;
@@ -669,6 +678,13 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		send_to_char(
 			"Unfortunately, I cannot teach you anything more, you have already mastered this skill!\n",
+			pl);
+		return TRUE;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Epic skill purchases are unavailable while economic accounting is active.\n",
 			pl);
 		return TRUE;
 	}

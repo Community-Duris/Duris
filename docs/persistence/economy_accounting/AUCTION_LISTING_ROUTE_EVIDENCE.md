@@ -1,7 +1,7 @@
 # Auction listing accounting route evidence
 
-The schema 2 auction listing component is an inactive SQL transaction path. It
-uses the existing native listing action: one accepted operation creates the
+The schema 2 auction listing component has inactive SQL and flatfile owners.
+The SQL owner uses the existing native listing action: one accepted operation creates the
 auction row and custody slots, moves each original item UID from seller to
 auction ownership, charges the listing fee, and writes the native auction,
 currency, and item ledgers. The typed owner adds an EAP1 root, account effects,
@@ -33,6 +33,20 @@ references its matching `item_ownership_ledger` row by operation and event
 index. Any failed native or accounting step requires the caller to roll back
 the whole transaction.
 
+The flatfile owner decodes the canonical frozen intent and renews the active
+epoch and seller wallet/bank mappings under one authority lock. It snapshots
+the native balances and item custody before preparing the listing. After the
+native listing assigns its deterministic auction ID, it stages a new escrow
+mapping whose creating operation is the listing, verifies the native result
+with the same pure plan, and commits the auction catalog, wallet fee, item
+custody, exact item reference, escrow mapping, and EAP1 record in one journal.
+It refuses roots with descendants because the native auction handoff moves
+only the selected roots. Native refusals retain an empty-plan accounting
+record. The focused flatfile harness forces a journal interruption, recovers
+the complete listing and mapping, checks balanced fee and custody evidence,
+and verifies replay and the descendant refusal. This typed owner can be called
+directly; common admission still refuses schema 2 auction listings.
+
 The focused pure regression checks a paid listing, original UID transfer,
 result tampering, and zero-fee denomination canonicalization. The disposable
 SQL journey lists two original UIDs, forces failure while inserting a late item
@@ -51,4 +65,4 @@ CLI and Ubuntu WSL, run
 The route remains inactive. Common admission and publication integration is
 Plan 1 work. Auction money collection and the
 [aggregate claim source gap](AUCTION_CLAIM_SOURCE_GAP.md), escrow retirement,
-and flatfile parity remain in Plan 4.
+and flatfile bid/settlement parity remain in Plan 4.

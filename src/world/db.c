@@ -48,6 +48,7 @@
 #include <unordered_map>
 #include "world/object_template.h"
 #include "account/newbie_kit_plan.h"
+#include "economy/economic_gameplay_authority.h"
 
 /*
  * external variables
@@ -3265,6 +3266,23 @@ static bool live_shopkeeper_for_identity(int shop)
 	return false;
 }
 
+static bool reset_command_issues_item(char command)
+{
+	switch (command)
+	{
+	case 'B':
+	case 'C':
+	case 'A':
+	case 'O':
+	case 'P':
+	case 'G':
+	case 'E':
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* execute the reset command table of a given zone */
 /* force_item_repop : 2 means this is a boot-time initial reset of zone. */
 void reset_zone(int zone, int force_item_repop)
@@ -3283,6 +3301,14 @@ void reset_zone(int zone, int force_item_repop)
 	{
 		if (ZCMD.command == 'S')
 			break;
+		// Zone item commands lack a durable reset-generation identity. Refuse
+		// before read_object or any live placement during an accounting epoch.
+		if (economic_gameplay_authority::active() &&
+		    reset_command_issues_item(ZCMD.command))
+		{
+			last_cmd = 0;
+			continue;
+		}
 
 		/* last_mob_load added in case an equipment load fails due to a random
 		   roll..  we want the rest of the stuff on the mob to happen (followers,

@@ -100,6 +100,22 @@ int main()
 	const economic_account_key bank = { lineage, economic_account_kind::bank, 12, 1 };
 	economic_frozen_intent intent;
 	const auto paid_command = command_for(payload(200), 4, wallet, bank, &intent);
+	economic_frozen_intent decoded_intent;
+	auction_command_payload decoded_payload = {};
+	economic_account_key decoded_wallet, decoded_bank;
+	assert(auction_listing_accounting_decode(paid_command, &decoded_intent, &decoded_payload,
+						 &decoded_wallet,
+						 &decoded_bank) == economic_accounting_error::ok);
+	assert(decoded_payload.listing_fee == 200 &&
+	       economic_account_key_equal(decoded_wallet, wallet) &&
+	       economic_account_key_equal(decoded_bank, bank));
+	auto tampered = paid_command;
+	tampered.accounting_intent.front() ^= 1;
+	assert(auction_listing_accounting_decode(tampered, &decoded_intent, &decoded_payload,
+						 &decoded_wallet,
+						 &decoded_bank) != economic_accounting_error::ok);
+	assert(decoded_payload.listing_fee == 200 &&
+	       economic_account_key_equal(decoded_wallet, wallet));
 	const auto before = authority(wallet, bank);
 	const auto paid_result = result_for(200);
 	economic_accounting_plan plan;

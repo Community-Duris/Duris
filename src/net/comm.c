@@ -5352,6 +5352,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 				if (*strp == '$')
 				{
 					j = 0;
+					i = nullptr;
 
 					switch (*(++strp))
 					{

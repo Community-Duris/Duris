@@ -5,6 +5,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "core/defines.h"
+#include "economy/economic_gameplay_authority.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 
@@ -209,6 +210,20 @@ void spell_remove_curse(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, 
 
 	if (IS_NPC(ch) && (GET_VNUM(ch) == 63))
 		return;
+	if (!obj && victim && economic_gameplay_authority::active())
+	{
+		bool would_drop = false;
+		for (int slot = 0; slot < MAX_WEAR; ++slot)
+			would_drop |= victim->equipment[slot] &&
+				      IS_SET(victim->equipment[slot]->extra_flags, ITEM_NODROP);
+		for (P_obj held = victim->carrying; held; held = held->next_content)
+			would_drop |= IS_SET(held->extra_flags, ITEM_NODROP);
+		if (would_drop)
+		{
+			send_to_char("That curse cannot release items right now.\r\n", ch);
+			return;
+		}
+	}
 
 	if (obj)
 	{

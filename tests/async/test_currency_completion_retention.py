@@ -34,6 +34,7 @@ HARNESS = r'''
 #include <utility>
 
 static P_char online = nullptr, online_other = nullptr;
+P_desc descriptor_list = nullptr;
 static critical_command submitted;
 static int submissions = 0, callbacks = 0, alerts = 0, bank_publications = 0;
 static int held_submissions = 0, publication_acks = 0;
@@ -71,6 +72,10 @@ P_char find_player_by_pid(int pid)
 {
     if (online && GET_PID(online) == pid) return online;
     return online_other && GET_PID(online_other) == pid ? online_other : nullptr;
+}
+int IS_MORPH(P_char ch)
+{
+    return ch && IS_NPC(ch) && ch->only.npc && ch->only.npc->orig_char;
 }
 bool critical_command_coordinator_is_fenced(const critical_entity_key &, critical_operation_id *)
 {
@@ -181,6 +186,63 @@ int main(int argc, char **argv)
     GET_COPPER(&actor) = 5;
     online = &actor;
     currency_transaction_reset_for_tests();
+    if (scenario == "exact_morph_coin")
+    {
+        critical_operation_id lineage = {}, epoch = {}, activation = {};
+        lineage.bytes[0] = 1;
+        epoch.bytes[0] = 2;
+        activation.bytes[0] = 3;
+        economic_gameplay_authority_test_access::install(lineage, epoch, activation);
+        GET_SILVER(&actor) = 12;
+        pc_only_data recipient_player = {};
+        recipient_player.pid = 45;
+        recipient_player.wallet_revision = 1;
+        recipient_player.bank_revision = 1;
+        char_data recipient = {};
+        recipient.only.pc = &recipient_player;
+        recipient.player.racewar = actor.player.racewar;
+        npc_only_data morph_data = {};
+        morph_data.orig_char = &recipient;
+        char_data morph = {};
+        morph.specials.act |= ACT_ISNPC;
+        morph.only.npc = &morph_data;
+        descriptor_data descriptor = {};
+        descriptor.connected = CON_PLAYING;
+        descriptor.character = &morph;
+        descriptor_list = &descriptor;
+        coin_transfer_payload transfer = {};
+        assert(currency_transaction_coin_wallet_exact(&actor, 1, 10, true,
+                                                       &transfer.source));
+        assert(currency_transaction_coin_wallet_exact(&recipient, 1, 10, false,
+                                                       &transfer.destination));
+        assert((transfer.source.after == std::array<int32_t, 4>{5, 2, 0, 0}));
+        assert((transfer.destination.after == std::array<int32_t, 4>{0, 10, 0, 0}));
+        assert(currency_transaction_submit_coin(&actor, transfer, coin_completed, nullptr, 0));
+        assert(held_submissions == 1 && submissions == 0);
+        coin_transfer_result result = {};
+        const coin_transfer_endpoint *endpoints[] = {&transfer.source, &transfer.destination};
+        for (size_t index = 0; index < 2; ++index)
+        {
+            for (size_t denomination = 0; denomination < 4; ++denomination)
+                result.wallets[index].wallet.amount[denomination] =
+                    endpoints[index]->after[denomination];
+            result.wallets[index].wallet_revision = 2;
+            result.wallets[index].bank_revision = 2;
+        }
+        std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> bytes = {};
+        assert(coin_transfer_command_encode_result(transfer, result, &bytes));
+        critical_completion receipt = {};
+        receipt.operation_id = submitted.operation_id;
+        receipt.outcome = critical_apply_outcome::applied;
+        receipt.result_size = bytes.size();
+        std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(callbacks == 1 && callback_committed &&
+               GET_SILVER(&actor) == 2 && GET_SILVER(&recipient) == 10 &&
+               GET_COPPER(&actor) == 5 && GET_COPPER(&recipient) == 0);
+        assert(currency_transaction_health_copy().pending == 0);
+        return 0;
+    }
     if (scenario == "accounted_coin_producer_restart")
     {
         critical_operation_id lineage = {}, epoch = {}, activation = {};
@@ -693,6 +755,7 @@ def main():
         "rejected_without_payload", "callback_chain", "callback_rehash", "active_rebasable",
         "blocked_rebasable", "coin_ambiguous", "coin_exhausted_retry",
         "coin_malformed_commit",
+        "exact_morph_coin",
         "accounted_coin_producer_restart",
         "accounted_bank_publication", "accounted_bank_ack_retry",
         "accounted_bank_invalid_result", "accounted_bank_restart",

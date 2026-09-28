@@ -7,6 +7,7 @@
 #include "core/utils.h"
 #include "core/defines.h"
 #include "combat/justice.h"
+#include "economy/economic_gameplay_authority.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include <stdio.h>
@@ -219,6 +220,11 @@ void spell_moonstone(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 		send_to_char("The powers of nature ignore your call for serenity.\n", ch);
 		return;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("A moonstone cannot be formed right now.\r\n", ch);
+		return;
+	}
 
 	if ((afp = get_spell_from_char(ch, SPELL_MOONSTONE)))
 	{
@@ -419,6 +425,11 @@ bool spell_general_portal(int /*level*/, P_char ch, P_char victim, struct portal
 	{
 		send_to_char("&+LThe nature of that room prevents you from creating a portal.&n\n",
 			     ch);
+		return FALSE;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("A portal cannot be formed right now.\r\n", ch);
 		return FALSE;
 	}
 

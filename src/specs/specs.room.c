@@ -15,6 +15,7 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <strings.h>
@@ -682,6 +683,16 @@ int dump(int /*room*/, P_char ch, int cmd, char *arg)
 
 	if (!ch)
 		return (FALSE);
+	if (economic_gameplay_authority::active())
+	{
+		if (cmd == CMD_DROP)
+		{
+			send_to_char("The dump cannot accept items while accounting is active.\r\n",
+				     ch);
+			return TRUE;
+		}
+		return FALSE;
+	}
 
 	for (obj = world[ch->in_room].contents; obj; obj = next_obj)
 	{

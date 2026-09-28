@@ -111,12 +111,11 @@ def validate_fixture(fixture, registry):
         require(operation['reason'] in reasons, 'unknown reason')
         policy = reasons[operation['reason']]
         require(operation['actor'] == policy['actor'], 'unauthorized actor')
-        if policy['source_event_required']:
-            source = operation['source_event']
+        source = operation.get('source_event')
+        if policy['source_event_required'] or source is not None:
             require(isinstance(source,str) and re.fullmatch('[0-9a-f]{32}',source) and int(source,16), 'missing source event')
-            source_key = (operation['reason'], source)
-            require(source_key not in sources, 'duplicate source event')
-            sources.add(source_key)
+            require(source not in sources, 'duplicate source event')
+            sources.add(source)
         if policy.get('original_operation_required'):
             original=operation.get('original_operation_id')
             require(original in receipts, 'missing committed original operation')
@@ -164,7 +163,7 @@ def validate_fixture(fixture, registry):
                 require(operation['reason'] in ('item_create','first_admission','baseline'), 'unauthorized item creation')
             elif event['action'] == 'destroy':
                 require(event['before'] is not None and event['after'] is None, 'invalid destruction')
-                require(operation['reason'] in ('item_destroy','lifecycle_retirement'), 'unauthorized destruction')
+                require(operation['reason'] in ('item_destroy','item_reward','lifecycle_retirement'), 'unauthorized destruction')
             else:
                 require(event['before'] is not None and event['after'] is not None, 'invalid transfer')
                 require(event['before'] != event['after'], 'empty item movement')

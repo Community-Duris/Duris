@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Exercise journal replay against real SQL item custody in a disposable DB.
 
-Called by test_mysql_playtime_journey after its gameplay phases. The fixture
-uses the migrated schema and synthetic rows only; it refuses non-loopback or
-non-playtime_test databases and does not read .env.
+Called by test_mysql_playtime_journey and disposable economic SQL fixtures.
+The fixture uses a migrated schema and synthetic rows only; it refuses
+non-loopback or unmarked economic test databases and does not read .env.
 """
 from pathlib import Path
 import os
@@ -13,10 +13,13 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "player/player_save_journal.h"
+#include "player/player_load_repository.h"
 #include "player/player_snapshot_repository.h"
+#include "persistence/persistence_observability.h"
 
 #include <mysql/mysql.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -24,6 +27,8 @@ HARNESS = r'''
 #include <limits>
 #include <string>
 #include <vector>
+
+extern "C" void sql_pool_discard_connection(MYSQL *) {}
 
 char *sql_escape_string(const char *text)
 {
@@ -203,10 +208,15 @@ int main(int argc, char **argv)
     const int lag_pid = static_cast<int>(maximum_pid + 5);
     const int conflict_pid = lag_pid + 1;
     const int foreign_pid = lag_pid + 2;
+    const int equipment_pid = lag_pid + 3;
+    const int legacy_equipment_pid = lag_pid + 4;
     constexpr uint64_t lag_root = UINT64_C(9000000000000000100);
     constexpr uint64_t lag_child = UINT64_C(9000000000000000101);
     constexpr uint64_t foreign_item = UINT64_C(9000000000000000102);
-    for (uint64_t uid : {lag_root, lag_child, foreign_item})
+    constexpr uint64_t equipment_item = UINT64_C(9000000000000000103);
+    constexpr uint64_t legacy_equipment_item = UINT64_C(9000000000000000104);
+    for (uint64_t uid : {lag_root, lag_child, foreign_item, equipment_item,
+                         legacy_equipment_item})
         if (scalar(db, "SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
                            std::to_string(uid)) != 0)
         {
@@ -216,6 +226,8 @@ int main(int argc, char **argv)
     seed_player(db, lag_pid, "ItemReconLagFixture");
     seed_player(db, conflict_pid, "ItemReconConflictFixture");
     seed_player(db, foreign_pid, "ItemReconForeignFixture");
+    seed_player(db, equipment_pid, "ItemReconEquipmentFixture");
+    seed_player(db, legacy_equipment_pid, "ItemReconLegacyEquipFixture");
     exec_sql(db,
              "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
              "owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
@@ -225,12 +237,28 @@ int main(int argc, char **argv)
                  ",NULL,1," + std::to_string(lag_pid) + ",0,1,16,1),(" +
                  std::to_string(foreign_item) + "," + std::to_string(foreign_item) +
                  ",NULL,1," + std::to_string(foreign_pid) + ",0,4,17,1)");
+    exec_sql(db, "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
+                 "owner_type,owner_id,owner_context_id,item_revision,vnum,state,"
+                 "equipment_slot) VALUES(" + std::to_string(equipment_item) + "," +
+                 std::to_string(equipment_item) + ",NULL,1," +
+                 std::to_string(equipment_pid) + ",0,2,18,1,5)");
+    exec_sql(db, "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
+                 "owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
+                 std::to_string(legacy_equipment_item) + "," +
+                 std::to_string(legacy_equipment_item) + ",NULL,1," +
+                 std::to_string(legacy_equipment_pid) + ",0,1,19,1)");
     exec_sql(db,
              "INSERT INTO player_items(pid,vnum,equip_slot,container_id,obj_uid) VALUES(" +
                  std::to_string(lag_pid) + ",15,0,NULL," + std::to_string(lag_root) + "),(" +
                  std::to_string(lag_pid) + ",16,0,NULL," + std::to_string(lag_child) + "),(" +
                  std::to_string(conflict_pid) + ",17,0,NULL," +
                  std::to_string(foreign_item) + ")");
+    exec_sql(db, "INSERT INTO player_items(pid,vnum,equip_slot,container_id,obj_uid) VALUES(" +
+                 std::to_string(equipment_pid) + ",18,0,NULL," +
+                 std::to_string(equipment_item) + ")");
+    exec_sql(db, "INSERT INTO player_items(pid,vnum,equip_slot,container_id,obj_uid) VALUES(" +
+                 std::to_string(legacy_equipment_pid) + ",19,5,NULL," +
+                 std::to_string(legacy_equipment_item) + ")");
 
     const std::string lag_directory = journal_root + "/owner-projection-lag";
     player_snapshot lag_snapshot = make_snapshot(lag_pid, 2, {{lag_root, 15}, {lag_child, 16}});
@@ -309,6 +337,86 @@ int main(int argc, char **argv)
     player_save_journal_shutdown();
     mysql_close(db);
     db = connect_db();
+
+    // The queued save captured this item as carried before a committed wear.
+    // Its replay and restart must preserve the slot recorded by custody.
+    const std::string equipment_directory = journal_root + "/equipment-slot-lag";
+    const player_snapshot stale_equipment =
+        make_snapshot(equipment_pid, 2, {{equipment_item, 18}});
+    open_journal(equipment_directory);
+    if (player_save_journal_append(stale_equipment) != player_save_journal_result::ok)
+        return 2;
+    player_save_journal_shutdown();
+    const std::string equipment_owner_query =
+        "SELECT item_uid,item_revision,equipment_slot FROM item_current_owner WHERE item_uid=" +
+        std::to_string(equipment_item);
+    const auto equipment_owner_before = query_rows(db, equipment_owner_query);
+    mysql_close(db);
+    db = connect_db();
+    const bool equipment_replayed = replay_case(db, equipment_directory,
+        "equipment_slot_lag", player_save_journal_result::ok);
+    all_passed &= expect(equipment_replayed &&
+                         scalar(db, "SELECT equip_slot FROM player_items WHERE obj_uid=" +
+                                    std::to_string(equipment_item)) == 5 &&
+                         query_rows(db, equipment_owner_query) == equipment_owner_before,
+                         "stale equipment save overwrote committed custody position");
+    player_save_journal_shutdown();
+    mysql_close(db);
+    db = connect_db();
+    open_journal(equipment_directory);
+    replay_context equipment_context{db};
+    const auto equipment_restart = player_save_journal_replay(apply_snapshot,
+                                                               &equipment_context);
+    all_passed &= expect(equipment_restart == player_save_journal_result::ok &&
+                         player_save_journal_health_copy().records == 0 &&
+                         scalar(db, "SELECT equip_slot FROM player_items WHERE obj_uid=" +
+                                    std::to_string(equipment_item)) == 5,
+                         "equipment slot changed after journal restart");
+    player_save_journal_shutdown();
+    mysql_close(db);
+    db = connect_db();
+
+    // Inactive legacy equipment has no accounting reference. Its native slot
+    // must survive a normal save while the new custody column still defaults 0.
+    player_snapshot legacy_equipment =
+        make_snapshot(legacy_equipment_pid, 2, {{legacy_equipment_item, 19}});
+    legacy_equipment.items[0].equipment_slot = 5;
+    const auto legacy_saved = player_snapshot_repository_apply(db, legacy_equipment);
+    all_passed &= expect(legacy_saved.outcome == player_save_apply_outcome::applied &&
+                         scalar(db, "SELECT equip_slot FROM player_items WHERE obj_uid=" +
+                                    std::to_string(legacy_equipment_item)) == 5,
+                         "inactive legacy equipment slot was overwritten");
+
+    exec_sql(db, "UPDATE player_data SET account_name='ItemReconTest' WHERE pid IN (" +
+                     std::to_string(equipment_pid) + "," +
+                     std::to_string(legacy_equipment_pid) + ")");
+    exec_sql(db, "INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,"
+                 "revision) VALUES(1," + std::to_string(equipment_pid) + ",0,2),(1," +
+                 std::to_string(legacy_equipment_pid) + ",0,1)");
+    auto load_slot = [&](int pid, uint64_t uid, uint64_t request_id)
+    {
+        player_load_request request{};
+        request.request_id = request_id;
+        request.pid = pid;
+        request.account_name = "ItemReconTest";
+        request.deadline_usec =
+            persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+        const auto loaded = player_load_repository_execute(db, request);
+        if (loaded.outcome != player_load_outcome::applied)
+            std::cerr << "equipment load outcome=" << static_cast<int>(loaded.outcome)
+                      << " stage=" << (loaded.failed_component ? loaded.failed_component : "none")
+                      << " error=" << loaded.error_code << '\n';
+        const auto item = std::find_if(loaded.snapshot.items.begin(),
+                                       loaded.snapshot.items.end(),
+                                       [uid](const auto &candidate)
+                                       { return candidate.object_uid == uid; });
+        return loaded.outcome == player_load_outcome::applied &&
+               item != loaded.snapshot.items.end() ? item->equipment_slot : -1;
+    };
+    all_passed &= expect(load_slot(equipment_pid, equipment_item, 801) == 5,
+                         "load did not use committed custody equipment slot");
+    all_passed &= expect(load_slot(legacy_equipment_pid, legacy_equipment_item, 802) == 5,
+                         "load overwrote inactive legacy wear");
 
     player_snapshot incomplete_snapshot =
         make_snapshot(lag_pid, 3, {{lag_root, 15}});
@@ -445,12 +553,21 @@ int main(int argc, char **argv)
 
     player_save_journal_shutdown();
     exec_sql(db, "DELETE FROM player_items WHERE pid IN (" + std::to_string(lag_pid) + "," +
-                     std::to_string(conflict_pid) + ")");
+                     std::to_string(conflict_pid) + "," +
+                     std::to_string(equipment_pid) + "," +
+                     std::to_string(legacy_equipment_pid) + ")");
     exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid=" + std::to_string(lag_child));
     exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid IN (" + std::to_string(lag_root) +
-                     "," + std::to_string(foreign_item) + ")");
+                     "," + std::to_string(foreign_item) + "," +
+                     std::to_string(equipment_item) + "," +
+                     std::to_string(legacy_equipment_item) + ")");
+    exec_sql(db, "DELETE FROM item_owner_revision WHERE owner_type=1 AND owner_id IN (" +
+                     std::to_string(equipment_pid) + "," +
+                     std::to_string(legacy_equipment_pid) + ")");
     exec_sql(db, "DELETE FROM player_data WHERE pid IN (" + std::to_string(lag_pid) + "," +
-                     std::to_string(conflict_pid) + "," + std::to_string(foreign_pid) + ")");
+                     std::to_string(conflict_pid) + "," + std::to_string(foreign_pid) +
+                     "," + std::to_string(equipment_pid) + "," +
+                     std::to_string(legacy_equipment_pid) + ")");
     mysql_close(db);
     if (!all_passed)
     {
@@ -466,8 +583,11 @@ int main(int argc, char **argv)
 def main() -> None:
     if os.environ.get("DB_HOST") != "127.0.0.1":
         raise SystemExit("refusing non-loopback DB target")
-    if not os.environ.get("DB_NAME", "").startswith("playtime_test_"):
-        raise SystemExit("refusing DB schema outside disposable playtime_test_ journey")
+    database = os.environ.get("DB_NAME", "")
+    if not (database.startswith("playtime_test_") or
+            (database.startswith("economic_schema_test_") and
+             os.environ.get("TEST_DB_DISPOSABLE") == "1")):
+        raise SystemExit("refusing DB schema outside disposable test journey")
     with tempfile.TemporaryDirectory(prefix="player-item-reconcile-") as temporary:
         source = Path(temporary) / "item_reconcile.cpp"
         binary = Path(temporary) / "item_reconcile"
@@ -479,8 +599,13 @@ def main() -> None:
                 "g++", "-std=c++20", "-ffunction-sections", "-fdata-sections", "-Isrc",
                 "-I/usr/include/mysql", str(source), "src/player/player_snapshot_repository.c",
                 "src/player/player_snapshot_codec.c", "src/player/player_save_journal.c",
+                "src/player/player_load_repository.c", "src/player/player_load_topology.c",
+                "src/player/player_death_recovery_query.c",
+                "src/player/player_death_conflict_repository.c",
+                "src/persistence/critical_command.c",
+                "src/persistence/player_death_restitution_command.c",
                 "src/sql/item_extra_descr_codec.c", "src/persistence/persistence_observability.c",
-                "-Wl,--gc-sections", "-lmysqlclient", "-pthread", "-o", str(binary),
+                "-Wl,--gc-sections", "-lmysqlclient", "-lcrypto", "-pthread", "-o", str(binary),
             ],
             cwd=ROOT,
             check=True,

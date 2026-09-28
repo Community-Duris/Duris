@@ -538,6 +538,36 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "636f84e3bd147b32331c50ba95c86b01ad70e654859934b397af03a7e4d15988",
       "verify_checksum": "5dede4d54e394d630713b8256c457989c800f1bdf9b75ff37b73541470614615"
+    },
+    {
+      "id": "0037_saved_item_handoff_payload",
+      "sequence": 37,
+      "description": "Bind saved item recovery handoffs to both payload snapshots",
+      "apply": "immutable/0037_saved_item_handoff_payload.sql",
+      "verify": "immutable/0037_saved_item_handoff_payload.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ed8171fd2b30ce866ef0eeae8a55249f0df9f061aab9677706ca1e3b81012ea1",
+      "verify_checksum": "cac78b627eb9b70ed10f208ba2ade8a80d01067b72b33dd34926aa5937273506"
+    },
+    {
+      "id": "0038_item_equipment_slot",
+      "sequence": 38,
+      "description": "Record equipment slots in item custody and event evidence",
+      "apply": "immutable/0038_item_equipment_slot.sql",
+      "verify": "immutable/0038_item_equipment_slot.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "8e41e32f25b8027fdc149fc692b96db0a1ec1076a20223e740310c3f1f993feb",
+      "verify_checksum": "015978cb36a4e33e2aac4452a77eba4b9a0984e92d25e26e347739cc5720d28b"
+    },
+    {
+      "id": "0039_economic_pending_claim_source",
+      "sequence": 39,
+      "description": "Register retained source allocation for pending money claims",
+      "apply": "immutable/0039_economic_pending_claim_source.sql",
+      "verify": "immutable/0039_economic_pending_claim_source.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "a066739e50371e0a19af5953e78fdc8300413c64a9598d45464d49f3268d3fb4",
+      "verify_checksum": "d34b1e98c3ba471b0e9b2de21fc862fd008bd9646aac7e8d91bc6ff803705cbd"
     }
   ]
 }

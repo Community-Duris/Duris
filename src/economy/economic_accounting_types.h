@@ -134,6 +134,7 @@ struct economic_item_position
 	uint64_t parent_uid = 0;
 	uint64_t revision = 0;
 	item_custody_state state = item_custody_state::absent;
+	uint16_t equipment_slot = 0;
 };
 
 struct economic_item_snapshot

@@ -61,7 +61,7 @@ static void spell_room_creation_completed(P_char actor, uint64_t item_uid, bool 
 static bool submit_spell_room_creation(P_char actor, P_obj object)
 {
 	if (item_creation_grant_submit_to_room(actor, object, actor->in_room,
-					       economic_source_kind::item_action,
+					       economic_source_kind::spell_creation,
 					       spell_room_creation_completed))
 		return true;
 	if (OBJ_NOWHERE(object))
@@ -130,7 +130,7 @@ static bool submit_spell_player_creation(P_char actor, P_obj object)
 {
 	if (item_creation_grant_submit_to_player_with_completion(
 		    actor, object, actor, NULL, spell_player_creation_completed,
-		    economic_source_kind::item_action))
+		    economic_source_kind::spell_creation))
 		return true;
 	if (OBJ_NOWHERE(object))
 		extract_obj(object, FALSE);
@@ -1689,6 +1689,11 @@ void spell_channel(int /*level*/, P_char ch, P_char victim, P_obj obj)
 
 	if (!ch || !victim || !obj)
 		return;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("That avatar focus cannot advance right now.\r\n", ch);
+		return;
+	}
 
 	obj->timer[0]++;
 
@@ -1855,6 +1860,11 @@ void cast_channel(int level, P_char ch, char * /*arg*/, int type, P_char /*tar_c
 		}
 		else if (t_ch == ch)
 		{
+			if (economic_gameplay_authority::active())
+			{
+				send_to_char("An avatar focus cannot be formed right now.\r\n", ch);
+				return;
+			}
 			if (IS_EVIL(ch))
 				t_obj = read_object(EVIL_AVATAR_OBJ, VIRTUAL);
 			else
@@ -2392,10 +2402,10 @@ void spell_sticks_to_snakes(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_batch(
-			    ch, selected_arrows, selected_arrow_count, NULL, player_owner, destruction,
-			    item_transfer_reason::destruction, SPELL_STICKS_TO_SNAKES,
+			    ch, selected_arrows, selected_arrow_count, NULL, player_owner,
+			    destruction, item_transfer_reason::destruction, SPELL_STICKS_TO_SNAKES,
 			    sticks_to_snakes_retirement_completed, &context, sizeof(context), NULL,
-			    &reject, nullptr, economic_source_kind::item_action))
+			    &reject, nullptr, economic_source_kind::spell_consumption))
 		{
 			send_to_char("Your spell fails and the arrows remain unchanged.\r\n", ch);
 			logit(LOG_FILE, "sticks-to-snakes item retirement refused (pid=%d reason=%s)",

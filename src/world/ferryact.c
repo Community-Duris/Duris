@@ -17,6 +17,7 @@ For the main ferry documentation, see ferry.c
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <fstream>
 #include <list>
 #include <stdio.h>
@@ -486,6 +487,13 @@ int ferry_automat_proc(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_BUY && isname(arg, "ticket"))
 	{
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Ferry tickets are unavailable while economic accounting is active.\r\n",
+				ch);
+			return TRUE;
+		}
 		if (GET_MONEY(ch) < ticket_cost)
 		{
 			send_to_char("You don't have enough money to buy a ticket!\r\n", ch);

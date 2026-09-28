@@ -162,10 +162,9 @@ static bool submit_conjured_weapon(P_char actor, P_obj blade, conjured_weapon_ki
 		GET_HIT(actor) * 0.10f,
 		static_cast<uint8_t>(kind),
 	};
-	if (item_creation_grant_submit_to_player_with_completion(actor, blade, actor,
-								 conjured_weapon_grant_completed,
-								 &context, sizeof(context), NULL,
-								 economic_source_kind::item_action))
+	if (item_creation_grant_submit_to_player_with_completion(
+		    actor, blade, actor, conjured_weapon_grant_completed, &context, sizeof(context),
+		    NULL, economic_source_kind::spell_creation))
 		return true;
 
 	extract_obj(blade, FALSE);

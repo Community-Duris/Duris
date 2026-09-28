@@ -73,6 +73,7 @@
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_death_enrollment.h"
 #include "economy/collector_presence.h"
@@ -1897,7 +1898,7 @@ void die(P_char ch, P_char killer)
 			    FALSE, ch, 0, 0, TO_CHAR);
 		}
 		// Do nothing for PCs and !exp mobs.
-		if (IS_PC(ch) || GET_EXP(ch) <= 0)
+		if (IS_PC(ch) || GET_EXP(ch) <= 0 || economic_gameplay_authority::active())
 		{
 		}
 		// Check Thanksgiving first.
@@ -2048,14 +2049,15 @@ void die(P_char ch, P_char killer)
 
 	// Dragon mobs now will drop a dragon scale
 	// No longer includes !exp mobs like dragon illusions.
-	if (GET_RACE(ch) == RACE_DRAGON && GET_EXP(ch) > 0)
+	if (!economic_gameplay_authority::active() && GET_RACE(ch) == RACE_DRAGON &&
+	    GET_EXP(ch) > 0)
 	{
 		P_obj dragon_scale = read_object(VOBJ_DRAGON_SCALE, VIRTUAL);
 		obj_to_char(dragon_scale, ch);
 	}
 
-	if (IS_NPC(ch) && (GET_LEVEL(ch) > 51) && !IS_PC_PET(ch) &&
-	    !affected_by_spell(ch, TAG_CONJURED_PET)) // soul shard - Drannak
+	if (!economic_gameplay_authority::active() && IS_NPC(ch) && (GET_LEVEL(ch) > 51) &&
+	    !IS_PC_PET(ch) && !affected_by_spell(ch, TAG_CONJURED_PET)) // soul shard - Drannak
 	{
 		int dchance = 5;
 
@@ -2073,12 +2075,13 @@ void die(P_char ch, P_char killer)
 
 	// possibility to find a recipe for the items in the zone.
 	//  Only find recipes from mobs inside their own zone.
-	if (IS_PC(killer) && !IS_PC_PET(ch) && in_their_zone(ch) &&
-	    !affected_by_spell(ch, TAG_CONJURED_PET))
+	if (!economic_gameplay_authority::active() && IS_PC(killer) && !IS_PC_PET(ch) &&
+	    in_their_zone(ch) && !affected_by_spell(ch, TAG_CONJURED_PET))
 		random_recipe(killer, ch);
 
 	// object code - Normal kills.  Kvark
-	if ((IS_PC(killer) || IS_PC_PET(killer)) && IS_NPC(ch) && IS_ALIVE(killer))
+	if (!economic_gameplay_authority::active() && (IS_PC(killer) || IS_PC_PET(killer)) &&
+	    IS_NPC(ch) && IS_ALIVE(killer))
 	{
 		// if(GET_LEVEL(ch) < 30 || GET_LEVEL(killer) < 20)
 		//   {
@@ -5071,7 +5074,12 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			if (weapon && GET_LEVEL(ch) > 1 &&
 			    !IS_SET(weapon->extra_flags, ITEM_NODROP))
 			{
-				if (bIsQuickStepMiss)
+				if (bIsQuickStepMiss && economic_gameplay_authority::active() &&
+				    IS_PC(ch))
+					send_to_char(
+						"You stumble, but keep hold of your weapon.\r\n",
+						ch);
+				else if (bIsQuickStepMiss)
 				{
 					for (pos = 0; pos < MAX_WEAR; pos++)
 						if (ch->equipment[pos] == weapon)
