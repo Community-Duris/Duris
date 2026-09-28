@@ -98,11 +98,26 @@ struct holding_source
 	economic_account_kind account_kind = economic_account_kind::wallet;
 	uint64_t native_id = 0;
 	uint8_t racewar = 0;
+	uint32_t shop_id = 0;
 	std::string name;
 	economic_coin_vector balance = {};
 	uint64_t native_revision = 0;
 	economic_sql_source_digest digest = {};
 };
+uint16_t native_locator(economic_account_kind kind)
+{
+	switch (kind)
+	{
+	case economic_account_kind::wallet:
+		return 1;
+	case economic_account_kind::bank:
+		return 2;
+	case economic_account_kind::treasury:
+		return 6;
+	default:
+		throw failure{ EINVAL };
+	}
+}
 void frame(std::vector<uint8_t> &output, std::span<const uint8_t> value)
 {
 	const uint64_t size = value.size();
@@ -135,7 +150,11 @@ economic_sql_source_digest native_digest(const economic_sql_source_snapshot &sna
 	const auto bank = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
 				       [&](const auto &table)
 				       { return table.name == "account_banks"; });
-	require(wallet != snapshot.tables.end() && bank != snapshot.tables.end());
+	const auto shops = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+					[&](const auto &table)
+					{ return table.name == "shopkeepers"; });
+	require(wallet != snapshot.tables.end() && bank != snapshot.tables.end() &&
+		shops != snapshot.tables.end());
 	std::vector<uint8_t> data{ 'E', 'S', 'N', '1' };
 	frame(data, wallet->content_digest);
 	frame(data, bank->content_digest);
@@ -157,6 +176,11 @@ economic_sql_source_digest native_digest(const economic_sql_source_snapshot &sna
 		}
 		data[3] = '2';
 		frame(data, sha(pile_data));
+	}
+	if (!shops->rows.empty())
+	{
+		data[3] = '3';
+		frame(data, shops->content_digest);
 	}
 	return sha(data);
 }
@@ -217,6 +241,7 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 {
 	const auto wallets = table_index(snapshot, "player_data");
 	const auto banks = table_index(snapshot, "account_banks");
+	const auto shops = table_index(snapshot, "shopkeepers");
 	const auto items = table_index(snapshot, "item_current_owner");
 	std::vector<holding_source> output;
 	std::set<std::pair<std::string, uint8_t>> bank_names;
@@ -239,15 +264,17 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 	{
 		if (holding.kind != economic_sql_holding_kind::wallet &&
 		    holding.kind != economic_sql_holding_kind::bank &&
+		    holding.kind != economic_sql_holding_kind::treasury &&
 		    holding.kind != economic_sql_holding_kind::pile)
 			continue;
 		require(holding.disposition == economic_sql_holding_disposition::current &&
 			holding.balance && holding.native_revision.has_value() &&
 			holding.native_id > 0);
 		const auto expected_table =
-			holding.kind == economic_sql_holding_kind::wallet ? wallets :
-			holding.kind == economic_sql_holding_kind::bank	  ? banks :
-									    items;
+			holding.kind == economic_sql_holding_kind::wallet   ? wallets :
+			holding.kind == economic_sql_holding_kind::bank	    ? banks :
+			holding.kind == economic_sql_holding_kind::treasury ? shops :
+									      items;
 		require(holding.source.row != SIZE_MAX && holding.source.table == expected_table);
 		const auto &source = snapshot.tables[holding.source.table].rows[holding.source.row];
 		for (auto amount : *holding.balance)
@@ -257,6 +284,8 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 					      economic_account_kind::wallet :
 				      holding.kind == economic_sql_holding_kind::bank ?
 					      economic_account_kind::bank :
+				      holding.kind == economic_sql_holding_kind::treasury ?
+					      economic_account_kind::treasury :
 					      economic_account_kind::pile;
 		native.native_id = holding.native_id;
 		native.balance = *holding.balance;
@@ -276,6 +305,16 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 		{
 			require(holding.native_id <= UINT32_MAX && source.cells.size() == 9,
 				ERANGE);
+		}
+		else if (native.account_kind == economic_account_kind::treasury)
+		{
+			require(holding.native_id <= UINT32_MAX && source.cells.size() == 6 &&
+					integer<uint64_t>(source.cells[0]) == holding.native_id &&
+					integer<uint64_t>(source.cells[1]) <= UINT32_MAX &&
+					(*holding.balance)[1] == 0 && (*holding.balance)[2] == 0 &&
+					(*holding.balance)[3] == 0,
+				ERANGE);
+			native.shop_id = integer<uint32_t>(source.cells[1]);
 		}
 		else
 		{
@@ -299,14 +338,19 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 		  });
 	const auto wallet_rows = snapshot.tables[wallets].rows.size();
 	const auto bank_rows = snapshot.tables[banks].rows.size();
+	const auto shop_rows = snapshot.tables[shops].rows.size();
 	const auto selected_wallets = static_cast<uint64_t>(
 		std::count_if(output.begin(), output.end(), [](const auto &value)
 			      { return value.account_kind == economic_account_kind::wallet; }));
 	const auto selected_banks = static_cast<uint64_t>(
 		std::count_if(output.begin(), output.end(), [](const auto &value)
 			      { return value.account_kind == economic_account_kind::bank; }));
+	const auto selected_shops = static_cast<uint64_t>(
+		std::count_if(output.begin(), output.end(), [](const auto &value)
+			      { return value.account_kind == economic_account_kind::treasury; }));
 	require(selected_wallets == static_cast<uint64_t>(wallet_rows) &&
 			selected_banks == static_cast<uint64_t>(bank_rows) &&
+			selected_shops == static_cast<uint64_t>(shop_rows) &&
 			selected_coin_rows == active_coin_rows,
 		EILSEQ);
 	return output;
@@ -491,7 +535,7 @@ std::vector<uint64_t> create_or_verify_mappings(MYSQL *connection,
 			}
 			const uint16_t account_kind = static_cast<uint16_t>(holding.account_kind);
 			const bool bank = holding.account_kind == economic_account_kind::bank;
-			const uint16_t locator = bank ? 2 : 1;
+			const uint16_t locator = native_locator(holding.account_kind);
 			execute(connection,
 				"INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
 				"locator_kind,native_id,active_native_id,creating_operation_id,retiring_operation_id,revision) VALUES(" +
@@ -530,9 +574,10 @@ std::vector<uint64_t> create_or_verify_mappings(MYSQL *connection,
 		const auto locator = integer<uint16_t>(record[4]);
 		const bool bank = source.account_kind == economic_account_kind::bank;
 		const auto expected_kind = static_cast<uint16_t>(source.account_kind);
+		const uint16_t expected_locator = native_locator(source.account_kind);
 		require(account_kind == expected_kind && context == (bank ? source.racewar : 0) &&
 				integer<uint8_t>(record[3]) == ECONOMIC_MAPPING_BACKEND_SQL &&
-				locator == (bank ? 2 : 1) &&
+				locator == expected_locator &&
 				integer<uint64_t>(record[5]) == source.native_id &&
 				integer<uint64_t>(record[6]) == source.native_id &&
 				parse_id(record[7]).bytes == request.operation_id.bytes &&
@@ -658,6 +703,10 @@ void fill_export(const economic_sql_lifecycle_request &request,
 		};
 		if (source.account_kind == economic_account_kind::bank)
 			receipt.banks.push_back({ source.name, source.racewar, account });
+		else if (source.account_kind == economic_account_kind::treasury)
+			receipt.treasuries.push_back({ source.shop_id,
+						       static_cast<uint32_t>(source.native_id),
+						       account });
 		else
 			receipt.wallets.push_back(
 				{ static_cast<uint32_t>(source.native_id), account });

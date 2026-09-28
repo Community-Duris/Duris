@@ -43,7 +43,8 @@ class economic_prepared_currency
 				       std::optional<economic_prepared_currency> *);
 	friend economic_accounting_error economic_chaos_starter_bank_prepare(
 		const critical_command &, const economic_frozen_intent &,
-		const economic_currency_authority &, std::optional<economic_prepared_currency> *);
+		const economic_currency_authority &, currency_revision_policy,
+		std::optional<economic_prepared_currency> *);
 };
 
 // Selects reason/writer/actor internally and freezes both lifetime mappings.
@@ -70,10 +71,9 @@ economic_accounting_error economic_chaos_starter_bank_intent(const critical_comm
 							     const economic_account_key &wallet,
 							     const economic_account_key &bank,
 							     std::vector<uint8_t> *encoded);
-economic_accounting_error
-economic_chaos_starter_bank_prepare(const critical_command &command,
-				    const economic_frozen_intent &intent,
-				    const economic_currency_authority &authority,
-				    std::optional<economic_prepared_currency> *prepared);
+economic_accounting_error economic_chaos_starter_bank_prepare(
+	const critical_command &command, const economic_frozen_intent &intent,
+	const economic_currency_authority &authority, currency_revision_policy revision_policy,
+	std::optional<economic_prepared_currency> *prepared);
 
 #endif

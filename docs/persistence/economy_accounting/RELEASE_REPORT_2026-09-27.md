@@ -203,6 +203,16 @@ workload. A development
 database that already recorded the earlier `0041` verifier checksum needs
 separate migration-state assessment; none was used in these tests.
 
+The later `68af73add` merge uses a stricter `0041` cash verifier with a
+matching manifest and runtime history checksum. It also maps all 2,722
+current lexical candidate sites into 854 named routes. On that merged tree,
+the accounting validator, generated-matrix check, runtime compatibility
+validator, nine boot contract tests, all 48 writer contracts and 2,691
+writer-site checks passed. The dual-engine and server-build passes above
+belong to `6eede581a`;
+they do not qualify the later merged source. The release validator still
+refuses `writer has no executable evidence`.
+
 ## Earlier executed evidence
 
 | Backend / scope | Command or method | Result and limits |
@@ -609,7 +619,7 @@ unverified.
 
 ## Remaining release gates
 
-1. Finish semantic classification of all current writer candidates; attach
+1. Review the named routes beyond their lexical site mapping; attach
    executable evidence or explicit active-epoch refusal to every real route.
 2. Produce complete, fenced SQL and flatfile native/evidence exports. Run the
    read-only reconciler against each backend after fresh install, upgrade,

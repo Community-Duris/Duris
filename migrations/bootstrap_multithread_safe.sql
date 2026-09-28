@@ -1608,6 +1608,8 @@ CREATE TABLE `shopkeepers` (
   `mob_vnum` int DEFAULT '0',
   `room_vnum` int DEFAULT '0',
   `save_time` timestamp NULL DEFAULT NULL,
+  `cash` int DEFAULT NULL,
+  `shop_revision` bigint unsigned NOT NULL DEFAULT '1',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `shop_id` (`shop_id`),

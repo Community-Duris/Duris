@@ -587,7 +587,7 @@
       "verify": "immutable/0041_shopkeeper_cash_identity.sh",
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f",
-      "verify_checksum": "e0ad42a840f3db5f0e39dae9485b21dfbf635ab40eac3d23ddaa3e2a86287812"
+      "verify_checksum": "1e3187f0563854513b014129bf3e2a8bfc1a4b0a5ac0b6e196d7c0ca616a696d"
     }
   ]
 }

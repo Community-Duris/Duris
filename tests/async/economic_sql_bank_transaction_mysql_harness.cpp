@@ -828,6 +828,131 @@ int main()
 	assert(rolled->finalize() == 1305);
 	execute(connection, "ROLLBACK");
 
+	// The sourced Chaos bank grant is admitted only with its persisted native
+	// pending bit. Its one source claim and bank revision share the pooled root.
+	critical_operation_id starter_seed = {};
+	memcpy(starter_seed.bytes.data(), "CHAOSEED", 8);
+	for (size_t byte = 0; byte < 8; ++byte)
+		starter_seed.bytes[8 + byte] = static_cast<uint8_t>(pid >> (8 * byte));
+	critical_operation_id starter_id = {};
+	assert(critical_operation_id_derive(starter_seed, 0x43484250, 1, &starter_id));
+	currency_command_payload starter_payload = {};
+	starter_payload.pid = static_cast<uint32_t>(pid);
+	starter_payload.racewar = 1;
+	starter_payload.reason = currency_reason_type::chaos_starter_reward;
+	starter_payload.reason_id = pid;
+	memcpy(starter_payload.account_name.data(), account.data(), account.size());
+	starter_payload.bank_delta.amount[3] = 1000000;
+	critical_command starter;
+	const auto prior_wallet_revision =
+		scalar(connection,
+		       "SELECT wallet_revision FROM player_data WHERE pid=" + std::to_string(pid));
+	const auto prior_bank_revision =
+		scalar(connection, "SELECT bank_revision FROM account_banks WHERE id=" +
+					   std::to_string(bank_id));
+	const auto prior_platinum =
+		scalar(connection, "SELECT bank_platinum FROM account_banks WHERE id=" +
+					   std::to_string(bank_id));
+	assert(currency_command_build(&starter, starter_id, starter_payload, 0, prior_bank_revision,
+				      critical_source_site::login,
+				      critical_deadline_class::recovery));
+	starter.accepted_at_usec = 1;
+	assert(economic_chaos_starter_bank_intent(starter, epoch, wallet, bank,
+						  &starter.accounting_intent) ==
+	       economic_accounting_error::ok);
+	starter.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	starter.publication_required = true;
+	assert(economic_sql_bank_command_supported(starter));
+	assert(economic_command_admission_supported(starter));
+	assert(economic_flatfile_command_admission_supported(starter));
+	execute(connection, "START TRANSACTION");
+	pending(connection, starter);
+	std::unique_ptr<economic_sql_bank_transaction> missing_grant;
+	assert(economic_sql_bank_transaction::prepare(connection, starter, &missing_grant) ==
+	       EACCES);
+	assert(!missing_grant);
+	execute(connection, "ROLLBACK");
+	execute(connection, "UPDATE player_data SET act3=" +
+				    std::to_string(CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG) +
+				    " WHERE pid=" + std::to_string(pid));
+	execute(connection, "CREATE TRIGGER economic_starter_claim_fault BEFORE INSERT ON "
+			    "economic_accounting_source_claim FOR EACH ROW SIGNAL SQLSTATE '45000' "
+			    "SET MESSAGE_TEXT='synthetic source claim failure'");
+	assert(critical_command_repository_apply(connection, starter).outcome ==
+	       critical_apply_outcome::retryable_failure);
+	execute(connection, "DROP TRIGGER economic_starter_claim_fault");
+	assert(scalar(connection, "SELECT bank_platinum FROM account_banks WHERE id=" +
+					  std::to_string(bank_id)) == prior_platinum);
+	assert(scalar(connection, "SELECT bank_revision FROM account_banks WHERE id=" +
+					  std::to_string(bank_id)) == prior_bank_revision);
+	assert(scalar(connection, "SELECT wallet_revision FROM player_data WHERE pid=" +
+					  std::to_string(pid)) == prior_wallet_revision);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=" +
+			      literal(starter.operation_id)) == 0);
+	pool_enabled = true;
+	const auto starter_result = exercise_sql_coordinator(starter, "starter-bank");
+	pool_enabled = false;
+	assert(starter_result.outcome == critical_apply_outcome::applied &&
+	       starter_result.result_size == CURRENCY_RESULT_PAYLOAD_BYTES);
+	operations.push_back(starter.operation_id);
+	currency_command_result starter_after = {};
+	assert(currency_command_decode_result(starter_result.result_payload.data(),
+					      starter_result.result_size, &starter_after));
+	assert(starter_after.wallet_revision == prior_wallet_revision + 1 &&
+	       starter_after.bank_revision == prior_bank_revision + 1 &&
+	       starter_after.bank.amount[3] == static_cast<int64_t>(prior_platinum + 1000000));
+	assert(scalar(connection, "SELECT wallet_revision FROM player_data WHERE pid=" +
+					  std::to_string(pid)) == prior_wallet_revision + 1);
+	assert(scalar(connection, "SELECT bank_platinum FROM account_banks WHERE id=" +
+					  std::to_string(bank_id)) == prior_platinum + 1000000);
+	economic_frozen_intent starter_intent;
+	assert(economic_intent_decode(starter.accounting_intent, &starter_intent) ==
+	       economic_accounting_error::ok);
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> starter_source = {};
+	assert(economic_source_event_encode(*starter_intent.admission.metadata.source_event,
+					    &starter_source) == economic_accounting_error::ok);
+	const auto starter_where = " WHERE operation_id=" + literal(starter.operation_id);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_source_claim" +
+					  starter_where) == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM economic_accounting_source_claim WHERE lineage=" +
+			      literal(lineage) + " AND source_event=" + binary(starter_source)) ==
+	       1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM economic_accounting_operation" + starter_where +
+			      " AND source_event=" + binary(starter_source) + " AND writer_id=" +
+			      std::to_string(ECONOMIC_WRITER_CHAOS_STARTER_BANK)) == 1);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_account_effect" +
+					  starter_where) == 3);
+	assert(scalar(connection, "SELECT COUNT(*) FROM economic_accounting_coin_posting" +
+					  starter_where) == 2);
+	assert(scalar(connection, "SELECT SUM(copper_value) FROM economic_accounting_coin_posting" +
+					  starter_where) == 0);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM economic_accounting_coin_posting" + starter_where +
+			      " AND delta_platinum=-1000000 AND copper_value=-1000000000") == 1);
+	execute(connection, "UPDATE player_data SET act3=0 WHERE pid=" + std::to_string(pid));
+	const auto starter_replayed = critical_command_repository_reconcile(connection, starter);
+	same_receipt(starter_result, starter_replayed);
+	assert(starter_replayed.outcome == critical_apply_outcome::already_applied);
+	execute(connection, "START TRANSACTION");
+	execute(connection, "DELETE FROM economic_accounting_source_claim" + starter_where);
+	assert(economic_sql_bank_verify_retained(
+		       connection, starter, 0,
+		       std::span<const uint8_t>(starter_result.result_payload.data(),
+						starter_result.result_size)) != 0);
+	execute(connection, "ROLLBACK");
+	auto changed_starter = starter;
+	changed_starter.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	changed_starter.accounting_intent.clear();
+	changed_starter.publication_required = false;
+	changed_starter.operation_id = new_id();
+	std::vector<uint8_t> changed_intent;
+	assert(economic_chaos_starter_bank_intent(changed_starter, epoch, wallet, bank,
+						  &changed_intent) ==
+	       economic_accounting_error::unauthorized);
+
 	// Verification uses retained evidence after later writes and retirement.
 	execute(connection, "START TRANSACTION");
 	execute(connection,
@@ -905,7 +1030,7 @@ int main()
 	       pooled_retired_ambiguous.outcome == critical_apply_outcome::already_applied);
 	same_receipt(pooled_result, pooled_retired);
 	same_receipt(pooled_reconciled, pooled_retired_ambiguous);
-	assert(pool_acquisitions == 6 && pool_releases == 6 && pool_replacements == 1);
+	assert(pool_acquisitions == 8 && pool_releases == 8 && pool_replacements == 1);
 	pool_enabled = false;
 	puts("SQL pooled bank: retained receipts survive authority retirement");
 
@@ -939,9 +1064,9 @@ int main()
 	{
 		const auto where = " WHERE operation_id=" + literal(operation);
 		for (const char *table :
-		     { "economic_accounting_coin_posting", "economic_accounting_account_effect",
-		       "economic_accounting_operation", "critical_outbox", "currency_ledger",
-		       "critical_operation_inbox" })
+		     { "economic_accounting_source_claim", "economic_accounting_coin_posting",
+		       "economic_accounting_account_effect", "economic_accounting_operation",
+		       "critical_outbox", "currency_ledger", "critical_operation_inbox" })
 			execute(connection, std::string("DELETE FROM ") + table + where);
 	}
 	execute(connection,

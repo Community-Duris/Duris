@@ -12,6 +12,8 @@ constexpr size_t CURRENCY_ACCOUNT_NAME_MAX_BYTES = 50;
 constexpr size_t CURRENCY_COMMAND_PAYLOAD_BYTES = 136;
 constexpr size_t CURRENCY_RESULT_PAYLOAD_BYTES = 80;
 constexpr size_t CURRENCY_DENOMINATION_COUNT = 4;
+// Native player_data.act3 witness for the one-time Chaos bank grant.
+constexpr uint64_t CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG = uint64_t{ 1 } << 14;
 
 enum class currency_reason_type : uint16_t
 {

@@ -2,6 +2,7 @@
 // This reuses its native identity, metadata, account and retained-record fixtures.
 #include "phase8_bank_fixture.h"
 #include "flatfile/flatfile_accounting_dispatch.h"
+#include "flatfile/flatfile_accounting_coin_transaction.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "economy/economic_command_admission.h"
 #include "persistence/persistence_mode.h"
@@ -23,6 +24,12 @@ critical_apply_result flatfile_critical_command_repository_apply_selected(const 
 critical_apply_result flatfile_item_repository_apply(const std::string &, const critical_command &)
 {
 	assert(false && "bank admission journey must never enter item dispatcher");
+	return { outcome::terminal_failure, 0, EINVAL };
+}
+critical_apply_result flatfile_accounting_coin_transaction::apply(const std::string &,
+								  const critical_command &)
+{
+	assert(false && "bank admission journey must never enter coin dispatcher");
 	return { outcome::terminal_failure, 0, EINVAL };
 }
 struct native_execution
