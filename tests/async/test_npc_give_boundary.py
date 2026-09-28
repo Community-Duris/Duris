@@ -20,6 +20,7 @@ body = source[start:end]
 guard = index(body, "if (IS_PC(ch) && IS_NPC(vict) &&")
 give = index(body, "obj_from_char(obj);")
 quest_guard = index(quest_source, "if (item_command_uses_durable_ownership(offering))")
+durable_quest = index(quest_source, "if (submit_durable_quest_offering(ch, pl, quester_id, offering))")
 quest_give = index(quest_source, "do_give(pl, arg, -4);")
 quest_complete = index(quest_source, "quest_completion(qcp, ch, pl)")
 
@@ -29,8 +30,10 @@ checks = [
     ("PC-to-NPC gives are refused before detaching the item", guard < give),
     ("the refusal explains that NPC custody is not durable", contains(
         body[guard:guard + 700], "custody cannot be saved yet")),
-    ("quest offerings are refused before give and completion", quest_guard < quest_give
-     and quest_guard < quest_complete and contains(
+    ("safe durable quest consumption precedes the private NPC handoff",
+     quest_guard < durable_quest < quest_give and durable_quest < quest_complete),
+    ("unsupported durable offerings are refused before give and completion",
+     quest_guard < quest_give and quest_guard < quest_complete and contains(
          quest_source[quest_guard:quest_give], "return (TRUE);")),
     ("private quest/spec paths pass through the shared give guard", contains(
         quest_source, "do_give(pl, arg, -4);") and contains(

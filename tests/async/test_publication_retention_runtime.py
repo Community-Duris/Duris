@@ -9,6 +9,7 @@ from _paths import ROOT, rel
 
 HARNESS = r'''
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_transfer_command.h"
@@ -34,6 +35,7 @@ extern const int top_of_world = 1;
 
 static item_ownership_runtime_entry runtime_entry = {};
 static int publication_attempts = 0;
+static int completion_calls = 0;
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
 
 void obj_to_obj(P_obj, P_obj) {}
@@ -78,6 +80,11 @@ bool item_ownership_runtime_apply(const item_transfer_payload &, const item_tran
 
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
+bool economic_gameplay_authority::active() { return false; }
+economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
+    critical_command *, uint32_t, economic_source_kind) {
+    return economic_accounting_error::ok;
+}
 
 bool collector_death_enrollment_attach(P_char, P_obj, const critical_operation_id &,
                                         const std::vector<player_item_snapshot> &,
@@ -138,6 +145,13 @@ bool publication_callback(P_char actor, bool committed, const item_transfer_resu
         return false;
     ++publication_attempts;
     return publication_attempts >= 2;
+}
+
+void completion_callback(P_char actor, bool committed, const item_transfer_result &result,
+                         unsigned int, const uint8_t *, size_t)
+{
+    assert(actor && committed && result.item_count == 1);
+    ++completion_calls;
 }
 
 int main(int argc, char **argv)
@@ -229,6 +243,23 @@ int main(int argc, char **argv)
         {critical_entity_type::item, object.obj_uid}, nullptr));
     assert(!critical_command_coordinator_is_fenced(
         {critical_entity_type::player, 1001}, nullptr));
+
+    // A completion that submits a successor grant runs after publication has
+    // released the movement fence, and a later pulse cannot invoke it twice.
+    publication_attempts = 1;
+    assert(item_movement_transaction_submit(
+        &actor, &object, nullptr, runtime_entry.owner, destination,
+        item_transfer_reason::player_give, 2002, completion_callback, nullptr, 0,
+        nullptr, &reject, publication_callback));
+    for (int spin = 0; spin < 1000 && !completion_calls; ++spin) {
+        const size_t count = critical_command_coordinator_pulse(completions, 8);
+        item_movement_transaction_handle_completions(completions, count);
+        if (!completion_calls)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(completion_calls == 1 && item_movement_transaction_health_copy().pending == 0);
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(completion_calls == 1);
 
     // Exhausted uncertainty must not invoke the command callback as failure,
     // and must not checkpoint away the only durable retry/reconciliation record.
