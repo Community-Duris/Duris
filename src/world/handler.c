@@ -29,7 +29,9 @@
 #include "combat/arena.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/collector_catalog_cache.h"
+#include "economy/economic_gameplay_authority.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_death_restitution_locker.h"
@@ -1935,6 +1937,7 @@ void obj_to_char(P_obj object, P_char ch)
 		    ownership.state != item_custody_state::active)
 		{
 			if (!has_authoritative_ownership && creation_candidate &&
+			    !economic_gameplay_authority::active() &&
 			    item_creation_grant_submit_to_player(
 				    ch, object, ch, NULL, economic_source_kind::world_generation))
 				return;
@@ -2833,7 +2836,8 @@ void obj_to_room(P_obj object, int room)
 	}
 	if (world[room].contents && (world[room].contents->R_num == object->R_num))
 	{
-		if (obj_index[object->R_num].virtual_number == VOBJ_COINS)
+		if (obj_index[object->R_num].virtual_number == VOBJ_COINS &&
+		    !economic_gameplay_authority::active())
 		{
 			/* generic 'pile of coins' object, merge them */
 			add_coins(world[room].contents, object->value[0], object->value[1],
@@ -2856,7 +2860,8 @@ void obj_to_room(P_obj object, int room)
 		{
 			if (o->next_content && (o->next_content->R_num == object->R_num))
 			{
-				if (obj_index[object->R_num].virtual_number == VOBJ_COINS)
+				if (obj_index[object->R_num].virtual_number == VOBJ_COINS &&
+				    !economic_gameplay_authority::active())
 				{
 					/* generic 'pile of coins' object, merge them */
 					add_coins(o->next_content, object->value[0],

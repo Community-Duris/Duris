@@ -1,5 +1,6 @@
 #include "flatfile/flatfile_accounting_bank_transaction.h"
 #include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_accounting_baseline.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/currency_flatfile_mutation_writer.h"
@@ -36,6 +37,9 @@ class flatfile_accounting_test_access
 	static constexpr auto select_epoch = &flatfile_accounting_authority_storage::select_epoch;
 	static constexpr auto stage = &flatfile_accounting_storage::stage;
 	static constexpr auto commit = &flatfile_accounting_storage::commit;
+	static constexpr auto baseline_initialize =
+		&flatfile_accounting_baseline_storage::initialize;
+	static constexpr auto baseline_stage = &flatfile_accounting_baseline_storage::stage;
 	static constexpr auto native_stage = &currency_flatfile_mutation_writer::stage;
 };
 using access_type = flatfile_accounting_test_access;

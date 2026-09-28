@@ -73,7 +73,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_numbered_quest_and_coin_steal_direct_writers_are_blocked(self) -> None:
         expected = {
             "nq.reward": ("nq_reward_player", "quest_reward"),
-            "nq.requirement_consumption": ("nq_test_single_action", "service_cost"),
+            "nq.requirement_consumption": ("nq_test_single_action", "quest_cost"),
             "nq.item_allocation": ("nq_create_item", "item_create"),
             "currency.coin_steal": ("do_steal", "wallet_transfer"),
         }
@@ -99,12 +99,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_coin_steal_refuses_active_epoch_before_victim_debit(self) -> None:
         source = coverage.mask_cpp((ROOT / "src/cmd/actoth.c").read_text(encoding="utf-8"))
         steal = source[source.index("void do_steal("):source.index("void do_split(")]
-        coin_case = steal[steal.index("case 3:"):]
-        guard = coin_case.index("economic_gameplay_authority::active()")
-        refusal = coin_case.index("return;", guard)
-        debit = coin_case.index("victim->points.cash[vcoins]--")
-        credit = coin_case.index("ADD_MONEY(ch")
+        guard = steal.index("economic_gameplay_authority::active()")
+        refusal = steal.index("return;", guard)
+        victim_lookup = steal.index("get_char_room_vis(ch, victim_name)")
+        debit = steal.index("victim->points.cash[vcoins]--")
+        credit = steal.index("ADD_MONEY(ch")
         self.assertLess(guard, refusal)
+        self.assertLess(refusal, victim_lookup)
         self.assertLess(refusal, debit)
         self.assertLess(debit, credit)
 
@@ -114,17 +115,17 @@ class SplitEconomyActivationContract(unittest.TestCase):
                              source.index("struct nq_instance *nq_accept_quest(")]
         reward = source[source.index("void nq_reward_player("):
                         source.index("int nq_test_single_action(")]
-        for body, mutation in ((requirement, "extract_obj(components[found]"),
-                               (reward, "ch->points.cash[3] +=")):
-            guard = body.index("economic_gameplay_authority::active()")
-            refusal = body.index("return", guard)
-            self.assertLess(refusal, body.index(mutation))
-            for field in ("action->item", "action->cash", "action->reward->item",
-                          "action->reward->cash"):
-                self.assertIn(field, body[guard:refusal])
-        self.assertRegex(requirement, r"if\s*\(action->cash\)\s*\{\s*mob_cash -= action->cash;")
-        self.assertLess(reward.index("economic_gameplay_authority::active()"),
-                        reward.index("nq_create_item(item)"))
+        admission = source[source.index("int nq_action_check_all("):
+                           source.index("void nq_char_death(")]
+        guard = admission.index("economic_gameplay_authority::active()")
+        refusal = admission.index("continue;", guard)
+        self.assertLess(refusal, admission.index("nq_test_single_action(action, instance"))
+        self.assertIn("action->cash != 0", admission[guard:refusal])
+        self.assertIn("action->reward->cash != 0", admission[guard:refusal])
+        self.assertIn("extract_obj(components[found]", requirement)
+        self.assertIn("ch->points.cash[3] +=", reward)
+        self.assertIn("mob_cash -= action->cash;", requirement)
+        self.assertIn("nq_create_item(item)", reward)
 
     def test_smelter_refuses_active_cash_and_ore_before_mutation(self) -> None:
         route = self.routes["special.smelter"]
@@ -136,12 +137,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         first_guard = smelter.index("economic_gameplay_authority::active()")
         first_refusal = smelter.index("return TRUE;", first_guard)
         cash_debit = smelter.index("pl->points.cash[type] -= amount")
-        second_guard = smelter.index("economic_gameplay_authority::active()", first_refusal)
-        second_refusal = smelter.index("return TRUE;", second_guard)
         ore_move = smelter.index("obj_from_char(obj)")
         self.assertLess(first_refusal, cash_debit)
-        self.assertLess(cash_debit, second_guard)
-        self.assertLess(second_refusal, ore_move)
+        self.assertLess(first_refusal, ore_move)
 
     def test_blackjack_refuses_active_wagers_and_pending_payout(self) -> None:
         route = self.routes["currency.card_game_payout"]
@@ -151,11 +149,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         start = source.index("int blackjack_table(")
         table = source[start:source.index("void event_dealersturn(", start)]
         guard = table.index("economic_gameplay_authority::active()")
-        periodic = table.index("if (cmd == CMD_PERIODIC)", guard)
+        periodic = table.index("if (cmd == CMD_PERIODIC && obj->value[0] == BJ_DEALERSTURN)", guard)
         offer = table.index("if (cmd == CMD_OFFER)", periodic)
-        say = table.index("if (cmd == CMD_SAY && argument)", offer)
+        say = table.index("if (cmd == CMD_SAY && *argument)", offer)
         for keyword in ('"deal"', '"stay"', '"fold"', '"hit"'):
-            self.assertIn(keyword, table[say:table.index("theDeck =", say)])
+            self.assertIn(keyword, table[say:])
         self.assertLess(periodic, table.index("ch->points.cash[obj->value[2]] +="))
         self.assertLess(offer, table.index("SUB_MONEY(ch, betamt"))
         self.assertIn("return FALSE;", table[periodic:offer])
@@ -228,7 +226,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertIn("src/magic/spell_conjuration.c", evidence)
         helper = (ROOT / "src/magic/magic.c").read_text(encoding="utf-8")
         self.assertRegex(helper, r"spell_consume_components\([\s\S]*?item_movement_transaction_submit_batch\(")
-        self.assertRegex(helper, r"item_transfer_reason::destruction[\s\S]*?economic_source_kind::item_action")
+        self.assertRegex(helper, r"item_transfer_reason::destruction[\s\S]*?economic_source_kind::spell_consumption")
         legacy = helper[helper.index("int get_spell_component("):helper.index("namespace\n{")]
         self.assertRegex(legacy, r"economic_gameplay_authority::active\(\)\s*&&\s*ch\s*&&\s*IS_PC\(ch\)\)\s*return 0;")
         consumers = (
@@ -238,7 +236,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         for source in consumers:
             self.assertIn("spell_consume_components(", (ROOT / source).read_text(encoding="utf-8"))
 
-    def test_do_split_is_not_permitted_after_activation(self) -> None:
+    def test_do_split_uses_sequential_balanced_children_after_activation(self) -> None:
         route = self.routes["currency.split"]
         self.assertEqual(route["source"]["file"], "src/cmd/actoth.c")
         self.assertEqual(route["source"]["function"], "do_split")
@@ -247,10 +245,12 @@ class SplitEconomyActivationContract(unittest.TestCase):
                                                           route["source"]["function"]))
         self.assertEqual(route["current_critical_command_schema"]["current_schema"], 1)
         self.assertEqual(route["current_critical_command_schema"]["route_mode"],
-                         "multiple_schema_1_currency_legs_not_atomic_root")
-        self.assertTrue(route["blocking_policy_after_activation"]["must_block_on_activation"])
+                         "schema_1_when_inactive_schema_2_sequential_coin_children_when_active")
+        self.assertTrue(route["current_critical_command_schema"]["schema_2_gameplay_producer_connected"])
+        self.assertTrue(route["double_entry_evidence"]["unified_operation_postings_observed"])
+        self.assertFalse(route["blocking_policy_after_activation"]["must_block_on_activation"])
         self.assertEqual(route["blocking_policy_after_activation"]["decision"],
-                         "block_until_typed_schema2_accounting")
+                         "allow_sequential_schema2_coin_children")
 
         raw = (ROOT / route["source"]["file"]).read_text(encoding="utf-8")
         code = coverage.mask_cpp(raw)
@@ -271,12 +271,16 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     break
         self.assertGreater(body_end, body_start)
         body = code[body_start:body_end + 1]
-        credit = body.find("ADD_MONEY(gl->ch")
-        debit = body.find("SUB_MONEY(ch")
-        self.assertGreaterEqual(credit, 0, "expected current recipient wallet mutation leg")
-        self.assertLess(debit, credit, "sender debit precedes recipient credits")
-        self.assertNotRegex(body, r"(?:economic_accounting|critical_command_accounting_schema|schema_2)")
-        self.assertIn("no atomic root command", route["current_critical_command_schema"]["interpretation"])
+        active = body.find("if (economic_gameplay_authority::active())")
+        legacy_debit = body.find("SUB_MONEY(ch")
+        legacy_credit = body.find("ADD_MONEY(gl->ch")
+        self.assertGreaterEqual(active, 0)
+        self.assertLess(active, legacy_debit)
+        self.assertLess(legacy_debit, legacy_credit)
+        self.assertIn("continue_money_split(split_id)", body[active:legacy_debit])
+        self.assertIn("currency_transaction_submit_coin(actor, payload, money_split_child_completion",
+                      code)
+        self.assertIn("Completed shares remain transferred", route["current_critical_command_schema"]["interpretation"])
 
     def test_unmatched_lexical_sites_keep_matrix_incomplete(self) -> None:
         self.assertFalse(self.artifact["coverage_complete"])
@@ -357,8 +361,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
         expected = {
-            "world.mobile_template": ("src/world/db.c", {2276, 2277, 2278, 2279,
-                                                     2667, 2668, 2669, 2670}),
+            "world.mobile_template": ("src/world/db.c", {2277, 2278, 2279, 2280,
+                                                     2668, 2669, 2670, 2671}),
             "player.flatfile_baseline_projection": ("src/core/files.c", {1829, 1830, 1831, 1832,
                                                                            1834, 1835, 1836, 1837}),
             "player.legacy_flatfile_load": ("src/core/files.c", {2416, 2417, 2418, 2419}),
@@ -437,9 +441,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2958, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9383, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9384, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10503, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10723, "sql_economy")],
                          {"recovery.saved_sql"})
 
     def test_sql_components_do_not_claim_a_playable_root(self) -> None:
@@ -569,11 +573,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new handler item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/handler.c", 3356, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 3361, "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 3972, "item_publication")],
+        self.assertEqual(owners[("src/world/handler.c", 3977, "item_publication")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4341, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 4346, "item_lifecycle")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
@@ -607,9 +611,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new other-command item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/cmd/actoth.c", 1345, "item_publication")],
+        self.assertEqual(owners[("src/cmd/actoth.c", 1347, "item_publication")],
                          {"item.forage_food_creation"})
-        self.assertEqual(owners[("src/cmd/actoth.c", 3956, "item_publication")],
+        self.assertEqual(owners[("src/cmd/actoth.c", 3969, "item_publication")],
                          {"item.legacy_steal_fallback"})
         self.assertEqual(self.routes["item.forage_doodle_probe"]["disposition"],
                          "non_writer_candidate")
@@ -639,9 +643,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 9964, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9965, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10810, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11106, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -765,7 +769,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new NPC behavior item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/mob/mobact.c", 1165, "item_publication")],
+        self.assertEqual(owners[("src/mob/mobact.c", 1166, "item_publication")],
                          {"mob.corpse_dig_creation"})
         self.assertEqual(self.routes["mob.corpse_dig_creation"]["disposition"],
                          "runtime_mutation_route")
@@ -789,9 +793,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new random-zone item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/random.zone.c", 425, "item_publication")],
+        self.assertEqual(owners[("src/world/random.zone.c", 426, "item_publication")],
                          {"world.random_chest_coin_issue"})
-        self.assertEqual(owners[("src/world/random.zone.c", 1419, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/random.zone.c", 1427, "item_lifecycle")],
                          {"world.lab_reset_destroy"})
         for route_id in ("world.random_sigil_factory", "world.lab_relic_probe",
                          "world.lab_relic_stage_reject"):
@@ -894,9 +898,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new enhancement item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/item/enhance.c", 282, "item_lifecycle")],
+        self.assertEqual(owners[("src/item/enhance.c", 283, "item_lifecycle")],
                          {"item.enhance_transform"})
-        self.assertEqual(owners[("src/item/enhance.c", 1092, "item_publication")],
+        self.assertEqual(owners[("src/item/enhance.c", 1099, "item_publication")],
                          {"item.thanksgiving_turkey_grant"})
         for route_id in ("item.enhance_base_probe", "item.enhance_material_name_probe",
                          "item.superior_target_probe", "item.mod_enhance_description_probe",
@@ -1064,7 +1068,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new conjuration item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 2239, "item_lifecycle")],
+        self.assertEqual(owners[(path, 2249, "item_lifecycle")],
                          {"spell.snakes_committed_arrow_cleanup"})
         for route_id in ("spell.room_creation_rejected_stage",
                          "spell.player_creation_rejected_stage"):
@@ -1098,8 +1102,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new ranged item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 908, "item_lifecycle")], {"item.scrap"})
-        self.assertEqual(owners[(path, 1529, "item_lifecycle")],
+        self.assertEqual(owners[(path, 924, "item_lifecycle")], {"item.scrap"})
+        self.assertEqual(owners[(path, 1552, "item_lifecycle")],
                          {"range.load_weapon_ammunition"})
         self.assertEqual(self.routes["range.gather_quiver_relink"]["disposition"],
                          "runtime_projection_route")
@@ -1188,9 +1192,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new Heavens special item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 5821, "item_publication")],
+        self.assertEqual(owners[(path, 5829, "item_publication")],
                          {"special.treasure_chest_detach"})
-        self.assertEqual(owners[(path, 5708, "item_lifecycle")],
+        self.assertEqual(owners[(path, 5716, "item_lifecycle")],
                          {"gambling.slot_coupon_grant"})
         self.assertEqual(self.routes["special.flying_citadel_unreachable_move"]["disposition"],
                          "non_writer_candidate")

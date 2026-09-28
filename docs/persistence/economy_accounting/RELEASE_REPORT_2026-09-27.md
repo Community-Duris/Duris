@@ -17,11 +17,21 @@ disposable SQL runs used a clean `git archive` of the initial `49af585c4`
 commit, not the later uncommitted tree. The release gate must be rerun on one
 final integrated commit after Plans 1–4 land.
 
+The clean `cfd852ea5` merge checkout has a different source census from the
+shared working tree used for the matrix below. Its scan found 2,763 lexical
+occurrences and 2,705 unique sites: 1,418 registry sites still present, 1,287
+unmapped current sites, and 129 registered sites absent at their recorded
+path/line/family. The stored census has 280 removed and 284 added exact
+entries against that clean checkout. Some concurrent source changes are still
+uncommitted in the shared tree; regenerate and recheck the census on the final
+integrated commit before treating the matrix as current release evidence.
+
 ## Executed evidence
 
 | Backend / scope | Command or method | Result and limits |
 | --- | --- | --- |
 | Contract and census, current checkout | `python scripts/validate_economy_accounting.py` | Passed contract validation: 13 fixtures, 549 writer rows, 2,759 lexical candidate occurrences. This does not qualify runtime coverage. |
+| Contract and census, clean `cfd852ea5` checkout | `python scripts/validate_economy_accounting.py` and `python scripts/generate_economy_writer_coverage.py --check` | **Refused:** writer census drift and stale matrix after concurrent source changes. The Heavens-only focused source-contract test passed in this checkout. |
 | Release gate, current checkout | `python scripts/validate_economy_accounting.py --release` | **Refused**, `writer has no executable evidence`. This is the expected blocked result. |
 | Coverage matrix, current checkout | `python scripts/generate_economy_writer_coverage.py --check` and `python tests/async/test_economy_writer_coverage_contract.py` | Matrix checked with 549 registry rows and no supplemental candidate; all 46 source-contract tests passed, including focused item files through Heavens special procedures. Coverage remains incomplete; these are not executable gameplay proofs. |
 | Audit fixture, current checkout | `python tests/async/test_reconcile_economy_accounting.py`; `python tests/async/test_audit_accounting_invariants.py` | 16 and 9 tests passed. Creation origins, exact before/after item revisions, and retired account terminal state are included. These are synthetic snapshots and operation fixtures, not live native reconciliation. |
@@ -43,8 +53,9 @@ was used. A passed schema slice is narrower than an end-to-end backend pass.
 
 ## Route and workload coverage
 
-The current matrix has 549 registry rows, including the formerly supplemental
-legacy auction settlement definition. Its lexical scan has 2,701 unique
+The matrix generated from the shared working tree has 549 registry rows,
+including the formerly supplemental legacy auction settlement definition.
+Its lexical scan has 2,701 unique
 path/line/family sites, 1,547 mapped to current registry evidence and **1,154
 unmapped**. Lexical sites are
 candidates, not a count of real writers; each needs semantic classification or

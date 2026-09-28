@@ -38,6 +38,7 @@
 #include <new>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "account/account.h"
@@ -10336,6 +10337,7 @@ static bool sql_saved_item_source_rows_match(const char *item_key, const std::ve
 		return false;
 	}
 	std::vector<int> observed;
+	std::unordered_map<int, int> parents;
 	bool graph_valid = true;
 	int roots = 0;
 	MYSQL_ROW row;
@@ -10343,6 +10345,7 @@ static bool sql_saved_item_source_rows_match(const char *item_key, const std::ve
 	{
 		const int id = atoi(row[0]);
 		observed.push_back(id);
+		parents[id] = row[1] ? atoi(row[1]) : 0;
 		if (!row[1])
 		{
 			++roots;
@@ -10357,6 +10360,24 @@ static bool sql_saved_item_source_rows_match(const char *item_key, const std::ve
 	std::vector<int> sorted = expected;
 	std::sort(sorted.begin(), sorted.end());
 	graph_valid = graph_valid && roots == 1 && observed == sorted;
+	for (int id : expected)
+	{
+		std::unordered_set<int> visited;
+		int current = id;
+		while (current != expected[0])
+		{
+			const auto parent = parents.find(current);
+			if (parent == parents.end() || !parent->second ||
+			    !visited.insert(current).second)
+			{
+				graph_valid = false;
+				break;
+			}
+			current = parent->second;
+		}
+		if (!graph_valid)
+			break;
+	}
 	for (int id : expected)
 	{
 		snprintf(
@@ -10388,7 +10409,8 @@ static bool sql_saved_item_source_ids(const char *item_key, std::vector<int> *id
 	if (!escaped)
 		return false;
 	char query[512];
-	snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE item_key='%s'", escaped);
+	snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE item_key='%s' ORDER BY id",
+		 escaped);
 	free(escaped);
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
@@ -10401,16 +10423,8 @@ static bool sql_saved_item_source_ids(const char *item_key, std::vector<int> *id
 	return true;
 }
 
-static std::string sql_saved_item_source_id_digest(const std::vector<int> &ids)
+static std::string sql_saved_item_hex_digest(const std::string &serialized)
 {
-	std::vector<int> ordered = ids;
-	std::sort(ordered.begin(), ordered.end());
-	std::string serialized;
-	for (int id : ordered)
-	{
-		serialized += std::to_string(id);
-		serialized += ',';
-	}
 	unsigned char digest[SHA256_DIGEST_LENGTH];
 	SHA256(reinterpret_cast<const unsigned char *>(serialized.data()), serialized.size(),
 	       digest);
@@ -10425,33 +10439,202 @@ static std::string sql_saved_item_source_id_digest(const std::vector<int> &ids)
 	return hex;
 }
 
-static bool sql_saved_item_collect_uids(P_obj obj, std::unordered_set<uint64_t> *uids)
+static std::string sql_saved_item_source_id_digest(const std::vector<int> &ids)
 {
-	if (!obj || !uids || !obj->obj_uid || !uids->insert(obj->obj_uid).second)
+	std::vector<int> ordered = ids;
+	std::sort(ordered.begin(), ordered.end());
+	std::string serialized;
+	for (int id : ordered)
+	{
+		serialized += std::to_string(id);
+		serialized += ',';
+	}
+	return sql_saved_item_hex_digest(serialized);
+}
+
+// Bind row content and nested metadata, including SQL IDs and parent links.
+// The two snapshots have separate digests because replacement rows get new IDs.
+static bool sql_saved_item_payload_digest(const char *item_key, std::string *digest,
+					  bool lock = false)
+{
+	if (!item_key || !digest)
+		return false;
+	char *escaped = sql_escape_string(item_key);
+	if (!escaped)
+		return false;
+	std::string serialized;
+	bool ok = true;
+	for (size_t table = 0; table < 3; ++table)
+	{
+		std::string query;
+		if (table == 0)
+			query = "SELECT s.* FROM saved_items s WHERE s.item_key='";
+		else if (table == 1)
+			query = "SELECT a.* FROM saved_item_affects a JOIN saved_items s "
+				"ON s.id=a.item_id WHERE s.item_key='";
+		else
+			query = "SELECT e.* FROM saved_item_extra_descr e JOIN saved_items s "
+				"ON s.id=e.item_id WHERE s.item_key='";
+		query += escaped;
+		query += table == 0 ? "' ORDER BY s.id" :
+			 table == 1 ? "' ORDER BY a.id" :
+				      "' ORDER BY e.id";
+		if (lock)
+			query += " FOR UPDATE";
+		MYSQL_RES *result = db_query("%s", query.c_str());
+		if (!result)
+		{
+			ok = false;
+			break;
+		}
+		serialized += std::to_string(table);
+		serialized += ':';
+		serialized += std::to_string(mysql_num_rows(result));
+		serialized += ':';
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(result)))
+		{
+			unsigned long *lengths = mysql_fetch_lengths(result);
+			if (!lengths)
+			{
+				ok = false;
+				break;
+			}
+			for (unsigned int column = 0; column < mysql_num_fields(result); ++column)
+			{
+				if (!row[column])
+				{
+					serialized += 'N';
+					continue;
+				}
+				serialized += 'V';
+				serialized += std::to_string(lengths[column]);
+				serialized += ':';
+				serialized.append(row[column], lengths[column]);
+			}
+		}
+		mysql_free_result(result);
+		if (!ok)
+			break;
+	}
+	free(escaped);
+	if (ok)
+		*digest = sql_saved_item_hex_digest(serialized);
+	return ok;
+}
+
+static bool sql_saved_item_destination_identity_matches(const std::string &key, int root_id,
+							uint64_t uid, int room_vnum)
+{
+	char *escaped = sql_escape_string(key.c_str());
+	if (!escaped)
+		return false;
+	char query[512];
+	snprintf(query, sizeof(query),
+		 "SELECT obj_uid,room_vnum FROM saved_items WHERE id=%d AND item_key='%s' "
+		 "AND container_id IS NULL",
+		 root_id, escaped);
+	free(escaped);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const bool matches = row && row[0] && row[1] && strtoull(row[0], NULL, 10) == uid &&
+			     atoi(row[1]) == room_vnum && mysql_num_rows(result) == 1;
+	mysql_free_result(result);
+	return matches;
+}
+
+static bool sql_saved_item_verified_destination(const std::string &key, int root_id, uint64_t uid,
+						int room_vnum, int source_count,
+						const std::string &expected_digest)
+{
+	char expected_key[128];
+	std::vector<int> destination_ids;
+	std::string observed_digest;
+	return uid && root_id > 0 && source_count > 0 &&
+	       sql_saved_item_uid_key(uid, expected_key, sizeof expected_key) &&
+	       key == expected_key &&
+	       sql_saved_item_destination_identity_matches(key, root_id, uid, room_vnum) &&
+	       sql_saved_item_source_ids(key.c_str(), &destination_ids) &&
+	       static_cast<int>(destination_ids.size()) == source_count &&
+	       !destination_ids.empty() && destination_ids[0] == root_id &&
+	       sql_saved_item_source_rows_match(key.c_str(), destination_ids, false) &&
+	       sql_saved_item_payload_digest(key.c_str(), &observed_digest) &&
+	       observed_digest == expected_digest;
+}
+
+static bool sql_saved_item_verified_source(const std::string &key, int root_id, int expected_count,
+					   const std::string &expected_id_digest,
+					   const std::string &expected_payload_digest)
+{
+	std::vector<int> ids;
+	std::string observed_payload_digest;
+	return root_id > 0 && expected_count > 0 && sql_saved_item_source_ids(key.c_str(), &ids) &&
+	       static_cast<int>(ids.size()) == expected_count && !ids.empty() &&
+	       ids[0] == root_id && sql_saved_item_source_id_digest(ids) == expected_id_digest &&
+	       sql_saved_item_source_rows_match(key.c_str(), ids, false) &&
+	       sql_saved_item_payload_digest(key.c_str(), &observed_payload_digest) &&
+	       observed_payload_digest == expected_payload_digest;
+}
+
+static bool sql_saved_item_custody_matches(P_obj obj, uint64_t root_uid, uint64_t parent_uid,
+					   uint64_t room_vnum, std::unordered_set<uint64_t> *uids,
+					   std::unordered_set<P_obj> *objects)
+{
+	if (!obj || !uids || !objects || !obj->obj_uid || !uids->insert(obj->obj_uid).second ||
+	    !objects->insert(obj).second)
+		return false;
+	item_ownership_runtime_entry custody = {};
+	if (!item_ownership_runtime_lookup(obj->obj_uid, &custody) ||
+	    custody.root_item_uid != root_uid || custody.parent_item_uid != parent_uid ||
+	    custody.vnum != OBJ_VNUM(obj) || custody.state != item_custody_state::active ||
+	    custody.owner.type != item_owner_type::room || custody.owner.id != room_vnum ||
+	    custody.owner.context_id)
 		return false;
 	for (P_obj child = obj->contains; child; child = child->next_content)
-		if (!sql_saved_item_collect_uids(child, uids))
+		if (!OBJ_INSIDE(child) || child->loc.inside != obj ||
+		    !sql_saved_item_custody_matches(child, root_uid, obj->obj_uid, room_vnum, uids,
+						    objects))
 			return false;
 	return true;
 }
 
-static bool sql_saved_item_handoff_receipt(uint64_t epoch, int source_root_id,
-					   int *destination_root_id, int *source_count,
-					   bool *retired, std::string *source_digest = NULL)
+enum class saved_item_handoff_status
 {
-	char query[256];
+	missing,
+	found,
+	error
+};
+
+static saved_item_handoff_status sql_saved_item_handoff_receipt(
+	uint64_t epoch, int source_root_id, int *destination_root_id, int *source_count,
+	bool *retired, std::string *source_digest = NULL, std::string *destination_key = NULL,
+	uint64_t *source_uid = NULL, int *source_room_vnum = NULL,
+	std::string *source_payload_digest = NULL, std::string *destination_payload_digest = NULL,
+	std::string *source_key = NULL)
+{
+	char query[384];
 	snprintf(query, sizeof(query),
-		 "SELECT destination_root_id, source_row_count, retired_at, HEX(source_id_digest) "
+		 "SELECT destination_root_id, source_row_count, retired_at, HEX(source_id_digest), "
+		 "destination_key, source_uid, source_room_vnum, "
+		 "HEX(source_payload_digest), HEX(destination_payload_digest), source_key "
 		 "FROM saved_item_recovery_handoff "
 		 "WHERE season_epoch=%llu AND source_root_id=%d",
 		 static_cast<unsigned long long>(epoch), source_root_id);
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
-		return false;
+		return saved_item_handoff_status::error;
 	MYSQL_ROW row = mysql_fetch_row(result);
 	const bool found = row != NULL;
 	if (found)
 	{
+		if (!row[0] || !row[1] || !row[3] || !row[4] || !row[5] || !row[6] || !row[7] ||
+		    !row[8] || !row[9])
+		{
+			mysql_free_result(result);
+			return saved_item_handoff_status::error;
+		}
 		if (destination_root_id)
 			*destination_root_id = atoi(row[0]);
 		if (source_count)
@@ -10460,9 +10643,40 @@ static bool sql_saved_item_handoff_receipt(uint64_t epoch, int source_root_id,
 			*retired = row[2] != NULL;
 		if (source_digest)
 			*source_digest = row[3] ? row[3] : "";
+		if (destination_key)
+			*destination_key = row[4];
+		if (source_uid)
+			*source_uid = strtoull(row[5], NULL, 10);
+		if (source_room_vnum)
+			*source_room_vnum = atoi(row[6]);
+		if (source_payload_digest)
+			*source_payload_digest = row[7];
+		if (destination_payload_digest)
+			*destination_payload_digest = row[8];
+		if (source_key)
+			*source_key = row[9];
 	}
 	mysql_free_result(result);
-	return found;
+	return found ? saved_item_handoff_status::found : saved_item_handoff_status::missing;
+}
+
+static saved_item_handoff_status
+sql_saved_item_destination_source(uint64_t epoch, int destination_root_id, int *source_root_id)
+{
+	MYSQL_RES *result = db_query("SELECT source_root_id FROM saved_item_recovery_handoff "
+				     "WHERE season_epoch=%llu AND destination_root_id=%d",
+				     static_cast<unsigned long long>(epoch), destination_root_id);
+	if (!result)
+		return saved_item_handoff_status::error;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	const bool found = row && row[0];
+	const bool unique = mysql_num_rows(result) == 1;
+	if (found && unique && source_root_id)
+		*source_root_id = atoi(row[0]);
+	mysql_free_result(result);
+	if (!found)
+		return saved_item_handoff_status::missing;
+	return unique ? saved_item_handoff_status::found : saved_item_handoff_status::error;
 }
 
 static bool sql_retire_saved_item_source(uint64_t epoch, int source_root_id, const char *source_key,
@@ -10474,8 +10688,11 @@ static bool sql_retire_saved_item_source(uint64_t epoch, int source_root_id, con
 	int destination_root_id = 0;
 	bool retired = false;
 	std::string source_digest;
-	if (!sql_saved_item_handoff_receipt(epoch, source_root_id, &destination_root_id, NULL,
-					    &retired, &source_digest) ||
+	std::string expected_payload_digest;
+	if (sql_saved_item_handoff_receipt(epoch, source_root_id, &destination_root_id, NULL,
+					   &retired, &source_digest, NULL, NULL, NULL,
+					   &expected_payload_digest) !=
+		    saved_item_handoff_status::found ||
 	    !destination_root_id)
 		goto done;
 	if (retired)
@@ -10485,12 +10702,15 @@ static bool sql_retire_saved_item_source(uint64_t epoch, int source_root_id, con
 	}
 	{
 		std::vector<int> source_ids;
+		std::string observed_payload_digest;
 		if (!sql_saved_item_source_ids(source_key, &source_ids) ||
 		    static_cast<int>(source_ids.size()) != source_count ||
 		    std::find(source_ids.begin(), source_ids.end(), source_root_id) ==
 			    source_ids.end() ||
 		    sql_saved_item_source_id_digest(source_ids) != source_digest ||
-		    !sql_saved_item_source_rows_match(source_key, source_ids, true))
+		    !sql_saved_item_source_rows_match(source_key, source_ids, true) ||
+		    !sql_saved_item_payload_digest(source_key, &observed_payload_digest, true) ||
+		    observed_payload_digest != expected_payload_digest)
 			goto done;
 	}
 	sql_saved_item_restore_fault("before_retirement");
@@ -10533,9 +10753,13 @@ static bool sql_acknowledge_saved_item_handoff(uint64_t epoch, const char *sourc
 		return false;
 	bool ok = false;
 	int destination_root_id = 0;
+	std::string source_payload_digest;
+	std::string destination_payload_digest;
 	char *escaped_source = NULL;
 	char *escaped_destination = NULL;
 	if (!sql_saved_item_source_rows_match(source_key, source_ids, true))
+		goto done;
+	if (!sql_saved_item_payload_digest(source_key, &source_payload_digest, true))
 		goto done;
 	escaped_destination = sql_escape_string(destination_key);
 	if (!escaped_destination)
@@ -10557,6 +10781,8 @@ static bool sql_acknowledge_saved_item_handoff(uint64_t epoch, const char *sourc
 	destination_root_id = sql_save_saved_item_recursive(destination_key, room_vnum, item, 0);
 	if (destination_root_id <= 0)
 		goto done;
+	if (!sql_saved_item_payload_digest(destination_key, &destination_payload_digest))
+		goto done;
 	escaped_source = sql_escape_string(source_key);
 	if (!escaped_source)
 		goto done;
@@ -10565,13 +10791,16 @@ static bool sql_acknowledge_saved_item_handoff(uint64_t epoch, const char *sourc
 		snprintf(query, sizeof(query),
 			 "INSERT INTO saved_item_recovery_handoff "
 			 "(season_epoch,source_root_id,source_key,source_uid,source_room_vnum,"
-			 "source_row_count,source_id_digest,destination_root_id,destination_key) "
-			 "VALUES (%llu,%d,'%s',%llu,%d,%u,UNHEX('%s'),%d,'%s')",
+			 "source_row_count,source_id_digest,destination_root_id,destination_key,"
+			 "source_payload_digest,destination_payload_digest) "
+			 "VALUES (%llu,%d,'%s',%llu,%d,%u,UNHEX('%s'),%d,'%s',"
+			 "UNHEX('%s'),UNHEX('%s'))",
 			 static_cast<unsigned long long>(epoch), source_ids[0], escaped_source,
 			 static_cast<unsigned long long>(item->obj_uid), room_vnum,
 			 static_cast<unsigned int>(source_ids.size()),
 			 sql_saved_item_source_id_digest(source_ids).c_str(), destination_root_id,
-			 escaped_destination);
+			 escaped_destination, source_payload_digest.c_str(),
+			 destination_payload_digest.c_str());
 		if (!sql_run_query(query))
 			goto done;
 	}
@@ -10632,24 +10861,80 @@ void sql_restore_saved_items(void)
 		int destination_root_id = 0;
 		int source_count = 0;
 		bool retired = false;
-		if (sql_saved_item_handoff_receipt(season_epoch, item_id, &destination_root_id,
-						   &source_count, &retired))
+		std::string receipt_destination_key;
+		std::string expected_destination_digest;
+		uint64_t receipt_uid = 0;
+		int receipt_room_vnum = 0;
+		const auto handoff = sql_saved_item_handoff_receipt(
+			season_epoch, item_id, &destination_root_id, &source_count, &retired, NULL,
+			&receipt_destination_key, &receipt_uid, &receipt_room_vnum, NULL,
+			&expected_destination_digest);
+		if (handoff != saved_item_handoff_status::missing)
 		{
-			char query[128];
-			snprintf(query, sizeof(query), "SELECT id FROM saved_items WHERE id=%d",
-				 destination_root_id);
-			MYSQL_RES *destination = db_query("%s", query);
-			const bool acknowledged_payload = destination &&
-							  mysql_num_rows(destination) == 1;
-			if (destination)
-				mysql_free_result(destination);
-			if (acknowledged_payload)
+			const bool valid_destination =
+				handoff == saved_item_handoff_status::found &&
+				receipt_uid == saved_uid && receipt_room_vnum == room_vnum &&
+				sql_saved_item_verified_destination(receipt_destination_key,
+								    destination_root_id,
+								    receipt_uid, receipt_room_vnum,
+								    source_count,
+								    expected_destination_digest);
+			if (!valid_destination)
 			{
-				if (!retired &&
-				    !sql_retire_saved_item_source(season_epoch, item_id, item_key,
-								  source_count))
-					logit(LOG_SYS,
-					      "sql_restore_saved_items: acknowledged source retirement deferred");
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged destination missing or conflicting; source retained without publication");
+				continue;
+			}
+			if (!retired && !sql_retire_saved_item_source(season_epoch, item_id,
+								      item_key, source_count))
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged source retirement deferred");
+			continue;
+		}
+		int receipt_source_root_id = 0;
+		const auto destination_handoff = sql_saved_item_destination_source(
+			season_epoch, item_id, &receipt_source_root_id);
+		if (destination_handoff != saved_item_handoff_status::missing)
+		{
+			std::string destination_key;
+			std::string destination_digest;
+			std::string receipt_source_key;
+			std::string receipt_source_id_digest;
+			std::string receipt_source_payload_digest;
+			uint64_t destination_uid = 0;
+			int destination_room_vnum = 0;
+			int acknowledged_root_id = 0;
+			int acknowledged_count = 0;
+			bool receipt_retired = false;
+			const auto receipt =
+				destination_handoff == saved_item_handoff_status::found ?
+					sql_saved_item_handoff_receipt(
+						season_epoch, receipt_source_root_id,
+						&acknowledged_root_id, &acknowledged_count,
+						&receipt_retired, &receipt_source_id_digest,
+						&destination_key, &destination_uid,
+						&destination_room_vnum,
+						&receipt_source_payload_digest, &destination_digest,
+						&receipt_source_key) :
+					saved_item_handoff_status::error;
+			if (receipt != saved_item_handoff_status::found ||
+			    acknowledged_root_id != item_id || destination_key != item_key ||
+			    destination_uid != saved_uid || destination_room_vnum != room_vnum ||
+			    !sql_saved_item_verified_destination(
+				    destination_key, item_id, saved_uid, room_vnum,
+				    acknowledged_count, destination_digest))
+			{
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged destination missing or conflicting; source retained without publication");
+				continue;
+			}
+			if (!receipt_retired &&
+			    !sql_saved_item_verified_source(
+				    receipt_source_key, receipt_source_root_id, acknowledged_count,
+				    receipt_source_id_digest, receipt_source_payload_digest))
+			{
+				logit(LOG_SYS,
+				      "sql_restore_saved_items: acknowledged source payload missing or conflicting; destination withheld");
 				continue;
 			}
 		}
@@ -10792,9 +11077,20 @@ void sql_restore_saved_items(void)
 			continue;
 		}
 		std::unordered_set<uint64_t> tree_uids;
-		if (!sql_saved_item_collect_uids(obj, &tree_uids) ||
-		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
-				{ return published_uids.find(uid) != published_uids.end(); }))
+		std::unordered_set<P_obj> tree_objects;
+		if (!sql_saved_item_custody_matches(obj, obj->obj_uid, 0, room_vnum, &tree_uids,
+						    &tree_objects) ||
+		    std::any_of(tree_uids.begin(), tree_uids.end(),
+				[&published_uids](uint64_t uid)
+				{ return published_uids.find(uid) != published_uids.end(); }) ||
+		    [&]()
+		    {
+			    for (P_obj live = object_list; live; live = live->next)
+				    if (tree_objects.find(live) == tree_objects.end() &&
+					tree_uids.find(live->obj_uid) != tree_uids.end())
+					    return true;
+			    return false;
+		    }())
 		{
 			extract_obj(obj, FALSE);
 			continue;

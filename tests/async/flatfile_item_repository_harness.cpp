@@ -517,6 +517,38 @@ static void coin_matrix(const fs::path &path, int coin_vnum)
 				"stale coin projection won over authority");
 	};
 	auto put = command(wallet(42, 1000, 900), pile(pile_uid, 0, 100));
+	{
+		auto accounted = put;
+		accounted.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		accounted.accounting_intent = {
+			1
+		}; // Opaque here; the accounting owner verifies it.
+		flatfile_authority_lock lock;
+		require(lock.acquire(root, &error), "coin prepare lock: " + error);
+		coin_transfer_payload payload;
+		require(coin_transfer_command_decode_payload(accounted, &payload),
+			"accounted coin payload decode");
+		coin_transfer_result prepared;
+		std::vector<flatfile_authority_after_image> images;
+		unsigned int result_code = 0;
+		require(flatfile_player_domain_prepare_coin_wallets(
+				root, lock, payload, &prepared, &images, &result_code, &error) ==
+					flatfile_player_domain_result::ok &&
+				!result_code,
+			"coin wallet image preparation: " + error);
+		const auto wallet_images = images.size();
+		require(flatfile_item_repository_prepare_coin_piles(
+				root, lock, accounted, &prepared, &images, &result_code, &error) ==
+					flatfile_item_repository_result::ok &&
+				!result_code && prepared.piles[1].max_item_revision == 1 &&
+				images.size() == wallet_images + 1 &&
+				images.back().filename == "item_ownership",
+			"accounted coin pile images were not prepared: " + error);
+	}
+	std::vector<flatfile_item_ownership_record> before_prepared_commit;
+	ownership(player, &before_prepared_commit);
+	require(domain(42).domains.wallet[0] == 1000 && before_prepared_commit.size() == 1,
+		"coin prepare mutated native state without a root commit");
 	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
 	require(apply(put).outcome == critical_apply_outcome::retryable_failure,
 		"coin pre-commit failure was not injected");
@@ -531,6 +563,21 @@ static void coin_matrix(const fs::path &path, int coin_vnum)
 		"coin creation lost value");
 	require(apply(put).outcome == critical_apply_outcome::already_applied,
 		"coin creation replay");
+	{
+		auto duplicate = command(wallet(42, 900, 800), pile(pile_uid, 0, 100));
+		duplicate.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		duplicate.accounting_intent = { 1 };
+		flatfile_authority_lock lock;
+		require(lock.acquire(root, &error), "duplicate coin prepare lock: " + error);
+		coin_transfer_result result;
+		std::vector<flatfile_authority_after_image> images;
+		unsigned int result_code = 0;
+		require(flatfile_item_repository_prepare_coin_piles(
+				root, lock, duplicate, &result, &images, &result_code, &error) ==
+					flatfile_item_repository_result::ok &&
+				result_code == EEXIST && images.empty(),
+			"duplicate pile creation escaped the locked prepare boundary");
+	}
 	reload(100, {});
 	auto merge = command(wallet(42, 900, 700), pile(pile_uid, 100, 300));
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
@@ -887,7 +934,7 @@ int main(int argc, char **argv)
 		};
 		require(read32(56) == 1 && read32(60) == 2 && read32(64) == 0,
 			"unexpected baseline fixture counts");
-		// Remove v3's empty per-item payload fields to reproduce an actual v1 file.
+		// Remove v5's empty per-item payload and slot fields for a v1 file.
 		std::vector<uint8_t> payload(bytes.begin() + 56, bytes.begin() + 93);
 		size_t offset = 93;
 		for (size_t i = 0; i < 2; ++i)
@@ -896,7 +943,7 @@ int main(int argc, char **argv)
 				"legacy fixture unexpectedly has coin payloads");
 			payload.insert(payload.end(), bytes.begin() + offset,
 				       bytes.begin() + offset + 54);
-			offset += 58;
+			offset += 60;
 		}
 		require(offset == bytes.size(), "unexpected baseline trailing data");
 		bytes.resize(56);

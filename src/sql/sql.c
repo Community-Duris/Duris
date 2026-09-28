@@ -2056,17 +2056,20 @@ static bool sql_verify_boot_database(void)
 		"AND column_name IN ('owner_type','owner_id','owner_context_id','revision','updated_at')) "
 		"OR (table_name='item_current_owner' AND column_name IN "
 		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
-		"'owner_context_id','item_revision','vnum','state','coin_payload','updated_at')) OR "
+		"'owner_context_id','item_revision','vnum','state','coin_payload',"
+		"'equipment_slot','updated_at')) OR "
 		"(table_name='item_ownership_baseline' AND column_name IN "
 		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
 		"'owner_context_id','opening_item_revision','vnum','source_table','source_row_id',"
-		"'captured_at')) OR (table_name='item_ownership_quarantine' AND column_name IN "
+		"'captured_at','equipment_slot')) OR (table_name='item_ownership_quarantine' "
+		"AND column_name IN "
 		"('quarantine_id','item_uid','source_table','source_row_id','conflict_code','evidence',"
 		"'detected_at','repaired_at')) OR (table_name='item_ownership_ledger' AND "
 		"column_name IN ('operation_id','event_index','item_uid','root_item_uid',"
 		"'parent_item_uid','from_owner_type','from_owner_id','from_owner_context_id',"
 		"'to_owner_type','to_owner_id','to_owner_context_id','item_revision',"
 		"'from_owner_revision','to_owner_revision','reason_type','reason_id','source_site',"
+		"'from_equipment_slot','to_equipment_slot',"
 		"'created_at')))";
 	result = db_query("%s", item_ownership_schema_probe);
 	if (!result)
@@ -2076,12 +2079,12 @@ static bool sql_verify_boot_database(void)
 	}
 	row = mysql_fetch_row(result);
 	lengths = row ? mysql_fetch_lengths(result) : NULL;
-	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 56;
+	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 60;
 	mysql_free_result(result);
 	if (!item_ownership_columns_ok)
 	{
 		logit(LOG_STATUS,
-		      "FATAL: item ownership schema is incomplete at boot (expected 56 columns).");
+		      "FATAL: item ownership schema is incomplete at boot (expected 60 columns).");
 		return false;
 	}
 	const char *item_ownership_index_probe =

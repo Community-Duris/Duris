@@ -39,6 +39,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
         rel("economic_accounting_plan.c"),
         rel("economic_accounting_intent.c"),
         rel("auction_item_claim_accounting.c"),
+        rel("auction_listing_accounting.c"),
         rel("collector_accounting.c"),
         rel("economic_accounting_item_reference.c"),
         rel("item_transfer_accounting.c"),

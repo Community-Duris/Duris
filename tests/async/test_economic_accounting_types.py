@@ -79,8 +79,15 @@ def goldens(include_plans=False):
                 output.append(f"auto plan=base_plan(); plan.metadata.reason=economic_reason::{operation['reason']}; plan.metadata.actor_kind=economic_actor_kind::{actor};")
                 output.append('plan.accounts=effects;plan.postings=postings;plan.items_before=items_before;plan.items_after=items_after;plan.item_events=events;')
                 if operation['source_event']:
-                    source_kind={'baseline':'baseline','quest_reward':'quest_completion','first_admission':'world_generation','item_destroy':'lifecycle'}.get(operation['reason'],'service')
-                    output.append(f'plan.metadata.source_event=source_event(economic_source_kind::{source_kind});')
+                    source_kind={'baseline':'baseline','quest_reward':'quest_completion','first_admission':'world_generation',
+                                 'item_destroy':'lifecycle','shop_buy':'shop_stock','auction_listing':'auction',
+                                 'auction_bid':'auction','auction_outbid':'auction','auction_settle':'auction',
+                                 'auction_claim':'auction'}.get(operation['reason'],'service')
+                    source_identity=bytes.fromhex(operation['source_event'])
+                    if len(source_identity)!=16: raise ValueError('golden source event must be 16 bytes')
+                    output.append(f'auto event=source_event(economic_source_kind::{source_kind}); '
+                                  f'event.source.bytes={{{",".join(map(str,source_identity))}}}; '
+                                  'plan.metadata.source_event=event;')
                 output.append('roundtrip(plan);')
             output.append('}')
     output.append('}')

@@ -96,4 +96,10 @@ critical_apply_result
 flatfile_auction_repository_apply_accounted_item_claim(const std::string &root,
 						       const critical_command &command);
 
+// Inactive schema-2 listing owner. Native listing, new escrow lifetime, and
+// EAP1 evidence share the auction authority journal.
+critical_apply_result
+flatfile_auction_repository_apply_accounted_listing(const std::string &root,
+						    const critical_command &command);
+
 #endif

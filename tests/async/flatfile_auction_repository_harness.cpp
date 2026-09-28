@@ -1,5 +1,6 @@
 #include "flatfile/flatfile_auction_repository.h"
 #include "economy/auction_item_claim_accounting.h"
+#include "economy/auction_listing_accounting.h"
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_item_accounting_reference.h"
@@ -49,6 +50,16 @@ static critical_operation_id operation(uint8_t value)
 	return id;
 }
 
+static uint32_t auction_id_for(const critical_operation_id &operation_id)
+{
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(operation_id.bytes.data(), operation_id.bytes.size(), digest.data());
+	uint32_t id = 0;
+	for (size_t byte = 0; byte < 4; ++byte)
+		id |= static_cast<uint32_t>(digest[byte]) << (byte * 8);
+	return id ? id : 1;
+}
+
 static size_t native_bucket(uint16_t kind, uint64_t context, uint64_t pid, const std::string &name)
 {
 	std::vector<uint8_t> bytes;
@@ -60,7 +71,7 @@ static size_t native_bucket(uint16_t kind, uint64_t context, uint64_t pid, const
 	add(kind, 2);
 	add(context, 8);
 	add(kind, 2);
-	if (kind == 1)
+	if (kind != 2)
 		add(pid, 8);
 	else
 		bytes.insert(bytes.end(), name.begin(), name.end());
@@ -70,7 +81,8 @@ static size_t native_bucket(uint16_t kind, uint64_t context, uint64_t pid, const
 }
 
 static void enable_accounting(const std::string &root, economic_account_key *wallet,
-			      economic_account_key *bank, std::string *error)
+			      economic_account_key *bank, std::string *error,
+			      uint32_t auction_id = 0)
 {
 	fs::create_directories(fs::path(root) / "economic-evidence");
 	fs::permissions(fs::path(root) / "economic-evidence", fs::perms::owner_all,
@@ -96,8 +108,11 @@ static void enable_accounting(const std::string &root, economic_account_key *wal
 							   &operations, error) == 0,
 		"could not bootstrap auction accounting: " + *error);
 	commit();
-	for (const size_t bucket :
-	     { native_bucket(1, 0, 42, {}), native_bucket(2, 1, 0, "seller-account") })
+	std::vector<size_t> native_buckets = { native_bucket(1, 0, 42, {}),
+					       native_bucket(2, 1, 0, "seller-account") };
+	if (auction_id)
+		native_buckets.push_back(native_bucket(4, 0, auction_id, {}));
+	for (const size_t bucket : native_buckets)
 	{
 		const auto initialized = flatfile_accounting_test_access::initialize_native(
 			root, lock, revision(), bucket, operation(72), &operations, error);
@@ -683,6 +698,133 @@ int main(int argc, char **argv)
 			accounted_references[0].item_uid == 703 &&
 			accounted_references[0].after_revision == 3,
 		"accounted auction claim did not retain its exact item reference");
+	const fs::path typed_root = root / "accounted-listing";
+	const std::string typed_path = typed_root.string();
+	const fs::path typed_domains = typed_root / "domains";
+	fs::create_directories(typed_domains);
+	fs::permissions(typed_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(typed_domains, fs::perms::owner_all, fs::perm_options::replace);
+	require(flatfile_player_domain_establish(typed_path, player(42, "seller-account"),
+						 &error) == flatfile_player_domain_result::ok &&
+			flatfile_item_repository_establish_owner(
+				typed_path, seller,
+				{ { 800, 800, 0, seller, 1, 1800, item_custody_state::active },
+				  { 900, 900, 0, seller, 1, 1900, item_custody_state::active },
+				  { 901, 900, 900, seller, 1, 1901, item_custody_state::active } },
+				&error) == flatfile_item_baseline_result::applied,
+		"could not establish accounted listing fixture: " + error);
+	const uint32_t expected_auction_id = auction_id_for(operation(19));
+	economic_account_key typed_wallet, typed_bank;
+	enable_accounting(typed_path, &typed_wallet, &typed_bank, &error, expected_auction_id);
+	auction_command_payload typed_listing = listing;
+	typed_listing.items[0] = { 800, 1, 1800 };
+	critical_command typed_command = command(typed_listing, 19);
+	require(auction_listing_accounting_intent(typed_command, operation(75), typed_wallet,
+						  typed_bank, &typed_command.accounting_intent) ==
+			economic_accounting_error::ok,
+		"could not freeze accounted auction listing");
+	typed_command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	critical_command wrong_mapping = command(typed_listing, 20);
+	auto unmapped_bank = typed_bank;
+	unmapped_bank.authority_id += 100;
+	require(auction_listing_accounting_intent(
+			wrong_mapping, operation(75), typed_wallet, unmapped_bank,
+			&wrong_mapping.accounting_intent) == economic_accounting_error::ok,
+		"could not freeze wrong auction mapping");
+	wrong_mapping.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	applied = flatfile_auction_repository_apply_accounted_listing(typed_path, wrong_mapping);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == ESTALE,
+		"accounted auction listing admitted an unmapped bank");
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_auction_repository_apply_accounted_listing(typed_path, typed_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			fs::exists(typed_domains / ".critical-authority-transaction"),
+		"accounted auction listing did not retain its interrupted journal: " +
+			std::to_string(static_cast<int>(applied.outcome)) + "/" +
+			std::to_string(applied.error_code) + " " + error);
+	flatfile_accounting_record typed_record;
+	flatfile_economic_mapping typed_escrow;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(typed_path, &error), "could not lock listing lookup");
+		require(flatfile_accounting_lookup(typed_path, lock, typed_command, &typed_record,
+						   &error) == flatfile_accounting_status::ok &&
+				!typed_record.plan.empty() && typed_record.result_code == 0,
+			"accounted auction listing did not recover its EAP1 plan: " + error);
+		require(flatfile_economic_native_lookup(
+				typed_path, lock, economic_account_kind::auction_escrow, 0,
+				{ 4, expected_auction_id, {} }, &typed_escrow, &error) == 0 &&
+				typed_escrow.creating_operation.bytes ==
+					typed_command.operation_id.bytes,
+			"accounted auction listing did not allocate its escrow mapping: " + error);
+	}
+	economic_accounting_plan typed_plan;
+	require(economic_plan_decode(typed_record.plan, &typed_plan) ==
+				economic_accounting_error::ok &&
+			typed_plan.accounts.size() == 3 && typed_plan.postings.size() == 2 &&
+			typed_plan.item_events.size() == 1 &&
+			economic_account_key_equal(typed_plan.accounts[1].key,
+						   typed_escrow.account) &&
+			typed_plan.item_events[0].uid == 800 &&
+			typed_plan.postings[0].copper == -100 &&
+			typed_plan.postings[1].copper == 100,
+		"accounted auction listing lost fee, escrow, or custody evidence");
+	applied = flatfile_auction_repository_apply_accounted_listing(typed_path, typed_command);
+	const auction_command_result typed_result = result_of(applied);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			typed_result.auction_id == expected_auction_id &&
+			typed_result.item_revisions[0] == 2 &&
+			typed_result.wallet_value_delta == -100,
+		"recovered accounted auction listing did not replay its result");
+	std::vector<economic_accounting_item_reference> typed_references;
+	require(flatfile_item_accounting_reference_find_by_operation(
+			typed_path, typed_command.operation_id, &typed_references, &error) ==
+				flatfile_item_accounting_status::ok &&
+			typed_references.size() == 1 && typed_references[0].item_uid == 800 &&
+			typed_references[0].child_index == 0 &&
+			typed_references[0].after_revision == 2,
+		"accounted auction listing lost its exact item reference");
+	require(flatfile_player_domain_load(typed_path, 42, "seller-account", 1, &loaded_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.wallet == std::array<uint64_t, 4>{ 0, 0, 9, 9 },
+		"accounted auction listing did not commit its wallet fee");
+	expect_event(typed_path, auction_event_type::listed, expected_auction_id, &error);
+	auction_command_payload nested_listing = typed_listing;
+	actor(&nested_listing, 42, "seller-account", "Seller", typed_result.wallet_revision,
+	      typed_result.bank_revision);
+	nested_listing.items[0] = { 900, 1, 1900 };
+	critical_command nested_command = command(nested_listing, 21);
+	require(auction_listing_accounting_intent(nested_command, operation(75), typed_wallet,
+						  typed_bank, &nested_command.accounting_intent) ==
+			economic_accounting_error::ok,
+		"could not freeze nested auction listing");
+	nested_command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	applied = flatfile_auction_repository_apply_accounted_listing(typed_path, nested_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EOPNOTSUPP,
+		"accounted auction listing moved a root with descendants");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(typed_path, &error), "could not lock nested listing lookup");
+		require(flatfile_accounting_lookup(typed_path, lock, nested_command, &typed_record,
+						   &error) == flatfile_accounting_status::ok &&
+				typed_record.result_code == EOPNOTSUPP && typed_record.plan.empty(),
+			"nested auction listing did not retain an empty-plan refusal");
+	}
+	owned.clear();
+	require(flatfile_item_repository_load_owner(typed_path, seller, &owner_revision, &owned,
+						    &error) ==
+				flatfile_item_repository_result::ok &&
+			owned.size() == 2 && owned[0].item_uid == 900 &&
+			owned[0].item_revision == 1 && owned[1].item_uid == 901 &&
+			owned[1].item_revision == 1 &&
+			flatfile_player_domain_load(typed_path, 42, "seller-account", 1,
+						    &loaded_player,
+						    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.wallet_revision == typed_result.wallet_revision,
+		"refused nested auction listing changed native custody or wallet");
 	const fs::path catalog = domains / "auction_catalog";
 	convert_catalog_to_legacy_v1(catalog);
 	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==

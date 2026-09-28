@@ -215,7 +215,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -228,7 +228,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -241,7 +241,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -254,7 +254,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -267,7 +267,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -280,7 +280,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -293,7 +293,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -306,7 +306,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -350,7 +350,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -401,9 +401,10 @@
       "domain": "auction",
       "account_kinds": [
         "wallet",
+        "auction_escrow",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -416,7 +417,7 @@
         "pending_claim",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -429,7 +430,7 @@
         "pending_claim",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -442,7 +443,7 @@
         "pending_claim",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -455,7 +456,7 @@
         "pending_claim",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -468,7 +469,7 @@
         "pending_claim",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -526,7 +527,7 @@
         "treasury",
         "sink"
       ],
-      "source_event_required": false,
+      "source_event_required": true,
       "actor": "domain"
     },
     {
@@ -589,7 +590,8 @@
         "restitution"
       ],
       "source_event_required": true,
-      "actor": "operator"
+      "actor": "operator",
+      "original_operation_required": true
     },
     {
       "id": "lifecycle_retirement",
@@ -622,6 +624,32 @@
       ],
       "source_event_required": true,
       "actor": "operator"
+    },
+    {
+      "id": "item_reward",
+      "number": 43,
+      "domain": "issuance",
+      "account_kinds": [
+        "wallet",
+        "pile",
+        "issuance",
+        "sink"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
+    },
+    {
+      "id": "quest_cost",
+      "number": 44,
+      "domain": "expenses",
+      "account_kinds": [
+        "wallet",
+        "bank",
+        "treasury",
+        "sink"
+      ],
+      "source_event_required": true,
+      "actor": "domain"
     }
   ],
   "domains": [
@@ -683,7 +711,7 @@
     "unresolved",
     "corrupt_evidence"
   ],
-  "source_event_policy": "Typed writer-specific durable source event, unique within lineage/policy. A fresh ID on ambiguous retry is forbidden.",
+  "source_event_policy": "Typed writer-specific durable source event, unique within a lineage across epochs and policy versions. A fresh ID on ambiguous retry is forbidden.",
   "system_policy": "Account kind and balanced arithmetic alone never authorize issuance. Writer capability, source event and exact domain effects must agree.",
   "source_kinds": [
     {
@@ -757,6 +785,10 @@
     {
       "id": "item_action",
       "number": 18
+    },
+    {
+      "id": "quest_action",
+      "number": 19
     }
   ],
   "plan_encoding": {

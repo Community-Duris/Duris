@@ -2576,6 +2576,8 @@ bool create_walls(int room, int exit, P_char ch, int level, int type, int power,
 	{
 		return FALSE;
 	}
+	if (economic_gameplay_authority::active())
+		return FALSE;
 
 	wall_inside = read_object(VOBJ_WALLS, VIRTUAL);
 	wall_outside = read_object(VOBJ_WALLS, VIRTUAL);

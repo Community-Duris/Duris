@@ -87,6 +87,7 @@ unsigned int economic_flatfile_lock_authority(const std::string &, const flatfil
 class flatfile_accounting_authority_storage
 {
 	friend class flatfile_accounting_lifecycle_transaction;
+	friend class flatfile_accounting_auction_item_claim_transaction;
 #ifdef DURIS_FLATFILE_ACCOUNTING_TEST
 	friend class flatfile_accounting_test_access;
 #endif

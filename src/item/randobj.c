@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -150,6 +151,12 @@ void do_randobj(P_char ch, char *strn, int /*val*/)
 	if (!IS_TRUSTED(ch))
 	{
 		send_to_char("Bad mortal or mob.. bad!.\r\n", ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Random object creation is unavailable during this economy epoch.\r\n",
+			     ch);
 		return;
 	}
 

@@ -312,7 +312,7 @@
           "operation_id": "00000000000000000000000000000006",
           "reason": "service_cost",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5050100000000000000000000000000",
           "postings": [
             {
               "account": "wallet",
@@ -437,7 +437,7 @@
           "operation_id": "00000000000000000000000000000008",
           "reason": "shop_buy",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5070100000000000000000000000000",
           "postings": [
             {
               "account": "buyer",
@@ -560,7 +560,7 @@
           "operation_id": "00000000000000000000000000000009",
           "reason": "auction_listing",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5080100000000000000000000000000",
           "postings": [
             {
               "account": "seller",
@@ -607,7 +607,7 @@
           "operation_id": "0000000000000000000000000000000a",
           "reason": "auction_bid",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5080200000000000000000000000000",
           "postings": [
             {
               "account": "buyer",
@@ -635,7 +635,7 @@
           "operation_id": "0000000000000000000000000000000b",
           "reason": "auction_settle",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5080300000000000000000000000000",
           "postings": [
             {
               "account": "escrow",
@@ -672,7 +672,7 @@
           "operation_id": "0000000000000000000000000000000c",
           "reason": "auction_claim",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5080400000000000000000000000000",
           "postings": [
             {
               "account": "claim",
@@ -700,7 +700,7 @@
           "operation_id": "0000000000000000000000000000000d",
           "reason": "auction_claim",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5080500000000000000000000000000",
           "postings": [],
           "items": [
             {
@@ -778,7 +778,7 @@
           "operation_id": "0000000000000000000000000000000e",
           "reason": "auction_bid",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5090100000000000000000000000000",
           "postings": [
             {
               "account": "old",
@@ -806,7 +806,7 @@
           "operation_id": "0000000000000000000000000000000f",
           "reason": "auction_outbid",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5090200000000000000000000000000",
           "postings": [
             {
               "account": "escrow",
@@ -852,7 +852,7 @@
           "operation_id": "00000000000000000000000000000010",
           "reason": "auction_claim",
           "actor": "domain",
-          "source_event": null,
+          "source_event": "a5090300000000000000000000000000",
           "postings": [
             {
               "account": "refund",

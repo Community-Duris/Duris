@@ -5,6 +5,7 @@
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_transfer_repository.h"
+#include "economy/economic_gameplay_authority.h"
 #include "account/account_reward.h"
 #include "account/account_reward_config.h"
 #include "account/account_reward_snapshot.h"
@@ -570,6 +571,8 @@ static void revoke_live_grant(const RewardGrant &grant)
 
 static void purge_expired_grants(void)
 {
+	if (economic_gameplay_authority::active())
+		return;
 	bool lookup_ok = false;
 	std::vector<RewardGrant> expired = query_grants(NULL, true, &lookup_ok);
 	if (!lookup_ok)
@@ -654,6 +657,14 @@ static P_obj existing_character_instance(P_char ch, const RewardGrant &grant,
 
 static bool summon_one(P_char ch, const RewardGrant &grant, bool explain)
 {
+	if (economic_gameplay_authority::active())
+	{
+		if (explain)
+			send_to_char(
+				"Divine rewards cannot be summoned while item accounting is active.\r\n",
+				ch);
+		return false;
+	}
 	P_obj existing = existing_character_instance(ch, grant, true);
 	const char *name = grant.display_name.empty() ? "a divine reward" :
 							grant.display_name.c_str();
@@ -900,6 +911,13 @@ static bool active_reward_capacity_allows(P_char ch, const RewardGrant &selected
 
 static void dismiss_player_grant(P_char ch, const RewardGrant &selected)
 {
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Divine rewards cannot be dismissed while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 	P_obj instance = existing_character_instance(ch, selected, true);
 	if (!instance)
 	{
@@ -1216,6 +1234,8 @@ static std::vector<RewardGrant> grants_for_removal(const char *account, int vnum
 
 static int remove_grants(const std::vector<RewardGrant> &grants)
 {
+	if (economic_gameplay_authority::active())
+		return -1;
 	std::vector<RewardGrant> revoked;
 	if (!sql_begin_transaction())
 		return -1;
@@ -1353,7 +1373,7 @@ static void dissolve_reward_containers(P_char ch, P_obj parent, const std::strin
 void account_bound_reward_prepare_player_corpse(P_char ch, P_obj corpse)
 {
 #ifndef __NO_MYSQL__
-	if (ch && corpse && IS_PC(ch))
+	if (!economic_gameplay_authority::active() && ch && corpse && IS_PC(ch))
 	{
 		const char *resolved = reward_account(ch);
 		if (resolved && *resolved)
@@ -1445,6 +1465,13 @@ void do_divineclaim(P_char ch, char *argument, int cmd)
 
 	if (!strcasecmp(first, "remove"))
 	{
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Divine rewards cannot be revoked while item accounting is active.\r\n",
+				ch);
+			return;
+		}
 		std::vector<RewardGrant> grants;
 		bool removal_lookup_ok = false;
 		int numeric = 0;
