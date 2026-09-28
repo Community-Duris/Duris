@@ -31,9 +31,9 @@ class economic_gameplay_authority
 	// rebound to the current epoch (retained exact-ID replay may be historical).
 	static economic_accounting_error prepare_currency(critical_command *command);
 	static economic_accounting_error prepare_coin_transfer(critical_command *command);
-	static economic_accounting_error prepare_item_transfer(critical_command *command,
-							       uint32_t actor_pid,
-							       economic_source_kind lifecycle_source = {});
+	static economic_accounting_error
+	prepare_item_transfer(critical_command *command, uint32_t actor_pid,
+			      economic_source_kind lifecycle_source = {});
 	static bool active();
 
     private:
@@ -48,6 +48,23 @@ class economic_gameplay_authority
 	static economic_accounting_error
 	install(const critical_operation_id &lineage, const critical_operation_id &epoch,
 		const critical_operation_id &receipt,
+		std::span<const economic_gameplay_wallet_mapping> wallets,
+		std::span<const economic_gameplay_bank_mapping> banks);
+	// This token keeps the qualification installer unavailable even to the
+	// unrelated flatfile lifecycle friend. Only the SQL lifecycle owner and the
+	// explicitly unit-only test seam can construct it.
+	class sql_wallet_root_qualification_install_key
+	{
+	    private:
+		sql_wallet_root_qualification_install_key() = default;
+		friend class economic_sql_accounting_lifecycle_transaction;
+#ifdef DURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST
+		friend class economic_gameplay_authority_test_access;
+#endif
+	};
+	static economic_accounting_error install_sql_wallet_root_qualification(
+		sql_wallet_root_qualification_install_key, const critical_operation_id &lineage,
+		const critical_operation_id &epoch, const critical_operation_id &receipt,
 		std::span<const economic_gameplay_wallet_mapping> wallets,
 		std::span<const economic_gameplay_bank_mapping> banks);
 #ifdef DURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST

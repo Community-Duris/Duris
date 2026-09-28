@@ -677,7 +677,7 @@ def run_wind_blade_sql_journey(binary: Path, base_build: Path, expected_head: st
                 client.pending.clear()
                 client.send("equipment")
                 equipment = client.expect("Pos: standing >", timeout=20)
-                require("blade" in (inventory + equipment).lower(),
+                require("a slender sword of vapor" in (inventory + equipment).lower(),
                         "reconnected character could not see the still-unexpired Wind Blade")
                 restored = _query_blade(db, pid)
                 require(restored["uid"] == saved["uid"],

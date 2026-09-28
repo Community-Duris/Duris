@@ -17,18 +17,54 @@
 #include <mysql.h>
 #include <span>
 #include <string>
+#include <thread>
 #include <vector>
 
-extern "C" MYSQL *sql_pool_acquire(void)
+namespace
 {
-	return nullptr;
+MYSQL *open_pool_test_connection()
+{
+	const char *host = getenv("DB_HOST");
+	const char *user = getenv("DB_USER");
+	const char *password = getenv("DB_PASSWD");
+	const char *database = getenv("ITEM_TRANSFER_TEST_DB_NAME");
+	const char *port_value = getenv("DB_PORT");
+	if (!host || !user || !password || !database)
+		return nullptr;
+	MYSQL *pooled = mysql_init(nullptr);
+	if (!pooled)
+		return nullptr;
+	const unsigned int port =
+		port_value ? static_cast<unsigned int>(strtoul(port_value, nullptr, 10)) : 3306;
+	if (!mysql_real_connect(pooled, host, user, password, database, port, nullptr, 0))
+	{
+		mysql_close(pooled);
+		return nullptr;
+	}
+	return pooled;
 }
+} // namespace
 
 unsigned long next_obj_uid = 1;
-extern "C" void sql_pool_release(MYSQL *) {}
-extern "C" MYSQL *sql_pool_replace_connection(MYSQL *)
+extern "C" MYSQL *sql_pool_acquire(void)
 {
-	return nullptr;
+	return open_pool_test_connection();
+}
+extern "C" void sql_pool_release(MYSQL *pooled)
+{
+	if (pooled)
+		mysql_close(pooled);
+}
+extern "C" MYSQL *sql_pool_replace_connection(MYSQL *pooled)
+{
+	if (pooled)
+		mysql_close(pooled);
+	return open_pool_test_connection();
+}
+extern "C" void sql_pool_discard_connection(MYSQL *pooled)
+{
+	if (pooled)
+		mysql_close(pooled);
 }
 
 namespace
@@ -799,7 +835,10 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 		2);
 	const critical_command admitted =
 		accounted_item_transfer(operation(133), give, lineage, epoch, 41);
-	const critical_apply_result moved = critical_command_repository_apply(connection, admitted);
+	critical_apply_result moved = {};
+	std::thread pooled_worker(
+		[&] { moved = critical_command_repository_apply_from_pool(admitted, nullptr); });
+	pooled_worker.join();
 	if (moved.outcome != critical_apply_outcome::applied || moved.error_code)
 		fprintf(stderr, "accounted item transfer failed: outcome=%u error=%u\n",
 			static_cast<unsigned int>(moved.outcome), moved.error_code);
@@ -892,6 +931,10 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 		critical_command_repository_apply(restarted, admitted);
 	assert(replayed.outcome == critical_apply_outcome::already_applied &&
 	       replayed.result_size == moved.result_size);
+	const critical_apply_result reconciled =
+		critical_command_repository_reconcile(restarted, admitted);
+	assert(reconciled.outcome == critical_apply_outcome::already_applied &&
+	       reconciled.result_size == moved.result_size);
 	assert(scalar(restarted, ("SELECT COUNT(*) FROM economic_accounting_item_reference WHERE "
 				  "operation_id=UNHEX('" +
 				  operation_hex(admitted.operation_id) + "')")
@@ -1008,6 +1051,7 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 
 int main()
 {
+	assert(mysql_library_init(0, nullptr, nullptr) == 0);
 	MYSQL *connection = mysql_init(nullptr);
 	assert(connection);
 	assert(mysql_real_connect(

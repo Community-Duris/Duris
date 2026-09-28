@@ -9,6 +9,8 @@
 
 class economic_sql_lifecycle_guard;
 class economic_sql_cutover_transaction_owner;
+struct critical_operation_id;
+struct economic_sql_activation_receipt;
 
 // Opaque owner-issued proof of the composed SQL fence and coordinator lease.
 // It stores identities only, never a pointer to a guard or SQL connection.
@@ -69,6 +71,12 @@ class economic_sql_lifecycle_guard
 	friend class economic_sql_cutover_transaction_owner;
 	friend class economic_sql_accounting_lifecycle_transaction;
 	friend class economic_sql_currency_writer_guard;
+	// Exact data-only readback needs to prove supplied-handle ownership without
+	// exposing the guard's connection/session through a general accessor.
+	friend unsigned int
+	economic_sql_activation_receipt_readback(MYSQL *, const economic_sql_lifecycle_guard &,
+						 const critical_operation_id &,
+						 economic_sql_activation_receipt *) noexcept;
 	static void clear_transferred_local_authority(bool runtime, bool maintenance) noexcept;
 	bool is_valid_cutover_capability(const economic_sql_cutover_capability &) const noexcept;
 	MYSQL *connection_ = nullptr;
@@ -124,10 +132,23 @@ class economic_sql_cutover_transaction_owner final
 	// matching SQL terminal result, SQL/local fence release, and coordinator owner
 	// release. A resolved opposite outcome is rejected without SQL or cleanup.
 	// retry_cleanup() issues only fence cleanup SQL, never COMMIT or ROLLBACK,
-	// and only releases fences after a known outcome.
+	// and only releases fences after a known outcome. The opt-in retained-publication
+	// path commits once but keeps every fence until finish_publication() releases
+	// the coordinator lease and transfers the maintenance SQL/local fences into
+	// an empty lifetime guard without unlocking them.
 	bool begin(economic_sql_lifecycle_guard &,
 		   const economic_sql_cutover_capability &) noexcept;
 	bool is_valid() noexcept;
+	// Opt in only for a maintenance owner: a successful COMMIT records a known
+	// durable outcome while retaining coordinator, SQL, and local exclusion.
+	// A false return after terminal_outcome()==committed leaves publication pending.
+	bool commit_and_retain_publication() noexcept;
+	bool is_valid_for_publication() noexcept;
+	// Call only after private publication. Release the coordinator while this
+	// owner still holds the SQL/local fences, then move those same fences into
+	// an empty lifetime guard without an unlock/reacquire gap.
+	bool finish_publication(economic_sql_lifecycle_guard *lifetime_guard) noexcept;
+	bool publication_pending() const noexcept { return publication_pending_; }
 	bool commit() noexcept;
 	bool rollback() noexcept;
 	bool retry_cleanup() noexcept;
@@ -148,11 +169,13 @@ class economic_sql_cutover_transaction_owner final
 	uint64_t coordinator_lease_id_ = 0;
 	bool runtime_lock_ = false;
 	bool writer_lock_ = false;
+	bool maintenance_ = false;
 	bool local_runtime_ = false;
 	bool local_maintenance_ = false;
 	bool active_ = false;
 	bool started_ = false;
 	bool outcome_uncertain_ = false;
+	bool publication_pending_ = false;
 	economic_sql_cutover_terminal_outcome terminal_outcome_ =
 		economic_sql_cutover_terminal_outcome::unresolved;
 	bool sql_resources_released_ = false;

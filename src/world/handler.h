@@ -5,3 +5,4 @@ int can_prime_class_use_item(P_char, P_obj);
 // only after the player's authoritative snapshot has been loaded.
 bool corpse_raise_player_save_fenced(P_char);
 void corpse_raise_player_ready(P_char, bool inventory_reloaded);
+bool corpse_has_death_conflict(P_obj);
