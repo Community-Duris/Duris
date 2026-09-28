@@ -69,11 +69,22 @@ qualify a grant or expense.
 
 An inactive Chaos starter bank adapter now freezes the existing deterministic
 `CHAOSEED` player identity as a `starter_grant` source, requires the exact
-1,000,000-platinum bank credit, and prepares a bank-only native revision with a
-balanced bank/issuance plan. It rejects a changed operation ID, source, amount,
-or authority witness. The SQL and flatfile commit owners must still verify the
-persisted pending grant, claim that source once, and write native state, plan,
-receipt, and publication together before the gameplay route can be admitted.
+1,000,000-platinum bank credit, and prepares a balanced bank/issuance plan. It
+rejects a changed operation ID, source, amount, or authority witness. The SQL
+bank owner checks the persisted pending bit in `player_data.act3` under its
+native lock, refuses an already claimed source, and commits the native ledger,
+accounting plan, unique source claim, receipt, and outbox in one root. SQL
+advances the unchanged wallet's revision along with the bank revision because
+the existing currency ledger requires a unique wallet revision for every row;
+the plan records that exact native effect. Retained replay verifies the source
+claim without requiring the pending bit to remain set. The flatfile owner reads
+the atomically saved player snapshot's `act3` status under its accounting
+authority lock and commits its native wallet and bank revisions, balanced plan,
+unique source claim, and receipt in one recoverable root. Its replay verifies
+the claim without rereading the pending bit. Both owners resolve current native
+revisions when this sourced reward commits, so an intervening ATM operation
+does not strand its deterministic ID. Gameplay submission remains inactive
+until the producer can prove that boundary for the selected backend.
 
 The versioned reason registry requires a source event for service, training,
 locker, shipping, insurance, guild, crafting, gambling-stake, shop-buy,

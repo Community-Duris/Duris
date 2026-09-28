@@ -3,10 +3,12 @@
 #include "flatfile/flatfile_accounting_baseline.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
 #include "flatfile/currency_flatfile_mutation_writer.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/economic_command_admission.h"
+#include "player/player_snapshot_codec.h"
 #include "persistence/critical_command_coordinator.h"
 #include "world/epic_command.h"
 #include <algorithm>
@@ -36,6 +38,8 @@ class flatfile_accounting_test_access
 	static constexpr auto append_epoch = &flatfile_accounting_authority_storage::append_epoch;
 	static constexpr auto select_epoch = &flatfile_accounting_authority_storage::select_epoch;
 	static constexpr auto stage = &flatfile_accounting_storage::stage;
+	static constexpr auto verify_source_claim =
+		&flatfile_accounting_storage::verify_source_claim;
 	static constexpr auto commit = &flatfile_accounting_storage::commit;
 	static constexpr auto baseline_initialize =
 		&flatfile_accounting_baseline_storage::initialize;
@@ -82,6 +86,39 @@ void write(const fs::path &path, const bytes &value)
 	assert(flatfile_atomic_write(path.parent_path().string(), path.filename().string(), value,
 				     nullptr));
 }
+void write_pending_snapshot(const fs::path &path, uint64_t flags, uint64_t revision)
+{
+	player_snapshot snapshot = {};
+	snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	snapshot.pid = 1;
+	snapshot.revision = revision;
+	snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+	snapshot.encoded_size_bound = 8192;
+	snapshot.status_integers = { { player_status_field::racewar, 1, 0, false },
+				     { player_status_field::action_flags_3, 0, flags, true } };
+	bytes payload;
+	assert(player_snapshot_encode(snapshot, &payload) == player_snapshot_codec_result::ok);
+	bytes file;
+	const auto &magic = flatfile_player_snapshot_file::player_magic;
+	file.insert(file.end(), magic.begin(), magic.end());
+	const auto number = [&](uint64_t value, size_t width)
+	{
+		for (size_t index = 0; index < width; ++index)
+			file.push_back(static_cast<uint8_t>(value >> (8 * index)));
+	};
+	number(flatfile_player_snapshot_file::player_file_version, 4);
+	number(payload.size(), 4);
+	number(snapshot.pid, 4);
+	number(snapshot.revision, 8);
+	number(snapshot.components, 8);
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.data(), payload.size(), digest.data());
+	file.insert(file.end(), digest.begin(), digest.end());
+	file.insert(file.end(), payload.begin(), payload.end());
+	fs::create_directories(path / "players");
+	fs::permissions(path / "players", fs::perms::owner_all);
+	write(path / "players/1.snapshot", file);
+}
 size_t bucket(uint16_t kind, uint64_t context, uint64_t pid, const std::string &name)
 {
 	bytes key;
@@ -125,8 +162,9 @@ void initialize_bucket(const std::string &root, const flatfile_authority_lock &l
 void setup(const fs::path &path, bool activate = true)
 {
 	const auto root = path.string();
-	for (const auto &dir : { path, path / "domains", path / "economic-evidence",
-				 path / "identities", path / "identities/names" })
+	for (const auto &dir :
+	     { path, path / "players", path / "domains", path / "economic-evidence",
+	       path / "identities", path / "identities/names" })
 	{
 		fs::create_directories(dir);
 		fs::permissions(dir, fs::perms::owner_all);
@@ -234,6 +272,35 @@ critical_command command(const std::string &root, uint64_t n, int64_t amount = 1
 		       economic_accounting_error::ok);
 		result.schema_version = 2;
 	}
+	return result;
+}
+critical_command starter_command(const std::string &root)
+{
+	const auto before = state(root);
+	critical_operation_id seed = {}, operation_id = {};
+	memcpy(seed.bytes.data(), "CHAOSEED", 8);
+	for (size_t index = 0; index < 8; ++index)
+		seed.bytes[8 + index] = static_cast<uint8_t>(uint64_t{ 1 } >> (8 * index));
+	assert(critical_operation_id_derive(seed, 0x43484250, 1, &operation_id));
+	currency_command_payload payload = {};
+	payload.pid = 1;
+	payload.racewar = 1;
+	payload.reason = currency_reason_type::chaos_starter_reward;
+	payload.reason_id = 1;
+	strcpy(payload.account_name.data(), "ACCOUNT-ONE");
+	payload.bank_delta.amount[3] = 1000000;
+	critical_command result;
+	assert(currency_command_build(&result, operation_id, payload,
+				      before.domains.wallet_revision, before.domains.bank_revision,
+				      critical_source_site::login,
+				      critical_deadline_class::recovery));
+	result.accepted_at_usec = 12;
+	assert(critical_command_normalize(&result));
+	assert(economic_chaos_starter_bank_intent(result, id(90005), wallet(), bank(),
+						  &result.accounting_intent) ==
+	       economic_accounting_error::ok);
+	result.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	result.publication_required = true;
 	return result;
 }
 void refreeze(critical_command &cmd, const critical_operation_id &epoch = id(90005))
@@ -391,6 +458,174 @@ void basic(const std::string &root)
 void clone(const fs::path &seed, const fs::path &target)
 {
 	fs::copy(seed, target, fs::copy_options::recursive);
+}
+void initialize_starter_bucket(const std::string &root, const critical_command &cmd)
+{
+	flatfile_authority_lock lock;
+	assert(lock.acquire(root, nullptr));
+	ops changes;
+	const auto result = access_type::initialize_evidence(root, lock,
+							     control(root, lock).revision,
+							     cmd.operation_id.bytes[0], id(92000),
+							     &changes, nullptr);
+	assert(result == 0 || result == EALREADY);
+	if (!result)
+		commit(root, lock, changes);
+}
+void starter_grant(const fs::path &seed, const fs::path &base)
+{
+	const auto path = base / "starter";
+	clone(seed, path);
+	const auto root = path.string();
+	const auto cmd = starter_command(root);
+	initialize_starter_bucket(root, cmd);
+	assert(economic_command_admission_supported(cmd) &&
+	       economic_flatfile_command_admission_supported(cmd));
+	const auto before = state(root);
+	const auto missing_snapshot = flatfile_accounting_bank_transaction::apply(root, cmd);
+	assert(missing_snapshot.outcome == outcome::retryable_failure &&
+	       missing_snapshot.error_code == ENOENT);
+	write_pending_snapshot(path, 0, 1);
+	const auto missing_flag = flatfile_accounting_bank_transaction::apply(root, cmd);
+	assert(missing_flag.outcome == outcome::retryable_failure &&
+	       missing_flag.error_code == EACCES);
+	assert(state(root).domains.bank == before.domains.bank &&
+	       state(root).domains.bank_revision == before.domains.bank_revision);
+	write_pending_snapshot(path, CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG, 2);
+	const auto applied = flatfile_accounting_bank_transaction::apply(root, cmd);
+	assert(applied.outcome == outcome::applied && !applied.error_code);
+	const auto after = state(root);
+	assert(after.domains.wallet == before.domains.wallet &&
+	       after.domains.wallet_revision == before.domains.wallet_revision + 1 &&
+	       after.domains.bank[3] == before.domains.bank[3] + 1000000 &&
+	       after.domains.bank_revision == before.domains.bank_revision + 1);
+	const auto record = retained(root, cmd);
+	economic_accounting_plan plan;
+	assert(economic_plan_decode(record.plan, &plan) == economic_accounting_error::ok &&
+	       plan.accounts.size() == 3 && plan.postings.size() == 2);
+	bool wallet_effect = false, bank_effect = false, issuance_effect = false;
+	for (const auto &account : plan.accounts)
+	{
+		if (economic_account_key_equal(account.key, wallet()))
+		{
+			wallet_effect = true;
+			assert(account.before_revision == before.domains.wallet_revision &&
+			       account.after_revision == after.domains.wallet_revision);
+			for (size_t part = 0; part < 4; ++part)
+				assert(account.before[part] ==
+					       static_cast<int64_t>(before.domains.wallet[part]) &&
+				       account.after[part] == account.before[part]);
+		}
+		else if (economic_account_key_equal(account.key, bank()))
+		{
+			bank_effect = true;
+			assert(account.before_revision == before.domains.bank_revision &&
+			       account.after_revision == after.domains.bank_revision);
+			for (size_t part = 0; part < 4; ++part)
+				assert(account.before[part] ==
+					       static_cast<int64_t>(before.domains.bank[part]) &&
+				       account.after[part] ==
+					       static_cast<int64_t>(after.domains.bank[part]));
+		}
+		else
+		{
+			issuance_effect = true;
+			assert(account.key.kind == economic_account_kind::issuance &&
+			       account.before == economic_coin_vector{} &&
+			       account.after == economic_coin_vector{});
+		}
+	}
+	assert(wallet_effect && bank_effect && issuance_effect);
+	int64_t copper_sum = 0;
+	bool bank_posting = false, issuance_posting = false;
+	for (const auto &posting : plan.postings)
+	{
+		copper_sum += posting.copper;
+		const auto kind = plan.accounts[posting.account_index].key.kind;
+		if (kind == economic_account_kind::bank)
+			bank_posting = posting.delta == economic_coin_vector{ 0, 0, 0, 1000000 } &&
+				       posting.copper == 1000000000;
+		else if (kind == economic_account_kind::issuance)
+			issuance_posting = posting.delta ==
+						   economic_coin_vector{ 0, 0, 0, -1000000 } &&
+					   posting.copper == -1000000000;
+	}
+	assert(bank_posting && issuance_posting && copper_sum == 0);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		assert(access_type::verify_source_claim(root, lock, record, nullptr) ==
+		       flatfile_accounting_status::ok);
+	}
+	write_pending_snapshot(path, 0, 3);
+	const auto replay = flatfile_accounting_bank_transaction::apply(root, cmd);
+	assert(replay.outcome == outcome::already_applied);
+	same(applied, replay);
+	auto changed_id = cmd;
+	changed_id.operation_id = id(92001);
+	changed_id.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	changed_id.accounting_intent.clear();
+	changed_id.publication_required = false;
+	std::vector<uint8_t> changed_intent;
+	assert(economic_chaos_starter_bank_intent(changed_id, id(90005), wallet(), bank(),
+						  &changed_intent) ==
+	       economic_accounting_error::unauthorized);
+	const auto tampered = base / "starter-tampered";
+	clone(path, tampered);
+	bool removed_claim = false;
+	for (const auto &entry : fs::directory_iterator(tampered / "economic-evidence"))
+		if (entry.path().filename().string().starts_with("source-claim-"))
+		{
+			assert(!removed_claim && fs::remove(entry.path()));
+			removed_claim = true;
+		}
+	assert(removed_claim);
+	const auto damaged = flatfile_accounting_bank_transaction::apply(tampered.string(), cmd);
+	assert(damaged.outcome == outcome::retryable_failure && damaged.error_code);
+	assert(state(tampered.string()).domains.bank[3] == after.domains.bank[3]);
+	const auto rebase = base / "starter-rebase";
+	clone(seed, rebase);
+	const auto rebase_root = rebase.string();
+	const auto stale_grant = starter_command(rebase_root);
+	initialize_starter_bucket(rebase_root, stale_grant);
+	write_pending_snapshot(rebase, CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG, 1);
+	assert(flatfile_accounting_bank_transaction::apply(rebase_root, command(rebase_root, 2))
+		       .outcome == outcome::applied);
+	const auto rebased = flatfile_accounting_bank_transaction::apply(rebase_root, stale_grant);
+	assert(rebased.outcome == outcome::applied &&
+	       state(rebase_root).domains.wallet[0] == before.domains.wallet[0] + 1 &&
+	       state(rebase_root).domains.bank[3] == before.domains.bank[3] + 1000000);
+	const auto crash = base / "starter-crash";
+	clone(seed, crash);
+	const auto crash_root = crash.string();
+	const auto crash_command = starter_command(crash_root);
+	initialize_starter_bucket(crash_root, crash_command);
+	write_pending_snapshot(crash, CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG, 1);
+	const auto child = fork();
+	assert(child >= 0);
+	if (!child)
+	{
+		setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION", "5", 1);
+		const auto result =
+			flatfile_accounting_bank_transaction::apply(crash_root, crash_command);
+		_exit(result.outcome == outcome::ambiguous_commit ? 77 : 78);
+	}
+	int status;
+	assert(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
+	       WEXITSTATUS(status) == 77);
+	const auto recovered =
+		flatfile_accounting_bank_transaction::apply(crash_root, crash_command);
+	assert(recovered.outcome == outcome::already_applied &&
+	       state(crash_root).domains.bank[3] == before.domains.bank[3] + 1000000);
+	const auto recovered_record = retained(crash_root, crash_command);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(crash_root, nullptr));
+		assert(access_type::verify_source_claim(crash_root, lock, recovered_record,
+							nullptr) == flatfile_accounting_status::ok);
+	}
+	std::cout
+		<< "bank root: sourced starter grant, missing witness, retained claim, tamper and crash recovery passed\n";
 }
 void crashes(const fs::path &seed, const fs::path &base)
 {
@@ -761,6 +996,7 @@ int main(int argc, char **argv)
 	fs::permissions(base, fs::perms::owner_all);
 	const auto seed = base / "seed";
 	setup(seed);
+	starter_grant(seed, base);
 	crashes(seed, base);
 	legacy_capacity(seed, base / "legacy-full");
 	contention(seed, base / "contended");

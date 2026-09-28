@@ -69,11 +69,35 @@ applies captured cash before publishing the keeper and rejects invalid values.
 deterministic SQL doubles. The migration is required before deploying the SQL
 server code; no historical cash value is backfilled.
 
-This pure adapter is not yet invoked by either repository. Plan 4 still needs
-keeper mapping creation and baseline coverage, followed by a typed shop
-transaction that stages the plan with native state, receipt, and outbox. The SQL route needs a
-composite instead of its separate legacy money and item calls. The shop fee is a
-separate route and needs its own accounting treatment. Disposable MySQL and
-MariaDB journeys must prove buy, sell, keeper cash, the VNUM 11005 exception,
-replay, restart, and intermediate failure. No shop route is activated by this
-boundary work.
+The SQL source capture now includes each stable shopkeeper row, including
+nullable cash and the shop revision. Normalization reports unknown cash as a
+defect, and the lifecycle owner refuses a baseline until every keeper has a
+known, nonnegative cash value. It assigns a treasury mapping to the stable
+`shopkeepers.id`, preserves `shop_id` in the readback receipt, and includes the
+exact keeper cash and revision in the opening witness. A changed keeper row
+changes the native boundary digest. The disposable MySQL source and lifecycle
+fixtures cover a known keeper, a null-cash refusal, and treasury readback.
+
+An inactive SQL shop authority lock now validates the frozen three-account
+intent under the caller's transaction. It locks the active epoch and mappings,
+then the native player wallet, account bank, and keeper cash rows. It locks the
+owner revisions and selected item ownership tree; a produced item also locks
+its stocked exemplar and target ancestors. Migration 0038 supplies the
+equipment slot witness; the lock refuses an equipped item. A disposable MySQL
+fixture passes all five shop actions through this lock and the typed plan,
+checks the VNUM 11005 issuance exception and an unfunded roaming refusal, and
+rejects null or stale cash, a hidden child, an equipped item, and an inactive
+epoch. The client-free build returns `ENOTSUP`. The disposable runner can use
+MariaDB 10.11 with `bash tests/async/run_shop_trade_sql_lock_schema_mysql.sh`
+or MySQL 8.4 with `SHOP_TRADE_LOCK_DB_IMAGE=mysql:8.4` before that command.
+This fixture has no native shop mutation, receipt, or outbox. The SQL composite
+still needs physical item-row and gameplay shop configuration witnesses before
+the route can be activated.
+
+The pure accounting adapter is not yet invoked by either repository. Plan 4
+still needs a typed shop transaction that stages the plan with native state,
+receipt, and outbox. The SQL route needs a composite instead of its separate
+legacy money and item calls. The shop fee is a separate route and needs its own
+accounting treatment. Disposable MySQL and MariaDB journeys must prove buy,
+sell, keeper cash, the VNUM 11005 exception, replay, restart, and intermediate
+failure. No shop route is activated by this boundary work.

@@ -47,8 +47,16 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 							    economic_account_kind::bank,
 							    little_u64(facts, 8),
 							    little_u64(facts, 16) };
-			if (economic_bank_transfer_intent(admission, meta.epoch, wallet, bank,
-							  &expected) != error::ok)
+			currency_command_payload payload = {};
+			if (!currency_command_decode_payload(admission, &payload))
+				return false;
+			const auto result =
+				payload.reason == currency_reason_type::chaos_starter_reward ?
+					economic_chaos_starter_bank_intent(
+						admission, meta.epoch, wallet, bank, &expected) :
+					economic_bank_transfer_intent(admission, meta.epoch, wallet,
+								      bank, &expected);
+			if (result != error::ok)
 				return false;
 		}
 		else if (command.type == critical_command_type::coin_transfer)
@@ -93,6 +101,15 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 
 bool economic_flatfile_command_admission_supported(const critical_command &command) noexcept
 {
+	if (command.type == critical_command_type::account_bank)
+	{
+		currency_command_payload payload = {};
+		if (!currency_command_decode_payload(command, &payload) ||
+		    (payload.reason != currency_reason_type::atm_deposit &&
+		     payload.reason != currency_reason_type::atm_withdraw &&
+		     payload.reason != currency_reason_type::chaos_starter_reward))
+			return false;
+	}
 	return (command.type == critical_command_type::account_bank ||
 		command.type == critical_command_type::item_transfer) &&
 	       economic_command_admission_supported(command);

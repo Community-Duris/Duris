@@ -420,6 +420,7 @@ static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 
 static constexpr uint32_t CHAOS_STARTER_EPIC_OPERATION_DOMAIN = 0x43484550;
 static constexpr uint32_t CHAOS_STARTER_BANK_OPERATION_DOMAIN = 0x43484250;
+static_assert(PLR3_CHAOS_STARTER_BANK_PENDING == CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG);
 
 static bool chaos_starter_operation_id(P_char ch, uint32_t domain,
 				       critical_operation_id *operation_id)

@@ -280,11 +280,10 @@ economic_accounting_error economic_chaos_starter_bank_intent(const critical_comm
 	}
 }
 
-economic_accounting_error
-economic_chaos_starter_bank_prepare(const critical_command &command,
-				    const economic_frozen_intent &intent,
-				    const economic_currency_authority &authority,
-				    std::optional<economic_prepared_currency> *prepared)
+economic_accounting_error economic_chaos_starter_bank_prepare(
+	const critical_command &command, const economic_frozen_intent &intent,
+	const economic_currency_authority &authority, currency_revision_policy revision_policy,
+	std::optional<economic_prepared_currency> *prepared)
 {
 	if (!prepared || !account_pair(authority.wallet_account, authority.bank_account))
 		return economic_accounting_error::invalid_identity;
@@ -318,8 +317,7 @@ economic_chaos_starter_bank_prepare(const critical_command &command,
 		std::optional<currency_prepared_mutation> mutation;
 		const auto domain_error = currency_prepare_mutation(
 			payload, authority.state, command.expected_revisions[0].revision,
-			command.expected_revisions[1].revision, currency_revision_policy::bank_only,
-			&mutation);
+			command.expected_revisions[1].revision, revision_policy, &mutation);
 		if (domain_error)
 			return mutation_error(domain_error);
 		economic_accounting_plan plan;
@@ -330,9 +328,16 @@ economic_chaos_starter_bank_prepare(const critical_command &command,
 		const auto &after = mutation->after();
 		const economic_account_key issuance = { authority.bank_account.lineage,
 							economic_account_kind::issuance, 1, 0 };
-		plan.accounts = { { authority.bank_account, before.bank.amount, after.bank.amount,
-				    before.bank_revision, after.bank_revision },
-				  { issuance, {}, {}, 0, 0 } };
+		if (after.wallet_revision != before.wallet_revision)
+			plan.accounts.push_back({ authority.wallet_account, before.wallet.amount,
+						  after.wallet.amount, before.wallet_revision,
+						  after.wallet_revision });
+		const uint16_t bank_index = static_cast<uint16_t>(plan.accounts.size());
+		plan.accounts.push_back({ authority.bank_account, before.bank.amount,
+					  after.bank.amount, before.bank_revision,
+					  after.bank_revision });
+		const uint16_t issuance_index = static_cast<uint16_t>(plan.accounts.size());
+		plan.accounts.push_back({ issuance, {}, {}, 0, 0 });
 		int64_t value = 0;
 		result = economic_coin_value(payload.bank_delta.amount, &value);
 		if (result != economic_accounting_error::ok)
@@ -340,8 +345,8 @@ economic_chaos_starter_bank_prepare(const critical_command &command,
 		economic_coin_vector issuance_delta = {};
 		for (size_t part = 0; part < issuance_delta.size(); ++part)
 			issuance_delta[part] = -payload.bank_delta.amount[part];
-		plan.postings = { { 0, 0, 0, payload.bank_delta.amount, value },
-				  { 1, 1, 0, issuance_delta, -value } };
+		plan.postings = { { 0, bank_index, 0, payload.bank_delta.amount, value },
+				  { 1, issuance_index, 0, issuance_delta, -value } };
 		result = economic_plan_normalize(&plan);
 		if (result != economic_accounting_error::ok)
 			return result;

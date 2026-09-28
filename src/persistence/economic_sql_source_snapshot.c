@@ -25,6 +25,7 @@ constexpr source sources[] = {
 	{ "account_banks",
 	  "id,account_name,racewar,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision",
 	  "id" },
+	{ "shopkeepers", "id,shop_id,mob_vnum,room_vnum,cash,shop_revision", "id" },
 	{ "ships", "id,owner_name,money", "id" },
 	{ "auctions",
 	  "id,seller_pid,status,winning_bidder_pid,cur_price,buy_price,quantity,auction_revision,custody_state,listing_operation_id,obj_vnum,obj_blob_str",

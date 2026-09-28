@@ -284,7 +284,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
 
     def test_unmatched_lexical_sites_keep_matrix_incomplete(self) -> None:
         self.assertFalse(self.artifact["coverage_complete"])
-        self.assertGreater(self.artifact["lexical_census"]["unmapped_current_unique_sites"], 0)
+        self.assertEqual(self.artifact["lexical_census"]["unmapped_current_unique_sites"], 0)
         self.assertEqual(self.artifact["playable_release_status"], "BLOCKED")
 
     def test_bank_load_result_is_read_only_and_local_buffer_is_not_a_writer(self) -> None:

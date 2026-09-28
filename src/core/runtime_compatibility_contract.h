@@ -91,17 +91,17 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * Migration 0033 adds staged SQL lifecycle receipts, not gameplay activation.
  * Migration 0034 adds retained death-conflict evidence, not capture activation.
  * Migration 0036 adds scoped activation receipts; migration 0040 adds the
- * separate global SQL cutover decision. Migration 0041 adds retained
- * shopkeeper cash and revision metadata.
+ * separate global SQL cutover decision. Migration 0041 records shopkeeper cash
+ * and a stable shop revision without adding a runtime table.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
 constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0041_shopkeeper_cash_identity";
 constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 41;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
 	"b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"e0ad42a840f3db5f0e39dae9485b21dfbf635ab40eac3d23ddaa3e2a86287812";
+	"1e3187f0563854513b014129bf3e2a8bfc1a4b0a5ac0b6e196d7c0ca616a696d";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"e45b5945f48c7c6a30bfaa79c5c0dc37420ec31a2962275c9c4cd74dba7e5924";
+	"68be1e69b695fc7d363014965309a45eecea334163d7427fd62594ff4de9c9de";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

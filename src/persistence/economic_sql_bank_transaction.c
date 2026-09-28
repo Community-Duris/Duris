@@ -67,10 +67,14 @@ bank_identity decode(const critical_command &command)
 	admission_command.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 	admission_command.accounting_intent.clear();
 	admission_command.publication_required = false;
-	checked(economic_bank_transfer_intent(admission_command, metadata.epoch, value.wallet,
-					      value.bank, &expected));
+	if (value.payload.reason == currency_reason_type::chaos_starter_reward)
+		checked(economic_chaos_starter_bank_intent(admission_command, metadata.epoch,
+							   value.wallet, value.bank, &expected));
+	else
+		checked(economic_bank_transfer_intent(admission_command, metadata.epoch,
+						      value.wallet, value.bank, &expected));
 	// Enforces writer/reason/source/actor/policy/facts and the complete immutable
-	// command binding before any SQL. ATM capabilities never mint source events.
+	// command binding before any SQL.
 	require(expected == command.accounting_intent, EACCES);
 	return value;
 }
@@ -155,6 +159,14 @@ std::string hex(std::span<const uint8_t> data)
 std::string id(const critical_operation_id &value)
 {
 	return hex(value.bytes);
+}
+std::string source_event_literal(const economic_operation_metadata &metadata)
+{
+	if (!metadata.source_event)
+		return "NULL";
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> encoded = {};
+	checked(economic_source_event_encode(*metadata.source_event, &encoded));
+	return hex(encoded);
 }
 void execute(MYSQL *connection, const std::string &sql)
 {
@@ -364,7 +376,7 @@ fields operation(const critical_command &command, const bank_identity &identity,
 		 { "actor_kind", std::to_string(static_cast<uint8_t>(metadata.actor_kind)) },
 		 { "actor_id", std::to_string(metadata.actor_id) },
 		 { "reason", std::to_string(static_cast<uint16_t>(metadata.reason)) },
-		 { "source_event", "NULL" },
+		 { "source_event", source_event_literal(metadata) },
 		 { "intent_digest", hex(metadata.intent_digest) },
 		 { "domain_digest", hex(metadata.domain_digest) },
 		 { "plan_digest", plan ? hex(hash(encoded)) : "NULL" },
@@ -413,7 +425,9 @@ void evidence(MYSQL *connection, const critical_command &command, const bank_ide
 	const std::string where = "operation_id=" + id(command.operation_id);
 	if (plan)
 	{
-		require(plan->accounts.size() == 2 && plan->postings.size() == 2 &&
+		const bool starter = identity.payload.reason ==
+				     currency_reason_type::chaos_starter_reward;
+		require(plan->accounts.size() == (starter ? 3 : 2) && plan->postings.size() == 2 &&
 			plan->children.empty() && plan->items_before.empty() &&
 			plan->items_after.empty() && plan->item_events.empty());
 		for (size_t index = 0; index < plan->accounts.size(); ++index)
@@ -432,11 +446,35 @@ void evidence(MYSQL *connection, const critical_command &command, const bank_ide
 			count(connection, "economic_accounting_coin_posting", predicate(row), 1);
 		}
 	}
-	count(connection, "economic_accounting_account_effect", where, plan ? 2 : 0);
+	const bool claimed = plan && identity.intent.admission.metadata.source_event;
+	if (claimed)
+	{
+		const fields claim = { { "lineage", id(identity.wallet.lineage) },
+				       { "source_event",
+					 source_event_literal(identity.intent.admission.metadata) },
+				       { "operation_id", id(command.operation_id) },
+				       { "outcome", "1" } };
+		if (append)
+		{
+			try
+			{
+				insert(connection, "economic_accounting_source_claim", claim);
+			}
+			catch (const failure &error)
+			{
+				if (error.code == 1062)
+					throw failure{ EEXIST };
+				throw;
+			}
+		}
+		count(connection, "economic_accounting_source_claim", predicate(claim), 1);
+	}
+	count(connection, "economic_accounting_account_effect", where,
+	      plan ? plan->accounts.size() : 0);
 	count(connection, "economic_accounting_coin_posting", where, plan ? 2 : 0);
-	for (const char *table :
-	     { "economic_accounting_child", "economic_accounting_item_reference",
-	       "economic_accounting_source_claim", "item_ownership_ledger" })
+	count(connection, "economic_accounting_source_claim", where, claimed ? 1 : 0);
+	for (const char *table : { "economic_accounting_child",
+				   "economic_accounting_item_reference", "item_ownership_ledger" })
 		count(connection, table, where, 0);
 }
 }
@@ -505,15 +543,41 @@ economic_sql_bank_transaction::prepare(MYSQL *connection, const critical_command
 		require(!error, error);
 		state->before = balances(connection, identity, state->bank_id);
 		state->result = state->before;
+		const bool starter = identity.payload.reason ==
+				     currency_reason_type::chaos_starter_reward;
+		if (starter)
+		{
+			const auto flags = integer<uint64_t>(
+				read(connection,
+				     "SELECT act3 FROM player_data WHERE pid=" +
+					     std::to_string(identity.payload.pid) + " FOR UPDATE",
+				     1)[0]);
+			require((flags & CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG) != 0, EACCES);
+			const auto &metadata = identity.intent.admission.metadata;
+			const auto source = source_event_literal(metadata);
+			require(source != "NULL");
+			require(integer<uint64_t>(read(
+					connection,
+					"SELECT COUNT(*) FROM economic_accounting_source_claim WHERE lineage=" +
+						id(metadata.lineage) +
+						" AND source_event=" + source,
+					1)[0]) == 0,
+				EEXIST);
+		}
 		economic_currency_authority authority = { identity.intent.admission.metadata.epoch,
 							  identity.wallet,
 							  identity.bank,
 							  command.keys[0],
 							  command.keys[1],
 							  state->before };
-		const auto preparation = economic_bank_transfer_prepare(
-			command, identity.intent, authority, currency_revision_policy::sql_legacy,
-			&state->prepared);
+		const auto revision_policy = currency_revision_policy::sql_legacy;
+		const auto preparation =
+			starter ?
+				economic_chaos_starter_bank_prepare(command, identity.intent,
+								    authority, revision_policy,
+								    &state->prepared) :
+				economic_bank_transfer_prepare(command, identity.intent, authority,
+							       revision_policy, &state->prepared);
 		if (preparation != economic_accounting_error::ok)
 		{
 			require(preparation != economic_accounting_error::capacity, ENOMEM);
@@ -521,8 +585,7 @@ economic_sql_bank_transaction::prepare(MYSQL *connection, const critical_command
 			state->code = currency_prepare_mutation(
 				identity.payload, state->before,
 				command.expected_revisions[0].revision,
-				command.expected_revisions[1].revision,
-				currency_revision_policy::sql_legacy, &domain);
+				command.expected_revisions[1].revision, revision_policy, &domain);
 			// Invalid native holdings and malformed preparation are unresolved
 			// authority failures, never durable business rejections.
 			require(business_error(state->code), state->code ? state->code : EINVAL);
@@ -759,7 +822,9 @@ unsigned int economic_sql_bank_verify_retained(MYSQL *connection, const critical
 					reinterpret_cast<const uint8_t *>(row[0]->data()),
 					row[0]->size()),
 				&plan));
-			require(plan.accounts.size() == 2);
+			const bool starter = identity.payload.reason ==
+					     currency_reason_type::chaos_starter_reward;
+			require(plan.accounts.size() == (starter ? 3 : 2));
 			economic_currency_authority authority = {
 				identity.intent.admission.metadata.epoch,
 				identity.wallet,
@@ -768,24 +833,44 @@ unsigned int economic_sql_bank_verify_retained(MYSQL *connection, const critical
 				command.keys[1],
 				{}
 			};
+			bool wallet_seen = false, bank_seen = false, issuance_seen = false;
+			const economic_account_key issuance = { identity.bank.lineage,
+								economic_account_kind::issuance, 1,
+								0 };
 			for (const auto &account : plan.accounts)
 			{
 				if (economic_account_key_equal(account.key, identity.wallet))
 				{
+					require(!wallet_seen);
+					wallet_seen = true;
 					authority.state.wallet.amount = account.before;
 					authority.state.wallet_revision = account.before_revision;
 				}
 				else if (economic_account_key_equal(account.key, identity.bank))
 				{
+					require(!bank_seen);
+					bank_seen = true;
 					authority.state.bank.amount = account.before;
 					authority.state.bank_revision = account.before_revision;
+				}
+				else if (starter &&
+					 economic_account_key_equal(account.key, issuance))
+				{
+					require(!issuance_seen);
+					issuance_seen = true;
 				}
 				else
 					throw failure{ EILSEQ };
 			}
-			checked(economic_bank_transfer_prepare(command, identity.intent, authority,
-							       currency_revision_policy::sql_legacy,
-							       &prepared));
+			require(wallet_seen && bank_seen && (starter == issuance_seen));
+			if (starter)
+				checked(economic_chaos_starter_bank_prepare(
+					command, identity.intent, authority,
+					currency_revision_policy::sql_legacy, &prepared));
+			else
+				checked(economic_bank_transfer_prepare(
+					command, identity.intent, authority,
+					currency_revision_policy::sql_legacy, &prepared));
 			checked(prepared->agrees_with(plan));
 			require(equal(prepared->mutation().after(), result));
 		}

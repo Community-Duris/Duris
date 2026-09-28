@@ -228,7 +228,7 @@ void normalization(MYSQL *c)
 	assert(report.items.size() == 10 && report.owners.size() == 1);
 	const auto count = [&](issue code)
 	{ return report.issue_counts[static_cast<size_t>(code)]; };
-	assert(count(issue::unknown_money) == 3 && count(issue::accounting_overflow) == 1);
+	assert(count(issue::unknown_money) == 4 && count(issue::accounting_overflow) == 1);
 	assert(count(issue::negative_holding) == 2 &&
 	       count(issue::unavailable_native_revision) == 1);
 	assert(count(issue::unresolved_auction) == 1 && count(issue::quarantined_item) == 2);
@@ -251,6 +251,11 @@ void normalization(MYSQL *c)
 	assert(!holding(kind::wallet, 22).balance && !holding(kind::bank, 7).balance);
 	assert(holding(kind::bank, 7).native_revision == UINT64_MAX &&
 	       !holding(kind::ship, 7).native_revision);
+	assert(holding(kind::treasury, 3).balance &&
+	       (*holding(kind::treasury, 3).balance == economic_coin_vector{ 47, 0, 0, 0 }) &&
+	       holding(kind::treasury, 3).native_revision == 9);
+	assert(!holding(kind::treasury, 4).balance &&
+	       holding(kind::treasury, 4).native_revision == 1);
 	assert(holding(kind::claim, 22).balance && (*holding(kind::claim, 22).balance)[0] == 100);
 	assert(holding(kind::auction, 5).disposition == disposition::history &&
 	       !holding(kind::auction, 5).balance);
@@ -400,7 +405,7 @@ int main()
 	}
 	assert(economic_sql_normalize_sources(empty, 512, nullptr) ==
 	       economic_accounting_error::corrupt_evidence);
-	assert(empty.tables.size() == 19);
+	assert(empty.tables.size() == 20);
 	assert(table(empty, "economic_account_mapping").rows.empty());
 	const char *expected_item_sources[] = { "player_pet_items", "shopkeeper_items",
 						"siege_items" };
@@ -416,6 +421,8 @@ int main()
 	    "INSERT INTO player_data(pid,name,account_name,copper,silver,wallet_revision) VALUES(22,'synthetic_two','synthetic_shared',NULL,-1,18446744073709551615),(11,'synthetic_one','synthetic_shared',7,0,0)");
 	sql(c.get(),
 	    "INSERT INTO account_banks(id,account_name,bank_copper,bank_gold,bank_revision) VALUES(7,'synthetic_shared',18446744073709551615,NULL,18446744073709551615)");
+	sql(c.get(),
+	    "INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision) VALUES(3,0,11005,100,47,9),(4,1,12000,101,NULL,1)");
 	sql(c.get(), "INSERT INTO ships(id,owner_name,money) VALUES(7,'synthetic_owner',NULL)");
 	sql(c.get(),
 	    "INSERT INTO auctions(id,seller_pid,status,winning_bidder_pid,cur_price,obj_blob_str) VALUES(5,11,'CLOSED',22,100,X'000102ff')");
@@ -443,12 +450,19 @@ int main()
 	assert(wallet.rows[1].cells[7] == "18446744073709551615");
 	assert(table(baseline, "account_banks").rows.size() == 1);
 	assert(table(baseline, "account_banks").rows[0].cells[3] == "18446744073709551615");
+	assert(table(baseline, "shopkeepers").rows.size() == 2 &&
+	       table(baseline, "shopkeepers").rows[0].cells[4] == "47" &&
+	       !table(baseline, "shopkeepers").rows[1].cells[4]);
 	assert(table(baseline, "auction_item_pickups").rows[0].cells[2] == "");
 	assert(table(baseline, "item_current_owner").rows[0].cells[9] ==
 	       std::string("\0\xff\0", 3));
 	assert(table(baseline, "auctions").rows[0].cells[2] == "CLOSED");
 	assert(table(baseline, "critical_operation_inbox").rows[0].cells[11] == "0");
 	assert(baseline.digest != empty.digest);
+	sql(c.get(), "UPDATE shopkeepers SET cash=48,shop_revision=10 WHERE id=3");
+	assert(capture(c.get()).digest != baseline.digest);
+	sql(c.get(), "UPDATE shopkeepers SET cash=47,shop_revision=9 WHERE id=3");
+	assert(capture(c.get()) == baseline);
 	// NULL and empty locator bytes produce distinct source/row evidence.
 	sql(c.get(), "UPDATE player_data SET account_name=NULL WHERE pid=22");
 	auto null_locator = capture(c.get());

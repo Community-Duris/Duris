@@ -13,8 +13,8 @@
     "id": "0041_shopkeeper_cash_identity",
     "sequence": 41,
     "apply_checksum": "b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f",
-    "verify_checksum": "e0ad42a840f3db5f0e39dae9485b21dfbf635ab40eac3d23ddaa3e2a86287812",
-    "history_checksum": "e45b5945f48c7c6a30bfaa79c5c0dc37420ec31a2962275c9c4cd74dba7e5924"
+    "verify_checksum": "1e3187f0563854513b014129bf3e2a8bfc1a4b0a5ac0b6e196d7c0ca616a696d",
+    "history_checksum": "68be1e69b695fc7d363014965309a45eecea334163d7427fd62594ff4de9c9de"
   },
   "connection": {
     "character_set": "utf8mb4",

@@ -1277,6 +1277,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	unsigned long root_session = 0;
 	auto root_failure = [accounted_bank, accounted_coin, accounted_item](unsigned int error)
 	{
+		if (accounted_bank && error == EEXIST)
+			return critical_apply_result{ critical_apply_outcome::terminal_failure, 0,
+						      EEXIST };
 		return (accounted_bank || accounted_coin || accounted_item) ?
 			       critical_apply_result{ critical_apply_outcome::retryable_failure, 0,
 						      error ? error : EIO } :

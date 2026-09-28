@@ -9,6 +9,7 @@ enum class economic_sql_holding_kind : uint8_t
 {
 	wallet,
 	bank,
+	treasury,
 	ship,
 	auction,
 	claim,
