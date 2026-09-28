@@ -588,6 +588,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f",
       "verify_checksum": "1e3187f0563854513b014129bf3e2a8bfc1a4b0a5ac0b6e196d7c0ca616a696d"
+    },
+    {
+      "id": "0042_shopkeeper_roaming_witness",
+      "sequence": 42,
+      "description": "Capture nullable durable shopkeeper roaming configuration",
+      "apply": "immutable/0042_shopkeeper_roaming_witness.sql",
+      "verify": "immutable/0042_shopkeeper_roaming_witness.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "100057903820eb762051bd96e16816eadd0f8fafdc3e91088f447f64131792ec",
+      "verify_checksum": "483b53886b10a198809fec277a4f708b9c738c7b21ad9c27320fcf8e135f073c"
     }
   ]
 }

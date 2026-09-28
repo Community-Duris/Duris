@@ -104,6 +104,14 @@ flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);
+// Includes retired UIDs so a read-only caller can reconstruct their last
+// owner and historical root/parent without treating them as live inventory.
+flatfile_item_repository_result
+flatfile_item_repository_lookup_uid(const std::string &root, uint64_t uid,
+				    flatfile_item_ownership_record *item, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_lookup_uid_locked(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t uid,
+	flatfile_item_ownership_record *item, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_load_coins_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<uint64_t> &uids, std::vector<flatfile_item_ownership_record> *coins,

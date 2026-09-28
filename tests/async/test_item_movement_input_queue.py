@@ -88,6 +88,7 @@ assert equip_check < authoritative_root_guard < container_reparent
 
 PRELUDE = r'''
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_transfer_command.h"
@@ -206,6 +207,13 @@ static uint64_t pending_coin_uid = 0;
 static uint64_t fenced_item_uid = 0;
 static uint64_t collector_pending_uid = 0;
 static unsigned collector_invalidations = 0;
+bool economic_gameplay_authority::active() { return false; }
+economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
+    critical_command *, uint32_t, economic_source_kind)
+{
+    assert(false && "inactive queue fixture prepared active accounting");
+    return economic_accounting_error::unauthorized;
+}
 bool currency_transaction_coin_item_busy(uint64_t uid)
 {
 	return uid && uid == pending_coin_uid;
@@ -1103,6 +1111,10 @@ int main()
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 1025, &actor));
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, duplicates, 2, &actor));
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, invalid_tail, 2, &actor));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(
+        &actor, grants, 2, &actor, economic_source_kind{}, 90001));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(
+        &actor, grants, 2, &actor, economic_source_kind::quest_completion, 90001));
     grant_second.loc_p = LOC_ROOM;
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
     grant_second.loc_p = LOC_NOWHERE;
@@ -1118,8 +1130,14 @@ int main()
     assert(!item_creation_grant_blocks_commands(&actor));
     assert(!item_creation_grant_batches_pending());
     assert(extracted_count == 0 && OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
-    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    assert(item_creation_grant_submit_batch_to_player_before_entry(
+        &actor, grants, 2, &actor, economic_source_kind::world_generation, 90001));
     assert(command_submitted && item_creation_grant_blocks_commands(&actor));
+    item_transfer_payload sourced_batch = {};
+    assert(item_transfer_command_decode_payload(submitted_command, &sourced_batch));
+    assert(sourced_batch.reason == item_transfer_reason::creation &&
+           sourced_batch.multi_root && sourced_batch.item_count == 2 &&
+           sourced_batch.logical_source_id == 90001);
     assert(item_creation_grant_batches_pending());
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
     push(&q, "wear grant");

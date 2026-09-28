@@ -274,8 +274,8 @@ void seed(MYSQL *connection)
 		"INSERT INTO account_banks(account_name,racewar,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision) VALUES"
 		"('lifecycle_a',0,8,1,0,0,4),('lifecycle_b',1,0,3,0,0,9)");
 	execute(connection,
-		"INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision) "
-		"VALUES(9,0,11005,100,73,4)");
+		"INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision,"
+		"keeper_roaming) VALUES(9,0,11005,100,73,4,0)");
 	execute(connection,
 		"INSERT INTO player_data(pid,name,account_name,racewar,copper,silver,gold,platinum,wallet_revision,save_revision) VALUES"
 		"(21001,'LifecycleOne','lifecycle_a',0,4,2,0,0,6,12),"
@@ -494,6 +494,23 @@ int main()
 				      sql_id(invalid_request.lineage),
 			      "0");
 		execute(setup, "UPDATE shopkeepers SET cash=73 WHERE id=9");
+		execute(setup, "UPDATE shopkeepers SET keeper_roaming=NULL WHERE id=9");
+		economic_sql_lifecycle_receipt unknown_policy_output;
+		unknown_policy_output.operation_id = ident(209);
+		const auto unknown_policy_status =
+			economic_sql_accounting_lifecycle_transaction::install(
+				owner_connection, *maintenance, invalid_request,
+				&unknown_policy_output);
+		if (unknown_policy_status != EBUSY ||
+		    unknown_policy_output.operation_id.bytes != ident(209).bytes)
+			throw std::runtime_error(
+				"unknown keeper roaming policy was admitted to opening baseline");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(invalid_request.lineage),
+			      "0");
+		execute(setup, "UPDATE shopkeepers SET keeper_roaming=0 WHERE id=9");
+		assert_scalar(setup, "SELECT keeper_roaming FROM shopkeepers WHERE id=9", "0");
 		execute(setup, "UPDATE item_current_owner SET coin_payload=NULL WHERE item_uid=2");
 		economic_sql_lifecycle_receipt bad_coin_output;
 		bad_coin_output.operation_id = ident(210);

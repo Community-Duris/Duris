@@ -224,7 +224,8 @@ economic_accounting_error economic_gameplay_authority::prepare_currency(critical
 		if (!currency_command_decode_payload(*command, &payload))
 			return error::corrupt_evidence;
 		if (payload.reason != currency_reason_type::atm_deposit &&
-		    payload.reason != currency_reason_type::atm_withdraw)
+		    payload.reason != currency_reason_type::atm_withdraw &&
+		    payload.reason != currency_reason_type::chaos_starter_reward)
 			return error::incomplete_coverage;
 		std::string canonical;
 		if (!bank_locator(payload.account_name.data(), &canonical))
@@ -235,8 +236,13 @@ economic_accounting_error economic_gameplay_authority::prepare_currency(critical
 			return error::incomplete_coverage;
 		critical_command frozen = *command;
 		std::vector<uint8_t> intent;
-		const auto result = economic_bank_transfer_intent(
-			frozen, selected->epoch, wallet->second, bank->second, &intent);
+		error result;
+		if (payload.reason == currency_reason_type::chaos_starter_reward)
+			result = economic_chaos_starter_bank_intent(
+				frozen, selected->epoch, wallet->second, bank->second, &intent);
+		else
+			result = economic_bank_transfer_intent(
+				frozen, selected->epoch, wallet->second, bank->second, &intent);
 		if (result != error::ok)
 			return result;
 		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;

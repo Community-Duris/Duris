@@ -75,6 +75,7 @@ enum class economic_sql_normalization_issue : uint8_t
 	legacy_item_claim,
 	allocator_missing_or_invalid,
 	uid_outside_allocator,
+	unknown_keeper_configuration,
 	count
 };
 struct economic_sql_normalization_diagnostic

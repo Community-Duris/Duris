@@ -186,6 +186,12 @@ class Reconciler:
             elif (op["outcome"] == "committed" and op.get("result_code") != 0 or
                   op["outcome"] == "rejected" and op.get("result_code") == 0):
                 self.emit("invalid_result_code", operation_id=op_id)
+            price = op.get("realized_price_copper")
+            if price is not None:
+                if type(price) is not int or price < 0 or price >= 2**63:
+                    self.emit("invalid_realized_price", operation_id=op_id)
+                elif op.get("outcome") != "committed":
+                    self.emit("rejected_realized_price", operation_id=op_id)
             policy = self.reasons.get(op.get("reason"))
             if policy is None:
                 self.emit("unknown_policy_reason", operation_id=op_id)
@@ -457,8 +463,9 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                  "price_copper": row["realized_price_copper"]}
                 for row in snapshot["operations"]
                 if isinstance(row.get("operation_id"), str) and HEX_ID.fullmatch(row["operation_id"])
+                and row.get("outcome") == "committed"
                 and type(row.get("reason")) is int and type(row.get("realized_price_copper")) is int
-                and row["realized_price_copper"] >= 0]
+                and 0 <= row["realized_price_copper"] < 2**63]
     elif name == "routes":
         matrix = json.loads((Path(__file__).resolve().parents[1] /
                              "docs/persistence/economy_accounting/writer_coverage_matrix.json").read_text())

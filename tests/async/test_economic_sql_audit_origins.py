@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Exact EAB1 origin decoding and SQL read-only snapshot boundary checks."""
+
+import copy
+import hashlib
+from pathlib import Path
+import struct
+import sys
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
+from economic_sql_audit_origins import OriginError, capture, decode_witness  # noqa: E402
+
+LINEAGE = bytes.fromhex("11" * 16)
+EPOCH = bytes.fromhex("22" * 16)
+OP = bytes.fromhex("33" * 16)
+
+
+def key(kind, authority):
+    return LINEAGE + struct.pack("<HHQQ4x", 1, kind, authority, 0)
+
+
+OPENING = key(9, 99)
+
+
+def witness():
+    blob = (b"EAB1" + struct.pack("<HHII", 1, 192, 392, 0) + LINEAGE + EPOCH +
+            bytes.fromhex("44" * 16) + struct.pack("<QQ", 7, 1) + OPENING +
+            bytes.fromhex("55" * 32) + bytes.fromhex("66" * 32) +
+            struct.pack("<II", 1, 1))
+    assert len(blob) == 192
+    blob += key(1, 7) + struct.pack("<4qQ", 5, 0, 0, 0, 4) + bytes.fromhex("77" * 32)
+    blob += (struct.pack("<QBB6x5Q", 81, 1, 1, 7, 0, 81, 0, 2) +
+             bytes.fromhex("88" * 32))
+    assert len(blob) == 392
+    return {"operation_id": OP, "book_revision": 1, "holding_count": 1,
+            "item_count": 1, "witness_digest": hashlib.sha256(blob).digest(),
+            "canonical_witness": blob, "reason": 38, "outcome": 1,
+            "result_code": 0, "inbox_status": 1, "inbox_result": 0}
+
+
+class Cursor:
+    def __init__(self, rows):
+        self.rows = rows
+        self.statements = []
+        self.index = -1
+        self.closed = False
+
+    def execute(self, statement, params=None):
+        self.index += 1
+        self.statements.append((statement, params))
+
+    def fetchone(self):
+        return self.rows[self.index]
+
+    def fetchall(self):
+        return self.rows[self.index]
+
+    def close(self):
+        self.closed = True
+
+
+class Connection:
+    def __init__(self, control=None, rows=None):
+        rows = [witness()] if rows is None else rows
+        self.scan = Cursor([
+            None, None,
+            [{"table_name": name, "engine": "InnoDB"} for name in
+             ("economic_baseline_control", "economic_baseline_witness",
+              "economic_accounting_operation", "critical_operation_inbox")],
+            {"opening_account": OPENING, "revision": 1, "last_operation_id": OP}
+            if control is None else control,
+            {"row_count": len(rows),
+             "blob_bytes": sum(len(row["canonical_witness"]) for row in rows)},
+            rows,
+        ])
+        self.rollbacks = 0
+
+    def cursor(self):
+        return self.scan
+
+    def rollback(self):
+        self.rollbacks += 1
+
+
+class OriginTests(unittest.TestCase):
+    def test_exact_witness_and_read_only_capture(self):
+        account_origins, item_origins = decode_witness(witness(), LINEAGE, EPOCH, OPENING)
+        self.assertEqual(account_origins[0]["balance"], [5, 0, 0, 0])
+        self.assertEqual(account_origins[0]["revision"], 4)
+        self.assertEqual(item_origins[0]["uid"], 81)
+        self.assertEqual(item_origins[0]["owner"], [1, 7, 0])
+        connection = Connection()
+        result = capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(result["format"], "economic_sql_audit_origins_v1")
+        self.assertEqual(result["account_origins"], account_origins)
+        self.assertEqual(result["item_origins"], item_origins)
+        self.assertEqual(connection.rollbacks, 1)
+        self.assertTrue(connection.scan.closed)
+        statements = [sql.upper() for sql, _ in connection.scan.statements]
+        self.assertIn("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY", statements)
+        self.assertTrue(all(sql.startswith(("SET TRANSACTION", "START TRANSACTION", "SELECT"))
+                            for sql in statements))
+        self.assertEqual(connection.scan.statements[3][1], (LINEAGE, EPOCH))
+
+    def test_digest_header_count_and_origin_corruption_refuse(self):
+        for change in ("digest", "header", "count", "lineage", "source", "owner"):
+            with self.subTest(change=change):
+                row = copy.deepcopy(witness())
+                blob = bytearray(row["canonical_witness"])
+                if change == "digest":
+                    row["witness_digest"] = bytes(32)
+                elif change == "header":
+                    blob[4] = 2
+                elif change == "count":
+                    row["holding_count"] = 0
+                elif change == "lineage":
+                    blob[16] ^= 1
+                elif change == "source":
+                    blob[272:304] = bytes(32)
+                else:
+                    blob[312] = 0
+                if change != "digest":
+                    row["canonical_witness"] = bytes(blob)
+                    row["witness_digest"] = hashlib.sha256(blob).digest()
+                with self.assertRaises((OriginError, ValueError)):
+                    decode_witness(row, LINEAGE, EPOCH, OPENING)
+
+    def test_uncommitted_or_missing_control_rolls_back(self):
+        bad = witness()
+        bad["inbox_status"] = 0
+        connection = Connection(rows=[bad])
+        with self.assertRaisesRegex(OriginError, "uncommitted"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(connection.rollbacks, 1)
+        self.assertTrue(connection.scan.closed)
+        connection = Connection(control={"opening_account": OPENING,
+                                         "revision": 2, "last_operation_id": OP})
+        with self.assertRaisesRegex(OriginError, "revision gap"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(connection.rollbacks, 1)
+        connection = Connection()
+        connection.scan.rows[2][0]["engine"] = "MyISAM"
+        with self.assertRaisesRegex(OriginError, "not InnoDB"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(connection.rollbacks, 1)
+
+    def test_cross_witness_duplicate_origin_refuses(self):
+        first = witness()
+        second = copy.deepcopy(first)
+        second["operation_id"] = bytes.fromhex("99" * 16)
+        second["book_revision"] = 2
+        connection = Connection(
+            control={"opening_account": OPENING, "revision": 2,
+                     "last_operation_id": second["operation_id"]}, rows=[first, second])
+        with self.assertRaisesRegex(OriginError, "duplicate baseline account"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(connection.rollbacks, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

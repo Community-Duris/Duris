@@ -1306,6 +1306,50 @@ flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	return flatfile_item_repository_result::ok;
 }
 
+flatfile_item_repository_result
+flatfile_item_repository_lookup_uid(const std::string &root, uint64_t uid,
+				    flatfile_item_ownership_record *item, std::string *error)
+{
+	if (!uid || !item)
+		return flatfile_item_repository_result::invalid;
+	std::lock_guard<std::mutex> guard(ownership_mutex);
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return flatfile_item_repository_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_lookup_uid_locked(root, authority, uid, item, error);
+}
+
+flatfile_item_repository_result
+flatfile_item_repository_lookup_uid_locked(const std::string &root,
+					   const flatfile_authority_lock &lock, uint64_t uid,
+					   flatfile_item_ownership_record *item, std::string *error)
+{
+	if (!lock.matches(root) || !uid || !item)
+		return flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	const auto *stored = find_item(&catalog, uid);
+	if (!stored)
+		return flatfile_item_repository_result::not_found;
+	try
+	{
+		flatfile_item_ownership_record candidate = *stored;
+		*item = std::move(candidate);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
+	return flatfile_item_repository_result::ok;
+}
+
 // The caller selects ITEM_MONEY identities from the original snapshot. Include
 // their tombstones even though consumed records no longer have a coin payload.
 flatfile_item_repository_result flatfile_item_repository_load_coins_locked(

@@ -456,9 +456,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2958, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9404, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9407, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10771, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10791, "sql_economy")],
                          {"recovery.saved_sql"})
 
     def test_sql_components_do_not_claim_a_playable_root(self) -> None:
@@ -724,9 +724,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10013, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10033, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11154, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11174, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -1082,9 +1082,15 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new locker item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 2938, "item_lifecycle")],
+        def site(family, excerpt):
+            matches = [row for row in registry["census"] if row["path"] == path and
+                       row["family"] == family and row["excerpt"] == excerpt]
+            self.assertEqual(len(matches), 1)
+            return (path, matches[0]["line"], family)
+
+        self.assertEqual(owners[site("item_lifecycle", "extract_obj(tmp_object);")],
                          {"locker.reused_room_item_sweep"})
-        self.assertEqual(owners[(path, 1580, "item_publication")],
+        self.assertEqual(owners[site("item_publication", "obj_to_room(content, room);")],
                          {"locker.chest_content_spill"})
         self.assertEqual(self.routes["locker.access_check_temp_unload"]["disposition"],
                          "non_writer_candidate")
@@ -1100,10 +1106,12 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
             self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
                             ["must_block_on_activation"])
-        self.assertEqual(self.routes["locker.chest_fixture_teardown"]["source"]["definition_lines"],
-                         [1557])
-        self.assertEqual(self.routes["locker.private_chest_fixture"]["source"]["definition_lines"],
-                         [1635])
+        lines = (ROOT / path).read_text(encoding="utf-8").splitlines()
+        for route_id, signature in (("locker.chest_fixture_teardown", "LockerChest::~LockerChest"),
+                                    ("locker.private_chest_fixture", "PrivateChest::PrivateChest")):
+            definitions = self.routes[route_id]["source"]["definition_lines"]
+            self.assertTrue(definitions)
+            self.assertTrue(all(signature in lines[line - 1] for line in definitions))
 
     def test_new_command_item_sites_include_in_place_key_changes(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())

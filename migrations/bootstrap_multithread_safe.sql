@@ -1610,6 +1610,7 @@ CREATE TABLE `shopkeepers` (
   `save_time` timestamp NULL DEFAULT NULL,
   `cash` int DEFAULT NULL,
   `shop_revision` bigint unsigned NOT NULL DEFAULT '1',
+  `keeper_roaming` tinyint unsigned DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `shop_id` (`shop_id`),

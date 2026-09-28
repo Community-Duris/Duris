@@ -69,6 +69,27 @@ critical_command transfer(currency_reason_type reason = currency_reason_type::at
 				      critical_deadline_class::interactive));
 	return command;
 }
+critical_command chaos_starter_bank(uint32_t pid = 7, const char *name = "Fixture")
+{
+	currency_command_payload payload = {};
+	payload.pid = pid;
+	payload.racewar = 1;
+	payload.reason = currency_reason_type::chaos_starter_reward;
+	payload.reason_id = pid;
+	std::strcpy(payload.account_name.data(), name);
+	payload.bank_delta.amount[3] = 1000000;
+	critical_operation_id seed = {};
+	std::memcpy(seed.bytes.data(), "CHAOSEED", 8);
+	for (size_t byte = 0; byte < 8; ++byte)
+		seed.bytes[8 + byte] = static_cast<uint8_t>(uint64_t(pid) >> (8 * byte));
+	critical_operation_id operation = {};
+	assert(critical_operation_id_derive(seed, 0x43484250, 1, &operation));
+	critical_command command;
+	assert(currency_command_build(&command, operation, payload, 2, UINT64_MAX,
+				      critical_source_site::login,
+				      critical_deadline_class::recovery));
+	return command;
+}
 critical_command item_transfer()
 {
 	const item_owner_identity player = { item_owner_type::player, 7, 0 };
@@ -270,13 +291,18 @@ void qualified_projection_regressions()
 	// controls and historical replay compatibility checks.
 	auto frozen_deposit = transfer(currency_reason_type::atm_deposit);
 	auto frozen_withdraw = transfer(currency_reason_type::atm_withdraw);
+	auto frozen_starter = chaos_starter_bank();
 	assert(economic_gameplay_authority::prepare_currency(&frozen_deposit) == error::ok);
 	assert(economic_gameplay_authority::prepare_currency(&frozen_withdraw) == error::ok);
+	assert(economic_gameplay_authority::prepare_currency(&frozen_starter) == error::ok);
 	frozen_deposit.accepted_at_usec = 101;
 	frozen_withdraw.accepted_at_usec = 102;
-	assert(supported_candidate(frozen_deposit) && supported_candidate(frozen_withdraw));
+	frozen_starter.accepted_at_usec = 105;
+	assert(supported_candidate(frozen_deposit) && supported_candidate(frozen_withdraw) &&
+	       supported_candidate(frozen_starter));
 	const auto frozen_deposit_bytes = frozen_deposit;
 	const auto frozen_withdraw_bytes = frozen_withdraw;
+	const auto frozen_starter_bytes = frozen_starter;
 	const auto frozen_reward = frozen_wallet_reason(currency_reason_type::wallet_reward);
 	const auto frozen_spend = frozen_wallet_reason(currency_reason_type::wallet_spend);
 	// Upstream also admits standalone item roots in regular mode. Keep a real
@@ -324,9 +350,10 @@ void qualified_projection_regressions()
 	for (auto command :
 	     { transfer(currency_reason_type::atm_deposit),
 	       transfer(currency_reason_type::atm_withdraw),
+	       chaos_starter_bank(),
 	       wallet_reason_command(currency_reason_type::wallet_reward, 7),
 	       wallet_reason_command(currency_reason_type::wallet_spend, 7), frozen_deposit_bytes,
-	       frozen_withdraw_bytes, frozen_reward, frozen_spend })
+	       frozen_withdraw_bytes, frozen_starter_bytes, frozen_reward, frozen_spend })
 	{
 		const auto before = command;
 		assert(economic_gameplay_authority::prepare_currency(&command) ==
@@ -441,6 +468,45 @@ int main()
 	auto withdraw = transfer(currency_reason_type::atm_withdraw);
 	assert(economic_gameplay_authority::prepare_currency(&withdraw) == error::ok);
 	assert(supported_candidate(withdraw));
+	auto starter = chaos_starter_bank();
+	assert(economic_gameplay_authority::prepare_currency(&starter) == error::ok);
+	assert(supported_candidate(starter));
+	economic_frozen_intent starter_intent;
+	assert(economic_intent_decode(starter.accounting_intent, &starter_intent) == error::ok);
+	assert(starter_intent.admission.metadata.writer_id == ECONOMIC_WRITER_CHAOS_STARTER_BANK);
+	assert(starter_intent.admission.metadata.reason == economic_reason::starter_reward);
+	assert(starter_intent.admission.metadata.source_event);
+	assert(starter_intent.admission.metadata.source_event->kind ==
+	       economic_source_kind::starter_grant);
+	for (auto invalid : { chaos_starter_bank(8), chaos_starter_bank(7, "another") })
+	{
+		const auto before = invalid;
+		assert(economic_gameplay_authority::prepare_currency(&invalid) ==
+		       error::incomplete_coverage);
+		assert(candidate_equal(invalid, before));
+	}
+	for (int variant = 0; variant < 4; ++variant)
+	{
+		auto invalid = chaos_starter_bank();
+		if (variant == 0)
+			invalid.operation_id.bytes[0] ^= 1;
+		else if (variant == 1)
+			invalid.source_site = critical_source_site::command;
+		else if (variant == 2)
+			invalid.deadline_class = critical_deadline_class::interactive;
+		else
+		{
+			currency_command_payload payload = {};
+			assert(currency_command_decode_payload(invalid, &payload));
+			payload.bank_delta.amount[3] = 999999;
+			assert(currency_command_build(&invalid, invalid.operation_id, payload, 2,
+						      UINT64_MAX, critical_source_site::login,
+						      critical_deadline_class::recovery));
+		}
+		const auto before = invalid;
+		assert(economic_gameplay_authority::prepare_currency(&invalid) != error::ok);
+		assert(candidate_equal(invalid, before));
+	}
 	auto item_drop = item_transfer();
 	assert(economic_gameplay_authority::prepare_item_transfer(&item_drop, 7) == error::ok);
 	assert(item_drop.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
