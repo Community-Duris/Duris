@@ -2,6 +2,7 @@
 """Validate economy accounting contracts and report incomplete writer coverage."""
 
 import argparse
+from collections import Counter
 import json
 from pathlib import Path
 import re
@@ -181,14 +182,15 @@ def validate_fixture(fixture, registry):
 # only for SQL mutation discovery. Source-site snapshots make changed/new hits visible.
 LEXEME = re.compile(r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
 PATTERNS = {
-    'money_helper': r'\b(?:ADD_MONEY|SUB_MONEY|SUB_BANK|insert_money_pickup|transact)\s*\(',
+    'money_helper': r'\b(?:ADD_MONEY|SUB_MONEY|SUB_BANK|CLEAR_MONEY|insert_money_pickup|transact)\s*\(',
     'economic_submit': r'\b(?:currency_transaction_submit\w*|coin_transfer_command_build|currency_command_build|item_transfer_command_build|item_creation_grant_submit\w*|item_movement_transaction_submit\w*|shop_trade_transaction_submit|collector_transaction_submit|auction_transaction_submit\w*)\s*\(',
     'coin_assignment': r'GET_(?:BALANCE_)?(?:COPPER|SILVER|GOLD|PLATINUM)\([^;\n]*?\)\s*(?:=(?!=)|[+*/-]=|\+\+|--)',
-    'direct_cash_assignment': r'\b(?:cash|bank)\s*\[[^;\n]*?\]\s*(?:=(?!=)|[+*/-]=|\+\+|--)',
-    'coin_bulk_mutation': r'\b(?:fill|fill_n|memset|memcpy|memmove|add_coins|difficulty_scale_coins)\s*\([^;\n]*(?:cash|GET_|obj|pile)',
+    'direct_cash_assignment': r'(?:->|\.)\s*(?:cash|bank)\s*\[[^;\n]*?\]\s*(?:=(?!=)|[+*/-]=|\+\+|--)',
+    'ship_coffer_assignment': r'\bship->money\s*(?:=(?!=)|[+*/-]=|\+\+|--)',
+    'coin_bulk_mutation': r'\b(?:add_coins|difficulty_scale_coins)\s*\(|\b(?:std::)?(?:fill|fill_n|memset|memcpy|memmove)\s*\([^;\n]*(?:cash|bank)|\b(?:std::)?fill_n\s*\(\s*obj->value',
     'item_lifecycle': r'\b(?:read_object|instantiate_object_template|create_money|extract_obj|MakeScrap)\s*\(',
     'item_publication': r'\b(?:obj_to_char(?:_at_end)?|obj_to_obj|obj_to_room|obj_from_char|obj_from_obj|obj_from_room|equip_char|unequip_char)\s*\(',
-    'sql_economy': r'\b(?:INSERT(?: IGNORE)? INTO|UPDATE|DELETE FROM)\s+(?:currency_ledger|item_current_owner|item_ownership_ledger|account_banks|auction_money_pickups|auction_item_custody|saved_items)\b',
+    'sql_economy': r'\b(?:INSERT(?: IGNORE)? INTO|UPDATE|DELETE FROM)\s+(?:currency_ledger|item_current_owner|item_ownership_ledger|account_banks|auction_money_pickups|auction_item_custody|saved_items|ships)\b',
 }
 
 
@@ -201,7 +203,8 @@ def scan_sources(root):
         comments_masked=LEXEME.sub(lambda m: re.sub('[^\n]',' ',m[0]) if m[0].startswith(('/',)) else m[0], source)
         code=LEXEME.sub(lambda m: re.sub('[^\n]',' ',m[0]),source)
         for family,pattern in PATTERNS.items():
-            for match in re.finditer(pattern,comments_masked if family=='sql_economy' else code):
+            for match in re.finditer(pattern,comments_masked if family=='sql_economy' else code,
+                                     re.IGNORECASE if family=='sql_economy' else 0):
                 line=source.count('\n',0,match.start())+1
                 excerpt=source.splitlines()[line-1].strip()
                 found.append(dict(path=path.relative_to(root).as_posix(),line=line,family=family,excerpt=excerpt))
@@ -234,7 +237,9 @@ def validate_inventory(inventory, registry, root, release=False):
             require(expected is not None,'writer not qualified')
             require(all(b['status']==expected and b.get('evidence') for b in writer['backends'].values()),'backend not qualified')
     current=scan_sources(root)
-    require(current==inventory['census'],'economic writer census drift; review new/changed sites')
+    signature=lambda rows: Counter((row['path'],row['family'],row['excerpt']) for row in rows)
+    require(signature(current)==signature(inventory['census']),
+            'economic writer census drift; review new/changed sites')
     if release:
         require(inventory['census_complete'],'writer census not complete')
         require(registry['status']=='frozen','registry contract not frozen')
