@@ -8,6 +8,7 @@
 #include "world/zone_touch_repository.h"
 #include "account/session_audit_repository.h"
 #include "economy/currency_repository.h"
+#include "economy/economic_currency_adapter.h"
 #include "persistence/critical_command_repository.h"
 #include "item/item_transfer_repository.h"
 #include "sql/sql_pool.h"
@@ -15,7 +16,11 @@
 #include <cassert>
 #include <cerrno>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
+
+static bool supported_bank_pool = false;
+static bool bank_initialized_library = false;
 
 // These must remain unreachable for every unsupported envelope variant.
 extern "C" MYSQL *sql_pool_acquire()
@@ -34,7 +39,8 @@ extern "C" MYSQL *sql_pool_replace_connection(MYSQL *)
 }
 extern "C" int __wrap_mysql_server_init(int, char **, char **)
 {
-	assert(false && "unsupported envelope initialized SQL library");
+	assert(supported_bank_pool);
+	bank_initialized_library = true;
 	return 1;
 }
 extern "C" decltype(mysql_thread_init()) __wrap_mysql_thread_init()
@@ -104,12 +110,24 @@ void check_rejected(const critical_command &command)
 	assert(transaction.outcome == critical_apply_outcome::retryable_failure);
 	assert(transaction.error_code == EPROTONOSUPPORT);
 	assert(result_code == 123 && mutated);
+
+	const bool bank_root = command.schema_version ==
+				       CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			       command.type == critical_command_type::account_bank &&
+			       critical_command_envelope_valid(command);
+	supported_bank_pool = bank_root;
 	const auto pooled = critical_command_repository_apply_from_pool(command, nullptr);
 	assert(pooled.outcome == critical_apply_outcome::retryable_failure);
-	assert(pooled.error_code == EPROTONOSUPPORT);
+	assert(pooled.error_code == (bank_root ? EIO : EPROTONOSUPPORT));
+	if (bank_root)
+		assert(bank_initialized_library);
+	supported_bank_pool = false;
+	// Supported pooled banks reach SQL initialization; this fixture injects its
+	// failure. Unsupported paths never touch SQL. Direct roots reject nullptr.
+	auto *root_connection = bank_root ? nullptr : unusable_connection;
 	for (const auto &top_level :
-	     { critical_command_repository_apply(unusable_connection, command),
-	       critical_command_repository_reconcile(unusable_connection, command) })
+	     { critical_command_repository_apply(root_connection, command),
+	       critical_command_repository_reconcile(root_connection, command) })
 	{
 		assert(top_level.outcome == critical_apply_outcome::terminal_failure);
 		assert(top_level.error_code == EINVAL);
@@ -136,8 +154,48 @@ int main()
 		if (schema != 99)
 			command.accounting_intent = { 1 };
 		assert(!critical_command_valid(command));
-		check_rejected(command);
+		// All unsupported command families retain direct-root no-touch coverage.
+		for (uint16_t type = static_cast<uint16_t>(critical_command_type::test);
+		     type <= static_cast<uint16_t>(critical_command_type::player_death_restitution);
+		     ++type)
+		{
+			command.type = static_cast<critical_command_type>(type);
+			check_rejected(command);
+		}
 	}
+	// Malformed bank envelopes must still reject even a poison connection.
+	auto malformed = legacy;
+	malformed.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	malformed.accounting_intent = { 1 };
+	malformed.accepted_at_usec = 0;
+	assert(!critical_command_envelope_valid(malformed));
+	check_rejected(malformed);
+
+	// Exercise the null-connection boundary with a fully formed typed bank
+	// request too. Successful SQL execution belongs to the native DB harnesses.
+	currency_command_payload payload = {};
+	payload.pid = 7;
+	payload.racewar = 1;
+	payload.reason = currency_reason_type::atm_deposit;
+	std::strcpy(payload.account_name.data(), "fixture");
+	payload.wallet_delta.amount = { -1, 0, 0, 0 };
+	payload.bank_delta.amount = { 1, 0, 0, 0 };
+	critical_command bank;
+	assert(currency_command_build(&bank, legacy.operation_id, payload, 0, 0,
+				      critical_source_site::command,
+				      critical_deadline_class::interactive));
+	bank.accepted_at_usec = 1;
+	critical_operation_id lineage = {}, epoch = {};
+	lineage.bytes[0] = 2;
+	epoch.bytes[0] = 3;
+	assert(economic_bank_transfer_intent(
+		       bank, epoch, { lineage, economic_account_kind::wallet, 1001, 0 },
+		       { lineage, economic_account_kind::bank, 2001, 1 },
+		       &bank.accounting_intent) == economic_accounting_error::ok);
+	bank.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	assert(critical_command_envelope_valid(bank));
+	check_rejected(bank);
+
 	std::cout
-		<< "direct SQL entrypoints reject schema2, hidden intent and unknown schema before connection access or output mutation\n";
+		<< "closed SQL paths reject before access; typed bank pool reaches initialization and roots reject null connections\n";
 }

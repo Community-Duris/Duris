@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 203;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 212;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -26,7 +26,11 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'corpse_item_extra_descr','corpse_items',"
 	"'corpses','critical_operation_inbox','critical_outbox','critical_outbox_delivery_dedupe',"
 	"'critical_test_state','ctf_data','currency_bank_baseline','currency_ledger',"
-	"'currency_wallet_baseline','epic_balance_baseline','epic_bonus','epic_gain',"
+	"'currency_wallet_baseline',"
+	"'economic_account_mapping','economic_accounting_account_effect','economic_accounting_child',"
+	"'economic_accounting_coin_posting','economic_accounting_item_reference',"
+	"'economic_accounting_operation','economic_accounting_source_claim','economic_epoch',"
+	"'economic_lineage_state','epic_balance_baseline','epic_bonus','epic_gain',"
 	"'epic_ledger','epic_stone_claim','eq_drop','frag_leaderboard','guild_members',"
 	"'guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms',"
 	"'guildhalls','guilds','ip_info','item_current_owner',"
@@ -60,9 +64,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"95bff54b5a35f2151dcd30106b34e990712488a8787b119c69469505acbb5afc";
+	"7a94b95e389d4eb6a225085564e6dc1575d3e6c4ff35fffaad1c142fa9dcd100";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"bd4d4619ef5dbc338b01344c2526c66bc3ff08477d891aa6e67a50162ddbd949";
+	"14344973024a3c1382ef86d53c2629a20f4baca3cf4e542cb8789fa387b49c5d";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -75,15 +79,16 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * the saved-item recovery receipt introduced by migration 0027, and the durable
  * telemetry quarantine introduced by migration 0030. Migration 0029 adds the
  * additive critical-operation failure stage; it changes no runtime table count.
+ * Migration 0031 adds retained accounting evidence and identity metadata.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0030_telemetry_quarantine";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 30;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0031_economy_accounting";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 31;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"dc2aa43b67f0851963f6dbbcf02a3257e4b99a1b2a090015849acf5e18a4909c";
+	"f19f74eecbb63b7986613a0eb1ad79f96c3f9e7ab5c654afb69a18430a1f4e95";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"5c85232132f1e1e0d05e469f5d752454e07361e50360b387635d200cc060e1cf";
+	"674b39f13915320eeddc158cc47ad88128ec38fb8ba05afb619972d4af8ad911";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"cc88e4cbd2343b711f652293dd380d01a07773e8f5b925d5f328e6c49058720c";
+	"28a72fe6e029e1c7df66982757d5869212136e1594373ff498f292308f382241";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

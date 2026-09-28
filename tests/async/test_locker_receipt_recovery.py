@@ -29,7 +29,7 @@ SQL = ['src/item/item_transfer_command.c', 'src/item/item_transfer_repository.c'
        'src/persistence/corpse_lifecycle_repository.c',
        'src/player/player_snapshot_codec.c', 'src/player/player_load_repository.c',
        'src/player/player_load_topology.c', 'src/persistence/persistence_observability.c',
-       'src/persistence/critical_command_repository.c']
+       'src/persistence/economic_accounting_repository.c','src/persistence/economic_sql_bank_transaction.c','src/economy/economic_currency_adapter.c','src/economy/economic_accounting_types.c','src/economy/economic_accounting_plan.c','src/economy/economic_accounting_intent.c','src/persistence/critical_command_repository.c']
 
 
 def run_backend(temp, mysql=False):
@@ -57,8 +57,9 @@ def run_backend(temp, mysql=False):
                 subprocess.run([str(binary), state, prefix+'delivered', purse], check=True, timeout=30)
 
 
-(ROOT / 'bin/tests').mkdir(parents=True, exist_ok=True)
-with tempfile.TemporaryDirectory(prefix='locker-recovery-', dir=ROOT / 'bin/tests') as temporary:
+# Authority fixtures require native private-directory permissions; a Windows-backed
+# checkout can ignore chmod(0700). Use the host's disposable temporary filesystem.
+with tempfile.TemporaryDirectory(prefix='locker-recovery-') as temporary:
     temp = Path(temporary)
     run_backend(temp)
     if os.getenv('TEST_DB_HOST'):

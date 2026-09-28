@@ -88,6 +88,12 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c src/persistence/player_death_restitution_repository.c \
     src/player/player_load_repository.c src/player/player_load_topology.c src/persistence/persistence_observability.c \
+    src/persistence/economic_accounting_repository.c \
+    src/persistence/economic_sql_bank_transaction.c \
+    src/economy/economic_currency_adapter.c \
+    src/economy/economic_accounting_types.c \
+    src/economy/economic_accounting_plan.c \
+    src/economy/economic_accounting_intent.c \
     src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
 "$ROOT/bin/tests/currency_transaction_mysql_harness"

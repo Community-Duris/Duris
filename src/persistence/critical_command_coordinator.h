@@ -86,11 +86,18 @@ using critical_apply_fn = critical_apply_result (*)(const critical_command &comm
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
 
-bool critical_command_coordinator_init(const char *journal_directory, critical_apply_fn apply,
-				       void *context,
-				       unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-				       critical_replay_observer_fn replay_observer = nullptr,
-				       void *replay_context = nullptr);
+// Optional support for canonical schema-2 commands. The validator must be pure,
+// bounded and noexcept; it verifies typed immutable evidence, never current
+// authority or activation state (retained receipts must remain replayable).
+// It runs under the coordinator mutex and must not call coordinator APIs.
+// The caller must pair it with an apply function supporting the same routes.
+using critical_extension_validator_fn = bool (*)(const critical_command &) noexcept;
+
+bool critical_command_coordinator_init(
+	const char *journal_directory, critical_apply_fn apply, void *context,
+	unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+	critical_replay_observer_fn replay_observer = nullptr, void *replay_context = nullptr,
+	critical_extension_validator_fn extension_validator = nullptr);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
 // Opt-in path for commands whose durable result is not complete until the game

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cerrno>
+#include <climits>
 #include <cstring>
 #include <limits>
 #include <string>
@@ -278,4 +280,66 @@ bool currency_command_build(critical_command *command, critical_operation_id ope
 		.payload = std::move(encoded),
 	};
 	return true;
+}
+
+unsigned int currency_prepare_mutation(const currency_command_payload &payload,
+				       const currency_command_result &before,
+				       uint64_t expected_wallet_revision,
+				       uint64_t expected_bank_revision,
+				       currency_revision_policy revision_policy,
+				       std::optional<currency_prepared_mutation> *prepared)
+{
+	if (!prepared ||
+	    (revision_policy != currency_revision_policy::sql_legacy &&
+	     revision_policy != currency_revision_policy::flatfile_legacy) ||
+	    !vector_valid(payload.wallet_delta) || !vector_valid(payload.bank_delta))
+		return EINVAL;
+	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
+		if (before.wallet.amount[index] < 0 || before.wallet.amount[index] > INT_MAX ||
+		    before.bank.amount[index] < 0 || before.bank.amount[index] > INT_MAX)
+			return EILSEQ;
+	const bool rebase = revision_policy == currency_revision_policy::sql_legacy &&
+			    currency_command_is_rebasable_reward(payload);
+	constexpr uint64_t wildcard = std::numeric_limits<uint64_t>::max();
+	if (!rebase && ((expected_wallet_revision != wildcard &&
+			 expected_wallet_revision != before.wallet_revision) ||
+			(expected_bank_revision != wildcard &&
+			 expected_bank_revision != before.bank_revision)))
+		return ESTALE;
+	auto after = before;
+	const auto apply = [](int64_t current, int64_t delta, int64_t *next) -> unsigned int
+	{
+		// The current value is bounded above, so subtraction avoids signed
+		// overflow even for an extreme positive delta. INT64_MIN is rejected.
+		if (delta < 0 && current < -delta)
+			return ENOSPC;
+		if (delta > 0 && current > static_cast<int64_t>(INT_MAX) - delta)
+			return ERANGE;
+		*next = current + delta;
+		return 0;
+	};
+	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
+	{
+		const auto wallet_error = apply(before.wallet.amount[index],
+						payload.wallet_delta.amount[index],
+						&after.wallet.amount[index]);
+		const auto bank_error = apply(before.bank.amount[index],
+					      payload.bank_delta.amount[index],
+					      &after.bank.amount[index]);
+		// SQL historically reports either insufficient holding before either
+		// overflow at the same denomination. Flatfile checks wallet then bank.
+		if (revision_policy == currency_revision_policy::sql_legacy &&
+		    (wallet_error == ENOSPC || bank_error == ENOSPC))
+			return ENOSPC;
+		if (wallet_error)
+			return wallet_error;
+		if (bank_error)
+			return bank_error;
+	}
+	if (before.wallet_revision == wildcard || before.bank_revision == wildcard)
+		return ERANGE;
+	++after.wallet_revision;
+	++after.bank_revision;
+	*prepared = currency_prepared_mutation(payload, before, after);
+	return 0;
 }
