@@ -946,6 +946,9 @@ dirty after removing the committed bandage. The follow-up adds executable
 quest and MariaDB bandage save/restart journeys and source contracts.
 
 On that integrated source, the maintained GCC 13.3 MariaDB server build passed.
+The flatfile server built from the same checkout (`SERVER_BUILD built
+build=426.082s lookup=30.064s`), and its ordinary quest offering, reward
+grant, save, and cold reconnect journey passed with the reward UID retained.
 The disposable MariaDB bandage journey passed with one consumed UID, a
 destruction custody tombstone, no saved-item row, and successful save after a
 cold restart. The quest source and durable-offering tests passed. The writer
