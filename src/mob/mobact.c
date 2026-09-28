@@ -19,6 +19,7 @@
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "world/handler.h"
 #include <climits>
 #include <stdio.h>
 #include <string.h>
@@ -112,7 +113,7 @@ struct remember_data
 {
 	P_char c;
 	struct remember_data *next;
-} *remember_array[MAX_ZONES];
+} * remember_array[MAX_ZONES];
 
 // Many mobiles are multiclass, and do not pick the best skin spell for protection.
 // This function when called selects the best available skin spell for the mobile.
@@ -8133,6 +8134,8 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 					struct obj_affect *af;
 					af = get_obj_affect(best_obj, TAG_OBJ_DECAY);
 					if (af && (obj_affect_time(best_obj, af) > 2550))
+						goto normal;
+					if (corpse_has_death_conflict(best_obj))
 						goto normal;
 				}
 				//      act("$n examines $p.", FALSE, ch, best_obj, 0, TO_ROOM);

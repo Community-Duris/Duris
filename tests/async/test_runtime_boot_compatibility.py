@@ -69,7 +69,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery and SQL lifecycle tables.
-        self.assertEqual(report["current_table_count"], 217)
+        self.assertEqual(report["current_table_count"], 218)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -80,8 +80,9 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'corpse_catalog_state'", self.header)
         self.assertIn("'zone_story_quest_state'", self.header)
         self.assertIn("'economic_sql_lifecycle_installation'", self.header)
+        self.assertIn("'economic_sql_activation_receipt'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0034_player_death_conflict_evidence")
+                         "0036_economic_sql_activation_receipt")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

@@ -21,16 +21,50 @@
 #include <string>
 #include <vector>
 
+namespace
+{
+MYSQL *open_pool_test_connection()
+{
+	const char *host = std::getenv("DB_HOST");
+	const char *user = std::getenv("DB_USER");
+	const char *password = std::getenv("DB_PASSWD");
+	const char *database = std::getenv("CURRENCY_TEST_DB_NAME");
+	const char *port_value = std::getenv("DB_PORT");
+	if (!host || !user || !password || !database)
+		return nullptr;
+	MYSQL *pooled = mysql_init(nullptr);
+	if (!pooled)
+		return nullptr;
+	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
+	if (!mysql_real_connect(pooled, host, user, password, database, port, nullptr, 0))
+	{
+		mysql_close(pooled);
+		return nullptr;
+	}
+	return pooled;
+}
+} // namespace
+
 extern "C" MYSQL *sql_pool_acquire(void)
 {
-	return nullptr;
+	return open_pool_test_connection();
 }
-extern "C" void sql_pool_release(MYSQL *) {}
-extern "C" MYSQL *sql_pool_replace_connection(MYSQL *)
+extern "C" void sql_pool_release(MYSQL *pooled)
 {
-	return nullptr;
+	if (pooled)
+		mysql_close(pooled);
 }
-extern "C" void sql_pool_discard_connection(MYSQL *) {}
+extern "C" MYSQL *sql_pool_replace_connection(MYSQL *pooled)
+{
+	if (pooled)
+		mysql_close(pooled);
+	return open_pool_test_connection();
+}
+extern "C" void sql_pool_discard_connection(MYSQL *pooled)
+{
+	if (pooled)
+		mysql_close(pooled);
+}
 
 namespace
 {
@@ -252,15 +286,20 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 	command.accepted_at_usec = 1;
 	command.publication_required = true;
 	assert(critical_command_envelope_valid(command));
-	const auto applied = critical_command_repository_apply(connection, command);
+	critical_apply_result applied = {};
+	std::thread pooled_worker(
+		[&] { applied = critical_command_repository_apply_from_pool(command, nullptr); });
+	pooled_worker.join();
 	if (applied.outcome != critical_apply_outcome::applied || applied.error_code)
-		fprintf(stderr, "typed coin item transfer failed outcome=%u error=%u mysql=%u %s\n",
-			static_cast<unsigned int>(applied.outcome), applied.error_code,
-			mysql_errno(connection), mysql_error(connection));
+		fprintf(stderr, "pooled typed coin transfer failed outcome=%u error=%u\n",
+			static_cast<unsigned int>(applied.outcome), applied.error_code);
 	assert(applied.outcome == critical_apply_outcome::applied && !applied.error_code);
 	const auto replayed = critical_command_repository_apply(connection, command);
 	assert(replayed.outcome == critical_apply_outcome::already_applied &&
 	       replayed.result_size == applied.result_size);
+	const auto reconciled = critical_command_repository_reconcile(connection, command);
+	assert(reconciled.outcome == critical_apply_outcome::already_applied &&
+	       reconciled.result_size == applied.result_size);
 
 	critical_operation_id wallet_child = {}, pile_child = {};
 	assert(critical_operation_id_derive(operation, COIN_TRANSFER_OPERATION_DOMAIN, 0,
@@ -778,6 +817,7 @@ void coin_failure_matrix()
 
 int main()
 {
+	assert(mysql_library_init(0, nullptr, nullptr) == 0);
 	const char *host = getenv("DB_HOST"), *user = getenv("DB_USER"),
 		   *password = getenv("DB_PASSWD"), *database = getenv("CURRENCY_TEST_DB_NAME"),
 		   *port_value = getenv("DB_PORT");

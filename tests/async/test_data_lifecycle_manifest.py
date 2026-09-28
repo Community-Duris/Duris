@@ -39,6 +39,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0032_economic_baseline.sql",
     ROOT / "migrations" / "immutable" / "0033_economic_sql_lifecycle_owner.sql",
     ROOT / "migrations" / "immutable" / "0034_player_death_conflict_evidence.sql",
+    ROOT / "migrations" / "immutable" / "0036_economic_sql_activation_receipt.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -100,7 +101,7 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 217)
+        self.assertEqual(report["database_tables"], 218)
         self.assertEqual(report["non_database_stores"], 34)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
