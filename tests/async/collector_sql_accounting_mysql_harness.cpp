@@ -1,5 +1,6 @@
 #include "economy/collector_accounting.h"
 #include "persistence/economic_sql_collector_transaction.h"
+#include "persistence/critical_command_repository.h"
 #include "player/player_snapshot_codec.h"
 
 #include <mysql.h>
@@ -209,19 +210,26 @@ critical_command purchase_command(const collector::record &listing,
 	return command;
 }
 
-critical_command expire_command(const collector::record &listing, const std::vector<uint8_t> &blob,
-				const critical_operation_id &lineage,
-				const critical_operation_id &epoch)
+critical_command held_command(const collector::record &listing, const std::vector<uint8_t> &blob,
+			      const critical_operation_id &lineage,
+			      const critical_operation_id &epoch, collector_action action,
+			      collector::reason reason = collector::reason::none)
 {
 	collector_command_payload payload;
-	payload.action = collector_action::expire;
+	payload.action = action;
+	payload.cancel_reason = reason;
 	payload.listing = listing.listing;
 	payload.expected_listing_revision = listing.revision;
-	payload.observed_at = listing.expires_at;
+	payload.observed_at = action == collector_action::expire ? listing.expires_at :
+								   listing.available_at;
 	payload.from_owner = { item_owner_type::collector, listing.listing, 0 };
-	payload.to_owner = { item_owner_type::destruction, 0, 0 };
+	payload.to_owner = reason == collector::reason::quarantined ?
+				   item_owner_identity{ item_owner_type::system, 0, 0 } :
+				   item_owner_identity{ item_owner_type::destruction, 0, 0 };
 	payload.selected_item_uid = listing.uid;
-	payload.target_state = item_custody_state::destroyed;
+	payload.target_state = reason == collector::reason::quarantined ?
+				       item_custody_state::quarantined :
+				       item_custody_state::destroyed;
 	payload.item_count = 1;
 	payload.items[0] = { listing.uid,	    listing.uid, 0,
 			     listing.item_revision, 1201,	 item_custody_state::active };
@@ -240,21 +248,6 @@ critical_command expire_command(const collector::record &listing, const std::vec
 	return command;
 }
 
-void commit_receipt(const critical_command &command, const collector_command_result &result)
-{
-	std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
-	assert(collector_command_encode_result(result, &encoded));
-	execute("INSERT INTO critical_outbox(operation_id,event_index,destination,event_type,"
-		"payload_version,payload) VALUES(" +
-		literal(command.operation_id) + ",0,11,1,2,X'" +
-		hex(encoded.data(), encoded.size()) + "')");
-	execute("UPDATE critical_operation_inbox SET status=1,result_code=0,"
-		"durable_revision=" +
-		std::to_string(result.catalog_revision) + ",result_payload=X'" +
-		hex(encoded.data(), encoded.size()) +
-		"' WHERE operation_id=" + literal(command.operation_id) + " AND status=0");
-	assert(mysql_affected_rows(connection) == 1);
-}
 } // namespace
 
 int main()
@@ -302,22 +295,19 @@ int main()
 	const auto blob = item_blob(9400000880ULL);
 	const auto listing = seed_listing(8001, 9400000880ULL, true, blob);
 	const auto command = purchase_command(listing, blob, epoch, wallet, bank);
-	execute("START TRANSACTION");
-	seed_inbox(command.operation_id, static_cast<uint16_t>(command.type), 2, 0);
+	const critical_apply_result applied =
+		critical_command_repository_apply(connection, command);
+	if (applied.outcome != critical_apply_outcome::applied)
+		fprintf(stderr, "collector root apply failed: %u outcome=%u mysql=%u %s\n",
+			applied.error_code, static_cast<unsigned int>(applied.outcome),
+			mysql_errno(connection), mysql_error(connection));
+	assert(applied.outcome == critical_apply_outcome::applied);
+	collector_command_result result = {};
+	assert(collector_command_decode_result(applied.result_payload.data(), applied.result_size,
+					       &result));
 	economic_sql_collector_context context;
-	unsigned int error = economic_sql_collector_lock(connection, command, &context);
-	if (error)
-		fprintf(stderr, "collector accounting lock failed: %u\n", error);
-	assert(error == 0);
-	collector_command_result result;
 	unsigned int result_code = 0;
 	bool mutation_applied = false;
-	error = economic_sql_collector_execute_and_record(connection, command, context, &result,
-							  &result_code, &mutation_applied);
-	if (error)
-		fprintf(stderr, "collector accounting apply failed: %u mysql=%u %s\n", error,
-			mysql_errno(connection), mysql_error(connection));
-	assert(error == 0 && result_code == 0 && mutation_applied);
 	const std::string where = " WHERE operation_id=" + literal(command.operation_id);
 	assert(scalar("SELECT COUNT(*) FROM economic_accounting_operation" + where) == 1);
 	assert(scalar("SELECT COUNT(*) FROM economic_accounting_account_effect" + where) == 3);
@@ -331,8 +321,6 @@ int main()
 		     "legacy_event_index) FROM economic_accounting_item_reference" +
 		     where) == "9400000880:6:7:0");
 	assert(scalar("SELECT COUNT(*) FROM collector_ledger" + where) == 1);
-	commit_receipt(command, result);
-	execute("COMMIT");
 	mysql_close(connection);
 	connection = mysql_init(nullptr);
 	assert(connection && mysql_real_connect(connection, getenv("DB_HOST"), getenv("DB_USER"),
@@ -355,38 +343,108 @@ int main()
 		     where) == listing.death_operation.data());
 	std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> retained_purchase = {};
 	assert(collector_command_encode_result(result, &retained_purchase));
+	assert(economic_sql_collector_verify_retained(connection, command, 0,
+						      retained_purchase.data(),
+						      retained_purchase.size()) == 0);
+	assert(critical_command_repository_reconcile(connection, command).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(critical_command_repository_apply(connection, command).outcome ==
+	       critical_apply_outcome::already_applied);
+	execute("UPDATE economic_accounting_coin_posting SET copper_value=copper_value+1 "
+		"WHERE operation_id=" +
+		literal(command.operation_id) + " AND line_index=0");
+	assert(economic_sql_collector_verify_retained(connection, command, 0,
+						      retained_purchase.data(),
+						      retained_purchase.size()) != 0);
+	assert(critical_command_repository_apply(connection, command).outcome ==
+	       critical_apply_outcome::retryable_failure);
+	execute("UPDATE economic_accounting_coin_posting SET copper_value=copper_value-1 "
+		"WHERE operation_id=" +
+		literal(command.operation_id) + " AND line_index=0");
+	assert(economic_sql_collector_verify_retained(connection, command, 0,
+						      retained_purchase.data(),
+						      retained_purchase.size()) == 0);
+	assert(critical_command_repository_reconcile(connection, command).outcome ==
+	       critical_apply_outcome::already_applied);
 	assert(value("SELECT LOWER(HEX(result_payload)) FROM critical_operation_inbox" + where) ==
 	       hex(retained_purchase.data(), retained_purchase.size()));
 	const std::string wallet_after_purchase =
 		value("SELECT CONCAT(copper,':',silver,':',gold,':',platinum,':',wallet_revision) "
 		      "FROM player_data WHERE pid=" +
 		      std::to_string(PID));
+	const auto stale = purchase_command(listing, blob, epoch, wallet, bank);
+	const critical_apply_result rejected = critical_command_repository_apply(connection, stale);
+	assert(rejected.outcome == critical_apply_outcome::terminal_failure);
+	assert(rejected.error_code == ESTALE);
+	assert(critical_command_repository_apply(connection, stale).outcome ==
+	       critical_apply_outcome::terminal_failure);
+	const std::string stale_where = " WHERE operation_id=" + literal(stale.operation_id);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_operation" + stale_where) == 1);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_coin_posting" + stale_where) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_item_reference" + stale_where) ==
+	       0);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox" + stale_where) == 0);
 
 	// Held expiry is a separate linked root with one destruction event and no money.
 	const auto expire_blob = item_blob(9400000882ULL);
 	const auto expiring = seed_listing(8003, 9400000882ULL, true, expire_blob);
 	execute("INSERT IGNORE INTO item_owner_revision(owner_type,owner_id,owner_context_id,"
 		"revision) VALUES(8,0,0,0)");
-	const auto expire = expire_command(expiring, expire_blob, lineage, epoch);
-	execute("START TRANSACTION");
-	seed_inbox(expire.operation_id, static_cast<uint16_t>(expire.type), 2, 0);
-	assert(economic_sql_collector_lock(connection, expire, &context) == 0);
-	assert(economic_sql_collector_execute_and_record(connection, expire, context, &result,
-							 &result_code, &mutation_applied) == 0);
-	assert(result_code == 0 && mutation_applied);
+	const auto expire =
+		held_command(expiring, expire_blob, lineage, epoch, collector_action::expire);
+	const critical_apply_result expired_root =
+		critical_command_repository_apply(connection, expire);
+	assert(expired_root.outcome == critical_apply_outcome::applied);
+	assert(collector_command_decode_result(expired_root.result_payload.data(),
+					       expired_root.result_size, &result));
 	const std::string expire_where = " WHERE operation_id=" + literal(expire.operation_id);
 	assert(scalar("SELECT COUNT(*) FROM economic_accounting_account_effect" + expire_where) ==
 	       0);
 	assert(scalar("SELECT COUNT(*) FROM economic_accounting_coin_posting" + expire_where) == 0);
 	assert(scalar("SELECT COUNT(*) FROM economic_accounting_item_reference" + expire_where) ==
 	       1);
-	commit_receipt(expire, result);
-	execute("COMMIT");
+	std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> retained_expire = {};
+	assert(collector_command_encode_result(result, &retained_expire));
+	assert(economic_sql_collector_verify_retained(connection, expire, 0, retained_expire.data(),
+						      retained_expire.size()) == 0);
+	assert(critical_command_repository_reconcile(connection, expire).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(critical_command_repository_apply(connection, expire).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox" + expire_where) == 1);
 	assert(value("SELECT LOWER(HEX(original_operation_id)) FROM "
 		     "economic_accounting_operation" +
 		     expire_where) == expiring.death_operation.data());
 	assert(value("SELECT CONCAT(owner_type,':',state,':',item_revision) FROM "
 		     "item_current_owner WHERE item_uid=9400000882") == "8:2:7");
+	assert(value("SELECT CONCAT(copper,':',silver,':',gold,':',platinum,':',"
+		     "wallet_revision) FROM player_data WHERE pid=" +
+		     std::to_string(PID)) == wallet_after_purchase);
+
+	// Cancellation is its own item-only root and preserves the original UID in
+	// quarantine. It must not debit the buyer or issue collector proceeds.
+	const auto cancel_blob = item_blob(9400000883ULL);
+	const auto cancellable = seed_listing(8004, 9400000883ULL, true, cancel_blob);
+	execute("INSERT IGNORE INTO item_owner_revision(owner_type,owner_id,owner_context_id,"
+		"revision) VALUES(7,0,0,0)");
+	const auto cancel = held_command(cancellable, cancel_blob, lineage, epoch,
+					 collector_action::cancel, collector::reason::quarantined);
+	const critical_apply_result cancelled_root =
+		critical_command_repository_apply(connection, cancel);
+	assert(cancelled_root.outcome == critical_apply_outcome::applied);
+	const std::string cancel_where = " WHERE operation_id=" + literal(cancel.operation_id);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_account_effect" + cancel_where) ==
+	       0);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_coin_posting" + cancel_where) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_item_reference" + cancel_where) ==
+	       1);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox" + cancel_where) == 1);
+	assert(value("SELECT CONCAT(owner_type,':',state,':',item_revision) FROM "
+		     "item_current_owner WHERE item_uid=9400000883") == "7:3:7");
+	assert(critical_command_repository_reconcile(connection, cancel).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(critical_command_repository_apply(connection, cancel).outcome ==
+	       critical_apply_outcome::already_applied);
 	assert(value("SELECT CONCAT(copper,':',silver,':',gold,':',platinum,':',"
 		     "wallet_revision) FROM player_data WHERE pid=" +
 		     std::to_string(PID)) == wallet_after_purchase);
@@ -397,13 +455,9 @@ int main()
 	execute("CREATE TRIGGER fail_accounting_reference BEFORE INSERT ON "
 		"economic_accounting_item_reference FOR EACH ROW SIGNAL SQLSTATE '45000' "
 		"SET MESSAGE_TEXT='forced accounting failure'");
-	execute("START TRANSACTION");
-	seed_inbox(failure.operation_id, static_cast<uint16_t>(failure.type), 2, 0);
-	assert(economic_sql_collector_lock(connection, failure, &context) == 0);
-	error = economic_sql_collector_execute_and_record(connection, failure, context, &result,
-							  &result_code, &mutation_applied);
-	assert(error != 0);
-	execute("ROLLBACK");
+	const critical_apply_result failed_root =
+		critical_command_repository_apply(connection, failure);
+	assert(failed_root.outcome == critical_apply_outcome::retryable_failure);
 	execute("DROP TRIGGER fail_accounting_reference");
 	const auto failed_where = " WHERE operation_id=" + literal(failure.operation_id);
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox" + failed_where) == 0);
@@ -417,6 +471,9 @@ int main()
 		     "wallet_revision) FROM player_data WHERE pid=" +
 		     std::to_string(PID)) == wallet_after_purchase);
 	// A context retained across transactions cannot bypass an epoch transition.
+	execute("START TRANSACTION");
+	assert(economic_sql_collector_lock(connection, failure, &context) == 0);
+	execute("ROLLBACK");
 	execute("UPDATE economic_lineage_state SET active_epoch=NULL,revision=revision+1 "
 		"WHERE lineage=" +
 		literal(lineage));

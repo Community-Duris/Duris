@@ -1578,6 +1578,21 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::applied &&
 			result_of(applied).from_owner_revision == 5,
 		"saved storage destruction did not apply");
+	flatfile_item_ownership_record retired_root = {}, retired_child = {};
+	require(flatfile_item_repository_lookup_uid(room_root.string(), 300, &retired_root,
+						    &error) ==
+				flatfile_item_repository_result::ok &&
+			retired_root.state == item_custody_state::destroyed &&
+			retired_root.owner.type == item_owner_type::destruction &&
+			retired_root.root_item_uid == 300 && !retired_root.parent_item_uid,
+		"retired storage root lost its last topology");
+	require(flatfile_item_repository_lookup_uid(room_root.string(), 301, &retired_child,
+						    &error) ==
+				flatfile_item_repository_result::ok &&
+			retired_child.state == item_custody_state::destroyed &&
+			retired_child.owner.type == item_owner_type::destruction &&
+			retired_child.root_item_uid == 300 && retired_child.parent_item_uid == 300,
+		"retired storage child lost its historical parent");
 	room_records.clear();
 	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
 				flatfile_world_item_result::ok &&

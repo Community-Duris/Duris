@@ -1,5 +1,6 @@
 #include "persistence/economic_sql_bank_transaction.h"
 #include "persistence/critical_command_repository.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economic_sql_coordinator_fixture.h"
 #include <openssl/sha.h>
 
@@ -14,6 +15,21 @@
 #include <vector>
 #include <thread>
 #include <barrier>
+
+class economic_gameplay_authority_test_access
+{
+    public:
+	static economic_accounting_error
+	install(const critical_operation_id &lineage, const critical_operation_id &epoch,
+		const critical_operation_id &receipt,
+		std::span<const economic_gameplay_wallet_mapping> wallets,
+		std::span<const economic_gameplay_bank_mapping> banks)
+	{
+		return economic_gameplay_authority::install(lineage, epoch, receipt, wallets,
+							    banks);
+	}
+	static void reset() { economic_gameplay_authority::reset_for_tests(); }
+};
 
 // Test-only link wrapper: let the real server commit, then hide its reply from
 // the repository. This exercises its ambiguous outcome and fresh reconciliation.
@@ -853,15 +869,22 @@ int main()
 	const auto prior_platinum =
 		scalar(connection, "SELECT bank_platinum FROM account_banks WHERE id=" +
 					   std::to_string(bank_id));
-	assert(currency_command_build(&starter, starter_id, starter_payload, 0, prior_bank_revision,
-				      critical_source_site::login,
+	assert(currency_command_build(&starter, starter_id, starter_payload, prior_wallet_revision,
+				      UINT64_MAX, critical_source_site::login,
 				      critical_deadline_class::recovery));
-	starter.accepted_at_usec = 1;
-	assert(economic_chaos_starter_bank_intent(starter, epoch, wallet, bank,
-						  &starter.accounting_intent) ==
+	const std::array starter_wallets = { economic_gameplay_wallet_mapping{
+		static_cast<uint32_t>(pid), wallet } };
+	const std::array starter_banks = { economic_gameplay_bank_mapping{ account, 1, bank } };
+	assert(economic_gameplay_authority_test_access::install(lineage, epoch, bootstrap,
+								starter_wallets, starter_banks) ==
 	       economic_accounting_error::ok);
-	starter.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	assert(economic_gameplay_authority::prepare_currency(&starter) ==
+	       economic_accounting_error::ok);
+	economic_gameplay_authority_test_access::reset();
+	assert(starter.expected_revisions[1].revision == UINT64_MAX);
+	starter.accepted_at_usec = 1;
 	starter.publication_required = true;
+	assert(critical_command_envelope_valid(starter));
 	assert(economic_sql_bank_command_supported(starter));
 	assert(economic_command_admission_supported(starter));
 	assert(economic_flatfile_command_admission_supported(starter));

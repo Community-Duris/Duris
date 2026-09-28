@@ -15,9 +15,9 @@ struct economic_sql_shop_trade_context
 
 // Standalone inactive shop capability. The caller owns an open inbox
 // transaction. Lock all three money lifetimes, native cash and wallet rows,
-// ownership rows for the item tree, and owner revisions. The locks and this
-// context expire at the caller's commit or rollback. Physical item rows and
-// the gameplay shop configuration still need witnesses before activation.
+// ownership and physical inventory rows for the item tree, and owner revisions.
+// The locks and this context expire at the caller's commit or rollback. The
+// gameplay shop configuration still needs a durable witness before activation.
 unsigned int economic_sql_shop_trade_lock(MYSQL *connection, const critical_command &command,
 					  economic_sql_shop_trade_context *context);
 

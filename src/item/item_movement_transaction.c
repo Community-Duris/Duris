@@ -1003,7 +1003,8 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_moveme
 				if (candidate.to_room || candidate.target_container_uid ||
 				    !candidate.allow_pre_entry ||
 				    candidate.recipient_pid != actor_pid || !object ||
-				    !OBJ_NOWHERE(object) || candidate.source != request.source)
+				    !OBJ_NOWHERE(object) || candidate.source != request.source ||
+				    candidate.source_id != request.source_id)
 					return reject_with(reject,
 							   item_movement_reject::owner_mismatch);
 				objects.push_back(object);
@@ -1017,7 +1018,7 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_moveme
 			    actor, objects.data(), objects.size(), NULL, system_owner_identity,
 			    creation_grant_owner(request), item_transfer_reason::creation, 0,
 			    creation_grant_batch_completion, &actor_pid, sizeof(actor_pid), NULL,
-			    reject, nullptr, request.source))
+			    reject, nullptr, request.source, request.source_id))
 			return false;
 		queue.active = true;
 		return true;
@@ -1761,7 +1762,7 @@ bool item_movement_transaction_submit_batch(
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context,
 	item_movement_reject *reject, item_movement_publication_fn publication,
-	economic_source_kind lifecycle_source)
+	economic_source_kind lifecycle_source, uint64_t logical_source_id)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1775,7 +1776,9 @@ bool item_movement_transaction_submit_batch(
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !roots || !root_count ||
 	    root_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
-	    corpse_transfer != (corpse_context != NULL) || (creation && target_container))
+	    corpse_transfer != (corpse_context != NULL) || (creation && target_container) ||
+	    (logical_source_id && (!creation || lifecycle_source == economic_source_kind{} ||
+				   lifecycle_source == economic_source_kind::quest_completion)))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
@@ -1910,6 +1913,7 @@ bool item_movement_transaction_submit_batch(
 		.to_owner = to_owner,
 		.reason = reason,
 		.reason_id = reason_id,
+		.logical_source_id = logical_source_id,
 		.expected_from_revision = from_revision,
 		.expected_to_revision = to_revision,
 		.selected_item_uid = 0,
@@ -2225,11 +2229,14 @@ bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj objec
 }
 
 bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
-								     size_t count, P_char recipient,
-								     economic_source_kind source)
+							     size_t count, P_char recipient,
+							     economic_source_kind source,
+							     uint64_t source_id)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || recipient != actor || !objects ||
-	    !count || count > ITEM_CREATION_GRANT_MAX_ROOTS)
+	    !count || count > ITEM_CREATION_GRANT_MAX_ROOTS ||
+	    (source_id && (source == economic_source_kind{} ||
+			   source == economic_source_kind::quest_completion)))
 		return false;
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	if (creation_grants.find(actor_pid) != creation_grants.end())
@@ -2255,9 +2262,11 @@ bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj
 		queue.stop_on_failure = true;
 		for (size_t i = 0; i < count; ++i)
 		{
-			pending_creation_grant request = { objects[i]->obj_uid, 0, actor_pid, NOWHERE,
-							   false, true };
+			pending_creation_grant request = {
+				objects[i]->obj_uid, 0, actor_pid, NOWHERE, false, true
+			};
 			request.source = source;
+			request.source_id = source_id;
 			queue.requests.push_back(request);
 		}
 		if (!creation_grants.emplace(actor_pid, std::move(queue)).second)

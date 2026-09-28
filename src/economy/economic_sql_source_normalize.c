@@ -327,6 +327,15 @@ struct consumer
 		monetary("player_data", kind::wallet, 3, 4, false, 7);
 		monetary("account_banks", kind::bank, 3, 4, true, 7);
 		monetary("shopkeepers", kind::treasury, 4, 1, false, 5);
+		const auto shops = source("shopkeepers");
+		for (size_t row = 0; row < input.tables[shops].rows.size(); ++row)
+		{
+			const auto &roaming = input.tables[shops].rows[row].cells[6];
+			if (!roaming)
+				observe(issue::unknown_keeper_configuration, reference(shops, row));
+			else
+				require(integer<uint8_t>(roaming) <= 1);
+		}
 		monetary("ships", kind::ship, 2, 1, false, std::nullopt);
 		monetary("auction_money_pickups", kind::claim, 1, 1, true, 2);
 		auctions();

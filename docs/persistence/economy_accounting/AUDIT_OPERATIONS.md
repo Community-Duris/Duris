@@ -71,6 +71,27 @@ before asserting completeness. **A hand-authored JSON fixture is synthetic
 evidence only.** No live SQL or flatfile snapshot is currently certified by
 this interface.
 
+### SQL opening-origin extraction
+
+`scripts/economic_sql_audit_origins.py` reads retained EAB1 baseline witnesses
+through a dedicated repeatable-read, consistent-snapshot, read-only SQL
+transaction. Give it an explicit host, database, user, lineage, epoch and new
+output path; its password comes from the named environment variable (default
+`DB_PASSWORD`). Use a database account with `SELECT` privilege only. It checks
+InnoDB source tables, the control revision and terminal witness, each committed
+baseline root/inbox receipt, stored SHA-256 and EAB1 framing, canonical row
+order, nonzero source digests and unique account lifetimes/UIDs. A missing or
+zero-revision baseline refuses. The output is bounded by the audit input limit
+and contains only non-personal account keys, UID positions and revisions.
+
+The `economic_sql_audit_origins_v1` artifact supplies **only**
+`account_origins` and `item_origins` for a later full SQL exporter. It is not a
+version-1 audit snapshot, does not attest current native balances or complete
+ownership/economic history, and cannot be passed to the reconciler as a clean
+release result. The disposable database runner
+`tests/async/run_economic_sql_audit_origins_mysql.py` exercises the extractor
+with a `SELECT`-only account; it requires an explicit disposable loopback flag.
+
 ## Reconciliation and bounded views
 
 Run `python3 scripts/reconcile_economy_accounting.py snapshot.json`. Exit 0
@@ -84,7 +105,9 @@ child links, and receipt presence. It never clears an exception.
 `--view holdings`, `--view supply`, `--view provenance --uid UID`, `--view
 prices`, and `--view routes` produce bounded JSON rows. Supply and price views
 report actual evidence only. Price data must come from the committed domain
-result; a caller must never fill it with an appraisal. All views print
+result; a caller must never fill it with an appraisal. A rejected root carrying
+a realized price is an audit exception and is excluded from the price view;
+prices outside the signed 64-bit copper range are also refused. All views print
 non-personal account keys, UIDs and operation IDs, never account names, player
 names, email, or address. Run the tool only under the staff/operator account
 that can read the protected snapshot. There is no public endpoint or player

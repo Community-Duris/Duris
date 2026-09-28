@@ -7,12 +7,12 @@ or permission to activate an epoch.
 
 | Reachable path | Authority and source/sink | Current Plan 3 status | Proof or remaining work |
 | --- | --- | --- | --- |
-| `item_movement_transaction_submit` from player get, drop, put, give and trusted steal | Existing item ownership repository; custody move | Accounted intent, ordered item events and exact legacy references on SQL and flatfile; same-owner nesting admitted. SQL player materialization refuses an unexpected native child, a foreign player row or a mismatched template before detaching selected rows | `test_item_transfer_accounting.py`, `test_universal_item_transfer_accounting.py`, `test_economic_accounting_flatfile_gate.py`; SQL item harness includes each native conflict followed by a valid give |
-| Locker deposit/withdraw and pet give/return through the same transaction | Existing locker/pet native rows and item ownership repository; custody move | Accounted policy admission is implemented. SQL moves nested native rows and metadata for both routes in the custody transaction; flatfile preserves the nested custody graph and exact references | Focused SQL and flatfile fixtures pass, including stale player snapshot reconciliation for pet handoff and return. Real-server SQL pet and locker journeys pass on current 0041 source with save and restart while the epoch is inactive. Add active-epoch and flatfile gameplay journeys |
+| `item_movement_transaction_submit` from player get, drop, put, give and trusted steal | Existing item ownership repository; custody move | Accounted intent, ordered item events and exact legacy references on SQL and flatfile; same-owner nesting admitted. SQL player materialization refuses an unexpected native child, a foreign player row or a mismatched template before detaching selected rows | `test_item_transfer_accounting.py`, `test_universal_item_transfer_accounting.py`, `test_economic_accounting_flatfile_gate.py`; SQL item harness includes each native conflict followed by a valid give. The disposable flatfile `run_npc_container_claim_journey.py --restart-only` mode verifies a nested player UID graph, unchanged custody revision, and live materialization after save/restart while the epoch is inactive |
+| Locker deposit/withdraw and pet give/return through the same transaction | Existing locker/pet native rows and item ownership repository; custody move | Accounted policy admission is implemented. SQL moves nested native rows and metadata for both routes in the custody transaction; flatfile preserves the nested custody graph and exact references | Focused SQL and flatfile fixtures pass, including stale player snapshot reconciliation for pet handoff and return. Real-server SQL pet and locker journeys pass at `68af73add` with migration 0041, save and restart while the epoch is inactive. Add active-epoch and flatfile gameplay journeys |
 | Corpse create/loot through item transfer | Existing corpse handoff and item ownership repository; custody move | Existing accounted path retained; coin piles excluded from ordinary item accounting | Existing corpse tests; combined death/coin effects belong to Plan 4 |
 | Spell conjuration and spell component retirement | Creation grant / item movement transaction; issuance or destruction | Typed `spell_creation` and `spell_consumption` claims. The SQL item transaction removes a committed player component forest from native `player_items` while retaining destroyed UID, root and parent history. It refuses an unexpected native child before publishing retirement. Flatfile and SQL fixtures cover a multi-root retirement with a nested child and exact references. A queued stale player save remains blocked after retirement, while reconnect and restart loads leave the retired forest absent | The fixtures also reject a second spell issuance with the same logical source and a new UID. Live spell casts still use UID-lifetime identity because they lack a durable cast ID; add that producer identity and a live save/reconnect/restart gameplay journey |
 | Soulbind reload and replacement cleanup in `magic/spell_item_lifecycle.c` | Repeatable player item issuance and direct retirement of earlier bound items | Active-epoch reload refuses before `read_object`; staff clearing and replacement refuse before removing an old binding. The shared cleanup skips durable objects if an epoch becomes active before a pending callback, while transient cleanup remains available | Assign a durable entitlement generation and retire the old UID in the same accounted replacement operation before admitting reload or staff replacement. Cover the live callback and restart path |
-| Key breaking, chaos pouch consumption and administrative load | Item movement transaction; intentional sink or issuance | Typed `intentional_destruction` / `administrator` claims | Add live command journeys and explicit source authority checks |
+| Key breaking, chaos pouch consumption and administrative load | Item movement transaction; intentional sink or issuance | Typed `intentional_destruction` / `administrator` claims. Flatfile retains destroyed UID and historical root/parent for read-only provenance lookup | The disposable `run_npc_container_claim_journey.py --key-break` mode unlocks a synthetic chest with a guaranteed breaking key, observes committed destruction before live extraction, and verifies the same tombstone after save/restart while the epoch is inactive. Add SQL and active-epoch command journeys and explicit source authority checks for the remaining routes |
 | Staff storage establish, empty and delete in `cmd/actwiz.c` | Existing room item repository; issuance, same-room child move or destruction | Flatfile uses typed administrator/intentional claims and a bounded direct-child repair policy. Active SQL `new`, `delete` and `remove` refuse before native saved-item or live item mutation | Policy regression and `test_pa_item_admission.py` pass; qualify the full native room projection on SQL before enabling its storage commands, and add live command journeys |
 | Quest item rewards in `world/quest.c` and `world/world_quest.c` | Creation grant; issuance | World quests use persisted `(player PID, quest_started)` as a logical `quest_completion` source independent of the allocated UID. The start value now advances across resets, repeat starts in one second and shared assignments. A missing source ID is refused before queuing. Active-epoch completion waits for the published item grant before quest reset, completion XP and epic reward. A terminal grant failure keeps the quest and restores the prior kill count. High-level mercenary quests with a coupled coin reward refuse before item admission. Static quests have no durable completion ID and refuse their legacy gift path before accepting an offering during an active epoch | SQL and flatfile fixtures reject a second UID with the same source; `test_world_quest_reward_policy.py` checks ordering and `test_world_quest_item_completion.py` executes the publication callback's success, refusal, changed quest and duplicate-callback cases. Restart reconciliation of a committed item whose callback did not run, an exact-once quest marker, and the coupled coin route remain open; add a durable static quest completion ID and NPC custody route |
 | Random-zone quest offerings in `world/random.zone.c` and staff `randobj` in `item/randobj.c` | Direct extraction followed by unsourced random rewards; direct staff issuance | Both entry points refuse before an offering or reward is mutated in an active epoch | Add stable entitlement identities and admission for these routes if they must run after activation |
@@ -55,7 +55,10 @@ different command ID and epoch for the same UID. The item-transfer v8 payload
 also carries an optional logical source ID for nonquest creation. When supplied,
 the source claim uses `(lineage, kind, logical source ID, slot 0)` and survives
 allocation of a different UID; the reason ID continues to identify the item
-template. SQL and flatfile fixtures refuse a second world-generation UID for
+template. The pre-entry multi-root grant and its underlying batch transaction
+retain the same ID for the entire issued forest. The executable queue fixture
+checks its encoded command and rejects an ID without a valid creation source.
+SQL and flatfile fixtures refuse a second world-generation UID for
 the same logical source. Creation grant APIs can pass this ID, but the withheld
 world reset, spell, and loot routes still need durable producer identities and
 publication journeys before admission. World quest rewards use
@@ -66,9 +69,10 @@ for each newly created or shared quest, including quests begun in the same
 second. Static quests, resets, and loot still need their own durable cause
 identities before those routes can be called complete.
 
-The duplicate reward fixtures leave the second UID absent from current ownership
-and the legacy event ledger. SQL reports the source-claim uniqueness collision as
-a retryable authority failure after rollback; flatfile reports a terminal
+The SQL duplicate quest-reward and world-generation fixtures leave the second
+UID absent from current ownership, the legacy event ledger, and accounting
+operations. SQL maps a duplicate source-claim insertion to terminal `EEXIST`
+after rolling back the enclosing transaction; flatfile also reports a terminal
 conflict. Both preserve the first reward and publish no second copy.
 
 The SQL locker fixture deposits and withdraws a nested forest, verifies its
@@ -91,14 +95,31 @@ It checks native player and pet rows, current custody and metadata after each
 move, auto-equips the trinket on the pet, and restores the follower with all five
 UIDs after a server restart. The run holds the economic epoch inactive, so it
 establishes live native custody behavior rather than active-epoch references.
-The journey also passed on current source with the migration 0041 runtime
+The journey also passed at `68af73add` with the migration 0041 runtime
 contract.
+
+The disposable flatfile container journey claims a nested room item with player
+get/put commands, saves the character, and restarts the server. Its
+`--restart-only` mode verifies both UIDs, parentage, one current player owner,
+unchanged custody revision, and visible container contents after reconnect.
+The original mode separately verifies a real NPC claim of the nested item after
+player drop, with one committed room revision and no duplicate player copy.
+Both modes ran while the epoch was inactive; neither proves active-epoch
+accounting references for those live commands.
+
+The flatfile key-break mode claims a key, unlocks a chest with a guaranteed
+break, and checks that the key disappears only after its UID is recorded as
+destroyed. A read-only lookup confirms the retired UID, higher revision, last
+root/parent, and destruction owner before and after a server restart. The
+isolated repository fixture also checks historical root/parent for a destroyed
+container and child. This live mode ran while the epoch was inactive, so it
+does not establish a live accounting source claim or reference.
 
 The disposable-schema SQL locker journey uses a real server to deposit a nested
 backpack, leave the locker, save, restart, withdraw, and save again. It checks
 current custody at each move and native player or locker rows, parentage, UIDs,
 affects and extra descriptions at the save boundaries. This passed with both
-the earlier `4d8d0e2bd` source snapshot and current source after its migration
+the earlier `4d8d0e2bd` source snapshot and `68af73add` after its migration
 0041 runtime contract was measured on MySQL 8.0 and MariaDB 10.11. The economic
 epoch was inactive, so this does not establish live active-epoch references.
 
