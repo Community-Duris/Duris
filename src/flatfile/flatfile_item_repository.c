@@ -2950,7 +2950,7 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		include_room = true;
 	}
 	bool include_corpse_artifacts = false;
-	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	if (!result_code && command.payload_version >= ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION &&
 	    (corpse_loot_transfer(payload) || corpse_create_transfer(payload)))
 	{
 		const auto prepared = flatfile_artifact_prepare_corpse_transfer(

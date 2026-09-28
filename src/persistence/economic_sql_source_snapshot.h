@@ -65,6 +65,11 @@ struct economic_sql_source_limits
 // error code otherwise. No partial output on any failure, including rollback.
 unsigned int economic_sql_capture_sources(MYSQL *, const economic_sql_source_limits &,
 					  economic_sql_source_snapshot *) noexcept;
+// Capture in a caller-owned RR consistent transaction. The caller retains the
+// transaction and rolls it back on any failure; this function never ends it.
+unsigned int economic_sql_capture_sources_in_transaction(MYSQL *,
+							 const economic_sql_source_limits &,
+							 economic_sql_source_snapshot *) noexcept;
 // Pure version/registry/bounds/framing verification for captured DTO consumers.
 // Checks all retained cells and digests, not server provenance or complete DDL.
 // A caller can manufacture matching hashes; this is NOT an authority capability.

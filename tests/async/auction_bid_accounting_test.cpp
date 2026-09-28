@@ -68,6 +68,7 @@ critical_command accepted(const auction_command_payload &payload, uint8_t operat
 	assert(auction_command_build(&command, id(operation), payload,
 				     critical_source_site::command,
 				     critical_deadline_class::interactive));
+	command.accepted_at_usec = operation;
 	std::vector<uint8_t> encoded;
 	assert(auction_bid_accounting_intent(command, id(9), before, keys, &encoded) ==
 	       economic_accounting_error::ok);
@@ -136,6 +137,21 @@ int main()
 	const auto first_payload = bid_payload(20, 3000, 4);
 	economic_frozen_intent first_intent;
 	const auto first_command = accepted(first_payload, 3, first, first_keys, &first_intent);
+	economic_frozen_intent decoded_intent;
+	auction_command_payload decoded_payload = {};
+	auction_bid_accounting_listing decoded_listing;
+	auction_bid_accounting_accounts decoded_accounts;
+	assert(auction_bid_accounting_decode(first_command, &decoded_intent, &decoded_payload,
+					     &decoded_listing,
+					     &decoded_accounts) == economic_accounting_error::ok);
+	assert(decoded_listing.auction_id == 400 && decoded_payload.value == 3000 &&
+	       economic_account_key_equal(decoded_accounts.escrow, first_keys.escrow));
+	auto corrupt_command = first_command;
+	corrupt_command.accounting_intent.front() ^= 1;
+	assert(auction_bid_accounting_decode(corrupt_command, &decoded_intent, &decoded_payload,
+					     &decoded_listing,
+					     &decoded_accounts) != economic_accounting_error::ok &&
+	       decoded_listing.auction_id == 400);
 	auto first_authority = authority(first, first_keys, 4);
 	const auto first_result = result_for(first_payload, first, 4);
 	economic_accounting_plan plan;

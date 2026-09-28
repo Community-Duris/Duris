@@ -52,6 +52,22 @@ int main()
 	claim.sources = { { id(10), 1, 100, 13, 300 }, { id(11), 2, 100, 13, 200 } };
 	economic_frozen_intent intent;
 	const auto command = command_for(claim, wallet, bank, pending, &intent);
+	economic_frozen_intent decoded_intent;
+	auction_command_payload decoded_payload = {};
+	economic_account_key decoded_wallet, decoded_bank, decoded_claim;
+	assert(auction_money_claim_accounting_decode(
+		       command, &decoded_intent, &decoded_payload, &decoded_wallet, &decoded_bank,
+		       &decoded_claim) == economic_accounting_error::ok);
+	assert(decoded_payload.actor_pid == 100 &&
+	       economic_account_key_equal(decoded_wallet, wallet) &&
+	       economic_account_key_equal(decoded_bank, bank) &&
+	       economic_account_key_equal(decoded_claim, pending));
+	auto malformed = command;
+	malformed.accounting_intent.front() ^= 1;
+	assert(auction_money_claim_accounting_decode(
+		       malformed, &decoded_intent, &decoded_payload, &decoded_wallet, &decoded_bank,
+		       &decoded_claim) != economic_accounting_error::ok &&
+	       economic_account_key_equal(decoded_claim, pending));
 	auction_money_claim_authority before;
 	before.epoch = id(3);
 	before.wallet = wallet;

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <climits>
 #include <new>
+#include <span>
+#include <utility>
 
 namespace
 {
@@ -179,6 +181,105 @@ economic_accounting_error auction_settlement_accounting_intent(
 		admission.metadata.source_event = source(listing, payload);
 		admission.facts = facts(listing, accounts);
 		return economic_intent_freeze(command, admission, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error auction_settlement_accounting_decode(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, auction_settlement_listing *listing,
+	auction_settlement_accounts *accounts)
+{
+	if (!intent || !payload || !listing || !accounts ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return error::invalid_version;
+	try
+	{
+		auction_command_payload parsed_payload = {};
+		if (!auction_command_decode_payload(command, &parsed_payload) ||
+		    (parsed_payload.action != auction_action::finalize &&
+		     parsed_payload.action != auction_action::remove))
+			return error::invalid_identity;
+		economic_frozen_intent parsed_intent;
+		if (economic_intent_decode(command.accounting_intent, &parsed_intent) !=
+			    error::ok ||
+		    economic_intent_verify_binding(command, parsed_intent) != error::ok)
+			return error::corrupt_evidence;
+		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
+		if (facts.size() < 122)
+			return error::invalid_identity;
+		const auto number = [&](size_t offset, size_t width)
+		{
+			uint64_t value = 0;
+			for (size_t byte = 0; byte < width; ++byte)
+				value |= static_cast<uint64_t>(facts[offset + byte]) << (byte * 8);
+			return value;
+		};
+		const auto count = static_cast<uint16_t>(number(120, 2));
+		if (!count || count > AUCTION_COMMAND_MAX_ITEMS ||
+		    facts.size() != 122 + static_cast<size_t>(count) * 27)
+			return error::invalid_identity;
+		const auto &lineage = parsed_intent.admission.metadata.lineage;
+		auction_settlement_accounts parsed_accounts;
+		parsed_accounts.escrow = { lineage, economic_account_kind::auction_escrow,
+					   number(0, 8), 0 };
+		if (const auto id = number(8, 8))
+			parsed_accounts.seller_claim = { lineage,
+							 economic_account_kind::pending_claim, id,
+							 0 };
+		if (const auto id = number(16, 8))
+			parsed_accounts.actor_wallet = { lineage, economic_account_kind::wallet, id,
+							 0 };
+		if (const auto id = number(24, 8))
+			parsed_accounts.actor_bank = { lineage, economic_account_kind::bank, id,
+						       parsed_payload.racewar };
+		auction_settlement_listing parsed_listing;
+		parsed_listing.auction_id = static_cast<uint32_t>(number(32, 4));
+		parsed_listing.seller_pid = static_cast<uint32_t>(number(36, 4));
+		parsed_listing.winner_pid = static_cast<uint32_t>(number(40, 4));
+		parsed_listing.status = static_cast<uint32_t>(number(44, 4));
+		parsed_listing.custody_state = static_cast<uint32_t>(number(48, 4));
+		parsed_listing.quantity = static_cast<uint32_t>(number(52, 4));
+		parsed_listing.current_price = static_cast<int64_t>(number(56, 8));
+		parsed_listing.buy_price = static_cast<int64_t>(number(64, 8));
+		parsed_listing.revision = number(72, 8);
+		parsed_listing.end_time = number(80, 8);
+		std::copy_n(facts.begin() + 88, 16, parsed_listing.listing_operation.bytes.begin());
+		std::copy_n(facts.begin() + 104, 16,
+			    parsed_listing.winning_bid_operation.bytes.begin());
+		parsed_listing.item_count = count;
+		for (size_t index = 0; index < count; ++index)
+		{
+			const size_t offset = 122 + index * 27;
+			auto &item = parsed_listing.items[index];
+			item.uid = number(offset, 8);
+			item.revision = number(offset + 8, 8);
+			item.slot = static_cast<uint16_t>(number(offset + 16, 2));
+			item.vnum = static_cast<int32_t>(number(offset + 18, 4));
+			item.claim_pid = static_cast<uint32_t>(number(offset + 22, 4));
+			if (facts[offset + 26] > 1)
+				return error::invalid_identity;
+			item.claimed = facts[offset + 26] == 1;
+		}
+		critical_command projected = command;
+		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		projected.accounting_intent.clear();
+		projected.publication_required = false;
+		std::vector<uint8_t> expected;
+		if (auction_settlement_accounting_intent(
+			    projected, parsed_intent.admission.metadata.epoch, parsed_listing,
+			    parsed_accounts, &expected) != error::ok ||
+		    expected != command.accounting_intent)
+			return error::unauthorized;
+		*intent = std::move(parsed_intent);
+		*payload = parsed_payload;
+		*listing = parsed_listing;
+		*accounts = parsed_accounts;
+		return error::ok;
 	}
 	catch (const std::bad_alloc &)
 	{

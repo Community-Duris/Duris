@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <climits>
 #include <new>
+#include <span>
+#include <utility>
 
 namespace
 {
@@ -150,6 +152,81 @@ economic_accounting_error auction_money_claim_accounting_intent(
 						    claim.sources.front().slot };
 		admission.facts = facts(wallet, bank, claim_account, claim);
 		return economic_intent_freeze(command, admission, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error auction_money_claim_accounting_decode(const critical_command &command,
+								economic_frozen_intent *intent,
+								auction_command_payload *payload,
+								economic_account_key *wallet,
+								economic_account_key *bank,
+								economic_account_key *claim_account)
+{
+	if (!intent || !payload || !wallet || !bank || !claim_account ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return error::invalid_version;
+	try
+	{
+		auction_command_payload parsed_payload = {};
+		if (!auction_command_decode_payload(command, &parsed_payload) ||
+		    parsed_payload.action != auction_action::claim_money ||
+		    !parsed_payload.actor_pid)
+			return error::invalid_identity;
+		economic_frozen_intent parsed_intent;
+		if (economic_intent_decode(command.accounting_intent, &parsed_intent) !=
+			    error::ok ||
+		    economic_intent_verify_binding(command, parsed_intent) != error::ok)
+			return error::corrupt_evidence;
+		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
+		if (facts.size() != 80)
+			return error::invalid_identity;
+		const auto number = [&](size_t offset, size_t width)
+		{
+			uint64_t value = 0;
+			for (size_t byte = 0; byte < width; ++byte)
+				value |= static_cast<uint64_t>(facts[offset + byte]) << (byte * 8);
+			return value;
+		};
+		const auto &meta = parsed_intent.admission.metadata;
+		if (meta.writer_id != ECONOMIC_WRITER_AUCTION_MONEY_CLAIM ||
+		    meta.reason != economic_reason::auction_claim ||
+		    meta.actor_kind != economic_actor_kind::domain ||
+		    meta.actor_id != parsed_payload.actor_pid ||
+		    number(24, 4) != parsed_payload.actor_pid || !number(28, 8) ||
+		    number(28, 8) > INT_MAX || !number(44, 4) ||
+		    number(44, 4) > ECONOMIC_AUCTION_CLAIM_MAX_SOURCES || !meta.source_event ||
+		    meta.source_event->kind != economic_source_kind::service ||
+		    meta.source_event->source.bytes != meta.original_operation_id.bytes ||
+		    meta.source_event->generation.bytes != meta.original_operation_id.bytes ||
+		    meta.source_event->sequence != number(36, 8) || !meta.source_event->slot)
+			return error::invalid_identity;
+		const economic_account_key parsed_wallet = { meta.lineage,
+							     economic_account_kind::wallet,
+							     number(0, 8), 0 };
+		const economic_account_key parsed_bank = { meta.lineage,
+							   economic_account_kind::bank,
+							   number(8, 8), parsed_payload.racewar };
+		const economic_account_key parsed_claim = { meta.lineage,
+							    economic_account_kind::pending_claim,
+							    number(16, 8), 0 };
+		if (!economic_account_key_valid(parsed_wallet) ||
+		    !economic_account_key_valid(parsed_bank) ||
+		    !economic_account_key_valid(parsed_claim) ||
+		    parsed_wallet.authority_id == parsed_bank.authority_id ||
+		    parsed_wallet.authority_id == parsed_claim.authority_id ||
+		    parsed_bank.authority_id == parsed_claim.authority_id)
+			return error::invalid_identity;
+		*intent = std::move(parsed_intent);
+		*payload = parsed_payload;
+		*wallet = parsed_wallet;
+		*bank = parsed_bank;
+		*claim_account = parsed_claim;
+		return error::ok;
 	}
 	catch (const std::bad_alloc &)
 	{

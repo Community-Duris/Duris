@@ -250,8 +250,11 @@ bool economic_sql_cutover_transaction_owner::begin(
 
 	try
 	{
-		static constexpr char start[] = "START TRANSACTION";
-		if (mysql_real_query(connection_, start, sizeof(start) - 1) ||
+		static constexpr char isolation[] =
+			"SET TRANSACTION ISOLATION LEVEL REPEATABLE READ";
+		static constexpr char start[] = "START TRANSACTION WITH CONSISTENT SNAPSHOT";
+		if (mysql_real_query(connection_, isolation, sizeof(isolation) - 1) ||
+		    mysql_real_query(connection_, start, sizeof(start) - 1) ||
 		    mysql_thread_id(connection_) != session_ ||
 		    !(connection_->server_status & SERVER_STATUS_IN_TRANS) ||
 		    !reconnect_disabled(connection_))

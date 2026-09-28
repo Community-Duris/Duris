@@ -1299,6 +1299,68 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 				  operation_hex(duplicate_reward.operation_id) + "')")
 					 .c_str()) == 0);
 	root_uid = original_root_uid;
+	const item_owner_identity generated_room = { item_owner_type::room, 151, 0 };
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(restarted, 1));
+	root_uid = item_uid_allocator_next();
+	const uint64_t generated_uid = root_uid;
+	auto generated_payload = payload(system, generated_room, item_transfer_reason::creation,
+					 owner_revision(restarted, system),
+					 owner_revision(restarted, generated_room),
+					 ITEM_TRANSFER_ABSENT_REVISION, 1);
+	generated_payload.logical_source_id = 90001;
+	const auto generated = accounted_item_transfer(operation(159), generated_payload, lineage,
+						       next_epoch, 41,
+						       economic_source_kind::world_generation);
+	assert(critical_command_repository_apply(restarted, generated).outcome ==
+	       critical_apply_outcome::applied);
+	assert(critical_command_repository_apply(restarted, generated).outcome ==
+	       critical_apply_outcome::already_applied);
+	economic_source_event generated_source_event = { economic_source_kind::world_generation,
+							 lineage, lineage, 90001, 0 };
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> encoded_generated_source_event = {};
+	assert(economic_source_event_encode(generated_source_event,
+					    &encoded_generated_source_event) ==
+	       economic_accounting_error::ok);
+	assert(scalar(restarted,
+		      ("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE lineage=UNHEX('" +
+		       operation_hex(lineage) + "') AND source_event=UNHEX('" +
+		       bytes_hex(encoded_generated_source_event) + "') AND operation_id=UNHEX('" +
+		       operation_hex(generated.operation_id) + "') AND outcome=1")
+			      .c_str()) == 1);
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(restarted, 1));
+	root_uid = item_uid_allocator_next();
+	const uint64_t duplicate_generated_uid = root_uid;
+	auto duplicate_generated_payload = payload(system, generated_room,
+						   item_transfer_reason::creation,
+						   owner_revision(restarted, system),
+						   owner_revision(restarted, generated_room),
+						   ITEM_TRANSFER_ABSENT_REVISION, 1);
+	duplicate_generated_payload.logical_source_id = 90001;
+	const auto duplicate_generated =
+		accounted_item_transfer(operation(160), duplicate_generated_payload, lineage,
+					next_epoch, 41, economic_source_kind::world_generation);
+	const auto refused_duplicate_generated =
+		critical_command_repository_apply(restarted, duplicate_generated);
+	assert(refused_duplicate_generated.outcome == critical_apply_outcome::retryable_failure &&
+	       refused_duplicate_generated.error_code == 1062);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				  std::to_string(duplicate_generated_uid))
+					 .c_str()) == 0);
+	assert(scalar(restarted,
+		      ("SELECT COUNT(*) FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+		       operation_hex(duplicate_generated.operation_id) + "')")
+			      .c_str()) == 0);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM economic_accounting_item_reference WHERE "
+				  "operation_id=UNHEX('" +
+				  operation_hex(duplicate_generated.operation_id) + "')")
+					 .c_str()) == 0);
+	assert(scalar(restarted, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				  std::to_string(generated_uid) +
+				  " AND owner_type=3 AND owner_id=151 AND state=1")
+					 .c_str()) == 1);
+	root_uid = original_root_uid;
 
 	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(restarted, 3));

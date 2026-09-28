@@ -106,9 +106,29 @@ after recreation. An inactive flatfile schema-2 item-claim owner now verifies
 the frozen listing and terminal claim source against the native catalog, then
 commits custody, the EAP1 root, and exact item references through one authority
 journal. Its focused journey covers stale source refusal, interrupted commit
-recovery, replay, and retained custody/source evidence. This is component
-parity for item collection only. Other flatfile auction actions and source
-allocation still need typed owners and journeys.
+recovery, replay, and retained custody/source evidence.
+
+An inactive flatfile schema-2 bid owner decodes the complete frozen listing
+and mapped account identities, renews them under the auction authority lock,
+and compares the live listing and custody rows before mutation. It records the
+native bid and EAP1 plan in one authority journal. The focused flatfile journey
+starts with the accounted listing's escrow lifetime, then covers an opening
+bid, an incremental raise by the same bidder, stale prior-source refusal, an
+outbid with a former-bidder pending claim, and buy-now with seller proceeds and
+a closing fee. It verifies source IDs, postings, native pickup rights, exact
+replay, and interrupted-journal recovery.
+
+Inactive flatfile schema-2 finalize and trusted-removal owners now decode the
+entire frozen listing and item sequence, renew the escrow, optional seller
+claim, and actor mappings, and compare the native listing and custody before
+mutation. They retain the changed claim rights and EAP1 closure plan in the
+same authority journal. The focused journey covers a timed sale with seller
+proceeds and closing fee, interrupted sale recovery, removal with the winning
+escrow still held and no bidder refund, and no-bid expiry with no postings. It
+checks exact source links, unchanged item custody witnesses, native pickup
+rights, stale revision refusal, and replay. These owners are not wired into
+the live route. The flatfile money-claim action still needs a typed owner and
+journey, and closed escrow lifetimes still need retirement.
 
 The flatfile auction and collector repositories check the retained accounting
 control under their authority lock after exact replay lookup. A new schema-1

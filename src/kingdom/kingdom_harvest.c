@@ -147,6 +147,7 @@
  */
 
 #include "kingdom/kingdom_internal.h"
+#include "economy/economic_gameplay_authority.h"
 
 #include "core/structs.h"
 
@@ -807,6 +808,8 @@ static bool kingdom_node_should_reap(P_obj obj, int rnum, int now_min, int decay
  */
 void kingdom_node_reap_room(int rnum)
 {
+	if (economic_gameplay_authority::active())
+		return;
 	if (!kingdom_harvest_valid_rnum(rnum))
 		return;
 
@@ -833,6 +836,8 @@ void kingdom_node_reap_room(int rnum)
  */
 static int kingdom_nodes_reap(void)
 {
+	if (economic_gameplay_authority::active())
+		return 0;
 	const int now_min = kingdom_node_now_minutes();
 	const int decay_mins = kingdom_node_decay_mins();
 	std::vector<P_obj> doomed;
@@ -1062,6 +1067,8 @@ static const char *kingdom_node_richness_text(int richness)
  */
 static bool kingdom_load_one_node(int region, int res)
 {
+	if (economic_gameplay_authority::active())
+		return false;
 	if (region < 0 || region >= KINGDOM_NODE_REGION_COUNT || res < 0 || res >= KRES_MAX)
 		return false;
 
@@ -1251,6 +1258,11 @@ static void kingdom_nodes_reload(int region)
 {
 	if (region < 0 || region >= KINGDOM_NODE_REGION_COUNT)
 		return;
+	if (economic_gameplay_authority::active())
+	{
+		kingdom_node_schedule_sweep(region);
+		return;
+	}
 
 	/* World-wide, not region-scoped, and before the census: a node that has
 	 * rotted or been enclosed by a realm must stop counting against the quota
@@ -1355,7 +1367,8 @@ static int kingdom_node_proc(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 		return TRUE;
 	}
 
-	if (cmd == CMD_PERIODIC && obj && obj->value[0] <= 0)
+	if (cmd == CMD_PERIODIC && obj && obj->value[0] <= 0 &&
+	    !economic_gameplay_authority::active())
 	{
 		/* FALSE (the default), not mining's TRUE: gone_for_good exists to
 		 * purge artifact rows (core/prototypes.h) and a node is not an
@@ -1722,8 +1735,9 @@ void kingdom_harvest_shutdown(void)
 		doomed.push_back(obj);
 	}
 
-	for (std::size_t i = 0; i < doomed.size(); i++)
-		extract_obj(doomed[i]);
+	if (!economic_gameplay_authority::active())
+		for (std::size_t i = 0; i < doomed.size(); i++)
+			extract_obj(doomed[i]);
 
 	kingdom_terrain_cache.clear();
 
@@ -1806,6 +1820,11 @@ static void kingdom_harvest_tick(P_char ch, P_char /*victim*/, P_obj, void *data
 
 	if (!kingdom_enabled())
 		return;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("You stop working the land for now.\r\n", ch);
+		return;
+	}
 
 	if (!ch->desc || IS_FIGHTING(ch) || !IS_AWAKE(ch) || IS_STUNNED(ch) || IS_CASTING(ch) ||
 	    !MIN_POS(ch, POS_STANDING + STAT_NORMAL))
@@ -2028,6 +2047,11 @@ static void kingdom_gather_tick(P_char ch, P_char /*victim*/, P_obj, void *data)
 {
 	if (!ch || !data)
 		return;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("You stop gathering for now.\r\n", ch);
+		return;
+	}
 
 	struct kingdom_gather_work work;
 
@@ -2181,6 +2205,11 @@ static void kingdom_gather_command(P_char ch, P_obj node)
 		send_to_char("You have no interest in honest work.\r\n", ch);
 		return;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("You cannot gather from the land right now.\r\n", ch);
+		return;
+	}
 
 	if (get_scheduled(ch, kingdom_gather_tick) || get_scheduled(ch, kingdom_harvest_tick))
 	{
@@ -2269,6 +2298,11 @@ void kingdom_harvest_command(struct char_data *ch, char * /*argument*/)
 	if (IS_NPC(ch))
 	{
 		send_to_char("You have no interest in honest work.\r\n", ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("You cannot work the land right now.\r\n", ch);
 		return;
 	}
 

@@ -63,6 +63,13 @@ economic_accounting_error auction_settlement_accounting_intent(
 	const auction_settlement_listing &listing, const auction_settlement_accounts &accounts,
 	std::vector<uint8_t> *encoded);
 
+// Decode and verify the complete canonical frozen settlement. Outputs stay
+// unchanged on failure; the repository must still renew the mapped lifetimes.
+economic_accounting_error auction_settlement_accounting_decode(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, auction_settlement_listing *listing,
+	auction_settlement_accounts *accounts);
+
 // A timed sale spends existing escrow into seller claim and fee sink. Removal
 // advances the escrow witness without reimbursing the prior winner. Item
 // custody is unchanged; claim rights are checked against native after-state.

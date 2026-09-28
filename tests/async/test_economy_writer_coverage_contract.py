@@ -502,6 +502,72 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(self.routes["auction.money_claim_legacy"]["disposition"],
                          "dormant_writer_candidate")
 
+    def test_salvage_separates_candidates_from_live_retirement(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/item/salvage.c"
+        current = {(row["path"], row["line"], row["family"])
+                   for row in coverage.load_validator().scan_sources(ROOT)
+                   if row["path"] == path}
+        owners = {}
+        for route in registry["writers"]:
+            for site in route.get("sites", []):
+                if site[0] == path:
+                    owners.setdefault(tuple(site), set()).add(route["id"])
+        self.assertEqual(current, owners.keys(), "review new salvage custody sites")
+        self.assertEqual(owners[(path, 32, "item_lifecycle")],
+                         {"item.salvage_grant_reject_cleanup"})
+        self.assertEqual(owners[(path, 215, "item_publication")],
+                         {"item.salvage_input_retirement"})
+        for route_id in ("item.salvage_candidate_allocation",
+                         "item.salvage_grant_reject_cleanup"):
+            self.assertEqual(self.routes[route_id]["disposition"], "non_writer_candidate")
+        for route_id in ("item.salvage_grant", "item.salvage_input_retirement",
+                         "item.salvage_scientific_tools_consumption"):
+            route = self.routes[route_id]
+            self.assertEqual(route["disposition"], "runtime_mutation_route")
+            self.assertTrue(route["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
+            self.assertFalse(route["double_entry_evidence"]
+                             ["unified_operation_postings_observed"])
+        tool = next(row for row in registry["writers"]
+                    if row["id"] == "item.salvage_scientific_tools_consumption")
+        self.assertEqual(tool["sites"], [])  # Semantic helper call is outside the scanner.
+        self.assertIn("vnum_from_inv(ch, crafting_scientific_tools_vnum(), 1)",
+                      (ROOT / path).read_text(encoding="utf-8"))
+
+    def test_kingdom_harvest_sites_separate_world_nodes_and_personal_materials(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/kingdom/kingdom_harvest.c"
+        current = {(row["path"], row["line"], row["family"])
+                   for row in coverage.load_validator().scan_sources(ROOT)
+                   if row["path"] == path}
+        owners = {}
+        for route in registry["writers"]:
+            for site in route.get("sites", []):
+                if site[0] == path:
+                    owners.setdefault(tuple(site), set()).add(route["id"])
+        self.assertEqual(current, owners.keys(), "review new kingdom harvest item sites")
+        self.assertEqual(owners[(path, 1128, "item_publication")], {"kingdom.node_spawn"})
+        self.assertEqual(owners[(path, 1942, "item_lifecycle")],
+                         {"kingdom.realm_harvest"})
+        self.assertEqual(owners[(path, 2154, "item_publication")],
+                         {"kingdom.personal_gather"})
+        self.assertEqual(owners[(path, 2149, "item_lifecycle")],
+                         {"kingdom.material_rejected_candidate"})
+        for route_id in ("kingdom.node_candidate_allocation",
+                         "kingdom.material_candidate_allocation",
+                         "kingdom.material_rejected_candidate"):
+            self.assertEqual(self.routes[route_id]["disposition"], "non_writer_candidate")
+        for route_id in ("kingdom.node_reap", "kingdom.node_periodic_retirement",
+                         "kingdom.node_shutdown_unload", "kingdom.node_spawn",
+                         "kingdom.realm_harvest", "kingdom.personal_gather"):
+            route = self.routes[route_id]
+            self.assertEqual(route["disposition"], "runtime_mutation_route")
+            self.assertTrue(route["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
+            self.assertFalse(route["double_entry_evidence"]
+                             ["unified_operation_postings_observed"])
+
     def test_coin_pile_and_scrap_calls_have_source_classifications(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {(row["path"], row["line"], row["family"])
@@ -1037,7 +1103,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new command item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 3967, "item_publication")],
+        self.assertEqual(owners[(path, 3968, "item_publication")],
                          {"combat.throw_potion_cast_sink"})
         self.assertEqual(self.routes["combat.disarm_slot_relink"]["disposition"],
                          "runtime_projection_route")
@@ -1049,9 +1115,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
                             ["must_block_on_activation"])
         self.assertEqual(self.routes["craft.make_lock_payload"]["source"]["definition_lines"],
-                         [3095])
+                         [3096])
         self.assertEqual(self.routes["craft.make_key_payload"]["source"]["definition_lines"],
-                         [3177])
+                         [3178])
         self.assertIn("early return for over-level magic",
                       self.routes["combat.throw_potion_cast_sink"]["source_classification"])
 

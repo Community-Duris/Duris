@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <climits>
 #include <new>
+#include <span>
 #include <utility>
 
 namespace
@@ -187,6 +188,87 @@ auction_bid_accounting_intent(const critical_command &command, const critical_op
 		facts.metadata.source_event = source_for(listing);
 		facts.facts = frozen_facts(listing, accounts);
 		return economic_intent_freeze(command, facts, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error auction_bid_accounting_decode(const critical_command &command,
+							economic_frozen_intent *intent,
+							auction_command_payload *payload,
+							auction_bid_accounting_listing *listing,
+							auction_bid_accounting_accounts *accounts)
+{
+	if (!intent || !payload || !listing || !accounts ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return error::invalid_version;
+	try
+	{
+		auction_command_payload parsed_payload = {};
+		if (!auction_command_decode_payload(command, &parsed_payload) ||
+		    parsed_payload.action != auction_action::bid)
+			return error::invalid_identity;
+		economic_frozen_intent parsed_intent;
+		if (economic_intent_decode(command.accounting_intent, &parsed_intent) !=
+			    error::ok ||
+		    economic_intent_verify_binding(command, parsed_intent) != error::ok)
+			return error::corrupt_evidence;
+		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
+		if (facts.size() != 116)
+			return error::invalid_identity;
+		const auto number = [&](size_t offset, size_t width)
+		{
+			uint64_t value = 0;
+			for (size_t byte = 0; byte < width; ++byte)
+				value |= static_cast<uint64_t>(facts[offset + byte]) << (byte * 8);
+			return value;
+		};
+		const auto &lineage = parsed_intent.admission.metadata.lineage;
+		auction_bid_accounting_accounts parsed_accounts;
+		parsed_accounts.wallet = { lineage, economic_account_kind::wallet, number(0, 8),
+					   0 };
+		parsed_accounts.bank = { lineage, economic_account_kind::bank, number(8, 8),
+					 parsed_payload.racewar };
+		parsed_accounts.escrow = { lineage, economic_account_kind::auction_escrow,
+					   number(16, 8), 0 };
+		if (const auto id = number(24, 8))
+			parsed_accounts.previous_claim = { lineage,
+							   economic_account_kind::pending_claim, id,
+							   0 };
+		if (const auto id = number(32, 8))
+			parsed_accounts.seller_claim = { lineage,
+							 economic_account_kind::pending_claim, id,
+							 0 };
+		auction_bid_accounting_listing parsed_listing;
+		parsed_listing.auction_id = static_cast<uint32_t>(number(40, 4));
+		parsed_listing.seller_pid = static_cast<uint32_t>(number(44, 4));
+		parsed_listing.winning_bidder_pid = static_cast<uint32_t>(number(48, 4));
+		parsed_listing.status = static_cast<uint32_t>(number(52, 4));
+		parsed_listing.custody_state = static_cast<uint32_t>(number(56, 4));
+		parsed_listing.current_price = static_cast<int64_t>(number(60, 8));
+		parsed_listing.buy_price = static_cast<int64_t>(number(68, 8));
+		parsed_listing.revision = number(76, 8);
+		std::copy_n(facts.begin() + 84, 16, parsed_listing.listing_operation.bytes.begin());
+		std::copy_n(facts.begin() + 100, 16,
+			    parsed_listing.previous_bid_operation.bytes.begin());
+		critical_command projected = command;
+		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		projected.accounting_intent.clear();
+		projected.publication_required = false;
+		std::vector<uint8_t> expected;
+		if (auction_bid_accounting_intent(projected, parsed_intent.admission.metadata.epoch,
+						  parsed_listing, parsed_accounts,
+						  &expected) != error::ok ||
+		    expected != command.accounting_intent)
+			return error::unauthorized;
+		*intent = std::move(parsed_intent);
+		*payload = parsed_payload;
+		*listing = parsed_listing;
+		*accounts = parsed_accounts;
+		return error::ok;
 	}
 	catch (const std::bad_alloc &)
 	{

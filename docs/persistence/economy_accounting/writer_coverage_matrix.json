@@ -2,31 +2,31 @@
   "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
   "blockers": [
     "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
-    "Current function inventory is not codebase-complete: 1151 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
+    "Current function inventory is not codebase-complete: 1126 unique lexical candidate sites are unmapped; classify real writers vs projections/cleanup/staging before release.",
     "The SQL coin component has balanced postings, but no complete gameplay route is qualified; legacy currency/item/domain ledgers are not substitutes.",
     "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 549,
-    "function_definition_anchors_verified": 542,
-    "matrix_rows": 549,
+    "draft_registry_rows": 562,
+    "function_definition_anchors_verified": 555,
+    "matrix_rows": 562,
     "non_function_candidate_anchors": 7,
-    "non_writer_or_out_of_scope_candidates": 87,
+    "non_writer_or_out_of_scope_candidates": 92,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 77,
     "routes_with_schema_2_gameplay_producer": 8,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 445,
+    "runtime_mutation_and_projection_routes": 453,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 14,
-    "non_writer_candidate": 87,
+    "non_writer_candidate": 92,
     "offline_operational_writer": 3,
-    "runtime_mutation_route": 385,
+    "runtime_mutation_route": 393,
     "runtime_projection_route": 60
   },
   "global_schema_and_accounting_evidence": {
@@ -39,8 +39,8 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 549 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
-    "Most 1151 unmapped current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
+    "The matrix reconciles 562 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "Most 1126 unmapped current lexical sites are likely shared helpers, staging, recovery or unrelated mutations; they have not been semantically classified here.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
@@ -63,11 +63,11 @@
       "ship_coffer_assignment": 6,
       "sql_economy": 49
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 549-row registry maps 1559 current unique sites; 1151 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
-    "mapped_sites_still_present": 1559,
-    "mapped_unique_sites_from_draft_rows": 1559,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 562-row registry maps 1584 current unique sites; 1126 current unique sites remain unmapped, so semantic completeness is unproven and release remains blocked.",
+    "mapped_sites_still_present": 1584,
+    "mapped_unique_sites_from_draft_rows": 1584,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
-    "unmapped_current_unique_sites": 1151
+    "unmapped_current_unique_sites": 1126
   },
   "method": {
     "candidate_source": "docs/persistence/economy_accounting/writers.json (source-reviewed registry, including legacy settlement definitions)",
@@ -1156,7 +1156,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          372
+          382
         ],
         "file": "src/world/world_quest.c",
         "function": "quest_full_reward",
@@ -1216,7 +1216,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          460
+          470
         ],
         "file": "src/world/world_quest.c",
         "function": "quest_kill",
@@ -4976,7 +4976,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1534
+          1538
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -6596,7 +6596,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1704
+          2426
         ],
         "file": "src/flatfile/flatfile_auction_repository.c",
         "function": "flatfile_auction_repository_apply",
@@ -7137,7 +7137,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          371
+          380
         ],
         "file": "src/economy/mining.c",
         "function": "event_mine_check",
@@ -7263,8 +7263,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2077,
-          2089
+          2085,
+          2097
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -7495,6 +7495,530 @@
         "original_draft_symbol": "prop_vnum"
       },
       "source_classification": "Workshop props are created, placed and extracted during room lifecycle; distinguish new construction from load/reload projection before assigning issuance.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "kingdom.node_reap",
+      "native_effects": {
+        "custody_effect": "Live room-node custody is removed by extract_obj.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "live kingdom node UID, room owner, charge and decay stamp",
+          "item_current_owner and item_ownership_ledger on the selected backend"
+        ]
+      },
+      "reachability_evidence": "kingdom_node_reap_room is called on room/claim touch; kingdom_nodes_reap is called from the periodic reload sweep. Both use kingdom_node_should_reap before extracting.",
+      "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "Both kingdom_node_reap_room and kingdom_nodes_reap return before extraction while economic_gameplay_authority::active()."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          837
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_nodes_reap",
+        "original_draft_symbol": "kingdom_nodes_reap"
+      },
+      "source_classification": "Room-touch and reload sweeps extract live room nodes that expired, became realm-controlled or fell outside configured regions. These are selected world UIDs, not rejected allocations.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "kingdom.node_periodic_retirement",
+      "native_effects": {
+        "custody_effect": "Live exhausted node UID is removed from its room.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "live kingdom node UID, room owner, charge and decay stamp",
+          "item_current_owner and item_ownership_ledger on the selected backend"
+        ]
+      },
+      "reachability_evidence": "event_object_proc reaches kingdom_node_proc for a placed node's periodic event.",
+      "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "The CMD_PERIODIC extraction branch checks !economic_gameplay_authority::active() before extract_obj."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1353
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_node_proc",
+        "original_draft_symbol": "kingdom_node_proc"
+      },
+      "source_classification": "The node's periodic proc extracts a live exhausted node once its charge reaches zero.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "kingdom.node_shutdown_unload",
+      "native_effects": {
+        "custody_effect": "Live room-node object graph is unloaded or retired; source history is not recorded here.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "live kingdom node UID, room owner, charge and decay stamp",
+          "item_current_owner and item_ownership_ledger on the selected backend"
+        ]
+      },
+      "reachability_evidence": "kingdom_harvest_shutdown collects room-owned node objects from object_list, then extracts them before ending the reload chain.",
+      "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "The extraction loop runs only under !economic_gameplay_authority::active()."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1722
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_harvest_shutdown",
+        "original_draft_symbol": "kingdom_harvest_shutdown"
+      },
+      "source_classification": "Module shutdown extracts every live room node while accounting is inactive. Active-epoch shutdown leaves them in place; unload versus durable retirement needs a restore policy.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "The reload sweep's read_object creates an unpublished node candidate; room admission occurs at the separate obj_to_room site."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "The reload sweep's read_object creates an unpublished node candidate; room admission occurs at the separate obj_to_room site.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "The reload sweep's read_object creates an unpublished node candidate; room admission occurs at the separate obj_to_room site.",
+      "id": "kingdom.node_candidate_allocation",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "kingdom_load_one_node is called only by kingdom_nodes_reload after quota and placement checks.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "kingdom_nodes_reload reschedules without reaping or spawning while economic_gameplay_authority::active()."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1068
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_load_one_node",
+        "original_draft_symbol": "kingdom_load_one_node"
+      },
+      "source_classification": "read_object allocates a fresh unpublished node candidate after the reload sweep selects a room and prototype.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "kingdom.node_spawn",
+      "native_effects": {
+        "custody_effect": "Fresh node UID becomes room-owned through obj_to_room.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "live kingdom node UID, room owner, charge and decay stamp",
+          "item_current_owner and item_ownership_ledger on the selected backend"
+        ]
+      },
+      "reachability_evidence": "kingdom_nodes_reload calls kingdom_load_one_node for each population shortfall.",
+      "reason": "first_admission",
+      "refusal_source_evidence": [
+        "kingdom_nodes_reload reschedules without reaping or spawning while economic_gameplay_authority::active()."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1068
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_load_one_node",
+        "original_draft_symbol": "kingdom_load_one_node"
+      },
+      "source_classification": "The reload sweep publishes a newly rolled node in a room. obj_to_room returns void and can reroute or destroy its argument, so the selected actual owner may differ from the requested room.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "kingdom.realm_harvest",
+      "native_effects": {
+        "custody_effect": "One live node charge is consumed; an exhausted node UID is extracted.",
+        "holding_effect": "Possible realm material store credit; no wallet coin effect.",
+        "native_state_targets": [
+          "live kingdom node UID, room owner, charge and decay stamp",
+          "item_current_owner and item_ownership_ledger on the selected backend",
+          "harvester realm material store and durable kingdom state"
+        ]
+      },
+      "reachability_evidence": "kingdom_harvest_command schedules kingdom_harvest_tick, which reselects the node and current realm at each tick before deposit and charge consumption.",
+      "reason": "item_destroy",
+      "refusal_source_evidence": [
+        "Both kingdom_harvest_command and kingdom_harvest_tick refuse economic_gameplay_authority::active() before realm deposit or node mutation."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1803
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_harvest_tick",
+        "original_draft_symbol": "kingdom_harvest_tick"
+      },
+      "source_classification": "A completed realm harvest may increase an abstract realm material store, always spends one node charge, and extracts an exhausted live node. No existing reason policy explicitly authorizes the abstract store credit.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Personal gathering reads a material template into an unowned candidate; only the later bag publication admits its UID."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Personal gathering reads a material template into an unowned candidate; only the later bag publication admits its UID.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Personal gathering reads a material template into an unowned candidate; only the later bag publication admits its UID.",
+      "id": "kingdom.material_candidate_allocation",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "kingdom_gather_tick loops up to the selected yield after decrementing node charge.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "kingdom_gather_command and kingdom_gather_tick refuse economic_gameplay_authority::active() before node charge or candidate allocation."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2046
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_gather_tick",
+        "original_draft_symbol": "kingdom_gather_tick"
+      },
+      "source_classification": "read_object allocates an unpublished material candidate after one node charge has already been spent.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "A bag-capacity rejection extracts only the fresh unowned material candidate before publication; the spent node charge is a separate writer effect."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "A bag-capacity rejection extracts only the fresh unowned material candidate before publication; the spent node charge is a separate writer effect.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "A bag-capacity rejection extracts only the fresh unowned material candidate before publication; the spent node charge is a separate writer effect.",
+      "id": "kingdom.material_rejected_candidate",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "The bag-capacity branch extracts the freshly read material before obj_to_obj.",
+      "reason": "item_destroy",
+      "refusal_source_evidence": [
+        "kingdom_gather_tick refuses economic_gameplay_authority::active() before node charge, allocation or cleanup."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2046
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_gather_tick",
+        "original_draft_symbol": "kingdom_gather_tick"
+      },
+      "source_classification": "A material candidate rejected by the bag weight limit is extracted before owner publication; the node charge was still spent.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "kingdom.personal_gather",
+      "native_effects": {
+        "custody_effect": "Fresh material UIDs enter bag custody; an exhausted world node UID is retired.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "generated material UID and gathering bag parent/root owner",
+          "live kingdom node UID and charge",
+          "item_current_owner and item_ownership_ledger on the selected backend"
+        ]
+      },
+      "reachability_evidence": "The node spec proc dispatches kingdom_gather_command, whose scheduled tick reselects the node and bag before spending a charge and publishing items.",
+      "reason": "item_reward",
+      "refusal_source_evidence": [
+        "Both kingdom_gather_command and kingdom_gather_tick refuse economic_gameplay_authority::active() before charge, material publication or node extraction."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2046
+        ],
+        "file": "src/kingdom/kingdom_harvest.c",
+        "function": "kingdom_gather_tick",
+        "original_draft_symbol": "kingdom_gather_tick"
+      },
+      "source_classification": "Personal gather spends a node charge, calls void obj_to_obj for zero or more fresh material UIDs, and extracts an exhausted live node. The code increments its output count after publication without a committed custody result.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -8594,7 +9118,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1692
+          1693
         ],
         "file": "src/cmd/actnew.c",
         "function": "morph",
@@ -10313,12 +10837,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "The named production function has an extracted active-refusal and inactive-effect harness; full command or special-procedure gameplay reachability and committed root identity remain unqualified.",
       "reason": "service_cost",
+      "refusal_source_evidence": [
+        "src/cmd/actnew.c:do_home guards before hometown assignment, do_save_silent, or SUB_MONEY; extracted production-function harness verifies active refusal and inactive behavior"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4168
+          4169
         ],
         "file": "src/cmd/actnew.c",
         "function": "do_home",
@@ -10977,12 +11504,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "do_construct dispatches to the named helper; an extracted dispatcher harness verifies active refusal and inactive dispatch, while gameplay reachability and committed source identity remain unqualified.",
       "reason": "guild_cost",
+      "refusal_source_evidence": [
+        "src/guild/guildhall_cmds.c:do_construct active-epoch recognized-command guard precedes do_construct_overmax dispatch; extracted production-function harness verifies active refusal"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          187
+          197
         ],
         "file": "src/guild/guildhall_cmds.c",
         "function": "do_construct_overmax",
@@ -11036,12 +11566,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "do_construct dispatches to the named helper; an extracted dispatcher harness verifies active refusal and inactive dispatch, while gameplay reachability and committed source identity remain unqualified.",
       "reason": "guild_cost",
+      "refusal_source_evidence": [
+        "src/guild/guildhall_cmds.c:do_construct active-epoch recognized-command guard precedes do_construct_guildhall dispatch; extracted production-function harness verifies active refusal"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          254
+          264
         ],
         "file": "src/guild/guildhall_cmds.c",
         "function": "do_construct_guildhall",
@@ -11095,12 +11628,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "do_construct dispatches to the named helper; an extracted dispatcher harness verifies active refusal and inactive dispatch, while gameplay reachability and committed source identity remain unqualified.",
       "reason": "guild_cost",
+      "refusal_source_evidence": [
+        "src/guild/guildhall_cmds.c:do_construct active-epoch recognized-command guard precedes do_construct_room dispatch; extracted production-function harness verifies active refusal"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          329
+          339
         ],
         "file": "src/guild/guildhall_cmds.c",
         "function": "do_construct_room",
@@ -11154,12 +11690,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "do_construct dispatches to the named helper; an extracted dispatcher harness verifies active refusal and inactive dispatch, while gameplay reachability and committed source identity remain unqualified.",
       "reason": "guild_cost",
+      "refusal_source_evidence": [
+        "src/guild/guildhall_cmds.c:do_construct active-epoch recognized-command guard precedes do_construct_golem dispatch; extracted production-function harness verifies active refusal"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          438
+          448
         ],
         "file": "src/guild/guildhall_cmds.c",
         "function": "do_construct_golem",
@@ -11213,12 +11752,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "do_construct dispatches to the named helper; an extracted dispatcher harness verifies active refusal and inactive dispatch, while gameplay reachability and committed source identity remain unqualified.",
       "reason": "guild_cost",
+      "refusal_source_evidence": [
+        "src/guild/guildhall_cmds.c:do_construct active-epoch recognized-command guard precedes do_construct_upgrade dispatch; extracted production-function harness verifies active refusal"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          629
+          639
         ],
         "file": "src/guild/guildhall_cmds.c",
         "function": "do_construct_upgrade",
@@ -11272,12 +11814,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "do_construct dispatches to the named helper; an extracted dispatcher harness verifies active refusal and inactive dispatch, while gameplay reachability and committed source identity remain unqualified.",
       "reason": "guild_cost",
+      "refusal_source_evidence": [
+        "src/guild/guildhall_cmds.c:do_construct active-epoch recognized-command guard precedes do_construct_rename dispatch; extracted production-function harness verifies active refusal"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          834
+          844
         ],
         "file": "src/guild/guildhall_cmds.c",
         "function": "do_construct_rename",
@@ -12418,8 +12963,11 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "The named production function has an extracted active-refusal and inactive-effect harness; full command or special-procedure gameplay reachability and committed root identity remain unqualified.",
       "reason": "service_cost",
+      "refusal_source_evidence": [
+        "src/specs/specs.room.c:pray_for_items guards a matching stash item before obj_from_room, obj_to_room, or SUB_MONEY; extracted production-function harness verifies active refusal and inactive behavior"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
@@ -12477,12 +13025,15 @@
           "pending claim or named domain state where applicable"
         ]
       },
-      "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
+      "reachability_evidence": "The named production function has an extracted active-refusal and inactive-effect harness; full command or special-procedure gameplay reachability and committed root identity remain unqualified.",
       "reason": "service_cost",
+      "refusal_source_evidence": [
+        "src/specs/specs.stormport.c:clear_epic_task_spec guards paid prayer before affect_remove or SUB_MONEY; extracted production-function harness verifies active refusal and inactive behavior"
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          21
+          22
         ],
         "file": "src/specs/specs.stormport.c",
         "function": "clear_epic_task_spec",
@@ -14213,7 +14764,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1097
+          1113
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -14938,7 +15489,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          551
+          557
         ],
         "file": "src/classes/ethermancer.c",
         "function": "grant_wind_blade",
@@ -15425,6 +15976,230 @@
     },
     {
       "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Salvage read_object calls allocate unpublished material, essence and recipe candidates; the grant helper is the separate admission boundary."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Salvage read_object calls allocate unpublished material, essence and recipe candidates; the grant helper is the separate admission boundary.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Salvage read_object calls allocate unpublished material, essence and recipe candidates; the grant helper is the separate admission boundary.",
+      "id": "item.salvage_candidate_allocation",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "All eight read_object results are passed to grant_salvage_item directly or through salvaged/recipe; do_salvage checks active authority before reaching them.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          139
+        ],
+        "file": "src/item/salvage.c",
+        "function": "do_salvage",
+        "original_draft_symbol": "do_salvage"
+      },
+      "source_classification": "Eight read_object calls allocate unpublished material, essence or recipe candidates; admission occurs only through grant_salvage_item.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "A rejected salvage grant frees its still-unowned candidate before any accepted ownership publication; this is not retirement of the carried source item."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "A rejected salvage grant frees its still-unowned candidate before any accepted ownership publication; this is not retirement of the carried source item.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "A rejected salvage grant frees its still-unowned candidate before any accepted ownership publication; this is not retirement of the carried source item.",
+      "id": "item.salvage_grant_reject_cleanup",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "grant_salvage_item is called only from do_salvage with freshly read candidates. The submit helper returns false before accepting a grant; this branch extracts the rejected candidate.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          26
+        ],
+        "file": "src/item/salvage.c",
+        "function": "grant_salvage_item",
+        "original_draft_symbol": "grant_salvage_item"
+      },
+      "source_classification": "A rejected grant extracts its still-unowned candidate; this cleanup does not retire the carried source or an admitted output UID.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.salvage_input_retirement",
+      "native_effects": {
+        "custody_effect": "Live source item custody is detached and destroyed; any generated material, essence or recipe requires linked admission.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "carried source and optional scientific-tools item UIDs",
+          "generated material, essence and recipe UIDs",
+          "item_current_owner and item_ownership_ledger on the selected backend"
+        ]
+      },
+      "reachability_evidence": "do_salvage is a player command. Its active-authority guard precedes every output grant and source extraction; the normal branches retire an already carried item.",
+      "reason": "item_destroy",
+      "refusal_source_evidence": [
+        "do_salvage checks economic_gameplay_authority::active() before its first grant, source extraction and scientific-tools consumption; tests/async/test_pa_item_admission.py checks that source order."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          139
+        ],
+        "file": "src/item/salvage.c",
+        "function": "do_salvage",
+        "original_draft_symbol": "do_salvage"
+      },
+      "source_classification": "The carried source is removed and extracted on material downgrade, failed skill, low-value breakage or completed salvage. Generated outputs are separate queued grants.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.salvage_scientific_tools_consumption",
+      "native_effects": {
+        "custody_effect": "One carried scientific-tools set is consumed when the optional recipe branch runs.",
+        "holding_effect": "No direct coin effect.",
+        "native_state_targets": [
+          "carried source and optional scientific-tools item UIDs",
+          "generated material, essence and recipe UIDs",
+          "item_current_owner and item_ownership_ledger on the selected backend"
+        ]
+      },
+      "reachability_evidence": "The scitools branch in do_salvage calls vnum_from_inv(ch, crafting_scientific_tools_vnum(), 1); the active-authority guard precedes it.",
+      "reason": "item_destroy",
+      "refusal_source_evidence": [
+        "do_salvage checks economic_gameplay_authority::active() before its first grant, source extraction and scientific-tools consumption; tests/async/test_pa_item_admission.py checks that source order."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          139
+        ],
+        "file": "src/item/salvage.c",
+        "function": "do_salvage",
+        "original_draft_symbol": "do_salvage"
+      },
+      "source_classification": "When scientific tools are present, vnum_from_inv consumes one carried tool set for recipe discovery after material/essence grants and before final source extraction. This semantic writer is outside the lexical scanner.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
         "decision": "block_until_typed_schema2_accounting",
         "must_block_on_activation": true,
         "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
@@ -15463,25 +16238,28 @@
       },
       "id": "item.salvage_grant",
       "native_effects": {
-        "custody_effect": "Salvage grants a replacement UID and must link original retirement.",
+        "custody_effect": "Accepted output grant queues a new UID; source item and optional scientific tools are separately retired by do_salvage.",
         "holding_effect": "No direct coin effect at this submit call unless route detail names one.",
         "native_state_targets": [
           "selected backend domain state",
           "operation/source claim/receipt and exact UID reference where required"
         ]
       },
-      "reachability_evidence": "The named function contains the linked submission; exact caller, source identity, backend commit and refusal need executable proof.",
+      "reachability_evidence": "Only do_salvage calls grant_salvage_item. The helper can queue material, essence and recipe grants, while source/tool retirement occurs separately in the command.",
       "reason": "item_create",
+      "refusal_source_evidence": [
+        "do_salvage checks economic_gameplay_authority::active() before its first grant, source extraction and scientific-tools consumption; tests/async/test_pa_item_admission.py checks that source order."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          25
+          26
         ],
         "file": "src/item/salvage.c",
         "function": "grant_salvage_item",
         "original_draft_symbol": "grant_salvage_item"
       },
-      "source_classification": "Salvage grants a replacement UID and must link original retirement.",
+      "source_classification": "Material downgrade, salvage material, optional essence and recipe outputs are separately queued typed grants. The carried source and optional scientific tools are retired by direct legacy calls, so the outputs are not yet one linked salvage root.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -27873,7 +28651,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1402
+          1403
         ],
         "file": "src/cmd/actnew.c",
         "function": "do_disarm",
@@ -27932,7 +28710,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3071
+          3072
         ],
         "file": "src/cmd/actnew.c",
         "function": "yank_make_item",
@@ -27991,7 +28769,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3095
+          3096
         ],
         "file": "src/cmd/actnew.c",
         "function": "make_lock",
@@ -28051,7 +28829,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3177
+          3178
         ],
         "file": "src/cmd/actnew.c",
         "function": "make_key",
@@ -28110,7 +28888,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3177
+          3178
         ],
         "file": "src/cmd/actnew.c",
         "function": "make_key",
@@ -28169,7 +28947,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3849
+          3850
         ],
         "file": "src/cmd/actnew.c",
         "function": "throw_potion",
@@ -28228,7 +29006,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3849
+          3850
         ],
         "file": "src/cmd/actnew.c",
         "function": "throw_potion",
@@ -28287,7 +29065,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3849
+          3850
         ],
         "file": "src/cmd/actnew.c",
         "function": "throw_potion",

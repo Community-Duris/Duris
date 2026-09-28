@@ -31,7 +31,10 @@ SOURCES = (
     "coin_transfer_accounting.c", "critical_command_journal.c",
     "critical_command_coordinator.c",
     "economic_accounting_plan.c", "economic_accounting_types.c",
-    "auction_item_claim_accounting.c", "collector_accounting.c",
+    "auction_item_claim_accounting.c", "auction_accounting.c",
+    "auction_settlement_accounting.c", "auction_money_claim_accounting.c",
+    "auction_listing_accounting.c",
+    "collector_accounting.c",
 )
 with tempfile.TemporaryDirectory(prefix="duris-accounting-flatfile-gate-") as temporary:
     executable = Path(temporary) / "gate"

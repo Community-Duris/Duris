@@ -55,6 +55,14 @@ auction_bid_accounting_intent(const critical_command &command, const critical_op
 			      const auction_bid_accounting_accounts &accounts,
 			      std::vector<uint8_t> *encoded);
 
+// Decode and verify the complete canonical frozen bid. Outputs stay unchanged
+// on failure; the repository must still renew the mapped lifetimes.
+economic_accounting_error auction_bid_accounting_decode(const critical_command &command,
+							economic_frozen_intent *intent,
+							auction_command_payload *payload,
+							auction_bid_accounting_listing *listing,
+							auction_bid_accounting_accounts *accounts);
+
 // Pure comparison against repository-locked state and its native result.
 // The caller records this plan in the same transaction as the bid.
 economic_accounting_error
