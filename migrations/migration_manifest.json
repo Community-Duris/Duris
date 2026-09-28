@@ -488,6 +488,16 @@
       "verify": "immutable/0031_economy_accounting.sh",
       "verify_checksum": "674b39f13915320eeddc158cc47ad88128ec38fb8ba05afb619972d4af8ad911",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0032_economic_baseline",
+      "sequence": 32,
+      "description": "Add baseline witness retention and per-epoch opening reservations",
+      "apply": "immutable/0032_economic_baseline.sql",
+      "verify": "immutable/0032_economic_baseline.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "97f27800708a4492bd157b353010988811de10486c0f06ae14df370995ed5ee3",
+      "verify_checksum": "6cb06fc24dc98b3e14151fdf9676aece96e3501cd7cafe7896201dd8f1dde602"
     }
   ]
 }
