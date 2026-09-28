@@ -895,3 +895,31 @@ This is source inventory evidence. The release validator still refuses
 qualification work is the reproducible build and quest-reward restart fault
 from [the active plan](FINISH_ACCOUNTING_PLAN.md), followed by the remaining
 gameplay, native audit, backend, and workload gates above.
+
+## `finish-accounting` quest and save checkpoint (2026-09-28)
+
+Issue #8's zero-source-ID quest grant was reproduced from its code path. Commit
+`cde63f95e` derives a stable, nonzero, signed-safe item reward source from the
+consumed offering UID, reward VNUM, and duplicate ordinal. The source-ID and
+durable-offering focused tests passed. In the disposable `duris-finish-accounting-qa:local`
+container, an ordinary Human Druid gave three items to a quest NPC. The actual
+flatfile server granted one reward blade; a save and cold server restart kept
+the same reward UID and did not restore the offerings. The standalone journey
+passed from a freshly compiled cached artifact (`SERVER_BUILD built
+build=477.420s lookup=25.206s`). This establishes the normal grant and
+restart path on that fixture, not SQL qualification or interruption recovery.
+
+The manual `run_quest_reward_ack_crash.py` journey then stopped the server at
+`complete_quest_offering`, which is called after the offering publication
+acknowledgment. On a cold restart the offerings stayed consumed but no blade
+existed. Its `--confirm-loss` baseline passed; its default recovery expectation
+remains a failing acceptance case. The callback context and reward obligation
+are not yet durable across that boundary, so Step 1 and the release gate remain
+open.
+
+Issue #10 was traced read-only on the isolated main-branch playtest instance.
+The latest rejected player-save journal snapshot contained 23 items while the
+SQL custody and saved-item projections each held 24. The missing snapshot UID
+was a VNUM 393 bandage; `do_bandage()` directly extracted it without retiring
+its active custody row. No live player data or database rows were changed during
+this diagnosis. The save guard correctly refused a destructive checkpoint.
