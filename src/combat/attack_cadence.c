@@ -847,6 +847,9 @@ void perform_violence(void)
 
 		num_hits = 0;
 		damAccumulator = 0;
+		const attack_continuation cadence_continuation =
+			begin_attack_continuation(ch, opponent);
+		bool cadence_can_continue = true;
 
 		for (i = 0; i < real_attacks; i++)
 		{
@@ -866,7 +869,22 @@ void perform_violence(void)
 			{
 				num_hits++;
 			}
+
+			const attack_continuation_result after_attack =
+				check_attack_continuation(cadence_continuation);
+			if (!after_attack.can_continue() ||
+			    !is_char_in_room(after_attack.actor, room) ||
+			    !is_char_in_room(after_attack.target, room))
+			{
+				cadence_can_continue = false;
+				break;
+			}
+			ch = after_attack.actor;
+			opponent = after_attack.target;
 		}
+
+		if (!cadence_can_continue)
+			continue;
 
 		if (!is_char_in_room(opponent, room) || !is_char_in_room(ch, room))
 			continue;

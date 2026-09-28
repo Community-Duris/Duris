@@ -43,7 +43,7 @@ WEB_RECOVERY_SOURCE_INPUTS = (
 def _clean_environment() -> dict[str, str]:
     environment = os.environ.copy()
     for key in (
-        "DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWD", "MYSQL_PWD",
+        "DB_HOST", "DB_PORT", "DB_SOCKET", "DB_NAME", "DB_USER", "DB_PASSWD", "MYSQL_PWD",
         "DB_ALLOWED_TARGETS", "TEST_DB_DISPOSABLE", "DURIS_TEST_SQL_DEATH_CONFLICT_RECOVERY",
         "TEST_DB_HOST", "TEST_DB_PORT", "TEST_DB_USER", "TEST_DB_PASSWORD",
         "DURIS_ACCOUNTING_BASE_BUILD", "DURIS_ACCOUNTING_RESOURCE_ROOT",

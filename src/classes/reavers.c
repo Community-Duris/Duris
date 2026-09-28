@@ -294,10 +294,15 @@ void event_blood_alliance(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*
 	struct affected_type *af;
 	int sdam;
 
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
+		return;
+
 	linked = get_linking_char(ch, LNK_BLOOD_ALLIANCE);
 
 	if (!linked)
 		linked = get_linked_char(ch, LNK_BLOOD_ALLIANCE);
+	if (!linked || !char_in_list(linked) || !IS_ALIVE(linked))
+		return;
 
 	if (linked->in_room != ch->in_room)
 		return;

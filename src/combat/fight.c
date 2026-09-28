@@ -2801,16 +2801,30 @@ bool damage(P_char ch, P_char victim, double dam, int attacktype)
 
 		return spell_damage(ch, victim, dam, type, flags, &tmsg);
 	}
-	else if (raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &tmsg) == DAM_VICTDEAD)
-	{
-		return TRUE;
-	}
 	else
 	{
+		const bool actor_listed = ch && char_in_list(ch);
+		const bool victim_listed = victim && char_in_list(victim);
+		if (!actor_listed || !victim_listed)
+			return TRUE;
+
+		const uint64_t actor_runtime_id = ch->runtime_id;
+		const uint64_t victim_runtime_id = victim->runtime_id;
+		const int raw_result = raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &tmsg);
+		if (raw_result != DAM_NONEDEAD)
+			return TRUE;
+
+		ch = find_character_by_runtime_id(actor_runtime_id);
+		victim = find_character_by_runtime_id(victim_runtime_id);
+		if (!ch || !victim || !IS_ALIVE(ch) || !IS_ALIVE(victim))
+			return TRUE;
+
 		if (!IS_FIGHTING(ch) && (ch->in_room == victim->in_room))
 		{
 			set_fighting(ch, victim);
-			attack_back(ch, victim, attacktype > FIRST_SKILL);
+			const int retaliation_result =
+				attack_back(ch, victim, attacktype > FIRST_SKILL);
+			return retaliation_result != DAM_NONEDEAD;
 		}
 		return FALSE;
 	}
@@ -2849,6 +2863,15 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Just making sure.
 	if (!ch || !victim)
 		return DAM_NONEDEAD;
+	const bool ch_listed = char_in_list(ch);
+	const bool victim_listed = char_in_list(victim);
+	if (!ch_listed && !victim_listed)
+		return DAM_BOTHDEAD;
+	if (!ch_listed)
+		return DAM_CHARDEAD;
+	if (!victim_listed)
+		return DAM_VICTDEAD;
+
 	if (training_dummy_is(ch))
 		return DAM_NONEDEAD;
 	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
@@ -3233,6 +3256,22 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	damProf.addedMod = 0.0;
 	damProf.increasedMod = 1.0;
 	damProf.moreMod = 1.0;
+	const uint64_t ch_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
+	auto refresh_spell_damage_participants = [&]()
+	{
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		victim = find_character_by_runtime_id(victim_runtime_id);
+		const bool attacker_alive = ch && IS_ALIVE(ch);
+		const bool victim_alive = victim && IS_ALIVE(victim);
+		if (!attacker_alive && !victim_alive)
+			return DAM_BOTHDEAD;
+		if (!victim_alive)
+			return DAM_VICTDEAD;
+		if (!attacker_alive)
+			return DAM_CHARDEAD;
+		return DAM_NONEDEAD;
+	};
 
 	// accumulate modifiers into damProf
 	for (size_t modifier_index = 0; modifier_index < ARRAY_SIZE(spell_damage_modifiers);
@@ -3241,6 +3280,12 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 		damage_mod dam_mod = { dam_mod_type::None, 0.0 };
 		spell_damage_modifiers[modifier_index](ch, victim, dam, type, flags, &dam_mod,
 						       messages);
+		if (dam_mod.requires_participant_revalidation)
+		{
+			result = refresh_spell_damage_participants();
+			if (result != DAM_NONEDEAD)
+				return result;
+		}
 
 		// if (dam_mod.type != dam_mod_type::None && (dam_mod.mod < 0 || dam_mod.mod > 0))
 		// 	debug("spell_damage: spell_damage_modifiers[%d] - mod: %f, type: %d", i, dam_mod.mod, dam_mod.type);
@@ -3286,22 +3331,6 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 	// ugly hack - we smuggle damage_type for eq poofing messages on 8 highest bits
 	messages->type |= type << 24;
-	const uint64_t ch_runtime_id = ch->runtime_id;
-	const uint64_t victim_runtime_id = victim->runtime_id;
-	auto refresh_spell_damage_participants = [&]()
-	{
-		ch = find_character_by_runtime_id(ch_runtime_id);
-		victim = find_character_by_runtime_id(victim_runtime_id);
-		const bool attacker_alive = ch && IS_ALIVE(ch);
-		const bool victim_alive = victim && IS_ALIVE(victim);
-		if (!attacker_alive && !victim_alive)
-			return DAM_BOTHDEAD;
-		if (!victim_alive)
-			return DAM_VICTDEAD;
-		if (!attacker_alive)
-			return DAM_CHARDEAD;
-		return DAM_NONEDEAD;
-	};
 	result = raw_damage(ch, victim, dam, (RAWDAM_DEFAULT ^ flags) | RAWDAM_NOWARD, messages,
 			    damAccumulator);
 
@@ -4805,8 +4834,9 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 	 */
 bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 {
-	// Death teardown can clear player storage. Check before any skill lookup.
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+	// Death teardown can clear player storage. Prove membership before liveness or skill reads.
+	if (!ch || !victim || !char_in_list(ch) || !char_in_list(victim) || !IS_ALIVE(ch) ||
+	    !IS_ALIVE(victim))
 		return FALSE;
 
 	P_char tch, mount, gvict;
