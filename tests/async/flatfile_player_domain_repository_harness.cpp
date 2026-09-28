@@ -37,6 +37,20 @@ static void write_u32(std::vector<uint8_t> *bytes, size_t offset, uint32_t value
 		(*bytes)[offset + byte] = static_cast<uint8_t>(value >> (byte * 8));
 }
 
+static void write_player_domain_fixture(const fs::path &path, std::vector<uint8_t> file,
+					const std::vector<uint8_t> &payload)
+{
+	write_u32(&file, 12, payload.size());
+	file.resize(56);
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.data(), payload.size(), digest.data());
+	std::copy(digest.begin(), digest.end(), file.begin() + 24);
+	file.insert(file.end(), payload.begin(), payload.end());
+	std::ofstream output(path, std::ios::binary | std::ios::trunc);
+	output.write(reinterpret_cast<const char *>(file.data()), file.size());
+	require(output.good(), "could not write player domain fixture");
+}
+
 static void convert_player_domain_to_v2(const fs::path &path)
 {
 	std::ifstream input(path, std::ios::binary);
@@ -54,14 +68,30 @@ static void convert_player_domain_to_v2(const fs::path &path)
 	require(offset + 28 <= payload.size(), "player stat authority was not in v3 payload");
 	payload.erase(payload.begin() + offset, payload.begin() + offset + 28);
 	write_u32(&file, 8, 2);
-	write_u32(&file, 12, payload.size());
-	file.resize(56);
-	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
-	SHA256(payload.data(), payload.size(), digest.data());
-	std::copy(digest.begin(), digest.end(), file.begin() + 24);
-	file.insert(file.end(), payload.begin(), payload.end());
-	std::ofstream output(path, std::ios::binary | std::ios::trunc);
-	output.write(reinterpret_cast<const char *>(file.data()), file.size());
+	write_player_domain_fixture(path, file, payload);
+}
+
+// Retained results are opaque during load; command replay decodes their payload.
+static void append_retained_result(const fs::path &path, uint16_t result_size)
+{
+	std::ifstream input(path, std::ios::binary);
+	std::vector<uint8_t> file((std::istreambuf_iterator<char>(input)),
+				  std::istreambuf_iterator<char>());
+	require(file.size() >= 60, "retained-result fixture was truncated");
+	std::vector<uint8_t> payload(file.begin() + 56, file.end());
+	size_t count_offset = payload.size() - 4;
+	require(read_u32(payload, &count_offset) == 0,
+		"retained-result fixture already contained operations");
+	write_u32(&payload, payload.size() - 4, 1);
+	critical_operation_id operation = {};
+	operation.bytes[0] = 0x7f;
+	payload.insert(payload.end(), operation.bytes.begin(), operation.bytes.end());
+	payload.insert(payload.end(), SHA256_DIGEST_LENGTH, 0x5a);
+	payload.insert(payload.end(), 4, 0); // Successful result code.
+	payload.push_back(static_cast<uint8_t>(result_size));
+	payload.push_back(static_cast<uint8_t>(result_size >> 8));
+	payload.insert(payload.end(), result_size, 0xa5);
+	write_player_domain_fixture(path, file, payload);
 }
 
 static flatfile_player_domain_record baseline(int32_t pid)
@@ -380,6 +410,34 @@ int main(int argc, char **argv)
 			loaded.domains.base_stat_revision == 0 &&
 			loaded.domains.base_stats == std::array<int16_t, 10>{},
 		"legacy v2 player domain did not remain readable and snapshot-owned");
+
+	static_assert(CRITICAL_COMPLETION_RESULT_MAX_BYTES > 2048);
+	for (uint32_t version : { 2U, 3U })
+	{
+		for (uint16_t result_size : { 2048, 2049 })
+		{
+			const int32_t pid = 100 + version * 2 + (result_size - 2048);
+			const std::string label = "v" + std::to_string(version) +
+						  " retained result " + std::to_string(result_size);
+			flatfile_player_domain_record receipt_fixture = baseline(pid);
+			receipt_fixture.domains.bank = {};
+			require(flatfile_player_domain_establish_initial_player(
+					root.string(), receipt_fixture, &error) ==
+					flatfile_player_domain_result::ok,
+				label + " baseline failed: " + error);
+			const fs::path fixture =
+				domains / ("player-" + std::to_string(pid) + ".domain");
+			if (version == 2)
+				convert_player_domain_to_v2(fixture);
+			append_retained_result(fixture, result_size);
+			const auto expected = result_size == 2048 ?
+						      flatfile_player_domain_result::ok :
+						      flatfile_player_domain_result::invalid;
+			require(flatfile_player_domain_load(root.string(), pid, "account-one", 1,
+							    &loaded, &error) == expected,
+				label + " did not preserve the native 2048-byte bound: " + error);
+		}
+	}
 
 	const fs::path player = domains / "player-42.domain";
 	{
