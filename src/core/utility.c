@@ -35,6 +35,7 @@ using namespace std;
 #include "core/utils.h"
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
+#include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
 #include "core/defines.h"
 #include "world/epic.h"
@@ -56,7 +57,6 @@ using namespace std;
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_pool.h"
-#include "sql/sql_player.h"
 #include "world/weather.h"
 
 /*

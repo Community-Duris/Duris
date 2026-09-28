@@ -24,8 +24,10 @@
 #include <utility>
 #include "account/account.h"
 #include "cmd/mail.h"
+#include "core/random.h"
 #include "core/safe_format.h"
 #include "core/safe_io.h"
+#include "net/comm.h"
 using namespace std;
 
 struct AccountBankBalances;
@@ -785,8 +787,6 @@ int process_output(P_desc);
 void write_to_pc_log(P_char, const char *, int);
 void initialize_logs(P_char ch, bool reset_logs);
 void clear_logs(P_char);
-void act(const char *, int, P_char, P_obj, void *, int);
-void act(const char *, int, P_char, P_obj, void *, int, const OutputContext &);
 void close_socket(P_desc);
 void close_sockets(int);
 int is_desc_valid(P_desc);
@@ -806,7 +806,6 @@ bool send_to_pid(const char *, int);
 void send_to_except(const char *, P_char);
 void send_to_outdoor(const char *);
 void send_to_room_f(int room, const char *fmt, ...);
-void send_to_room(const char *, int);
 void send_to_room_except(const char *, int, P_char);
 void send_to_room_except_two(const char *, int, P_char, P_char);
 void send_to_zone(int, const char *);
@@ -1071,7 +1070,6 @@ int wearing_invis(P_char ch);
 int attack_back(P_char, P_char, int);
 void change_alignment(P_char, P_char);
 void check_killer(P_char, P_char);
-void death_rattle(P_char);
 void die(P_char, P_char);
 void death_extract_retry_pulse(void);
 void do_trophy(P_char, char *, int);
@@ -1110,7 +1108,6 @@ bool can_hit_target(P_char, P_char);
 void moveToBackup(char *name);
 int writeCharacter(P_char, int, int);
 void restore_houses();
-void writeShapechangeData(P_char ch);
 int register_ship(int);
 int ship_registered(int);
 bool writeObjectlist(P_obj, int);
@@ -2915,16 +2912,6 @@ void spell_edictum_cineris(int, P_char, char *, int, P_char, P_obj);
 void spell_sigillum_negati(int, P_char, char *, int, P_char, P_obj);
 void spell_draconic_apotheosis(int, P_char, char *, int, P_char, P_obj);
 
-/* track.c */
-
-char *sickprocess(const char *);
-int MaxTrackDist(P_char);
-void track_move(P_char);
-void add_track(P_char, int);
-void do_track(P_char, char *, int);
-void show_tracks(P_char ch, int room);
-void show_tracking_map(P_char);
-
 /* trap.c */
 
 void do_trapremove(P_char ch, char *argument, int cmd);
@@ -3051,7 +3038,6 @@ int IS_MORPH(P_char);
 int can_exec_cmd(P_char, int);
 int is_granted(P_char, int);
 int move_cost(P_char, int);
-int number(int, int);
 int maproom_of_zone(int);
 /* int str_cmp(const char *, const char *); */
 int strn_cmp(const char *, const char *, uint);

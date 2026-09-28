@@ -32,7 +32,7 @@
 #include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "sql/sql_player.h"
+#include "sql/sql_spellbook.h"
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "world/vnum.obj.h"

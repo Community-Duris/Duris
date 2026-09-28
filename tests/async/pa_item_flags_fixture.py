@@ -465,8 +465,26 @@ def run_item_flags_fixture() -> str:
             ROOT / "migrations/bootstrap_multithread_safe.sql",
             ROOT / "migrations/immutable/0015_output_preferences.sql",
             ROOT / "migrations/immutable/0020_player_death_restitution.sql",
+            ROOT / "migrations/immutable/0035_player_item_dynamic_state.sql",
         ):
             output.append(_sql(container, database, password, source=migration))
+
+        verifier = ROOT / "migrations/immutable/0035_player_item_dynamic_state.sh"
+        verifier_env = os.environ.copy()
+        verifier_env.update({
+            "DB_HOST": "127.0.0.1",
+            "DB_PORT": "3306",
+            "DB_USER": "root",
+            "DB_PASSWD": password,
+            "DB_NAME": database,
+        })
+        output.append(_require(
+            _run([
+                "docker", "exec", "-i", "-e", "DB_HOST", "-e", "DB_PORT", "-e",
+                "DB_USER", "-e", "DB_PASSWD", "-e", "DB_NAME", container, "bash", "-s",
+            ], env=verifier_env, input_text=verifier.read_text()),
+            "verify schema-0035 item dynamic-state metadata",
+        ))
 
         with tempfile.TemporaryDirectory(prefix="s05-item-flags-") as temporary:
             source = Path(temporary) / "item_flags.cpp"

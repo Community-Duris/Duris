@@ -23,6 +23,7 @@
 using namespace std;
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
 #include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"

@@ -94,7 +94,7 @@
 #include "account/creation_availability_config.h"
 #include "item/material_rarity.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_migration.h"
 #include "net/telnet.h"
 #include "world/timers.h"
 #include "economy/tradeskill.h"

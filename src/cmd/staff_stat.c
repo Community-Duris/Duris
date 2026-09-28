@@ -26,7 +26,6 @@
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
 #include "item/trophy.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"

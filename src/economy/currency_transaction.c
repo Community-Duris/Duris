@@ -1,10 +1,10 @@
 #include "economy/currency_transaction.h"
 #include "economy/currency_publication.h"
 #include "economy/economic_gameplay_authority.h"
+#include "economy/account_bank_balances.h"
 
 #include "net/gmcp.h"
 #include "core/prototypes.h"
-#include "sql/sql_player.h"
 #include "core/utils.h"
 
 #include <algorithm>

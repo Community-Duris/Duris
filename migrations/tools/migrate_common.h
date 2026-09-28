@@ -18,7 +18,6 @@
 #include "../../src/core/structs.h"
 #include "../../src/core/utils.h"
 #include "../../src/sql/sql.h"
-#include "../../src/sql/sql_player.h"
 #include "../../src/account/account.h"
 #include "../../src/guild/assocs.h"
 #include "../../src/ships/ships.h"
