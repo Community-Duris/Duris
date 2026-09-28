@@ -17,6 +17,7 @@
 #include "world/buildings.h"
 #include "world/outposts.h"
 #include "core/proc-libs.h"
+#include "combat/defense_resolution.h"
 #include "specs/specs.barovia.h"
 #include "specs/specs.caertannad.h"
 #include "specs/specs.eth2.h"

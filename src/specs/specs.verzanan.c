@@ -7182,3 +7182,37 @@ int bouncer_four(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	}
 	return false;
 }
+
+int jester(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	/*
+	 * check for periodic event calls
+	 */
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (cmd)
+		return (0);
+
+	switch (number(0, 60))
+	{
+	case 0:
+		mobsay(ch, "You are a real stinker!");
+		return (1);
+	case 1:
+		mobsay(ch, "Have you considered getting a lobotomy?");
+		return (1);
+	case 2:
+		mobsay(ch, "You're as stupid as you look!");
+		return (1);
+	case 3:
+		mobsay(ch, "Get a real hair-cut!");
+		return (1);
+	case 4:
+		act("$n does a backflip.", TRUE, ch, 0, 0, TO_ROOM);
+		mobsay(ch, "Ha!");
+		return (1);
+	default:
+		return (0);
+	}
+}

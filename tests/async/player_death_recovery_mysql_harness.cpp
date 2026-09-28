@@ -235,7 +235,15 @@ player_load_result load(MYSQL *db, int pid, const std::string &name, bool payloa
 	if (recovery_query)
 		request.death_recovery_query.kind = player_death_recovery_query_kind::list;
 	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
-	return player_load_repository_execute(db, request);
+	auto result = player_load_repository_execute(db, request);
+	if (!recovery_query && payload && result.outcome == player_load_outcome::applied)
+	{
+		const size_t expected_queries = by_name ? PLAYER_LOAD_QUERY_MAX :
+							  PLAYER_LOAD_PID_QUERY_MAX;
+		require(result.metrics.query_count == expected_queries,
+			"healthy full load query count disagrees with materialization budget");
+	}
+	return result;
 }
 void refusal(const player_load_result &result, player_load_recovery_gate gate)
 {

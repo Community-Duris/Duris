@@ -111,6 +111,53 @@ extern struct mm_ds *dead_pconly_pool;
 extern int _pwipe;
 extern const char *sector_types[];
 
+/* Format a long integer with grouping commas. */
+char *comma_string(long num)
+{
+	static char buf1[50] = { 0 }, buf2[50] = { 0 };
+	int bp1, bp2, len, j;
+
+	snprintf(buf1, 50, "%ld", num);
+
+	len = strlen(buf1);
+	bp1 = 0;
+	bp2 = 0;
+
+	if (buf1[0] == '-')
+	{
+		*(buf2 + bp2++) = *(buf1 + bp1++);
+		len--;
+	}
+	if (len < 4)
+		return (buf1); /*
+		                * doesn't need commas
+		                */
+
+	if (len % 3)
+	{
+		for (j = len % 3; j > 0; j--)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		*(buf2 + bp2++) = ',';
+	}
+	while (len)
+	{
+		for (j = 0; j < 3; j++)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		if (len)
+			*(buf2 + bp2++) = ',';
+	}
+
+	*(buf2 + bp2) = '\0';
+
+	return (buf2);
+}
+
 char GS_buf1[MAX_STRING_LENGTH];
 
 int is_ice(P_char ch, int room);
@@ -4919,6 +4966,12 @@ bool spell_can_affect_char(P_char ch, int spl)
 		 (IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) ||
 		 (IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
 		 (IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER)));
+}
+
+// The swashbuckler is considered the victim. // May09 -Lucrot
+bool opposite_racewar(P_char ch, P_char victim)
+{
+	return IS_PC(ch) && IS_PC(victim) && GET_RACEWAR(ch) != GET_RACEWAR(victim);
 }
 
 /* is viewee at war with viewer? */

@@ -26,6 +26,7 @@ void logit(const char *, const char *, ...) __attribute__((format(printf, 2, 3))
 
 int cmd_from_dir(int dir);
 int direction_tag(P_char ch);
+bool opposite_racewar(P_char ch, P_char victim);
 
 const char *condition_str(P_char ch);
 

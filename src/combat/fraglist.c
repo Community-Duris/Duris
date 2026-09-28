@@ -1,5 +1,6 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "core/utility.h"
 #include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>

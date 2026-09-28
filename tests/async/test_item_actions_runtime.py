@@ -608,7 +608,7 @@ for signature, hook in [("void char_from_room(", "item_actions_character_leaving
                         ("P_obj unequip_char(", "item_actions_source_leaving(obj)"),
                         ("void extract_obj(", "item_actions_source_leaving(obj)")]:
     assert hook in handler.split(signature, 1)[1].split("\n}", 1)[0]
-assert "item_action_active(ch)" in (ROOT / "src/combat/fight.c").read_text()
+assert "item_action_active(ch)" in (ROOT / "src/combat/attack_cadence.c").read_text()
 properties = (ROOT / "src/world/properties.c").read_text()
 assert "update_item_action_properties();" in properties.split("void apply_properties()", 1)[1]
 assert "item_actions_reload();" in properties.split("void initialize_properties()", 1)[1]

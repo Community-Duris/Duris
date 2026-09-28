@@ -121,6 +121,14 @@ bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 void critical_command_coordinator_quiesce(void);
 void critical_command_coordinator_resume(void);
 bool critical_command_coordinator_drain(uint64_t timeout_msec);
+// Point-in-time cutover preflight. Call quiesce() and drain() first. Returns
+// true only while initialized and quiesced, with no retained operations,
+// execution/admission queues or completions, blocked/admission-uncertain/
+// publication-held/fenced work, in-flight append, uncertain journal append,
+// or unresolved durable journal frames. This is not a lock or token: the caller
+// must retain its lifecycle/runtime fence and keep the coordinator quiesced
+// through cutover.
+bool critical_command_coordinator_cutover_ready(void);
 void critical_command_coordinator_set_drain_observer(critical_drain_observer_fn observer);
 critical_coordinator_health critical_command_coordinator_health_copy(void);
 bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion);

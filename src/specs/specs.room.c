@@ -25,6 +25,7 @@
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/specs.prototypes.h"
+#include "world/bloodstains.h"
 #include "specs/specs.winterhaven.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

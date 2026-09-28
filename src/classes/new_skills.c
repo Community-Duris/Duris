@@ -19,6 +19,7 @@
 #include <string.h>
 #include <time.h>
 #include "combat/damage.h"
+#include "combat/death_messages.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
 #include "combat/training_dummy.h"
@@ -2743,6 +2744,17 @@ void do_ogre_roar(P_char ch, char *argument, int /*cmd*/)
 
 			return;
 		}
+}
+
+bool isCarved(P_obj corpse)
+{
+	int i;
+
+	for (i = 0; i < numCarvables; i++)
+		if (corpse->value[1] & carve_part_flag[i])
+			return TRUE;
+
+	return FALSE;
 }
 
 /* Krov: carving procedure. checks in value[3] of a corpse which body
