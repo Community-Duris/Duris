@@ -13,6 +13,7 @@ def main():
                "src/flatfile/flatfile_accounting_bank_transaction.c",
                "src/flatfile/flatfile_identity_repository.c",
                "src/flatfile/flatfile_player_domain_repository.c",
+               "src/flatfile/flatfile_player_snapshot_file.c",
                "src/economy/economic_command_admission.c",
                "src/economy/coin_transfer_accounting.c",
                "src/economy/item_transfer_accounting.c",

@@ -2,6 +2,7 @@
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
 #include "flatfile/currency_flatfile_mutation_writer.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/economic_currency_adapter.h"
@@ -56,6 +57,16 @@ void checked(flatfile_player_domain_result value)
 		throw failure{ EIO };
 	throw failure{ EILSEQ };
 }
+void checked(flatfile_player_load_result value)
+{
+	if (value == flatfile_player_load_result::ok)
+		return;
+	if (value == flatfile_player_load_result::not_found)
+		throw failure{ ENOENT };
+	if (value == flatfile_player_load_result::io_error)
+		throw failure{ EIO };
+	throw failure{ EILSEQ };
+}
 std::string canonical(const std::string &name)
 {
 	need(!name.empty() && name.size() <= CURRENCY_ACCOUNT_NAME_MAX_BYTES, EINVAL);
@@ -100,8 +111,12 @@ bank_identity decode(const critical_command &command)
 	admission.accounting_intent.clear();
 	admission.publication_required = false;
 	std::vector<uint8_t> expected;
-	checked(economic_bank_transfer_intent(admission, meta.epoch, value.wallet, value.bank,
-					      &expected));
+	if (value.payload.reason == currency_reason_type::chaos_starter_reward)
+		checked(economic_chaos_starter_bank_intent(admission, meta.epoch, value.wallet,
+							   value.bank, &expected));
+	else
+		checked(economic_bank_transfer_intent(admission, meta.epoch, value.wallet,
+						      value.bank, &expected));
 	need(expected == command.accounting_intent, EACCES);
 	return value;
 }
@@ -122,6 +137,21 @@ currency_command_result balances(const flatfile_player_domain_record &record)
 	}
 	value.wallet_revision = record.domains.wallet_revision;
 	value.bank_revision = record.domains.bank_revision;
+	return value;
+}
+uint64_t status_value(const player_snapshot &snapshot, player_status_field field)
+{
+	bool found = false;
+	uint64_t value = 0;
+	for (const auto &entry : snapshot.status_integers)
+		if (entry.field == field)
+		{
+			need(!found && (entry.is_unsigned || entry.signed_value >= 0));
+			value = entry.is_unsigned ? entry.unsigned_value :
+						    static_cast<uint64_t>(entry.signed_value);
+			found = true;
+		}
+	need(found);
 	return value;
 }
 bool business_error(unsigned int code)
@@ -168,14 +198,17 @@ void verify(const std::string &root, const flatfile_authority_lock &lock,
 	}
 	economic_accounting_plan plan;
 	checked(economic_plan_decode(record.plan, &plan));
-	need(plan.accounts.size() == 2);
+	const bool starter = identity.payload.reason == currency_reason_type::chaos_starter_reward;
+	need(plan.accounts.size() == (starter ? 3 : 2));
 	economic_currency_authority authority = { identity.intent.admission.metadata.epoch,
 						  identity.wallet,
 						  identity.bank,
 						  record.command.keys[0],
 						  record.command.keys[1],
 						  {} };
-	bool wallet = false, bank = false;
+	bool wallet = false, bank = false, issuance = false;
+	const economic_account_key issuance_account = { identity.bank.lineage,
+							economic_account_kind::issuance, 1, 0 };
 	for (const auto &account : plan.accounts)
 	{
 		if (economic_account_key_equal(account.key, identity.wallet))
@@ -192,14 +225,24 @@ void verify(const std::string &root, const flatfile_authority_lock &lock,
 			authority.state.bank.amount = account.before;
 			authority.state.bank_revision = account.before_revision;
 		}
+		else if (starter && economic_account_key_equal(account.key, issuance_account))
+		{
+			need(!issuance);
+			issuance = true;
+		}
 		else
 			need(false);
 	}
-	need(wallet && bank);
+	need(wallet && bank && (starter == issuance));
 	std::optional<economic_prepared_currency> prepared;
-	checked(economic_bank_transfer_prepare(record.command, identity.intent, authority,
-					       currency_revision_policy::flatfile_legacy,
-					       &prepared));
+	if (starter)
+		checked(economic_chaos_starter_bank_prepare(
+			record.command, identity.intent, authority,
+			currency_revision_policy::flatfile_legacy, &prepared));
+	else
+		checked(economic_bank_transfer_prepare(record.command, identity.intent, authority,
+						       currency_revision_policy::flatfile_legacy,
+						       &prepared));
 	checked(prepared->agrees_with(plan));
 	need(equal(prepared->mutation().after(), result));
 }
@@ -239,6 +282,8 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 		if (lookup == flatfile_accounting_status::ok)
 		{
 			verify(root, lock, retained);
+			checked(flatfile_accounting_storage::verify_source_claim(
+				root, lock, retained, nullptr));
 			return completion(retained, true);
 		}
 		if (lookup != flatfile_accounting_status::not_found)
@@ -273,6 +318,22 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 		checked(flatfile_player_domain_load_locked(root, lock, identity.payload.pid,
 							   account, identity.payload.racewar,
 							   &native, nullptr));
+		const bool starter = identity.payload.reason ==
+				     currency_reason_type::chaos_starter_reward;
+		if (starter)
+		{
+			// Snapshot replacement is atomic; no player lock is taken beneath
+			// the authority lock. A retained replay uses the source claim instead.
+			player_snapshot snapshot = {};
+			checked(flatfile_player_snapshot_read(root, identity.payload.pid, &snapshot,
+							      nullptr));
+			need(status_value(snapshot, player_status_field::racewar) ==
+				     identity.payload.racewar,
+			     EACCES);
+			need((status_value(snapshot, player_status_field::action_flags_3) &
+			      CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG) != 0,
+			     EACCES);
+		}
 		economic_currency_authority authority = { identity.intent.admission.metadata.epoch,
 							  identity.wallet,
 							  identity.bank,
@@ -280,9 +341,13 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 							  command.keys[1],
 							  balances(native) };
 		std::optional<economic_prepared_currency> prepared;
-		const auto preparation = economic_bank_transfer_prepare(
-			command, identity.intent, authority,
-			currency_revision_policy::flatfile_legacy, &prepared);
+		const auto preparation =
+			starter ? economic_chaos_starter_bank_prepare(
+					  command, identity.intent, authority,
+					  currency_revision_policy::flatfile_legacy, &prepared) :
+				  economic_bank_transfer_prepare(
+					  command, identity.intent, authority,
+					  currency_revision_policy::flatfile_legacy, &prepared);
 		currency_command_result result = authority.state;
 		flatfile_accounting_record record;
 		record.command = command;
@@ -312,12 +377,16 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 		const auto domain_images = operations.size();
 		checked(flatfile_accounting_storage::stage(root, lock, record, &operations,
 							   nullptr));
+		checked(flatfile_accounting_storage::stage_source_claim(root, lock, record,
+									&operations, nullptr));
 		publishing = true;
 		need(flatfile_accounting_storage::commit(root, lock, operations, nullptr) ==
 			     flatfile_authority_transaction_result::ok,
 		     EIO);
 		checked(flatfile_accounting_lookup(root, lock, command, &retained, nullptr), true);
 		verify(root, lock, retained);
+		checked(flatfile_accounting_storage::verify_source_claim(root, lock, retained,
+									 nullptr));
 		need(retained.plan == record.plan && retained.result == record.result &&
 		     retained.result_code == record.result_code &&
 		     retained.failure_stage == record.failure_stage &&

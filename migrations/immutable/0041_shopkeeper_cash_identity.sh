@@ -16,8 +16,8 @@ MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}
 scalar() { "${MYSQL[@]}" -e "$1"; }
 
 table=$(scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='shopkeepers' AND engine='InnoDB'")
-cash=$(scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='shopkeepers' AND column_name='cash' AND LOWER(data_type)='int' AND is_nullable='YES' AND (column_default IS NULL OR UPPER(column_default)='NULL')")
-revision=$(scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='shopkeepers' AND column_name='shop_revision' AND LOWER(data_type)='bigint' AND LOWER(column_type) LIKE '%unsigned' AND is_nullable='NO' AND column_default='1'")
+cash=$(scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='shopkeepers' AND column_name='cash' AND data_type='int' AND LOWER(column_type) NOT LIKE '%unsigned%' AND is_nullable='YES' AND (column_default IS NULL OR UPPER(column_default)='NULL')")
+revision=$(scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='shopkeepers' AND column_name='shop_revision' AND data_type='bigint' AND LOWER(column_type) LIKE '%unsigned%' AND is_nullable='NO' AND column_default='1'")
 if [[ "$table" != 1 || "$cash" != 1 || "$revision" != 1 ]]; then
     echo 'shopkeeper cash and revision schema mismatch' >&2
     exit 1

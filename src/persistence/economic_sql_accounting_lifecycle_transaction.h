@@ -32,6 +32,12 @@ struct economic_sql_lifecycle_bank_mapping
 	uint8_t racewar = 0;
 	economic_account_key account;
 };
+struct economic_sql_lifecycle_treasury_mapping
+{
+	uint32_t shop_id = 0;
+	uint32_t native_id = 0;
+	economic_account_key account;
+};
 struct economic_sql_lifecycle_receipt
 {
 	critical_operation_id operation_id = {};
@@ -43,6 +49,7 @@ struct economic_sql_lifecycle_receipt
 	uint64_t baseline_revision = 0;
 	std::vector<economic_sql_lifecycle_wallet_mapping> wallets;
 	std::vector<economic_sql_lifecycle_bank_mapping> banks;
+	std::vector<economic_sql_lifecycle_treasury_mapping> treasuries;
 };
 
 // Plans 2-4 register their route proofs with the Plan 5 verifier. Its

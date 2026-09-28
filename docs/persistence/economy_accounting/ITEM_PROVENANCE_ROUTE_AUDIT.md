@@ -8,7 +8,7 @@ or permission to activate an epoch.
 | Reachable path | Authority and source/sink | Current Plan 3 status | Proof or remaining work |
 | --- | --- | --- | --- |
 | `item_movement_transaction_submit` from player get, drop, put, give and trusted steal | Existing item ownership repository; custody move | Accounted intent, ordered item events and exact legacy references on SQL and flatfile; same-owner nesting admitted. SQL player materialization refuses an unexpected native child, a foreign player row or a mismatched template before detaching selected rows | `test_item_transfer_accounting.py`, `test_universal_item_transfer_accounting.py`, `test_economic_accounting_flatfile_gate.py`; SQL item harness includes each native conflict followed by a valid give |
-| Locker deposit/withdraw and pet give/return through the same transaction | Existing locker/pet native rows and item ownership repository; custody move | Accounted policy admission is implemented. SQL moves nested native rows and metadata for both routes in the custody transaction; flatfile preserves the nested custody graph and exact references | Focused SQL and flatfile fixtures pass, including stale player snapshot reconciliation for pet handoff and return. `run_chaos_raise_transient_journey.py --pet-give-probe --coinless` passes a real-server SQL pet give/return, save and restart with nested contents, an empty container, an ordinary item and auto-equip while the epoch is inactive; add a live locker journey and active-epoch or flatfile pet journeys |
+| Locker deposit/withdraw and pet give/return through the same transaction | Existing locker/pet native rows and item ownership repository; custody move | Accounted policy admission is implemented. SQL moves nested native rows and metadata for both routes in the custody transaction; flatfile preserves the nested custody graph and exact references | Focused SQL and flatfile fixtures pass, including stale player snapshot reconciliation for pet handoff and return. Real-server SQL pet and locker journeys pass on current 0041 source with save and restart while the epoch is inactive. Add active-epoch and flatfile gameplay journeys |
 | Corpse create/loot through item transfer | Existing corpse handoff and item ownership repository; custody move | Existing accounted path retained; coin piles excluded from ordinary item accounting | Existing corpse tests; combined death/coin effects belong to Plan 4 |
 | Spell conjuration and spell component retirement | Creation grant / item movement transaction; issuance or destruction | Typed `spell_creation` and `spell_consumption` claims. The SQL item transaction removes a committed player component forest from native `player_items` while retaining destroyed UID, root and parent history. It refuses an unexpected native child before publishing retirement. Flatfile and SQL fixtures cover a multi-root retirement with a nested child and exact references. A queued stale player save remains blocked after retirement, while reconnect and restart loads leave the retired forest absent | The fixtures also reject a second spell issuance with the same logical source and a new UID. Live spell casts still use UID-lifetime identity because they lack a durable cast ID; add that producer identity and a live save/reconnect/restart gameplay journey |
 | Soulbind reload and replacement cleanup in `magic/spell_item_lifecycle.c` | Repeatable player item issuance and direct retirement of earlier bound items | Active-epoch reload refuses before `read_object`; staff clearing and replacement refuse before removing an old binding. The shared cleanup skips durable objects if an epoch becomes active before a pending callback, while transient cleanup remains available | Assign a durable entitlement generation and retire the old UID in the same accounted replacement operation before admitting reload or staff replacement. Cover the live callback and restart path |
@@ -91,6 +91,16 @@ It checks native player and pet rows, current custody and metadata after each
 move, auto-equips the trinket on the pet, and restores the follower with all five
 UIDs after a server restart. The run holds the economic epoch inactive, so it
 establishes live native custody behavior rather than active-epoch references.
+The journey also passed on current source with the migration 0041 runtime
+contract.
+
+The disposable-schema SQL locker journey uses a real server to deposit a nested
+backpack, leave the locker, save, restart, withdraw, and save again. It checks
+current custody at each move and native player or locker rows, parentage, UIDs,
+affects and extra descriptions at the save boundaries. This passed with both
+the earlier `4d8d0e2bd` source snapshot and current source after its migration
+0041 runtime contract was measured on MySQL 8.0 and MariaDB 10.11. The economic
+epoch was inactive, so this does not establish live active-epoch references.
 
 Migration 0038 adds equipment slots to the SQL current owner, opening baseline,
 and legacy transition ledger. A root slot is one-based (zero means carried);

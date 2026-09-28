@@ -239,8 +239,9 @@ void assert_source_registry(MYSQL *connection)
 			" server=" + mysql_get_server_info(connection));
 	if (economic_sql_validate_sources(snapshot))
 		throw std::runtime_error("source snapshot validation failed");
-	for (const char *name : { "player_data", "account_banks", "economic_account_mapping",
-				  "item_current_owner", "item_uid_allocator" })
+	for (const char *name :
+	     { "player_data", "account_banks", "shopkeepers", "economic_account_mapping",
+	       "item_current_owner", "item_uid_allocator" })
 	{
 		const auto found = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
 						[&](const auto &table)
@@ -254,10 +255,14 @@ void assert_source_registry(MYSQL *connection)
 	const auto bank = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
 				       [&](const auto &table)
 				       { return table.name == "account_banks"; });
+	const auto shop = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+				       [&](const auto &table)
+				       { return table.name == "shopkeepers"; });
 	const auto items = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
 					[&](const auto &table)
 					{ return table.name == "item_current_owner"; });
-	if (wallet->rows.size() != 2 || bank->rows.size() != 2 || items->rows.size() != 3)
+	if (wallet->rows.size() != 2 || bank->rows.size() != 2 || shop->rows.size() != 1 ||
+	    items->rows.size() != 3)
 		throw std::runtime_error(
 			"capture did not enumerate every wallet, shared bank and current item row");
 }
@@ -268,6 +273,9 @@ void seed(MYSQL *connection)
 	execute(connection,
 		"INSERT INTO account_banks(account_name,racewar,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision) VALUES"
 		"('lifecycle_a',0,8,1,0,0,4),('lifecycle_b',1,0,3,0,0,9)");
+	execute(connection,
+		"INSERT INTO shopkeepers(id,shop_id,mob_vnum,room_vnum,cash,shop_revision) "
+		"VALUES(9,0,11005,100,73,4)");
 	execute(connection,
 		"INSERT INTO player_data(pid,name,account_name,racewar,copper,silver,gold,platinum,wallet_revision,save_revision) VALUES"
 		"(21001,'LifecycleOne','lifecycle_a',0,4,2,0,0,6,12),"
@@ -300,9 +308,9 @@ void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_rec
 	    !prepared)
 		throw std::runtime_error("retained baseline witness did not decode");
 	const auto &holdings = prepared->witness().holdings;
-	if (holdings.size() != 6)
+	if (holdings.size() != 7)
 		throw std::runtime_error(
-			"baseline did not retain every wallet, bank and coin pile");
+			"baseline did not retain every wallet, bank, keeper treasury and coin pile");
 	for (const auto &wallet : receipt.wallets)
 	{
 		const auto found =
@@ -334,6 +342,15 @@ void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_rec
 		     found->native_revision != 9))
 			throw std::runtime_error("second shared-bank baseline values mismatch");
 	}
+	if (receipt.treasuries.size() != 1 || receipt.treasuries[0].shop_id != 0 ||
+	    receipt.treasuries[0].native_id != 9)
+		throw std::runtime_error("keeper treasury mapping missing from receipt");
+	const auto keeper = std::find_if(
+		holdings.begin(), holdings.end(), [&](const auto &holding)
+		{ return same_account(holding.account, receipt.treasuries[0].account); });
+	if (keeper == holdings.end() || keeper->balance != economic_coin_vector{ 73, 0, 0, 0 } ||
+	    keeper->native_revision != 4)
+		throw std::runtime_error("keeper cash absent from retained baseline");
 	const auto assert_pile =
 		[&](uint64_t uid, const economic_coin_vector &balance, uint64_t revision)
 	{
@@ -461,6 +478,22 @@ int main()
 		assert_scalar(setup, "SELECT COUNT(*) FROM player_death_conflict_evidence", "1");
 		execute(setup, "DELETE FROM player_death_conflict_evidence WHERE operation_id=" +
 				       sql_id(ident(13)));
+		execute(setup, "UPDATE shopkeepers SET cash=NULL WHERE id=9");
+		economic_sql_lifecycle_receipt unknown_keeper_output;
+		unknown_keeper_output.operation_id = ident(208);
+		const auto unknown_keeper_status =
+			economic_sql_accounting_lifecycle_transaction::install(
+				owner_connection, *maintenance, invalid_request,
+				&unknown_keeper_output);
+		if (unknown_keeper_status != EILSEQ ||
+		    unknown_keeper_output.operation_id.bytes != ident(208).bytes)
+			throw std::runtime_error(
+				"unknown keeper cash was admitted to opening baseline");
+		assert_scalar(setup,
+			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+				      sql_id(invalid_request.lineage),
+			      "0");
+		execute(setup, "UPDATE shopkeepers SET cash=73 WHERE id=9");
 		execute(setup, "UPDATE item_current_owner SET coin_payload=NULL WHERE item_uid=2");
 		economic_sql_lifecycle_receipt bad_coin_output;
 		bad_coin_output.operation_id = ident(210);
@@ -529,7 +562,7 @@ int main()
 		if (!partial_status || untouched.operation_id.bytes != ident(212).bytes)
 			throw std::runtime_error(
 				"partial installation failure was not retained unchanged");
-		assert_scalar(owner_connection, "SELECT @lifecycle_partial_mappings", "4");
+		assert_scalar(owner_connection, "SELECT @lifecycle_partial_mappings", "5");
 		assert_scalar(owner_connection, "SELECT @lifecycle_partial_control", "1");
 		for (const char *table :
 		     { "economic_lineage_state", "economic_epoch", "economic_account_mapping",
@@ -585,7 +618,7 @@ int main()
 			throw std::runtime_error("SQL lifecycle install failed with " +
 						 std::to_string(install_status));
 		if (receipt.wallets.size() != 2 || receipt.banks.size() != 2 ||
-		    receipt.baseline_revision != 1 ||
+		    receipt.treasuries.size() != 1 || receipt.baseline_revision != 1 ||
 		    receipt.source_capture_digest == economic_sql_source_digest{} ||
 		    receipt.native_boundary_digest == economic_sql_source_digest{})
 			throw std::runtime_error(
@@ -593,7 +626,7 @@ int main()
 		assert_scalar(setup,
 			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
 				      sql_id(request.lineage),
-			      "4");
+			      "5");
 		assert_scalar(setup,
 			      "SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
 				      sql_id(request.lineage) + " AND account_kind=3",
@@ -620,6 +653,15 @@ int main()
 					std::to_string(bank.racewar) + ") AND mapping_id=" +
 					std::to_string(bank.account.authority_id),
 				"1");
+		for (const auto &keeper : receipt.treasuries)
+			assert_scalar(
+				setup,
+				"SELECT COUNT(*) FROM economic_account_mapping WHERE lineage=" +
+					sql_id(request.lineage) +
+					" AND account_kind=6 AND locator_kind=6 AND native_id=" +
+					std::to_string(keeper.native_id) + " AND mapping_id=" +
+					std::to_string(keeper.account.authority_id),
+				"1");
 		assert_scalar(
 			setup,
 			"SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() "
@@ -629,7 +671,7 @@ int main()
 			      "SELECT COUNT(*) FROM economic_baseline_reservation WHERE lineage=" +
 				      sql_id(request.lineage) + " AND epoch=" +
 				      sql_id(request.epoch) + " AND identity_kind=1",
-			      "6");
+			      "7");
 		assert_scalar(setup,
 			      "SELECT COUNT(*) FROM economic_baseline_reservation WHERE lineage=" +
 				      sql_id(request.lineage) +
@@ -705,6 +747,7 @@ int main()
 			throw std::runtime_error("exact lifecycle replay failed");
 		if (replay.wallets.size() != receipt.wallets.size() ||
 		    replay.banks.size() != receipt.banks.size() ||
+		    replay.treasuries.size() != receipt.treasuries.size() ||
 		    replay.baseline_operation_id.bytes != receipt.baseline_operation_id.bytes ||
 		    replay.wallets[0].account.authority_id !=
 			    receipt.wallets[0].account.authority_id ||
@@ -965,7 +1008,7 @@ int main()
 						std::to_string(recovered));
 			}
 		}
-		puts("PASS native_wallets=2 shared_banks=2 durable_mappings=4 baseline_receipt=verified partial_write_rollback=verified phase_one_resume=verified exact_replay=stable concurrent_legacy_writer=serialized legacy_gate=closed healthy_inactive_runtime=admitted staged_runtime=refused active_epoch_without_receipt=refused failure_cleanup=verified output_preserved=verified");
+		puts("PASS native_wallets=2 shared_banks=2 keeper_treasuries=1 durable_mappings=5 baseline_receipt=verified partial_write_rollback=verified phase_one_resume=verified exact_replay=stable concurrent_legacy_writer=serialized legacy_gate=closed healthy_inactive_runtime=admitted staged_runtime=refused active_epoch_without_receipt=refused failure_cleanup=verified output_preserved=verified");
 		mysql_close(runtime_connection);
 		mysql_close(owner_connection);
 		mysql_close(setup);

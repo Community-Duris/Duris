@@ -326,6 +326,7 @@ struct consumer
 		report.diagnostics.reserve(limit);
 		monetary("player_data", kind::wallet, 3, 4, false, 7);
 		monetary("account_banks", kind::bank, 3, 4, true, 7);
+		monetary("shopkeepers", kind::treasury, 4, 1, false, 5);
 		monetary("ships", kind::ship, 2, 1, false, std::nullopt);
 		monetary("auction_money_pickups", kind::claim, 1, 1, true, 2);
 		auctions();

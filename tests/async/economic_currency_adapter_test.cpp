@@ -249,7 +249,9 @@ void mutation_policy()
 					 &prepared) == 0);
 	assert(currency_prepare_mutation(payload, state, 0, 0,
 					 currency_revision_policy::flatfile_legacy,
-					 &prepared) == ESTALE);
+					 &prepared) == 0);
+	assert(prepared->after().wallet_revision == state.wallet_revision + 1 &&
+	       prepared->after().bank_revision == state.bank_revision + 1);
 	payload.reason = currency_reason_type::bank_reward;
 	assert(currency_prepare_mutation(payload, state, 0, 0, currency_revision_policy::sql_legacy,
 					 &prepared) == ESTALE);
@@ -362,7 +364,9 @@ void chaos_starter_bank_supply()
 	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 	command.accounting_intent = frozen;
 	std::optional<economic_prepared_currency> prepared;
-	assert(economic_chaos_starter_bank_prepare(command, intent, state, &prepared) == error::ok);
+	assert(economic_chaos_starter_bank_prepare(command, intent, state,
+						   currency_revision_policy::bank_only,
+						   &prepared) == error::ok);
 	const auto &after = prepared->mutation().after();
 	assert(after.wallet.amount == state.state.wallet.amount &&
 	       after.wallet_revision == state.state.wallet_revision);
@@ -398,26 +402,47 @@ void chaos_starter_bank_supply()
 	auto changed_plan = plan;
 	++changed_plan.metadata.source_event->slot;
 	assert(prepared->agrees_with(changed_plan) == error::payload_conflict);
+	std::optional<economic_prepared_currency> sql_prepared;
+	assert(economic_chaos_starter_bank_prepare(command, intent, state,
+						   currency_revision_policy::sql_legacy,
+						   &sql_prepared) == error::ok);
+	const auto &sql_after = sql_prepared->mutation().after();
+	const auto &sql_plan = sql_prepared->plan();
+	assert(sql_after.wallet_revision == state.state.wallet_revision + 1 &&
+	       sql_after.wallet.amount == state.state.wallet.amount &&
+	       sql_after.bank_revision == state.state.bank_revision + 1);
+	assert(sql_plan.accounts.size() == 3 && sql_plan.postings.size() == 2 &&
+	       sql_plan.accounts[0].key.kind == economic_account_kind::wallet &&
+	       sql_plan.accounts[0].before == sql_plan.accounts[0].after &&
+	       sql_plan.accounts[0].after_revision == state.state.wallet_revision + 1 &&
+	       sql_plan.accounts[1].key.kind == economic_account_kind::bank &&
+	       sql_plan.accounts[2].key.kind == economic_account_kind::issuance &&
+	       sql_plan.postings[0].account_index == 1 && sql_plan.postings[1].account_index == 2);
+	assert(economic_plan_validate_structure(sql_plan) == error::ok);
 	auto wrong_source = intent;
 	++wrong_source.admission.metadata.source_event->slot;
 	assert(economic_intent_encode(wrong_source, &command.accounting_intent) == error::ok);
-	assert(economic_chaos_starter_bank_prepare(command, wrong_source, state, &prepared) ==
-	       error::unauthorized);
+	assert(economic_chaos_starter_bank_prepare(command, wrong_source, state,
+						   currency_revision_policy::bank_only,
+						   &prepared) == error::unauthorized);
 	auto wrong_writer = intent;
 	wrong_writer.admission.metadata.writer_id = ECONOMIC_WRITER_BANK_DEPOSIT;
 	assert(economic_intent_encode(wrong_writer, &command.accounting_intent) == error::ok);
-	assert(economic_chaos_starter_bank_prepare(command, wrong_writer, state, &prepared) ==
-	       error::unauthorized);
+	assert(economic_chaos_starter_bank_prepare(command, wrong_writer, state,
+						   currency_revision_policy::bank_only,
+						   &prepared) == error::unauthorized);
 	command.accounting_intent = frozen;
 	auto changed = state;
 	changed.state.bank.amount[3] = INT_MAX - 999999;
-	assert(economic_chaos_starter_bank_prepare(command, intent, changed, &prepared) ==
-	       error::overflow);
+	assert(economic_chaos_starter_bank_prepare(command, intent, changed,
+						   currency_revision_policy::bank_only,
+						   &prepared) == error::overflow);
 	changed = state;
 	++changed.state.bank_revision;
 	command.expected_revisions[1].revision = 9;
-	assert(economic_chaos_starter_bank_prepare(command, intent, changed, &prepared) ==
-	       error::payload_conflict);
+	assert(economic_chaos_starter_bank_prepare(command, intent, changed,
+						   currency_revision_policy::bank_only,
+						   &prepared) == error::payload_conflict);
 	command.expected_revisions[1].revision = UINT64_MAX;
 	critical_command stale_command = {};
 	assert(currency_command_build(&stale_command, operation, payload, 4, 9,
@@ -430,11 +455,13 @@ void chaos_starter_bank_supply()
 	economic_frozen_intent stale_intent;
 	assert(economic_intent_decode(stale_command.accounting_intent, &stale_intent) == error::ok);
 	assert(economic_chaos_starter_bank_prepare(stale_command, stale_intent, changed,
+						   currency_revision_policy::bank_only,
 						   &prepared) == error::stale_revision);
 	changed = state;
 	changed.epoch = id(9);
-	assert(economic_chaos_starter_bank_prepare(command, intent, changed, &prepared) ==
-	       error::unauthorized);
+	assert(economic_chaos_starter_bank_prepare(command, intent, changed,
+						   currency_revision_policy::bank_only,
+						   &prepared) == error::unauthorized);
 	command.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 	command.accounting_intent.clear();
 	auto refused = std::vector<uint8_t>{ 99 };
