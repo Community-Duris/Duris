@@ -21,4 +21,21 @@ struct economic_sql_shop_trade_context
 unsigned int economic_sql_shop_trade_lock(MYSQL *connection, const critical_command &command,
 					  economic_sql_shop_trade_context *context);
 
+// Apply one admitted trade and record its canonical accounting root inside the
+// caller's open inbox transaction. The caller writes the result receipt and
+// outbox before commit; this function never commits.
+unsigned int
+economic_sql_shop_trade_execute_and_record(MYSQL *connection, const critical_command &command,
+					   const economic_sql_shop_trade_context &context,
+					   shop_trade_result *result, unsigned int *result_code,
+					   bool *mutation_applied);
+
+// Verify the retained canonical root, postings, item references, and source
+// claim on operation-ID replay. The caller verifies the inbox receipt/outbox.
+unsigned int economic_sql_shop_trade_verify_retained(MYSQL *connection,
+						     const critical_command &command,
+						     unsigned int result_code,
+						     const uint8_t *result_payload,
+						     size_t result_size);
+
 #endif

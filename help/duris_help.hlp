@@ -5262,22 +5262,22 @@ You say 'HELPMARKER_212_Cast'
 <> 
 Cast - Last Edited: 2022-10-08 22:04:20 by ashyel
 =================================================
-Syntax: cast "<spell>" [<object>|<victim>]
+Syntax: cast '<spell>' [<object>|<victim>]
      
 "Cast" is a command used to indicate that a spell is being created. It is
 the act of invoking the gods or calling upon magical powers inside the
 individual. Some spells may only be cast on the caster, and therefore you
 do not need to indicate a target for the spell. If you are casting a spell
 upon yourself, you may substitute for your name "me" or "self." All spell
-names must be enclosed by " ". For Magic-User subclasses, you must have a
+names must be enclosed by ' '. For Magic-User subclasses, you must have a
 spellbook containing the spell you want to cast in order to memorize it.
 For Priest sub-classes, you may simply pray for your spells. Undeads, 
 except for Gargoyles, must assimilate spells. Finally, Druids regain their
 spells by communing them.
      
-Examples:       cast "burning hands" <victim>
-                cast "teleport"
-                cast "strength" me
+Examples:       cast 'burning hands' <victim>
+                cast 'teleport'
+                cast 'strength' me
      
 If you are casting an offensive spell while in combat, and the target is
 the enemy you are fighting, the spell will automatically be directed at the
@@ -5291,11 +5291,11 @@ Examples:      	help "cure light"
      
 NOTE:  You can abbreviate the spell name when casting it.  For example,
 
-                > cast "lightning bolt" <monster>
+                > cast 'lightning bolt' <monster>
 
                 could be abbreviated as:
 
-                > cast "ligh" <monster>
+                > cast 'ligh' <monster>
      
 You must be careful however when abbreviating to insure that the correct
 spell is cast because many spells have similar names and the abbreviations

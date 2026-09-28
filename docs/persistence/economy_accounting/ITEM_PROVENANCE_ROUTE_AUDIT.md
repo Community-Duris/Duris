@@ -95,6 +95,15 @@ and snapshot materialization with exact references and replay. The locker snapsh
 keeps the player's object commands fenced until its sealed snapshot commits,
 so an older in-flight snapshot cannot replace a later transactional locker move.
 
+SQL player, recursive locker, and private-chest hydration now require a strict
+nonzero decimal UID and matching owner before prototype allocation. Rows with a
+missing, malformed, overflowing, or mismatched UID remain in their native item
+table and are not published. `test_sql_saved_item_uid_restore.py` checks the
+validation order in all three loaders and sanitizer-tests UID parsing
+boundaries. Unknown player-item templates can still produce partial inventories;
+selected-authority, complete-graph, and active-epoch receipt proof remain open
+for these recovery routes.
+
 The flatfile pet fixture reconciles a player snapshot saved before each custody
 commit. It removes the handed-off forest from the player projection, retains the
 same UID tree and metadata on the pet, and restores exactly one copy to the

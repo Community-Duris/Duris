@@ -118,7 +118,13 @@ void check_rejected(const critical_command &command)
 	supported_bank_pool = bank_root;
 	const auto pooled = critical_command_repository_apply_from_pool(command, nullptr);
 	assert(pooled.outcome == critical_apply_outcome::retryable_failure);
-	assert(pooled.error_code == (bank_root ? EIO : EPROTONOSUPPORT));
+	const unsigned int expected_pool_error = bank_root ? EIO : EPROTONOSUPPORT;
+	if (pooled.error_code != expected_pool_error)
+		std::cerr << "unexpected pooled SQL gate error for schema "
+			  << command.schema_version << " type "
+			  << static_cast<uint16_t>(command.type) << ": " << pooled.error_code
+			  << " (expected " << expected_pool_error << ")\n";
+	assert(pooled.error_code == expected_pool_error);
 	if (bank_root)
 		assert(bank_initialized_library);
 	supported_bank_pool = false;

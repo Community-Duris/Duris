@@ -88,6 +88,12 @@ flatfile_identity_lookup_pid_locked(const std::string &root,
 				    const flatfile_identity_lock &identity_lock,
 				    const flatfile_authority_lock &authority_lock, int32_t pid,
 				    flatfile_identity_record *record, std::string *error);
+// Borrow identity then authority locks. Returns the complete retained identity
+// catalog, including retired rows, after recovering the shared authority journal.
+flatfile_identity_result flatfile_identity_list_all_locked(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &authority_lock,
+	std::vector<flatfile_identity_record> *records, std::string *error);
 flatfile_identity_result
 flatfile_identity_list_account(const std::string &root, const std::string &account,
 			       std::vector<flatfile_identity_record> *records, std::string *error);

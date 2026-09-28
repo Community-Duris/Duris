@@ -1,4 +1,6 @@
 #include "flatfile/flatfile_accounting_lifecycle_transaction.h"
+#include "flatfile/flatfile_identity_repository.h"
+#include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_accounting_store.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/currency_command.h"
@@ -29,11 +31,135 @@ bool nonzero(const critical_operation_id &id)
 	return !critical_operation_id_is_zero(id);
 }
 
+std::string canonical_identity_account(const std::string &account)
+{
+	std::string canonical = account;
+	for (char &character : canonical)
+		if (character >= 'A' && character <= 'Z')
+			character = static_cast<char>(character - 'A' + 'a');
+	return canonical;
+}
+
 economic_digest hash(std::span<const uint8_t> data)
 {
 	economic_digest value = {};
 	SHA256(data.data(), data.size(), value.data());
 	return value;
+}
+
+void append_u32(std::vector<uint8_t> *data, uint32_t value)
+{
+	for (size_t index = 0; index < 4; ++index)
+		data->push_back(static_cast<uint8_t>(value >> (index * 8)));
+}
+
+void append_u64(std::vector<uint8_t> *data, uint64_t value)
+{
+	for (size_t index = 0; index < 8; ++index)
+		data->push_back(static_cast<uint8_t>(value >> (index * 8)));
+}
+
+economic_digest holding_source_digest(uint8_t kind, uint64_t id, uint8_t context,
+				      const std::string &name, uint64_t revision,
+				      const economic_coin_vector &balance)
+{
+	std::vector<uint8_t> data{ 'D', 'U', 'R', 'I', 'S', '-', 'H', 'O', 'L',
+				   'D', 'I', 'N', 'G', '-', 'V', '1', kind };
+	append_u64(&data, id);
+	data.push_back(context);
+	append_u32(&data, static_cast<uint32_t>(name.size()));
+	data.insert(data.end(), name.begin(), name.end());
+	append_u64(&data, revision);
+	for (int64_t amount : balance)
+		append_u64(&data, static_cast<uint64_t>(amount));
+	return hash(data);
+}
+
+unsigned int capture_sources(const std::string &root, const flatfile_identity_lock &identity_lock,
+			     const flatfile_authority_lock &authority_lock,
+			     flatfile_accounting_lifecycle_native_sources *sources,
+			     std::string *error)
+{
+	need(!root.empty() && identity_lock.matches(root) && authority_lock.matches(root) &&
+		     sources,
+	     EINVAL);
+	std::vector<flatfile_identity_record> identities;
+	const auto identity_result = flatfile_identity_list_all_locked(
+		root, identity_lock, authority_lock, &identities, error);
+	need(identity_result == flatfile_identity_result::ok,
+	     identity_result == flatfile_identity_result::io_error ? EIO : EILSEQ);
+	flatfile_player_domain_native_sources native;
+	const auto native_result = flatfile_player_domain_capture_native_sources_locked(
+		root, authority_lock, &native, error);
+	need(native_result == flatfile_player_domain_result::ok,
+	     native_result == flatfile_player_domain_result::io_error ? EIO : EILSEQ);
+	need(native.wallets.size() + native.banks.size() <= ECONOMIC_BASELINE_MAX_HOLDINGS, ENOSPC);
+	std::map<int32_t, flatfile_identity_record> identities_by_pid;
+	for (const auto &identity : identities)
+	{
+		need(identity.pid > 0 && identity.racewar >= 0, EILSEQ);
+		need(identities_by_pid.emplace(identity.pid, identity).second, EILSEQ);
+	}
+	std::set<int32_t> wallet_pids;
+	std::set<std::pair<std::string, uint8_t>> bank_keys;
+	for (const auto &bank : native.banks)
+		bank_keys.insert({ bank.account_name, static_cast<uint8_t>(bank.racewar) });
+	flatfile_accounting_lifecycle_native_sources candidate;
+	candidate.wallets.reserve(native.wallets.size());
+	candidate.banks.reserve(native.banks.size());
+	for (const auto &wallet : native.wallets)
+	{
+		auto identity = identities_by_pid.find(wallet.pid);
+		const std::string identity_account =
+			identity == identities_by_pid.end() ?
+				std::string{} :
+				canonical_identity_account(identity->second.account);
+		need(identity != identities_by_pid.end() &&
+			     identity_account == wallet.account_name &&
+			     identity->second.racewar == wallet.racewar,
+		     EILSEQ);
+		wallet_pids.insert(wallet.pid);
+		flatfile_accounting_lifecycle_wallet_source source;
+		source.pid = static_cast<uint32_t>(wallet.pid);
+		source.account_name = wallet.account_name;
+		source.racewar = static_cast<uint8_t>(wallet.racewar);
+		source.native_revision = wallet.revision;
+		for (size_t index = 0; index < source.balance.size(); ++index)
+		{
+			need(wallet.balance[index] <= static_cast<uint64_t>(INT64_MAX), EOVERFLOW);
+			source.balance[index] = static_cast<int64_t>(wallet.balance[index]);
+		}
+		source.source_digest =
+			holding_source_digest(1, source.pid, source.racewar, source.account_name,
+					      source.native_revision, source.balance);
+		candidate.wallets.push_back(std::move(source));
+	}
+	for (const auto &identity : identities)
+		if (identity.active)
+		{
+			need(wallet_pids.count(identity.pid) == 1, EILSEQ);
+			need(bank_keys.count({ canonical_identity_account(identity.account),
+					       static_cast<uint8_t>(identity.racewar) }) == 1,
+			     EILSEQ);
+		}
+	for (const auto &bank : native.banks)
+	{
+		need(bank.racewar >= 0, EILSEQ);
+		flatfile_accounting_lifecycle_bank_source source;
+		source.name = bank.account_name;
+		source.racewar = static_cast<uint8_t>(bank.racewar);
+		source.native_revision = bank.revision;
+		for (size_t index = 0; index < source.balance.size(); ++index)
+		{
+			need(bank.balance[index] <= static_cast<uint64_t>(INT64_MAX), EOVERFLOW);
+			source.balance[index] = static_cast<int64_t>(bank.balance[index]);
+		}
+		source.source_digest = holding_source_digest(
+			2, 0, source.racewar, source.name, source.native_revision, source.balance);
+		candidate.banks.push_back(std::move(source));
+	}
+	*sources = std::move(candidate);
+	return 0;
 }
 
 economic_digest
@@ -42,10 +168,17 @@ compute_coverage_digest(const std::vector<flatfile_accounting_lifecycle_wallet_s
 {
 	std::vector<uint8_t> data{ 'D', 'U', 'R', 'I', 'S', '-', 'F', 'L', 'A', 'T', 'F', 'I', 'L',
 				   'E', '-', 'C', 'O', 'V', 'E', 'R', 'A', 'G', 'E', '-', 'V', '1' };
+	append_u64(&data, wallets.size());
+	append_u64(&data, banks.size());
 	for (const auto &w : wallets)
 	{
+		data.push_back('W');
 		for (size_t i = 0; i < 4; ++i)
 			data.push_back(static_cast<uint8_t>(w.pid >> (i * 8)));
+		data.push_back(w.racewar);
+		append_u32(&data, static_cast<uint32_t>(w.account_name.size()));
+		data.insert(data.end(), w.account_name.begin(), w.account_name.end());
+		append_u64(&data, w.native_revision);
 		for (size_t i = 0; i < 4; ++i)
 		{
 			uint64_t val = static_cast<uint64_t>(w.balance[i]);
@@ -55,9 +188,11 @@ compute_coverage_digest(const std::vector<flatfile_accounting_lifecycle_wallet_s
 	}
 	for (const auto &b : banks)
 	{
+		data.push_back('B');
 		data.push_back(b.racewar);
+		append_u32(&data, static_cast<uint32_t>(b.name.size()));
 		data.insert(data.end(), b.name.begin(), b.name.end());
-		data.push_back(0);
+		append_u64(&data, b.native_revision);
 		for (size_t i = 0; i < 4; ++i)
 		{
 			uint64_t val = static_cast<uint64_t>(b.balance[i]);
@@ -97,10 +232,28 @@ template <typename F> unsigned int guarded(F &&action, std::string *error) noexc
 
 } // namespace
 
+unsigned int flatfile_accounting_lifecycle_transaction::capture_native_sources_locked(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &authority_lock,
+	flatfile_accounting_lifecycle_native_sources *sources, std::string *error) noexcept
+{
+	return guarded(
+		[&]
+		{
+			need(sources != nullptr, EINVAL);
+			flatfile_accounting_lifecycle_native_sources candidate;
+			const auto code = capture_sources(root, identity_lock, authority_lock,
+							  &candidate, error);
+			need(!code, code);
+			if (sources)
+				*sources = std::move(candidate);
+		},
+		error);
+}
+
 unsigned int flatfile_accounting_lifecycle_transaction::install(
-	const std::string &root, const flatfile_authority_lock &lock,
-	const flatfile_accounting_lifecycle_request &request,
-	const flatfile_accounting_lifecycle_native_sources &sources,
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &lock, const flatfile_accounting_lifecycle_request &request,
 	const economic_account_key &opening_account, flatfile_accounting_lifecycle_receipt *receipt,
 	std::string *error) noexcept
 {
@@ -108,6 +261,10 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 		[&]
 		{
 			need(!root.empty(), EINVAL);
+			flatfile_accounting_lifecycle_native_sources sources;
+			const auto capture_code = capture_native_sources_locked(
+				root, identity_lock, lock, &sources, error);
+			need(!capture_code, capture_code);
 			need(nonzero(request.operation_id) && nonzero(request.lineage) &&
 				     nonzero(request.epoch),
 			     EINVAL);
@@ -254,15 +411,21 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			{
 				economic_baseline_holding holding;
 				holding.account = mappings[i].account;
-				holding.native_revision = mappings[i].revision;
 				if (i < sources.wallets.size())
 				{
 					holding.balance = sources.wallets[i].balance;
+					holding.native_revision =
+						sources.wallets[i].native_revision;
+					holding.source_digest = sources.wallets[i].source_digest;
 				}
 				else
 				{
 					size_t bank_idx = i - sources.wallets.size();
 					holding.balance = sources.banks[bank_idx].balance;
+					holding.native_revision =
+						sources.banks[bank_idx].native_revision;
+					holding.source_digest =
+						sources.banks[bank_idx].source_digest;
 				}
 				batch.holdings.push_back(holding);
 			}

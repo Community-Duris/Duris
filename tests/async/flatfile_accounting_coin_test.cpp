@@ -1,5 +1,6 @@
 #include "phase8_bank_fixture.h"
 #include "flatfile/flatfile_accounting_coin_transaction.h"
+#include "flatfile/flatfile_accounting_lifecycle_transaction.h"
 #include "flatfile/flatfile_accounting_pile_state.h"
 #include "flatfile/flatfile_accounting_pile_baseline.h"
 #include "flatfile/flatfile_item_accounting_reference.h"
@@ -9,8 +10,10 @@
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdlib>
 #include <fstream>
+#include <iostream>
 
 flatfile_player_domain_record peer_state(const std::string &root)
 {
@@ -638,6 +641,140 @@ void legacy_pile_inventory(const fs::path &path)
 		       &wrong_owner_source, nullptr) == flatfile_item_repository_result::not_found);
 }
 
+void lifecycle_native_capture(const fs::path &path)
+{
+	const auto root = path.string();
+	setup(path, false);
+	int32_t pid = 0;
+	assert(flatfile_identity_allocate_pid(root, &pid, nullptr) ==
+		       flatfile_identity_result::ok &&
+	       pid == 2);
+	assert(flatfile_identity_claim(root, pid, "Peer", "ACCOUNT-ONE", nullptr) ==
+	       flatfile_identity_result::ok);
+	flatfile_identity_record first, second;
+	assert(flatfile_identity_lookup_pid(root, 1, &first, nullptr) ==
+	       flatfile_identity_result::ok);
+	assert(flatfile_identity_lookup_pid(root, 2, &second, nullptr) ==
+	       flatfile_identity_result::ok);
+	second.racewar = 1;
+	assert(flatfile_identity_sync_account(root, "account-one", { first, second }, nullptr) ==
+	       flatfile_identity_result::ok);
+	flatfile_player_domain_record peer;
+	peer.pid = 2;
+	peer.account_name = "account-one";
+	peer.racewar = 1;
+	peer.domains.wallet = { 11, 12, 13, 14 };
+	peer.domains.bank = { 100, 20, 3, 1 };
+	assert(flatfile_player_domain_establish(root, peer, nullptr) ==
+	       flatfile_player_domain_result::ok);
+
+	flatfile_accounting_lifecycle_native_sources captured;
+	{
+		flatfile_identity_lock identity_lock;
+		assert(identity_lock.acquire(root, nullptr));
+		flatfile_authority_lock authority_lock;
+		assert(authority_lock.acquire(root, nullptr));
+		assert(flatfile_accounting_lifecycle_transaction::capture_native_sources_locked(
+			       root, identity_lock, authority_lock, nullptr, nullptr) == EINVAL);
+		std::string error;
+		const auto result =
+			flatfile_accounting_lifecycle_transaction::capture_native_sources_locked(
+				root, identity_lock, authority_lock, &captured, &error);
+		if (result)
+			std::cerr << "native lifecycle capture error " << result << ": " << error
+				  << '\n';
+		assert(result == 0);
+	}
+	const auto native_first = state(root), native_second = peer_state(root);
+	assert((captured.wallets.size() == 2 && captured.wallets[0].pid == 1 &&
+		captured.wallets[0].account_name == "account-one" &&
+		captured.wallets[0].racewar == 1 &&
+		captured.wallets[0].balance == economic_coin_vector{ 100, 20, 3, 1 } &&
+		captured.wallets[0].native_revision == native_first.domains.wallet_revision &&
+		captured.wallets[0].source_digest != economic_digest{}));
+	assert((captured.wallets[1].pid == 2 && captured.wallets[1].account_name == "account-one" &&
+		captured.wallets[1].racewar == 1 &&
+		captured.wallets[1].balance == economic_coin_vector{ 11, 12, 13, 14 } &&
+		captured.wallets[1].native_revision == native_second.domains.wallet_revision &&
+		captured.wallets[1].source_digest != economic_digest{}));
+	assert((captured.banks.size() == 1 && captured.banks[0].name == "account-one" &&
+		captured.banks[0].racewar == 1 &&
+		captured.banks[0].balance == economic_coin_vector{ 100, 20, 3, 1 } &&
+		captured.banks[0].native_revision == native_first.domains.bank_revision &&
+		captured.banks[0].source_digest != economic_digest{}));
+
+	economic_baseline_batch baseline;
+	baseline.lineage = id(90001);
+	baseline.epoch = id(90005);
+	baseline.preparation_id = id(90999);
+	baseline.actor_id = 1;
+	baseline.opening_account = { id(90001), economic_account_kind::opening, 90002, 0 };
+	baseline.boundary_digest[0] = 1;
+	baseline.coverage_digest[0] = 2;
+	baseline.holdings.push_back({ wallet(), captured.wallets[0].balance,
+				      captured.wallets[0].native_revision,
+				      captured.wallets[0].source_digest });
+	baseline.holdings.push_back({ bank(), captured.banks[0].balance,
+				      captured.banks[0].native_revision,
+				      captured.banks[0].source_digest });
+	std::optional<economic_prepared_baseline> prepared;
+	assert(economic_baseline_prepare(baseline, &prepared) == economic_accounting_error::ok);
+	assert(prepared && prepared->witness().holdings.size() == 2);
+	const auto wallet_witness =
+		std::find_if(prepared->witness().holdings.begin(),
+			     prepared->witness().holdings.end(), [](const auto &holding)
+			     { return holding.account.kind == economic_account_kind::wallet; });
+	const auto bank_witness =
+		std::find_if(prepared->witness().holdings.begin(),
+			     prepared->witness().holdings.end(), [](const auto &holding)
+			     { return holding.account.kind == economic_account_kind::bank; });
+	assert(wallet_witness != prepared->witness().holdings.end() &&
+	       wallet_witness->native_revision == captured.wallets[0].native_revision &&
+	       wallet_witness->source_digest == captured.wallets[0].source_digest);
+	assert(bank_witness != prepared->witness().holdings.end() &&
+	       bank_witness->native_revision == captured.banks[0].native_revision &&
+	       bank_witness->source_digest == captured.banks[0].source_digest);
+	critical_command baseline_command;
+	assert(economic_baseline_command_build(*prepared, 99, &baseline_command) ==
+	       economic_accounting_error::ok);
+
+	const auto missing_wallet = path / "missing-wallet";
+	setup(missing_wallet, false, false);
+	assert(fs::remove(missing_wallet / "domains" / "player-1.domain"));
+	flatfile_accounting_lifecycle_native_sources unchanged;
+	flatfile_accounting_lifecycle_wallet_source sentinel;
+	sentinel.pid = 99;
+	unchanged.wallets.push_back(sentinel);
+	{
+		const auto missing_root = missing_wallet.string();
+		flatfile_identity_lock identity_lock;
+		assert(identity_lock.acquire(missing_root, nullptr));
+		flatfile_authority_lock authority_lock;
+		assert(authority_lock.acquire(missing_root, nullptr));
+		assert(flatfile_accounting_lifecycle_transaction::capture_native_sources_locked(
+			       missing_root, identity_lock, authority_lock, &unchanged, nullptr) ==
+		       EILSEQ);
+	}
+	assert(unchanged.wallets.size() == 1 && unchanged.wallets[0].pid == 99 &&
+	       unchanged.banks.empty());
+
+	const auto missing_bank = path / "missing-bank";
+	setup(missing_bank, false, false);
+	assert(fs::remove(missing_bank / "domains" / "bank-account-one-1.domain"));
+	{
+		const auto missing_root = missing_bank.string();
+		flatfile_identity_lock identity_lock;
+		assert(identity_lock.acquire(missing_root, nullptr));
+		flatfile_authority_lock authority_lock;
+		assert(authority_lock.acquire(missing_root, nullptr));
+		assert(flatfile_accounting_lifecycle_transaction::capture_native_sources_locked(
+			       missing_root, identity_lock, authority_lock, &unchanged, nullptr) ==
+		       EILSEQ);
+	}
+	assert(unchanged.wallets.size() == 1 && unchanged.wallets[0].pid == 99 &&
+	       unchanged.banks.empty());
+}
+
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
@@ -1058,6 +1195,7 @@ int main(int argc, char **argv)
 	       corrupt_replay.error_code == EILSEQ);
 	preexisting_pile_journey(path / "preexisting");
 	legacy_pile_inventory(path / "legacy-inventory");
+	lifecycle_native_capture(path / "lifecycle-native-capture");
 	split_children_journey(path / "split-children");
 	std::cout
 		<< "flatfile peer coin root: native wallets, pile creation, split, merge, pickup and denomination change, shared bank revisions, balanced evidence, retained replay, stale rejection, and interrupted commit recovery passed\n";

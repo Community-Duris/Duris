@@ -1498,7 +1498,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The periodic monolith proc adds a duplicate room monolith\u2019s charge count to the survivor and extracts the duplicate.",
+      "classification": "The periodic monolith proc adds a duplicate room monolith’s charge count to the survivor and extracts the duplicate.",
       "authority_boundary": "Bind both UIDs, source charge payload, resulting charge count and duplicate retirement atomically; avoid charge duplication on replay.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -1529,7 +1529,7 @@
       "reachability_evidence": "Registered object vnum 354 scans its room on CMD_PERIODIC for another object of the same template.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u2019s charge count to the survivor and extracts the duplicate.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolith’s charge count to the survivor and extracts the duplicate.",
         "native_state_targets": [
           "surviving monolith payload",
           "duplicate monolith UID/tombstone"
@@ -5975,7 +5975,7 @@
       "id": "combat.disarm_slot_relink",
       "symbol": "do_disarm",
       "reason": "item_move",
-      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u2019s carrying list; its owner UID stays with that character.",
+      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character’s carrying list; its owner UID stays with that character.",
       "authority_boundary": "Verify exact weapon UID, same player/NPC owner and non-stale equipment slot before live relink; do not create a second ownership event.",
       "reachability_evidence": "Registered do_disarm selects a worn weapon on victim or actor and both branches use obj_to_char(unequip_char(...)).",
       "sites": [
@@ -5992,7 +5992,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u2019s carrying list; its owner UID stays with that character.",
+        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character’s carrying list; its owner UID stays with that character.",
         "native_state_targets": [
           "same-character equipment and inventory slots",
           "selected item UID/owner"
@@ -6659,13 +6659,13 @@
       "id": "craft.make_lock_payload",
       "symbol": "make_lock",
       "reason": "item_move",
-      "classification": "A successful make lock changes an existing container\u2019s lock flags/value or a door pair\u2019s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+      "classification": "A successful make lock changes an existing container’s lock flags/value or a door pair’s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
       "authority_boundary": "Bind exact target item UID/revision or door identity with the consumed template UID and source operation; reject before altering either state.",
       "reachability_evidence": "do_make dispatches make_lock; lines 3136-3138 and 3154-3171 mutate the target immediately before yank_make_item.",
       "sites": [],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "A successful make lock changes an existing container\u2019s lock flags/value or a door pair\u2019s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+        "custody_effect": "A successful make lock changes an existing container’s lock flags/value or a door pair’s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
         "native_state_targets": [
           "live container payload or door state",
           "item payload/revision if admitted"
@@ -8277,22 +8277,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12117,
+          12153,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12304,
+          12340,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12385,
+          12421,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12483,
+          12519,
           "sql_economy"
         ]
       ],
@@ -17916,7 +17916,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u2019s description.",
+      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item’s description.",
       "authority_boundary": "Keep the temporary template unpublished; description change belongs to the retained source UID revision.",
       "current_support": "Source review only; exclusion and caller reachability need executable proof.",
       "backends": {
@@ -17950,7 +17950,7 @@
       "reachability_evidence": "modenhance is called from enhancement command, NPC death/reset hook or boot index construction as described.",
       "native_effects": {
         "holding_effect": "Enhancement fee and material-generated usage change only where the named route includes them.",
-        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source item\u2019s description.",
+        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source item’s description.",
         "native_state_targets": [
           "player/NPC inventory and item payload",
           "item_current_owner and item_ownership_ledger for admitted UID",
@@ -21860,7 +21860,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          5787,
+          5813,
           "sql_economy"
         ]
       ],
@@ -25646,7 +25646,7 @@
       "id": "movement.drag_room_relink",
       "symbol": "do_drag",
       "reason": "item_move",
-      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u2019s new room with the same UID.",
+      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor’s new room with the same UID.",
       "authority_boundary": "Require selected old room and new room identities, exact item UID, source movement receipt and non-stale corpse ownership before publishing the room relink.",
       "reachability_evidence": "do_drag calls command_interpreter to move the actor, then checks the object is still in the old room before direct obj_from_room/obj_to_room.",
       "sites": [
@@ -25663,7 +25663,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these call sites.",
-        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u2019s new room with the same UID.",
+        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor’s new room with the same UID.",
         "native_state_targets": [
           "old and new live room contents",
           "item_current_owner room identity and corpse location"
@@ -26930,7 +26930,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The second confiscation branch\u2019s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+      "classification": "The second confiscation branch’s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
       "authority_boundary": "Keep the disabled branch unreachable or source-classify it anew if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -26964,7 +26964,7 @@
       "reachability_evidence": "confiscate_item source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "The second confiscation branch\u2019s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+        "custody_effect": "The second confiscation branch’s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -27557,42 +27557,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12141,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          12142,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          12143,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          12144,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          12175,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          12176,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
           12177,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
           12178,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12179,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12180,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12211,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12212,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12213,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12214,
           "coin_assignment"
         ]
       ],
@@ -27630,16 +27630,6 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4179,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          4180,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
           4181,
           "coin_assignment"
         ],
@@ -27650,12 +27640,12 @@
         ],
         [
           "src/sql/sql_player.c",
-          4187,
+          4183,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4188,
+          4184,
           "coin_assignment"
         ],
         [
@@ -27666,6 +27656,16 @@
         [
           "src/sql/sql_player.c",
           4190,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4191,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4192,
           "coin_assignment"
         ]
       ],
@@ -28432,7 +28432,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Catalog restore frees staged objects after collection allocation or partial publication failure, without retiring saved UID authority.",
-      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28533,7 +28533,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Corpse materialization frees a detached candidate graph when prototype, money or lifecycle hydration fails; saved custody is not retired.",
-      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28638,7 +28638,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "discard_staged frees candidate corpse/room objects and money piles after a failed flat-file restore attempt; saved custody stays authoritative.",
-      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28738,7 +28738,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Room-item materialization frees detached item candidates when coin-pile allocation fails; saved room custody is not retired.",
-      "authority_boundary": "Clear only this attempt\u2019s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attempt’s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28983,7 +28983,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Pet save\u2019s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+      "classification": "Pet save’s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
       "authority_boundary": "Keep the disabled extraction unreachable or require a typed retirement root if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -29017,7 +29017,7 @@
       "reachability_evidence": "writePet source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "Pet save\u2019s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+        "custody_effect": "Pet save’s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -29293,7 +29293,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10837,
+          10873,
           "sql_economy"
         ]
       ],
@@ -29331,7 +29331,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9416,
+          9452,
           "sql_economy"
         ]
       ],
@@ -29369,12 +29369,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9299,
+          9335,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          9379,
+          9415,
           "sql_economy"
         ]
       ],
@@ -29455,32 +29455,32 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8404,
+          8440,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8419,
+          8455,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8458,
+          8494,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8520,
+          8556,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8695,
+          8731,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8708,
+          8744,
           "item_publication"
         ]
       ],
@@ -29525,27 +29525,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8400,
+          8436,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8415,
+          8451,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8600,
+          8636,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8691,
+          8727,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8704,
+          8740,
           "item_lifecycle"
         ]
       ],
@@ -29590,12 +29590,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          913,
+          915,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          966,
+          968,
           "item_lifecycle"
         ]
       ],
@@ -29619,7 +29619,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Recursive locker load restores saved objects; the ownership check is conditional on a nonempty obj_uid column, so a missing UID can become a new prototype UID.",
+      "classification": "Recursive locker load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation; invalid rows are retained and skipped.",
       "authority_boundary": "Require every row to contain a valid saved UID and exact locker/chest owner before publication.",
       "current_support": "Source classification only; selected-authority and both-backend replay proof unverified.",
       "backends": {
@@ -29636,16 +29636,13 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_sql_saved_item_uid_restore.py"
+      ],
       "sites": [
         [
           "src/sql/sql_player.c",
-          6336,
-          "item_lifecycle"
-        ],
-        [
-          "src/sql/sql_player.c",
-          6415,
+          6382,
           "item_lifecycle"
         ]
       ],
@@ -29653,7 +29650,7 @@
       "reachability_evidence": "sql_load_locker_items_filtered uses the SQL recovery or migration path; the linked branch is reviewed without claiming full source completeness.",
       "native_effects": {
         "holding_effect": "No new coin value should be issued during recovery; any money-object payload must equal retained native data.",
-        "custody_effect": "Recursive locker load restores saved objects; the ownership check is conditional on a nonempty obj_uid column, so a missing UID can become a new prototype UID.",
+        "custody_effect": "Recursive locker load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation; invalid rows are retained and skipped.",
         "native_state_targets": [
           "SQL player_items/locker_items/corpse_items/shopkeeper_items/saved_items as applicable",
           "runtime P_obj UID/owner/parent/slot graph",
@@ -29669,7 +29666,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "SQL player_items rows restore saved UIDs into inventory, equipment and nested containers; owner mismatches are discarded but unknown templates are skipped, allowing partial load success.",
+      "classification": "SQL player_items restoration requires a strict positive decimal saved UID and matching player owner before prototype allocation; invalid or mismatched rows are retained and skipped, while unknown templates can still leave a partial inventory.",
       "authority_boundary": "Require complete selected player_items snapshot, exact UID/parent/slot and current owner evidence before player publication.",
       "current_support": "Source classification only; selected-authority and both-backend replay proof unverified.",
       "backends": {
@@ -29686,22 +29683,14 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_sql_saved_item_uid_restore.py"
+      ],
       "sites": [
         [
           "src/sql/sql_player.c",
-          4544,
+          4579,
           "item_lifecycle"
-        ],
-        [
-          "src/sql/sql_player.c",
-          4616,
-          "item_lifecycle"
-        ],
-        [
-          "src/sql/sql_player.c",
-          4774,
-          "item_publication"
         ],
         [
           "src/sql/sql_player.c",
@@ -29710,12 +29699,17 @@
         ],
         [
           "src/sql/sql_player.c",
-          4804,
+          4826,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4810,
+          4830,
+          "item_publication"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4836,
           "item_publication"
         ]
       ],
@@ -29723,7 +29717,7 @@
       "reachability_evidence": "sql_load_player_items uses the SQL recovery or migration path; the linked branch is reviewed without claiming full source completeness.",
       "native_effects": {
         "holding_effect": "No new coin value should be issued during recovery; any money-object payload must equal retained native data.",
-        "custody_effect": "SQL player_items rows restore saved UIDs into inventory, equipment and nested containers; owner mismatches are discarded but unknown templates are skipped, allowing partial load success.",
+        "custody_effect": "SQL player_items restoration requires a strict positive decimal saved UID and matching player owner before prototype allocation; invalid or mismatched rows are retained and skipped, while unknown templates can still leave a partial inventory.",
         "native_state_targets": [
           "SQL player_items/locker_items/corpse_items/shopkeeper_items/saved_items as applicable",
           "runtime P_obj UID/owner/parent/slot graph",
@@ -29739,7 +29733,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Private-chest items are read from locker_items, checked against locker/chest owner and nested in the chest; mismatches are discarded.",
+      "classification": "Private-chest load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation, then publishes the retained item into the chest.",
       "authority_boundary": "Require exact saved UID, owner/context and complete nested graph before chest publication.",
       "current_support": "Source classification only; selected-authority and both-backend replay proof unverified.",
       "backends": {
@@ -29756,21 +29750,18 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_sql_saved_item_uid_restore.py"
+      ],
       "sites": [
         [
           "src/sql/sql_player.c",
-          7151,
+          7201,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7213,
-          "item_lifecycle"
-        ],
-        [
-          "src/sql/sql_player.c",
-          7224,
+          7260,
           "item_publication"
         ]
       ],
@@ -29778,7 +29769,7 @@
       "reachability_evidence": "sql_load_private_chest_items uses the SQL recovery or migration path; the linked branch is reviewed without claiming full source completeness.",
       "native_effects": {
         "holding_effect": "No new coin value should be issued during recovery; any money-object payload must equal retained native data.",
-        "custody_effect": "Private-chest items are read from locker_items, checked against locker/chest owner and nested in the chest; mismatches are discarded.",
+        "custody_effect": "Private-chest load requires a strict positive decimal saved UID and matching locker/chest owner before prototype allocation, then publishes the retained item into the chest.",
         "native_state_targets": [
           "SQL player_items/locker_items/corpse_items/shopkeeper_items/saved_items as applicable",
           "runtime P_obj UID/owner/parent/slot graph",
@@ -29815,22 +29806,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10267,
+          10303,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10339,
+          10375,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11074,
+          11110,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11220,
+          11256,
           "item_publication"
         ]
       ],
@@ -29875,27 +29866,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11143,
+          11179,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11190,
+          11226,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11209,
+          11245,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11215,
+          11251,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11223,
+          11259,
           "item_lifecycle"
         ]
       ],
@@ -29943,22 +29934,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9599,
+          9635,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9601,
+          9637,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9603,
+          9639,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9604,
+          9640,
           "coin_assignment"
         ]
       ],
@@ -30003,17 +29994,17 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9705,
+          9741,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10041,
+          10077,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10079,
+          10115,
           "item_publication"
         ]
       ],
@@ -30060,42 +30051,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9459,
+          9495,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9465,
+          9501,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9475,
+          9511,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9717,
+          9753,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9788,
+          9824,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9836,
+          9872,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9846,
+          9882,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9856,
+          9892,
           "item_lifecycle"
         ]
       ],
@@ -30140,22 +30131,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          7276,
+          7312,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7277,
+          7313,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7286,
+          7322,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7287,
+          7323,
           "item_lifecycle"
         ]
       ],
@@ -32063,7 +32054,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11724,
+          11760,
           "sql_economy"
         ]
       ],
@@ -32101,7 +32092,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11645,
+          11681,
           "ship_coffer_assignment"
         ]
       ],
@@ -32138,12 +32129,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11389,
+          11425,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          11444,
+          11480,
           "sql_economy"
         ]
       ],
@@ -33929,7 +33920,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The gloves proc unequips the struck character\u2019s weapon into the same character\u2019s carrying list.",
+      "classification": "The gloves proc unequips the struck character’s weapon into the same character’s carrying list.",
       "authority_boundary": "Match the weapon UID, owner and slot before and after the live relink; do not mint or retire the item.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -33965,7 +33956,7 @@
       "reachability_evidence": "Registered object vnum 192 handles CMD_GOTHIT and can reach the non-NODROP weapon branch.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The gloves proc unequips the struck character\u2019s weapon into the same character\u2019s carrying list.",
+        "custody_effect": "The gloves proc unequips the struck character’s weapon into the same character’s carrying list.",
         "native_state_targets": [
           "victim equipment slot",
           "victim carrying list",
@@ -35067,7 +35058,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Io\u2019s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "classification": "Io’s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
       "authority_boundary": "Issue the new rose UID once and link both NPC grant and intended recipient handoff to a source-qualified root; verify do_give result.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -35103,7 +35094,7 @@
       "reachability_evidence": "Registered mob vnum 444 reaches this idle room-presence branch when Vareena is found.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "Io\u2019s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "custody_effect": "Io’s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
         "native_state_targets": [
           "fresh rose UID",
           "assistant inventory",
@@ -37327,7 +37318,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u2019s inventory.",
+      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener’s inventory.",
       "authority_boundary": "Bind chest UID, random reward count, each new potion UID and player custody to one source-qualified root.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -37363,7 +37354,7 @@
       "reachability_evidence": "Registered chest vnum 1270 and an explicit do_open caller reach the CMD_OPEN reward loop.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u2019s inventory.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener’s inventory.",
         "native_state_targets": [
           "chest UID",
           "new potion UIDs",
@@ -59197,487 +59188,469 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4179,
+      "line": 4181,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4180,
+      "line": 4182,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4181,
+      "line": 4183,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4182,
+      "line": 4184,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4187,
-      "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 4188,
-      "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
       "line": 4189,
       "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
+      "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
       "line": 4190,
       "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 9599,
-      "family": "coin_assignment",
-      "excerpt": "GET_PLATINUM(mob) = remaining / 1000;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 9601,
-      "family": "coin_assignment",
-      "excerpt": "GET_GOLD(mob) = remaining / 100;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 9603,
-      "family": "coin_assignment",
-      "excerpt": "GET_SILVER(mob) = remaining / 10;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 9604,
-      "family": "coin_assignment",
-      "excerpt": "GET_COPPER(mob) = remaining % 10;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 9788,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 12141,
-      "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 12142,
-      "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12143,
+      "line": 4191,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12144,
+      "line": 4192,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12175,
+      "line": 9635,
       "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_COPPER(ch) = parsed.copper;"
+      "excerpt": "GET_PLATINUM(mob) = remaining / 1000;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12176,
+      "line": 9637,
       "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_SILVER(ch) = parsed.silver;"
+      "excerpt": "GET_GOLD(mob) = remaining / 100;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 9639,
+      "family": "coin_assignment",
+      "excerpt": "GET_SILVER(mob) = remaining / 10;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 9640,
+      "family": "coin_assignment",
+      "excerpt": "GET_COPPER(mob) = remaining % 10;"
     },
     {
       "path": "src/sql/sql_player.c",
       "line": 12177,
       "family": "coin_assignment",
-      "excerpt": "GET_BALANCE_GOLD(ch) = parsed.gold;"
+      "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
       "line": 12178,
       "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 12179,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 12180,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 12211,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_COPPER(ch) = parsed.copper;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 12212,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_SILVER(ch) = parsed.silver;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 12213,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_GOLD(ch) = parsed.gold;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 12214,
+      "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = parsed.platinum;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11645,
+      "line": 11681,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = atoi(row[8]);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 913,
+      "line": 915,
       "family": "item_lifecycle",
       "excerpt": "P_obj proto = read_object(obj->R_num, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 966,
+      "line": 968,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(proto);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4544,
+      "line": 4579,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4616,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 6336,
+      "line": 6382,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 6415,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 7151,
+      "line": 7201,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7213,
+      "line": 7313,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7277,
+      "line": 7323,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7287,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 8400,
+      "line": 8436,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8415,
+      "line": 8451,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8458,
+      "line": 8494,
       "family": "item_lifecycle",
       "excerpt": "cur_corpse = read_object(corpse_rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8520,
+      "line": 8556,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8600,
+      "line": 8636,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8691,
+      "line": 8727,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8704,
+      "line": 8740,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9459,
+      "line": 9495,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9465,
+      "line": 9501,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9475,
+      "line": 9511,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item->obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9705,
+      "line": 9741,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9717,
+      "line": 9753,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9836,
+      "line": 9824,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9846,
+      "line": 9872,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9856,
+      "line": 9882,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10041,
+      "line": 9892,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 10077,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10267,
+      "line": 10303,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10339,
+      "line": 10375,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11074,
+      "line": 11110,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11143,
+      "line": 11179,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11190,
+      "line": 11226,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11209,
+      "line": 11245,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11215,
+      "line": 11251,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11223,
+      "line": 11259,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/sql/sql_player.c",
-      "line": 4774,
-      "family": "item_publication",
-      "excerpt": "obj_to_obj(items[i], items[j]);"
     },
     {
       "path": "src/sql/sql_player.c",
       "line": 4800,
       "family": "item_publication",
+      "excerpt": "obj_to_obj(items[i], items[j]);"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 4826,
+      "family": "item_publication",
       "excerpt": "equip_char(ch, items[i], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4804,
+      "line": 4830,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4810,
+      "line": 4836,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7224,
+      "line": 7260,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, chest_obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7276,
+      "line": 7312,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(ch, i);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7286,
+      "line": 7322,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8404,
+      "line": 8440,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8419,
+      "line": 8455,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8695,
+      "line": 8731,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8708,
+      "line": 8744,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10079,
+      "line": 10115,
       "family": "item_publication",
       "excerpt": "equip_char(k->mob, k->equipment[slot], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11220,
+      "line": 11256,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 5787,
+      "line": 5813,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM ships WHERE LOWER(owner_name)=LOWER('%s')\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9299,
+      "line": 9335,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO saved_items (\""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9379,
+      "line": 9415,
       "family": "sql_economy",
       "excerpt": "snprintf(del_query, sizeof(del_query), \"DELETE FROM saved_items WHERE item_key='%s'\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9416,
+      "line": 9452,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"DELETE FROM saved_items WHERE item_key='%s'\", esc_key);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10837,
+      "line": 10873,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM saved_items WHERE id=%d AND item_key='%s'\", source_root_id,"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11389,
+      "line": 11425,
       "family": "sql_economy",
       "excerpt": "\"insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11444,
+      "line": 11480,
       "family": "sql_economy",
       "excerpt": "\"update ships set owner_name='%s', ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11724,
+      "line": 11760,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"delete from ships where owner_name='%s'\", esc_owner);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12117,
+      "line": 12153,
       "family": "sql_economy",
       "excerpt": "\"insert ignore into account_banks (account_name, racewar) values ('%s', %d)\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12304,
+      "line": 12340,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper+%d, \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12385,
+      "line": 12421,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12483,
+      "line": 12519,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper-%d, \""
     },

@@ -1,4 +1,5 @@
 #include "persistence/economic_sql_shop_trade_transaction.h"
+#include "persistence/critical_command_repository.h"
 #include "player/player_snapshot_codec.h"
 
 #include <mysql.h>
@@ -264,6 +265,126 @@ void plan_case(shop_trade_action action, uint8_t operation, const critical_opera
 	       plan.items_before.size() == (action == shop_trade_action::buy_produced ? 2U : 1U));
 	execute("ROLLBACK");
 }
+
+shop_trade_result write_case(const critical_command &command, unsigned int expected_code,
+			     bool expected_mutation)
+{
+	const auto applied = critical_command_repository_apply(connection, command);
+	const auto expected_outcome = expected_code ? critical_apply_outcome::terminal_failure :
+						      critical_apply_outcome::applied;
+	if (applied.outcome != expected_outcome || applied.error_code != expected_code ||
+	    applied.result_size != SHOP_TRADE_RESULT_BYTES)
+		std::fprintf(stderr, "shop SQL command root returned outcome %u error %u size %d\n",
+			     static_cast<unsigned>(applied.outcome), applied.error_code,
+			     applied.result_size);
+	assert(applied.outcome == expected_outcome && applied.error_code == expected_code &&
+	       applied.result_size == SHOP_TRADE_RESULT_BYTES);
+	shop_trade_result result = {};
+	assert(shop_trade_command_decode_result(applied.result_payload.data(), applied.result_size,
+						&result));
+	const auto outbox_count =
+		scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=" +
+		       literal(command.operation_id));
+	assert(outbox_count == (expected_mutation ? 1 : 0));
+	const auto replayed = critical_command_repository_apply(connection, command);
+	assert(replayed.outcome == (expected_code ? critical_apply_outcome::terminal_failure :
+						    critical_apply_outcome::already_applied) &&
+	       replayed.error_code == expected_code &&
+	       replayed.result_payload == applied.result_payload);
+	return result;
+}
+
+void writer_cases(const critical_operation_id &epoch, const economic_account_key &wallet,
+		  const economic_account_key &bank, const economic_account_key &keeper)
+{
+	const auto buy = command_for(payload_for(shop_trade_action::buy_existing), 86, epoch,
+				     wallet, bank, keeper);
+	const auto purchased = write_case(buy, 0, true);
+	assert(purchased.keeper_cash_recorded && purchased.keeper_cash == 700 &&
+	       purchased.wallet.amount == (economic_coin_vector{ 0, 0, 8, 0 }) &&
+	       purchased.wallet_revision == 5 && purchased.bank_revision == 8 &&
+	       purchased.shop_revision == 10 && purchased.item_revisions[0] == 5);
+	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + std::to_string(PLAYER) +
+		      " AND obj_uid=" + std::to_string(ITEM)) == 1);
+	assert(scalar("SELECT COUNT(*) FROM shopkeeper_items WHERE shopkeeper_id=" +
+		      std::to_string(KEEPER_ROW) + " AND obj_uid=" + std::to_string(ITEM)) == 0);
+	assert(scalar("SELECT owner_type FROM item_current_owner WHERE item_uid=" +
+		      std::to_string(ITEM)) == static_cast<uint8_t>(item_owner_type::player));
+
+	auto sale_payload = payload_for(shop_trade_action::sell_store);
+	sale_payload.expected_wallet_revision = 5;
+	sale_payload.expected_bank_revision = 8;
+	sale_payload.expected_shop_revision = 10;
+	sale_payload.expected_keeper_cash = 700;
+	sale_payload.items[0].expected_item_revision = 5;
+	const auto sale = command_for(sale_payload, 87, epoch, wallet, bank, keeper);
+	const auto sold = write_case(sale, 0, true);
+	assert(sold.keeper_cash_recorded && sold.keeper_cash == 500 &&
+	       sold.wallet.amount == (economic_coin_vector{ 0, 0, 0, 1 }) &&
+	       sold.wallet_revision == 6 && sold.bank_revision == 9 && sold.shop_revision == 11 &&
+	       sold.item_revisions[0] == 6);
+	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + std::to_string(PLAYER) +
+		      " AND obj_uid=" + std::to_string(ITEM)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM shopkeeper_items WHERE shopkeeper_id=" +
+		      std::to_string(KEEPER_ROW) + " AND obj_uid=" + std::to_string(ITEM)) == 1);
+	// A retained operation must remain verifiable after the item is traded again.
+	std::array<uint8_t, SHOP_TRADE_RESULT_BYTES> old_result = {};
+	assert(shop_trade_command_encode_result(purchased, &old_result));
+	const auto late_replay = critical_command_repository_apply(connection, buy);
+	assert(late_replay.outcome == critical_apply_outcome::already_applied &&
+	       std::memcmp(late_replay.result_payload.data(), old_result.data(),
+			   old_result.size()) == 0);
+
+	auto rejected_payload = payload_for(shop_trade_action::buy_existing);
+	rejected_payload.price = 2000;
+	rejected_payload.expected_wallet_revision = 6;
+	rejected_payload.expected_bank_revision = 9;
+	rejected_payload.expected_shop_revision = 11;
+	rejected_payload.expected_keeper_cash = 500;
+	rejected_payload.expected_stock_item_revision = 6;
+	rejected_payload.items[0].expected_item_revision = 6;
+	const auto rejected = command_for(rejected_payload, 88, epoch, wallet, bank, keeper);
+	const auto refused = write_case(rejected, ENOBUFS, false);
+	assert(!refused.keeper_cash_recorded && refused.wallet_revision == 6 &&
+	       refused.bank_revision == 9);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(PLAYER)) == 0);
+	assert(scalar("SELECT cash FROM shopkeepers WHERE id=" + std::to_string(KEEPER_ROW)) ==
+	       500);
+	auto fault_payload = payload_for(shop_trade_action::buy_existing);
+	fault_payload.expected_wallet_revision = 6;
+	fault_payload.expected_bank_revision = 9;
+	fault_payload.expected_shop_revision = 11;
+	fault_payload.expected_keeper_cash = 500;
+	fault_payload.expected_stock_item_revision = 6;
+	fault_payload.items[0].expected_item_revision = 6;
+	const auto faulted_command = command_for(fault_payload, 89, epoch, wallet, bank, keeper);
+	execute("CREATE TRIGGER fail_shop_player_item_insert BEFORE INSERT ON player_items "
+		"FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='test custody failure'");
+	const auto faulted = critical_command_repository_apply(connection, faulted_command);
+	execute("DROP TRIGGER fail_shop_player_item_insert");
+	assert(faulted.outcome == critical_apply_outcome::retryable_failure && faulted.error_code &&
+	       !faulted.result_size);
+	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=" +
+		      literal(faulted_command.operation_id)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=" +
+		      literal(faulted_command.operation_id)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=" +
+		      literal(faulted_command.operation_id)) == 0);
+	assert(scalar("SELECT wallet_revision FROM player_data WHERE pid=" +
+		      std::to_string(PLAYER)) == 6);
+	assert(scalar("SELECT bank_revision FROM account_banks WHERE account_name="
+		      "'shop_sql_player'") == 9);
+	assert(scalar("SELECT shop_revision FROM shopkeepers WHERE id=" +
+		      std::to_string(KEEPER_ROW)) == 11);
+	assert(scalar("SELECT cash FROM shopkeepers WHERE id=" + std::to_string(KEEPER_ROW)) ==
+	       500);
+	assert(scalar("SELECT COUNT(*) FROM shopkeeper_items WHERE shopkeeper_id=" +
+		      std::to_string(KEEPER_ROW) + " AND obj_uid=" + std::to_string(ITEM)) == 1);
+	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + std::to_string(PLAYER) +
+		      " AND obj_uid=" + std::to_string(ITEM)) == 0);
+	assert(scalar("SELECT owner_type FROM item_current_owner WHERE item_uid=" +
+		      std::to_string(ITEM)) == static_cast<uint8_t>(item_owner_type::shopkeeper));
+}
 } // namespace
 
 int main()
@@ -280,10 +401,15 @@ int main()
 	using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
 	flag reconnect = false;
 	assert(!mysql_options(connection, MYSQL_OPT_RECONNECT, &reconnect));
-	assert(mysql_real_connect(connection, getenv("DB_HOST"), getenv("DB_USER"),
-				  getenv("DB_PASSWD"), getenv("DB_NAME"),
-				  static_cast<unsigned>(strtoul(getenv("DB_PORT"), nullptr, 10)),
-				  nullptr, 0));
+	if (!mysql_real_connect(connection, getenv("DB_HOST"), getenv("DB_USER"),
+				getenv("DB_PASSWD"), getenv("DB_NAME"),
+				static_cast<unsigned>(strtoul(getenv("DB_PORT"), nullptr, 10)),
+				nullptr, 0))
+	{
+		std::fprintf(stderr, "shop SQL fixture database connection failed: %s\n",
+			     mysql_error(connection));
+		return 1;
+	}
 	const auto bootstrap = id(71), lineage = id(72), epoch = id(73);
 	execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
 		"command_type,schema_version,payload_version,status,result_payload) VALUES(" +
@@ -484,6 +610,7 @@ int main()
 	execute("UPDATE item_current_owner SET owner_type=9,owner_id=4 WHERE item_uid=" +
 		std::to_string(ITEM));
 	plan_case(shop_trade_action::discard_invalid, 79, epoch, wallet, bank, keeper);
+	writer_cases(epoch, wallet, bank, keeper);
 	execute("UPDATE economic_lineage_state SET active_epoch=NULL WHERE lineage=" +
 		literal(lineage));
 	execute("START TRANSACTION");
@@ -491,6 +618,6 @@ int main()
 	       unchanged.keeper_id == 123);
 	execute("ROLLBACK");
 	mysql_close(connection);
-	std::puts("SQL shop lock: five actions, cash exceptions, stale/unknown cash, "
-		  "hidden custody/native child, missing stock, equipped item, inactive epoch PASS");
+	std::puts("SQL shop lock and writer: custody, cash exceptions, buy/sell atomicity, "
+		  "accounting replay, insufficient funds, inactive epoch PASS");
 }

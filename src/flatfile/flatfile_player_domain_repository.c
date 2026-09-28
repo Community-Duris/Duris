@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <charconv>
 #include <cstring>
 #include <filesystem>
 #include <limits>
@@ -18,7 +19,9 @@
 #include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
+#include <string_view>
 #include <type_traits>
+#include <tuple>
 #include <vector>
 
 __attribute__((weak)) unsigned int
@@ -1100,6 +1103,139 @@ flatfile_player_domain_load_locked(const std::string &root, const flatfile_autho
 		return flatfile_player_domain_result::ok;
 	}
 	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+}
+
+flatfile_player_domain_result flatfile_player_domain_capture_native_sources_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_player_domain_native_sources *sources, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !sources)
+		return flatfile_player_domain_result::invalid;
+	try
+	{
+		const auto recovered = recover_authority(root, lock, error);
+		if (recovered != flatfile_player_domain_result::ok)
+			return recovered;
+		flatfile_player_domain_native_sources candidate;
+		const std::filesystem::path directory(domains_directory(root));
+		std::error_code filesystem_error;
+		if (!std::filesystem::exists(directory, filesystem_error))
+		{
+			if (filesystem_error)
+				return flatfile_player_domain_result::io_error;
+			*sources = std::move(candidate);
+			return flatfile_player_domain_result::ok;
+		}
+		for (const auto &entry : std::filesystem::directory_iterator(directory))
+		{
+			const std::string filename = entry.path().filename().string();
+			const bool is_player = filename.rfind("player-", 0) == 0;
+			const bool is_bank = filename.rfind("bank-", 0) == 0;
+			if (!is_player && !is_bank)
+				continue;
+			const auto file_status = entry.symlink_status(filesystem_error);
+			if (filesystem_error)
+				return flatfile_player_domain_result::io_error;
+			if (file_status.type() != std::filesystem::file_type::regular)
+				return flatfile_player_domain_result::invalid;
+			if (is_player)
+			{
+				constexpr std::string_view prefix = "player-";
+				constexpr std::string_view suffix = ".domain";
+				if (filename.size() <= prefix.size() + suffix.size() ||
+				    filename.compare(filename.size() - suffix.size(), suffix.size(),
+						     suffix) != 0)
+					return flatfile_player_domain_result::invalid;
+				const std::string_view digits(filename.data() + prefix.size(),
+							      filename.size() - prefix.size() -
+								      suffix.size());
+				int32_t pid = 0;
+				const auto parsed = std::from_chars(
+					digits.data(), digits.data() + digits.size(), pid);
+				if (digits.empty() || parsed.ec != std::errc{} ||
+				    parsed.ptr != digits.data() + digits.size() || pid <= 0 ||
+				    player_filename(pid) != filename)
+					return flatfile_player_domain_result::invalid;
+				flatfile_player_domain_record record;
+				const auto loaded = load_player(root, pid, &record, error);
+				if (loaded != flatfile_player_domain_result::ok)
+					return loaded;
+				flatfile_player_domain_native_wallet wallet;
+				wallet.pid = pid;
+				wallet.account_name = std::move(record.account_name);
+				wallet.racewar = record.racewar;
+				wallet.balance = record.domains.wallet;
+				wallet.revision = record.domains.wallet_revision;
+				candidate.wallets.push_back(std::move(wallet));
+				continue;
+			}
+			constexpr std::string_view prefix = "bank-";
+			constexpr std::string_view suffix = ".domain";
+			if (filename.size() <= prefix.size() + suffix.size() ||
+			    filename.compare(filename.size() - suffix.size(), suffix.size(),
+					     suffix) != 0)
+				return flatfile_player_domain_result::invalid;
+			const std::string_view contents(filename.data() + prefix.size(),
+							filename.size() - prefix.size() -
+								suffix.size());
+			const size_t separator = contents.rfind('-');
+			if (separator == std::string_view::npos || !separator ||
+			    separator + 1 >= contents.size())
+				return flatfile_player_domain_result::invalid;
+			const std::string account(contents.substr(0, separator));
+			std::string canonical;
+			if (!canonical_account(account, &canonical) || canonical != account)
+				return flatfile_player_domain_result::invalid;
+			const std::string_view racewar_text = contents.substr(separator + 1);
+			int racewar = 0;
+			const auto parsed =
+				std::from_chars(racewar_text.data(),
+						racewar_text.data() + racewar_text.size(), racewar);
+			if (parsed.ec != std::errc{} ||
+			    parsed.ptr != racewar_text.data() + racewar_text.size() ||
+			    racewar < 0 || racewar > INT8_MAX)
+				return flatfile_player_domain_result::invalid;
+			const auto racewar_value = static_cast<int8_t>(racewar);
+			if (bank_filename(account, racewar_value) != filename)
+				return flatfile_player_domain_result::invalid;
+			bank_record record;
+			const auto loaded = load_bank(root, account, racewar_value, &record, error);
+			if (loaded != flatfile_player_domain_result::ok)
+				return loaded;
+			flatfile_player_domain_native_bank bank;
+			bank.account_name = std::move(record.account_name);
+			bank.racewar = record.racewar;
+			bank.balance = record.balances;
+			bank.revision = record.revision;
+			candidate.banks.push_back(std::move(bank));
+		}
+		std::sort(candidate.wallets.begin(), candidate.wallets.end(),
+			  [](const auto &left, const auto &right) { return left.pid < right.pid; });
+		std::sort(candidate.banks.begin(), candidate.banks.end(),
+			  [](const auto &left, const auto &right)
+			  {
+				  return std::tie(left.account_name, left.racewar) <
+					 std::tie(right.account_name, right.racewar);
+			  });
+		for (size_t index = 1; index < candidate.wallets.size(); ++index)
+			if (candidate.wallets[index - 1].pid == candidate.wallets[index].pid)
+				return flatfile_player_domain_result::invalid;
+		for (size_t index = 1; index < candidate.banks.size(); ++index)
+			if (candidate.banks[index - 1].account_name ==
+				    candidate.banks[index].account_name &&
+			    candidate.banks[index - 1].racewar == candidate.banks[index].racewar)
+				return flatfile_player_domain_result::invalid;
+		*sources = std::move(candidate);
+		return flatfile_player_domain_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+	catch (const std::filesystem::filesystem_error &)
 	{
 		return flatfile_player_domain_result::io_error;
 	}

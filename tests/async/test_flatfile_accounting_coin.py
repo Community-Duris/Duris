@@ -20,6 +20,7 @@ def main():
             "src/flatfile/flatfile_accounting_pile_state.c",
             "src/flatfile/flatfile_accounting_pile_baseline.c",
             "src/flatfile/flatfile_accounting_baseline.c",
+            "src/flatfile/flatfile_accounting_lifecycle_transaction.c",
             "src/flatfile/flatfile_item_repository.c",
             "src/flatfile/flatfile_item_accounting_reference.c",
             "src/flatfile/flatfile_locker_repository.c",

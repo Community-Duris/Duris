@@ -22,6 +22,29 @@ struct flatfile_player_domain_record
 	std::vector<int32_t> completed_epic_zones;
 };
 
+struct flatfile_player_domain_native_wallet
+{
+	int32_t pid = 0;
+	std::string account_name;
+	int8_t racewar = 0;
+	std::array<uint64_t, 4> balance = {};
+	uint64_t revision = 0;
+};
+
+struct flatfile_player_domain_native_bank
+{
+	std::string account_name;
+	int8_t racewar = 0;
+	std::array<uint64_t, 4> balance = {};
+	uint64_t revision = 0;
+};
+
+struct flatfile_player_domain_native_sources
+{
+	std::vector<flatfile_player_domain_native_wallet> wallets;
+	std::vector<flatfile_player_domain_native_bank> banks;
+};
+
 enum class flatfile_player_domain_result
 {
 	ok,
@@ -70,6 +93,11 @@ flatfile_player_domain_result
 flatfile_player_domain_load_locked(const std::string &root, const flatfile_authority_lock &lock,
 				   int32_t pid, const std::string &account_name, int8_t racewar,
 				   flatfile_player_domain_record *record, std::string *error);
+// Enumerate and validate every native player-wallet and shared-bank domain file
+// while borrowing the authority lock. Malformed recognized files fail closed.
+flatfile_player_domain_result flatfile_player_domain_capture_native_sources_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_player_domain_native_sources *sources, std::string *error);
 // Exact legacy evidence, with no fabricated accounting plan or inferred schema-2
 // equivalence. Lookup uses PID/operation ID before current name/epoch policy.
 // Success with an empty optional means a valid player file without this ID;
