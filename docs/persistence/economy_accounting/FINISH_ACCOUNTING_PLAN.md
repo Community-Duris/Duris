@@ -1,9 +1,13 @@
 # Finish accounting, saves, item custody, and death recovery
 
 Date: 2026-09-28
-Branch: `finish-accounting`
+Planning branch: `finish-accounting`
 Planning base: `main` at `d686d4c70384af9012673fa7c4db5cba356c471f`
 Status: implementation plan; accounting release remains blocked.
+
+The checks and counts in the planning-base table are a dated baseline. The
+checkpoints below record later fixes; use the current generated writer matrix
+for the latest route count and release state.
 
 ## Outcome and delivery order
 

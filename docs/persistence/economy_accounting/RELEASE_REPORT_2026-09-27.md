@@ -935,3 +935,27 @@ cases, movement prompt runtime, and smith tradeskill tests passed. This proves
 the new path for fresh actions. The already stranded playtest character still
 needs an individually reviewed, owner-authorized data repair or recovery path;
 the running main-branch instance has not been modified or restarted.
+
+## Main integration checkpoint (2026-09-28)
+
+PR #9 and PR #11 were merged to `main` as `e92a5424b` and `ab423482a`.
+Follow-up source commit `0ceb561fe` keeps the normal quest grant source bound
+to the consumed offering UID and changes the bandage branch to select durable
+custody per item. Its publication explicitly marks the player's inventory
+dirty after removing the committed bandage. The follow-up adds executable
+quest and MariaDB bandage save/restart journeys and source contracts.
+
+On that integrated source, the maintained GCC 13.3 MariaDB server build passed.
+The flatfile server built from the same checkout (`SERVER_BUILD built
+build=426.082s lookup=30.064s`), and its ordinary quest offering, reward
+grant, save, and cold reconnect journey passed with the reward UID retained.
+The disposable MariaDB bandage journey passed with one consumed UID, a
+destruction custody tombstone, no saved-item row, and successful save after a
+cold restart. The quest source and durable-offering tests passed. The writer
+registry maps all 2,728 current unique lexical candidate sites across 861
+routes; the normal accounting validator and generated-matrix check pass.
+The release validator still stops at `writer has no executable evidence`.
+`coverage_complete=false` and `playable_release_status=BLOCKED` remain correct:
+the post-offering-ack quest crash still loses the pending reward, and most
+writer routes still lack executable release evidence. The existing stranded
+playtest character has not been modified.
