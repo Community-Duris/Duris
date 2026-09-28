@@ -248,6 +248,8 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_notification.o \
 				 economy/collector_transaction.o \
 				 economy/collector_repository.o \
+				 economy/collector_accounting.o \
+				 persistence/economic_sql_collector_transaction.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
          magic/blispells.o \
@@ -459,6 +461,17 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_currency_adapter.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \
+				 economy/auction_accounting.o \
+				 economy/auction_money_claim_accounting.o \
+				 persistence/economic_sql_pending_claim_source.o \
+				 economy/auction_listing_accounting.o \
+				 persistence/economic_sql_auction_listing_transaction.o \
+				 persistence/economic_sql_auction_bid_transaction.o \
+				 persistence/economic_sql_auction_money_claim_transaction.o \
+				 economy/auction_item_claim_accounting.o \
+				 persistence/economic_sql_auction_item_claim_transaction.o \
+				 economy/auction_settlement_accounting.o \
+				 persistence/economic_sql_auction_settlement_transaction.o \
 				 economy/auction_transaction.o \
 				 combat/combat_outcome_command.o \
 				 combat/combat_outcome_repository.o \

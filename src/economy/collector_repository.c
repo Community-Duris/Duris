@@ -2,6 +2,8 @@
 
 #include "economy/collector_custody_boundary.h"
 #include "economy/collector_eligibility.h"
+#include "economy/collector_accounting.h"
+#include "economy/economic_accounting_intent.h"
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
@@ -2122,16 +2124,13 @@ bool collector_repository_read_listing(MYSQL *connection, uint64_t listing,
 	return true;
 }
 
-bool collector_repository_execute(MYSQL *connection, const critical_command &command,
-				  collector_command_result *result, unsigned int *result_code,
-				  bool *mutation_applied)
+namespace
 {
-	if (!critical_command_legacy_execution_supported(command))
-	{
-		errno = EPROTONOSUPPORT;
-		return false;
-	}
-
+bool collector_repository_execute_impl(MYSQL *connection, const critical_command &command,
+				       collector_command_result *result, unsigned int *result_code,
+				       bool *mutation_applied,
+				       collector_repository_locked_before *before)
+{
 	collector_command_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
 	    !collector_command_decode_payload(command, &payload))
@@ -2236,6 +2235,30 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 			*result_code = ESTALE;
 			return true;
 		}
+	}
+	collector_repository_locked_before locked;
+	if (before)
+	{
+		if (payload.item_count != 1 || authority.size() != 1 ||
+		    (payload.action != collector_action::purchase &&
+		     payload.action != collector_action::expire &&
+		     payload.action != collector_action::cancel))
+		{
+			errno = EPROTONOSUPPORT;
+			return false;
+		}
+		locked.listing = listing.entry;
+		locked.balances.wallet = wallet.wallet;
+		locked.balances.bank = wallet.bank;
+		locked.balances.wallet_revision = wallet.wallet_revision;
+		locked.balances.bank_revision = wallet.bank_revision;
+		locked.bank_id = wallet.bank_id;
+		locked.item = { authority[0].uid,
+				{ authority[0].owner, authority[0].root, authority[0].parent,
+				  authority[0].revision, authority[0].state } };
+		locked.catalog_revision = catalog.revision;
+		locked.from_owner_revision = from_revision;
+		locked.to_owner_revision = to_revision;
 	}
 
 	collector::outcome policy = collector::outcome::invalid;
@@ -2342,5 +2365,61 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 	result->catalog_revision = catalog_revision;
 	result->entry = updated;
 	*mutation_applied = true;
+	if (before)
+		*before = std::move(locked);
 	return true;
+}
+} // namespace
+
+bool collector_repository_execute(MYSQL *connection, const critical_command &command,
+				  collector_command_result *result, unsigned int *result_code,
+				  bool *mutation_applied)
+{
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+	return collector_repository_execute_impl(connection, command, result, result_code,
+						 mutation_applied, nullptr);
+}
+
+bool collector_repository_execute_accounted(MYSQL *connection, const critical_command &command,
+					    collector_command_result *result,
+					    unsigned int *result_code, bool *mutation_applied,
+					    collector_repository_locked_before *before)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)result;
+	(void)result_code;
+	(void)mutation_applied;
+	(void)before;
+	errno = ENOTSUP;
+	return false;
+#else
+	collector_command_payload payload = {};
+	economic_frozen_intent intent;
+	if (!connection || !before || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command) ||
+	    !collector_command_decode_payload(command, &payload) ||
+	    economic_intent_decode(command.accounting_intent, &intent) !=
+		    economic_accounting_error::ok ||
+	    economic_intent_verify_binding(command, intent) != economic_accounting_error::ok ||
+	    !((payload.action == collector_action::purchase &&
+	       intent.admission.metadata.writer_id == ECONOMIC_WRITER_COLLECTOR_PURCHASE &&
+	       intent.admission.metadata.reason == economic_reason::collector_purchase) ||
+	      ((payload.action == collector_action::expire ||
+		payload.action == collector_action::cancel) &&
+	       intent.admission.metadata.writer_id == ECONOMIC_WRITER_COLLECTOR_HELD &&
+	       intent.admission.metadata.reason == economic_reason::collector_custody)))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+	return collector_repository_execute_impl(connection, command, result, result_code,
+						 mutation_applied, before);
+#endif
 }

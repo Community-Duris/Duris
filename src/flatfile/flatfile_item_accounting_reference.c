@@ -272,10 +272,11 @@ try
 
 	const std::string dir = item_refs_directory(root);
 	const std::string filename = bucket_filename(bucket);
+	ensure_directory(dir);
 	std::vector<uint8_t> existing;
-	const auto read_result = flatfile_read(
-		dir, filename, FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
-		&existing, error);
+	const auto read_result = flatfile_read(dir, filename,
+					       FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+					       &existing, error);
 	if (read_result != flatfile_read_result::ok &&
 	    read_result != flatfile_read_result::not_found)
 		return read_status(read_result);
@@ -293,15 +294,13 @@ try
 		if (retained.legacy_operation_id.bytes == operation_id.bytes)
 			return flatfile_item_accounting_status::already_exists;
 	}
-	if (addition.size() > FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES -
-			      existing.size())
+	if (addition.size() > FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES - existing.size())
 		return flatfile_item_accounting_status::capacity;
 	if (references.empty())
 		return flatfile_item_accounting_status::ok;
 	if (addition.size() > flatfile_authority_transaction_maximum_bytes - existing.size())
 		return flatfile_item_accounting_status::capacity;
 	existing.insert(existing.end(), addition.begin(), addition.end());
-	ensure_directory(dir);
 	for (const auto &operation : *operations)
 		if (operation.store == flatfile_authority_store::item_accounting_references &&
 		    operation.filename == filename)
@@ -325,12 +324,12 @@ try
 		return flatfile_item_accounting_status::invalid;
 	const uint8_t bucket = legacy_operation_id.bytes[0];
 	std::vector<uint8_t> existing;
-	const auto read_result = flatfile_read(
-		item_refs_directory(root), bucket_filename(bucket),
-		FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES, &existing, error);
+	const auto read_result = flatfile_read(item_refs_directory(root), bucket_filename(bucket),
+					       FLATFILE_ITEM_ACCOUNTING_REFERENCE_BUCKET_MAX_BYTES,
+					       &existing, error);
 	if (read_result == flatfile_read_result::not_found)
 		return expected.empty() ? flatfile_item_accounting_status::ok :
-					 flatfile_item_accounting_status::not_found;
+					  flatfile_item_accounting_status::not_found;
 	if (read_result != flatfile_read_result::ok)
 		return read_status(read_result);
 	if (!valid_bucket(existing, bucket))
@@ -353,7 +352,7 @@ try
 	auto less = [](const auto &left, const auto &right)
 	{ return left.legacy_event_index < right.legacy_event_index; };
 	std::vector<economic_accounting_item_reference> sorted_expected(expected.begin(),
-									 expected.end());
+									expected.end());
 	std::sort(retained.begin(), retained.end(), less);
 	std::sort(sorted_expected.begin(), sorted_expected.end(), less);
 	for (size_t index = 0; index < retained.size(); ++index)
@@ -362,8 +361,8 @@ try
 		if (flatfile_item_accounting_reference_encode(retained[index], &actual_bytes) !=
 			    flatfile_item_accounting_status::ok ||
 		    flatfile_item_accounting_reference_encode(sorted_expected[index],
-								      &expected_bytes) !=
-				    flatfile_item_accounting_status::ok ||
+							      &expected_bytes) !=
+			    flatfile_item_accounting_status::ok ||
 		    actual_bytes != expected_bytes)
 			return flatfile_item_accounting_status::invalid;
 	}

@@ -5,15 +5,19 @@
 #include "flatfile/currency_flatfile_mutation_writer.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/economic_currency_adapter.h"
+#include "economy/economic_command_admission.h"
+#include "persistence/critical_command_coordinator.h"
 #include "world/epic_command.h"
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <new>
 #include <openssl/sha.h>
+#include <thread>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -674,6 +678,76 @@ void contention(const fs::path &seed, const fs::path &path)
 	std::cout
 		<< "bank root: concurrent players sharing a bank serialize with one exact stale rejection\n";
 }
+struct coordinator_bank_context
+{
+	std::string root;
+};
+
+critical_apply_result apply_coordinator_bank(const critical_command &cmd, void *opaque)
+{
+	const auto &context = *static_cast<coordinator_bank_context *>(opaque);
+	return flatfile_accounting_bank_transaction::apply(context.root, cmd);
+}
+
+void coordinated_bank(const fs::path &root, const fs::path &journal)
+{
+	setup(root);
+	fs::create_directories(journal);
+	fs::permissions(journal, fs::perms::owner_all, fs::perm_options::replace);
+	coordinator_bank_context context{ root.string() };
+	auto cmd = command(context.root, 91001);
+	cmd.publication_required = true;
+	assert(economic_flatfile_command_admission_supported(cmd));
+	const auto before = state(context.root);
+	const auto start = [&]
+	{
+		assert(critical_command_coordinator_init(
+			journal.c_str(), apply_coordinator_bank, &context, 1, nullptr, nullptr,
+			economic_flatfile_command_admission_supported));
+	};
+	const auto completed = [&]
+	{
+		critical_completion result = {};
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+		while (critical_command_coordinator_pulse(&result, 1) != 1)
+		{
+			assert(std::chrono::steady_clock::now() < deadline);
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		assert(critical_operation_id_equal(result.operation_id, cmd.operation_id) &&
+		       !result.error_code);
+		return result;
+	};
+	start();
+	assert(critical_command_coordinator_submit_for_publication(cmd) ==
+	       critical_submit_result::awaiting_durability);
+	const auto first = completed();
+	assert(first.outcome == outcome::applied);
+	auto conflict = cmd;
+	++conflict.accepted_at_usec;
+	assert(critical_command_coordinator_submit_for_publication(conflict) ==
+	       critical_submit_result::identity_conflict);
+	const auto after = state(context.root);
+	assert(after.domains.wallet[0] == before.domains.wallet[0] + 1 &&
+	       after.domains.bank[0] + 1 == before.domains.bank[0]);
+	assert(critical_command_journal_health_copy().checkpoints == 0 &&
+	       critical_command_coordinator_health_copy().publication_pending == 1);
+	assert(critical_command_coordinator_shutdown());
+	start();
+	const auto second = completed();
+	assert(second.outcome == outcome::already_applied &&
+	       second.durable_revision == first.durable_revision &&
+	       second.result_payload == first.result_payload &&
+	       state(context.root).domains.wallet == after.domains.wallet &&
+	       state(context.root).domains.bank == after.domains.bank);
+	assert(critical_command_coordinator_acknowledge_publication(cmd.operation_id));
+	assert(critical_command_journal_health_copy().checkpoints == 1);
+	assert(critical_command_coordinator_shutdown());
+	start();
+	assert(critical_command_coordinator_health_copy().publication_pending == 0);
+	assert(critical_command_coordinator_shutdown());
+}
+
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
@@ -691,5 +765,6 @@ int main(int argc, char **argv)
 	const auto journey = base / "basic";
 	setup(journey, false);
 	basic(journey.string());
+	coordinated_bank(base / "coordinator-bank", base / "coordinator-bank-journal");
 	std::cout << "flatfile typed bank root journeys passed\n";
 }

@@ -48,6 +48,16 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             rel("flatfile_boon_repository.c"),
             rel("flatfile_player_domain_repository.c"),
             rel("flatfile_authority_transaction.c"),
+            rel("flatfile_item_accounting_reference.c"),
+            rel("flatfile_accounting_authority.c"),
+            rel("flatfile_accounting_store.c"),
+            rel("economic_accounting_types.c"),
+            rel("economic_accounting_plan.c"),
+            rel("auction_item_claim_accounting.c"),
+            rel("collector_accounting.c"),
+            rel("economic_accounting_intent.c"),
+            rel("economic_accounting_item_reference.c"),
+            rel("item_transfer_accounting.c"),
             rel("player_snapshot_codec.c"),
             rel("flatfile_store.c"),
             rel("item_transfer_command.c"),
@@ -84,16 +94,18 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
         shutil.copy2(binary, destination)
         raise SystemExit(0)
 
-    state_root = temporary_path / "state"
-    run_result = subprocess.run(
-        [str(binary), str(state_root)],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if run_result.returncode:
-        raise SystemExit(run_result.stdout)
+    # The authority lock requires native POSIX ownership/mode metadata. Keep
+    # runtime state on the local filesystem when the checkout is on DrvFS.
+    with tempfile.TemporaryDirectory(prefix="flat-player-state-") as state_temporary:
+        run_result = subprocess.run(
+            [str(binary), state_temporary],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if run_result.returncode:
+            raise SystemExit(run_result.stdout)
 
     domain_source = (SRC / "flatfile_player_domain_repository.c").read_text()
     player_source = (SRC / "flatfile_player_repository.c").read_text()

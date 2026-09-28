@@ -40,9 +40,11 @@
 #include <cstring>
 #include <strings.h>
 #include <limits>
+#include <memory>
 #include <mysql.h>
 #include <new>
 #include <openssl/sha.h>
+#include <string>
 #include <vector>
 #include <type_traits>
 
@@ -659,6 +661,80 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 				   payload_version, payload, payload_size);
 }
 
+unsigned int verify_accounted_root_outbox(MYSQL *connection, const critical_command &command,
+					  unsigned int result_code, const uint8_t *result_payload,
+					  size_t result_size)
+{
+	try
+	{
+		char operation_hex[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+		if (!connection ||
+		    !critical_operation_id_to_hex(command.operation_id, operation_hex,
+						  sizeof(operation_hex)))
+			return EINVAL;
+		const std::string query =
+			"SELECT event_index,destination,event_type,payload_version,payload FROM critical_outbox "
+			"WHERE operation_id=UNHEX('" +
+			std::string(operation_hex) + "')";
+		if (!execute(connection, query.c_str()))
+			return database_error(connection);
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows)
+			return database_error(connection);
+		if (result_code)
+			return mysql_num_rows(rows.get()) == 0 ? 0 : EILSEQ;
+		if (mysql_num_rows(rows.get()) != 1 || !result_payload || !result_size)
+			return EILSEQ;
+		uint16_t destination = 0, event_type = 0;
+		const uint8_t *expected = result_payload;
+		size_t expected_size = result_size;
+		std::array<uint8_t, CRITICAL_OUTBOX_COIN_RECEIPT_BYTES> coin_receipt = {};
+		if (command.type == critical_command_type::account_bank)
+		{
+			destination = OUTBOX_DESTINATION_CURRENCY;
+			event_type = OUTBOX_EVENT_CURRENCY_BALANCE;
+		}
+		else if (command.type == critical_command_type::item_transfer)
+		{
+			destination = OUTBOX_DESTINATION_ITEM_OWNERSHIP;
+			event_type = OUTBOX_EVENT_ITEM_TRANSFERRED;
+		}
+		else if (command.type == critical_command_type::coin_transfer)
+		{
+			coin_transfer_payload payload = {};
+			if (!coin_transfer_command_decode_payload(command, &payload))
+				return EILSEQ;
+			std::copy(payload.source.change.operation_id.bytes.begin(),
+				  payload.source.change.operation_id.bytes.end(),
+				  coin_receipt.begin());
+			std::copy(payload.destination.change.operation_id.bytes.begin(),
+				  payload.destination.change.operation_id.bytes.end(),
+				  coin_receipt.begin() + 16);
+			destination = CRITICAL_OUTBOX_COIN_RECEIPT_DESTINATION;
+			event_type = CRITICAL_OUTBOX_COIN_RECEIPT_EVENT;
+			expected = coin_receipt.data();
+			expected_size = coin_receipt.size();
+		}
+		else
+			return EINVAL;
+		MYSQL_ROW row = mysql_fetch_row(rows.get());
+		const unsigned long *lengths = mysql_fetch_lengths(rows.get());
+		if (!row || !lengths || !row[0] || !row[1] || !row[2] || !row[3] || !row[4] ||
+		    std::string(row[0], lengths[0]) != "0" ||
+		    std::string(row[1], lengths[1]) != std::to_string(destination) ||
+		    std::string(row[2], lengths[2]) != std::to_string(event_type) ||
+		    std::string(row[3], lengths[3]) != "1" || lengths[4] != expected_size ||
+		    std::memcmp(row[4], expected, expected_size) != 0)
+			return EILSEQ;
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
+
 bool finish_inbox(MYSQL *connection, const critical_command &command, uint64_t revision,
 		  unsigned int result_code, const uint8_t *payload, size_t payload_size,
 		  critical_failure_stage failure_stage = critical_failure_stage::none)
@@ -1188,7 +1264,7 @@ bool currency_repository_execute(MYSQL *connection, const critical_command &comm
 	}
 
 	return execute_currency_state(connection, command, result, result_code, mutation_applied,
-				       false);
+				      false);
 }
 
 critical_apply_result critical_command_repository_apply(MYSQL *connection,
@@ -1331,6 +1407,10 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 					stored.result_payload.data(), stored.result_payload.size());
 			else if (accounted_item)
 				retained_error = economic_sql_item_transfer_verify_retained(
+					connection, command, stored.result_code,
+					stored.result_payload.data(), stored.result_payload.size());
+			if (!retained_error && (accounted_bank || accounted_coin || accounted_item))
+				retained_error = verify_accounted_root_outbox(
 					connection, command, stored.result_code,
 					stored.result_payload.data(), stored.result_payload.size());
 			if (!retained_error && (accounted_bank || accounted_coin || accounted_item))
@@ -1547,10 +1627,15 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 							  coin_transfer_accounting_verify_retained(
 								  connection, command, result_code,
 								  bytes.data(), result_size);
-			if (verify_error)
+			const auto outbox_error = verify_error ?
+							  verify_error :
+							  verify_accounted_root_outbox(
+								  connection, command, result_code,
+								  bytes.data(), result_size);
+			if (outbox_error)
 			{
 				rollback(connection);
-				return root_failure(verify_error);
+				return root_failure(outbox_error);
 			}
 		}
 		if (!execute(connection, "COMMIT"))
@@ -1638,7 +1723,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			mutation_applied = result_code == 0;
 		}
 		else if (!execute_currency_state(connection, command, &currency_result,
-						  &result_code, &mutation_applied, false))
+						 &result_code, &mutation_applied, false))
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
@@ -1675,7 +1760,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		}
 		if (accounting)
 		{
-			const auto error = accounting->verify_root_completion();
+			auto error = accounting->verify_root_completion();
+			if (!error)
+				error = verify_accounted_root_outbox(connection, command,
+								     result_code,
+								     result_payload.data(),
+								     result_payload.size());
 			if (error)
 			{
 				rollback(connection);
@@ -1898,10 +1988,16 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 					economic_sql_item_transfer_verify_retained(
 						connection, command, result_code,
 						result_payload.data(), result_payload.size());
-			if (verify_error)
+			const auto outbox_error =
+				verify_error ? verify_error :
+					       verify_accounted_root_outbox(connection, command,
+									    result_code,
+									    result_payload.data(),
+									    result_payload.size());
+			if (outbox_error)
 			{
 				rollback(connection);
-				return root_failure(verify_error);
+				return root_failure(outbox_error);
 			}
 		}
 		if (!execute(connection, "COMMIT"))
@@ -2554,6 +2650,11 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 			error = economic_sql_item_transfer_verify_retained(
 				connection, command, stored.result_code,
 				stored.result_payload.data(), stored.result_payload.size());
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command,
+							     stored.result_code,
+							     stored.result_payload.data(),
+							     stored.result_payload.size());
 		if (!error)
 			error = accounted_session_check(connection, &root_session, true);
 		rollback(connection);

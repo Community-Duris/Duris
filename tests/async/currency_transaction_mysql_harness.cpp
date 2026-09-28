@@ -1,4 +1,5 @@
 #include "persistence/critical_command_repository.h"
+#include "economic_sql_coordinator_fixture.h"
 #include "economy/currency_command.h"
 #include "economy/coin_transfer_command.h"
 #include "economy/coin_transfer_accounting.h"
@@ -286,14 +287,11 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 	command.accepted_at_usec = 1;
 	command.publication_required = true;
 	assert(critical_command_envelope_valid(command));
-	critical_apply_result applied = {};
-	std::thread pooled_worker(
-		[&] { applied = critical_command_repository_apply_from_pool(command, nullptr); });
-	pooled_worker.join();
-	if (applied.outcome != critical_apply_outcome::applied || applied.error_code)
+	const critical_apply_result applied = exercise_sql_coordinator(command, "coin", true);
+	if (applied.outcome != critical_apply_outcome::already_applied || applied.error_code)
 		fprintf(stderr, "pooled typed coin transfer failed outcome=%u error=%u\n",
 			static_cast<unsigned int>(applied.outcome), applied.error_code);
-	assert(applied.outcome == critical_apply_outcome::applied && !applied.error_code);
+	assert(applied.outcome == critical_apply_outcome::already_applied && !applied.error_code);
 	const auto replayed = critical_command_repository_apply(connection, command);
 	assert(replayed.outcome == critical_apply_outcome::already_applied &&
 	       replayed.result_size == applied.result_size);

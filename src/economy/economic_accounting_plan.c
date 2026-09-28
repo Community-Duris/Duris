@@ -50,7 +50,7 @@ constexpr reason_rule RULES[] = {
 	{ economic_reason::collector_purchase, 326, economic_actor_kind::domain, false, false,
 	  false },
 	{ economic_reason::collector_custody, 0, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::auction_listing, 258, economic_actor_kind::domain, false, false, false },
+	{ economic_reason::auction_listing, 274, economic_actor_kind::domain, false, false, false },
 	{ economic_reason::auction_bid, 306, economic_actor_kind::domain, false, false, false },
 	{ economic_reason::auction_outbid, 306, economic_actor_kind::domain, false, false, false },
 	{ economic_reason::auction_cancel, 306, economic_actor_kind::domain, false, false, false },

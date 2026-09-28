@@ -27,10 +27,11 @@ with tempfile.TemporaryDirectory(prefix='run-',dir=work) as temporary:
     executable = Path(temporary)/'bank'
     flags = ['g++','-std=c++20','-Wall','-Wextra','-Wpedantic','-Werror','-pthread','-O1','-g',
              '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie','-Isrc']
+    flags += ['-ffunction-sections','-fdata-sections','-Wl,--gc-sections']
     flags += shlex.split(subprocess.check_output(['mysql_config','--cflags'],text=True))
     flags += ['-Wl,--wrap=mysql_real_query,--wrap=mysql_errno']
     flags += files + shlex.split(subprocess.check_output(['mysql_config','--libs'],text=True))
-    subprocess.run(flags+['-lcrypto','-o',str(executable)],cwd=ROOT,check=True)
+    subprocess.run(flags+['-lcrypto','-lz','-o',str(executable)],cwd=ROOT,check=True)
     subprocess.run([str(executable)],cwd=ROOT,check=True,
                    env=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',
                             UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1'))

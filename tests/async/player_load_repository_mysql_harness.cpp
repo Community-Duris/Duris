@@ -16,6 +16,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+extern "C" void sql_pool_discard_connection(MYSQL *connection)
+{
+	mysql_close(connection);
+}
+
 namespace
 {
 const char *required_env(const char *name)

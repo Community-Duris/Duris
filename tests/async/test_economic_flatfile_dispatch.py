@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native bank-only dispatcher contract in both compilation modes."""
+"""Bank/item dispatcher and unsupported coin refusal in both compilation modes."""
 import os
 from pathlib import Path
 import subprocess

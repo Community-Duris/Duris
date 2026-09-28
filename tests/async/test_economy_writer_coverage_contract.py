@@ -1085,6 +1085,132 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertIn("remaining detached arrows can be left unconsumed",
                       self.routes["spell.snakes_direct_arrow_sink"]["source_classification"])
 
+    def test_ranged_item_sites_keep_ammunition_payload_and_uid_together(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/combat/range.c"
+        current = {(row["path"], row["line"], row["family"])
+                   for row in coverage.load_validator().scan_sources(ROOT)
+                   if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
+        owners = {}
+        for route in registry["writers"]:
+            for site in route.get("sites", []):
+                if site[0] == path and site[2] in ("item_lifecycle", "item_publication"):
+                    owners.setdefault(tuple(site), set()).add(route["id"])
+        self.assertEqual(current, owners.keys(), "review new ranged item calls")
+        self.assertTrue(all(len(owners[site]) == 1 for site in current))
+        self.assertEqual(owners[(path, 908, "item_lifecycle")], {"item.scrap"})
+        self.assertEqual(owners[(path, 1529, "item_lifecycle")],
+                         {"range.load_weapon_ammunition"})
+        self.assertEqual(self.routes["range.gather_quiver_relink"]["disposition"],
+                         "runtime_projection_route")
+        for route_id in ("range.gather_arrow_transfer", "range.fire_missile_transfer",
+                         "range.throw_weapon_drop", "range.load_weapon_ammunition"):
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
+        self.assertIn("partially consumed stack keeps its UID",
+                      self.routes["range.load_weapon_ammunition"]["source_classification"])
+
+    def test_guildhall_fixture_sites_record_unretired_detach(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/guild/guildhall_rooms.c"
+        current = {(row["path"], row["line"], row["family"])
+                   for row in coverage.load_validator().scan_sources(ROOT)
+                   if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
+        owners = {}
+        for route in registry["writers"]:
+            for site in route.get("sites", []):
+                if site[0] == path and site[2] in ("item_lifecycle", "item_publication"):
+                    owners.setdefault(tuple(site), set()).add(route["id"])
+        self.assertEqual(current, owners.keys(), "review new guildhall fixture calls")
+        self.assertTrue(all(len(owners[site]) == 1 for site in current))
+        self.assertEqual(owners[(path, 682, "item_publication")],
+                         {"guildhall.town_portal_fixture_detach"})
+        names = ("entrance_door", "inn_board", "heartstone", "window", "fountain",
+                 "bank_counter", "town_portal", "library_tome", "cargo_board")
+        for name in names:
+            grant = self.routes[f"guildhall.{name}_fixture_grant"]
+            detach = self.routes[f"guildhall.{name}_fixture_detach"]
+            self.assertEqual(grant["disposition"], "runtime_mutation_route")
+            self.assertEqual(detach["disposition"], "runtime_mutation_route")
+            self.assertTrue(grant["blocking_policy_after_activation"]["must_block_on_activation"])
+            self.assertTrue(detach["blocking_policy_after_activation"]["must_block_on_activation"])
+            self.assertIn("without extracting or retiring", detach["source_classification"])
+            self.assertTrue(grant["source"]["definition_lines"])
+            self.assertTrue(detach["source"]["definition_lines"])
+
+    def test_necromancy_item_sites_separate_committed_raise_from_clone_and_fallback(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/classes/necromancy.c"
+        current = {(row["path"], row["line"], row["family"])
+                   for row in coverage.load_validator().scan_sources(ROOT)
+                   if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
+        owners = {}
+        for route in registry["writers"]:
+            for site in route.get("sites", []):
+                if site[0] == path and site[2] in ("item_lifecycle", "item_publication"):
+                    owners.setdefault(tuple(site), set()).add(route["id"])
+        self.assertEqual(current, owners.keys(), "review new necromancy item calls")
+        self.assertTrue(all(len(owners[site]) == 1 for site in current))
+        self.assertEqual(owners[(path, 1290, "item_publication")],
+                         {"death.saved_corpse_clone"})
+        self.assertEqual(owners[(path, 1497, "item_lifecycle")],
+                         {"death.raise_committed_publication"})
+        self.assertEqual(self.routes["death.corpseform_disabled"]["disposition"],
+                         "non_writer_candidate")
+        for route_id in ("death.raise_nested_exclusion_cleanup",
+                         "death.raise_committed_publication"):
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_projection_route")
+            self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]["decision"],
+                             "block_until_projection_proof")
+        for route_id in ("death.saved_corpse_clone", "death.saved_corpse_timed_cleanup",
+                         "death.exhume_corpse_grant", "death.summon_host_corpse_grant",
+                         "death.wall_of_bones_direct", "death.compact_corpse_direct",
+                         "death.legacy_raise_item_recipient"):
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
+        self.assertIn("recursively clones every contained item",
+                      self.routes["death.saved_corpse_clone"]["source_classification"])
+        self.assertIn("if pile allocation fails the corpse remains emptied",
+                      self.routes["death.compact_corpse_direct"]["source_classification"])
+
+    def test_heavens_special_item_sites_keep_rewards_sinks_and_dead_code_distinct(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/specs/specs.heavens.c"
+        current = {(row["path"], row["line"], row["family"])
+                   for row in coverage.load_validator().scan_sources(ROOT)
+                   if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
+        owners = {}
+        for route in registry["writers"]:
+            for site in route.get("sites", []):
+                if site[0] == path and site[2] in ("item_lifecycle", "item_publication"):
+                    owners.setdefault(tuple(site), set()).add(route["id"])
+        self.assertEqual(current, owners.keys(), "review new Heavens special item calls")
+        self.assertTrue(all(len(owners[site]) == 1 for site in current))
+        self.assertEqual(owners[(path, 5821, "item_publication")],
+                         {"special.treasure_chest_detach"})
+        self.assertEqual(owners[(path, 5708, "item_lifecycle")],
+                         {"gambling.slot_coupon_grant"})
+        self.assertEqual(self.routes["special.flying_citadel_unreachable_move"]["disposition"],
+                         "non_writer_candidate")
+        for route_id in ("special.disarm_pick_gloves_slot_relink",
+                         "artifact.good_evil_sword_slot_relink"):
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_projection_route")
+            self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]["decision"],
+                             "block_until_projection_proof")
+        for route_id in ("special.treasure_chest_potion_grant",
+                         "special.treasure_chest_detach", "gambling.slot_coupon_grant",
+                         "artifact.monolith_absorb", "artifact.holy_weapon_owner_transfer",
+                         "death.dracolich_death_drop"):
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
+        self.assertIn("never extracted",
+                      self.routes["special.treasure_chest_detach"]["source_classification"])
+        self.assertIn("item grants precede",
+                      self.routes["gambling.slot_coupon_grant"]["native_effects"]["holding_effect"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

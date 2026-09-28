@@ -1,11 +1,74 @@
 # Economy accounting phased delivery
 
+## Current plan: add-double-entry at 49af585c4 (2026-09-27)
+
+The [remaining requirements](REMAINING_REQUIREMENTS.md) and five work plans
+below supersede the phase order later in this file. SQL is the first delivery
+target; flatfile is required before the full feature is complete. Item economy
+means durable UID provenance/custody/supply plus actual trade prices. Appraised
+inventory values are outside this feature.
+
+| Independently executable plan | Owned result | SQL milestone | Full-feature milestone |
+| --- | --- | --- | --- |
+| [1. Authority and cutover](plans/01_AUTHORITY_AND_CUTOVER.md) | Coordinator dispatch/reconcile, atomic owner, staged baseline, publication, guarded activation | Coin and item schema-2 commands traverse the real pool and replay correctly; an incomplete census cannot activate | Equivalent flatfile authority and replay |
+| [2. Money and supply](plans/02_MONEY_AND_SUPPLY.md) | Ordinary holdings, transfers, coin piles, rewards, expenses, source dedupe | Every supported general money writer has balanced native/evidence/receipt proof | Same policy and journeys on flatfile |
+| [3. Item provenance](plans/03_ITEM_PROVENANCE.md) | UID admission, custody/topology, intentional retirement, restoration identity | Every supported ordinary item event has one exact reference and valid source | Same UID and source behavior on flatfile |
+| [4. Compound domains](plans/04_COMPOUND_DOMAINS.md) | Shop, collector, auction, craft, death/resurrection composites | Domain-specific player journeys prove money and item effects in each commit | Equivalent domain journeys and refusals on flatfile |
+| [5. Audit and release](plans/05_AUDIT_OPERATIONS_AND_RELEASE.md) | Complete writer inventory, independent reconciliation, operations and fault proof | Zero unclassified real writers and SQL reconciliation/report | Both backends and release matrix pass |
+
+The prior issue crosswalk is Plan 1: #476-479; Plan 2: #480-481;
+Plan 3: #482; Plan 4: #483-486; Plan 5: #475 and #487-490. This is an
+ownership guide, not a dependency order. Baseline/activation (#479) and final
+qualification (#490) close only after the joint release gate.
+
+Each plan starts from this head and has its own inactive-epoch fixtures,
+owned code areas, and acceptance evidence. Work can proceed concurrently
+without selecting an active epoch. Shared coordinator changes are owned by
+Plan 1; domain plans add narrow typed adapters and publish their interface
+needs instead of introducing a second queue or authority. Integrate branches
+against one tested head, then run the joint route inventory and gameplay
+matrix. Independent execution does not imply independent activation.
+
+The immediate SQL integration gate is concrete: the SQL direct root handles
+bank, coin, and item schema-2 families, but pooled apply/reconcile still gate
+on the bank family. The staged SQL baseline covers wallet, shared bank, and
+active coin-pile balances and leaves active_epoch null. The production boot
+guard is wired, yet no complete writer-set activation path exists. The draft
+writer census currently fails its drift validator. The tracked route matrix
+includes the new corpse item route, but still cites an older repository head
+and does not count later SQL coin evidence; reconcile it with current code
+before quoting any coverage count as release evidence.
+
+### Unified release gate
+
+1. Reconcile a quiescent complete source snapshot, active epoch, mappings,
+   native state, and immutable openings without creating gameplay money/items.
+2. For every reachable writer, prove typed same-root accounting on SQL and
+   flatfile or an executable refusal before mutation; classify projections
+   and dead code separately. No legacy schema-1 bypass is allowed in an active
+   epoch.
+3. Prove conservation and exact custody using an independent read-only
+   reconciler, then real player journeys for transfer, issuance/expense,
+   commerce, crafting, death/recovery, and restart.
+4. Prove exact-ID and source-event dedupe, lost-reply reconciliation, rollback,
+   publication, backup/restore, erasure/retention, and measured workload
+   budgets. Keep a pause/rollback path that never permits unjournaled writes.
+
+No plan completion authorizes production migration, deployment, wipes, or
+restitution. Use disposable local databases for SQL acceptance. Preserve
+existing branch changes and apply the smallest typed seam needed: the current
+critical-command authority, current money and item ledgers, and current UID
+catalog remain the sources of truth. No new inventory appraisal, second
+custody catalog, or general online freeze framework is needed.
+
+## Historical phase record (superseded as an execution order)
+
 Approved direction: 2026-09-21. Parent [#474](https://github.com/Community-Duris/Duris/issues/474).
 Linked phase PRs supersede the previous one-final-PR instruction. The full feature
 contract and all 16 child issues remain in scope; no phase merge authorizes a live
 cutover or production deployment. Request **xander-l** review on each PR.
 
-## Active execution priority: database backend first
+## Historical 2026-09-26 priority: database backend first
 
 Updated by user direction on 2026-09-26: prioritize the SQL backend (MariaDB/MySQL).
 Flatfile catch-up is a separate, non-blocking workstream; it must not consume the
@@ -237,7 +300,7 @@ or connect the coordinator. A passing structural validator is not proof of
 current-state authorization or atomic persistence. The draft release check must
 continue refusing incomplete coverage.
 
-## Remaining delivery order
+## Historical delivery order (superseded)
 
 | Phase | Delivery | Exit gate |
 | --- | --- | --- |

@@ -1,5 +1,6 @@
 #include "persistence/economic_sql_bank_transaction.h"
 #include "persistence/critical_command_repository.h"
+#include "economic_sql_coordinator_fixture.h"
 #include <openssl/sha.h>
 
 #include <algorithm>
@@ -365,8 +366,10 @@ int main()
 	{
 		critical_apply_result result;
 		std::thread worker(
-			[&]
-			{ result = critical_command_repository_apply_from_pool(command, nullptr); });
+			[&] {
+				result = critical_command_repository_apply_from_pool(command,
+										     nullptr);
+			});
 		worker.join();
 		return result;
 	};
@@ -383,9 +386,10 @@ int main()
 	auto pooled_command = command_for(10);
 	pooled_command.publication_required = true;
 	assert(economic_sql_bank_command_supported(pooled_command));
-	const auto pooled_result = pooled_apply(pooled_command);
+	const auto pooled_result = exercise_sql_coordinator(pooled_command, "bank");
 	assert(pooled_result.outcome == critical_apply_outcome::applied);
-	const auto pooled_replayed = pooled_apply(pooled_command);
+	const auto pooled_replayed =
+		critical_command_repository_reconcile(connection, pooled_command);
 	assert(pooled_replayed.outcome == critical_apply_outcome::already_applied);
 	same_receipt(pooled_result, pooled_replayed);
 	assert(pool_acquisitions == 2 && pool_releases == 2 && pool_replacements == 0);
@@ -856,8 +860,8 @@ int main()
 	assert(economic_sql_bank_verify_retained(connection, first.first, 0, first.second) != 0);
 	execute(connection, "ROLLBACK");
 
-	// Root replay uses retained evidence even after authorities retire and a
-	// publication has been consumed. Corruption remains unresolved/retryable.
+	// Root replay uses retained evidence even after authorities retire. An
+	// erased publication obligation is evidence loss, not a consumed event.
 	execute(connection,
 		"UPDATE economic_lineage_state SET active_epoch=NULL,revision=revision+1 WHERE lineage=" +
 			literal(lineage));
@@ -865,8 +869,17 @@ int main()
 		"UPDATE economic_account_mapping SET active_native_id=NULL,retiring_operation_id=" +
 			literal(bootstrap) +
 			",revision=revision+1 WHERE lineage=" + literal(lineage));
+	execute(connection, "CREATE TEMPORARY TABLE retained_root_outbox AS SELECT * FROM "
+			    "critical_outbox WHERE operation_id=" +
+				    literal(root_command.operation_id));
 	execute(connection, "DELETE FROM critical_outbox WHERE operation_id=" +
 				    literal(root_command.operation_id));
+	assert(critical_command_repository_apply(connection, root_command).outcome ==
+	       critical_apply_outcome::retryable_failure);
+	assert(critical_command_repository_reconcile(connection, root_command).outcome ==
+	       critical_apply_outcome::retryable_failure);
+	execute(connection, "INSERT INTO critical_outbox SELECT * FROM retained_root_outbox");
+	execute(connection, "DROP TEMPORARY TABLE retained_root_outbox");
 	assert(critical_command_repository_apply(connection, root_command).outcome ==
 	       critical_apply_outcome::already_applied);
 	assert(critical_command_repository_reconcile(connection, root_command).outcome ==

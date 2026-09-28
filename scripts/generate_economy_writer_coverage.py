@@ -138,6 +138,8 @@ NON_WRITERS = {
     "locker.access_check_temp_unload": "Racewar access comparison unloads item copies on a temporary restored character; selected native locker/player custody is not retired.",
     "spell.room_creation_rejected_stage": "Failed typed room creation frees only a still-unowned NOWHERE candidate before publication.",
     "spell.player_creation_rejected_stage": "Failed typed player creation frees only a still-unowned NOWHERE candidate before publication.",
+    "death.corpseform_disabled": "spell_corpseform returns unconditionally with a disabled message before its corpse child movement and extraction body.",
+    "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
     "currency.bank_live_projection": "Publishes an already committed shared-bank balance into connected player views; no account_banks row or source balance changes here.",
@@ -192,9 +194,14 @@ PROJECTION_ROUTES = {
     "locker.public_items_room_restore": "Projects saved locker items into chests or the room after load, sort or rollback; retained UID and coin-pile identity must match selected authority.",
     "combat.disarm_slot_relink": "Moves a worn weapon into the same owner’s inventory after combat disarm or fumble; no owner event is intended.",
     "spell.snakes_committed_arrow_cleanup": "Removes live arrow copies after the exact typed batch-retirement result commits; no second owner event is authorized.",
+    "range.gather_quiver_relink": "Temporarily unequips and re-equips the same quiver under the same player owner and slot during gather.",
+    "death.raise_nested_exclusion_cleanup": "After a committed raise, removes live transient or consumed coin-pile copies listed in the durable result; no second retirement is authorized.",
+    "death.raise_committed_publication": "Publishes the committed corpse raise by moving retained children, cleaning consumed copies and removing the old corpse.",
     "mob.thief_weapon_relink": "NPC thief tactics move an existing weapon between carrying and equipment slots under the same NPC owner.",
     "mob.better_object_relink": "NPC item ranking moves displaced equipment into the same NPC inventory before wearing a replacement.",
     "mob.hunter_weapon_relink": "NPC hunt tactics move a carried backstab weapon into a slot and return displaced gear to the same NPC inventory.",
+    "special.disarm_pick_gloves_slot_relink": "The gloves move a struck character's equipped weapon to the same character's carrying list without changing its owner.",
+    "artifact.good_evil_sword_slot_relink": "The sword shifts other equipment to the same owner's inventory and equips itself in the primary weapon slot.",
 }
 
 # Current gameplay commands still build schema 1. The named families below have
@@ -730,7 +737,11 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
                       "movement.key_break_committed_publication", "movement.drag_room_relink",
                       "locker.chest_item_restore", "locker.public_items_save_relink",
                       "locker.public_items_room_restore", "combat.disarm_slot_relink",
-                      "spell.snakes_committed_arrow_cleanup"}:
+                      "spell.snakes_committed_arrow_cleanup", "range.gather_quiver_relink",
+                      "death.raise_nested_exclusion_cleanup",
+                      "death.raise_committed_publication",
+                      "special.disarm_pick_gloves_slot_relink",
+                      "artifact.good_evil_sword_slot_relink"}:
         decision = "block_until_projection_proof"
         if route_id == "player.sql_bank_live_load":
             policy = PROJECTION_ROUTES[route_id] + " The login caller ignores a failed bank read after this function has zeroed the PC bank. Refuse publication until the selected bank result and revision are verified."
@@ -738,7 +749,7 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
             policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the separate selected account-bank load succeeds and wallet/bank revisions form one complete player view."
         elif route_id == "recovery.flat_corpse_coin_materialization":
             policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the selected saved corpse/room identity, exact coin vector, pile UID and complete source receipt are verified."
-        elif route_id.startswith(("item.", "death.", "coin.", "mob.", "movement.", "locker.", "combat.", "spell.")) or route_id.startswith("recovery.sql_") or route_id in {"world.zone_reset_equip_relink", "world.copyover_item_materialization", "recovery.flat_room_item_projection", "player.flat_terminal_inventory_unload", "player.sql_terminal_inventory_unload", "recovery.legacy_object_restore", "recovery.single_item_decode", "recovery.pet_save_equipment_relink"}:
+        elif route_id.startswith(("item.", "death.", "coin.", "mob.", "movement.", "locker.", "combat.", "spell.", "range.")) or route_id.startswith("recovery.sql_") or route_id in {"world.zone_reset_equip_relink", "world.copyover_item_materialization", "recovery.flat_room_item_projection", "player.flat_terminal_inventory_unload", "player.sql_terminal_inventory_unload", "recovery.legacy_object_restore", "recovery.single_item_decode", "recovery.pet_save_equipment_relink"}:
             policy = PROJECTION_ROUTES[route_id] + " Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
         else:
             policy = PROJECTION_ROUTES[route_id] + " Current source does not prove the selected active-epoch authority and complete recovery identity, and it does not reject inconsistent decoded and legacy gold before the gold overwrite. Refuse active-epoch publication until that proof is executable; do not treat a recovery overwrite as issuance."

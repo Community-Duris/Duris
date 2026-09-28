@@ -259,6 +259,38 @@
       }
     },
     {
+      "id": "database:economic_pending_claim_source",
+      "kind": "database_table",
+      "locator": "economic_pending_claim_source",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Exact source allocation and consumption links for pending-money claims",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_accounting_operation",
+        "database:economic_account_mapping"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
       "id": "database:economic_epoch",
       "kind": "database_table",
       "locator": "economic_epoch",

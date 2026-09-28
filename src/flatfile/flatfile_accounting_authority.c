@@ -306,10 +306,17 @@ void name_valid(const std::string &name)
 void locator_valid(economic_account_kind kind, uint64_t context,
 		   const flatfile_economic_locator &locator, bool creating = false)
 {
-	if (kind == economic_account_kind::wallet)
-		need(context == 0 && locator.kind == 1 && locator.native_id > 0 &&
-			     locator.native_id <= INT32_MAX && locator.name.empty(),
+	if (kind == economic_account_kind::wallet ||
+	    kind == economic_account_kind::auction_escrow ||
+	    kind == economic_account_kind::pending_claim)
+	{
+		const auto limit = kind == economic_account_kind::auction_escrow ? UINT32_MAX :
+										   INT32_MAX;
+		need(context == 0 && locator.kind == static_cast<uint16_t>(kind) &&
+			     locator.native_id > 0 && locator.native_id <= limit &&
+			     locator.name.empty(),
 		     EINVAL);
+	}
 	else
 	{
 		need(kind == economic_account_kind::bank && context <= INT8_MAX &&
@@ -328,7 +335,7 @@ bytes native_key(economic_account_kind kind, uint64_t context,
 	number(key, static_cast<uint16_t>(kind), 2);
 	number(key, context, 8);
 	number(key, locator.kind, 2);
-	if (kind == economic_account_kind::wallet)
+	if (kind != economic_account_kind::bank)
 		number(key, locator.native_id, 8);
 	else
 		raw(key, { reinterpret_cast<const uint8_t *>(locator.name.data()),
@@ -342,7 +349,7 @@ void validate_native_key(const bytes &key)
 	auto context = in.number(8);
 	flatfile_economic_locator locator;
 	locator.kind = in.number(2);
-	if (kind == economic_account_kind::wallet)
+	if (kind != economic_account_kind::bank)
 		locator.native_id = in.number(8);
 	else
 	{
@@ -588,7 +595,7 @@ void validate_tombstone(const std::string &root, const flatfile_economic_control
 	auto current = native_key(last.account.kind, last.account.context_id, last.locator);
 	need(current.size() >= 12 && entry.key.size() >= 12 &&
 	     std::equal(current.begin(), current.begin() + 12, entry.key.begin()));
-	if (last.account.kind == economic_account_kind::wallet)
+	if (last.account.kind != economic_account_kind::bank)
 		need(current == entry.key);
 	if (!nonzero(last.retiring_operation))
 	{
@@ -694,6 +701,28 @@ unsigned int flatfile_economic_control_read(const std::string &root,
 			recover(root, lock);
 			auto value = load_control(root);
 			*out = std::move(value);
+		},
+		error);
+}
+unsigned int flatfile_economic_legacy_domain_gate(const std::string &root,
+						  const flatfile_authority_lock &lock,
+						  std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(!root.empty() && lock.matches(root), EINVAL);
+			struct stat info = {};
+			const auto path = directory(root);
+			if (stat(path.c_str(), &info))
+			{
+				need(errno == ENOENT, EIO);
+				return;
+			}
+			need(S_ISDIR(info.st_mode));
+			recover(root, lock);
+			const auto control = load_control(root);
+			need(!nonzero(control.active_epoch), EAGAIN);
 		},
 		error);
 }

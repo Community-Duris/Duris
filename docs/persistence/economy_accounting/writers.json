@@ -25265,6 +25265,3008 @@
           "item_current_owner destruction"
         ]
       }
+    },
+    {
+      "path": "src/combat/range.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "range.gather_quiver_relink",
+      "symbol": "do_gather",
+      "reason": "item_move",
+      "classification": "Gather temporarily unequips a player quiver and re-equips it on refusal or completion; the quiver UID remains under the same player owner and slot.",
+      "authority_boundary": "Require exact quiver UID, original player owner and slot topology before and after the gather attempt; no new owner event is intended.",
+      "reachability_evidence": "Registered do_gather rejects NPCs, finds a worn quiver, and re-equips it on both invalid-target and completed paths.",
+      "sites": [
+        [
+          "src/combat/range.c",
+          83,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          115,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          121,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          156,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these call sites.",
+        "custody_effect": "Gather temporarily unequips a player quiver and re-equips it on refusal or completion; the quiver UID remains under the same player owner and slot.",
+        "native_state_targets": [
+          "player quiver equipment slot",
+          "selected quiver UID/owner"
+        ]
+      }
+    },
+    {
+      "path": "src/combat/range.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "range.gather_arrow_transfer",
+      "symbol": "do_gather",
+      "reason": "item_move",
+      "classification": "Gather directly moves the player-tagged missile UID from a room floor or corpse into the equipped quiver and increments its carried count.",
+      "authority_boundary": "Commit source room/corpse UID, arrow UID, quiver parent UID and player owner transition together before relinking.",
+      "reachability_evidence": "do_gather filters missiles by timer[0] equal to GET_PID(ch), then moves each from room/corpse to quiver.",
+      "sites": [
+        [
+          "src/combat/range.c",
+          138,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          140,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          142,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these call sites.",
+        "custody_effect": "Gather directly moves the player-tagged missile UID from a room floor or corpse into the equipped quiver and increments its carried count.",
+        "native_state_targets": [
+          "room or corpse missile custody",
+          "player quiver contents and count",
+          "item_current_owner parent/owner"
+        ]
+      }
+    },
+    {
+      "path": "src/combat/range.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "range.fire_missile_transfer",
+      "symbol": "do_fire",
+      "reason": "item_move",
+      "classification": "A non-returning shot removes one missile from the quiver, then a hit gives it to the victim, a miss drops it in a room, or damage can scrap it through the separately mapped MakeScrap route.",
+      "authority_boundary": "Authorize exact arrow UID, quiver parent/count, source event and one exclusive victim, room or scrap disposition before removing it from the quiver.",
+      "reachability_evidence": "do_fire detaches missile only when carrow is false, then branches to victim inventory, room floor or MakeScrap; cursed arrows remain in the quiver.",
+      "sites": [
+        [
+          "src/combat/range.c",
+          735,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          912,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          917,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          1036,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these call sites.",
+        "custody_effect": "A non-returning shot removes one missile from the quiver, then a hit gives it to the victim, a miss drops it in a room, or damage can scrap it through the separately mapped MakeScrap route.",
+        "native_state_targets": [
+          "shooter quiver contents/count",
+          "victim inventory or room contents",
+          "item_current_owner missile outcome"
+        ]
+      }
+    },
+    {
+      "path": "src/combat/range.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "range.throw_weapon_drop",
+      "symbol": "do_throw",
+      "reason": "item_move",
+      "classification": "A non-returning thrown weapon is moved from one of four equipment slots or inventory to the target/current room with the same UID; returning weapons stay equipped.",
+      "authority_boundary": "Bind exact weapon UID, player/NPC owner, source slot and target room to one committed movement result before live drop.",
+      "reachability_evidence": "do_throw performs the direct equipment/inventory-to-room relink only when ITEM_RETURNING is absent.",
+      "sites": [
+        [
+          "src/combat/range.c",
+          1438,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          1440,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          1442,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          1444,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          1446,
+          "item_publication"
+        ],
+        [
+          "src/combat/range.c",
+          1447,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these call sites.",
+        "custody_effect": "A non-returning thrown weapon is moved from one of four equipment slots or inventory to the target/current room with the same UID; returning weapons stay equipped.",
+        "native_state_targets": [
+          "thrower weapon equipment/inventory",
+          "target room contents",
+          "item_current_owner room transition"
+        ]
+      }
+    },
+    {
+      "path": "src/combat/range.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "range.load_weapon_ammunition",
+      "symbol": "do_load_weapon",
+      "reason": "item_destroy",
+      "classification": "Loading transfers an ammunition stack count into weapon->value[2]; empty or fully consumed missiles are directly extracted, while a partially consumed stack keeps its UID with reduced value[2].",
+      "authority_boundary": "Bind exact weapon and missile UIDs, before/after payload counts and consumed stack sink under one root before updating either object.",
+      "reachability_evidence": "Registered do_load_weapon validates missile type and caliber, then updates weapon->value[2] and extracts or decrements the carried ammunition.",
+      "sites": [
+        [
+          "src/combat/range.c",
+          1523,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/range.c",
+          1529,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these call sites.",
+        "custody_effect": "Loading transfers an ammunition stack count into weapon->value[2]; empty or fully consumed missiles are directly extracted, while a partially consumed stack keeps its UID with reduced value[2].",
+        "native_state_targets": [
+          "weapon ammunition payload",
+          "carried missile count/UID",
+          "item_current_owner destruction for exhausted stack"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.entrance_door_fixture_grant",
+      "symbol": "EntranceRoom::init",
+      "reason": "item_create",
+      "classification": "EntranceRoom::init reads a fresh entrance door template and publishes its UID in the outside guildhall room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          185,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          193,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh entrance door fixture is published in outside guildhall room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.entrance_door_fixture_detach",
+      "symbol": "EntranceRoom::deinit",
+      "reason": "item_move",
+      "classification": "EntranceRoom::deinit calls obj_from_room on the entrance door fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          566,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.inn_board_fixture_grant",
+      "symbol": "InnRoom::init",
+      "reason": "item_create",
+      "classification": "InnRoom::init reads a fresh inn board template and publishes its UID in the guildhall inn room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          291,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          293,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh inn board fixture is published in guildhall inn room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.inn_board_fixture_detach",
+      "symbol": "InnRoom::deinit",
+      "reason": "item_move",
+      "classification": "InnRoom::deinit calls obj_from_room on the inn board fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          596,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.heartstone_fixture_grant",
+      "symbol": "HeartstoneRoom::init",
+      "reason": "item_create",
+      "classification": "HeartstoneRoom::init reads a fresh heartstone template and publishes its UID in the guildhall heartstone room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          306,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          309,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh heartstone fixture is published in guildhall heartstone room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.heartstone_fixture_detach",
+      "symbol": "HeartstoneRoom::deinit",
+      "reason": "item_move",
+      "classification": "HeartstoneRoom::deinit calls obj_from_room on the heartstone fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          612,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.window_fixture_grant",
+      "symbol": "WindowRoom::init",
+      "reason": "item_create",
+      "classification": "WindowRoom::init reads a fresh window template and publishes its UID in the guildhall window room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          330,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          333,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh window fixture is published in guildhall window room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.window_fixture_detach",
+      "symbol": "WindowRoom::deinit",
+      "reason": "item_move",
+      "classification": "WindowRoom::deinit calls obj_from_room on the window fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          636,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.fountain_fixture_grant",
+      "symbol": "HealRoom::init",
+      "reason": "item_create",
+      "classification": "HealRoom::init reads a fresh fountain template and publishes its UID in the guildhall healing room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          346,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          348,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh fountain fixture is published in guildhall healing room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.fountain_fixture_detach",
+      "symbol": "HealRoom::deinit",
+      "reason": "item_move",
+      "classification": "HealRoom::deinit calls obj_from_room on the fountain fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          652,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.bank_counter_fixture_grant",
+      "symbol": "BankRoom::init",
+      "reason": "item_create",
+      "classification": "BankRoom::init reads a fresh bank counter template and publishes its UID in the guildhall bank room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          362,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          364,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh bank counter fixture is published in guildhall bank room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.bank_counter_fixture_detach",
+      "symbol": "BankRoom::deinit",
+      "reason": "item_move",
+      "classification": "BankRoom::deinit calls obj_from_room on the bank counter fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          668,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.town_portal_fixture_grant",
+      "symbol": "TownPortalRoom::init",
+      "reason": "item_create",
+      "classification": "TownPortalRoom::init reads a fresh town portal template and publishes its UID in the guildhall town portal room; it is a guildhall fixture, not a player reward. Good and evil racewar branches publish the same provisional portal at separate sites; an unknown racewar leaves it unpublished.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          375,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          423,
+          "item_publication"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          442,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh town portal fixture is published in guildhall town portal room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.town_portal_fixture_detach",
+      "symbol": "TownPortalRoom::deinit",
+      "reason": "item_move",
+      "classification": "TownPortalRoom::deinit calls obj_from_room on the town portal fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          682,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.library_tome_fixture_grant",
+      "symbol": "LibraryRoom::init",
+      "reason": "item_create",
+      "classification": "LibraryRoom::init reads a fresh library tome template and publishes its UID in the guildhall library room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          454,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          456,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh library tome fixture is published in guildhall library room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.library_tome_fixture_detach",
+      "symbol": "LibraryRoom::deinit",
+      "reason": "item_move",
+      "classification": "LibraryRoom::deinit calls obj_from_room on the library tome fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          696,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.cargo_board_fixture_grant",
+      "symbol": "CargoRoom::init",
+      "reason": "item_create",
+      "classification": "CargoRoom::init reads a fresh cargo board template and publishes its UID in the guildhall cargo room; it is a guildhall fixture, not a player reward.",
+      "authority_boundary": "Prove a transient fixture exemption that prevents durable ownership and player extraction, or bind the exact fixture UID/vnum, guildhall room and creation source to a bounded root.",
+      "reachability_evidence": "Guildhall::init at boot and the guildhall room command call each derived room init; a successful read_object reaches obj_to_room for the fixture.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          467,
+          "item_lifecycle"
+        ],
+        [
+          "src/guild/guildhall_rooms.c",
+          469,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at these fixture sites.",
+        "custody_effect": "Fresh cargo board fixture is published in guildhall cargo room.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "item_current_owner if fixture UID is admitted"
+        ]
+      }
+    },
+    {
+      "path": "src/guild/guildhall_rooms.c",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "current_support": "Source review only; fixture exemption, selected UID identity and backend qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "id": "guildhall.cargo_board_fixture_detach",
+      "symbol": "CargoRoom::deinit",
+      "reason": "item_move",
+      "classification": "CargoRoom::deinit calls obj_from_room on the cargo board fixture and nulls its wrapper pointer without extracting or retiring the live object; it can remain in NOWHERE with no wrapper reference.",
+      "authority_boundary": "Before deinit, prove the fixture is transient or commit an exact UID retirement/location disposition; do not lose the live pointer or leave an admitted UID detached.",
+      "reachability_evidence": "Guildhall::deinit and guildhall room command teardown call derived deinit; the fixture pointer is set by the corresponding init.",
+      "sites": [
+        [
+          "src/guild/guildhall_rooms.c",
+          710,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance change at this fixture detach site.",
+        "custody_effect": "Removes fixture from room and clears wrapper pointer without extract_obj or a durable owner event.",
+        "native_state_targets": [
+          "live guildhall fixture room contents",
+          "detached NOWHERE object_list entry",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "id": "death.legacy_raise_item_recipient",
+      "path": "src/classes/necromancy.c",
+      "symbol": "place_raised_item",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The six legacy corpse-raise fallbacks give non-money recovered contents to a PC caster when present, but give coin piles and other cases to the summoned follower; the same UID changes owner directly.",
+      "authority_boundary": "Bind each corpse child UID and coin-pile owner to the selected caster/follower destination under the corpse raise root before live publication.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          49,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          51,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "raise_undead, spawn_raise_undead, dracolich, golem, avatar and greater dracolich legacy bodies call place_raised_item after removing children from the corpse.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The six legacy corpse-raise fallbacks give non-money recovered contents to a PC caster when present, but give coin piles and other cases to the summoned follower; the same UID changes owner directly.",
+        "native_state_targets": [
+          "corpse child owner",
+          "caster or summoned follower inventory",
+          "item_current_owner"
+        ]
+      }
+    },
+    {
+      "id": "death.legacy_raise_undead_corpse",
+      "path": "src/classes/necromancy.c",
+      "symbol": "raise_undead",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The undead raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+      "authority_boundary": "Require one typed raise root with exact corpse UID/retirement, all child owner events, coin-pile disposition and saved-copy policy before any live mutation.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          726,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          754,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "raise_undead calls persistence_defer_corpse_raise first; if that path does not take ownership, the direct fallback reaches these two sites.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The undead raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+        "native_state_targets": [
+          "source corpse and child graph",
+          "caster or follower inventory",
+          "item_current_owner and corpse lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "death.legacy_raise_titan_corpse",
+      "path": "src/classes/necromancy.c",
+      "symbol": "spawn_raise_undead",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The titan raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+      "authority_boundary": "Require one typed raise root with exact corpse UID/retirement, all child owner events, coin-pile disposition and saved-copy policy before any live mutation.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          1186,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1200,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "spawn_raise_undead calls persistence_defer_corpse_raise first; if that path does not take ownership, the direct fallback reaches these two sites.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The titan raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+        "native_state_targets": [
+          "source corpse and child graph",
+          "caster or follower inventory",
+          "item_current_owner and corpse lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "death.legacy_raise_dracolich_corpse",
+      "path": "src/classes/necromancy.c",
+      "symbol": "spell_create_dracolich",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The dracolich raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+      "authority_boundary": "Require one typed raise root with exact corpse UID/retirement, all child owner events, coin-pile disposition and saved-copy policy before any live mutation.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          1791,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1809,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "spell_create_dracolich calls persistence_defer_corpse_raise first; if that path does not take ownership, the direct fallback reaches these two sites.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The dracolich raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+        "native_state_targets": [
+          "source corpse and child graph",
+          "caster or follower inventory",
+          "item_current_owner and corpse lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "death.legacy_raise_golem_corpse",
+      "path": "src/classes/necromancy.c",
+      "symbol": "create_golem",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The golem raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+      "authority_boundary": "Require one typed raise root with exact corpse UID/retirement, all child owner events, coin-pile disposition and saved-copy policy before any live mutation.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          2056,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2068,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "create_golem calls persistence_defer_corpse_raise first; if that path does not take ownership, the direct fallback reaches these two sites.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The golem raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+        "native_state_targets": [
+          "source corpse and child graph",
+          "caster or follower inventory",
+          "item_current_owner and corpse lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "death.legacy_raise_avatar_corpse",
+      "path": "src/classes/necromancy.c",
+      "symbol": "spell_call_avatar",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The avatar raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+      "authority_boundary": "Require one typed raise root with exact corpse UID/retirement, all child owner events, coin-pile disposition and saved-copy policy before any live mutation.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          2278,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2289,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "spell_call_avatar calls persistence_defer_corpse_raise first; if that path does not take ownership, the direct fallback reaches these two sites.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The avatar raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+        "native_state_targets": [
+          "source corpse and child graph",
+          "caster or follower inventory",
+          "item_current_owner and corpse lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "death.legacy_raise_greater_dracolich_corpse",
+      "path": "src/classes/necromancy.c",
+      "symbol": "spell_create_greater_dracolich",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The greater dracolich raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+      "authority_boundary": "Require one typed raise root with exact corpse UID/retirement, all child owner events, coin-pile disposition and saved-copy policy before any live mutation.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          2529,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2540,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "spell_create_greater_dracolich calls persistence_defer_corpse_raise first; if that path does not take ownership, the direct fallback reaches these two sites.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The greater dracolich raise fallback removes each child from its corpse, gives it through place_raised_item, and directly extracts the old corpse after making a separate saved-corpse clone when contents exist.",
+        "native_state_targets": [
+          "source corpse and child graph",
+          "caster or follower inventory",
+          "item_current_owner and corpse lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "death.saved_corpse_timed_cleanup",
+      "path": "src/classes/necromancy.c",
+      "symbol": "check_saved_corpse",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A scheduled check directly extracts the saved clone corpse when it still occupies the corpse storage room, including whatever cloned children remain.",
+      "authority_boundary": "Require the clone lineage and every cloned UID to be explicitly classified as inaccessible transient evidence or retired under a linked source root before extraction.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          1263,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "create_saved_corpse schedules event_saved_corpse on the raised mob; check_saved_corpse finds the stored copy by room and extracts it.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "A scheduled check directly extracts the saved clone corpse when it still occupies the corpse storage room, including whatever cloned children remain.",
+        "native_state_targets": [
+          "saved corpse room copy and children",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "id": "death.saved_corpse_clone",
+      "path": "src/classes/necromancy.c",
+      "symbol": "create_saved_corpse",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Legacy PC-corpse raise clones the corpse shell and recursively clones every contained item with fresh read_object UIDs, then publishes that duplicate graph in corpse storage while the original children are delivered elsewhere.",
+      "authority_boundary": "Prove storage copy is isolated non-economic recovery evidence with no admitted custody, or record every duplicate UID, origin and eventual sink under the raise root; refuse unknown or money-valued duplicate copies.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          1290,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "All six direct raise fallbacks call create_saved_corpse when a PC corpse has contents; clone_obj and clone_container_obj in actwiz.c create fresh template objects before obj_to_room here.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "Legacy PC-corpse raise clones the corpse shell and recursively clones every contained item with fresh read_object UIDs, then publishes that duplicate graph in corpse storage while the original children are delivered elsewhere.",
+        "native_state_targets": [
+          "stored clone corpse and child UIDs",
+          "source corpse and child UIDs",
+          "item_current_owner and provenance"
+        ]
+      }
+    },
+    {
+      "id": "death.raise_nested_exclusion_cleanup",
+      "path": "src/classes/necromancy.c",
+      "symbol": "discard_nested_raise_exclusions",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "After a committed corpse raise, nested transient children and, when not preserved, money piles are removed from containers and extracted from live state.",
+      "authority_boundary": "Verify the committed raise result explicitly accounts for each discarded UID and coin-pile value before applying this live cleanup; do not retire an unlisted native owner.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          1309,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1310,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "complete_corpse_raise_after_commit calls this helper on retained children and the helper recursively removes excluded nested items.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "After a committed corpse raise, nested transient children and, when not preserved, money piles are removed from containers and extracted from live state.",
+        "native_state_targets": [
+          "committed corpse child graph",
+          "transient and coin-pile cleanup",
+          "item_current_owner destruction result"
+        ]
+      }
+    },
+    {
+      "id": "death.raise_committed_publication",
+      "path": "src/classes/necromancy.c",
+      "symbol": "complete_corpse_raise_after_commit",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The committed raise callback removes transient or spent coin-pile children, gives retained children to the selected caster/follower and extracts the corpse after the durable lifecycle root committed.",
+      "authority_boundary": "Match the committed root receipt, every child UID and coin amount, caster/follower owner, corpse retirement and non-stale live graph before publication.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          1439,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1440,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1468,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1471,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1475,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1497,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "persistence_defer_corpse_raise schedules this completion only after its durable transaction; these sites publish that result.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The committed raise callback removes transient or spent coin-pile children, gives retained children to the selected caster/follower and extracts the corpse after the durable lifecycle root committed.",
+        "native_state_targets": [
+          "committed corpse lifecycle and ownership result",
+          "live caster/follower graph",
+          "spent coin-pile cleanup"
+        ]
+      }
+    },
+    {
+      "id": "death.exhume_corpse_grant",
+      "path": "src/classes/necromancy.c",
+      "symbol": "do_exhume",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A successful exhume skill reads a fresh corpse vnum 2, customizes its level and publishes it in the room before embalming.",
+      "authority_boundary": "Bind skill action, caster, room, new corpse UID and payload to one source-qualified issuance root before publication.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          2644,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2649,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered do_exhume reaches read_object and obj_to_room after skill/timer checks.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "A successful exhume skill reads a fresh corpse vnum 2, customizes its level and publishes it in the room before embalming.",
+        "native_state_targets": [
+          "room corpse",
+          "item_current_owner and corpse creation origin"
+        ]
+      }
+    },
+    {
+      "id": "death.summon_host_corpse_grant",
+      "path": "src/classes/necromancy.c",
+      "symbol": "do_summon_host",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A successful summon-host action reads a fresh corpse vnum 2, customizes its level and publishes it in the room before embalming.",
+      "authority_boundary": "Bind action, caster, room, new corpse UID and payload to one source-qualified issuance root before publication.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          2753,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2758,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered do_summon_host reaches read_object and obj_to_room after class/timer checks.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "A successful summon-host action reads a fresh corpse vnum 2, customizes its level and publishes it in the room before embalming.",
+        "native_state_targets": [
+          "room corpse",
+          "item_current_owner and corpse creation origin"
+        ]
+      }
+    },
+    {
+      "id": "death.corpseform_disabled",
+      "path": "src/classes/necromancy.c",
+      "symbol": "spell_corpseform",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The corpseform body that would move corpse children into a room and extract the corpse is unreachable because the function sends Temporarily disabled and returns unconditionally before its checks.",
+      "authority_boundary": "Keep the unconditional return or require a typed corpse and child disposition root before enabling this body.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          2961,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2962,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2966,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "spell_corpseform lines 2799-2800 return before all three item sites; no in-tree caller can reach them in this build.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The corpseform body that would move corpse children into a room and extract the corpse is unreachable because the function sends Temporarily disabled and returns unconditionally before its checks.",
+        "native_state_targets": []
+      }
+    },
+    {
+      "id": "death.wall_of_bones_direct",
+      "path": "src/classes/necromancy.c",
+      "symbol": "spell_wall_of_bones",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The direct fallback creates a wall, moves any corpse contents to the room, then extracts the empty corpse or a dragon-scale input; selected scale components can also be consumed by a separate typed active-PC path.",
+      "authority_boundary": "Bind the exact corpse/scale UID, every child owner transition and wall source event before creating the wall or extracting material.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          3442,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3443,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3446,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3451,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "spell_wall_of_bones first tries deferred corpse lifecycle or typed active-PC scale consumption, then these direct branches remain available when not deferred.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The direct fallback creates a wall, moves any corpse contents to the room, then extracts the empty corpse or a dragon-scale input; selected scale components can also be consumed by a separate typed active-PC path.",
+        "native_state_targets": [
+          "corpse or scale item sink",
+          "room child items",
+          "wall state and item_current_owner"
+        ]
+      }
+    },
+    {
+      "id": "death.compact_corpse_direct",
+      "path": "src/classes/necromancy.c",
+      "symbol": "spell_compact_corpse",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The non-deferred compaction path moves all corpse contents into the room, creates a fresh bone pile, extracts the corpse and publishes the pile; if pile allocation fails the corpse remains emptied.",
+      "authority_boundary": "Preflight a source-qualified pile UID and one root for corpse retirement, child release and pile issuance before moving any child; retain all live state on rejection.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/classes/necromancy.c",
+          3481,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3482,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3485,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3494,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3495,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "spell_compact_corpse first calls persistence_defer_corpse_compaction; the direct fallback reaches these sites if deferral does not own the operation.",
+      "native_effects": {
+        "holding_effect": "No denomination assignment at these call sites; coin-pile custody or value may change through the described item effect.",
+        "custody_effect": "The non-deferred compaction path moves all corpse contents into the room, creates a fresh bone pile, extracts the corpse and publishes the pile; if pile allocation fails the corpse remains emptied.",
+        "native_state_targets": [
+          "source corpse and children",
+          "new room bone pile",
+          "item_current_owner and corpse lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "special.xmas_cap_wrong_owner_sink",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "xmas_cap",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A player wearing the gift cap with another PID in value[6] loses that live item after its hit proc casts a spell.",
+      "authority_boundary": "Retire the exact cap UID with the wrong-owner penalty and committed source before extraction; a spell side effect cannot substitute for custody evidence.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          1603,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "The cap is registered as object vnum 666; CMD_GOTHIT can reach this PID mismatch branch.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "A player wearing the gift cap with another PID in value[6] loses that live item after its hit proc casts a spell.",
+        "native_state_targets": [
+          "worn cap UID",
+          "item ownership tombstone"
+        ]
+      }
+    },
+    {
+      "id": "special.flying_citadel_unreachable_move",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "flying_citadel",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The room-to-room object movement follows an unconditional return FALSE and is unreachable in this build.",
+      "authority_boundary": "Keep the branch unreachable or qualify an exact UID room transfer before removing the return.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          2271,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          2272,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Object vnum 1218 is registered, but line 2265 returns before both movement calls.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "The room-to-room object movement follows an unconditional return FALSE and is unreachable in this build.",
+        "native_state_targets": []
+      }
+    },
+    {
+      "id": "special.disarm_pick_gloves_slot_relink",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "disarm_pick_gloves",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The gloves proc unequips the struck character’s weapon into the same character’s carrying list.",
+      "authority_boundary": "Match the weapon UID, owner and slot before and after the live relink; do not mint or retire the item.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          2535,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          2540,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered object vnum 192 handles CMD_GOTHIT and can reach the non-NODROP weapon branch.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "The gloves proc unequips the struck character’s weapon into the same character’s carrying list.",
+        "native_state_targets": [
+          "victim equipment slot",
+          "victim carrying list",
+          "selected weapon UID"
+        ]
+      }
+    },
+    {
+      "id": "special.guild_badge_break",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "guild_badge",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A worn player guild badge can crumble on a periodic timer check; its timer and stat payload can change before that later sink.",
+      "authority_boundary": "Retire the exact badge UID and preserve its selected owner, revision and timer/source result before extraction.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          2863,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered object vnum 41 reaches this random break branch after the timer expires.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "A worn player guild badge can crumble on a periodic timer check; its timer and stat payload can change before that later sink.",
+        "native_state_targets": [
+          "worn badge UID",
+          "item ownership tombstone",
+          "badge payload"
+        ]
+      }
+    },
+    {
+      "id": "special.imprison_object_sink",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "obj_imprison",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The room prison object is extracted when its target leaves or escapes after its struggle value changes.",
+      "authority_boundary": "Link the selected prison UID, room owner, payload change and destruction reason to one durable disposition.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          3115,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          3146,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered object vnum 1300 executes these branches when its recorded PID is absent or a struggle succeeds.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "The room prison object is extracted when its target leaves or escapes after its struggle value changes.",
+        "native_state_targets": [
+          "prison object UID and room owner",
+          "item ownership tombstone",
+          "struggle payload"
+        ]
+      }
+    },
+    {
+      "id": "special.huntsman_ward_trigger_sink",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "huntsman_ward",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Four armed trap variants clear their secret/owner payload and extract the room trap when a trespasser triggers it.",
+      "authority_boundary": "Bind the exact ward UID, room, arm/disarm state and trigger source to a single destruction result before extraction.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          3761,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          3788,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          3827,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          3846,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Object vnums 54, 77, 400229 and 73 are registered; movement through an armed room can reach each extraction.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "Four armed trap variants clear their secret/owner payload and extract the room trap when a trespasser triggers it.",
+        "native_state_targets": [
+          "room trap UID",
+          "item ownership tombstone",
+          "armed/owner payload"
+        ]
+      }
+    },
+    {
+      "id": "death.dracolich_death_drop",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "necro_dracolich",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "On summoned dracolich death, carried and worn items are moved directly into the death room after check_saved_corpse.",
+      "authority_boundary": "Move every retained UID from NPC custody to the exact room under the death root, including equipped items; prove saved-corpse overlap cannot duplicate custody.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          4335,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          4336,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          4340,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered dracolich mob vnums 3-10 and 1201 reach this CMD_DEATH branch.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "On summoned dracolich death, carried and worn items are moved directly into the death room after check_saved_corpse.",
+        "native_state_targets": [
+          "NPC inventory/equipment",
+          "death room item list",
+          "item owner history"
+        ]
+      }
+    },
+    {
+      "id": "special.io_assistant_rose_grant",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "io_assistant",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Io’s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "authority_boundary": "Issue the new rose UID once and link both NPC grant and intended recipient handoff to a source-qualified root; verify do_give result.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          4965,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          4968,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered mob vnum 444 reaches this idle room-presence branch when Vareena is found.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "Io’s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "native_state_targets": [
+          "fresh rose UID",
+          "assistant inventory",
+          "recipient custody"
+        ]
+      }
+    },
+    {
+      "id": "artifact.monolith_absorb",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "artifact_monolith",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The periodic monolith proc adds a duplicate room monolith’s charge count to the survivor and extracts the duplicate.",
+      "authority_boundary": "Bind both UIDs, source charge payload, resulting charge count and duplicate retirement atomically; avoid charge duplication on replay.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          5105,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered object vnum 354 scans its room on CMD_PERIODIC for another object of the same template.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolith’s charge count to the survivor and extracts the duplicate.",
+        "native_state_targets": [
+          "surviving monolith payload",
+          "duplicate monolith UID/tombstone"
+        ]
+      }
+    },
+    {
+      "id": "gambling.slot_coupon_grant",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "slot_machine",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A type-3 slot jackpot directly creates blue and red restring coupons and places both in the player inventory.",
+      "authority_boundary": "Bind the two new coupon UIDs, jackpot source and wallet payout in the same committed root before either live grant.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          5708,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          5708,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          5709,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          5709,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered slot machine vnum 45 reaches the type-3 jackpot branch before its wallet payout submission.",
+      "native_effects": {
+        "holding_effect": "The same jackpot also calculates and submits a wallet payout; the item grants precede that submission.",
+        "custody_effect": "A type-3 slot jackpot directly creates blue and red restring coupons and places both in the player inventory.",
+        "native_state_targets": [
+          "two new coupon UIDs",
+          "player inventory",
+          "jackpot wallet result"
+        ]
+      }
+    },
+    {
+      "id": "special.treasure_chest_potion_grant",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "treasure_chest",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener’s inventory.",
+      "authority_boundary": "Bind chest UID, random reward count, each new potion UID and player custody to one source-qualified root.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          5809,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          5811,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered chest vnum 1270 and an explicit do_open caller reach the CMD_OPEN reward loop.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener’s inventory.",
+        "native_state_targets": [
+          "chest UID",
+          "new potion UIDs",
+          "player inventory"
+        ]
+      }
+    },
+    {
+      "id": "special.treasure_chest_detach",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "treasure_chest",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The opened chest is removed from its room but never extracted; obj_from_room leaves it in LOC_NOWHERE in the global object list.",
+      "authority_boundary": "Retire the exact chest UID or prove a deliberately transient fixture disposition before detaching it; preserve its relation to potion rewards.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          5821,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "The CMD_OPEN path always calls obj_from_room after the reward branch; handler.c leaves detached objects in NOWHERE.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "The opened chest is removed from its room but never extracted; obj_from_room leaves it in LOC_NOWHERE in the global object list.",
+        "native_state_targets": [
+          "room chest UID",
+          "detached NOWHERE object",
+          "item_current_owner if admitted"
+        ]
+      }
+    },
+    {
+      "id": "artifact.holy_weapon_owner_transfer",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "holy_weapon",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "A racewar-mismatched holy weapon is unequipped, detached from its holder and given directly to a matching player in the room.",
+      "authority_boundary": "Commit the exact sword UID, prior slot/owner and selected recipient before live transfer and before the lightning spell can kill its former holder.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          6046,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          6055,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          6074,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered holy weapon object vnums 32822, 425 and 51005 reach the periodic wrong-alignment branch.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "A racewar-mismatched holy weapon is unequipped, detached from its holder and given directly to a matching player in the room.",
+        "native_state_targets": [
+          "former equipment/inventory",
+          "recipient inventory",
+          "artifact UID ownership"
+        ]
+      }
+    },
+    {
+      "id": "artifact.holy_weapon_vanish",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "holy_weapon",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "If no matching player is found after the holy weapon leaves its holder, the sword is extracted before its former holder is struck.",
+      "authority_boundary": "Retire the sword UID under the same wrong-alignment source with the detached owner and result before extraction.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          6085,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "The registered holy weapon periodic branch reaches this extraction when no matching room player exists.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "If no matching player is found after the holy weapon leaves its holder, the sword is extracted before its former holder is struck.",
+        "native_state_targets": [
+          "detached sword UID",
+          "artifact ownership tombstone"
+        ]
+      }
+    },
+    {
+      "id": "item.banana_consumption",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "banana",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Eating a banana extracts the carried banana after applying fullness, before the replacement peel is allocated.",
+      "authority_boundary": "Retire the exact banana UID and couple its consumption to peel issuance; reject before extraction if the replacement cannot be committed.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          6277,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered banana vnum 1235 reaches this CMD_EAT branch when the player is not full.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "Eating a banana extracts the carried banana after applying fullness, before the replacement peel is allocated.",
+        "native_state_targets": [
+          "carried banana UID",
+          "item ownership tombstone"
+        ]
+      }
+    },
+    {
+      "id": "item.banana_peel_grant",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "banana",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "After consuming a banana, the proc reads a new peel template and publishes it in the current room without a null check.",
+      "authority_boundary": "Issue the peel UID with the banana sink and exact room owner in one root; handle allocation failure before changing the source.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          6279,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          6281,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "The CMD_EAT banana branch calls read_object(1234) and obj_to_room after extracting the banana.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "After consuming a banana, the proc reads a new peel template and publishes it in the current room without a null check.",
+        "native_state_targets": [
+          "new peel UID",
+          "room item list"
+        ]
+      }
+    },
+    {
+      "id": "artifact.good_evil_sword_poof",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "good_evil_poofSword",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The helper extracts a live good/evil sword after damaging its holder.",
+      "authority_boundary": "Retire the exact sword UID with a selected owner, cause and receipt before extraction.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          6813,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "The registered good_evil_sword proc calls good_evil_poofSword in its player-alignment response.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "The helper extracts a live good/evil sword after damaging its holder.",
+        "native_state_targets": [
+          "held sword UID",
+          "item ownership tombstone"
+        ]
+      }
+    },
+    {
+      "id": "artifact.good_evil_sword_slot_relink",
+      "path": "src/specs/specs.heavens.c",
+      "symbol": "good_evil_sword",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "The good/evil sword forces other equipped items into the same player inventory, then equips itself as primary weapon.",
+      "authority_boundary": "Verify each exact UID, player owner and resulting equipment slot; retain committed custody identity during live relink.",
+      "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "sites": [
+        [
+          "src/specs/specs.heavens.c",
+          6972,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          6983,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          6988,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          6993,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          6998,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          7017,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.heavens.c",
+          7018,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Registered object vnums 21 and 22 reach these worn/carried branches for an alive untrusted holder.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes at these call sites.",
+        "custody_effect": "The good/evil sword forces other equipped items into the same player inventory, then equips itself as primary weapon.",
+        "native_state_targets": [
+          "player equipment slots",
+          "player inventory",
+          "selected sword and displaced UIDs"
+        ]
+      }
     }
   ],
   "census": [
