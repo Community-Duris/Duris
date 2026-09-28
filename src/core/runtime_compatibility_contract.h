@@ -108,6 +108,7 @@ constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
+constexpr const char *RUNTIME_DB_COLLATION = "utf8mb4_unicode_ci";
 constexpr const char *RUNTIME_DB_TIME_ZONE = "+00:00";
 constexpr const char *RUNTIME_DB_ISOLATION = "READ-COMMITTED";
 constexpr const char *RUNTIME_DB_SQL_MODE =

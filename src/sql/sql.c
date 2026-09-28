@@ -1024,16 +1024,18 @@ static bool sql_mode_has(const char *mode, const char *required)
 
 static bool sql_verify_session_contract(MYSQL *conn)
 {
-	const char *verify = "SELECT @@character_set_connection,@@time_zone,@@sql_mode";
+	const char *verify =
+		"SELECT @@character_set_connection,@@collation_connection,@@time_zone,@@sql_mode";
 	if (mysql_real_query(conn, verify, strlen(verify)))
 		return false;
 	MYSQL_RES *result = mysql_store_result(conn);
 	MYSQL_ROW row = result ? mysql_fetch_row(result) : NULL;
 	bool valid = row && row[0] && !strcmp(row[0], RUNTIME_DB_CHARACTER_SET) && row[1] &&
-		     !strcmp(row[1], RUNTIME_DB_TIME_ZONE) && row[2] &&
-		     sql_mode_has(row[2], "STRICT_TRANS_TABLES") &&
-		     sql_mode_has(row[2], "ERROR_FOR_DIVISION_BY_ZERO") &&
-		     sql_mode_has(row[2], "NO_ENGINE_SUBSTITUTION");
+		     !strcmp(row[1], RUNTIME_DB_COLLATION) && row[2] &&
+		     !strcmp(row[2], RUNTIME_DB_TIME_ZONE) && row[3] &&
+		     sql_mode_has(row[3], "STRICT_TRANS_TABLES") &&
+		     sql_mode_has(row[3], "ERROR_FOR_DIVISION_BY_ZERO") &&
+		     sql_mode_has(row[3], "NO_ENGINE_SUBSTITUTION");
 	if (result)
 		mysql_free_result(result);
 	if (!valid)
@@ -1077,9 +1079,11 @@ static bool sql_apply_session_contract(MYSQL *conn)
 {
 	if (mysql_set_character_set(conn, RUNTIME_DB_CHARACTER_SET))
 		return false;
+	std::string collation_statement =
+		"SET SESSION collation_connection='" + std::string(RUNTIME_DB_COLLATION) + "'";
 	std::string sql_mode_statement =
 		"SET SESSION sql_mode='" + std::string(RUNTIME_DB_SQL_MODE) + "'";
-	const char *statements[] = { "SET SESSION time_zone='+00:00'",
+	const char *statements[] = { collation_statement.c_str(), "SET SESSION time_zone='+00:00'",
 				     "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED",
 				     sql_mode_statement.c_str() };
 	for (const char *statement : statements)

@@ -90,7 +90,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
         self.assertIn("RUNTIME_MYSQL8_METADATA_FINGERPRINT", self.header)
         self.assertIn("RUNTIME_MARIADB10_11_METADATA_FINGERPRINT", self.header)
-        for constant in ("RUNTIME_DB_CHARACTER_SET", "RUNTIME_DB_TIME_ZONE",
+        for constant in ("RUNTIME_DB_CHARACTER_SET", "RUNTIME_DB_COLLATION",
+                         "RUNTIME_DB_TIME_ZONE",
                          "RUNTIME_DB_ISOLATION", "RUNTIME_DB_SQL_MODE",
                          "RUNTIME_DB_TIMEOUT_SECONDS",
                          "RUNTIME_DB_REMOTE_TLS_REQUIRED",

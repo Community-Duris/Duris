@@ -61,6 +61,15 @@ int main(int argc, char **argv)
         assert(!strcmp(argv[1], "session"));
         const char *server = mysql_get_server_info(DB);
         assert(server);
+        assert(sql_connection_execute(DB,
+            "CREATE TEMPORARY TABLE exact_account_collation_probe("
+            "account_name VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY)"
+            " CHARACTER SET utf8mb4"));
+        assert(sql_connection_execute(DB,
+            "INSERT INTO exact_account_collation_probe VALUES('duris-collation-probe')"));
+        assert(sql_connection_execute(DB,
+            "DELETE FROM exact_account_collation_probe WHERE account_name='duris-collation-probe'"));
+        assert(sql_connection_execute(DB, "DROP TEMPORARY TABLE exact_account_collation_probe"));
         if (strstr(server, "MariaDB"))
         {
             assert(sql_connection_execute(DB, "SET SESSION check_constraint_checks=0"));
