@@ -6,6 +6,7 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/transport.h"
 #include <ctype.h>
 #include <list>
@@ -469,6 +470,13 @@ bool flying_transport_cmd_buy(P_char ch, P_char victim, char *arg)
 	if (!found_it || !transport_routes[i].origin_vnum)
 	{
 		send_to_char("Invalid choice.\n", ch);
+		return TRUE;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Flight tickets are unavailable while economic accounting is active.\n",
+			ch);
 		return TRUE;
 	}
 

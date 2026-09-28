@@ -10,6 +10,7 @@
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "specs/specs.gellz.h"
 #include <ctype.h>
 #include <list>
@@ -214,6 +215,17 @@ int magic_deck(P_obj obj, P_char ch, int cmd, char *argument)
 	char buf[MAX_STRING_LENGTH];
 	char betbuf2[MAX_STRING_LENGTH];
 	char betbuf1[MAX_STRING_LENGTH];
+	if (economic_gameplay_authority::active())
+	{
+		if (cmd == CMD_OFFER && ch)
+		{
+			send_to_char(
+				"Blackjack is unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
+		return FALSE;
+	}
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -761,6 +773,8 @@ int needcard(char whoscard, P_char ch)
 
 int do_win(P_char ch, int bettype, int betamt, int winloose)
 {
+	if (economic_gameplay_authority::active())
+		return FALSE;
 	if (winloose == 1)
 	{ // WINNING Tasks
 		static const int coin_values[] = { 1, 10, 100, 1000 };

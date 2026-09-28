@@ -51,6 +51,8 @@ enum class economic_reason : uint16_t
 	restitution = 40,
 	lifecycle_retirement = 41,
 	epoch_transition = 42,
+	item_reward = 43,
+	quest_cost = 44,
 };
 
 enum class economic_actor_kind : uint8_t
@@ -78,6 +80,11 @@ enum class economic_source_kind : uint16_t
 	lifecycle = 16,
 	service = 17,
 	item_action = 18,
+	quest_action = 19,
+	spell_creation = 20,
+	spell_consumption = 21,
+	intentional_destruction = 22,
+	loot = 23,
 };
 
 constexpr size_t ECONOMIC_SOURCE_EVENT_BYTES = 48;

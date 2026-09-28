@@ -25,9 +25,11 @@
 #include <errno.h>
 #include <ctype.h>
 #include <new>
+#include <set>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <unordered_map>
 #include <vector>
 #include "world/achievements.h"
 #include "guild/assocs.h"
@@ -1364,6 +1366,11 @@ void do_forage(P_char ch, char * /*arg*/, int /*cmd*/)
 	if (IS_NPC(ch))
 	{
 		send_to_char("You are far too NPC-like to even try.\r\n", ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("You cannot forage for items right now.\r\n", ch);
 		return;
 	}
 	if (IS_AFFECTED2(ch, AFF2_SCRIBING) || IS_AFFECTED2(ch, AFF2_MEMORIZING))
@@ -3683,6 +3690,13 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 
 	argument = one_argument(argument, obj_name);
 	one_argument(argument, victim_name);
+	if (!str_cmp(obj_name, "coins") && economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Stealing coins is unavailable while active accounting is enabled.\r\n",
+			ch);
+		return;
+	}
 
 	if (!(victim = get_char_room_vis(ch, victim_name)))
 	{
@@ -6110,16 +6124,182 @@ void do_rub(P_char /*ch*/, char * /*argument*/, int /*cmd*/)
 	return;
 }
 
-void do_split(P_char ch, char *argument, int /*cmd*/)
+namespace
 {
-	if (economic_gameplay_authority::active())
+struct money_split_recipient
+{
+	uint64_t runtime_id;
+	uint32_t pid;
+};
+
+struct money_split_state
+{
+	uint64_t actor_runtime_id;
+	uint32_t actor_pid;
+	int room;
+	int coin_type;
+	long amount;
+	long share;
+	long given = 0;
+	size_t next = 0;
+	bool in_flight = false;
+	bool announced = false;
+	std::vector<money_split_recipient> recipients;
+};
+
+struct money_split_child
+{
+	uint64_t split_id;
+	uint64_t recipient_runtime_id;
+	uint32_t recipient_pid;
+	size_t index;
+};
+
+static_assert(sizeof(money_split_child) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
+std::unordered_map<uint64_t, money_split_state> money_splits;
+uint64_t next_money_split_id = 0;
+
+void finish_money_split(uint64_t split_id, const char *reason)
+{
+	auto node = money_splits.extract(split_id);
+	if (node.empty())
+		return;
+	const auto &state = node.mapped();
+	P_char actor = find_character_by_runtime_id(state.actor_runtime_id);
+	if (!actor)
+		return;
+	if (reason)
+		send_to_char(reason, actor);
+	char line[MAX_STRING_LENGTH];
+	snprintf(line, sizeof(line), "You keep %ld %s coins for yourself.\r\n",
+		 state.amount - state.given, coin_names[state.coin_type]);
+	send_to_char(line, actor);
+}
+
+void continue_money_split(uint64_t split_id);
+
+bool money_split_child_completion(P_char, bool committed, const coin_transfer_payload &,
+				  const coin_transfer_result &, unsigned int,
+				  const uint8_t *encoded, size_t encoded_size)
+{
+	money_split_child child = {};
+	if (!encoded || encoded_size != sizeof(child))
+		return true;
+	memcpy(&child, encoded, sizeof(child));
+	auto found = money_splits.find(child.split_id);
+	if (found == money_splits.end() || !found->second.in_flight ||
+	    found->second.next != child.index)
+		return true;
+	auto &state = found->second;
+	state.in_flight = false;
+	if (!committed)
 	{
-		send_to_char(
-			"Money splitting is unavailable while active accounting is enabled.\r\n",
-			ch);
+		finish_money_split(child.split_id,
+				   "The split stopped; completed shares remain transferred.\r\n");
+		return true;
+	}
+	state.given += state.share;
+	P_char actor = find_character_by_runtime_id(state.actor_runtime_id);
+	P_char recipient = find_character_by_runtime_id(child.recipient_runtime_id);
+	if (recipient &&
+	    (!(IS_PC(recipient) || IS_MORPH(recipient)) || !IS_PC(GET_PLYR(recipient)) ||
+	     GET_PID(GET_PLYR(recipient)) != static_cast<int>(child.recipient_pid)))
+		recipient = nullptr;
+	if (!recipient)
+		recipient = find_player_by_pid(child.recipient_pid);
+	char line[MAX_STRING_LENGTH];
+	if (actor)
+	{
+		if (!state.announced && actor->in_room == state.room)
+			act("$n splits some money with $s group.", 1, actor, 0, 0, TO_ROOM);
+		state.announced = true;
+		if (recipient)
+		{
+			snprintf(line, sizeof(line), "You give %s %ld %s coins.\r\n",
+				 GET_NAME(recipient), state.share, coin_names[state.coin_type]);
+			send_to_char(line, actor);
+		}
+	}
+	if (recipient)
+	{
+		if (actor)
+		{
+			snprintf(line, sizeof(line), "$n gives you your share:  %ld %s coins.",
+				 state.share, coin_names[state.coin_type]);
+			act(line, 0, actor, 0, recipient, TO_VICT);
+		}
+		else
+		{
+			snprintf(line, sizeof(line), "You receive %ld %s coins.\r\n", state.share,
+				 coin_names[state.coin_type]);
+			send_to_char(line, recipient);
+		}
+		gmcp_char_vitals(recipient);
+	}
+	++state.next;
+	continue_money_split(child.split_id);
+	return true;
+}
+
+void continue_money_split(uint64_t split_id)
+{
+	auto found = money_splits.find(split_id);
+	if (found == money_splits.end())
+		return;
+	auto &state = found->second;
+	P_char actor = find_character_by_runtime_id(state.actor_runtime_id);
+	if (!actor || !IS_PC(actor) || GET_PID(actor) != static_cast<int>(state.actor_pid) ||
+	    actor->in_room != state.room)
+	{
+		finish_money_split(split_id,
+				   "The split stopped; completed shares remain transferred.\r\n");
 		return;
 	}
+	for (; state.next < state.recipients.size(); ++state.next)
+	{
+		P_char recipient =
+			find_character_by_runtime_id(state.recipients[state.next].runtime_id);
+		if (!recipient || recipient == actor || recipient->in_room != state.room ||
+		    !(IS_PC(recipient) || IS_MORPH(recipient)) || !CAN_SEE(actor, recipient))
+			continue;
+		bool grouped = false;
+		for (group_list *member = actor->group; member; member = member->next)
+			if (member->ch == recipient)
+				grouped = true;
+		if (!grouped)
+			continue;
+		P_char recipient_wallet = GET_PLYR(recipient);
+		if (!recipient_wallet || !IS_PC(recipient_wallet) ||
+		    GET_PID(recipient_wallet) <= 0 ||
+		    GET_PID(recipient_wallet) !=
+			    static_cast<int>(state.recipients[state.next].pid) ||
+		    GET_PID(recipient_wallet) == static_cast<int>(state.actor_pid))
+			continue;
+		coin_transfer_payload payload;
+		const int32_t share = static_cast<int32_t>(state.share);
+		if (!currency_transaction_coin_wallet_exact(actor, state.coin_type, share, true,
+							    &payload.source) ||
+		    !currency_transaction_coin_wallet_exact(recipient_wallet, state.coin_type,
+							    share, false, &payload.destination))
+			break;
+		money_split_child child = { split_id, recipient->runtime_id,
+					    state.recipients[state.next].pid, state.next };
+		state.in_flight = true;
+		if (currency_transaction_submit_coin(actor, payload, money_split_child_completion,
+						     &child, sizeof(child)))
+			return;
+		state.in_flight = false;
+		break;
+	}
+	finish_money_split(split_id,
+			   state.next < state.recipients.size() ?
+				   "The split stopped; completed shares remain transferred.\r\n" :
+				   nullptr);
+}
+} // namespace
 
+void do_split(P_char ch, char *argument, int /*cmd*/)
+{
 	char gold_str[MAX_INPUT_LENGTH], typestr[MAX_INPUT_LENGTH];
 	int group_size = 0, ctype;
 	long gold, share, given;
@@ -6222,11 +6402,64 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 			     ch);
 		return;
 	}
-	if (gold < group_size)
+	if (!economic_gameplay_authority::active() && gold < group_size)
 	{ /*
 	   * Make sure enough for 1 coin/player
 	   */
 		send_to_char("There isn't enough money to go around!\r\n", ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		if (!IS_PC(ch) || GET_PID(ch) <= 0 || GET_LEVEL(ch) >= MAXLVL)
+		{
+			send_to_char("This split cannot use an accounted player wallet.\r\n", ch);
+			return;
+		}
+		uint64_t split_id = 0;
+		try
+		{
+			money_split_state state = {};
+			state.actor_runtime_id = ch->runtime_id;
+			state.actor_pid = GET_PID(ch);
+			state.room = ch->in_room;
+			state.coin_type = ctype;
+			state.amount = gold;
+			std::set<uint32_t> seen_wallets;
+			for (gl = ch->group; gl; gl = gl->next)
+				if (gl->ch && gl->ch != ch && gl->ch->in_room == ch->in_room &&
+				    CAN_SEE(ch, gl->ch) && (IS_PC(gl->ch) || IS_MORPH(gl->ch)))
+				{
+					P_char wallet = GET_PLYR(gl->ch);
+					if (wallet && IS_PC(wallet) && GET_PID(wallet) > 0 &&
+					    GET_PID(wallet) != GET_PID(ch) &&
+					    seen_wallets.insert(GET_PID(wallet)).second)
+						state.recipients.push_back(
+							{ gl->ch->runtime_id,
+							  static_cast<uint32_t>(GET_PID(wallet)) });
+				}
+			if (gold < static_cast<long>(state.recipients.size() + 1))
+			{
+				send_to_char("There isn't enough money to go around!\r\n", ch);
+				return;
+			}
+			state.share = gold / static_cast<long>(state.recipients.size() + 1);
+			if (state.recipients.empty() || ++next_money_split_id == 0)
+			{
+				send_to_char(
+					"No eligible player wallet can receive this split.\r\n",
+					ch);
+				return;
+			}
+			split_id = next_money_split_id;
+			money_splits.emplace(split_id, std::move(state));
+		}
+		catch (const std::bad_alloc &)
+		{
+			send_to_char("The split could not start; nothing changed.\r\n", ch);
+			return;
+		}
+		continue_money_split(split_id);
 		return;
 	}
 	act("$n splits some money with $s group.", 1, ch, 0, 0, TO_ROOM);

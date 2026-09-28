@@ -5,6 +5,7 @@
 #include "item/enhance.h"
 #include "item/item_movement_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/utils.h"
 
 #include <stdlib.h>
@@ -132,6 +133,13 @@ static void chaos_side(P_char ch, const char *arg)
 
 static void chaos_pouch_test_seed(P_char ch)
 {
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Pouch test materials cannot be issued while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 	static constexpr int vnums[] = { 400000, 400001, 400291, 18000, 22801 };
 	bool queued = false;
 	for (int vnum : vnums)

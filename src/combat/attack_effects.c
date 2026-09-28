@@ -7,6 +7,7 @@
 #include "core/utils.h"
 #include "combat/attack_continuation.h"
 #include "combat/damage.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/forced_weapon_drop.h"
 #include "item/native_artifact_actions.h"
 #include "item/objmisc.h"
@@ -714,6 +715,8 @@ bool critical_disarm(P_char ch, P_char victim)
 		return forced_weapon_drop(victim, obj, forced_weapon_drop_cause::critical_disarm) !=
 		       forced_weapon_drop_result::rejected;
 	}
+	if (economic_gameplay_authority::active() && IS_PC(victim))
+		return FALSE;
 
 	obj = unequip_char(victim, pos);
 	if (!obj)

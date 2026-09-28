@@ -15,6 +15,8 @@
 #include "guild/alliances.h"
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "sql/sql.h"
 
 extern P_room world;
@@ -848,6 +850,15 @@ void spell_word_of_recall(int /*level*/, P_char ch, char * /*arg*/, int /*type*/
 		send_to_char("You are completely lost.\n", victim);
 		return;
 	}
+	if (economic_gameplay_authority::active() &&
+	    total_carried_weight(victim) > ((CAN_CARRY_W(victim) / 100) * 70))
+		for (int slot = 0; slot < MAX_WEAR; ++slot)
+			if (victim->equipment[slot])
+			{
+				send_to_char("Your equipment cannot be left behind right now.\r\n",
+					     ch);
+				return;
+			}
 	if (ch == victim)
 		act("&+W$n utters a single word and disappears.", TRUE, victim, 0, 0, TO_ROOM);
 	else
@@ -1088,6 +1099,12 @@ bool check_item_teleport(P_char ch, char *arg, int cmd)
 	if (!obj->value[2] || (IS_ROOM(ch->in_room, ROOM_ARENA) != IS_ROOM(to_room, ROOM_ARENA)))
 	{
 		send_to_char("Nothing happens.\n\n", ch);
+		return TRUE;
+	}
+	if (obj->value[2] == 1 && economic_gameplay_authority::active() &&
+	    item_command_uses_durable_ownership(obj))
+	{
+		send_to_char("That portal cannot use its final charge right now.\r\n", ch);
 		return TRUE;
 	}
 	if (OBJ_CARRIED_BY(obj, ch))

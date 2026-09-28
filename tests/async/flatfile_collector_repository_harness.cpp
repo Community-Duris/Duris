@@ -331,10 +331,137 @@ static void enable_accounting(const std::string &root, economic_account_key *wal
 	commit();
 }
 
+static void interrupted_saved_room_collection(const fs::path &root)
+{
+	fs::create_directories(root / "domains");
+	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const std::string path = root.string();
+	std::string error;
+	const item_owner_identity room = { item_owner_type::room, 700, 0 };
+	const auto container = snapshot(100, 2100, PLAYER_SNAPSHOT_NO_PARENT, 30, 10, false);
+	const auto shell = snapshot(101, 2101, 0, 5, 500, true);
+	flatfile_saved_world_item_record saved = {};
+	saved.item_key = "item.collector.saved";
+	saved.room_vnum = 700;
+	saved.revision = 1;
+	saved.items = { container, shell };
+	require(flatfile_world_item_establish(path, {}, { saved }, &error) ==
+			flatfile_world_item_result::ok,
+		"could not establish saved-room collector fixture: " + error);
+	require(flatfile_item_repository_establish_owner(
+			path, room,
+			{ { 100, 100, 0, room, 1, 2100, item_custody_state::active },
+			  { 101, 100, 100, room, 1, 2101, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish saved-room item custody: " + error);
+	item_transfer_payload enrollment = {};
+	enrollment.from_owner = { item_owner_type::player, 42, 0 };
+	enrollment.to_owner = { item_owner_type::corpse, item_corpse_owner_id(42, 2000), 0 };
+	enrollment.reason = item_transfer_reason::corpse_create;
+	enrollment.selected_item_uid = 100;
+	enrollment.target_root_item_uid = 100;
+	enrollment.item_count = 2;
+	enrollment.items[0] = { 100, 100, 0, 0, 2100, item_custody_state::active };
+	enrollment.items[1] = { 101, 100, 100, 0, 2101, item_custody_state::active };
+	const auto blob = encode(saved.items);
+	enrollment.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), enrollment.item_blob.begin());
+	enrollment.collector.present = true;
+	enrollment.collector.death_operation = operation(90);
+	enrollment.collector.beneficiary_pid = 42;
+	enrollment.collector.death_time = 1000;
+	enrollment.collector.policy = { 10, 20, 100, 200, 100 };
+	enrollment.collector.eligible_item_uids = { 101 };
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(path, &error), "could not lock saved-room enrollment fixture");
+		flatfile_collector_enrollment_mutation mutation;
+		unsigned int result_code = 0;
+		const item_transfer_result transfer = { 100, 2, 0, 1, 1, 0 };
+		require(flatfile_collector_prepare_death_enrollment(
+				path, lock, enrollment, transfer, &mutation, &result_code,
+				&error) == flatfile_collector_repository_result::ok &&
+				!result_code && mutation.enrolled == 1,
+			"could not prepare saved-room collector entitlement: " + error);
+		require(flatfile_authority_transaction_commit(path, lock, { mutation.after_image },
+							      &error) ==
+				flatfile_authority_transaction_result::ok,
+			"could not commit saved-room collector entitlement: " + error);
+	}
+	const auto detail = listing(path, 1, &error);
+	const auto payload = collect_payload(path, detail.entry, room, shell, 1010, &error);
+	const auto command = collector_command(payload, 91);
+	require(setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION", "2", 1) == 0,
+		"could not arm saved-room collection fault");
+	const auto interrupted = flatfile_collector_repository_apply(path, command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION");
+	require(interrupted.outcome == critical_apply_outcome::retryable_failure &&
+			fs::exists(root / "domains/.critical-authority-transaction"),
+		"saved-room collector command did not interrupt after partial publication");
+	const auto recovered = listing(path, 1, &error);
+	require(recovered.entry.status == collector::state::collected &&
+			!fs::exists(root / "domains/.critical-authority-transaction"),
+		"saved-room collection did not recover its complete journal");
+	const auto replay = flatfile_collector_repository_apply(path, command);
+	require(replay.outcome == critical_apply_outcome::already_applied &&
+			collector_result(replay).entry.item_revision == 2,
+		"saved-room collection did not replay exactly");
+	std::vector<flatfile_corpse_record> corpses;
+	std::vector<flatfile_saved_world_item_record> saved_items;
+	require(flatfile_world_item_list(path, &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty() && saved_items.size() == 1 &&
+			saved_items[0].revision == 2 && saved_items[0].items.size() == 1 &&
+			saved_items[0].items[0].object_uid == 100 &&
+			saved_items[0].items[0].weight == 25,
+		"saved-room collection left a duplicate or damaged the retained container");
+	std::vector<flatfile_item_ownership_record> room_items, held_items;
+	require(owner_revision(path, room, &room_items, &error) == 2 && room_items.size() == 1 &&
+			room_items[0].item_uid == 100 && room_items[0].item_revision == 2,
+		"saved-room collection did not retain exact room custody");
+	require(owner_revision(path, payload.to_owner, &held_items, &error) == 1 &&
+			held_items.size() == 1 && held_items[0].item_uid == 101 &&
+			held_items[0].item_revision == 2,
+		"saved-room collection did not publish exact collector custody");
+	std::vector<economic_accounting_item_reference> references;
+	for (uint16_t index = 0; index < 2; ++index)
+	{
+		economic_accounting_item_reference reference = {};
+		require(flatfile_item_accounting_reference_find_by_legacy(
+				path, command.operation_id, index, &reference, &error) ==
+					flatfile_item_accounting_status::ok &&
+				reference.item_uid == UINT64_C(100) + index &&
+				reference.before_revision == 1 && reference.after_revision == 2 &&
+				reference.operation_id.bytes == command.operation_id.bytes &&
+				reference.line_index == index && reference.child_index == 1,
+			"saved-room collection lost an exact item reference: " + error);
+		references.push_back(reference);
+	}
+	require(flatfile_item_accounting_reference_verify_operation(path, command.operation_id,
+								    references, &error) ==
+			flatfile_item_accounting_status::ok,
+		"saved-room collection retained an extra item reference: " + error);
+	size_t removed_buckets = 0;
+	for (const auto &entry : fs::directory_iterator(root / "accounting/item_references"))
+	{
+		require(entry.is_regular_file() && fs::remove(entry.path()),
+			"could not fault the saved-room reference bucket");
+		++removed_buckets;
+	}
+	require(removed_buckets == 1,
+		"saved-room collection had an unexpected reference bucket count");
+	const auto missing_reference = flatfile_collector_repository_apply(path, command);
+	require(missing_reference.outcome == critical_apply_outcome::terminal_failure &&
+			missing_reference.error_code == EILSEQ,
+		"collector replay accepted a missing committed item reference");
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
+	interrupted_saved_room_collection(root / "saved-room-fault");
 	const std::string root_path = root.string();
 	fs::create_directories(root / "domains");
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
@@ -510,6 +637,13 @@ int main(int argc, char **argv)
 			purchase_references[0].after_revision ==
 				collect_first.items[0].expected_item_revision + 1,
 		"recovered collector purchase did not atomically retain its item reference");
+	economic_accounting_item_reference reference = {};
+	require(flatfile_item_accounting_reference_find_by_legacy(
+			root_path, collect_first_command.operation_id, 1, &reference, &error) ==
+				flatfile_item_accounting_status::ok &&
+			reference.item_uid == 101 && reference.before_revision == 2 &&
+			reference.after_revision == 3,
+		"recovered collector command lost its exact item reference: " + error);
 	applied = flatfile_collector_repository_apply(root_path, collect_first_command);
 	require(applied.outcome == critical_apply_outcome::already_applied &&
 			collector_result(applied).entry.revision == collected_first.entry.revision,

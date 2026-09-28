@@ -51,6 +51,8 @@ bool currency_transaction_player_busy(P_char character);
 bool currency_transaction_coin_item_busy(uint64_t item_uid);
 bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
 				      coin_transfer_endpoint *endpoint);
+bool currency_transaction_coin_wallet_exact(P_char character, uint8_t denomination, int32_t amount,
+					    bool debit, coin_transfer_endpoint *endpoint);
 bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,
 				      coin_completion_fn completion, const void *context,
 				      size_t context_size);

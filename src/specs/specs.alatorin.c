@@ -12,6 +12,7 @@
 #include "world/db.h"
 #include "economy/mining.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "magic/spells.h"
 
 int miners_helmet(P_obj obj, P_char ch, int cmd, char *argument)
@@ -105,6 +106,14 @@ int smelter(P_char ch, P_char pl, int cmd, char *argument)
 
 	if (cmd == CMD_GIVE)
 	{
+		// Smelting can accept coins or ore before charging the NPC-held cash.
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char("The smelter is unavailable while active accounting is "
+				     "enabled.\r\n",
+				     pl);
+			return TRUE;
+		}
 		rest = one_argument(argument, arg1);
 		rest = one_argument(rest, arg2);
 		// If it's coins.

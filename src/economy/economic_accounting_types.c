@@ -269,8 +269,12 @@ bool item_position_valid(uint64_t uid, const economic_item_position &position)
 	if (position.state == item_custody_state::absent)
 		return position.owner.type == item_owner_type::unknown && !position.owner.id &&
 		       !position.owner.context_id && !position.root_uid && !position.parent_uid &&
-		       !position.revision;
+		       !position.revision && !position.equipment_slot;
 	if (!item_owner_identity_valid(position.owner))
+		return false;
+	if (position.equipment_slot &&
+	    (position.owner.type != item_owner_type::player || position.parent_uid ||
+	     position.state != item_custody_state::active))
 		return false;
 	if (position.state == item_custody_state::destroyed)
 		// Existing authority keeps a destroyed child's former root/parent.
@@ -337,7 +341,8 @@ bool economic_item_position_equal(const economic_item_position &left,
 {
 	return item_owner_identity_equal(left.owner, right.owner) &&
 	       left.root_uid == right.root_uid && left.parent_uid == right.parent_uid &&
-	       left.revision == right.revision && left.state == right.state;
+	       left.revision == right.revision && left.state == right.state &&
+	       left.equipment_slot == right.equipment_slot;
 }
 
 economic_accounting_error

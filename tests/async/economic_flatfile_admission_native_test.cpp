@@ -20,6 +20,11 @@ critical_apply_result flatfile_critical_command_repository_apply_selected(const 
 	assert(false && "native accounting journey must never enter legacy dispatcher");
 	return { outcome::terminal_failure, 0, EINVAL };
 }
+critical_apply_result flatfile_item_repository_apply(const std::string &, const critical_command &)
+{
+	assert(false && "bank admission journey must never enter item dispatcher");
+	return { outcome::terminal_failure, 0, EINVAL };
+}
 struct native_execution
 {
 	std::string root;

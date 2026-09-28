@@ -5,6 +5,8 @@
 #include "core/utils.h"
 #include "core/defines.h"
 #include "combat/damage.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "magic/spells.h"
 #include <string.h>
 void spell_magic_missile(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
@@ -1187,7 +1189,9 @@ void spell_disintegrate(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 					{
 						obj = victim->equipment[i];
 
-						if (!NewSaves(victim, SAVING_SPELL, -5) &&
+						if (!(economic_gameplay_authority::active() &&
+						      item_command_uses_durable_ownership(obj)) &&
+						    !NewSaves(victim, SAVING_SPELL, -5) &&
 						    !CHAR_IN_ARENA(victim) && !IS_ARTIFACT(obj) &&
 						    !IS_NOSHOW(obj))
 						{

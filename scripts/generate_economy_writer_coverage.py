@@ -549,6 +549,9 @@ def schema_record(route_id: str, disposition: str) -> dict:
     elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         current = 2
         mode = "typed_schema_2_sql_component_without_qualified_gameplay_route"
+    elif route_id == "currency.split":
+        current = 1
+        mode = "schema_1_when_inactive_schema_2_sequential_coin_children_when_active"
     elif route_id in MIXED_SPELL_ITEM_IDS:
         current = None
         mode = "typed_schema_2_for_active_pc_via_shared_item_owner_direct_legacy_for_npc_or_inactive"
@@ -557,9 +560,7 @@ def schema_record(route_id: str, disposition: str) -> dict:
         mode = "schema_1_plus_direct_side_effects" if route_id in MIXED_SCHEMA1_IDS else "schema_1_typed_command_path"
         if route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
             mode = "schema_1_when_inactive_schema_2_item_repository_component_when_active"
-        if route_id == "currency.split":
-            mode = "multiple_schema_1_currency_legs_not_atomic_root"
-        elif route_id in SCHEMA2_ITEM_TRANSFER_IDS:
+        if route_id in SCHEMA2_ITEM_TRANSFER_IDS:
             mode = "schema_1_when_inactive_schema_2_item_accounting_when_active"
     elif disposition == "runtime_projection_route":
         current = None
@@ -571,18 +572,21 @@ def schema_record(route_id: str, disposition: str) -> dict:
     evidence = list(BUILDER_EVIDENCE.get(family, [])) if current == 1 else []
     evidence.extend(["src/persistence/critical_command.h:9-10", "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"])
     if route_id == "currency.split":
-        evidence.append("src/cmd/actoth.c:6232-6257 (recipient ADD_MONEY legs precede sender SUB_MONEY; no root command)")
+        evidence.extend([
+            "src/cmd/actoth.c:do_split and continue_money_split (active wallet-to-wallet schema-2 coin child per eligible recipient)",
+            "tests/async/test_currency_completion_retention.py (retained completion and partial split behavior)",
+        ])
     if route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         evidence.extend([
             "src/economy/coin_transfer_accounting.c:947-1017 (SQL native coin effects, balanced postings, item references, source claim and receipt)",
             "tests/async/test_coin_transfer_accounting.py (SQL component harness; not a real player journey)",
         ])
-    schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS
+    schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS or route_id == "currency.split"
     item_action_coverage = (
         " and spell creation/component consumption, sticks-to-snakes retirement, and key-break retirement"
         if route_id == "item.movement_submit" else ""
     )
-    if schema2_connected:
+    if route_id in SCHEMA2_ITEM_TRANSFER_IDS:
         evidence.extend([
             "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
             "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
@@ -613,7 +617,7 @@ def schema_record(route_id: str, disposition: str) -> dict:
     else:
         interpretation = f"Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction{item_action_coverage} use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported." if schema2_connected else "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected." if current == 1 else "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root." if disposition == "runtime_projection_route" else "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation." if disposition not in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"} else mode
     if route_id == "currency.split":
-        interpretation = "do_split has no atomic root command: recipient credits are individually submitted through schema-1 currency legs before the sender debit. No schema-2 multi-party operation is connected."
+        interpretation = "Inactive do_split uses a schema-1 sender debit followed by recipient credits. Active do_split submits one balanced schema-2 wallet-to-wallet coin child per eligible recipient, with exact denomination and retained completion. Completed shares remain transferred if a later child fails; there is no atomic multi-party split root. Full backend gameplay qualification remains pending."
     elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         interpretation = "The SQL transaction component records typed schema-2 coin effects and balanced postings. Pooled dispatch/reconcile and player-visible publication are separate qualification gates; flat-file coin accounting remains unqualified."
     elif route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
@@ -641,6 +645,15 @@ def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
             "required_atomic_evidence": ["Pooled root dispatch/reconcile", "post-commit player publication", "equivalent flat-file evidence and replay"],
             "global_evidence": ["src/economy/coin_transfer_accounting.c", "tests/async/test_coin_transfer_accounting.py"],
             "note": "Observed only in a SQL component harness; no real player journey or full backend route is qualified.",
+        }
+    if route_id == "currency.split":
+        return {
+            "status": "typed_schema2_balanced_child_roots_without_global_split_atomicity",
+            "unified_operation_postings_observed": True,
+            "legacy_domain_evidence": ["Active split submits an exact-denomination wallet-to-wallet coin transfer for each eligible recipient."],
+            "required_atomic_evidence": ["Both-backend gameplay qualification for each child and retained completion", "Explicit acceptance of partial completion rather than global split atomicity"],
+            "global_evidence": ["src/cmd/actoth.c:continue_money_split", "src/economy/currency_transaction.c", "tests/async/test_currency_completion_retention.py"],
+            "note": "Each accepted child has balanced postings; the whole group split is deliberately sequential and may partially complete.",
         }
     if disposition == "dormant_writer_candidate":
         status = "not_executed_in_tree"
@@ -703,6 +716,9 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     if disposition == "non_writer_candidate":
         decision = "not_a_playable_economy_or_custody_writer"
         policy = NON_WRITERS[route_id]
+    elif route_id == "currency.split":
+        decision = "allow_sequential_schema2_coin_children"
+        policy = "Under active authority, admit only identified player wallets and submit one exact-denomination balanced transfer per eligible recipient. Retain each completion before continuing; stop on failure and report that completed shares remain transferred. The legacy schema-1 branch runs only while accounting is inactive."
     elif disposition == "dormant_writer_candidate":
         decision = "keep_unreachable_or_block_if_reactivated"
         if route_id == "currency.bank_single_projection":
@@ -770,8 +786,6 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
         policy = "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
         if route_id in {"item.extraction", "item.scrap", "world.zone_purge", "lifecycle.sql_reset", "lifecycle.character_delete", "lifecycle.flat_character_delete", "lifecycle.sql_character_delete", "lifecycle.sql_account_delete", "lifecycle.flat_account_delete", "staff.purge", "staff.zone_reset", "lifecycle.reset_entry"}:
             policy += " For lifecycle/destruction paths, distinguish true retirement from staging, unload, rollback, reset reconstruction and recovery; only true destruction gets a linked custody tombstone and explicit coin sink."
-        if route_id in {"currency.split"}:
-            policy += " Split all participant effects under one root operation with every player fenced/validated before any recipient credit; current separate schema-1 credits and later sender debit are not atomic."
         if route_id in {"world.mobile_scaling", "world.mobile_template", "pet.no_cash", "recovery.pet_cash_discard"}:
             policy += " Prove the NPC is provisional before this assignment or preserve its admitted source/sink and revision in one root; existing charm targets and pet restoration cannot be assumed fresh."
         if route_id.startswith("auction."):
@@ -819,9 +833,9 @@ def build() -> dict:
                    else source_targets(route_id, disposition))
         if route_id == "currency.split":
             details = {
-                "holding_effect": "Issues one schema-1 currency credit leg per eligible group recipient, then submits sender debit for total given; remainder stays with sender. Recipient credits happen before sender debit, so failed debit can leave net issuance.",
+                "holding_effect": "Inactive mode debits the sender before separate recipient credits. Active mode submits one balanced exact-denomination wallet-to-wallet schema-2 child per eligible recipient; completed children remain transferred if a later child fails.",
                 "custody_effect": "None; this route moves wallet value, not item UIDs.",
-                "native_state_targets": ["eligible recipients' PC.cash[0..3] / player_data denomination columns", "sender PC.cash[0..3] / player_data denomination columns", "wallet_revision and currency_ledger on each applicable SQL leg"],
+                "native_state_targets": ["eligible recipients' PC.cash[0..3] / player_data denomination columns", "sender PC.cash[0..3] / player_data denomination columns", "wallet_revision and currency_ledger on applicable SQL legs", "economic_accounting_operation and balanced coin postings for each active child"],
             }
         route = {
             "id": route_id,

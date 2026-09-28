@@ -25,6 +25,7 @@
 #include "combat/training_dummy.h"
 #include "item/objmisc.h"
 #include "item/item_movement_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "magic/spells.h"
 #include "world/weather.h"
 /*
@@ -2018,6 +2019,13 @@ void do_OLD_bandage(P_char ch, char *arg, int /*cmd*/)
 
 void event_summon_book(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char(
+			"The spellbook cannot be summoned while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 	P_obj book;
 	char bookname[512];
 	char namebuf[512];
@@ -2042,12 +2050,25 @@ void event_summon_book(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*dat
 
 void do_summon_book(P_char ch, char * /*arg*/, int /*cmd*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char(
+			"The spellbook cannot be summoned while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 	send_to_char("You utter a magical formula summoning your spellbook..\r\n", ch);
 	add_event(event_summon_book, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
 }
 
 void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char("The totem cannot be summoned while item accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	P_obj totem;
 	char totemname[512];
 	char namebuf[512];
@@ -2095,6 +2116,12 @@ void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*da
 
 void do_summon_totem(P_char ch, char * /*arg*/, int /*cmd*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char("The totem cannot be summoned while item accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	send_to_char(
 		"You thrust your arms skyward, uttering an incantation to &+GMaglubiyet&n.\r\n",
 		ch);

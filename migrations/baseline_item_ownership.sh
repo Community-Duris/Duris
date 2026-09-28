@@ -232,6 +232,18 @@ UPDATE item_current_owner current_item JOIN unambiguous_item_evidence evidence
   ON evidence.item_uid=current_item.item_uid
 SET current_item.parent_item_uid=evidence.parent_uid
 WHERE current_item.parent_item_uid IS NULL AND evidence.parent_uid IS NOT NULL;
+-- Only an unmodified player baseline may inherit an equipped position from
+-- its unique native row. Later custody revisions retain their own slot evidence.
+UPDATE item_current_owner current_item
+JOIN item_ownership_baseline baseline ON baseline.item_uid=current_item.item_uid
+JOIN player_items native ON native.id=baseline.source_row_id
+SET current_item.equipment_slot=native.equip_slot,
+    baseline.equipment_slot=native.equip_slot
+WHERE baseline.source_table='player_items' AND baseline.opening_item_revision=0
+  AND current_item.item_revision=0 AND current_item.owner_type=1
+  AND current_item.owner_id=native.pid AND current_item.parent_item_uid IS NULL
+  AND native.obj_uid=current_item.item_uid AND native.container_id IS NULL
+  AND native.equip_slot BETWEEN 1 AND 43;
 COMMIT;
 SELECT COUNT(*) AS authoritative_items FROM item_current_owner;
 SELECT COUNT(*) AS open_quarantine_rows FROM item_ownership_quarantine WHERE repaired_at IS NULL;

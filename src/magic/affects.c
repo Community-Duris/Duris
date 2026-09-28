@@ -17,6 +17,7 @@
 #include "world/falling.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -35,6 +36,7 @@
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "item/item_command_policy.h"
 #include "kingdom/kingdom_store_piece.h"
 #include "classes/paladins.h"
 #include "combat/racewar_stat_mods.h"
@@ -3435,6 +3437,8 @@ bool make_wet(P_char ch, int duration)
 void poo(P_char ch)
 {
 	P_obj load;
+	if (economic_gameplay_authority::active())
+		return;
 
 	if (IS_PC(ch) && (IS_CENTAUR(ch) || IS_MINOTAUR(ch) || IS_GOBLIN(ch)) &&
 	    (number(0, 1000) == 42) && (load = read_object(51, VIRTUAL)))
@@ -3678,6 +3682,8 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 		// May have to do the damage here, but more likely in get()
 		return FALSE;
 	}
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(obj))
+		return FALSE;
 
 	/* Not for underwater use, or noshow objects. */
 	if (obj->z_cord < 0 || already_falling || IS_NOSHOW(obj))

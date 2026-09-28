@@ -17,6 +17,7 @@
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "item/item_movement_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 
@@ -191,6 +192,12 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "spell_faerie_sight: bogus params.");
+		return;
+	}
+	if (economic_gameplay_authority::active() && vnum_in_inv(ch, VOBJ_FORAGE_FAERIE_DUST) > 0)
+	{
+		send_to_char("Faerie dust cannot be consumed while item accounting is active.\r\n",
+			     ch);
 		return;
 	}
 
@@ -549,6 +556,12 @@ static void wind_blade_grant_completed(P_char actor, bool committed,
 
 void grant_wind_blade(P_char ch)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char("The winds cannot create a blade while item accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	P_obj blade;
 
 	int blade_vnum = WIND_BLADE;

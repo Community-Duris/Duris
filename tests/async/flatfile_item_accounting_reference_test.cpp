@@ -254,6 +254,45 @@ int main(int argc, char *argv[])
 	       flatfile_item_accounting_status::ok);
 	assert(found.item_uid == ref1.item_uid);
 
+	// Two child operations can share a shard in one authority transaction.
+	// Staging also creates the private reference directory for a fresh root.
+	const std::string staged_root = temp_dir + "/staged";
+	fs::create_directories(staged_root + "/domains");
+	fs::permissions(staged_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(staged_root + "/domains", fs::perms::owner_all, fs::perm_options::replace);
+	flatfile_authority_lock lock;
+	assert(lock.acquire(staged_root, &err));
+	economic_accounting_item_reference staged_first = ref1;
+	staged_first.legacy_operation_id.bytes[0] = 0xbb;
+	staged_first.legacy_operation_id.bytes[15] = 1;
+	staged_first.legacy_event_index = 0;
+	economic_accounting_item_reference staged_second = ref2;
+	staged_second.legacy_operation_id.bytes[0] = 0xbb;
+	staged_second.legacy_operation_id.bytes[15] = 2;
+	staged_second.legacy_event_index = 0;
+	std::vector<flatfile_authority_operation> operations;
+	assert(flatfile_item_accounting_reference_stage(
+		       staged_root, lock, staged_first.legacy_operation_id,
+		       std::span<const economic_accounting_item_reference>(&staged_first, 1),
+		       &operations, &err) == flatfile_item_accounting_status::ok);
+	assert(flatfile_item_accounting_reference_stage(
+		       staged_root, lock, staged_second.legacy_operation_id,
+		       std::span<const economic_accounting_item_reference>(&staged_second, 1),
+		       &operations, &err) == flatfile_item_accounting_status::ok);
+	assert(operations.size() == 1 && operations[0].filename == "bb.bin" &&
+	       operations[0].bytes.size() == 2 * FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+	assert(flatfile_authority_transaction_commit_operations(staged_root, lock, operations,
+								&err) ==
+	       flatfile_authority_transaction_result::ok);
+	assert(flatfile_item_accounting_reference_verify_operation(
+		       staged_root, staged_first.legacy_operation_id,
+		       std::span<const economic_accounting_item_reference>(&staged_first, 1),
+		       &err) == flatfile_item_accounting_status::ok);
+	assert(flatfile_item_accounting_reference_verify_operation(
+		       staged_root, staged_second.legacy_operation_id,
+		       std::span<const economic_accounting_item_reference>(&staged_second, 1),
+		       &err) == flatfile_item_accounting_status::ok);
+
 	fs::remove_all(temp_dir);
 	return 0;
 }

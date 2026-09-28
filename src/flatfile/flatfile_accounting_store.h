@@ -72,6 +72,7 @@ class flatfile_accounting_storage
 	friend class flatfile_accounting_bank_transaction;
 	friend class flatfile_accounting_collector_transaction;
 	friend class flatfile_accounting_auction_item_claim_transaction;
+	friend class flatfile_accounting_coin_transaction;
 	friend class flatfile_accounting_item_transfer_transaction;
 	friend class flatfile_accounting_lifecycle_transaction;
 	friend class flatfile_accounting_authority_storage;

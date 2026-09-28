@@ -14,23 +14,85 @@ bool ordinary_player_move(const item_transfer_payload &payload, uint32_t actor_p
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 		if (payload.items[index].expected_state != item_custody_state::active ||
-		    payload.items[index].expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION)
+		    payload.items[index].expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ||
+		    payload.items[index].vnum == VOBJ_COINS)
 			return false;
 	switch (payload.reason)
 	{
 	case item_transfer_reason::player_get:
 		return (payload.from_owner.type == item_owner_type::room ||
-			payload.from_owner.type == item_owner_type::container) &&
+			payload.from_owner.type == item_owner_type::container ||
+			(payload.from_owner.type == item_owner_type::player &&
+			 payload.from_owner.id == actor_pid)) &&
 		       payload.to_owner.type == item_owner_type::player &&
-		       payload.to_owner.id == actor_pid;
+		       payload.to_owner.id == actor_pid && !payload.target_parent_item_uid;
 	case item_transfer_reason::player_drop:
+	case item_transfer_reason::combat_fumble:
+	case item_transfer_reason::critical_disarm:
 		return payload.from_owner.type == item_owner_type::player &&
 		       payload.from_owner.id == actor_pid &&
-		       payload.to_owner.type == item_owner_type::room;
+		       payload.to_owner.type == item_owner_type::room &&
+		       (!item_transfer_forced_weapon_drop(payload.reason) ||
+			(payload.reason_id > 0 &&
+			 payload.reason_id <= ITEM_TRANSFER_MAX_EQUIPMENT_SLOT));
 	case item_transfer_reason::player_put:
 		return payload.from_owner.type == item_owner_type::player &&
+		       payload.from_owner.id == actor_pid && payload.target_parent_item_uid &&
+		       payload.reason_id == static_cast<int64_t>(payload.target_parent_item_uid) &&
+		       ((payload.to_owner.type == item_owner_type::player &&
+			 payload.to_owner.id == actor_pid) ||
+			payload.to_owner.type == item_owner_type::room ||
+			payload.to_owner.type == item_owner_type::container);
+	case item_transfer_reason::locker_deposit:
+		return payload.from_owner.type == item_owner_type::player &&
 		       payload.from_owner.id == actor_pid &&
-		       payload.to_owner.type == item_owner_type::container;
+		       payload.to_owner.type == item_owner_type::locker && payload.to_owner.id &&
+		       payload.to_owner.context_id;
+	case item_transfer_reason::locker_withdraw:
+		return payload.from_owner.type == item_owner_type::locker &&
+		       payload.from_owner.id && payload.from_owner.context_id &&
+		       payload.to_owner.type == item_owner_type::player &&
+		       payload.to_owner.id == actor_pid && !payload.target_parent_item_uid;
+	case item_transfer_reason::pet_give:
+		return payload.from_owner.type == item_owner_type::player &&
+		       payload.from_owner.id == actor_pid &&
+		       payload.to_owner.type == item_owner_type::pet && payload.to_owner.id &&
+		       payload.to_owner.context_id == actor_pid &&
+		       payload.reason_id == static_cast<int64_t>(payload.to_owner.id) &&
+		       !payload.multi_root && !payload.target_parent_item_uid;
+	case item_transfer_reason::pet_return:
+		return payload.from_owner.type == item_owner_type::pet && payload.from_owner.id &&
+		       payload.from_owner.context_id == actor_pid &&
+		       payload.to_owner.type == item_owner_type::player &&
+		       payload.to_owner.id == actor_pid &&
+		       payload.reason_id == static_cast<int64_t>(payload.from_owner.id) &&
+		       !payload.multi_root && !payload.target_parent_item_uid;
+	case item_transfer_reason::player_wear:
+	case item_transfer_reason::player_remove:
+		return payload.from_owner.type == item_owner_type::player &&
+		       payload.from_owner.id == actor_pid &&
+		       item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
+		       payload.reason_id > 0 &&
+		       payload.reason_id <= ITEM_TRANSFER_MAX_EQUIPMENT_SLOT &&
+		       payload.selected_item_uid == payload.target_root_item_uid &&
+		       !payload.target_parent_item_uid && !payload.multi_root;
+	case item_transfer_reason::operator_repair:
+	{
+		if (payload.from_owner.type != item_owner_type::room ||
+		    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+		    payload.from_owner.context_id || !payload.from_owner.id ||
+		    payload.reason_id <= 0 || !payload.selected_item_uid ||
+		    payload.selected_item_uid == static_cast<uint64_t>(payload.reason_id) ||
+		    payload.target_root_item_uid != payload.selected_item_uid ||
+		    payload.target_parent_item_uid || payload.multi_root)
+			return false;
+		const uint64_t storage_uid = static_cast<uint64_t>(payload.reason_id);
+		for (size_t index = 0; index < payload.item_count; ++index)
+			if (payload.items[index].item_uid == payload.selected_item_uid)
+				return payload.items[index].root_item_uid == storage_uid &&
+				       payload.items[index].parent_item_uid == storage_uid;
+		return false;
+	}
 	case item_transfer_reason::player_give:
 		return payload.from_owner.type == item_owner_type::player &&
 		       payload.from_owner.id == actor_pid &&
@@ -55,7 +117,8 @@ bool corpse_player_move(const item_transfer_payload &payload, uint32_t actor_pid
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 		if (payload.items[index].expected_state != item_custody_state::active ||
-		    payload.items[index].expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION)
+		    payload.items[index].expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ||
+		    payload.items[index].vnum == VOBJ_COINS)
 			return false;
 
 	if (payload.reason == item_transfer_reason::corpse_create)
@@ -76,20 +139,23 @@ bool corpse_player_move(const item_transfer_payload &payload, uint32_t actor_pid
 	return false;
 }
 
-bool sourced_item_creation(const item_transfer_payload &payload, uint32_t actor_pid)
+bool sourced_item_creation(const item_transfer_payload &payload, uint32_t actor_pid,
+			   economic_source_kind kind)
 {
-	if (!actor_pid || actor_pid > INT32_MAX || payload.reason != item_transfer_reason::creation ||
+	if (!actor_pid || actor_pid > INT32_MAX ||
+	    payload.reason != item_transfer_reason::creation ||
 	    !item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner) ||
 	    payload.from_owner.type != item_owner_type::system || payload.from_owner.id ||
-	    payload.from_owner.context_id ||
-	    payload.to_owner.context_id ||
-	    (payload.to_owner.type == item_owner_type::player && payload.to_owner.id != actor_pid) ||
+	    payload.from_owner.context_id || payload.to_owner.context_id ||
+	    (payload.to_owner.type == item_owner_type::player &&
+	     payload.to_owner.id != actor_pid) ||
 	    (payload.to_owner.type != item_owner_type::player &&
 	     payload.to_owner.type != item_owner_type::room) ||
 	    payload.reason_id < 0 ||
-	    payload.reason_id > UINT32_MAX || payload.corpse.present || payload.collector.present ||
-	    !payload.item_count)
+	    (kind == economic_source_kind::quest_completion ? payload.reason_id == 0 :
+							      payload.reason_id > UINT32_MAX) ||
+	    payload.corpse.present || payload.collector.present || !payload.item_count)
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 		if (payload.items[index].expected_state != item_custody_state::absent ||
@@ -119,6 +185,47 @@ bool sourced_item_destruction(const item_transfer_payload &payload)
 			return false;
 	return true;
 }
+
+bool creation_source_valid(economic_source_kind kind)
+{
+	switch (kind)
+	{
+	case economic_source_kind::quest_completion:
+	case economic_source_kind::npc_generation:
+	case economic_source_kind::starter_grant:
+	case economic_source_kind::boon:
+	case economic_source_kind::achievement:
+	case economic_source_kind::world_generation:
+	case economic_source_kind::crafting:
+	case economic_source_kind::administrator:
+	case economic_source_kind::legacy_import:
+	case economic_source_kind::shop_stock:
+	case economic_source_kind::lifecycle:
+	case economic_source_kind::item_action:
+	case economic_source_kind::spell_creation:
+	case economic_source_kind::loot:
+		return true;
+	default:
+		return false;
+	}
+}
+
+uint64_t source_item_uid(const item_transfer_payload &payload)
+{
+	// The sorted item set is part of the frozen command. A UID-lifetime source
+	// claim must survive a rebuilt command ID and an epoch change.
+	return payload.selected_item_uid ? payload.selected_item_uid : payload.items[0].item_uid;
+}
+
+economic_source_event item_lifecycle_source(const item_transfer_payload &payload,
+					    economic_source_kind kind,
+					    const critical_operation_id &lineage)
+{
+	if (kind == economic_source_kind::quest_completion)
+		return { kind, lineage, lineage, static_cast<uint64_t>(payload.reason_id), 0 };
+	return { kind, lineage, lineage, source_item_uid(payload),
+		 static_cast<uint32_t>(payload.reason_id) };
+}
 } // namespace
 
 economic_accounting_error item_transfer_accounting_intent(const critical_command &command,
@@ -147,25 +254,23 @@ economic_accounting_error item_transfer_accounting_intent(const critical_command
 		facts.metadata.writer_id = ECONOMIC_WRITER_ITEM_TRANSFER;
 		if (payload.reason == item_transfer_reason::creation)
 		{
-			if (lifecycle_source == economic_source_kind{} ||
-			    !sourced_item_creation(payload, actor_pid))
+			if (!creation_source_valid(lifecycle_source) ||
+			    !sourced_item_creation(payload, actor_pid, lifecycle_source))
 				return error::unauthorized;
 			facts.metadata.reason = economic_reason::item_create;
-			facts.metadata.source_event = economic_source_event{
-				lifecycle_source, command.operation_id, epoch,
-				payload.selected_item_uid,
-				static_cast<uint32_t>(payload.reason_id) };
+			facts.metadata.source_event =
+				item_lifecycle_source(payload, lifecycle_source, lineage);
 		}
 		else if (payload.reason == item_transfer_reason::destruction)
 		{
-			if (lifecycle_source != economic_source_kind::item_action ||
+			if ((lifecycle_source != economic_source_kind::item_action &&
+			     lifecycle_source != economic_source_kind::spell_consumption &&
+			     lifecycle_source != economic_source_kind::intentional_destruction) ||
 			    !sourced_item_destruction(payload))
 				return error::unauthorized;
 			facts.metadata.reason = economic_reason::item_destroy;
-			facts.metadata.source_event = economic_source_event{
-				lifecycle_source, command.operation_id, epoch,
-				payload.selected_item_uid,
-				static_cast<uint32_t>(payload.reason_id) };
+			facts.metadata.source_event =
+				item_lifecycle_source(payload, lifecycle_source, lineage);
 		}
 		else
 		{
@@ -217,8 +322,8 @@ bool item_transfer_accounting_command_supported(const critical_command &command)
 		if (item_transfer_accounting_intent(
 			    admission, intent.admission.metadata.lineage,
 			    intent.admission.metadata.epoch,
-			    static_cast<uint32_t>(intent.admission.metadata.actor_id),
-			    &expected, lifecycle_source) != error::ok)
+			    static_cast<uint32_t>(intent.admission.metadata.actor_id), &expected,
+			    lifecycle_source) != error::ok)
 			return false;
 		return expected == command.accounting_intent;
 	}

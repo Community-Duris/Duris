@@ -34,44 +34,46 @@ constexpr reason_rule RULES[] = {
 	{ economic_reason::boon_reward, 134, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::achievement_reward, 134, economic_actor_kind::domain, true, false,
 	  false },
-	{ economic_reason::service_cost, 326, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::training_cost, 326, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::locker_cost, 326, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::shipping_cost, 326, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::insurance_cost, 326, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::guild_cost, 326, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::crafting_cost, 326, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::gambling_stake, 326, economic_actor_kind::domain, false, false, false },
+	{ economic_reason::service_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::training_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::locker_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::shipping_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::insurance_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::guild_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::crafting_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::gambling_stake, 326, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::gambling_payout, 130, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::refund, 382, economic_actor_kind::domain, true, true, true },
-	{ economic_reason::shop_buy, 326, economic_actor_kind::domain, false, false, false },
+	{ economic_reason::shop_buy, 326, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::shop_sell, 198, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::shop_cleanup, 0, economic_actor_kind::domain, false, false, false },
 	{ economic_reason::collector_purchase, 326, economic_actor_kind::domain, false, false,
 	  false },
 	{ economic_reason::collector_custody, 0, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::auction_listing, 274, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::auction_bid, 306, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::auction_outbid, 306, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::auction_cancel, 306, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::auction_settle, 306, economic_actor_kind::domain, false, false, false },
-	{ economic_reason::auction_claim, 306, economic_actor_kind::domain, false, false, false },
+	{ economic_reason::auction_listing, 274, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::auction_bid, 306, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::auction_outbid, 306, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::auction_cancel, 306, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::auction_settle, 306, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::auction_claim, 306, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::item_move, 0, economic_actor_kind::domain, false, false, false },
 	{ economic_reason::item_create, 136, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::item_destroy, 264, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::first_admission, 138, economic_actor_kind::domain, true, false, false },
-	{ economic_reason::death_transfer, 382, economic_actor_kind::domain, false, false, false },
+	{ economic_reason::death_transfer, 382, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::corpse_restore, 126, economic_actor_kind::domain, false, false, false },
 	{ economic_reason::baseline, 638, economic_actor_kind::operator_action, true, false,
 	  false },
 	{ economic_reason::correction, 126, economic_actor_kind::operator_action, true, false,
 	  false },
-	{ economic_reason::restitution, 1150, economic_actor_kind::operator_action, true, false,
+	{ economic_reason::restitution, 1150, economic_actor_kind::operator_action, true, true,
 	  false },
 	{ economic_reason::lifecycle_retirement, 382, economic_actor_kind::operator_action, true,
 	  false, false },
 	{ economic_reason::epoch_transition, 638, economic_actor_kind::operator_action, true, false,
 	  false },
+	{ economic_reason::item_reward, 394, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::quest_cost, 326, economic_actor_kind::domain, true, false, false },
 };
 
 static_assert(ECONOMIC_PLAN_HEADER_BYTES + ACCOUNT_BYTES * ECONOMIC_ACCOUNTING_MAX_ACCOUNTS +
@@ -92,6 +94,67 @@ const reason_rule *rule_for(economic_reason reason)
 		if (rule.reason == reason)
 			return &rule;
 	return nullptr;
+}
+
+bool source_kind_allowed(economic_reason reason, economic_source_kind kind)
+{
+	switch (reason)
+	{
+	case economic_reason::quest_reward:
+		return kind == economic_source_kind::quest_completion;
+	case economic_reason::quest_cost:
+		return kind == economic_source_kind::quest_action;
+	case economic_reason::npc_reward:
+		return kind == economic_source_kind::npc_generation;
+	case economic_reason::chaos_reward:
+		return kind == economic_source_kind::starter_grant ||
+		       kind == economic_source_kind::world_generation;
+	case economic_reason::starter_reward:
+		return kind == economic_source_kind::starter_grant;
+	case economic_reason::boon_reward:
+		return kind == economic_source_kind::boon;
+	case economic_reason::achievement_reward:
+		return kind == economic_source_kind::achievement;
+	case economic_reason::service_cost:
+	case economic_reason::training_cost:
+	case economic_reason::locker_cost:
+	case economic_reason::shipping_cost:
+	case economic_reason::insurance_cost:
+	case economic_reason::guild_cost:
+		return kind == economic_source_kind::service;
+	case economic_reason::crafting_cost:
+		return kind == economic_source_kind::crafting;
+	case economic_reason::gambling_stake:
+	case economic_reason::gambling_payout:
+		return kind == economic_source_kind::gambling_round;
+	case economic_reason::shop_buy:
+	case economic_reason::shop_sell:
+		return kind == economic_source_kind::shop_stock ||
+		       kind == economic_source_kind::item_action;
+	case economic_reason::collector_purchase:
+		return kind == economic_source_kind::service ||
+		       kind == economic_source_kind::item_action;
+	case economic_reason::auction_listing:
+	case economic_reason::auction_bid:
+	case economic_reason::auction_outbid:
+	case economic_reason::auction_cancel:
+	case economic_reason::auction_settle:
+		return kind == economic_source_kind::auction;
+	case economic_reason::auction_claim:
+		return kind == economic_source_kind::auction ||
+		       kind == economic_source_kind::service;
+	case economic_reason::death_transfer:
+		return kind == economic_source_kind::corpse;
+	case economic_reason::item_reward:
+		return kind == economic_source_kind::item_action;
+	case economic_reason::baseline:
+		return kind == economic_source_kind::baseline;
+	case economic_reason::lifecycle_retirement:
+	case economic_reason::epoch_transition:
+		return kind == economic_source_kind::lifecycle;
+	default:
+		return true;
+	}
 }
 
 struct writer
@@ -124,7 +187,8 @@ struct writer
 		integer(value.root_uid);
 		integer(value.parent_uid);
 		integer(value.revision);
-		zeros(8);
+		integer(value.equipment_slot);
+		zeros(6);
 	}
 };
 
@@ -190,7 +254,8 @@ struct reader
 		result.root_uid = integer<uint64_t>();
 		result.parent_uid = integer<uint64_t>();
 		result.revision = integer<uint64_t>();
-		zeros(8);
+		result.equipment_slot = integer<uint16_t>();
+		zeros(6);
 		return result;
 	}
 };
@@ -342,7 +407,7 @@ void encode_valid(const economic_accounting_plan &plan, writer &output)
 bool economic_source_event_valid(const economic_source_event &event)
 {
 	return event.kind >= economic_source_kind::quest_completion &&
-	       event.kind <= economic_source_kind::item_action &&
+	       event.kind <= economic_source_kind::loot &&
 	       !critical_operation_id_is_zero(event.source) &&
 	       !critical_operation_id_is_zero(event.generation);
 }
@@ -410,6 +475,8 @@ economic_operation_metadata_validate(const economic_operation_metadata &meta)
 	    (meta.source_event && !economic_source_event_valid(*meta.source_event)) ||
 	    (rule->original_required && critical_operation_id_is_zero(meta.original_operation_id)))
 		return economic_accounting_error::invalid_identity;
+	if (meta.source_event && !source_kind_allowed(meta.reason, meta.source_event->kind))
+		return economic_accounting_error::unauthorized;
 	return economic_accounting_error::ok;
 }
 

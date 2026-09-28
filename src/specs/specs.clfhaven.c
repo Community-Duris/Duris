@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "world/events.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/tradeskill.h"
 
 extern P_room world;
@@ -32,6 +33,13 @@ int llyren(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (cmd != CMD_LIST)
 		return FALSE;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Artifact location purchases are unavailable while active accounting is enabled.\r\n",
+			pl);
+		return TRUE;
+	}
 
 	arg = skip_spaces(arg);
 

@@ -22,6 +22,8 @@
 #include <time.h>
 #include "combat/damage.h"
 #include "combat/justice.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "world/weather.h"
@@ -73,6 +75,11 @@ void do_gather(P_char ch, char *argument, int /*cmd*/)
 	// function uses GET_PID, so lets not let npc's use it...
 	if (IS_NPC(ch))
 		return;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("You cannot gather missiles right now.\r\n", ch);
+		return;
+	}
 
 	for (i = 0, quiver = NULL; i < MAX_WEAR; i++)
 	{
@@ -468,6 +475,12 @@ void do_fire(P_char ch, char *argument, int cmd)
 		act(buf, FALSE, ch, weapon, ch, TO_CHAR);
 		return;
 	}
+	if (economic_gameplay_authority::active() && (item_command_uses_durable_ownership(quiver) ||
+						      item_command_uses_durable_ownership(missile)))
+	{
+		send_to_char("You cannot fire those missiles right now.\r\n", ch);
+		return;
+	}
 
 	half_chop(argument, tararg, dirarg);
 	// victim = ParseTarget(ch, argument);
@@ -703,6 +716,9 @@ void do_fire(P_char ch, char *argument, int cmd)
 			send_to_char("Looks like you ran out of missiles.\n", ch);
 			break;
 		}
+		if (economic_gameplay_authority::active() &&
+		    item_command_uses_durable_ownership(missile))
+			break;
 
 		// Cursed is auto return arrows
 		if (notch_skill(ch, SKILL_CURSED_ARROWS, 10) ||
@@ -920,7 +936,9 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 			// How can it be shield blocked without a shield?  But ok.
 			// 10% chance to damage shield.
-			if (shield_blocked && shield && !number(0, 9) && !IS_ARTIFACT(shield))
+			if (shield_blocked && shield && !number(0, 9) && !IS_ARTIFACT(shield) &&
+			    !(economic_gameplay_authority::active() &&
+			      item_command_uses_durable_ownership(shield)))
 			{
 				shield->condition -= number(1, 3);
 				send_to_char("Your shield is damaged!\r\n", victim);
@@ -1244,6 +1262,11 @@ void do_throw(P_char ch, char *argument, int /*cmd*/)
 		send_to_char(buf, ch);
 		return;
 	}
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(weapon))
+	{
+		send_to_char("You cannot throw that weapon right now.\r\n", ch);
+		return;
+	}
 
 	nb_attack = number_throw(ch, arg1);
 	if (nb_attack == 0)
@@ -1505,6 +1528,12 @@ void do_load_weapon(P_char ch, char *argument, int /*cmd*/)
 	if (missile->value[3] != weapon->value[3])
 	{
 		send_to_char("The ammunition won't fit in the weapon!\r\n", ch);
+		return;
+	}
+	if (economic_gameplay_authority::active() && (item_command_uses_durable_ownership(weapon) ||
+						      item_command_uses_durable_ownership(missile)))
+	{
+		send_to_char("You cannot load that ammunition right now.\r\n", ch);
 		return;
 	}
 	num_needed = weapon->value[1] - weapon->value[2];

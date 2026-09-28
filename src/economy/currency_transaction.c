@@ -19,8 +19,25 @@
 #include <unordered_map>
 #include <utility>
 
+extern P_desc descriptor_list;
+
 namespace
 {
+P_char live_wallet_by_pid(uint32_t pid)
+{
+	if (P_char direct = find_player_by_pid(static_cast<int>(pid)))
+		return direct;
+	for (P_desc desc = descriptor_list; desc; desc = desc->next)
+	{
+		if (STATE(desc) != CON_PLAYING || !desc->character)
+			continue;
+		P_char wallet = GET_PLYR(desc->character);
+		if (wallet && IS_PC(wallet) && GET_PID(wallet) == static_cast<int>(pid))
+			return wallet;
+	}
+	return nullptr;
+}
+
 struct pending_currency
 {
 	uint32_t pid;
@@ -102,7 +119,7 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 			if (!currency_command_decode_payload(endpoints[index]->change, &wallet))
 				return retain_unresolved_publication(entry, "invalid_coin_endpoint",
 								     true);
-			P_char character = find_player_by_pid(wallet.pid);
+			P_char character = live_wallet_by_pid(wallet.pid);
 			const auto &balances = result.wallets[index];
 			// Offline endpoints load the same committed state on re-entry. They must
 			// not hold up publication to the other endpoint or require a refund.
@@ -486,17 +503,14 @@ bool currency_transaction_coin_item_busy(uint64_t item_uid)
 	return false;
 }
 
-bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
-				      coin_transfer_endpoint *endpoint)
+static bool coin_wallet_delta(P_char character, const currency_vector &delta,
+			      coin_transfer_endpoint *endpoint)
 {
 	if (!endpoint || !currency_transaction_can_submit_nonrebasable(character))
 		return false;
 	coin_transfer_endpoint candidate;
 	candidate.before = { GET_COPPER(character), GET_SILVER(character), GET_GOLD(character),
 			     GET_PLATINUM(character) };
-	currency_vector delta;
-	if (!wallet_value_delta(character, value_delta, &delta))
-		return false;
 	currency_command_payload wallet = {};
 	wallet.pid = GET_PID(character);
 	wallet.racewar = GET_RACEWAR(character);
@@ -520,6 +534,24 @@ bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
 		return false;
 	*endpoint = std::move(candidate);
 	return true;
+}
+
+bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
+				      coin_transfer_endpoint *endpoint)
+{
+	currency_vector delta;
+	return wallet_value_delta(character, value_delta, &delta) &&
+	       coin_wallet_delta(character, delta, endpoint);
+}
+
+bool currency_transaction_coin_wallet_exact(P_char character, uint8_t denomination, int32_t amount,
+					    bool debit, coin_transfer_endpoint *endpoint)
+{
+	if (denomination >= CURRENCY_DENOMINATION_COUNT || amount <= 0)
+		return false;
+	currency_vector delta = {};
+	delta.amount[denomination] = debit ? -static_cast<int64_t>(amount) : amount;
+	return coin_wallet_delta(character, delta, endpoint);
 }
 
 bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,
@@ -555,7 +587,7 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 			currency_command_payload wallet;
 			if (!currency_command_decode_payload(endpoint->change, &wallet))
 				return false;
-			P_char character = find_player_by_pid(wallet.pid);
+			P_char character = live_wallet_by_pid(wallet.pid);
 			if (!character || currency_transaction_player_busy(character))
 				return false;
 		}
@@ -903,7 +935,7 @@ void currency_transaction_handle_completions(const critical_completion *completi
 		auto found = pending.find(operation_key(ready[index]));
 		if (found == pending.end())
 			continue;
-		P_char character = find_player_by_pid(found->second.pid);
+		P_char character = live_wallet_by_pid(found->second.pid);
 		if (character || found->second.coin)
 			publish(found, character);
 		else

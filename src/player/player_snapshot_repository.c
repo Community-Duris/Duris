@@ -713,6 +713,7 @@ struct expected_player_item_custody
 	uint64_t parent_item_uid;
 	int32_t vnum;
 	size_t snapshot_index;
+	uint16_t equipment_slot;
 };
 
 bool parse_custody_uint64(const char *text, uint64_t *value)
@@ -730,8 +731,8 @@ bool parse_custody_uint64(const char *text, uint64_t *value)
 
 /**
  * Match a complete payload to active player custody by UID and vnum. If only
- * root/parent topology has drifted, rebuild the payload topology from the locked
- * authoritative rows; never create/drop an item or rewrite item_current_owner.
+ * root/parent/equipment position has drifted, rebuild the payload position from
+ * the locked authoritative rows; never create/drop an item or rewrite custody.
  * Inline coin custody is independently loadable and needs no player_items row.
  */
 query_result reconcile_player_item_custody(MYSQL *connection, const player_snapshot &snapshot,
@@ -754,7 +755,9 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			const player_item_snapshot &item = snapshot.items[index];
 			if (!item.object_uid || item.vnum <= 0 ||
 			    item.parent_index >= static_cast<int32_t>(index) ||
-			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT)
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.equipment_slot < 0 || item.equipment_slot > MAX_WEAR ||
+			    (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT && item.equipment_slot))
 				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
 
 			uint64_t root_item_uid = item.object_uid;
@@ -771,9 +774,10 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				parent_item_uid = parent.object_uid;
 			}
 			if (!expected.emplace(item.object_uid,
-					      expected_player_item_custody{ root_item_uid,
-									    parent_item_uid,
-									    item.vnum, index })
+					      expected_player_item_custody{
+						      root_item_uid, parent_item_uid, item.vnum,
+						      index,
+						      static_cast<uint16_t>(item.equipment_slot) })
 				     .second)
 				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
 		}
@@ -783,14 +787,17 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 		return { false, ENOMEM };
 	}
 
-	const std::string sql =
-		"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),vnum,"
-		"coin_payload IS NOT NULL FROM item_current_owner WHERE owner_type=" +
-		std::to_string(static_cast<unsigned>(item_owner_type::player)) +
-		" AND owner_id=" + std::to_string(snapshot.pid) +
-		" AND owner_context_id=0 AND state=" +
-		std::to_string(static_cast<unsigned>(item_custody_state::active)) +
-		" ORDER BY item_uid FOR UPDATE";
+	const std::string sql = "SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),vnum,"
+				"coin_payload IS NOT NULL,equipment_slot,"
+				"EXISTS(SELECT 1 FROM economic_accounting_item_reference reference "
+				"WHERE reference.item_uid=own.item_uid AND "
+				"reference.after_revision=own.item_revision) "
+				"FROM item_current_owner own WHERE owner_type=" +
+				std::to_string(static_cast<unsigned>(item_owner_type::player)) +
+				" AND owner_id=" + std::to_string(snapshot.pid) +
+				" AND owner_context_id=0 AND state=" +
+				std::to_string(static_cast<unsigned>(item_custody_state::active)) +
+				" ORDER BY item_uid FOR UPDATE";
 	query_result query = execute(connection, sql);
 	if (!query.ok)
 		return query;
@@ -799,20 +806,33 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 		return { false, mysql_errno(connection) };
 
 	MYSQL_ROW row;
+	std::array<bool, MAX_WEAR + 1> occupied_slots = {};
 	try
 	{
 		while ((row = mysql_fetch_row(rows)) != nullptr)
 		{
 			uint64_t item_uid = 0, root_item_uid = 0, parent_item_uid = 0;
+			uint64_t equipment_slot = 0, slot_evidence = 0;
 			const bool valid =
 				parse_custody_uint64(row[0], &item_uid) && item_uid &&
 				parse_custody_uint64(row[1], &root_item_uid) && root_item_uid &&
-				parse_custody_uint64(row[2], &parent_item_uid) && row[3] && row[4];
+				parse_custody_uint64(row[2], &parent_item_uid) && row[3] &&
+				row[4] && parse_custody_uint64(row[5], &equipment_slot) &&
+				parse_custody_uint64(row[6], &slot_evidence) &&
+				slot_evidence <= 1 && equipment_slot <= MAX_WEAR &&
+				(!parent_item_uid || !equipment_slot);
 			if (!valid)
 			{
 				mysql_free_result(rows);
 				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
 			}
+			if (equipment_slot && occupied_slots[equipment_slot])
+			{
+				mysql_free_result(rows);
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			}
+			if (equipment_slot)
+				occupied_slots[equipment_slot] = true;
 
 			auto found = expected.find(item_uid);
 			const bool inline_coin_payload = std::strcmp(row[4], "0") != 0;
@@ -834,6 +854,14 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				topology_mismatch = true;
 			item.root_item_uid = root_item_uid;
 			item.parent_item_uid = parent_item_uid;
+			// Legacy custody can predate slot accounting. A retained item
+			// reference or a nonzero opening slot makes this position authoritative.
+			if (slot_evidence || equipment_slot || parent_item_uid)
+			{
+				if (item.equipment_slot != equipment_slot)
+					topology_mismatch = true;
+				item.equipment_slot = static_cast<uint16_t>(equipment_slot);
+			}
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -930,6 +958,7 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			}
 			else
 				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			item.equipment_slot = static_cast<int16_t>(custody->second.equipment_slot);
 			if (reconciled_items->size() >
 				    static_cast<size_t>(std::numeric_limits<int32_t>::max()) ||
 			    !projected_index

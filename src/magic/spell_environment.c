@@ -7,6 +7,7 @@
 #include "core/utils.h"
 #include "core/defines.h"
 #include "magic/spells.h"
+#include "economy/economic_gameplay_authority.h"
 #include <string.h>
 
 extern const int top_of_world;
@@ -412,6 +413,11 @@ void spell_create_spring(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
 		send_to_char("&+bA spring usually needs more solid ground for support!\n", ch);
 		return;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("A spring cannot be formed right now.\r\n", ch);
+		return;
+	}
 
 	spring = read_object(750, VIRTUAL);
 	if (!spring)
@@ -430,6 +436,11 @@ void spell_divine_font(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		       P_obj /*obj*/)
 {
 	P_obj font;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("A divine font cannot be formed right now.\r\n", ch);
+		return;
+	}
 
 	font = read_object(469, VIRTUAL);
 	if (!font)

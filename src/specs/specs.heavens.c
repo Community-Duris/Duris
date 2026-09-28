@@ -13,6 +13,7 @@
 #include "core/utility.h"
 #include "world/vnum.obj.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "item/forced_weapon_drop.h"
@@ -4806,6 +4807,13 @@ int witch_doctor(P_char witch, P_char customer, int cmd, char *arg)
 
 	if (cmd == CMD_BUY)
 	{
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"The witch doctor's elixirs are unavailable while active accounting is enabled.\r\n",
+				customer);
+			return TRUE;
+		}
 		for (i = 0; elixir_list[i].keyword; i++)
 		{
 			if (((code = atoi(arg)) > 0 && code == i + 1) ||

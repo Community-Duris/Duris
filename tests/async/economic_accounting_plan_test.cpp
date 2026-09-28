@@ -235,6 +235,88 @@ void source_and_policy()
 	changed.metadata.original_operation_id = id(9);
 	roundtrip(
 		changed); // Original receipt/entitlement authorization belongs to its typed adapter.
+
+	auto expense = base_plan();
+	expense.metadata.reason = economic_reason::service_cost;
+	expense.metadata.source_event = source_event(economic_source_kind::service);
+	expense.accounts = {
+		{ key(economic_account_kind::wallet, 1), { 5, 0, 0, 0 }, { 4, 0, 0, 0 }, 4, 5 },
+		{ key(economic_account_kind::sink, 1), {}, {}, 0, 0 }
+	};
+	expense.postings = { { 0, 0, 0, { -1, 0, 0, 0 }, -1 }, { 1, 1, 0, { 1, 0, 0, 0 }, 1 } };
+	roundtrip(expense);
+	changed = expense;
+	changed.metadata.source_event.reset();
+	CHECK(economic_plan_validate_structure(changed) == error::invalid_identity);
+	changed = expense;
+	changed.metadata.source_event->kind = economic_source_kind::quest_completion;
+	CHECK(economic_plan_validate_structure(changed) == error::unauthorized);
+	changed = expense;
+	changed.postings[0].copper = 1;
+	CHECK(economic_plan_validate_structure(changed) != error::ok);
+	auto quest_cost = expense;
+	quest_cost.metadata.reason = economic_reason::quest_cost;
+	quest_cost.metadata.source_event->kind = economic_source_kind::quest_action;
+	roundtrip(quest_cost);
+	auto item_reward = reward;
+	item_reward.metadata.reason = economic_reason::item_reward;
+	item_reward.metadata.source_event->kind = economic_source_kind::item_action;
+	item_reward.accounts.erase(item_reward.accounts.begin() + 1);
+	item_reward.postings[1].account_index = 1;
+	roundtrip(item_reward);
+
+	const std::pair<economic_reason, economic_source_kind> sourced[] = {
+		{ economic_reason::quest_reward, economic_source_kind::quest_completion },
+		{ economic_reason::npc_reward, economic_source_kind::npc_generation },
+		{ economic_reason::chaos_reward, economic_source_kind::world_generation },
+		{ economic_reason::starter_reward, economic_source_kind::starter_grant },
+		{ economic_reason::boon_reward, economic_source_kind::boon },
+		{ economic_reason::achievement_reward, economic_source_kind::achievement },
+		{ economic_reason::service_cost, economic_source_kind::service },
+		{ economic_reason::training_cost, economic_source_kind::service },
+		{ economic_reason::locker_cost, economic_source_kind::service },
+		{ economic_reason::shipping_cost, economic_source_kind::service },
+		{ economic_reason::insurance_cost, economic_source_kind::service },
+		{ economic_reason::guild_cost, economic_source_kind::service },
+		{ economic_reason::crafting_cost, economic_source_kind::crafting },
+		{ economic_reason::gambling_stake, economic_source_kind::gambling_round },
+		{ economic_reason::gambling_payout, economic_source_kind::gambling_round },
+		{ economic_reason::shop_buy, economic_source_kind::shop_stock },
+		{ economic_reason::shop_sell, economic_source_kind::shop_stock },
+		{ economic_reason::auction_listing, economic_source_kind::auction },
+		{ economic_reason::auction_bid, economic_source_kind::auction },
+		{ economic_reason::auction_outbid, economic_source_kind::auction },
+		{ economic_reason::auction_cancel, economic_source_kind::auction },
+		{ economic_reason::auction_settle, economic_source_kind::auction },
+		{ economic_reason::auction_claim, economic_source_kind::auction },
+		{ economic_reason::death_transfer, economic_source_kind::corpse },
+		{ economic_reason::item_reward, economic_source_kind::item_action },
+		{ economic_reason::quest_cost, economic_source_kind::quest_action },
+	};
+	for (const auto &[reason, kind] : sourced)
+	{
+		auto meta = base_plan().metadata;
+		meta.reason = reason;
+		CHECK(economic_operation_metadata_validate(meta) == error::invalid_identity);
+		meta.source_event = source_event(kind);
+		CHECK(economic_operation_metadata_validate(meta) == error::ok);
+		meta.source_event->kind = economic_source_kind::administrator;
+		CHECK(economic_operation_metadata_validate(meta) == error::unauthorized);
+	}
+	auto collector = base_plan().metadata;
+	collector.reason = economic_reason::collector_purchase;
+	CHECK(economic_operation_metadata_validate(collector) == error::ok);
+	collector.source_event = source_event(economic_source_kind::service);
+	CHECK(economic_operation_metadata_validate(collector) == error::ok);
+	collector.source_event->kind = economic_source_kind::administrator;
+	CHECK(economic_operation_metadata_validate(collector) == error::unauthorized);
+	auto restitution = base_plan().metadata;
+	restitution.reason = economic_reason::restitution;
+	restitution.actor_kind = economic_actor_kind::operator_action;
+	restitution.source_event = source_event(economic_source_kind::correction);
+	CHECK(economic_operation_metadata_validate(restitution) == error::invalid_identity);
+	restitution.original_operation_id = id(9);
+	CHECK(economic_operation_metadata_validate(restitution) == error::ok);
 }
 
 void maximum_plan()
@@ -518,7 +600,11 @@ void versioned_envelopes()
 	CHECK(critical_command_decode(malformed_flag.data(), malformed_flag.size(), &decoded) ==
 	      critical_command_codec_result::invalid);
 	marked.type = critical_command_type::coin_transfer;
-	CHECK(!critical_command_envelope_valid(marked));
+	CHECK(critical_command_envelope_valid(marked) && !critical_command_valid(marked));
+	CHECK(economic_intent_verify_binding(marked, intent) == error::payload_conflict);
+	marked.type = critical_command_type::item_transfer;
+	CHECK(critical_command_envelope_valid(marked) && !critical_command_valid(marked));
+	CHECK(economic_intent_verify_binding(marked, intent) == error::payload_conflict);
 	auto changed = decoded;
 	changed.accounting_intent.back() ^= 1;
 	CHECK(!critical_command_equal(changed, decoded));

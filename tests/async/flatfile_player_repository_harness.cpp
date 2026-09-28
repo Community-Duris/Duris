@@ -374,6 +374,7 @@ static void coin_player_matrix(const fs::path &path)
 			flatfile_identity_result::ok,
 		"coin player identity claim");
 	auto snapshot = make_full(1);
+	snapshot.items[0].equipment_slot = 5;
 	snapshot.items[1].vnum = VOBJ_COINS;
 	snapshot.items[1].type = ITEM_MONEY;
 	snapshot.items[1].values[0] = 50;
@@ -396,6 +397,10 @@ static void coin_player_matrix(const fs::path &path)
 							    &error) ==
 				flatfile_item_repository_result::ok,
 			"coin player custody load");
+		require(std::any_of(owned.begin(), owned.end(),
+				    [](const auto &item)
+				    { return item.item_uid == 100 && item.equipment_slot == 5; }),
+			"equipped player baseline slot missing");
 		flatfile_item_repository_load_owner(root, { item_owner_type::destruction, 0, 0 },
 						    &destroyed_revision, &destroyed, &error);
 		const auto found = std::find_if(owned.begin(), owned.end(), [](const auto &item)

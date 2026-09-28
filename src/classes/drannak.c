@@ -35,6 +35,7 @@
 #include "sql/sql_spellbook.h"
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 
@@ -409,6 +410,13 @@ int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 
 		else if (strstr(arg, "1"))
 		{
+			if (economic_gameplay_authority::active())
+			{
+				send_to_char(
+					"Shard purchases are unavailable while item accounting is active.\r\n",
+					pl);
+				return TRUE;
+			}
 			// Check for SHARDS_FOR_ORB soul shards
 			if (vnum_in_inv(pl, VOBJ_SOUL_SHARD) < SHARDS_FOR_ORB)
 			{
@@ -1124,6 +1132,15 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 		{
 			send_to_char(
 				"You must have a &+Ya &+Mgreater&+Y o&+Mr&+Bb &+Yof &+mM&+Ma&+Wg&+Mi&+mc&n in your &+Winventory&n in order to &+Ysummon&n a being of such &+Mgreat&+M power&n.\r\n",
+				ch);
+			extract_char(t_ch);
+			return;
+		}
+		if (economic_gameplay_authority::active() &&
+		    GET_LEVEL(t_ch) > CONJURE_MAXLVL_NO_ORB && !IS_TRUSTED(ch))
+		{
+			send_to_char(
+				"Orb summoning is unavailable while item accounting is active.\r\n",
 				ch);
 			extract_char(t_ch);
 			return;

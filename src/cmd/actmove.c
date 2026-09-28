@@ -143,11 +143,10 @@ static bool break_key(P_char actor, P_obj key)
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 	const key_break_context context = { key->obj_uid };
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_movement_transaction_submit(actor, key, NULL, player_owner, destruction,
-					      item_transfer_reason::destruction, OBJ_VNUM(key),
-					      NULL, &context, sizeof(context), NULL, &reject,
-					      publish_key_break,
-					      economic_source_kind::item_action))
+	if (!item_movement_transaction_submit(
+		    actor, key, NULL, player_owner, destruction, item_transfer_reason::destruction,
+		    OBJ_VNUM(key), NULL, &context, sizeof(context), NULL, &reject,
+		    publish_key_break, economic_source_kind::intentional_destruction))
 	{
 		persistence_alert(AVATAR, "item_movement", "key_break", "none", "none",
 				  item_movement_reject_name(reject), "item_uid=%llu", key->obj_uid);

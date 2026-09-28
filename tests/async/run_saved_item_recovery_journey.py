@@ -24,7 +24,11 @@ def run(binary: Path, count: int, expect_abort: bool, malformed: bool = False,
         nested_replay: bool = False, fault_stage: str | None = None,
         reject_child: bool = False, concurrent_save: bool = False,
         concurrent_child: bool = False,
-        malformed_child: bool = False) -> None:
+        malformed_child: bool = False,
+        missing_destination: bool = False,
+        tamper_destination_payload: bool = False,
+        tamper_source_payload: bool = False,
+        cyclic_source_topology: bool = False) -> None:
     host = os.environ.get("TEST_DB_HOST", "127.0.0.1")
     port = os.environ.get("TEST_DB_PORT", "3306")
     assert host in ("127.0.0.1", "localhost", "::1")
@@ -181,6 +185,27 @@ def run(binary: Path, count: int, expect_abort: bool, malformed: bool = False,
                     else:
                         assert (source_count, destination_count, receipt_count) == (
                             "2", "2", "1")
+                    if missing_destination:
+                        assert fault_stage == "after_acknowledgment"
+                        sql("DELETE FROM saved_items WHERE "
+                            "item_key='item.uid.800000000001' AND container_id IS NULL")
+                        assert sql("SELECT COUNT(*) FROM saved_items WHERE "
+                                   "item_key='item.uid.800000000001'") == "0"
+                    if tamper_destination_payload:
+                        assert fault_stage == "after_acknowledgment"
+                        sql("UPDATE saved_items SET cost=cost+1 WHERE "
+                            "item_key='item.uid.800000000001' AND container_id IS NOT NULL")
+                    if tamper_source_payload:
+                        assert fault_stage == "after_acknowledgment"
+                        sql("UPDATE saved_items SET cost=cost+1 WHERE "
+                            "item_key='restore_allocator_1' AND container_id IS NOT NULL")
+                    if cyclic_source_topology:
+                        assert fault_stage == "after_acknowledgment"
+                        child_id = sql("SELECT id FROM saved_items WHERE "
+                                       "item_key='restore_allocator_1' AND "
+                                       "container_id IS NOT NULL")
+                        sql("UPDATE saved_items SET container_id=" + child_id +
+                            " WHERE item_key='restore_allocator_1' AND id=" + root_id)
                     env.pop("DURIS_SAVED_ITEM_RESTORE_FAULT_STAGE")
                     game_port, tls_port, websocket_port = journey.available_ports()
                     env.update(DURIS_TLS_PORT=str(tls_port),
@@ -201,6 +226,33 @@ def run(binary: Path, count: int, expect_abort: bool, malformed: bool = False,
                     client.pending.clear()
                     client.send("look")
                     room = client.expect("Pos: standing >", timeout=20)
+                    if missing_destination or tamper_destination_payload:
+                        assert "recovery backpack" not in room, room
+                        assert sql("SELECT COUNT(*) FROM saved_items WHERE "
+                                   "item_key='restore_allocator_1'") == "2"
+                        assert sql("SELECT COUNT(*) FROM saved_item_recovery_handoff "
+                                   "WHERE retired_at IS NULL") == "1"
+                        assert "acknowledged destination missing or conflicting" in (
+                            output_path.read_text(errors="replace") +
+                            journey.runtime_logs(game))
+                        print("untrusted acknowledged payload: source and receipt retained",
+                              flush=True)
+                        return
+                    if tamper_source_payload or cyclic_source_topology:
+                        assert "recovery backpack" not in room, room
+                        assert sql("SELECT COUNT(*) FROM saved_items WHERE "
+                                   "item_key='restore_allocator_1'") == "2"
+                        assert sql("SELECT COUNT(*) FROM saved_item_recovery_handoff "
+                                   "WHERE retired_at IS NULL") == "1"
+                        if tamper_source_payload:
+                            assert "acknowledged source retirement deferred" in (
+                                output_path.read_text(errors="replace") +
+                                journey.runtime_logs(game))
+                        assert "acknowledged source payload missing or conflicting" in (
+                            output_path.read_text(errors="replace") +
+                            journey.runtime_logs(game))
+                        print("untrusted source payload: destination withheld", flush=True)
+                        return
                     assert room.count("recovery backpack") == 1, room
                     client.pending.clear()
                     client.send("look in backpack")
@@ -515,13 +567,33 @@ def run(binary: Path, count: int, expect_abort: bool, malformed: bool = False,
                     client.close()
                 if process.poll() is None:
                     process.terminate()
-                    process.wait(timeout=20)
+                    try:
+                        process.wait(timeout=20)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=5)
     finally:
         sql("DROP DATABASE " + database, False)
 
 
 if __name__ == "__main__":
     binary = Path(sys.argv[1]).resolve()
+    if "--missing-destination" in sys.argv[2:]:
+        run(binary, 1, False, nested_replay=True,
+            fault_stage="after_acknowledgment", missing_destination=True)
+        sys.exit(0)
+    if "--tamper-destination-payload" in sys.argv[2:]:
+        run(binary, 1, False, nested_replay=True,
+            fault_stage="after_acknowledgment", tamper_destination_payload=True)
+        sys.exit(0)
+    if "--tamper-source-payload" in sys.argv[2:]:
+        run(binary, 1, False, nested_replay=True,
+            fault_stage="after_acknowledgment", tamper_source_payload=True)
+        sys.exit(0)
+    if "--cyclic-source-topology" in sys.argv[2:]:
+        run(binary, 1, False, nested_replay=True,
+            fault_stage="after_acknowledgment", cyclic_source_topology=True)
+        sys.exit(0)
     if "--nested-boot-only" in sys.argv[2:]:
         run(binary, 1, False, nested_replay=True, boot_only=True)
         sys.exit(0)

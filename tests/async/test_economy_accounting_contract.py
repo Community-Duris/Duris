@@ -54,6 +54,20 @@ class AccountingContractTest(unittest.TestCase):
         f['operations'].append(changed)
         with self.assertRaisesRegex(contract.ContractError,'duplicate source'): self.validate('reward')
 
+    def test_source_cannot_be_reused_for_another_reason(self):
+        f=self.examples['auction_staged']
+        f['operations'][1]['source_event']=f['operations'][0]['source_event']
+        with self.assertRaisesRegex(contract.ContractError,'duplicate source'): self.validate('auction_staged')
+
+    def test_expense_requires_source(self):
+        self.examples['expense']['operations'][0]['source_event']=None
+        with self.assertRaisesRegex(contract.ContractError,'source event'): self.validate('expense')
+
+    def test_restitution_names_original(self):
+        op=self.examples['expense']['operations'][0]
+        op['reason']='restitution';op['actor']='operator'
+        with self.assertRaisesRegex(contract.ContractError,'original operation'): self.validate('expense')
+
     def test_missing_source(self):
         self.examples['reward']['operations'][0]['source_event']=None
         with self.assertRaisesRegex(contract.ContractError,'source event'): self.validate('reward')

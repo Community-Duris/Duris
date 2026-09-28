@@ -33,8 +33,11 @@ class FlatfileItemAccountingReferenceContract(unittest.TestCase):
                 "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
                 "tests/async/flatfile_item_accounting_reference_test.cpp",
                 "src/flatfile/flatfile_item_accounting_reference.c",
+                "src/flatfile/flatfile_authority_transaction.c",
                 "src/flatfile/flatfile_store.c",
+                "src/persistence/critical_command.c",
                 "src/item/economic_accounting_item_reference.c",
+                "-lcrypto", "-pthread",
                 "-o", str(binary),
             ], cwd=ROOT, check=True)
             subprocess.run([str(binary), str(test_storage)], check=True, timeout=30, env=dict(

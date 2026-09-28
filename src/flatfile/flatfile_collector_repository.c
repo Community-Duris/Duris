@@ -1266,6 +1266,29 @@ try
 								   &frozen_listing)) !=
 		    economic_accounting_error::ok)
 		return { critical_apply_outcome::terminal_failure, 0, EPROTONOSUPPORT };
+	std::vector<economic_accounting_item_reference> references;
+	try
+	{
+		references.reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			economic_accounting_item_reference ref = {};
+			ref.operation_id = command.operation_id;
+			ref.line_index = static_cast<uint16_t>(index);
+			ref.event_index = ref.line_index;
+			ref.child_index = accounted ? 0 : 1;
+			ref.item_uid = payload.items[index].item_uid;
+			ref.before_revision = payload.items[index].expected_item_revision;
+			ref.after_revision = ref.before_revision + 1;
+			ref.legacy_operation_id = command.operation_id;
+			ref.legacy_event_index = static_cast<uint16_t>(index);
+			references.push_back(ref);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
 	flatfile_authority_lock lock;
 	std::string error;
 	if (!lock.acquire(root, &error))
@@ -1325,6 +1348,24 @@ try
 			    (retained.result_code == 0) != !retained.plan.empty())
 				return { critical_apply_outcome::terminal_failure,
 					 catalog.catalog_revision, EILSEQ };
+			if (!retained.result_code && !references.empty())
+			{
+				const auto verified =
+					flatfile_item_accounting_reference_verify_operation(
+						root, command.operation_id, references, &error);
+				if (verified != flatfile_item_accounting_status::ok)
+					return {
+						verified == flatfile_item_accounting_status::io_error ?
+							critical_apply_outcome::retryable_failure :
+							critical_apply_outcome::terminal_failure,
+						catalog.catalog_revision,
+						static_cast<unsigned int>(
+							verified == flatfile_item_accounting_status::
+										io_error ?
+								EIO :
+								EILSEQ)
+					};
+			}
 			return accounted_completion(retained);
 		}
 		if (found != flatfile_accounting_status::not_found)
@@ -1347,6 +1388,24 @@ try
 			if (accounted)
 				return { critical_apply_outcome::terminal_failure,
 					 catalog.catalog_revision, EEXIST };
+			if (!operation.result_code && !references.empty())
+			{
+				const auto verified =
+					flatfile_item_accounting_reference_verify_operation(
+						root, command.operation_id, references, &error);
+				if (verified != flatfile_item_accounting_status::ok)
+					return {
+						verified == flatfile_item_accounting_status::io_error ?
+							critical_apply_outcome::retryable_failure :
+							critical_apply_outcome::terminal_failure,
+						catalog.catalog_revision,
+						static_cast<unsigned int>(
+							verified == flatfile_item_accounting_status::
+										io_error ?
+								EIO :
+								EILSEQ)
+					};
+			}
 			return make_result(operation, catalog.catalog_revision,
 					   critical_apply_outcome::already_applied);
 		}
@@ -1851,7 +1910,9 @@ try
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(images.size() + 1);
+		operations.reserve(images.size() +
+				   (mutation_applied && payload.item_count ? 1 : 0) +
+				   (accounted ? 1 : 0));
 		for (auto &image : images)
 			operations.push_back({ flatfile_authority_store::domains,
 					       flatfile_authority_operation_kind::write,
@@ -1864,31 +1925,6 @@ try
 	}
 	if (mutation_applied && payload.item_count > 0)
 	{
-		std::vector<economic_accounting_item_reference> references;
-		try
-		{
-			references.reserve(payload.item_count);
-			for (size_t index = 0; index < payload.item_count; ++index)
-			{
-				economic_accounting_item_reference ref = {};
-				ref.operation_id = command.operation_id;
-				ref.line_index = static_cast<uint16_t>(index);
-				ref.event_index = ref.line_index;
-				ref.child_index = accounted ? 0 : 1;
-				ref.item_uid = payload.items[index].item_uid;
-				ref.before_revision = payload.items[index].expected_item_revision;
-				ref.after_revision =
-					payload.items[index].expected_item_revision + 1;
-				ref.legacy_operation_id = command.operation_id;
-				ref.legacy_event_index = static_cast<uint16_t>(index);
-				references.push_back(ref);
-			}
-		}
-		catch (const std::bad_alloc &)
-		{
-			return { critical_apply_outcome::retryable_failure,
-				 catalog.catalog_revision, ENOMEM };
-		}
 		const auto staged = flatfile_item_accounting_reference_stage(
 			root, lock, command.operation_id, references, &operations, &error);
 		if (staged != flatfile_item_accounting_status::ok)
@@ -1901,6 +1937,8 @@ try
 						 EIO :
 					 staged == flatfile_item_accounting_status::capacity ?
 						 ENOSPC :
+					 staged == flatfile_item_accounting_status::already_exists ?
+						 EEXIST :
 						 EILSEQ) };
 	}
 	if (accounted)
@@ -1932,6 +1970,20 @@ try
 				 committed == flatfile_authority_transaction_result::io_error ?
 					 EIO :
 					 EILSEQ) };
+	if (mutation_applied && !references.empty())
+	{
+		const auto verified = flatfile_item_accounting_reference_verify_operation(
+			root, command.operation_id, references, &error);
+		if (verified != flatfile_item_accounting_status::ok)
+			return { verified == flatfile_item_accounting_status::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 candidate.catalog_revision,
+				 static_cast<unsigned int>(
+					 verified == flatfile_item_accounting_status::io_error ?
+						 EIO :
+						 EILSEQ) };
+	}
 	return make_result(candidate.operations.back(), candidate.catalog_revision,
 			   critical_apply_outcome::applied);
 }

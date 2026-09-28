@@ -488,10 +488,11 @@ bool submit_pouch_collection(P_char actor, P_obj pouch, P_obj const *roots, size
 	const item_owner_identity destination = { item_owner_type::destruction, 0, 0 };
 	const pouch_collection_context context = { actor_pid, pouch->obj_uid };
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_movement_transaction_submit_batch(actor, roots, root_count, NULL, source,
-						    destination, item_transfer_reason::destruction,
-						    0, chaos_material_pouch_collection_completion,
-						    &context, sizeof(context), NULL, &reject))
+	if (!item_movement_transaction_submit_batch(
+		    actor, roots, root_count, NULL, source, destination,
+		    item_transfer_reason::destruction, 0,
+		    chaos_material_pouch_collection_completion, &context, sizeof(context), NULL,
+		    &reject, nullptr, economic_source_kind::intentional_destruction))
 	{
 		if (!chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count))
 			logit(LOG_FILE,

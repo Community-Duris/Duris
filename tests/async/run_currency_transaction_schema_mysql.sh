@@ -36,7 +36,11 @@ for candidate in "$published_host:$published_port" "host.docker.internal:$publis
     [[ "$candidate" == :3306 ]] && continue
     export DB_HOST="${candidate%:*}" DB_PORT="${candidate##*:}"
     MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
-    for _ in $(seq 1 10); do
+    # A cold MySQL 8 image initializes its data directory before opening the
+    # published port; keep the primary Docker endpoint long enough for that.
+    attempts=10
+    [[ "$candidate" == "$published_host:$published_port" ]] && attempts=40
+    for _ in $(seq 1 "$attempts"); do
         if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
         sleep 1
     done

@@ -221,7 +221,7 @@ bool spell_consume_components(P_char actor, int vnum, size_t max_components,
 		actor, selected, selected_count, NULL, owner, destruction,
 		item_transfer_reason::destruction, static_cast<int64_t>(reason_id),
 		spell_component_retirement_completed, &context, sizeof(context), NULL, &reject,
-		nullptr, economic_source_kind::item_action);
+		nullptr, economic_source_kind::spell_consumption);
 }
 
 /*

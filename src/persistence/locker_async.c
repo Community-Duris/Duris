@@ -170,11 +170,12 @@ int locker_async_player_obj_locked(P_char ch)
 	pid = GET_PID(ch);
 	if (pid <= 0)
 		return 0;
-	/* Only lock while DIRTY (waiting for / during the main-thread snapshot
-	 * start). Once INFLIGHT the SQL payload is sealed; unlock the player. */
+	/* Keep object commands fenced until the worker's sealed snapshot commits.
+	 * An in-flight snapshot from before a custody transfer could otherwise
+	 * delete the newly committed locker row when it finishes later. */
 	for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
 	{
-		if (g_slots[i].state == LCHK_DIRTY && g_slots[i].user_pid == pid)
+		if (g_slots[i].state != LCHK_FREE && g_slots[i].user_pid == pid)
 			return 1;
 	}
 	return 0;

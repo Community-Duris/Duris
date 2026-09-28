@@ -3124,18 +3124,17 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
-	if (IS_PC(ch) && GET_PID(ch) > 0)
+	if (economic_gameplay_authority::active())
 	{
-		if (economic_gameplay_authority::active())
-		{
-			logit(LOG_WIZ,
-			      "ADD_MONEY: refusing unsupported active wallet reward for pid %d",
-			      GET_PID(ch));
+		logit(LOG_WIZ, "ADD_MONEY: refusing unsupported active cash credit");
+		if (IS_PC(ch) && GET_PID(ch) > 0)
 			send_to_char(
 				"Your coin credit could not be processed while active accounting is enabled.\r\n",
 				ch);
-			return;
-		}
+		return;
+	}
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+	{
 		if (!currency_transaction_submit_wallet_value(
 			    ch, amount, currency_reason_type::wallet_reward, 0,
 			    critical_source_site::command, critical_deadline_class::interactive,
@@ -3238,6 +3237,8 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 	for (P_desc desc = descriptor_list; desc; desc = desc->next)
 	{
 		P_char target = desc->original ? desc->original : desc->character;
+		if (target && IS_MORPH(target))
+			target = MORPH_ORIG(target);
 		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
 		    !desc->account->acct_name ||
 		    strcasecmp(desc->account->acct_name, account_name) ||
@@ -3287,6 +3288,8 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	int t = 0;
 
 	if (amount <= 0)
+		return -1;
+	if (economic_gameplay_authority::active())
 		return -1;
 	if (amount > GET_MONEY(ch))
 		return -1;

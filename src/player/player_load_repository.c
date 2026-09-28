@@ -1,5 +1,6 @@
 #include "player/player_load_repository.h"
 
+#include "core/defines.h"
 #include "persistence/persistence_observability.h"
 #include "persistence/player_death_restitution_command.h"
 #include "player/player_snapshot_codec.h"
@@ -1227,7 +1228,11 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"(own.coin_payload IS NOT NULL OR ((own.vnum=3 OR "
 		"(pi.item_type=20 AND own.vnum=pi.vnum)) AND own.state=2 AND "
 		"own.owner_type=8 AND own.owner_id=0 AND own.owner_context_id=0)),"
-		"pi.item_properties,OCTET_LENGTH(pi.item_properties) FROM player_items pi "
+		"pi.item_properties,OCTET_LENGTH(pi.item_properties),own.equipment_slot,"
+		"EXISTS(SELECT 1 FROM economic_accounting_item_reference reference "
+		"WHERE reference.item_uid=own.item_uid AND "
+		"reference.after_revision=own.item_revision) "
+		"FROM player_items pi "
 		"LEFT JOIN item_current_owner own ON own.item_uid=pi.obj_uid LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=own.owner_type "
 		"AND owner_revision.owner_id=own.owner_id AND "
@@ -1275,6 +1280,15 @@ bool load_items(MYSQL *connection, player_load_result *result)
 				    }
 				    return true;
 			    }
+			    uint64_t custody_slot = 0, slot_evidence = 0;
+			    if (!parse_unsigned(row[44], MAX_WEAR, &custody_slot) ||
+				!parse_unsigned(row[45], 1, &slot_evidence) ||
+				(identity.parent_item_uid && custody_slot))
+				    return false;
+			    // Legacy custody can predate slot accounting. A retained item
+			    // reference or nonzero opening slot makes the position authoritative.
+			    if (slot_evidence || custody_slot || identity.parent_item_uid)
+				    item.equipment_slot = static_cast<int16_t>(custody_slot);
 			    bool has_item_properties = false;
 			    const player_snapshot_codec_result decoded =
 				    player_item_properties_decode_sql_row(row[42], row[43],

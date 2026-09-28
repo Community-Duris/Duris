@@ -368,6 +368,10 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::trusted_steal:
 	case item_transfer_reason::soulbind:
 	case item_transfer_reason::slip:
+	case item_transfer_reason::player_wear:
+	case item_transfer_reason::player_remove:
+	case item_transfer_reason::combat_fumble:
+	case item_transfer_reason::critical_disarm:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -476,7 +480,33 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
 	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
 	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool equipment = payload.reason == item_transfer_reason::player_wear ||
+			       payload.reason == item_transfer_reason::player_remove;
+	const bool forced_drop = item_transfer_forced_weapon_drop(payload.reason);
 	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (forced_drop &&
+	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::room || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !find_payload_item(payload, payload.selected_item_uid) ||
+	     find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
+	if (equipment &&
+	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+	     payload.from_owner.context_id || payload.multi_root || !payload.selected_item_uid ||
+	     payload.selected_item_uid != payload.items[0].root_item_uid ||
+	     payload.target_root_item_uid != payload.selected_item_uid ||
+	     payload.target_parent_item_uid || !payload.item_blob_size || payload.reason_id <= 0 ||
+	     payload.reason_id > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
+	     !find_payload_item(payload, payload.selected_item_uid) ||
+	     find_payload_item(payload, payload.selected_item_uid)->parent_item_uid))
+		return false;
 	if (player_transfer &&
 	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
 	     payload.from_owner.type != item_owner_type::player ||

@@ -28,7 +28,7 @@ class SavedItemFlatfileRoutingTests(unittest.TestCase):
     def test_storage_admin_mutations_wait_for_item_transfer_ack(self):
         actwiz = (SRC / "actwiz.c").read_text()
         storage = actwiz[actwiz.index("enum class flat_storage_action") :]
-        storage = storage[: storage.index("void newb_spellup")]
+        storage = storage[: storage.index("} // namespace")]
         completion = storage[storage.index("void flat_storage_completion") :]
         completion = completion[: completion.index("bool submit_flat_storage_destroy")]
         self.assertIn("submit_flat_storage_establish", storage)

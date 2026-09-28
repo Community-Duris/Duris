@@ -1543,8 +1543,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			}
 			if (!ok)
 			{
+				const unsigned int native_error = errno;
 				const auto db_error = database_error(connection);
-				const unsigned int error = db_error ? db_error : errno;
+				const unsigned int error = db_error ? db_error : native_error;
 				rollback(connection);
 				return root_failure(error ? error : EIO);
 			}
