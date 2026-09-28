@@ -16,7 +16,7 @@ trap 'exit 143' TERM
 docker run -d --name "$NAME" -p 127.0.0.1::3306 \
     -e MARIADB_ROOT_PASSWORD="$PASSWORD" -e MARIADB_ROOT_HOST='%' "$IMAGE" >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"
-export TEST_DB_HOST=host.docker.internal TEST_DB_PORT="${mapping##*:}"
+export TEST_DB_HOST=127.0.0.1 TEST_DB_PORT="${mapping##*:}"
 export TEST_DB_USER=root TEST_DB_PASSWORD="$PASSWORD" TEST_DB_DISPOSABLE=1
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then
     MYSQL_SSL=(--ssl-mode=PREFERRED)
