@@ -22,7 +22,7 @@ class AuctionAccountingContextContract(unittest.TestCase):
         self.assertIn("ref.operation_id = command.operation_id;", flatfile_source)
         self.assertIn("ref.item_uid = item_mutation.item_uids[index];", flatfile_source)
         self.assertIn("ref.after_revision = item_mutation.item_revisions[index];", flatfile_source)
-        self.assertIn("ref.child_index = 1;", flatfile_source)
+        self.assertIn("ref.child_index = accounted ? 0 : 1;", flatfile_source)
 
     def test_auction_accounting_roundtrip(self):
         with tempfile.TemporaryDirectory(prefix="duris-auction-acc-test-") as directory:

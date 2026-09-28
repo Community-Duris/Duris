@@ -20,6 +20,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "economy/tradeskill.h"
+#include "economy/economic_gameplay_authority.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -785,6 +786,11 @@ int smith(P_char ch, P_char pl, int cmd, char *arg)
 	if (cmd != CMD_FORGE)
 	{
 		return FALSE;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Forging is unavailable while economic accounting is active.\r\n", pl);
+		return TRUE;
 	}
 
 	j = GET_VNUM(ch);
@@ -2419,6 +2425,12 @@ int get_matstart(P_obj obj)
 
 void do_refine(P_char ch, char *arg, int /*cmd*/)
 {
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Refining is unavailable while economic accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	P_obj obj;
 	P_obj t_obj, nextobj;
 	int i = 0, o = 0, vnum;

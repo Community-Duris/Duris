@@ -16,6 +16,11 @@ unsigned int economic_sql_lock_authority(MYSQL *, const critical_operation_id &,
 {
 	return ENOTSUP;
 }
+unsigned int economic_sql_retire_mapping(MYSQL *, const economic_sql_locked_mapping &,
+					 const critical_operation_id &)
+{
+	return ENOTSUP;
+}
 #else
 namespace
 {
@@ -197,6 +202,61 @@ unsigned int economic_sql_lock_authority(MYSQL *connection, const critical_opera
 	{
 		return ENOMEM;
 	}
+}
+
+unsigned int economic_sql_retire_mapping(MYSQL *connection,
+					 const economic_sql_locked_mapping &mapping,
+					 const critical_operation_id &retiring_operation)
+{
+	if (!connection || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	    !economic_account_key_valid(mapping.request.account) ||
+	    !economic_account_is_ordinary(mapping.request.account.kind) ||
+	    !mapping.request.locator_kind || !mapping.request.native_id ||
+	    mapping.revision == UINT64_MAX || critical_operation_id_is_zero(retiring_operation))
+		return EINVAL;
+	using client_flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+	client_flag reconnect = false;
+	if (mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) || reconnect)
+		return EPERM;
+	statement_ptr statement(mysql_stmt_init(connection), mysql_stmt_close);
+	if (!statement)
+		return ENOMEM;
+	static constexpr char sql[] =
+		"UPDATE economic_account_mapping SET active_native_id=NULL,"
+		"retiring_operation_id=?,revision=revision+1 WHERE mapping_id=? AND lineage=? "
+		"AND account_kind=? AND context_id=? AND backend_kind=? AND locator_kind=? "
+		"AND native_id=? AND active_native_id=? AND retiring_operation_id IS NULL "
+		"AND revision=?";
+	if (mysql_stmt_prepare(statement.get(), sql, sizeof(sql) - 1))
+		return statement_error(statement.get());
+	auto account = mapping.request.account;
+	uint64_t mapping_id = account.authority_id;
+	uint64_t kind = static_cast<uint16_t>(account.kind);
+	uint64_t context = account.context_id;
+	uint64_t backend = ECONOMIC_MAPPING_BACKEND_SQL;
+	uint64_t locator = mapping.request.locator_kind;
+	uint64_t native = mapping.request.native_id;
+	uint64_t active = native;
+	uint64_t revision = mapping.revision;
+	auto operation = retiring_operation;
+	std::array<MYSQL_BIND, 10> parameters = {
+		bytes(operation.bytes.data(), operation.bytes.size()),
+		number(&mapping_id),
+		bytes(account.lineage.bytes.data(), account.lineage.bytes.size()),
+		number(&kind),
+		number(&context),
+		number(&backend),
+		number(&locator),
+		number(&native),
+		number(&active),
+		number(&revision)
+	};
+	if (mysql_stmt_bind_param(statement.get(), parameters.data()) ||
+	    mysql_stmt_execute(statement.get()))
+		return statement_error(statement.get());
+	if (mysql_stmt_affected_rows(statement.get()) != 1)
+		return ESTALE;
+	return connection->server_status & SERVER_STATUS_IN_TRANS ? 0 : ENOTCONN;
 }
 
 #endif

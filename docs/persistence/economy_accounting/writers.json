@@ -1241,6 +1241,11 @@
           "src/combat/fight.c",
           1520,
           "item_lifecycle"
+        ],
+        [
+          "src/combat/fight.c",
+          1533,
+          "item_lifecycle"
         ]
       ],
       "evidence": []
@@ -1354,7 +1359,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10723,
+          10771,
           "sql_economy"
         ]
       ],
@@ -1808,7 +1813,7 @@
       "sites": [
         [
           "src/cmd/actwiz.c",
-          1062,
+          1063,
           "economic_submit"
         ]
       ],
@@ -1901,17 +1906,17 @@
       "sites": [
         [
           "src/cmd/actwiz.c",
-          2833,
+          2834,
           "economic_submit"
         ],
         [
           "src/cmd/actwiz.c",
-          2852,
+          2853,
           "economic_submit"
         ],
         [
           "src/cmd/actwiz.c",
-          2867,
+          2868,
           "economic_submit"
         ]
       ],
@@ -2800,7 +2805,7 @@
       "coverage": "legacy",
       "classification": "Same-room visible PC or morph recipients, excluding sender and duplicate original-player wallets. Active mode submits sequential exact-denomination wallet transfers; integer shares and uncommitted shares remain with the splitter.",
       "authority_boundary": "Each eligible recipient receives a separate balanced wallet-to-wallet root after room, group, visibility, and original-player identity checks; no global bulk atomicity is promised.",
-      "current_support": "Inactive legacy path and active schema-2 coin children; extracted command harness covers morph recipients, remainder, and later-child refusal, while disposable MySQL/MariaDB fixtures cover sequential balanced child roots. Flatfile split sequence and full gameplay journeys remain pending.",
+      "current_support": "Inactive legacy path and active schema-2 coin children; extracted command harness covers morph recipients, remainder, and later-child refusal. Disposable MySQL/MariaDB and isolated flatfile fixtures cover sequential balanced child roots; flatfile also checks stale later-child rejection and restart replay. Full gameplay journeys remain pending.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -2820,7 +2825,9 @@
         "tests/async/test_economy_writer_coverage_contract.py",
         "tests/async/test_currency_completion_retention.py",
         "tests/async/run_currency_transaction_schema_mysql.sh",
-        "tests/async/currency_transaction_mysql_harness.cpp"
+        "tests/async/currency_transaction_mysql_harness.cpp",
+        "tests/async/test_flatfile_accounting_coin.py",
+        "tests/async/flatfile_accounting_coin_test.cpp"
       ],
       "sites": [
         [
@@ -2907,22 +2914,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12003,
+          12051,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12190,
+          12238,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12271,
+          12319,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12369,
+          12417,
           "sql_economy"
         ]
       ],
@@ -3597,7 +3604,7 @@
         ],
         [
           "src/magic/spell_item_lifecycle.c",
-          680,
+          704,
           "economic_submit"
         ]
       ],
@@ -3693,13 +3700,38 @@
       "sites": [
         [
           "src/economy/shop.c",
-          1212,
+          1064,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1094,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1227,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1248,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          1282,
+          1318,
           "money_helper"
+        ],
+        [
+          "src/economy/shop.c",
+          1341,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          1348,
+          "item_lifecycle"
         ]
       ],
       "evidence": []
@@ -3736,62 +3768,132 @@
       "sites": [
         [
           "src/economy/shop.c",
-          168,
+          180,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          177,
+          189,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          195,
+          207,
           "economic_submit"
+        ],
+        [
+          "src/economy/shop.c",
+          228,
+          "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
           234,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          246,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          261,
+          255,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
           273,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          278,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          286,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          560,
+          288,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          574,
+          383,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          408,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          425,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          427,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          430,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          431,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          480,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          482,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          485,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          594,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          608,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          584,
+          618,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1202,
+          1238,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1215,
+          1251,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1309,
+          1345,
           "economic_submit"
         ]
       ],
@@ -3828,18 +3930,33 @@
       "sites": [
         [
           "src/economy/shop.c",
-          1447,
+          1485,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          1480,
+          1518,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          1482,
+          1520,
           "money_helper"
+        ],
+        [
+          "src/economy/shop.c",
+          1529,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1534,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          1535,
+          "item_publication"
         ]
       ],
       "evidence": []
@@ -3906,7 +4023,7 @@
       "sites": [
         [
           "src/economy/shop.c",
-          290,
+          303,
           "economic_submit"
         ]
       ],
@@ -3943,12 +4060,32 @@
       "sites": [
         [
           "src/economy/shop.c",
-          389,
+          397,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop.c",
+          399,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop.c",
+          401,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop.c",
+          402,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop.c",
+          422,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          441,
+          475,
           "money_helper"
         ]
       ],
@@ -3983,7 +4120,17 @@
       "sites": [
         [
           "src/economy/shop.c",
-          1907,
+          1916,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1929,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1949,
           "money_helper"
         ]
       ],
@@ -4019,6 +4166,69 @@
       ],
       "sites": [],
       "evidence": []
+    },
+    {
+      "id": "recovery.flat_shopkeeper_cash_materialization",
+      "path": "src/flatfile/flatfile_shopkeeper_materialize.c",
+      "symbol": "flatfile_shopkeeper_materialize",
+      "reason": "shop_cleanup",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "legacy",
+      "classification": "Detached recovery projection of retained shopkeeper cash: four denominations are decoded from the selected flatfile shop record before the staged keeper is released; this is not a new trade or issuance.",
+      "authority_boundary": "Verify selected shop ID, retained cash and revision, and complete item ownership before publishing the staged keeper to a room; the recovery overwrite emits no new posting.",
+      "current_support": "Source-reviewed flatfile recovery projection; exact active-epoch authority, receipt and restart qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_flatfile_shopkeeper_materialize.py",
+        "tests/async/test_flatfile_shopkeeper_restore.py"
+      ],
+      "sites": [
+        [
+          "src/flatfile/flatfile_shopkeeper_materialize.c",
+          100,
+          "coin_assignment"
+        ],
+        [
+          "src/flatfile/flatfile_shopkeeper_materialize.c",
+          102,
+          "coin_assignment"
+        ],
+        [
+          "src/flatfile/flatfile_shopkeeper_materialize.c",
+          104,
+          "coin_assignment"
+        ],
+        [
+          "src/flatfile/flatfile_shopkeeper_materialize.c",
+          105,
+          "coin_assignment"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "The flatfile shopkeeper restore path calls this materializer for a selected retained record; its staged keeper remains detached until ownership materialization succeeds and the result is released.",
+      "native_effects": {
+        "holding_effect": "Copies retained shop cash into the detached keeper denomination fields; no durable shop cash row changes or new value is created.",
+        "custody_effect": "The staged keeper and saved item graph are projected from the retained shopkeeper record before live room publication.",
+        "native_state_targets": [
+          "selected flatfile shopkeeper record cash, shop ID and revision",
+          "runtime detached keeper copper/silver/gold/platinum fields",
+          "saved shopkeeper item ownership and runtime item graph"
+        ]
+      }
     },
     {
       "id": "collector.collect",
@@ -4546,8 +4756,23 @@
         ],
         [
           "src/economy/auction_houses.c",
+          2062,
+          "item_publication"
+        ],
+        [
+          "src/economy/auction_houses.c",
           2069,
           "money_helper"
+        ],
+        [
+          "src/economy/auction_houses.c",
+          2071,
+          "item_publication"
+        ],
+        [
+          "src/economy/auction_houses.c",
+          2076,
+          "item_lifecycle"
         ]
       ],
       "evidence": []
@@ -4729,7 +4954,223 @@
         }
       },
       "test_candidates": [],
-      "sites": [],
+      "sites": [
+        [
+          "src/economy/crafting.c",
+          558,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          575,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          621,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          626,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          638,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          654,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          666,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          675,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          676,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          687,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          733,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          735,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          736,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          747,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          763,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          784,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          795,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          796,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          807,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          840,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          841,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          842,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          851,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          852,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          853,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          862,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          863,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          864,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          877,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          878,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          879,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          897,
+          "item_publication"
+        ],
+        [
+          "src/economy/crafting.c",
+          898,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          904,
+          "item_publication"
+        ],
+        [
+          "src/economy/crafting.c",
+          905,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          912,
+          "item_publication"
+        ],
+        [
+          "src/economy/crafting.c",
+          913,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          919,
+          "item_publication"
+        ],
+        [
+          "src/economy/crafting.c",
+          920,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          944,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          945,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          968,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          969,
+          "item_lifecycle"
+        ]
+      ],
       "evidence": []
     },
     {
@@ -4758,7 +5199,123 @@
         }
       },
       "test_candidates": [],
-      "sites": [],
+      "sites": [
+        [
+          "src/economy/crafting.c",
+          1201,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1217,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1269,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1287,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1295,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1296,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1303,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1307,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1309,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1352,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1353,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1354,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1365,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1376,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1397,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1447,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1456,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1469,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1483,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1489,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1495,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1500,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1547,
+          "item_lifecycle"
+        ]
+      ],
       "evidence": []
     },
     {
@@ -4790,18 +5347,58 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          882,
+          851,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          863,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          874,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          881,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          888,
           "money_helper"
         ],
         [
           "src/economy/tradeskill.c",
-          898,
+          892,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          904,
           "money_helper"
         ],
         [
           "src/economy/tradeskill.c",
-          912,
+          910,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          918,
           "money_helper"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          921,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          929,
+          "item_lifecycle"
         ]
       ],
       "evidence": []
@@ -4835,8 +5432,43 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          2487,
+          2499,
           "money_helper"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          2519,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          2520,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          2529,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          2530,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          2563,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          2567,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          2575,
+          "item_lifecycle"
         ]
       ],
       "evidence": []
@@ -4867,7 +5499,13 @@
         }
       },
       "test_candidates": [],
-      "sites": [],
+      "sites": [
+        [
+          "src/economy/tradeskill.c",
+          688,
+          "item_lifecycle"
+        ]
+      ],
       "evidence": []
     },
     {
@@ -4896,7 +5534,28 @@
         }
       },
       "test_candidates": [],
-      "sites": [],
+      "sites": [
+        [
+          "src/economy/tradeskill.c",
+          277,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          285,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          304,
+          "item_publication"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          317,
+          "item_lifecycle"
+        ]
+      ],
       "evidence": []
     },
     {
@@ -5084,12 +5743,12 @@
         ],
         [
           "src/magic/spell_item_lifecycle.c",
-          165,
+          167,
           "economic_submit"
         ],
         [
           "src/magic/spell_item_lifecycle.c",
-          763,
+          793,
           "economic_submit"
         ]
       ],
@@ -5793,7 +6452,7 @@
       "coverage": "legacy",
       "classification": "Captain credits wallet then zeroes durable ship coffer; current legs lack one atomic root.",
       "authority_boundary": "Captain authorization, wallet commit and ship save must be one typed operation",
-      "current_support": "Reachable legacy or projection behavior; no qualified accounting route",
+      "current_support": "Captain coffer claims refuse active accounting before wallet credit or coffer clear; inactive behavior remains legacy. No qualified accounting route or coffer holding lifetime.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -5809,22 +6468,26 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_ship_save_queue_dedup.py"
+        "tests/async/test_ship_save_queue_dedup.py",
+        "tests/async/test_active_special_service_refusal.py"
       ],
       "sites": [
         [
           "src/ships/ship_control.c",
-          1800,
+          1808,
           "money_helper"
         ],
         [
           "src/ships/ship_control.c",
-          1802,
+          1810,
           "ship_coffer_assignment"
         ]
       ],
       "evidence": [],
-      "reachability_evidence": "ship_control.c dispatches the captain get-money command to claim_coffer; it credits the player before clearing ship->money."
+      "reachability_evidence": "ship_control.c dispatches the captain get-money command to claim_coffer; the active guard precedes wallet credit and coffer clear. An extracted-function regression checks refusal and inactive claim behavior.",
+      "refusal_source_evidence": [
+        "src/ships/ship_control.c:claim_coffer active-epoch guard before wallet credit or coffer clear; extracted-function regression"
+      ]
     },
     {
       "id": "ship.insurance_fallback",
@@ -5874,6 +6537,16 @@
           "src/ships/ship_base.c",
           3064,
           "ship_coffer_assignment"
+        ],
+        [
+          "src/ships/ship_base.c",
+          3090,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          3091,
+          "item_publication"
         ]
       ],
       "evidence": [],
@@ -5947,7 +6620,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11531,
+          11579,
           "ship_coffer_assignment"
         ]
       ],
@@ -5986,6 +6659,16 @@
           "src/ships/ship_base.c",
           733,
           "ship_coffer_assignment"
+        ],
+        [
+          "src/ships/ship_base.c",
+          708,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_base.c",
+          719,
+          "item_lifecycle"
         ]
       ],
       "evidence": []
@@ -6021,12 +6704,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11275,
+          11323,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          11330,
+          11378,
           "sql_economy"
         ]
       ],
@@ -6064,7 +6747,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11610,
+          11658,
           "sql_economy"
         ]
       ],
@@ -7156,42 +7839,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12027,
+          12075,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12028,
+          12076,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12029,
+          12077,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12030,
+          12078,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12061,
+          12109,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12062,
+          12110,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12063,
+          12111,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12064,
+          12112,
           "coin_assignment"
         ]
       ],
@@ -7601,22 +8284,22 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          1188,
+          1362,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1221,
+          1395,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1305,
+          1479,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1404,
+          1578,
           "sql_economy"
         ]
       ],
@@ -7813,12 +8496,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9267,
+          9287,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          9347,
+          9367,
           "sql_economy"
         ]
       ],
@@ -7856,7 +8539,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9384,
+          9404,
           "sql_economy"
         ]
       ],
@@ -8508,7 +9191,12 @@
       "sites": [
         [
           "src/economy/shop.c",
-          1659,
+          1688,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1699,
           "money_helper"
         ]
       ],
@@ -8552,22 +9240,37 @@
       "sites": [
         [
           "src/economy/shop.c",
-          2625,
+          2671,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          2656,
+          2689,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          2699,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          2700,
+          "item_publication"
+        ],
+        [
+          "src/economy/shop.c",
+          2704,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          2672,
+          2720,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          2673,
+          2721,
           "money_helper"
         ]
       ],
@@ -9446,6 +10149,26 @@
           "src/mob/specials.c",
           450,
           "money_helper"
+        ],
+        [
+          "src/mob/specials.c",
+          358,
+          "item_publication"
+        ],
+        [
+          "src/mob/specials.c",
+          369,
+          "item_publication"
+        ],
+        [
+          "src/mob/specials.c",
+          373,
+          "item_publication"
+        ],
+        [
+          "src/mob/specials.c",
+          374,
+          "item_publication"
         ]
       ],
       "evidence": [],
@@ -10417,6 +11140,16 @@
           "src/ships/ship_shop.c",
           809,
           "money_helper"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          868,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          869,
+          "item_publication"
         ]
       ],
       "evidence": [],
@@ -11234,6 +11967,36 @@
           "src/ships/ship_shop.c",
           3750,
           "money_helper"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3751,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3752,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3765,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3766,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3771,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3774,
+          "item_publication"
         ]
       ],
       "evidence": [],
@@ -11290,6 +12053,21 @@
           "src/economy/auction_houses.c",
           2975,
           "sql_economy"
+        ],
+        [
+          "src/economy/auction_houses.c",
+          3036,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/auction_houses.c",
+          3049,
+          "item_publication"
+        ],
+        [
+          "src/economy/auction_houses.c",
+          3058,
+          "item_publication"
         ]
       ],
       "evidence": [],
@@ -11344,7 +12122,7 @@
         ],
         [
           "src/economy/currency_command.h",
-          117,
+          119,
           "economic_submit"
         ],
         [
@@ -11882,12 +12660,12 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          2324,
+          2500,
           "economic_submit"
         ],
         [
           "src/item/item_transfer_repository.c",
-          2391,
+          2567,
           "economic_submit"
         ]
       ],
@@ -12156,7 +12934,7 @@
       "sites": [
         [
           "src/classes/new_skills.c",
-          207,
+          218,
           "economic_submit"
         ]
       ],
@@ -12246,6 +13024,16 @@
           "src/combat/chaos.c",
           150,
           "economic_submit"
+        ],
+        [
+          "src/combat/chaos.c",
+          147,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/chaos.c",
+          154,
+          "item_lifecycle"
         ]
       ],
       "evidence": [],
@@ -12332,8 +13120,13 @@
       "sites": [
         [
           "src/economy/crafting.c",
-          31,
+          32,
           "economic_submit"
+        ],
+        [
+          "src/economy/crafting.c",
+          36,
+          "item_lifecycle"
         ]
       ],
       "evidence": [],
@@ -12376,8 +13169,23 @@
       "sites": [
         [
           "src/economy/tradeskill.c",
-          59,
+          60,
           "economic_submit"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          64,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          94,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/tradeskill.c",
+          107,
+          "item_publication"
         ]
       ],
       "evidence": [],
@@ -13172,6 +13980,41 @@
           "src/ships/ship_npc.c",
           1754,
           "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          1722,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          1725,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          1729,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          1732,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          1755,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          1762,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          1769,
+          "item_publication"
         ]
       ],
       "evidence": [],
@@ -17326,37 +18169,37 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9427,
+          9447,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9433,
+          9453,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9443,
+          9463,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9657,
+          9705,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9723,
+          9771,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9733,
+          9781,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9742,
+          9790,
           "item_lifecycle"
         ]
       ],
@@ -17401,17 +18244,17 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9645,
+          9693,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9927,
+          9975,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9965,
+          10013,
           "item_publication"
         ]
       ],
@@ -17424,6 +18267,69 @@
           "SQL player_items/locker_items/corpse_items/shopkeeper_items/saved_items as applicable",
           "runtime P_obj UID/owner/parent/slot graph",
           "item_current_owner and item_ownership_ledger"
+        ]
+      }
+    },
+    {
+      "id": "recovery.sql_shopkeeper_cash_materialization",
+      "path": "src/sql/sql_player.c",
+      "symbol": "sql_restore_shopkeeper_catalog",
+      "reason": "shop_cleanup",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "legacy",
+      "classification": "Staged SQL shopkeeper recovery copies the retained non-NULL cash total into four denomination fields before live publication. A legacy NULL row keeps prototype cash and does not prove retained treasury value; this path is a projection, not a trade or issuance.",
+      "authority_boundary": "Verify the selected shopkeeper ID, non-NULL cash and cash revision, complete stock identity and source receipt before publishing the staged keeper; emit no new posting for recovered cash.",
+      "current_support": "Source-reviewed SQL recovery projection and focused SQL doubles; selected active-epoch authority, revision fencing and restart qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_shopkeeper_save_runtime.py",
+        "tests/async/test_shopkeeper_population.py"
+      ],
+      "sites": [
+        [
+          "src/sql/sql_player.c",
+          9587,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9589,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9591,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9592,
+          "coin_assignment"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "sql_restore_shopkeeper_catalog reads the selected shopkeepers row and projects saved cash into a newly read, staged mob; the shopkeeper is published only after catalog staging succeeds.",
+      "native_effects": {
+        "holding_effect": "Copies retained SQL shop cash into staged keeper copper/silver/gold/platinum fields; no durable shop cash row changes and no new value is created.",
+        "custody_effect": "The staged keeper and stock graph are rebuilt from SQL shopkeeper rows before live room publication.",
+        "native_state_targets": [
+          "selected SQL shopkeepers row, cash and cash_revision",
+          "runtime staged keeper denomination fields",
+          "shopkeeper_items and runtime stock graph"
         ]
       }
     },
@@ -17456,22 +18362,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10153,
+          10201,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10225,
+          10273,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10960,
+          11008,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11106,
+          11154,
           "item_publication"
         ]
       ],
@@ -17516,27 +18422,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11029,
+          11077,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11076,
+          11124,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11095,
+          11143,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11101,
+          11149,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11109,
+          11157,
           "item_lifecycle"
         ]
       ],
@@ -29155,6 +30061,2222 @@
           "selected sword and displaced UIDs"
         ]
       }
+    },
+    {
+      "id": "ship.shutdown_unload",
+      "path": "src/ships/ship_base.c",
+      "symbol": "shutdown_ships",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Server shutdown relocates loose items remaining in ship cabins to the ship anchor room before saving.",
+      "authority_boundary": "Require verified ship anchor room and intact item identities before bulk evacuation at shutdown.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "shutdown_ships iterates ship cabin rooms and extracts loose objects to the anchor room prior to database commit.",
+      "sites": [
+        [
+          "src/ships/ship_base.c",
+          645,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          646,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Loose objects aboard the ship are evacuated to the anchor room.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ship.load_fixture",
+      "path": "src/ships/ship_base.c",
+      "symbol": "load_ship",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Loading an active ship places the control panel in the bridge room and the ship vehicle object into the world room.",
+      "authority_boundary": "Require authenticated ship instance and target room before publishing ship fixtures.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "load_ship links ship->panel to the bridge room and SHIP_OBJ(ship) to the world arrival room.",
+      "sites": [
+        [
+          "src/ships/ship_base.c",
+          1123,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          1134,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Ship control panel and vehicle object are placed into world rooms.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ship.runtime_delete",
+      "path": "src/ships/ship_base.c",
+      "symbol": "delete_ship",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Deleting a ship unlinks and extracts the runtime control panel and ship vehicle object from the world.",
+      "authority_boundary": "Require confirmed persistent ship deletion before releasing and extracting runtime ship objects.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "delete_ship removes ship->panel and ship->shipobj from their rooms and calls extract_obj.",
+      "sites": [
+        [
+          "src/ships/ship_base.c",
+          1214,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          1215,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          1216,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_base.c",
+          1217,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Ship control panel and vehicle objects are extracted and destroyed.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "ship.reset_panel",
+      "path": "src/ships/ship_base.c",
+      "symbol": "reset_ship",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Resetting ship hull layout relocates the ship control panel to the new bridge room.",
+      "authority_boundary": "Require valid ship bridge room before moving control panel.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "reset_ship calls obj_from_room and obj_to_room for the control panel after reconfiguring rooms.",
+      "sites": [
+        [
+          "src/ships/ship_base.c",
+          1754,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          1759,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Ship control panel is transferred between bridge rooms.",
+        "native_state_targets": [
+          "world room contents"
+        ]
+      }
+    },
+    {
+      "id": "ship.movement_relocation",
+      "path": "src/ships/ship_base.c",
+      "symbol": "ship_activity",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Periodic ship sailing activity moves the ship object across world ocean rooms.",
+      "authority_boundary": "Require valid coordinates and open water room before updating ship position.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "ship_activity updates ship->location and transfers SHIP_OBJ(ship) between rooms.",
+      "sites": [
+        [
+          "src/ships/ship_base.c",
+          2734,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          2735,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Physical ship object is relocated between ocean rooms.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ship.dock_relocation",
+      "path": "src/ships/ship_base.c",
+      "symbol": "dock_ship",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Docking a ship moves the ship object into the designated harbor dock room.",
+      "authority_boundary": "Require valid port dock room and dock permission.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "dock_ship updates ship->location to the port dock and moves ship->shipobj into the room.",
+      "sites": [
+        [
+          "src/ships/ship_base.c",
+          2911,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          2912,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Ship object moves into harbor room.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ship.summon_arrival",
+      "path": "src/ships/ship_base.c",
+      "symbol": "summon_ship_event",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Completion of ship summoning event arrives the ship object at the designated destination harbor.",
+      "authority_boundary": "Require scheduled summon event completion and destination room verification.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "summon_ship_event moves ship->shipobj from transit to target arrival room.",
+      "sites": [
+        [
+          "src/ships/ship_base.c",
+          3130,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_base.c",
+          3131,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Ship vehicle object arrives in harbor room.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ship.maneuver_relocation",
+      "path": "src/ships/ship_control.c",
+      "symbol": "order_maneuver",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Navigational ship maneuver orders update ship coordinates and relocate the physical ship entity.",
+      "authority_boundary": "Require authorized captain maneuver command and navigable target water tile.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "order_maneuver moves SHIP_OBJ(ship) to the new ship->location.",
+      "sites": [
+        [
+          "src/ships/ship_control.c",
+          339,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_control.c",
+          340,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Ship vehicle object moves between tactical ocean rooms.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ship.cyrics_revenge_chest",
+      "path": "src/ships/ship_npc.c",
+      "symbol": "load_cyrics_revenge_crew",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Spawning Cyric's Revenge flagship populates its treasure chest with the automaton moonstone core fragment and nexus key.",
+      "authority_boundary": "Require flagship encounter initialization before seeding quest key items.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "load_cyrics_revenge_crew reads fragment and key objects and places them inside the captain's chest.",
+      "sites": [
+        [
+          "src/ships/ship_npc.c",
+          2029,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          2030,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          2035,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_npc.c",
+          2036,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Quest core fragment and nexus key are instantiated and placed in chest.",
+        "native_state_targets": [
+          "container contents",
+          "item_current_owner parent container"
+        ]
+      }
+    },
+    {
+      "id": "ship.moonstone_fragment_combine",
+      "path": "src/ships/ship_shop.c",
+      "symbol": "moonstone_fragment",
+      "reason": "quest_reward",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Combining all four moonstone parts consumes the fragments and awards the assembled Automaton's Moonstone.",
+      "authority_boundary": "Require verified possession of all 4 distinct moonstone parts before extraction and grant.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "moonstone_fragment extracts component parts from inventory and grants assembled moonstone.",
+      "sites": [
+        [
+          "src/ships/ship_shop.c",
+          3563,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3564,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3570,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3573,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Carried moonstone fragments extracted; assembled moonstone granted to player inventory.",
+        "native_state_targets": [
+          "player inventory",
+          "item_current_owner character"
+        ]
+      }
+    },
+    {
+      "id": "ship.moonstone_fragment_load",
+      "path": "src/ships/ship_shop.c",
+      "symbol": "load_moonstone_fragments",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "World initialization distributes moonstone fragments to Olhydra, the sea locker, and automaton mob.",
+      "authority_boundary": "Require world boot/reset context for quest fragment distribution.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "load_moonstone_fragments instantiates fragment objects and places them on NPCs and in locker room.",
+      "sites": [
+        [
+          "src/ships/ship_shop.c",
+          3643,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3647,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3651,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3669,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_shop.c",
+          3671,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Instantiates quest fragment items into world mobs and container rooms.",
+        "native_state_targets": [
+          "mob inventory",
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "ship.kick_off_items",
+      "path": "src/ships/ship_utils.c",
+      "symbol": "kick_everyone_off",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Evacuating a ship moves loose objects from cabin rooms to the exterior world location.",
+      "authority_boundary": "Require verified exterior ship location before dumping items.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "kick_everyone_off loops ship rooms and moves non-panel items to ship->location.",
+      "sites": [
+        [
+          "src/ships/ship_utils.c",
+          413,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_utils.c",
+          414,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Loose objects transferred from ship interior to exterior room.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ship.clear_contents",
+      "path": "src/ships/ship_utils.c",
+      "symbol": "clear_ship_content",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Dismantling a ship evacuates player corpses to exterior water while destroying all other cabin contents.",
+      "authority_boundary": "Require ship destruction authorization; preserve player corpses while destroying orphaned room contents.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "clear_ship_content preserves player corpses by moving them outside, then extracts all other objects.",
+      "sites": [
+        [
+          "src/ships/ship_utils.c",
+          463,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_utils.c",
+          464,
+          "item_publication"
+        ],
+        [
+          "src/ships/ship_utils.c",
+          467,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Player corpses evacuated; ordinary room items destroyed.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner room identity and lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "ship.jettison_crates",
+      "path": "src/ships/ship_utils.c",
+      "symbol": "jettison_crates",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Jettisoning cargo overboard creates floating cargo crate objects in the ocean room.",
+      "authority_boundary": "Require verified jettison command and cargo crate prototype.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "jettison_crates reads cargo crate template objects and places them in ship->location.",
+      "sites": [
+        [
+          "src/ships/ship_utils.c",
+          2469,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_utils.c",
+          2475,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Cargo crate objects created and placed in ocean room.",
+        "native_state_targets": [
+          "world room contents"
+        ]
+      }
+    },
+    {
+      "id": "ship.cargo_salvage",
+      "path": "src/ships/ship_utils.c",
+      "symbol": "salvage_cargo",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Salvaging floating cargo crates extracts the crate object and credits cargo hold units.",
+      "authority_boundary": "Require player ship with available cargo hold capacity before consuming crate.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "salvage_cargo extracts salvageable crate objects from current room after loading into ship holds.",
+      "sites": [
+        [
+          "src/ships/ship_utils.c",
+          2697,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Floating cargo crate object extracted and converted to ship cargo units.",
+        "native_state_targets": [
+          "world room contents",
+          "item_current_owner lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "combat.disarm_inventory_relink",
+      "path": "src/combat/attack_effects.c",
+      "symbol": "critical_disarm",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Critical hit disarm unequips weapon and relocates it into the victim's carried inventory.",
+      "authority_boundary": "Require verified combat participant and equipped weapon slot before inventory transfer.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "critical_disarm calls unequip_char and obj_to_char on critical disarm roll.",
+      "sites": [
+        [
+          "src/combat/attack_effects.c",
+          721,
+          "item_publication"
+        ],
+        [
+          "src/combat/attack_effects.c",
+          724,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Weapon moves from equipment slot to character inventory.",
+        "native_state_targets": [
+          "character equipment",
+          "character inventory"
+        ]
+      }
+    },
+    {
+      "id": "combat.breath_item_drop",
+      "path": "src/combat/breath_weapons.c",
+      "symbol": "breath_damage_mod",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Elemental breath damage burns or freezes carried items causing them to fall to the room.",
+      "authority_boundary": "Require breath damage resolution context before dropping inventory items.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "breath_damage_mod and breath_weapon_paralysis drop burned or frozen objects from char to room.",
+      "sites": [
+        [
+          "src/combat/breath_weapons.c",
+          115,
+          "item_publication"
+        ],
+        [
+          "src/combat/breath_weapons.c",
+          116,
+          "item_publication"
+        ],
+        [
+          "src/combat/breath_weapons.c",
+          244,
+          "item_publication"
+        ],
+        [
+          "src/combat/breath_weapons.c",
+          245,
+          "item_publication"
+        ],
+        [
+          "src/combat/breath_weapons.c",
+          559,
+          "item_publication"
+        ],
+        [
+          "src/combat/breath_weapons.c",
+          560,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Items transfer from character inventory to room floor.",
+        "native_state_targets": [
+          "character inventory",
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "combat.chaos_material_cleanup",
+      "path": "src/combat/chaos_materials.c",
+      "symbol": "extract_collected_objects",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Chaos material collection system destroys stale or unused material objects.",
+      "authority_boundary": "Require chaos material collection cleanup cycle.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "extract_collected_objects extracts material items collected during chaos processing.",
+      "sites": [
+        [
+          "src/combat/chaos_materials.c",
+          370,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Extracted material items are destroyed.",
+        "native_state_targets": [
+          "chaos material graph",
+          "item_current_owner lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "combat.chaos_material_probe",
+      "path": "src/combat/chaos_materials.c",
+      "symbol": "chaos_materials_initialize",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Startup initialization probes chaos material template validity by instantiating and extracting test objects.",
+      "authority_boundary": "System startup offline initialization probe.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "chaos_materials_initialize instantiates and immediately extracts material objects to verify prototypes.",
+      "sites": [
+        [
+          "src/combat/chaos_materials.c",
+          526,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/chaos_materials.c",
+          530,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Temporary probe object instantiated and immediately destroyed.",
+        "native_state_targets": [
+          "transient template probe"
+        ]
+      }
+    },
+    {
+      "id": "ctf.flag_load",
+      "path": "src/combat/ctf.c",
+      "symbol": "load_ctf",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Capture the Flag arena initialization loads team flag objects and places them in their base rooms.",
+      "authority_boundary": "Require CTF game configuration and valid flag room targets.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "load_ctf reads flag objects and places them into team base rooms.",
+      "sites": [
+        [
+          "src/combat/ctf.c",
+          152,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/ctf.c",
+          173,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "CTF flag objects instantiated and placed in arena base rooms.",
+        "native_state_targets": [
+          "room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "ctf.flag_proc",
+      "path": "src/combat/ctf.c",
+      "symbol": "ctf_flag_proc",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "CTF flag special procedure returns unattended flags or moves flags during arena interactions.",
+      "authority_boundary": "Require CTF active match status and flag proximity.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "ctf_flag_proc transfers flags between arena rooms.",
+      "sites": [
+        [
+          "src/combat/ctf.c",
+          276,
+          "item_publication"
+        ],
+        [
+          "src/combat/ctf.c",
+          283,
+          "item_publication"
+        ],
+        [
+          "src/combat/ctf.c",
+          338,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "CTF flag object transferred between arena rooms.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "ctf.flag_drop",
+      "path": "src/combat/ctf.c",
+      "symbol": "drop_ctf_flag",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Dropping the CTF flag places the flag object onto the carrier's current room floor.",
+      "authority_boundary": "Require carrier dropping or dying with the flag.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "drop_ctf_flag places the flag into ch->in_room.",
+      "sites": [
+        [
+          "src/combat/ctf.c",
+          483,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Flag object placed into arena room.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "ctf.flag_capture_respawn",
+      "path": "src/combat/ctf.c",
+      "symbol": "check_ctf_capture",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Scoring a capture in CTF respawns missing team flag objects back at their base rooms.",
+      "authority_boundary": "Require confirmed flag capture event in active match.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "check_ctf_capture respawns good and evil flags to base rooms if missing after capture.",
+      "sites": [
+        [
+          "src/combat/ctf.c",
+          509,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/ctf.c",
+          514,
+          "item_publication"
+        ],
+        [
+          "src/combat/ctf.c",
+          521,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/ctf.c",
+          526,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Replacement flag objects instantiated and placed into base rooms.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "ctf.flag_capture",
+      "path": "src/combat/ctf.c",
+      "symbol": "capture_flag",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Capturing an enemy flag returns the flag object to its home base room.",
+      "authority_boundary": "Require verified team capture event at friendly base.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "capture_flag removes flag from current room and relocates it to the home base room.",
+      "sites": [
+        [
+          "src/combat/ctf.c",
+          611,
+          "item_publication"
+        ],
+        [
+          "src/combat/ctf.c",
+          627,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Flag object relocated from carrier room to base room.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "ctf.flag_reload",
+      "path": "src/combat/ctf.c",
+      "symbol": "ctf_reload_flag",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Staff or timer reload of CTF arena reloads flag object into base room.",
+      "authority_boundary": "Require arena reset or administrative reload authorization.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "ctf_reload_flag instantiates new flag object and links to room.",
+      "sites": [
+        [
+          "src/combat/ctf.c",
+          996,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/ctf.c",
+          1018,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Flag object reloaded into arena room.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "ctf.flag_delete",
+      "path": "src/combat/ctf.c",
+      "symbol": "ctf_delete_flag",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Arena shutdown extracts and destroys CTF flag objects.",
+      "authority_boundary": "Require CTF game termination or cleanup authorization.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "ctf_delete_flag calls extract_obj on active CTF flags.",
+      "sites": [
+        [
+          "src/combat/ctf.c",
+          1066,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "CTF flag objects extracted and destroyed.",
+        "native_state_targets": [
+          "arena game objects"
+        ]
+      }
+    },
+    {
+      "id": "combat.mangle_weapon_relink",
+      "path": "src/combat/defense_resolution.c",
+      "symbol": "mangleSucceed",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Successful limb mangle defense unarms victim weapon from hand into inventory.",
+      "authority_boundary": "Require resolved mangle combat defense check.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "mangleSucceed calls unequip_char and obj_to_char on mangled limb.",
+      "sites": [
+        [
+          "src/combat/defense_resolution.c",
+          965,
+          "item_publication"
+        ],
+        [
+          "src/combat/defense_resolution.c",
+          966,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Weapon moves from wield slot into inventory.",
+        "native_state_targets": [
+          "character equipment",
+          "character inventory"
+        ]
+      }
+    },
+    {
+      "id": "death.corpse_dispute_transfer",
+      "path": "src/combat/fight.c",
+      "symbol": "clear_corpse_transfer_dispute",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Resolving a disputed death item transfer moves the item from character inventory into the corpse container.",
+      "authority_boundary": "Require verified disputed item reference and target player corpse.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "clear_corpse_transfer_dispute transfers item from char into corpse container.",
+      "sites": [
+        [
+          "src/combat/fight.c",
+          633,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          634,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Disputed item transferred from character into corpse.",
+        "native_state_targets": [
+          "character inventory",
+          "corpse contents"
+        ]
+      }
+    },
+    {
+      "id": "death.corpse_fixture_instantiation",
+      "path": "src/combat/fight.c",
+      "symbol": "make_corpse",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Entity death instantiates the corpse container object, publishes it to the death room or storage, and spills overflowing items.",
+      "authority_boundary": "Require confirmed entity death before instantiating corpse fixture.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "make_corpse instantiates corpse object, places it in room, and handles overflow contents.",
+      "sites": [
+        [
+          "src/combat/fight.c",
+          735,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/fight.c",
+          865,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          869,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          874,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          887,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          891,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          895,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Corpse container instantiated and placed into room; overflow contents handled.",
+        "native_state_targets": [
+          "room contents",
+          "item_current_owner room identity"
+        ]
+      }
+    },
+    {
+      "id": "death.corpse_disintegration",
+      "path": "src/combat/fight.c",
+      "symbol": "make_corpse",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Planar and extraplanar entity death dissolves and extracts the transient corpse object.",
+      "authority_boundary": "Require extraplanar entity death race check before corpse extraction.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "make_corpse extracts planar corpses for summoned or extraplanar races.",
+      "sites": [
+        [
+          "src/combat/fight.c",
+          972,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          973,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Corpse object unlinked from room and destroyed.",
+        "native_state_targets": [
+          "room contents",
+          "item_current_owner lifecycle"
+        ]
+      }
+    },
+    {
+      "id": "combat.death_trophy_grant",
+      "path": "src/combat/fight.c",
+      "symbol": "die",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Entity death awards trophy scales, time echoes, or death tokens directly to the killer or dying entity.",
+      "authority_boundary": "Require confirmed kill event and trophy eligibility.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "die instantiates dragon scale, time echo, or token objects and places them on ch.",
+      "sites": [
+        [
+          "src/combat/fight.c",
+          2055,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/fight.c",
+          2056,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          2069,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/fight.c",
+          2070,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          2115,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          2126,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Trophy or token item instantiated and placed in inventory.",
+        "native_state_targets": [
+          "character inventory",
+          "item_current_owner character"
+        ]
+      }
+    },
+    {
+      "id": "combat.shield_portal",
+      "path": "src/combat/fight.c",
+      "symbol": "check_shields",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Epic shield defense proc spawns an escape portal object in the celestial room.",
+      "authority_boundary": "Require shield proc trigger conditions.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "check_shields instantiates portal object 400220 and places in room 400000.",
+      "sites": [
+        [
+          "src/combat/fight.c",
+          4669,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/fight.c",
+          4680,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Portal object instantiated and linked to room.",
+        "native_state_targets": [
+          "room contents"
+        ]
+      }
+    },
+    {
+      "id": "combat.weapon_inventory_relink",
+      "path": "src/combat/fight.c",
+      "symbol": "hit",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Weapon drop/unequip during combat hit unlinks from wear slot into inventory.",
+      "authority_boundary": "Require valid combat hit event and equipped weapon slot.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "hit calls unequip_char and obj_to_char when weapon must be removed during hit.",
+      "sites": [
+        [
+          "src/combat/fight.c",
+          5087,
+          "item_publication"
+        ],
+        [
+          "src/combat/fight.c",
+          5094,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Weapon moves from wield slot to inventory.",
+        "native_state_targets": [
+          "character equipment",
+          "character inventory"
+        ]
+      }
+    },
+    {
+      "id": "justice.guard_equipment",
+      "path": "src/combat/justice.c",
+      "symbol": "justice_make_guard",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Spawning a justice guard equips them with a city lantern or baton fixture.",
+      "authority_boundary": "Require city law enforcement mob spawn context.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "justice_make_guard reads object 398 and equips it to the spawned guard.",
+      "sites": [
+        [
+          "src/combat/justice.c",
+          268,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/justice.c",
+          270,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Guard equipment instantiated and equipped to mob.",
+        "native_state_targets": [
+          "mob equipment"
+        ]
+      }
+    },
+    {
+      "id": "justice.guard_cleanup",
+      "path": "src/combat/justice.c",
+      "symbol": "justice_delete_guard",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Despawning a justice guard extracts and destroys all carried and equipped items.",
+      "authority_boundary": "Require justice guard despawn event.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "justice_delete_guard unequips all slots and extracts items.",
+      "sites": [
+        [
+          "src/combat/justice.c",
+          384,
+          "item_publication"
+        ],
+        [
+          "src/combat/justice.c",
+          385,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/justice.c",
+          398,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Despawned guard equipment extracted and destroyed.",
+        "native_state_targets": [
+          "mob equipment",
+          "mob inventory"
+        ]
+      }
+    },
+    {
+      "id": "combat.training_dummy_cleanup",
+      "path": "src/combat/training_dummy.c",
+      "symbol": "training_dummy_refresh_description",
+      "reason": "item_destroy",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Refreshing training dummy state strips and destroys worn or carried equipment.",
+      "authority_boundary": "Require training dummy state refresh context.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "training_dummy_refresh_description unequips and extracts dummy gear.",
+      "sites": [
+        [
+          "src/combat/training_dummy.c",
+          159,
+          "item_publication"
+        ],
+        [
+          "src/combat/training_dummy.c",
+          161,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/training_dummy.c",
+          167,
+          "item_publication"
+        ],
+        [
+          "src/combat/training_dummy.c",
+          168,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Dummy equipment extracted and destroyed.",
+        "native_state_targets": [
+          "training dummy equipment"
+        ]
+      }
+    },
+    {
+      "id": "mob.random_encounter_equip",
+      "path": "src/mob/encounters.c",
+      "symbol": "randobjs_to_mob",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Attaching generated random encounter objects to a spawned mob places items into mob inventory.",
+      "authority_boundary": "Require random encounter mob spawn context.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "randobjs_to_mob calls obj_to_char for each generated encounter item.",
+      "sites": [
+        [
+          "src/mob/encounters.c",
+          298,
+          "item_publication"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Generated items placed into mob inventory.",
+        "native_state_targets": [
+          "mob inventory"
+        ]
+      }
+    },
+    {
+      "id": "mob.random_encounter_magical",
+      "path": "src/mob/encounters.c",
+      "symbol": "ran_magical",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Generating magical encounter loot instantiates random wand/staff/scroll templates.",
+      "authority_boundary": "Require random encounter magical loot roll context.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "ran_magical reads template object 1295 for random magical loot.",
+      "sites": [
+        [
+          "src/mob/encounters.c",
+          355,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Magical item instantiated from template.",
+        "native_state_targets": [
+          "transient encounter loot"
+        ]
+      }
+    },
+    {
+      "id": "mob.random_encounter_loot",
+      "path": "src/mob/encounters.c",
+      "symbol": "ran_obj",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Generating non-magical encounter loot instantiates random armor, weapon, and accessory templates.",
+      "authority_boundary": "Require random encounter mundane loot roll context.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "ran_obj reads random equipment templates for encounter mobs.",
+      "sites": [
+        [
+          "src/mob/encounters.c",
+          531,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          560,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          574,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          591,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          608,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          624,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          641,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          657,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          671,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          693,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          705,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          725,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          740,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/encounters.c",
+          768,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Encounter loot items instantiated from templates.",
+        "native_state_targets": [
+          "transient encounter loot"
+        ]
+      }
+    },
+    {
+      "id": "mob.studio_script_item",
+      "path": "src/mob/studioproc.c",
+      "symbol": "sp_execute",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Studio scripting virtual machine executes item spawn and destruction actions.",
+      "authority_boundary": "Require verified studio procedure script context.",
+      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_economy_writer_coverage_contract.py"
+      ],
+      "evidence": [],
+      "reachability_evidence": "sp_execute creates items into rooms/chars and extracts self objects on script command.",
+      "sites": [
+        [
+          "src/mob/studioproc.c",
+          1146,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/studioproc.c",
+          1147,
+          "item_publication"
+        ],
+        [
+          "src/mob/studioproc.c",
+          1151,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/studioproc.c",
+          1153,
+          "item_publication"
+        ],
+        [
+          "src/mob/studioproc.c",
+          1357,
+          "item_lifecycle"
+        ]
+      ],
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Script-driven item creation to room/actor and self-extraction.",
+        "native_state_targets": [
+          "room contents",
+          "actor inventory",
+          "item lifecycle"
+        ]
+      }
     }
   ],
   "census": [
@@ -29922,73 +33044,73 @@
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 207,
+      "line": 218,
       "family": "economic_submit",
       "excerpt": "if (item_creation_grant_submit_to_player_with_completion(actor, object, actor,"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 112,
+      "line": 122,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 213,
+      "line": 224,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 2035,
+      "line": 2046,
       "family": "item_lifecycle",
       "excerpt": "book = read_object(31, VIRTUAL);"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 2078,
+      "line": 2089,
       "family": "item_lifecycle",
       "excerpt": "totem = read_object(417, VIRTUAL);"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 2917,
+      "line": 2928,
       "family": "item_lifecycle",
       "excerpt": "carve = read_object(8, VIRTUAL);"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 3105,
+      "line": 3116,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(unequip_char(ch, HOLD), TRUE); // Arti rope?"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 3457,
+      "line": 3468,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(unequip_char(ch, HOLD), TRUE); // Arti rope?"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 192,
+      "line": 203,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 3001,
+      "line": 3012,
       "family": "item_publication",
       "excerpt": "obj_to_obj(carve, corpse);"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 3105,
+      "line": 3116,
       "family": "item_publication",
       "excerpt": "extract_obj(unequip_char(ch, HOLD), TRUE); // Arti rope?"
     },
     {
       "path": "src/classes/new_skills.c",
-      "line": 3457,
+      "line": 3468,
       "family": "item_publication",
       "excerpt": "extract_obj(unequip_char(ch, HOLD), TRUE); // Arti rope?"
     },
@@ -32358,175 +35480,175 @@
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1062,
+      "line": 1063,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2833,
+      "line": 2834,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(actor, storage, NULL, source, destination,"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2852,
+      "line": 2853,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(actor, item, NULL, owner, owner,"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2867,
+      "line": 2868,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(actor, storage, NULL, owner, owner,"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 418,
+      "line": 419,
       "family": "item_lifecycle",
       "excerpt": "if ((obj = read_object(atoi(vnum), VIRTUAL)))"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 422,
+      "line": 423,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1028,
+      "line": 1029,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1136,
+      "line": 1137,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(r_num, REAL);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1166,
+      "line": 1167,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1282,
+      "line": 1283,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1379,
+      "line": 1380,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2754,
+      "line": 2755,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(storage, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2821,
+      "line": 2822,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(storage, context.action == flat_storage_action::destroy);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2892,
+      "line": 2901,
       "family": "item_lifecycle",
       "excerpt": "if (!(s_obj = read_object(atoi(objarg), VIRTUAL)))"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2902,
+      "line": 2911,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2921,
+      "line": 2930,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2941,
+      "line": 2950,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2971,
+      "line": 2980,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 3008,
+      "line": 3017,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1043,
+      "line": 1044,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, context.room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1045,
+      "line": 1046,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1159,
+      "line": 1160,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1161,
+      "line": 1162,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2772,
+      "line": 2773,
       "family": "item_publication",
       "excerpt": "obj_to_room(storage, context.room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2800,
+      "line": 2801,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2801,
+      "line": 2802,
       "family": "item_publication",
       "excerpt": "obj_to_room(item, context.room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2928,
+      "line": 2937,
       "family": "item_publication",
       "excerpt": "obj_to_room(s_obj, ch->in_room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 3001,
+      "line": 3010,
       "family": "item_publication",
       "excerpt": "obj_from_obj(tmpobj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 3002,
+      "line": 3011,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmpobj, ch->in_room);"
     },
@@ -34584,277 +37706,271 @@
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 31,
+      "line": 32,
       "family": "economic_submit",
       "excerpt": "if (object && item_creation_grant_submit_to_player("
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 35,
+      "line": 36,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 287,
+      "line": 288,
       "family": "item_lifecycle",
       "excerpt": "low = read_object(plan.low_material_vnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 288,
+      "line": 289,
       "family": "item_lifecycle",
       "excerpt": "high = read_object(plan.high_material_vnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 292,
+      "line": 293,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(low);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 294,
+      "line": 295,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(high);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 325,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(low);"
     },
     {
       "path": "src/economy/crafting.c",
       "line": 326,
       "family": "item_lifecycle",
+      "excerpt": "extract_obj(low);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 327,
+      "family": "item_lifecycle",
       "excerpt": "extract_obj(high);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 402,
+      "line": 403,
       "family": "item_lifecycle",
       "excerpt": "P_obj target = read_object(recipes[i], VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 406,
+      "line": 407,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(target);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 428,
+      "line": 429,
       "family": "item_lifecycle",
       "excerpt": "target = read_object(recipe_vnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 432,
+      "line": 433,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(target);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 435,
+      "line": 436,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(target);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 550,
+      "line": 558,
       "family": "item_lifecycle",
       "excerpt": "tobj = read_object(recipes[i], VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 567,
+      "line": 575,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 613,
+      "line": 621,
       "family": "item_lifecycle",
       "excerpt": "tobj = read_object(selected, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 618,
+      "line": 626,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 630,
+      "line": 638,
       "family": "item_lifecycle",
       "excerpt": "tobj = read_object(selected, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 646,
+      "line": 654,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 658,
+      "line": 666,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 667,
+      "line": 675,
       "family": "item_lifecycle",
       "excerpt": "matLowest = read_object(lowQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 668,
+      "line": 676,
       "family": "item_lifecycle",
       "excerpt": "matHighest = read_object(lowQualityMaterialVnum + 4, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 679,
+      "line": 687,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 725,
+      "line": 733,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 727,
+      "line": 735,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 728,
+      "line": 736,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 739,
+      "line": 747,
       "family": "item_lifecycle",
       "excerpt": "tobj = read_object(selected, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 755,
+      "line": 763,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 776,
+      "line": 784,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 787,
+      "line": 795,
       "family": "item_lifecycle",
       "excerpt": "matLowest = read_object(lowQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 788,
+      "line": 796,
       "family": "item_lifecycle",
       "excerpt": "matHighest = read_object(highQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 799,
+      "line": 807,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 832,
+      "line": 840,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 833,
+      "line": 841,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 834,
+      "line": 842,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 843,
+      "line": 851,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 844,
+      "line": 852,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 845,
+      "line": 853,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 854,
+      "line": 862,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 855,
+      "line": 863,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 856,
+      "line": 864,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 869,
+      "line": 877,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 870,
+      "line": 878,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 871,
+      "line": 879,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 890,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(inventory);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 897,
+      "line": 898,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(inventory);"
     },
@@ -34866,181 +37982,181 @@
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 912,
+      "line": 913,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(inventory);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 936,
+      "line": 920,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(inventory);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 944,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 937,
+      "line": 945,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 960,
+      "line": 968,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 961,
+      "line": 969,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1193,
+      "line": 1201,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(recipes[i], VIRTUAL)))"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1209,
+      "line": 1217,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1261,
+      "line": 1269,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(objVnum, VIRTUAL)))"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1279,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
       "line": 1287,
       "family": "item_lifecycle",
-      "excerpt": "lowQualityMaterial = read_object(lowQualityMaterialVnum, VIRTUAL);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1288,
-      "family": "item_lifecycle",
-      "excerpt": "highQualityMaterial = read_object(highQualityMaterialVnum, VIRTUAL);"
+      "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
       "line": 1295,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(lowQualityMaterial);"
+      "excerpt": "lowQualityMaterial = read_object(lowQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1299,
+      "line": 1296,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(highQualityMaterial);"
+      "excerpt": "highQualityMaterial = read_object(highQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1301,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1344,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1345,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(highQualityMaterial);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1346,
+      "line": 1303,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(lowQualityMaterial);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1357,
+      "line": 1307,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(highQualityMaterial);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1309,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1368,
+      "line": 1352,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1389,
+      "line": 1353,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(highQualityMaterial);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1354,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(lowQualityMaterial);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1365,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1439,
+      "line": 1376,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1448,
+      "line": 1397,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1461,
+      "line": 1447,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1475,
+      "line": 1456,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1469,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1483,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(inventory, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1481,
+      "line": 1489,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(inventory, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1487,
+      "line": 1495,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(inventory, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1492,
+      "line": 1500,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(inventory, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1539,
+      "line": 1547,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 889,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(inventory);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 896,
+      "line": 897,
       "family": "item_publication",
       "excerpt": "obj_from_char(inventory);"
     },
@@ -35052,7 +38168,13 @@
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 911,
+      "line": 912,
+      "family": "item_publication",
+      "excerpt": "obj_from_char(inventory);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 919,
       "family": "item_publication",
       "excerpt": "obj_from_char(inventory);"
     },
@@ -35064,7 +38186,7 @@
     },
     {
       "path": "src/economy/currency_command.h",
-      "line": 117,
+      "line": 119,
       "family": "economic_submit",
       "excerpt": "bool currency_command_build(critical_command *command, critical_operation_id operation_id,"
     },
@@ -35400,355 +38522,379 @@
     },
     {
       "path": "src/economy/shop.c",
-      "line": 168,
+      "line": 180,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, sequence.price);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 177,
+      "line": 189,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(keeper, sequence.price, 0) != 0)"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 389,
+      "line": 422,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(keeper, payload.price);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 441,
+      "line": 475,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(keeper, payload.price, 0);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 574,
+      "line": 608,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(keeper, static_cast<int>(sequence.price));"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1282,
+      "line": 1318,
       "family": "money_helper",
       "excerpt": "if (!transact(ch, gem, keeper, sale))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1480,
+      "line": 1518,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, sale);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1482,
+      "line": 1520,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(keeper, sale, 0);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1659,
+      "line": 1699,
       "family": "money_helper",
       "excerpt": "if (!transact(ch, gem, keeper, sale))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1907,
+      "line": 1949,
       "family": "money_helper",
       "excerpt": "if (!transact(ch, gem, keeper, cost))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2625,
+      "line": 2671,
       "family": "money_helper",
       "excerpt": "bool transact(P_char from, P_obj merchandise, P_char to, int value)"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2656,
+      "line": 2704,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(from, change);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2672,
+      "line": 2720,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(from, value, 0) > -1)"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2673,
+      "line": 2721,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(to, value);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 195,
+      "line": 207,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_player_with_completion(ch, selected, ch, destination,"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 234,
+      "line": 246,
       "family": "economic_submit",
       "excerpt": "if (currency_transaction_submit_wallet_value("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 273,
+      "line": 286,
       "family": "economic_submit",
       "excerpt": "!shop_trade_transaction_submit(ch, payload, shop_trade_completion))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 290,
+      "line": 303,
       "family": "economic_submit",
       "excerpt": "shop_trade_transaction_submit(ch, payload, shop_trade_completion);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1212,
+      "line": 1248,
       "family": "economic_submit",
       "excerpt": "!shop_trade_transaction_submit(ch, payload, shop_trade_completion))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1309,
+      "line": 1345,
       "family": "economic_submit",
       "excerpt": "if (!item_creation_grant_submit_to_player(ch, temp1, ch, container,"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1447,
+      "line": 1485,
       "family": "economic_submit",
       "excerpt": "!shop_trade_transaction_submit(ch, payload, shop_trade_completion))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 216,
+      "line": 397,
+      "family": "coin_assignment",
+      "excerpt": "GET_PLATINUM(keeper) = remaining / 1000;"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 399,
+      "family": "coin_assignment",
+      "excerpt": "GET_GOLD(keeper) = remaining / 100;"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 401,
+      "family": "coin_assignment",
+      "excerpt": "GET_SILVER(keeper) = remaining / 10;"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 402,
+      "family": "coin_assignment",
+      "excerpt": "GET_COPPER(keeper) = remaining % 10;"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 228,
       "family": "item_lifecycle",
       "excerpt": "P_obj selected = read_object(stock->R_num, REAL);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 222,
+      "line": 234,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 243,
+      "line": 255,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 261,
+      "line": 273,
       "family": "item_lifecycle",
       "excerpt": "P_obj selected = read_object(stock->R_num, REAL);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 266,
+      "line": 278,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 275,
+      "line": 288,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 361,
+      "line": 383,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 376,
+      "line": 408,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, TRUE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 448,
+      "line": 482,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, TRUE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 560,
+      "line": 594,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 584,
+      "line": 618,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 894,
+      "line": 928,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Shopkeeper with cost 0 arti?"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1028,
+      "line": 1064,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Bye arti."
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1058,
+      "line": 1094,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Arti with no cost?"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1191,
+      "line": 1227,
       "family": "item_lifecycle",
       "excerpt": "if (produced && !(selected = read_object(temp1->R_num, REAL)))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1202,
+      "line": 1238,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1215,
+      "line": 1251,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1312,
+      "line": 1348,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1491,
+      "line": 1529,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Prolly not an arti if type trash."
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1648,
+      "line": 1688,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Arti with no cost?"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1754,
+      "line": 1794,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj1, TRUE); // Bye arti."
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1874,
+      "line": 1916,
       "family": "item_lifecycle",
       "excerpt": "wpn = read_object(obj_index[obj->R_num].virtual_number, VIRTUAL);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1887,
+      "line": 1929,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(wpn);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1979,
+      "line": 2025,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item, TRUE); // Shopkeep dies with arti? :("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 392,
+      "line": 425,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 394,
+      "line": 427,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, ch);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 397,
+      "line": 430,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 398,
+      "line": 431,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, destination);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 446,
+      "line": 480,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 451,
+      "line": 485,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, keeper);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1305,
+      "line": 1341,
       "family": "item_publication",
       "excerpt": "obj_from_char(temp1);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1496,
+      "line": 1534,
       "family": "item_publication",
       "excerpt": "obj_from_char(temp1);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1497,
+      "line": 1535,
       "family": "item_publication",
       "excerpt": "obj_to_char(temp1, keeper);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1972,
+      "line": 2018,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1975,
+      "line": 2021,
       "family": "item_publication",
       "excerpt": "obj_to_room(item, room);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2641,
+      "line": 2689,
       "family": "item_publication",
       "excerpt": "unequip_char(from, i);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2651,
+      "line": 2699,
       "family": "item_publication",
       "excerpt": "obj_from_char(merchandise);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2652,
+      "line": 2700,
       "family": "item_publication",
       "excerpt": "obj_to_char(merchandise, to);"
     },
@@ -35766,211 +38912,211 @@
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 882,
+      "line": 888,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(pl, price, 0) != 0)"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 898,
+      "line": 904,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(pl, price);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 912,
+      "line": 918,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(pl, price);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2487,
+      "line": 2499,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(ch, 50000, 0) != 0)"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 59,
+      "line": 60,
       "family": "economic_submit",
       "excerpt": "if (object && item_creation_grant_submit_to_player("
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 63,
+      "line": 64,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 93,
+      "line": 94,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(context.object_vnum, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 276,
+      "line": 277,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 284,
+      "line": 285,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(PARCHMENT_VNUM, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 316,
+      "line": 317,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(1255, VIRTUAL)))"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 687,
+      "line": 688,
       "family": "item_lifecycle",
       "excerpt": "if (!(fish = read_object(fishes[random], VIRTUAL)))"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 923,
+      "line": 929,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed_ore[j], TRUE); // Ore is not an arti, but was 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1130,
+      "line": 1136,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bandage, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1205,
+      "line": 1211,
       "family": "item_lifecycle",
       "excerpt": "tobj = read_object(recipenumber, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1227,
+      "line": 1233,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1290,
+      "line": 1296,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1300,
+      "line": 1306,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1312,
+      "line": 1318,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 1330,
+      "line": 1336,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2508,
+      "line": 2520,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2518,
+      "line": 2530,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'"
-    },
-    {
-      "path": "src/economy/tradeskill.c",
-      "line": 2551,
-      "family": "item_lifecycle",
-      "excerpt": "obj = read_object(vnum + 1, VIRTUAL);"
-    },
-    {
-      "path": "src/economy/tradeskill.c",
-      "line": 2555,
-      "family": "item_lifecycle",
-      "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/economy/tradeskill.c",
       "line": 2563,
       "family": "item_lifecycle",
+      "excerpt": "obj = read_object(vnum + 1, VIRTUAL);"
+    },
+    {
+      "path": "src/economy/tradeskill.c",
+      "line": 2567,
+      "family": "item_lifecycle",
+      "excerpt": "obj = read_object(vnum, VIRTUAL);"
+    },
+    {
+      "path": "src/economy/tradeskill.c",
+      "line": 2575,
+      "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 106,
+      "line": 107,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 303,
+      "line": 304,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 845,
+      "line": 851,
       "family": "item_publication",
       "excerpt": "obj_from_char(tobj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 857,
+      "line": 863,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 868,
+      "line": 874,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 875,
+      "line": 881,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 886,
+      "line": 892,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 904,
+      "line": 910,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 915,
+      "line": 921,
       "family": "item_publication",
       "excerpt": "obj_to_char(needed_ore[j], pl);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2507,
+      "line": 2519,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/economy/tradeskill.c",
-      "line": 2517,
+      "line": 2529,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
@@ -36069,6 +39215,30 @@
       "line": 460,
       "family": "item_publication",
       "excerpt": "obj_to_room(staged_rooms[index].money, staged_rooms[index].room_rnum);"
+    },
+    {
+      "path": "src/flatfile/flatfile_shopkeeper_materialize.c",
+      "line": 100,
+      "family": "coin_assignment",
+      "excerpt": "GET_PLATINUM(character) = remaining / 1000;"
+    },
+    {
+      "path": "src/flatfile/flatfile_shopkeeper_materialize.c",
+      "line": 102,
+      "family": "coin_assignment",
+      "excerpt": "GET_GOLD(character) = remaining / 100;"
+    },
+    {
+      "path": "src/flatfile/flatfile_shopkeeper_materialize.c",
+      "line": 104,
+      "family": "coin_assignment",
+      "excerpt": "GET_SILVER(character) = remaining / 10;"
+    },
+    {
+      "path": "src/flatfile/flatfile_shopkeeper_materialize.c",
+      "line": 105,
+      "family": "coin_assignment",
+      "excerpt": "GET_COPPER(character) = remaining % 10;"
     },
     {
       "path": "src/guild/artifact.c",
@@ -37326,37 +40496,37 @@
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2324,
+      "line": 2500,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2391,
+      "line": 2567,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, *payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1188,
+      "line": 1362,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1221,
+      "line": 1395,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET root_item_uid=?,parent_item_uid=IF(?=0,NULL,?),\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1305,
+      "line": 1479,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1404,
+      "line": 1578,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?\";"
     },
@@ -38658,97 +41828,97 @@
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 165,
+      "line": 167,
       "family": "economic_submit",
       "excerpt": "if (item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 680,
+      "line": 704,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 763,
+      "line": 793,
       "family": "economic_submit",
       "excerpt": "if (item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 170,
+      "line": 172,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(blade, FALSE);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 213,
+      "line": 223,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 726,
+      "line": 756,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(item, VIRTUAL);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 768,
+      "line": 798,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 785,
+      "line": 815,
       "family": "item_lifecycle",
       "excerpt": "blade = read_object(real_object(56), REAL);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 837,
+      "line": 867,
       "family": "item_lifecycle",
       "excerpt": "blade = read_object(real_object(93), REAL);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 889,
+      "line": 919,
       "family": "item_lifecycle",
       "excerpt": "blade = read_object(real_object(171), REAL);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 154,
+      "line": 156,
       "family": "item_publication",
       "excerpt": "obj_to_char(blade, actor);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 318,
+      "line": 328,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 319,
+      "line": 329,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, victim);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 405,
+      "line": 415,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 406,
+      "line": 416,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, victim);"
     },
     {
       "path": "src/magic/spell_item_lifecycle.c",
-      "line": 750,
+      "line": 780,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
@@ -39744,25 +42914,25 @@
     },
     {
       "path": "src/ships/ship_control.c",
-      "line": 1800,
+      "line": 1808,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, ship->money);"
     },
     {
       "path": "src/ships/ship_control.c",
-      "line": 1802,
+      "line": 1810,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = 0;"
     },
     {
       "path": "src/ships/ship_control.c",
-      "line": 338,
+      "line": 339,
       "family": "item_publication",
       "excerpt": "obj_from_room(SHIP_OBJ(ship));"
     },
     {
       "path": "src/ships/ship_control.c",
-      "line": 339,
+      "line": 340,
       "family": "item_publication",
       "excerpt": "obj_to_room(SHIP_OBJ(ship), ship->location);"
     },
@@ -43272,55 +46442,79 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12027,
+      "line": 9587,
+      "family": "coin_assignment",
+      "excerpt": "GET_PLATINUM(mob) = remaining / 1000;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 9589,
+      "family": "coin_assignment",
+      "excerpt": "GET_GOLD(mob) = remaining / 100;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 9591,
+      "family": "coin_assignment",
+      "excerpt": "GET_SILVER(mob) = remaining / 10;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 9592,
+      "family": "coin_assignment",
+      "excerpt": "GET_COPPER(mob) = remaining % 10;"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 12075,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12028,
+      "line": 12076,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12029,
+      "line": 12077,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12030,
+      "line": 12078,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12061,
+      "line": 12109,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = parsed.copper;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12062,
+      "line": 12110,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = parsed.silver;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12063,
+      "line": 12111,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = parsed.gold;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12064,
+      "line": 12112,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = parsed.platinum;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11531,
+      "line": 11579,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = atoi(row[8]);"
     },
@@ -43428,103 +46622,103 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9427,
+      "line": 9447,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9433,
+      "line": 9453,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9443,
+      "line": 9463,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item->obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9645,
+      "line": 9693,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9657,
+      "line": 9705,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9723,
+      "line": 9771,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9733,
+      "line": 9781,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9742,
+      "line": 9790,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9927,
+      "line": 9975,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10153,
+      "line": 10201,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10225,
+      "line": 10273,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10960,
+      "line": 11008,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11029,
+      "line": 11077,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11076,
+      "line": 11124,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11095,
+      "line": 11143,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11101,
+      "line": 11149,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11109,
+      "line": 11157,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
@@ -43596,13 +46790,13 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9965,
+      "line": 10013,
       "family": "item_publication",
       "excerpt": "equip_char(k->mob, k->equipment[slot], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11106,
+      "line": 11154,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, room);"
     },
@@ -43614,67 +46808,67 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9267,
+      "line": 9287,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO saved_items (\""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9347,
+      "line": 9367,
       "family": "sql_economy",
       "excerpt": "snprintf(del_query, sizeof(del_query), \"DELETE FROM saved_items WHERE item_key='%s'\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9384,
+      "line": 9404,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"DELETE FROM saved_items WHERE item_key='%s'\", esc_key);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10723,
+      "line": 10771,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM saved_items WHERE id=%d AND item_key='%s'\", source_root_id,"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11275,
+      "line": 11323,
       "family": "sql_economy",
       "excerpt": "\"insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11330,
+      "line": 11378,
       "family": "sql_economy",
       "excerpt": "\"update ships set owner_name='%s', ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11610,
+      "line": 11658,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"delete from ships where owner_name='%s'\", esc_owner);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12003,
+      "line": 12051,
       "family": "sql_economy",
       "excerpt": "\"insert ignore into account_banks (account_name, racewar) values ('%s', %d)\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12190,
+      "line": 12238,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper+%d, \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12271,
+      "line": 12319,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12369,
+      "line": 12417,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper-%d, \""
     },

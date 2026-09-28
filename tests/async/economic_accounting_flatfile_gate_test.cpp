@@ -571,6 +571,108 @@ static void logical_creation_source_rejects_second_uid(const fs::path &base)
 	       flatfile_item_accounting_status::not_found);
 }
 
+static void spell_component_batch_retains_tombstone_topology(const fs::path &base)
+{
+	const fs::path root = base / "accounted-spell-batch";
+	const critical_operation_id lineage = operation(41);
+	const critical_operation_id epoch = operation(42);
+	create_accounting_root(root);
+	initialize_item_accounting_bucket(root, lineage, accounting_id(21));
+	const item_owner_identity player = { item_owner_type::player, 42, 0 };
+	item_transfer_payload creation = {};
+	creation.from_owner = { item_owner_type::system, 0, 0 };
+	creation.to_owner = player;
+	creation.reason = item_transfer_reason::creation;
+	creation.reason_id = 820;
+	creation.logical_source_id = 92001;
+	creation.expected_from_revision = 0;
+	creation.expected_to_revision = 0;
+	creation.multi_root = true;
+	creation.item_count = 3;
+	creation.items[0] = { 8201, 8201,
+			      0,    ITEM_TRANSFER_ABSENT_REVISION,
+			      820,  item_custody_state::absent };
+	creation.items[1] = { 8202, 8201,
+			      8201, ITEM_TRANSFER_ABSENT_REVISION,
+			      821,  item_custody_state::absent };
+	creation.items[2] = { 8203, 8203,
+			      0,    ITEM_TRANSFER_ABSENT_REVISION,
+			      820,  item_custody_state::absent };
+	player_item_snapshot first = {};
+	first.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	first.equipment_slot = -1;
+	first.object_uid = 8201;
+	first.vnum = 820;
+	first.type = 1;
+	first.weight = 1;
+	first.condition = 100;
+	auto child = first;
+	child.parent_index = 0;
+	child.object_uid = 8202;
+	child.vnum = 821;
+	auto second = first;
+	second.object_uid = 8203;
+	attach_item_blob(&creation, { first, child, second });
+	const auto issue = accounted_item_command(creation, 62, 42, lineage, epoch,
+						  economic_source_kind::spell_creation);
+	assert(flatfile_item_repository_apply(root.string(), issue).outcome ==
+	       critical_apply_outcome::applied);
+	assert(flatfile_item_repository_apply(root.string(), issue).outcome ==
+	       critical_apply_outcome::already_applied);
+	uint64_t revision = 0;
+	std::vector<flatfile_item_ownership_record> items;
+	assert(flatfile_item_repository_load_owner(root.string(), player, &revision, &items,
+						   nullptr) == flatfile_item_repository_result::ok);
+	assert(revision == 1 && items.size() == 3);
+
+	auto consume = creation;
+	consume.from_owner = player;
+	consume.to_owner = { item_owner_type::destruction, 0, 0 };
+	consume.reason = item_transfer_reason::destruction;
+	consume.reason_id = 3401;
+	consume.logical_source_id = 0;
+	consume.expected_from_revision = 1;
+	consume.expected_to_revision = 0;
+	for (size_t index = 0; index < consume.item_count; ++index)
+	{
+		consume.items[index].expected_item_revision = 1;
+		consume.items[index].expected_state = item_custody_state::active;
+	}
+	const auto retire = accounted_item_command(consume, 63, 42, lineage, epoch,
+						   economic_source_kind::spell_consumption);
+	assert(flatfile_item_repository_apply(root.string(), retire).outcome ==
+	       critical_apply_outcome::applied);
+	assert(flatfile_item_repository_apply(root.string(), retire).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(flatfile_item_repository_load_owner(root.string(), player, &revision, &items,
+						   nullptr) == flatfile_item_repository_result::ok);
+	assert(revision == 2 && items.empty());
+	for (uint32_t index = 0; index < consume.item_count; ++index)
+	{
+		economic_accounting_item_reference reference = {};
+		assert(flatfile_item_accounting_reference_find_by_legacy(
+			       root.string(), retire.operation_id, index, &reference, nullptr) ==
+		       flatfile_item_accounting_status::ok);
+		assert(reference.item_uid == consume.items[index].item_uid &&
+		       reference.before_revision == 1 && reference.after_revision == 2);
+	}
+	flatfile_accounting_record retained;
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root.string(), nullptr));
+		assert(flatfile_accounting_lookup(root.string(), lock, retire, &retained,
+						  nullptr) == flatfile_accounting_status::ok);
+	}
+	economic_accounting_plan plan;
+	assert(economic_plan_decode(retained.plan, &plan) == economic_accounting_error::ok);
+	assert(plan.item_events.size() == 3 && plan.item_events[1].uid == 8202 &&
+	       plan.item_events[1].before.root_uid == 8201 &&
+	       plan.item_events[1].before.parent_uid == 8201 &&
+	       plan.item_events[1].after.root_uid == 8201 &&
+	       plan.item_events[1].after.parent_uid == 8201 &&
+	       plan.item_events[1].after.state == item_custody_state::destroyed);
+}
+
 static void integrated_pet_custody(const fs::path &base)
 {
 	const critical_operation_id lineage = operation(51);
@@ -1279,6 +1381,7 @@ int main(int argc, char **argv)
 	check(missing, seeded, before, nested(coin_command, true));
 	integrated_item_accounting(base);
 	logical_creation_source_rejects_second_uid(base);
+	spell_component_batch_retains_tombstone_topology(base);
 	integrated_pet_custody(base);
 	integrated_locker_custody(base);
 	integrated_nested_item_accounting(base);
@@ -1287,6 +1390,6 @@ int main(int argc, char **argv)
 	std::cout
 		<< "flatfile gates: invalid envelopes and nested coin legs rejected; item "
 		   "movement, sourced room creation and retirement, nested pet and locker custody, "
-		   "duplicate quest and world sources refused, same-owner nesting and equipment slots, exact references, "
+		   "duplicate quest and world sources refused, spell component batch retired, same-owner nesting and equipment slots, exact references, "
 		   "simultaneous first-claim refusal, replay and journal recovery passed\n";
 }

@@ -319,6 +319,9 @@ int main()
 	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_source WHERE "
 		      "source_operation_id=" +
 		      literal(sale.operation_id)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=" +
+		      std::to_string(sale_escrow.authority_id) + " AND active_native_id=" +
+		      std::to_string(sale_auction) + " AND retiring_operation_id IS NULL") == 1);
 	execute("START TRANSACTION");
 	inbox(sale.operation_id, static_cast<uint16_t>(sale.type), 2, 0);
 	assert(economic_sql_auction_settlement_lock(connection, sale, &sale_context) == 0);
@@ -353,6 +356,11 @@ int main()
 	assert(value("SELECT LOWER(HEX(SUBSTR(source_event,5,16))) FROM "
 		     "economic_accounting_operation WHERE operation_id=" +
 		     literal(sale.operation_id)) == hex(id(5).bytes.data(), id(5).bytes.size()));
+	assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=" +
+		      std::to_string(sale_escrow.authority_id) +
+		      " AND active_native_id IS NULL "
+		      "AND retiring_operation_id=" +
+		      literal(sale.operation_id) + " AND revision=1") == 1);
 	const uint32_t removed_auction = auction(id(7), id(8), ITEM + 100, 2000000000);
 	const auto removal_escrow = mapping(lineage, economic_account_kind::auction_escrow, 0, 4,
 					    removed_auction, bootstrap);
@@ -407,6 +415,9 @@ int main()
 	assert(scalar("SELECT after_copper FROM economic_accounting_account_effect WHERE "
 		      "operation_id=" +
 		      literal(removal.operation_id)) == 3000);
+	assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=" +
+		      std::to_string(removal_escrow.authority_id) + " AND active_native_id=" +
+		      std::to_string(removed_auction) + " AND retiring_operation_id IS NULL") == 1);
 	auction_item_claim_state staged;
 	staged.auction_id = removed_auction;
 	staged.seller_pid = SELLER;
@@ -471,6 +482,11 @@ int main()
 	assert(scalar("SELECT COUNT(*) FROM economic_accounting_coin_posting WHERE "
 		      "operation_id=" +
 		      literal(expired.operation_id)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=" +
+		      std::to_string(expired_escrow.authority_id) +
+		      " AND active_native_id IS NULL "
+		      "AND retiring_operation_id=" +
+		      literal(expired.operation_id) + " AND revision=1") == 1);
 	// Retained contexts must reject a changed epoch without a second mutation.
 	execute("UPDATE economic_lineage_state SET active_epoch=NULL,revision=revision+1 "
 		"WHERE lineage=" +

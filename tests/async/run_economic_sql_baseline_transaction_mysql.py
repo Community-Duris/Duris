@@ -8,6 +8,7 @@ import shlex
 import subprocess
 import tempfile
 ROOT=Path(__file__).resolve().parents[2]
+CXX=os.environ.get('CXX','g++-12')
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--client-free-only', action='store_true', help='compile and run refusal checks without a database')
 parser.add_argument('--concurrency-rounds', type=int, choices=range(1,101), metavar='1..100', help='run only repeated SQL concurrency qualification')
@@ -20,7 +21,7 @@ files=['tests/async/economic_sql_baseline_transaction_test.cpp','src/persistence
 with tempfile.TemporaryDirectory(prefix='duris-sql-baseline-') as temporary:
     for mode in (('client-free',) if options.client_free_only else (('sql',) if options.concurrency_rounds else ('sql','client-free'))):
         executable=Path(temporary)/mode
-        flags=['g++','-std=c++20','-Wall','-Wextra','-Wpedantic','-Werror','-pthread','-O1','-g','-DDURIS_ECONOMIC_SQL_BASELINE_TEST','-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie','-Isrc']
+        flags=[CXX,'-std=c++20','-Wall','-Wextra','-Wpedantic','-Werror','-pthread','-O1','-g','-DDURIS_ECONOMIC_SQL_BASELINE_TEST','-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie','-Isrc']
         if mode=='sql':flags+=shlex.split(subprocess.check_output(['mysql_config','--cflags'],text=True))+['-Wl,--wrap=mysql_real_query,--wrap=mysql_errno,--wrap=_Znwm,--wrap=_Znam']
         else:flags+=['-D__NO_MYSQL__','-Isrc/no_mysql']
         flags+=files

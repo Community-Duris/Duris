@@ -1,6 +1,7 @@
 // The Python runner inserts production code; these doubles model only its I/O.
 #include <algorithm>
 #include <cassert>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -44,6 +45,7 @@ struct Object
 struct Character
 {
 	int rnum = 0, in_room = NOWHERE, birthplace = 0, affects = 0;
+	int copper = 0, silver = 0, gold = 4, platinum = 0;
 	bool npc = true, shopkeeper = true;
 	P_char next = nullptr, next_in_room = nullptr, master = nullptr;
 	struct npc_data
@@ -90,6 +92,10 @@ void extract_obj(P_obj obj, int = 0);
 #define GET_RNUM(ch) ((ch)->rnum)
 #define GET_BIRTHPLACE(ch) ((ch)->birthplace)
 #define GET_MASTER(ch) ((ch)->master)
+#define GET_COPPER(ch) ((ch)->copper)
+#define GET_SILVER(ch) ((ch)->silver)
+#define GET_GOLD(ch) ((ch)->gold)
+#define GET_PLATINUM(ch) ((ch)->platinum)
 #define IS_NPC(ch) ((ch)->npc)
 #define IS_SHOPKEEPER(ch) ((ch)->npc && (ch)->shopkeeper)
 int singleton_shop_id(P_char keeper)
@@ -298,7 +304,7 @@ MYSQL_ROW mysql_fetch_row(MYSQL_RES *result)
 		return nullptr;
 	result->cells.clear();
 	for (auto &value : result->rows[result->index++])
-		result->cells.push_back(value.data());
+		result->cells.push_back(value.empty() ? nullptr : value.data());
 	return result->cells.data();
 }
 void mysql_free_result(MYSQL_RES *result)
@@ -385,6 +391,7 @@ bool has_item(P_char ch, int rnum)
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
+	assert(!reset_command_issues_item('M'));
 	const std::string scenario = argv[1];
 	for (int i = 0; i < 3; ++i)
 	{
@@ -454,7 +461,8 @@ int main(int argc, char **argv)
 		P_char elsewhere = spawn(2);
 		P_char player = spawn(0);
 		player->npc = false;
-		saved_keepers = { { "0", "10", "100", "200" }, { "1", "11", "100", "201" } };
+		saved_keepers = { { "0", "10", "100", "200", "1234" },
+				  { "1", "11", "100", "201", "0" } };
 		add_item(10, 70);
 		add_item(11, 71);
 		add_item(11, 72, 1);
@@ -470,34 +478,56 @@ int main(int argc, char **argv)
 		assert(has_item(first, 70) && has_item(first, 80) && !has_item(first, 81));
 		assert(has_item(second, 71) && has_item(second, 81) && !has_item(second, 80));
 		assert(second->equipment[0]->R_num == 72 && second->affects == 1);
+		assert(first->platinum == 1 && first->gold == 2 && first->silver == 3 &&
+		       first->copper == 4);
+		assert(second->platinum == 0 && second->gold == 0 && second->silver == 0 &&
+		       second->copper == 0);
 		assert(shop_index[0].dirty && shop_index[1].dirty);
 		assert(mob_index[0].number == 6);
 	}
 	else if (scenario == "duplicate")
 	{
 		// DB orders newest snapshot first; only its stock should materialize.
-		saved_keepers = { { "1", "11", "100", "201" }, { "1", "12", "100", "201" } };
+		saved_keepers = { { "1", "11", "100", "201", "25" },
+				  { "1", "12", "100", "201", "999" } };
 		add_item(11, 71);
 		assert(sql_restore_shopkeepers());
 		assert(births == 1 && objects.size() == 1 && world[1].people &&
 		       !world[1].people->next_in_room);
 		assert(has_item(world[1].people, 71) && !has_item(world[1].people, 72));
+		assert(world[1].people->silver == 2 && world[1].people->copper == 5);
 		assert(shop_index[1].dirty && !shop_index[0].dirty);
 	}
 	else if (scenario == "cleanup")
 	{
-		saved_keepers = { { "0", "10", "100", "200" } };
+		saved_keepers = { { "0", "10", "100", "200", "" } };
 		add_item(10, 60);
 		fail_affects_query = true;
 		assert(!sql_restore_shopkeepers());
 		assert(!character_list && objects.empty() && !world[0].people &&
 		       mob_index[0].number == 0);
 	}
+	else if (scenario == "cash")
+	{
+		// A legacy NULL retains the prototype; invalid persisted cash aborts
+		// the whole restore without publishing the earlier staged keeper.
+		saved_keepers = { { "0", "10", "100", "200", "" } };
+		assert(sql_restore_shopkeepers());
+		assert(world[0].people && world[0].people->gold == 4);
+		extract_char(world[0].people);
+		saved_keepers = { { "0", "10", "100", "200", "12" },
+				  { "1", "11", "100", "201", "-1" } };
+		assert(!sql_restore_shopkeepers());
+		assert(!character_list && !world[0].people && !world[1].people);
+		saved_keepers[1][4] = std::to_string(static_cast<long long>(INT_MAX) + 1);
+		assert(!sql_restore_shopkeepers());
+		assert(!character_list);
+	}
 	else if (scenario == "invalid")
 	{
-		saved_keepers = { { "0", "10", "100", "200" }, { "-1", "11", "100", "201" },
-				  { "4", "12", "100", "201" }, { "1", "13", "101", "201" },
-				  { "2", "14", "100", "999" }, { "3", "15", "999", "201" } };
+		saved_keepers = { { "0", "10", "100", "200", "" }, { "-1", "11", "100", "201", "" },
+				  { "4", "12", "100", "201", "" }, { "1", "13", "101", "201", "" },
+				  { "2", "14", "100", "999", "" }, { "3", "15", "999", "201", "" } };
 		for (int id = 10; id <= 15; ++id)
 			add_item(id, id + 50);
 		assert(!sql_restore_shopkeepers());

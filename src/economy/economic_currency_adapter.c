@@ -1,6 +1,7 @@
 #include "economy/economic_currency_adapter.h"
 
 #include <cerrno>
+#include <cstring>
 #include <new>
 #include <utility>
 
@@ -83,6 +84,34 @@ economic_accounting_error transfer_policy(const currency_command_payload &payloa
 	if (wallet + bank != 0)
 		return economic_accounting_error::unbalanced;
 	return economic_accounting_error::ok;
+}
+economic_accounting_error chaos_starter_bank_source(const critical_command &command,
+						    const currency_command_payload &payload,
+						    economic_source_event *source)
+{
+	if (!source || payload.reason != currency_reason_type::chaos_starter_reward ||
+	    payload.reason_id != payload.pid ||
+	    command.source_site != critical_source_site::login ||
+	    command.deadline_class != critical_deadline_class::recovery ||
+	    payload.wallet_delta.amount != economic_coin_vector{} ||
+	    payload.bank_delta.amount != (economic_coin_vector{ 0, 0, 0, 1000000 }))
+		return economic_accounting_error::unauthorized;
+	critical_operation_id seed = {};
+	memcpy(seed.bytes.data(), "CHAOSEED", 8);
+	for (size_t byte = 0; byte < 8; ++byte)
+		seed.bytes[8 + byte] = static_cast<uint8_t>(uint64_t(payload.pid) >> (8 * byte));
+	critical_operation_id operation = {};
+	if (!critical_operation_id_derive(seed, 0x43484250, 1, &operation) ||
+	    !critical_operation_id_equal(command.operation_id, operation))
+		return economic_accounting_error::unauthorized;
+	*source = { economic_source_kind::starter_grant, seed, seed, 1, 1 };
+	return economic_accounting_error::ok;
+}
+bool same_source(const economic_source_event &left, const economic_source_event &right)
+{
+	return left.kind == right.kind && left.source.bytes == right.source.bytes &&
+	       left.generation.bytes == right.generation.bytes && left.sequence == right.sequence &&
+	       left.slot == right.slot;
 }
 }
 
@@ -198,6 +227,121 @@ economic_accounting_error economic_bank_transfer_prepare(
 			return result;
 		plan.postings = { { 0, 0, 0, payload.wallet_delta.amount, wallet },
 				  { 1, 1, 0, payload.bank_delta.amount, bank } };
+		result = economic_plan_normalize(&plan);
+		if (result != economic_accounting_error::ok)
+			return result;
+		std::vector<uint8_t> encoded;
+		result = economic_plan_encode(plan, &encoded);
+		if (result != economic_accounting_error::ok)
+			return result;
+		*prepared =
+			economic_prepared_currency(*mutation, std::move(plan), std::move(encoded));
+		return economic_accounting_error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+}
+
+economic_accounting_error economic_chaos_starter_bank_intent(const critical_command &command,
+							     const critical_operation_id &epoch,
+							     const economic_account_key &wallet,
+							     const economic_account_key &bank,
+							     std::vector<uint8_t> *encoded)
+{
+	if (!encoded || !account_pair(wallet, bank))
+		return economic_accounting_error::invalid_identity;
+	currency_command_payload payload = {};
+	if (!currency_command_decode_payload(command, &payload))
+		return economic_accounting_error::corrupt_evidence;
+	economic_source_event source;
+	auto result = chaos_starter_bank_source(command, payload, &source);
+	if (result != economic_accounting_error::ok)
+		return result;
+	if (bank.context_id != payload.racewar)
+		return economic_accounting_error::invalid_identity;
+	try
+	{
+		economic_admission_facts facts;
+		facts.metadata.lineage = wallet.lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = wallet.authority_id;
+		facts.metadata.writer_id = ECONOMIC_WRITER_CHAOS_STARTER_BANK;
+		facts.metadata.reason = economic_reason::starter_reward;
+		facts.metadata.source_event = source;
+		facts.facts = bank_facts(wallet, bank);
+		return economic_intent_freeze(command, facts, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return economic_accounting_error::capacity;
+	}
+}
+
+economic_accounting_error
+economic_chaos_starter_bank_prepare(const critical_command &command,
+				    const economic_frozen_intent &intent,
+				    const economic_currency_authority &authority,
+				    std::optional<economic_prepared_currency> *prepared)
+{
+	if (!prepared || !account_pair(authority.wallet_account, authority.bank_account))
+		return economic_accounting_error::invalid_identity;
+	try
+	{
+		auto result = economic_intent_verify_binding(command, intent);
+		if (result != economic_accounting_error::ok)
+			return result;
+		currency_command_payload payload = {};
+		if (!currency_command_decode_payload(command, &payload))
+			return economic_accounting_error::corrupt_evidence;
+		economic_source_event source;
+		result = chaos_starter_bank_source(command, payload, &source);
+		if (result != economic_accounting_error::ok)
+			return result;
+		const auto &meta = intent.admission.metadata;
+		if (meta.epoch.bytes != authority.epoch.bytes ||
+		    meta.writer_id != ECONOMIC_WRITER_CHAOS_STARTER_BANK ||
+		    meta.reason != economic_reason::starter_reward ||
+		    meta.actor_kind != economic_actor_kind::domain ||
+		    meta.actor_id != authority.wallet_account.authority_id || !meta.source_event ||
+		    !same_source(*meta.source_event, source) ||
+		    !critical_operation_id_is_zero(meta.original_operation_id) ||
+		    meta.lineage.bytes != authority.wallet_account.lineage.bytes ||
+		    authority.bank_account.context_id != payload.racewar ||
+		    !critical_entity_key_equal(authority.player_fence, command.keys[0]) ||
+		    !critical_entity_key_equal(authority.bank_fence, command.keys[1]) ||
+		    intent.admission.facts !=
+			    bank_facts(authority.wallet_account, authority.bank_account))
+			return economic_accounting_error::unauthorized;
+		std::optional<currency_prepared_mutation> mutation;
+		const auto domain_error = currency_prepare_mutation(
+			payload, authority.state, command.expected_revisions[0].revision,
+			command.expected_revisions[1].revision, currency_revision_policy::bank_only,
+			&mutation);
+		if (domain_error)
+			return mutation_error(domain_error);
+		economic_accounting_plan plan;
+		result = economic_intent_plan_metadata(command, intent, &plan.metadata);
+		if (result != economic_accounting_error::ok)
+			return result;
+		const auto &before = mutation->before();
+		const auto &after = mutation->after();
+		const economic_account_key issuance = { authority.bank_account.lineage,
+							economic_account_kind::issuance, 1, 0 };
+		plan.accounts = { { authority.bank_account, before.bank.amount, after.bank.amount,
+				    before.bank_revision, after.bank_revision },
+				  { issuance, {}, {}, 0, 0 } };
+		int64_t value = 0;
+		result = economic_coin_value(payload.bank_delta.amount, &value);
+		if (result != economic_accounting_error::ok)
+			return result;
+		economic_coin_vector issuance_delta = {};
+		for (size_t part = 0; part < issuance_delta.size(); ++part)
+			issuance_delta[part] = -payload.bank_delta.amount[part];
+		plan.postings = { { 0, 0, 0, payload.bank_delta.amount, value },
+				  { 1, 1, 0, issuance_delta, -value } };
 		result = economic_plan_normalize(&plan);
 		if (result != economic_accounting_error::ok)
 			return result;

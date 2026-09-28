@@ -291,8 +291,16 @@ unsigned int currency_prepare_mutation(const currency_command_payload &payload,
 {
 	if (!prepared ||
 	    (revision_policy != currency_revision_policy::sql_legacy &&
-	     revision_policy != currency_revision_policy::flatfile_legacy) ||
+	     revision_policy != currency_revision_policy::flatfile_legacy &&
+	     revision_policy != currency_revision_policy::bank_only) ||
 	    !vector_valid(payload.wallet_delta) || !vector_valid(payload.bank_delta))
+		return EINVAL;
+	const bool bank_only = revision_policy == currency_revision_policy::bank_only;
+	if (bank_only &&
+	    (std::any_of(payload.wallet_delta.amount.begin(), payload.wallet_delta.amount.end(),
+			 [](int64_t amount) { return amount != 0; }) ||
+	     std::all_of(payload.bank_delta.amount.begin(), payload.bank_delta.amount.end(),
+			 [](int64_t amount) { return amount == 0; })))
 		return EINVAL;
 	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
 		if (before.wallet.amount[index] < 0 || before.wallet.amount[index] > INT_MAX ||
@@ -301,7 +309,7 @@ unsigned int currency_prepare_mutation(const currency_command_payload &payload,
 	const bool rebase = revision_policy == currency_revision_policy::sql_legacy &&
 			    currency_command_is_rebasable_reward(payload);
 	constexpr uint64_t wildcard = std::numeric_limits<uint64_t>::max();
-	if (!rebase && ((expected_wallet_revision != wildcard &&
+	if (!rebase && ((!bank_only && expected_wallet_revision != wildcard &&
 			 expected_wallet_revision != before.wallet_revision) ||
 			(expected_bank_revision != wildcard &&
 			 expected_bank_revision != before.bank_revision)))
@@ -336,9 +344,10 @@ unsigned int currency_prepare_mutation(const currency_command_payload &payload,
 		if (bank_error)
 			return bank_error;
 	}
-	if (before.wallet_revision == wildcard || before.bank_revision == wildcard)
+	if ((!bank_only && before.wallet_revision == wildcard) || before.bank_revision == wildcard)
 		return ERANGE;
-	++after.wallet_revision;
+	if (!bank_only)
+		++after.wallet_revision;
 	++after.bank_revision;
 	*prepared = currency_prepared_mutation(payload, before, after);
 	return 0;
