@@ -469,6 +469,42 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"recovery.saved_sql_delete"})
         self.assertEqual(owners[("src/sql/sql_player.c", 10873, "sql_economy")],
                          {"recovery.saved_sql"})
+        shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
+        for line in (885, 905, 938):
+            self.assertEqual(owners[(shop_path, line, "sql_economy")],
+                             {"shop.sql_native_item_events"})
+        self.assertEqual(owners[(shop_path, 1072, "sql_economy")],
+                         {"shop.sql_native_balances"})
+        for route_id in ("shop.sql_native_item_events", "shop.sql_native_balances"):
+            route = self.routes[route_id]
+            self.assertEqual(route["current_critical_command_schema"]["current_schema"], 2)
+            self.assertFalse(route["current_critical_command_schema"]
+                             ["schema_2_gameplay_producer_connected"])
+            self.assertTrue(route["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
+
+    def test_quest_offering_sites_keep_consumption_and_publication_distinct(self) -> None:
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        path = "src/world/quest.c"
+        owners = {}
+        for writer in registry["writers"]:
+            for site in writer.get("sites", []):
+                if site[0] == path:
+                    owners.setdefault(tuple(site), set()).add(writer["id"])
+        self.assertEqual(owners[(path, 564, "economic_submit")],
+                         {"quest.durable_offering_submission"})
+        self.assertEqual(owners[(path, 463, "item_lifecycle")],
+                         {"quest.durable_offering_publication"})
+        for line, family in ((423, "item_lifecycle"), (423, "item_publication"),
+                             (425, "item_lifecycle")):
+            self.assertEqual(owners[(path, line, family)],
+                             {"quest.disappearing_npc_cleanup"})
+        self.assertTrue(self.routes["quest.durable_offering_submission"]
+                        ["current_critical_command_schema"]["schema_2_gameplay_producer_connected"])
+        self.assertEqual(self.routes["quest.durable_offering_publication"]["disposition"],
+                         "runtime_projection_route")
+        self.assertFalse(next(writer for writer in registry["writers"]
+                              if writer["id"] == "quest.artifact_turnin")["sites"])
 
     def test_sql_components_do_not_claim_a_playable_root(self) -> None:
         component = self.routes["item.sql_custody_apply"]

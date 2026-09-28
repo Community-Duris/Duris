@@ -62,6 +62,30 @@ schema qualification through migration `0044` and maintained SQL/flatfile builds
 on earlier commits. Preserve that evidence with its original commit identity.
 It does not certify this branch's final integrated binary.
 
+## Step 0 checkpoint: source inventory repaired
+
+The planning-base audit rows above record the starting failure. The current
+source-reviewed registry and generated matrix now list 859 routes and all 2,726
+unique lexical sites, with zero unmapped sites. Three removed quest expressions
+were retired, five new quest expressions and four SQL shop writes were reviewed,
+and unchanged expressions were reanchored after source-line moves. The five
+new routes distinguish the quest destruction submit, committed live removal,
+disappearing-NPC cleanup, SQL shop item writes, and SQL shop balance writes.
+The old `quest.artifact_turnin` entry records the quester entry point without
+claiming that its removed direct extraction still runs. The inactive legacy
+`quest_completion` path consumes from NPC carrying, not player carrying.
+
+`python3 scripts/validate_economy_accounting.py`, the generated-matrix
+`--check`, the writer-site contract (2,695 checks), the existing 49 writer
+route tests, and two focused new-route tests passed. The release validator still
+refuses `writer has no executable evidence`; the matrix keeps
+`coverage_complete=false` and `playable_release_status=BLOCKED`. Lexical mapping
+does not close any runtime gate. The SQL server built with GCC 13.3 using
+`make -C src -j4`. After pinning the four executable area-script checkouts to
+LF in `.gitattributes`, `make world` passed in the maintained local audit
+container. The focused quest-offering and shared publication retention harnesses
+passed. The process-restart fault reproduction remains the next step 0 task.
+
 ## Invariants to preserve
 
 - **One authority for each state:** SQL native rows and the existing command/item
