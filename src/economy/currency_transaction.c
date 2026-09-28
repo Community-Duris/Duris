@@ -115,6 +115,12 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 		}
 		entry.coin_wallets_published = true;
 	}
+	if (entry.publication_required &&
+	    !critical_command_coordinator_acknowledge_publication(completed.operation_id))
+	{
+		entry.publication_state = currency_publication_state::retrying_callback;
+		return false;
+	}
 	// Extract the node so a successful callback can advance a bulk command. A
 	// temporarily unavailable live destination keeps this same operation for retry.
 	auto node = pending.extract(found);
@@ -535,6 +541,11 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 		      error ? error : "unknown build failure");
 		return false;
 	}
+	if (economic_gameplay_authority::prepare_coin_transfer(&command) !=
+	    economic_accounting_error::ok)
+		return false;
+	const bool publication_required = command.schema_version ==
+					  CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 	for (const auto &key : command.keys)
 		if (critical_command_coordinator_is_fenced(key, nullptr))
 			return false;
@@ -558,6 +569,7 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 		memcpy(entry.account_name.data(), account, strlen(account));
 		entry.coin = payload;
 		entry.coin_completion = completion;
+		entry.publication_required = publication_required;
 		entry.context_size = context_size;
 		if (context_size)
 			memcpy(entry.context.data(), context, context_size);
@@ -567,7 +579,10 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 	{
 		return false;
 	}
-	const auto submitted = critical_command_coordinator_submit(std::move(command));
+	const auto submitted =
+		publication_required ?
+			critical_command_coordinator_submit_for_publication(command) :
+			critical_command_coordinator_submit(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
@@ -901,7 +916,49 @@ void currency_transaction_handle_completions(const critical_completion *completi
 bool currency_transaction_restore_replayed_command(const critical_command &command)
 {
 	if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
-	    command.type != critical_command_type::account_bank || !command.publication_required)
+	    !command.publication_required)
+		return true;
+	if (command.type == critical_command_type::coin_transfer)
+	{
+		coin_transfer_payload coin = {};
+		currency_command_payload source = {}, destination = {};
+		if (!critical_command_envelope_valid(command) ||
+		    !coin_transfer_command_decode_payload(command, &coin) ||
+		    coin.source.change.type != critical_command_type::account_bank ||
+		    coin.destination.change.type != critical_command_type::account_bank ||
+		    !currency_command_decode_payload(coin.source.change, &source) ||
+		    !currency_command_decode_payload(coin.destination.change, &destination) ||
+		    pending.size() >= CURRENCY_PENDING_MAX)
+			return false;
+		pending_currency entry = { .pid = source.pid,
+					   .account_name = source.account_name,
+					   .racewar = source.racewar,
+					   .completion = nullptr,
+					   .context = {},
+					   .context_size = 0,
+					   .publication_state =
+						   currency_publication_state::awaiting_completion,
+					   .completed = {},
+					   .coin = coin,
+					   .coin_completion = nullptr,
+					   .coin_wallets_published = false,
+					   .publication_attempts = 0,
+					   .publication_required = true };
+		try
+		{
+			const std::string key = operation_key(command.operation_id);
+			if (pending.find(key) != pending.end())
+				return false;
+			pending.emplace(key, std::move(entry));
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+		update_retained_health();
+		return true;
+	}
+	if (command.type != critical_command_type::account_bank)
 		return true;
 	currency_command_payload payload = {};
 	if (!critical_command_envelope_valid(command) ||

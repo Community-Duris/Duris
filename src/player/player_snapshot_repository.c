@@ -408,6 +408,18 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 			return { false, EINVAL };
 		const std::string container =
 			row.parent_index < 0 ? "NULL" : std::to_string(ids[row.parent_index]);
+		std::string item_properties;
+		if (!pet_items)
+		{
+			const player_snapshot_codec_result encoded = player_item_properties_encode(
+				row.extra2_flags, row.dynamic_affects, &item_properties);
+			if (encoded != player_snapshot_codec_result::ok)
+				return { false, static_cast<unsigned int>(
+							encoded == player_snapshot_codec_result::
+										allocation_failure ?
+								ENOMEM :
+								EINVAL) };
+		}
 		std::ostringstream sql;
 		if (pet_items)
 			sql << "INSERT INTO player_pet_items (pet_id,vnum,equip_slot,container_id,";
@@ -416,8 +428,11 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		sql << "weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
 		       "value3,value4,value5,value6,value7,name,short_descr,description,action_descr,"
 		       "bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,item_material,obj_uid,"
-		       "item_condition) VALUES ("
-		    << owner_id << ',' << row.vnum << ',' << row.equipment_slot << ',' << container;
+		       "item_condition";
+		if (!pet_items)
+			sql << ",item_properties";
+		sql << ") VALUES (" << owner_id << ',' << row.vnum << ',' << row.equipment_slot
+		    << ',' << container;
 		if (!pet_items)
 			sql << ",1";
 		sql << ',' << row.weight << ',' << row.cost << ',' << row.timers[0] << ','
@@ -432,7 +447,10 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		for (uint64_t bitvector : row.bitvectors)
 			sql << ',' << bitvector;
 		sql << ',' << static_cast<int>(row.material) << ',' << row.object_uid << ','
-		    << row.condition << ')';
+		    << row.condition;
+		if (!pet_items)
+			sql << ',' << quote(connection, item_properties);
+		sql << ')';
 		query_result result = execute(connection, sql.str());
 		if (!result.ok)
 			return result;

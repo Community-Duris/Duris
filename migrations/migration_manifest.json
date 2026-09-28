@@ -518,6 +518,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "35489b02df08627f9c03cd9cd4538f646205ee595328adced4ce2144c35ca646",
       "verify_checksum": "6b11f5702e3c26103052c99affb5317e296de535af1813527b5bdda826d722f6"
+    },
+    {
+      "id": "0035_player_item_dynamic_state",
+      "sequence": 35,
+      "description": "Persist secondary item flags and complete dynamic-affect state",
+      "apply": "immutable/0035_player_item_dynamic_state.sql",
+      "verify": "immutable/0035_player_item_dynamic_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "94567314ffc8e3152c4534ef072cf87da2c4094493e43ea76f5287538b53fbe5",
+      "verify_checksum": "53236964fa334e6bc25b67b738f5d39e2ad7ab04873d26f87f0aaca479cade27"
     }
   ]
 }

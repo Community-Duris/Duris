@@ -400,7 +400,16 @@ int main()
 	}
 	assert(economic_sql_normalize_sources(empty, 512, nullptr) ==
 	       economic_accounting_error::corrupt_evidence);
-	assert(empty.tables.size() == 18);
+	assert(empty.tables.size() == 19);
+	assert(table(empty, "economic_account_mapping").rows.empty());
+	const char *expected_item_sources[] = { "player_pet_items", "shopkeeper_items",
+						"siege_items" };
+	assert(empty.item_sources.size() == std::size(expected_item_sources));
+	for (size_t index = 0; index < std::size(expected_item_sources); ++index)
+	{
+		assert(empty.item_sources[index].name == expected_item_sources[index]);
+		assert(empty.item_sources[index].rows.empty());
+	}
 	assert(table(empty, "player_data").rows.empty());
 	sql(c.get(), "INSERT INTO accounts(account_name) VALUES('synthetic_shared')");
 	sql(c.get(),

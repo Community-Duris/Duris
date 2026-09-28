@@ -46,6 +46,7 @@
 #include "player/player_name.h"
 #include "account/password_hash.h"
 #include "player/player_revision_state.h"
+#include "player/player_snapshot_codec.h"
 #include "persistence/persistence_mode.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_transfer_command.h"
@@ -2328,6 +2329,31 @@ static bool sql_save_item_affects(int item_id, P_obj obj)
 	return true;
 }
 
+// Build the same versioned property payload used by snapshot saves. The hex
+// literal needs no connection-specific escaping and is safe to embed directly.
+static bool sql_player_item_properties_value_suffix(P_obj obj, std::string *suffix)
+{
+	if (!obj || !suffix)
+		return false;
+	std::vector<player_item_dynamic_affect_snapshot> dynamic_affects;
+	try
+	{
+		size_t count = 0;
+		for (const obj_affect *affect = obj->affects; affect; affect = affect->next)
+		{
+			if (++count > PLAYER_SNAPSHOT_MAX_ROWS)
+				return false;
+			dynamic_affects.push_back({ affect->type, affect->data, affect->extra2 });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return player_item_properties_sql_value_suffix(obj->extra2_flags, dynamic_affects,
+						       suffix) == player_snapshot_codec_result::ok;
+}
+
 // check if object has any non-default data that needs individual handling
 static bool obj_needs_individual_save(P_obj obj)
 {
@@ -2340,6 +2366,10 @@ static bool obj_needs_individual_save(P_obj obj)
 		if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
 			return true;
 	}
+
+	// has dynamic affects persisted in item_properties
+	if (obj->affects)
+		return true;
 
 	// has extra descriptions
 	if (obj->ex_description)
@@ -2374,19 +2404,30 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 	if (simple_count == 0)
 		return 0;
 
-	// allocate batch buffer - each item needs ~300 bytes for values
-	size_t buf_size = 1024 + (simple_count * 400);
+	// The property payload for a simple row has no dynamic affects and is bounded
+	// to its version/flags header plus the SQL quoting suffix.
+	size_t buf_size = 1024 + (simple_count * 464);
 	char *batch = (char *)malloc(buf_size);
 	if (!batch)
 		return -1;
 
-	int pos = snprintf(batch, buf_size,
-			   "INSERT INTO player_items ("
-			   "pid, vnum, equip_slot, container_id, quantity, "
-			   "weight, cost, timer, extra_flags, "
-			   "value0, value1, value2, value3, value4, value5, value6, value7, "
-			   "wear_flags, item_type, item_material, obj_uid, item_condition"
-			   ") VALUES ");
+	std::string insert_header;
+	try
+	{
+		insert_header = "INSERT INTO player_items ("
+				"pid, vnum, equip_slot, container_id, quantity, "
+				"weight, cost, timer, extra_flags, "
+				"value0, value1, value2, value3, value4, value5, value6, value7, "
+				"wear_flags, item_type, item_material, obj_uid, item_condition";
+		insert_header += player_item_properties_sql_column_suffix();
+		insert_header += ") VALUES ";
+	}
+	catch (const std::bad_alloc &)
+	{
+		free(batch);
+		return -1;
+	}
+	int pos = snprintf(batch, buf_size, "%s", insert_header.c_str());
 
 	bool first = true;
 	int batch_count = 0;
@@ -2402,17 +2443,24 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 
 		int vnum = obj_index[obj->R_num].virtual_number;
 
+		std::string properties_suffix;
+		if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
+		{
+			free(batch);
+			return -1;
+		}
+
 		sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str,
 							   bv1_str, bv2_str, bv3_str, bv4_str,
 							   bv5_str);
 		int new_pos = batch_append(
 			batch, pos, buf_size,
-			"%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%lu,%d)",
+			"%s(%d,%d,0,%d,1,%d,%d,%ld,%u,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%lu,%d%s)",
 			first ? "" : ",", pid, vnum, container_id, obj->weight, obj->cost,
 			(long)obj->timer[0], obj->extra_flags, obj->value[0], obj->value[1],
 			obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
 			obj->value[7], wear_str, type_str, material_str, obj->obj_uid,
-			obj->condition);
+			obj->condition, properties_suffix.c_str());
 		if (new_pos < 0)
 		{
 			free(batch);
@@ -2432,14 +2480,7 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 				return -1;
 			}
 			// reset for next batch
-			pos = snprintf(
-				batch, buf_size,
-				"INSERT INTO player_items ("
-				"pid, vnum, equip_slot, container_id, quantity, "
-				"weight, cost, timer, extra_flags, "
-				"value0, value1, value2, value3, value4, value5, value6, value7, "
-				"wear_flags, item_type, item_material, obj_uid, item_condition"
-				") VALUES ");
+			pos = snprintf(batch, buf_size, "%s", insert_header.c_str());
 			first = true;
 		}
 	}
@@ -2716,6 +2757,29 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 
 	int vnum = obj_index[obj->R_num].virtual_number;
 
+	std::string properties_suffix;
+	if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
+		return 0;
+	std::vector<char> query;
+	std::string query_prefix;
+	try
+	{
+		query.resize(8192 + properties_suffix.size() + 32);
+		query_prefix = "INSERT INTO player_items ("
+			       "pid, vnum, equip_slot, container_id, quantity, "
+			       "weight, cost, timer, extra_flags, wear_flags, item_type, "
+			       "value0, value1, value2, value3, value4, value5, value6, value7, "
+			       "name, short_descr, description, action_descr, "
+			       "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+			       "item_material, obj_uid, item_condition";
+		query_prefix += player_item_properties_sql_column_suffix();
+		query_prefix += ") VALUES (";
+	}
+	catch (const std::bad_alloc &)
+	{
+		return 0;
+	}
+
 	// escape strings - only save if strung (different from prototype)
 	// STRUNG_KEYS = name, STRUNG_DESC2 = short_description,
 	// STRUNG_DESC1 = description, STRUNG_DESC3 = action_description
@@ -2772,29 +2836,19 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str,
 						   bv2_str, bv3_str, bv4_str, bv5_str);
 
-	// build the query
-	char query[8192];
-	snprintf(query, sizeof(query),
-		 "INSERT INTO player_items ("
-		 "pid, vnum, equip_slot, container_id, quantity, "
-		 "weight, cost, timer, extra_flags, wear_flags, item_type, "
-		 "value0, value1, value2, value3, value4, value5, value6, value7, "
-		 "name, short_descr, description, action_descr, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		 "item_material, obj_uid, item_condition"
-		 ") VALUES ("
-		 "%d, %d, %d, %s, 1, "
+	snprintf(query.data(), query.size(),
+		 "%s%d, %d, %d, %s, 1, "
 		 "%d, %d, %ld, %u, %s, %s, "
 		 "%d, %d, %d, %d, %d, %d, %d, %d, "
 		 "%s, %s, %s, %s, "
 		 "%s, %s, %s, %s, %s, "
-		 "%s, %lu, %d"
-		 ")",
-		 pid, vnum, equip_slot, container_str, obj->weight, obj->cost, (long)obj->timer[0],
-		 obj->extra_flags, wear_str, type_str, obj->value[0], obj->value[1], obj->value[2],
-		 obj->value[3], obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-		 name_str, short_str, desc_str, action_str, bv1_str, bv2_str, bv3_str, bv4_str,
-		 bv5_str, material_str, obj->obj_uid, obj->condition);
+		 "%s, %lu, %d%s)",
+		 query_prefix.c_str(), pid, vnum, equip_slot, container_str, obj->weight, obj->cost,
+		 (long)obj->timer[0], obj->extra_flags, wear_str, type_str, obj->value[0],
+		 obj->value[1], obj->value[2], obj->value[3], obj->value[4], obj->value[5],
+		 obj->value[6], obj->value[7], name_str, short_str, desc_str, action_str, bv1_str,
+		 bv2_str, bv3_str, bv4_str, bv5_str, material_str, obj->obj_uid, obj->condition,
+		 properties_suffix.c_str());
 
 	// free escaped strings
 	if (esc_name)
@@ -2806,7 +2860,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 	if (esc_action)
 		free(esc_action);
 
-	if (!sql_run_query(query))
+	if (!sql_run_query(query.data()))
 	{
 		sql_player_error("sql_save_single_item");
 		return 0;
@@ -3089,17 +3143,27 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		return false;
 	}
 
-	const char *insert_header =
-		"INSERT INTO player_items ("
-		"pid, vnum, equip_slot, container_id, quantity, "
-		"weight, cost, timer, extra_flags, wear_flags, item_type, "
-		"value0, value1, value2, value3, value4, value5, value6, value7, "
-		"name, short_descr, description, action_descr, "
-		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		"item_material, obj_uid, item_condition"
-		") VALUES ";
+	std::string insert_header;
+	try
+	{
+		insert_header = "INSERT INTO player_items ("
+				"pid, vnum, equip_slot, container_id, quantity, "
+				"weight, cost, timer, extra_flags, wear_flags, item_type, "
+				"value0, value1, value2, value3, value4, value5, value6, value7, "
+				"name, short_descr, description, action_descr, "
+				"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+				"item_material, obj_uid, item_condition";
+		insert_header += player_item_properties_sql_column_suffix();
+		insert_header += ") VALUES ";
+	}
+	catch (const std::bad_alloc &)
+	{
+		free(batch);
+		free(flat);
+		return false;
+	}
 
-	int pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header);
+	int pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header.c_str());
 	int batch_start_idx = 0;
 	int items_in_batch = 0;
 
@@ -3107,6 +3171,13 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 	{
 		P_obj obj = flat[i].obj;
 		int vnum = obj_index[obj->R_num].virtual_number;
+		std::string properties_suffix;
+		if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
+		{
+			free(batch);
+			free(flat);
+			return false;
+		}
 
 		// Escape strung strings (same logic as sql_save_single_item_get_id)
 		char *esc_name = NULL;
@@ -3157,13 +3228,14 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		char row_buf[16384];
 		int row_len = snprintf(
 			row_buf, sizeof(row_buf),
-			"%s(%d,%d,%d,NULL,1,%d,%d,%ld,%u,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%lu,%d)",
+			"%s(%d,%d,%d,NULL,1,%d,%d,%ld,%u,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%lu,%d%s)",
 			(items_in_batch == 0) ? "" : ",", pid, vnum, flat[i].equip_slot,
 			obj->weight, obj->cost, (long)obj->timer[0], obj->extra_flags, wear_str,
 			type_str, obj->value[0], obj->value[1], obj->value[2], obj->value[3],
 			obj->value[4], obj->value[5], obj->value[6], obj->value[7], name_str,
 			short_str, desc_str, action_str, bv1_str, bv2_str, bv3_str, bv4_str,
-			bv5_str, material_str, (unsigned long)obj->obj_uid, obj->condition);
+			bv5_str, material_str, (unsigned long)obj->obj_uid, obj->condition,
+			properties_suffix.c_str());
 
 		// Free escaped strings
 		if (esc_name)
@@ -3227,7 +3299,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 			}
 
 			// Restart batch for remaining items
-			pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header);
+			pos = snprintf(batch, BATCH_BUF_SIZE, "%s", insert_header.c_str());
 			batch_start_idx = i;
 			items_in_batch = 0;
 
