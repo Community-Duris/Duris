@@ -165,8 +165,8 @@ bool critical_command_legacy_execution_supported(const critical_command &command
 
 bool critical_command_valid(const critical_command &command)
 {
-	// Keep admission, replay and existing repository paths closed to schema 2.
-	// Accounting-aware execution must be added explicitly with atomic evidence.
+	// Legacy mutation entrypoints stay closed to schema 2. The coordinator
+	// separately registers typed accounting admission and atomic owners.
 	return critical_command_legacy_execution_supported(command) &&
 	       critical_command_envelope_valid(command);
 }

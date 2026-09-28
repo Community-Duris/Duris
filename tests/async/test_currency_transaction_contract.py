@@ -48,7 +48,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
 
     def test_repository_commits_both_states_ledger_result_and_outbox(self):
         repository = (SRC / "critical_command_repository.c").read_text()
-        start = repository.index("bool execute_currency_state")
+        start = repository.index("bool write_currency_state")
         apply = repository.index("critical_apply_result critical_command_repository_apply")
         state = repository[start:apply]
         for token in (
@@ -69,7 +69,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         )
         self.assertLess(bank_ensure, bank_lock)
         branch = repository[apply:]
-        currency = branch[branch.index("if (currency_command)") :]
+        currency = branch[branch.index("if (currency_command || accounted_bank)") :]
         commit = currency.index('execute(connection, "COMMIT")')
         self.assertLess(currency.index("insert_outbox"), commit)
         self.assertLess(currency.index("finish_inbox"), commit)
@@ -103,8 +103,9 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("currency_command_is_rebasable_bank_reward", command)
         self.assertIn("currency_command_is_rebasable_reward", transaction)
         self.assertIn("currency_command_is_rebasable_bank_reward", transaction)
-        self.assertIn("!rebasable_reward &&", repository)
-        self.assertIn("currency_command_is_rebasable_reward", repository)
+        self.assertIn("!rebase &&", command)
+        self.assertIn("currency_prepare_mutation", repository)
+        self.assertIn("currency_revision_policy::sql_legacy", repository)
 
     def test_checkpoint_handoff_captures_but_cannot_overwrite_currency(self):
         capture = (SRC / "player_snapshot_capture.c").read_text()

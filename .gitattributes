@@ -1,0 +1,3 @@
+# Immutable migration checksums cover canonical LF bytes on every checkout.
+migrations/immutable/*.sql text eol=lf
+migrations/immutable/*.sh text eol=lf

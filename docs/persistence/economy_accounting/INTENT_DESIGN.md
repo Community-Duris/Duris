@@ -70,16 +70,19 @@ command intent, preventing a caller from substituting another facts record.
 `critical_command_envelope_valid` checks bounded wire structure for schemas 1/2.
 It deliberately does not interpret writer-specific fact bytes. The economy
 codec checks intent structure and command binding; typed adapters must still
-validate and authorize the facts. `critical_command_valid` remains legacy-only
-through `critical_command_legacy_execution_supported`. Thus current coordinator
-admission, journal replay and repository validity checks reject schema 2.
-All public command-bearing SQL mutation helpers also check the shared legacy
-predicate before touching their connection or output arguments. The pooled root
-entrypoint also rejects before client-library/thread initialization or pool
-acquisition. This predicate
-does not impose new timestamp requirements on existing compound child calls.
-No path strips an extension to invoke a legacy writer.
+validate and authorize the facts. The typed SQL bank increment is the first
+exception at direct `critical_command_repository_apply`/`reconcile`: structural
+schema-2 currency envelopes reach retained lookup, then new roots must pass the
+typed ATM adapter and transaction checks. See [SQL_BANK.md](SQL_BANK.md).
 
+`critical_command_valid` remains legacy-only through
+`critical_command_legacy_execution_supported`. SQL startup now explicitly pairs
+the bank-only frozen-intent validator with the pooled bank owner. Both fresh
+submission APIs and journal replay use that validator; default callers and
+flat-file startup retain no extension support. Nested SQL mutation helpers still
+reject schema 2 before touching connection/output. Unsupported pooled families
+reject before SQL initialization. See [BANK_ADMISSION.md](BANK_ADMISSION.md).
+No path strips an extension to invoke a legacy writer.
 When adding transactional accounting, replace these closed execution gates only
 with typed adapters that verify and atomically retain accounting evidence. Audit
 all direct entrypoints as well as top-level dispatch. The immutable command
@@ -107,5 +110,6 @@ observer may restore temporary legacy restitution state before a later unsupport
 record stops initialization; production startup failure aborts that state and
 clears coordinator fences. This is not an authority apply callback. Both fresh
 submission APIs reject unsupported envelopes before admission. Existing
-coordinator/admission and journal-fault tests also pass. Same-ID attachment during supported accounting execution and backend
-storage/recovery journeys remain pending transactional integration.
+coordinator/admission and journal-fault tests also pass. Bank same-ID attachment and durable transport replay are covered separately;
+native pooled storage qualification is tracked in BANK_ADMISSION.md. Full gameplay
+publication and backend activation remain pending.
