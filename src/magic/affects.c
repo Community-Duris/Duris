@@ -4055,3 +4055,40 @@ void strip_holy_sword(P_char ch)
 			     ch);
 	}
 }
+
+/*
+ * this is utility function for area spells
+ * it checks if the room character is in is affected
+ * by the given spell cast by character or someone grouped
+ * with him. if so, it returns the P_char pointing to
+ * the original caster, otherwise it return NULL and
+ * sets affect on the room for the given duration in seconds
+ */
+P_char stack_area(P_char ch, int spell, int duration)
+{
+	struct room_affect af, *afp;
+	P_room room = &world[ch->in_room];
+
+	for (afp = room->affected; afp; afp = afp->next)
+	{
+		if (afp->type == spell && char_in_list(afp->ch) &&
+		    ((ch->group && ch->group == afp->ch->group) || ch == afp->ch))
+			return afp->ch;
+	}
+
+	memset(&af, 0, sizeof(struct room_affect));
+	af.duration = duration * WAIT_SEC;
+	af.type = spell;
+	af.ch = ch;
+	affect_to_room(ch->in_room, &af);
+
+	return NULL;
+}
+
+int KludgeDuration(P_char ch, int baselevel, int baseduration)
+{
+	/* return baseduration;
+	   this isn't really what was originally intended, but it's based on caster's
+	   level */
+	return MAX(1, (GET_LEVEL(ch) / baselevel) * baseduration);
+}

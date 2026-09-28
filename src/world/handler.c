@@ -2295,6 +2295,19 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	return (obj);
 }
 
+void unequip_char_dale(P_obj kala)
+{
+	int a, b;
+
+	b = -1;
+	for (a = 0; a < MAX_WEAR; a++)
+		if (OBJ_WORN_POS(kala, a))
+			b = a;
+	if (b != -1)
+		unequip_char(kala->loc.wearing, b);
+}
+
+
 void unequip_all(P_char ch)
 {
 	for (int i = 0; i < MAX_WEAR; i++)

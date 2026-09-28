@@ -680,6 +680,15 @@ char *sickprocess(const char *arg)
 	return hmm;
 }
 
+int tracks(P_obj /*obj*/, P_char /*ch*/, int cmd, char * /*argument*/)
+{
+	if (cmd == CMD_DECAY)
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
 // Shows tracks / messages when appropriate to ch for tracks in room room.
 void show_tracks(P_char ch, int room)
 {

@@ -10,12 +10,12 @@ from _paths import ROOT, SRC, extract_function, rel
 
 makefile = (SRC / "Makefile").read_text(encoding="utf-8")
 fight = (SRC / "fight.c").read_text(encoding="utf-8")
-specs = (SRC / "specs.object.c").read_text(encoding="utf-8")
+specs = (SRC / "specs.heavens.c").read_text(encoding="utf-8")
 
 assert "item/forced_weapon_drop.o" in makefile
 fumble = fight[fight.index("if (sic == 1") : fight.index("if (IS_GRAPPLED", fight.index("if (sic == 1"))]
-critical = extract_function("fight.c", "bool critical_disarm(P_char ch, P_char victim)")
-gauntlets = extract_function("specs.object.c", "int fumblegaunts(P_obj obj, P_char ch, int cmd")
+critical = extract_function("attack_effects.c", "bool critical_disarm(P_char ch, P_char victim)")
+gauntlets = extract_function("specs.heavens.c", "int fumblegaunts(P_obj obj, P_char ch, int cmd")
 for body in (fumble, critical, gauntlets):
     assert "forced_weapon_drop(" in body
 assert "obj_to_room(weap" not in fumble

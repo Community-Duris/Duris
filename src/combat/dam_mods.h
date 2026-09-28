@@ -23,6 +23,13 @@ typedef struct
 typedef void (*dam_mod_predicate)(P_char, P_char, double, int, uint, damage_mod *,
 				  struct damage_messages *);
 
+extern float dam_factor[LAST_DF + 1];
+extern float racial_spldam_offensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
+extern float racial_spldam_defensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];
+
+void update_dam_factors(void);
+void update_racial_dam_factors(void);
+
 /* One macro serves every predicate lambda; which of these a body reads varies
    from predicate to predicate, so the slots are annotated rather than unnamed. */
 #define MAKE_DAM_MOD_PRED()                                                                    \

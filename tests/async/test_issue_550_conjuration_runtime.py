@@ -6,7 +6,7 @@ import subprocess
 from _paths import ROOT, extract_function, source
 
 
-MAGIC = source("magic.c").read_text(encoding="utf-8", errors="replace")
+MAGIC = source("spell_item_lifecycle.c").read_text(encoding="utf-8", errors="replace")
 SKILLS = source("classes/new_skills.c").read_text(encoding="utf-8", errors="replace")
 
 PRELUDE = r'''
@@ -79,18 +79,18 @@ FUNCTIONS = "\n".join(
         "struct summoned_replacement_context { uint64_t item_uid; uint32_t recipient_pid; uint8_t kind; };",
         "struct soulbind_reload_context { uint64_t item_uid; uint32_t recipient_pid; int32_t item_vnum; };",
         "int has_soulbind(P_char) { return binding_vnum; }",
-        extract_function("magic.c", "static int conjured_weapon_vnum("),
-        extract_function("magic.c", "static P_obj magic_find_object_by_uid("),
-        extract_function("magic.c", "static void conjured_weapon_publish_effect("),
-        extract_function("magic.c", "static void conjured_weapon_grant_completed("),
+        extract_function("spell_item_lifecycle.c", "static int conjured_weapon_vnum("),
+        extract_function("spell_item_lifecycle.c", "static P_obj magic_find_object_by_uid("),
+        extract_function("spell_item_lifecycle.c", "static void conjured_weapon_publish_effect("),
+        extract_function("spell_item_lifecycle.c", "static void conjured_weapon_grant_completed("),
         extract_function("classes/new_skills.c", "static P_obj new_skills_find_object_by_uid("),
         extract_function("classes/new_skills.c", "static bool summoned_book_matches("),
         extract_function("classes/new_skills.c", "static bool summoned_totem_matches("),
         extract_function("classes/new_skills.c", "static bool summoned_replacement_kind_valid("),
         extract_function("classes/new_skills.c", "static void retire_other_summoned_items("),
         extract_function("classes/new_skills.c", "static void summoned_replacement_completed("),
-        extract_function("magic.c", "static void remove_soulbind_except("),
-        extract_function("magic.c", "static void soulbind_reload_completed("),
+        extract_function("spell_item_lifecycle.c", "static void remove_soulbind_except("),
+        extract_function("spell_item_lifecycle.c", "static void soulbind_reload_completed("),
     ]
 )
 

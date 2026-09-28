@@ -2745,6 +2745,17 @@ void do_ogre_roar(P_char ch, char *argument, int /*cmd*/)
 		}
 }
 
+bool isCarved(P_obj corpse)
+{
+	int i;
+
+	for (i = 0; i < numCarvables; i++)
+		if (corpse->value[1] & carve_part_flag[i])
+			return TRUE;
+
+	return FALSE;
+}
+
 /* Krov: carving procedure. checks in value[3] of a corpse which body
    parts are missing and then puts a (named) body part in corpse
    if the carve was successful */

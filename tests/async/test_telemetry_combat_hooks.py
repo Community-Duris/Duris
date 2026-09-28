@@ -25,7 +25,7 @@ def function(source, signature):
 
 
 def main():
-    source = (ROOT / 'src/combat/fight.c').read_text()
+    source = (ROOT / 'src/combat/fight_state.c').read_text()
     helper = function(source, 'static void telemetry_combat_context_changed(')
     start = function(source, 'void set_fighting(P_char ch, P_char vict)')
     stop = function(source, 'void stop_fighting(P_char ch)')

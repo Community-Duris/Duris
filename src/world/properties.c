@@ -17,6 +17,8 @@
 #include "world/difficulty.h"
 #include "telemetry/telemetry_config_reload.h"
 #include "core/structs.h"
+#include "combat/damage.h"
+#include "combat/dam_mods.h"
 #include "net/comm.h"
 #include "net/ws_handlers.h"
 #include "core/utils.h"
@@ -41,8 +43,6 @@ extern void update_racial_exp_mods();
 extern void update_racial_exp_mod_victims();
 extern void update_exp_mods();
 extern void update_stat_data();
-extern void update_dam_factors();
-extern void update_racial_dam_factors();
 extern void update_saving_throws();
 extern void update_breath_weapon_properties();
 extern void update_regen_properties();

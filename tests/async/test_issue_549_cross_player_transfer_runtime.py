@@ -133,7 +133,7 @@ void obj_to_char(P_obj object, P_char owner) {
 
 '''
 
-MAGIC = source("magic.c").read_text(encoding="utf-8")
+MAGIC = source("spell_item_lifecycle.c").read_text(encoding="utf-8")
 ROGUES = source("classes/rogues.c").read_text(encoding="utf-8")
 
 FUNCTIONS = "\n".join(
@@ -155,14 +155,14 @@ struct slip_movement_context {
     int32_t victim_room;
 };
 ''',
-        extract_function("magic.c", "int has_soulbind("),
-        extract_function("magic.c", "static void remove_soulbind_except("),
-        extract_function("magic.c", "void remove_soulbind("),
-        extract_function("magic.c", "static P_char find_soulbind_player("),
-        extract_function("magic.c", "static P_obj find_soulbind_item("),
-        extract_function("magic.c", "static bool soulbind_metadata_applied("),
-        extract_function("magic.c", "static bool apply_soulbind_metadata("),
-        extract_function("magic.c", "static bool soulbind_transfer_publication("),
+        extract_function("spell_item_lifecycle.c", "int has_soulbind("),
+        extract_function("spell_item_lifecycle.c", "static void remove_soulbind_except("),
+        extract_function("spell_item_lifecycle.c", "void remove_soulbind("),
+        extract_function("spell_item_lifecycle.c", "static P_char find_soulbind_player("),
+        extract_function("spell_item_lifecycle.c", "static P_obj find_soulbind_item("),
+        extract_function("spell_item_lifecycle.c", "static bool soulbind_metadata_applied("),
+        extract_function("spell_item_lifecycle.c", "static bool apply_soulbind_metadata("),
+        extract_function("spell_item_lifecycle.c", "static bool soulbind_transfer_publication("),
         extract_function("classes/rogues.c", "static P_char find_slip_player("),
         extract_function("classes/rogues.c", "static P_obj find_slip_item("),
         extract_function("classes/rogues.c", "static bool slip_transfer_publication("),

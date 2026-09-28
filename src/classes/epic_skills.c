@@ -2,6 +2,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
+#include "world/specs.prototypes.h"
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -17,6 +18,8 @@ extern P_index mob_index;
 extern P_index obj_index;
 extern Skill skills[];
 extern P_room world;
+extern struct zone_data *zone_table;
+extern P_obj object_list;
 extern struct race_names race_names_table[];
 
 namespace
@@ -407,6 +410,35 @@ void do_epic_skills(P_char ch, char * /*arg*/, int /*cmd*/)
 	}
 
 	send_to_char("\n", ch);
+}
+
+int teacher(P_char ch, P_char pl, int cmd, char *arg)
+{
+	P_obj t_obj;
+	char buf[512];
+
+	if (cmd != CMD_ASK || !arg || !strstr(arg, "level") || !pl ||
+	    !GET_CLASS(pl, ch->player.m_class))
+		return FALSE;
+
+	snprintf(buf, 512,
+		 "For your further path of development it is crucial that you visit\n"
+		 "%s of the magical runestones locates in the following lands:\n",
+		 GET_LEVEL(pl) >= get_property("exp.levelForAllRunestones", 51) - 1 ? "all" :
+										      "one");
+
+	for (t_obj = object_list; t_obj; t_obj = t_obj->next)
+	{
+		if (obj_index[t_obj->R_num].func.obj == epic_stone &&
+		    t_obj->value[3] == GET_LEVEL(pl) + 1)
+		{
+			strcat(buf, zone_table[real_zone0(t_obj->value[2])].name);
+			strcat(buf, "\n");
+		}
+	}
+
+	send_to_char(buf, pl);
+	return TRUE;
 }
 
 int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)

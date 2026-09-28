@@ -669,10 +669,6 @@ void do_zreset(P_char, char *, int);
 void read_wizconnect_file(void);
 void read_ban_file(void);
 void roll_basic_attributes(P_char, int);
-void sa_ageCopy(P_char, ulong, int);
-void sa_byteCopy(P_char, ulong, int);
-void sa_intCopy(P_char, ulong, int);
-void sa_shortCopy(P_char, ulong, int);
 void save_ban_file(void);
 void save_wizconnect_file(void);
 void do_terminate(P_char, char *, int);
@@ -1051,6 +1047,13 @@ void displayHardCore(P_char ch, char *arg, int cmd);
 void displayLeader(P_char ch, char *arg, int cmd);
 void displayRelic(P_char ch, char *arg, int cmd);
 int leapSucceed(P_char, P_char);
+int WeaponSkill(P_char, P_obj);
+int dodgeSucceed(P_char, P_char, P_obj);
+int blockSucceed(P_char, P_char, P_obj);
+int MonkRiposte(P_char, P_char, P_obj);
+int parrySucceed(P_char, P_char, P_obj);
+bool mangleSucceed(P_char, P_char, P_obj);
+int try_riposte(P_char, P_char, P_obj);
 int damage_modifier(P_char, P_char, int);
 #ifdef REALTIME_COMBAT
 int CharNumberOfAttacks(P_char);
@@ -1070,7 +1073,10 @@ int melee_damage(P_char ch, P_char vict, double dam, int type, struct damage_mes
 int PartySizeMod(int, int, int, int);
 int TryRiposte(P_char, P_char);
 int vamp(P_char, double, double);
+void check_vamp(P_char, P_char, double, uint);
+bool soul_trap(P_char, P_char);
 void heal(P_char, P_char, int, int);
+bool decrease_skin_counter(P_char, unsigned int);
 bool blind(P_char, P_char, int);
 void retarget_event(P_char ch, P_char victim, P_obj obj, void *data);
 void MoveAllAttackers(P_char, P_char);
@@ -1095,6 +1101,7 @@ int calculate_ac(P_char);
 void load_messages(void);
 P_obj make_corpse(P_char, int);
 void make_bloodstain(P_char);
+int calculate_attacks(P_char, int attacks[]);
 void perform_violence(void);
 void set_fighting(P_char, P_char);
 bool set_fighting(P_char, P_char, bool);
@@ -1103,11 +1110,14 @@ void engage(P_char, P_char);
 void soul_taking_check(P_char, P_char);
 struct affected_type *get_ward_from_char(P_char ch);
 int check_damage_ward(P_char ch, int dam);
+int check_damage_ward(P_char attacker, P_char victim, int dam);
+void dam_message(double, P_char, P_char, struct damage_messages *messages);
 int required_weapon_skill(P_obj wpn);
 /*
 void swapWeapon(P_char);
 */
 void update_pos(P_char);
+unsigned int calculate_ch_state(P_char);
 bool can_damage(P_char, P_char); /* TASFALEN */
 /*
 void swapWeapon2(P_char, int, int);
@@ -1518,7 +1528,6 @@ void spell_mielikki_vitality(int, P_char, char *, int, P_char, P_obj);
 void do_nothing_spell(int, P_char, char *, int, P_char, P_obj);
 bool can_relocate_to(P_char, P_char);
 void cure_arrow_wound(P_char);
-void set_up_portals(P_char, P_obj, P_obj, int);
 bool can_do_general_portal(int level, P_char ch, P_char victim, struct portal_settings *settings,
 			   struct portal_create_messages *messages);
 bool spell_general_portal(int level, P_char ch, P_char victim, struct portal_settings *settings,
@@ -1530,6 +1539,10 @@ int can_call_woodland_beings(P_char, int);
 int can_raise_undead(P_char, int);
 int can_raise_draco(P_char, int, bool);
 bool should_area_hit(P_char, P_char);
+int cast_as_damage_area(P_char, void (*)(int, P_char, char *, int, P_char, P_obj), int, P_char,
+			float, float);
+int cast_as_damage_area(P_char, void (*)(int, P_char, char *, int, P_char, P_obj), int, P_char,
+			float, float, bool (*)(P_char, P_char));
 /* True while cast_as_damage_area() is inside its victim loop (core/utility.c).
  * The damage pipeline is never told which spell it is scaling, so this is how a
  * modifier learns that the damage in front of it came from an area spell. */
@@ -2646,6 +2659,7 @@ void spell_relocate(int, P_char, char *, int, P_char, P_obj);
 void spell_dark_compact(int, P_char, char *, int, P_char, P_obj);
 void spell_remove_curse(int, P_char, char *, int, P_char, P_obj);
 void spell_remove_poison(int, P_char, char *, int, P_char, P_obj);
+bool isCarved(P_obj);
 void spell_resurrect(int, P_char, char *, int, P_char, P_obj);
 void spell_lesser_resurrect(int, P_char, char *, int, P_char, P_obj);
 bool persistence_defer_corpse_resurrection(P_obj, P_char, P_char, bool);
@@ -2789,7 +2803,6 @@ void cast_vines(int, P_char, char *, int, P_char, P_obj);
 void event_spike_growth(P_char, P_char, P_obj, void *);
 void cast_spike_growth(int, P_char, char *, int, P_char, P_obj);
 void event_awaken_forest(P_char, P_char, P_obj, void *);
-void event_spore_burst(P_char, P_char, P_obj, void *);
 void cast_awaken_forest(int, P_char, char *, int, P_char, P_obj);
 void cast_hurricane(int, P_char, char *, int, P_char, P_obj);
 void cast_storm_shield(int, P_char, char *, int, P_char, P_obj);

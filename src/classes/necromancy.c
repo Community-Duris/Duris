@@ -38,7 +38,6 @@ extern bool create_walls(int room, int exit, P_char ch, int level, int type, int
 			 const char *short_desc, const char *desc, ulong flags);
 P_obj get_object_from_char(P_char owner, int vnum);
 
-bool isCarved(P_obj corpse);
 
 /* Legacy raise paths do not have a corpse transaction to publish an NPC-side
  * inventory. A player caster is the durable recipient, so keep recovered
