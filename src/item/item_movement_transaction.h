@@ -90,15 +90,13 @@ struct item_movement_health
 	uint64_t publication_ack_pending;
 };
 
-bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_container,
-				      const item_owner_identity &from_owner,
-				      const item_owner_identity &to_owner,
-				      item_transfer_reason reason, int64_t reason_id,
-				      item_movement_completion_fn completion, const void *context,
-				      size_t context_size, P_obj corpse_context = NULL,
-				      item_movement_reject *reject = NULL,
-				      item_movement_publication_fn publication = nullptr,
-				      economic_source_kind lifecycle_source = {});
+bool item_movement_transaction_submit(
+	P_char actor, P_obj root, P_obj target_container, const item_owner_identity &from_owner,
+	const item_owner_identity &to_owner, item_transfer_reason reason, int64_t reason_id,
+	item_movement_completion_fn completion, const void *context, size_t context_size,
+	P_obj corpse_context = NULL, item_movement_reject *reject = NULL,
+	item_movement_publication_fn publication = nullptr,
+	economic_source_kind lifecycle_source = {}, uint64_t logical_source_id = 0);
 // A corpse_create batch validates and publishes all captured live roots before
 // invoking completion. Its callback persists/finalizes the corpse, not the moves.
 // Stale topology retains the movement and busy fence without calling completion.
@@ -125,18 +123,20 @@ bool item_creation_grant_submit_to_player_with_completion(
 // after the grant queue releases this request, so it may submit a successor.
 bool item_creation_grant_submit_to_player_with_completion(
 	P_char actor, P_obj object, P_char recipient, P_obj target_container,
-	item_creation_grant_completion_fn completion, economic_source_kind source = {});
-bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
-						       P_char recipient,
-						       economic_source_kind source = {});
+	item_creation_grant_completion_fn completion, economic_source_kind source = {},
+	uint64_t source_id = 0);
+bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,
+						       economic_source_kind source = {},
+						       uint64_t source_id = 0);
 // Admit all detached roots before starting any ownership operation. A refused
 // batch leaves every object with the caller; an accepted batch owns every root.
 bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
 								     size_t count, P_char recipient,
 								     economic_source_kind source = {});
-bool item_creation_grant_submit_to_room(
-	P_char actor, P_obj object, int room, economic_source_kind source,
-	item_creation_grant_completion_fn completion = nullptr);
+bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,
+					economic_source_kind source,
+					item_creation_grant_completion_fn completion = nullptr,
+					uint64_t source_id = 0);
 bool item_creation_grant_mark_blocking(P_char actor);
 bool item_creation_grant_blocks_commands(P_char actor);
 // Orderly maintenance must not quiesce between the roots of an accepted kit.

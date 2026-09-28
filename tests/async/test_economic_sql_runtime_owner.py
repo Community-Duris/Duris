@@ -14,13 +14,15 @@ ENV = r'''
 #include <string>
 #include <vector>
 struct MYSQL { int id = 1; };
-extern bool fail_open, fail_acquire, fail_bind, fail_constructor, locked;
-extern int opened, closed, acquired, released, bound;
+extern bool fail_open, fail_acquire, fail_bind, fail_recover, fail_constructor, locked;
+extern int opened, closed, acquired, released, bound, recovered;
 extern std::vector<std::string> events;
 void mysql_close(MYSQL *);
 #endif
 '''
 GUARD = r'''
+#ifndef OWNER_TEST_GUARD_H
+#define OWNER_TEST_GUARD_H
 #include "owner_test_env.h"
 class economic_sql_lifecycle_guard {
     bool held = false;
@@ -35,6 +37,7 @@ public:
         out->held = true; locked = true; return 0;
     }
 };
+#endif
 '''
 BIND = r'''
 #include "owner_test_env.h"
@@ -43,14 +46,34 @@ inline bool duris_sql_exclusion_guard_bind_economic_runtime(MYSQL *conn) {
     return !fail_bind;
 }
 '''
+LIFECYCLE = r'''
+#include "owner_test_env.h"
+class economic_sql_lifecycle_guard;
+class economic_sql_accounting_lifecycle_transaction {
+public:
+    static unsigned int recover_runtime(MYSQL *conn, const economic_sql_lifecycle_guard &,
+                                        bool *active) noexcept {
+        assert(conn && conn->id == 1 && locked && active);
+        ++recovered; *active = false; return fail_recover ? 5 : 0;
+    }
+};
+'''
+GAMEPLAY = r'''
+class economic_gameplay_authority {
+public:
+    static bool active() noexcept { return false; }
+    static void clear_sql_runtime() noexcept {}
+};
+'''
 DRIVER = r'''
 #include "owner_test_env.h"
 #include "sql/sql_economic_runtime.h"
 #include <cstdio>
 #include <sys/wait.h>
 #include <unistd.h>
-bool fail_open = false, fail_acquire = false, fail_bind = false, fail_constructor = false, locked = false;
-int opened = 0, closed = 0, acquired = 0, released = 0, bound = 0;
+bool fail_open = false, fail_acquire = false, fail_bind = false, fail_recover = false,
+     fail_constructor = false, locked = false;
+int opened = 0, closed = 0, acquired = 0, released = 0, bound = 0, recovered = 0;
 std::vector<std::string> events;
 MYSQL *sql_open_configured_connection(unsigned long flags) {
     assert(flags == 0); ++opened; events.push_back("open");
@@ -61,8 +84,8 @@ void mysql_close(MYSQL *conn) {
 }
 void reset() {
     sql_economic_runtime_shutdown(); assert(!locked);
-    fail_open = fail_acquire = fail_bind = fail_constructor = false;
-    opened = closed = acquired = released = bound = 0; events.clear();
+    fail_open = fail_acquire = fail_bind = fail_recover = fail_constructor = false;
+    opened = closed = acquired = released = bound = recovered = 0; events.clear();
 }
 int main() {
     reset(); fail_open = true;
@@ -74,11 +97,14 @@ int main() {
     reset(); fail_bind = true;
     assert(!sql_economic_runtime_start());
     assert((events == std::vector<std::string>{"open", "acquire", "bind", "release", "close"}));
+    reset(); fail_recover = true;
+    assert(!sql_economic_runtime_start());
+    assert(recovered == 1 && !locked && released == 1 && closed == 1);
     reset(); fail_constructor = true;
     assert(!sql_economic_runtime_start());
     assert(opened == 1 && acquired == 0 && closed == 1 && !locked);
     reset(); assert(sql_economic_runtime_start());
-    assert(locked && opened == 1 && acquired == 1 && bound == 1 && closed == 0);
+    assert(locked && opened == 1 && acquired == 1 && bound == 1 && recovered == 1 && closed == 0);
     assert(!sql_economic_runtime_start());
     assert(locked && opened == 1 && acquired == 1 && bound == 1 && closed == 0);
     pid_t child = fork(); assert(child >= 0);
@@ -108,6 +134,8 @@ def main():
         path = Path(directory)
         for name, content in {'owner_test_env.h': ENV,
                               'persistence/economic_sql_lifecycle_guard.h': GUARD,
+                              'persistence/economic_sql_accounting_lifecycle_transaction.h': LIFECYCLE,
+                              'economy/economic_gameplay_authority.h': GAMEPLAY,
                               'sql/sql_exclusion_guard.h': BIND,
                               'owner.cpp': DRIVER, 'no_mysql.cpp': NO_MYSQL}.items():
             dest = path / name; dest.parent.mkdir(parents=True, exist_ok=True); dest.write_text(content)

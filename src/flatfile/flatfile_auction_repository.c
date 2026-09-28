@@ -1,8 +1,11 @@
 #include "flatfile/flatfile_auction_repository.h"
 
 #include "economy/auction_command.h"
+#include "economy/auction_accounting.h"
 #include "economy/auction_item_claim_accounting.h"
 #include "economy/auction_listing_accounting.h"
+#include "economy/auction_money_claim_accounting.h"
+#include "economy/auction_settlement_accounting.h"
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_accounting_store.h"
 #include "flatfile/flatfile_authority_transaction.h"
@@ -35,6 +38,11 @@ constexpr size_t catalog_maximum_listings = 262144;
 constexpr size_t catalog_maximum_money = 262144;
 constexpr size_t catalog_maximum_operations = 1048576;
 constexpr const char *catalog_filename = "auction_catalog";
+constexpr std::array<uint8_t, 8> source_magic = { 'D', 'U', 'R', 'A', 'U', 'S', 'R', 0 };
+constexpr uint32_t source_version = 1;
+constexpr size_t source_maximum_bytes = 32 * 1024 * 1024;
+constexpr size_t source_maximum_rows = 262144;
+constexpr const char *source_filename = "auction_claim_sources";
 constexpr uint32_t auction_status_open = 1;
 constexpr uint32_t auction_status_closed = 2;
 constexpr uint32_t auction_status_removed = 3;
@@ -90,6 +98,23 @@ struct auction_catalog
 	std::vector<auction_listing> listings;
 	std::vector<money_pickup> money;
 	std::vector<auction_operation> operations;
+};
+
+struct auction_claim_source_row
+{
+	critical_operation_id operation = {};
+	uint16_t slot = 0;
+	critical_operation_id lineage = {};
+	uint32_t beneficiary_pid = 0;
+	uint64_t claim_mapping_id = 0;
+	uint64_t amount = 0;
+	critical_operation_id consumed_by = {};
+};
+
+struct auction_claim_source_catalog
+{
+	uint64_t revision = 0;
+	std::vector<auction_claim_source_row> rows;
 };
 
 struct operation_id_hash
@@ -531,6 +556,160 @@ flatfile_read_result load_catalog(const std::string &root, auction_catalog *cata
 						flatfile_read_result::invalid;
 }
 
+bool source_less(const auction_claim_source_row &left, const auction_claim_source_row &right)
+{
+	return left.operation.bytes < right.operation.bytes ||
+	       (left.operation.bytes == right.operation.bytes && left.slot < right.slot);
+}
+
+bool encode_sources(const auction_claim_source_catalog &catalog, std::vector<uint8_t> *bytes)
+{
+	if (!bytes || !catalog.revision || catalog.rows.size() > source_maximum_rows)
+		return false;
+	encoder payload;
+	payload.number<uint32_t>(catalog.rows.size());
+	for (const auto &row : catalog.rows)
+	{
+		payload.raw(row.operation.bytes.data(), row.operation.bytes.size());
+		payload.number(row.slot);
+		payload.raw(row.lineage.bytes.data(), row.lineage.bytes.size());
+		payload.number(row.beneficiary_pid);
+		payload.number(row.claim_mapping_id);
+		payload.number(row.amount);
+		payload.raw(row.consumed_by.bytes.data(), row.consumed_by.bytes.size());
+	}
+	if (!payload.valid || payload.bytes.size() > source_maximum_bytes)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.bytes.data(), payload.bytes.size(), digest.data());
+	encoder file;
+	file.raw(source_magic.data(), source_magic.size());
+	file.number(source_version);
+	file.number<uint32_t>(payload.bytes.size());
+	file.number(catalog.revision);
+	file.raw(digest.data(), digest.size());
+	file.raw(payload.bytes.data(), payload.bytes.size());
+	if (!file.valid || file.bytes.size() > source_maximum_bytes)
+		return false;
+	*bytes = std::move(file.bytes);
+	return true;
+}
+
+bool decode_sources(const std::vector<uint8_t> &bytes, auction_claim_source_catalog *catalog)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size ||
+	    memcmp(bytes.data(), source_magic.data(), source_magic.size()))
+		return false;
+	decoder header{ bytes.data() + 8, bytes.size() - 8 };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || version != source_version || !revision ||
+	    payload_size != bytes.size() - header_size)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(bytes.data() + header_size, payload_size, digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	decoder payload{ bytes.data() + header_size, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count > source_maximum_rows ||
+	    payload_size != 4 + static_cast<size_t>(count) * 70)
+		return false;
+	auction_claim_source_catalog decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.rows.resize(count);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (auto &row : decoded.rows)
+		if (!payload.raw(row.operation.bytes.data(), row.operation.bytes.size()) ||
+		    !payload.number(&row.slot) ||
+		    !payload.raw(row.lineage.bytes.data(), row.lineage.bytes.size()) ||
+		    !payload.number(&row.beneficiary_pid) ||
+		    !payload.number(&row.claim_mapping_id) || !payload.number(&row.amount) ||
+		    !payload.raw(row.consumed_by.bytes.data(), row.consumed_by.bytes.size()) ||
+		    critical_operation_id_is_zero(row.operation) || !row.slot ||
+		    critical_operation_id_is_zero(row.lineage) || !row.beneficiary_pid ||
+		    !row.claim_mapping_id || !row.amount || row.amount > INT_MAX ||
+		    critical_operation_id_equal(row.operation, row.consumed_by))
+			return false;
+	for (size_t index = 1; index < decoded.rows.size(); ++index)
+		if (!source_less(decoded.rows[index - 1], decoded.rows[index]))
+			return false;
+	*catalog = std::move(decoded);
+	return true;
+}
+
+flatfile_read_result load_sources(const std::string &root, auction_claim_source_catalog *catalog,
+				  std::string *error)
+{
+	std::vector<uint8_t> bytes;
+	const auto read = flatfile_read(domains_directory(root), source_filename,
+					source_maximum_bytes, &bytes, error);
+	if (read == flatfile_read_result::not_found)
+	{
+		*catalog = {};
+		return read;
+	}
+	if (read != flatfile_read_result::ok)
+		return read;
+	return decode_sources(bytes, catalog) ? flatfile_read_result::ok :
+						flatfile_read_result::invalid;
+}
+
+bool add_source(auction_claim_source_catalog *catalog, const critical_command &command,
+		const economic_account_key &claim_account, uint32_t beneficiary_pid, uint16_t slot,
+		uint64_t amount)
+{
+	if (!catalog || !beneficiary_pid || !slot || !amount || amount > INT_MAX ||
+	    catalog->rows.size() >= source_maximum_rows || catalog->revision == UINT64_MAX ||
+	    claim_account.kind != economic_account_kind::pending_claim ||
+	    !economic_account_key_valid(claim_account))
+		return false;
+	auction_claim_source_row row{ command.operation_id,
+				      slot,
+				      claim_account.lineage,
+				      beneficiary_pid,
+				      claim_account.authority_id,
+				      amount,
+				      {} };
+	auto found = std::lower_bound(catalog->rows.begin(), catalog->rows.end(), row, source_less);
+	if (found != catalog->rows.end() && !source_less(row, *found))
+		return false;
+	catalog->rows.insert(found, row);
+	++catalog->revision;
+	return true;
+}
+
+bool plan_claim_credit(const economic_accounting_plan &plan,
+		       const economic_account_key &claim_account, int64_t before,
+		       uint64_t before_revision, int64_t amount)
+{
+	if (amount <= 0 || before < 0 || before > INT64_MAX - amount ||
+	    before_revision == UINT64_MAX)
+		return false;
+	for (const auto &effect : plan.accounts)
+	{
+		if (!economic_account_key_equal(effect.key, claim_account))
+			continue;
+		int64_t effect_before = 0, effect_after = 0;
+		return economic_coin_value(effect.before, &effect_before) ==
+			       economic_accounting_error::ok &&
+		       economic_coin_value(effect.after, &effect_after) ==
+			       economic_accounting_error::ok &&
+		       effect.before_revision == before_revision &&
+		       effect.after_revision == before_revision + 1 && effect_before == before &&
+		       effect_after == before + amount;
+	}
+	return false;
+}
+
 flatfile_auction_query_result query_catalog(const std::string &root, auction_catalog *catalog,
 					    std::string *error)
 {
@@ -687,6 +866,96 @@ bool claim_state(const auction_catalog &catalog, const auction_command_payload &
 				      found->claimed };
 	}
 	*claim = value;
+	return true;
+}
+
+bool open_listing_state(const auction_catalog &catalog, uint32_t auction_id,
+			auction_bid_accounting_listing *state)
+{
+	if (!state)
+		return false;
+	const auto found = std::find_if(catalog.listings.begin(), catalog.listings.end(),
+					[&](const auction_listing &listing)
+					{ return listing.id == auction_id; });
+	if (found == catalog.listings.end() || found->status != auction_status_open ||
+	    found->items.empty())
+		return false;
+	for (const auto &item : found->items)
+		if (item.claimed || item.claim_pid)
+			return false;
+	auction_bid_accounting_listing value;
+	value.auction_id = found->id;
+	value.seller_pid = found->seller_pid;
+	value.winning_bidder_pid = found->winner_pid;
+	value.status = found->status;
+	value.custody_state = 1;
+	value.current_price = found->current_price;
+	value.buy_price = found->buy_price;
+	value.revision = found->revision;
+	for (const auto &operation : catalog.operations)
+	{
+		if (operation.result_code || operation.result.auction_id != found->id)
+			continue;
+		if (operation.result.event_type == auction_event_type::listed)
+		{
+			if (!critical_operation_id_is_zero(value.listing_operation) ||
+			    operation.result.auction_revision != 1 ||
+			    operation.result.seller_pid != found->seller_pid)
+				return false;
+			value.listing_operation = operation.operation_id;
+		}
+		else if (operation.result.event_type == auction_event_type::bid_placed &&
+			 operation.result.auction_revision == found->revision)
+		{
+			if (!critical_operation_id_is_zero(value.previous_bid_operation) ||
+			    operation.result.winner_pid != found->winner_pid ||
+			    operation.result.final_price != found->current_price)
+				return false;
+			value.previous_bid_operation = operation.operation_id;
+		}
+	}
+	if (critical_operation_id_is_zero(value.listing_operation) ||
+	    (found->winner_pid != 0) !=
+		    !critical_operation_id_is_zero(value.previous_bid_operation))
+		return false;
+	*state = value;
+	return true;
+}
+
+bool settlement_state(const auction_catalog &catalog, uint32_t auction_id,
+		      auction_settlement_listing *state)
+{
+	if (!state)
+		return false;
+	auction_bid_accounting_listing open;
+	if (!open_listing_state(catalog, auction_id, &open))
+		return false;
+	const auto found = std::find_if(catalog.listings.begin(), catalog.listings.end(),
+					[&](const auction_listing &listing)
+					{ return listing.id == auction_id; });
+	if (found == catalog.listings.end() || found->items.size() > AUCTION_COMMAND_MAX_ITEMS)
+		return false;
+	auction_settlement_listing value;
+	value.auction_id = open.auction_id;
+	value.seller_pid = open.seller_pid;
+	value.winner_pid = open.winning_bidder_pid;
+	value.status = open.status;
+	value.custody_state = open.custody_state;
+	value.quantity = found->items.size();
+	value.current_price = open.current_price;
+	value.buy_price = open.buy_price;
+	value.revision = open.revision;
+	value.end_time = found->end_time;
+	value.listing_operation = open.listing_operation;
+	value.winning_bid_operation = open.previous_bid_operation;
+	value.item_count = found->items.size();
+	for (size_t index = 0; index < found->items.size(); ++index)
+	{
+		const auto &item = found->items[index];
+		value.items[index] = { item.uid,  item.revision,  static_cast<uint16_t>(index),
+				       item.vnum, item.claim_pid, item.claimed };
+	}
+	*state = value;
 	return true;
 }
 
@@ -926,16 +1195,43 @@ try
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	economic_frozen_intent intent;
 	auction_item_claim_state frozen_claim;
-	economic_account_key wallet_account, bank_account;
+	auction_bid_accounting_listing frozen_bid;
+	auction_bid_accounting_accounts bid_accounts;
+	auction_settlement_listing frozen_settlement;
+	auction_settlement_accounts settlement_accounts;
+	economic_account_key wallet_account, bank_account, claim_account;
 	if (accounted &&
 	    (payload.action != accounted_action ||
 	     (accounted_action == auction_action::list ?
 		      auction_listing_accounting_decode(command, &intent, &payload, &wallet_account,
 							&bank_account) :
+	      accounted_action == auction_action::bid ?
+		      auction_bid_accounting_decode(command, &intent, &payload, &frozen_bid,
+						    &bid_accounts) :
+	      accounted_action == auction_action::finalize ||
+			      accounted_action == auction_action::remove ?
+		      auction_settlement_accounting_decode(command, &intent, &payload,
+							   &frozen_settlement,
+							   &settlement_accounts) :
+	      accounted_action == auction_action::claim_money ?
+		      auction_money_claim_accounting_decode(command, &intent, &payload,
+							    &wallet_account, &bank_account,
+							    &claim_account) :
 		      auction_item_claim_accounting_decode(
 			      command, &intent, &payload, &frozen_claim, &wallet_account,
 			      &bank_account)) != economic_accounting_error::ok))
 		return { critical_apply_outcome::terminal_failure, 0, EPROTONOSUPPORT };
+	if (accounted && accounted_action == auction_action::bid)
+	{
+		wallet_account = bid_accounts.wallet;
+		bank_account = bid_accounts.bank;
+	}
+	if (accounted && (accounted_action == auction_action::finalize ||
+			  accounted_action == auction_action::remove))
+	{
+		wallet_account = settlement_accounts.actor_wallet;
+		bank_account = settlement_accounts.actor_bank;
+	}
 	SHA256(encoded_command.data(), encoded_command.size(), digest.data());
 	flatfile_authority_lock lock;
 	std::string error;
@@ -988,6 +1284,76 @@ try
 			    (retained.result_code == 0) != !retained.plan.empty())
 				return { critical_apply_outcome::terminal_failure, catalog.revision,
 					 EILSEQ };
+			if (accounted_action == auction_action::claim_money &&
+			    !retained.result_code)
+			{
+				auction_claim_source_catalog retained_sources;
+				const auto read = load_sources(root, &retained_sources, &error);
+				if (read != flatfile_read_result::ok)
+					return { read == flatfile_read_result::io_error ?
+							 critical_apply_outcome::retryable_failure :
+							 critical_apply_outcome::terminal_failure,
+						 catalog.revision,
+						 static_cast<unsigned int>(
+							 read == flatfile_read_result::io_error ?
+								 EIO :
+								 EILSEQ) };
+				decoder facts{ intent.admission.facts.data(),
+					       intent.admission.facts.size(), 24 };
+				uint32_t beneficiary = 0;
+				uint64_t amount = 0, revision = 0;
+				if (!facts.number(&beneficiary) || !facts.number(&amount) ||
+				    !facts.number(&revision))
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EILSEQ };
+				auction_money_claim_state retained_claim;
+				retained_claim.beneficiary_pid = beneficiary;
+				retained_claim.money = static_cast<int64_t>(amount);
+				retained_claim.revision = revision;
+				for (const auto &row : retained_sources.rows)
+					if (critical_operation_id_equal(row.consumed_by,
+									command.operation_id))
+					{
+						if (row.lineage.bytes !=
+							    claim_account.lineage.bytes ||
+						    row.beneficiary_pid != beneficiary ||
+						    row.claim_mapping_id !=
+							    claim_account.authority_id)
+							return { critical_apply_outcome::
+									 terminal_failure,
+								 catalog.revision, EILSEQ };
+						retained_claim.sources.push_back(
+							{ row.operation, row.slot,
+							  row.beneficiary_pid, row.claim_mapping_id,
+							  row.amount });
+					}
+				critical_command projected = command;
+				projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+				projected.accounting_intent.clear();
+				projected.publication_required = false;
+				std::vector<uint8_t> expected;
+				if (auction_money_claim_accounting_intent(
+					    projected, intent.admission.metadata.epoch,
+					    wallet_account, bank_account, claim_account,
+					    retained_claim,
+					    &expected) != economic_accounting_error::ok ||
+				    expected != command.accounting_intent)
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EILSEQ };
+				const auto linked =
+					flatfile_accounting_storage::verify_source_claim(
+						root, lock, retained, &error);
+				if (linked != flatfile_accounting_status::ok)
+					return { linked == flatfile_accounting_status::io_error ?
+							 critical_apply_outcome::retryable_failure :
+							 critical_apply_outcome::terminal_failure,
+						 catalog.revision,
+						 static_cast<unsigned int>(
+							 linked == flatfile_accounting_status::
+										 io_error ?
+								 EIO :
+								 EILSEQ) };
+			}
 			return accounted_completion(retained);
 		}
 		if (found != flatfile_accounting_status::not_found)
@@ -1020,22 +1386,68 @@ try
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
 	const bool listing_accounted = accounted && payload.action == auction_action::list;
+	const bool bid_accounted = accounted && payload.action == auction_action::bid;
+	const bool settlement_accounted = accounted &&
+					  (payload.action == auction_action::finalize ||
+					   payload.action == auction_action::remove);
+	const bool money_accounted = accounted && payload.action == auction_action::claim_money;
 	auction_item_claim_accounting_authority accounting_before;
+	auction_money_claim_authority money_before;
 	auction_listing_accounting_authority listing_before;
+	auction_bid_accounting_authority bid_before;
+	auction_settlement_authority settlement_before;
+	auction_claim_source_catalog sources;
+	bool sources_changed = false;
+	if (bid_accounted || settlement_accounted || money_accounted)
+	{
+		const auto read = load_sources(root, &sources, &error);
+		if (read != flatfile_read_result::ok && read != flatfile_read_result::not_found)
+			return { read == flatfile_read_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 read == flatfile_read_result::io_error ? EIO : EILSEQ) };
+	}
 	flatfile_economic_authority_snapshot authority;
 	if (accounted)
 	{
-		std::string account;
-		if (!canonical_account(payload.account_name.data(), &account))
-			return { critical_apply_outcome::terminal_failure, catalog.revision,
-				 EINVAL };
-		const flatfile_economic_mapping_request requests[] = {
-			{ wallet_account, { 1, payload.actor_pid, {} } },
-			{ bank_account, { 2, bank_account.authority_id, account } }
-		};
+		std::vector<flatfile_economic_mapping_request> requests;
+		if (!settlement_accounted || payload.actor_pid)
+		{
+			std::string account;
+			if (!canonical_account(payload.account_name.data(), &account))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 EINVAL };
+			requests.push_back({ wallet_account, { 1, payload.actor_pid, {} } });
+			requests.push_back(
+				{ bank_account, { 2, bank_account.authority_id, account } });
+		}
+		if (bid_accounted)
+		{
+			requests.push_back({ bid_accounts.escrow, { 4, payload.auction_id, {} } });
+			if (bid_accounts.previous_claim.authority_id)
+				requests.push_back({ bid_accounts.previous_claim,
+						     { 5, frozen_bid.winning_bidder_pid, {} } });
+			if (bid_accounts.seller_claim.authority_id)
+				requests.push_back({ bid_accounts.seller_claim,
+						     { 5, frozen_bid.seller_pid, {} } });
+		}
+		if (settlement_accounted)
+		{
+			requests.push_back(
+				{ settlement_accounts.escrow, { 4, payload.auction_id, {} } });
+			if (settlement_accounts.seller_claim.authority_id)
+				requests.push_back({ settlement_accounts.seller_claim,
+						     { 5, frozen_settlement.seller_pid, {} } });
+		}
+		if (money_accounted)
+			requests.push_back({ claim_account, { 5, payload.actor_pid, {} } });
 		const unsigned int gate = economic_flatfile_lock_authority(
-			root, lock, wallet_account.lineage, intent.admission.metadata.epoch,
-			requests, &authority, &error);
+			root, lock,
+			settlement_accounted ? settlement_accounts.escrow.lineage :
+					       wallet_account.lineage,
+			intent.admission.metadata.epoch, requests, &authority, &error);
 		if (gate)
 			return { gate == EIO || gate == ENOMEM ?
 					 critical_apply_outcome::retryable_failure :
@@ -1046,6 +1458,105 @@ try
 			listing_before.epoch = intent.admission.metadata.epoch;
 			listing_before.wallet = wallet_account;
 			listing_before.bank = bank_account;
+		}
+		else if (bid_accounted)
+		{
+			bid_before.epoch = intent.admission.metadata.epoch;
+			bid_before.accounts = bid_accounts;
+			if (!open_listing_state(catalog, payload.auction_id, &bid_before.listing))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+			critical_command projected = command;
+			projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+			projected.accounting_intent.clear();
+			projected.publication_required = false;
+			std::vector<uint8_t> expected;
+			if (auction_bid_accounting_intent(
+				    projected, bid_before.epoch, bid_before.listing, bid_accounts,
+				    &expected) != economic_accounting_error::ok ||
+			    expected != command.accounting_intent)
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+			const auto prior = bid_before.listing.winning_bidder_pid;
+			if (prior && prior != payload.actor_pid)
+				if (const auto *pickup = find_money(&catalog, prior))
+					bid_before.previous_claim_before = { pickup->amount,
+									     pickup->revision };
+			if (bid_before.listing.buy_price > 0 &&
+			    payload.value >= bid_before.listing.buy_price)
+				if (const auto *pickup =
+					    find_money(&catalog, bid_before.listing.seller_pid))
+					bid_before.seller_claim_before = { pickup->amount,
+									   pickup->revision };
+		}
+		else if (settlement_accounted)
+		{
+			settlement_before.epoch = intent.admission.metadata.epoch;
+			settlement_before.accounts = settlement_accounts;
+			if (!settlement_state(catalog, payload.auction_id,
+					      &settlement_before.listing))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+			critical_command projected = command;
+			projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+			projected.accounting_intent.clear();
+			projected.publication_required = false;
+			std::vector<uint8_t> expected;
+			if (auction_settlement_accounting_intent(projected, settlement_before.epoch,
+								 settlement_before.listing,
+								 settlement_accounts, &expected) !=
+				    economic_accounting_error::ok ||
+			    expected != command.accounting_intent)
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+			if (payload.action == auction_action::finalize &&
+			    settlement_before.listing.winner_pid)
+				if (const auto *pickup = find_money(
+					    &catalog, settlement_before.listing.seller_pid))
+				{
+					settlement_before.seller_claim_before = pickup->amount;
+					settlement_before.seller_claim_revision_before =
+						pickup->revision;
+				}
+		}
+		else if (money_accounted)
+		{
+			money_before.epoch = intent.admission.metadata.epoch;
+			money_before.wallet = wallet_account;
+			money_before.bank = bank_account;
+			money_before.claim_account = claim_account;
+			money_before.claim.beneficiary_pid = payload.actor_pid;
+			if (const auto *pickup = find_money(&catalog, payload.actor_pid))
+			{
+				money_before.claim.money = pickup->amount;
+				money_before.claim.revision = pickup->revision;
+			}
+			for (const auto &row : sources.rows)
+				if (critical_operation_id_is_zero(row.consumed_by) &&
+				    row.lineage.bytes == claim_account.lineage.bytes &&
+				    row.beneficiary_pid == payload.actor_pid &&
+				    row.claim_mapping_id == claim_account.authority_id)
+				{
+					if (money_before.claim.sources.size() >=
+					    ECONOMIC_AUCTION_CLAIM_MAX_SOURCES)
+						return { critical_apply_outcome::terminal_failure,
+							 catalog.revision, ENOSPC };
+					money_before.claim.sources.push_back(
+						{ row.operation, row.slot, row.beneficiary_pid,
+						  row.claim_mapping_id, row.amount });
+				}
+			critical_command projected = command;
+			projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+			projected.accounting_intent.clear();
+			projected.publication_required = false;
+			std::vector<uint8_t> expected;
+			if (auction_money_claim_accounting_intent(
+				    projected, money_before.epoch, wallet_account, bank_account,
+				    claim_account, money_before.claim,
+				    &expected) != economic_accounting_error::ok ||
+			    expected != command.accounting_intent)
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
 		}
 		else
 		{
@@ -1101,8 +1612,11 @@ try
 	}
 	if (accounted && !result_code)
 	{
-		auto &balances = listing_accounted ? listing_before.balances_before :
-						     accounting_before.balances_before;
+		auto &balances = listing_accounted    ? listing_before.balances_before :
+				 bid_accounted	      ? bid_before.balances_before :
+				 settlement_accounted ? settlement_before.actor_balances_before :
+				 money_accounted      ? money_before.balances_before :
+							accounting_before.balances_before;
 		balances.wallet = wallet.wallet;
 		balances.bank = wallet.bank;
 		balances.wallet_revision = wallet.wallet_revision;
@@ -1113,13 +1627,16 @@ try
 							   payload.actor_pid, 0 };
 		uint64_t auction_revision = 0, player_revision = 0;
 		std::vector<flatfile_item_ownership_record> auction_items, player_items;
-		const auto from = listing_accounted ?
+		const auto from = listing_accounted || money_accounted ?
 					  flatfile_item_repository_result::not_found :
 					  flatfile_item_repository_load_owner_locked(
 						  root, lock, auction_owner, &auction_revision,
 						  &auction_items, &error);
-		const auto to = flatfile_item_repository_load_owner_locked(
-			root, lock, player_owner, &player_revision, &player_items, &error);
+		const auto to = bid_accounted || settlement_accounted || money_accounted ?
+					flatfile_item_repository_result::not_found :
+					flatfile_item_repository_load_owner_locked(
+						root, lock, player_owner, &player_revision,
+						&player_items, &error);
 		if ((from != flatfile_item_repository_result::ok &&
 		     from != flatfile_item_repository_result::not_found) ||
 		    (to != flatfile_item_repository_result::ok &&
@@ -1137,25 +1654,56 @@ try
 						 EILSEQ) };
 		if (listing_accounted)
 			listing_before.player_owner_revision_before = player_revision;
-		else
+		else if (!bid_accounted && !settlement_accounted && !money_accounted)
 		{
 			accounting_before.auction_owner_revision_before = auction_revision;
 			accounting_before.player_owner_revision_before = player_revision;
 		}
-		const auto &source_items = listing_accounted ? player_items : auction_items;
-		auto &items_before = listing_accounted ? listing_before.items_before :
-							 accounting_before.items_before;
-		for (size_t index = 0; index < payload.item_count; ++index)
+		if (bid_accounted || settlement_accounted)
 		{
-			const auto selected = std::find_if(
-				source_items.begin(), source_items.end(), [&](const auto &item)
-				{ return item.item_uid == payload.items[index].item_uid; });
-			if (selected == source_items.end())
-				break;
-			items_before.push_back({ selected->item_uid,
-						 { selected->owner, selected->root_item_uid,
-						   selected->parent_item_uid,
-						   selected->item_revision, selected->state } });
+			const auto *listing = find_listing(&catalog, payload.auction_id);
+			if (!listing || auction_items.size() != listing->items.size())
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+			for (const auto &row : listing->items)
+			{
+				const auto found = std::find_if(
+					auction_items.begin(), auction_items.end(),
+					[&](const auto &item) { return item.item_uid == row.uid; });
+				if (found == auction_items.end() ||
+				    found->root_item_uid != row.uid || found->parent_item_uid ||
+				    found->item_revision != row.revision ||
+				    found->vnum != row.vnum ||
+				    found->state != item_custody_state::active)
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, ESTALE };
+				if (settlement_accounted)
+					settlement_before.items_before.push_back(
+						{ found->item_uid,
+						  { found->owner, found->root_item_uid,
+						    found->parent_item_uid, found->item_revision,
+						    found->state } });
+			}
+		}
+		if (!money_accounted)
+		{
+			const auto &source_items = listing_accounted ? player_items : auction_items;
+			auto &items_before = listing_accounted ? listing_before.items_before :
+								 accounting_before.items_before;
+			for (size_t index = 0; index < payload.item_count; ++index)
+			{
+				const auto selected = std::find_if(
+					source_items.begin(), source_items.end(),
+					[&](const auto &item)
+					{ return item.item_uid == payload.items[index].item_uid; });
+				if (selected == source_items.end())
+					break;
+				items_before.push_back(
+					{ selected->item_uid,
+					  { selected->owner, selected->root_item_uid,
+					    selected->parent_item_uid, selected->item_revision,
+					    selected->state } });
+			}
 		}
 	}
 	flatfile_item_auction_mutation item_mutation;
@@ -1507,6 +2055,34 @@ try
 		result.wallet_revision = wallet.wallet_revision;
 		result.bank_revision = wallet.bank_revision;
 	}
+	if (settlement_accounted && mutation_applied)
+	{
+		const auto *updated = find_listing(&catalog, payload.auction_id);
+		if (!updated || updated->items.size() != settlement_before.listing.item_count)
+			return { critical_apply_outcome::terminal_failure, catalog.revision,
+				 EILSEQ };
+		for (size_t index = 0; index < updated->items.size(); ++index)
+		{
+			const auto &item = updated->items[index];
+			if (item.uid != settlement_before.listing.items[index].uid ||
+			    item.revision != settlement_before.listing.items[index].revision ||
+			    item.claimed)
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 EILSEQ };
+			settlement_before.claim_pids_after.push_back(item.claim_pid);
+		}
+		if (payload.action == auction_action::finalize &&
+		    settlement_before.listing.winner_pid)
+		{
+			const auto *pickup =
+				find_money(&catalog, settlement_before.listing.seller_pid);
+			if (!pickup)
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 EILSEQ };
+			settlement_before.seller_claim_after = pickup->amount;
+			settlement_before.seller_claim_revision_after = pickup->revision;
+		}
+	}
 	flatfile_accounting_record accounting_record;
 	std::vector<flatfile_authority_operation> mapping_operations;
 	if (accounted)
@@ -1536,10 +2112,20 @@ try
 				listing_accounted ?
 					auction_listing_accounting_plan(
 						command, intent, listing_before, result, &plan) :
+				bid_accounted ?
+					auction_bid_accounting_plan(command, intent, bid_before,
+								    result, &plan) :
+				settlement_accounted ?
+					auction_settlement_accounting_plan(
+						command, intent, settlement_before, result, &plan) :
+				money_accounted ?
+					auction_money_claim_accounting_plan(
+						command, intent, money_before, result, &plan) :
 					auction_item_claim_accounting_plan(
 						command, intent, accounting_before, result, &plan);
 			if (planned != economic_accounting_error::ok ||
-			    (!listing_accounted &&
+			    (!listing_accounted && !bid_accounted && !settlement_accounted &&
+			     !money_accounted &&
 			     (!plan.accounts.empty() || !plan.postings.empty())) ||
 			    !plan.children.empty() || plan.item_events.size() != payload.item_count)
 				return { planned == economic_accounting_error::capacity ?
@@ -1550,6 +2136,114 @@ try
 						 planned == economic_accounting_error::capacity ?
 							 ENOMEM :
 							 EILSEQ) };
+			if (bid_accounted)
+			{
+				const auto &listing = bid_before.listing;
+				if (listing.winning_bidder_pid &&
+				    listing.winning_bidder_pid != payload.actor_pid)
+				{
+					const auto *pickup =
+						find_money(&catalog, listing.winning_bidder_pid);
+					if (!pickup ||
+					    pickup->amount !=
+						    bid_before.previous_claim_before.money +
+							    listing.current_price ||
+					    pickup->revision !=
+						    bid_before.previous_claim_before.revision + 1 ||
+					    !plan_claim_credit(
+						    plan, bid_accounts.previous_claim,
+						    bid_before.previous_claim_before.money,
+						    bid_before.previous_claim_before.revision,
+						    listing.current_price) ||
+					    !add_source(&sources, command,
+							bid_accounts.previous_claim,
+							listing.winning_bidder_pid, 1,
+							listing.current_price))
+						return { critical_apply_outcome::terminal_failure,
+							 catalog.revision, EILSEQ };
+					sources_changed = true;
+				}
+				if (result.event_type == auction_event_type::sold)
+				{
+					const int64_t fee = static_cast<int64_t>(
+						static_cast<__int128_t>(result.final_price) *
+						payload.closing_fee_basis_points / 10000);
+					const int64_t proceeds = result.final_price - fee;
+					const auto *pickup =
+						find_money(&catalog, listing.seller_pid);
+					if (!pickup ||
+					    pickup->amount != bid_before.seller_claim_before.money +
+								      proceeds ||
+					    pickup->revision !=
+						    bid_before.seller_claim_before.revision + 1)
+						return { critical_apply_outcome::terminal_failure,
+							 catalog.revision, EILSEQ };
+					if (proceeds)
+					{
+						if (!plan_claim_credit(
+							    plan, bid_accounts.seller_claim,
+							    bid_before.seller_claim_before.money,
+							    bid_before.seller_claim_before.revision,
+							    proceeds) ||
+						    !add_source(&sources, command,
+								bid_accounts.seller_claim,
+								listing.seller_pid, 2, proceeds))
+							return { critical_apply_outcome::
+									 terminal_failure,
+								 catalog.revision, EILSEQ };
+						sources_changed = true;
+					}
+				}
+			}
+			if (settlement_accounted && payload.action == auction_action::finalize &&
+			    settlement_before.listing.winner_pid)
+			{
+				const int64_t fee = static_cast<int64_t>(
+					static_cast<__int128_t>(result.final_price) *
+					payload.closing_fee_basis_points / 10000);
+				const int64_t proceeds = result.final_price - fee;
+				if (proceeds &&
+				    (!plan_claim_credit(
+					     plan, settlement_accounts.seller_claim,
+					     settlement_before.seller_claim_before,
+					     settlement_before.seller_claim_revision_before,
+					     proceeds) ||
+				     !add_source(
+					     &sources, command, settlement_accounts.seller_claim,
+					     settlement_before.listing.seller_pid, 2, proceeds)))
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EILSEQ };
+				sources_changed = proceeds > 0;
+			}
+			if (money_accounted)
+			{
+				const auto *pickup = find_money(&catalog, payload.actor_pid);
+				if (!pickup || pickup->amount ||
+				    pickup->revision != money_before.claim.revision + 1 ||
+				    sources.revision == UINT64_MAX)
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EILSEQ };
+				for (const auto &source : money_before.claim.sources)
+				{
+					auction_claim_source_row key{ source.operation,
+								      source.slot };
+					auto found = std::lower_bound(sources.rows.begin(),
+								      sources.rows.end(), key,
+								      source_less);
+					if (found == sources.rows.end() ||
+					    source_less(key, *found) ||
+					    !critical_operation_id_is_zero(found->consumed_by) ||
+					    found->lineage.bytes != claim_account.lineage.bytes ||
+					    found->beneficiary_pid != payload.actor_pid ||
+					    found->claim_mapping_id != claim_account.authority_id ||
+					    found->amount != source.amount)
+						return { critical_apply_outcome::terminal_failure,
+							 catalog.revision, EILSEQ };
+					found->consumed_by = command.operation_id;
+				}
+				++sources.revision;
+				sources_changed = true;
+			}
 			const auto encoded = economic_plan_encode(plan, &accounting_record.plan);
 			if (encoded != economic_accounting_error::ok)
 				return { encoded == economic_accounting_error::capacity ?
@@ -1592,6 +2286,14 @@ try
 	try
 	{
 		images.push_back({ catalog_filename, std::move(catalog_bytes) });
+		if (sources_changed)
+		{
+			std::vector<uint8_t> encoded_sources;
+			if (!encode_sources(sources, &encoded_sources))
+				return { critical_apply_outcome::terminal_failure,
+					 catalog.revision - 1, ENOSPC };
+			images.push_back({ source_filename, std::move(encoded_sources) });
+		}
 		if (mutation_applied && item_mutation.after_image.bytes.size())
 			images.push_back(std::move(item_mutation.after_image));
 		if (mutation_applied)
@@ -1675,6 +2377,26 @@ try
 					 staged == flatfile_accounting_status::already_exists ?
 											  EEXIST :
 											  EILSEQ) };
+		if (money_accounted && !result_code)
+		{
+			const auto linked = flatfile_accounting_storage::stage_source_claim(
+				root, lock, accounting_record, &operations, &error);
+			if (linked != flatfile_accounting_status::ok)
+				return {
+					linked == flatfile_accounting_status::io_error ||
+							linked ==
+								flatfile_accounting_status::capacity ?
+						critical_apply_outcome::retryable_failure :
+						critical_apply_outcome::terminal_failure,
+					catalog.revision - 1,
+					static_cast<unsigned int>(
+						linked == flatfile_accounting_status::io_error ?
+							EIO :
+						linked == flatfile_accounting_status::capacity ?
+							ENOSPC :
+							EILSEQ)
+				};
+		}
 	}
 	// The EAP stage accepts native images only; add the new mapping images
 	// afterwards so all evidence still commits in the same authority journal.
@@ -1722,4 +2444,36 @@ flatfile_auction_repository_apply_accounted_listing(const std::string &root,
 {
 	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, true,
 									 auction_action::list);
+}
+
+critical_apply_result
+flatfile_auction_repository_apply_accounted_bid(const std::string &root,
+						const critical_command &command)
+{
+	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, true,
+									 auction_action::bid);
+}
+
+critical_apply_result
+flatfile_auction_repository_apply_accounted_finalize(const std::string &root,
+						     const critical_command &command)
+{
+	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, true,
+									 auction_action::finalize);
+}
+
+critical_apply_result
+flatfile_auction_repository_apply_accounted_remove(const std::string &root,
+						   const critical_command &command)
+{
+	return flatfile_accounting_auction_item_claim_transaction::apply(root, command, true,
+									 auction_action::remove);
+}
+
+critical_apply_result
+flatfile_auction_repository_apply_accounted_money_claim(const std::string &root,
+							const critical_command &command)
+{
+	return flatfile_accounting_auction_item_claim_transaction::apply(
+		root, command, true, auction_action::claim_money);
 }

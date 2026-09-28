@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 7;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 8;
+constexpr uint16_t ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION = 7;
 constexpr uint16_t ITEM_TRANSFER_BATCH_PAYLOAD_VERSION = 6;
 constexpr uint16_t ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5;
 constexpr uint16_t ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4;
@@ -159,6 +160,8 @@ struct item_transfer_payload
 	item_owner_identity to_owner;
 	item_transfer_reason reason;
 	int64_t reason_id;
+	// Stable issuance identity for a sourced creation; zero uses the item UID lifetime.
+	uint64_t logical_source_id = 0;
 	uint64_t expected_from_revision;
 	uint64_t expected_to_revision;
 	uint64_t selected_item_uid;

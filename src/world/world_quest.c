@@ -31,6 +31,7 @@ using namespace std;
 #include "core/utils.h"
 #include "economy/economic_gameplay_authority.h"
 #include <ctype.h>
+#include <climits>
 #include <fnmatch.h>
 #include <stdio.h>
 #include <string.h>
@@ -113,13 +114,22 @@ extern Skill skills[];
 extern const mcname multiclass_names[];
 extern void displayShutdownMsg(P_char);
 
+// quest_started is saved on both backends. Retaining the last value after a
+// reset makes it a per-player generation watermark as well as a quest clock.
+static int world_quest_next_started(int previous, time_t proposed)
+{
+	if (previous < 0 || previous >= INT_MAX || proposed <= 0 || proposed > INT_MAX)
+		return 0;
+	const int started = static_cast<int>(proposed);
+	return started > previous ? started : previous + 1;
+}
+
 void resetQuest(P_char ch)
 {
 	ch->only.pc->quest_active = 0;
 	ch->only.pc->quest_mob_vnum = 0;
 	ch->only.pc->quest_type = 0;
 	ch->only.pc->quest_accomplished = 0;
-	ch->only.pc->quest_started = 0;
 	ch->only.pc->quest_zone_number = -1;
 	ch->only.pc->quest_giver = 0;
 	ch->only.pc->quest_level = 0;
@@ -828,6 +838,15 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 				send_to_char("They've already done this quest!\r\n", ch);
 				return;
 			}
+			const int recipient_started = world_quest_next_started(
+				victim->only.pc->quest_started, ch->only.pc->quest_started);
+			if (!recipient_started)
+			{
+				send_to_char(
+					"A unique quest receipt is unavailable; tell a God.\r\n",
+					ch);
+				return;
+			}
 			resetQuest(victim);
 
 			ch->only.pc->quest_shares_left--;
@@ -840,7 +859,7 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 			victim->only.pc->quest_mob_vnum = ch->only.pc->quest_mob_vnum;
 			victim->only.pc->quest_type = ch->only.pc->quest_type;
 			victim->only.pc->quest_accomplished = ch->only.pc->quest_accomplished;
-			victim->only.pc->quest_started = ch->only.pc->quest_started;
+			victim->only.pc->quest_started = recipient_started;
 			victim->only.pc->quest_zone_number = ch->only.pc->quest_zone_number;
 			victim->only.pc->quest_giver = ch->only.pc->quest_giver;
 			victim->only.pc->quest_level = ch->only.pc->quest_level;
@@ -1079,12 +1098,20 @@ bool createQuestForGiverVnum(P_char ch, int giver_vnum, quest_creation_failure *
 
 	const int quest_kill_original =
 		MIN(difficulty_scale_world_quest_kills(number(7, 9)), mob_index[rnum].number - 1);
+	const int next_started = world_quest_next_started(ch->only.pc->quest_started, time(NULL));
+	if (!next_started)
+	{
+		wizlog(56, "Unable to allocate a unique quest start for %s", GET_NAME(ch));
+		if (failure)
+			*failure = QUEST_CREATION_NO_ELIGIBLE_TARGET;
+		return FALSE;
+	}
 	ch->only.pc->quest_shares_left = world_quest_share_limit();
 	ch->only.pc->quest_active = 1;
 	ch->only.pc->quest_mob_vnum = quest_mob;
 	ch->only.pc->quest_type = quest_type;
 	ch->only.pc->quest_accomplished = 0;
-	ch->only.pc->quest_started = time(NULL);
+	ch->only.pc->quest_started = next_started;
 	ch->only.pc->quest_zone_number = zone_table[quest_zone].number;
 	ch->only.pc->quest_giver = giver_vnum;
 	ch->only.pc->quest_level = GET_LEVEL(ch);

@@ -1113,6 +1113,13 @@ int pray_for_items(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 		for (ext = obj->ex_description; ext && !found; ext = ext->next)
 			if (str_cmp(Gbuf4, ext->keyword) == 0)
 			{
+				if (economic_gameplay_authority::active())
+				{
+					send_to_char(
+						"Item prayers are unavailable while active accounting is enabled.\r\n",
+						ch);
+					return TRUE;
+				}
 				if (gold == 0)
 				{
 					gold = 1;

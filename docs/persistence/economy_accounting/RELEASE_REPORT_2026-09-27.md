@@ -5,7 +5,97 @@ deployment authorization. The release validator refuses the current writer
 inventory, and neither backend has a certified native-authority audit export or
 the complete player and fault journey evidence required by Plan 5.
 
-## Source and test identity
+## Harvest audit checkpoint
+
+Commit `edde723168b40cbc0d51380fc7a2cd381675b3cf` on
+`add-double-entry` includes the kingdom harvest source review and the latest
+merged auction claim code. The registry has **562 route rows** and 2,768
+lexical occurrences (2,710 unique path/line/family sites). It maps 1,584
+unique sites; **1,126 remain unmapped**. The generated matrix check and its
+route-count contract pass at this commit. The validator passes contract
+validity and the release validator still refuses missing executable writer
+evidence.
+
+All 11 previously unmapped sites in `src/kingdom/kingdom_harvest.c` now have
+source classifications: provisional node/material allocation and rejected
+material cleanup; world-node spawn, reap, periodic retirement and shutdown
+unload; realm resource harvest; and personal material grants with node
+retirement. The current source refuses these legacy effects during an active
+accounting epoch. It does not yet prove one root that binds the node charge,
+realm store or material output, actual item owner, and any terminal node
+retirement. `obj_to_room` can reroute or destroy the spawned node, while the
+personal gather path counts an item after a void `obj_to_obj` call; those
+actual outcomes need exact retained evidence.
+
+The full 48-test writer source-contract suite passed on the pre-auction-merge
+audit commit `67bbd190ce802cfcdaba7ca8a613ad3c695d799c`. After the auction
+merge, the harvest and typed-submit contracts, validator, generated matrix
+check and route-count contract passed on the integrated source; the matrix's
+auction function line anchor was refreshed before the push. These checks are
+source and synthetic contracts, not real player or backend release journeys.
+
+The subsequent logical item-source update through `65f72ad4c` changed six
+typed-submit declaration excerpts and shifted related source lines without
+adding or removing lexical calls. The registry sites and matrix definition
+lines were reanchored. On that merged source tree, all 48 writer contracts,
+the accounting validator and the generated-matrix check passed; coverage
+counts remained 562 routes, 1,584 mapped and 1,126 unmapped unique sites.
+
+## Earlier clean integrated audit checkpoint
+
+The tested audit snapshot is commit
+`a7dd9ed7dabf8a661236e607372a76768e5fa233`, which includes merged
+`add-double-entry` work through `2d562a128` and the salvage census
+review. This is an audit checkpoint, not a release build. The registry has 553
+route rows and 2,768 lexical occurrences (2,710 unique path/line/family
+sites). It maps 1,573 current unique sites; **1,137 remain unmapped**. The
+matrix still records `coverage_complete=false` and
+`playable_release_status=BLOCKED`.
+
+The salvage review linked all 14 previously unmapped lexical sites in
+`src/item/salvage.c`: eight unpublished output allocations, one rejected
+candidate cleanup, and five live source-item detach/destruction sites. It
+also records the optional `vnum_from_inv` scientific-tools consumption that
+the lexical scanner does not detect. Output grants are queued separately
+from source and tool retirement. The command has a source-order active-epoch
+refusal, but no same-root salvage operation or executable backend journey is
+qualified. The replayed-source invariant fixture now asserts the current
+global source-event rejection message and passes.
+
+| Check on the audit snapshot | Result |
+| --- | --- |
+| `python scripts/validate_economy_accounting.py` | Passed: 13 fixtures, 553 writer routes, 2,768 candidate occurrences. Contract validity only. |
+| `python scripts/generate_economy_writer_coverage.py --check` | Passed: 553 matrix rows, 1,573 mapped and 1,137 unmapped unique sites. |
+| `python tests/async/test_economy_writer_coverage_contract.py` | All 47 source-contract tests passed after the merge and matrix refresh. |
+| `python tests/async/test_reconcile_economy_accounting.py` | All 16 synthetic read-only reconciliation fixtures passed. |
+| `python tests/async/test_audit_accounting_invariants.py` | All 9 invariant fixtures passed. |
+| Salvage-specific `test_pa_item_admission.py` method | Passed the source-order refusal check. The full 26-test file reported 22 passes and four environment errors in the isolated Windows checkout: two methods require a local compiler and two require generated `areas/world.obj`. |
+| `python scripts/validate_economy_accounting.py --release` | Refused: `writer has no executable evidence`. |
+
+No new C/C++ code was written in this audit checkpoint. The SQL and flatfile
+builds and disposable database runs below used earlier source snapshots; they
+do not certify this integrated commit. No real player journey, native-authority
+export, full backend replay, or release workload was run on this checkpoint.
+
+The later branch checkpoint `6bcd83830dabf4d4725ce6404dde2fe031d8014e`
+merged the world quest source-ID update and reanchored seven census entries
+in `src/world/world_quest.c` by ten lines. The lexical occurrence and mapped
+counts above did not change. The validator, generated-matrix check, focused
+typed-submit and salvage contracts, 16 reconciler fixtures and 9 invariant
+fixtures passed after that merge; the full 47-test writer suite belongs to
+the preceding `a7dd9ed7d` audit snapshot.
+
+At `e8ad2228ed0ecbca8b6cbe3cda7fcaef94140257`, the immutable migration
+verifiers `0036` through `0040` were marked executable in Git. A Git archive
+of that commit lists all five scripts with executable mode, without content
+or checksum changes. The lifecycle manifest validator passed with 220
+database tables and 34 non-database stores. The Windows migration-runner
+suite reported five platform errors involving symlink privilege, Unix UID
+checks and Bash paths; its canonical verifier method passed but does not
+establish Linux execution. Fresh/upgrade/replay database qualification and
+the earlier runtime metadata mismatch remain unverified on this checkpoint.
+
+## Source and test identity from the earlier shared-tree investigation
 
 The initial Git base was `49af585c4b9c8cfa5ead0ac07025f39d4720a659`
 on `add-double-entry`; the shared branch advanced during qualification and
@@ -26,7 +116,7 @@ entries against that clean checkout. Some concurrent source changes are still
 uncommitted in the shared tree; regenerate and recheck the census on the final
 integrated commit before treating the matrix as current release evidence.
 
-## Executed evidence
+## Earlier executed evidence
 
 | Backend / scope | Command or method | Result and limits |
 | --- | --- | --- |
@@ -51,7 +141,7 @@ The MariaDB and MySQL tests used disposable Docker databases only. No
 production database, `.env` credential, player data or operational migration
 was used. A passed schema slice is narrower than an end-to-end backend pass.
 
-## Route and workload coverage
+## Route and workload coverage from the earlier shared tree
 
 The matrix generated from the shared working tree has 549 registry rows,
 including the formerly supplemental legacy auction settlement definition.
@@ -438,11 +528,12 @@ unverified.
    read-only reconciler against each backend after fresh install, upgrade,
    restore and injected evidence loss. A JSON fixture cannot attest its own
    completeness or operator access.
-3. Make the `0036_economic_sql_activation_receipt.sh` verifier executable in
-   Git and resolve the clean-head runtime metadata/state mismatch. Rerun the
-   full MySQL and MariaDB wrappers on the integrated commit. Qualify flatfile
-   journal interruption, restore, source/UID dedupe and receipt replay with
-   actual domain roots. Resolve any later build or harness failure on that commit.
+3. Verify the now-executable `0036`–`0040` migration verifiers on a clean
+   Linux checkout, resolve the clean-head runtime metadata/state mismatch,
+   and rerun the full MySQL and MariaDB wrappers on the integrated commit.
+   Qualify flatfile journal interruption, restore, source/UID dedupe and
+   receipt replay with actual domain roots. Resolve any later build or
+   harness failure on that commit.
 4. Run both server builds and the focused gameplay/fault matrix for both
    backends, including live publication, reconnect and player-visible state.
    Measure the stated operation, latency, storage, checkpoint and audit budgets.

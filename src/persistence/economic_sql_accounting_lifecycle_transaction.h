@@ -45,6 +45,22 @@ struct economic_sql_lifecycle_receipt
 	std::vector<economic_sql_lifecycle_bank_mapping> banks;
 };
 
+// Plans 2-4 register their route proofs with the Plan 5 verifier. Its
+// manifest digest binds the complete reviewed writer census; audit_digest
+// binds the separate native/evidence reconciliation. This owner rejects a
+// missing verifier, incomplete count, or zero digest before selecting an epoch.
+struct economic_sql_activation_evidence
+{
+	economic_sql_source_digest manifest_digest = {};
+	economic_sql_source_digest audit_digest = {};
+	uint64_t route_count = 0;
+	uint64_t verified_route_count = 0;
+	uint64_t unclassified_route_count = 0;
+};
+using economic_sql_activation_verifier =
+	unsigned int (*)(MYSQL *, const economic_sql_activation_evidence &,
+			 const economic_sql_source_snapshot &) noexcept;
+
 // Private SQL lifecycle owner. Requires a live, lock-backed maintenance token
 // obtained from economic_sql_lifecycle_guard::acquire_maintenance(). It captures
 // full native sources, creates durable wallet PID/bank-row lifetimes, persists
@@ -57,10 +73,24 @@ class economic_sql_accounting_lifecycle_transaction
 	static unsigned int install(MYSQL *, const economic_sql_lifecycle_guard &,
 				    const economic_sql_lifecycle_request &,
 				    economic_sql_lifecycle_receipt *) noexcept;
+	// The caller owns the quiesced transaction and its terminal outcome. Only
+	// verified activation may create the global decision in that transaction;
+	// the older pointer selector below requires that decision already be present.
+	// Plan 5 supplies the independent verifier; production registers none yet.
+	static unsigned int activate_verified(MYSQL *,
+					      economic_sql_cutover_transaction_owner &owner,
+					      const economic_sql_lifecycle_request &,
+					      const economic_sql_activation_evidence &,
+					      economic_sql_activation_verifier) noexcept;
 	static unsigned int activate(MYSQL *connection,
 				     economic_sql_cutover_transaction_owner &owner,
 				     const critical_operation_id &lineage,
 				     uint64_t *new_lineage_revision = nullptr) noexcept;
+	static unsigned int pause(MYSQL *, economic_sql_cutover_transaction_owner &owner,
+				  const critical_operation_id &lineage) noexcept;
+	// Called at runtime boot while its named lock is held and before gameplay.
+	static unsigned int recover_runtime(MYSQL *, const economic_sql_lifecycle_guard &,
+					    bool *active) noexcept;
 };
 
 #endif

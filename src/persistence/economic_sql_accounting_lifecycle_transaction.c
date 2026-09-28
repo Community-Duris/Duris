@@ -1,5 +1,6 @@
 #include "persistence/economic_sql_accounting_lifecycle_transaction.h"
 #include "economy/economic_baseline_command.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/economic_sql_source_normalize.h"
 #include "persistence/economic_sql_baseline_transaction.h"
 #include "persistence/economic_accounting_repository.h"
@@ -27,6 +28,22 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 unsigned int economic_sql_accounting_lifecycle_transaction::activate(
 	MYSQL *, economic_sql_cutover_transaction_owner &, const critical_operation_id &,
 	uint64_t *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::activate_verified(
+	MYSQL *, economic_sql_cutover_transaction_owner &, const economic_sql_lifecycle_request &,
+	const economic_sql_activation_evidence &, economic_sql_activation_verifier) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::pause(
+	MYSQL *, economic_sql_cutover_transaction_owner &, const critical_operation_id &) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::recover_runtime(
+	MYSQL *, const economic_sql_lifecycle_guard &, bool *) noexcept
 {
 	return ENOTSUP;
 }
@@ -345,6 +362,30 @@ critical_operation_id parse_id(const std::optional<std::string> &value)
 	}
 	return output;
 }
+economic_sql_source_digest parse_digest(const std::optional<std::string> &value)
+{
+	const auto text = lower_hex(value);
+	require(text.size() == SHA256_DIGEST_LENGTH * 2);
+	economic_sql_source_digest output = {};
+	for (size_t index = 0; index < output.size(); ++index)
+	{
+		auto nibble = [](char ch) -> uint8_t
+		{
+			if (ch >= '0' && ch <= '9')
+				return static_cast<uint8_t>(ch - '0');
+			if (ch >= 'a' && ch <= 'f')
+				return static_cast<uint8_t>(ch - 'a' + 10);
+			throw failure{ EILSEQ };
+		};
+		output[index] = static_cast<uint8_t>((nibble(text[index * 2]) << 4) |
+						     nibble(text[index * 2 + 1]));
+	}
+	return output;
+}
+bool digest_nonzero(const economic_sql_source_digest &value)
+{
+	return std::any_of(value.begin(), value.end(), [](uint8_t byte) { return byte != 0; });
+}
 void create_operation_receipt(MYSQL *connection, const economic_sql_lifecycle_request &request,
 			      const economic_sql_source_digest &request_hash)
 {
@@ -393,22 +434,9 @@ stored_installation load_installation(MYSQL *connection, const critical_operatio
 	result.operation = parse_id(record[0]);
 	result.lineage = parse_id(record[1]);
 	result.epoch = parse_id(record[2]);
-	const auto copy_digest =
-		[](const std::optional<std::string> &value, economic_sql_source_digest *target)
-	{
-		const auto text = lower_hex(value);
-		require(text.size() == target->size() * 2);
-		for (size_t i = 0; i < target->size(); ++i)
-		{
-			auto digit = [](char ch) -> uint8_t
-			{ return static_cast<uint8_t>(ch <= '9' ? ch - '0' : ch - 'a' + 10); };
-			(*target)[i] = static_cast<uint8_t>((digit(text[2 * i]) << 4) |
-							    digit(text[2 * i + 1]));
-		}
-	};
-	copy_digest(record[3], &result.request_hash);
-	copy_digest(record[4], &result.capture_hash);
-	copy_digest(record[5], &result.native_hash);
+	result.request_hash = parse_digest(record[3]);
+	result.capture_hash = parse_digest(record[4]);
+	result.native_hash = parse_digest(record[5]);
 	if (record[6])
 		result.baseline_operation = parse_id(record[6]);
 	result.wallet_count = integer<uint64_t>(record[7]);
@@ -603,6 +631,7 @@ void ensure_no_preexisting_mapping(const economic_sql_source_snapshot &snapshot,
 			throw failure{ EEXIST };
 	}
 }
+
 void fill_export(const economic_sql_lifecycle_request &request,
 		 const std::vector<holding_source> &holdings,
 		 const std::vector<uint64_t> &account_ids, const stored_installation &stored,
@@ -676,6 +705,89 @@ void check_active_epoch_null(MYSQL *connection, const critical_operation_id &lin
 		"SELECT HEX(active_epoch) FROM economic_lineage_state WHERE lineage=" + id(lineage),
 		1);
 	require(!state[0], EPERM);
+}
+struct stored_activation
+{
+	bool exists = false;
+	critical_operation_id epoch = {};
+	critical_operation_id installation = {};
+	critical_operation_id baseline = {};
+	economic_sql_source_digest manifest_digest = {};
+	economic_sql_source_digest audit_digest = {};
+	uint64_t route_count = 0;
+	uint64_t verified_route_count = 0;
+	uint64_t unclassified_route_count = 0;
+	uint64_t state = 0;
+	uint64_t revision = 0;
+};
+stored_activation load_activation(MYSQL *connection, const critical_operation_id &lineage)
+{
+	const auto rows =
+		query(connection,
+		      "SELECT HEX(epoch),HEX(installation_operation_id),HEX(baseline_operation_id),"
+		      "HEX(manifest_digest),HEX(audit_digest),route_count,"
+		      "verified_route_count,unclassified_route_count,state,revision FROM "
+		      "economic_sql_global_activation WHERE lineage=" +
+			      id(lineage) + " FOR UPDATE",
+		      10);
+	require(rows.size() <= 1);
+	stored_activation output;
+	if (rows.empty())
+		return output;
+	const auto &record = rows.front();
+	output.exists = true;
+	output.epoch = parse_id(record[0]);
+	output.installation = parse_id(record[1]);
+	output.baseline = parse_id(record[2]);
+	output.manifest_digest = parse_digest(record[3]);
+	output.audit_digest = parse_digest(record[4]);
+	output.route_count = integer<uint64_t>(record[5]);
+	output.verified_route_count = integer<uint64_t>(record[6]);
+	output.unclassified_route_count = integer<uint64_t>(record[7]);
+	output.state = integer<uint64_t>(record[8]);
+	output.revision = integer<uint64_t>(record[9]);
+	return output;
+}
+void verify_baseline_receipt(MYSQL *connection, const stored_installation &stored,
+			     std::optional<uint64_t> expected_holdings = std::nullopt)
+{
+	require(stored.baseline_operation && stored.phase == 2 && stored.revision == 1 &&
+			stored.selected_epoch && stored.selected_epoch->bytes == stored.epoch.bytes,
+		EILSEQ);
+	const auto receipt = one(
+		connection,
+		"SELECT HEX(c.last_operation_id),c.revision,w.holding_count,o.outcome,"
+		"i.status FROM economic_baseline_control c JOIN economic_baseline_witness w "
+		"ON w.lineage=c.lineage AND w.epoch=c.epoch AND w.operation_id=c.last_operation_id "
+		"JOIN economic_accounting_operation o ON o.operation_id=w.operation_id "
+		"JOIN critical_operation_inbox i ON i.operation_id=w.operation_id "
+		"WHERE c.lineage=" +
+			id(stored.lineage) + " AND c.epoch=" + id(stored.epoch) +
+			" LOCK IN SHARE MODE",
+		5);
+	const auto holding_count = integer<uint64_t>(receipt[2]);
+	require(parse_id(receipt[0]).bytes == stored.baseline_operation->bytes &&
+			integer<uint64_t>(receipt[1]) == 1 &&
+			holding_count >= stored.wallet_count + stored.bank_count &&
+			(!expected_holdings || holding_count == *expected_holdings) &&
+			integer<uint64_t>(receipt[3]) == 1 && integer<uint64_t>(receipt[4]) == 1,
+		EILSEQ);
+}
+std::pair<economic_sql_source_snapshot, std::vector<holding_source>>
+capture_current_holdings(MYSQL *connection, bool reject_defects)
+{
+	economic_sql_source_snapshot snapshot;
+	const auto captured =
+		economic_sql_capture_sources_in_transaction(connection, {}, &snapshot);
+	require(captured == 0, captured);
+	economic_sql_normalized_sources normalized;
+	const auto status = economic_sql_normalize_sources(snapshot, 512, &normalized);
+	require(status == economic_accounting_error::ok,
+		status == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+	if (reject_defects)
+		reject_cutover_defects(normalized);
+	auto holdings = read_native_holdings(snapshot, normalized);
+	return { std::move(snapshot), std::move(holdings) };
 }
 struct transaction
 {
@@ -850,63 +962,357 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 	}
 }
 
+unsigned int economic_sql_accounting_lifecycle_transaction::activate_verified(
+	MYSQL *connection, economic_sql_cutover_transaction_owner &owner,
+	const economic_sql_lifecycle_request &request,
+	const economic_sql_activation_evidence &evidence,
+	economic_sql_activation_verifier verify) noexcept
+{
+	try
+	{
+		require(connection, EINVAL);
+		require(owner.is_valid() && owner.connection_ == connection && owner.maintenance_ &&
+				owner.writer_lock_ && mysql_thread_id(connection) == owner.session_,
+			EPERM);
+		require(verify && evidence.route_count &&
+				evidence.verified_route_count == evidence.route_count &&
+				!evidence.unclassified_route_count &&
+				digest_nonzero(evidence.manifest_digest) &&
+				digest_nonzero(evidence.audit_digest),
+			ENODATA);
+		require(!critical_operation_id_is_zero(request.operation_id) &&
+				!critical_operation_id_is_zero(request.lineage) &&
+				!critical_operation_id_is_zero(request.epoch),
+			EINVAL);
+		// A committed active decision is an exact retry even after gameplay has
+		// changed native holdings. Its durable evidence and pointer must still
+		// match; a paused decision must pass fresh capture and verification below.
+		const auto existing = load_activation(connection, request.lineage);
+		if (existing.exists && existing.state == 1)
+		{
+			const auto staged = load_installation(connection, request.lineage);
+			require(staged.exists && staged.phase == 2 && staged.baseline_operation &&
+					staged.operation.bytes == request.operation_id.bytes &&
+					staged.epoch.bytes == request.epoch.bytes &&
+					staged.request_hash == request_digest(request) &&
+					existing.epoch.bytes == request.epoch.bytes &&
+					existing.installation.bytes == request.operation_id.bytes &&
+					existing.baseline.bytes ==
+						staged.baseline_operation->bytes &&
+					existing.manifest_digest == evidence.manifest_digest &&
+					existing.audit_digest == evidence.audit_digest &&
+					existing.route_count == evidence.route_count &&
+					existing.verified_route_count ==
+						evidence.verified_route_count &&
+					existing.unclassified_route_count == 0,
+				EEXIST);
+			const auto selected = one(
+				connection,
+				"SELECT HEX(active_epoch) FROM economic_lineage_state WHERE lineage=" +
+					id(request.lineage) + " FOR UPDATE",
+				1);
+			require(selected[0] && parse_id(selected[0]).bytes == request.epoch.bytes,
+				EILSEQ);
+			return activate(connection, owner, request.lineage);
+		}
+		auto [snapshot, holdings] = capture_current_holdings(connection, true);
+		execute(connection, "SAVEPOINT economic_sql_activation_verifier");
+		const auto verified = verify(connection, evidence, snapshot);
+		require(!verified, verified);
+		execute(connection, "ROLLBACK TO SAVEPOINT economic_sql_activation_verifier");
+		execute(connection, "RELEASE SAVEPOINT economic_sql_activation_verifier");
+		require(owner.is_valid(), EPERM);
+		const auto stored = load_installation(connection, request.lineage);
+		require(stored.exists && stored.operation.bytes == request.operation_id.bytes &&
+				stored.epoch.bytes == request.epoch.bytes &&
+				stored.request_hash == request_digest(request) &&
+				stored.wallet_count ==
+					static_cast<uint64_t>(std::count_if(
+						holdings.begin(), holdings.end(),
+						[](const auto &value) {
+							return value.account_kind ==
+							       economic_account_kind::wallet;
+						})) &&
+				stored.bank_count ==
+					static_cast<uint64_t>(std::count_if(
+						holdings.begin(), holdings.end(),
+						[](const auto &value) {
+							return value.account_kind ==
+							       economic_account_kind::bank;
+						})),
+			EILSEQ);
+		verify_baseline_receipt(connection, stored, holdings.size());
+		(void)create_or_verify_mappings(connection, request, holdings, false);
+		const auto activation = load_activation(connection, request.lineage);
+		const auto lineage =
+			one(connection,
+			    "SELECT HEX(active_epoch) FROM economic_lineage_state WHERE lineage=" +
+				    id(request.lineage) + " FOR UPDATE",
+			    1);
+		if (!activation.exists)
+		{
+			require(!lineage[0] &&
+					stored.native_hash == native_digest(snapshot, holdings),
+				ESTALE);
+			execute(connection,
+				"INSERT INTO economic_sql_global_activation(lineage,epoch,"
+				"installation_operation_id,baseline_operation_id,manifest_digest,"
+				"audit_digest,route_count,verified_route_count,"
+				"unclassified_route_count,state,revision) VALUES(" +
+					id(request.lineage) + "," + id(request.epoch) + "," +
+					id(request.operation_id) + "," +
+					id(*stored.baseline_operation) + "," +
+					digest_sql(evidence.manifest_digest) + "," +
+					digest_sql(evidence.audit_digest) + "," +
+					std::to_string(evidence.route_count) + "," +
+					std::to_string(evidence.verified_route_count) + ",0,1,1)");
+		}
+		else
+		{
+			require(activation.epoch.bytes == request.epoch.bytes &&
+					activation.installation.bytes ==
+						request.operation_id.bytes &&
+					activation.baseline.bytes ==
+						stored.baseline_operation->bytes &&
+					activation.manifest_digest == evidence.manifest_digest &&
+					activation.audit_digest == evidence.audit_digest &&
+					activation.route_count == evidence.route_count &&
+					activation.verified_route_count ==
+						evidence.verified_route_count &&
+					activation.unclassified_route_count == 0,
+				EEXIST);
+			require((activation.state == 1 && lineage[0] &&
+				 parse_id(lineage[0]).bytes == request.epoch.bytes) ||
+					(activation.state == 2 && !lineage[0]),
+				EILSEQ);
+			if (activation.state == 2)
+			{
+				execute(connection,
+					"UPDATE economic_sql_global_activation SET state=1,revision=revision+1 "
+					"WHERE lineage=" +
+						id(request.lineage) + " AND state=2 AND revision=" +
+						std::to_string(activation.revision));
+				require(mysql_affected_rows(connection) == 1, ESTALE);
+			}
+		}
+		return activate(connection, owner, request.lineage);
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
 unsigned int economic_sql_accounting_lifecycle_transaction::activate(
 	MYSQL *connection, economic_sql_cutover_transaction_owner &owner,
 	const critical_operation_id &lineage, uint64_t *new_lineage_revision) noexcept
 {
 	try
 	{
-		require(connection != nullptr, EINVAL);
+		require(connection, EINVAL);
 		require(!critical_operation_id_is_zero(lineage), EINVAL);
-		require(owner.is_valid() && owner.connection_ == connection &&
-				mysql_thread_id(connection) == owner.session_,
+		require(owner.is_valid() && owner.connection_ == connection && owner.maintenance_ &&
+				owner.writer_lock_ && mysql_thread_id(connection) == owner.session_,
 			EPERM);
-		require(connection->server_status & SERVER_STATUS_IN_TRANS, EBUSY);
-
 		const auto stored = load_installation(connection, lineage);
-		require(stored.exists, ENOENT);
-		require(stored.phase == 2, EILSEQ);
-		require(stored.selected_epoch.has_value() &&
-				!critical_operation_id_is_zero(*stored.selected_epoch),
-			EILSEQ);
-		require(stored.baseline_operation.has_value() &&
-				!critical_operation_id_is_zero(*stored.baseline_operation),
-			EILSEQ);
-		require(stored.revision == 1, EILSEQ);
-
-		const auto state_row = one(
+		const auto decision = load_activation(connection, lineage);
+		require(stored.exists && stored.phase == 2 && stored.revision == 1 &&
+				stored.selected_epoch && stored.baseline_operation &&
+				stored.selected_epoch->bytes == stored.epoch.bytes &&
+				decision.exists && decision.state == 1 && decision.revision > 0 &&
+				decision.epoch.bytes == stored.epoch.bytes &&
+				decision.installation.bytes == stored.operation.bytes &&
+				decision.baseline.bytes == stored.baseline_operation->bytes &&
+				decision.route_count > 0 &&
+				decision.verified_route_count == decision.route_count &&
+				decision.unclassified_route_count == 0 &&
+				digest_nonzero(decision.manifest_digest) &&
+				digest_nonzero(decision.audit_digest),
+			ENODATA);
+		verify_baseline_receipt(connection, stored);
+		const auto state = one(
 			connection,
 			"SELECT HEX(active_epoch),revision FROM economic_lineage_state WHERE lineage=" +
 				id(lineage) + " FOR UPDATE",
 			2);
-		const auto current_active_hex = state_row[0];
-		const auto current_revision = integer<uint64_t>(state_row[1]);
-
-		uint64_t final_revision = current_revision;
-		if (current_active_hex.has_value())
-		{
-			const auto current_active = parse_id(*current_active_hex);
-			if (current_active.bytes == stored.selected_epoch->bytes)
-			{
-				final_revision = current_revision;
-			}
-			else
-			{
-				throw failure{ EEXIST };
-			}
-		}
+		auto revision = integer<uint64_t>(state[1]);
+		if (state[0])
+			require(parse_id(state[0]).bytes == stored.epoch.bytes, EEXIST);
 		else
 		{
+			require(revision < std::numeric_limits<uint64_t>::max(), EOVERFLOW);
 			execute(connection, "UPDATE economic_lineage_state SET active_epoch=" +
-						    id(*stored.selected_epoch) +
+						    id(stored.epoch) +
 						    ",revision=revision+1 WHERE lineage=" +
 						    id(lineage) + " AND active_epoch IS NULL");
-			require(mysql_affected_rows(connection) == 1, EIO);
-			final_revision = current_revision + 1;
+			require(mysql_affected_rows(connection) == 1, ESTALE);
+			++revision;
 		}
-
 		if (new_lineage_revision)
-			*new_lineage_revision = final_revision;
+			*new_lineage_revision = revision;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
+unsigned int economic_sql_accounting_lifecycle_transaction::pause(
+	MYSQL *connection, economic_sql_cutover_transaction_owner &owner,
+	const critical_operation_id &lineage_id) noexcept
+{
+	try
+	{
+		require(connection && !critical_operation_id_is_zero(lineage_id), EINVAL);
+		require(owner.is_valid() && owner.connection_ == connection && owner.maintenance_ &&
+				owner.writer_lock_ && mysql_thread_id(connection) == owner.session_,
+			EPERM);
+		const auto stored = load_installation(connection, lineage_id);
+		const auto activation = load_activation(connection, lineage_id);
+		require(stored.exists && activation.exists && stored.phase == 2 &&
+				activation.epoch.bytes == stored.epoch.bytes &&
+				activation.installation.bytes == stored.operation.bytes &&
+				stored.baseline_operation &&
+				activation.baseline.bytes == stored.baseline_operation->bytes,
+			EILSEQ);
+		const auto state =
+			one(connection,
+			    "SELECT HEX(active_epoch) FROM economic_lineage_state WHERE lineage=" +
+				    id(lineage_id) + " FOR UPDATE",
+			    1);
+		if (activation.state == 1)
+		{
+			require(state[0] && parse_id(state[0]).bytes == stored.epoch.bytes, EILSEQ);
+			execute(connection, "UPDATE economic_lineage_state SET active_epoch=NULL,"
+					    "revision=revision+1 WHERE lineage=" +
+						    id(lineage_id) +
+						    " AND active_epoch=" + id(stored.epoch));
+			require(mysql_affected_rows(connection) == 1, ESTALE);
+			execute(connection,
+				"UPDATE economic_sql_global_activation SET state=2,revision=revision+1 "
+				"WHERE lineage=" +
+					id(lineage_id) + " AND state=1 AND revision=" +
+					std::to_string(activation.revision));
+			require(mysql_affected_rows(connection) == 1, ESTALE);
+		}
+		else
+			require(activation.state == 2 && !state[0], EILSEQ);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::recover_runtime(
+	MYSQL *connection, const economic_sql_lifecycle_guard &authority, bool *active) noexcept
+{
+	try
+	{
+		require(connection && active && authority.connection_ == connection &&
+				!authority.maintenance_ && authority.is_valid_authority() &&
+				!economic_gameplay_authority::active(),
+			EPERM);
+		*active = false;
+		execute(connection, "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+		transaction owner{ connection, mysql_thread_id(connection), true };
+		execute(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT");
+		const auto active_rows =
+			query(connection,
+			      "SELECT HEX(lineage),HEX(active_epoch) FROM economic_lineage_state "
+			      "WHERE active_epoch IS NOT NULL FOR UPDATE",
+			      2);
+		require(active_rows.size() <= 1, EILSEQ);
+		if (active_rows.empty())
+		{
+			execute(connection, "COMMIT");
+			owner.started = false;
+			return 0;
+		}
+		const auto lineage = parse_id(active_rows[0][0]);
+		const auto epoch = parse_id(active_rows[0][1]);
+		const auto stored = load_installation(connection, lineage);
+		const auto activation = load_activation(connection, lineage);
+		require(stored.exists && stored.phase == 2 && stored.epoch.bytes == epoch.bytes &&
+				activation.exists && activation.state == 1 &&
+				activation.epoch.bytes == epoch.bytes &&
+				activation.installation.bytes == stored.operation.bytes &&
+				stored.baseline_operation &&
+				activation.baseline.bytes == stored.baseline_operation->bytes &&
+				activation.route_count > 0 &&
+				activation.verified_route_count == activation.route_count &&
+				activation.unclassified_route_count == 0 &&
+				digest_nonzero(activation.manifest_digest) &&
+				digest_nonzero(activation.audit_digest),
+			EILSEQ);
+		verify_baseline_receipt(connection, stored);
+		auto [snapshot, holdings] = capture_current_holdings(connection, false);
+		(void)snapshot;
+		require(stored.wallet_count == static_cast<uint64_t>(std::count_if(
+						       holdings.begin(), holdings.end(),
+						       [](const auto &value) {
+							       return value.account_kind ==
+								      economic_account_kind::wallet;
+						       })) &&
+				stored.bank_count ==
+					static_cast<uint64_t>(std::count_if(
+						holdings.begin(), holdings.end(),
+						[](const auto &value) {
+							return value.account_kind ==
+							       economic_account_kind::bank;
+						})),
+			EILSEQ);
+		economic_sql_lifecycle_request request;
+		request.operation_id = stored.operation;
+		request.lineage = lineage;
+		request.epoch = epoch;
+		const auto account_ids =
+			create_or_verify_mappings(connection, request, holdings, false);
+		economic_sql_lifecycle_receipt receipt;
+		fill_export(request, holdings, account_ids, stored, 1, &receipt);
+		require(mysql_thread_id(connection) == owner.session &&
+				(connection->server_status & SERVER_STATUS_IN_TRANS),
+			ENOTCONN);
+		execute(connection, "COMMIT");
+		owner.started = false;
+		std::vector<economic_gameplay_wallet_mapping> wallets;
+		std::vector<economic_gameplay_bank_mapping> banks;
+		wallets.reserve(receipt.wallets.size());
+		banks.reserve(receipt.banks.size());
+		for (const auto &wallet : receipt.wallets)
+			wallets.push_back({ wallet.pid, wallet.account });
+		for (const auto &bank : receipt.banks)
+			banks.push_back({ bank.name, bank.racewar, bank.account });
+		const auto installed = economic_gameplay_authority::install(
+			lineage, epoch, *stored.baseline_operation, wallets, banks);
+		require(installed == economic_accounting_error::ok,
+			installed == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+		*active = true;
 		return 0;
 	}
 	catch (const failure &error)

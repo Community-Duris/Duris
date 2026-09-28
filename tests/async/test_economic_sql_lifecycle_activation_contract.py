@@ -16,6 +16,9 @@ class TestEconomicSqlLifecycleActivationContract(unittest.TestCase):
     def test_header_declarations(self):
         header = (ROOT / "src/persistence/economic_sql_accounting_lifecycle_transaction.h").read_text(encoding="utf-8")
         self.assertIn("static unsigned int activate(", header)
+        self.assertIn("static unsigned int activate_verified(", header)
+        self.assertIn("static unsigned int pause(", header)
+        self.assertIn("static unsigned int recover_runtime(", header)
         self.assertIn("economic_sql_cutover_transaction_owner &owner", header)
         self.assertIn("const critical_operation_id &lineage", header)
         self.assertIn("uint64_t *new_lineage_revision = nullptr", header)
@@ -37,12 +40,15 @@ class TestEconomicSqlLifecycleActivationContract(unittest.TestCase):
         self.assertIn("owner.connection_ == connection", impl)
         self.assertIn("mysql_thread_id(connection) == owner.session_", impl)
         self.assertIn("stored.phase == 2", impl)
+        self.assertIn("decision.exists && decision.state == 1", impl)
+        self.assertIn("verify(connection, evidence, snapshot)", impl)
+        self.assertIn("economic_sql_global_activation", impl)
         # Check transition statement
         self.assertIn("UPDATE economic_lineage_state SET active_epoch=", impl)
         self.assertIn("revision=revision+1", impl)
         self.assertIn("AND active_epoch IS NULL", impl)
-        # Check idempotent retry
-        self.assertIn("current_active.bytes == stored.selected_epoch->bytes", impl)
+        # Exact retry accepts only the already selected epoch.
+        self.assertIn("parse_id(state[0]).bytes == stored.epoch.bytes", impl)
 
     def test_client_free_refusal_executes(self):
         cmd = ["python3", str(ROOT / "tests/async/test_economic_sql_lifecycle_no_mysql.py")]

@@ -11,6 +11,7 @@ from _paths import ROOT, extract_function
 PRELUDE = r'''
 #include <algorithm>
 #include <cassert>
+#include <climits>
 #include <ctime>
 #include <vector>
 #include "world/world_quest_policy_math.h"
@@ -36,7 +37,7 @@ struct pc_data {
     int quest_shares_left = 0, quest_active = 0, quest_mob_vnum = 0, quest_type = 0;
     int quest_accomplished = 0, quest_zone_number = 0, quest_giver = 0, quest_level = 0;
     int quest_receiver = 0, quest_kill_how_many = 0, quest_kill_original = 0;
-    time_t quest_started = 0;
+    int quest_started = 0;
     bool operator==(const pc_data &) const = default;
 };
 struct character {
@@ -126,6 +127,14 @@ int main() {
     assert(pc.quest_active == 1 && pc.quest_mob_vnum == 1001);
     assert(pc.quest_type == FIND_AND_KILL && failure == QUEST_CREATION_NO_FAILURE);
 
+    // A second grant retains the previous source generation, even within one second.
+    const int previous_started = pc.quest_started;
+    pc.quest_active = 0;
+    setup(1, 2, 56, 2);
+    fresh_target = 1001;
+    assert(createQuestForGiverVnum(&player, 16553, &failure));
+    assert(pc.quest_started > previous_started);
+
     // The same retry must work for ask quests and retain the shared probe budget.
     pc = {};
     player.level = 30;
@@ -186,6 +195,7 @@ def main() -> None:
         + extract_function("world/world_quest_policy.c", "int select_cached_mob(")
         + ADAPTER
         + extract_function("world_quest.c", "static int world_quest_share_limit(")
+        + extract_function("world_quest.c", "static int world_quest_next_started(")
         + extract_function("world_quest.c", "bool createQuestForGiverVnum(")
         + SCENARIOS
     )

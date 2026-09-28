@@ -175,6 +175,13 @@ economic_accounting_error economic_gameplay_authority::install_sql_wallet_root_q
 				  projection_scope::sql_wallet_root_qualification);
 }
 
+void economic_gameplay_authority::clear_sql_runtime() noexcept
+{
+	auto selected = current.load(std::memory_order_acquire);
+	if (selected && selected->scope == projection_scope::regular)
+		current.compare_exchange_strong(selected, {}, std::memory_order_acq_rel);
+}
+
 bool economic_gameplay_authority::active()
 {
 	return bool(current.load(std::memory_order_acquire));

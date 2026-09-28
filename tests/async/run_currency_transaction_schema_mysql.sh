@@ -123,6 +123,11 @@ if [[ "${CURRENCY_TEST_ATM_ONLY:-0}" == 1 ]]; then
     # by the explicitly selected ATM-only journey. EXIT still removes the DB.
     exit 0
 fi
+if [[ "${CURRENCY_TEST_COIN_ONLY:-0}" == 1 ]]; then
+    # The complete coin matrix has run; leave unrelated player/item loaders to
+    # the default full runner while keeping the Plan 2 SQL gate independent.
+    exit 0
+fi
 # The new coin query also runs on ordinary inventories; retain the full existing
 # loader regression matrix alongside the crash-window coin cases above.
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \

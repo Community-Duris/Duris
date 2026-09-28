@@ -506,6 +506,71 @@ static void integrated_item_accounting(const fs::path &base)
 		       .outcome == critical_apply_outcome::already_applied);
 }
 
+static void logical_creation_source_rejects_second_uid(const fs::path &base)
+{
+	const fs::path root = base / "accounted-logical-source";
+	const critical_operation_id lineage = operation(41);
+	const critical_operation_id epoch = operation(42);
+	create_accounting_root(root);
+	initialize_item_accounting_bucket(root, lineage, accounting_id(21));
+	const item_owner_identity room = { item_owner_type::room, 51, 0 };
+	item_transfer_payload creation = {};
+	creation.from_owner = { item_owner_type::system, 0, 0 };
+	creation.to_owner = room;
+	creation.reason = item_transfer_reason::creation;
+	creation.reason_id = 810;
+	creation.logical_source_id = 90001;
+	creation.expected_from_revision = 0;
+	creation.expected_to_revision = 0;
+	creation.selected_item_uid = 8101;
+	creation.target_root_item_uid = 8101;
+	creation.item_count = 1;
+	creation.items[0] = { 8101, 8101,
+			      0,    ITEM_TRANSFER_ABSENT_REVISION,
+			      810,  item_custody_state::absent };
+	player_item_snapshot item = {};
+	item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	item.equipment_slot = -1;
+	item.object_uid = 8101;
+	item.vnum = 810;
+	item.type = 1;
+	item.weight = 1;
+	item.condition = 100;
+	attach_item_blob(&creation, { item });
+	const auto command = accounted_item_command(creation, 60, 42, lineage, epoch,
+						    economic_source_kind::world_generation);
+	assert(flatfile_item_repository_apply(root.string(), command).outcome ==
+	       critical_apply_outcome::applied);
+	assert(flatfile_item_repository_apply(root.string(), command).outcome ==
+	       critical_apply_outcome::already_applied);
+	economic_accounting_item_reference reference = {};
+	assert(flatfile_item_accounting_reference_find_by_legacy(
+		       root.string(), command.operation_id, 0, &reference, nullptr) ==
+	       flatfile_item_accounting_status::ok);
+	assert(reference.item_uid == 8101 && reference.before_revision == 0 &&
+	       reference.after_revision == 1);
+	creation.expected_from_revision = 1;
+	creation.expected_to_revision = 1;
+	creation.selected_item_uid = 8102;
+	creation.target_root_item_uid = 8102;
+	creation.items[0].item_uid = 8102;
+	creation.items[0].root_item_uid = 8102;
+	item.object_uid = 8102;
+	attach_item_blob(&creation, { item });
+	const auto duplicate = accounted_item_command(creation, 61, 42, lineage, epoch,
+						      economic_source_kind::world_generation);
+	assert(flatfile_item_repository_apply(root.string(), duplicate).outcome ==
+	       critical_apply_outcome::terminal_failure);
+	uint64_t revision = 0;
+	std::vector<flatfile_item_ownership_record> items;
+	assert(flatfile_item_repository_load_owner(root.string(), room, &revision, &items,
+						   nullptr) == flatfile_item_repository_result::ok);
+	assert(revision == 1 && items.size() == 1 && items[0].item_uid == 8101);
+	assert(flatfile_item_accounting_reference_find_by_legacy(
+		       root.string(), duplicate.operation_id, 0, &reference, nullptr) ==
+	       flatfile_item_accounting_status::not_found);
+}
+
 static void integrated_pet_custody(const fs::path &base)
 {
 	const critical_operation_id lineage = operation(51);
@@ -1213,6 +1278,7 @@ int main(int argc, char **argv)
 	check(missing, seeded, before, nested(coin_command, false));
 	check(missing, seeded, before, nested(coin_command, true));
 	integrated_item_accounting(base);
+	logical_creation_source_rejects_second_uid(base);
 	integrated_pet_custody(base);
 	integrated_locker_custody(base);
 	integrated_nested_item_accounting(base);
@@ -1221,6 +1287,6 @@ int main(int argc, char **argv)
 	std::cout
 		<< "flatfile gates: invalid envelopes and nested coin legs rejected; item "
 		   "movement, sourced room creation and retirement, nested pet and locker custody, "
-		   "duplicate quest source refusal, same-owner nesting and equipment slots, exact references, "
+		   "duplicate quest and world sources refused, same-owner nesting and equipment slots, exact references, "
 		   "simultaneous first-claim refusal, replay and journal recovery passed\n";
 }

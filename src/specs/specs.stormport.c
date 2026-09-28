@@ -14,6 +14,7 @@
 
 #include "world/events.h"
 #include "world/epic.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/nexus_stones.h"
 #include "economy/tradeskill.h"
 #include "sql/sql.h"
@@ -68,6 +69,13 @@ int clear_epic_task_spec(P_char npc, P_char ch, int cmd, char *arg)
 		if (!afp)
 		{
 			mobsay(npc, "Whaat? The Gods haven't given you a task! Begone!");
+			return TRUE;
+		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Epic task clearing is unavailable while active accounting is enabled.\r\n",
+				ch);
 			return TRUE;
 		}
 

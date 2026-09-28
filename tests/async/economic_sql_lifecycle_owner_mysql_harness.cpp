@@ -1,8 +1,10 @@
 #include "economy/economic_baseline_adapter.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/defines.h"
 #include "persistence/economic_sql_accounting_lifecycle_transaction.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "persistence/economic_sql_source_snapshot.h"
+#include "persistence/critical_command_coordinator.h"
 #include "player/player_snapshot_codec.h"
 #include "world/vnum.obj.h"
 #include <mysql/mysql.h>
@@ -25,8 +27,27 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+class economic_gameplay_authority_test_access
+{
+    public:
+	static void reset() { economic_gameplay_authority::reset_for_tests(); }
+};
+
 namespace
 {
+critical_apply_result no_gameplay_apply(const critical_command &, void *)
+{
+	return { critical_apply_outcome::retryable_failure, 0, EIO };
+}
+
+unsigned int verify_synthetic_routes(MYSQL *, const economic_sql_activation_evidence &evidence,
+				     const economic_sql_source_snapshot &snapshot) noexcept
+{
+	if (evidence.route_count != 3 || evidence.verified_route_count != 3 ||
+	    evidence.unclassified_route_count || snapshot.tables.empty())
+		return ENODATA;
+	return 0;
+}
 const char *required(const char *name)
 {
 	const char *value = std::getenv(name);
@@ -212,8 +233,10 @@ void writer_child(int ready_fd, int continue_fd, uint32_t pid)
 void assert_source_registry(MYSQL *connection)
 {
 	economic_sql_source_snapshot snapshot;
-	if (economic_sql_capture_sources(connection, {}, &snapshot))
-		throw std::runtime_error("full native source capture failed");
+	if (const auto code = economic_sql_capture_sources(connection, {}, &snapshot))
+		throw std::runtime_error(
+			"full native source capture failed: " + std::to_string(code) +
+			" server=" + mysql_get_server_info(connection));
 	if (economic_sql_validate_sources(snapshot))
 		throw std::runtime_error("source snapshot validation failed");
 	for (const char *name : { "player_data", "account_banks", "economic_account_mapping",
@@ -705,6 +728,176 @@ int main()
 		    unchanged.operation_id.bytes != ident(212).bytes)
 			throw std::runtime_error(
 				"same operation ID with changed request was not rejected unchanged");
+
+		// Synthetic route coverage exercises the durable decision only in this
+		// disposable schema. Production has no Plan 5 verifier registration yet.
+		economic_sql_activation_evidence coverage;
+		coverage.manifest_digest.fill(0x44);
+		coverage.audit_digest.fill(0x55);
+		coverage.route_count = 3;
+		coverage.verified_route_count = 2;
+		maintenance.reset();
+		const std::string journal = required("ECONOMIC_SQL_LIFECYCLE_JOURNAL_DIR");
+		if (!critical_command_coordinator_init(journal.c_str(), no_gameplay_apply, nullptr,
+						       1))
+			throw std::runtime_error("coordinator setup failed");
+		auto cutover = [&](auto action, bool commit_on_success = false)
+		{
+			economic_sql_lifecycle_guard guard;
+			economic_sql_cutover_capability lease;
+			economic_sql_cutover_transaction_owner transaction;
+			if (economic_sql_lifecycle_guard::acquire_maintenance(owner_connection,
+									      &guard) ||
+			    !guard.acquire_cutover_capability(3000, &lease) ||
+			    !transaction.begin(guard, lease))
+				throw std::runtime_error(
+					"cutover owner did not acquire the drained transaction");
+			const auto code = action(transaction);
+			if (!(code == 0 && commit_on_success ? transaction.commit() :
+							       transaction.rollback()))
+				throw std::runtime_error(
+					"cutover owner could not finish transaction");
+			return code;
+		};
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::activate(
+					    owner_connection, owner, request.lineage);
+			    }) != ENODATA)
+			throw std::runtime_error("pointer selector accepted no global decision");
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::
+					    activate_verified(owner_connection, owner, request,
+							      coverage, verify_synthetic_routes);
+			    }) != ENODATA)
+			throw std::runtime_error("incomplete route manifest activated");
+		coverage.verified_route_count = coverage.route_count;
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::
+					    activate_verified(owner_connection, owner, request,
+							      coverage, nullptr);
+			    }) != ENODATA)
+			throw std::runtime_error("missing independent verifier activated");
+		execute(setup, "UPDATE critical_operation_inbox SET status=0 WHERE operation_id=" +
+				       sql_id(request.operation_id));
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::
+					    activate_verified(owner_connection, owner, request,
+							      coverage, verify_synthetic_routes);
+			    }) != EBUSY)
+			throw std::runtime_error("incomplete inbox activated");
+		execute(setup, "UPDATE critical_operation_inbox SET status=1 WHERE operation_id=" +
+				       sql_id(request.operation_id));
+		execute(setup, "INSERT INTO critical_outbox(operation_id,event_index,destination,"
+			       "event_type,payload_version,payload) VALUES(" +
+				       sql_id(request.operation_id) + ",0,1,1,1,X'01')");
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::
+					    activate_verified(owner_connection, owner, request,
+							      coverage, verify_synthetic_routes);
+			    }) != EBUSY)
+			throw std::runtime_error("pending outbox activated");
+		execute(setup, "DELETE FROM critical_outbox WHERE operation_id=" +
+				       sql_id(request.operation_id));
+		if (const auto code = cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::
+					    activate_verified(owner_connection, owner, request,
+							      coverage, verify_synthetic_routes);
+			    },
+			    true))
+			throw std::runtime_error("synthetic activation failed: " +
+						 std::to_string(code));
+		assert_scalar(
+			setup,
+			"SELECT CONCAT(state,':',revision) FROM economic_sql_global_activation WHERE lineage=" +
+				sql_id(request.lineage),
+			"1:1");
+		assert_scalar(setup,
+			      "SELECT active_epoch= " + sql_id(request.epoch) +
+				      " FROM economic_lineage_state WHERE lineage=" +
+				      sql_id(request.lineage),
+			      "1");
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::
+					    activate_verified(owner_connection, owner, request,
+							      coverage, verify_synthetic_routes);
+			    },
+			    true))
+			throw std::runtime_error("exact active decision retry failed");
+		assert_scalar(
+			setup,
+			"SELECT CONCAT(state,':',revision) FROM economic_sql_global_activation WHERE lineage=" +
+				sql_id(request.lineage),
+			"1:1");
+		critical_command_coordinator_shutdown();
+		{
+			economic_sql_lifecycle_guard active_runtime;
+			if (economic_sql_lifecycle_guard::acquire_runtime(runtime_connection,
+									  &active_runtime))
+				throw std::runtime_error("active receipt was refused at boot");
+			bool active = false;
+			if (const auto code =
+				    economic_sql_accounting_lifecycle_transaction::recover_runtime(
+					    runtime_connection, active_runtime, &active);
+			    code || !active || !economic_gameplay_authority::active())
+				throw std::runtime_error("runtime cache recovery failed: " +
+							 std::to_string(code));
+			economic_gameplay_authority_test_access::reset();
+		}
+		if (!critical_command_coordinator_init(journal.c_str(), no_gameplay_apply, nullptr,
+						       1))
+			throw std::runtime_error("pause authority setup failed");
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::pause(
+					    owner_connection, owner, request.lineage);
+			    },
+			    true))
+			throw std::runtime_error("durable pause failed");
+		assert_scalar(
+			setup,
+			"SELECT CONCAT(state,':',revision) FROM economic_sql_global_activation WHERE lineage=" +
+				sql_id(request.lineage),
+			"2:2");
+		{
+			economic_sql_lifecycle_guard paused_runtime;
+			if (economic_sql_lifecycle_guard::acquire_runtime(runtime_connection,
+									  &paused_runtime) != EPERM)
+				throw std::runtime_error("paused decision was admitted at boot");
+		}
+		if (cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::
+					    activate_verified(owner_connection, owner, request,
+							      coverage, verify_synthetic_routes);
+			    },
+			    true) ||
+		    cutover(
+			    [&](auto &owner)
+			    {
+				    return economic_sql_accounting_lifecycle_transaction::pause(
+					    owner_connection, owner, request.lineage);
+			    },
+			    true))
+			throw std::runtime_error("pause/resume was not reversible");
+		critical_command_coordinator_shutdown();
+		execute(setup, "DELETE FROM economic_sql_global_activation WHERE lineage=" +
+				       sql_id(request.lineage));
 
 		MYSQL *legacy_connection = connect_fixture();
 		maintenance.reset();

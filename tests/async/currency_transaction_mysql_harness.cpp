@@ -942,6 +942,156 @@ void check_active_peer_accounting(uint32_t pid, const char *account,
 	puts("PASS: activated SQL peer transfer preserves shared-bank revisions, balanced postings, and replay");
 }
 
+void check_active_split_children(const char *account, const critical_operation_id &lineage,
+				 const critical_operation_id &epoch)
+{
+	const std::string lineage_sql = "UNHEX('" + operation_hex(lineage) + "')";
+	const uint64_t bank_revision = static_cast<uint64_t>(
+		scalar("SELECT bank_revision FROM account_banks WHERE account_name='" +
+		       std::string(account) + "' AND racewar=1"));
+	const std::array<const char *, 3> names = { "SplitSender", "SplitRecipientOne",
+						    "SplitRecipientTwo" };
+	std::array<uint32_t, 3> pids = {};
+	std::array<uint64_t, 3> lifetimes = {};
+	for (size_t index = 0; index < pids.size(); ++index)
+	{
+		execute("INSERT INTO player_data(name,account_name,racewar,copper) VALUES('" +
+			std::string(names[index]) + "','" + account + "',1," +
+			std::to_string(index == 0 ? 11 : 0) + ")");
+		pids[index] = static_cast<uint32_t>(mysql_insert_id(connection));
+		execute("INSERT INTO economic_account_mapping(lineage,account_kind,context_id,"
+			"backend_kind,locator_kind,native_id,active_native_id,creating_operation_id) "
+			"VALUES(" +
+			lineage_sql + ",1,0,1,1," + std::to_string(pids[index]) + "," +
+			std::to_string(pids[index]) +
+			",UNHEX('cccccccccccccccccccccccccccccccc'))");
+		lifetimes[index] = static_cast<uint64_t>(
+			scalar("SELECT mapping_id FROM economic_account_mapping WHERE lineage=" +
+			       lineage_sql +
+			       " AND account_kind=1 AND native_id=" + std::to_string(pids[index])));
+	}
+	std::array<critical_command, 2> children;
+	std::array<critical_apply_result, 2> results;
+	for (size_t index = 0; index < children.size(); ++index)
+	{
+		const int32_t before = 11 - 3 * static_cast<int32_t>(index);
+		const auto source =
+			coin_wallet(pids[0], account, { before, 0, 0, 0 }, { before - 3, 0, 0, 0 });
+		const auto destination = coin_wallet(pids[index + 1], account, {}, { 3, 0, 0, 0 });
+		auto &command = children[index];
+		command = coin_command(source, destination);
+		assert(coin_transfer_accounting_intent(
+			       command, epoch,
+			       { lineage, economic_account_kind::wallet, lifetimes[0], 0 },
+			       { lineage, economic_account_kind::wallet, lifetimes[index + 1], 0 },
+			       &command.accounting_intent) == economic_accounting_error::ok);
+		command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		command.publication_required = true;
+		assert(critical_command_envelope_valid(command));
+		results[index] = pooled_apply(command);
+		assert(results[index].outcome == critical_apply_outcome::applied &&
+		       !results[index].error_code);
+		const std::string root_id = operation_hex(command.operation_id);
+		assert(scalar("SELECT COUNT(*) FROM player_data WHERE pid=" +
+			      std::to_string(pids[0]) +
+			      " AND copper=" + std::to_string(before - 3) +
+			      " AND wallet_revision=" + std::to_string(index + 1)) == 1);
+		assert(scalar("SELECT COUNT(*) FROM player_data WHERE pid=" +
+			      std::to_string(pids[index + 1]) +
+			      " AND copper=3 AND wallet_revision=1") == 1);
+		assert(scalar("SELECT COUNT(*) FROM account_banks WHERE account_name='" +
+			      std::string(account) + "' AND racewar=1 AND bank_revision=" +
+			      std::to_string(bank_revision + 2 * (index + 1))) == 1);
+		assert(scalar("SELECT COUNT(*) FROM economic_accounting_operation WHERE "
+			      "operation_id=UNHEX('" +
+			      root_id +
+			      "') AND outcome=1 AND account_count=2 AND posting_count=2 AND "
+			      "child_count=2 AND item_event_count=0") == 1);
+		assert(scalar("SELECT COUNT(*) FROM economic_accounting_account_effect WHERE "
+			      "operation_id=UNHEX('" +
+			      root_id +
+			      "') AND account_index=0 AND before_copper=" + std::to_string(before) +
+			      " AND after_copper=" + std::to_string(before - 3) +
+			      " AND before_revision=" + std::to_string(index) +
+			      " AND after_revision=" + std::to_string(index + 1)) == 1);
+		assert(scalar("SELECT COUNT(*) FROM economic_accounting_account_effect WHERE "
+			      "operation_id=UNHEX('" +
+			      root_id +
+			      "') AND account_index=1 AND before_copper=0 AND after_copper=3 "
+			      "AND before_revision=0 AND after_revision=1") == 1);
+		assert(scalar("SELECT COUNT(*) FROM economic_accounting_coin_posting WHERE "
+			      "operation_id=UNHEX('" +
+			      root_id +
+			      "') AND ((account_index=0 AND delta_copper=-3 AND copper_value=-3) "
+			      "OR (account_index=1 AND delta_copper=3 AND copper_value=3))") == 2);
+		assert(scalar("SELECT SUM(copper_value) FROM economic_accounting_coin_posting "
+			      "WHERE operation_id=UNHEX('" +
+			      root_id + "')") == 0);
+		assert(scalar("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE "
+			      "operation_id=UNHEX('" +
+			      root_id + "')") == 0);
+		assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE "
+			      "operation_id=UNHEX('" +
+			      root_id + "') AND status=1 AND OCTET_LENGTH(result_payload)>0") == 1);
+		assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE operation_id IN "
+			      "(SELECT child_operation_id FROM economic_accounting_child WHERE "
+			      "operation_id=UNHEX('" +
+			      root_id + "'))") == 2);
+	}
+	assert(scalar("SELECT SUM(copper) FROM player_data WHERE pid IN (" +
+		      std::to_string(pids[0]) + "," + std::to_string(pids[1]) + "," +
+		      std::to_string(pids[2]) + ")") == 11);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pids[0])) ==
+	       5); // 11 / 3 gives two shares of 3; the splitter keeps the extra 2.
+	for (size_t index = 0; index < children.size(); ++index)
+	{
+		const auto replayed = pooled_apply(children[index]);
+		assert(replayed.outcome == critical_apply_outcome::already_applied &&
+		       replayed.result_size == results[index].result_size &&
+		       std::equal(results[index].result_payload.begin(),
+				  results[index].result_payload.begin() +
+					  results[index].result_size,
+				  replayed.result_payload.begin()));
+		const std::string root_id = operation_hex(children[index].operation_id);
+		critical_operation_id source_child = {}, destination_child = {};
+		assert(critical_operation_id_derive(children[index].operation_id,
+						    COIN_TRANSFER_OPERATION_DOMAIN, 0,
+						    &source_child));
+		assert(critical_operation_id_derive(children[index].operation_id,
+						    COIN_TRANSFER_OPERATION_DOMAIN, 1,
+						    &destination_child));
+		const std::string ids = "UNHEX('" + root_id + "'),UNHEX('" +
+					operation_hex(source_child) + "'),UNHEX('" +
+					operation_hex(destination_child) + "')";
+		execute("DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o "
+			"ON o.outbox_id=d.outbox_id WHERE o.operation_id IN (" +
+			ids + ")");
+		execute("DELETE FROM critical_outbox WHERE operation_id IN (" + ids + ")");
+		execute("DELETE FROM economic_accounting_coin_posting WHERE "
+			"operation_id=UNHEX('" +
+			root_id + "')");
+		execute("DELETE FROM economic_accounting_child WHERE operation_id=UNHEX('" +
+			root_id + "')");
+		execute("DELETE FROM economic_accounting_account_effect WHERE "
+			"operation_id=UNHEX('" +
+			root_id + "')");
+		execute("DELETE FROM economic_accounting_operation WHERE operation_id=UNHEX('" +
+			root_id + "')");
+		execute("DELETE FROM currency_ledger WHERE operation_id IN (UNHEX('" +
+			operation_hex(source_child) + "'),UNHEX('" +
+			operation_hex(destination_child) + "'))");
+		execute("DELETE FROM critical_operation_inbox WHERE operation_id IN (" + ids + ")");
+	}
+	execute("DELETE FROM economic_account_mapping WHERE lineage=" + lineage_sql +
+		" AND native_id IN (" + std::to_string(pids[0]) + "," + std::to_string(pids[1]) +
+		"," + std::to_string(pids[2]) + ")");
+	execute("DELETE FROM player_data WHERE pid IN (" + std::to_string(pids[0]) + "," +
+		std::to_string(pids[1]) + "," + std::to_string(pids[2]) + ")");
+	execute("UPDATE account_banks SET bank_revision=" + std::to_string(bank_revision) +
+		" WHERE account_name='" + std::string(account) + "' AND racewar=1");
+	puts("PASS: activated SQL split children retain separate balanced roots and the sender remainder");
+}
+
 coins pile_amount(uint64_t uid)
 {
 	execute("SELECT coin_payload FROM item_current_owner WHERE item_uid=" +
@@ -1549,6 +1699,7 @@ int main()
 	check_active_coin_item_accounting(pid, account.c_str(), lineage_id, epoch_id);
 	check_active_coin_change_accounting(pid, account.c_str(), lineage_id, epoch_id);
 	check_active_peer_accounting(pid, account.c_str(), lineage_id, epoch_id);
+	check_active_split_children(account.c_str(), lineage_id, epoch_id);
 	assert(critical_command_repository_apply(connection, deposit).outcome ==
 	       critical_apply_outcome::already_applied);
 	const auto wallet_before =

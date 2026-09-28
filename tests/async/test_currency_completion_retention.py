@@ -6,6 +6,7 @@ live-world endpoints are controlled. This is not a database integration test.
 """
 
 from pathlib import Path
+import os
 import shlex
 import subprocess
 import tempfile
@@ -768,11 +769,12 @@ def main():
     with tempfile.TemporaryDirectory(prefix="currency-retention-") as directory:
         source = Path(directory) / "retention.cpp"
         source.write_text(HARNESS, encoding="utf-8")
+        compiler = shlex.split(os.environ.get("CXX", "g++"))
         for flatfile in (False, True):
             backend = "flatfile" if flatfile else "mysql"
             binary = Path(directory) / backend
             subprocess.run([
-                "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
+                *compiler, "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
                 "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
                 "-pthread", "-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST",
                 *(["-D__NO_MYSQL__", "-Isrc/no_mysql"] if flatfile else []),

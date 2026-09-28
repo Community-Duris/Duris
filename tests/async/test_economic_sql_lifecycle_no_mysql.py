@@ -46,6 +46,14 @@ int main()
     uint64_t new_lineage_revision = 0;
     assert(economic_sql_accounting_lifecycle_transaction::activate(
         nullptr, transaction, request.lineage, &new_lineage_revision) == ENOTSUP);
+    economic_sql_activation_evidence evidence;
+    assert(economic_sql_accounting_lifecycle_transaction::activate_verified(
+        nullptr, transaction, request, evidence, nullptr) == ENOTSUP);
+    assert(economic_sql_accounting_lifecycle_transaction::pause(
+        nullptr, transaction, request.lineage) == ENOTSUP);
+    bool active = false;
+    assert(economic_sql_accounting_lifecycle_transaction::recover_runtime(
+        nullptr, authority, &active) == ENOTSUP);
     assert(new_lineage_revision == 0);
     assert(!authority.is_maintenance_authority());
     assert(receipt.wallets.empty() && receipt.banks.empty());

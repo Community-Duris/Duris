@@ -502,6 +502,97 @@ int main()
         self.assertLess(salvage_guard,
                         salvage.index("vnum_from_inv(ch, crafting_scientific_tools_vnum()"))
 
+    def test_mining_refuses_queued_rewards_and_node_mutation(self):
+        mine = extract_function("economy/mining.c", "int mine(")
+        self.assertLess(mine.index("economic_gameplay_authority::active()"),
+                        mine.index("extract_obj(obj, TRUE)"))
+        start_guard = mine.index("economic_gameplay_authority::active()",
+                                 mine.index("if (cmd == CMD_MINE)"))
+        self.assertLess(start_guard, mine.index("remove_mine_content(obj)"))
+        self.assertLess(start_guard, mine.index("add_event(event_mine_check"))
+
+        event = extract_function("economy/mining.c", "void event_mine_check(")
+        guard = event.index("economic_gameplay_authority::active()")
+        self.assertLess(guard, event.index("--mdata->counter"))
+        self.assertLess(guard, event.index("get_gem_from_mine(ch,"))
+        self.assertLess(guard, event.index("obj_to_room(ore, ch->in_room)"))
+        self.assertLess(guard, event.index("unequip_char(ch, WIELD)"))
+
+        placement = extract_function("economy/mining.c", "bool load_one_mine(int map)\n{")
+        self.assertLess(placement.index("economic_gameplay_authority::active()"),
+                        placement.index("read_object(mine_data[map].type"))
+        admin = extract_function("economy/mining.c", "void do_mine(")
+        admin_guard = admin.index("economic_gameplay_authority::active()")
+        self.assertLess(admin_guard, admin.index("do_mine(ch, buf2, CMD_MINE)"))
+        self.assertLess(admin_guard, admin.index("load_one_mine(i)"))
+        self.assertLess(admin_guard, admin.index("extract_obj(tobj, TRUE)"))
+
+        prototypes = (ROOT / "areas/world.obj").read_text(encoding="utf-8")
+        defines = (ROOT / "src/core/defines.h").read_text(encoding="utf-8")
+        transient = re.search(r"#define BIT_20 (\d+)U", defines)
+        assert transient is not None
+        for vnum in (193, 434):
+            node = prototypes.split(f"#{vnum}\n", 1)[1].split("\n#", 1)[0]
+            flags = [int(value) for value in node.splitlines()[4].split()]
+            self.assertFalse(flags[5] & int(transient.group(1)))
+            self.assertFalse(flags[6] & 1)
+
+    def test_kingdom_harvest_refuses_unsourced_nodes_and_materials(self):
+        path = "kingdom/kingdom_harvest.c"
+        for symbol, mutation in (
+            ("void kingdom_node_reap_room(", "extract_obj(obj)"),
+            ("static int kingdom_nodes_reap(", "extract_obj(doomed[i])"),
+            ("static bool kingdom_load_one_node(", "read_object(vnum, VIRTUAL)"),
+            ("static void kingdom_nodes_reload(", "kingdom_nodes_reap()"),
+            ("static void kingdom_harvest_tick(P_char ch, P_char /*victim*/, P_obj, void *data)\n{",
+             "kingdom_resource_deposit("),
+            ("static void kingdom_gather_tick(P_char ch, P_char /*victim*/, P_obj, void *data)\n{",
+             "GET_VITALITY(ch) -= "),
+            ("static void kingdom_gather_command(P_char ch, P_obj node)\n{",
+             "add_event(kingdom_gather_tick"),
+            ("void kingdom_harvest_command(", "kingdom_node_reap_room(rnum)"),
+        ):
+            body = extract_function(path, symbol)
+            self.assertLess(body.index("economic_gameplay_authority::active()"),
+                            body.index(mutation), symbol)
+
+        realm_tick = extract_function(
+            path,
+            "static void kingdom_harvest_tick(P_char ch, P_char /*victim*/, P_obj, void *data)\n{",
+        )
+        realm_guard = realm_tick.index("economic_gameplay_authority::active()")
+        self.assertLess(realm_guard, realm_tick.index("GET_VITALITY(ch) -= "))
+        self.assertLess(realm_guard, realm_tick.index("node->value[0]--"))
+        gather_tick = extract_function(
+            path,
+            "static void kingdom_gather_tick(P_char ch, P_char /*victim*/, P_obj, void *data)\n{",
+        )
+        gather_guard = gather_tick.index("economic_gameplay_authority::active()")
+        self.assertLess(gather_guard, gather_tick.index("node->value[0]--"))
+        self.assertLess(gather_guard, gather_tick.index("read_object(mat_rnum, REAL)"))
+
+        reload_body = extract_function(path, "static void kingdom_nodes_reload(")
+        self.assertIn("kingdom_node_schedule_sweep(region);", reload_body[
+            reload_body.index("economic_gameplay_authority::active()"):reload_body.index(
+                "kingdom_nodes_reap()")
+        ])
+
+        periodic = extract_function(path, "static int kingdom_node_proc(")
+        self.assertLess(periodic.index("!economic_gameplay_authority::active()"),
+                        periodic.index("extract_obj(obj)"))
+        shutdown = extract_function(path, "void kingdom_harvest_shutdown(")
+        self.assertLess(shutdown.index("!economic_gameplay_authority::active()"),
+                        shutdown.index("extract_obj(doomed[i])"))
+
+        prototypes = (ROOT / "areas/obj/heavens.obj").read_text(encoding="utf-8")
+        defines = (ROOT / "src/core/defines.h").read_text(encoding="utf-8")
+        transient = re.search(r"#define BIT_20 (\d+)U", defines)
+        assert transient is not None
+        for vnum in range(477, 485):
+            node = prototypes.split(f"#{vnum}\n", 1)[1].split("\n#", 1)[0]
+            flags = [int(value) for value in node.splitlines()[4].split()]
+            self.assertFalse(flags[5] & int(transient.group(1)))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -391,6 +391,71 @@ void quest_reward_source_survives_new_uid_and_command()
 	       error::unauthorized);
 }
 
+void logical_creation_source_survives_new_uid_and_command()
+{
+	const auto lineage = id(1);
+	const auto epoch = id(2);
+	auto command = move(item_transfer_reason::creation, { item_owner_type::system, 0, 0 },
+			    { item_owner_type::player, 10, 0 });
+	item_transfer_payload payload = {};
+	assert(item_transfer_command_decode_payload(command, &payload));
+	payload.logical_source_id = 90001;
+	assert(item_transfer_command_build(&command, id(24), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	std::vector<uint8_t> encoded;
+	assert(item_transfer_accounting_intent(command, lineage, epoch, 10, &encoded,
+					       economic_source_kind::world_generation) ==
+	       error::ok);
+	economic_frozen_intent decoded;
+	assert(economic_intent_decode(encoded, &decoded) == error::ok);
+	assert(decoded.admission.metadata.source_event.has_value());
+	const auto source = *decoded.admission.metadata.source_event;
+	assert(source.kind == economic_source_kind::world_generation &&
+	       source.source.bytes == lineage.bytes && source.generation.bytes == lineage.bytes &&
+	       source.sequence == payload.logical_source_id && source.slot == 0);
+
+	payload.selected_item_uid = 101;
+	payload.target_root_item_uid = 101;
+	payload.items[0].item_uid = 101;
+	payload.items[0].root_item_uid = 101;
+	critical_command retry = {};
+	assert(item_transfer_command_build(&retry, id(25), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(retry, lineage, id(5), 10, &encoded,
+					       economic_source_kind::world_generation) ==
+	       error::ok);
+	assert(economic_intent_decode(encoded, &decoded) == error::ok);
+	assert(decoded.admission.metadata.source_event.has_value());
+	assert(decoded.admission.metadata.source_event->kind == source.kind &&
+	       decoded.admission.metadata.source_event->source.bytes == source.source.bytes &&
+	       decoded.admission.metadata.source_event->generation.bytes ==
+		       source.generation.bytes &&
+	       decoded.admission.metadata.source_event->sequence == source.sequence &&
+	       decoded.admission.metadata.source_event->slot == source.slot);
+
+	assert(item_transfer_accounting_intent(retry, lineage, epoch, 10, &encoded,
+					       economic_source_kind::spell_creation) == error::ok);
+	assert(economic_intent_decode(encoded, &decoded) == error::ok);
+	assert(decoded.admission.metadata.source_event->kind ==
+	       economic_source_kind::spell_creation);
+	payload.logical_source_id = 0;
+	assert(item_transfer_command_build(&retry, id(26), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(retry, lineage, epoch, 10, &encoded,
+					       economic_source_kind::world_generation) ==
+	       error::ok);
+	assert(economic_intent_decode(encoded, &decoded) == error::ok);
+	assert(decoded.admission.metadata.source_event->sequence == 101);
+	assert(decoded.admission.metadata.source_event->slot == 7);
+
+	payload.logical_source_id = 90001;
+	assert(item_transfer_command_build(&retry, id(27), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_accounting_intent(retry, lineage, epoch, 10, &encoded,
+					       economic_source_kind::quest_completion) ==
+	       error::unauthorized);
+}
+
 void sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events()
 {
 	const auto lineage = id(1);
@@ -545,6 +610,7 @@ int main()
 	unsupported_or_changed_commands_fail_closed();
 	sourced_creation_grants_are_bound_to_the_item_event();
 	quest_reward_source_survives_new_uid_and_command();
+	logical_creation_source_survives_new_uid_and_command();
 	sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events();
 	corpse_custody_roots_bind_the_actor_and_exact_corpse();
 	return 0;

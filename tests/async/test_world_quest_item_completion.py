@@ -12,14 +12,24 @@ def main() -> None:
     world_quest = source("world_quest.c").read_text(encoding="utf-8")
     start = world_quest.index("struct world_quest_reward_context\n{")
     context = world_quest[start:world_quest.index("};", start) + 2]
+    next_started = extract_function("world_quest.c", "static int world_quest_next_started(")
     source_id = extract_function("world_quest.c", "static uint64_t world_quest_reward_source_id(")
     completion = extract_function("world_quest.c", "static void world_quest_reward_completed(")
+    reset = extract_function("world_quest.c", "void resetQuest(")
+    assert "quest_started = 0" not in reset
+    assert "world_quest_next_started(ch->only.pc->quest_started, time(NULL))" in world_quest
+    share = world_quest[world_quest.index('if (isname(name, "share"))'):]
+    assert share.index("const int recipient_started = world_quest_next_started(") < share.index(
+        "resetQuest(victim);"
+    ) < share.index("victim->only.pc->quest_started = recipient_started")
     program = r'''
 #include <cassert>
+#include <climits>
 #include <cstdint>
 #include <cstdarg>
 #include <cstring>
 #include <cstdio>
+#include <ctime>
 
 struct pc_data {
     int quest_started = 0;
@@ -66,10 +76,9 @@ void quest_epic_reward(P_char, int) { ++epic; }
 void sql_world_quest_finished(P_char, P_obj) { ++sql; }
 void resetQuest(P_char ch) {
     ++resets;
-    ch->only.pc->quest_started = 0;
     ch->only.pc->quest_mob_vnum = 0;
 }
-''' + context + "\n" + source_id + "\n" + completion + r'''
+''' + context + "\n" + next_started + "\n" + source_id + "\n" + completion + r'''
 void clear_counts() {
     logged = notified = dirty = gmcp = epic = sql = resets = experience = 0;
 }
@@ -82,6 +91,14 @@ int main() {
     character actor;
     actor.only.pc = &state;
     actor.pid = 42;
+    const uint64_t first_source = world_quest_reward_source_id(&actor);
+    state.quest_started = world_quest_next_started(state.quest_started, 100);
+    assert(state.quest_started == 101);
+    assert(world_quest_reward_source_id(&actor) != first_source);
+    assert(world_quest_next_started(101, 99) == 102);
+    assert(world_quest_next_started(101, 105) == 105);
+    assert(world_quest_next_started(INT_MAX, INT_MAX) == 0);
+    state.quest_started = 100;
     object item;
     item.obj_uid = 1000;
     item.carrier = &actor;
@@ -116,7 +133,7 @@ int main() {
     world_quest_reward_completed(&actor, true, result, 0,
         reinterpret_cast<const uint8_t *>(&request), sizeof(request));
     assert(experience == 30 && epic == 1 && sql == 1 && resets == 1);
-    assert(state.quest_started == 0);
+    assert(state.quest_started == 100);
     world_quest_reward_completed(&actor, true, result, 0,
         reinterpret_cast<const uint8_t *>(&request), sizeof(request));
     assert(experience == 30 && epic == 1 && sql == 1 && resets == 1);

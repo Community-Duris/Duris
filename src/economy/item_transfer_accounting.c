@@ -155,6 +155,7 @@ bool sourced_item_creation(const item_transfer_payload &payload, uint32_t actor_
 	    payload.reason_id < 0 ||
 	    (kind == economic_source_kind::quest_completion ? payload.reason_id == 0 :
 							      payload.reason_id > UINT32_MAX) ||
+	    (kind == economic_source_kind::quest_completion && payload.logical_source_id) ||
 	    payload.corpse.present || payload.collector.present || !payload.item_count)
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
@@ -223,6 +224,8 @@ economic_source_event item_lifecycle_source(const item_transfer_payload &payload
 {
 	if (kind == economic_source_kind::quest_completion)
 		return { kind, lineage, lineage, static_cast<uint64_t>(payload.reason_id), 0 };
+	if (payload.logical_source_id)
+		return { kind, lineage, lineage, payload.logical_source_id, 0 };
 	return { kind, lineage, lineage, source_item_uid(payload),
 		 static_cast<uint32_t>(payload.reason_id) };
 }

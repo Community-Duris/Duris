@@ -39,6 +39,8 @@ class economic_gameplay_authority
     private:
 	friend class economic_sql_accounting_lifecycle_transaction;
 	friend class flatfile_accounting_lifecycle_transaction;
+	friend bool sql_economic_runtime_start() noexcept;
+	friend void sql_economic_runtime_shutdown() noexcept;
 #ifdef DURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST
 	friend class economic_gameplay_authority_test_access;
 #endif
@@ -67,6 +69,7 @@ class economic_gameplay_authority
 		const critical_operation_id &epoch, const critical_operation_id &receipt,
 		std::span<const economic_gameplay_wallet_mapping> wallets,
 		std::span<const economic_gameplay_bank_mapping> banks);
+	static void clear_sql_runtime() noexcept;
 #ifdef DURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST
 	static void reset_for_tests();
 #endif
