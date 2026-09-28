@@ -1,13 +1,20 @@
 #include "economy/economic_gameplay_authority.h"
 #include "economy/economic_command_admission.h"
+#include "economy/economic_accounting_intent.h"
+#include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
+#include "core/structs.h"
 #include "item/item_transfer_command.h"
+#include "player/player_snapshot_codec.h"
+#include "world/vnum.obj.h"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstring>
 #include <iostream>
 #include <thread>
+#include <utility>
 
 class economic_gameplay_authority_test_access
 {
@@ -20,6 +27,15 @@ class economic_gameplay_authority_test_access
 	{
 		return economic_gameplay_authority::install(lineage, epoch, receipt, wallets,
 							    banks);
+	}
+	static auto install_sql_wallet_root_qualification(
+		const critical_operation_id &lineage, const critical_operation_id &epoch,
+		const critical_operation_id &receipt,
+		std::span<const economic_gameplay_wallet_mapping> wallets,
+		std::span<const economic_gameplay_bank_mapping> banks)
+	{
+		return economic_gameplay_authority::install_sql_wallet_root_qualification(
+			{}, lineage, epoch, receipt, wallets, banks);
 	}
 	static void reset() { economic_gameplay_authority::reset_for_tests(); }
 };
@@ -83,6 +99,312 @@ bool supported_candidate(critical_command command)
 {
 	command.accepted_at_usec = 1;
 	return economic_command_admission_supported(command);
+}
+critical_command wallet_reason_command(currency_reason_type reason, uint32_t pid)
+{
+	currency_command_payload payload = {};
+	payload.pid = pid;
+	payload.racewar = 1;
+	payload.reason = reason;
+	std::strcpy(payload.account_name.data(), "Fixture");
+	payload.wallet_delta.amount[0] = reason == currency_reason_type::wallet_reward ? 5 : -5;
+	critical_command command;
+	assert(currency_command_build(&command, id(41), payload, 2, 4,
+				      critical_source_site::command,
+				      critical_deadline_class::interactive));
+	return command;
+}
+coin_transfer_endpoint wallet_endpoint(uint32_t pid, const char *account_name, uint8_t operation,
+				       bool source)
+{
+	coin_transfer_endpoint endpoint = {};
+	endpoint.before[0] = 100;
+	endpoint.after[0] = source ? 95 : 105;
+	currency_command_payload payload = {};
+	payload.pid = pid;
+	payload.racewar = 1;
+	payload.reason = currency_reason_type::coin_transfer;
+	std::strcpy(payload.account_name.data(), account_name);
+	payload.wallet_delta.amount[0] = source ? -5 : 5;
+	assert(currency_command_build(&endpoint.change, id(operation), payload, source ? 8 : 9, 7,
+				      critical_source_site::command,
+				      critical_deadline_class::interactive));
+	return endpoint;
+}
+critical_command wallet_root(uint8_t root_id = 30, uint32_t source_pid = 7,
+			     uint32_t destination_pid = 8, const char *source_bank = "fixture",
+			     const char *destination_bank = "other_bank")
+{
+	coin_transfer_payload payload = {};
+	payload.source = wallet_endpoint(source_pid, source_bank, root_id + 1, true);
+	payload.destination =
+		wallet_endpoint(destination_pid, destination_bank, root_id + 2, false);
+	critical_command command;
+	assert(coin_transfer_command_build(&command, id(root_id), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	return command;
+}
+coin_transfer_endpoint coin_pile_endpoint(uint64_t uid, uint32_t owner_pid)
+{
+	coin_transfer_endpoint endpoint = {};
+	endpoint.before[0] = 0;
+	endpoint.after[0] = 5;
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::system, 0, 0 };
+	payload.to_owner = { item_owner_type::player, owner_pid, 0 };
+	payload.expected_from_revision = 7;
+	payload.expected_to_revision = 7;
+	payload.reason = item_transfer_reason::creation;
+	payload.selected_item_uid = uid;
+	payload.target_root_item_uid = uid;
+	payload.item_count = 1;
+	payload.items[0] = { uid,	 uid,
+			     0,		 ITEM_TRANSFER_ABSENT_REVISION,
+			     VOBJ_COINS, item_custody_state::absent };
+	player_item_snapshot snapshot = {};
+	snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	snapshot.equipment_slot = -1;
+	snapshot.object_uid = uid;
+	snapshot.vnum = VOBJ_COINS;
+	snapshot.type = ITEM_MONEY;
+	snapshot.values[0] = 5;
+	std::vector<uint8_t> blob;
+	assert(player_item_snapshot_list_encode({ snapshot }, &blob) ==
+	       player_snapshot_codec_result::ok);
+	payload.item_blob_size = blob.size();
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+	assert(item_transfer_command_build(&endpoint.change, id(static_cast<uint8_t>(uid)), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	return endpoint;
+}
+critical_command wallet_to_pile_root()
+{
+	coin_transfer_payload payload = {};
+	payload.source = wallet_endpoint(7, "fixture", 51, true);
+	payload.destination = coin_pile_endpoint(900, 8);
+	critical_command command;
+	assert(coin_transfer_command_build(&command, id(50), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	return command;
+}
+void replace_source_change(critical_command *command, currency_reason_type reason,
+			   bool add_bank_delta)
+{
+	coin_transfer_payload payload = {};
+	assert(coin_transfer_command_decode_payload(*command, &payload));
+	currency_command_payload changed = {};
+	assert(currency_command_decode_payload(payload.source.change, &changed));
+	changed.reason = reason;
+	if (add_bank_delta)
+		changed.bank_delta.amount[0] = 1;
+	critical_command replacement;
+	assert(currency_command_build(&replacement, payload.source.change.operation_id, changed,
+				      payload.source.change.expected_revisions[0].revision,
+				      payload.source.change.expected_revisions[1].revision,
+				      payload.source.change.source_site,
+				      payload.source.change.deadline_class));
+	replacement.accepted_at_usec = payload.source.change.accepted_at_usec;
+	std::vector<uint8_t> encoded;
+	assert(critical_command_encode(replacement, &encoded) == critical_command_codec_result::ok);
+	const size_t size = static_cast<size_t>(command->payload[32]) |
+			    (static_cast<size_t>(command->payload[33]) << 8) |
+			    (static_cast<size_t>(command->payload[34]) << 16) |
+			    (static_cast<size_t>(command->payload[35]) << 24);
+	assert(encoded.size() == size);
+	std::copy(encoded.begin(), encoded.end(), command->payload.begin() + 36);
+}
+critical_command frozen_wallet_reason(currency_reason_type reason)
+{
+	auto command = wallet_reason_command(reason, 7);
+	economic_admission_facts facts = {};
+	facts.metadata.lineage = id(1);
+	facts.metadata.epoch = id(2);
+	facts.metadata.actor_kind = economic_actor_kind::domain;
+	facts.metadata.actor_id = 101;
+	facts.metadata.writer_id = 77;
+	facts.metadata.reason = economic_reason::coin_transfer;
+	facts.facts = { 1, 2 };
+	std::vector<uint8_t> intent;
+	assert(economic_intent_freeze(command, facts, &intent) == error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accounting_intent = std::move(intent);
+	command.accepted_at_usec = 103;
+	return command;
+}
+void qualified_projection_regressions()
+{
+	lifecycle_access::reset();
+	const std::array wallets = { economic_gameplay_wallet_mapping{
+					     7, { id(1), economic_account_kind::wallet, 101, 0 } },
+				     economic_gameplay_wallet_mapping{
+					     8,
+					     { id(1), economic_account_kind::wallet, 102, 0 } } };
+	const std::array banks = { economic_gameplay_bank_mapping{
+		"fixture", 1, { id(1), economic_account_kind::bank, 202, 1 } } };
+	const std::array<economic_gameplay_bank_mapping, 0> no_banks = {};
+	assert(lifecycle_access::install(id(1), id(2), id(3), wallets, banks) == error::ok);
+
+	// The ordinary projection still freezes wallet roots and shared-bank roots.
+	auto regular_root = wallet_root(60);
+	assert(economic_gameplay_authority::prepare_coin_transfer(&regular_root) == error::ok);
+	assert(supported_candidate(regular_root));
+	auto regular_shared_bank = wallet_root(62, 7, 8, "shared", "shared");
+	assert(economic_gameplay_authority::prepare_coin_transfer(&regular_shared_bank) ==
+	       error::ok);
+	coin_transfer_payload shared_payload = {};
+	assert(coin_transfer_command_decode_payload(regular_shared_bank, &shared_payload));
+	assert(shared_payload.source.change.expected_revisions[1].revision ==
+	       shared_payload.destination.change.expected_revisions[1].revision);
+
+	// Normal active projection does not admit an unrelated fresh wallet spend.
+	auto normal_wallet_spend = wallet_reason_command(currency_reason_type::wallet_spend, 7);
+	const auto normal_wallet_spend_before = normal_wallet_spend;
+	assert(economic_gameplay_authority::prepare_currency(&normal_wallet_spend) ==
+	       error::incomplete_coverage);
+	assert(candidate_equal(normal_wallet_spend, normal_wallet_spend_before));
+
+	// Keep genuine normal-projection schema-2 ATM commands for both scope-bypass
+	// controls and historical replay compatibility checks.
+	auto frozen_deposit = transfer(currency_reason_type::atm_deposit);
+	auto frozen_withdraw = transfer(currency_reason_type::atm_withdraw);
+	assert(economic_gameplay_authority::prepare_currency(&frozen_deposit) == error::ok);
+	assert(economic_gameplay_authority::prepare_currency(&frozen_withdraw) == error::ok);
+	frozen_deposit.accepted_at_usec = 101;
+	frozen_withdraw.accepted_at_usec = 102;
+	assert(supported_candidate(frozen_deposit) && supported_candidate(frozen_withdraw));
+	const auto frozen_deposit_bytes = frozen_deposit;
+	const auto frozen_withdraw_bytes = frozen_withdraw;
+	const auto frozen_reward = frozen_wallet_reason(currency_reason_type::wallet_reward);
+	const auto frozen_spend = frozen_wallet_reason(currency_reason_type::wallet_spend);
+	// Upstream also admits standalone item roots in regular mode. Keep a real
+	// frozen one to prove that qualification closes the historical fast path.
+	auto frozen_item = item_transfer();
+	assert(economic_gameplay_authority::prepare_item_transfer(&frozen_item, 7) == error::ok);
+	frozen_item.accepted_at_usec = 104;
+	assert(supported_candidate(frozen_item));
+	const auto frozen_item_bytes = frozen_item;
+
+	assert(lifecycle_access::install_sql_wallet_root_qualification(id(1), id(2), id(3), wallets,
+								       no_banks) == error::ok);
+	auto qualified_root = wallet_root(70);
+	assert(economic_gameplay_authority::prepare_coin_transfer(&qualified_root) == error::ok);
+	assert(supported_candidate(qualified_root));
+	economic_frozen_intent intent;
+	assert(economic_intent_decode(qualified_root.accounting_intent, &intent) == error::ok);
+	assert(intent.admission.metadata.lineage.bytes == id(1).bytes);
+	assert(intent.admission.metadata.epoch.bytes == id(2).bytes);
+	assert(intent.admission.metadata.actor_id == 101);
+	assert(intent.admission.metadata.writer_id == ECONOMIC_WRITER_WALLET_COIN_TRANSFER);
+	qualified_root.accepted_at_usec = 71;
+	const auto replay_bytes = qualified_root;
+	assert(economic_gameplay_authority::prepare_coin_transfer(&qualified_root) == error::ok);
+	assert(critical_command_equal(qualified_root, replay_bytes));
+
+	// Shared-bank wallet roots remain admitted; the existing executor owns its
+	// second-endpoint revision rebase after this immutable admission step.
+	auto qualified_shared_bank = wallet_root(72, 7, 8, "shared", "shared");
+	assert(economic_gameplay_authority::prepare_coin_transfer(&qualified_shared_bank) ==
+	       error::ok);
+
+	// Wallet-root qualification must reject BOTH new and frozen standalone
+	// item roots without changing the caller's command.
+	auto new_item = item_transfer();
+	const auto new_item_before = new_item;
+	assert(economic_gameplay_authority::prepare_item_transfer(&new_item, 7) ==
+	       error::unauthorized);
+	assert(candidate_equal(new_item, new_item_before));
+	auto retained_item = frozen_item_bytes;
+	assert(economic_gameplay_authority::prepare_item_transfer(&retained_item, 7) ==
+	       error::unauthorized);
+	assert(critical_command_equal(retained_item, frozen_item_bytes));
+
+	for (auto command :
+	     { transfer(currency_reason_type::atm_deposit),
+	       transfer(currency_reason_type::atm_withdraw),
+	       wallet_reason_command(currency_reason_type::wallet_reward, 7),
+	       wallet_reason_command(currency_reason_type::wallet_spend, 7), frozen_deposit_bytes,
+	       frozen_withdraw_bytes, frozen_reward, frozen_spend })
+	{
+		const auto before = command;
+		assert(economic_gameplay_authority::prepare_currency(&command) ==
+		       error::unauthorized);
+		const bool unchanged = candidate_equal(command, before);
+		assert(unchanged);
+	}
+	for (auto command :
+	     { frozen_deposit_bytes, frozen_withdraw_bytes, frozen_reward, frozen_spend })
+	{
+		const auto before = command;
+		assert(economic_gameplay_authority::prepare_coin_transfer(&command) ==
+		       error::unauthorized);
+		assert(candidate_equal(command, before));
+	}
+	for (auto command : { transfer(currency_reason_type::atm_deposit), wallet_to_pile_root() })
+	{
+		const auto before = command;
+		assert(economic_gameplay_authority::prepare_coin_transfer(&command) != error::ok);
+		assert(candidate_equal(command, before));
+	}
+
+	// Malformed wallet endpoint reason and bank denomination delta are rejected
+	// after a real root build, without modifying the command.
+	auto wrong_reason = wallet_root(74);
+	replace_source_change(&wrong_reason, currency_reason_type::atm_deposit, false);
+	const auto wrong_reason_bytes = wrong_reason;
+	assert(economic_gameplay_authority::prepare_coin_transfer(&wrong_reason) != error::ok);
+	assert(candidate_equal(wrong_reason, wrong_reason_bytes));
+	auto bank_delta = wallet_root(76);
+	replace_source_change(&bank_delta, currency_reason_type::coin_transfer, true);
+	const auto bank_delta_bytes = bank_delta;
+	assert(economic_gameplay_authority::prepare_coin_transfer(&bank_delta) != error::ok);
+	assert(candidate_equal(bank_delta, bank_delta_bytes));
+
+	auto unknown_wallet = wallet_root(78, 99, 8);
+	const auto unknown_wallet_bytes = unknown_wallet;
+	assert(economic_gameplay_authority::prepare_coin_transfer(&unknown_wallet) ==
+	       error::incomplete_coverage);
+	assert(candidate_equal(unknown_wallet, unknown_wallet_bytes));
+
+	// Old frozen lineage/lifetime selections cannot replay under a different
+	// qualified mapping or epoch; the same-ID exact replay succeeds again when
+	// its selected projection is restored.
+	auto wrong_lifetime = wallets;
+	wrong_lifetime[0].account.authority_id = 111;
+	assert(lifecycle_access::install_sql_wallet_root_qualification(
+		       id(1), id(2), id(4), wrong_lifetime, no_banks) == error::ok);
+	auto stale_lifetime = replay_bytes;
+	assert(economic_gameplay_authority::prepare_coin_transfer(&stale_lifetime) ==
+	       error::payload_conflict);
+	assert(critical_command_equal(stale_lifetime, replay_bytes));
+	assert(lifecycle_access::install_sql_wallet_root_qualification(id(1), id(4), id(5), wallets,
+								       no_banks) == error::ok);
+	auto stale_epoch = replay_bytes;
+	assert(economic_gameplay_authority::prepare_coin_transfer(&stale_epoch) ==
+	       error::payload_conflict);
+	assert(critical_command_equal(stale_epoch, replay_bytes));
+	assert(lifecycle_access::install_sql_wallet_root_qualification(id(1), id(2), id(3), wallets,
+								       no_banks) == error::ok);
+
+	std::array duplicate_lifetimes = { wallets[0], wallets[1] };
+	duplicate_lifetimes[1].account.authority_id = 101;
+	std::array duplicate_pid = { wallets[0], wallets[1] };
+	duplicate_pid[1].pid = duplicate_pid[0].pid;
+	duplicate_pid[1].account.authority_id = 103;
+	assert(lifecycle_access::install_sql_wallet_root_qualification(
+		       id(1), id(2), id(6), duplicate_pid, no_banks) == error::invalid_identity);
+	assert(lifecycle_access::install_sql_wallet_root_qualification(
+		       id(1), id(2), id(6), duplicate_lifetimes, no_banks) ==
+	       error::invalid_identity);
+	assert(lifecycle_access::install_sql_wallet_root_qualification(
+		       id(1), {}, id(3), wallets, no_banks) == error::invalid_identity);
+	auto still_qualified = replay_bytes;
+	assert(economic_gameplay_authority::prepare_coin_transfer(&still_qualified) == error::ok);
+	assert(critical_command_equal(still_qualified, replay_bytes));
+	auto still_closed = transfer(currency_reason_type::atm_deposit);
+	assert(economic_gameplay_authority::prepare_currency(&still_closed) == error::unauthorized);
+	assert(still_closed.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION);
 }
 int main()
 {
@@ -204,6 +526,7 @@ int main()
 		assert(lifecycle_access::install(id(1), id(index % 2 ? 2 : 4), id(5), wallets,
 						 index % 2 ? banks : recreated) == error::ok);
 	reader.join();
+	qualified_projection_regressions();
 	std::cout
 		<< "gameplay authority admission, exact replay, fail-closed coverage and atomic cache passed\n";
 }

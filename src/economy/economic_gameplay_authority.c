@@ -14,11 +14,20 @@
 
 namespace
 {
+enum class projection_scope : uint8_t
+{
+	regular,
+	sql_wallet_root_qualification,
+};
+constexpr uint16_t SQL_WALLET_ROOT_QUALIFICATION_VERSION = 1;
+
 struct admission_projection
 {
 	critical_operation_id lineage;
 	critical_operation_id epoch;
 	critical_operation_id receipt;
+	projection_scope scope = projection_scope::regular;
+	uint16_t scope_version = 0;
 	std::map<uint32_t, economic_account_key> wallets;
 	std::map<std::pair<std::string, uint8_t>, economic_account_key> banks;
 };
@@ -50,14 +59,12 @@ bool mapping_valid(const economic_account_key &account, economic_account_kind ki
 	return economic_account_key_valid(account) && account.kind == kind &&
 	       account.context_id == context && account.lineage.bytes == lineage.bytes;
 }
-} // namespace
 
 economic_accounting_error
-economic_gameplay_authority::install(const critical_operation_id &lineage,
-				     const critical_operation_id &epoch,
-				     const critical_operation_id &receipt,
-				     std::span<const economic_gameplay_wallet_mapping> wallets,
-				     std::span<const economic_gameplay_bank_mapping> banks)
+publish_projection(const critical_operation_id &lineage, const critical_operation_id &epoch,
+		   const critical_operation_id &receipt,
+		   std::span<const economic_gameplay_wallet_mapping> wallets,
+		   std::span<const economic_gameplay_bank_mapping> banks, projection_scope scope)
 {
 	using error = economic_accounting_error;
 	if (critical_operation_id_is_zero(lineage) || critical_operation_id_is_zero(epoch) ||
@@ -69,6 +76,10 @@ economic_gameplay_authority::install(const critical_operation_id &lineage,
 		next->lineage = lineage;
 		next->epoch = epoch;
 		next->receipt = receipt;
+		next->scope = scope;
+		next->scope_version = scope == projection_scope::sql_wallet_root_qualification ?
+					      SQL_WALLET_ROOT_QUALIFICATION_VERSION :
+					      0;
 		std::set<uint64_t> lifetimes;
 		for (const auto &wallet : wallets)
 		{
@@ -102,6 +113,68 @@ economic_gameplay_authority::install(const critical_operation_id &lineage,
 	}
 }
 
+bool sql_wallet_root_scope(const admission_projection &selected)
+{
+	return selected.scope == projection_scope::sql_wallet_root_qualification &&
+	       selected.scope_version == SQL_WALLET_ROOT_QUALIFICATION_VERSION;
+}
+
+economic_accounting_error qualified_wallet_root_intent(const admission_projection &selected,
+						       const critical_command &command,
+						       std::vector<uint8_t> *encoded)
+{
+	using error = economic_accounting_error;
+	if (!encoded || command.type != critical_command_type::coin_transfer)
+		return error::unauthorized;
+	coin_transfer_payload payload = {};
+	if (!coin_transfer_command_decode_payload(command, &payload) ||
+	    payload.source.change.type != critical_command_type::account_bank ||
+	    payload.destination.change.type != critical_command_type::account_bank)
+		return error::unauthorized;
+	currency_command_payload source = {}, destination = {};
+	if (!currency_command_decode_payload(payload.source.change, &source) ||
+	    !currency_command_decode_payload(payload.destination.change, &destination))
+		return error::corrupt_evidence;
+	const auto source_mapping = selected.wallets.find(source.pid);
+	const auto destination_mapping = selected.wallets.find(destination.pid);
+	if (source_mapping == selected.wallets.end() ||
+	    destination_mapping == selected.wallets.end())
+		return error::incomplete_coverage;
+	critical_command admission = command;
+	if (admission.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+	{
+		admission.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		admission.accounting_intent.clear();
+		admission.publication_required = false;
+	}
+	else if (admission.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION)
+		return error::invalid_version;
+	return coin_transfer_accounting_intent(admission, selected.epoch, source_mapping->second,
+					       destination_mapping->second, encoded);
+}
+} // namespace
+
+economic_accounting_error
+economic_gameplay_authority::install(const critical_operation_id &lineage,
+				     const critical_operation_id &epoch,
+				     const critical_operation_id &receipt,
+				     std::span<const economic_gameplay_wallet_mapping> wallets,
+				     std::span<const economic_gameplay_bank_mapping> banks)
+{
+	return publish_projection(lineage, epoch, receipt, wallets, banks,
+				  projection_scope::regular);
+}
+
+economic_accounting_error economic_gameplay_authority::install_sql_wallet_root_qualification(
+	sql_wallet_root_qualification_install_key, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, const critical_operation_id &receipt,
+	std::span<const economic_gameplay_wallet_mapping> wallets,
+	std::span<const economic_gameplay_bank_mapping> banks)
+{
+	return publish_projection(lineage, epoch, receipt, wallets, banks,
+				  projection_scope::sql_wallet_root_qualification);
+}
+
 bool economic_gameplay_authority::active()
 {
 	return bool(current.load(std::memory_order_acquire));
@@ -124,12 +197,16 @@ economic_accounting_error economic_gameplay_authority::prepare_currency(critical
 				projection.accepted_at_usec = 1;
 			return economic_command_admission_supported(projection);
 		};
+		const auto selected = current.load(std::memory_order_acquire);
+		// Qualification is root-only even for previously frozen schema-2
+		// currency commands. Keep the ordinary historical replay path unchanged.
+		if (selected && sql_wallet_root_scope(*selected))
+			return error::unauthorized;
 		// Retained schema-2 commands keep their original epoch and lifetimes.
 		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
 			return supported_candidate(*command) ? error::ok : error::unauthorized;
 		if (!critical_command_legacy_execution_supported(*command))
 			return error::corrupt_evidence;
-		const auto selected = current.load(std::memory_order_acquire);
 		if (!selected)
 			return error::ok;
 		// Never retag a previously accepted schema-1 identity. A retained
@@ -183,9 +260,41 @@ economic_gameplay_authority::prepare_coin_transfer(critical_command *command)
 				projection.accepted_at_usec = 1;
 			return economic_command_admission_supported(projection);
 		};
+		const auto selected = current.load(std::memory_order_acquire);
+		if (selected && sql_wallet_root_scope(*selected))
+		{
+			if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+			{
+				if (!supported_candidate(*command))
+					return error::unauthorized;
+				std::vector<uint8_t> expected_intent;
+				const auto result = qualified_wallet_root_intent(
+					*selected, *command, &expected_intent);
+				if (result != error::ok)
+					return result;
+				return expected_intent == command->accounting_intent ?
+					       error::ok :
+					       error::payload_conflict;
+			}
+			if (!critical_command_legacy_execution_supported(*command))
+				return error::corrupt_evidence;
+			if (command->accepted_at_usec || command->publication_required)
+				return error::unauthorized;
+			critical_command frozen = *command;
+			std::vector<uint8_t> intent;
+			const auto result =
+				qualified_wallet_root_intent(*selected, frozen, &intent);
+			if (result != error::ok)
+				return result;
+			frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+			frozen.accounting_intent = std::move(intent);
+			if (!supported_candidate(frozen))
+				return error::corrupt_evidence;
+			*command = std::move(frozen);
+			return error::ok;
+		}
 		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
 			return supported_candidate(*command) ? error::ok : error::unauthorized;
-		const auto selected = current.load(std::memory_order_acquire);
 		if (!selected)
 			return error::ok;
 		if (!critical_command_legacy_execution_supported(*command))
@@ -252,7 +361,7 @@ economic_gameplay_authority::prepare_coin_transfer(critical_command *command)
 
 economic_accounting_error
 economic_gameplay_authority::prepare_item_transfer(critical_command *command, uint32_t actor_pid,
-							  economic_source_kind lifecycle_source)
+						   economic_source_kind lifecycle_source)
 {
 	using error = economic_accounting_error;
 	if (!command)
@@ -266,6 +375,11 @@ economic_gameplay_authority::prepare_item_transfer(critical_command *command, ui
 				projection.accepted_at_usec = 1;
 			return economic_command_admission_supported(projection);
 		};
+		const auto selected = current.load(std::memory_order_acquire);
+		// SQL wallet-root qualification excludes standalone item roots,
+		// including commands frozen before this restricted projection existed.
+		if (selected && sql_wallet_root_scope(*selected))
+			return error::unauthorized;
 		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
 			return supported_candidate(*command) &&
 					       item_transfer_accounting_command_supported(
@@ -274,15 +388,15 @@ economic_gameplay_authority::prepare_item_transfer(critical_command *command, ui
 				       error::unauthorized;
 		if (!critical_command_legacy_execution_supported(*command))
 			return error::corrupt_evidence;
-		const auto selected = current.load(std::memory_order_acquire);
 		if (!selected)
 			return error::ok;
 		if (command->accepted_at_usec || command->publication_required)
 			return error::unauthorized;
 		critical_command frozen = *command;
 		std::vector<uint8_t> intent;
-		const auto result = item_transfer_accounting_intent(
-			frozen, selected->lineage, selected->epoch, actor_pid, &intent, lifecycle_source);
+		const auto result = item_transfer_accounting_intent(frozen, selected->lineage,
+								    selected->epoch, actor_pid,
+								    &intent, lifecycle_source);
 		if (result != error::ok)
 			return result;
 		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;

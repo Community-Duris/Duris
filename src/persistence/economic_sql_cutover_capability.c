@@ -225,12 +225,14 @@ bool economic_sql_cutover_transaction_owner::begin(
 	coordinator_lease_id_ = lease_id;
 	runtime_lock_ = guard.runtime_lock_;
 	writer_lock_ = guard.writer_lock_;
+	maintenance_ = guard.maintenance_;
 	local_runtime_ = guard.local_runtime_;
 	local_maintenance_ = guard.local_maintenance_;
 	local_exclusive_ = std::move(guard.local_exclusive_);
 	active_ = true;
 	started_ = false;
 	outcome_uncertain_ = true;
+	publication_pending_ = false;
 	terminal_outcome_ = economic_sql_cutover_terminal_outcome::unresolved;
 	sql_resources_released_ = false;
 
@@ -323,13 +325,148 @@ bool economic_sql_cutover_transaction_owner::is_valid() noexcept
 #endif
 }
 
+bool economic_sql_cutover_transaction_owner::commit_and_retain_publication() noexcept
+{
+#ifdef __NO_MYSQL__
+	return false;
+#else
+	if (!active_ || !started_ || outcome_uncertain_ || publication_pending_ ||
+	    terminal_outcome_ != economic_sql_cutover_terminal_outcome::unresolved ||
+	    !maintenance_ || !runtime_lock_ || !writer_lock_ || local_runtime_ ||
+	    !local_maintenance_ || !local_exclusive_.owns_lock() || !is_valid())
+		return false;
+	if (mysql_commit(connection_) || mysql_thread_id(connection_) != session_ ||
+	    (connection_->server_status & SERVER_STATUS_IN_TRANS))
+	{
+		outcome_uncertain_ = true;
+		try
+		{
+			critical_command_coordinator_owner::set_cutover_outcome_uncertain(
+				coordinator_generation_, coordinator_lease_id_, connection_,
+				session_, true);
+		}
+		catch (...)
+		{
+		}
+		return false;
+	}
+	started_ = false;
+	outcome_uncertain_ = false;
+	terminal_outcome_ = economic_sql_cutover_terminal_outcome::committed;
+	publication_pending_ = true;
+	return is_valid_for_publication();
+#endif
+}
+
+bool economic_sql_cutover_transaction_owner::is_valid_for_publication() noexcept
+{
+#ifdef __NO_MYSQL__
+	return false;
+#else
+	if (!active_ || !publication_pending_ || started_ || outcome_uncertain_ ||
+	    terminal_outcome_ != economic_sql_cutover_terminal_outcome::committed || !connection_ ||
+	    !session_ || !sql_authority_id_ || !maintenance_ || !runtime_lock_ || !writer_lock_ ||
+	    local_runtime_ || !local_maintenance_ || sql_resources_released_ ||
+	    !local_exclusive_.owns_lock())
+		return false;
+	try
+	{
+		const auto coordinator_valid = [&]
+		{
+			return critical_command_coordinator_owner::validate_cutover_transaction(
+				coordinator_generation_, coordinator_lease_id_, connection_,
+				session_);
+		};
+		if (!coordinator_valid() || mysql_thread_id(connection_) != session_ ||
+		    !reconnect_disabled(connection_) || mysql_ping(connection_) ||
+		    mysql_thread_id(connection_) != session_ || !reconnect_disabled(connection_) ||
+		    (connection_->server_status & SERVER_STATUS_IN_TRANS) ||
+		    !(connection_->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+		    !owns_exact_lock(connection_, ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME,
+				     session_) ||
+		    !owns_exact_lock(connection_, "duris:economic_sql_currency_writers",
+				     session_) ||
+		    mysql_thread_id(connection_) != session_ || !reconnect_disabled(connection_) ||
+		    (connection_->server_status & SERVER_STATUS_IN_TRANS) ||
+		    !(connection_->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+		    !coordinator_valid())
+			return false;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool economic_sql_cutover_transaction_owner::finish_publication(
+	economic_sql_lifecycle_guard *lifetime_guard) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)lifetime_guard;
+	return false;
+#else
+	if (!lifetime_guard || lifetime_guard->connection_ || lifetime_guard->session_ ||
+	    lifetime_guard->runtime_lock_ || lifetime_guard->writer_lock_ ||
+	    lifetime_guard->maintenance_ || lifetime_guard->local_runtime_ ||
+	    lifetime_guard->local_maintenance_ || lifetime_guard->coordinator_release_ ||
+	    lifetime_guard->authority_id_ || lifetime_guard->coordinator_generation_ ||
+	    lifetime_guard->coordinator_lease_id_ || lifetime_guard->local_exclusive_.owns_lock() ||
+	    lifetime_guard->local_exclusive_.mutex() || !publication_pending_ ||
+	    !is_valid_for_publication())
+		return false;
+
+	// Finish admission only after publication, while this owner still holds every
+	// SQL/local fence. A refusal leaves both the output and retained owner intact.
+	try
+	{
+		if (!critical_command_coordinator_owner::finish_cutover_transaction(
+			    coordinator_generation_, coordinator_lease_id_, connection_, session_))
+			return false;
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+	// All remaining writes are non-throwing. The SQL locks stay owned by this
+	// exact session and the local mutex stays locked as unique_lock ownership moves.
+	static_assert(std::is_nothrow_move_assignable_v<std::unique_lock<std::shared_mutex>>);
+	lifetime_guard->connection_ = connection_;
+	lifetime_guard->session_ = session_;
+	lifetime_guard->runtime_lock_ = runtime_lock_;
+	lifetime_guard->writer_lock_ = writer_lock_;
+	lifetime_guard->maintenance_ = maintenance_;
+	lifetime_guard->local_runtime_ = local_runtime_;
+	lifetime_guard->local_maintenance_ = local_maintenance_;
+	lifetime_guard->authority_id_ = sql_authority_id_;
+	lifetime_guard->local_exclusive_ = std::move(local_exclusive_);
+
+	active_ = false;
+	terminal_ = true;
+	publication_pending_ = false;
+	connection_ = nullptr;
+	session_ = 0;
+	sql_authority_id_ = 0;
+	coordinator_generation_ = 0;
+	coordinator_lease_id_ = 0;
+	runtime_lock_ = false;
+	writer_lock_ = false;
+	maintenance_ = false;
+	local_runtime_ = false;
+	local_maintenance_ = false;
+	return true;
+#endif
+}
+
 bool economic_sql_cutover_transaction_owner::release_after_terminal() noexcept
 {
 #ifdef __NO_MYSQL__
 	return false;
 #else
-	if (!active_ || terminal_outcome_ == economic_sql_cutover_terminal_outcome::unresolved ||
-	    !connection_)
+	if (!active_ || publication_pending_ ||
+	    terminal_outcome_ == economic_sql_cutover_terminal_outcome::unresolved || !connection_)
 		return false;
 	if (!sql_resources_released_)
 	{
@@ -374,6 +511,7 @@ bool economic_sql_cutover_transaction_owner::release_after_terminal() noexcept
 	coordinator_lease_id_ = 0;
 	runtime_lock_ = false;
 	writer_lock_ = false;
+	maintenance_ = false;
 	local_runtime_ = false;
 	local_maintenance_ = false;
 	return true;
@@ -385,6 +523,8 @@ bool economic_sql_cutover_transaction_owner::commit() noexcept
 #ifdef __NO_MYSQL__
 	return false;
 #else
+	if (publication_pending_)
+		return false;
 	if (terminal_outcome_ != economic_sql_cutover_terminal_outcome::unresolved)
 		return terminal_outcome_ == economic_sql_cutover_terminal_outcome::committed &&
 		       release_after_terminal();
@@ -478,7 +618,8 @@ bool economic_sql_cutover_transaction_owner::retry_cleanup() noexcept
 #ifdef __NO_MYSQL__
 	return false;
 #else
-	if (terminal_outcome_ == economic_sql_cutover_terminal_outcome::unresolved)
+	if (publication_pending_ ||
+	    terminal_outcome_ == economic_sql_cutover_terminal_outcome::unresolved)
 		return false;
 	return release_after_terminal();
 #endif

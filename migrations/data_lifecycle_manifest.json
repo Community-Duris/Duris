@@ -7281,6 +7281,45 @@
         ],
         "shared_fields": []
       }
+    },
+    {
+      "id": "database:economic_sql_activation_receipt",
+      "kind": "database_table",
+      "locator": "economic_sql_activation_receipt",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Durable SQL activation qualification evidence and retained operation identity; no independent gameplay activation authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox",
+        "database:economic_baseline_witness",
+        "database:economic_epoch",
+        "database:economic_sql_lifecycle_installation"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "source_capture_digest",
+          "native_boundary_digest",
+          "coverage_evidence_digest",
+          "activation_digest"
+        ],
+        "shared_fields": []
+      }
     }
   ]
 }

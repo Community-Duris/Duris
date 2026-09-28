@@ -6503,7 +6503,8 @@ void try_to_hide(P_char ch, P_obj obj_object)
  *                                                        *
  *********************************************************/
 
-#define IN_WELL_ROOM(x) (world[(x)->in_room].number == WELL_ROOM)
+#define IN_WELL_ROOM(x) \
+	((world[(x)->in_room].number == WELL_ROOM) || (world[(x)->in_room].number == 8003))
 
 void do_donate(P_char ch, char *argument, int /*cmd*/)
 {
@@ -6514,6 +6515,14 @@ void do_donate(P_char ch, char *argument, int /*cmd*/)
 
 	if (ch->in_room == NOWHERE)
 		return;
+
+	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
+	{
+		send_to_char(
+			"You are too busy with in-flight transactions to donate right now.\r\n",
+			ch);
+		return;
+	}
 
 	if (!IN_WELL_ROOM(ch))
 	{
@@ -6608,11 +6617,85 @@ void do_donate(P_char ch, char *argument, int /*cmd*/)
  *                                                               *
  ****************************************************************/
 
+struct donation_movement_context
+{
+	uint64_t item_uid;
+	uint64_t well_uid;
+	bool destroyed;
+};
+
+static void item_donation_completion(P_char actor, bool committed, const item_transfer_result &,
+				     unsigned int error_code, const uint8_t *encoded,
+				     size_t encoded_size)
+{
+	donation_movement_context context = {};
+	if (!encoded || encoded_size != sizeof(context))
+	{
+		persistence_alert(AVATAR, "item_movement", "donate_publish", "none", "none",
+				  "invalid_context", "uid=unknown");
+		return;
+	}
+	memcpy(&context, encoded, sizeof(context));
+	if (!actor || !IS_PC(actor))
+		return;
+	if (!committed)
+	{
+		logit(LOG_FILE,
+		      "item_movement: command=donate outcome=not_committed actor=%s "
+		      "uid=%llu error=%u",
+		      J_NAME(actor), (unsigned long long)context.item_uid, error_code);
+		send_to_char("The donation transaction did not commit; you retain the item.\r\n",
+			     actor);
+		return;
+	}
+
+	P_obj object = nullptr;
+	P_obj well = nullptr;
+	for (P_obj obj = object_list; obj; obj = obj->next)
+	{
+		if (obj->obj_uid == context.item_uid)
+			object = obj;
+		if (obj->obj_uid == context.well_uid)
+			well = obj;
+		if (object && (well || context.destroyed))
+			break;
+	}
+	if (!object || (!context.destroyed && !well))
+	{
+		persistence_alert(AVATAR, "item_movement", "donate_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		return;
+	}
+
+	if (OBJ_CARRIED_BY(object, actor))
+		obj_from_char(object);
+
+	if (context.destroyed)
+	{
+		extract_obj(object);
+	}
+	else
+	{
+		obj_to_obj(object, well);
+	}
+}
+
 void try_to_donate(P_char ch, P_obj obj_to_put)
 {
 	P_obj obj_object, next_object, sub_object;
 	int dupes_in_well = 0;
 	char Gbuf3[MAX_STRING_LENGTH];
+
+	if (!ch || !obj_to_put)
+		return;
+
+	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
+	{
+		send_to_char(
+			"You are too busy with in-flight transactions to donate right now.\r\n",
+			ch);
+		return;
+	}
 
 	// Get Well object
 	for (sub_object = world[ch->in_room].contents; sub_object;
@@ -6692,6 +6775,63 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 		{
 			dupes_in_well++;
 		}
+	}
+
+	if (IS_PC(ch) && item_command_uses_durable_ownership(obj_to_put))
+	{
+		const bool will_destroy = (dupes_in_well >= MAX_DUPES_IN_WELL);
+		const item_owner_identity source = { item_owner_type::player,
+						     static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const item_owner_identity destination =
+			will_destroy ? item_owner_identity{ item_owner_type::destruction, 0, 0 } :
+				       item_owner_identity{
+					       item_owner_type::room,
+					       static_cast<uint64_t>(world[ch->in_room].number), 0
+				       };
+		const item_transfer_reason reason = will_destroy ?
+							    item_transfer_reason::destruction :
+							    item_transfer_reason::player_put;
+		const int64_t reason_id = will_destroy ? static_cast<int64_t>(obj_to_put->obj_uid) :
+							 static_cast<int64_t>(sub_object->obj_uid);
+
+		const donation_movement_context context = { obj_to_put->obj_uid,
+							    sub_object->obj_uid, will_destroy };
+
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(
+			    ch, obj_to_put, will_destroy ? nullptr : sub_object, source,
+			    destination, reason, reason_id, item_donation_completion, &context,
+			    sizeof(context), nullptr, &reject))
+		{
+			send_to_char("You could not donate that right now.\r\n", ch);
+			return;
+		}
+
+		if (IS_TRUSTED(ch))
+		{
+			wizlog(GET_LEVEL(ch), "%s donated %s into %s [%d]", J_NAME(ch),
+			       obj_to_put->short_description, sub_object->short_description,
+			       world[ch->in_room].number);
+			logit(LOG_WIZ, "%s donated %s into %s [%d]", J_NAME(ch),
+			      obj_to_put->short_description, sub_object->short_description,
+			      world[ch->in_room].number);
+			sql_log(ch, WIZLOG, "Donated %s into %s", obj_to_put->short_description,
+				sub_object->short_description);
+		}
+		else
+		{
+			wizlog(MINLVLIMMORTAL, "%s donated %s into %s [%d]", J_NAME(ch),
+			       obj_to_put->short_description, sub_object->short_description,
+			       world[ch->in_room].number);
+			logit(LOG_PLAYER, "%s donated %s into %s [%d]", J_NAME(ch),
+			      obj_to_put->short_description, sub_object->short_description,
+			      world[ch->in_room].number);
+			sql_log(ch, PLAYERLOG, "Donated %s into %s", obj_to_put->short_description,
+				sub_object->short_description);
+		}
+
+		act("You donate $p - thank you!", FALSE, ch, obj_to_put, 0, TO_CHAR);
+		return;
 	}
 
 	/*

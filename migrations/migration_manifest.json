@@ -528,6 +528,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "94567314ffc8e3152c4534ef072cf87da2c4094493e43ea76f5287538b53fbe5",
       "verify_checksum": "53236964fa334e6bc25b67b738f5d39e2ad7ab04873d26f87f0aaca479cade27"
+    },
+    {
+      "id": "0036_economic_sql_activation_receipt",
+      "sequence": 36,
+      "description": "Add durable scoped SQL economic activation receipts",
+      "apply": "immutable/0036_economic_sql_activation_receipt.sql",
+      "verify": "immutable/0036_economic_sql_activation_receipt.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "636f84e3bd147b32331c50ba95c86b01ad70e654859934b397af03a7e4d15988",
+      "verify_checksum": "5dede4d54e394d630713b8256c457989c800f1bdf9b75ff37b73541470614615"
     }
   ]
 }

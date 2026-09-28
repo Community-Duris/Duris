@@ -4631,6 +4631,8 @@ bool submit_corpse_destruction(P_obj corpse)
 	if (!corpse || !corpse->action_description || !*corpse->action_description ||
 	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
 		return false;
+	if (corpse_has_death_conflict(corpse))
+		return false;
 	int room = NOWHERE;
 	if (!corpse_release_room(corpse, &room))
 		return false;
@@ -4670,6 +4672,26 @@ void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
 	// reconnect reuses the existing live graph and therefore must not clear a
 	// fence unless a fresh authoritative snapshot was actually loaded.
 	REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
+}
+
+bool corpse_has_death_conflict(P_obj corpse)
+{
+	if (!corpse || corpse->type != ITEM_CORPSE ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	const int pid = corpse->value[CORPSE_PID];
+	if (pid <= 0)
+		return false;
+	const uint32_t save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	if (corpse_lifecycle_transaction_busy(static_cast<uint32_t>(pid), save_id))
+		return true;
+	for (P_char temp_ch = character_list; temp_ch; temp_ch = temp_ch->next)
+	{
+		if (IS_PC(temp_ch) && GET_PID(temp_ch) == pid &&
+		    corpse_raise_player_save_fenced(temp_ch))
+			return true;
+	}
+	return false;
 }
 
 namespace
@@ -4981,6 +5003,11 @@ bool persistence_defer_corpse_room_release(P_obj corpse)
 	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
+	if (corpse_has_death_conflict(corpse))
+	{
+		rearm_corpse_release(corpse);
+		return true;
+	}
 	if (corpse->value[CORPSE_PID] > 0 && corpse->value[CORPSE_SAVEID] > 0 &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
 					      static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])))
@@ -5142,6 +5169,11 @@ bool persistence_defer_corpse_destruction(P_obj corpse)
 	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
+	if (corpse_has_death_conflict(corpse))
+	{
+		rearm_corpse_release(corpse);
+		return true;
+	}
 	if (!submit_corpse_destruction(corpse))
 		persistence_alert(AVATAR, "corpse", "durable_destroy", "none", "none",
 				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);

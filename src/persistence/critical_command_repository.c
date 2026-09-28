@@ -1439,25 +1439,13 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			}
 			else
 			{
-				item_transfer_accounting_context child_item_accounting = {};
-				const item_transfer_accounting_context *child_context_ptr = nullptr;
-				if (accounted_coin)
-				{
-					child_item_accounting.root_operation_id =
-						command.operation_id;
-					child_item_accounting.child_index =
-						static_cast<uint16_t>(index + 1);
-					child_item_accounting.line_index_base =
-						static_cast<uint16_t>(
-							index == 0 ? 0 :
-								     result.piles[0].item_count);
-					child_context_ptr = &child_item_accounting;
-				}
 				// A legacy inbox/child ID is not an admitted accounting root.
+				// The coin accounting writer inserts item references after it
+				// inserts the root operation that owns those references.
 				ok = item_transfer_repository_execute_coin(
 					connection, change, endpoints[index]->before,
 					&result.piles[index], &result_code, &mutated,
-					&item_failure_stage, child_context_ptr);
+					&item_failure_stage, nullptr);
 				if (ok && result_code == ESTALE)
 					failure_stage = classify_coin_item_revision(
 						index, item_failure_stage);
@@ -2460,8 +2448,11 @@ bool critical_command_repository_finish_item_transfer_in_transaction(
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context)
 {
+	const bool accounted_coin = accounted_coin_envelope(command) &&
+				    coin_transfer_accounting_command_supported(command);
+	const bool accounted_item = item_transfer_accounting_command_supported(command);
 	if (!critical_command_legacy_execution_supported(command) &&
-	    !accounted_bank_envelope(command))
+	    !accounted_bank_envelope(command) && !accounted_coin && !accounted_item)
 		return { critical_apply_outcome::retryable_failure, 0, EPROTONOSUPPORT };
 
 	(void)context;
@@ -2492,22 +2483,26 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 {
 	last_statement_error = 0;
 	const bool accounted_bank = accounted_bank_envelope(command);
+	const bool accounted_coin = accounted_coin_envelope(command) &&
+				    coin_transfer_accounting_command_supported(command);
+	const bool accounted_item = item_transfer_accounting_command_supported(command);
+	const bool accounted_root = accounted_bank || accounted_coin || accounted_item;
 	unsigned long root_session = 0;
-	auto root_failure = [accounted_bank](unsigned int error)
+	auto root_failure = [accounted_root](unsigned int error)
 	{
-		return accounted_bank ?
+		return accounted_root ?
 			       critical_apply_result{ critical_apply_outcome::retryable_failure, 0,
 						      error ? error : EIO } :
 			       failure(error);
 	};
-	if (!connection || (!accounted_bank && !critical_command_valid(command)))
+	if (!connection || (!accounted_root && !critical_command_valid(command)))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
 	stored_operation stored = {};
 	bool found = false;
 	if (!command_hashes(command, &command_hash, &keys_hash))
 		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
-	if (accounted_bank)
+	if (accounted_root)
 	{
 		if (root_transaction_active(connection))
 			return root_failure(EBUSY);
@@ -2517,14 +2512,14 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 		if (!execute(connection, "START TRANSACTION"))
 			return root_failure(mysql_errno(connection));
 	}
-	if (!read_operation(connection, command.operation_id, accounted_bank, &stored, &found))
+	if (!read_operation(connection, command.operation_id, accounted_root, &stored, &found))
 	{
 		const auto error = database_error(connection);
-		if (accounted_bank)
+		if (accounted_root)
 			rollback(connection);
 		return root_failure(error);
 	}
-	if (accounted_bank)
+	if (accounted_root)
 	{
 		const auto error = accounted_session_check(connection, &root_session, true);
 		if (error)
@@ -2535,20 +2530,30 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 	}
 	if (!found || stored.status != INBOX_COMMITTED)
 	{
-		if (accounted_bank)
+		if (accounted_root)
 			rollback(connection);
 		return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
 	}
 	if (!identity_matches(stored, command, command_hash, keys_hash))
 	{
-		if (accounted_bank)
+		if (accounted_root)
 			rollback(connection);
 		return { critical_apply_outcome::terminal_failure, 0, EEXIST };
 	}
-	if (accounted_bank)
+	if (accounted_root)
 	{
-		auto error = economic_sql_bank_verify_retained(
-			connection, command, stored.result_code, stored.result_payload);
+		auto error = 0u;
+		if (accounted_bank)
+			error = economic_sql_bank_verify_retained(
+				connection, command, stored.result_code, stored.result_payload);
+		else if (accounted_coin)
+			error = coin_transfer_accounting_verify_retained(
+				connection, command, stored.result_code,
+				stored.result_payload.data(), stored.result_payload.size());
+		else
+			error = economic_sql_item_transfer_verify_retained(
+				connection, command, stored.result_code,
+				stored.result_payload.data(), stored.result_payload.size());
 		if (!error)
 			error = accounted_session_check(connection, &root_session, true);
 		rollback(connection);

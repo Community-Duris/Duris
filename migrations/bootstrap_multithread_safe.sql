@@ -3032,3 +3032,62 @@ CREATE TABLE IF NOT EXISTS economic_sql_lifecycle_installation (
     CONSTRAINT fk_economic_sql_lifecycle_baseline FOREIGN KEY (baseline_operation_id)
         REFERENCES critical_operation_inbox(operation_id) ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Activation receipt schema only: no receipt, baseline, installation, or active
+-- pointer rows are seeded. The installation composite FK is deferred to immutable
+-- migration 0036 so the exact historical 0033 verifier runs against its sealed
+-- installation index set during ordered fresh replay.
+CREATE TABLE IF NOT EXISTS economic_sql_activation_receipt (
+    operation_id BINARY(16) NOT NULL,
+    lineage BINARY(16) NOT NULL,
+    epoch BINARY(16) NOT NULL,
+    baseline_operation_id BINARY(16) NOT NULL,
+    baseline_revision BIGINT UNSIGNED NOT NULL,
+    source_capture_digest BINARY(32) NOT NULL,
+    native_boundary_digest BINARY(32) NOT NULL,
+    activation_scope TINYINT UNSIGNED NOT NULL,
+    coverage_contract_version SMALLINT UNSIGNED NOT NULL,
+    coverage_evidence_digest BINARY(32) NOT NULL,
+    activation_digest BINARY(32) NOT NULL,
+    receipt_version SMALLINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (operation_id),
+    UNIQUE KEY uq_economic_sql_activation_lineage (lineage),
+    KEY idx_economic_sql_activation_install_binding
+        (operation_id, lineage, epoch, baseline_operation_id),
+    KEY idx_economic_sql_activation_epoch_revision
+        (lineage, epoch, baseline_revision),
+    KEY idx_economic_sql_activation_baseline_operation (baseline_operation_id),
+    CONSTRAINT ck_economic_sql_activation_operation_nonzero
+        CHECK (operation_id <> 0x00000000000000000000000000000000),
+    CONSTRAINT ck_economic_sql_activation_lineage_nonzero
+        CHECK (lineage <> 0x00000000000000000000000000000000),
+    CONSTRAINT ck_economic_sql_activation_epoch_nonzero
+        CHECK (epoch <> 0x00000000000000000000000000000000),
+    CONSTRAINT ck_economic_sql_activation_baseline_operation_nonzero
+        CHECK (baseline_operation_id <> 0x00000000000000000000000000000000),
+    CONSTRAINT ck_economic_sql_activation_baseline_revision
+        CHECK (baseline_revision > 0),
+    CONSTRAINT ck_economic_sql_activation_scope
+        CHECK (activation_scope = 1),
+    CONSTRAINT ck_economic_sql_activation_coverage_version
+        CHECK (coverage_contract_version = 1),
+    CONSTRAINT ck_economic_sql_activation_receipt_version
+        CHECK (receipt_version = 1),
+    CONSTRAINT fk_economic_sql_activation_epoch
+        FOREIGN KEY (lineage, epoch)
+        REFERENCES economic_epoch (lineage, epoch)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT fk_economic_sql_activation_baseline_revision
+        FOREIGN KEY (lineage, epoch, baseline_revision)
+        REFERENCES economic_baseline_witness (lineage, epoch, book_revision)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT fk_economic_sql_activation_operation_inbox
+        FOREIGN KEY (operation_id)
+        REFERENCES critical_operation_inbox (operation_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT fk_economic_sql_activation_baseline_inbox
+        FOREIGN KEY (baseline_operation_id)
+        REFERENCES critical_operation_inbox (operation_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

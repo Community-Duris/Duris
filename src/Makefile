@@ -415,6 +415,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command_coordinator.o \
 				 persistence/economic_accounting_repository.o \
 				 persistence/economic_sql_baseline_transaction.o \
+				 persistence/economic_sql_activation_receipt.o \
 				 persistence/economic_sql_lifecycle_guard.o \
 				 persistence/economic_sql_cutover_capability.o \
 				 persistence/economic_sql_accounting_lifecycle_transaction.o \

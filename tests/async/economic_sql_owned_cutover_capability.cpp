@@ -717,6 +717,118 @@ void test_terminal_cleanup_retry(MYSQL *connection, const std::string &directory
 	critical_command_coordinator_reset_for_tests();
 }
 
+void test_retained_publication_handoff(MYSQL *connection, const std::string &directory)
+{
+	require(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 1),
+		"retained-publication coordinator initialization failed");
+	economic_sql_lifecycle_guard guard;
+	require(!economic_sql_lifecycle_guard::acquire_maintenance(connection, &guard),
+		"retained-publication maintenance acquisition failed");
+	economic_sql_cutover_capability capability;
+	require(guard.acquire_cutover_capability(3000, &capability),
+		"retained-publication capability acquisition failed");
+	economic_sql_cutover_transaction_owner transaction;
+	require(transaction.begin(guard, capability) && transaction.is_valid(),
+		"retained-publication transaction did not begin valid");
+	const unsigned long session = mysql_thread_id(connection);
+	commit_attempts = 0;
+	rollback_attempts = 0;
+	release_lock_query_attempts = 0;
+
+	require(transaction.commit_and_retain_publication(),
+		"retained-publication COMMIT or post-COMMIT fence validation failed");
+	require(commit_attempts == 1 && rollback_attempts == 0 &&
+			transaction.terminal_outcome() ==
+				economic_sql_cutover_terminal_outcome::committed &&
+			transaction.publication_pending() && !transaction.outcome_uncertain() &&
+			!transaction.terminal() && transaction.is_valid_for_publication(),
+		"known COMMIT was conflated with publication completion");
+	require(named_lock_owned_by(connection, ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME, session) &&
+			named_lock_owned_by(connection, "duris:economic_sql_currency_writers",
+					    session),
+		"retained COMMIT released a SQL fence");
+	const critical_coordinator_health held = critical_command_coordinator_health_copy();
+	require(!held.accepting && held.cutover_transaction_active &&
+			!held.cutover_outcome_uncertain &&
+			critical_command_coordinator_submit(make_command(31)) ==
+				critical_submit_result::unavailable,
+		"admission reopened before private publication completion");
+
+	// The original guard was emptied by begin(), so it is the lifetime output.
+	// A null/occupied-output refusal must not consume the known COMMIT or release
+	// a fence; the source-contract test checks every private guard field preflight.
+	require(!transaction.finish_publication(nullptr) && transaction.publication_pending() &&
+			!release_lock_query_attempts &&
+			named_lock_owned_by(connection, ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME,
+					    session),
+		"failed publication output changed the retained owner");
+
+	bool wrong_thread_valid = true;
+	bool wrong_thread_finish = true;
+	std::thread wrong_thread(
+		[&]
+		{
+			wrong_thread_valid = transaction.is_valid_for_publication();
+			wrong_thread_finish = transaction.finish_publication(&guard);
+		});
+	wrong_thread.join();
+	require(!wrong_thread_valid && !wrong_thread_finish && transaction.publication_pending() &&
+			!guard.is_maintenance_authority(),
+		"same MYSQL owner was accepted from the wrong thread");
+
+	// Stand-in for the future private publication callback; this is not gameplay
+	// projection or qualification proof. Only explicit completion transfers fences.
+	const bool publication_step_succeeded = true;
+	require(publication_step_succeeded && transaction.is_valid_for_publication() &&
+			transaction.finish_publication(&guard),
+		"explicit publication completion did not hand off retained fences");
+	const critical_coordinator_health finished = critical_command_coordinator_health_copy();
+	require(transaction.terminal() && !transaction.publication_pending() &&
+			transaction.terminal_outcome() ==
+				economic_sql_cutover_terminal_outcome::committed &&
+			finished.accepting && !finished.cutover_transaction_active &&
+			guard.is_maintenance_authority() && guard.is_valid_authority(),
+		"successful publication failed to retain exact maintenance lifetime authority");
+	require(named_lock_owned_by(connection, ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME, session) &&
+			named_lock_owned_by(connection, "duris:economic_sql_currency_writers",
+					    session) &&
+			!release_lock_query_attempts && commit_attempts == 1 &&
+			rollback_attempts == 0,
+		"publication handoff unlocked, reacquired, or retried terminal SQL");
+	economic_sql_lifecycle_guard denied;
+	require(economic_sql_lifecycle_guard::acquire_maintenance(connection, &denied) != 0,
+		"maintenance lifetime fence did not exclude a second guard");
+	require(critical_command_coordinator_submit(make_command(32)) ==
+				critical_submit_result::awaiting_durability &&
+			critical_command_coordinator_drain(3000),
+		"coordinator did not resume after explicit publication completion");
+	critical_command_coordinator_reset_for_tests();
+}
+
+void test_retained_commit_requires_maintenance(MYSQL *connection, const std::string &directory)
+{
+	require(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 1),
+		"retained-maintenance coordinator initialization failed");
+	economic_sql_lifecycle_guard guard;
+	require(!economic_sql_lifecycle_guard::acquire_runtime(connection, &guard),
+		"runtime guard acquisition failed for retained-maintenance refusal");
+	economic_sql_cutover_capability capability;
+	require(guard.acquire_cutover_capability(3000, &capability),
+		"runtime cutover capability acquisition failed");
+	economic_sql_cutover_transaction_owner transaction;
+	require(transaction.begin(guard, capability), "runtime cutover did not begin");
+	commit_attempts = 0;
+	require(!transaction.commit_and_retain_publication() &&
+			transaction.terminal_outcome() ==
+				economic_sql_cutover_terminal_outcome::unresolved &&
+			!transaction.publication_pending() && commit_attempts == 0,
+		"retained publication accepted non-maintenance authority or issued COMMIT");
+	require(transaction.rollback() && transaction.terminal() &&
+			critical_command_coordinator_health_copy().accepting,
+		"ordinary rollback changed after retained-mode refusal");
+	critical_command_coordinator_reset_for_tests();
+}
+
 void test_partial_terminal_cleanup_retry(MYSQL *connection, const std::string &directory,
 					 bool commit)
 {
@@ -819,6 +931,124 @@ int run_session_loss_child(const std::string &directory)
 	}
 }
 
+int run_retained_session_loss_child(const std::string &directory)
+{
+	try
+	{
+		MYSQL *connection = connect_fixture();
+		MYSQL *killer = connect_fixture();
+		require(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 1),
+			"retained session-loss coordinator initialization failed");
+		economic_sql_lifecycle_guard guard;
+		require(!economic_sql_lifecycle_guard::acquire_maintenance(connection, &guard),
+			"retained session-loss maintenance acquisition failed");
+		economic_sql_cutover_capability capability;
+		require(guard.acquire_cutover_capability(3000, &capability),
+			"retained session-loss capability acquisition failed");
+		economic_sql_cutover_transaction_owner transaction;
+		require(transaction.begin(guard, capability) &&
+				transaction.commit_and_retain_publication(),
+			"retained session-loss owner did not reach known COMMIT");
+		// The known COMMIT already counts; forbid only additional terminal attempts.
+		const auto committed_attempts = commit_attempts.load();
+		const auto rollback_attempts_before_loss = rollback_attempts.load();
+		const unsigned long session = mysql_thread_id(connection);
+		execute(killer, "KILL CONNECTION " + std::to_string(session));
+		economic_sql_lifecycle_guard handoff;
+		require(!transaction.is_valid_for_publication() &&
+				!transaction.finish_publication(&handoff) &&
+				transaction.publication_pending() &&
+				transaction.terminal_outcome() ==
+					economic_sql_cutover_terminal_outcome::committed &&
+				!transaction.outcome_uncertain(),
+			"lost post-COMMIT session was published or confused with unknown COMMIT");
+		require(!transaction.commit() && !transaction.rollback() &&
+				!transaction.retry_cleanup() &&
+				commit_attempts == committed_attempts &&
+				rollback_attempts == rollback_attempts_before_loss,
+			"lost retained session retried SQL or released through ordinary cleanup");
+		const critical_coordinator_health state =
+			critical_command_coordinator_health_copy();
+		require(!state.accepting && state.cutover_transaction_active &&
+				!state.cutover_outcome_uncertain &&
+				critical_command_coordinator_submit(make_command(33)) ==
+					critical_submit_result::unavailable &&
+				!named_lock_owned_by(
+					killer, ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME, session) &&
+				!named_lock_owned_by(killer, "duris:economic_sql_currency_writers",
+						     session),
+			"lost fence reopened admission or remained owned by the dead SQL session");
+		mysql_close(killer);
+		mysql_close(connection);
+		return 0;
+	}
+	catch (const std::exception &error)
+	{
+		fprintf(stderr, "OWNED-CUTOVER-RETAINED-SESSION-LOSS-ERROR %s\n", error.what());
+		return 1;
+	}
+}
+
+int run_retained_destructor_child(const std::string &directory)
+{
+	try
+	{
+		MYSQL *connection = connect_fixture();
+		require(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 1),
+			"retained destructor coordinator initialization failed");
+		const unsigned long session = mysql_thread_id(connection);
+		{
+			economic_sql_lifecycle_guard guard;
+			require(!economic_sql_lifecycle_guard::acquire_maintenance(connection,
+										   &guard),
+				"retained destructor maintenance acquisition failed");
+			economic_sql_cutover_capability capability;
+			require(guard.acquire_cutover_capability(3000, &capability),
+				"retained destructor capability acquisition failed");
+			economic_sql_cutover_transaction_owner transaction;
+			require(transaction.begin(guard, capability) &&
+					transaction.commit_and_retain_publication() &&
+					transaction.publication_pending(),
+				"retained destructor did not reach publication-pending COMMIT");
+		}
+		const critical_coordinator_health state =
+			critical_command_coordinator_health_copy();
+		require(!state.accepting && state.cutover_transaction_active &&
+				!state.cutover_outcome_uncertain &&
+				critical_command_coordinator_submit(make_command(34)) ==
+					critical_submit_result::unavailable &&
+				named_lock_owned_by(connection,
+						    ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME,
+						    session) &&
+				named_lock_owned_by(connection,
+						    "duris:economic_sql_currency_writers", session),
+			"destruction became an implicit publication recovery or released a fence");
+		mysql_close(connection);
+		return 0;
+	}
+	catch (const std::exception &error)
+	{
+		fprintf(stderr, "OWNED-CUTOVER-RETAINED-DESTRUCTOR-ERROR %s\n", error.what());
+		return 1;
+	}
+}
+
+void test_retained_failure_in_subprocess(const char *program, const std::string &directory,
+					 const char *mode)
+{
+	const pid_t child = fork();
+	require(child >= 0, "retained-publication subprocess fork failed");
+	if (!child)
+	{
+		execl(program, program, mode, directory.c_str(), static_cast<char *>(nullptr));
+		std::_Exit(127);
+	}
+	int status = 0;
+	require(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
+			WEXITSTATUS(status) == 0,
+		"retained-publication failure subprocess did not fail closed");
+}
+
 void test_session_loss_in_subprocess(const char *program, const std::string &directory)
 {
 	const pid_t child = fork();
@@ -849,6 +1079,17 @@ int main(int argc, char **argv)
 		if (mysql_library_init(0, nullptr, nullptr))
 			std::_Exit(2);
 		const int result = run_session_loss_child(argv[2]);
+		std::fflush(nullptr);
+		std::_Exit(result);
+	}
+	if (argc == 3 && (std::string(argv[1]) == "--retained-session-loss-child" ||
+			  std::string(argv[1]) == "--retained-destructor-child"))
+	{
+		if (mysql_library_init(0, nullptr, nullptr))
+			std::_Exit(2);
+		const int result = std::string(argv[1]) == "--retained-session-loss-child" ?
+					   run_retained_session_loss_child(argv[2]) :
+					   run_retained_destructor_child(argv[2]);
 		std::fflush(nullptr);
 		std::_Exit(result);
 	}
@@ -896,10 +1137,24 @@ int main(int argc, char **argv)
 		test_partial_terminal_cleanup_retry(
 			connection, (root / "rollback-partial-cleanup").string(), false);
 		puts("OWNED-CUTOVER-PASS second SQL fence failure preserves terminal outcome until cleanup");
+		test_retained_publication_handoff(connection,
+						  (root / "retained-publication").string());
+		puts("OWNED-CUTOVER-SOURCE retained COMMIT, publication admission, and lifetime handoff");
+		test_retained_commit_requires_maintenance(
+			connection, (root / "retained-requires-maintenance").string());
+		puts("OWNED-CUTOVER-SOURCE retained mode refuses ordinary runtime authority");
 		mysql_close(connection);
 		connection = nullptr;
 		test_session_loss_in_subprocess(argv[0], (root / "session-loss").string());
 		puts("OWNED-CUTOVER-PASS exact-session loss/reconnect refusal retained uncertain lease");
+		test_retained_failure_in_subprocess(argv[0],
+						    (root / "retained-session-loss").string(),
+						    "--retained-session-loss-child");
+		puts("OWNED-CUTOVER-SOURCE lost post-COMMIT session keeps known outcome and admission closed");
+		test_retained_failure_in_subprocess(argv[0],
+						    (root / "retained-destructor").string(),
+						    "--retained-destructor-child");
+		puts("OWNED-CUTOVER-SOURCE unresolved publication destruction is not recovery");
 		mysql_library_end();
 		return 0;
 	}

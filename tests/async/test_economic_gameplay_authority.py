@@ -21,6 +21,7 @@ SOURCES = (
     "src/economy/item_transfer_accounting.c",
     "src/item/item_transfer_command.c",
     "src/player/player_snapshot_codec.c",
+    "src/persistence/economic_accounting_repository.c",
     "src/persistence/critical_command.c",
 )
 with tempfile.TemporaryDirectory(prefix="duris-gameplay-authority-") as temporary:
@@ -35,6 +36,8 @@ with tempfile.TemporaryDirectory(prefix="duris-gameplay-authority-") as temporar
         if mode == "flatfile":
             command += ["-D__NO_MYSQL__", "-I" + str(ROOT / "src/no_mysql")]
         command += [str(ROOT / source) for source in SOURCES]
+        if mode == "sql":
+            command.append("-lmysqlclient")
         command += ["-lcrypto", "-o", str(executable)]
         subprocess.run(command, check=True)
         environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",

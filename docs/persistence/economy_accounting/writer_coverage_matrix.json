@@ -45,28 +45,28 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2746,
-    "current_unique_path_line_family_sites": 2688,
+    "current_occurrences": 2750,
+    "current_unique_path_line_family_sites": 2692,
     "draft_registry_census_complete": false,
     "draft_source_commit": "e1357a30acf258356a5f269ce00496457e3a240a",
-    "draft_to_current_unique_sites_added": 437,
-    "draft_to_current_unique_sites_removed": 429,
-    "draft_unique_sites": 2680,
+    "draft_to_current_unique_sites_added": 0,
+    "draft_to_current_unique_sites_removed": 0,
+    "draft_unique_sites": 2692,
     "family_occurrences": {
       "coin_assignment": 148,
       "coin_bulk_mutation": 21,
       "direct_cash_assignment": 13,
-      "economic_submit": 160,
-      "item_lifecycle": 1143,
-      "item_publication": 1059,
+      "economic_submit": 161,
+      "item_lifecycle": 1144,
+      "item_publication": 1061,
       "money_helper": 162,
       "sql_economy": 40
     },
     "interpretation": "Lexical occurrences are candidates, not writer routes. The 115-row draft maps only 33 unique sites; 2,646 current unique sites remain unmapped, so semantic completeness is unproven and release must remain blocked.",
-    "mapped_sites_still_present": 20,
+    "mapped_sites_still_present": 33,
     "mapped_unique_sites_from_draft_rows": 33,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
-    "unmapped_current_unique_sites": 2668
+    "unmapped_current_unique_sites": 2659
   },
   "method": {
     "candidate_source": "docs/persistence/economy_accounting/writers.json (draft registry), plus one supplemental legacy settlement writer found during source review",
@@ -838,7 +838,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6511
+          6543
         ],
         "file": "src/world/handler.c",
         "function": "create_money",
@@ -899,7 +899,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6365
+          6397
         ],
         "file": "src/world/handler.c",
         "function": "add_coins",
