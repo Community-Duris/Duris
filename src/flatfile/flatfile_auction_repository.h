@@ -90,4 +90,10 @@ flatfile_auction_check_player_unreferenced(const std::string &root,
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command);
 
+// Inactive schema-2 item claim owner. Its native custody and EAP1 record share
+// the auction authority journal.
+critical_apply_result
+flatfile_auction_repository_apply_accounted_item_claim(const std::string &root,
+						       const critical_command &command);
+
 #endif

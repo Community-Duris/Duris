@@ -56,6 +56,23 @@ This boundary enumerates `player_data` wallet PIDs, `account_banks` row lifetime
 
 Pending journal intents, independent lost-authority/partial-restore provenance, and global activation recovery are not qualified by this component. The writer/boot gate detects retained staged installation rows; do not interpret absent installation evidence as permission to resume legacy writes after an evidence-loss incident. No pending-intent draft is wired into the server by this slice.
 
+## Coordinator and flatfile accounting roots
+
+The coordinator's SQL pooled apply and reconcile paths admit supported schema-2
+bank, coin, and item commands. Each root checks its retained native and EAI1/EAP1
+evidence and its exact root outbox event before reporting a durable completion.
+The coordinator fixture holds publication across restart, checks same-ID replay
+and conflicting-ID refusal, and simulates a lost result after the pooled commit.
+
+Flatfile admits schema-2 bank and item commands through their native authority
+journals. A flatfile coin root is refused before journal admission until its
+typed owner is qualified. Bank and item fixtures exercise interruption,
+recovery, held publication, and acknowledgement under the original ID.
+
+These routes do not widen immutable migration 0036's wallet-root qualification
+scope or authorize a game-wide active epoch. The staged runtime gate remains in
+force until the remaining writer coverage and independent audit are qualified.
+
 ## Disposable validation
 
 Run the behavior test on a disposable MariaDB/MySQL container only (the runner never reads `.env`):

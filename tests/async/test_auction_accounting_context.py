@@ -17,7 +17,8 @@ class AuctionAccountingContextContract(unittest.TestCase):
 
     def test_flatfile_repository_wiring_contract(self):
         flatfile_source = (ROOT / "src/flatfile/flatfile_auction_repository.c").read_text(encoding="utf-8")
-        self.assertIn("flatfile_item_accounting_reference_append", flatfile_source)
+        self.assertIn("flatfile_item_accounting_reference_stage", flatfile_source)
+        self.assertIn("flatfile_authority_transaction_commit_operations", flatfile_source)
         self.assertIn("ref.operation_id = command.operation_id;", flatfile_source)
         self.assertIn("ref.item_uid = item_mutation.item_uids[index];", flatfile_source)
         self.assertIn("ref.after_revision = item_mutation.item_revisions[index];", flatfile_source)
@@ -29,6 +30,7 @@ class AuctionAccountingContextContract(unittest.TestCase):
             subprocess.run([
                 "g++-12", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+                "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
                 "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
                 "tests/async/auction_accounting_context_test.cpp",
                 "src/flatfile/flatfile_item_accounting_reference.c",

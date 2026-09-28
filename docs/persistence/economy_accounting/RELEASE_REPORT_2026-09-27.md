@@ -9,8 +9,8 @@ the complete player and fault journey evidence required by Plan 5.
 
 The initial Git base was `49af585c4b9c8cfa5ead0ac07025f39d4720a659`
 on `add-double-entry`; the shared branch advanced during qualification and
-was at `95ae59ccc3d98901b5ce39604109601c879311c3` at the final contract
-check. Focused Python checks and both server builds ran against a **moving,
+was at `631c2cfdf` before an earlier full contract check. Focused Python
+checks and both server builds ran against a **moving,
 uncommitted working tree** with concurrent changes from other persistence
 tasks. There is no single integrated commit to certify from those runs. The
 disposable SQL runs used a clean `git archive` of the initial `49af585c4`
@@ -21,9 +21,9 @@ final integrated commit after Plans 1–4 land.
 
 | Backend / scope | Command or method | Result and limits |
 | --- | --- | --- |
-| Contract and census, current checkout | `python scripts/validate_economy_accounting.py` | Passed contract validation: 13 fixtures, 492 writer rows, 2,759 lexical candidate occurrences. This does not qualify runtime coverage. |
+| Contract and census, current checkout | `python scripts/validate_economy_accounting.py` | Passed contract validation: 13 fixtures, 549 writer rows, 2,759 lexical candidate occurrences. This does not qualify runtime coverage. |
 | Release gate, current checkout | `python scripts/validate_economy_accounting.py --release` | **Refused**, `writer has no executable evidence`. This is the expected blocked result. |
-| Coverage matrix, current checkout | `python scripts/generate_economy_writer_coverage.py --check` and `python tests/async/test_economy_writer_coverage_contract.py` | Matrix checked with 492 registry rows and no supplemental candidate. All 42 source-contract tests passed. The suite covers pre-mutation refusal ordering for coin theft, numbered quests, smelting and blackjack, complete mapping of the current direct-SQL, money-helper and typed-submit lexical families, and focused item files through conjuration review. Coverage remains incomplete; these are not executable gameplay proofs. |
+| Coverage matrix, current checkout | `python scripts/generate_economy_writer_coverage.py --check` and `python tests/async/test_economy_writer_coverage_contract.py` | Matrix checked with 549 registry rows and no supplemental candidate; all 46 source-contract tests passed, including focused item files through Heavens special procedures. Coverage remains incomplete; these are not executable gameplay proofs. |
 | Audit fixture, current checkout | `python tests/async/test_reconcile_economy_accounting.py`; `python tests/async/test_audit_accounting_invariants.py` | 16 and 9 tests passed. Creation origins, exact before/after item revisions, and retired account terminal state are included. These are synthetic snapshots and operation fixtures, not live native reconciliation. |
 | SQL coin component, current checkout | `python3 tests/async/test_coin_transfer_accounting.py` under WSL | One component harness passed. This demonstrates a balanced SQL accounting component, not a qualified gameplay route or flatfile equivalent. |
 | Flatfile evidence and dispatcher, current checkout | `python3 tests/async/test_flatfile_accounting_store.py`; `python3 tests/async/test_economic_flatfile_dispatch.py` under WSL | Storage harness passed 85 injected commit/recovery write, sync, rename, remove and process-exit cases; dispatcher passed in SQL and client-free modes after its harness was updated for the current item route. These are isolated component tests. |
@@ -43,9 +43,9 @@ was used. A passed schema slice is narrower than an end-to-end backend pass.
 
 ## Route and workload coverage
 
-The current matrix has 492 registry rows, including the formerly supplemental
+The current matrix has 549 registry rows, including the formerly supplemental
 legacy auction settlement definition. Its lexical scan has 2,701 unique
-path/line/family sites, 1,420 mapped to current registry evidence and **1,281
+path/line/family sites, 1,547 mapped to current registry evidence and **1,154
 unmapped**. Lexical sites are
 candidates, not a count of real writers; each needs semantic classification or
 reachability proof before `census_complete` can be true. The scan now includes
@@ -330,6 +330,59 @@ publication, and committed sticks-to-snakes arrows are removed from live
 state after the batch result. The fallback arrow loop detaches selected arrows
 first and stops consuming them if the victim dies early, potentially leaving
 remaining detached objects. No spell path has a real player journey here.
+
+All 19 previously unmapped unique item sites in `src/combat/range.c` are now
+linked. Gather temporarily unequips and re-equips the same quiver, while its
+arrows move directly from a room or corpse into that quiver. Firing removes
+an arrow from the quiver and can give it to the target, drop it in a room or
+scrap it; the already mapped scrap call remains a separate sink. A thrown
+weapon moves from the thrower to a room unless it returns. Loading ammunition
+changes weapon and missile counts and can extract the exhausted missile.
+Partial loading keeps the missile UID with a lower count. These routes need
+one source and exact UID, owner, parent and payload result before publication.
+
+All 28 previously unmapped item sites in `src/guild/guildhall_rooms.c` are now
+linked. Nine guildhall room classes instantiate and publish fresh door, board,
+heartstone, window, fountain, counter, portal and tome fixtures. Each derived
+`deinit` then calls `obj_from_room` and clears its wrapper pointer without
+extracting or retiring the object. The detached object can remain in the
+global object list at `NOWHERE`; subsequent room initialization can create a
+new copy. The matrix requires an explicit transient-fixture exemption or an
+exact UID creation and teardown policy before active-epoch use. This is an
+audit finding, not a repaired lifecycle path.
+
+All 40 previously unmapped item sites in `src/classes/necromancy.c` are now
+linked. Six corpse-raise bodies first offer a durable deferral but retain
+direct fallbacks that move children to a PC caster or summoned follower and
+extract the old corpse. For PC corpses with contents, they also call
+`create_saved_corpse`: `clone_obj` and `clone_container_obj` create a fresh
+corpse shell and fresh child UIDs, then publish that duplicate graph in
+corpse storage while the originals move elsewhere. The storage copy and its
+timed cleanup require an explicit inaccessible-evidence policy or a linked
+creation and retirement account. The committed raise callback's child moves,
+transient/coin cleanup and corpse removal are separate gated projections.
+Exhume and summon host directly issue fresh room corpses; wall of bones and
+compaction have direct corpse/material sink paths when deferral does not own
+the operation. Compaction can release contents before bone-pile allocation
+fails, leaving the source corpse emptied. `spell_corpseform` returns with a
+disabled message before its item body, so those lexical sites are unreachable
+in this build.
+
+All 40 previously unmapped unique item sites in `src/specs/specs.heavens.c`
+are now linked. The slot machine grants two fresh restring coupons in its
+jackpot branch before submitting the wallet payout, so those effects can
+diverge on payout failure. Opening the treasure chest grants fresh potions,
+then calls `obj_from_room` on the chest without extracting or retiring it;
+`obj_from_room` leaves the object in the global list at `LOC_NOWHERE`. Io's
+assistant creates a rose before a separate `do_give` handoff. A monolith
+absorbs another monolith's charges and destroys its UID, and the banana proc
+extracts the eaten banana before allocating a replacement peel. Holy and
+good/evil swords have separate owner transfer, slot relink and destruction
+paths. Registered trap, badge, prison object and gift-cap procs also destroy
+live items directly. The flying citadel's apparent room transfer is behind an
+unconditional return and is classified as unreachable in this build. These
+routes remain blocked for active-epoch use until exact UID/source/root and
+backend evidence exists.
 
 All 49 current direct-SQL lexical sites are linked to named routes. Ten added
 rows distinguish combat reward SQL, legacy auction pickup and compensation, collector SQL,

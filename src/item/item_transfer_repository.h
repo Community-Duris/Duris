@@ -8,8 +8,8 @@
 #include <mysql/mysql.h>
 
 // Only an enclosing, admitted accounting owner may supply this context. A
-// schema-v1 inbox ID alone is not admission. Reference failure remains fatal to
-// the enclosing transaction; nullptr selects the unchanged legacy writer.
+// schema-v1 inbox ID alone is not admission. The enclosing owner inserts and
+// verifies references after its root operation; nullptr selects the legacy writer.
 struct item_transfer_accounting_context
 {
 	critical_operation_id root_operation_id = {};

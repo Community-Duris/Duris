@@ -12,7 +12,7 @@ constexpr size_t FLATFILE_ECONOMIC_METADATA_MAX_BYTES = 2 * 1024 * 1024;
 // A name locates the current bank; only its allocated lifetime identifies it.
 struct flatfile_economic_locator
 {
-	uint16_t kind = 0; // 1: wallet PID; 2: bank lifetime and canonical name.
+	uint16_t kind = 0; // 1: wallet PID; 2: bank name; 4: auction ID; 5: claim PID.
 	uint64_t native_id = 0;
 	std::string name;
 };
@@ -57,6 +57,11 @@ struct flatfile_economic_authority_snapshot
 // Snapshots are values, never capabilities to write financial evidence.
 unsigned int flatfile_economic_control_read(const std::string &, const flatfile_authority_lock &,
 					    flatfile_economic_control *, std::string *);
+// Call under the domain's authority lock after checking an exact replay and
+// before preparing any new legacy mutation. An absent accounting store is an
+// inactive installation; a present but corrupt store must fail closed.
+unsigned int flatfile_economic_legacy_domain_gate(const std::string &,
+						  const flatfile_authority_lock &, std::string *);
 // Retained membership only: historical epochs remain readable after selection changes.
 unsigned int flatfile_economic_epoch_read(const std::string &, const flatfile_authority_lock &,
 					  const critical_operation_id &lineage,

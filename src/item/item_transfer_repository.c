@@ -21,17 +21,6 @@
 #include <utility>
 #include <vector>
 
-#if !defined(__NO_MYSQL__) && defined(__GNUC__)
-__attribute__((weak)) bool
-economic_accounting_item_reference_insert(MYSQL *, const economic_accounting_item_reference &)
-{
-	// Legacy callers need no reference module. An explicit accounting context
-	// must never silently succeed when that module was omitted from a harness.
-	errno = ENOTSUP;
-	return false;
-}
-#endif
-
 namespace
 {
 using mysql_null_indicator = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
@@ -1812,23 +1801,8 @@ bool item_transfer_repository_execute_at_offset(
 				   item_revision, from_revision + 1,
 				   same_owner ? from_revision + 1 : to_revision + 1))
 			return false;
-		if (accounting_context)
-		{
-			economic_accounting_item_reference item_ref = {};
-			item_ref.operation_id = accounting_context->root_operation_id;
-			item_ref.line_index =
-				static_cast<uint16_t>(accounting_context->line_index_base + index);
-			item_ref.event_index = item_ref.line_index;
-			item_ref.child_index = accounting_context->child_index;
-			item_ref.item_uid = payload.items[index].item_uid;
-			item_ref.before_revision = prior_revision;
-			item_ref.after_revision = item_revision;
-			item_ref.legacy_operation_id = command.operation_id;
-			item_ref.legacy_event_index =
-				static_cast<uint16_t>(event_index_base + index);
-			if (!economic_accounting_item_reference_insert(connection, item_ref))
-				return false;
-		}
+		// The root owner inserts the reference after its accounting operation.
+		// InnoDB requires that parent row before the reference's foreign key.
 	}
 	if (!move_pet_physical_items(connection, payload))
 		return false;

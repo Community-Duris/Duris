@@ -946,6 +946,7 @@ int run_the_game(int port, int sslport)
 		economic_command_admission_supported;
 #ifdef __NO_MYSQL__
 	critical_apply = flatfile_accounting_apply_selected;
+	critical_extension_validator = economic_flatfile_command_admission_supported;
 #else
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);

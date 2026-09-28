@@ -7,7 +7,7 @@
 #include <iostream>
 
 const char *configured_root = nullptr;
-unsigned legacy_calls = 0, bank_calls = 0;
+unsigned legacy_calls = 0, bank_calls = 0, item_calls = 0;
 critical_command expected;
 std::string expected_root;
 void *expected_context = nullptr;
@@ -28,6 +28,13 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 {
 	assert(&command == &expected && root == expected_root);
 	++bank_calls;
+	return forwarded;
+}
+critical_apply_result flatfile_item_repository_apply(const std::string &root,
+						     const critical_command &command)
+{
+	assert(&command == &expected && root == expected_root);
+	++item_calls;
 	return forwarded;
 }
 void check_result(critical_apply_result actual)
@@ -70,12 +77,18 @@ int main()
 	check_result(flatfile_accounting_apply_selected(expected, nullptr));
 	expected_root = explicit_root;
 	check_result(flatfile_accounting_apply_selected(expected, explicit_root));
+	expected.type = critical_command_type::item_transfer;
+	expected_root = configured_root;
+	check_result(flatfile_accounting_apply_selected(expected, nullptr));
+	expected_root = explicit_root;
+	check_result(flatfile_accounting_apply_selected(expected, explicit_root));
 	char empty_root[] = "";
 	assert(flatfile_accounting_apply_selected(expected, empty_root).error_code == ENOENT);
 	for (uint16_t type = static_cast<uint16_t>(critical_command_type::test);
 	     type <= static_cast<uint16_t>(critical_command_type::player_death_restitution); ++type)
 	{
-		if (type == static_cast<uint16_t>(critical_command_type::account_bank))
+		if (type == static_cast<uint16_t>(critical_command_type::account_bank) ||
+		    type == static_cast<uint16_t>(critical_command_type::item_transfer))
 			continue;
 		expected.type = static_cast<critical_command_type>(type);
 		for (void *context :
@@ -86,7 +99,7 @@ int main()
 			       result.error_code == ENOTSUP);
 		}
 	}
-	assert(legacy_calls == 6 && bank_calls == 2);
+	assert(legacy_calls == 6 && bank_calls == 2 && item_calls == 2);
 	std::cout
-		<< "flatfile dispatcher: bank-only routing, legacy contexts, root precedence and full completion preservation passed\n";
+		<< "flatfile dispatcher: bank/item routing, legacy contexts, root precedence and full completion preservation passed\n";
 }
