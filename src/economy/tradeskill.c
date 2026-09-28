@@ -982,6 +982,16 @@ struct bandage_data
 	int maxheal;
 };
 
+struct bandage_retirement_context
+{
+	uint64_t bandage_uid;
+	uint64_t victim_runtime_id;
+	int32_t room;
+	int32_t maxheal;
+};
+
+static_assert(sizeof(bandage_retirement_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
 void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct bandage_data *mdata = (struct bandage_data *)data;
@@ -1059,10 +1069,77 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 		  sizeof(struct bandage_data));
 }
 
-void do_bandage(P_char ch, char *arg, int /*cmd*/)
+static void start_bandaging(P_char ch, P_char victim, int maxheal)
 {
 	struct affected_type af;
-	struct bandage_data data;
+	struct bandage_data data = {};
+	data.maxheal = maxheal;
+	data.room = ch->in_room;
+
+	if (ch != victim)
+		act("You attempt to &+Wbandage&n $N.", FALSE, ch, 0, victim, TO_CHAR);
+	else
+		act("You attempt to &+Wbandage&n yourself.", FALSE, ch, 0, victim, TO_CHAR);
+	act("$n attempts to &+Wbandage&n you.", FALSE, ch, 0, victim, TO_VICT);
+	act("$n attempts to &+Wbandage&n $N", FALSE, ch, 0, victim, TO_NOTVICT);
+
+	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, &data, sizeof(data));
+	bzero(&af, sizeof(af));
+	af.duration = 3;
+	af.type = SKILL_BANDAGE;
+	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+	affect_to_char(victim, &af);
+	CharWait(ch, 2 * PULSE_VIOLENCE);
+}
+
+static bool publish_bandage_retirement(P_char actor, bool committed, const item_transfer_result &,
+				       unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	bandage_retirement_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return false;
+	if (!committed)
+		return true;
+	memcpy(&context, encoded, sizeof(context));
+	P_obj bandage = actor->carrying;
+	while (bandage && bandage->obj_uid != context.bandage_uid)
+		bandage = bandage->next_content;
+	if (!bandage || bandage->type != ITEM_BANDAGE)
+		return false;
+	extract_obj(bandage, TRUE);
+	return true;
+}
+
+static void complete_bandage_retirement(P_char actor, bool committed, const item_transfer_result &,
+					unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	bandage_retirement_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return;
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("The bandage could not be used. Please try again.\r\n", actor);
+		return;
+	}
+	P_char victim = NULL;
+	for (P_char candidate = character_list; candidate; candidate = candidate->next)
+		if (candidate->runtime_id == context.victim_runtime_id)
+		{
+			victim = candidate;
+			break;
+		}
+	if (!victim || actor->in_room != context.room || victim->in_room != context.room)
+	{
+		send_to_char("Your bandage was used, but the patient is no longer here.\r\n",
+			     actor);
+		return;
+	}
+	start_bandaging(actor, victim, context.maxheal);
+}
+
+void do_bandage(P_char ch, char *arg, int /*cmd*/)
+{
 	P_char victim = NULL;
 	P_obj bandage;
 
@@ -1132,30 +1209,34 @@ void do_bandage(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	data.maxheal = bandage->value[0];
-	extract_obj(bandage, TRUE); // Not an arti, but 'in game.'
-
-	if (ch != victim)
-		act("You attempt to &+Wbandage&n $N.", FALSE, ch, 0, victim, TO_CHAR);
-	else
-		act("You attempt to &+Wbandage&n yourself.", FALSE, ch, 0, victim, TO_CHAR);
-
-	act("$n attempts to &+Wbandage&n you.", FALSE, ch, 0, victim, TO_VICT);
-	act("$n attempts to &+Wbandage&n $N", FALSE, ch, 0, victim, TO_NOTVICT);
-
-	data.room = ch->in_room;
-	data.healed = 0;
-
-	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, &data,
-		  sizeof(struct bandage_data));
-
-	bzero(&af, sizeof(af));
-	af.duration = 3;
-	af.type = SKILL_BANDAGE;
-	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
-	affect_to_char(victim, &af);
-
-	CharWait(ch, 2 * PULSE_VIOLENCE);
+	if (economic_gameplay_authority::active())
+	{
+		bandage_retirement_context context = {};
+		context.bandage_uid = bandage->obj_uid;
+		context.victim_runtime_id = victim->runtime_id;
+		context.room = ch->in_room;
+		context.maxheal = bandage->value[0];
+		const item_owner_identity owner = { item_owner_type::player,
+						    static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(
+			    ch, bandage, NULL, owner, destruction,
+			    item_transfer_reason::destruction,
+			    static_cast<int64_t>(bandage->obj_uid), complete_bandage_retirement,
+			    &context, sizeof(context), NULL, &reject, publish_bandage_retirement,
+			    economic_source_kind::intentional_destruction))
+		{
+			send_to_char("The bandage cannot be used right now. Please try again.\r\n",
+				     ch);
+			logit(LOG_FILE, "bandage retirement refused (pid=%d reason=%s)",
+			      GET_PID(ch), item_movement_reject_name(reject));
+		}
+		return;
+	}
+	const int maxheal = bandage->value[0];
+	extract_obj(bandage, TRUE);
+	start_bandaging(ch, victim, maxheal);
 	return;
 }
 
