@@ -25,8 +25,20 @@ curl http://127.0.0.1:4050/health
 
 The initializer creates `.env.docker` once, with mode `0600` and independent
 random application and root database passwords. It refuses to overwrite an
-existing file. Edit its non-secret values before the first `up` to change the
-build concurrency, loopback bind address, or published ports.
+existing file. It also asks you to type `approve` before recording that the
+local `duris-runtime` volume is the backup custodian. That volume stays on this
+Docker host and is not an off-host recovery copy or a production backup. Edit
+the non-secret values before the first `up` to change the build concurrency,
+loopback bind address, or published ports.
+
+On first container start, the entrypoint creates the approved policy from the
+tracked example inside the owner-controlled `duris-runtime` volume. The policy
+file is mode `0600`, uses the account that ran the initializer as custodian, and
+is never replaced on later starts. Review or replace an existing policy using
+the normal backup policy procedures before starting the game. Compose pins
+MariaDB 10.11 because that is the version accepted by the immutable migration
+and runtime compatibility checks. The extensionless MySQL socket shim is
+checked out with LF line endings on Windows as well as Unix.
 
 The first start performs the following guarded sequence:
 
@@ -78,6 +90,12 @@ the `duris-runtime` volume. Filesystem-backed player state such as lockers,
 crafting recipes, aliases, and death-object configuration is in `duris-players`.
 Game logs are in `duris-logs`, and MariaDB data is in `mariadb-data`.
 
+The local Compose stack does not run the independent backup scheduler or an
+off-host replica. The generated policy enables the required local pre-boot
+backup and retention checks; it does not establish a disaster-recovery RPO.
+Use the production backup procedure for scheduled, independently stored
+recovery generations.
+
 `mariadb-socket` is also a persistent named volume because Compose cannot share
 a tmpfs between services. It contains no durable application state, but it can
 retain stale socket or PID files across `down`; `down --volumes` removes it
@@ -94,6 +112,14 @@ docker compose --env-file .env.docker exec game ./scripts/healthcheck.sh
 An existing native `.env` is neither copied into the image nor loaded by
 Compose. Container configuration comes only from `compose.yaml` and the secret
 values interpolated from `.env.docker`.
+
+Existing `.env.docker` files from earlier Compose versions are not replaced.
+After reviewing and approving local backup custody, add
+`DURIS_DOCKER_BACKUP_APPROVAL=local-volume` and
+`DURIS_DOCKER_BACKUP_CUSTODIAN=<your-account>` to that file. Compose pins
+MariaDB 10.11 for new local databases; do not start that image against an
+existing MariaDB 11.4 data volume as an in-place downgrade. Preserve the old
+volume and follow a reviewed export/restore plan if its data is needed.
 
 ## Clean local reset
 

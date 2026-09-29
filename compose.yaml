@@ -2,7 +2,7 @@ name: durismud
 
 services:
   mariadb:
-    image: mariadb:11.4
+    image: mariadb:10.11
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -53,6 +53,9 @@ services:
       PLAYER_SAVE_JOURNAL_DIR: /var/lib/duris/player-journal
       CRITICAL_COMMAND_JOURNAL_DIR: /var/lib/duris/critical-command-journal
       DATABASE_BACKUP_DIR: /var/lib/duris/db-backups
+      BACKUP_POLICY_FILE: /var/lib/duris/harness-backup-policy.json
+      DURIS_DOCKER_BACKUP_APPROVAL: ${DURIS_DOCKER_BACKUP_APPROVAL:?run ./scripts/init_docker_env.sh and approve the local backup volume}
+      DURIS_DOCKER_BACKUP_CUSTODIAN: ${DURIS_DOCKER_BACKUP_CUSTODIAN:?run ./scripts/init_docker_env.sh first}
       MAINTENANCE_STATE_FILE: /var/lib/duris/maintenance-scheduler.state
       REDIS: "FALSE"
     ports:
