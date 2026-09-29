@@ -47,18 +47,34 @@ def main() -> None:
     bind = function_body(guard, "static inline bool duris_sql_exclusion_guard_bind_economic_runtime")
     assert "mysql_thread_id(control)" in bind
     assert "state.economic_connection_id = session" in bind
-    assert "return duris_sql_exclusion_guard_validate(control)" in bind
-    validate = function_body(guard, "static inline bool duris_sql_exclusion_guard_validate(MYSQL *probe)")
+    assert "duris_sql_exclusion_guard_validate(control)" in bind
+    assert "status == duris_sql_exclusion_guard_status::inconclusive" in bind
+    validate = function_body(
+        guard,
+        "static inline duris_sql_exclusion_guard_status duris_sql_exclusion_guard_validate(MYSQL *probe)",
+    )
     assert "IS_USED_LOCK(%s)" in validate
     assert "IS_USED_LOCK('%s')" in validate
     assert "state.economic_connection_id" in validate
+    assert "duris_sql_exclusion_guard_status::inconclusive" in validate
+    assert 'if (!strcmp(value, "0"))' in validate
     assert "state.lost = true" in validate
+    assert validate.index('if (!strcmp(value, "0"))') < validate.index("state.lost = true")
+    assert validate.index("duris_sql_exclusion_guard_scalar") < validate.index(
+        'if (!strcmp(value, "0"))'
+    )
 
     allows = function_body(guard, "static inline bool duris_sql_exclusion_guard_allows(MYSQL *probe)")
+    check = function_body(
+        guard,
+        "static inline duris_sql_exclusion_guard_status duris_sql_exclusion_guard_check(MYSQL *probe)",
+    )
     acquire = function_body(guard, "static inline bool duris_sql_exclusion_guard_acquire(MYSQL *connection)")
-    assert "if (state.lost)" in allows and "return false;" in allows
+    assert "duris_sql_exclusion_guard_check(probe)" in allows
+    assert "state.lost" in check and "duris_sql_exclusion_guard_validate(probe)" in check
     assert "state.connection || state.lost" in acquire
     assert acquire.index("state.connection || state.lost") < acquire.index("state.lost = false")
+    assert "status == duris_sql_exclusion_guard_status::owner_lost" in acquire
 
     query = function_body(sql, "bool sql_trace_exec_at(struct persistence_query_site source_site")
     assert query.index("duris_sql_exclusion_guard_allows(DB)") < query.index(
