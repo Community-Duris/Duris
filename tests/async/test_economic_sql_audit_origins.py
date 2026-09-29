@@ -3,6 +3,7 @@
 
 import copy
 import hashlib
+import json
 from pathlib import Path
 import struct
 import sys
@@ -11,6 +12,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from economic_sql_audit_origins import OriginError, capture, decode_witness  # noqa: E402
+from economic_sql_audit_snapshot import (native_source_count,
+                                         read_lineage_realized_prices)  # noqa: E402
 
 LINEAGE = bytes.fromhex("11" * 16)
 EPOCH = bytes.fromhex("22" * 16)
@@ -37,7 +40,8 @@ def witness():
     return {"operation_id": OP, "book_revision": 1, "holding_count": 1,
             "item_count": 1, "witness_digest": hashlib.sha256(blob).digest(),
             "canonical_witness": blob, "reason": 38, "outcome": 1,
-            "result_code": 0, "inbox_status": 1, "inbox_result": 0}
+            "result_code": 0, "inbox_status": 1, "inbox_result": 0,
+            "inbox_failure_stage": 0, "inbox_committed_at_present": 1}
 
 
 class Cursor:
@@ -85,6 +89,49 @@ class Connection:
 
 
 class OriginTests(unittest.TestCase):
+    def test_native_mapping_coverage_is_scoped_to_selected_lineage(self):
+        class Cursor:
+            query = None
+            parameters = None
+
+            def execute(self, query, parameters):
+                self.query = query
+                self.parameters = parameters
+
+            def fetchone(self):
+                return {"source_rows": 2, "unmapped_rows": 1}
+
+        cursor = Cursor()
+        self.assertEqual(native_source_count(cursor, LINEAGE, "player_data", "pid", 1),
+                         (2, 1))
+        self.assertIn("m.lineage=%s", cursor.query)
+        self.assertEqual(cursor.parameters, (LINEAGE,))
+
+    def test_realized_price_query_uses_registry_candidate_reasons(self):
+        class Cursor:
+            query = None
+            parameters = None
+
+            def execute(self, query, parameters):
+                self.query = query
+                self.parameters = parameters
+
+            def fetchall(self):
+                return []
+
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/registry.json")
+                              .read_text(encoding="utf-8"))
+        expected = [row["number"] for row in registry["reasons"]
+                    if row.get("realized_price_required") is True]
+        cursor = Cursor()
+        rows, coverage = read_lineage_realized_prices(cursor, LINEAGE, True)
+        self.assertEqual(rows, [])
+        self.assertEqual(coverage["candidate_rows"], 0)
+        self.assertIn("o.reason IN (" + ",".join("%s" for _ in expected) + ")",
+                      cursor.query)
+        self.assertEqual(cursor.parameters[:-1], (LINEAGE, *expected))
+        self.assertEqual(cursor.parameters[-1], 100_001)
+
     def test_exact_witness_and_read_only_capture(self):
         account_origins, item_origins = decode_witness(witness(), LINEAGE, EPOCH, OPENING)
         self.assertEqual(account_origins[0]["balance"], [5, 0, 0, 0])
@@ -96,6 +143,7 @@ class OriginTests(unittest.TestCase):
         self.assertEqual(result["format"], "economic_sql_audit_origins_v1")
         self.assertEqual(result["account_origins"], account_origins)
         self.assertEqual(result["item_origins"], item_origins)
+        self.assertEqual(result["baseline_operation_ids"], [OP.hex()])
         self.assertEqual(connection.rollbacks, 1)
         self.assertTrue(connection.scan.closed)
         statements = [sql.upper() for sql, _ in connection.scan.statements]
@@ -103,6 +151,9 @@ class OriginTests(unittest.TestCase):
         self.assertTrue(all(sql.startswith(("SET TRANSACTION", "START TRANSACTION", "SELECT"))
                             for sql in statements))
         self.assertEqual(connection.scan.statements[3][1], (LINEAGE, EPOCH))
+        witness_query = connection.scan.statements[5][0]
+        self.assertIn("i.failure_stage AS inbox_failure_stage", witness_query)
+        self.assertIn("i.committed_at IS NOT NULL", witness_query)
 
     def test_digest_header_count_and_origin_corruption_refuse(self):
         for change in ("digest", "header", "count", "lineage", "source", "owner"):
@@ -128,13 +179,16 @@ class OriginTests(unittest.TestCase):
                     decode_witness(row, LINEAGE, EPOCH, OPENING)
 
     def test_uncommitted_or_missing_control_rolls_back(self):
-        bad = witness()
-        bad["inbox_status"] = 0
-        connection = Connection(rows=[bad])
-        with self.assertRaisesRegex(OriginError, "uncommitted"):
-            capture(connection, LINEAGE, EPOCH)
-        self.assertEqual(connection.rollbacks, 1)
-        self.assertTrue(connection.scan.closed)
+        for field, value in (("inbox_status", 0), ("inbox_failure_stage", 1),
+                             ("inbox_committed_at_present", 0)):
+            with self.subTest(field=field):
+                bad = witness()
+                bad[field] = value
+                connection = Connection(rows=[bad])
+                with self.assertRaisesRegex(OriginError, "uncommitted"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
         connection = Connection(control={"opening_account": OPENING,
                                          "revision": 2, "last_operation_id": OP})
         with self.assertRaisesRegex(OriginError, "revision gap"):

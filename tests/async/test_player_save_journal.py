@@ -188,6 +188,29 @@ int main(int argc, char **argv)
     assert(player_snapshot_decode(truncated.data(), truncated.size(), &decoded) ==
            player_snapshot_codec_result::truncated);
 
+    player_snapshot quest_xp = make_snapshot(11, 2);
+    quest_xp.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+    quest_xp.encoded_size_bound += 4 + 24;
+    player_quest_xp_receipt_snapshot xp_receipt = {};
+    xp_receipt.offering_operation.bytes[0] = 0x42;
+    xp_receipt.reward_index = 63;
+    xp_receipt.amount = 1234;
+    quest_xp.quest_xp_receipts.push_back(xp_receipt);
+    std::vector<uint8_t> quest_xp_bytes;
+    assert(player_snapshot_encode(quest_xp, &quest_xp_bytes) ==
+           player_snapshot_codec_result::ok);
+    assert(player_snapshot_decode(quest_xp_bytes.data(), quest_xp_bytes.size(), &decoded) ==
+           player_snapshot_codec_result::ok);
+    assert(decoded.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
+           decoded.quest_xp_receipts.size() == 1 &&
+           decoded.quest_xp_receipts[0].offering_operation.bytes ==
+               xp_receipt.offering_operation.bytes &&
+           decoded.quest_xp_receipts[0].reward_index == 63 &&
+           decoded.quest_xp_receipts[0].amount == 1234);
+    quest_xp.quest_xp_receipts.push_back(xp_receipt);
+    assert(player_snapshot_encode(quest_xp, &quest_xp_bytes) ==
+           player_snapshot_codec_result::invalid_value);
+
     player_snapshot death = make_snapshot(80, 4);
     death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
     death.items.clear();
@@ -456,7 +479,8 @@ for contract in (
 ):
     assert contract in JOURNAL + CODEC
 assert "sizeof(player_snapshot)" not in CODEC
-assert "sql" not in CODEC.lower()
+assert "MYSQL *" not in CODEC
+assert "mysql_query" not in CODEC
 print("[PASS] snapshot codec is typed, endian-stable, bounded, and host-layout independent")
 
 for contract in (

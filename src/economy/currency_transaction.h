@@ -74,6 +74,11 @@ bool currency_transaction_submit_identified(
 	currency_reason_type reason, int64_t reason_id, critical_source_site source_site,
 	critical_deadline_class deadline_class, currency_completion_fn completion,
 	const void *context, size_t context_size);
+bool currency_transaction_submit_wallet_value_identified(
+	P_char character, const critical_operation_id &operation_id, int64_t value_delta,
+	currency_reason_type reason, int64_t reason_id, critical_source_site source_site,
+	critical_deadline_class deadline_class, currency_completion_fn completion,
+	const void *context, size_t context_size);
 // Prepare an immutable locker payment without submitting it. A durable receipt
 // must store this exact command before submit_prepared is called. Admission is
 // checked before that durable boundary; unsupported active-mode payments refuse.

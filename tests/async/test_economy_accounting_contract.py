@@ -196,6 +196,14 @@ class AccountingContractTest(unittest.TestCase):
                 symbol='example',test_candidates=[],evidence=[],
                 backends={name:dict(status='projection') for name in ('mysql','mariadb','flatfile')})
             inventory=dict(schema_version=1,writers=[writer],census=[],census_complete=True)
+            matrix_dir=root/'docs/persistence/economy_accounting';matrix_dir.mkdir(parents=True)
+            matrix=dict(schema_version=1,routes=[dict(id='example',
+                disposition='runtime_projection_route',source_classification='hydration',
+                source=dict(original_draft_symbol='example'))],coverage_complete=False,
+                lexical_census=dict(current_occurrences=0,
+                    current_unique_path_line_family_sites=0,
+                    unmapped_current_unique_sites=0))
+            (matrix_dir/'writer_coverage_matrix.json').write_text(json.dumps(matrix))
             self.registry['status']='frozen'
             with self.assertRaisesRegex(contract.ContractError,'executable evidence'):
                 contract.validate_inventory(inventory,self.registry,root,release=True)

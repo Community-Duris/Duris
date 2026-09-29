@@ -2071,22 +2071,22 @@ static void finish_summon_insects(P_char ch, int room)
 	affect_to_room(room, &af);
 }
 
-static void summon_insects_component_completed(P_char ch, bool committed,
-					       const item_transfer_result &,
-					       unsigned int /*error_code*/,
-					       const uint8_t *encoded,
-					       size_t encoded_size)
+spell_component_effect_status spell_summon_insects_component_completed(
+	const critical_operation_id & /*operation_id*/, P_char ch, bool committed,
+	const item_transfer_result &, unsigned int /*error_code*/, const uint8_t *encoded,
+	size_t encoded_size)
 {
-	if (!ch || !encoded || encoded_size != sizeof(int32_t))
-		return;
+	spell_component_context_reader reader(encoded, encoded_size);
 	int32_t room = 0;
-	memcpy(&room, encoded, sizeof(room));
+	if (!ch || !reader.get_i32(&room) || !reader.finished())
+		return spell_component_effect_status::retry;
 	if (!committed || ch->in_room != room)
 	{
 		send_to_char("The mandrake is left intact as your spell fails.\r\n", ch);
-		return;
+		return spell_component_effect_status::complete;
 	}
 	finish_summon_insects(ch, room);
+	return spell_component_effect_status::complete;
 }
 
 void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -2120,10 +2120,12 @@ void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 	}
 	if (economic_gameplay_authority::active() && IS_PC(ch))
 	{
-		const int32_t room = ch->in_room;
-		if (!spell_consume_components(ch, VOBJ_FORAGE_MANDRAKE, 1, SPELL_SUMMON_INSECTS,
-					      summon_insects_component_completed, &room,
-					      sizeof(room)))
+		spell_component_context_writer context;
+		if (!context.put_i32(ch->in_room))
+			return;
+		if (!spell_consume_components(ch, VOBJ_FORAGE_MANDRAKE, 1, SPELL_SUMMON_INSECTS, item_spell_component_effect::summon_insects,
+					      spell_summon_insects_component_completed, context.data(),
+					      context.size))
 			send_to_char("Your mandrake cannot be consumed right now; please try again.\r\n",
 				     ch);
 		return;

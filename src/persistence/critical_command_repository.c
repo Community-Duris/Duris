@@ -33,6 +33,7 @@
 #include "account/session_audit_command.h"
 #include "account/session_audit_repository.h"
 #include "item/item_transfer_repository.h"
+#include "item/quest_reward_continuation.h"
 #include "persistence/player_death_restitution_repository.h"
 #include "sql/sql_pool.h"
 
@@ -629,6 +630,233 @@ bool insert_outbox_event(MYSQL *connection, const critical_operation_id &operati
 		last_statement_error = mysql_stmt_errno(statement);
 	mysql_stmt_close(statement);
 	return ok;
+}
+
+bool insert_quest_reward_obligation(MYSQL *connection, const critical_operation_id &operation_id,
+				    const item_transfer_payload &payload)
+{
+	if (payload.continuation.kind != item_transfer_continuation_kind::quest_offering)
+		return true;
+	static const char SQL[] =
+		"INSERT INTO quest_reward_obligation(offering_operation_id,player_pid,continuation) "
+		"VALUES(?,?,?)";
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL))
+		return false;
+	unsigned long operation_length = operation_id.bytes.size();
+	unsigned long continuation_length = payload.continuation.data.size();
+	uint32_t player_pid = static_cast<uint32_t>(payload.from_owner.id);
+	MYSQL_BIND bindings[3] = {};
+	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[0].buffer = const_cast<uint8_t *>(operation_id.bytes.data());
+	bindings[0].buffer_length = operation_length;
+	bindings[0].length = &operation_length;
+	bindings[1].buffer_type = MYSQL_TYPE_LONG;
+	bindings[1].buffer = &player_pid;
+	bindings[1].is_unsigned = true;
+	bindings[2].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[2].buffer = const_cast<uint8_t *>(payload.continuation.data.data());
+	bindings[2].buffer_length = continuation_length;
+	bindings[2].length = &continuation_length;
+	const bool ok = mysql_stmt_bind_param(statement, bindings) == 0 &&
+			mysql_stmt_execute(statement) == 0;
+	if (!ok)
+		last_statement_error = mysql_stmt_errno(statement);
+	mysql_stmt_close(statement);
+	if (!ok)
+		return false;
+	quest_reward_continuation continuation = {};
+	if (!quest_reward_continuation_decode(payload.continuation.data.data(),
+					      payload.continuation.data.size(), &continuation) ||
+	    continuation.player_pid != payload.from_owner.id)
+	{
+		last_statement_error = EINVAL;
+		return false;
+	}
+	if (continuation.version < 5 || continuation.credited_count <= 1 ||
+	    !continuation.xp_award_count)
+		return true;
+	static const char XP_SQL[] =
+		"INSERT INTO quest_reward_xp_entitlement(offering_operation_id,recipient_pid,"
+		"reward_index,amount) VALUES(?,?,?,?)";
+	if (!prepare(&statement, connection, XP_SQL))
+		return false;
+	unsigned int reward_index = 0;
+	uint32_t recipient_pid = 0, amount = 0;
+	MYSQL_BIND xp_bindings[4] = {};
+	xp_bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	xp_bindings[0].buffer = const_cast<uint8_t *>(operation_id.bytes.data());
+	xp_bindings[0].buffer_length = operation_length;
+	xp_bindings[0].length = &operation_length;
+	xp_bindings[1].buffer_type = MYSQL_TYPE_LONG;
+	xp_bindings[1].buffer = &recipient_pid;
+	xp_bindings[1].is_unsigned = true;
+	xp_bindings[2].buffer_type = MYSQL_TYPE_LONG;
+	xp_bindings[2].buffer = &reward_index;
+	xp_bindings[2].is_unsigned = true;
+	xp_bindings[3].buffer_type = MYSQL_TYPE_LONG;
+	xp_bindings[3].buffer = &amount;
+	xp_bindings[3].is_unsigned = true;
+	for (size_t index = 0; index < continuation.xp_award_count; ++index)
+	{
+		recipient_pid = continuation.xp_awards[index].recipient_pid;
+		reward_index = continuation.xp_awards[index].reward_index;
+		amount = continuation.xp_awards[index].amount;
+		if (mysql_stmt_bind_param(statement, xp_bindings) != 0 ||
+		    mysql_stmt_execute(statement) != 0)
+		{
+			last_statement_error = mysql_stmt_errno(statement);
+			mysql_stmt_close(statement);
+			return false;
+		}
+	}
+	mysql_stmt_close(statement);
+	return true;
+}
+
+unsigned int verify_quest_reward_xp_entitlements(MYSQL *connection,
+						 const critical_operation_id &operation_id,
+						 const quest_reward_continuation &continuation,
+						 bool expected)
+{
+	const size_t expected_count = expected && continuation.version >= 5 &&
+						      continuation.credited_count > 1 ?
+					      continuation.xp_award_count :
+					      0;
+	static const char SQL[] =
+		"SELECT recipient_pid,reward_index,amount FROM quest_reward_xp_entitlement "
+		"WHERE offering_operation_id=? ORDER BY reward_index,recipient_pid";
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL))
+		return database_error(connection);
+	unsigned long operation_length = operation_id.bytes.size();
+	MYSQL_BIND parameter = {};
+	parameter.buffer_type = MYSQL_TYPE_BLOB;
+	parameter.buffer = const_cast<uint8_t *>(operation_id.bytes.data());
+	parameter.buffer_length = operation_length;
+	parameter.length = &operation_length;
+	if (mysql_stmt_bind_param(statement, &parameter) != 0 ||
+	    mysql_stmt_execute(statement) != 0 || mysql_stmt_store_result(statement) != 0)
+	{
+		statement_failure(statement);
+		return database_error(connection);
+	}
+	uint32_t recipient_pid = 0, reward_index = 0, amount = 0;
+	MYSQL_BIND results[3] = {};
+	results[0].buffer_type = MYSQL_TYPE_LONG;
+	results[0].buffer = &recipient_pid;
+	results[0].is_unsigned = true;
+	results[1].buffer_type = MYSQL_TYPE_LONG;
+	results[1].buffer = &reward_index;
+	results[1].is_unsigned = true;
+	results[2].buffer_type = MYSQL_TYPE_LONG;
+	results[2].buffer = &amount;
+	results[2].is_unsigned = true;
+	if (mysql_stmt_bind_result(statement, results) != 0)
+	{
+		statement_failure(statement);
+		return database_error(connection);
+	}
+	std::array<bool, QUEST_REWARD_MAX_CREDITED_PIDS> seen = {};
+	size_t rows = 0;
+	unsigned int error = 0;
+	for (;;)
+	{
+		const int fetched = mysql_stmt_fetch(statement);
+		if (fetched == MYSQL_NO_DATA)
+			break;
+		if (fetched != 0 || rows >= expected_count)
+		{
+			error = fetched != 0 && fetched != MYSQL_DATA_TRUNCATED ?
+					mysql_stmt_errno(statement) :
+					EEXIST;
+			break;
+		}
+		size_t found = expected_count;
+		for (size_t index = 0; index < expected_count; ++index)
+			if (continuation.xp_awards[index].recipient_pid == recipient_pid &&
+			    continuation.xp_awards[index].reward_index == reward_index &&
+			    continuation.xp_awards[index].amount == amount)
+			{
+				found = index;
+				break;
+			}
+		if (found == expected_count || seen[found])
+		{
+			error = EEXIST;
+			break;
+		}
+		seen[found] = true;
+		++rows;
+	}
+	mysql_stmt_close(statement);
+	if (error)
+		return error;
+	if (rows != expected_count)
+		return EAGAIN;
+	return 0;
+}
+
+unsigned int verify_quest_reward_obligation(MYSQL *connection,
+					    const critical_operation_id &operation_id,
+					    const item_transfer_payload &payload,
+					    unsigned int result_code)
+{
+	if (payload.continuation.kind != item_transfer_continuation_kind::quest_offering)
+		return 0;
+	static const char SQL[] = "SELECT player_pid,continuation FROM quest_reward_obligation "
+				  "WHERE offering_operation_id=?";
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL))
+		return database_error(connection);
+	unsigned long operation_length = operation_id.bytes.size();
+	MYSQL_BIND parameter = {};
+	parameter.buffer_type = MYSQL_TYPE_BLOB;
+	parameter.buffer = const_cast<uint8_t *>(operation_id.bytes.data());
+	parameter.buffer_length = operation_length;
+	parameter.length = &operation_length;
+	if (mysql_stmt_bind_param(statement, &parameter) != 0 ||
+	    mysql_stmt_execute(statement) != 0 || mysql_stmt_store_result(statement) != 0)
+	{
+		statement_failure(statement);
+		return database_error(connection);
+	}
+	uint32_t player_pid = 0;
+	std::array<uint8_t, ITEM_TRANSFER_CONTINUATION_MAX_BYTES> continuation = {};
+	unsigned long continuation_length = 0;
+	MYSQL_BIND results[2] = {};
+	results[0].buffer_type = MYSQL_TYPE_LONG;
+	results[0].buffer = &player_pid;
+	results[0].is_unsigned = true;
+	results[1].buffer_type = MYSQL_TYPE_BLOB;
+	results[1].buffer = continuation.data();
+	results[1].buffer_length = continuation.size();
+	results[1].length = &continuation_length;
+	if (mysql_stmt_bind_result(statement, results) != 0)
+	{
+		statement_failure(statement);
+		return database_error(connection);
+	}
+	const int fetched = mysql_stmt_fetch(statement);
+	const bool matches =
+		result_code ?
+			fetched == MYSQL_NO_DATA :
+			fetched == 0 && player_pid == payload.from_owner.id &&
+				continuation_length == payload.continuation.data.size() &&
+				std::equal(payload.continuation.data.begin(),
+					   payload.continuation.data.end(), continuation.begin());
+	const unsigned int error =
+		fetched != 0 && fetched != MYSQL_NO_DATA ? mysql_stmt_errno(statement) : EAGAIN;
+	mysql_stmt_close(statement);
+	if (!matches)
+		return error ? error : EAGAIN;
+	quest_reward_continuation terms = {};
+	if (fetched == 0 &&
+	    !quest_reward_continuation_decode(payload.continuation.data.data(),
+					      payload.continuation.data.size(), &terms))
+		return EINVAL;
+	return verify_quest_reward_xp_entitlements(connection, operation_id, terms,
+						   fetched == 0 && !result_code);
 }
 
 bool insert_outbox(MYSQL *connection, const critical_command &command, const uint8_t *payload,
@@ -1336,7 +1564,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	auto root_failure = [accounted_bank, accounted_coin, accounted_item, accounted_collector,
 			     accounted_shop](unsigned int error)
 	{
-		if ((accounted_bank || accounted_item || accounted_shop) && error == EEXIST)
+		if ((accounted_bank || accounted_coin || accounted_item || accounted_shop) &&
+		    error == EEXIST)
 			return critical_apply_result{ critical_apply_outcome::terminal_failure, 0,
 						      EEXIST };
 		return (accounted_bank || accounted_coin || accounted_item || accounted_collector ||
@@ -1487,6 +1716,10 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				retained_error = economic_sql_shop_trade_verify_retained(
 					connection, command, stored.result_code,
 					stored.result_payload.data(), stored.result_payload.size());
+			if (!retained_error && item_command)
+				retained_error = verify_quest_reward_obligation(
+					connection, command.operation_id, item_payload,
+					stored.result_code);
 			if (!retained_error &&
 			    (accounted_bank || accounted_coin || accounted_item ||
 			     accounted_collector || accounted_shop))
@@ -2013,6 +2246,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			if (repository_ok && !enrollment.new_items.empty())
 				collector_revision = enrollment.catalog_revision + 1;
 		}
+		if (repository_ok && !result_code && mutation_applied)
+			repository_ok = insert_quest_reward_obligation(
+				connection, command.operation_id, item_payload);
 		if (!repository_ok)
 		{
 			const unsigned int database_failure = database_error(connection);
@@ -2060,6 +2296,13 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			rollback(connection);
 			return accounted_item ? root_failure(error ? error : EIO) :
 						failure(error ? error : EIO);
+		}
+		const auto quest_error = verify_quest_reward_obligation(
+			connection, command.operation_id, item_payload, result_code);
+		if (quest_error)
+		{
+			rollback(connection);
+			return root_failure(quest_error);
 		}
 		if (accounted_item)
 		{
@@ -2832,6 +3075,24 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 		if (accounted_root)
 			rollback(connection);
 		return { critical_apply_outcome::terminal_failure, 0, EEXIST };
+	}
+	if (command.type == critical_command_type::item_transfer)
+	{
+		item_transfer_payload item_payload = {};
+		if (!item_transfer_command_decode_payload(command, &item_payload))
+		{
+			if (accounted_root)
+				rollback(connection);
+			return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+		}
+		const auto error = verify_quest_reward_obligation(connection, command.operation_id,
+								  item_payload, stored.result_code);
+		if (error)
+		{
+			if (accounted_root)
+				rollback(connection);
+			return root_failure(error);
+		}
 	}
 	if (accounted_root)
 	{

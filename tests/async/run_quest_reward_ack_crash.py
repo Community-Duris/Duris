@@ -11,6 +11,8 @@ import time
 import test_flatfile_combat_journey as journey
 import test_static_quest_reward_journey as quest
 
+QUEST_COIN_REWARD = 1000
+
 
 def fault_boot(binary: Path, run_root: Path, environment: dict[str, str],
                port: int, output_path: Path):
@@ -34,6 +36,19 @@ def fault_boot(binary: Path, run_root: Path, environment: dict[str, str],
         time.sleep(0.1)
     raise AssertionError("fault server did not boot:\n" +
                          output_path.read_text(errors="replace")[-8000:])
+
+
+def pending_quest_reward_count(state_root: Path, player_pid: int) -> int:
+    output = subprocess.check_output(
+        [str(journey.INSPECTOR), str(state_root), "pending-quest-rewards",
+         str(player_pid)], text=True, timeout=15)
+    return int(output.strip())
+
+
+def player_wallet_value(state_root: Path) -> int:
+    wallet = journey.inspect_authority(state_root)["wallet"]
+    return sum(amount * denomination for amount, denomination in
+               zip(wallet, (1, 10, 100, 1000)))
 
 
 def run(binary: Path, expect_recovered: bool) -> None:
@@ -85,6 +100,7 @@ def run(binary: Path, expect_recovered: bool) -> None:
             fault_text = crash_output.read_text(errors="replace")
             journey.require("Breakpoint 1, complete_quest_offering" in fault_text,
                             "fault did not reach post-ack quest completion callback")
+            wallet_before_recovery = player_wallet_value(state_root)
         finally:
             client.close()
             if process.poll() is None:
@@ -100,13 +116,37 @@ def run(binary: Path, expect_recovered: bool) -> None:
             client = journey.reconnect_character(port)
             client.send("save")
             client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
+            pending_after_load = pending_quest_reward_count(state_root, 1)
+            if expect_recovered:
+                deadline = time.monotonic() + 10
+                while pending_after_load and time.monotonic() < deadline:
+                    time.sleep(0.1)
+                    pending_after_load = pending_quest_reward_count(state_root, 1)
             items = quest.player_item_rows(state_root)
             rewards = [item for item in items if item["vnum"] == quest.REWARD_VNUM]
             offerings = [item for item in items if item["vnum"] in (22802, 22803, 22804)]
             journey.require(not offerings, f"consumed offerings returned: {offerings}")
             expected = 1 if expect_recovered else 0
+            diagnostic_lines = []
+            for line in (restart_output.read_text(errors="replace") + "\n" +
+                         journey.runtime_logs(run_root)).splitlines():
+                if any(term in line.lower() for term in
+                       ("quest", "reward", "currency", "materialize", "obligation")):
+                    diagnostic_lines.append(line)
             journey.require(len(rewards) == expected,
-                            f"expected {expected} reward after ack crash, found {rewards}")
+                            f"expected {expected} reward after ack crash, found {rewards}; "
+                            f"pending={pending_after_load}\n"
+                            f"--- recovery diagnostics ---\n" +
+                            "\n".join(diagnostic_lines[-80:]))
+            expected_wallet = (wallet_before_recovery + QUEST_COIN_REWARD
+                               if expect_recovered else wallet_before_recovery)
+            journey.require(player_wallet_value(state_root) == expected_wallet,
+                            f"expected wallet value {expected_wallet} after recovery, "
+                            f"found {player_wallet_value(state_root)}")
+            if expect_recovered:
+                journey.require(pending_after_load == 0,
+                                f"recovered reward obligation remains pending: "
+                                f"{pending_after_load}")
             client.send("quit")
             client.expect("ACCOUNT MENU", timeout=30)
             client.send("0")

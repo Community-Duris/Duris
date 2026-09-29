@@ -154,7 +154,9 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     cursor.execute(
         "SELECT w.operation_id,w.book_revision,w.holding_count,w.item_count,"
         "w.witness_digest,w.canonical_witness,o.reason,o.outcome,o.result_code,"
-        "i.status AS inbox_status,i.result_code AS inbox_result "
+        "i.status AS inbox_status,i.result_code AS inbox_result,"
+        "i.failure_stage AS inbox_failure_stage,"
+        "(i.committed_at IS NOT NULL) AS inbox_committed_at_present "
         "FROM economic_baseline_witness w "
         "LEFT JOIN economic_accounting_operation o ON o.operation_id=w.operation_id "
         "LEFT JOIN critical_operation_inbox i ON i.operation_id=w.operation_id "
@@ -171,7 +173,9 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     for expected_revision, row in enumerate(witnesses, 1):
         if (row["book_revision"] != expected_revision or row["reason"] != 38 or
                 row["outcome"] != 1 or row["result_code"] != 0 or
-                row["inbox_status"] != 1 or row["inbox_result"] != 0):
+                row["inbox_status"] != 1 or row["inbox_result"] != 0 or
+                row["inbox_failure_stage"] != 0 or
+                row["inbox_committed_at_present"] != 1):
             raise OriginError("uncommitted or noncanonical baseline witness")
         batch_holdings, batch_items = decode_witness(row, lineage, epoch, opening)
         for holding in batch_holdings:
@@ -195,7 +199,8 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     result = {"format": "economic_sql_audit_origins_v1", "lineage": lineage.hex(),
               "epoch": epoch.hex(), "control_revision": control["revision"],
               "witness_count": len(witnesses), "account_origins": holdings,
-              "item_origins": items}
+              "item_origins": items,
+              "baseline_operation_ids": [row["operation_id"].hex() for row in witnesses]}
     encoded = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
     if len(encoded) > MAX_INPUT_BYTES:
         raise OriginError("origin export exceeds audit input limit")

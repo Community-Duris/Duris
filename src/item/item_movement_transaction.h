@@ -22,11 +22,12 @@ using item_creation_prepare_fn = std::function<item_creation_prepare_result(P_ch
 using item_creation_grant_completion_fn = void (*)(P_char actor, uint64_t item_uid, bool committed,
 						   unsigned int error_code);
 bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare,
-			       economic_source_kind source = {});
+			       economic_source_kind source = {}, uint64_t source_id = 0);
 void item_creation_grant_prepare_pulse(void);
 
 constexpr size_t ITEM_MOVEMENT_PENDING_MAX = 1024;
-constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 128;
+// Durable quest publication captures a bounded group-credit snapshot here.
+constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 768;
 // Creation batches are held in the same bounded admission queue as movement
 // transactions, so admission must never promise more roots than submission can carry.
 constexpr size_t ITEM_CREATION_GRANT_MAX_ROOTS =
@@ -39,8 +40,10 @@ using item_movement_completion_fn = void (*)(P_char actor, bool committed,
 					     unsigned int error_code, const uint8_t *context,
 					     size_t context_size);
 // Opt-in callbacks are the publication boundary: returning false retains the
-// movement entry and the coordinator's entity fences for a later attempt.
-using item_movement_publication_fn = bool (*)(P_char actor, bool committed,
+// movement entry and the coordinator's entity fences for a later attempt. The
+// operation ID is borrowed for this call; copy it before retaining it.
+using item_movement_publication_fn = bool (*)(const critical_operation_id &operation_id,
+					      P_char actor, bool committed,
 					      const item_transfer_result &result,
 					      unsigned int error_code, const uint8_t *context,
 					      size_t context_size);
@@ -88,6 +91,7 @@ struct item_movement_health
 	uint64_t publication_retrying;
 	uint64_t publication_blocked;
 	uint64_t publication_ack_pending;
+	uint64_t publication_owner_waiting;
 };
 
 bool item_movement_transaction_submit(
@@ -96,7 +100,8 @@ bool item_movement_transaction_submit(
 	item_movement_completion_fn completion, const void *context, size_t context_size,
 	P_obj corpse_context = NULL, item_movement_reject *reject = NULL,
 	item_movement_publication_fn publication = nullptr,
-	economic_source_kind lifecycle_source = {}, uint64_t logical_source_id = 0);
+	economic_source_kind lifecycle_source = {}, uint64_t logical_source_id = 0,
+	const item_transfer_continuation &continuation = {});
 // A corpse_create batch validates and publishes all captured live roots before
 // invoking completion. Its callback persists/finalizes the corpse, not the moves.
 // Stale topology retains the movement and busy fence without calling completion.
@@ -107,6 +112,14 @@ bool item_movement_transaction_submit_batch(
 	const void *context, size_t context_size, P_obj corpse_context = NULL,
 	item_movement_reject *reject = NULL, item_movement_publication_fn publication = nullptr,
 	economic_source_kind lifecycle_source = {}, uint64_t logical_source_id = 0);
+bool item_movement_transaction_submit_batch(
+	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
+	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
+	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj corpse_context,
+	item_movement_reject *reject, item_movement_publication_fn publication,
+	economic_source_kind lifecycle_source, uint64_t logical_source_id,
+	const item_transfer_continuation &continuation);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL,
 					  economic_source_kind source = {}, uint64_t source_id = 0);
@@ -125,6 +138,9 @@ bool item_creation_grant_submit_to_player_with_completion(
 	P_char actor, P_obj object, P_char recipient, P_obj target_container,
 	item_creation_grant_completion_fn completion, economic_source_kind source = {},
 	uint64_t source_id = 0);
+bool item_creation_grant_submit_to_player_before_entry_with_completion(
+	P_char actor, P_obj object, P_char recipient, item_creation_grant_completion_fn completion,
+	economic_source_kind source, uint64_t source_id);
 bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,
 						       economic_source_kind source = {},
 						       uint64_t source_id = 0);
@@ -146,6 +162,13 @@ bool item_creation_grant_batches_pending(void);
 void item_creation_grant_cancel_batch_before_entry(P_char actor);
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count);
+// Restore the in-memory publication owner for replayed item commands whose
+// durable continuation is sufficient to finish recovery without the original
+// process-local callback.
+bool item_movement_transaction_restore_replayed_command(const critical_command &command);
+bool item_movement_transaction_restore_replayed_publication(
+	const critical_command &command, item_movement_publication_fn publication,
+	const void *context, size_t context_size);
 void item_movement_transaction_player_ready(P_char actor);
 bool item_movement_transaction_player_busy(P_char actor);
 item_movement_health item_movement_transaction_health_copy(void);

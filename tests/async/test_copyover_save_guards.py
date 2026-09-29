@@ -10,6 +10,7 @@ root = Path(__file__).resolve().parents[2]
 copyover = (SRC / "copyover.c").read_text()
 comm = (SRC / "comm.c").read_text()
 db = (SRC / "db.c").read_text()
+fight = (SRC / "combat/fight.c").read_text()
 
 body = copyover[copyover.index("bool copyover_save("):copyover.index(
     "static P_char copyover_load_player", copyover.index("bool copyover_save(")
@@ -35,6 +36,18 @@ execute = body.index("execl(")
 
 checks = {
     "copyover returns failure": body.count("return false;") >= 10,
+    "connected death retries are serialized and disconnected retries block copyover":
+        "death_extract_retry_pending(pending_character)" in body and
+        "copyover_descriptor_is_eligible(pending_desc)" in body and
+        "a death recovery cannot be preserved" in body and
+        "death_extract_retry_copy_state(ch" in descriptor_capture,
+    "retry query covers scheduled and fallback retries":
+        "death_retry_delay > 0 || ch->only.pc->death_retry_due_usec ||" in fight[
+            fight.index("bool death_extract_retry_pending(P_char ch)"):].split("}", 1)[0] and
+        "get_scheduled(ch, event_death_extract_retry)" in fight[
+            fight.index("bool death_extract_retry_pending(P_char ch)"):].split("}", 1)[0] and
+        "ch->only.pc->death_retry_delay = delay;" in fight[
+            fight.index("static void schedule_death_extract_retry("):].split("}", 1)[0],
     "copyover refuses sessions that cannot survive exec before any save or close":
         body.index("non-preservable connection") < save and
         body.index("non-preservable connection") < close,
@@ -87,6 +100,18 @@ checks = {
     "copyover keeps materialized inventory attached": "reset_char(ch);" not in recover,
     "descriptor capture requires the player's actual pet link":
         "GET_MASTER(f->follower) == ch" in descriptor_capture,
+    "copyover v17 appends retry state while retaining old descriptor sizes":
+        "#define COPYOVER_VERSION 17" in (SRC / "copyover.h").read_text() and
+        "offsetof(copyover_desc, death_retry_pending)" in copyover and
+        "copyover_desc_bytes_for_version(header.version)" in copyover and
+        "fread(&desc_entry, desc_bytes, 1, fp)" in copyover,
+    "copyover v16 mob layout remains intact":
+        "if (version < 16)" in copyover and "if (header.version < 16)" in copyover,
+    "death retry state is validated and restored after player placement":
+        "invalid death retry state in desc" in copyover and
+        recover.index("player_load_pets_place(ch);") <
+        recover.index("death_extract_retry_restore(ch,") <
+        recover.index("raw_write_to_fd(d->descriptor"),
     "world mob capture excludes every linked pet":
         "ch->in_room >= 0 && !GET_MASTER(ch)" in body,
     "minimal copyover preserves its world dataset":
@@ -117,6 +142,13 @@ P_char get_linked_char(P_char ch, ush_int type)
     for (char_link_data *link = ch->linking; link; link = link->next_linking)
         if (link->type == type) return link->linked;
     return nullptr;
+}
+bool retry_pending = false;
+bool death_extract_retry_copy_state(P_char, uint64_t *corpse_uid, int *delay)
+{
+    *corpse_uid = retry_pending ? 987654321ULL : 0;
+    *delay = retry_pending ? 8 : 0;
+    return true;
 }
 ''' + descriptor_capture + r'''
 int main()
@@ -157,6 +189,18 @@ int main()
     fclose(file);
     assert(saved.num_pets == 1);
     assert(saved.pet_vnums[0] == 1201);
+
+    retry_pending = true;
+    file = tmpfile();
+    assert(file);
+    assert(write_desc_entry(file, &descriptor));
+    rewind(file);
+    saved = {};
+    assert(fread(&saved, sizeof(saved), 1, file) == 1);
+    fclose(file);
+    assert(saved.death_retry_pending == 1);
+    assert(saved.death_retry_delay == 8);
+    assert(saved.death_retry_corpse_uid == 987654321ULL);
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-copyover-pet-owner-") as directory:

@@ -86,10 +86,17 @@ bool retain_unresolved_publication(pending_currency &entry, const char *reason, 
 		char operation[33];
 		critical_operation_id_to_hex(entry.completed.operation_id, operation,
 					     sizeof(operation));
+		const unsigned int reason_code =
+			!strcmp(reason, "unresolved_outcome") ? 1 :
+			!strcmp(reason, "invalid_result") ? 2 :
+			!strcmp(reason, "invalid_live_balances") ? 3 :
+			!strcmp(reason, "invalid_coin_result") ? 4 :
+			!strcmp(reason, "invalid_coin_endpoint") ? 5 :
+			!strcmp(reason, "invalid_coin_live_balances") ? 6 : 0;
 		persistence_alert(AVATAR, "currency", "publication", operation, "none",
-				  "publication_blocked", "outcome=%u error=%u reason=%s",
+				  "publication_blocked", "outcome=%u error=%u reason_code=%u",
 				  static_cast<unsigned int>(entry.completed.outcome),
-				  entry.completed.error_code, reason);
+				  entry.completed.error_code, reason_code);
 	}
 	return false;
 }
@@ -679,11 +686,12 @@ bool currency_transaction_submit_identified(
 	if (critical_operation_id_is_zero(operation_id))
 		return false;
 	critical_command command = {};
-	const uint64_t expected_bank_revision = currency_command_is_rebasable_bank_reward(payload) ?
-							UINT64_MAX :
-							character->only.pc->bank_revision;
+	const uint64_t expected_wallet_revision = rebasable_reward ? UINT64_MAX :
+							    character->only.pc->wallet_revision;
+	const uint64_t expected_bank_revision = rebasable_reward ? UINT64_MAX :
+							  character->only.pc->bank_revision;
 	if (!currency_command_build(&command, operation_id, payload,
-				    character->only.pc->wallet_revision, expected_bank_revision,
+				    expected_wallet_revision, expected_bank_revision,
 				    source_site, deadline_class))
 		return false;
 	// Freeze the lifecycle-issued lifetime/epoch before durable admission. This
@@ -803,6 +811,19 @@ bool currency_transaction_submit_wallet_value(P_char character, int64_t value_de
 	return currency_transaction_submit(character, wallet_delta, {}, reason, reason_id,
 					   source_site, deadline_class, completion, context,
 					   context_size);
+}
+
+bool currency_transaction_submit_wallet_value_identified(
+	P_char character, const critical_operation_id &operation_id, int64_t value_delta,
+	currency_reason_type reason, int64_t reason_id, critical_source_site source_site,
+	critical_deadline_class deadline_class, currency_completion_fn completion,
+	const void *context, size_t context_size)
+{
+	if (value_delta <= 0)
+		return false;
+	return currency_transaction_submit_identified(
+		character, operation_id, canonical_value(value_delta), {}, reason, reason_id,
+		source_site, deadline_class, completion, context, context_size);
 }
 
 bool currency_transaction_submit_bank_reward(P_char character, int64_t value,

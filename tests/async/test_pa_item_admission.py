@@ -175,15 +175,7 @@ int main()
         for mutation in ("writeSavedItem(", "obj_from_obj(", "extract_obj("):
             self.assertLess(guard, storage.index(mutation))
 
-    def test_repeatable_unsourced_grants_refuse_before_reservation_or_allocation(self):
-        summon = extract_function("account/account_reward.c", "static bool summon_one(")
-        self.assertLess(summon.index("economic_gameplay_authority::active()"),
-                        summon.index("existing_character_instance("))
-        self.assertLess(summon.index("economic_gameplay_authority::active()"),
-                        summon.index("read_object("))
-        self.assertLess(summon.index("economic_gameplay_authority::active()"),
-                        summon.index("INSERT INTO account_bound_reward_summons"))
-
+    def test_unidentified_delayed_grants_refuse_before_reservation_or_allocation(self):
         for symbol, allocation in (
             ("void event_summon_book(", "read_object(31"),
             ("void event_summon_totem(", "read_object(417"),

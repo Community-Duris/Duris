@@ -15,6 +15,7 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "core/prototypes.h"
 #include "classes/necromancy.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
@@ -30,6 +31,13 @@ PRELUDE = r'''
 #include <map>
 #include <string>
 #include <utility>
+
+bool economic_gameplay_authority::active() { return false; }
+economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
+    critical_command *, uint32_t, economic_source_kind)
+{
+    return economic_accounting_error::ok;
+}
 
 P_obj object_list = nullptr;
 P_char character_list = nullptr;
@@ -282,12 +290,13 @@ int main()
     {
         fixture f;
         int calls = 0;
+        constexpr uint64_t source_id = (uint64_t{42} << 32) | 0x4e455742;
         assert(item_creation_grant_defer(&f.actor, [&](P_char, P_obj *root) {
             ++calls;
             if (calls == 1) *root = &f.bag;
             if (calls == 9) *root = &f.food;
             return calls == 9 ? item_creation_prepare_result::ready : item_creation_prepare_result::more;
-        }));
+        }, economic_source_kind::starter_grant, source_id));
         item_creation_grant_prepare_pulse();
         assert(item_creation_grant_submit_to_player(&f.actor, &f.extra, &f.actor));
         assert(submitted.empty() && extractions.empty());
@@ -295,6 +304,7 @@ int main()
         item_transfer_payload payload{};
         assert(submitted.size() == 1 && item_transfer_command_decode_payload(submitted.front(), &payload));
         assert(payload.item_count == 2);
+        assert(payload.logical_source_id == source_id);
         deliver(next_completion(commit ? critical_apply_outcome::applied : critical_apply_outcome::terminal_failure));
         assert(submitted.size() == 1 && extractions[102] == 0);
         assert(item_transfer_command_decode_payload(submitted.front(), &payload));

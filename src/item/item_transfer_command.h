@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 8;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 9;
+constexpr uint16_t ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION = 8;
 constexpr uint16_t ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION = 7;
 constexpr uint16_t ITEM_TRANSFER_BATCH_PAYLOAD_VERSION = 6;
 constexpr uint16_t ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5;
@@ -22,6 +23,7 @@ constexpr size_t ITEM_TRANSFER_ENTRY_BYTES = 40;
 constexpr size_t ITEM_TRANSFER_PAYLOAD_BYTES =
 	ITEM_TRANSFER_HEADER_BYTES + ITEM_TRANSFER_LEGACY_MAX_ITEMS * ITEM_TRANSFER_ENTRY_BYTES;
 constexpr size_t ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES = 128 * 1024;
+constexpr size_t ITEM_TRANSFER_CONTINUATION_MAX_BYTES = 8 * 1024;
 constexpr size_t ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES = 255;
 constexpr size_t ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES = 512;
 constexpr size_t ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES = 64 * 1024;
@@ -86,6 +88,9 @@ enum class item_transfer_reason : uint16_t
 	player_remove,
 	combat_fumble,
 	critical_disarm,
+	// Quest turn-ins retire the submitted UIDs under a quest-specific reason and
+	// retain the reward continuation with the same durable operation.
+	quest_turnin,
 };
 
 constexpr bool item_transfer_forced_weapon_drop(item_transfer_reason reason)
@@ -154,6 +159,32 @@ struct item_collector_death_enrollment
 	std::vector<uint64_t> eligible_item_uids;
 };
 
+enum class item_transfer_continuation_kind : uint32_t
+{
+	none = 0,
+	quest_offering = 1,
+	soulbind_transfer = 2,
+	spell_component_retirement = 3,
+	account_reward_retirement = 4,
+	account_reward_duplicate_promotion = 5,
+};
+
+enum class item_spell_component_effect : uint32_t
+{
+	faerie_sight = 1,
+	spore_burst_initial = 2,
+	spore_burst_repeat = 3,
+	summon_insects = 4,
+	wall_of_bones = 5,
+	vines = 6,
+};
+
+struct item_transfer_continuation
+{
+	item_transfer_continuation_kind kind = item_transfer_continuation_kind::none;
+	std::vector<uint8_t> data;
+};
+
 struct item_transfer_payload
 {
 	item_owner_identity from_owner;
@@ -175,6 +206,7 @@ struct item_transfer_payload
 	std::array<uint8_t, ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES> item_blob;
 	item_corpse_metadata corpse;
 	item_collector_death_enrollment collector;
+	item_transfer_continuation continuation;
 };
 
 struct item_transfer_result
@@ -189,6 +221,9 @@ struct item_transfer_result
 	// metadata. The game thread uses this replay-safe flag to invalidate its
 	// asynchronous collector projection after the item result is published.
 	bool collector_catalog_changed = false;
+	// Populated by the game-thread publication path from the coordinator receipt.
+	// It is deliberately not part of the encoded domain result.
+	critical_operation_id operation_id = {};
 };
 
 // Internal classification returned by the SQL executor. The enclosing coin

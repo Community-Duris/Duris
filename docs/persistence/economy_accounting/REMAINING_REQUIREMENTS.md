@@ -56,14 +56,23 @@ at this head.
 These decisions must be resolved in the relevant plan before enabling the route;
 the safe current behavior is refusal or inactive legacy operation.
 
-- Define durable identity and reset/death/loot rules for NPC-held money and
-  finite keeper cash. The VNUM 11005 exception preserves current gameplay but
-  does not create an accounting identity.
-- Define blackjack table/round identity and interrupted-round refund or forfeit
-  policy. A push returns the stake; a win issues only net winnings.
-- Define source-event identities and authority for quest, loot, reset, crafting,
-  spells, and administrator grants. Prototype VNUMs and process-local IDs are
-  insufficient by themselves.
+- Shopkeepers operate against a shared system sink/issuance account rather than
+  individual per-NPC wallets. Keeper VNUM and shop ID are preserved on accounting
+  and provenance metadata for tracking.
+- Blackjack is permanently deprecated under active epochs (active refusal guard
+  is maintained). Code and zone objects will be removed post-release.
+- Auction escrow: Outbid funds credit automatically to the bidder's pending claim
+  account. Re-bidding applies available claim credit first with structured command
+  feedback. Players can cash out via `auction pickup`.
+- Death and resurrection: Death and resurrection are separate atomic operations.
+  Death extraction must boundedly transition to the account menu and detach
+  descriptors cleanly to prevent stranded player instances. Resurrection reverses
+  unlooted corpse items back to the player, dropping any currently equipped items
+  to the room floor.
+- Day 1 non-negotiable gameplay mechanics: NPC item-give quests (sequential turn-ins
+  via `quest_turnin`), bartender quests, mob death loot/coin issuance, zone reset
+  spawns, uncursing item drops (`remove curse`), and item consumables (potions,
+  bandages, keys) must be fully supported with durable UIDs and zero refusals.
 - Determine whether the existing aggregate pending-claim store can retain exact
   source-operation attribution for every non-auction and auction claim. Keep it
   if it can; add rows only for a proven gap.

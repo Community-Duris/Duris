@@ -35,6 +35,12 @@ struct flatfile_coin_pile_source
 	player_item_snapshot item;
 };
 
+struct flatfile_quest_reward_obligation
+{
+	critical_operation_id offering_operation = {};
+	std::vector<uint8_t> continuation;
+};
+
 enum class flatfile_item_repository_result
 {
 	ok,
@@ -143,6 +149,16 @@ flatfile_item_repository_result flatfile_item_repository_list_collector_items_lo
 flatfile_item_repository_result flatfile_item_repository_list_active_player_items(
 	const std::string &root, std::vector<flatfile_item_ownership_record> *items,
 	std::string *error);
+// The offering result and this continuation are committed in one authority
+// image. Acknowledgement is separate and only follows completion of all
+// promised reward effects.
+flatfile_item_repository_result flatfile_item_repository_pending_quest_rewards(
+	const std::string &root, uint32_t player_pid,
+	std::vector<flatfile_quest_reward_obligation> *obligations, std::string *error);
+flatfile_item_repository_result
+flatfile_item_repository_ack_quest_reward(const std::string &root, uint32_t player_pid,
+					  const critical_operation_id &offering_operation,
+					  std::string *error);
 flatfile_item_baseline_result
 flatfile_item_repository_establish_owner(const std::string &root, const item_owner_identity &owner,
 					 const std::vector<flatfile_item_ownership_record> &items,

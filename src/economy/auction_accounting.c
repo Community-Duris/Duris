@@ -59,6 +59,7 @@ bool valid_accounts(const auction_bid_accounting_accounts &accounts,
 	    accounts.bank.context_id != payload.racewar ||
 	    accounts.bank.lineage.bytes != lineage.bytes ||
 	    !account(accounts.escrow, economic_account_kind::auction_escrow, lineage) ||
+	    !account(accounts.bidder_claim, economic_account_kind::pending_claim, lineage) ||
 	    (outbid &&
 	     !account(accounts.previous_claim, economic_account_kind::pending_claim, lineage)) ||
 	    (sold &&
@@ -74,14 +75,19 @@ bool valid_accounts(const auction_bid_accounting_accounts &accounts,
 		return false;
 	return accounts.wallet.authority_id != accounts.bank.authority_id &&
 	       accounts.wallet.authority_id != accounts.escrow.authority_id &&
+	       accounts.wallet.authority_id != accounts.bidder_claim.authority_id &&
 	       accounts.bank.authority_id != accounts.escrow.authority_id &&
+	       accounts.bank.authority_id != accounts.bidder_claim.authority_id &&
+	       accounts.escrow.authority_id != accounts.bidder_claim.authority_id &&
 	       (!outbid ||
 		(accounts.previous_claim.authority_id != accounts.wallet.authority_id &&
 		 accounts.previous_claim.authority_id != accounts.bank.authority_id &&
-		 accounts.previous_claim.authority_id != accounts.escrow.authority_id)) &&
+		 accounts.previous_claim.authority_id != accounts.escrow.authority_id &&
+		 accounts.previous_claim.authority_id != accounts.bidder_claim.authority_id)) &&
 	       (!sold || (accounts.seller_claim.authority_id != accounts.wallet.authority_id &&
 			  accounts.seller_claim.authority_id != accounts.bank.authority_id &&
 			  accounts.seller_claim.authority_id != accounts.escrow.authority_id &&
+			  accounts.seller_claim.authority_id != accounts.bidder_claim.authority_id &&
 			  (!outbid || accounts.seller_claim.authority_id !=
 					      accounts.previous_claim.authority_id)));
 }
@@ -104,9 +110,10 @@ std::vector<uint8_t> frozen_facts(const auction_bid_accounting_listing &listing,
 				  const auction_bid_accounting_accounts &accounts)
 {
 	std::vector<uint8_t> facts;
-	facts.reserve(120);
+	facts.reserve(124);
 	for (const auto &account : { accounts.wallet, accounts.bank, accounts.escrow,
-				     accounts.previous_claim, accounts.seller_claim })
+				     accounts.bidder_claim, accounts.previous_claim,
+				     accounts.seller_claim })
 		append_u64(&facts, account.authority_id);
 	append_u32(&facts, listing.auction_id);
 	append_u32(&facts, listing.seller_pid);
@@ -217,7 +224,7 @@ economic_accounting_error auction_bid_accounting_decode(const critical_command &
 		    economic_intent_verify_binding(command, parsed_intent) != error::ok)
 			return error::corrupt_evidence;
 		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
-		if (facts.size() != 116)
+		if (facts.size() != 124)
 			return error::invalid_identity;
 		const auto number = [&](size_t offset, size_t width)
 		{
@@ -234,25 +241,27 @@ economic_accounting_error auction_bid_accounting_decode(const critical_command &
 					 parsed_payload.racewar };
 		parsed_accounts.escrow = { lineage, economic_account_kind::auction_escrow,
 					   number(16, 8), 0 };
-		if (const auto id = number(24, 8))
+		parsed_accounts.bidder_claim = { lineage, economic_account_kind::pending_claim,
+						 number(24, 8), 0 };
+		if (const auto id = number(32, 8))
 			parsed_accounts.previous_claim = { lineage,
 							   economic_account_kind::pending_claim, id,
 							   0 };
-		if (const auto id = number(32, 8))
+		if (const auto id = number(40, 8))
 			parsed_accounts.seller_claim = { lineage,
 							 economic_account_kind::pending_claim, id,
 							 0 };
 		auction_bid_accounting_listing parsed_listing;
-		parsed_listing.auction_id = static_cast<uint32_t>(number(40, 4));
-		parsed_listing.seller_pid = static_cast<uint32_t>(number(44, 4));
-		parsed_listing.winning_bidder_pid = static_cast<uint32_t>(number(48, 4));
-		parsed_listing.status = static_cast<uint32_t>(number(52, 4));
-		parsed_listing.custody_state = static_cast<uint32_t>(number(56, 4));
-		parsed_listing.current_price = static_cast<int64_t>(number(60, 8));
-		parsed_listing.buy_price = static_cast<int64_t>(number(68, 8));
-		parsed_listing.revision = number(76, 8);
-		std::copy_n(facts.begin() + 84, 16, parsed_listing.listing_operation.bytes.begin());
-		std::copy_n(facts.begin() + 100, 16,
+		parsed_listing.auction_id = static_cast<uint32_t>(number(48, 4));
+		parsed_listing.seller_pid = static_cast<uint32_t>(number(52, 4));
+		parsed_listing.winning_bidder_pid = static_cast<uint32_t>(number(56, 4));
+		parsed_listing.status = static_cast<uint32_t>(number(60, 4));
+		parsed_listing.custody_state = static_cast<uint32_t>(number(64, 4));
+		parsed_listing.current_price = static_cast<int64_t>(number(68, 8));
+		parsed_listing.buy_price = static_cast<int64_t>(number(76, 8));
+		parsed_listing.revision = number(84, 8);
+		std::copy_n(facts.begin() + 92, 16, parsed_listing.listing_operation.bytes.begin());
+		std::copy_n(facts.begin() + 108, 16,
 			    parsed_listing.previous_bid_operation.bytes.begin());
 		critical_command projected = command;
 		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
@@ -324,18 +333,25 @@ auction_bid_accounting_plan(const critical_command &command, const economic_froz
 						    payload.closing_fee_basis_points / 10000) :
 			       0;
 		const int64_t proceeds = sold ? bid - fee : 0;
+		if (authority.bidder_claim_before.money < 0 ||
+		    authority.bidder_claim_before.money > UINT_MAX)
+			return error::corrupt_evidence;
+		const int64_t claim_credit_used =
+			std::min(to_pay, authority.bidder_claim_before.money);
+		const int64_t wallet_to_pay = to_pay - claim_credit_used;
 		int64_t wallet_before = 0;
 		status = economic_coin_value(authority.balances_before.wallet.amount,
 					     &wallet_before);
 		if (status != error::ok)
 			return status;
-		if (wallet_before < to_pay)
+		if (wallet_before < wallet_to_pay)
 			return error::negative_holding;
 		if (authority.balances_before.wallet_revision != payload.expected_wallet_revision ||
 		    authority.balances_before.bank_revision != payload.expected_bank_revision)
 			return error::stale_revision;
 		if (authority.balances_before.wallet_revision == UINT64_MAX ||
 		    authority.balances_before.bank_revision == UINT64_MAX ||
+		    (claim_credit_used && authority.bidder_claim_before.revision == UINT64_MAX) ||
 		    (outbid && authority.previous_claim_before.revision == UINT64_MAX) ||
 		    (sold && authority.seller_claim_before.revision == UINT64_MAX))
 			return error::overflow;
@@ -346,7 +362,7 @@ auction_bid_accounting_plan(const critical_command &command, const economic_froz
 			      authority.seller_claim_before.money >
 				      static_cast<int64_t>(UINT_MAX) - proceeds)))
 			return error::overflow;
-		const auto wallet_after = canonical_wallet(wallet_before - to_pay);
+		const auto wallet_after = canonical_wallet(wallet_before - wallet_to_pay);
 		if (result.action != auction_action::bid ||
 		    result.event_type !=
 			    (sold ? auction_event_type::sold : auction_event_type::bid_placed) ||
@@ -354,7 +370,8 @@ auction_bid_accounting_plan(const critical_command &command, const economic_froz
 		    result.seller_pid != listing.seller_pid ||
 		    result.winner_pid != payload.actor_pid ||
 		    result.previous_bidder_pid != listing.winning_bidder_pid ||
-		    result.final_price != bid || result.wallet_value_delta != -to_pay ||
+		    result.final_price != bid || result.wallet_value_delta != -wallet_to_pay ||
+		    result.claim_credit_used != claim_credit_used ||
 		    result.wallet.amount != wallet_after ||
 		    result.bank.amount != authority.balances_before.bank.amount ||
 		    result.wallet_revision != authority.balances_before.wallet_revision + 1 ||
@@ -375,6 +392,18 @@ auction_bid_accounting_plan(const critical_command &command, const economic_froz
 			{ accounts.wallet, authority.balances_before.wallet.amount,
 			  result.wallet.amount, authority.balances_before.wallet_revision,
 			  result.wallet_revision });
+		uint16_t bidder_claim_index = 0;
+		if (claim_credit_used)
+		{
+			bidder_claim_index = static_cast<uint16_t>(candidate.accounts.size());
+			candidate.accounts.push_back(
+				{ accounts.bidder_claim,
+				  copper(authority.bidder_claim_before.money),
+				  copper(authority.bidder_claim_before.money - claim_credit_used),
+				  authority.bidder_claim_before.revision,
+				  authority.bidder_claim_before.revision + 1 });
+		}
+		uint16_t escrow_index = static_cast<uint16_t>(candidate.accounts.size());
 		candidate.accounts.push_back(
 			{ accounts.escrow,
 			  copper(listing.winning_bidder_pid ? listing.current_price : 0),
@@ -406,18 +435,22 @@ auction_bid_accounting_plan(const critical_command &command, const economic_froz
 					     candidate.accounts[0].after, &wallet_delta);
 		if (status != error::ok)
 			return status;
-		posting(&candidate, 0, wallet_delta, -to_pay);
-		posting(&candidate, 1, copper(to_pay), to_pay);
+		if (wallet_to_pay)
+			posting(&candidate, 0, wallet_delta, -wallet_to_pay);
+		if (claim_credit_used)
+			posting(&candidate, bidder_claim_index, copper(-claim_credit_used),
+				-claim_credit_used);
+		posting(&candidate, escrow_index, copper(to_pay), to_pay);
 		if (outbid)
 		{
-			posting(&candidate, 1, copper(-listing.current_price),
+			posting(&candidate, escrow_index, copper(-listing.current_price),
 				-listing.current_price);
 			posting(&candidate, previous_index, copper(listing.current_price),
 				listing.current_price);
 		}
 		if (sold)
 		{
-			posting(&candidate, 1, copper(-bid), -bid);
+			posting(&candidate, escrow_index, copper(-bid), -bid);
 			if (proceeds)
 				posting(&candidate, seller_index, copper(proceeds), proceeds);
 			if (fee)

@@ -168,7 +168,8 @@ bool sourced_item_creation(const item_transfer_payload &payload, uint32_t actor_
 
 bool sourced_item_destruction(const item_transfer_payload &payload)
 {
-	if (payload.reason != item_transfer_reason::destruction ||
+	if ((payload.reason != item_transfer_reason::destruction &&
+	     payload.reason != item_transfer_reason::quest_turnin) ||
 	    !item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner) ||
 	    (payload.from_owner.type != item_owner_type::player &&
@@ -264,7 +265,8 @@ economic_accounting_error item_transfer_accounting_intent(const critical_command
 			facts.metadata.source_event =
 				item_lifecycle_source(payload, lifecycle_source, lineage);
 		}
-		else if (payload.reason == item_transfer_reason::destruction)
+		else if (payload.reason == item_transfer_reason::destruction ||
+			 payload.reason == item_transfer_reason::quest_turnin)
 		{
 			if ((lifecycle_source != economic_source_kind::item_action &&
 			     lifecycle_source != economic_source_kind::spell_consumption &&

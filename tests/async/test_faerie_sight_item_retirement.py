@@ -10,11 +10,14 @@ from _paths import extract_function, source
 
 def main() -> None:
     ethermancer = source("ethermancer.c").read_text(encoding="utf-8")
-    start = ethermancer.index("struct faerie_sight_component_context\n{")
-    context = ethermancer[start:ethermancer.index("\n};", start) + 3]
+    lifecycle = source("spell_item_lifecycle.h").read_text(encoding="utf-8")
+    start = lifecycle.index("constexpr size_t SPELL_COMPONENT_EFFECT_CONTEXT_MAX_BYTES")
+    context = lifecycle[start:lifecycle.index("// Consume up to", start)]
     count = extract_function("ethermancer.c", "static size_t faerie_sight_dust_count(")
     apply = extract_function("ethermancer.c", "static void apply_faerie_sight(")
-    completed = extract_function("ethermancer.c", "static void faerie_sight_component_completed(")
+    completed = extract_function(
+        "ethermancer.c", "spell_component_effect_status spell_faerie_sight_component_completed("
+    )
     cast = extract_function("ethermancer.c", "void spell_faerie_sight(")
     program = r'''
 #include <array>
@@ -60,8 +63,11 @@ struct character {
 using P_char = character *;
 using P_obj = object *;
 struct item_transfer_result { uint64_t root_item_uid = 0; uint16_t item_count = 0; };
-using item_movement_completion_fn = void (*)(P_char, bool,
+enum class spell_component_effect_status { retry, waiting_for_owner, complete };
+struct critical_operation_id { std::array<uint8_t, 16> bytes = {}; };
+using item_movement_completion_fn = spell_component_effect_status (*)(const critical_operation_id &, P_char, bool,
     const item_transfer_result &, unsigned int, const uint8_t *, size_t);
+enum class item_spell_component_effect { faerie_sight = 1 };
 #define IS_SET(bits, flag) (((bits) & (flag)) != 0)
 #define IS_AFFECTED2(ch, flag) IS_SET((ch)->affected2, flag)
 #define IS_PC(ch) (!(ch)->npc)
@@ -118,10 +124,13 @@ void extract_obj(P_obj item) {
     ++direct_removed;
 }
 bool spell_consume_components(P_char, int vnum, size_t count, uint32_t reason,
+                              item_spell_component_effect effect,
                               item_movement_completion_fn continuation,
                               const void *context, size_t context_size, bool exact) {
     assert(active_epoch && vnum == VOBJ_FORAGE_FAERIE_DUST &&
-           reason == SPELL_FAERIE_SIGHT && context_size <= pending_context.size());
+           reason == SPELL_FAERIE_SIGHT &&
+           effect == item_spell_component_effect::faerie_sight &&
+           context_size <= pending_context.size());
     ++submitted;
     requested_count = count;
     requested_exact = exact;
@@ -142,7 +151,10 @@ void complete(P_char actor, bool committed) {
             ++durable_removed;
         }
     item_transfer_result result {1, static_cast<uint16_t>(requested_count)};
-    continuation(actor, committed, result, 0, pending_context.data(), pending_context_size);
+    critical_operation_id operation_id{};
+    assert(continuation(operation_id, actor, committed, result, 0,
+                        pending_context.data(), pending_context_size) ==
+           spell_component_effect_status::complete);
 }
 void reset(P_char actor) {
     actor->carrying = nullptr;

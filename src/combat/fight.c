@@ -1558,6 +1558,8 @@ static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int del
 		delay = DEATH_EXTRACT_RETRY_INITIAL;
 	if (delay > DEATH_EXTRACT_RETRY_MAX)
 		delay = DEATH_EXTRACT_RETRY_MAX;
+	ch->only.pc->death_retry_corpse_uid = corpse_uid;
+	ch->only.pc->death_retry_delay = delay;
 
 	// add_event() rejects dead character owners. Briefly expose a live state while
 	// linking the private recovery event, then restore the pending death before
@@ -1573,8 +1575,6 @@ static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int del
 	{
 		// Retain the retry on the character without another allocation. The game
 		// pulse can retry a refused event without releasing unsaved live assets.
-		ch->only.pc->death_retry_corpse_uid = corpse_uid;
-		ch->only.pc->death_retry_delay = delay;
 		ch->only.pc->death_retry_due_usec =
 			persistence_observability_now_usec() +
 			static_cast<uint64_t>(delay) * 1000000 / WAIT_SEC;
@@ -1644,6 +1644,9 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch) || !ch->only.pc)
 		return;
+	ch->only.pc->death_retry_corpse_uid = 0;
+	ch->only.pc->death_retry_delay = 0;
+	ch->only.pc->death_retry_due_usec = 0;
 
 	if (ch->in_room != NOWHERE && (CHAR_IN_ARENA(ch) || GET_STAT(ch) != STAT_DEAD))
 	{
@@ -1785,6 +1788,36 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	// Terminal publication must release intake even when no corpse-item handoff ever ran.
 	collector_death_enrollment_end(corpse);
 	release_after_terminal_death(ch, "death_recovery_completed");
+}
+
+bool death_extract_retry_pending(P_char ch)
+{
+	return ch && IS_PC(ch) && ch->only.pc &&
+	       (ch->only.pc->death_retry_delay > 0 || ch->only.pc->death_retry_due_usec ||
+		get_scheduled(ch, event_death_extract_retry) != nullptr);
+}
+
+bool death_extract_retry_copy_state(P_char ch, uint64_t *corpse_uid, int *delay)
+{
+	if (!corpse_uid || !delay)
+		return false;
+	*corpse_uid = 0;
+	*delay = 0;
+	if (!death_extract_retry_pending(ch))
+		return true;
+	*corpse_uid = ch->only.pc->death_retry_corpse_uid;
+	*delay = ch->only.pc->death_retry_delay;
+	return *delay >= DEATH_EXTRACT_RETRY_INITIAL && *delay <= DEATH_EXTRACT_RETRY_MAX;
+}
+
+bool death_extract_retry_restore(P_char ch, uint64_t corpse_uid, int delay)
+{
+	if (!ch || IS_NPC(ch) || !ch->only.pc || delay < DEATH_EXTRACT_RETRY_INITIAL ||
+	    delay > DEATH_EXTRACT_RETRY_MAX)
+		return false;
+	hold_for_death_extract_retry(ch);
+	schedule_death_extract_retry(ch, corpse_uid, delay);
+	return death_extract_retry_pending(ch);
 }
 
 static long lich_death_residual_experience(long experience, int level)

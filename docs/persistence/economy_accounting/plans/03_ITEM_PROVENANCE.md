@@ -33,15 +33,18 @@ against its disposable SQL fixture.
    Separate real issuance/destruction from temporary objects and projections.
    Classify remaining lexical hits by reachable writer, nonwriter, or
    unsupported route; use the shared inventory format in Plan 5.
-2. Extend typed source-event identity for quest/world generation, loot, spell
-   creation/consumption, and intentional item destruction. Dedupe a logical
-   issuance even when retried with another command ID. Keep UID lifetime and
-   source lineage through copyover, save, reconnect, and restored snapshots.
+2. Extend typed source-event identity for quest/world generation, zone resets,
+   mob loot generation, spell creation (e.g. wind blade, flame blade, minor creation),
+   and item consumption/destruction (potions, scrolls, bandages, broken keys).
+   Dedupe a logical issuance even when retried with another command ID. Keep UID
+   lifetime and source lineage through copyover, save, reconnect, and restored snapshots.
 3. Complete root/child/event references for all eligible ordinary transfers:
    player, room, container, equipment, locker, pet, corpse handoff, and
-   same-owner topology changes. The before-state, event order, exact native
-   ownership ledger row, and final graph must agree. Preserve historical
-   root/parent data on destroyed children.
+   same-owner topology changes. Support PC-to-NPC quest turn-ins without refusing
+   durable ownership; consume submitted items under `item_transfer_reason::quest_turnin`.
+   Support spell-driven drops (e.g. `remove curse` dropping cursed items to room floor).
+   The before-state, event order, exact native ownership ledger row, and final graph
+   must agree. Preserve historical root/parent data on destroyed children.
 4. Integrate saved-item handoff and retirement with source epoch/root,
    payload digest, receipt, acknowledgement, and safe cleanup ordering.
    Missing payload, conflicting ownership, cyclic topology, or uncertain

@@ -47,6 +47,7 @@ using namespace std;
 #include "world/zone_story_quest_runtime.h"
 #include "economy/nexus_stones.h"
 #include "economy/currency_transaction.h"
+#include "item/item_movement_transaction.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "persistence/persistence_checkpoint.h"
@@ -4167,6 +4168,7 @@ static void show_world_persistence(P_char ch)
 	const epic_transaction_health epic_transactions = epic_transaction_health_copy();
 	const currency_transaction_health currency_transactions =
 		currency_transaction_health_copy();
+	const item_movement_health item_movements = item_movement_transaction_health_copy();
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	const maintenance_scheduler_health maintenance =
 		maintenance_scheduler_health_copy(ne_event_tick);
@@ -4472,6 +4474,32 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)currency_transactions.submission_failures,
 		 (unsigned long long)currency_transactions.malformed_completions,
 		 (unsigned long long)currency_transactions.publication_abandoned);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "item_movements state=%s pending=%llu retained_offline=%llu "
+		 "publication_retrying=%llu publication_owner_waiting=%llu "
+		 "publication_blocked=%llu ack_pending=%llu submitted=%llu committed=%llu "
+		 "rejected=%llu submit_failures=%llu stale_publications=%llu\n",
+		 item_movements.publication_blocked || item_movements.publication_ack_pending ||
+				 item_movements.submission_failures ||
+				 item_movements.stale_publications ?
+			 "degraded" :
+		 item_movements.pending || item_movements.publication_retrying ||
+				 item_movements.publication_owner_waiting ?
+			 "pending" :
+							 "ready",
+		 (unsigned long long)item_movements.pending,
+		 (unsigned long long)item_movements.retained_offline,
+		 (unsigned long long)item_movements.publication_retrying,
+		 (unsigned long long)item_movements.publication_owner_waiting,
+		 (unsigned long long)item_movements.publication_blocked,
+		 (unsigned long long)item_movements.publication_ack_pending,
+		 (unsigned long long)item_movements.submitted,
+		 (unsigned long long)item_movements.committed,
+		 (unsigned long long)item_movements.rejected,
+		 (unsigned long long)item_movements.submission_failures,
+		 (unsigned long long)item_movements.stale_publications);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

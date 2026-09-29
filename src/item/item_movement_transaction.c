@@ -13,6 +13,8 @@
 #include "player/player_load_items.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "account/account_reward.h"
+#include "magic/spell_item_lifecycle.h"
 
 #include <algorithm>
 #include <array>
@@ -36,6 +38,7 @@ enum class publication_state : uint8_t
 	none,
 	ready,
 	retrying,
+	owner_waiting,
 	blocked,
 	ack_pending,
 };
@@ -62,6 +65,7 @@ struct pending_movement
 	publication_state publication_status;
 	bool creation_batch;
 	bool registry_applied;
+	bool recovered_publication;
 	bool collector_invalidated;
 	critical_completion completed;
 };
@@ -89,6 +93,7 @@ struct creation_grant_queue
 {
 	item_creation_prepare_fn prepare;
 	economic_source_kind source = {};
+	uint64_t source_id = 0;
 	std::deque<pending_creation_grant> requests;
 	std::deque<pending_creation_grant> following_requests;
 	bool active = false;
@@ -135,6 +140,33 @@ std::string operation_key(const critical_operation_id &operation_id)
 bool reject_with(item_movement_reject *reject, item_movement_reject reason)
 {
 	*reject = reason;
+	return false;
+}
+
+bool recovered_durable_item_publication(const critical_operation_id &, P_char actor, bool,
+						const item_transfer_result &,
+						unsigned int, const uint8_t *, size_t)
+{
+	// The repository or a domain recovery obligation owns the replayed outcome;
+	// runtime inventory and room projections are hydrated from that authority.
+	return actor != nullptr;
+}
+
+bool unresolved_replay_publication(const critical_operation_id &, P_char actor, bool committed,
+					  const item_transfer_result &,
+					  unsigned int, const uint8_t *, size_t)
+{
+	if (!actor)
+		return false;
+	if (!committed)
+	{
+		send_to_char("The pending item change did not commit; your items remain unchanged.\r\n",
+			     actor);
+		return true;
+	}
+	send_to_char(
+		"A committed item change needs recovery before it can finish. Your item state is retained; please contact staff.\r\n",
+		actor);
 	return false;
 }
 
@@ -364,7 +396,8 @@ P_obj find_item(uint64_t uid)
 bool destruction_publication_live_ready(P_char actor, const item_transfer_payload &payload)
 {
 	if (!actor || !IS_PC(actor) || GET_PID(actor) <= 0 ||
-	    payload.reason != item_transfer_reason::destruction ||
+	    (payload.reason != item_transfer_reason::destruction &&
+	     payload.reason != item_transfer_reason::quest_turnin) ||
 	    payload.from_owner.type != item_owner_type::player ||
 	    payload.from_owner.id != static_cast<uint32_t>(GET_PID(actor)) ||
 	    payload.to_owner.type != item_owner_type::destruction || !payload.item_count ||
@@ -1163,12 +1196,6 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	auto [found, inserted] = creation_grants.try_emplace(actor_pid);
 	creation_grant_queue &queue = found->second;
-	if (queue.batch_submission && source != queue.source)
-	{
-		if (inserted)
-			creation_grants.erase(found);
-		return false;
-	}
 	if (target_container &&
 	    (to_room || !creation_grant_target_available(queue, target_container, recipient)))
 	{
@@ -1239,6 +1266,7 @@ void account_health()
 	health.publication_retrying = 0;
 	health.publication_blocked = 0;
 	health.publication_ack_pending = 0;
+	health.publication_owner_waiting = 0;
 	for (const auto &[key, entry] : pending)
 	{
 		(void)key;
@@ -1248,6 +1276,8 @@ void account_health()
 			++health.publication_retrying;
 		else if (entry.publication_status == publication_state::blocked)
 			++health.publication_blocked;
+		else if (entry.publication_status == publication_state::owner_waiting)
+			++health.publication_owner_waiting;
 		else if (entry.publication_status == publication_state::ack_pending)
 			++health.publication_ack_pending;
 	}
@@ -1336,6 +1366,8 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	item_transfer_result result = {};
 	const bool decoded = item_transfer_command_decode_result(
 		entry.completed.result_payload.data(), entry.completed.result_size, &result);
+	if (decoded)
+		result.operation_id = entry.completed.operation_id;
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
@@ -1402,7 +1434,9 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		return;
 	}
 	if (committed && entry.publication && !entry.registry_applied &&
-	    entry.payload.reason == item_transfer_reason::destruction &&
+	    !entry.recovered_publication &&
+	    (entry.payload.reason == item_transfer_reason::destruction ||
+	     entry.payload.reason == item_transfer_reason::quest_turnin) &&
 	    entry.payload.from_owner.type == item_owner_type::player)
 	{
 		if (!actor)
@@ -1450,7 +1484,7 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		bool published = false;
 		try
 		{
-			published = entry.publication(actor, committed, result, error_code,
+			published = entry.publication(entry.completed.operation_id, actor, committed, result, error_code,
 						      context.data(), context_size);
 		}
 		catch (...)
@@ -1462,6 +1496,13 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			return;
 		if (!published)
 		{
+			if (spell_component_retirement_waiting_for_effect(
+				    current->second.completed.operation_id))
+			{
+				current->second.publication_status = publication_state::owner_waiting;
+				account_health();
+				return;
+			}
 			retain_publication_failure(current->second, "callback");
 			account_health();
 			return;
@@ -1672,7 +1713,7 @@ bool item_movement_transaction_submit(
 	item_movement_completion_fn completion, const void *context, size_t context_size,
 	P_obj corpse_context, item_movement_reject *reject,
 	item_movement_publication_fn publication, economic_source_kind lifecycle_source,
-	uint64_t logical_source_id)
+	uint64_t logical_source_id, const item_transfer_continuation &continuation)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1779,7 +1820,8 @@ bool item_movement_transaction_submit(
 		.item_blob_size = 0,
 		.item_blob = {},
 		.corpse = {},
-		.collector = {}
+		.collector = {},
+		.continuation = continuation
 	};
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
@@ -1845,6 +1887,7 @@ bool item_movement_transaction_submit(
 						    publication_state::none,
 		.creation_batch = false,
 		.registry_applied = false,
+		.recovered_publication = false,
 		.collector_invalidated = false,
 		.completed = {}
 	};
@@ -1892,7 +1935,8 @@ bool item_movement_transaction_submit_batch(
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context,
 	item_movement_reject *reject, item_movement_publication_fn publication,
-	economic_source_kind lifecycle_source, uint64_t logical_source_id)
+	economic_source_kind lifecycle_source, uint64_t logical_source_id,
+	const item_transfer_continuation &continuation)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -2057,8 +2101,17 @@ bool item_movement_transaction_submit_batch(
 		.item_blob_size = 0,
 		.item_blob = {},
 		.corpse = {},
-		.collector = {}
+		.collector = {},
+		.continuation = {}
 	};
+	try
+	{
+		payload.continuation = continuation;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return reject_with(reject, item_movement_reject::allocation_failure);
+	}
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
 	std::vector<uint8_t> item_blob;
@@ -2109,6 +2162,7 @@ bool item_movement_transaction_submit_batch(
 						    publication_state::none,
 		.creation_batch = creation,
 		.registry_applied = false,
+		.recovered_publication = false,
 		.collector_invalidated = false,
 		.completed = {}
 	};
@@ -2148,6 +2202,21 @@ bool item_movement_transaction_submit_batch(
 	++health.submitted;
 	account_health();
 	return true;
+}
+
+bool item_movement_transaction_submit_batch(
+	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
+	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
+	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj corpse_context,
+	item_movement_reject *reject, item_movement_publication_fn publication,
+	economic_source_kind lifecycle_source, uint64_t logical_source_id)
+{
+	return item_movement_transaction_submit_batch(actor, roots, root_count, target_container,
+						      from_owner, to_owner, reason, reason_id,
+						      completion, context, context_size,
+						      corpse_context, reject, publication,
+						      lifecycle_source, logical_source_id, {});
 }
 
 const char *item_movement_reject_name(item_movement_reject reason)
@@ -2241,7 +2310,7 @@ bool item_creation_grant_submit_to_player_with_completion(
 
 /** Reserve the player before any legacy kit objects or persistence work exist. */
 bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare,
-			       economic_source_kind source)
+			       economic_source_kind source, uint64_t source_id)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !prepare ||
 	    item_movement_transaction_player_busy(actor) ||
@@ -2253,6 +2322,7 @@ bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare,
 		creation_grant_queue queue;
 		queue.prepare = std::move(prepare);
 		queue.source = source;
+		queue.source_id = source_id;
 		queue.batch_submission = true;
 		queue.blocks_actor_commands = true;
 		queue.stop_on_failure = true;
@@ -2316,8 +2386,9 @@ void item_creation_grant_prepare_pulse(void)
 					else
 					{
 						pending_creation_grant request = { object->obj_uid, 0, pid,
-									   NOWHERE, false, true };
+								   NOWHERE, false, true };
 						request.source = queue.source;
+						request.source_id = queue.source_id;
 						queue.requests.push_back(request);
 						object = nullptr;
 					}
@@ -2356,6 +2427,17 @@ bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj objec
 {
 	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true, nullptr,
 				    nullptr, 0, nullptr, source, source_id);
+}
+
+bool item_creation_grant_submit_to_player_before_entry_with_completion(
+	P_char actor, P_obj object, P_char recipient,
+	item_creation_grant_completion_fn completion, economic_source_kind source,
+	uint64_t source_id)
+{
+	if (!completion)
+		return false;
+	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true,
+				    nullptr, nullptr, 0, completion, source, source_id);
 }
 
 bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
@@ -2501,6 +2583,7 @@ void retry_publications(void)
 			if (entry.publication && entry.completion_ready &&
 			    (entry.publication_status == publication_state::ready ||
 			     entry.publication_status == publication_state::retrying ||
+			     entry.publication_status == publication_state::owner_waiting ||
 			     entry.publication_status == publication_state::ack_pending))
 				retry_keys.push_back(key);
 	}
@@ -2573,6 +2656,123 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 	}
 	pump_creation_grants();
 	account_health();
+}
+
+bool item_movement_transaction_restore_replayed_command(const critical_command &command)
+{
+	if (command.type != critical_command_type::item_transfer ||
+	    !command.publication_required)
+		return true;
+	const std::string key = operation_key(command.operation_id);
+	if (pending.find(key) != pending.end())
+		return true;
+	item_transfer_payload payload = {};
+	if (!item_transfer_command_decode_payload(command, &payload) ||
+	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	    payload.from_owner.id > UINT32_MAX)
+		return false;
+	const bool quest_offering =
+		payload.reason == item_transfer_reason::quest_turnin &&
+		payload.continuation.kind == item_transfer_continuation_kind::quest_offering;
+	const bool forced_room_drop =
+		item_transfer_forced_weapon_drop(payload.reason) &&
+		payload.continuation.kind == item_transfer_continuation_kind::none &&
+		payload.to_owner.type == item_owner_type::room;
+	const bool account_reward_retirement =
+		payload.continuation.kind ==
+		item_transfer_continuation_kind::account_reward_retirement;
+	const bool account_reward_duplicate_promotion =
+		payload.continuation.kind ==
+		item_transfer_continuation_kind::account_reward_duplicate_promotion;
+	const bool spell_component_retirement =
+		payload.continuation.kind ==
+		item_transfer_continuation_kind::spell_component_retirement;
+	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> spell_context = {};
+	size_t spell_context_size = 0;
+	if (spell_component_retirement &&
+	    !spell_component_retirement_restore_context(payload, &spell_context,
+							&spell_context_size))
+		return false;
+	const item_movement_publication_fn publication =
+		account_reward_duplicate_promotion ? account_reward_duplicate_promotion_publication :
+		(account_reward_retirement ? account_reward_retirement_publication :
+		 (spell_component_retirement ? spell_component_retirement_replayed_publication :
+		  ((quest_offering || forced_room_drop) ? recovered_durable_item_publication :
+							       unresolved_replay_publication)));
+	const void *replay_context =
+		(account_reward_retirement || account_reward_duplicate_promotion) ?
+			payload.continuation.data.data() :
+		(spell_component_retirement ? spell_context.data() : nullptr);
+	const size_t replay_context_size =
+		(account_reward_retirement || account_reward_duplicate_promotion) ?
+			payload.continuation.data.size() :
+		(spell_component_retirement ? spell_context_size : 0);
+	return item_movement_transaction_restore_replayed_publication(
+		command, publication, replay_context, replay_context_size);
+}
+
+bool item_movement_transaction_restore_replayed_publication(
+	const critical_command &command, item_movement_publication_fn publication,
+	const void *context, size_t context_size)
+{
+	if (command.type != critical_command_type::item_transfer ||
+	    !command.publication_required || !publication ||
+	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
+		return false;
+	const std::string key = operation_key(command.operation_id);
+	if (pending.find(key) != pending.end() || pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
+		return false;
+	item_transfer_payload payload = {};
+	if (!item_transfer_command_decode_payload(command, &payload) ||
+	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	    payload.from_owner.id > UINT32_MAX)
+		return false;
+	const item_owner_identity to_owner = payload.to_owner;
+	const uint64_t target_parent_uid = payload.target_parent_item_uid;
+	const item_transfer_reason reason = payload.reason;
+	const int64_t reason_id = payload.reason_id;
+	pending_movement entry = {
+		.actor_pid = static_cast<uint32_t>(payload.from_owner.id),
+		.actor_runtime_id = 0,
+		.payload = std::move(payload),
+		.requested_to_owner = to_owner,
+		.requested_target_parent_uid = target_parent_uid,
+		.requested_reason = reason,
+		.requested_reason_id = reason_id,
+		.requested_corpse_uid = 0,
+		.adopting = false,
+		.adoption_only = false,
+		.completion = nullptr,
+		.publication = publication,
+		.context = {},
+		.context_size = context_size,
+		.completion_ready = false,
+		.publication_failed = false,
+		.publication_attempts =
+			(publication == unresolved_replay_publication ||
+			 publication == spell_component_retirement_replayed_publication) ?
+						 ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS - 1 :
+						 0,
+		.publication_status = publication_state::ready,
+		.creation_batch = false,
+		// The durable item repository already owns the replayed result. Runtime
+		// inventory is hydrated from that authority when the owner loads.
+		.registry_applied = true,
+		.recovered_publication = true,
+		.collector_invalidated = false,
+		.completed = {}
+	};
+	if (context_size)
+		memcpy(entry.context.data(), context, context_size);
+	try
+	{
+		pending.emplace(key, std::move(entry));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
 }
 
 /** Publish ready work for a player, stopping if a stale completion must remain held. */

@@ -34,6 +34,11 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0027_saved_item_recovery_handoff.sql",
     ROOT / "migrations" / "immutable" / "0030_telemetry_quarantine.sql",
     ROOT / "migrations" / "immutable" / "0031_economy_accounting.sql",
+    ROOT / "migrations" / "immutable" / "0045_quest_reward_obligation.sql",
+    ROOT / "migrations" / "immutable" / "0046_economic_realized_trade_price.sql",
+    ROOT / "migrations" / "immutable" / "0047_quest_xp_receipt.sql",
+    ROOT / "migrations" / "immutable" / "0048_quest_xp_entitlement.sql",
+    ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
     ROOT / "migrations" / "economic_baseline.sql",
 )
 

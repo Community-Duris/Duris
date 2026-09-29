@@ -88,9 +88,16 @@ static size_t copyover_mob_bytes_for_version(int version)
 {
 	if (version == 12)
 		return offsetof(copyover_mob, transport);
-	if (version < COPYOVER_VERSION)
+	if (version < 16)
 		return offsetof(copyover_mob, shopkeeper_shop_id);
 	return sizeof(copyover_mob);
+}
+
+static size_t copyover_desc_bytes_for_version(int version)
+{
+	if (version < 17)
+		return offsetof(copyover_desc, death_retry_pending);
+	return sizeof(copyover_desc);
 }
 
 const char *copyover_state_file()
@@ -209,6 +216,16 @@ static int write_desc_entry(FILE *fp, P_desc d)
 	{
 		strlcpy(entry.player_name, GET_NAME(ch), sizeof(entry.player_name));
 		entry.room = ch->in_room;
+		int retry_delay = 0;
+		uint64_t retry_corpse_uid = 0;
+		if (!death_extract_retry_copy_state(ch, &retry_corpse_uid, &retry_delay))
+			return 0;
+		if (retry_delay > 0)
+		{
+			entry.death_retry_pending = 1;
+			entry.death_retry_delay = retry_delay;
+			entry.death_retry_corpse_uid = retry_corpse_uid;
+		}
 
 		// save combat state
 		if (ch->specials.fighting)
@@ -769,6 +786,32 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	const std::string copyover_tmp_path = std::string(COPYOVER_FILE) + ".tmp";
 	const char *copyover_tmp = copyover_tmp_path.c_str();
 
+	for (P_char pending_character = character_list; pending_character;
+	     pending_character = pending_character->next)
+		if (death_extract_retry_pending(pending_character))
+		{
+			bool serialized = false;
+			uint64_t retry_corpse_uid = 0;
+			int retry_delay = 0;
+			const bool retry_state_valid = death_extract_retry_copy_state(
+				pending_character, &retry_corpse_uid, &retry_delay);
+			for (P_desc pending_desc = descriptor_list; pending_desc;
+			     pending_desc = pending_desc->next)
+				if (copyover_descriptor_is_eligible(pending_desc) &&
+				    pending_desc->character == pending_character && retry_state_valid &&
+				    retry_delay > 0 && GET_NAME(pending_character))
+				{
+					serialized = true;
+					break;
+				}
+			if (!serialized)
+			{
+				notify_copyover_failure(
+					"\r\n*** Copyover cancelled: a death recovery cannot be preserved; retry after recovery completes. ***\r\n");
+				return false;
+			}
+		}
+
 	if (item_creation_grant_batches_pending())
 	{
 		notify_copyover_failure(
@@ -1282,6 +1325,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	P_char ch;
 	int i, rnum, save_room;
 	int success = 0;
+	size_t desc_bytes = 0;
 	std::vector<telemetry_copyover_entry> telemetry_entries;
 
 	copyover_in_progress = 1;
@@ -1306,6 +1350,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 	logit(LOG_STATUS, "copyover_recover: restoring %d descs, %d mobs, %d doors",
 	      header.num_descriptors, header.num_mobs, header.num_rooms);
+	desc_bytes = copyover_desc_bytes_for_version(header.version);
 
 	// read listener sockets
 	if (fread(mother_desc, sizeof(int), 1, fp) != 1 ||
@@ -1319,9 +1364,21 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	// restore descriptors
 	for (i = 0; i < header.num_descriptors; i++)
 	{
-		if (fread(&desc_entry, sizeof(desc_entry), 1, fp) != 1)
+		memset(&desc_entry, 0, sizeof(desc_entry));
+		if (fread(&desc_entry, desc_bytes, 1, fp) != 1)
 		{
 			logit(LOG_STATUS, "copyover_recover: failed reading desc %d", i);
+			goto copyover_recover_fail;
+		}
+		if (header.version >= 17 &&
+		    (desc_entry.death_retry_pending > 1 || desc_entry.death_retry_reserved[0] ||
+		     desc_entry.death_retry_reserved[1] || desc_entry.death_retry_reserved[2] ||
+		     (desc_entry.death_retry_pending &&
+		      (desc_entry.death_retry_delay < 4 || desc_entry.death_retry_delay > 60)) ||
+		     (!desc_entry.death_retry_pending &&
+		      (desc_entry.death_retry_delay || desc_entry.death_retry_corpse_uid))))
+		{
+			logit(LOG_STATUS, "copyover_recover: invalid death retry state in desc %d", i);
 			goto copyover_recover_fail;
 		}
 
@@ -1400,6 +1457,14 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				ch->in_room = NOWHERE;
 				char_to_room(ch, save_room, FALSE);
 				player_load_pets_place(ch);
+				if (desc_entry.death_retry_pending &&
+				    !death_extract_retry_restore(ch, desc_entry.death_retry_corpse_uid,
+								 desc_entry.death_retry_delay))
+				{
+					logit(LOG_STATUS, "copyover: failed restoring death retry for %s",
+					      desc_entry.player_name);
+					goto copyover_recover_fail;
+				}
 
 				// stash fighting info for later restoration
 				ch->specials.copyover_fighting_type = desc_entry.fighting_type;
@@ -1460,7 +1525,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		const size_t mob_bytes = copyover_mob_bytes_for_version(header.version);
 		if (fread(&mob_entry, mob_bytes, 1, fp) != 1)
 			goto copyover_recover_fail;
-		if (header.version < COPYOVER_VERSION)
+		if (header.version < 16)
 			mob_entry.shopkeeper_shop_id = -1;
 
 		// read affects into temp array

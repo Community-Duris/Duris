@@ -12,6 +12,8 @@ struct char_data;
 typedef struct char_data *P_char;
 struct obj_data;
 typedef struct obj_data *P_obj;
+struct player_quest_xp_receipt_snapshot;
+struct player_spell_effect_receipt_snapshot;
 
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 256;
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_BYTES = 32 * 1024 * 1024;
@@ -96,6 +98,14 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum);
+// Capture progression and its quest reward identities in one save-journal frame.
+// SQL applies the experience snapshot and receipt mask in the same transaction.
+player_save_pipeline_result player_save_pipeline_request_quest_xp(
+	P_char ch, player_component_mask_t components,
+	const player_quest_xp_receipt_snapshot *receipts, size_t receipt_count, int room_vnum);
+player_save_pipeline_result player_save_pipeline_request_spell_effect(
+	P_char ch, player_component_mask_t components,
+	const player_spell_effect_receipt_snapshot *receipt, int room_vnum);
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
 							  bool allow_journal_handoff);

@@ -2,10 +2,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-set -a
-# shellcheck disable=SC1091
-source "$ROOT/.env"
-set +a
+if [[ -z "${DB_HOST:-}" || -z "${DB_USER:-}" || -z "${DB_PASSWD:-}" ||
+      -z "${DB_NAME:-}" || -z "${ENVIRONMENT:-${APP_ENV:-}}" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$ROOT/.env"
+    set +a
+fi
 environment_name="${ENVIRONMENT:-${APP_ENV:-}}"
 [[ "${environment_name,,}" =~ (dev|local|test) ]] || { echo 'refusing item transfer test: environment is not development/local/test' >&2; exit 1; }
 [[ "${DB_NAME,,}" =~ (dev|local|test) ]] || { echo 'refusing item transfer test: database name is not development/local/test' >&2; exit 1; }
@@ -15,6 +18,7 @@ MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/item_ownership_ledger.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/shopkeeper_item_owner.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/collector_item_owner.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0045_quest_reward_obligation.sql"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
@@ -37,12 +41,16 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
     src/economy/collector_command.c src/economy/collector_codec.c \
     src/economy/collector_policy.c src/economy/collector_repository.c \
+    src/economy/collector_accounting.c \
+    src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/player_death_restitution_repository.c \
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
     src/persistence/economic_sql_item_transfer_transaction.c \
+    src/persistence/economic_sql_collector_transaction.c \
+    src/persistence/economic_sql_shop_trade_transaction.c \
     src/economy/economic_currency_adapter.c \
     src/economy/item_transfer_accounting.c \
     src/economy/coin_transfer_accounting.c \
@@ -50,6 +58,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/economic_accounting_plan.c \
     src/economy/economic_accounting_intent.c src/economy/economic_command_admission.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
+    src/persistence/quest_reward_obligation_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
     "${MYSQL_LIBS[@]}" -lcrypto -lz \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"

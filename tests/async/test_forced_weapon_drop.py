@@ -130,7 +130,7 @@ bool item_movement_transaction_submit(
     const item_owner_identity &to_owner, item_transfer_reason reason, int64_t reason_id,
     item_movement_completion_fn, const void *context, size_t context_size, P_obj,
     item_movement_reject *reject, item_movement_publication_fn publication,
-    economic_source_kind)
+    economic_source_kind, uint64_t, const item_transfer_continuation &)
 {
     ++submit_calls;
     submitted_worn = OBJ_WORN_BY(object, actor) && actor->equipment[WIELD] == object;
@@ -278,7 +278,8 @@ static bool publish(bool committed)
 {
     assert(submitted_publication && submitted_context_size);
     item_transfer_result result = {};
-    return submitted_publication(&actor, committed, result, 0,
+    critical_operation_id operation_id = {};
+    return submitted_publication(operation_id, &actor, committed, result, 0,
                                  submitted_context.data(), submitted_context_size);
 }
 

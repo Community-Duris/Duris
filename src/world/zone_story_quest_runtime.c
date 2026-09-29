@@ -289,7 +289,8 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 }
 
 bool record_legacy_completion(struct char_data *player, const quest_complete_data *completion,
-			      int32_t room_vnum, int64_t completed_at, std::string *error)
+			      int32_t room_vnum, int64_t completed_at, std::string *error,
+			      std::string_view transaction_id)
 {
 	if (!player || IS_NPC(player) || !completion)
 		return fail(error, "legacy zone-story completion requires a player and Q block");
@@ -338,6 +339,7 @@ bool record_legacy_completion(struct char_data *player, const quest_complete_dat
 	return record_authoritative_completion(*definition_id, zone_number, pid, credited_pids,
 					       room_vnum, completed_at, GET_NAME(player),
 					       GET_LEVEL(player), GET_RACEWAR(player), true,
-					       party_size, strongest_party_level, error);
+					       party_size, strongest_party_level, error,
+					       transaction_id);
 }
 } // namespace zone_story_quest_runtime

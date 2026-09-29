@@ -7568,7 +7568,8 @@ struct equipment_transition_context
 int remove_item(P_char ch, P_obj obj, int position);
 static bool equipment_publication_in_progress = false;
 
-static bool publish_equipment_transition(P_char actor, bool committed, const item_transfer_result &,
+static bool publish_equipment_transition(const critical_operation_id & /*operation_id*/,
+					 P_char actor, bool committed, const item_transfer_result &,
 					 unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
 	if (!actor || !encoded || encoded_size != sizeof(equipment_transition_context))
@@ -10086,7 +10087,8 @@ void finish_empty(P_char actor, const empty_state &state)
 		writeSavedItem(target);
 }
 
-bool empty_completion(P_char actor, bool committed, const item_transfer_result &result,
+bool empty_completion(const critical_operation_id & /*operation_id*/, P_char actor,
+		      bool committed, const item_transfer_result &result,
 		      unsigned int error_code, const uint8_t *encoded, size_t encoded_size)
 {
 	(void)error_code;

@@ -27,6 +27,20 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+
+namespace
+{
+constexpr uint32_t NEWBIE_GRANT_SOURCE_TAG = 0x4e455742;
+constexpr uint32_t CHAOS_KIT_SOURCE_TAG = 0x4348414f;
+
+uint64_t starter_grant_source_id(P_char character, uint32_t tag)
+{
+	if (!character || GET_PID(character) <= 0 || GET_PID(character) > INT32_MAX || !tag)
+		return 0;
+	return (static_cast<uint64_t>(static_cast<uint32_t>(GET_PID(character))) << 32) | tag;
+}
+} // namespace
+
 #include "account/account.h"
 #include "account/account_recovery.h"
 #include "world/achievements.h"
@@ -735,7 +749,10 @@ static void load_chaos_new_character_kit(P_char ch)
 
 	if (!item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),
 								     kit.count, ch,
-								     economic_source_kind::starter_grant))
+								     economic_source_kind::starter_grant,
+								     starter_grant_source_id(
+									     ch,
+									     CHAOS_KIT_SOURCE_TAG)))
 	{
 		statuslog(56, "&+RALERT&n: CHAOS starter kit grant could not be queued");
 		send_to_char(
@@ -913,7 +930,8 @@ void load_obj_to_newbies(P_char ch)
 				    return item_creation_prepare_result::failed;
 			    return ++index == plan.size() ? item_creation_prepare_result::ready :
 							    item_creation_prepare_result::more;
-			    }, economic_source_kind::starter_grant))
+			    }, economic_source_kind::starter_grant,
+			    starter_grant_source_id(ch, NEWBIE_GRANT_SOURCE_TAG)))
 		send_to_char("Your starter kit is being prepared...\r\n", ch);
 	else
 		send_to_char(

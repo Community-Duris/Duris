@@ -309,7 +309,7 @@ unsigned int currency_prepare_mutation(const currency_command_payload &payload,
 	const bool rebase = (revision_policy == currency_revision_policy::sql_legacy &&
 			     currency_command_is_rebasable_reward(payload)) ||
 			    (revision_policy == currency_revision_policy::flatfile_legacy &&
-			     currency_command_is_rebasable_bank_reward(payload));
+			     currency_command_is_rebasable_reward(payload));
 	constexpr uint64_t wildcard = std::numeric_limits<uint64_t>::max();
 	if (!rebase && ((!bank_only && expected_wallet_revision != wildcard &&
 			 expected_wallet_revision != before.wallet_revision) ||

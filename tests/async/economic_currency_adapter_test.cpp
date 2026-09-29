@@ -211,6 +211,49 @@ void prepare_and_agree()
 	assert(economic_bank_transfer_intent(command, id(2), state.wallet_account,
 					     state.bank_account, &sentinel) == error::unbalanced);
 }
+void quest_wallet_reward()
+{
+	auto command = transfer(currency_reason_type::wallet_reward);
+	currency_command_payload payload = {};
+	assert(currency_command_decode_payload(command, &payload));
+	payload.reason_id = 1;
+	payload.wallet_delta.amount = { 100, 0, 0, 0 };
+	payload.bank_delta.amount = {};
+	assert(currency_command_encode_payload(payload, &command.payload));
+	command.source_site = critical_source_site::recovery;
+	command.deadline_class = critical_deadline_class::recovery;
+	command.expected_revisions[0].revision = UINT64_MAX;
+	command.expected_revisions[1].revision = UINT64_MAX;
+	auto state = authority(command);
+	std::vector<uint8_t> encoded;
+	assert(economic_quest_wallet_reward_intent(command, state.epoch, state.wallet_account,
+						  state.bank_account, &encoded) == error::ok);
+	command.accounting_intent = encoded;
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	economic_frozen_intent intent;
+	assert(economic_intent_decode(encoded, &intent) == error::ok);
+	assert(intent.admission.metadata.writer_id == ECONOMIC_WRITER_QUEST_WALLET_REWARD &&
+	       intent.admission.metadata.reason == economic_reason::quest_reward &&
+	       intent.admission.metadata.source_event &&
+	       intent.admission.metadata.source_event->source.bytes == command.operation_id.bytes);
+	std::optional<economic_prepared_currency> prepared;
+	assert(economic_quest_wallet_reward_prepare(command, intent, state,
+						   currency_revision_policy::sql_legacy,
+						   &prepared) == error::ok);
+	assert(prepared->plan().accounts.size() == 3 && prepared->plan().postings.size() == 2 &&
+	       prepared->plan().metadata.source_event &&
+	       prepared->plan().accounts[0].key.kind == economic_account_kind::wallet &&
+	       prepared->plan().accounts[2].key.kind == economic_account_kind::issuance);
+	assert(prepared->agrees_with(prepared->plan()) == error::ok);
+	std::optional<economic_prepared_currency> flatfile;
+	assert(economic_quest_wallet_reward_prepare(command, intent, state,
+						   currency_revision_policy::flatfile_legacy,
+						   &flatfile) == error::ok);
+	assert(prepared->agrees_with(flatfile->plan()) == error::ok);
+	command.source_site = critical_source_site::command;
+	assert(economic_quest_wallet_reward_intent(command, state.epoch, state.wallet_account,
+						  state.bank_account, &encoded) == error::unauthorized);
+}
 void mutation_policy()
 {
 	auto command = transfer();
@@ -241,7 +284,9 @@ void mutation_policy()
 	       prepared->after().bank_revision == 10);
 	assert(currency_prepare_mutation(payload, state, 0, 0,
 					 currency_revision_policy::flatfile_legacy,
-					 &prepared) == ESTALE);
+					 &prepared) == 0);
+	assert(prepared->after().wallet.amount[0] == state.wallet.amount[0] + 1 &&
+	       prepared->after().bank_revision == state.bank_revision + 1);
 	payload.reason = currency_reason_type::chaos_starter_reward;
 	payload.wallet_delta.amount = {};
 	payload.bank_delta.amount = { 1, 0, 0, 0 };
@@ -485,6 +530,7 @@ void chaos_starter_bank_supply()
 int main()
 {
 	prepare_and_agree();
+	quest_wallet_reward();
 	mutation_policy();
 	chaos_starter_bank_supply();
 	std::cout

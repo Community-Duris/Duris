@@ -1,4 +1,5 @@
 #include "persistence/critical_command_repository.h"
+#include "persistence/quest_reward_obligation_repository.h"
 #include "economic_sql_coordinator_fixture.h"
 #include "economy/item_transfer_accounting.h"
 #include "item/item_transfer_command.h"
@@ -18,7 +19,9 @@
 #include <mysql.h>
 #include <span>
 #include <string>
+#include <sys/wait.h>
 #include <thread>
+#include <unistd.h>
 #include <vector>
 
 namespace
@@ -1692,6 +1695,154 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 	puts("PASS: sourced creation, nested transfers and native pet/locker rows, duplicate quest and world source refusal, theft and retirement retain exact SQL references through replay and epoch change");
 }
 
+void check_quest_reward_obligation(MYSQL *&connection)
+{
+	const uint64_t previous_root_uid = root_uid;
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(connection, 1));
+	root_uid = item_uid_allocator_next();
+	const item_owner_identity system = { item_owner_type::system, 0, 0 };
+	const item_owner_identity player = { item_owner_type::player, 4000000002, 0 };
+	const item_owner_identity destroyed = { item_owner_type::destruction, 0, 0 };
+	auto create = payload(system, player, item_transfer_reason::creation,
+			      owner_revision(connection, system),
+			      owner_revision(connection, player), ITEM_TRANSFER_ABSENT_REVISION, 1);
+	const auto created = apply(connection, 240, create);
+	assert(created.outcome == critical_apply_outcome::applied);
+	item_transfer_result created_result = {};
+	assert(item_transfer_command_decode_result(created.result_payload.data(),
+						   created.result_size, &created_result));
+	auto offering = payload(player, destroyed, item_transfer_reason::quest_turnin,
+				created_result.to_owner_revision,
+				owner_revision(connection, destroyed),
+				created_result.max_item_revision, 1);
+	offering.multi_root = true;
+	offering.continuation.kind = item_transfer_continuation_kind::quest_offering;
+	offering.continuation.data.assign(56, 0);
+	auto put32 = [&](size_t offset, uint32_t value)
+	{
+		for (size_t index = 0; index < 4; ++index)
+			offering.continuation.data[offset + index] = value >> (index * 8);
+	};
+	auto put64 = [&](size_t offset, uint64_t value)
+	{
+		for (size_t index = 0; index < 8; ++index)
+			offering.continuation.data[offset + index] = value >> (index * 8);
+	};
+	put32(0, 1);
+	put32(4, 4000000002U);
+	put32(8, 3);
+	put32(12, 0);
+	put32(16, 77);
+	put32(20, 4200);
+	put64(24, 123456789);
+	put32(32, 1);
+	put64(36, root_uid);
+	put32(44, 1);
+	put32(48, 1);
+	put32(52, 1005);
+	auto stale_offering = offering;
+	--stale_offering.expected_from_revision;
+	const auto rejected = apply(connection, 242, stale_offering);
+	assert(rejected.outcome == critical_apply_outcome::terminal_failure);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM quest_reward_obligation WHERE "
+				   "offering_operation_id=UNHEX('" +
+				   operation_hex(242) + "')")
+					  .c_str()) == 0);
+	// Simulate the game process dying after SQL commits the offering but before
+	// it can publish the result or acknowledge the reward. The parent reconnects
+	// and verifies both custody and the retained obligation.
+	mysql_close(connection);
+	connection = nullptr;
+	const pid_t writer = fork();
+	assert(writer >= 0);
+	if (writer == 0)
+	{
+		MYSQL *writer_connection = open_pool_test_connection();
+		if (!writer_connection)
+			_exit(80);
+		const auto consumed = apply(writer_connection, 241, offering);
+		if (consumed.outcome != critical_apply_outcome::applied)
+			_exit(81);
+		kill(getpid(), SIGKILL);
+		_exit(82);
+	}
+	int writer_status = 0;
+	assert(waitpid(writer, &writer_status, 0) == writer);
+	assert(WIFSIGNALED(writer_status) && WTERMSIG(writer_status) == SIGKILL);
+	connection = open_pool_test_connection();
+	assert(connection);
+	const std::string operation_id = operation_hex(241);
+	const std::string continuation_hex = bytes_hex(offering.continuation.data);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM quest_reward_obligation WHERE "
+				   "offering_operation_id=UNHEX('" +
+				   operation_id +
+				   "') AND player_pid=4000000002 AND acknowledged_at IS NULL AND "
+				   "continuation=UNHEX('" +
+				   continuation_hex + "')")
+					  .c_str()) == 1);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_ownership_ledger WHERE "
+				   "operation_id=UNHEX('" +
+				   operation_id + "')")
+				  .c_str()) == 1);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+	       std::to_string(root_uid) + " AND state=" +
+	       std::to_string(static_cast<unsigned>(item_custody_state::destroyed)) +
+	       " AND owner_type=" +
+	       std::to_string(static_cast<unsigned>(item_owner_type::destruction)))
+		      .c_str()) == 1);
+	MYSQL *reopened = open_pool_test_connection();
+	assert(reopened);
+	std::vector<quest_reward_obligation_record> pending_rewards;
+	unsigned int database_error = 0;
+	assert(quest_reward_obligation_repository_pending(reopened, 4000000002U, &pending_rewards,
+							  &database_error) ==
+	       quest_reward_obligation_result::ok);
+	assert(database_error == 0 && pending_rewards.size() == 1 &&
+	       critical_operation_id_equal(pending_rewards[0].offering_operation, operation(241)) &&
+	       pending_rewards[0].continuation == offering.continuation.data &&
+	       pending_rewards[0].terms.rewards[0].number == 1005);
+	execute(connection, "UPDATE quest_reward_obligation SET continuation=X'00' WHERE "
+			    "offering_operation_id=UNHEX('" +
+				    operation_id + "')");
+	assert(quest_reward_obligation_repository_pending(reopened, 4000000002U, &pending_rewards,
+							  &database_error) ==
+		       quest_reward_obligation_result::corrupt &&
+	       pending_rewards.size() == 1);
+	execute(connection, "UPDATE quest_reward_obligation SET continuation=UNHEX('" +
+				    continuation_hex + "') WHERE offering_operation_id=UNHEX('" +
+				    operation_id + "')");
+	assert(quest_reward_obligation_repository_pending(reopened, 4000000001U, &pending_rewards,
+							  &database_error) ==
+		       quest_reward_obligation_result::ok &&
+	       pending_rewards.empty());
+	assert(quest_reward_obligation_repository_acknowledge(reopened, 4000000001U, operation(241),
+							      &database_error) ==
+	       quest_reward_obligation_result::not_found);
+	assert(quest_reward_obligation_repository_acknowledge(reopened, 4000000002U, operation(241),
+							      &database_error) ==
+	       quest_reward_obligation_result::ok);
+	assert(quest_reward_obligation_repository_acknowledge(reopened, 4000000002U, operation(241),
+							      &database_error) ==
+	       quest_reward_obligation_result::already_acknowledged);
+	assert(quest_reward_obligation_repository_pending(reopened, 4000000002U, &pending_rewards,
+							  &database_error) ==
+		       quest_reward_obligation_result::ok &&
+	       pending_rewards.empty());
+	mysql_close(reopened);
+	assert(apply(connection, 241, offering).outcome == critical_apply_outcome::already_applied);
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, operation(241), offering,
+					   critical_source_site::operator_repair,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	assert(critical_command_repository_reconcile(connection, command).outcome ==
+	       critical_apply_outcome::already_applied);
+	root_uid = previous_root_uid;
+	puts("PASS: committed SQL quest offering retains exact reward obligation and replays once");
+}
+
 int main()
 {
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
@@ -2103,6 +2254,7 @@ int main()
 	check_deferred_accounting_reference_rollback(connection);
 	check_dispatch_fence_commit_and_rollback(connection);
 	check_sql_accounted_item_transfer(connection);
+	check_quest_reward_obligation(connection);
 	for (uint8_t id = 1; id <= 15; ++id)
 	{
 		const std::string hex = operation_hex(id);

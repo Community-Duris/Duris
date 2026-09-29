@@ -463,17 +463,17 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertFalse(current - owners.keys(), "review newly detected native SQL writes")
         self.assertEqual(owners[("src/economy/auction_houses.c", 935, "sql_economy")],
                          {"auction.money_claim_compensation"})
-        self.assertEqual(owners[("src/economy/auction_houses.c", 2958, "sql_economy")],
+        self.assertEqual(owners[("src/economy/auction_houses.c", 2966, "sql_economy")],
                          {"auction.money_claim_legacy"})
         self.assertEqual(owners[("src/sql/sql_player.c", 9452, "sql_economy")],
                          {"recovery.saved_sql_delete"})
         self.assertEqual(owners[("src/sql/sql_player.c", 10873, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
-        for line in (885, 905, 938):
+        for line in (888, 908, 941):
             self.assertEqual(owners[(shop_path, line, "sql_economy")],
                              {"shop.sql_native_item_events"})
-        self.assertEqual(owners[(shop_path, 1072, "sql_economy")],
+        self.assertEqual(owners[(shop_path, 1075, "sql_economy")],
                          {"shop.sql_native_balances"})
         for route_id in ("shop.sql_native_item_events", "shop.sql_native_balances"):
             route = self.routes[route_id]
@@ -491,12 +491,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
             for site in writer.get("sites", []):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(writer["id"])
-        self.assertEqual(owners[(path, 602, "economic_submit")],
+        self.assertEqual(owners[(path, 1283, "economic_submit")],
                          {"quest.durable_offering_submission"})
-        self.assertEqual(owners[(path, 501, "item_lifecycle")],
+        self.assertEqual(owners[(path, 797, "item_lifecycle")],
                          {"quest.durable_offering_publication"})
-        for line, family in ((461, "item_lifecycle"), (461, "item_publication"),
-                             (463, "item_lifecycle")):
+        for line, family in ((756, "item_lifecycle"), (756, "item_publication"),
+                             (758, "item_lifecycle"), (903, "item_lifecycle"),
+                             (903, "item_publication"), (905, "item_lifecycle")):
             self.assertEqual(owners[(path, line, family)],
                              {"quest.disappearing_npc_cleanup"})
         self.assertTrue(self.routes["quest.durable_offering_submission"]

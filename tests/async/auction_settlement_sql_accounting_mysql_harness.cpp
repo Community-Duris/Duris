@@ -458,6 +458,40 @@ int main()
 		     "economic_accounting_operation WHERE operation_id=" +
 		     literal(claim.operation_id)) ==
 	       hex(staged.listing_operation.bytes.data(), staged.listing_operation.bytes.size()));
+	const uint32_t removed_no_bid_auction = auction(id(14), {}, ITEM + 300, 2000000000);
+	const auto removed_no_bid_escrow = mapping(
+		lineage, economic_account_kind::auction_escrow, 0, 4, removed_no_bid_auction,
+		bootstrap);
+	const auto removed_no_bid_listing =
+		listing(removed_no_bid_auction, ITEM + 300, 2000000000, id(14), {});
+	auction_settlement_accounts removed_no_bid_accounts;
+	removed_no_bid_accounts.escrow = removed_no_bid_escrow;
+	removed_no_bid_accounts.actor_wallet = trusted_wallet;
+	removed_no_bid_accounts.actor_bank = trusted_bank_key;
+	const auto remove_no_bid = closure(15, auction_action::remove, removed_no_bid_listing,
+					   removed_no_bid_accounts, epoch, true);
+	execute("START TRANSACTION");
+	inbox(remove_no_bid.operation_id, static_cast<uint16_t>(remove_no_bid.type), 2, 0);
+	economic_sql_auction_settlement_context remove_no_bid_context;
+	assert(economic_sql_auction_settlement_lock(connection, remove_no_bid,
+						    &remove_no_bid_context) == 0);
+	assert(economic_sql_auction_settlement_execute_and_record(
+		       connection, remove_no_bid, remove_no_bid_context, &result, &result_code,
+		       &mutation_applied) == 0);
+	assert(result_code == 0 && mutation_applied &&
+	       result.event_type == auction_event_type::removed);
+	receipt(remove_no_bid, result);
+	execute("COMMIT");
+	assert(scalar("SELECT after_copper FROM economic_accounting_account_effect WHERE "
+		      "operation_id=" +
+		      literal(remove_no_bid.operation_id)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_coin_posting WHERE "
+		      "operation_id=" +
+		      literal(remove_no_bid.operation_id)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=" +
+		      std::to_string(removed_no_bid_escrow.authority_id) +
+		      " AND active_native_id IS NULL AND retiring_operation_id=" +
+		      literal(remove_no_bid.operation_id) + " AND revision=1") == 1);
 	const uint32_t expired_auction = auction(id(11), {}, ITEM + 200, 1700000000);
 	const auto expired_escrow = mapping(lineage, economic_account_kind::auction_escrow, 0, 4,
 					    expired_auction, bootstrap);
@@ -498,7 +532,8 @@ int main()
 	execute("ROLLBACK");
 	reconnect();
 	for (const auto operation :
-	     { sale.operation_id, removal.operation_id, expired.operation_id })
+	     { sale.operation_id, removal.operation_id, remove_no_bid.operation_id,
+	       expired.operation_id })
 	{
 		assert(scalar("SELECT LENGTH(canonical_intent) FROM "
 			      "economic_accounting_operation WHERE operation_id=" +

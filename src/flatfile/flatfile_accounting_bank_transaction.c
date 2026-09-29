@@ -113,7 +113,10 @@ bank_identity decode(const critical_command &command)
 	std::vector<uint8_t> expected;
 	if (value.payload.reason == currency_reason_type::chaos_starter_reward)
 		checked(economic_chaos_starter_bank_intent(admission, meta.epoch, value.wallet,
-							   value.bank, &expected));
+								   value.bank, &expected));
+	else if (value.payload.reason == currency_reason_type::wallet_reward)
+		checked(economic_quest_wallet_reward_intent(admission, meta.epoch, value.wallet,
+								   value.bank, &expected));
 	else
 		checked(economic_bank_transfer_intent(admission, meta.epoch, value.wallet,
 						      value.bank, &expected));
@@ -199,7 +202,9 @@ void verify(const std::string &root, const flatfile_authority_lock &lock,
 	economic_accounting_plan plan;
 	checked(economic_plan_decode(record.plan, &plan));
 	const bool starter = identity.payload.reason == currency_reason_type::chaos_starter_reward;
-	need(plan.accounts.size() == (starter ? 3 : 2));
+	const bool quest_reward = identity.payload.reason == currency_reason_type::wallet_reward;
+	const bool has_issuance = starter || quest_reward;
+	need(plan.accounts.size() == (has_issuance ? 3 : 2));
 	economic_currency_authority authority = { identity.intent.admission.metadata.epoch,
 						  identity.wallet,
 						  identity.bank,
@@ -225,7 +230,7 @@ void verify(const std::string &root, const flatfile_authority_lock &lock,
 			authority.state.bank.amount = account.before;
 			authority.state.bank_revision = account.before_revision;
 		}
-		else if (starter && economic_account_key_equal(account.key, issuance_account))
+		else if (has_issuance && economic_account_key_equal(account.key, issuance_account))
 		{
 			need(!issuance);
 			issuance = true;
@@ -233,10 +238,14 @@ void verify(const std::string &root, const flatfile_authority_lock &lock,
 		else
 			need(false);
 	}
-	need(wallet && bank && (starter == issuance));
+	need(wallet && bank && (has_issuance == issuance));
 	std::optional<economic_prepared_currency> prepared;
 	if (starter)
 		checked(economic_chaos_starter_bank_prepare(
+			record.command, identity.intent, authority,
+			currency_revision_policy::flatfile_legacy, &prepared));
+	else if (quest_reward)
+		checked(economic_quest_wallet_reward_prepare(
 			record.command, identity.intent, authority,
 			currency_revision_policy::flatfile_legacy, &prepared));
 	else
@@ -320,6 +329,8 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 							   &native, nullptr));
 		const bool starter = identity.payload.reason ==
 				     currency_reason_type::chaos_starter_reward;
+		const bool quest_reward = identity.payload.reason ==
+				  currency_reason_type::wallet_reward;
 		if (starter)
 		{
 			// Snapshot replacement is atomic; no player lock is taken beneath
@@ -345,9 +356,12 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 			starter ? economic_chaos_starter_bank_prepare(
 					  command, identity.intent, authority,
 					  currency_revision_policy::flatfile_legacy, &prepared) :
+			quest_reward ? economic_quest_wallet_reward_prepare(
+					       command, identity.intent, authority,
+					       currency_revision_policy::flatfile_legacy, &prepared) :
 				  economic_bank_transfer_prepare(
 					  command, identity.intent, authority,
-					  currency_revision_policy::flatfile_legacy, &prepared);
+				  currency_revision_policy::flatfile_legacy, &prepared);
 		currency_command_result result = authority.state;
 		flatfile_accounting_record record;
 		record.command = command;

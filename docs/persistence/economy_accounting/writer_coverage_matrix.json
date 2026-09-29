@@ -13,20 +13,20 @@
     "function_definition_anchors_verified": 854,
     "matrix_rows": 861,
     "non_function_candidate_anchors": 7,
-    "non_writer_or_out_of_scope_candidates": 92,
+    "non_writer_or_out_of_scope_candidates": 93,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 77,
     "routes_with_schema_2_gameplay_producer": 9,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 752,
+    "runtime_mutation_and_projection_routes": 751,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 14,
-    "non_writer_candidate": 92,
+    "non_writer_candidate": 93,
     "offline_operational_writer": 3,
-    "runtime_mutation_route": 689,
+    "runtime_mutation_route": 688,
     "runtime_projection_route": 63
   },
   "global_schema_and_accounting_evidence": {
@@ -45,27 +45,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2786,
-    "current_unique_path_line_family_sites": 2728,
+    "current_occurrences": 2811,
+    "current_unique_path_line_family_sites": 2753,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "0ceb561fe61215490f6109b8242010e99a540a2b",
+    "draft_source_commit": "aec41e3c091689b49cb74196badcffe8780228dd",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2728,
+    "draft_unique_sites": 2753,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
-      "economic_submit": 167,
-      "item_lifecycle": 1145,
-      "item_publication": 1061,
+      "economic_submit": 179,
+      "item_lifecycle": 1152,
+      "item_publication": 1066,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
-      "sql_economy": 53
+      "sql_economy": 54
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 861-row registry maps 2728 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2728,
-    "mapped_unique_sites_from_draft_rows": 2728,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 861-row registry maps 2753 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2753,
+    "mapped_unique_sites_from_draft_rows": 2753,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,54 +77,42 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "0ceb561fe61215490f6109b8242010e99a540a2b",
+  "repository_head": "aec41e3c091689b49cb74196badcffe8780228dd",
   "routes": [
     {
       "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
-        "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement."
       },
       "counts_as_operational_writer": false,
-      "counts_as_runtime_writer": true,
+      "counts_as_runtime_writer": false,
       "current_critical_command_schema": {
         "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
+        "current_schema": "not_applicable",
         "evidence": [
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
         "schema_2_gameplay_producer_connected": false
       },
-      "disposition": "runtime_mutation_route",
+      "disposition": "non_writer_candidate",
       "double_entry_evidence": {
-        "global_evidence": [
-          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
-          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
-        ],
-        "legacy_domain_evidence": [],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
-        "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
-        ],
-        "status": "no_operation_level_double_entry_evidence",
+        "existing_evidence": [],
+        "note": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
+        "status": "not_applicable",
         "unified_operation_postings_observed": false
       },
+      "exclusion_reason": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
       "id": "account.cleanup_temp_char",
       "native_effects": {
-        "custody_effect": "Temporary character items extracted.",
-        "holding_effect": "No coin balance changes.",
-        "native_state_targets": [
-          "temp char equipment",
-          "temp char inventory"
-        ]
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
       },
-      "reachability_evidence": "cleanup_temp_char loops through equipment and inventory and extracts items.",
+      "reachability_evidence": "In-tree callers pass restoreCharOnly results held in temp_ch and immediately free the temporary character; cleanup_temp_char only unloads copied equipment and inventory without a player save or item-owner repository call.",
       "reason": "item_destroy",
       "source": {
         "anchor_status": "function_definition_verified",
@@ -135,7 +123,7 @@
         "function": "cleanup_temp_char",
         "original_draft_symbol": "cleanup_temp_char"
       },
-      "source_classification": "Discarding temporary character login structures unequips and extracts all temporary equipment and inventory.",
+      "source_classification": "Unloads a temporary restoreCharOnly PC graph used for account and browser display; extracted item copies are not durable custody retirement.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -188,7 +176,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          658
+          1081
         ],
         "file": "src/account/account_reward.c",
         "function": "summon_one",
@@ -233,26 +221,27 @@
         "status": "no_operation_level_double_entry_evidence",
         "unified_operation_postings_observed": false
       },
-      "id": "account.reward_cooldown_probe",
+      "id": "account.reward_duplicate_cleanup",
       "native_effects": {
-        "custody_effect": "Transient probe extracted.",
+        "custody_effect": "Direct child item custody is moved to the duplicate root\u00e2\u20ac\u2122s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
         "holding_effect": "No coin balance changes.",
         "native_state_targets": [
-          "transient probe"
+          "direct child item UIDs and player_items parent links",
+          "duplicate reward UID and player_items projection"
         ]
       },
-      "reachability_evidence": "cooldown_remaining extracts temporary grant objects.",
+      "reachability_evidence": "summon_one enables duplicate cleanup during active accounting; existing_character_instance routes populated duplicates through submit_accounted_reward_promotion and empty duplicates through submit_accounted_reward_retirement. The promotion completion submits retirement only after the live root is empty.",
       "reason": "item_destroy",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          612
+          637
         ],
         "file": "src/account/account_reward.c",
-        "function": "cooldown_remaining",
-        "original_draft_symbol": "cooldown_remaining"
+        "function": "existing_character_instance",
+        "original_draft_symbol": "existing_character_instance"
       },
-      "source_classification": "Cooldown calculation cleans up transient probe objects.",
+      "source_classification": "Summoning retires duplicate grant roots through typed item custody: it first promotes direct children with a same-owner move, then destroys the empty root; rejected or unplaceable children leave the duplicate intact.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -293,25 +282,25 @@
       },
       "id": "account.reward_dismiss",
       "native_effects": {
-        "custody_effect": "Player grant instance extracted.",
+        "custody_effect": "The typed item transfer retires the exact player item custody; committed live publication extracts the matching account reward UID.",
         "holding_effect": "No coin balance changes.",
         "native_state_targets": [
-          "player inventory",
-          "account grant instance"
+          "dismissed reward UID and player_items projection",
+          "account reward instance"
         ]
       },
-      "reachability_evidence": "dismiss_player_grant extracts the dismissed instance.",
+      "reachability_evidence": "dismiss_player_grant submits account_reward_retirement with intentional_destruction source and account_reward_retirement_publication; replay restores that publication from the durable continuation.",
       "reason": "item_destroy",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          912
+          1339
         ],
         "file": "src/account/account_reward.c",
         "function": "dismiss_player_grant",
         "original_draft_symbol": "dismiss_player_grant"
       },
-      "source_classification": "Player dismissal of active grant item extracts the instance from inventory.",
+      "source_classification": "Player dismissal submits a sourced destruction command; only the committed exact reward UID is extracted at publication, including replay.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -363,7 +352,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1334
+          1787
         ],
         "file": "src/account/account_reward.c",
         "function": "dissolve_reward_containers",
@@ -422,7 +411,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          174
+          178
         ],
         "file": "src/account/account_reward.c",
         "function": "promote_reward_contents",
@@ -480,7 +469,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          538
+          534
         ],
         "file": "src/account/account_reward.c",
         "function": "revoke_live_grant",
@@ -1622,7 +1611,7 @@
       },
       "id": "artifact.monolith_absorb",
       "native_effects": {
-        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u2019s charge count to the survivor and extracts the duplicate.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u00e2\u20ac\u2122s charge count to the survivor and extracts the duplicate.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "surviving monolith payload",
@@ -1640,7 +1629,7 @@
         "function": "artifact_monolith",
         "original_draft_symbol": "artifact_monolith"
       },
-      "source_classification": "The periodic monolith proc adds a duplicate room monolith\u2019s charge count to the survivor and extracts the duplicate.",
+      "source_classification": "The periodic monolith proc adds a duplicate room monolith\u00e2\u20ac\u2122s charge count to the survivor and extracts the duplicate.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -2282,7 +2271,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           699,
-          2282
+          2290
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_info",
@@ -2347,7 +2336,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1624
+          1632
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_item_claim_completed",
@@ -2609,7 +2598,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           557,
-          2482
+          2490
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_bid",
@@ -2670,7 +2659,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2511
+          2519
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_bid_legacy",
@@ -2731,7 +2720,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3104
+          3112
         ],
         "file": "src/economy/auction_houses.c",
         "function": "finalize_auction_legacy",
@@ -2797,7 +2786,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2459
+          2591
         ],
         "file": "src/flatfile/flatfile_auction_repository.c",
         "function": "flatfile_auction_repository_apply",
@@ -2994,7 +2983,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           749,
-          2791
+          2799
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_pickup",
@@ -3055,7 +3044,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1838
+          1846
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_offer_legacy",
@@ -3122,7 +3111,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           459,
-          1736
+          1744
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_offer",
@@ -3190,7 +3179,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           749,
-          2791
+          2799
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_pickup",
@@ -3312,7 +3301,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2877
+          2885
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_pickup_legacy",
@@ -3379,7 +3368,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           862,
-          3248
+          3256
         ],
         "file": "src/economy/auction_houses.c",
         "function": "insert_money_pickup",
@@ -3446,7 +3435,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           586,
-          2387
+          2395
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_remove",
@@ -3513,7 +3502,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           858,
-          3092
+          3100
         ],
         "file": "src/economy/auction_houses.c",
         "function": "finalize_auction",
@@ -3580,7 +3569,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          859
+          928
         ],
         "file": "src/economy/auction_repository.c",
         "function": "auction_repository_execute",
@@ -4603,7 +4592,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          367
+          362
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_faerie_sight",
@@ -4660,7 +4649,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          900
+          897
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_beacon",
@@ -4717,7 +4706,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1037
+          1034
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_bolt",
@@ -4774,7 +4763,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2426
+          2423
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_single_cosmic_rift",
@@ -5869,7 +5858,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3525
+          3664
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -6237,8 +6226,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          876,
-          947
+          972,
+          1043
         ],
         "file": "src/economy/coin_transfer_accounting.c",
         "function": "coin_transfer_accounting_record",
@@ -6299,7 +6288,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          557
+          564
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_coin",
@@ -7203,7 +7192,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1797
+          1830
         ],
         "file": "src/combat/fight.c",
         "function": "die",
@@ -7309,7 +7298,7 @@
       },
       "id": "combat.disarm_slot_relink",
       "native_effects": {
-        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u2019s carrying list; its owner UID stays with that character.",
+        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00e2\u20ac\u2122s carrying list; its owner UID stays with that character.",
         "holding_effect": "No coin balance change at these sites.",
         "native_state_targets": [
           "same-character equipment and inventory slots",
@@ -7328,7 +7317,7 @@
         "function": "do_disarm",
         "original_draft_symbol": "do_disarm"
       },
-      "source_classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u2019s carrying list; its owner UID stays with that character.",
+      "source_classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00e2\u20ac\u2122s carrying list; its owner UID stays with that character.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -7439,7 +7428,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3389
+          3422
         ],
         "file": "src/combat/fight.c",
         "function": "check_shields",
@@ -7793,7 +7782,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4839
+          4872
         ],
         "file": "src/combat/fight.c",
         "function": "hit",
@@ -8075,7 +8064,7 @@
       },
       "id": "craft.make_lock_payload",
       "native_effects": {
-        "custody_effect": "A successful make lock changes an existing container\u2019s lock flags/value or a door pair\u2019s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+        "custody_effect": "A successful make lock changes an existing container\u00e2\u20ac\u2122s lock flags/value or a door pair\u00e2\u20ac\u2122s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
         "holding_effect": "No coin balance change at these sites.",
         "native_state_targets": [
           "live container payload or door state",
@@ -8093,7 +8082,7 @@
         "function": "make_lock",
         "original_draft_symbol": "make_lock"
       },
-      "source_classification": "A successful make lock changes an existing container\u2019s lock flags/value or a door pair\u2019s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+      "source_classification": "A successful make lock changes an existing container\u00e2\u20ac\u2122s lock flags/value or a door pair\u00e2\u20ac\u2122s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -8626,7 +8615,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2506
+          2507
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_refine",
@@ -9279,7 +9268,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          898
+          919
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -9343,7 +9332,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          808
+          829
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -9901,7 +9890,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          859
+          880
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -10213,7 +10202,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1157
+          1385
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -10274,7 +10263,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          698
+          706
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_prepared",
@@ -10466,7 +10455,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          371
+          378
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_publish_wallet",
@@ -10591,7 +10580,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          793
+          801
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_wallet_value",
@@ -10717,7 +10706,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3460
+          3466
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_compact_corpse",
@@ -13458,7 +13447,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3311
+          3313
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_wall_of_bones",
@@ -16500,7 +16489,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1113
+          1338
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17080,8 +17069,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2219,
-          2231
+          2288,
+          2300
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17143,7 +17132,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1011
+          1044
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17205,7 +17194,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          911
+          944
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17390,7 +17379,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          792
+          825
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17635,7 +17624,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10011
+          10012
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18258,7 +18247,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7712
+          7713
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18320,7 +18309,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7646
+          7647
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18444,7 +18433,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          629
+          662
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18506,7 +18495,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          636
+          669
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -18967,7 +18956,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          157
+          158
         ],
         "file": "src/item/forced_weapon_drop.c",
         "function": "forced_weapon_drop",
@@ -19579,7 +19568,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2453
+          2535
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19641,7 +19630,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2278
+          2348
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20253,7 +20242,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9731
+          9732
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20430,7 +20419,7 @@
         "function": "modenhance",
         "original_draft_symbol": "modenhance"
       },
-      "source_classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u2019s description.",
+      "source_classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00e2\u20ac\u2122s description.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -20627,7 +20616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1669
+          1710
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21056,7 +21045,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9635
+          9636
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -21456,7 +21445,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1290
+          1320
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21518,7 +21507,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          843
+          876
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21886,7 +21875,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          698
+          731
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22009,7 +21998,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          167
+          168
         ],
         "file": "src/classes/rogues.c",
         "function": "do_slip",
@@ -22605,7 +22594,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1822
+          1823
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -22666,7 +22655,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2444
+          2445
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -25057,7 +25046,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           721,
-          4752
+          4756
         ],
         "file": "src/sql/sql.c",
         "function": "sql_pwipe",
@@ -25104,7 +25093,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           548,
-          2790
+          2794
         ],
         "file": "src/sql/sql.c",
         "function": "sql_soft_delete_character",
@@ -26593,7 +26582,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          170
+          212
         ],
         "file": "src/magic/magic.c",
         "function": "spell_component_retirement_published",
@@ -26650,7 +26639,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          125
+          130
         ],
         "file": "src/magic/magic.c",
         "function": "get_spell_component",
@@ -27102,7 +27091,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          821
+          855
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_ensis_unguis",
@@ -27155,7 +27144,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          873
+          907
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_lancea_cineralae",
@@ -27212,7 +27201,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          752
+          786
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "load_soulbind",
@@ -27379,7 +27368,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          925
+          959
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_simulacrum_anguis",
@@ -27945,7 +27934,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2024
+          2025
         ],
         "file": "src/magic/spells.c",
         "function": "cast_vines",
@@ -28002,7 +27991,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2560
+          2564
         ],
         "file": "src/magic/spells.c",
         "function": "create_walls",
@@ -29166,7 +29155,7 @@
       },
       "id": "movement.drag_room_relink",
       "native_effects": {
-        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u2019s new room with the same UID.",
+        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00e2\u20ac\u2122s new room with the same UID.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "old and new live room contents",
@@ -29179,13 +29168,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3566
+          3567
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_drag",
         "original_draft_symbol": "do_drag"
       },
-      "source_classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u2019s new room with the same UID.",
+      "source_classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00e2\u20ac\u2122s new room with the same UID.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -29238,7 +29227,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2456
+          2457
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_open",
@@ -29285,7 +29274,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2456
+          2457
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_open",
@@ -29344,7 +29333,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2456
+          2457
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_open",
@@ -29403,7 +29392,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2248
+          2249
         ],
         "file": "src/cmd/actmove.c",
         "function": "make_ice",
@@ -29450,7 +29439,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2248
+          2249
         ],
         "file": "src/cmd/actmove.c",
         "function": "make_ice",
@@ -29569,7 +29558,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          117
+          118
         ],
         "file": "src/cmd/actmove.c",
         "function": "break_key",
@@ -29628,7 +29617,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3142
+          3143
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_pick",
@@ -29687,7 +29676,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1106
+          1124
         ],
         "file": "src/account/nanny.c",
         "function": "perform_eq_wipe",
@@ -29745,7 +29734,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          882
+          899
         ],
         "file": "src/account/nanny.c",
         "function": "load_obj_to_newbies",
@@ -30361,7 +30350,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          597
+          598
         ],
         "file": "src/player/player_load_repository.c",
         "function": "load_bank",
@@ -30420,7 +30409,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          525
+          539
         ],
         "file": "src/account/nanny.c",
         "function": "schedule_chaos_starting_bank",
@@ -30479,7 +30468,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          667
+          681
         ],
         "file": "src/account/nanny.c",
         "function": "load_chaos_new_character_kit",
@@ -30590,7 +30579,7 @@
         "function": "confiscate_item",
         "original_draft_symbol": "confiscate_item"
       },
-      "source_classification": "The second confiscation branch\u2019s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+      "source_classification": "The second confiscation branch\u00e2\u20ac\u2122s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -30702,7 +30691,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1403
+          1602
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -30943,7 +30932,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          373
+          374
         ],
         "file": "src/player/player_load_materialize.c",
         "function": "player_load_materialize",
@@ -30990,7 +30979,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4538
+          4556
         ],
         "file": "src/account/nanny.c",
         "function": "init_char",
@@ -31386,7 +31375,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          726
+          1606
         ],
         "file": "src/world/quest.c",
         "function": "quester",
@@ -31445,7 +31434,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          122
+          136
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -31500,16 +31489,16 @@
           "item lifecycle"
         ]
       },
-      "reachability_evidence": "finish_quest_reward invokes these extraction calls when completion.disappear is set.",
+      "reachability_evidence": "finish_quest_reward and publish_quest_offering both extract equipment and carried items when the completed quest marks its NPC to disappear.",
       "reason": "item_destroy",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          445
+          838
         ],
         "file": "src/world/quest.c",
-        "function": "finish_quest_reward",
-        "original_draft_symbol": "finish_quest_reward"
+        "function": "publish_quest_offering",
+        "original_draft_symbol": "publish_quest_offering"
       },
       "source_classification": "A disappearing quest NPC extracts its equipment and carried items after reward processing.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
@@ -31565,7 +31554,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          467
+          838
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -31643,13 +31632,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          526
+          1368
         ],
         "file": "src/world/quest.c",
         "function": "submit_durable_quest_offering",
         "original_draft_symbol": "submit_durable_quest_offering"
       },
-      "source_classification": "Selects item goals from the player and submits one typed batch destruction for a completed durable offering.",
+      "source_classification": "Selects item goals from the player and submits one typed batch quest_turnin for a completed durable offering.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -31703,7 +31692,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          122
+          136
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -31763,7 +31752,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          217
+          346
         ],
         "file": "src/world/quest.c",
         "function": "give_reward",
@@ -31821,7 +31810,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          626
+          1506
         ],
         "file": "src/world/quest.c",
         "function": "tell_quest",
@@ -32183,7 +32172,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1976
+          2041
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -32245,7 +32234,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1275
+          1318
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",
@@ -32861,7 +32850,7 @@
         "function": "writePet",
         "original_draft_symbol": "writePet"
       },
-      "source_classification": "Pet save\u2019s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+      "source_classification": "Pet save\u00e2\u20ac\u2122s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -37734,7 +37723,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1052
+          1055
         ],
         "file": "src/persistence/economic_sql_shop_trade_transaction.c",
         "function": "apply_native_trade",
@@ -37797,7 +37786,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          852
+          855
         ],
         "file": "src/persistence/economic_sql_shop_trade_transaction.c",
         "function": "apply_item_events",
@@ -38761,7 +38750,7 @@
       },
       "id": "special.disarm_pick_gloves_slot_relink",
       "native_effects": {
-        "custody_effect": "The gloves proc unequips the struck character\u2019s weapon into the same character\u2019s carrying list.",
+        "custody_effect": "The gloves proc unequips the struck character\u00e2\u20ac\u2122s weapon into the same character\u00e2\u20ac\u2122s carrying list.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "victim equipment slot",
@@ -38781,7 +38770,7 @@
         "function": "disarm_pick_gloves",
         "original_draft_symbol": "disarm_pick_gloves"
       },
-      "source_classification": "The gloves proc unequips the struck character\u2019s weapon into the same character\u2019s carrying list.",
+      "source_classification": "The gloves proc unequips the struck character\u00e2\u20ac\u2122s weapon into the same character\u00e2\u20ac\u2122s carrying list.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -40139,7 +40128,7 @@
       },
       "id": "special.io_assistant_rose_grant",
       "native_effects": {
-        "custody_effect": "Io\u2019s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "custody_effect": "Io\u00e2\u20ac\u2122s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "fresh rose UID",
@@ -40158,7 +40147,7 @@
         "function": "io_assistant",
         "original_draft_symbol": "io_assistant"
       },
-      "source_classification": "Io\u2019s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "source_classification": "Io\u00e2\u20ac\u2122s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -42632,7 +42621,7 @@
       },
       "id": "special.treasure_chest_potion_grant",
       "native_effects": {
-        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u2019s inventory.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00e2\u20ac\u2122s inventory.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "chest UID",
@@ -42651,7 +42640,7 @@
         "function": "treasure_chest",
         "original_draft_symbol": "treasure_chest"
       },
-      "source_classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u2019s inventory.",
+      "source_classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00e2\u20ac\u2122s inventory.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -44082,7 +44071,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2136
+          2138
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_doom_blade",
@@ -44531,7 +44520,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2231
+          2233
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "sticks_to_snakes_retirement_completed",
@@ -44590,7 +44579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2288
+          2290
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_sticks_to_snakes",
@@ -44814,7 +44803,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          658
+          655
         ],
         "file": "src/classes/ethermancer.c",
         "function": "grant_wind_blade",
@@ -45460,7 +45449,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4797
+          4825
         ],
         "file": "src/cmd/actinf.c",
         "function": "do_world",
@@ -45578,7 +45567,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1141
+          1142
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_bandage",
@@ -45638,7 +45627,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1141
+          1142
         ],
         "file": "src/economy/tradeskill.c",
         "function": "do_bandage",
@@ -45754,7 +45743,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1263
+          1264
         ],
         "file": "src/economy/tradeskill.c",
         "function": "learn_recipe",

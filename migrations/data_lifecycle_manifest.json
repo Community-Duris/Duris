@@ -2018,6 +2018,93 @@
       "dependencies": ["database:critical_operation_inbox"]
     },
     {
+      "id": "database:quest_reward_obligation",
+      "kind": "database_table",
+      "locator": "quest_reward_obligation",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_pid_and_offering_operation_id",
+      "technical_purpose": "Recover committed quest rewards after item offering and replay",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": ["continuation"],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:quest_reward_xp_entitlement",
+      "kind": "database_table",
+      "locator": "quest_reward_xp_entitlement",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "recipient_pid_and_offering_operation_id",
+      "technical_purpose": "Recover committed quest XP for each credited player",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox", "database:quest_reward_obligation"]
+    },
+    {
+      "id": "database:player_spell_effect_receipt",
+      "kind": "database_table",
+      "locator": "player_spell_effect_receipt",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_pid_and_spell_operation_id",
+      "technical_purpose": "Identify committed spell effects retained with the owning player snapshot",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:critical_outbox_delivery_dedupe",
       "kind": "database_table",
       "locator": "critical_outbox_delivery_dedupe",

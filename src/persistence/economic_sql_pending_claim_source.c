@@ -160,3 +160,122 @@ unsigned int economic_sql_pending_claim_source_stage(MYSQL *connection,
 	}
 #endif
 }
+
+unsigned int economic_sql_pending_claim_source_consume(
+	MYSQL *connection, const critical_operation_id &spending_operation,
+	const economic_account_key &claim_account, uint32_t beneficiary_pid,
+	uint64_t claim_balance, uint64_t amount)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)spending_operation;
+	(void)claim_account;
+	(void)beneficiary_pid;
+	(void)claim_balance;
+	(void)amount;
+	return ENOTSUP;
+#else
+	if (!connection || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	    critical_operation_id_is_zero(spending_operation) || !beneficiary_pid || !amount ||
+	    claim_balance > UINT_MAX || amount > claim_balance || !economic_account_key_valid(claim_account) ||
+	    claim_account.kind != economic_account_kind::pending_claim || claim_account.context_id)
+		return EINVAL;
+	try
+	{
+		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> encoded = {};
+		if (economic_account_key_encode(claim_account, &encoded) !=
+		    economic_accounting_error::ok)
+			return EILSEQ;
+		std::vector<std::string> values;
+		const auto lineage = hex(claim_account.lineage.bytes);
+		if (!row(connection,
+			 "SELECT native_id FROM economic_account_mapping WHERE mapping_id=" +
+				 std::to_string(claim_account.authority_id) +
+				 " AND lineage=" + lineage + " AND account_kind=5 AND context_id=0 "
+				 "AND backend_kind=1 AND locator_kind=5 AND active_native_id=" +
+				 std::to_string(beneficiary_pid) +
+				 " AND retiring_operation_id IS NULL FOR UPDATE",
+			 1, &values))
+			return errno ? static_cast<unsigned int>(errno) : EILSEQ;
+		uint64_t native = 0;
+		if (!u64(values[0], &native) || native != beneficiary_pid)
+			return EILSEQ;
+		if (!row(connection,
+			 "SELECT COALESCE(SUM(amount),0) FROM economic_pending_claim_source WHERE "
+			 "lineage=" + lineage + " AND claim_mapping_id=" +
+				 std::to_string(claim_account.authority_id) +
+				 " AND beneficiary_pid=" + std::to_string(beneficiary_pid) +
+				 " AND claim_operation_id IS NULL",
+			 1, &values))
+			return errno ? static_cast<unsigned int>(errno) : EILSEQ;
+		uint64_t source_balance = 0;
+		if (!u64(values[0], &source_balance) || source_balance != claim_balance)
+			return EILSEQ;
+		if (!row(connection,
+			 "SELECT o.outcome,e.before_copper-e.after_copper "
+			 "FROM economic_accounting_operation o "
+			 "JOIN economic_accounting_account_effect e ON e.operation_id=o.operation_id "
+			 "WHERE o.operation_id=" + hex(spending_operation.bytes) +
+				 " AND o.lineage=" + lineage + " AND e.account_key=" + hex(encoded) +
+				 " FOR UPDATE",
+			 2, &values))
+			return errno ? static_cast<unsigned int>(errno) : EILSEQ;
+		uint64_t outcome = 0, debit = 0;
+		if (!u64(values[0], &outcome) || outcome != 1 || !u64(values[1], &debit) ||
+		    debit != amount)
+		return EILSEQ;
+
+		if (!execute(connection,
+			     "SELECT HEX(source_operation_id),source_slot,amount "
+			     "FROM economic_pending_claim_source WHERE lineage=" + lineage +
+				     " AND claim_mapping_id=" +
+				     std::to_string(claim_account.authority_id) +
+				     " AND beneficiary_pid=" + std::to_string(beneficiary_pid) +
+				     " AND claim_operation_id IS NULL "
+				     "ORDER BY source_operation_id,source_slot FOR UPDATE"))
+			return errno ? static_cast<unsigned int>(errno) : EIO;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows || mysql_num_fields(rows.get()) != 3)
+			return errno = EILSEQ;
+		uint64_t remaining = amount;
+		MYSQL_ROW cells = nullptr;
+		while (remaining && (cells = mysql_fetch_row(rows.get())))
+		{
+			const unsigned long *lengths = mysql_fetch_lengths(rows.get());
+			if (!lengths || !cells[0] || !cells[1] || !cells[2])
+				return EILSEQ;
+			std::string operation_hex(cells[0], lengths[0]);
+			std::string slot_text(cells[1], lengths[1]);
+			std::string amount_text(cells[2], lengths[2]);
+			uint64_t source_slot = 0, source_amount = 0;
+			if (!u64(slot_text, &source_slot) || source_slot > UINT16_MAX ||
+			    !u64(amount_text, &source_amount) || !source_amount)
+			{
+				return EILSEQ;
+			}
+			if (source_amount > remaining)
+				return ENOTSUP;
+			critical_operation_id source_operation = {};
+			if (operation_hex.size() != 32 ||
+			    !critical_operation_id_from_hex(operation_hex.c_str(), &source_operation))
+				return EILSEQ;
+			if (!execute(connection,
+				     "UPDATE economic_pending_claim_source SET claim_operation_id=" +
+					     hex(spending_operation.bytes) +
+					     " WHERE source_operation_id=" + hex(source_operation.bytes) +
+					     " AND source_slot=" + std::to_string(source_slot) +
+					     " AND claim_operation_id IS NULL"))
+				return errno ? static_cast<unsigned int>(errno) : EIO;
+			if (mysql_affected_rows(connection) != 1)
+				return EILSEQ;
+			remaining -= source_amount;
+		}
+		return remaining ? ENOTSUP : 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+#endif
+}

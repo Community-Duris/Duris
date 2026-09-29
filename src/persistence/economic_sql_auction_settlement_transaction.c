@@ -763,20 +763,20 @@ unsigned int economic_sql_auction_settlement_execute_and_record(
 					return staged;
 			}
 		}
-		if (payload.action == auction_action::finalize)
+		const auto escrow_effect = std::find_if(
+			plan.accounts.begin(), plan.accounts.end(), [&](const auto &entry)
+			{ return economic_account_key_equal(entry.key, accounts.escrow); });
+		if (escrow_effect == plan.accounts.end())
+			return EILSEQ;
+		if (escrow_effect->after == economic_coin_vector{})
 		{
-			const auto effect = std::find_if(
-				plan.accounts.begin(), plan.accounts.end(), [&](const auto &entry)
-				{ return economic_account_key_equal(entry.key, accounts.escrow); });
 			const auto mapping = std::find_if(
 				active.authority.mappings.begin(), active.authority.mappings.end(),
 				[&](const auto &entry) {
 					return economic_account_key_equal(entry.request.account,
 									  accounts.escrow);
 				});
-			if (effect == plan.accounts.end() ||
-			    effect->after != economic_coin_vector{} ||
-			    mapping == active.authority.mappings.end())
+			if (mapping == active.authority.mappings.end())
 				return EILSEQ;
 			const auto retired = economic_sql_retire_mapping(connection, *mapping,
 									 command.operation_id);

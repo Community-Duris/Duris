@@ -618,6 +618,56 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "dc28ae7a11669974c52b764406c8f4362c7f75c713a2c7df92da2991a613bdcd",
       "verify_checksum": "14315e7cd18adfe3c203edbec6c071d83a782ff35d93429a6bf3031f05e5cd72"
+    },
+    {
+      "id": "0045_quest_reward_obligation",
+      "sequence": 45,
+      "description": "Retain quest reward obligations with committed item offerings",
+      "apply": "immutable/0045_quest_reward_obligation.sql",
+      "verify": "immutable/0045_quest_reward_obligation.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "9a77ff94121c29537eeec3e618d695cddb8fccf5108f5247ec6a643d02109ac4",
+      "verify_checksum": "354c8babceb51b3e7b448e5e7eccd0eabad1e1d54a42ef4ffcb50c2c84b2495a"
+    },
+    {
+      "id": "0046_economic_realized_trade_price",
+      "sequence": 46,
+      "description": "Record committed realized copper prices for shop trades",
+      "apply": "immutable/0046_economic_realized_trade_price.sql",
+      "verify": "immutable/0046_economic_realized_trade_price.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "2d0d950ccfce78738f3f0794daa3e6406aaaf90ac0b6c4f50e1eae663e9d68ca",
+      "verify_checksum": "0a3375ad88390c19c192ce0a79cdf24274e2102da74bc2b7a3965447feac8f3b"
+    },
+    {
+      "id": "0047_quest_xp_receipt",
+      "sequence": 47,
+      "description": "Make quest XP reward application idempotent across player save recovery",
+      "apply": "immutable/0047_quest_xp_receipt.sql",
+      "verify": "immutable/0047_quest_xp_receipt.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "635a95927956b2b0667c4411758b8dd287722fe4445153606e0d697ecef6aef8",
+      "verify_checksum": "0552f7ee49eaf08762f6aa4453150d13a946940d4d9511b0ab4bf51d0af3664b"
+    },
+    {
+      "id": "0048_quest_xp_entitlement",
+      "sequence": 48,
+      "description": "Persist recoverable quest XP entitlements for every credited player",
+      "apply": "immutable/0048_quest_xp_entitlement.sql",
+      "verify": "immutable/0048_quest_xp_entitlement.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ed93976ddb651024c3c4ec55a4b2d0becb318c18ce8ad8e930defb0530182b49",
+      "verify_checksum": "8c1d98ffb08292d4b10143a7f414902da3ecb93b63ec8d13fd7fe9fc7b263175"
+    },
+    {
+      "id": "0049_player_spell_effect_receipt",
+      "sequence": 49,
+      "description": "Persist operation-scoped player spell effect receipts with saved affects",
+      "apply": "immutable/0049_player_spell_effect_receipt.sql",
+      "verify": "immutable/0049_player_spell_effect_receipt.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "46779e7b1cf8a12af6828f263a4842ddfed21303719f693224ac130a76371f5b",
+      "verify_checksum": "ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a"
     }
   ]
 }

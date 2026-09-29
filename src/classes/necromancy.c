@@ -3287,25 +3287,27 @@ static bool create_wall_of_bones_from_scales(P_char ch, int level, int exit_dir,
 	return true;
 }
 
-static void wall_of_bones_scales_completed(P_char ch, bool committed,
-					   const item_transfer_result &result,
-					   unsigned int /*error_code*/,
-					   const uint8_t *encoded,
-					   size_t encoded_size)
+spell_component_effect_status spell_wall_of_bones_scales_completed(
+	const critical_operation_id & /*operation_id*/, P_char ch, bool committed,
+	const item_transfer_result &result, unsigned int /*error_code*/,
+	const uint8_t *encoded, size_t encoded_size)
 {
-	if (!ch || !encoded || encoded_size != sizeof(wall_of_bones_scales_context))
-		return;
+	spell_component_context_reader reader(encoded, encoded_size);
 	wall_of_bones_scales_context context = {};
-	memcpy(&context, encoded, sizeof(context));
+	if (!ch || !reader.get_i32(&context.level) || !reader.get_i32(&context.exit_dir) ||
+	    !reader.get_i32(&context.room) || !reader.get_i32(&context.multiplier) ||
+	    !reader.finished())
+		return spell_component_effect_status::retry;
 	if (!committed || ch->in_room != context.room)
 	{
 		send_to_char("The dragon scales remain intact as your spell fizzles.\r\n", ch);
-		return;
+		return spell_component_effect_status::complete;
 	}
 	if (!create_wall_of_bones_from_scales(
 		    ch, context.level, context.exit_dir,
 		    static_cast<int>(result.item_count) * context.multiplier))
 		send_to_char("Something prevents you from making a wall there.\n", ch);
+	return spell_component_effect_status::complete;
 }
 
 void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int type,
@@ -3404,11 +3406,15 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 		{
 			if (economic_gameplay_authority::active() && IS_PC(ch))
 			{
-				const wall_of_bones_scales_context context = {
+				const wall_of_bones_scales_context values = {
 					level, exit_dir, ch->in_room, number(1, 2) };
+				spell_component_context_writer context;
+				if (!context.put_i32(values.level) || !context.put_i32(values.exit_dir) ||
+				    !context.put_i32(values.room) || !context.put_i32(values.multiplier))
+					return;
 				if (spell_consume_components(
-					    ch, VOBJ_DRAGON_SCALE, 4, SPELL_WALL_OF_BONES,
-					    wall_of_bones_scales_completed, &context, sizeof(context)))
+					    ch, VOBJ_DRAGON_SCALE, 4, SPELL_WALL_OF_BONES, item_spell_component_effect::wall_of_bones,
+					    spell_wall_of_bones_scales_completed, context.data(), context.size))
 					return;
 				scales = 0;
 			}

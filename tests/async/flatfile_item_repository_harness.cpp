@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -2417,6 +2418,147 @@ int main(int argc, char **argv)
 							    &owner_revision, &items, &error) ==
 				flatfile_item_repository_result::not_found,
 			"combined removal left an item owner authoritative");
+
+	const fs::path legacy_root = fs::path(argv[1]).string() + "-legacy-v5";
+	fs::create_directories(legacy_root / "domains");
+	fs::permissions(legacy_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(legacy_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const critical_command legacy_creation = single_creation(252, 990, 84, 0);
+	require(flatfile_item_repository_apply(legacy_root.string(), legacy_creation).outcome ==
+			critical_apply_outcome::applied,
+		"legacy fixture item creation failed");
+	const fs::path legacy_file = legacy_root / "domains" / "item_ownership";
+	std::ifstream legacy_input(legacy_file, std::ios::binary);
+	std::vector<uint8_t> legacy_bytes((std::istreambuf_iterator<char>(legacy_input)),
+					  std::istreambuf_iterator<char>());
+	require(legacy_bytes.size() > 61 && std::all_of(legacy_bytes.end() - 5, legacy_bytes.end(),
+							[](uint8_t byte) { return byte == 0; }),
+		"version 6 operation trailer did not match the empty fixture");
+	legacy_bytes.resize(legacy_bytes.size() - 5);
+	legacy_bytes[8] = 5;
+	const uint32_t legacy_payload_size = static_cast<uint32_t>(legacy_bytes.size() - 56);
+	for (size_t byte = 0; byte < 4; ++byte)
+		legacy_bytes[12 + byte] = static_cast<uint8_t>(legacy_payload_size >> (byte * 8));
+	SHA256(legacy_bytes.data() + 56, legacy_payload_size, legacy_bytes.data() + 24);
+	{
+		std::ofstream legacy_output(legacy_file, std::ios::binary | std::ios::trunc);
+		legacy_output.write(reinterpret_cast<const char *>(legacy_bytes.data()),
+				    legacy_bytes.size());
+		require(legacy_output.good(), "could not write version 5 fixture");
+	}
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			legacy_root.string(), { item_owner_type::player, 84, 0 }, &owner_revision,
+			&items, &error) == flatfile_item_repository_result::ok &&
+			items.size() == 1 && items[0].item_uid == 990 &&
+			flatfile_item_repository_apply(legacy_root.string(), legacy_creation)
+					.outcome == critical_apply_outcome::already_applied,
+		"version 5 catalog with an operation was not replayable");
+
+	const fs::path quest_root = fs::path(argv[1]).string() + "-quest";
+	fs::create_directories(quest_root / "domains");
+	fs::permissions(quest_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(quest_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const item_owner_identity quest_player = { item_owner_type::player, 42, 0 };
+	require(flatfile_item_repository_establish_owner(
+			quest_root.string(), quest_player,
+			{ { 900, 900, 0, quest_player, 1, 500, item_custody_state::active },
+			  { 901, 901, 0, quest_player, 1, 501, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"quest offering baseline failed: " + error);
+	item_transfer_payload offering = {};
+	offering.from_owner = quest_player;
+	offering.to_owner = { item_owner_type::destruction, 0, 0 };
+	offering.reason = item_transfer_reason::destruction;
+	offering.reason_id = 711;
+	offering.expected_from_revision = 1;
+	offering.multi_root = true;
+	offering.item_count = 2;
+	offering.items[0] = { 900, 900, 0, 1, 500, item_custody_state::active };
+	offering.items[1] = { 901, 901, 0, 1, 501, item_custody_state::active };
+	offering.continuation.kind = item_transfer_continuation_kind::quest_offering;
+	offering.continuation.data.assign(64, 0);
+	auto write32 = [&](size_t offset, uint32_t value)
+	{
+		for (size_t byte = 0; byte < 4; ++byte)
+			offering.continuation.data[offset + byte] =
+				static_cast<uint8_t>(value >> (byte * 8));
+	};
+	auto write64 = [&](size_t offset, uint64_t value)
+	{
+		for (size_t byte = 0; byte < 8; ++byte)
+			offering.continuation.data[offset + byte] =
+				static_cast<uint8_t>(value >> (byte * 8));
+	};
+	write32(0, 1);
+	write32(4, 42);
+	write32(16, 711);
+	write32(20, 500);
+	write64(24, 1700000000);
+	write32(32, 2);
+	write64(36, 900);
+	write64(44, 901);
+	write32(52, 1);
+	write32(56, 1);
+	write32(60, 777);
+	critical_command offering_command = {};
+	require(item_transfer_command_build(&offering_command, operation(250), offering,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build quest offering command");
+	offering_command.accepted_at_usec = 250;
+	std::vector<flatfile_quest_reward_obligation> obligations;
+	require(flatfile_item_repository_pending_quest_rewards(quest_root.string(), 42,
+							       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.empty(),
+		"quest obligation appeared before offering commit");
+	item_transfer_payload stale_offering = offering;
+	stale_offering.expected_from_revision = 0;
+	critical_command stale_offering_command = {};
+	require(item_transfer_command_build(&stale_offering_command, operation(251), stale_offering,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build stale quest offering command");
+	stale_offering_command.accepted_at_usec = 251;
+	require(flatfile_item_repository_apply(quest_root.string(), stale_offering_command)
+					.outcome == critical_apply_outcome::terminal_failure &&
+			flatfile_item_repository_pending_quest_rewards(quest_root.string(), 42,
+								       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.empty(),
+		"rejected quest offering created a reward obligation");
+	applied = flatfile_item_repository_apply(quest_root.string(), offering_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"quest offering custody did not commit");
+	require(flatfile_item_repository_apply(quest_root.string(), offering_command).outcome ==
+			critical_apply_outcome::already_applied,
+		"quest offering replay was not deduplicated");
+	require(flatfile_item_repository_pending_quest_rewards(quest_root.string(), 42,
+							       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.size() == 1 &&
+			obligations[0].continuation == offering.continuation.data &&
+			critical_operation_id_equal(obligations[0].offering_operation,
+						    offering_command.operation_id),
+		"committed offering lost its exact reward obligation");
+	require(flatfile_item_repository_ack_quest_reward(quest_root.string(), 77,
+							  offering_command.operation_id, &error) ==
+			flatfile_item_repository_result::invalid,
+		"another player could acknowledge the quest reward");
+	require(flatfile_item_repository_ack_quest_reward(quest_root.string(), 42,
+							  offering_command.operation_id, &error) ==
+				flatfile_item_repository_result::ok &&
+			flatfile_item_repository_ack_quest_reward(
+				quest_root.string(), 42, offering_command.operation_id, &error) ==
+				flatfile_item_repository_result::unchanged,
+		"quest reward acknowledgement was not durable and idempotent");
+	obligations.clear();
+	require(flatfile_item_repository_pending_quest_rewards(quest_root.string(), 42,
+							       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.empty(),
+		"acknowledged quest reward reappeared after reload");
 
 	const fs::path authority = domains / "item_ownership";
 	{

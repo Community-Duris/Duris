@@ -304,6 +304,9 @@ void writer_cases(const critical_operation_id &epoch, const economic_account_key
 	       purchased.wallet.amount == (economic_coin_vector{ 0, 0, 8, 0 }) &&
 	       purchased.wallet_revision == 5 && purchased.bank_revision == 8 &&
 	       purchased.shop_revision == 10 && purchased.item_revisions[0] == 5);
+	assert(scalar("SELECT realized_price_copper FROM economic_accounting_operation WHERE operation_id=" +
+		      literal(buy.operation_id)) == static_cast<uint64_t>(
+			      payload_for(shop_trade_action::buy_existing).price));
 	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + std::to_string(PLAYER) +
 		      " AND obj_uid=" + std::to_string(ITEM)) == 1);
 	assert(scalar("SELECT COUNT(*) FROM shopkeeper_items WHERE shopkeeper_id=" +
@@ -323,6 +326,8 @@ void writer_cases(const critical_operation_id &epoch, const economic_account_key
 	       sold.wallet.amount == (economic_coin_vector{ 0, 0, 0, 1 }) &&
 	       sold.wallet_revision == 6 && sold.bank_revision == 9 && sold.shop_revision == 11 &&
 	       sold.item_revisions[0] == 6);
+	assert(scalar("SELECT realized_price_copper FROM economic_accounting_operation WHERE operation_id=" +
+		      literal(sale.operation_id)) == static_cast<uint64_t>(sale_payload.price));
 	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + std::to_string(PLAYER) +
 		      " AND obj_uid=" + std::to_string(ITEM)) == 0);
 	assert(scalar("SELECT COUNT(*) FROM shopkeeper_items WHERE shopkeeper_id=" +
@@ -347,6 +352,8 @@ void writer_cases(const critical_operation_id &epoch, const economic_account_key
 	const auto refused = write_case(rejected, ENOBUFS, false);
 	assert(!refused.keeper_cash_recorded && refused.wallet_revision == 6 &&
 	       refused.bank_revision == 9);
+	assert(scalar("SELECT realized_price_copper IS NULL FROM economic_accounting_operation WHERE operation_id=" +
+		      literal(rejected.operation_id)) == 1);
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(PLAYER)) == 0);
 	assert(scalar("SELECT cash FROM shopkeepers WHERE id=" + std::to_string(KEEPER_ROW)) ==
 	       500);

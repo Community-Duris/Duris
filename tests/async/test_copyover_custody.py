@@ -75,6 +75,11 @@ bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authori
     size_t, item_ownership_runtime_entry *, size_t) { std::abort(); }
 bool world_recovery_rehydrate_npc_items(P_char const *, size_t) { std::abort(); }
 bool item_creation_grant_batches_pending() { return false; }
+bool death_extract_retry_pending(P_char) { return false; }
+bool death_extract_retry_copy_state(P_char, uint64_t *corpse_uid, int *delay) {
+    *corpse_uid = 0; *delay = 0; return true;
+}
+bool death_extract_retry_restore(P_char, uint64_t, int) { return false; }
 void flush_pending_ship_saves() {}
 bool drain_pending_ship_saves() { return true; }
 int locker_async_drain(int) { return 1; }

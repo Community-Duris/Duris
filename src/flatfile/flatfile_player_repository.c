@@ -56,7 +56,10 @@ bool valid_snapshot(const player_snapshot &snapshot)
 {
 	const uint32_t required = snapshot.death ? PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION :
 						   PLAYER_SNAPSHOT_SCHEMA_VERSION;
-	return snapshot.schema_version == required && snapshot.pid > 0 && snapshot.revision &&
+	return (snapshot.schema_version == required ||
+		(!snapshot.death && snapshot.schema_version ==
+		 PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION)) &&
+	       snapshot.pid > 0 && snapshot.revision &&
 	       snapshot.components && !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES &&
@@ -801,6 +804,54 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		result.recent_pvp_deaths = std::move(domains.recent_pvp_deaths);
 		result.completed_epic_zones = std::move(domains.completed_epic_zones);
 		result.read_components = PLAYER_LOAD_SESSION04_READS;
+	}
+	{
+		std::vector<flatfile_quest_reward_obligation> obligations;
+		const auto loaded = flatfile_item_repository_pending_quest_rewards(
+			root, static_cast<uint32_t>(identity.pid), &obligations, &error);
+		if (loaded == flatfile_item_repository_result::ok)
+		{
+			bool malformed = false;
+			try
+			{
+				result.pending_quest_rewards.reserve(obligations.size());
+				for (auto &obligation : obligations)
+				{
+					quest_reward_continuation terms;
+					if (!quest_reward_continuation_decode(
+						    obligation.continuation.data(),
+						    obligation.continuation.size(), &terms))
+					{
+						malformed = true;
+						break;
+					}
+					result.pending_quest_rewards.push_back(
+						{ obligation.offering_operation,
+						  std::move(obligation.continuation), terms });
+				}
+			}
+			catch (const std::bad_alloc &)
+			{
+				result.pending_quest_rewards.clear();
+				result.error_code = ENOMEM;
+				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+					      "quest_reward_obligations");
+			}
+			if (malformed)
+			{
+				result.pending_quest_rewards.clear();
+				result.error_code = EILSEQ;
+				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+					      "quest_reward_obligations");
+			}
+		}
+		else
+		{
+			result.error_code =
+				loaded == flatfile_item_repository_result::io_error ? EIO : EILSEQ;
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+				      "quest_reward_obligations");
+		}
 	}
 	if (!request.include_pets)
 	{

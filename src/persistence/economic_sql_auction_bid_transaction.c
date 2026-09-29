@@ -13,6 +13,7 @@
 #include <cstring>
 #include <memory>
 #include <new>
+#include <span>
 #include <string>
 #include <strings.h>
 #include <vector>
@@ -23,7 +24,7 @@ constexpr uint16_t PLAYER_LOCATOR = 1;
 constexpr uint16_t BANK_LOCATOR = 2;
 constexpr uint16_t AUCTION_LOCATOR = 4;
 constexpr uint16_t CLAIM_LOCATOR = 5;
-constexpr size_t BID_FACT_BYTES = 116;
+constexpr size_t BID_FACT_BYTES = 124;
 
 std::string hex(std::span<const uint8_t> bytes)
 {
@@ -161,22 +162,24 @@ bool identity(const critical_command &command, economic_frozen_intent *intent,
 			   payload->racewar };
 	accounts->escrow = { lineage, economic_account_kind::auction_escrow, little_u64(facts, 16),
 			     0 };
-	if (const auto mapping = little_u64(facts, 24))
+	accounts->bidder_claim = { lineage, economic_account_kind::pending_claim,
+				   little_u64(facts, 24), 0 };
+	if (const auto mapping = little_u64(facts, 32))
 		accounts->previous_claim = { lineage, economic_account_kind::pending_claim, mapping,
 					     0 };
-	if (const auto mapping = little_u64(facts, 32))
+	if (const auto mapping = little_u64(facts, 40))
 		accounts->seller_claim = { lineage, economic_account_kind::pending_claim, mapping,
 					   0 };
-	listing->auction_id = little_u32(facts, 40);
-	listing->seller_pid = little_u32(facts, 44);
-	listing->winning_bidder_pid = little_u32(facts, 48);
-	listing->status = little_u32(facts, 52);
-	listing->custody_state = little_u32(facts, 56);
-	listing->current_price = static_cast<int64_t>(little_u64(facts, 60));
-	listing->buy_price = static_cast<int64_t>(little_u64(facts, 68));
-	listing->revision = little_u64(facts, 76);
-	std::copy_n(facts.begin() + 84, 16, listing->listing_operation.bytes.begin());
-	std::copy_n(facts.begin() + 100, 16, listing->previous_bid_operation.bytes.begin());
+	listing->auction_id = little_u32(facts, 48);
+	listing->seller_pid = little_u32(facts, 52);
+	listing->winning_bidder_pid = little_u32(facts, 56);
+	listing->status = little_u32(facts, 60);
+	listing->custody_state = little_u32(facts, 64);
+	listing->current_price = static_cast<int64_t>(little_u64(facts, 68));
+	listing->buy_price = static_cast<int64_t>(little_u64(facts, 76));
+	listing->revision = little_u64(facts, 84);
+	std::copy_n(facts.begin() + 92, 16, listing->listing_operation.bytes.begin());
+	std::copy_n(facts.begin() + 108, 16, listing->previous_bid_operation.bytes.begin());
 	critical_command projected = command;
 	projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 	projected.accounting_intent.clear();
@@ -341,7 +344,8 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 	const bool outbid = listing.winning_bidder_pid &&
 			    listing.winning_bidder_pid != payload.actor_pid;
 	const bool sold = listing.buy_price > 0 && payload.value >= listing.buy_price;
-	return (!outbid ||
+	return claim(connection, payload.actor_pid, &before->bidder_claim_before) &&
+	       (!outbid ||
 		claim(connection, listing.winning_bidder_pid, &before->previous_claim_before)) &&
 	       (!sold || claim(connection, listing.seller_pid, &before->seller_claim_before));
 }
@@ -354,6 +358,28 @@ bool insert_operation(MYSQL *connection, const critical_command &command,
 	std::vector<uint8_t> encoded_plan;
 	economic_digest plan_digest = {}, intent_digest = {};
 	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> source = {};
+	std::string realized_price_sql = "NULL";
+	if (plan && meta.reason == economic_reason::auction_bid)
+	{
+		auction_command_payload payload = {};
+		const auto facts = std::span<const uint8_t>(intent.admission.facts);
+		if (facts.size() != BID_FACT_BYTES ||
+		    !auction_command_decode_payload(command, &payload) || payload.value <= 0)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		uint64_t realized_price = static_cast<uint64_t>(payload.value);
+		const auto buy_price = little_u64(facts, 76);
+		if (buy_price && realized_price >= buy_price)
+			realized_price = buy_price;
+		if (!realized_price || realized_price > UINT_MAX)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		realized_price_sql = std::to_string(realized_price);
+	}
 	if (!meta.source_event ||
 	    economic_source_event_encode(*meta.source_event, &source) !=
 		    economic_accounting_error::ok ||
@@ -369,7 +395,8 @@ bool insert_operation(MYSQL *connection, const critical_command &command,
 	const std::string sql =
 		"INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,"
 		"original_operation_id,accounting_version,writer_id,policy_version,compiler_version,"
-		"actor_kind,actor_id,reason,source_event,intent_digest,domain_digest,plan_digest,"
+		"actor_kind,actor_id,reason,source_event,realized_price_copper,intent_digest,domain_digest,"
+		"plan_digest,"
 		"canonical_intent,canonical_plan,outcome,result_code,account_count,posting_count,"
 		"child_count,item_event_count,before_witness_count,after_witness_count) VALUES(" +
 		id(command.operation_id) + "," + id(meta.lineage) + "," + id(meta.epoch) + "," +
@@ -379,6 +406,7 @@ bool insert_operation(MYSQL *connection, const critical_command &command,
 		std::to_string(static_cast<uint8_t>(meta.actor_kind)) + "," +
 		std::to_string(meta.actor_id) + "," +
 		std::to_string(static_cast<uint16_t>(meta.reason)) + "," + hex(source) + "," +
+		realized_price_sql + "," +
 		hex(intent_digest) + "," + hex(intent.domain_digest) + "," +
 		(plan ? hex(plan_digest) : "NULL") + "," + hex(command.accounting_intent) + "," +
 		(plan ? hex(encoded_plan) : "NULL") + "," +
@@ -455,7 +483,8 @@ unsigned int economic_sql_auction_bid_lock(MYSQL *connection, const critical_com
 		std::vector<economic_sql_mapping_request> requests = {
 			{ accounts.wallet, PLAYER_LOCATOR, payload.actor_pid },
 			{ accounts.bank, BANK_LOCATOR, candidate.bank_id },
-			{ accounts.escrow, AUCTION_LOCATOR, listing.auction_id }
+			{ accounts.escrow, AUCTION_LOCATOR, listing.auction_id },
+			{ accounts.bidder_claim, CLAIM_LOCATOR, payload.actor_pid }
 		};
 		if (economic_account_key_valid(accounts.previous_claim))
 			requests.push_back({ accounts.previous_claim, CLAIM_LOCATOR,
@@ -564,6 +593,16 @@ economic_sql_auction_bid_execute_and_record(MYSQL *connection, const critical_co
 			if (!insert_posting(connection, command.operation_id, index,
 					    plan.postings[index]))
 				return failure_code();
+		if (result->claim_credit_used > 0)
+		{
+			const auto consumed = economic_sql_pending_claim_source_consume(
+				connection, command.operation_id, accounts.bidder_claim,
+				payload.actor_pid,
+				static_cast<uint64_t>(before.bidder_claim_before.money),
+				static_cast<uint64_t>(result->claim_credit_used));
+			if (consumed)
+				return consumed;
+		}
 		const bool outbid = before.listing.winning_bidder_pid &&
 				    before.listing.winning_bidder_pid != payload.actor_pid;
 		if (outbid)

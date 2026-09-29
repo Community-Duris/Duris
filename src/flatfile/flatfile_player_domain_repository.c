@@ -1685,7 +1685,7 @@ critical_apply_result apply_epic_command(const std::string &root, const critical
 			 0,
 			 static_cast<unsigned int>(
 				 recovered == flatfile_player_domain_result::io_error ? EIO :
-											EILSEQ) };
+										EILSEQ) };
 	player_authority authority;
 	const auto loaded = load_player_authority(root, payload.pid, &authority, &error);
 	if (loaded != flatfile_player_domain_result::ok)
@@ -1802,8 +1802,8 @@ critical_apply_result apply_currency_command(const std::string &root,
 				 critical_apply_outcome::retryable_failure :
 				 critical_apply_outcome::terminal_failure,
 			 0,
-			 static_cast<unsigned int>(
-				 recovered == flatfile_player_domain_result::io_error ? EIO :
+				 static_cast<unsigned int>(
+					 recovered == flatfile_player_domain_result::io_error ? EIO :
 											EILSEQ) };
 	player_authority authority;
 	const auto player_loaded = load_player_authority(root, payload.pid, &authority, &error);
@@ -1861,12 +1861,20 @@ critical_apply_result apply_currency_command(const std::string &root,
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
 	if (evidence_exists)
 	{
-		flatfile_economic_control control;
-		const auto status = flatfile_economic_control_read(root, lock, &control, &error);
-		if (status)
-			return { critical_apply_outcome::retryable_failure, 0, status };
-		if (!critical_operation_id_is_zero(control.active_epoch))
-			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		const bool evidence_empty = std::filesystem::is_empty(
+			std::filesystem::path(root) / "economic-evidence", metadata_error);
+		if (metadata_error)
+			return { critical_apply_outcome::retryable_failure, 0, EIO };
+		if (!evidence_empty)
+		{
+			flatfile_economic_control control;
+			const auto status = flatfile_economic_control_read(root, lock, &control,
+									     &error);
+			if (status)
+				return { critical_apply_outcome::retryable_failure, 0, status };
+			if (!critical_operation_id_is_zero(control.active_epoch))
+				return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		}
 	}
 	if (authority.operations.size() >= domain_maximum_operations)
 		return { critical_apply_outcome::terminal_failure,

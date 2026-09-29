@@ -44,14 +44,11 @@ int main()
         result.snapshot.status_strings.push_back(entry);
     }
     require(valid_snapshot(result), "healthy fixture is invalid before query accounting");
-    // Observed in the actual SQL cold-entry journey: 28 prior queries plus the
-    // primary-key lock which serializes this view with retained-death admission.
-    result.metrics.query_count = 29;
-    require(valid_snapshot(result), "healthy 29-query PID load rejected after identity lock");
-    // Name lookup precedes that same lock and revalidation; it adds one query.
-    result.metrics.query_count = 30;
-    require(valid_snapshot(result), "healthy 30-query name load rejected after identity lookup");
-    result.metrics.query_count = 31;
+    result.metrics.query_count = PLAYER_LOAD_PID_QUERY_MAX;
+    require(valid_snapshot(result), "healthy bounded PID load rejected after identity lock");
+    result.metrics.query_count = PLAYER_LOAD_QUERY_MAX;
+    require(valid_snapshot(result), "healthy bounded name load rejected after identity lookup");
+    result.metrics.query_count = PLAYER_LOAD_QUERY_MAX + 1;
     require(!valid_snapshot(result), "unexpected extra query escaped the bounded admission gate");
     result.metrics.query_count = 29;
     ++result.snapshot.schema_version;
