@@ -16,6 +16,60 @@ constexpr unsigned int PLAYER_SAVE_WORKER_DEFAULT_THREADS = 2;
  * not exactly match authoritative active custody. */
 constexpr unsigned int PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH = 10001;
 
+// Low-cardinality, redacted reasons for rejecting a custody payload. These are
+// diagnostic context only; the public save error remains the generic mismatch.
+enum class player_save_custody_diagnosis : uint8_t
+{
+	none = 0,
+	invalid_snapshot_item = 1,
+	invalid_snapshot_parent = 2,
+	duplicate_snapshot_uid = 3,
+	malformed_active_custody_row = 4,
+	duplicate_equipment_slot = 5,
+	active_custody_absent_from_snapshot = 6,
+	custody_vnum_mismatch = 7,
+	duplicate_custody_match = 8,
+	snapshot_item_absent_from_custody = 9,
+	invalid_custody_topology = 10,
+	invalid_death_payload = 11,
+	saved_item_absent_from_death_payload = 12,
+};
+
+inline const char *player_save_custody_diagnosis_name(
+	player_save_custody_diagnosis diagnosis)
+{
+	switch (diagnosis)
+	{
+	case player_save_custody_diagnosis::invalid_snapshot_item:
+		return "invalid_snapshot_item";
+	case player_save_custody_diagnosis::invalid_snapshot_parent:
+		return "invalid_snapshot_parent";
+	case player_save_custody_diagnosis::duplicate_snapshot_uid:
+		return "duplicate_snapshot_uid";
+	case player_save_custody_diagnosis::malformed_active_custody_row:
+		return "malformed_active_custody_row";
+	case player_save_custody_diagnosis::duplicate_equipment_slot:
+		return "duplicate_equipment_slot";
+	case player_save_custody_diagnosis::active_custody_absent_from_snapshot:
+		return "active_custody_absent_from_snapshot";
+	case player_save_custody_diagnosis::custody_vnum_mismatch:
+		return "custody_vnum_mismatch";
+	case player_save_custody_diagnosis::duplicate_custody_match:
+		return "duplicate_custody_match";
+	case player_save_custody_diagnosis::snapshot_item_absent_from_custody:
+		return "snapshot_item_absent_from_custody";
+	case player_save_custody_diagnosis::invalid_custody_topology:
+		return "invalid_custody_topology";
+	case player_save_custody_diagnosis::invalid_death_payload:
+		return "invalid_death_payload";
+	case player_save_custody_diagnosis::saved_item_absent_from_death_payload:
+		return "saved_item_absent_from_death_payload";
+	case player_save_custody_diagnosis::none:
+	default:
+		return "none";
+	}
+}
+
 enum class player_save_apply_outcome : uint8_t
 {
 	applied,
@@ -31,6 +85,8 @@ struct player_save_apply_result
 	player_save_apply_outcome outcome;
 	player_revision_t durable_revision;
 	unsigned int error_code;
+	player_save_custody_diagnosis custody_diagnosis =
+		player_save_custody_diagnosis::none;
 };
 
 // A death needs its own exact successful receipt. Leave ordinary snapshots to
@@ -51,6 +107,8 @@ struct player_save_completion
 	player_save_apply_outcome outcome;
 	player_revision_t durable_revision;
 	unsigned int error_code;
+	player_save_custody_diagnosis custody_diagnosis =
+		player_save_custody_diagnosis::none;
 	unsigned int retry_count;
 	uint64_t queued_at_usec;
 	uint64_t started_at_usec;

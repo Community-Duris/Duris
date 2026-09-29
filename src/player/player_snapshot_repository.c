@@ -30,7 +30,14 @@ struct query_result
 {
 	bool ok;
 	unsigned int error_code;
+	player_save_custody_diagnosis custody_diagnosis =
+		player_save_custody_diagnosis::none;
 };
+
+query_result custody_payload_mismatch(player_save_custody_diagnosis diagnosis)
+{
+	return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH, diagnosis };
+}
 
 query_result
 canonicalize_snapshot_extra_description(const player_item_extra_description_snapshot &description,
@@ -119,11 +126,13 @@ bool connection_error(unsigned int error_code)
 	return error_code == 2002 || error_code == 2003 || error_code == 2006 || error_code == 2013;
 }
 
-player_save_apply_result failure(unsigned int error_code)
+player_save_apply_result failure(
+	unsigned int error_code,
+	player_save_custody_diagnosis custody_diagnosis = player_save_custody_diagnosis::none)
 {
 	return { retryable_error(error_code) ? player_save_apply_outcome::retryable_failure :
 					       player_save_apply_outcome::terminal_failure,
-		 0, error_code };
+		 0, error_code, custody_diagnosis };
 }
 
 std::string escape(MYSQL *connection, const std::string &value)
@@ -758,7 +767,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
 			    item.equipment_slot < 0 || item.equipment_slot > MAX_WEAR ||
 			    (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT && item.equipment_slot))
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::invalid_snapshot_item);
 
 			uint64_t root_item_uid = item.object_uid;
 			uint64_t parent_item_uid = 0;
@@ -768,8 +778,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 					snapshot.items[item.parent_index];
 				const auto parent_custody = expected.find(parent.object_uid);
 				if (parent_custody == expected.end())
-					return { false,
-						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+					return custody_payload_mismatch(
+						player_save_custody_diagnosis::invalid_snapshot_parent);
 				root_item_uid = parent_custody->second.root_item_uid;
 				parent_item_uid = parent.object_uid;
 			}
@@ -779,7 +789,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 						      index,
 						      static_cast<uint16_t>(item.equipment_slot) })
 				     .second)
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::duplicate_snapshot_uid);
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -824,12 +835,14 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			if (!valid)
 			{
 				mysql_free_result(rows);
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::malformed_active_custody_row);
 			}
 			if (equipment_slot && occupied_slots[equipment_slot])
 			{
 				mysql_free_result(rows);
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::duplicate_equipment_slot);
 			}
 			if (equipment_slot)
 				occupied_slots[equipment_slot] = true;
@@ -841,13 +854,21 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				if (inline_coin_payload)
 					continue;
 				mysql_free_result(rows);
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::active_custody_absent_from_snapshot);
 			}
 			expected_player_item_custody &item = found->second;
-			if (std::to_string(item.vnum) != row[3] || !matched.insert(item_uid).second)
+			if (std::to_string(item.vnum) != row[3])
 			{
 				mysql_free_result(rows);
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::custody_vnum_mismatch);
+			}
+			if (!matched.insert(item_uid).second)
+			{
+				mysql_free_result(rows);
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::duplicate_custody_match);
 			}
 			if (item.root_item_uid != root_item_uid ||
 			    item.parent_item_uid != parent_item_uid)
@@ -871,7 +892,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 	}
 	mysql_free_result(rows);
 	if (matched.size() != expected.size())
-		return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		return custody_payload_mismatch(
+			player_save_custody_diagnosis::snapshot_item_absent_from_custody);
 	if (!topology_mismatch)
 		return { true, 0 };
 
@@ -885,12 +907,13 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			const uint64_t item_uid = snapshot.items[index].object_uid;
 			const auto item = expected.find(item_uid);
 			if (item == expected.end())
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::invalid_custody_topology);
 			if (!item->second.parent_item_uid)
 			{
 				if (item->second.root_item_uid != item_uid)
-					return { false,
-						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+					return custody_payload_mismatch(
+						player_save_custody_diagnosis::invalid_custody_topology);
 				roots.push_back(index);
 				continue;
 			}
@@ -898,7 +921,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			if (parent == expected.end() ||
 			    parent->second.root_item_uid != item->second.root_item_uid ||
 			    parent->second.snapshot_index >= snapshot.items.size())
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::invalid_custody_topology);
 			children[parent->second.snapshot_index].push_back(index);
 		}
 
@@ -917,8 +941,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				const size_t index = stack.back();
 				stack.pop_back();
 				if (visited[index])
-					return { false,
-						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+					return custody_payload_mismatch(
+						player_save_custody_diagnosis::invalid_custody_topology);
 				visited[index] = true;
 				order.push_back(index);
 				for (auto child = children[index].rbegin();
@@ -926,17 +950,16 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				{
 					const size_t child_depth = depths[index] + 1;
 					if (child_depth > PLAYER_SNAPSHOT_MAX_DEPTH)
-						return {
-							false,
-							PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH
-						};
+						return custody_payload_mismatch(
+							player_save_custody_diagnosis::invalid_custody_topology);
 					depths[*child] = child_depth;
 					stack.push_back(*child);
 				}
 			}
 		}
 		if (order.size() != snapshot.items.size())
-			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::invalid_custody_topology);
 
 		std::unordered_map<uint64_t, int32_t> projected_index;
 		projected_index.reserve(order.size());
@@ -946,14 +969,15 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			player_item_snapshot item = snapshot.items[original_index];
 			const auto custody = expected.find(item.object_uid);
 			if (custody == expected.end())
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::invalid_custody_topology);
 			if (custody->second.parent_item_uid)
 			{
 				const auto parent =
 					projected_index.find(custody->second.parent_item_uid);
 				if (parent == projected_index.end())
-					return { false,
-						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+					return custody_payload_mismatch(
+						player_save_custody_diagnosis::invalid_custody_topology);
 				item.parent_index = parent->second;
 			}
 			else
@@ -965,7 +989,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				     .emplace(item.object_uid,
 					      static_cast<int32_t>(reconciled_items->size()))
 				     .second)
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::invalid_custody_topology);
 			reconciled_items->push_back(std::move(item));
 		}
 	}
@@ -986,7 +1011,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 query_result verify_player_death_item_payload(MYSQL *connection, const player_snapshot &snapshot)
 {
 	if (!snapshot.death || !snapshot.items.empty())
-		return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		return custody_payload_mismatch(
+			player_save_custody_diagnosis::invalid_death_payload);
 	std::unordered_map<uint64_t, int32_t> captured;
 	try
 	{
@@ -994,7 +1020,8 @@ query_result verify_player_death_item_payload(MYSQL *connection, const player_sn
 		for (const player_item_snapshot &item : snapshot.death->corpse)
 			if (!item.object_uid || item.vnum <= 0 ||
 			    !captured.emplace(item.object_uid, item.vnum).second)
-				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				return custody_payload_mismatch(
+					player_save_custody_diagnosis::invalid_death_payload);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -1015,13 +1042,15 @@ query_result verify_player_death_item_payload(MYSQL *connection, const player_sn
 		if (!parse_custody_uint64(row[0], &item_uid) || !item_uid || !row[1])
 		{
 			mysql_free_result(rows);
-			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::malformed_active_custody_row);
 		}
 		const auto found = captured.find(item_uid);
 		if (found == captured.end() || std::to_string(found->second) != row[1])
 		{
 			mysql_free_result(rows);
-			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::saved_item_absent_from_death_payload);
 		}
 		captured.erase(found);
 	}
@@ -1712,7 +1741,7 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 		const auto receipt = verify_death_receipt(connection, snapshot);
 		execute(connection, "ROLLBACK");
 		if (!receipt.ok)
-			return failure(receipt.error_code);
+			return failure(receipt.error_code, receipt.custody_diagnosis);
 		return { durable == snapshot.revision ? player_save_apply_outcome::already_applied :
 							player_save_apply_outcome::stale_revision,
 			 durable, 0 };
@@ -1744,7 +1773,8 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	if (!query.ok)
 	{
 		execute(connection, "ROLLBACK");
-		player_save_apply_result failed = failure(query.error_code);
+		player_save_apply_result failed =
+			failure(query.error_code, query.custody_diagnosis);
 		failed.durable_revision = durable;
 		return failed;
 	}

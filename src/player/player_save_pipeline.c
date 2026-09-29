@@ -951,13 +951,16 @@ void player_save_pipeline_pulse(void)
 			{
 				const auto &completion = completions[index];
 				logit(LOG_STATUS,
-				      "PLAYER SAVE TRACE: stage=completion mono_us=%llu pid=%d revision=%llu components=%llu outcome=%u durable=%llu error=%u retries=%u queued_us=%llu started_us=%llu completed_us=%llu",
+				      "PLAYER SAVE TRACE: stage=completion mono_us=%llu pid=%d revision=%llu components=%llu outcome=%u durable=%llu error=%u custody_diagnosis=%s retries=%u queued_us=%llu started_us=%llu completed_us=%llu",
 				      (unsigned long long)persistence_observability_now_usec(),
 				      completion.pid, (unsigned long long)completion.revision,
 				      (unsigned long long)completion.components,
 				      (unsigned)completion.outcome,
 				      (unsigned long long)completion.durable_revision,
-				      completion.error_code, completion.retry_count,
+				      completion.error_code,
+				      player_save_custody_diagnosis_name(
+					      completion.custody_diagnosis),
+				      completion.retry_count,
 				      (unsigned long long)completion.queued_at_usec,
 				      (unsigned long long)completion.started_at_usec,
 				      (unsigned long long)completion.completed_at_usec);
@@ -1005,10 +1008,12 @@ void player_save_pipeline_pulse(void)
 		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
 				  "custody_payload_mismatch_rejected",
 				  "pid=%d revision=%llu components=%llu destructive_write=0 "
-				  "recapture_scheduled=%d",
+				  "custody_diagnosis=%s recapture_scheduled=%d",
 				  custody_mismatches[index].pid,
 				  (unsigned long long)custody_mismatches[index].revision,
 				  (unsigned long long)custody_mismatches[index].components,
+				  player_save_custody_diagnosis_name(
+					  custody_mismatches[index].custody_diagnosis),
 				  recapture_scheduled ? 1 : 0);
 	}
 	for (size_t index = 0; index < missing_baseline_count; ++index)
