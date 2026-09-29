@@ -35,6 +35,13 @@ struct duris_sql_exclusion_guard_state
 	unsigned long economic_connection_id = 0;
 };
 
+enum class duris_sql_exclusion_guard_status
+{
+	allowed,
+	owner_lost,
+	inconclusive
+};
+
 // External inline linkage gives sql.c and sql_pool.c one shared process state.
 // Owner identity is published before worker startup and cleared after draining;
 // concurrent probes may independently latch a loss, so that flag is atomic.
@@ -72,19 +79,18 @@ static inline bool duris_sql_exclusion_guard_scalar(MYSQL *connection, const cha
 	return value_ok;
 }
 
-static inline bool duris_sql_exclusion_guard_validate(MYSQL *probe)
+static inline duris_sql_exclusion_guard_status duris_sql_exclusion_guard_validate(MYSQL *probe)
 {
 	duris_sql_exclusion_guard_state &state = duris_sql_exclusion_guard_state_ref();
-	if (!probe || !state.connection || state.lost || state.connection_id == 0)
-		return false;
+	if (state.lost)
+		return duris_sql_exclusion_guard_status::owner_lost;
+	if (!probe || !state.connection || state.connection_id == 0)
+		return duris_sql_exclusion_guard_status::inconclusive;
 
 	/* A forked child must not touch the inherited MYSQL handle.  It may use a
 	 * newly opened handle, which still proves that the parent-owned lock exists. */
 	if (state.process_id != getpid() && probe == state.connection)
-	{
-		state.lost = true;
-		return false;
-	}
+		return duris_sql_exclusion_guard_status::inconclusive;
 
 	char query[512];
 	const int written =
@@ -99,18 +105,20 @@ static inline bool duris_sql_exclusion_guard_validate(MYSQL *probe)
 				 "SELECT IF(IFNULL(IS_USED_LOCK(%s),0)=%lu,1,0)",
 				 DURIS_SQL_EXCLUSION_LOCK_EXPRESSION, state.connection_id);
 	if (written < 0 || (size_t)written >= sizeof(query))
-	{
-		state.lost = true;
-		return false;
-	}
+		return duris_sql_exclusion_guard_status::inconclusive;
 	char value[4];
-	if (!duris_sql_exclusion_guard_scalar(probe, query, value, sizeof(value)) ||
-	    strcmp(value, "1"))
+	if (!duris_sql_exclusion_guard_scalar(probe, query, value, sizeof(value)))
+		return duris_sql_exclusion_guard_status::inconclusive;
+	if (!strcmp(value, "0"))
 	{
 		state.lost = true;
-		return false;
+		return duris_sql_exclusion_guard_status::owner_lost;
 	}
-	return true;
+	if (strcmp(value, "1"))
+		return duris_sql_exclusion_guard_status::inconclusive;
+	if (state.lost)
+		return duris_sql_exclusion_guard_status::owner_lost;
+	return duris_sql_exclusion_guard_status::allowed;
 }
 
 // Boot-only: publish the dedicated lifecycle owner before starting workers.
@@ -125,7 +133,22 @@ static inline bool duris_sql_exclusion_guard_bind_economic_runtime(MYSQL *contro
 	if (!session)
 		return false;
 	state.economic_connection_id = session;
-	return duris_sql_exclusion_guard_validate(control);
+	const auto status = duris_sql_exclusion_guard_validate(control);
+	if (status == duris_sql_exclusion_guard_status::inconclusive && !state.lost)
+		state.economic_connection_id = 0;
+	return status == duris_sql_exclusion_guard_status::allowed;
+}
+
+/* No guard is required before the runtime owner is initialized.  Once bound,
+ * callers can distinguish an inconclusive probe from proven owner loss. */
+static inline duris_sql_exclusion_guard_status duris_sql_exclusion_guard_check(MYSQL *probe)
+{
+	duris_sql_exclusion_guard_state &state = duris_sql_exclusion_guard_state_ref();
+	if (state.lost)
+		return duris_sql_exclusion_guard_status::owner_lost;
+	if (!state.connection)
+		return duris_sql_exclusion_guard_status::allowed;
+	return duris_sql_exclusion_guard_validate(probe);
 }
 
 /* A connection may be used only while the runtime's original owner is still
@@ -135,9 +158,7 @@ static inline bool duris_sql_exclusion_guard_allows(MYSQL *probe)
 	duris_sql_exclusion_guard_state &state = duris_sql_exclusion_guard_state_ref();
 	if (!state.connection && !state.lost)
 		return true;
-	if (state.lost)
-		return false;
-	return duris_sql_exclusion_guard_validate(probe);
+	return duris_sql_exclusion_guard_check(probe) == duris_sql_exclusion_guard_status::allowed;
 }
 
 static inline bool duris_sql_exclusion_guard_acquire(MYSQL *connection)
@@ -168,7 +189,8 @@ static inline bool duris_sql_exclusion_guard_acquire(MYSQL *connection)
 	state.process_id = getpid();
 	state.economic_connection_id = 0;
 	state.lost = false;
-	if (duris_sql_exclusion_guard_validate(connection))
+	const auto status = duris_sql_exclusion_guard_validate(connection);
+	if (status == duris_sql_exclusion_guard_status::allowed)
 		return true;
 
 	(void)duris_sql_exclusion_guard_scalar(
@@ -177,7 +199,8 @@ static inline bool duris_sql_exclusion_guard_acquire(MYSQL *connection)
 	state.connection = NULL;
 	state.connection_id = 0;
 	state.process_id = 0;
-	state.lost = true;
+	if (status == duris_sql_exclusion_guard_status::owner_lost)
+		state.lost = true;
 	return false;
 }
 
@@ -201,9 +224,14 @@ static inline void duris_sql_exclusion_guard_release()
 
 #else
 
-static inline bool duris_sql_exclusion_guard_validate(MYSQL *)
+static inline duris_sql_exclusion_guard_status duris_sql_exclusion_guard_validate(MYSQL *)
 {
-	return false;
+	return duris_sql_exclusion_guard_status::inconclusive;
+}
+
+static inline duris_sql_exclusion_guard_status duris_sql_exclusion_guard_check(MYSQL *)
+{
+	return duris_sql_exclusion_guard_status::inconclusive;
 }
 
 static inline bool duris_sql_exclusion_guard_allows(MYSQL *)
