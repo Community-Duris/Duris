@@ -194,6 +194,7 @@ void worker_main()
 			.outcome = applied.outcome,
 			.durable_revision = applied.durable_revision,
 			.error_code = applied.error_code,
+			.custody_diagnosis = applied.custody_diagnosis,
 			.retry_count = job->retry_count,
 			.queued_at_usec = job->queued_at_usec,
 			.started_at_usec = started,
