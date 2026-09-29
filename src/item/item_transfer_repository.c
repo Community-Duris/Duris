@@ -220,7 +220,8 @@ bool one_row(MYSQL *connection, const std::string &sql, std::vector<uint64_t> *v
 
 bool retire_player_projection(MYSQL *connection, const item_transfer_payload &payload)
 {
-	if (payload.reason != item_transfer_reason::destruction ||
+	if ((payload.reason != item_transfer_reason::destruction &&
+	     payload.reason != item_transfer_reason::quest_turnin) ||
 	    payload.from_owner.type != item_owner_type::player ||
 	    payload.to_owner.type != item_owner_type::destruction)
 		return true;

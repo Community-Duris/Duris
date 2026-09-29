@@ -19,6 +19,7 @@
 #include "economy/coin_transfer_command.h"
 #include "economy/item_transfer_accounting.h"
 #include "economy/economic_accounting_intent.h"
+#include "item/quest_reward_continuation.h"
 #include "player/player_snapshot_codec.h"
 #include "world/vnum.obj.h"
 #include "core/defines.h"
@@ -49,7 +50,7 @@ __attribute__((weak)) flatfile_item_accounting_status flatfile_item_accounting_r
 
 namespace
 {
-constexpr uint32_t ownership_format_version = 5;
+constexpr uint32_t ownership_format_version = 6;
 constexpr uint32_t ownership_legacy_format_version = 1;
 constexpr std::array<uint8_t, 8> ownership_magic = { 'D', 'U', 'R', 'O', 'W', 'N', 0, 0 };
 constexpr size_t ownership_maximum_bytes = 128 * 1024 * 1024;
@@ -72,6 +73,8 @@ struct operation_state
 	item_transfer_result result;
 	bool coin_operation = false;
 	std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> coin_result = {};
+	std::vector<uint8_t> quest_continuation = {};
+	bool quest_reward_acknowledged = false;
 };
 
 struct ownership_catalog
@@ -290,6 +293,11 @@ bool encode_catalog(const ownership_catalog &catalog, uint64_t revision,
 		payload.number<uint8_t>(entry.coin_operation ? 1 : 0);
 		if (entry.coin_operation)
 			payload.raw(entry.coin_result.data(), entry.coin_result.size());
+		payload.number<uint32_t>(entry.quest_continuation.size());
+		if (!entry.quest_continuation.empty())
+			payload.raw(entry.quest_continuation.data(),
+				    entry.quest_continuation.size());
+		payload.number<uint8_t>(entry.quest_reward_acknowledged ? 1 : 0);
 	}
 	if (!payload.valid || payload.bytes.size() > ownership_maximum_bytes)
 		return false;
@@ -354,6 +362,14 @@ bool valid_catalog(const ownership_catalog &catalog)
 		operation_ids.reserve(catalog.operations.size());
 		for (const operation_state &entry : catalog.operations)
 			if (critical_operation_id_is_zero(entry.operation_id) ||
+			    entry.quest_continuation.size() >
+				    ITEM_TRANSFER_CONTINUATION_MAX_BYTES ||
+			    (!entry.quest_continuation.empty() &&
+			     (entry.coin_operation || entry.result_code ||
+			      entry.quest_continuation.size() < 40 ||
+			      entry.quest_continuation[0] != 1 || entry.quest_continuation[1] ||
+			      entry.quest_continuation[2] || entry.quest_continuation[3])) ||
+			    (entry.quest_reward_acknowledged && entry.quest_continuation.empty()) ||
 			    (!entry.coin_operation &&
 			     (!entry.result.root_item_uid || !entry.result.item_count ||
 			      entry.result.item_count > ITEM_TRANSFER_MAX_ITEMS)) ||
@@ -476,6 +492,26 @@ flatfile_item_repository_result decode_catalog(const std::vector<uint8_t> &bytes
 			     !input.raw(entry.coin_result.data(), entry.coin_result.size())))
 				return flatfile_item_repository_result::invalid;
 			entry.coin_operation = coin != 0;
+		}
+		if (version >= 6)
+		{
+			uint32_t size = 0;
+			uint8_t acknowledged = 0;
+			if (!input.number(&size) || size > ITEM_TRANSFER_CONTINUATION_MAX_BYTES ||
+			    size > input.size - input.offset)
+				return flatfile_item_repository_result::invalid;
+			try
+			{
+				entry.quest_continuation.resize(size);
+			}
+			catch (const std::bad_alloc &)
+			{
+				return flatfile_item_repository_result::io_error;
+			}
+			if ((size && !input.raw(entry.quest_continuation.data(), size)) ||
+			    !input.number(&acknowledged) || acknowledged > 1)
+				return flatfile_item_repository_result::invalid;
+			entry.quest_reward_acknowledged = acknowledged != 0;
 		}
 	}
 	if (input.offset != input.size || !valid_catalog(decoded))
@@ -614,9 +650,15 @@ bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t p
 		payload.to_owner.type == item_owner_type::destruction &&
 		payload.reason == item_transfer_reason::destruction && !payload.multi_root &&
 		!payload.target_parent_item_uid;
+	const bool accounted_player_quest_turnin =
+		accounted && payload.from_owner.type == item_owner_type::player &&
+		payload.to_owner.type == item_owner_type::destruction &&
+		payload.reason == item_transfer_reason::quest_turnin && payload.multi_root &&
+		payload.continuation.kind == item_transfer_continuation_kind::quest_offering;
 	return (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
 	       mobile_claim || pet_give || pet_return || accounted_container_destruction ||
+	       accounted_player_quest_turnin ||
 	       locker_transfer(payload) ||
 	       corpse_loot_transfer(payload) ||
 	       (payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION && room_transfer(payload)) ||
@@ -1596,6 +1638,100 @@ flatfile_item_repository_result flatfile_item_repository_list_active_player_item
 	}
 	*items = std::move(selected);
 	return flatfile_item_repository_result::ok;
+}
+
+flatfile_item_repository_result flatfile_item_repository_pending_quest_rewards(
+	const std::string &root, uint32_t player_pid,
+	std::vector<flatfile_quest_reward_obligation> *obligations, std::string *error)
+{
+	if (root.empty() || !player_pid || !obligations)
+		return flatfile_item_repository_result::invalid;
+	std::lock_guard<std::mutex> guard(ownership_mutex);
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return flatfile_item_repository_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	std::vector<flatfile_quest_reward_obligation> selected;
+	try
+	{
+		for (const operation_state &entry : catalog.operations)
+		{
+			if (entry.quest_continuation.empty() || entry.quest_reward_acknowledged)
+				continue;
+			quest_reward_continuation terms;
+			if (!quest_reward_continuation_decode(entry.quest_continuation.data(),
+							      entry.quest_continuation.size(),
+							      &terms))
+				return flatfile_item_repository_result::invalid;
+			if (terms.player_pid == player_pid)
+				selected.push_back(
+					{ entry.operation_id, entry.quest_continuation });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
+	*obligations = std::move(selected);
+	return flatfile_item_repository_result::ok;
+}
+
+flatfile_item_repository_result
+flatfile_item_repository_ack_quest_reward(const std::string &root, uint32_t player_pid,
+					  const critical_operation_id &offering_operation,
+					  std::string *error)
+{
+	if (root.empty() || !player_pid || critical_operation_id_is_zero(offering_operation))
+		return flatfile_item_repository_result::invalid;
+	std::lock_guard<std::mutex> guard(ownership_mutex);
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return flatfile_item_repository_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	for (operation_state &entry : catalog.operations)
+	{
+		if (!critical_operation_id_equal(entry.operation_id, offering_operation))
+			continue;
+		if (entry.quest_continuation.empty())
+			return flatfile_item_repository_result::invalid;
+		quest_reward_continuation terms;
+		if (!quest_reward_continuation_decode(entry.quest_continuation.data(),
+						      entry.quest_continuation.size(), &terms) ||
+		    terms.player_pid != player_pid)
+			return flatfile_item_repository_result::invalid;
+		if (entry.quest_reward_acknowledged)
+			return flatfile_item_repository_result::unchanged;
+		if (catalog.revision == UINT64_MAX)
+			return flatfile_item_repository_result::invalid;
+		entry.quest_reward_acknowledged = true;
+		std::vector<uint8_t> bytes;
+		if (!encode_catalog(catalog, catalog.revision + 1, &bytes))
+			return flatfile_item_repository_result::invalid;
+		const auto committed = flatfile_authority_transaction_commit(
+			root, authority, { { ownership_filename, std::move(bytes) } }, error);
+		return committed == flatfile_authority_transaction_result::ok ?
+			       flatfile_item_repository_result::ok :
+		       committed == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	}
+	return flatfile_item_repository_result::not_found;
 }
 
 flatfile_item_baseline_result
@@ -2905,8 +3041,11 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	}
 	try
 	{
-		candidate.operations.push_back(
-			{ command.operation_id, digest, result_code, result });
+		operation_state operation = { command.operation_id, digest, result_code, result };
+		if (!result_code &&
+		    payload.continuation.kind == item_transfer_continuation_kind::quest_offering)
+			operation.quest_continuation = payload.continuation.data;
+		candidate.operations.push_back(std::move(operation));
 	}
 	catch (const std::bad_alloc &)
 	{

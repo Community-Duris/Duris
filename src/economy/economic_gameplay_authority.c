@@ -223,9 +223,15 @@ economic_accounting_error economic_gameplay_authority::prepare_currency(critical
 		currency_command_payload payload;
 		if (!currency_command_decode_payload(*command, &payload))
 			return error::corrupt_evidence;
+		const bool quest_wallet_reward =
+			payload.reason == currency_reason_type::wallet_reward &&
+			payload.reason_id > 0 &&
+			command->source_site == critical_source_site::recovery &&
+			command->deadline_class == critical_deadline_class::recovery;
 		if (payload.reason != currency_reason_type::atm_deposit &&
 		    payload.reason != currency_reason_type::atm_withdraw &&
-		    payload.reason != currency_reason_type::chaos_starter_reward)
+		    payload.reason != currency_reason_type::chaos_starter_reward &&
+		    !quest_wallet_reward)
 			return error::incomplete_coverage;
 		std::string canonical;
 		if (!bank_locator(payload.account_name.data(), &canonical))
@@ -239,6 +245,9 @@ economic_accounting_error economic_gameplay_authority::prepare_currency(critical
 		error result;
 		if (payload.reason == currency_reason_type::chaos_starter_reward)
 			result = economic_chaos_starter_bank_intent(
+				frozen, selected->epoch, wallet->second, bank->second, &intent);
+		else if (quest_wallet_reward)
+			result = economic_quest_wallet_reward_intent(
 				frozen, selected->epoch, wallet->second, bank->second, &intent);
 		else
 			result = economic_bank_transfer_intent(

@@ -1,6 +1,7 @@
 #include "player/player_snapshot_repository.h"
 
 #include "core/defines.h"
+#include "item/quest_reward_continuation.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_codec.h"
 #include "sql/item_extra_descr_codec.h"
@@ -30,8 +31,7 @@ struct query_result
 {
 	bool ok;
 	unsigned int error_code;
-	player_save_custody_diagnosis custody_diagnosis =
-		player_save_custody_diagnosis::none;
+	player_save_custody_diagnosis custody_diagnosis = player_save_custody_diagnosis::none;
 };
 
 query_result custody_payload_mismatch(player_save_custody_diagnosis diagnosis)
@@ -126,8 +126,8 @@ bool connection_error(unsigned int error_code)
 	return error_code == 2002 || error_code == 2003 || error_code == 2006 || error_code == 2013;
 }
 
-player_save_apply_result failure(
-	unsigned int error_code,
+player_save_apply_result
+failure(unsigned int error_code,
 	player_save_custody_diagnosis custody_diagnosis = player_save_custody_diagnosis::none)
 {
 	return { retryable_error(error_code) ? player_save_apply_outcome::retryable_failure :
@@ -327,10 +327,12 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(
-			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
-			snapshot.timers, [](auto &sql, const auto &row)
-			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
+		result = replace_rows(connection, snapshot.pid, "player_timers",
+				      "timer_id,timer_value", snapshot.timers,
+				      [](auto &sql, const auto &row) {
+					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
+						  << row.value << ",0))";
+				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
@@ -779,7 +781,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				const auto parent_custody = expected.find(parent.object_uid);
 				if (parent_custody == expected.end())
 					return custody_payload_mismatch(
-						player_save_custody_diagnosis::invalid_snapshot_parent);
+						player_save_custody_diagnosis::
+							invalid_snapshot_parent);
 				root_item_uid = parent_custody->second.root_item_uid;
 				parent_item_uid = parent.object_uid;
 			}
@@ -855,7 +858,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 					continue;
 				mysql_free_result(rows);
 				return custody_payload_mismatch(
-					player_save_custody_diagnosis::active_custody_absent_from_snapshot);
+					player_save_custody_diagnosis::
+						active_custody_absent_from_snapshot);
 			}
 			expected_player_item_custody &item = found->second;
 			if (std::to_string(item.vnum) != row[3])
@@ -913,7 +917,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 			{
 				if (item->second.root_item_uid != item_uid)
 					return custody_payload_mismatch(
-						player_save_custody_diagnosis::invalid_custody_topology);
+						player_save_custody_diagnosis::
+							invalid_custody_topology);
 				roots.push_back(index);
 				continue;
 			}
@@ -942,7 +947,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 				stack.pop_back();
 				if (visited[index])
 					return custody_payload_mismatch(
-						player_save_custody_diagnosis::invalid_custody_topology);
+						player_save_custody_diagnosis::
+							invalid_custody_topology);
 				visited[index] = true;
 				order.push_back(index);
 				for (auto child = children[index].rbegin();
@@ -951,7 +957,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 					const size_t child_depth = depths[index] + 1;
 					if (child_depth > PLAYER_SNAPSHOT_MAX_DEPTH)
 						return custody_payload_mismatch(
-							player_save_custody_diagnosis::invalid_custody_topology);
+							player_save_custody_diagnosis::
+								invalid_custody_topology);
 					depths[*child] = child_depth;
 					stack.push_back(*child);
 				}
@@ -977,7 +984,8 @@ query_result reconcile_player_item_custody(MYSQL *connection, const player_snaps
 					projected_index.find(custody->second.parent_item_uid);
 				if (parent == projected_index.end())
 					return custody_payload_mismatch(
-						player_save_custody_diagnosis::invalid_custody_topology);
+						player_save_custody_diagnosis::
+							invalid_custody_topology);
 				item.parent_index = parent->second;
 			}
 			else
@@ -1366,6 +1374,168 @@ std::string hex_operation(const critical_operation_id &operation_id)
 	return hex;
 }
 
+query_result apply_quest_xp_receipts(MYSQL *connection, const player_snapshot &snapshot)
+{
+	for (const auto &receipt : snapshot.quest_xp_receipts)
+	{
+		const std::string operation_hex = hex_operation(receipt.offering_operation);
+		const std::string entitlement_sql =
+			"SELECT q.continuation,e.applied_at IS NOT NULL "
+			"FROM quest_reward_xp_entitlement e JOIN quest_reward_obligation q "
+			"ON q.offering_operation_id=e.offering_operation_id "
+			"WHERE e.offering_operation_id=UNHEX('" +
+			operation_hex +
+			"') AND "
+			"e.recipient_pid=" +
+			std::to_string(snapshot.pid) +
+			" AND e.reward_index=" + std::to_string(receipt.reward_index) +
+			" AND q.acknowledged_at IS NULL FOR UPDATE";
+		query_result entitlement_query = execute(connection, entitlement_sql);
+		if (!entitlement_query.ok)
+			return entitlement_query;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> entitlement_result(
+			mysql_store_result(connection), mysql_free_result);
+		if (!entitlement_result)
+			return { false, mysql_errno(connection) ? mysql_errno(connection) : EIO };
+		MYSQL_ROW entitlement_row = mysql_fetch_row(entitlement_result.get());
+		unsigned long *entitlement_lengths =
+			entitlement_row ? mysql_fetch_lengths(entitlement_result.get()) : nullptr;
+		if (entitlement_row)
+		{
+			if (!entitlement_lengths || !entitlement_row[0] || !entitlement_row[1])
+				return { false, EINVAL };
+			quest_reward_continuation terms;
+			if (!quest_reward_continuation_decode(
+				    reinterpret_cast<const uint8_t *>(entitlement_row[0]),
+				    entitlement_lengths[0], &terms) ||
+			    terms.version < 5 || receipt.reward_index >= terms.reward_count ||
+			    terms.rewards[receipt.reward_index].type != 5U)
+				return { false, EINVAL };
+			bool matching_award = false;
+			for (size_t index = 0; index < terms.xp_award_count; ++index)
+				matching_award = matching_award ||
+						 (terms.xp_awards[index].recipient_pid ==
+							  static_cast<uint32_t>(snapshot.pid) &&
+						  terms.xp_awards[index].reward_index ==
+							  receipt.reward_index &&
+						  terms.xp_awards[index].amount == receipt.amount);
+			if (!matching_award)
+				return { false, EINVAL };
+			if (entitlement_row[1][0] == '1')
+				continue;
+			const std::string update_entitlement_sql =
+				"UPDATE quest_reward_xp_entitlement SET applied_at=CURRENT_TIMESTAMP(6) "
+				"WHERE offering_operation_id=UNHEX('" +
+				operation_hex +
+				"') AND recipient_pid=" + std::to_string(snapshot.pid) +
+				" AND reward_index=" + std::to_string(receipt.reward_index) +
+				" AND applied_at IS NULL";
+			entitlement_query = execute(connection, update_entitlement_sql);
+			if (!entitlement_query.ok || mysql_affected_rows(connection) != 1)
+				return { false, entitlement_query.ok ?
+							EAGAIN :
+							entitlement_query.error_code };
+			if (terms.player_pid == static_cast<uint32_t>(snapshot.pid))
+			{
+				const uint64_t bit = UINT64_C(1) << receipt.reward_index;
+				const std::string update_owner_mask_sql =
+					"UPDATE quest_reward_obligation SET xp_applied_mask="
+					"xp_applied_mask | " +
+					std::to_string(bit) +
+					" WHERE offering_operation_id=UNHEX('" + operation_hex +
+					"') AND player_pid=" + std::to_string(snapshot.pid) +
+					" AND acknowledged_at IS NULL";
+				entitlement_query = execute(connection, update_owner_mask_sql);
+				if (!entitlement_query.ok || mysql_affected_rows(connection) != 1)
+					return { false, entitlement_query.ok ?
+								EAGAIN :
+								entitlement_query.error_code };
+			}
+			continue;
+		}
+		const std::string select_sql =
+			"SELECT continuation,xp_applied_mask FROM quest_reward_obligation "
+			"WHERE offering_operation_id=UNHEX('" + operation_hex + "') AND player_pid=" +
+			std::to_string(snapshot.pid) + " AND acknowledged_at IS NULL FOR UPDATE";
+		query_result query = execute(connection, select_sql);
+		if (!query.ok)
+			return query;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+			mysql_store_result(connection), mysql_free_result);
+		if (!result)
+			return { false, mysql_errno(connection) ? mysql_errno(connection) : EIO };
+		MYSQL_ROW row = mysql_fetch_row(result.get());
+		unsigned long *lengths = row ? mysql_fetch_lengths(result.get()) : nullptr;
+		if (!row || !lengths || !row[0] || !row[1])
+			return { false, ENOENT };
+		quest_reward_continuation terms;
+		if (!quest_reward_continuation_decode(reinterpret_cast<const uint8_t *>(row[0]),
+						      lengths[0], &terms) ||
+		    terms.version < 4 || (terms.version >= 5 && terms.credited_count > 1) ||
+		    terms.player_pid != static_cast<uint32_t>(snapshot.pid) ||
+		    receipt.reward_index >= terms.reward_count ||
+		    terms.rewards[receipt.reward_index].type != 5U ||
+		    terms.rewards[receipt.reward_index].frozen_amount != receipt.amount)
+			return { false, EINVAL };
+		char *end = nullptr;
+		errno = 0;
+		const unsigned long long applied_mask = std::strtoull(row[1], &end, 10);
+		if (errno || !end || *end)
+			return { false, EINVAL };
+		const uint64_t bit = UINT64_C(1) << receipt.reward_index;
+		if (applied_mask & bit)
+			continue;
+		const std::string update_sql =
+			"UPDATE quest_reward_obligation SET xp_applied_mask=xp_applied_mask | " +
+			std::to_string(bit) + " WHERE offering_operation_id=UNHEX('" + operation_hex +
+			"') AND player_pid=" + std::to_string(snapshot.pid) +
+			" AND acknowledged_at IS NULL";
+		query = execute(connection, update_sql);
+		if (!query.ok || mysql_affected_rows(connection) != 1)
+			return { false, query.ok ? EAGAIN : query.error_code };
+	}
+	return { true, 0 };
+}
+
+query_result apply_spell_effect_receipts(MYSQL *connection, const player_snapshot &snapshot)
+{
+	for (const auto &receipt : snapshot.spell_effect_receipts)
+	{
+		if (!receipt.effect_id || receipt.effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX)
+			return { false, EINVAL };
+		const std::string operation_hex = hex_operation(receipt.operation_id);
+		query_result query = execute(
+			connection,
+			"SELECT effect_id FROM player_spell_effect_receipt WHERE pid=" +
+				std::to_string(snapshot.pid) + " AND operation_id=UNHEX('" + operation_hex +
+				"') FOR UPDATE");
+		if (!query.ok)
+			return query;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(mysql_store_result(connection),
+										      mysql_free_result);
+		if (!result)
+			return { false, mysql_errno(connection) ? mysql_errno(connection) : EIO };
+		MYSQL_ROW row = mysql_fetch_row(result.get());
+		if (row)
+		{
+			char *end = nullptr;
+			errno = 0;
+			const unsigned long stored_effect = std::strtoul(row[0] ? row[0] : "", &end, 10);
+			if (errno || !end || *end || stored_effect != receipt.effect_id)
+				return { false, EINVAL };
+			continue;
+		}
+		query = execute(
+			connection,
+			"INSERT INTO player_spell_effect_receipt (pid,operation_id,effect_id) VALUES (" +
+				std::to_string(snapshot.pid) + ",UNHEX('" + operation_hex + "')," +
+				std::to_string(receipt.effect_id) + ")");
+		if (!query.ok || mysql_affected_rows(connection) != 1)
+			return { false, query.ok ? EAGAIN : query.error_code };
+	}
+	return { true, 0 };
+}
+
 std::string hex_payload(const std::vector<uint8_t> &payload)
 {
 	static constexpr char digits[] = "0123456789abcdef";
@@ -1604,8 +1774,9 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 						player_revision_t source_revision)
 {
 	using outcome = player_death_terminal_write_outcome;
-	const auto failed = [](unsigned int code)
-	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
+	const auto failed = [](unsigned int code) {
+		return player_death_terminal_write_result{ outcome::failed, code ? code : EIO };
+	};
 	if (!connection)
 		return failed(EINVAL);
 #ifndef __NO_MYSQL__
@@ -1699,7 +1870,8 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 				     snapshot.death->corpse.empty() ||
 				     snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL ||
 				     !snapshot.items.empty() :
-			     snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION)
+			     (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+			      snapshot.schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION))
 		return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 
 	query_result query = execute(connection, "START TRANSACTION");
@@ -1768,6 +1940,10 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	}
 	cases.reset();
 	query = apply_components(connection, snapshot);
+	if (query.ok && !snapshot.quest_xp_receipts.empty())
+		query = apply_quest_xp_receipts(connection, snapshot);
+	if (query.ok && !snapshot.spell_effect_receipts.empty())
+		query = apply_spell_effect_receipts(connection, snapshot);
 	if (query.ok)
 		query = apply_death(connection, snapshot);
 	if (!query.ok)

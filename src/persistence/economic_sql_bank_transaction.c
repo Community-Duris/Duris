@@ -70,6 +70,9 @@ bank_identity decode(const critical_command &command)
 	if (value.payload.reason == currency_reason_type::chaos_starter_reward)
 		checked(economic_chaos_starter_bank_intent(admission_command, metadata.epoch,
 							   value.wallet, value.bank, &expected));
+	else if (value.payload.reason == currency_reason_type::wallet_reward)
+		checked(economic_quest_wallet_reward_intent(admission_command, metadata.epoch,
+							   value.wallet, value.bank, &expected));
 	else
 		checked(economic_bank_transfer_intent(admission_command, metadata.epoch,
 						      value.wallet, value.bank, &expected));
@@ -425,9 +428,10 @@ void evidence(MYSQL *connection, const critical_command &command, const bank_ide
 	const std::string where = "operation_id=" + id(command.operation_id);
 	if (plan)
 	{
-		const bool starter = identity.payload.reason ==
-				     currency_reason_type::chaos_starter_reward;
-		require(plan->accounts.size() == (starter ? 3 : 2) && plan->postings.size() == 2 &&
+		const bool issuance = identity.payload.reason ==
+				      currency_reason_type::chaos_starter_reward ||
+			      identity.payload.reason == currency_reason_type::wallet_reward;
+		require(plan->accounts.size() == (issuance ? 3 : 2) && plan->postings.size() == 2 &&
 			plan->children.empty() && plan->items_before.empty() &&
 			plan->items_after.empty() && plan->item_events.empty());
 		for (size_t index = 0; index < plan->accounts.size(); ++index)
@@ -545,6 +549,8 @@ economic_sql_bank_transaction::prepare(MYSQL *connection, const critical_command
 		state->result = state->before;
 		const bool starter = identity.payload.reason ==
 				     currency_reason_type::chaos_starter_reward;
+		const bool quest_reward = identity.payload.reason ==
+				  currency_reason_type::wallet_reward;
 		if (starter)
 		{
 			const auto flags = integer<uint64_t>(
@@ -576,6 +582,10 @@ economic_sql_bank_transaction::prepare(MYSQL *connection, const critical_command
 				economic_chaos_starter_bank_prepare(command, identity.intent,
 								    authority, revision_policy,
 								    &state->prepared) :
+			quest_reward ?
+				economic_quest_wallet_reward_prepare(
+					command, identity.intent, authority, revision_policy,
+					&state->prepared) :
 				economic_bank_transfer_prepare(command, identity.intent, authority,
 							       revision_policy, &state->prepared);
 		if (preparation != economic_accounting_error::ok)
@@ -824,7 +834,10 @@ unsigned int economic_sql_bank_verify_retained(MYSQL *connection, const critical
 				&plan));
 			const bool starter = identity.payload.reason ==
 					     currency_reason_type::chaos_starter_reward;
-			require(plan.accounts.size() == (starter ? 3 : 2));
+			const bool quest_reward = identity.payload.reason ==
+					  currency_reason_type::wallet_reward;
+			const bool has_issuance = starter || quest_reward;
+			require(plan.accounts.size() == (has_issuance ? 3 : 2));
 			economic_currency_authority authority = {
 				identity.intent.admission.metadata.epoch,
 				identity.wallet,
@@ -853,7 +866,7 @@ unsigned int economic_sql_bank_verify_retained(MYSQL *connection, const critical
 					authority.state.bank.amount = account.before;
 					authority.state.bank_revision = account.before_revision;
 				}
-				else if (starter &&
+				else if (has_issuance &&
 					 economic_account_key_equal(account.key, issuance))
 				{
 					require(!issuance_seen);
@@ -862,9 +875,13 @@ unsigned int economic_sql_bank_verify_retained(MYSQL *connection, const critical
 				else
 					throw failure{ EILSEQ };
 			}
-			require(wallet_seen && bank_seen && (starter == issuance_seen));
+			require(wallet_seen && bank_seen && (has_issuance == issuance_seen));
 			if (starter)
 				checked(economic_chaos_starter_bank_prepare(
+					command, identity.intent, authority,
+					currency_revision_policy::sql_legacy, &prepared));
+			else if (quest_reward)
+				checked(economic_quest_wallet_reward_prepare(
 					command, identity.intent, authority,
 					currency_revision_policy::sql_legacy, &prepared));
 			else

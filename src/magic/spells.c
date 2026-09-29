@@ -1993,20 +1993,20 @@ struct vines_component_context
 	int32_t count;
 };
 
-static void vines_component_retirement_completed(P_char actor, bool committed,
-						 const item_transfer_result &,
-						 unsigned int /*error_code*/,
-						 const uint8_t *encoded,
-						 size_t encoded_size)
+spell_component_effect_status spell_vines_component_retirement_completed(
+	const critical_operation_id & /*operation_id*/, P_char actor, bool committed,
+	const item_transfer_result &, unsigned int /*error_code*/, const uint8_t *encoded,
+	size_t encoded_size)
 {
-	if (!actor || !encoded || encoded_size != sizeof(vines_component_context))
-		return;
+	spell_component_context_reader reader(encoded, encoded_size);
 	vines_component_context context = {};
-	memcpy(&context, encoded, sizeof(context));
+	if (!actor || !reader.get_i32(&context.level) || !reader.get_i32(&context.count) ||
+	    !reader.finished())
+		return spell_component_effect_status::retry;
 	if (!committed)
 	{
 		send_to_char("Your green herbs remain intact as the spell fizzles.\r\n", actor);
-		return;
+		return spell_component_effect_status::complete;
 	}
 	act("&+GGreen&n vines sprout up around you forming a protective shield.", FALSE, actor, 0,
 	    0, TO_CHAR);
@@ -2019,6 +2019,7 @@ static void vines_component_retirement_completed(P_char actor, bool committed,
 	effect.duration = context.level / 2;
 	effect.modifier = 40 * context.count;
 	affect_to_char(actor, &effect);
+	return spell_component_effect_status::complete;
 }
 
 void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char /*tar_ch*/,
@@ -2064,11 +2065,14 @@ void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 
 		if (economic_gameplay_authority::active() && IS_PC(ch))
 		{
-			const vines_component_context context = { level, count };
+			const vines_component_context values = { level, count };
+			spell_component_context_writer context;
+			if (!context.put_i32(values.level) || !context.put_i32(values.count))
+				return;
 			if (!spell_consume_components(ch, VOBJ_FORAGE_GREEN_HERB,
-						      static_cast<size_t>(count), SPELL_VINES,
-						      vines_component_retirement_completed,
-						      &context, sizeof(context)))
+						      static_cast<size_t>(count), SPELL_VINES, item_spell_component_effect::vines,
+						      spell_vines_component_retirement_completed,
+						      context.data(), context.size))
 				send_to_char("Your green herbs cannot be consumed right now.\r\n", ch);
 			return;
 		}

@@ -643,6 +643,17 @@ int main(int argc, char **argv)
 		std::cout << item.object_uid << '\n';
 		return 0;
 	}
+	if (argc == 4 && std::string(argv[2]) == "pending-quest-rewards")
+	{
+		std::vector<flatfile_quest_reward_obligation> obligations;
+		std::string error;
+		const auto result = flatfile_item_repository_pending_quest_rewards(
+			argv[1], static_cast<uint32_t>(std::stoul(argv[3])), &obligations, &error);
+		require(result == flatfile_item_repository_result::ok,
+			"inspect pending quest rewards: " + error);
+		std::cout << obligations.size() << '\n';
+		return 0;
+	}
 	if (argc == 4 &&
 	    (std::string(argv[2]) == "inspect" || std::string(argv[2]) == "inspect-items"))
 	{

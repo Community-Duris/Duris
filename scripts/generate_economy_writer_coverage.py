@@ -53,6 +53,7 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "account.cleanup_temp_char": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
     "player.new_character_zero": "init_char assigns an initial zero wallet to a newly allocated PC before its first durable baseline; no existing holding is retired.",
     "morph.new_body_zero": "morph clears the cash on a freshly read NPC body before publishing it as the player morph; the original PC wallet remains separate.",
     "training.dummy_zero": "training_dummy_create freshly reads a template and calls training_dummy_apply_profile before room placement; the template cash is discarded before admission.",

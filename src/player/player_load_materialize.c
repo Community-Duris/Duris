@@ -5,6 +5,7 @@
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_save_pipeline.h"
+#include "world/quest_reward_recovery.h"
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "world/db.h"
@@ -878,5 +879,19 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	affect_total(ch, FALSE);
 	GET_MANA(ch) = BOUNDED(1, loaded_mana, GET_MAX_MANA(ch));
 	GET_VITALITY(ch) = BOUNDED(1, loaded_vitality, GET_MAX_VITALITY(ch));
+	if (!(materialize_degraded_components &
+	      (PLAYER_LOAD_DEGRADED_ITEMS | PLAYER_LOAD_DEGRADED_PETS |
+	       PLAYER_LOAD_DEGRADED_RECOVERY)))
+	{
+		for (const player_load_quest_reward &reward : result.pending_quest_rewards)
+			quest_reward_recover_pending(ch, reward.offering_operation, reward.terms,
+					     reward.xp_applied_mask);
+		for (const player_load_quest_xp_entitlement &entitlement :
+		     result.pending_quest_xp_entitlements)
+			quest_reward_recover_xp_entitlement(ch, entitlement.offering_operation,
+							    entitlement.terms,
+							    entitlement.reward_index,
+							    entitlement.amount);
+	}
 	return true;
 }

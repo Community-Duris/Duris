@@ -54,6 +54,12 @@ fi
 "${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0042_shopkeeper_roaming_witness.sql"
 "${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0043_shopkeeper_item_condition.sql"
 "${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0044_shopkeeper_item_properties.sql"
+"${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0045_quest_reward_obligation.sql"
+DB_HOST="$DB_HOST" DB_PORT="$DB_PORT" DB_USER=root DB_PASSWD="$PASSWORD" DB_NAME="$DATABASE" \
+    "$ROOT/migrations/immutable/0045_quest_reward_obligation.sh" >/dev/null
+"${mysql_client[@]}" "$DATABASE" < "$ROOT/migrations/immutable/0046_economic_realized_trade_price.sql"
+DB_HOST="$DB_HOST" DB_PORT="$DB_PORT" DB_USER=root DB_PASSWD="$PASSWORD" DB_NAME="$DATABASE" \
+    "$ROOT/migrations/immutable/0046_economic_realized_trade_price.sh" >/dev/null
 cd "$ROOT"
 python3 tests/async/run_shop_trade_sql_lock_mysql.py
 printf 'Shop SQL transaction fixture (%s): ok\n' "$IMAGE"

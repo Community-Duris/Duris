@@ -130,7 +130,6 @@ write_character = section(FILES, "int writeCharacter(P_char ch", "int deleteChar
 branch = write_character.index("player_save_pipeline_is_nonterminal_type")
 assert "!sql_in_transaction()" in write_character[:branch]
 for legacy in (
-    "sql_save_player_shapechanges",
     "sql_update_money",
     "unequip_char",
     "all_affects(ch, FALSE)",

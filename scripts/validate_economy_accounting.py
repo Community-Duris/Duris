@@ -50,9 +50,25 @@ def validate_registry(registry):
         for row in registry[section]:
             integer(row['number'], 'registry ID out of bounds', 1, 65535)
     kinds = {row['id'] for row in registry['account_kinds']}
+    realized_price_reasons = 0
     for reason in registry['reasons']:
         require(reason['domain'] in registry['domains'], 'unknown reason domain')
         require(set(reason['account_kinds']) <= kinds, 'unknown account kind in reason')
+        retires = reason.get('retires_account_kinds', [])
+        require(isinstance(retires, list) and all(isinstance(kind, str) for kind in retires) and
+                len(retires) == len(set(retires)) and set(retires) <= kinds,
+                'invalid retirement policy')
+        creates = reason.get('creates_account_kinds', [])
+        require(isinstance(creates, list) and all(isinstance(kind, str) for kind in creates) and
+                len(creates) == len(set(creates)) and set(creates) <= kinds,
+                'invalid creation policy')
+        require(set(creates) <= set(reason['account_kinds']),
+                'creation policy exceeds reason account scope')
+        if 'realized_price_required' in reason:
+            require(type(reason['realized_price_required']) is bool,
+                    'invalid realized-price policy')
+            realized_price_reasons += reason['realized_price_required']
+    require(realized_price_reasons > 0, 'realized-price policy is empty')
     require(registry['limits']['intent_bytes'] <= 8192, 'intent exceeds command budget')
     require(52 + 40 * 3003 + 393216 + 4 + registry['limits']['intent_bytes'] <= 524288,
             'accounting extension reduces existing command capacity')
@@ -215,6 +231,26 @@ def validate_inventory(inventory, registry, root, release=False):
     unique(inventory['writers'],'id','writer ID')
     reasons={r['id'] for r in registry['reasons']}
     census_sites={(site['path'],site['line'],site['family']) for site in inventory['census']}
+    release_dispositions = None
+    if release:
+        matrix_path = root / CONTRACT / 'writer_coverage_matrix.json'
+        require(matrix_path.is_file(), 'missing generated writer coverage matrix')
+        try:
+            matrix = json.loads(matrix_path.read_text(encoding='utf-8'))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ContractError('invalid generated writer coverage matrix') from error
+        routes = matrix.get('routes') if isinstance(matrix, dict) else None
+        require(isinstance(matrix, dict) and matrix.get('schema_version') == 1 and
+                isinstance(routes, list),
+                'invalid generated writer coverage matrix')
+        release_dispositions = {}
+        for route in routes:
+            route_id = route.get('id') if isinstance(route, dict) else None
+            require(isinstance(route_id, str) and route_id not in release_dispositions,
+                    'invalid or duplicate generated writer route')
+            release_dispositions[route_id] = route
+        require(set(release_dispositions) == {writer['id'] for writer in inventory['writers']},
+                'generated writer route inventory drift')
     for writer in inventory['writers']:
         require(writer['reason'] in reasons,'unknown writer reason')
         require(bool(writer['owner']),'missing integration owner')
@@ -231,10 +267,20 @@ def validate_inventory(inventory, registry, root, release=False):
         for test in writer['test_candidates']:
             require((root/test).is_file(),'missing test candidate')
         if release:
-            require(bool(writer.get('evidence')),'writer has no executable evidence')
-            expected={'unsupported':'refused','projection':'projection','enforced':'qualified'}.get(writer['coverage'])
-            require(expected is not None,'writer not qualified')
-            require(all(b['status']==expected and b.get('evidence') for b in writer['backends'].values()),'backend not qualified')
+            route = release_dispositions[writer['id']]
+            require(route.get('source_classification') == writer['classification'] and
+                    route.get('source', {}).get('original_draft_symbol') == writer['symbol'],
+                    'generated writer review is stale')
+            disposition = route.get('disposition')
+            require(disposition in {'runtime_mutation_route', 'runtime_projection_route',
+                                    'offline_operational_writer', 'dormant_writer_candidate',
+                                    'non_writer_candidate'},
+                    'invalid generated writer disposition')
+            if disposition not in {'dormant_writer_candidate', 'non_writer_candidate'}:
+                require(bool(writer.get('evidence')),'writer has no executable evidence')
+                expected={'unsupported':'refused','projection':'projection','enforced':'qualified'}.get(writer['coverage'])
+                require(expected is not None,'writer not qualified')
+                require(all(b['status']==expected and b.get('evidence') for b in writer['backends'].values()),'backend not qualified')
     current=scan_sources(root)
     signature=lambda rows: Counter((row['path'],row['family'],row['excerpt']) for row in rows)
     require(signature(current)==signature(inventory['census']),
@@ -242,6 +288,13 @@ def validate_inventory(inventory, registry, root, release=False):
     if release:
         require(inventory['census_complete'],'writer census not complete')
         require(registry['status']=='frozen','registry contract not frozen')
+        matrix = json.loads((root / CONTRACT / 'writer_coverage_matrix.json').read_text(encoding='utf-8'))
+        unique_sites = {(site['path'], site['line'], site['family']) for site in current}
+        require(matrix.get('coverage_complete') is True and
+                matrix.get('lexical_census', {}).get('current_occurrences') == len(current) and
+                matrix.get('lexical_census', {}).get('current_unique_path_line_family_sites') == len(unique_sites) and
+                matrix.get('lexical_census', {}).get('unmapped_current_unique_sites') == 0,
+                'generated writer coverage matrix is stale or incomplete')
         mapped={tuple(site) for writer in inventory['writers'] for site in writer.get('sites',[])}
         require(all((s['path'],s['line'],s['family']) in mapped for s in current),'unclassified writer candidate')
 

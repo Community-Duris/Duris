@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <string_view>
 #include <vector>
 
 struct char_data;
@@ -40,7 +41,8 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
  * later group changes cannot alter the recorded recipient set. */
 bool record_legacy_completion(struct char_data *player, const quest_complete_data *completion,
 			      int32_t room_vnum, int64_t completed_at,
-			      std::string *error = nullptr);
+			      std::string *error = nullptr,
+			      std::string_view transaction_id = {});
 } // namespace zone_story_quest_runtime
 
 #endif

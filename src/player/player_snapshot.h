@@ -16,6 +16,13 @@ constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 8;
 // Readable evidence envelope only. Existing capture/admission stays on version 8
 // until the atomic retention and player-visible recovery path is integrated.
 constexpr uint32_t PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION = 10;
+// Ordinary save frames carrying a quest progression receipt. Kept separate from
+// the death envelopes so the receipt can be committed with player progression.
+constexpr uint32_t PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION = 11;
+// Ordinary save frames that retain operation-scoped spell effect application receipts.
+constexpr uint32_t PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION = 12;
+constexpr uint32_t PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX = 6;
+constexpr size_t PLAYER_SPELL_EFFECT_RECEIPT_MAX = 4096;
 constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMNS = 64;
 constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES = 64;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
@@ -232,6 +239,19 @@ struct player_trophy_snapshot
 	int32_t experience;
 };
 
+struct player_quest_xp_receipt_snapshot
+{
+	critical_operation_id offering_operation;
+	uint32_t reward_index;
+	uint32_t amount;
+};
+
+struct player_spell_effect_receipt_snapshot
+{
+	critical_operation_id operation_id;
+	uint32_t effect_id;
+};
+
 // Stored with the post-death terminal snapshot, outside active inventory. The
 // corpse tree includes every captured asset; custody records ownership evidence
 // for that captured graph, including an explicit absent row when its runtime
@@ -301,6 +321,8 @@ struct player_snapshot
 	std::vector<player_pet_snapshot> pets;
 	std::vector<player_shape_snapshot> shapes;
 	std::vector<player_trophy_snapshot> trophies;
+	std::vector<player_quest_xp_receipt_snapshot> quest_xp_receipts;
+	std::vector<player_spell_effect_receipt_snapshot> spell_effect_receipts;
 	bool recipes_are_external;
 	std::string output_preferences;
 	std::optional<player_death_snapshot> death;

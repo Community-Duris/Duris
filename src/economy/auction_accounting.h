@@ -28,6 +28,7 @@ struct auction_bid_accounting_accounts
 	economic_account_key wallet = {};
 	economic_account_key bank = {};
 	economic_account_key escrow = {};
+	economic_account_key bidder_claim = {};
 	economic_account_key previous_claim = {};
 	economic_account_key seller_claim = {};
 };
@@ -44,6 +45,7 @@ struct auction_bid_accounting_authority
 	auction_bid_accounting_listing listing = {};
 	auction_bid_accounting_accounts accounts = {};
 	currency_command_result balances_before = {};
+	auction_bid_accounting_claim bidder_claim_before = {};
 	auction_bid_accounting_claim previous_claim_before = {};
 	auction_bid_accounting_claim seller_claim_before = {};
 };

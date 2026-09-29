@@ -43,19 +43,59 @@ operation's lineage, epoch, source and outcome so the reconciler can distinguish
 a valid earlier-epoch claim from an orphan. `source_claim_coverage` counts all
 committed nonbaseline operations in that lineage with a nonnull source event,
 missing exact claims and source values reused by multiple such operations.
-The reconciler emits coded counts for the latter two. This does not yet prove
-that every other-epoch operation required a source event under its policy, and
-baseline source claims are outside this collection.
+The reconciler emits coded counts for the latter two. This collection covers
+only operations with a nonnull source identity; baseline source claims remain
+outside this collection.
+
+`source_event_policy_coverage` separately counts committed nonbaseline
+operations across the selected lineage whose registry policy requires a source
+event, including operations from prior epochs. Missing source identities produce
+a coded exception. This catches missing required events without loading every
+historical operation into the current-epoch evidence tables; it does not prove
+that a present source identity describes the correct gameplay event.
 
 - `native.holdings`: each admitted **ordinary** account key, current four-value
   denomination vector and native revision. Wallet and bank keys use retained
-  mapping lifetime IDs; a pile key uses its UID. Escrow, pending claims, and
-  treasuries require real durable lifetime identities and native balances.
+  mapping lifetime IDs; a pile key uses its UID. Auction escrow includes held
+  bids for open listings and removed listings that still have a winning bidder,
+  and is zero when there is no winning bidder. Pending claims and treasuries
+  require real durable lifetime identities and native balances.
+- `native.retired_mappings`: retained SQL mapping lifetimes with their retiring
+  root metadata. The linked `native.retirement_roots` records retain the root
+  reason, complete account effects and postings. Reconciliation checks the
+  registry's per-reason `retires_account_kinds` policy along with the committed
+  same-lineage root, posting agreement and zero terminal balance. A
+  current-epoch row must also match its opening account origin and have no
+  native holding.
+- `native.lineage_uid_references`: every retained item reference for the selected
+  lineage across epochs, with its referenced legacy ownership event. Companion
+  root counts are reconciled against each operation's declared `item_event_count`.
+  The records also seed the UID event census, so historical referenced UIDs stay
+  in scope after leaving native state.
+- `native.uid_history_events`: every ownership-ledger event after the retained
+  opening revision for a UID anchored by an origin, reference or native row.
+  The reconciler checks exact reference status, the per-UID revision chain and
+  the final native position. Events without an accounting reference remain
+  visible with `referenced: false` and produce exceptions.
+- `native.uid_scope_coverage` and `native.unanchored_ownership_uids`: a
+  database-wide count of distinct ownership-ledger UIDs and the bounded IDs
+  absent from this snapshot's origins, references and native rows. Any such UID
+  is an explicit unassigned-history exception; this count cannot assign it to a
+  particular lineage.
+- `native.lineage_realized_prices` and `native.realized_price_coverage`: all
+  shop buy/sell roots across the selected lineage, including outcome and the
+  persisted copper price. SQL schema migration 0046 adds the nullable field;
+  committed shop buys/sales retain their frozen command price in the same
+  operation transaction. The exporter detects older schemas or missing
+  committed prices and reports explicit exceptions. It does not infer a price
+  from appraisal or postings.
 - `account_origins`: the same version-1 40-byte account key (lowercase hex), initial
   vector/revision, and `origin: baseline` from an exact EAB1 witness or
-  `origin: creation` with zero vector and revision zero from an authenticated
-  first account operation. An unknown legacy opening is reported, never
-  silently treated as zero. A retired mapping carries `retired_by` with the
+  `origin: creation` with zero vector and revision zero when a committed first
+  effect matches the retained mapping's creating operation. This inference is
+  limited to mapped ordinary accounts with an exact zero/revision-zero opening;
+  unsupported or unknown openings are reported, never silently treated as zero.
+  A retired mapping carries `retired_by` with the
   committed retirement root ID, must have a zero terminal balance, and must
   have no current native holding. Retained history for that key remains in the
   snapshot even after its native row is removed.
@@ -69,7 +109,8 @@ baseline source claims are outside this collection.
 - `operations`: immutable root ID, lineage, epoch, numeric reason, committed or
   rejected outcome, result code, source event when required, exact row counts,
   optional original operation ID, and optional **realized** price in copper.
-  Estimated inventory values do not belong here.
+  The SQL exporter reads it from the persisted field; estimated inventory values
+  do not belong here.
 - `effects`: operation/account index, account key, before/after four-vectors and
   native revisions. `postings`: operation/line/account/child indexes, signed
   four-vector delta and checked copper value. `children`: root/child indexes,
@@ -115,21 +156,57 @@ with a `SELECT`-only account; it requires an explicit disposable loopback flag.
 
 `scripts/economic_sql_audit_snapshot.py` now reads these origins, the retained
 nonbaseline accounting operations/effects/postings/children/item references,
-source claims and inbox receipts, mapped SQL wallet and bank rows, and current
-UID positions in **one** read-only consistent transaction. It writes a bounded
+source claims, inbox receipts, pending auction-claim source allocations, and
+mapped SQL wallet, bank, coin-pile,
+auction-escrow, pending-claim and shop-treasury rows, and current UID positions
+in **one** read-only consistent transaction. It writes a bounded
 version-1 diagnostic snapshot with `backend: sql_partial`, `complete: false`
 and a `capture_gaps` list. Pass that file to the reconciler to investigate
 observed exceptions; its nonzero `evidence_loss` result is mandatory even when
 all captured rows agree. The exporter omits baseline root effects because the
-verified EAB1 witnesses provide their terminal opening origins. Its ownership
-events are the legacy rows linked by captured accounting references, so it
-cannot detect unlinked legacy events or certify the full UID scope. Its mapping
-census can flag orphan candidates, duplicate active links and dangling links;
-it does not resolve legacy admission or lineage ownership. Coin-pile payloads,
-escrow/claim/treasury authority, postbaseline creation origins, retirement and
-cross-epoch required-source policy still need independent enumeration and
-proof. A partial snapshot cannot authorize activation or count as the Plan 5
-full SQL audit acceptance.
+verified EAB1 witnesses provide their terminal opening origins. It exports
+retained item references and exact ownership-event links across the selected
+lineage, then exports ledger events after each opening revision for UIDs anchored
+by those references, baseline origins, or any current native UID row. The
+reconciler checks their exact reference status, revision chain and final native
+position. Events without an exact operation, event-index and UID reference are
+reported. This detects unreferenced activity for every currently stored or
+historically referenced UID, but cannot certify UIDs absent from native state
+and all references; a database-wide UID census now counts and identifies those
+unanchored histories, but cannot assign them to a lineage. Retained SQL mapping
+retirements and their complete root reasons, effects and postings are exported
+across epochs. Reconciliation checks root identity, authorized reason/account
+kind, balanced value, effect/posting agreement and zero terminal balance. A
+current-epoch retirement is also checked against its opening origin
+and for absence of a native holding; prior-epoch native rows remain visible as
+unmapped candidates. Its mapping census can flag orphan candidates, duplicate
+active links and dangling links; it does not resolve legacy admission or
+lineage ownership. Retained mappings with a locator kind that does not match
+the account kind raise `invalid_native_<kind>_mapping`; invalid active mappings
+do not make a native row count as mapped. Unsupported mapping account kinds
+raise `invalid_native_mapping_kind`. Coin piles use their
+bounded item payload and preserve UID, owner, revision and state. Open auction
+escrow and removed auction escrow that still has a winning bidder, aggregate
+pending claims and non-null shop cash are exported as copper balances with their
+available native revisions. Auction escrow is zero without a winning bidder. A
+missing claim row is treated
+as zero only when the mapped player still exists. Missing coin payloads and null
+treasury cash remain invalid rather than being guessed. For each mapped holding
+with a retained opening origin, the reconciler compares the current native
+balance and revision with the ordered posting history; the disposable fixture
+also proves that changing one pile denomination raises `stale_native_balance`.
+The export includes pending claim source allocations and flags missing or
+mismatched claim lifetime mappings. It verifies each source root is committed
+in the same lineage, has a balanced posting set and credits the mapped claim by
+the allocated amount; open source totals must match the native claim balance.
+Consumed-source debit linkage is checked, but completeness across legacy claim
+writers and their logical source-event attribution are still unproven. Linked
+post-baseline create events now provide a creation origin; an unreferenced event
+for a tracked UID is reported as an exception, while origins for events outside
+that UID set remain unknown. The export also does not prove complete coin-pile
+mapping, escrow, claim or treasury lifecycle/origin semantics, and baseline
+source claims. A partial snapshot
+cannot authorize activation or count as the Plan 5 full SQL audit acceptance.
 
 The guarded disposable runner
 `tests/async/run_economic_sql_audit_snapshot_mysql.py` inserts a baseline and a
@@ -137,12 +214,27 @@ committed wallet-to-bank root into a minimal InnoDB schema, checks the
 `SELECT`-only CLI export and reconciler refusal, changes a native wallet from
 another connection during the audit cut to verify repeatable-read isolation,
 and injects a missing posting, stale native wallet balance, unmapped native
-wallet, duplicate wallet mapping and dangling bank mapping. A wallet mapped to
-another lineage is excluded from the unmapped count. A prior-epoch claim is
-accepted, while a missing cross-epoch claim, reused source and orphan claim
-produce exceptions. This tests the export mapping on both SQL engines;
-fresh/upgrade schema and playable authority qualification remain separate
-release gates.
+wallet, duplicate wallet mapping and dangling bank mapping. It also exports a
+live coin pile and a retired coin pile, verifies their exact UID and denomination
+vectors, refuses a malformed payload, changes a pile denomination and verifies
+the reconciler detects the stale holding, and checks mapped auction escrow,
+pending claim and shop-treasury balances. A wallet mapped to another lineage is
+excluded from the unmapped count. A prior-epoch claim is accepted, while a
+missing cross-epoch claim, reused source and orphan claim produce exceptions.
+The fixture also verifies a prior-epoch pending-claim credit and consumer debit,
+rejects changed source and consumer effects, checks open allocations against
+the aggregate, derives origins for one linked post-baseline UID creation and a
+newly mapped wallet, reports an unreferenced destruction event for a tracked
+UID, exports earlier-epoch retirement root evidence, and rejects a retirement
+whose terminal balance is nonzero. It counts a missing required source event on
+a prior-epoch operation under the current registry policy, verifies a linked
+prior-epoch UID creation, reconciles its full two-event revision chain, finds
+an unreferenced destroy event after it, and verifies realized-price export and
+missing-column reporting. The fixture also injects an ownership
+UID with no selected origin, reference or native row and verifies the scope
+census raises an unanchored-history exception.
+The current full fixture ran on MariaDB 10.11. MySQL, fresh/upgrade schema and
+playable authority qualification remain separate release gates.
 
 ## Reconciliation and bounded views
 

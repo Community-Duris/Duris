@@ -395,7 +395,7 @@ native_item native_row(MYSQL *connection, const native_domain &domain, uint64_t 
 
 void insert_operation(MYSQL *connection, const critical_command &command,
 		      const economic_frozen_intent &intent, const economic_accounting_plan *plan,
-		      unsigned int result_code)
+		      const shop_trade_payload &payload, unsigned int result_code)
 {
 	const auto &meta = intent.admission.metadata;
 	const bool applied = plan && result_code == 0;
@@ -424,7 +424,7 @@ void insert_operation(MYSQL *connection, const critical_command &command,
 	const std::string sql =
 		"INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,"
 		"original_operation_id,accounting_version,writer_id,policy_version,compiler_version,"
-		"actor_kind,actor_id,reason,source_event,intent_digest,domain_digest,plan_digest,"
+		"actor_kind,actor_id,reason,source_event,realized_price_copper,intent_digest,domain_digest,plan_digest,"
 		"canonical_intent,canonical_plan,outcome,result_code,account_count,posting_count,"
 		"child_count,item_event_count,before_witness_count,after_witness_count) VALUES(" +
 		id(command.operation_id) + "," + id(meta.lineage) + "," + id(meta.epoch) + "," +
@@ -436,6 +436,9 @@ void insert_operation(MYSQL *connection, const critical_command &command,
 		"," + std::to_string(static_cast<uint8_t>(meta.actor_kind)) + "," +
 		std::to_string(meta.actor_id) + "," +
 		std::to_string(static_cast<uint16_t>(meta.reason)) + "," + source_event_sql + "," +
+		(applied && (meta.reason == economic_reason::shop_buy ||
+			     meta.reason == economic_reason::shop_sell) ?
+			 std::to_string(payload.price) : "NULL") + "," +
 		hex(intent_digest) + "," + hex(intent.domain_digest) + "," +
 		(applied ? hex(plan_digest) : "NULL") + "," + hex(command.accounting_intent) + "," +
 		(applied ? hex(encoded_plan) : "NULL") + "," +
@@ -1314,7 +1317,7 @@ economic_sql_shop_trade_execute_and_record(MYSQL *connection, const critical_com
 			rejected.bank.amount = active.before.balances_before.bank.amount;
 			rejected.wallet_revision = active.before.balances_before.wallet_revision;
 			rejected.bank_revision = active.before.balances_before.bank_revision;
-			insert_operation(connection, command, intent, nullptr, denied);
+			insert_operation(connection, command, intent, nullptr, payload, denied);
 			*result = std::move(rejected);
 			*result_code = denied;
 			*mutation_applied = false;
@@ -1325,7 +1328,7 @@ economic_sql_shop_trade_execute_and_record(MYSQL *connection, const critical_com
 				   active.before, candidate);
 		apply_item_events(connection, command, payload, active.before, candidate, plan);
 		advance_owner_revisions(connection, payload, active.before);
-		insert_operation(connection, command, intent, &plan, 0);
+		insert_operation(connection, command, intent, &plan, payload, 0);
 		insert_source_claim(connection, intent.admission.metadata);
 		insert_plan_rows(connection, command.operation_id, plan);
 		if (!(connection->server_status & SERVER_STATUS_IN_TRANS) ||

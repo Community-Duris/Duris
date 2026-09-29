@@ -52,6 +52,7 @@ auction_bid_accounting_accounts accounts(uint32_t actor, bool outbid, bool sold)
 	keys.wallet = { lineage, economic_account_kind::wallet, actor, 0 };
 	keys.bank = { lineage, economic_account_kind::bank, actor + 1000, 1 };
 	keys.escrow = { lineage, economic_account_kind::auction_escrow, 400, 0 };
+	keys.bidder_claim = { lineage, economic_account_kind::pending_claim, actor + 2000, 0 };
 	if (outbid)
 		keys.previous_claim = { lineage, economic_account_kind::pending_claim, 20, 0 };
 	if (sold)
@@ -97,7 +98,7 @@ auction_bid_accounting_authority authority(const auction_bid_accounting_listing 
 
 auction_command_result result_for(const auction_command_payload &payload,
 				  const auction_bid_accounting_listing &before,
-				  uint64_t wallet_revision)
+				  uint64_t wallet_revision, int64_t claim_credit_used = 0)
 {
 	const bool sold = payload.value >= before.buy_price;
 	const int64_t bid = sold ? before.buy_price : payload.value;
@@ -112,8 +113,10 @@ auction_command_result result_for(const auction_command_payload &payload,
 	result.winner_pid = payload.actor_pid;
 	result.previous_bidder_pid = before.winning_bidder_pid;
 	result.final_price = bid;
-	result.wallet_value_delta = -pay;
-	result.wallet.amount = { 0, 0, 0, (10000 - pay) / 1000 };
+	const int64_t wallet_pay = pay - claim_credit_used;
+	result.wallet_value_delta = -wallet_pay;
+	result.claim_credit_used = claim_credit_used;
+	result.wallet.amount = { 0, 0, 0, (10000 - wallet_pay) / 1000 };
 	result.bank.amount = { 3, 0, 0, 0 };
 	result.wallet_revision = wallet_revision + 1;
 	result.bank_revision = wallet_revision + 2;
@@ -164,6 +167,18 @@ int main()
 	assert(plan.postings[0].copper == -3000 && plan.postings[1].copper == 3000);
 	assert(plan.accounts[1].after == (economic_coin_vector{ 3000, 0, 0, 0 }));
 	assert(posting_sum(plan) == 0);
+	assert(economic_plan_validate_structure(plan) == economic_accounting_error::ok);
+
+	// Pending auction credit funds the bid before the wallet and is balanced
+	// directly against escrow in the same accounting plan.
+	auto credit_authority = authority(first, first_keys, 4);
+	credit_authority.bidder_claim_before = { 2000, 9 };
+	const auto credit_result = result_for(first_payload, first, 4, 2000);
+	assert(auction_bid_accounting_plan(first_command, first_intent, credit_authority,
+					   credit_result, &plan) == economic_accounting_error::ok);
+	assert(plan.accounts.size() == 3 && plan.postings.size() == 3);
+	assert(plan.postings[0].copper == -1000 && plan.postings[1].copper == -2000 &&
+	       plan.postings[2].copper == 3000);
 	assert(economic_plan_validate_structure(plan) == economic_accounting_error::ok);
 
 	auto same = listing(20, 3000, 2);

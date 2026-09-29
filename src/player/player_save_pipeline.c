@@ -10,6 +10,7 @@
 #include "player/player_save_journal.h"
 #include "player/player_save_worker.h"
 #include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
 #include "core/structs.h"
 #include "core/utils.h"
@@ -340,6 +341,134 @@ bool any_snapshot_is_retained_locked(int pid)
 	return false;
 }
 
+bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &source)
+{
+	if (!target || source.quest_xp_receipts.empty())
+		return true;
+	if (target->death || source.death ||
+	    (target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
+		return false;
+	size_t added = 0;
+	for (const auto &candidate : source.quest_xp_receipts)
+	{
+		auto found = std::find_if(target->quest_xp_receipts.begin(),
+					  target->quest_xp_receipts.end(),
+					  [&](const auto &existing)
+					  {
+						  return existing.offering_operation.bytes ==
+							 candidate.offering_operation.bytes &&
+							 existing.reward_index == candidate.reward_index;
+					  });
+		if (found != target->quest_xp_receipts.end())
+		{
+			if (found->amount != candidate.amount)
+				return false;
+			continue;
+		}
+		++added;
+	}
+	if (!added)
+		return true;
+	const size_t schema_overhead =
+		target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ? 4 : 0;
+	if (target->quest_xp_receipts.size() + added > 64 ||
+	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+	    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
+	    added > (PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound - schema_overhead) / 24)
+		return false;
+	try
+	{
+		target->quest_xp_receipts.reserve(target->quest_xp_receipts.size() + added);
+		for (const auto &candidate : source.quest_xp_receipts)
+		{
+			const bool present = std::any_of(
+				target->quest_xp_receipts.begin(), target->quest_xp_receipts.end(),
+				[&](const auto &existing)
+				{
+					return existing.offering_operation.bytes ==
+						       candidate.offering_operation.bytes &&
+					       existing.reward_index == candidate.reward_index;
+				});
+			if (!present)
+				target->quest_xp_receipts.push_back(candidate);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION)
+	{
+		target->schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+		target->encoded_size_bound += 4;
+	}
+	target->encoded_size_bound += 24 * added;
+	return true;
+}
+
+bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot &source)
+{
+	if (!target || source.spell_effect_receipts.empty())
+		return true;
+	if (target->death || source.death ||
+	    (target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
+		return false;
+	size_t added = 0;
+	for (const auto &candidate : source.spell_effect_receipts)
+	{
+		auto found = std::find_if(target->spell_effect_receipts.begin(),
+					  target->spell_effect_receipts.end(),
+					  [&](const auto &existing)
+					  {
+						  return existing.operation_id.bytes ==
+							 candidate.operation_id.bytes;
+					  });
+		if (found != target->spell_effect_receipts.end())
+		{
+			if (found->effect_id != candidate.effect_id)
+				return false;
+			continue;
+		}
+		++added;
+	}
+	if (!added)
+		return true;
+	const size_t schema_overhead =
+		target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ? 8 :
+		target->schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ? 4 : 0;
+	if (target->spell_effect_receipts.size() + added > PLAYER_SPELL_EFFECT_RECEIPT_MAX ||
+	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+	    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
+	    added > (PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound - schema_overhead) / 20)
+		return false;
+	try
+	{
+		target->spell_effect_receipts.reserve(target->spell_effect_receipts.size() + added);
+		for (const auto &candidate : source.spell_effect_receipts)
+		{
+			const bool present = std::any_of(
+				target->spell_effect_receipts.begin(), target->spell_effect_receipts.end(),
+				[&](const auto &existing)
+				{
+					return existing.operation_id.bytes == candidate.operation_id.bytes;
+				});
+			if (!present)
+				target->spell_effect_receipts.push_back(candidate);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	target->schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+	target->encoded_size_bound += schema_overhead + 20 * added;
+	return true;
+}
+
 /** Admit or coalesce a snapshot within queue and byte limits before notifying the dispatcher. */
 player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 {
@@ -355,7 +484,39 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 		if (queued.pid != snapshot.pid)
 			continue;
 		if (snapshot.revision <= queued.revision)
+		{
+			for (const auto &receipt : snapshot.quest_xp_receipts)
+			{
+				const auto found = std::find_if(
+					queued.quest_xp_receipts.begin(), queued.quest_xp_receipts.end(),
+					[&](const auto &pending)
+					{
+						return pending.offering_operation.bytes ==
+							       receipt.offering_operation.bytes &&
+						       pending.reward_index == receipt.reward_index &&
+						       pending.amount == receipt.amount;
+					});
+				if (found == queued.quest_xp_receipts.end())
+					return player_save_pipeline_result::capture_failed;
+			}
+			for (const auto &receipt : snapshot.spell_effect_receipts)
+			{
+				const auto found = std::find_if(
+					queued.spell_effect_receipts.begin(),
+					queued.spell_effect_receipts.end(),
+					[&](const auto &pending)
+					{
+						return pending.operation_id.bytes == receipt.operation_id.bytes &&
+						       pending.effect_id == receipt.effect_id;
+					});
+				if (found == queued.spell_effect_receipts.end())
+					return player_save_pipeline_result::capture_failed;
+			}
 			return player_save_pipeline_result::coalesced;
+		}
+		if (!merge_quest_xp_receipts(&snapshot, queued) ||
+		    !merge_spell_effect_receipts(&snapshot, queued))
+			return player_save_pipeline_result::capture_failed;
 		if ((snapshot.components & queued.components) != queued.components)
 			return player_save_pipeline_result::capture_failed;
 		if (snapshot.encoded_size_bound >
@@ -508,8 +669,10 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 }
 
 /** Capture and enqueue pending player components with the supplied save intent and room. */
-player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
-								  int room_vnum)
+static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
+	P_char ch, int save_intent, int room_vnum,
+	const player_quest_xp_receipt_snapshot *receipts, size_t receipt_count,
+	const player_spell_effect_receipt_snapshot *spell_effect_receipt = nullptr)
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
@@ -554,6 +717,72 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 		++health.capture_failures;
 		return player_save_pipeline_result::capture_failed;
 	}
+	if (receipt_count)
+	{
+		if (!receipts || receipt_count > 64 || snapshot.death ||
+		    snapshot.encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+		    snapshot.encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES - 4 ||
+		    receipt_count >
+			    (PLAYER_SNAPSHOT_MAX_BYTES - snapshot.encoded_size_bound - 4) / 24)
+			return player_save_pipeline_result::invalid;
+		for (size_t index = 0; index < receipt_count; ++index)
+		{
+			const auto &receipt = receipts[index];
+			const bool empty_operation = std::all_of(
+				receipt.offering_operation.bytes.begin(),
+				receipt.offering_operation.bytes.end(), [](uint8_t byte) { return !byte; });
+			if (empty_operation || receipt.reward_index >= 64 || !receipt.amount)
+				return player_save_pipeline_result::invalid;
+			for (size_t prior = 0; prior < index; ++prior)
+				if (receipts[prior].offering_operation.bytes ==
+					    receipt.offering_operation.bytes &&
+				    receipts[prior].reward_index == receipt.reward_index)
+					return player_save_pipeline_result::invalid;
+		}
+		try
+		{
+			snapshot.quest_xp_receipts.assign(receipts, receipts + receipt_count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return player_save_pipeline_result::capture_failed;
+		}
+		snapshot.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+		snapshot.encoded_size_bound += 4 + 24 * receipt_count;
+		std::vector<uint8_t> encoded;
+		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
+			return player_save_pipeline_result::capture_failed;
+	}
+	if (spell_effect_receipt)
+	{
+		const bool empty_operation = std::all_of(
+			spell_effect_receipt->operation_id.bytes.begin(),
+			spell_effect_receipt->operation_id.bytes.end(),
+			[](uint8_t byte) { return !byte; });
+		const size_t schema_overhead =
+			snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ? 8 : 4;
+		if (empty_operation ||
+		    spell_effect_receipt->effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX ||
+		    !spell_effect_receipt->effect_id || snapshot.death ||
+		    snapshot.spell_effect_receipts.size() >= PLAYER_SPELL_EFFECT_RECEIPT_MAX ||
+		    snapshot.encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+		    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - snapshot.encoded_size_bound ||
+		    20 > PLAYER_SNAPSHOT_MAX_BYTES - snapshot.encoded_size_bound - schema_overhead)
+			return player_save_pipeline_result::invalid;
+		try
+		{
+			snapshot.spell_effect_receipts.push_back(*spell_effect_receipt);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return player_save_pipeline_result::capture_failed;
+		}
+		snapshot.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+		snapshot.encoded_size_bound += schema_overhead + 20;
+		std::vector<uint8_t> encoded;
+		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
+			return player_save_pipeline_result::capture_failed;
+	}
 	if (trace_player_saves())
 		logit(LOG_STATUS,
 		      "PLAYER SAVE TRACE: stage=capture mono_us=%llu pid=%d revision=%llu components=%llu intent=%d room=%d",
@@ -561,6 +790,12 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 		      (unsigned long long)queued_revision, (unsigned long long)components,
 		      save_intent, room_vnum);
 	return enqueue_snapshot(std::move(snapshot));
+}
+
+player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
+								  int room_vnum)
+{
+	return checkpoint_dirty_with_quest_xp(ch, save_intent, room_vnum, nullptr, 0);
 }
 
 /** Mark requested components and capture a checkpoint with the supplied intent and room. */
@@ -573,6 +808,33 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 	if (!ch || IS_NPC(ch) || !player_save_pipeline_mark(GET_PID(ch), components))
 		return player_save_pipeline_result::invalid;
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
+}
+
+player_save_pipeline_result player_save_pipeline_request_quest_xp(
+	P_char ch, player_component_mask_t components,
+	const player_quest_xp_receipt_snapshot *receipts, size_t receipt_count, int room_vnum)
+{
+	if (!ch || IS_NPC(ch) || !receipts || !receipt_count || receipt_count > 64 ||
+	    !(components & PLAYER_COMPONENT_STATUS) ||
+	    (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) ||
+	    IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::invalid;
+	if (!player_save_pipeline_mark(GET_PID(ch), components))
+		return player_save_pipeline_result::unavailable;
+	return checkpoint_dirty_with_quest_xp(ch, RENT_CRASH, room_vnum, receipts, receipt_count);
+}
+
+player_save_pipeline_result player_save_pipeline_request_spell_effect(
+	P_char ch, player_component_mask_t components,
+	const player_spell_effect_receipt_snapshot *receipt, int room_vnum)
+{
+	if (!ch || IS_NPC(ch) || !receipt || !(components & PLAYER_COMPONENT_AFFECTS) ||
+	    (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) ||
+	    IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::invalid;
+	if (!player_save_pipeline_mark(GET_PID(ch), components))
+		return player_save_pipeline_result::unavailable;
+	return checkpoint_dirty_with_quest_xp(ch, RENT_CRASH, room_vnum, nullptr, 0, receipt);
 }
 
 namespace

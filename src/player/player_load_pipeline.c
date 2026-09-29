@@ -105,6 +105,7 @@ void invalidate_uncertain_result(player_load_result *result, unsigned int error)
 	result->repaired_item_rows = 0;
 	result->item_identities.clear();
 	result->pet_identities.clear();
+	result->pending_quest_rewards.clear();
 	result->read_components = 0;
 	result->recent_pvp_deaths.clear();
 	result->completed_epic_zones.clear();

@@ -90,48 +90,56 @@ struct sb_data
 	int spores;
 };
 
-static void spore_burst_initial_components_completed(P_char ch, bool committed,
+spell_component_effect_status spell_spore_burst_initial_components_completed(
+	const critical_operation_id & /*operation_id*/, P_char ch, bool committed,
 						     const item_transfer_result &,
 						     unsigned int /*error_code*/,
 						     const uint8_t *encoded,
 						     size_t encoded_size)
 {
-	if (!ch || !encoded || encoded_size != sizeof(sb_data))
-		return;
-	sb_data context = {};
-	memcpy(&context, encoded, sizeof(context));
-	if (!committed || ch->in_room != context.room)
+	spell_component_context_reader reader(encoded, encoded_size);
+	int32_t room = 0;
+	int32_t spores = 0;
+	if (!ch || !reader.get_i32(&room) || !reader.get_i32(&spores) || !reader.finished())
+		return spell_component_effect_status::retry;
+	if (!committed || ch->in_room != room)
 	{
 		send_to_char("Your spell fizzles before the sphere of spores can form.\r\n", ch);
-		return;
+		return spell_component_effect_status::complete;
 	}
 	send_to_room(
 		"&+cA &+ysickly yellow &+ysphere &+cstarts to grow in the center of the room..\n",
-		context.room);
+		room);
+	sb_data context = { room, spores };
 	add_event(event_spore_burst, (int)(PULSE_VIOLENCE * 1.5), ch, 0, 0, 0, &context,
 		  sizeof(context));
 	CharWait(ch, (int)2.5 * PULSE_VIOLENCE);
+	return spell_component_effect_status::complete;
 }
 
-static void spore_burst_repeat_components_completed(P_char ch, bool committed,
+spell_component_effect_status spell_spore_burst_repeat_components_completed(
+	const critical_operation_id & /*operation_id*/, P_char ch, bool committed,
 						    const item_transfer_result &,
 						    unsigned int /*error_code*/,
 						    const uint8_t *encoded,
 						    size_t encoded_size)
 {
-	if (!ch || !encoded || encoded_size != sizeof(sb_data))
-		return;
-	sb_data context = {};
-	memcpy(&context, encoded, sizeof(context));
-	if (!committed || ch->in_room != context.room)
+	spell_component_context_reader reader(encoded, encoded_size);
+	int32_t room = 0;
+	int32_t spores = 0;
+	if (!ch || !reader.get_i32(&room) || !reader.get_i32(&spores) || !reader.finished())
+		return spell_component_effect_status::retry;
+	if (!committed || ch->in_room != room)
 	{
 		send_to_char("The growing sphere of spores collapses.\r\n", ch);
-		return;
+		return spell_component_effect_status::complete;
 	}
 	send_to_room("&+CA mass of &+Yspores&+C coalesce into a growing sphere...\n",
-		     context.room);
+		     room);
+	sb_data context = { room, spores };
 	add_event(event_spore_burst, static_cast<int>(PULSE_VIOLENCE), ch, 0, 0, 0, &context,
 		  sizeof(context));
+	return spell_component_effect_status::complete;
 }
 
 void spell_spore_burst(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
@@ -156,9 +164,12 @@ void spell_spore_burst(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 	{
 		sbdata.room = ch->in_room;
 		sbdata.spores = 1;
-		if (!spell_consume_components(ch, VOBJ_FORAGE_GARLIC, 1, SPELL_SPORE_BURST,
-					      spore_burst_initial_components_completed, &sbdata,
-					      sizeof(sbdata)))
+		spell_component_context_writer context;
+		if (!context.put_i32(sbdata.room) || !context.put_i32(sbdata.spores))
+			return;
+		if (!spell_consume_components(ch, VOBJ_FORAGE_GARLIC, 1, SPELL_SPORE_BURST, item_spell_component_effect::spore_burst_initial,
+					      spell_spore_burst_initial_components_completed,
+					      context.data(), context.size))
 		{
 			send_to_char("You must have &+Wsome garlic&n in your inventory.\n", ch);
 			act("&+W$n's&+G spell fizzles and dies before any growth can begin.\n", TRUE,
@@ -216,9 +227,12 @@ static void event_spore_burst(P_char ch, P_char /*victim*/, P_obj /*obj*/, void 
 		{
 			sb_data next_spore = *sbdata;
 			++next_spore.spores;
-			if (spell_consume_components(ch, VOBJ_FORAGE_GARLIC, 1, SPELL_SPORE_BURST,
-						    spore_burst_repeat_components_completed,
-						    &next_spore, sizeof(next_spore)))
+			spell_component_context_writer context;
+			if (!context.put_i32(next_spore.room) || !context.put_i32(next_spore.spores))
+				return;
+			if (spell_consume_components(ch, VOBJ_FORAGE_GARLIC, 1, SPELL_SPORE_BURST, item_spell_component_effect::spore_burst_repeat,
+						    spell_spore_burst_repeat_components_completed,
+						    context.data(), context.size))
 				return;
 		}
 		else

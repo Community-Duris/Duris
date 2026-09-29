@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS economic_accounting_operation (
     actor_id BIGINT UNSIGNED NOT NULL,
     reason SMALLINT UNSIGNED NOT NULL,
     source_event BINARY(48) NULL,
+    realized_price_copper BIGINT NULL DEFAULT NULL,
     intent_digest BINARY(32) NOT NULL,
     domain_digest BINARY(32) NOT NULL,
     plan_digest BINARY(32) NULL,

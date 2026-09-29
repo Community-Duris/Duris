@@ -280,6 +280,8 @@ int main()
 		mapping(lineage, economic_account_kind::bank, 1, 2, seller_bank, bootstrap);
 	const auto first_claim =
 		mapping(lineage, economic_account_kind::pending_claim, 0, 5, FIRST, bootstrap);
+	const auto second_claim =
+		mapping(lineage, economic_account_kind::pending_claim, 0, 5, SECOND, bootstrap);
 	const auto seller_claim =
 		mapping(lineage, economic_account_kind::pending_claim, 0, 5, SELLER, bootstrap);
 	auction_bid_accounting_listing before;
@@ -295,6 +297,7 @@ int main()
 	first_accounts.wallet = first_wallet;
 	first_accounts.bank = first_bank_key;
 	first_accounts.escrow = escrow;
+	first_accounts.bidder_claim = first_claim;
 	const auto first = bid(5, FIRST, "auction_bid_first", "AuctionFirst", 3000, before,
 			       first_accounts, epoch);
 	// Force failure after the native bid and root/effects have been written.
@@ -333,6 +336,9 @@ int main()
 	assert(result_code == 0 && mutation_applied && result.final_price == 3000);
 	receipt(first, result);
 	execute("COMMIT");
+	assert(scalar("SELECT realized_price_copper FROM economic_accounting_operation "
+		      "WHERE operation_id=" +
+		      literal(first.operation_id)) == 3000);
 	assert(scalar("SELECT COUNT(*) FROM economic_accounting_account_effect WHERE "
 		      "operation_id=" +
 		      literal(first.operation_id)) == 2);
@@ -350,6 +356,7 @@ int main()
 	second_accounts.wallet = second_wallet;
 	second_accounts.bank = second_bank_key;
 	second_accounts.escrow = escrow;
+	second_accounts.bidder_claim = second_claim;
 	second_accounts.previous_claim = first_claim;
 	second_accounts.seller_claim = seller_claim;
 	const auto second = bid(6, SECOND, "auction_bid_second", "AuctionSecond", 5000, before,
@@ -400,6 +407,9 @@ int main()
 	       result.event_type == auction_event_type::sold);
 	receipt(second, result);
 	execute("COMMIT");
+	assert(scalar("SELECT realized_price_copper FROM economic_accounting_operation "
+		      "WHERE operation_id=" +
+		      literal(second.operation_id)) == 5000);
 	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
 		      std::to_string(FIRST)) == 3000);
 	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
