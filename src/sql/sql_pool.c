@@ -194,6 +194,7 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 
 	while (1)
 	{
+		int retry_scan = 0;
 		/* Linear scan for a free slot -- pool is small (4-16), so O(n)
 		 * is fine. */
 		for (int i = 0; i < pool_size; i++)
@@ -203,14 +204,25 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 				pool[i].in_use = 1;
 				conn = pool[i].conn;
 				pthread_mutex_unlock(&pool_mutex);
-				if (!duris_sql_exclusion_guard_allows(conn))
+				const auto guard_status = duris_sql_exclusion_guard_check(conn);
+				if (guard_status == duris_sql_exclusion_guard_status::allowed)
+					return conn;
+				if (guard_status == duris_sql_exclusion_guard_status::owner_lost)
 				{
 					sql_pool_release(conn);
 					return NULL;
 				}
-				return conn;
+				/* An inconclusive probe says nothing about the original lock owner.
+				 * Retire this worker and rescan so another healthy slot can serve the
+				 * request or this slot can be refilled with a fresh configured handle. */
+				sql_pool_discard_connection(conn);
+				sql_pool_release(conn);
+				retry_scan = 1;
+				break;
 			}
 		}
+		if (retry_scan)
+			continue;
 
 		/* A discarded handle must never be reused, but permanently losing its
 		 * slot would eventually strand every persistence worker. Prefer the
@@ -243,12 +255,18 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 				}
 				pool[i].conn = conn;
 				pthread_mutex_unlock(&pool_mutex);
-				if (!duris_sql_exclusion_guard_allows(conn))
+				const auto guard_status = duris_sql_exclusion_guard_check(conn);
+				if (guard_status == duris_sql_exclusion_guard_status::allowed)
+					return conn;
+				if (guard_status == duris_sql_exclusion_guard_status::inconclusive)
 				{
-					sql_pool_release(conn);
-					return NULL;
+					/* The configured factory already validated this handle. If this
+					 * independent lease check is inconclusive, leave the slot empty for
+					 * a later acquisition rather than returning an unproven session. */
+					sql_pool_discard_connection(conn);
 				}
-				return conn;
+				sql_pool_release(conn);
+				return NULL;
 			}
 		}
 
