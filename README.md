@@ -88,7 +88,8 @@ nc 127.0.0.1 4000
 The generated `.env.docker` is ignored, mode `0600`, and contains random
 database credentials. The database, filesystem-backed player state, recovery
 journals, backups, certificate, and logs live in named Docker volumes and
-survive ordinary container rebuilds.
+survive ordinary container rebuilds. The initializer asks you to approve the
+local-only backup volume before creating that configuration.
 This stack is a local/development alternative to the native setup below; it is
 not the production deployment model. See the [Docker deployment guide](docs/operations/DOCKER.md)
 for lifecycle, configuration, upgrades, logs, and data-reset commands.

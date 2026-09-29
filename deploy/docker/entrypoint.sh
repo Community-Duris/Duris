@@ -11,6 +11,9 @@ for required_name in DB_HOST DB_USER DB_PASSWD DB_NAME DB_SOCKET; do
   fi
 done
 
+python3 scripts/init_docker_backup_policy.py
+unset DURIS_DOCKER_BACKUP_APPROVAL DURIS_DOCKER_BACKUP_CUSTODIAN
+
 TLS_DIRECTORY=/var/lib/duris/tls
 TLS_CERTIFICATE="$TLS_DIRECTORY/duris.crt"
 TLS_KEY="$TLS_DIRECTORY/duris.key"
