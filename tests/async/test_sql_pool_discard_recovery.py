@@ -15,10 +15,14 @@ HARNESS = r'''
 #include <chrono>
 #include <condition_variable>
 #include <cstdlib>
+#include <deque>
 #include <iostream>
 #include <mutex>
 #include <new>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace {
 std::atomic<unsigned long> next_id{1}, opened{0}, closed{0};
@@ -27,6 +31,23 @@ std::atomic<bool> throw_open{false};
 std::mutex factory_mutex;
 std::condition_variable factory_changed;
 bool pause_open = false, entered = false, resume_open = false;
+struct ProbeReply {
+    int query_error = 0;
+    std::string value = "1";
+    unsigned int fields = 1;
+    my_ulonglong rows = 1;
+    bool null_value = false;
+    bool additional_result = false;
+};
+std::mutex probe_mutex;
+std::deque<ProbeReply> probe_replies;
+std::vector<std::string> observed_probe_queries;
+thread_local ProbeReply current_probe_reply;
+thread_local std::string current_probe_value;
+thread_local char *current_probe_row[1];
+thread_local unsigned long current_probe_lengths[1];
+thread_local int fake_result;
+thread_local bool current_probe_query_failed = false;
 void pause_factory() {
     std::lock_guard<std::mutex> lock(factory_mutex);
     pause_open = true; entered = false; resume_open = false;
@@ -49,6 +70,138 @@ void retire(MYSQL *connection) {
     sql_pool_release(connection);
     assert(closed.load() == before + 1);
 }
+void queue_probe(ProbeReply reply = {}) {
+    std::lock_guard<std::mutex> lock(probe_mutex);
+    probe_replies.push_back(std::move(reply));
+}
+void configure_guard(MYSQL *owner) {
+    auto &guard = duris_sql_exclusion_guard_state_ref();
+    guard.connection = owner;
+    guard.connection_id = 700;
+    guard.process_id = getpid();
+    guard.economic_connection_id = 701;
+    guard.lost = false;
+}
+void clear_guard() {
+    auto &guard = duris_sql_exclusion_guard_state_ref();
+    guard.connection = nullptr;
+    guard.connection_id = 0;
+    guard.process_id = 0;
+    guard.economic_connection_id = 0;
+    guard.lost = false;
+}
+void test_guard_probe_recovery() {
+    MYSQL owner{};
+    configure_guard(&owner);
+    ProbeReply query_error; query_error.query_error = 1;
+    MYSQL synchronous_probe{};
+    queue_probe(query_error);
+    assert(!duris_sql_exclusion_guard_allows(&synchronous_probe));
+    assert(!duris_sql_exclusion_guard_state_ref().lost);
+
+    // A query error on a pooled worker is inconclusive. Retire that worker,
+    // validate a fresh connection against both original lock owner IDs, and
+    // return it without latching loss.
+    queue_probe();
+    assert(sql_pool_init(1) == 0);
+    queue_probe();
+    MYSQL *stale = sql_pool_acquire(); assert(stale);
+    const auto stale_id = stale->thread_id;
+    sql_pool_release(stale);
+    queue_probe(query_error);
+    queue_probe();
+    queue_probe();
+    MYSQL *recovered = sql_pool_acquire(); assert(recovered);
+    assert(recovered->thread_id != stale_id && !duris_sql_exclusion_guard_state_ref().lost);
+    {
+        std::lock_guard<std::mutex> lock(probe_mutex);
+        assert(probe_replies.empty());
+        bool checked_original_owners = false;
+        for (const auto &query : observed_probe_queries)
+            checked_original_owners |= query.find(")=700 AND") != std::string::npos &&
+                                       query.find("),0)=701,1,0") != std::string::npos;
+        assert(checked_original_owners);
+    }
+    sql_pool_release(recovered);
+    sql_pool_shutdown();
+    assert(opened == closed);
+    clear_guard();
+
+    // Unknown scalar values and malformed result shapes are inconclusive too.
+    configure_guard(&owner);
+    queue_probe();
+    assert(sql_pool_init(1) == 0);
+    queue_probe();
+    stale = sql_pool_acquire(); assert(stale);
+    sql_pool_release(stale);
+    ProbeReply malformed_value; malformed_value.value = "2";
+    queue_probe(malformed_value);
+    queue_probe();
+    queue_probe();
+    recovered = sql_pool_acquire(); assert(recovered);
+    assert(!duris_sql_exclusion_guard_state_ref().lost);
+    sql_pool_release(recovered);
+    sql_pool_shutdown();
+    assert(opened == closed);
+    clear_guard();
+
+    configure_guard(&owner);
+    queue_probe();
+    assert(sql_pool_init(1) == 0);
+    queue_probe();
+    stale = sql_pool_acquire(); assert(stale);
+    sql_pool_release(stale);
+    ProbeReply malformed_shape; malformed_shape.fields = 2;
+    queue_probe(malformed_shape);
+    queue_probe();
+    queue_probe();
+    recovered = sql_pool_acquire(); assert(recovered);
+    assert(!duris_sql_exclusion_guard_state_ref().lost);
+    sql_pool_release(recovered);
+    sql_pool_shutdown();
+    assert(opened == closed);
+    clear_guard();
+
+    // A failed configured replacement leaves a recoverable empty slot.
+    configure_guard(&owner);
+    queue_probe();
+    assert(sql_pool_init(1) == 0);
+    queue_probe();
+    stale = sql_pool_acquire(); assert(stale);
+    sql_pool_release(stale);
+    queue_probe(query_error);
+    queue_probe(query_error);
+    int active = 0;
+    assert(sql_pool_acquire_with_status(&active) == nullptr && active == 1);
+    assert(sql_pool_in_use() == 0 && sql_pool_available() == 0);
+    assert(!duris_sql_exclusion_guard_state_ref().lost);
+    queue_probe();
+    queue_probe();
+    recovered = sql_pool_acquire(); assert(recovered);
+    sql_pool_release(recovered);
+    sql_pool_shutdown();
+    assert(opened == closed);
+    clear_guard();
+
+    // Only a valid "0" proves owner loss; a positive later answer cannot
+    // replace either original lock owner.
+    configure_guard(&owner);
+    queue_probe();
+    assert(sql_pool_init(1) == 0);
+    queue_probe();
+    stale = sql_pool_acquire(); assert(stale);
+    sql_pool_release(stale);
+    ProbeReply owner_lost; owner_lost.value = "0";
+    queue_probe(owner_lost);
+    assert(sql_pool_acquire() == nullptr);
+    assert(duris_sql_exclusion_guard_state_ref().lost);
+    queue_probe();
+    assert(sql_pool_acquire() == nullptr);
+    assert(!probe_replies.empty());
+    sql_pool_shutdown();
+    assert(opened == closed);
+    clear_guard();
+}
 }
 MYSQL *sql_open_configured_connection(unsigned long) {
     {
@@ -65,9 +218,46 @@ MYSQL *sql_open_configured_connection(unsigned long) {
     connection->server_status = SERVER_STATUS_AUTOCOMMIT;
     connection->thread_id = next_id.fetch_add(1);
     ++opened;
+    if (duris_sql_exclusion_guard_check(connection) !=
+        duris_sql_exclusion_guard_status::allowed) {
+        mysql_close(connection);
+        return nullptr;
+    }
     return connection;
 }
 void logit(const char *, const char *, ...) {}
+extern "C" int STDCALL mysql_real_query(MYSQL *, const char *query, unsigned long length) {
+    std::lock_guard<std::mutex> lock(probe_mutex);
+    observed_probe_queries.emplace_back(query, length);
+    assert(!probe_replies.empty());
+    current_probe_reply = std::move(probe_replies.front());
+    probe_replies.pop_front();
+    current_probe_value = current_probe_reply.value;
+    current_probe_query_failed = current_probe_reply.query_error != 0;
+    return current_probe_reply.query_error;
+}
+extern "C" MYSQL_RES *STDCALL mysql_store_result(MYSQL *) {
+    return current_probe_query_failed ? nullptr : reinterpret_cast<MYSQL_RES *>(&fake_result);
+}
+extern "C" unsigned int STDCALL mysql_num_fields(MYSQL_RES *) {
+    return current_probe_reply.fields;
+}
+extern "C" my_ulonglong STDCALL mysql_num_rows(MYSQL_RES *) {
+    return current_probe_reply.rows;
+}
+extern "C" MYSQL_ROW STDCALL mysql_fetch_row(MYSQL_RES *) {
+    current_probe_row[0] = current_probe_reply.null_value ? nullptr :
+                           const_cast<char *>(current_probe_value.c_str());
+    return current_probe_reply.rows ? current_probe_row : nullptr;
+}
+extern "C" unsigned long *STDCALL mysql_fetch_lengths(MYSQL_RES *) {
+    current_probe_lengths[0] = static_cast<unsigned long>(current_probe_value.size());
+    return current_probe_lengths;
+}
+extern "C" void STDCALL mysql_free_result(MYSQL_RES *) {}
+extern "C" int STDCALL mysql_next_result(MYSQL *) {
+    return current_probe_reply.additional_result ? 0 : -1;
+}
 extern "C" void mysql_close(MYSQL *connection) {
     assert(connection);
     ++closed;
@@ -158,7 +348,8 @@ int main() {
     guard.lost = false;
     sql_pool_shutdown();
     assert(opened == closed);
-    std::cout << "PASS: real pool replenishes retired leases without dirty reuse, blocking healthy leases, or racing shutdown\n";
+    test_guard_probe_recovery();
+    std::cout << "PASS: pool replenishment preserves capacity, lock ownership, borrower ordering, and shutdown fencing\n";
 }
 '''
 
