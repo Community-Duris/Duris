@@ -9,7 +9,10 @@ dockerfile = (ROOT / "Dockerfile").read_text()
 compose = (ROOT / "compose.yaml").read_text()
 entrypoint = (ROOT / "deploy/docker/entrypoint.sh").read_text()
 initializer = (ROOT / "scripts/init_docker_env.sh").read_text()
+policy_initializer = (ROOT / "scripts/init_docker_backup_policy.py").read_text()
 socket_client = (ROOT / "scripts/mysql_socket_bin/mysql").read_text()
+socket_client_bytes = (ROOT / "scripts/mysql_socket_bin/mysql").read_bytes()
+gitattributes = (ROOT / ".gitattributes").read_text()
 dockerignore = (ROOT / ".dockerignore").read_text()
 gitignore = (ROOT / ".gitignore").read_text()
 guide = (ROOT / "docs/operations/DOCKER.md").read_text()
@@ -49,6 +52,17 @@ assert '"/opt/duris/Players/Tradeskills/$letter"' in dockerfile
 
 # Compose owns a fresh-schema database and app, without publishing MariaDB.
 assert "mariadb:" in compose and "game:" in compose
+assert "image: mariadb:10.11" in mariadb_service
+assert "image: mariadb:11.4" not in mariadb_service
+for migration in (
+    "0031_economy_accounting.sh",
+    "0032_economic_baseline.sh",
+    "0033_economic_sql_lifecycle_owner.sh",
+    "0034_player_death_conflict_evidence.sh",
+    "0036_economic_sql_activation_receipt.sh",
+):
+    source = (ROOT / "migrations/immutable" / migration).read_text()
+    assert "10.11.*MariaDB" in source, migration
 assert "migrations/bootstrap_multithread_safe.sql" in compose
 assert "condition: service_healthy" in compose
 assert "mariadb-data:/var/lib/mysql" in compose
@@ -57,6 +71,9 @@ assert "duris-players:/opt/duris/Players" in compose
 assert "DB_SOCKET: /run/mysqld/mysqld.sock" in compose
 assert "DB_HOST: localhost" in compose
 assert "DB_ALLOWED_TARGETS: localhost/duris_dev" in compose
+assert "BACKUP_POLICY_FILE: /var/lib/duris/harness-backup-policy.json" in game_service
+assert "DURIS_DOCKER_BACKUP_APPROVAL:" in game_service
+assert "DURIS_DOCKER_BACKUP_CUSTODIAN:" in game_service
 assert 'DURIS_DOCKER_BIND_ADDRESS:-127.0.0.1' in compose
 assert "ports:" not in mariadb_service
 assert 'restart: "on-failure:5"' in game_service
@@ -75,6 +92,16 @@ assert "Unable to query mud_schema_baselines" in entrypoint
 assert "import_help_to_prod.sh --local < <(yes yes)" in entrypoint
 assert "--protocol=socket" in socket_client
 assert "-h|-P|--host|--port|--protocol|--socket" in socket_client
+assert "scripts/mysql_socket_bin/mysql text eol=lf" in gitattributes
+assert b"\r\n" not in socket_client_bytes
+assert "python3 scripts/init_docker_backup_policy.py" in entrypoint
+assert entrypoint.index("python3 scripts/init_docker_backup_policy.py") < entrypoint.index(
+    "migration_runner.py adopt"
+)
+assert "DURIS_DOCKER_BACKUP_APPROVAL=local-volume" in initializer
+assert "Type 'approve'" in initializer
+assert 'policy["approved"] = True' in policy_initializer
+assert "policy_load(path)" in policy_initializer
 
 socket_verifier_branch = runtime_verifier.split('if [[ -n "${DB_SOCKET:-}" ]]', 1)[1].split(
     "else", 1
