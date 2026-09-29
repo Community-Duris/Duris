@@ -302,6 +302,9 @@ int main()
 			applied.error_code, static_cast<unsigned int>(applied.outcome),
 			mysql_errno(connection), mysql_error(connection));
 	assert(applied.outcome == critical_apply_outcome::applied);
+	assert(scalar("SELECT realized_price_copper FROM economic_accounting_operation "
+		      "WHERE operation_id=" +
+		      literal(command.operation_id)) == static_cast<int64_t>(listing.price_value));
 	collector_command_result result = {};
 	assert(collector_command_decode_result(applied.result_payload.data(), applied.result_size,
 					       &result));
@@ -350,6 +353,18 @@ int main()
 	       critical_apply_outcome::already_applied);
 	assert(critical_command_repository_apply(connection, command).outcome ==
 	       critical_apply_outcome::already_applied);
+	execute("UPDATE economic_accounting_operation SET realized_price_copper=" +
+		std::to_string(listing.price_value + 1) + " WHERE operation_id=" +
+		literal(command.operation_id));
+	assert(economic_sql_collector_verify_retained(connection, command, 0,
+						      retained_purchase.data(),
+						      retained_purchase.size()) != 0);
+	execute("UPDATE economic_accounting_operation SET realized_price_copper=" +
+		std::to_string(listing.price_value) + " WHERE operation_id=" +
+		literal(command.operation_id));
+	assert(economic_sql_collector_verify_retained(connection, command, 0,
+						      retained_purchase.data(),
+						      retained_purchase.size()) == 0);
 	execute("UPDATE economic_accounting_coin_posting SET copper_value=copper_value+1 "
 		"WHERE operation_id=" +
 		literal(command.operation_id) + " AND line_index=0");

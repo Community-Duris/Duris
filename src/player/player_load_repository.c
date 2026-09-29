@@ -1,4 +1,5 @@
 #include "player/player_load_repository.h"
+#include "persistence/quest_reward_obligation_repository.h"
 
 #include "core/defines.h"
 #include "persistence/persistence_observability.h"
@@ -2106,6 +2107,136 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	{
 		clear_gameplay_reads(&result);
 		mark_degraded(&result, PLAYER_LOAD_DEGRADED_GAMEPLAY, "gameplay_reads");
+	}
+	{
+		std::vector<quest_reward_obligation_record> obligations;
+		unsigned int database_error = 0;
+		const auto loaded = quest_reward_obligation_repository_pending(
+			connection, static_cast<uint32_t>(result.pid), &obligations,
+			&database_error);
+		++result.metrics.query_count;
+		if (loaded == quest_reward_obligation_result::ok)
+		{
+			try
+			{
+				result.pending_quest_rewards.reserve(obligations.size());
+				for (auto &obligation : obligations)
+					result.pending_quest_rewards.push_back(
+						{ obligation.offering_operation,
+						  std::move(obligation.continuation),
+						  obligation.terms, obligation.xp_applied_mask });
+				result.metrics.row_count +=
+					static_cast<uint32_t>(result.pending_quest_rewards.size());
+				for (const auto &obligation : result.pending_quest_rewards)
+					result.metrics.byte_count += obligation.continuation.size();
+			}
+			catch (const std::bad_alloc &)
+			{
+				result.pending_quest_rewards.clear();
+				result.error_code = ENOMEM;
+				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+					      "quest_reward_obligations");
+			}
+		}
+		else
+		{
+			result.pending_quest_rewards.clear();
+			result.error_code = database_error;
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+				      "quest_reward_obligations");
+		}
+	}
+	{
+		std::vector<quest_reward_xp_entitlement_record> entitlements;
+		unsigned int database_error = 0;
+		const auto loaded = quest_reward_xp_entitlement_repository_pending(
+			connection, static_cast<uint32_t>(result.pid), &entitlements,
+			&database_error);
+		++result.metrics.query_count;
+		if (loaded == quest_reward_obligation_result::ok)
+		{
+			try
+			{
+				result.pending_quest_xp_entitlements.reserve(entitlements.size());
+				for (const auto &entitlement : entitlements)
+					result.pending_quest_xp_entitlements.push_back(
+						{ entitlement.offering_operation, entitlement.terms,
+						  entitlement.reward_index, entitlement.amount });
+				result.metrics.row_count += static_cast<uint32_t>(
+					result.pending_quest_xp_entitlements.size());
+			}
+			catch (const std::bad_alloc &)
+			{
+				result.pending_quest_xp_entitlements.clear();
+				result.error_code = ENOMEM;
+				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+					      "quest_xp_entitlements");
+			}
+		}
+		else
+		{
+			result.pending_quest_xp_entitlements.clear();
+			result.error_code = database_error;
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+				      "quest_xp_entitlements");
+		}
+	}
+	{
+		MYSQL_RES *rows = query(
+			connection,
+			"SELECT operation_id,effect_id FROM player_spell_effect_receipt WHERE pid=" +
+				std::to_string(result.pid) + " ORDER BY created_at DESC,operation_id DESC LIMIT " +
+				std::to_string(PLAYER_SPELL_EFFECT_RECEIPT_MAX + 1),
+			&result);
+		if (!rows)
+		{
+			result.error_code = mysql_errno(connection);
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+				      "spell_effect_receipts");
+		}
+		else
+		{
+			try
+			{
+				result.spell_effect_receipts.reserve(PLAYER_SPELL_EFFECT_RECEIPT_MAX);
+				MYSQL_ROW row = nullptr;
+				while ((row = mysql_fetch_row(rows)))
+				{
+					if (!add_result_budget(rows, row, &result))
+					{
+						result.error_code = EOVERFLOW;
+						mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "spell_effect_receipts");
+						break;
+					}
+					const unsigned long *lengths = mysql_fetch_lengths(rows);
+					const uint64_t effect_id = unsigned_value(row[1]);
+					if (!lengths || !row[0] || lengths[0] != 16 || !effect_id ||
+					    effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX ||
+					    result.spell_effect_receipts.size() >=
+						    PLAYER_SPELL_EFFECT_RECEIPT_MAX)
+					{
+						result.error_code = EINVAL;
+						mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "spell_effect_receipts");
+						break;
+					}
+					player_load_spell_effect_receipt receipt = {};
+					std::copy_n(reinterpret_cast<const uint8_t *>(row[0]), 16,
+						    receipt.operation_id.bytes.begin());
+					receipt.effect_id = static_cast<uint32_t>(effect_id);
+					result.spell_effect_receipts.push_back(receipt);
+				}
+			}
+			catch (const std::bad_alloc &)
+			{
+				result.spell_effect_receipts.clear();
+				result.error_code = ENOMEM;
+				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+					      "spell_effect_receipts");
+			}
+			mysql_free_result(rows);
+		}
 	}
 	if (!load_bank(connection, request, &result))
 	{

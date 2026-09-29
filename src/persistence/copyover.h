@@ -12,7 +12,7 @@
 const char *copyover_state_file();
 #define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 16 // shopkeeper identity + telemetry; reads versions 12-15 too
+#define COPYOVER_VERSION 17 // death retry handoff; reads versions 12-16 too
 
 // copyover file header
 struct copyover_header
@@ -59,6 +59,10 @@ struct copyover_desc
 	int pet_vnums[10]; // up to 10 pets
 	int pet_hit[10]; // current hp
 	int pet_max_hit[10]; // max hp
+	uint8_t death_retry_pending;
+	uint8_t death_retry_reserved[3];
+	int death_retry_delay;
+	uint64_t death_retry_corpse_uid;
 };
 
 // mob state for copyover

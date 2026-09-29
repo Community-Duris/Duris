@@ -288,6 +288,20 @@ bool stage_money(auction_catalog *catalog, uint32_t pid, int64_t amount)
 	return true;
 }
 
+bool spend_money(auction_catalog *catalog, uint32_t pid, int64_t amount)
+{
+	if (!catalog || !pid || amount <= 0)
+		return false;
+	const auto *existing = find_money(catalog, pid);
+	if (!existing || existing->amount < amount ||
+	    existing->revision == std::numeric_limits<uint64_t>::max())
+		return false;
+	auto *pickup = find_money(catalog, pid);
+	pickup->amount -= amount;
+	++pickup->revision;
+	return true;
+}
+
 bool encode_catalog(const auction_catalog &catalog, std::vector<uint8_t> *bytes)
 {
 	if (!bytes || catalog.listings.size() > catalog_maximum_listings ||
@@ -687,6 +701,65 @@ bool add_source(auction_claim_source_catalog *catalog, const critical_command &c
 	return true;
 }
 
+bool claim_source_balance_matches(const auction_claim_source_catalog &catalog,
+				  const economic_account_key &claim_account,
+				  uint32_t beneficiary_pid, int64_t balance)
+{
+	if (balance < 0 || (balance && !economic_account_key_valid(claim_account)))
+		return false;
+	uint64_t total = 0;
+	for (const auto &row : catalog.rows)
+		if (critical_operation_id_is_zero(row.consumed_by) &&
+		    row.lineage.bytes == claim_account.lineage.bytes &&
+		    row.claim_mapping_id == claim_account.authority_id &&
+		    row.beneficiary_pid == beneficiary_pid)
+		{
+			if (row.amount > static_cast<uint64_t>(INT64_MAX) - total)
+				return false;
+			total += row.amount;
+		}
+	return total == static_cast<uint64_t>(balance);
+}
+
+bool consume_whole_claim_sources(auction_claim_source_catalog *catalog,
+				 const critical_command &command,
+				 const economic_account_key &claim_account,
+				 uint32_t beneficiary_pid, int64_t claim_balance, int64_t amount)
+{
+	if (!catalog || amount <= 0 || catalog->revision == UINT64_MAX ||
+	    !claim_source_balance_matches(*catalog, claim_account, beneficiary_pid,
+					  claim_balance))
+		return false;
+	uint64_t remaining = static_cast<uint64_t>(amount);
+	std::vector<size_t> selected;
+	try
+	{
+		for (size_t index = 0; index < catalog->rows.size() && remaining; ++index)
+		{
+			const auto &row = catalog->rows[index];
+			if (!critical_operation_id_is_zero(row.consumed_by) ||
+			    row.lineage.bytes != claim_account.lineage.bytes ||
+			    row.claim_mapping_id != claim_account.authority_id ||
+			    row.beneficiary_pid != beneficiary_pid)
+				continue;
+			if (row.amount > remaining)
+				return false;
+			selected.push_back(index);
+			remaining -= row.amount;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (remaining || selected.empty())
+		return false;
+	for (const size_t index : selected)
+		catalog->rows[index].consumed_by = command.operation_id;
+	++catalog->revision;
+	return true;
+}
+
 bool plan_claim_credit(const economic_accounting_plan &plan,
 		       const economic_account_key &claim_account, int64_t before,
 		       uint64_t before_revision, int64_t amount)
@@ -706,6 +779,28 @@ bool plan_claim_credit(const economic_accounting_plan &plan,
 		       effect.before_revision == before_revision &&
 		       effect.after_revision == before_revision + 1 && effect_before == before &&
 		       effect_after == before + amount;
+	}
+	return false;
+}
+
+bool plan_claim_debit(const economic_accounting_plan &plan,
+		      const economic_account_key &claim_account, int64_t before,
+		      uint64_t before_revision, int64_t amount)
+{
+	if (amount <= 0 || before < amount || before_revision == UINT64_MAX)
+		return false;
+	for (const auto &effect : plan.accounts)
+	{
+		if (!economic_account_key_equal(effect.key, claim_account))
+			continue;
+		int64_t effect_before = 0, effect_after = 0;
+		return economic_coin_value(effect.before, &effect_before) ==
+			       economic_accounting_error::ok &&
+		       economic_coin_value(effect.after, &effect_after) ==
+			       economic_accounting_error::ok &&
+		       effect.before_revision == before_revision &&
+		       effect.after_revision == before_revision + 1 && effect_before == before &&
+		       effect_after == before - amount;
 	}
 	return false;
 }
@@ -1428,6 +1523,8 @@ try
 		if (bid_accounted)
 		{
 			requests.push_back({ bid_accounts.escrow, { 4, payload.auction_id, {} } });
+			requests.push_back({ bid_accounts.bidder_claim,
+					     { 5, payload.actor_pid, {} } });
 			if (bid_accounts.previous_claim.authority_id)
 				requests.push_back({ bid_accounts.previous_claim,
 						     { 5, frozen_bid.winning_bidder_pid, {} } });
@@ -1466,6 +1563,14 @@ try
 			bid_before.epoch = intent.admission.metadata.epoch;
 			bid_before.accounts = bid_accounts;
 			if (!open_listing_state(catalog, payload.auction_id, &bid_before.listing))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 ESTALE };
+			bid_before.bidder_claim_before = {};
+			if (const auto *pickup = find_money(&catalog, payload.actor_pid))
+				bid_before.bidder_claim_before = { pickup->amount, pickup->revision };
+			if (!claim_source_balance_matches(sources, bid_accounts.bidder_claim,
+						  payload.actor_pid,
+						  bid_before.bidder_claim_before.money))
 				return { critical_apply_outcome::terminal_failure, catalog.revision,
 					 ESTALE };
 			critical_command projected = command;
@@ -1542,7 +1647,7 @@ try
 					if (money_before.claim.sources.size() >=
 					    ECONOMIC_AUCTION_CLAIM_MAX_SOURCES)
 						return { critical_apply_outcome::terminal_failure,
-							 catalog.revision, ENOSPC };
+								 catalog.revision, EILSEQ };
 					money_before.claim.sources.push_back(
 						{ row.operation, row.slot, row.beneficiary_pid,
 						  row.claim_mapping_id, row.amount });
@@ -1828,54 +1933,66 @@ try
 				const int64_t to_pay = listing->winner_pid == payload.actor_pid ?
 							       bid - listing->current_price :
 							       bid;
-				const uint32_t previous = listing->winner_pid;
-				if (previous && previous != payload.actor_pid &&
-				    !stage_money(&catalog, previous, listing->current_price))
-					return { critical_apply_outcome::retryable_failure, 0,
-						 ENOMEM };
-				listing->winner_pid = payload.actor_pid;
-				listing->winner_name = payload.actor_name.data();
-				listing->current_price = bid;
-				++listing->revision;
-				const bool sold = listing->buy_price > 0 &&
-						  bid >= listing->buy_price;
-				if (sold)
+				const auto *claim = find_money(&catalog, payload.actor_pid);
+				const int64_t claim_balance = claim ? claim->amount : 0;
+				const int64_t claim_credit_used = std::min(to_pay, claim_balance);
+				const int64_t wallet_to_pay = to_pay - claim_credit_used;
+				if (claim_credit_used &&
+				    !spend_money(&catalog, payload.actor_pid, claim_credit_used))
+					result_code = ERANGE;
+				if (!result_code)
 				{
-					listing->status = auction_status_closed;
-					int64_t proceeds = 0;
-					if (!sale_proceeds(bid, payload.closing_fee_basis_points,
-							   &proceeds))
-						result_code = EINVAL;
-					else if (!stage_money(&catalog, listing->seller_pid,
-							      proceeds))
-						return { critical_apply_outcome::retryable_failure,
-							 0, ENOMEM };
-					if (!result_code)
-						for (auto &item : listing->items)
-							if (!item.claimed && !item.claim_pid)
-								item.claim_pid = payload.actor_pid;
+					const uint32_t previous = listing->winner_pid;
+					if (previous && previous != payload.actor_pid &&
+					    !stage_money(&catalog, previous, listing->current_price))
+						return { critical_apply_outcome::retryable_failure, 0,
+							 ENOMEM };
+					listing->winner_pid = payload.actor_pid;
+					listing->winner_name = payload.actor_name.data();
+					listing->current_price = bid;
+					++listing->revision;
+					const bool sold = listing->buy_price > 0 &&
+							  bid >= listing->buy_price;
+					if (sold)
+					{
+						listing->status = auction_status_closed;
+						int64_t proceeds = 0;
+						if (!sale_proceeds(bid, payload.closing_fee_basis_points,
+								   &proceeds))
+							result_code = EINVAL;
+						else if (!stage_money(&catalog, listing->seller_pid,
+								     proceeds))
+							return { critical_apply_outcome::
+									  retryable_failure,
+								  0, ENOMEM };
+						if (!result_code)
+							for (auto &item : listing->items)
+								if (!item.claimed && !item.claim_pid)
+									item.claim_pid = payload.actor_pid;
+					}
+					else if (previous != payload.actor_pid &&
+						 payload.bid_extension_seconds)
+					{
+						if (listing->end_time >
+						    UINT64_MAX - payload.bid_extension_seconds)
+							result_code = ERANGE;
+						else
+							listing->end_time += payload.bid_extension_seconds;
+					}
+					wallet_delta = -wallet_to_pay;
+					mutate_wallet = true;
+					result.auction_id = listing->id;
+					result.status = listing->status;
+					result.seller_pid = listing->seller_pid;
+					result.winner_pid = payload.actor_pid;
+					result.previous_bidder_pid = previous;
+					result.final_price = bid;
+					result.claim_credit_used = claim_credit_used;
+					result.auction_revision = listing->revision;
+					result.event_type = sold ? auction_event_type::sold :
+								   auction_event_type::bid_placed;
+					mutation_applied = true;
 				}
-				else if (previous != payload.actor_pid &&
-					 payload.bid_extension_seconds)
-				{
-					if (listing->end_time >
-					    UINT64_MAX - payload.bid_extension_seconds)
-						result_code = ERANGE;
-					else
-						listing->end_time += payload.bid_extension_seconds;
-				}
-				wallet_delta = -to_pay;
-				mutate_wallet = true;
-				result.auction_id = listing->id;
-				result.status = listing->status;
-				result.seller_pid = listing->seller_pid;
-				result.winner_pid = payload.actor_pid;
-				result.previous_bidder_pid = previous;
-				result.final_price = bid;
-				result.auction_revision = listing->revision;
-				result.event_type = sold ? auction_event_type::sold :
-							   auction_event_type::bid_placed;
-				mutation_applied = true;
 			}
 		}
 	}
@@ -2130,17 +2247,32 @@ try
 			     !money_accounted &&
 			     (!plan.accounts.empty() || !plan.postings.empty())) ||
 			    !plan.children.empty() || plan.item_events.size() != payload.item_count)
-				return { planned == economic_accounting_error::capacity ?
-						 critical_apply_outcome::retryable_failure :
-						 critical_apply_outcome::terminal_failure,
-					 catalog.revision,
-					 static_cast<unsigned int>(
-						 planned == economic_accounting_error::capacity ?
-							 ENOMEM :
-							 EILSEQ) };
+					return { planned == economic_accounting_error::capacity ?
+							 critical_apply_outcome::retryable_failure :
+							 critical_apply_outcome::terminal_failure,
+						 catalog.revision,
+						 static_cast<unsigned int>(
+							 planned == economic_accounting_error::capacity ? ENOMEM :
+											 EBADMSG) };
 			if (bid_accounted)
 			{
 				const auto &listing = bid_before.listing;
+				if (result.claim_credit_used > 0)
+				{
+					if (!plan_claim_debit(
+						    plan, bid_accounts.bidder_claim,
+						    bid_before.bidder_claim_before.money,
+						    bid_before.bidder_claim_before.revision,
+						    result.claim_credit_used) ||
+					    !consume_whole_claim_sources(
+						    &sources, command, bid_accounts.bidder_claim,
+						    payload.actor_pid,
+					    bid_before.bidder_claim_before.money,
+					    result.claim_credit_used))
+						return { critical_apply_outcome::terminal_failure,
+							 catalog.revision, ENOSPC };
+					sources_changed = true;
+				}
 				if (listing.winning_bidder_pid &&
 				    listing.winning_bidder_pid != payload.actor_pid)
 				{

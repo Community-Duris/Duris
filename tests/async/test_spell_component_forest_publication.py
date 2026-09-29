@@ -52,7 +52,7 @@ using P_char = character *;
 #define OBJ_WORN_BY(item, actor) ((item)->loc_p == 2 && (item)->loc.wearing == (actor))
 enum class item_owner_type { player, destruction };
 enum class item_custody_state { active, destroyed };
-enum class item_transfer_reason { destruction };
+enum class item_transfer_reason { destruction, quest_turnin };
 struct item_owner_identity { item_owner_type type; uint64_t id; };
 struct item_transfer_entry {
     uint64_t item_uid;

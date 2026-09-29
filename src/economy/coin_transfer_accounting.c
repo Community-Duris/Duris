@@ -7,6 +7,7 @@
 #include <array>
 #include <charconv>
 #include <cerrno>
+#include <cstring>
 #include <memory>
 #include <new>
 #include <optional>
@@ -149,6 +150,20 @@ void insert(MYSQL *connection, const std::string &table,
 	}
 	execute(connection, "INSERT INTO " + table + "(" + names + ") VALUES(" + data + ")");
 	require(mysql_affected_rows(connection) == 1);
+}
+void insert_source_claim(MYSQL *connection,
+			 const std::vector<std::pair<std::string, std::string>> &values)
+{
+	try
+	{
+		insert(connection, "economic_accounting_source_claim", values);
+	}
+	catch (const failure &error)
+	{
+		if (error.code == 1062)
+			throw failure{ EEXIST };
+		throw;
+	}
 }
 void coin_fields(std::vector<std::pair<std::string, std::string>> *values,
 		 const std::string &prefix, const economic_coin_vector &coins)
@@ -510,6 +525,13 @@ operation_fields(const critical_command &root, const economic_frozen_intent &int
 {
 	economic_plan_metadata metadata;
 	checked(economic_intent_plan_metadata(root, intent, &metadata));
+	std::string source_event = "NULL";
+	if (metadata.source_event)
+	{
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> encoded = {};
+		checked(economic_source_event_encode(*metadata.source_event, &encoded));
+		source_event = hex(encoded);
+	}
 	std::vector<uint8_t> encoded;
 	if (plan)
 		checked(economic_plan_encode(*plan, &encoded));
@@ -527,7 +549,7 @@ operation_fields(const critical_command &root, const economic_frozen_intent &int
 		 { "actor_kind", std::to_string(static_cast<uint8_t>(metadata.actor_kind)) },
 		 { "actor_id", std::to_string(metadata.actor_id) },
 		 { "reason", std::to_string(static_cast<uint16_t>(metadata.reason)) },
-		 { "source_event", "NULL" },
+			 { "source_event", source_event },
 		 { "intent_digest", hex(metadata.intent_digest) },
 		 { "domain_digest", hex(metadata.domain_digest) },
 		 { "plan_digest", plan ? hex(plan_digest) : "NULL" },
@@ -577,6 +599,21 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 		      const economic_accounting_plan *plan, bool append)
 {
 	const std::string where = "operation_id=" + id(root.operation_id);
+	const bool has_source_claim = plan && plan->metadata.source_event.has_value();
+	if (has_source_claim)
+	{
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> encoded = {};
+		checked(economic_source_event_encode(*plan->metadata.source_event, &encoded));
+		const auto claim = std::vector<std::pair<std::string, std::string>>{
+			{ "lineage", id(plan->metadata.lineage) },
+			{ "source_event", hex(encoded) },
+			{ "operation_id", id(root.operation_id) },
+			{ "outcome", "1" }
+		};
+		if (append)
+			insert_source_claim(connection, claim);
+		count(connection, "economic_accounting_source_claim", predicate(claim), 1);
+	}
 	if (plan)
 	{
 		for (size_t index = 0; index < plan->children.size(); ++index)
@@ -621,8 +658,9 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 	      plan ? plan->postings.size() : 0);
 	count(connection, "economic_accounting_item_reference", where,
 	      plan ? plan->item_events.size() : 0);
-	for (const char *table : { "economic_accounting_source_claim", "item_ownership_ledger" })
-		count(connection, table, where, 0);
+	count(connection, "economic_accounting_source_claim", where,
+	      has_source_claim ? 1 : 0);
+	count(connection, "item_ownership_ledger", where, 0);
 }
 void verify_item_reference_rows(MYSQL *connection, const critical_command &root,
 				const identity &value, const coin_transfer_result &result,
@@ -843,6 +881,39 @@ coin_transfer_accounting_intent(const critical_command &root, const critical_ope
 		facts.metadata.actor_id = source_account.authority_id;
 		facts.metadata.writer_id = ECONOMIC_WRITER_WALLET_COIN_TRANSFER;
 		facts.metadata.reason = economic_reason::coin_transfer;
+		bool source_retired = false;
+		bool destination_created = false;
+		for (size_t index = 0; index < 2; ++index)
+		{
+			const auto *endpoint = endpoints[index];
+			if (endpoint->change.type != critical_command_type::item_transfer)
+				continue;
+			item_transfer_payload pile = {};
+			if (!item_transfer_command_decode_payload(endpoint->change, &pile) ||
+			    pile.item_count != 1)
+				return error::unauthorized;
+			if (index == 0 && pile.to_owner.type == item_owner_type::destruction)
+				source_retired = true;
+			if (index == 1 && pile.from_owner.type == item_owner_type::system)
+				destination_created = true;
+		}
+		economic_source_event source_event = {};
+		uint64_t source_revision = 0;
+		if (payload.source.change.type == critical_command_type::account_bank)
+			source_revision = payload.source.change.expected_revisions[0].revision;
+		else
+		{
+			item_transfer_payload source_pile = {};
+			if (!item_transfer_command_decode_payload(payload.source.change,
+								   &source_pile) ||
+			    source_pile.item_count != 1)
+				return error::unauthorized;
+			source_revision = source_pile.items[0].expected_item_revision;
+		}
+		if (coin_transfer_accounting_source_event(
+			    source_account.kind, source_account.authority_id, source_revision,
+			    source_retired, destination_created, &source_event))
+			facts.metadata.source_event = source_event;
 		append_u64(&facts.facts, source_account.authority_id);
 		append_u64(&facts.facts, destination_account.authority_id);
 		return economic_intent_freeze(root, facts, encoded);
@@ -851,6 +922,31 @@ coin_transfer_accounting_intent(const critical_command &root, const critical_ope
 	{
 		return error::capacity;
 	}
+}
+
+bool coin_transfer_accounting_source_event(economic_account_kind source_kind,
+					  uint64_t source_id, uint64_t source_revision,
+					  bool source_retired, bool destination_created,
+					  economic_source_event *event) noexcept
+{
+	if (!event || (source_kind != economic_account_kind::wallet &&
+		       source_kind != economic_account_kind::pile) ||
+	    !source_id || source_revision == UINT64_MAX ||
+	    (!source_retired && !destination_created))
+		return false;
+	economic_source_event result = {};
+	result.kind = economic_source_kind::lifecycle;
+	result.source.bytes[0] = static_cast<uint8_t>(source_kind);
+	for (size_t byte = 0; byte < 8; ++byte)
+		result.source.bytes[1 + byte] = static_cast<uint8_t>(source_id >> (byte * 8));
+	std::memcpy(result.source.bytes.data() + 9, "COINACC", 7);
+	for (size_t byte = 0; byte < 8; ++byte)
+		result.generation.bytes[byte] =
+			static_cast<uint8_t>(source_revision >> (byte * 8));
+	std::memcpy(result.generation.bytes.data() + 8, "COINLIFE", 8);
+	result.slot = (source_retired ? 1U : 0U) | (destination_created ? 2U : 0U);
+	*event = result;
+	return true;
 }
 
 bool coin_transfer_accounting_command_supported(const critical_command &root) noexcept

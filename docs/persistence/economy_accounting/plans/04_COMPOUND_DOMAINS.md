@@ -27,16 +27,19 @@ disposable database and real-PC fixture.
 
 ## Work
 
-1. For shop buy/sell and finite roaming keeper cash, model actual price, seller
-   proceeds, fees, item UID transfer, and keeper identity. Preserve the VNUM
-   11005 gameplay exception without treating the VNUM as an account. Preserve
-   SQL and flatfile semantics and test a failed cash/custody leg.
+1. For shop buy/sell and keeper cash, balance transactions against a shared system
+   sink/issuance account rather than per-keeper bank accounts. Preserve keeper
+   identity, shop ID, and dynamic item properties on metadata and ownership logs.
+   Preserve SQL and flatfile semantics and test a failed cash/custody leg.
 2. For collector purchases, record the money sink and item custody/destruction
    under the accepted root. Preserve disabled gem barter as refusal.
 3. For auction listing, bid, outbid, settlement, claim collection, and trusted
-   removal, give escrow and claims durable lifetimes and source links. Settlement
-   spends escrow, never the buyer wallet a second time. Keep current trusted
-   removal behavior, including the absence of an automatic reimbursement.
+   removal, give escrow and claims durable lifetimes and source links. Outbid funds
+   credit automatically to the bidder's pending claim account (credit balance)
+   instead of filling their physical wallet. New bids apply available claim credit
+   first, debiting only the remaining delta from the wallet, with structured
+   command feedback. Settlement spends escrow, never the buyer wallet a second time.
+   Keep current trusted removal behavior, including the absence of an automatic reimbursement.
 4. For crafting, forge, smith/refine, and spells that consume inputs, bind the
    selected outcome, input UIDs, costs, output source event, and item grant.
    Record intended gameplay failure as consumed inputs/cost with no output when
@@ -45,10 +48,12 @@ disposable database and real-PC fixture.
 5. For player death, corpse creation/loot, resurrection, and restitution,
    account for wallet-to-pile creation, pile custody/value consumption, original
    item handoffs, pre-claim drops, and restored wallet. Keep each death batch
-   and later resurrection as its own operation. Finish the durable disputed
-   custody route so an unassisted player reaches a terminal, authenticated
-   recovery state with original UIDs and money recoverable; do not delete or
-   force-extract conflicting payloads.
+   and later resurrection as its own operation. Death async custody drain must
+   have a strict bounded timeout; if delayed, transition into sealed disputed
+   custody and unconditionally release the descriptor to the account menu so
+   characters are never stranded in limbo. Resurrection reverses unlooted corpse
+   items back to the player; any temporary gear currently equipped by the player
+   is dropped to the room floor before corpse items transfer.
 6. Port supported composites to flatfile after SQL proof. Explicitly refuse
    any unported active-epoch domain route before the first native mutation.
 

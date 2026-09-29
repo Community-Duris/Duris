@@ -153,6 +153,19 @@ int main()
 	       plan.accounts[0].before == plan.accounts[0].after &&
 	       plan.accounts[0].before[0] == 3000 &&
 	       plan.metadata.reason == economic_reason::auction_cancel);
+	auto no_bid_removal = staged;
+	no_bid_removal.winner_pid = 0;
+	no_bid_removal.winning_bid_operation = {};
+	before = authority(no_bid_removal, accounts(false), no_bid_removal.seller_pid, 0);
+	const auto remove_no_bid = command(auction_action::remove, 7, 0, no_bid_removal,
+					   before.accounts, before.epoch);
+	assert(economic_intent_decode(remove_no_bid.accounting_intent, &intent) ==
+	       economic_accounting_error::ok);
+	assert(auction_settlement_accounting_plan(remove_no_bid, intent, before,
+						  result(auction_action::remove, no_bid_removal),
+						  &plan) == economic_accounting_error::ok);
+	assert(plan.accounts.size() == 1 && plan.accounts[0].before == economic_coin_vector{} &&
+	       plan.accounts[0].after == economic_coin_vector{} && plan.postings.empty());
 	auto expired = staged;
 	expired.winner_pid = 0;
 	expired.winning_bid_operation = {};

@@ -35,7 +35,7 @@ RUNTIME_VERIFY = ROOT / "migrations/verify_runtime_compatibility.sh"
 VALIDATOR = ROOT / "scripts/validate_runtime_compatibility.py"
 
 BOOTSTRAP_TABLE_COUNT = 203
-RUNTIME_TABLE_COUNT = 220
+RUNTIME_TABLE_COUNT = 221
 
 NEW_TABLES = ("telemetry_cohort_member", "telemetry_rollup_session")
 SESSION_TABLE = "telemetry_rollup_session"
@@ -805,7 +805,8 @@ def setup_full_schema(engine: Engine, manifest: object) -> dict[str, object]:
             # later verifiers check the resulting shape on both passes.
             stale_after_later_additive = (
                 replay == 2 and step.migration_id in {
-                    "0014_telemetry_storage", "0033_economic_sql_lifecycle_owner"
+                    "0014_telemetry_storage", "0031_economy_accounting",
+                    "0033_economic_sql_lifecycle_owner"
                 }
             )
             result = (

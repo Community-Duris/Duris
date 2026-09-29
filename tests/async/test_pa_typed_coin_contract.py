@@ -76,6 +76,15 @@ class TypedCoinRootContract(unittest.TestCase):
             TRANSACTION,
         )
 
+    def test_duplicate_lifecycle_source_claim_is_terminal(self):
+        record_body = ACCOUNTING[ACCOUNTING.index("void insert_source_claim("):]
+        record_body = record_body[:record_body.index("void coin_fields(")]
+        self.assertIn("error.code == 1062", record_body)
+        self.assertIn("throw failure{ EEXIST }", record_body)
+        apply_body = REPOSITORY[REPOSITORY.index("critical_apply_result critical_command_repository_apply("):]
+        self.assertIn("accounted_coin || accounted_item", apply_body)
+        self.assertIn("error == EEXIST", apply_body)
+
 
 if __name__ == "__main__":
     unittest.main()

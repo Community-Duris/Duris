@@ -54,6 +54,9 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 				payload.reason == currency_reason_type::chaos_starter_reward ?
 					economic_chaos_starter_bank_intent(
 						admission, meta.epoch, wallet, bank, &expected) :
+				payload.reason == currency_reason_type::wallet_reward ?
+					economic_quest_wallet_reward_intent(
+						admission, meta.epoch, wallet, bank, &expected) :
 					economic_bank_transfer_intent(admission, meta.epoch, wallet,
 								      bank, &expected);
 			if (result != error::ok)
@@ -107,7 +110,11 @@ bool economic_flatfile_command_admission_supported(const critical_command &comma
 		if (!currency_command_decode_payload(command, &payload) ||
 		    (payload.reason != currency_reason_type::atm_deposit &&
 		     payload.reason != currency_reason_type::atm_withdraw &&
-		     payload.reason != currency_reason_type::chaos_starter_reward))
+	     payload.reason != currency_reason_type::chaos_starter_reward &&
+	     !(payload.reason == currency_reason_type::wallet_reward &&
+	       payload.reason_id > 0 &&
+	       command.source_site == critical_source_site::recovery &&
+	       command.deadline_class == critical_deadline_class::recovery)))
 			return false;
 	}
 	return (command.type == critical_command_type::account_bank ||

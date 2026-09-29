@@ -1003,7 +1003,8 @@ static P_char bandage_target(uint64_t runtime_id)
 	return NULL;
 }
 
-static bool publish_bandage_consumption(P_char actor, bool committed, const item_transfer_result &,
+static bool publish_bandage_consumption(const critical_operation_id & /*operation_id*/,
+					P_char actor, bool committed, const item_transfer_result &,
 					unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
 	bandage_consumption_context context = {};

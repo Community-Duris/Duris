@@ -103,6 +103,8 @@ bool source_kind_allowed(economic_reason reason, economic_source_kind kind)
 {
 	switch (reason)
 	{
+	case economic_reason::coin_transfer:
+		return kind == economic_source_kind::lifecycle;
 	case economic_reason::quest_reward:
 		return kind == economic_source_kind::quest_completion;
 	case economic_reason::quest_cost:

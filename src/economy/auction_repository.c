@@ -509,6 +509,55 @@ bool stage_money(MYSQL *connection, uint32_t pid, int64_t amount)
 			       "claim_revision=claim_revision+1");
 }
 
+bool lock_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t *money,
+				uint64_t *revision)
+{
+	if (!pid || !money || !revision ||
+	    !execute(connection,
+		     "SELECT money,claim_revision FROM auction_money_pickups WHERE pid=" +
+			     std::to_string(pid) + " FOR UPDATE"))
+		return false;
+	MYSQL_RES *query = mysql_store_result(connection);
+	MYSQL_ROW row = query ? mysql_fetch_row(query) : nullptr;
+	if (!row)
+	{
+		const bool no_rows = query && mysql_num_rows(query) == 0;
+		if (query)
+			mysql_free_result(query);
+		if (no_rows)
+		{
+			*money = 0;
+			*revision = 0;
+			return true;
+		}
+		return false;
+	}
+	uint64_t parsed_money = 0;
+	const bool valid = parse_u64(row[0], &parsed_money) && parsed_money <= UINT_MAX &&
+			    parse_u64(row[1], revision);
+	if (query)
+		mysql_free_result(query);
+	if (!valid)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	*money = static_cast<int64_t>(parsed_money);
+	return true;
+}
+
+bool debit_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t amount,
+				 uint64_t revision)
+{
+	return pid && amount > 0 && revision != UINT64_MAX &&
+	       execute(connection,
+		       "UPDATE auction_money_pickups SET money=money-" + std::to_string(amount) +
+			       ",claim_revision=claim_revision+1 WHERE pid=" +
+			       std::to_string(pid) + " AND money>=" + std::to_string(amount) +
+			       " AND claim_revision=" + std::to_string(revision)) &&
+	       mysql_affected_rows(connection) == 1;
+}
+
 bool stage_items(MYSQL *connection, uint32_t auction_id, uint32_t pid)
 {
 	return pid && execute(connection,
@@ -634,11 +683,30 @@ static bool auction_repository_execute_impl(MYSQL *connection, const critical_co
 		}
 		const int64_t to_pay =
 			auction.winner_pid == payload.actor_pid ? bid - auction.cur_price : bid;
-		if (!apply_wallet_delta(connection, command, payload, -to_pay, &wallet,
+		int64_t claim_balance = 0;
+		uint64_t claim_revision = 0;
+		if (!lock_auction_claim_balance(connection, payload.actor_pid, &claim_balance,
+						&claim_revision))
+			return false;
+		const int64_t claim_credit_used = std::min(to_pay, claim_balance);
+		if (claim_credit_used && claim_revision == UINT64_MAX)
+		{
+			*result_code = ERANGE;
+			return true;
+		}
+		const int64_t wallet_to_pay = to_pay - claim_credit_used;
+		if (!apply_wallet_delta(connection, command, payload, -wallet_to_pay, &wallet,
 					result_code))
 			return false;
 		if (*result_code)
 			return true;
+		if (claim_credit_used &&
+		    !debit_auction_claim_balance(connection, payload.actor_pid, claim_credit_used,
+						 claim_revision))
+		{
+			errno = EILSEQ;
+			return false;
+		}
 		const uint32_t previous_bidder = auction.winner_pid;
 		if (previous_bidder && previous_bidder != payload.actor_pid &&
 		    !stage_money(connection, previous_bidder, auction.cur_price))
@@ -681,7 +749,8 @@ static bool auction_repository_execute_impl(MYSQL *connection, const critical_co
 		result->winner_pid = payload.actor_pid;
 		result->previous_bidder_pid = previous_bidder;
 		result->final_price = bid;
-		result->wallet_value_delta = -to_pay;
+		result->wallet_value_delta = -wallet_to_pay;
+		result->claim_credit_used = claim_credit_used;
 		result->wallet = wallet.wallet;
 		result->bank = wallet.bank;
 		result->wallet_revision = wallet.wallet_revision;

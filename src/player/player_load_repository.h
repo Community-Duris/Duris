@@ -5,11 +5,13 @@
 #include "persistence/gameplay_read_state.h"
 #include "player/player_death_recovery_query.h"
 #include "player/player_snapshot.h"
+#include "item/quest_reward_continuation.h"
 
 #include <array>
 #include <cstdint>
 #include <mysql/mysql.h>
 #include <string>
+#include <vector>
 
 constexpr uint32_t PLAYER_LOAD_SCHEMA_VERSION = 1;
 constexpr size_t PLAYER_LOAD_ACCOUNT_MAX = 50;
@@ -19,6 +21,7 @@ constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
 constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_DEATH_GATE_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = 1;
 // The primary-key lock precedes the consistent view. Name-based requests also
 // resolve the PID before starting that transaction, then revalidate under lock.
 constexpr size_t PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX = 1;
@@ -26,7 +29,7 @@ constexpr size_t PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_PID_QUERY_MAX =
 	PLAYER_LOAD_BASE_QUERY_MAX + PLAYER_LOAD_RESTITUTION_QUERY_MAX +
 	PLAYER_LOAD_PET_CUSTODY_QUERY_MAX + PLAYER_LOAD_DEATH_GATE_QUERY_MAX +
-	PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX;
+	PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX + PLAYER_LOAD_QUEST_REWARD_QUERY_MAX;
 constexpr size_t PLAYER_LOAD_QUERY_MAX =
 	PLAYER_LOAD_PID_QUERY_MAX + PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
@@ -175,6 +178,28 @@ struct player_load_metrics
 	uint64_t transaction_usec = 0;
 };
 
+struct player_load_quest_reward
+{
+	critical_operation_id offering_operation = {};
+	std::vector<uint8_t> continuation;
+	quest_reward_continuation terms;
+	uint64_t xp_applied_mask = 0;
+};
+
+struct player_load_quest_xp_entitlement
+{
+	critical_operation_id offering_operation = {};
+	quest_reward_continuation terms;
+	uint32_t reward_index = 0;
+	uint32_t amount = 0;
+};
+
+struct player_load_spell_effect_receipt
+{
+	critical_operation_id operation_id = {};
+	uint32_t effect_id = 0;
+};
+
 struct player_load_result
 {
 	uint64_t request_id = 0;
@@ -203,6 +228,9 @@ struct player_load_result
 	size_t repaired_item_rows = 0;
 	std::vector<player_load_item_identity> item_identities;
 	std::vector<player_load_pet_identity> pet_identities;
+	std::vector<player_load_quest_reward> pending_quest_rewards;
+	std::vector<player_load_quest_xp_entitlement> pending_quest_xp_entitlements;
+	std::vector<player_load_spell_effect_receipt> spell_effect_receipts;
 	player_load_read_mask_t read_components = 0;
 	std::vector<int64_t> recent_pvp_deaths;
 	std::vector<int32_t> completed_epic_zones;

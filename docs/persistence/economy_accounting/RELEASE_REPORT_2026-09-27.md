@@ -966,3 +966,107 @@ flatfile binary. It failed as expected: `expected 1 reward after ack crash,
 found []`. This is an observed recovery failure, separate from the passing
 normal quest cold-restart journey. Quest completion must retain a durable
 reward obligation through publication acknowledgement before Step 1 can pass.
+
+## Quest continuation format checkpoint (2026-09-28)
+
+`finish-accounting` now encodes a bounded, typed quest continuation in item
+transfer payload version 9. At offering submission, it snapshots the player,
+quest and mobile identifiers, room VNUM, completion time, consumed root UIDs,
+and ordered reward goal types and amounts. The decoder still accepts versions
+2 through 8; the focused compatibility harness rejects truncated or oversized
+continuations, mismatched player/root identities, and continuations attached
+to unrelated movement reasons. The durable-offering harness verifies the
+captured reward terms. The ordinary accounting validator and generated-matrix
+check pass with 861 routes and all 2,731 current unique sites mapped.
+
+This is a format and capture checkpoint, not a recovered quest completion.
+The SQL and flatfile authorities still need to retain the obligation after
+offering publication acknowledgement, record effect receipts, and replay it
+without the original NPC or quest catalog. The post-ack crash acceptance case
+and the release validator remain blocked until those paths pass on an
+integrated binary.
+
+## Flatfile quest obligation checkpoint (2026-09-28)
+
+The flatfile item ownership catalog now stores the validated quest continuation
+in the same authority image as a successful offering destruction. Catalog
+format 6 keeps earlier versions readable. A pending lookup returns the exact
+operation ID and reward terms after a fresh load; an acknowledgement marks the
+obligation complete with an idempotent catalog update. The repository harness
+proved that a stale, rejected offering creates no obligation, a committed
+offering survives catalog reload and command replay once, another player cannot
+acknowledge it, and acknowledgement survives another reload. A catalog-format
+5 fixture with an existing operation still loads and replays. The maintained
+server build and flatfile repository harness passed.
+
+The SQL authority still needed the same atomic obligation at this checkpoint.
+Neither backend had a player-ready reward executor with durable per-effect
+receipts. The flatfile acknowledgement API was not called by gameplay yet.
+The post-ack process-crash acceptance test therefore remained a known failure.
+
+## SQL quest obligation checkpoint (2026-09-28)
+
+Migration `0045_quest_reward_obligation` adds a retained obligation row keyed
+by the offering operation. The SQL item transfer transaction inserts the exact
+validated continuation after successful custody mutation and before the inbox
+result and commit. A rejected offering inserts no row. Apply, duplicate replay,
+and explicit reconcile verify that the retained bytes and player identity
+match the original command. The migration is additive and re-runnable; the
+runtime table inventory, lifecycle registry, and pinned MySQL 8.0/MariaDB
+10.11 metadata fingerprints were updated from disposable engine measurements.
+
+Both disposable engine schemas applied all 45 migrations, passed each new
+migration verifier, passed the schema-only runtime compatibility check, and
+accepted an idempotent migration rerun. The focused MariaDB item transfer
+harness passed a stale quest offering with no obligation and a committed
+offering with exactly one custody ledger entry and exact persisted reward
+terms through duplicate apply and reconcile. The maintained GCC 13.3 server
+build, 14 immutable-migration runner tests, 9 runtime-boot contract tests,
+51 writer-route contract tests, and 2,699 writer-site checks passed. The
+writer matrix still records the accounting release as
+`BLOCKED`; this checkpoint stores the SQL obligation but does not execute or
+acknowledge reward effects after reconnect. The post-ack crash acceptance test
+still needs a player-ready replay path with per-effect deduplication.
+
+## Quest obligation recovery-read checkpoint (2026-09-28)
+
+The version-1 continuation now has a bounded decoder shared by transfer
+validation and the flatfile pending/acknowledgement reads. It checks version,
+exact length, player and quest fields, root UIDs, and reward terms before any
+pending work is exposed. A SQL worker-side reader loads at most 64 pending
+obligations for one player, verifies the committed inbox result and exact
+continuation, and fails the whole read on malformed or excess rows. A fresh
+MariaDB connection found the committed offering and its reward terms in the
+focused transfer harness; an intentionally malformed row was rejected without
+overwriting the caller's prior result. The v2-v9 transfer compatibility test,
+flatfile item repository harness, and maintained SQL and flatfile server
+builds passed.
+
+The default `run_quest_reward_ack_crash.py` was rerun against this flatfile
+binary. It still failed after cold restart with
+`expected 1 reward after ack crash, found []`: the offerings remained consumed
+and the item was absent.
+This directly confirms that repository lookup alone does not close the
+publication-ack crash window.
+
+No player-ready executor consumes these reads yet. Version 1 also lacks a
+frozen zone-story definition and party/XP context, so it cannot by itself
+prove the full quest status and group reward outcome after a catalog or party
+change. Reward effect receipts, safe acknowledgement, and the post-ack crash
+journey remain open; the accounting release decision stays `BLOCKED`.
+
+## Quest acknowledgement worker checkpoint (2026-09-28)
+
+The SQL idempotent acknowledgement repository call now runs through a bounded
+worker queue. The worker starts after world boot, drains acknowledgements on
+the persistence pulse, and stops before the SQL pool shuts down. Flatfile
+acknowledgements use the same queue and execute their catalog write off the
+game thread. Failed acknowledgements leave the obligation pending and emit a
+redacted persistence alert. Both the maintained SQL server and flatfile server
+builds pass with this worker enabled.
+
+The worker has no gameplay producer yet: player-ready loads do not submit reward
+effects, and successful item publication does not enqueue acknowledgement. No
+player-ready reward executor consumes the loaded terms. Consequently the
+post-ack process-crash acceptance test remains failing and the accounting
+release decision stays `BLOCKED`.

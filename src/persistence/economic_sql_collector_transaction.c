@@ -144,6 +144,31 @@ bool identity(const critical_command &command, economic_frozen_intent *intent,
 	return status == economic_accounting_error::ok && expected == command.accounting_intent;
 }
 
+bool realized_price_sql_value(const critical_command &command, const economic_frozen_intent &intent,
+			      bool applied, std::string *value)
+{
+	if (!value)
+		return false;
+	*value = "NULL";
+	if (!applied || intent.admission.metadata.reason != economic_reason::collector_purchase)
+		return true;
+	collector_command_payload payload = {};
+	collector::record listing;
+	const auto &facts = intent.admission.facts;
+	if (!collector_command_decode_payload(command, &payload) ||
+	    payload.action != collector_action::purchase ||
+	    facts.size() != 16 + collector::encoded_record_bytes ||
+	    collector::record_decode(facts.data() + 16, collector::encoded_record_bytes,
+				     &listing) != collector::codec_result::ok ||
+	    !listing.price_value || listing.price_value > static_cast<uint64_t>(INT64_MAX))
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	*value = std::to_string(listing.price_value);
+	return true;
+}
+
 bool insert_operation(MYSQL *connection, const critical_command &command,
 		      const economic_frozen_intent &intent, const economic_accounting_plan *plan,
 		      unsigned int result_code)
@@ -151,6 +176,9 @@ bool insert_operation(MYSQL *connection, const critical_command &command,
 	const auto &meta = intent.admission.metadata;
 	std::vector<uint8_t> encoded_plan;
 	economic_digest plan_digest = {}, intent_digest = {};
+	std::string realized_price_sql;
+	if (!realized_price_sql_value(command, intent, plan != nullptr, &realized_price_sql))
+		return false;
 	if (economic_intent_digest(intent, &intent_digest) != economic_accounting_error::ok)
 	{
 		errno = EILSEQ;
@@ -170,7 +198,8 @@ bool insert_operation(MYSQL *connection, const critical_command &command,
 	const std::string sql =
 		"INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,"
 		"original_operation_id,accounting_version,writer_id,policy_version,compiler_version,"
-		"actor_kind,actor_id,reason,source_event,intent_digest,domain_digest,plan_digest,"
+		"actor_kind,actor_id,reason,source_event,realized_price_copper,intent_digest,"
+		"domain_digest,plan_digest,"
 		"canonical_intent,canonical_plan,outcome,result_code,account_count,posting_count,"
 		"child_count,item_event_count,before_witness_count,after_witness_count) VALUES(" +
 		id(command.operation_id) + "," + id(meta.lineage) + "," + id(meta.epoch) + "," +
@@ -181,9 +210,10 @@ bool insert_operation(MYSQL *connection, const critical_command &command,
 		std::to_string(meta.policy_version) + "," + std::to_string(meta.compiler_version) +
 		"," + std::to_string(static_cast<uint8_t>(meta.actor_kind)) + "," +
 		std::to_string(meta.actor_id) + "," +
-		std::to_string(static_cast<uint16_t>(meta.reason)) + ",NULL," + hex(intent_digest) +
-		"," + hex(intent.domain_digest) + "," + (plan ? hex(plan_digest) : "NULL") + "," +
-		hex(command.accounting_intent) + "," + (plan ? hex(encoded_plan) : "NULL") + "," +
+		std::to_string(static_cast<uint16_t>(meta.reason)) + ",NULL," + realized_price_sql +
+		"," + hex(intent_digest) + "," + hex(intent.domain_digest) + "," +
+		(plan ? hex(plan_digest) : "NULL") + "," + hex(command.accounting_intent) + "," +
+		(plan ? hex(encoded_plan) : "NULL") + "," +
 		(plan ? "1,0," : "2," + std::to_string(result_code) + ",") +
 		std::to_string(plan ? plan->accounts.size() : 0) + "," +
 		std::to_string(plan ? plan->postings.size() : 0) + "," +
@@ -554,6 +584,10 @@ unsigned int economic_sql_collector_verify_retained(MYSQL *connection,
 		else if (row[0] || result.record_present)
 			return EILSEQ;
 		const auto &meta = intent.admission.metadata;
+		std::string realized_price_sql;
+		if (!realized_price_sql_value(command, intent, result_code == 0,
+					      &realized_price_sql))
+			return EILSEQ;
 		const std::string original =
 			critical_operation_id_is_zero(meta.original_operation_id) ?
 				"original_operation_id IS NULL" :
@@ -562,6 +596,8 @@ unsigned int economic_sql_collector_verify_retained(MYSQL *connection,
 			where + " AND lineage=" + id(meta.lineage) +
 			" AND epoch=" + id(meta.epoch) + " AND " + original +
 			" AND source_event IS NULL" +
+			" AND realized_price_copper " +
+			(realized_price_sql == "NULL" ? "IS NULL" : "=" + realized_price_sql) +
 			" AND canonical_intent=" + hex(command.accounting_intent) +
 			" AND intent_digest=" + hex(intent_digest) +
 			" AND domain_digest=" + hex(intent.domain_digest) +

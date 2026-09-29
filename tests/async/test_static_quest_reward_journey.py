@@ -60,6 +60,7 @@ Q
 Lapney accepts your offering and blesses your journey.
 ~
 R I 22805
+R C 1000
 G I 22802
 G I 22803
 G I 22804

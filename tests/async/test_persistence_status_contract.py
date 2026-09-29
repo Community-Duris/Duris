@@ -22,6 +22,7 @@ checks = [
     ("existing trusted gate covers persistence", "choice = world_values[world_index]) > WORLD_ZONES" in actinf),
     ("fresh snapshot getters are inside renderer", all(token in actinf[actinf.index("static void show_world_persistence(P_char ch)"):actinf.index("void do_world", actinf.index("static void show_world_persistence(P_char ch)"))] for token in ["persistence_query_snapshot_copy", "persistence_item_event_health_snapshot_copy", "persistence_scalar_event_health_snapshot_copy", "persistence_large_event_health_snapshot_copy", "persistence_dirty_save_snapshot_copy", "persistence_deferred_save_snapshot_copy", "redis_shared_command_health_copy"])),
     ("flat shop materialization capacity is reported", all(token in actinf for token in ["flatfile_shop_trade_materialization_read_health", "shop_materialization state=%s", "reclaimable=%llu"])),
+    ("item movement publication waits are observable", all(token in actinf for token in ["item_movement_transaction_health_copy", "item_movements state=%s", "publication_owner_waiting=%llu", "ack_pending=%llu"])),
     ("top output is bounded with latency buckets", "top_site_limit = 8" in actinf and "site_index < rendered_sites" in actinf and "latency_buckets[7]" in actinf),
     ("status states are explicit", all(token in actinf for token in ["state=empty", "state=disabled", "state=unavailable", "heartbeat=unavailable", "registry_overflow", "failed_unscheduled", "oldest_save_age_ms"])),
     ("deferred retry state remains observable", "slot->retry_delay" in actoth and "snapshot.failures" in actoth),

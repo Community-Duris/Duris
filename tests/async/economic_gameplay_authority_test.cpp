@@ -136,6 +136,19 @@ critical_command wallet_reason_command(currency_reason_type reason, uint32_t pid
 				      critical_deadline_class::interactive));
 	return command;
 }
+critical_command quest_wallet_reward_command()
+{
+	auto command = wallet_reason_command(currency_reason_type::wallet_reward, 7);
+	currency_command_payload payload = {};
+	assert(currency_command_decode_payload(command, &payload));
+	payload.reason_id = 1;
+	assert(currency_command_encode_payload(payload, &command.payload));
+	command.source_site = critical_source_site::recovery;
+	command.deadline_class = critical_deadline_class::recovery;
+	command.expected_revisions[0].revision = UINT64_MAX;
+	command.expected_revisions[1].revision = UINT64_MAX;
+	return command;
+}
 coin_transfer_endpoint wallet_endpoint(uint32_t pid, const char *account_name, uint8_t operation,
 				       bool source)
 {
@@ -267,6 +280,15 @@ void qualified_projection_regressions()
 		"fixture", 1, { id(1), economic_account_kind::bank, 202, 1 } } };
 	const std::array<economic_gameplay_bank_mapping, 0> no_banks = {};
 	assert(lifecycle_access::install(id(1), id(2), id(3), wallets, banks) == error::ok);
+	auto quest_reward = quest_wallet_reward_command();
+	assert(economic_gameplay_authority::prepare_currency(&quest_reward) == error::ok);
+	assert(supported_candidate(quest_reward));
+	economic_frozen_intent quest_reward_intent;
+	assert(economic_intent_decode(quest_reward.accounting_intent, &quest_reward_intent) ==
+	       error::ok);
+	assert(quest_reward_intent.admission.metadata.writer_id ==
+		       ECONOMIC_WRITER_QUEST_WALLET_REWARD &&
+	       quest_reward_intent.admission.metadata.reason == economic_reason::quest_reward);
 
 	// The ordinary projection still freezes wallet roots and shared-bank roots.
 	auto regular_root = wallet_root(60);
@@ -304,6 +326,8 @@ void qualified_projection_regressions()
 	const auto frozen_withdraw_bytes = frozen_withdraw;
 	const auto frozen_starter_bytes = frozen_starter;
 	const auto frozen_reward = frozen_wallet_reason(currency_reason_type::wallet_reward);
+	auto frozen_quest_reward = quest_reward;
+	frozen_quest_reward.accepted_at_usec = 106;
 	const auto frozen_spend = frozen_wallet_reason(currency_reason_type::wallet_spend);
 	// Upstream also admits standalone item roots in regular mode. Keep a real
 	// frozen one to prove that qualification closes the historical fast path.
@@ -353,7 +377,8 @@ void qualified_projection_regressions()
 	       chaos_starter_bank(),
 	       wallet_reason_command(currency_reason_type::wallet_reward, 7),
 	       wallet_reason_command(currency_reason_type::wallet_spend, 7), frozen_deposit_bytes,
-	       frozen_withdraw_bytes, frozen_starter_bytes, frozen_reward, frozen_spend })
+	       frozen_withdraw_bytes, frozen_starter_bytes, frozen_reward, frozen_quest_reward,
+	       frozen_spend })
 	{
 		const auto before = command;
 		assert(economic_gameplay_authority::prepare_currency(&command) ==

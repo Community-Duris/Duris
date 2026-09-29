@@ -14,6 +14,8 @@
 #include "item/artifact_mana.h"
 #include "item/device_actions.h"
 #include "persistence/persistence_log.h"
+#include "persistence/quest_reward_obligation_pipeline.h"
+#include "world/quest_reward_recovery.h"
 #include "core/structs.h"
 #include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
@@ -80,6 +82,7 @@
 #include "redis/redis_world_runtime.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
+#include "magic/spell_item_lifecycle.h"
 #include "item/enhance.h"
 #include "economy/crafting.h"
 #include "account/account_recovery.h"
@@ -284,13 +287,29 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	player_death_restitution_runtime_handle_completions(completions, count);
 }
 
+static void quest_reward_ack_pipeline_pulse(void)
+{
+	quest_reward_ack_completion completions[QUEST_REWARD_ACK_PIPELINE_PULSE_MAX] = {};
+	const size_t count = quest_reward_obligation_pipeline_pulse(
+		completions, QUEST_REWARD_ACK_PIPELINE_PULSE_MAX);
+	for (size_t index = 0; index < count; ++index)
+		if (completions[index].result != quest_reward_obligation_result::ok &&
+		    completions[index].result !=
+			    quest_reward_obligation_result::already_acknowledged)
+			persistence_alert(AVATAR, "quest_reward", "offering", "redacted",
+					  "acknowledge", "retained_pending", "error=%u",
+					  completions[index].error_code);
+}
+
 static bool critical_gameplay_restore_replayed_command(const critical_command &command,
 						       void *context)
 {
 	// Replay runs under the coordinator mutex. Neither observer may call back
 	// into the coordinator; refusal keeps the journal and fails startup closed.
 	return player_death_restitution_runtime_restore_replayed_command(command, context) &&
-	       currency_transaction_restore_replayed_command(command);
+	       currency_transaction_restore_replayed_command(command) &&
+	       spell_item_lifecycle_restore_replayed_command(command) &&
+	       item_movement_transaction_restore_replayed_command(command);
 }
 
 #ifndef __NO_MYSQL__
@@ -917,6 +936,9 @@ int run_the_game(int port, int sslport)
 	if (!player_load_pipeline_init())
 		logit(LOG_STATUS,
 		      "Player load pipeline unavailable; existing-character login will use synchronous fallback.");
+	if (!quest_reward_obligation_pipeline_init())
+		logit(LOG_STATUS,
+		      "Quest reward acknowledgement worker unavailable; obligations remain pending.");
 	/* Same rule for the mail worker: joinable thread only after the fatal loads. */
 	if (!account_recovery_init())
 		logit(LOG_STATUS,
@@ -1026,6 +1048,7 @@ int run_the_game(int port, int sslport)
 	kingdom_shutdown();
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
+	quest_reward_obligation_pipeline_shutdown();
 	player_load_pipeline_shutdown();
 	collector_maintenance_shutdown();
 	collector_listing_pipeline_shutdown();
@@ -2030,6 +2053,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 			critical_command_coordinator_pulse(critical_completions, 64);
 		critical_gameplay_handle_completions(critical_completions,
 						     critical_completion_count);
+		quest_reward_ack_pipeline_pulse();
 		auction_transaction_publish_outbox();
 		corpse_lifecycle_transaction_publish_outbox();
 		collector_transaction_publish_outbox();
@@ -2044,6 +2068,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 						critical_completions[index].failure_stage),
 					"integrity_failure", "operation metadata redacted");
 		player_save_pipeline_pulse();
+		quest_reward_recovery_pulse();
 		persistence_pulse_character_saves();
 		death_extract_retry_pulse();
 		player_load_result load_completions[32] = {};

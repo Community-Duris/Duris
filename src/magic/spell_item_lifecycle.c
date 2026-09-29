@@ -346,7 +346,8 @@ static bool publish_nonplayer_soulbind(P_char source, P_char victim, P_obj objec
 	return OBJ_CARRIED_BY(object, victim);
 }
 
-static bool soulbind_transfer_publication(P_char /*callback_actor*/, bool committed,
+static bool soulbind_transfer_publication(const critical_operation_id & /*operation_id*/,
+						  P_char /*callback_actor*/, bool committed,
 					  const item_transfer_result &result,
 					  unsigned int error_code, const uint8_t *encoded,
 					  size_t encoded_size)
@@ -394,7 +395,8 @@ static bool soulbind_transfer_publication(P_char /*callback_actor*/, bool commit
 				  context.victim_pid);
 		return false;
 	}
-	if (owner->in_room != context.source_room || victim->in_room != context.victim_room)
+	if ((context.source_room >= 0 && owner->in_room != context.source_room) ||
+	    (context.victim_room >= 0 && victim->in_room != context.victim_room))
 		logit(LOG_FILE,
 		      "item_movement: command=soulbind recovering committed publication after room "
 		      "change source_pid=%u victim_pid=%u source_room=%d->%d victim_room=%d->%d",
@@ -477,6 +479,33 @@ static bool soulbind_transfer_publication(P_char /*callback_actor*/, bool commit
 							      PLAYER_COMPONENT_EQUIPMENT |
 							      PLAYER_COMPONENT_INVENTORY);
 	return true;
+}
+
+bool spell_item_lifecycle_restore_replayed_command(const critical_command &command)
+{
+	if (command.type != critical_command_type::item_transfer ||
+	    !command.publication_required)
+		return true;
+	item_transfer_payload payload = {};
+	if (!item_transfer_command_decode_payload(command, &payload))
+		return false;
+	if (payload.reason != item_transfer_reason::soulbind ||
+	    payload.continuation.kind != item_transfer_continuation_kind::soulbind_transfer)
+		return true;
+	if (payload.continuation.data.size() != 1 || payload.continuation.data[0] > 1 ||
+	    !payload.selected_item_uid || payload.from_owner.id > UINT32_MAX ||
+	    payload.to_owner.id > UINT32_MAX)
+		return false;
+	const soulbind_movement_context context = {
+		payload.selected_item_uid,
+		static_cast<uint32_t>(payload.from_owner.id),
+		static_cast<uint32_t>(payload.to_owner.id),
+		-1,
+		-1,
+		payload.continuation.data[0]
+	};
+	return item_movement_transaction_restore_replayed_publication(
+		command, soulbind_transfer_publication, &context, sizeof(context));
 }
 
 struct soulbind_reload_context
@@ -716,11 +745,16 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 				victim->in_room,
 				static_cast<uint8_t>(replace_existing)
 			};
+			const item_transfer_continuation continuation = {
+				item_transfer_continuation_kind::soulbind_transfer,
+				{ static_cast<uint8_t>(replace_existing) }
+			};
 			item_movement_reject reject = item_movement_reject::none;
 			if (!item_movement_transaction_submit(
 				    ch, obj, NULL, source, destination,
 				    item_transfer_reason::soulbind, GET_PID(ch), NULL, &context,
-				    sizeof(context), NULL, &reject, soulbind_transfer_publication))
+				    sizeof(context), NULL, &reject, soulbind_transfer_publication, {}, 0,
+				    continuation))
 			{
 				send_to_char(
 					"The soulbind transfer could not start; the item and recipient were unchanged.\r\n",

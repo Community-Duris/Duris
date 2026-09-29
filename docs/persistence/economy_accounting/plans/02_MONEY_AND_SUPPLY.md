@@ -37,14 +37,13 @@ database for native SQL acceptance.
    do not silently promise a new global bulk atomicity rule. Resolve NPC money
    only after a durable holding lifetime/policy is specified, otherwise refuse
    active-epoch writes before native mutation.
-3. Map rewards, loot, quest/chaos/epic grants, admin grants, blackjack outcomes,
-   costs, taxes, and non-auction pending claims to versioned issuance, expense,
-   restitution, or transfer policy. Identify each logical source event before
-   accepting a new operation ID. A failed reward that stages a claim must not
-   mint again when collected.
-4. Preserve current blackjack semantics: held stake, push refund, win stake plus
-   net issuance, and loss/bust/fold expense. Resolve interrupted-round policy
-   and table/round lifetime before activation.
+3. Map rewards, loot (including mob death coin generation), quest/chaos/epic
+   grants, bartender quest rewards, and admin grants to versioned issuance policy.
+   Identify each logical source event before accepting a new operation ID. A failed
+   reward that stages a claim must not mint again when collected.
+4. Blackjack is permanently deprecated under active epochs. Retain the active-epoch
+   refusal guard; do not implement table/round stake recovery. Schedule post-release
+   removal of legacy card game sources and zone objects.
 5. Make every unsupported cash writer fail at admission in an active epoch.
    Classify direct assignments and special procedures from the writer census,
    removing dead writers only with reachability evidence.

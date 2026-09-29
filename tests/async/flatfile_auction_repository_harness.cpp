@@ -1018,6 +1018,8 @@ int main(int argc, char **argv)
 					    { 2, 0, "buyer-account" }, 86, 87, &error);
 	const auto bidder_claim = map_account(typed_path, economic_account_kind::pending_claim, 0,
 					      { 5, 43, {} }, 88, 89, &error);
+	const auto buyer_claim = map_account(typed_path, economic_account_kind::pending_claim, 0,
+					     { 5, 44, {} }, 92, 93, &error);
 	const auto seller_claim = map_account(typed_path, economic_account_kind::pending_claim, 0,
 					      { 5, 42, {} }, 90, 91, &error);
 	auction_bid_accounting_listing bid_listing;
@@ -1033,6 +1035,7 @@ int main(int argc, char **argv)
 	bid_accounts.wallet = bidder_wallet;
 	bid_accounts.bank = bidder_bank;
 	bid_accounts.escrow = typed_escrow.account;
+	bid_accounts.bidder_claim = bidder_claim;
 	auction_command_payload opening_bid = {};
 	opening_bid.action = auction_action::bid;
 	opening_bid.auction_id = expected_auction_id;
@@ -1091,6 +1094,7 @@ int main(int argc, char **argv)
 	auction_bid_accounting_accounts outbid_accounts = bid_accounts;
 	outbid_accounts.wallet = buyer_wallet;
 	outbid_accounts.bank = buyer_bank;
+	outbid_accounts.bidder_claim = buyer_claim;
 	outbid_accounts.previous_claim = bidder_claim;
 	const auto typed_stale_command = accounted_bid(outbid, 24, bid_listing, outbid_accounts);
 	applied = flatfile_auction_repository_apply_accounted_bid(typed_path, typed_stale_command);
@@ -1211,6 +1215,7 @@ int main(int argc, char **argv)
 	sale_bid_accounts.wallet = bidder_wallet;
 	sale_bid_accounts.bank = bidder_bank;
 	sale_bid_accounts.escrow = sale_escrow;
+	sale_bid_accounts.bidder_claim = bidder_claim;
 	auction_command_payload sale_bid_payload = opening_bid;
 	actor(&sale_bid_payload, 43, "bidder-account", "Bidder", raise_result.wallet_revision,
 	      raise_result.bank_revision);
@@ -1220,8 +1225,12 @@ int main(int argc, char **argv)
 		accounted_bid(sale_bid_payload, 28, sale_bid_listing, sale_bid_accounts);
 	applied = flatfile_auction_repository_apply_accounted_bid(typed_path, sale_bid_command);
 	require(applied.outcome == critical_apply_outcome::applied &&
-			result_of(applied).event_type == auction_event_type::bid_placed,
-		"could not stage accounted timed-sale bid");
+			result_of(applied).event_type == auction_event_type::bid_placed &&
+			result_of(applied).claim_credit_used == 3000 &&
+			result_of(applied).wallet_value_delta == 0,
+		"could not stage accounted timed-sale bid outcome=" +
+			std::to_string(static_cast<unsigned int>(applied.outcome)) + " error=" +
+			std::to_string(applied.error_code));
 	expect_event(typed_path, auction_event_type::bid_placed, sale_auction_id, &error);
 	auction_settlement_listing sale_state;
 	sale_state.auction_id = sale_auction_id;
@@ -1317,6 +1326,7 @@ int main(int argc, char **argv)
 	remove_bid_accounts.wallet = buyer_wallet;
 	remove_bid_accounts.bank = buyer_bank;
 	remove_bid_accounts.escrow = remove_escrow;
+	remove_bid_accounts.bidder_claim = buyer_claim;
 	auction_command_payload remove_bid_payload = outbid;
 	actor(&remove_bid_payload, 44, "buyer-account", "Buyer", typed_buy_result.wallet_revision,
 	      typed_buy_result.bank_revision);
@@ -1480,7 +1490,8 @@ int main(int argc, char **argv)
 					   source_bytes.begin() + offset + 54),
 			"accounted auction source row lost identity, value, or consumption");
 	};
-	check_source(0, outbid_command.operation_id, 1, 43, bidder_claim, 3000, {});
+	check_source(0, outbid_command.operation_id, 1, 43, bidder_claim, 3000,
+		     sale_bid_command.operation_id);
 	check_source(1, buy_command.operation_id, 2, 42, seller_claim, 4500, {});
 	check_source(2, sale_command.operation_id, 2, 42, seller_claim, 2700, {});
 	auction_money_claim_state seller_state;
@@ -1515,21 +1526,6 @@ int main(int argc, char **argv)
 		"accounted auction collection accepted a stale source set");
 	const auto seller_claim_command = accounted_money_claim(
 		seller_claim_payload, 37, typed_wallet, typed_bank, seller_claim, seller_state);
-	auction_money_claim_state bidder_state;
-	bidder_state.beneficiary_pid = 43;
-	bidder_state.money = 3000;
-	bidder_state.revision = 1;
-	bidder_state.sources = { { outbid_command.operation_id, 1, 43, bidder_claim.authority_id,
-				   3000 } };
-	require(flatfile_player_domain_load(typed_path, 43, "bidder-account", 1, &loaded_player,
-					    &error) == flatfile_player_domain_result::ok,
-		"could not load bidder wallet before accounted collection");
-	auction_command_payload bidder_claim_payload = {};
-	bidder_claim_payload.action = auction_action::claim_money;
-	actor(&bidder_claim_payload, 43, "bidder-account", "Bidder",
-	      loaded_player.domains.wallet_revision, loaded_player.domains.bank_revision);
-	const auto bidder_claim_command = accounted_money_claim(
-		bidder_claim_payload, 36, bidder_wallet, bidder_bank, bidder_claim, bidder_state);
 	{
 		std::fstream file(source_path, std::ios::in | std::ios::out | std::ios::binary);
 		require(file.good(), "could not open source catalog for corruption test");
@@ -1541,7 +1537,7 @@ int main(int argc, char **argv)
 		file.write(&value, 1);
 	}
 	applied = flatfile_auction_repository_apply_accounted_money_claim(typed_path,
-									  bidder_claim_command);
+									  seller_claim_command);
 	require(applied.outcome == critical_apply_outcome::terminal_failure &&
 			applied.error_code == EILSEQ,
 		"accounted auction collection accepted a corrupt source catalog");
@@ -1552,25 +1548,26 @@ int main(int argc, char **argv)
 	}
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	applied = flatfile_auction_repository_apply_accounted_money_claim(typed_path,
-									  bidder_claim_command);
+									  seller_claim_command);
 	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
 	require(applied.outcome == critical_apply_outcome::retryable_failure &&
 			fs::exists(typed_domains / ".critical-authority-transaction"),
 		"accounted auction collection did not retain its interrupted journal");
-	const auto bidder_claim_plan = recorded_plan(typed_path, bidder_claim_command, &error);
-	require(bidder_claim_plan.accounts.size() == 2 && bidder_claim_plan.postings.size() == 2 &&
-			bidder_claim_plan.postings[0].copper == 3000 &&
-			bidder_claim_plan.postings[1].copper == -3000 &&
-			bidder_claim_plan.metadata.original_operation_id.bytes ==
-				outbid_command.operation_id.bytes,
-		"recovered auction refund collection lost balanced source evidence");
+	const auto seller_claim_plan = recorded_plan(typed_path, seller_claim_command, &error);
+	require(seller_claim_plan.accounts.size() == 2 &&
+			seller_claim_plan.postings.size() == 2 &&
+			seller_claim_plan.postings[0].copper == 7200 &&
+			seller_claim_plan.postings[1].copper == -7200 &&
+			seller_claim_plan.metadata.original_operation_id.bytes ==
+				buy_command.operation_id.bytes,
+		"recovered auction proceeds collection lost balanced source evidence");
 	applied = flatfile_auction_repository_apply_accounted_money_claim(typed_path,
-									  bidder_claim_command);
+									  seller_claim_command);
 	require(applied.outcome == critical_apply_outcome::already_applied &&
-			flatfile_auction_find_pickup(typed_path, 43, &typed_bidder_pickup,
+			flatfile_auction_find_pickup(typed_path, 42, &typed_seller_pickup,
 						     &error) == flatfile_auction_query_result::ok &&
-			typed_bidder_pickup.money == 0 && typed_bidder_pickup.money_revision == 2,
-		"recovered auction refund collection did not replay");
+			typed_seller_pickup.money == 0 && typed_seller_pickup.money_revision == 3,
+		"recovered auction proceeds collection did not replay");
 	const auto claimed_source_bytes = source_catalog_bytes(source_path);
 	{
 		std::fstream file(source_path, std::ios::in | std::ios::out | std::ios::binary);
@@ -1583,7 +1580,7 @@ int main(int argc, char **argv)
 		file.write(&value, 1);
 	}
 	applied = flatfile_auction_repository_apply_accounted_money_claim(typed_path,
-									  bidder_claim_command);
+									  seller_claim_command);
 	require(applied.outcome == critical_apply_outcome::terminal_failure &&
 			applied.error_code == EILSEQ,
 		"accounted auction claim replay accepted a corrupt source catalog");
@@ -1595,7 +1592,7 @@ int main(int argc, char **argv)
 	applied = flatfile_auction_repository_apply_accounted_money_claim(typed_path,
 									  seller_claim_command);
 	const auto seller_claim_result = result_of(applied);
-	require(applied.outcome == critical_apply_outcome::applied &&
+	require(applied.outcome == critical_apply_outcome::already_applied &&
 			seller_claim_result.wallet_value_delta == 7200 &&
 			flatfile_auction_find_pickup(typed_path, 42, &typed_seller_pickup,
 						     &error) == flatfile_auction_query_result::ok &&
@@ -1604,16 +1601,9 @@ int main(int argc, char **argv)
 				typed_path, seller_claim_command)
 					.outcome == critical_apply_outcome::already_applied,
 		"accounted auction proceeds collection did not consume both sources");
-	const auto seller_claim_plan = recorded_plan(typed_path, seller_claim_command, &error);
-	require(seller_claim_plan.accounts.size() == 2 && seller_claim_plan.postings.size() == 2 &&
-			seller_claim_plan.postings[0].copper == 7200 &&
-			seller_claim_plan.postings[1].copper == -7200 &&
-			seller_claim_plan.metadata.original_operation_id.bytes ==
-				buy_command.operation_id.bytes,
-		"accounted auction proceeds collection lost both source links");
 	source_bytes = source_catalog_bytes(source_path);
 	check_source(0, outbid_command.operation_id, 1, 43, bidder_claim, 3000,
-		     bidder_claim_command.operation_id);
+		     sale_bid_command.operation_id);
 	check_source(1, buy_command.operation_id, 2, 42, seller_claim, 4500,
 		     seller_claim_command.operation_id);
 	check_source(2, sale_command.operation_id, 2, 42, seller_claim, 2700,

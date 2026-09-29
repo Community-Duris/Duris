@@ -429,6 +429,8 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/economic_sql_bank_transaction.o \
 				 persistence/economic_sql_item_transfer_transaction.o \
 				 persistence/critical_command_repository.o \
+				 persistence/quest_reward_obligation_repository.o \
+				 persistence/quest_reward_obligation_pipeline.o \
 				 persistence/player_death_restitution_command.o \
 				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
