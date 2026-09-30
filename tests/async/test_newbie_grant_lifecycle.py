@@ -22,6 +22,7 @@ PRELUDE = r'''
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
+#include "world/handler.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -94,6 +95,10 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
 void __free(void *p, const char *, int) { free(p); }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &)
+{
+    return false;
+}
 void send_to_char(const char *text, P_char ch)
 {
     if (ch && ch->desc) fixture_messages += text;
@@ -109,7 +114,7 @@ P_char find_player_by_pid(int pid)
             return ch;
     return nullptr;
 }
-void obj_to_char(P_obj obj, P_char ch)
+obj_to_char_result obj_to_char_checked(P_obj obj, P_char ch)
 {
     assert(OBJ_NOWHERE(obj));
     // Execute the production publication guard; only the world-list mutation
@@ -124,7 +129,9 @@ void obj_to_char(P_obj obj, P_char ch)
     obj->loc.carrying = ch;
     obj->next_content = ch->carrying;
     ch->carrying = obj;
+    return obj_to_char_result::placed;
 }
+void obj_to_char(P_obj obj, P_char ch) { (void)obj_to_char_checked(obj, ch); }
 void obj_from_char(P_obj obj)
 {
     assert(OBJ_CARRIED(obj));
@@ -747,7 +754,7 @@ int main()
 
 
 def main() -> int:
-    to_char = extract_function("handler.c", "void obj_to_char(")
+    to_char = extract_function("handler.c", "obj_to_char_result obj_to_char_checked(")
     guard = to_char[to_char.index("// A persisted generic item"):
                     to_char.index("if (ch->carrying &&")]
     harness = "\n".join([PRELUDE.replace("PUBLICATION_GUARD", guard), extract_function(

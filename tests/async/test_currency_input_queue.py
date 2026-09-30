@@ -381,7 +381,8 @@ COIN_GET = (ACTOBJ[ACTOBJ.index("struct synchronous_get_item"):ACTOBJ.index("str
 static std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 static bulk_get_state *corpse_bulk_get(P_char, uint64_t) { return NULL; }
 static void announce_corpse_bulk_get(P_char, bulk_get_state &, P_obj) {}
-static bool item_get_ack_publication = false, item_get_deferred = false, item_get_rejected = false;
+enum class get_phase { admission, publication };
+static bool item_get_deferred = false, item_get_rejected = false;
 static int bulk_total = 0;
 static bool submit_coin_get(P_char, P_obj, P_obj, int,
     const coin_get_submission_options * = nullptr);
@@ -409,12 +410,13 @@ bool bulk_get_source_matches(const bulk_get_state &, P_obj container, P_obj mone
 { return money && OBJ_INSIDE(money) && money->loc.inside == container; }
 void MakeScrap(P_char, P_obj) { abort(); }
 void do_get_finalize_container_success(P_char actor, P_char, P_obj container, P_obj money,
-    int &, bool &, bool, const char *, const coin_get_submission_options *options)
+    int &, bool &, bool, const char *, const coin_get_submission_options *options,
+    get_phase)
 {
     item_get_deferred = submit_coin_get(actor, money, container, 1, options);
     item_get_rejected = !item_get_deferred;
 }
-void do_get_finalize_room_item(P_char, P_obj, bool &, int &) { abort(); }
+void do_get_finalize_room_item(P_char, P_obj, bool &, int &, get_phase) { abort(); }
 void finish_bulk_get(P_char, uint32_t pid)
 {
     bulk_total = bulk_gets.at(pid).total;
