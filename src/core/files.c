@@ -1688,9 +1688,69 @@ int calculate_save_room(P_char ch, int type, int room)
 	return room;
 }
 
+enum class character_save_admission
+{
+	proceed,
+	deferred,
+	rejected,
+};
+
+static character_save_admission admit_character_save(P_char ch, bool is_locker_char)
+{
+	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		// A degraded load may have omitted durable inventory or sidecar state. Treat
+		// save as a safe no-op until a clean cold load can hydrate every component;
+		// publishing the partial runtime snapshot would destroy the unresolved rows.
+		logit(LOG_DEBUG,
+		      "writeCharacter: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return character_save_admission::deferred;
+	}
+	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return character_save_admission::rejected;
+	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
+	const bool collector_save_pending = !collector_service_recover_player(ch);
+	if (!is_locker_char && GET_PID(ch) > 0 &&
+	    (corpse_raise_save_pending || collector_save_pending))
+	{
+		persistence_alert(AVATAR, corpse_raise_save_pending ? "corpse" : "collector",
+				  "player", "redacted",
+				  corpse_raise_save_pending ? "durable_raise" : "purchase_publish",
+				  "save_deferred", "live_materialization_pending=1");
+		return character_save_admission::rejected;
+	}
+	return character_save_admission::proceed;
+}
+
+static void finish_saved_character_inventory(P_char ch, bool save_succeeded, bool terminal_type)
+{
+	if (!persistence_should_extract_terminal_inventory(save_succeeded, terminal_type))
+	{
+		for (int i = 0; i < MAX_WEAR; ++i)
+			if (save_equip[i])
+				equip_char(ch, save_equip[i], i, 9);
+		for (int i = 0; i < MAX_WEAR; ++i)
+			save_equip[i] = NULL;
+		return;
+	}
+
+	for (int i = 0; i < MAX_WEAR; ++i)
+		if (save_equip[i])
+		{
+			extract_obj(save_equip[i]);
+			save_equip[i] = NULL;
+		}
+	for (P_obj obj = ch->carrying; obj;)
+	{
+		P_obj next = obj->next_content;
+		extract_obj(obj);
+		obj = next;
+	}
+}
+
 int writeCharacter(P_char ch, int type, int room)
 {
-	P_obj obj, obj2;
 	int i;
 	int result = 1;
 
@@ -1712,29 +1772,9 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
-	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
-	{
-		// A degraded load may have omitted durable inventory or sidecar state. Treat
-		// save as a safe no-op until a clean cold load can hydrate every component;
-		// publishing the partial runtime snapshot would destroy the unresolved rows.
-		logit(LOG_DEBUG,
-		      "writeCharacter: deferred degraded player save pid=%d components=0x%x",
-		      GET_PID(ch), ch->only.pc->load_degraded_components);
-		return 1;
-	}
-	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
-		return 0;
-	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
-	const bool collector_save_pending = !collector_service_recover_player(ch);
-	if (!is_locker_char && GET_PID(ch) > 0 &&
-	    (corpse_raise_save_pending || collector_save_pending))
-	{
-		persistence_alert(AVATAR, corpse_raise_save_pending ? "corpse" : "collector",
-				  "player", "redacted",
-				  corpse_raise_save_pending ? "durable_raise" : "purchase_publish",
-				  "save_deferred", "live_materialization_pending=1");
-		return 0;
-	}
+	const character_save_admission admission = admit_character_save(ch, is_locker_char);
+	if (admission != character_save_admission::proceed)
+		return admission == character_save_admission::deferred;
 
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -1856,17 +1896,7 @@ int writeCharacter(P_char ch, int type, int room)
 				save_equip[i] = ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;
 			all_affects(ch, FALSE);
 			updateShortAffects(ch);
-			for (i = 0; i < MAX_WEAR; ++i)
-				if (save_equip[i])
-				{
-					extract_obj(save_equip[i]);
-					save_equip[i] = NULL;
-				}
-			for (obj = ch->carrying; obj; obj = obj2)
-			{
-				obj2 = obj->next_content;
-				extract_obj(obj);
-			}
+			finish_saved_character_inventory(ch, true, terminal_type);
 			all_affects(ch, TRUE);
 		}
 		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -1960,32 +1990,9 @@ int writeCharacter(P_char ch, int type, int room)
 		}
 	}
 
-	// Failed saves always restore the live recovery source. Terminal inventory may
-	// be extracted only after the database save has succeeded; a flat fallback is
-	// recovery evidence, not authorization to destroy live state.
-	if (!persistence_should_extract_terminal_inventory(result != 0, terminal_type))
-	{
-		for (i = 0; i < MAX_WEAR; i++)
-			if (save_equip[i])
-				equip_char(ch, save_equip[i], i, 9);
-		for (i = 0; i < MAX_WEAR; i++)
-			save_equip[i] = NULL;
-	}
-	else
-	{
-		for (i = 0; i < MAX_WEAR; i++)
-			if (save_equip[i])
-			{
-				extract_obj(save_equip[i]);
-				save_equip[i] = NULL;
-			}
-		for (obj = ch->carrying; obj; obj = obj2)
-		{
-			obj2 = obj->next_content;
-			extract_obj(obj);
-			obj = NULL;
-		}
-	}
+	// Failed saves restore the live recovery source. Inventory is released only
+	// after a durable terminal save; a flat fallback is recovery evidence.
+	finish_saved_character_inventory(ch, result != 0, terminal_type);
 
 	// reapply affects
 	all_affects(ch, TRUE);
