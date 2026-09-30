@@ -1827,6 +1827,21 @@ static long lich_death_residual_experience(long experience, int level)
 	return MAX(1L, static_cast<long>(experience * percentage));
 }
 
+static P_char credited_player_killer(P_char victim, P_char killer)
+{
+	if (!killer || killer == victim)
+		return NULL;
+	if (IS_PC(killer))
+		return killer;
+	if (!IS_PC_PET(killer))
+		return NULL;
+	P_char master = GET_MASTER(killer);
+	if (!master || master->in_room != killer->in_room || !killer->group ||
+	    killer->group != master->group)
+		return NULL;
+	return master;
+}
+
 void die(P_char ch, P_char killer)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -1999,14 +2014,11 @@ void die(P_char ch, P_char killer)
 			  world[ch->in_room].number, world[ch->in_room].name);
 
 		// If killer is a PC, or a pet with master group and in room.. then we have PvP
-		if ((IS_PC(killer) ||
-		     (IS_PC_PET(killer) && (GET_MASTER(killer)->in_room == killer->in_room) &&
-		      killer->group && killer->group == GET_MASTER(killer)->group)) &&
-		    (killer != ch))
+		P_char credited_killer = credited_player_killer(ch, killer);
+		if (credited_killer)
 		{
 			// It's important that this is before sql_save_pkill, 'cause we don't want to count this death as recent.
 			setHeavenTime(ch);
-			P_char credited_killer = IS_PC_PET(killer) ? GET_MASTER(killer) : killer;
 			if (opposite_racewar(ch, credited_killer))
 			{
 				const bool award = !CHAR_IN_ARENA(ch) &&
