@@ -72,6 +72,33 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("Durable items must be dropped one at a time", actobj)
         self.assertNotIn("Durable items must be put away one at a time", actobj)
 
+    def test_destroyed_placement_stops_give_and_remove_continuations(self):
+        placement = extract_function(
+            "world/handler.c", "obj_to_char_result obj_to_char_checked("
+        )
+        self.assertIn("return obj_to_char_result::destroyed;", placement)
+        self.assertLess(
+            placement.index("extract_obj(object, TRUE)"),
+            placement.index("return obj_to_char_result::destroyed;"),
+        )
+
+        give = extract_function("cmd/actobj.c", "void do_give(")
+        give_guard = give.index("if (placement != obj_to_char_result::placed)")
+        self.assertLess(give_guard, give.index("if (IS_ARTIFACT(obj))", give_guard))
+        self.assertLess(give_guard, give.index("studioproc_give(vict, obj, ch)"))
+
+        remove = (SRC / "actobj.c").read_text()
+        remove = remove[remove.rindex("int remove_item(") :]
+        destroyed_guard = remove.index("if (placement == obj_to_char_result::destroyed)")
+        self.assertLess(destroyed_guard, remove.index("get_obj_affect(obj, SKILL_ENCHANT)", destroyed_guard))
+
+        for callback in ("void item_give_completion(", "void pet_give_completion("):
+            body = extract_function("cmd/actobj.c", callback)
+            self.assertLess(
+                body.index("if (placement != obj_to_char_result::placed)"),
+                body.index("studioproc_give(")
+            )
+
     def test_pc_corpse_roots_bypass_generic_ownership_transfers(self):
         actobj = (SRC / "actobj.c").read_text()
         policy = (SRC / "item/item_command_policy.c").read_text()
