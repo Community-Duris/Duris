@@ -280,13 +280,15 @@ require(
 
 # --- 8. saved-room fallback bounds ------------------------------------------------
 enter_game = section(NANNY, "void enter_game(P_desc d)", "\n}\n")
+entry_room = section(NANNY, "static int resolve_entry_room(", "void enter_game(P_desc d)")
 require(
-    "r_room = real_room(GET_ORIG_BIRTHPLACE(ch));" in enter_game,
+    "real_room(GET_ORIG_BIRTHPLACE(ch))" in entry_room
+    and "resolve_entry_room(ch, d->rtype, ct)" in enter_game,
     "enter_game must convert the original birthplace vnum to a world index",
 )
 require(
-    enter_game.index("if (r_room < 0 || r_room > top_of_world)")
-    < enter_game.index("if (zone_table[world[r_room].zone].flags & ZONE_CLOSED)"),
+    entry_room.index("if (room < 0 || room > top_of_world)")
+    < entry_room.index("zone_table[world[room].zone].flags & ZONE_CLOSED"),
     "enter_game must bounds-check a restored room before indexing world and zone_table",
 )
 

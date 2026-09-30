@@ -1265,6 +1265,64 @@ void schedule_pc_events(P_char ch)
 	if (affected_by_spell(ch, SPELL_BLEAK_FOEMAN))
 		add_event(event_bleak_foeman_check, WAIT_SEC, ch, 0, 0, 0, 0, 0);
 }
+static int resolve_entry_room(P_char ch, int rent_type, time_t now)
+{
+	int room = NOWHERE;
+	if ((rent_type == RENT_QUIT && GET_LEVEL(ch) < 2) || rent_type == RENT_DEATH)
+		room = real_room(GET_BIRTHPLACE(ch));
+	else if (rent_type == RENT_CRASH)
+		room = real_room(ch->specials.was_in_room);
+	else
+	{
+		room = real_room(ch->specials.was_in_room);
+		if (room == NOWHERE)
+			room = ch->in_room;
+	}
+
+	if (ch->only.pc->pc_timer[PC_TIMER_HEAVEN] > now)
+	{
+		if (IS_RACEWAR_GOOD(ch))
+			room = real_room(GOOD_HEAVEN_ROOM);
+		else if (IS_RACEWAR_EVIL(ch))
+			room = real_room(EVIL_HEAVEN_ROOM);
+		else if (IS_RACEWAR_UNDEAD(ch))
+			room = real_room(UNDEAD_HEAVEN_ROOM);
+		else if (IS_ILLITHID(ch))
+			room = real_room(NEUTRAL_HEAVEN_ROOM);
+		else if (IS_RACEWAR_NEUTRAL(ch))
+			room = real_room(NEUTRAL_HEAVEN_ROOM);
+		else
+			room = real_room(VROOM_CAGE);
+	}
+
+	if (room == NOWHERE)
+	{
+		room = GET_HOME(ch) ? real_room(GET_HOME(ch)) : real_room(GET_BIRTHPLACE(ch));
+		if (room == NOWHERE)
+			room = IS_TRUSTED(ch) ? real_room0(1200) :
+						   real_room(GET_ORIG_BIRTHPLACE(ch));
+		if (room == NOWHERE)
+			room = real_room0(11);
+	}
+	if (room < 0 || room > top_of_world)
+		room = real_room0(11);
+	else if (IS_SHIP_ROOM(room))
+		room = real_room(GET_BIRTHPLACE(ch));
+
+	// A ship or closed zone can send the candidate back through a missing
+	// birthplace. Validate it before indexing world or zone_table.
+	if (room >= 0 && room <= top_of_world &&
+	    (zone_table[world[room].zone].flags & ZONE_CLOSED))
+		room = real_room(GET_BIRTHPLACE(ch));
+	if (room > top_of_world)
+		room = real_room(11);
+	if (room < 0)
+		room = real_room(1197);
+
+	room = check_gh_home(ch, room);
+	return room >= 0 && room <= top_of_world ? room : real_room0(11);
+}
+
 /*
  *    existing or new character entering game
  */
@@ -1272,7 +1330,6 @@ void enter_game(P_desc d)
 {
 	struct affected_type af1, *afp1, *afp2;
 	int cost;
-	int r_room = NOWHERE;
 	long time_gone = 0, hit_g, move_g, heal_time, rest;
 	time_t ct = time(NULL);
 	int mana_g;
@@ -1299,85 +1356,8 @@ void enter_game(P_desc d)
 	// Bring them to life!
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
-	// Then put them in a room.
-	if ((d->rtype == RENT_QUIT && GET_LEVEL(ch) < 2) || d->rtype == RENT_DEATH)
-	{
-		/* defaults to birthplace on quit/death */
-		r_room = real_room(GET_BIRTHPLACE(ch));
-	}
-	else if (d->rtype == RENT_CRASH)
-	{
-		r_room = real_room(ch->specials.was_in_room);
-	}
-	else
-	{
-		r_room = real_room(ch->specials.was_in_room);
-		if (r_room == NOWHERE)
-			r_room = ch->in_room;
-	}
-
-	if (ch->only.pc->pc_timer[PC_TIMER_HEAVEN] > ct)
-	{
-		if (IS_RACEWAR_GOOD(ch))
-			r_room = real_room(GOOD_HEAVEN_ROOM);
-		else if (IS_RACEWAR_EVIL(ch))
-			r_room = real_room(EVIL_HEAVEN_ROOM);
-		else if (IS_RACEWAR_UNDEAD(ch))
-			r_room = real_room(UNDEAD_HEAVEN_ROOM);
-		else if (IS_ILLITHID(ch))
-			r_room = real_room(NEUTRAL_HEAVEN_ROOM);
-		else if (IS_RACEWAR_NEUTRAL(ch))
-			r_room = real_room(NEUTRAL_HEAVEN_ROOM);
-		// Cage people on undefined racewar sides.  That'll get a fix quick
-		else
-			r_room = real_room(VROOM_CAGE);
-	}
-
-	if (r_room == NOWHERE)
-	{
-		if (GET_HOME(ch))
-			r_room = real_room(GET_HOME(ch));
-		else
-			r_room = real_room(GET_BIRTHPLACE(ch));
-
-		if (r_room == NOWHERE)
-		{
-			if (IS_TRUSTED(ch))
-				r_room = real_room0(1200);
-			else
-				r_room = real_room(GET_ORIG_BIRTHPLACE(ch));
-		}
-
-		if (r_room == NOWHERE)
-			r_room = real_room0(11);
-	}
-	if (r_room < 0 || r_room > top_of_world)
-		r_room = real_room0(11);
-	// old guildhalls (deprecated)
-	//  else if (world[r_room].number >= 48000 &&
-	//           world[r_room].number <= 48999 &&
-	//           find_house(world[r_room].number) == NULL)
-	//  {
-	//    GET_HOME(ch) = GET_BIRTHPLACE(ch) = GET_ORIG_BIRTHPLACE(ch);
-	//    r_room = real_room(GET_HOME(ch));
-	//  }
-	else if (IS_SHIP_ROOM(r_room))
-	{
-		r_room = real_room(GET_BIRTHPLACE(ch));
-	}
-
-	if (zone_table[world[r_room].zone].flags & ZONE_CLOSED)
-		r_room = real_room(GET_BIRTHPLACE(ch));
-
-	// Stick them in the cage of smoke!
-	if (r_room > top_of_world)
-		r_room = real_room(11);
-	// Stick them in An Empty Dimension
-	if (r_room < 0)
-		r_room = real_room(1197);
-
-	// check home/birthplace/spawn room to see if it's in a GH and if ch is allowed
-	r_room = check_gh_home(ch, r_room);
+	// Resolve every entry-room policy before moving the live character.
+	const int r_room = resolve_entry_room(ch, d->rtype, ct);
 
 	ch->in_room = NOWHERE;
 	char_to_room(ch, r_room, -2);
