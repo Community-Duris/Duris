@@ -162,7 +162,7 @@ check("transfer serialization does not masquerade as an unowned player save",
       and "true, true);" in capture)
 
 # Every remaining direct grant is fenced at the low-level player publication boundary.
-to_char = handler[handler.index("void obj_to_char("):]
+to_char = handler[handler.index("obj_to_char_result obj_to_char_checked("):]
 to_char = to_char[:to_char.index("void obj_from_char(")]
 ownership_guard = condition_after(to_char, "// A persisted generic item")
 ownership_guard_body = braced_block_after(to_char, "// A persisted generic item")

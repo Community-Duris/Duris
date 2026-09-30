@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/handler.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -662,7 +663,7 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 	act("$n gives $p to $N.", TRUE, actor, object, recipient, TO_NOTVICT);
 	act("$n gives you $p.", FALSE, actor, object, recipient, TO_VICT);
 	send_to_char("Ok.\r\n", actor);
-	obj_to_char(object, recipient);
+	const obj_to_char_result placement = obj_to_char_checked(object, recipient);
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
@@ -671,6 +672,12 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 								 PLAYER_COMPONENT_INVENTORY);
 	char_light(actor);
 	room_light(actor->in_room, REAL);
+	if (placement != obj_to_char_result::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "give_publish", "none", "none",
+				  "live_placement_failed", "item_uid=%llu", context.item_uid);
+		return;
+	}
 	nq_action_check(actor, recipient, NULL);
 	studioproc_give(recipient, object, actor);
 }
@@ -715,12 +722,18 @@ void pet_give_completion(P_char actor, bool committed, const item_transfer_resul
 	act("$n gives $p to $N.", TRUE, source, object, destination, TO_NOTVICT);
 	act("$n gives you $p.", FALSE, source, object, destination, TO_VICT);
 	send_to_char("Ok.\r\n", source);
-	obj_to_char(object, destination);
+	const obj_to_char_result placement = obj_to_char_checked(object, destination);
 	mark_player_dirty_components(context.owner_pid,
 				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
 					     PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_PETS);
 	char_light(source);
 	room_light(context.room, REAL);
+	if (placement != obj_to_char_result::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "pet_give_publish", "none", "none",
+				  "live_placement_failed", "item_uid=%llu", context.item_uid);
+		return;
+	}
 	nq_action_check(source, destination, NULL);
 	studioproc_give(destination, object, source);
 }
@@ -6195,10 +6208,17 @@ void do_give(P_char ch, char *argument, int cmd)
 	act("$n gives $p to $N.", 1, ch, obj, vict, TO_NOTVICT);
 	act("$n gives you $p.", 0, ch, obj, vict, TO_VICT);
 	send_to_char("Ok.\r\n", ch);
-	// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
-	// extraction (handler.c), but callers below dereference obj (IS_ARTIFACT,
-	// short_description, R_num). Fix requires obj_to_char returning freed-status.
-	obj_to_char(obj, vict);
+	const obj_to_char_result placement = obj_to_char_checked(obj, vict);
+	if (placement != obj_to_char_result::placed)
+	{
+		if (IS_PC(ch))
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
+								PLAYER_COMPONENT_EQUIPMENT |
+								PLAYER_COMPONENT_INVENTORY);
+		char_light(ch);
+		room_light(ch->in_room, REAL);
+		return;
+	}
 	if (IS_TRUSTED(ch))
 	{
 		if (IS_ARTIFACT(obj))
@@ -7747,16 +7767,27 @@ int remove_item(P_char ch, P_obj obj, int position)
 				strip_holy_sword(ch);
 			}
 
-			// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
-			// extraction (handler.c), but callers below dereference obj (IS_SET,
-			// get_obj_affect, obj_affect_remove). Fix requires obj_to_char
-			// returning freed-status or a zombie flag.
-			obj_to_char(unequip_char(ch, position), ch);
+			const bool was_invisible = IS_SET(obj->bitvector, AFF_INVISIBLE);
+			const struct obj_affect *enchant = get_obj_affect(obj, SKILL_ENCHANT);
+			const bool was_enchanted = enchant != NULL;
+			const int enchant_data = was_enchanted ? enchant->data : 0;
+			const obj_to_char_result placement =
+				obj_to_char_checked(unequip_char(ch, position), ch);
 
 			// Remove Affects
-			if (IS_SET(obj->bitvector, AFF_INVISIBLE) &&
+			if (was_invisible &&
 			    affected_by_spell(ch, TAG_PERMINVIS) && !wearing_invis(ch))
 				affect_from_char(ch, TAG_PERMINVIS);
+
+			if (placement == obj_to_char_result::destroyed)
+			{
+				if (was_enchanted)
+				{
+					affect_from_char(ch, enchant_data);
+					return REMOVE_BREAK_ENCHANT;
+				}
+				return REMOVE_SUCCESS;
+			}
 
 			if (obj && (o_af = get_obj_affect(obj, SKILL_ENCHANT)))
 			{
