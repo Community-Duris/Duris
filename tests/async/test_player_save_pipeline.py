@@ -178,6 +178,10 @@ assert "player_revision_acknowledge_durable" in legacy_save
 assert legacy_save.index("if (own_txn)") < legacy_save.index(
     "player_revision_acknowledge_durable"
 )
+assert "if (own_txn)\n\t{\n\t\tif (compatibility_revision" in legacy_save
+assert legacy_save.index("player_revision_acknowledge_durable") < legacy_save.index(
+    "clear_player_dirty_container_flags(ch)"
+)
 print("[PASS] transactional compatibility saves fence every older immutable revision")
 
 mark = section(CHECKPOINT, "void mark_player_dirty(int pid)", "void flush_dirty_players(void)")
