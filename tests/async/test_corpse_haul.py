@@ -99,7 +99,6 @@ static bool admitted=true, owned=true, fail_delivery=false, pile_ok=true;
 enum class get_phase { admission, publication };
 enum class get_outcome { rejected, deferred, placed, consumed, destroyed };
 enum class obj_to_char_result { rejected, deferred, placed, destroyed };
-static bool item_get_deferred=false, item_get_rejected=false;
 static P_obj find_live_item_uid(uint64_t uid) { auto i=objects.find(uid); return i==objects.end()?nullptr:i->second; }
 static void send_to_char(const char *s,P_char) { output+=s; }
 static void act(const char *s,int,P_char ch,P_obj,void *,int target) {
@@ -159,20 +158,20 @@ static const char *coins_to_string(int p,int g,int s,int c,const char *) {
 finalizers = r'''
 static bool coin_options_seen=false;
 static coin_get_submission_options last_coin_options = {};
-static void do_get_finalize_container_success(P_char ch,P_char,P_obj container,P_obj object,
+static get_outcome do_get_finalize_container_success(P_char ch,P_char,P_obj container,P_obj object,
  int &total,bool &found,bool,const char *,const coin_get_submission_options *options=nullptr,
  get_phase phase=get_phase::admission) {
- item_get_deferred=false; item_get_rejected=false;
  if(object->type==ITEM_MONEY) {
   ++coin_attempts; coin_options_seen=options!=nullptr;
   if(options) last_coin_options=*options;
-  item_get_deferred=admitted; item_get_rejected=!admitted; return;
+  return admitted ? get_outcome::deferred : get_outcome::rejected;
  }
  get_outcome outcome=publish_container_get(ch,object,container,TRUE,false,phase);
  if(outcome==get_outcome::placed) { ++total; found=true; }
+ return outcome;
 }
-static void do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total,get_phase=get_phase::admission) {
- obj_to_char(o,ch); ++total; found=true;
+static get_outcome do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total,get_phase=get_phase::admission) {
+ obj_to_char(o,ch); ++total; found=true; return get_outcome::placed;
 }
 '''
 
