@@ -1392,20 +1392,25 @@ bool sql_save_player(P_char ch, int type, int room)
 			return false;
 		}
 	}
-	if (compatibility_revision &&
-	    !player_revision_acknowledge_durable(GET_PID(ch), compatibility_revision,
-						 PLAYER_CHECKPOINT_COMPONENT_ALL))
+	// A caller-owned transaction can still roll back after this function returns.
+	// Keep its revision and dirty flags pending for the next save rather than
+	// claiming durability before the caller commits.
+	if (own_txn)
 	{
-		logit(LOG_DEBUG, "sql_save_player: component=revision outcome=acknowledge_failure");
-		return false;
-	}
+		if (compatibility_revision &&
+		    !player_revision_acknowledge_durable(GET_PID(ch), compatibility_revision,
+						     PLAYER_CHECKPOINT_COMPONENT_ALL))
+		{
+			logit(LOG_DEBUG,
+			      "sql_save_player: component=revision outcome=acknowledge_failure");
+			return false;
+		}
 
-	clear_player_dirty_container_flags(ch);
-	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
-	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
-	// A pre-existing row or a newly inserted baseline is durable only once the whole
-	// synchronous save succeeds (and, when owned here, commits).
-	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+		clear_player_dirty_container_flags(ch);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+	}
 
 	return true;
 }
