@@ -661,6 +661,7 @@ def build_sql_harness(output: Path) -> None:
                "tests/async/pa_web_recovery_harness.cpp",
                "src/player/player_death_conflict_repository.c",
                "src/player/player_snapshot_repository.c", "src/player/player_snapshot_codec.c",
+               "src/player/player_save_journal.c",
                "src/sql/item_extra_descr_codec.c", "src/persistence/critical_command.c",
                "src/persistence/player_death_restitution_command.c",
                "src/persistence/persistence_observability.c",

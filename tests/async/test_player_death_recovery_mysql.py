@@ -21,7 +21,10 @@ def compile_sql(binary, *, load_source=None, query_source=None, extra_flags=()):
         str(query_source or ROOT / 'src/player/player_death_recovery_query.c'),
         'src/player/player_load_topology.c', 'src/player/player_death_conflict_repository.c',
         'src/persistence/critical_command.c',
+        'src/persistence/quest_reward_obligation_repository.c',
+        'src/item/item_transfer_command.c', 'src/economy/currency_command.c',
         'src/player/player_snapshot_repository.c', 'src/player/player_snapshot_codec.c',
+        'src/player/player_save_journal.c',
         'src/sql/item_extra_descr_codec.c', 'src/persistence/player_death_restitution_command.c',
         'src/persistence/persistence_observability.c', 'src/persistence/economic_sql_lifecycle_guard.c',
         '-Wl,--gc-sections', '-Wl,--wrap=mysql_real_query', *libs, '-lcrypto', '-o', str(binary)

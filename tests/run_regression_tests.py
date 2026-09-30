@@ -19,6 +19,7 @@ TEST_DIRECTORY = ROOT / "tests" / "async"
 MAX_AUTOMATIC_JOBS = 8
 RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
     {
+        "test_player_quarantine_restore.py",
         "test_account_recovery_journey.py",
         "test_creation_prompt_journey.py",
         "test_game_loop_session_journey.py",
@@ -45,6 +46,10 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
 # runner, which invokes every discovered script with no arguments.
 MANUAL_ONLY_TEST_NAMES = frozenset(
     {
+        # Requires a private copied staging journal and its custody manifests.
+        "test_player_save_journal_quarantine.py",
+        # Owns disposable Docker databases and measures the staging schema fork.
+        "test_staging_migration_fork_mysql.py",
         "test_mob_gold_dial_runtime.py",
         "test_mysql_playtime_journey.py",
         "test_pet_restart_journey.py",

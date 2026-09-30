@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <vector>
 
 enum class item_creation_prepare_result
 {
@@ -166,6 +167,10 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 // durable continuation is sufficient to finish recovery without the original
 // process-local callback.
 bool item_movement_transaction_restore_replayed_command(const critical_command &command);
+// Copy outstanding spell publications for a player's load request. The loader
+// only needs receipts for commands whose publication is still fenced.
+bool item_movement_transaction_pending_spell_effects(
+	uint32_t actor_pid, std::vector<critical_operation_id> *operations);
 bool item_movement_transaction_restore_replayed_publication(
 	const critical_command &command, item_movement_publication_fn publication,
 	const void *context, size_t context_size);

@@ -1477,3 +1477,787 @@ result. Additive migration 0049 creates the receipt table. This establishes the
 durable storage path; individual effect callbacks do not yet consult receipts,
 and committed spell replay remains fenced until owner application, save-ack
 polling, and receipt retention cleanup are integrated. No migration was run.
+
+### Preserve pending player effects through fallback and death saves (2026-09-30)
+
+The game-thread effect owner now exposes receipts for applied, unacknowledged
+vines and player-target faerie sight operations. Every ordinary checkpoint
+collects them before capture, includes affects in the captured component set,
+and deduplicates an explicit effect-save receipt. A capture or queue admission
+failure leaves the owner obligation available to a later ordinary or terminal
+save. A terminal full-component capture retains its original revision.
+
+Snapshot format 13 carries spell receipts with a death disposition. Format 14
+carries the same receipts with retained death conflict evidence. Codec, worker,
+immutable pin/retry, SQL application, evidence normalization, and recovery
+queries accept their appropriate formats. The retained conflict writer commits
+the receipt alongside player state; exact replay verifies both the immutable
+death record and receipt table. No database schema change was required beyond
+the existing migration 0049 table. Ordinary restitution accepts validated
+format 13; evidence formats 10 and 14 retain their separate recovery boundary.
+
+Truncation qualification found and fixed a decoder result bug: a short quest or
+spell operation ID returned false without setting a failure result. Every
+truncated prefix of the tested receipt frames now fails without publishing a
+partial decoded output. The frozen ordinary/death frame hashes remain exactly
+unchanged.
+
+Validation on the candidate worktree:
+
+- `make -C src -s -j2 BUILD_PROFILE=production PERSISTENCE_BACKEND=mariadb`
+  passed in `duris-accounting-build`. The resulting `bin/server/dms_new` SHA-256
+  is `9c2fc904517df285326aaea78c7c68eb039c24275b26fe723b450aa28026bc41`.
+- In `duris-accounting-test-tools:local`, the save pipeline, spell component
+  publication, death evidence codec, save worker, save journal, death journal
+  pipeline lifecycle, death journal load fence, stable terminal death request,
+  and terminal death entrypoint scripts passed. The death conflict repository
+  compiled for SQL and flatfile; its optional SQL runtime was exercised
+  separately below. The restitution CLI passed all 21 tests, including a real
+  format-13 native encoder/bridge/Python reader journey.
+- With `CXX=g++`, the death recovery query, conflict selection, and corpse
+  arbitration scripts passed. The test image has GCC 13, rather than the query
+  test's default `g++-14`; no compiler requirement was bypassed in source.
+- An isolated MariaDB 10.11 full-schema run of
+  `test_player_save_item_reconcile_mysql.py` and
+  `test_player_spell_effect_receipt_mysql.py` passed. The latter now exercises
+  ordinary death affect/receipt atomicity, an injected disposition-write
+  failure, exact replay, and missing receipt refusal.
+- The compiled `player_death_conflict_repository_mysql_harness.cpp`
+  `--terminal-spell-matrix` case passed against that disposable schema. It
+  injects archive, disposition, and revision failures, checks receipt/affect
+  rollback, preserves source payload/custody/pet/wallet bytes, and refuses
+  missing or conflicting spell receipts on exact replay.
+- Changed-line formatting and `git diff --check` passed. The writer inventory
+  was reanchored after source insertion; its generated matrix check and normal
+  accounting validator passed with 862 routes, 2,812 occurrences, 2,754 unique
+  sites, and zero unmapped sites. Release qualification remains false.
+- `test_economy_writer_coverage_contract.py` passed all 52 cases in the same
+  Linux test image after the inventory reanchoring.
+
+This closes the pending-receipt fallback implementation gap. It does not prove
+integrated server restart/save-custody journeys, NPC/room/event effect policies,
+flatfile receipt parity, complete writer coverage, staging restoration, or
+production ownership repair. Those remain tracked delivery gates. No live
+staging or production database, journal, or service was changed.
+
+
+### Flatfile player spell receipts and restore qualification (2026-09-30)
+
+The flatfile player repository now persists one immutable spell receipt per
+player/operation alongside its player file. The minimal schema-12 receipt reuses
+the checksummed DURPLYR envelope. A receipt-bearing save commits receipts and the
+affect-bearing player projection through the existing authority transaction;
+terminal death also commits disposition and custody quarantine in that bundle.
+The materialized player file does not accumulate receipt history. Loads read only
+the operation IDs requested by pending publication. Missing historical files are
+not inferred from a player revision, and contradictory requested evidence blocks
+publication recovery.
+
+Every save and load recovers an interrupted authority transaction before reading
+or advancing the player file. Baseline helpers retain their established lock
+ownership; the save rereads player authority after those helpers finish. A file
+that disappears after the initial read is refused, and an existing receipt newer
+than prior durable player state cannot authorize a later save. Exact replay
+checks receipt identity/effect; death replay compares immutable disposition bytes.
+Receipt/death read I/O failures remain retryable instead of being classified as
+permanent corruption.
+
+The transaction operation bound is 4,099: 4,096 receipts plus player, disposition,
+and custody files. The unchanged 256 MiB bound still preflights the complete
+bundle. The native capacity fixture verifies the exact bound reaches the injected
+commit refusal, a larger bundle is rejected, and neither leaves a file or journal.
+The lifecycle manifest protects `FLATFILE_ROOT/players/*.spell` as retained
+recovery evidence. Existing full-tree backup capture includes these files.
+
+The restore qualifier now validates all retained spell files, canonical filename
+identity, checksums, receipt shape, and revision against the restored player.
+A deleted player's receipt requires its inactive identity tombstone when its
+snapshot is absent. Its native build needed the item accounting reference and
+codec/type dependencies already used by shop materialization; those are now in
+`build_restore_qualifier.py`. The full flatfile server build also exposed a missing
+`MYSQL_DATA_TRUNCATED` constant in the client-free compatibility header; its value
+matches the installed MariaDB client header. No SQL behavior was changed.
+
+Validation on the candidate worktree:
+
+- In `duris-accounting-test-tools:local`,
+  `test_flatfile_player_repository.py` passed native ordinary/death receipt
+  atomicity, precommit refusal, interrupted publication, separate-process
+  recovery, exact replay, missing/conflicting/corrupt receipt refusal, scoped
+  historical loading, read EIO retry, and restored-player/future-receipt refusal.
+  Existing coin pickup/re-entry and player repository cases also passed.
+- `test_flatfile_authority_transaction.py` and
+  `test_flatfile_player_domain_repository.py` passed. The authority fixture
+  retains legacy journal recovery and adds the receipt bundle capacity checks.
+- `test_data_lifecycle_manifest.py` passed all 13 cases after updating its frozen
+  schema inputs for migrations 0045, 0047, 0048, and 0049. The normal validator
+  reports 223 tables, 35 non-database stores, 42 Redis surfaces, with destructive
+  rules disabled. The native Linux run also exercises symlink refusal; the
+  initial Windows attempt could not create a symlink and is not qualification.
+- `test_no_mysql_compat.py` passed. Both production profiles built and linked
+  with `make -C src -s -j2 BUILD_PROFILE=production` in `duris-accounting-build`.
+  MariaDB `bin/server/dms_new` SHA-256 is
+  `69a18a9c676edf9f65afa50b84de42e0089e55593cc987b31dbff9c857eec636`.
+  Flatfile `bin/server/dms_flatfile_new` and the separately linked restore binary
+  `bin/server/dms_restore_flatfile` have SHA-256
+  `950d3d088975b89d948eef3c18908fccd473ca038814008701881ccd74daa6e7`.
+- `test_persistence_backup.py` passed all 29 filesystem/unit cases.
+- With `DURIS_RUN_BACKUP_INTEGRATION=1`,
+  `test_persistence_backup_integration.py
+  PersistenceRecoveryIntegration.test_spell_receipt_state_qualification` passed
+  in the local `duris-accounting-restore-tools:local` image. Its nine cases cover
+  valid/corrupt files, wrong operation/PID, public permissions, hard links,
+  a receipt ahead of restored player state, missing active player, and a retained
+  inactive owner. The valid case captures and restores through the real managers,
+  preserves exact receipt bytes and the original state inventory, passes native
+  player loading, and boots the isolated restored service. The test uses
+  temporary state and network namespaces; no live server or database is used.
+- Changed-line formatting and `git diff --check` passed. Generated writer matrix
+  `--check` and the normal accounting validator passed at 862 routes, 2,812
+  occurrences, 2,754 unique sites, and zero unmapped sites. All 52 writer coverage
+  contract cases passed. `validate_economy_accounting.py --release` still refuses
+  with `writer has no executable evidence`; release qualification is false.
+
+This closes flatfile player spell receipt persistence and its focused restore
+boundary. Integrated spell casting/save-custody gameplay faults, NPC/room/event
+effect policies, flatfile quest XP parity, full writer qualification, independent
+activation audit, and staging/production repair remain required. Mixed spell and
+quest XP receipt saves refuse before mutation until their flatfile parity is
+implemented. No staging or production state was modified.
+
+### Flatfile quest XP save/load persistence (2026-09-30)
+
+The latest `origin/main` fetch remains `62a680dea`, equal to this worktree's
+committed HEAD. The refactor is already incorporated; no merge or reset was
+needed. All accumulated release changes remain in the worktree.
+
+Direct inspection found two repository gaps: the flatfile ownership catalog
+accepted only version-1 quest continuations although gameplay writes version 5,
+and schema-11 player saves did not retain quest XP application markers. The
+catalog now validates complete version-1 through version-5 continuations and
+writes format 7, retaining a slot mask and the exact committing player revision
+for each applied XP award. Earlier catalog formats remain readable. The mask is
+validated against frozen solo rewards or per-recipient awards; acknowledged
+legacy operations do not invent missing application proof.
+
+An ordinary receipt save requires an existing player snapshot and its experience
+status field. Under the shared authority lock it verifies offering ID, recipient,
+reward index, and amount, then prepares one catalog after-image. This image and
+the player snapshot use the existing recoverable authority transaction. Schema 12
+can now include both XP and spell receipts, with spell files in the same bundle.
+Exact-revision replay checks the requested XP markers; a newer player revision
+still returns stale without acknowledging the receipt frame. Read I/O is
+retryable; missing, conflicting, or future markers are refused. Gameplay loading
+detects a player restored behind its marker and retains recovery as unresolved.
+
+The player loader projects owner XP bits to reward indices and exposes unpaid
+peer entitlements independently of owner acknowledgment. New owner acknowledgment
+requires its own applied XP slots. Applied markers and continuations remain in
+the existing protected ownership catalog, so no new lifecycle store, migration,
+or service is needed. XP application evidence is not a ledger posting.
+
+Validation on temporary native Linux state:
+
+- `python3 tests/async/test_flatfile_player_repository.py` passed the complete
+  harness, including legacy version-4 solo, current version-5 solo, and version-5
+  group XP. Cases include unknown offerings, changed amounts, foreign recipients,
+  missing player authority, receipt-only saves, refused/interrupted commits,
+  fresh-process recovery, injected catalog read failure, missing exact markers,
+  player rollback behind a marker, exact replay after acknowledgment, stale
+  replay, mixed spell/XP commits, and peer payment after owner acknowledgment.
+  Existing coin, spell, ordinary save, and death cases remain passing.
+- `python3 tests/async/test_flatfile_item_repository.py` passed native item/coin
+  operations, retained version-1 quest item rewards, and version-5/version-6
+  catalog read/replay. Its old quest fixture now uses the maintained
+  `quest_turnin` reason required by the command codec.
+- `test_publication_ack_checkpoint.py`, `test_durable_quest_offering.py`, and
+  `test_player_save_pipeline.py` passed. The first verifies the refactor's
+  coordinator lock/checkpoint boundary; the latter checks ordinary and terminal
+  save contracts and existing spell receipt fallback.
+- `make -C src -s -j2 BUILD_PROFILE=production PERSISTENCE_BACKEND=mariadb` and
+  the corresponding flatfile build with
+  `DMS_BINARY=/opt/duris/bin/server/dms_flatfile_new` passed after the final C++
+  changes. Backend stamps remain `mariadb/production` and `flatfile/production`.
+  MariaDB candidate SHA-256:
+  `f8e5d4bb4218878449f98574a6e5b302113bcaa49911d222c0951c90f478c393`.
+  Flatfile candidate SHA-256:
+  `4962e3fac5c6a9b1aeb580bc7398089676f0eca397f91ccc89eabfc2611d5c1e`.
+  These are uncommitted worktree artifacts, not pinned deployable releases.
+- Changed-line formatting, `git diff --check`, the generated matrix `--check`,
+  and the normal accounting validator passed. The inventory remains 862 routes,
+  2,812 occurrences, 2,754 unique sites, and zero unmapped sites. Release mode
+  still rejects `writer has no executable evidence`; qualification remains false.
+
+This supersedes the prior mixed-receipt refusal for ordinary saves and closes
+the focused flatfile quest XP repository boundary. It does not complete the
+gameplay handoff: live XP is applied before save capture/admission, and failed
+admission can discard the pending receipt. Ordinary fallback and death-save
+receipt transport must be completed before enabling flatfile group XP. SQL peer
+application/pending queries also require qualification after owner acknowledgment.
+Integrated process restart and save/custody journeys, full writer evidence,
+independent activation audit, and the staging-derived restore rehearsal remain
+open. No staging or production operation was performed.
+
+
+### Quest XP fallback and terminal receipt handoff (2026-09-30)
+
+Applied live XP now retains its exact offering/recipient/reward/amount identity
+in the existing quest recovery map before requesting a player save. Failed
+capture/admission cannot erase that identity or permit another live application.
+Later ordinary and death saves collect the receipt with status/trophies and any
+coupled skills. Recovery does not discard applied receipt state when the player
+revision registry is unavailable. Capacity is reserved before applying XP, and
+a 65th pending receipt is held before mutation until exact completions release
+space. These changes close the earlier fallback omission.
+
+Death request schema 15 carries quest XP and optional spell receipts; conflict
+evidence uses schema 16. Previous schema-7/schema-8 wire hashes remain unchanged.
+The terminal pin preserves the original receipt bytes through timeout/resume.
+SQL conflict retention applies XP receipts inside its player-state transaction
+and verifies them on exact replay. Flatfile death quarantine and XP markers now
+prepare one ownership catalog after-image, so the two changes cannot overwrite
+each other in the authority bundle.
+
+SQL previously excluded acknowledged quest obligations even when their exact
+XP marker had already committed. A lost completion followed by owner ACK could
+therefore strand a later recipient checkpoint. Apply now verifies frozen terms,
+entitlement amount, and the existing applied marker even after ACK. It still
+refuses a new application under an acknowledged obligation. Group peer tests
+prove this distinction. SQL owner ACK continues to require every entitlement;
+flatfile independently retains unpaid peer awards after owner ACK.
+
+Group admission and immediate linkdead publication are enabled on both backends.
+The callback's owner frozen amount is now taken from its frozen owner award,
+matching the retained version-5 continuation for groups as well as solo rewards.
+The former flatfile group XP restriction is removed. This supports normal group
+gameplay; it does not claim the full crash/restart journey is qualified.
+
+Focused proof:
+
+- `test_durable_quest_offering.py`: real admission/callback/recovery helpers,
+  native continuation decoder, both backend modes, linkdead peer, refused initial
+  save, exact receipt ACK, coupled skill component, missing revision registry,
+  and 64-receipt saturation/retry.
+- `test_player_save_pipeline.py`, `test_terminal_death_entrypoints.py`,
+  `test_player_save_journal.py`, `test_player_save_worker.py`,
+  `test_death_journal_load_fence.py`, and `test_player_load_pipeline.py`: pending
+  receipt collection, immutable terminal pin, schema-13/schema-15 journal and
+  worker handling, exact successful completion, and blocked cold materialization.
+- `test_flatfile_player_repository.py`: version-4 solo and version-5 solo/group
+  ordinary saves, mixed XP/spell group death, refused/interrupted publication,
+  fresh-process recovery, exact quarantine and XP marker, and missing/conflicting
+  replay proof. Existing ordinary, coin, spell, and death cases pass.
+- `test_player_death_conflict_evidence_codec.py` and
+  `test_player_death_restitution_cli.py`: schemas 15/16 with optional spell
+  receipts, canonical/truncated wire validation, schema-15 restitution parsing,
+  evidence-envelope refusal, and unchanged legacy wire hashes.
+- On a generated disposable MariaDB 10.11 database with all 49 migrations,
+  `test_player_save_item_reconcile_mysql.py` and
+  `test_player_spell_effect_receipt_mysql.py` pass. The latter now covers normal
+  mixed XP/spell death rollback and replay, owner and group-peer saves after lost
+  ACK, unchanged application timestamp/XP, corrupt entitlement amount, and refusal
+  of new application under an acknowledged quest. Fixture cleanup follows FK
+  order; no production data is involved.
+- The real SQL death conflict harness compiled with
+  `test_player_death_conflict_repository.py.compile_sql` passes
+  `--terminal-quest-matrix`: archive/disposition/revision injected failures,
+  archive-only retry, schema-16 immutable readback, mixed XP/spell commits, exact
+  replay, missing/changed receipts, and unchanged complete item/custody/pet/wallet
+  source state.
+- Both production builds pass: `make -C src -s -j2 BUILD_PROFILE=production
+  PERSISTENCE_BACKEND=mariadb`, and the flatfile build with
+  `DMS_BINARY=/opt/duris/bin/server/dms_flatfile_new`.
+  MariaDB SHA-256:
+  `10d7e6b9f5b086ae70c62a7b3371ab39e7058818e7bd81d7aa17cf47e1725314`.
+  Flatfile SHA-256:
+  `c3519ef24491bcb5295417efa2e33b8e1a9503e881de10b2a1918c435c9265ac`.
+  These remain uncommitted candidate builds, not pinned releases.
+
+The reviewed writer sites were reanchored after quest edits without changing
+lexical content. The generated matrix check and normal accounting validator
+pass: 862 routes, 2,812 occurrences, 2,754 unique sites, zero unmapped sites.
+The coverage suite initially found one obsolete quest source-line expectation;
+that expectation was updated to the reviewed current sites and its focused test
+passes. The other 51 coverage tests pass. Release mode still reports `writer has
+no executable evidence`; release readiness remains false.
+
+This supersedes the earlier pending XP fallback/death transport and flatfile
+group restriction. Integrated service restart/copyover/save-custody races,
+complete native writer accounting, independent reconciliation/activation, and the
+staging-derived restore/repair rehearsal remain required. No server deployment,
+production migration, ownership repair, or accounting activation was performed.
+
+
+## 2026-09-30 — Quest crash journey and obsolete receipt replay
+
+A fresh `git fetch origin main` confirms that `origin/main` and committed HEAD
+remain `62a680dea` (PR #29); no additional merge is needed. Existing uncommitted
+persistence work is preserved.
+
+The existing debugger-driven quest crash journey now has a guarded disposable
+MariaDB mode and an XP-commit/lost-completion stop point. Its frozen fixture
+includes item, cash, and XP rewards. It checks original offering UIDs, one
+reward UID, cash value, progression, the native solo XP mask, the pending
+obligation, and a second cold restart. SQL mode requires explicit disposable
+loopback credentials, creates only a fresh generated test schema, applies the
+49 migrations, and removes that schema on completion. Flatfile remains the
+existing default. Synthetic failure logs are included in assertion diagnostics.
+
+The SQL offering crash first recovered rewards but refused character login on
+the second restart. An older receipt-bearing save that failed the custody guard
+remained in the journal after a later save paid the same reward. Replay rejected
+that obsolete attempt because its revision was no longer current. Repositories
+now explicitly verify every attached XP/spell receipt when reading an older
+save. Journal replay can retire an obsolete non-death frame using that proof.
+The original frame's revision is checkpointed, and live worker completion still
+requires an exact successful revision. Newer counters alone, missing markers,
+changed amounts/effects, and unverified death dispositions remain refused.
+No database migration or snapshot wire-format change is introduced.
+
+Validation:
+
+- `test_player_save_journal.py`, `test_player_save_worker.py`, and
+  `test_flatfile_player_repository.py` pass. New cases distinguish verified
+  obsolete operations from live ACKs and reject missing/conflicting historical
+  receipts despite newer player counters.
+- Disposable MariaDB with all 49 migrations passes
+  `test_player_save_item_reconcile_mysql.py`,
+  `test_player_spell_effect_receipt_mysql.py`, and the SQL death conflict
+  harness's `--terminal-quest-matrix`. The receipt fixture covers obsolete XP
+  and spell markers, missing application, changed XP amount/effect, and
+  unchanged progression after rejected replay.
+- Both production profiles build successfully. SQL binary SHA-256:
+  `4ebadc8075beb9d88418b5b3ee0fd7a3e41a314c96f05c51889258d3dbfb98b0`.
+  Flatfile binary SHA-256:
+  `df299fe338be2229dcbbe69bba8c0a98f8416db13070685c13deabbc9ce494a6`.
+  These are local uncommitted candidate builds.
+- The real SQL `--fault-phase offering` journey passes recovery and a second
+  cold restart: three original offering UID tombstones, one reward UID, exact
+  cash increase, retained XP, and no reopened obligation.
+- SQL `--fault-phase xp-ack` does **not** pass: XP is not paid twice and
+  item/cash checks pass, but a reconstructed item-grant attempt is rejected
+  with `ESTALE` and the quest obligation remains pending. The precise native
+  grant/recovery cause is still under investigation; an integrity alert alone
+  does not identify a changed-intent hash conflict.
+- The integrated flatfile `--fault-phase offering` journey does **not** pass:
+  the reward item is missing and the obligation remains pending after restart.
+  Its XP and item/custody publication path still requires investigation.
+  The flatfile XP-ACK phase was not reached because the offering phase failed.
+- Changed-line formatting and `git diff --check` pass. Writer reanchoring
+  changes zero sites; generated coverage and the normal accounting validator
+  pass with 862 routes, 2,812 occurrences, 2,754 unique sites, and zero unmapped
+  sites. Release mode still fails `writer has no executable evidence`.
+
+This is progress on a reproduced journal/login failure, not full quest or
+release qualification. No staging deployment, production database change,
+ownership reset, accounting activation, or PR was performed. Complete native
+writer coverage, further integrated recovery journeys, and the staging-derived
+repair/restore rehearsal remain required.
+
+## 2026-09-30 — Inactive flatfile accounting gate and quest recovery
+
+A fresh fetch again confirms `origin/main` and committed HEAD are `62a680dea`
+(PR #29). The refactor is already integrated; no merge or rebase is necessary.
+
+Debugger evidence identified the flatfile offering-recovery blockage. The item
+grant was admitted, but an earlier boon reward command exhausted nine attempts
+with `EILSEQ` and retained the player's coordinator fence. Its accounting-control
+read failed because boot creates an empty private `economic-evidence` directory
+even when accounting has never been initialized. The boon handler incorrectly
+used directory existence as its initialization test.
+
+Boon rewards and purchases now use the existing shared legacy domain gate. The
+gate accepts an absent or empty private evidence directory after journal recovery.
+Any nonempty evidence still requires valid control and epoch metadata; an active
+epoch returns `EAGAIN`. The weak control-reader fallback was removed from the boon
+repository, and its native harness now links the real authority implementation.
+No database schema, storage envelope, or command wire format changes here.
+
+Validation:
+
+- `test_flatfile_boon_repository.py` passes under ASan/UBSan, including empty
+  evidence admission, incomplete evidence refusal for rewards and purchases,
+  exact replay, and interrupted shop recovery.
+- `test_flatfile_accounting_authority.py` passes under ASan/UBSan, including
+  private empty-directory admission, unsafe metadata and stray evidence refusal,
+  active-epoch refusal, allocation failure preservation, native capacity bounds,
+  and ten crash boundaries. Its obsolete 32-operation-budget fixture was updated
+  to the existing receipt-bearing journal limit.
+- Both production profiles build successfully. MariaDB binary SHA-256:
+  `2798b9d3ce4dc41d58b8231fc9b774349bc011beb56f35f915cd83e48135d89f`.
+  Flatfile binary SHA-256:
+  `10f413d1cfe7797fa46497260260cbd5fd7523817eabfc703cb817b413640e4f`.
+  These remain local uncommitted candidate builds.
+- The real offering-crash journey passes on **both** backends through two cold
+  restarts: consumed offerings, one exact reward UID, exact cash increase,
+  retained XP, and a closed obligation. SQL runs on a task-owned disposable
+  MariaDB schema with all 49 migrations.
+- The XP-commit/lost-completion journey fails on **both** backends: item, cash,
+  and XP checks pass, but a reconstructed grant fails with `ESTALE` and leaves
+  one pending obligation. No duplicate XP was observed. This remains an open
+  recovery finding, separate from the fixed inactive-accounting gate.
+- Changed-line formatting, `git diff --check`, generated coverage `--check`,
+  and normal accounting validation pass. The census remains 862 routes, 2,812
+  occurrences, 2,754 unique sites, and zero unmapped sites. Release validation
+  still fails with `writer has no executable evidence`.
+
+The earlier flatfile offering failure is resolved. XP-ACK recovery, full native
+writer evidence, group/copyover/database-interruption journeys, and staging-derived
+restore and repair qualification remain. No deployment, production mutation,
+ownership reset, accounting activation, or PR was performed in this pass.
+
+## 2026-09-30 — Verified economic delivery recovery and refreshed staging
+
+Fetched `main` again: committed HEAD and `origin/main` remain `62a680dea`.
+No merge/rebase is required for PR #29. The worktree changes remain uncommitted.
+
+The reconstructed quest cash command kept its deterministic operation ID but
+received a new admission timestamp, changing its complete native digest. The
+fix preserves exact command replay and checks original delivery before recovery
+constructs another item or currency command. Player load carries a verified
+economic reward-slot mask into the existing quest continuation.
+
+SQL verifies committed native inbox results against original creation ledger
+source/recipient/UID/VNUM or the cash ledger's exact frozen denomination delta,
+slot, recovery site, revisions, and decoded result. Missing or conflicting
+evidence does not publish a partial load result. No SQL migration is added here.
+The item source identity helper is shared by the producer and repository reader.
+
+Flatfile ownership format 8 retains original creation source/recipient/VNUM and
+a persistent legacy-history flag. Domain format 4 retains eight bytes of cash
+slot/amount proof alongside the existing result. They read prior formats, retain
+the existing byte/receipt ceilings, and use the original journal/authority commit
+boundaries. Old pending economic obligations without reliable delivery evidence
+are held for review rather than guessed paid or unpaid. Rollback after writing
+these formats requires the corresponding old state and binary together.
+
+Validation:
+
+- The disposable MariaDB full-schema receipt fixture passes exact item/cash
+  delivery, moved/tombstoned delivered items, wrong recipient/VNUM/amount,
+  missing ledger, malformed payload, and result/ledger mismatch cases.
+- The existing SQL save reconciliation fixture passes same-owner repair,
+  foreign-owner refusal, reconnect, and restart. Its link command now includes
+  the two real result codecs used by the quest reader. The terminal spell/XP
+  matrix passes in the same disposable schema.
+- `test_durable_quest_offering.py` and `test_static_quest_reward_source.py` pass
+  the focused gameplay/identity cases, including paid-slot skipping, unpaid-slot
+  dispatch, invalid masks, and visible review holds.
+- Flatfile item and domain native suites pass new proof, backward-readable
+  formats, historical obligation holds preserved across an upgrade, and changed
+  admission metadata refusing exact replay. The player native harness passes
+  using the rebuilt inspector; its obsolete format-3 source assertion now names 4.
+- Real SQL and flatfile crash journeys pass **both offering and XP-ACK phases**
+  through a second cold restart: consumed offering UIDs, exactly one reward UID,
+  exact cash, retained XP, and no pending obligation. The flatfile inspector was
+  rebuilt after the format change; its first attempt with the old decoder failed
+  before gameplay and was not counted as runtime evidence.
+- Both production profiles build successfully after the staging world-capacity
+  integration. Final SQL SHA-256 is
+  `eb3b044016825939031d6b77d67e72974af9eb4fbf4881044b7fce29b6de0cf7`;
+  flatfile is
+  `48ed46129ae1af6587049e0de11f2ba3f0fc3d86b77b1180ca4f8b0f8bdc7d08`.
+  These are uncommitted local candidates. Final offering/XP-ACK reruns pass
+  on both exact binaries after the world-capacity integration.
+- Changed-line formatting passes. The coverage matrix remains 862 routes,
+  2,812 occurrences, 2,754 unique sites, zero unmapped sites. Normal contract
+  validation and matrix `--check` pass. The coverage suite passed 51 cases and
+  found one stale quest line anchor; the corrected focused case passes. The
+  release validator still rejects missing executable writer evidence.
+
+A fresh read-only staging inventory at 11:04 UTC found a new baseline:
+`381bf595c`, six local commits, schema 0045, a changed live binary, and a backup
+containing native quarantine/archive policy evidence. The four commits after the
+previous 6141167f baseline were read as tracked patches into ignored scratch.
+The 128 MiB bounded world/Redis capacity and backup preservation patches are
+ported locally. The world suite passes a 68,076,224-byte capture; an isolated
+Redis process publishes and reads it across 65 chunks. All 17 backup remediation
+tests pass, including byte-exact quarantine preservation and wrong-root refusal.
+
+The journal prefix/acknowledgment and native PID-fence/archive patches still
+need integration with this candidate's XP/spell proof logic. Current backups
+must not be replayed with a reader that ignores their fences. The configured
+dedicated restore mount remains absent. The refreshed read-only custody audit
+still reports 417 held cases: 406 exact death witnesses, ten related-root
+witnesses, one unwitnessed. These counts do not clear a case or establish a
+frozen repair artifact. `STAGING_SQL_ROLLOUT_PREP.md` now records the refreshed
+baseline and 0046–0049 clone migration range.
+
+This resolves the reproduced cold quest recovery finding. It does not finish
+group/copyover/database-interruption or concurrent publication/save journeys,
+prove the new reader's production workload budget, supply full writer evidence,
+or qualify the staging-derived clone and ownership repair. No live deployment,
+migration, ownership reset, accounting activation, or PR was performed.
+
+## 2026-09-30: integrate staging journals with exact operation receipts
+
+A fresh `git fetch origin main` confirms the refactor is already present:
+HEAD and `origin/main` both resolve to `62a680dea`, with zero divergence.
+No additional main merge was needed. Staging commits `c21ab308f` and
+`3d8490b7f` were reconstructed from verified tracked Git blobs and integrated
+through a deliberate three-way merge with the existing accounting changes.
+
+- Native quarantine archives and persistent PID policy now fence account,
+  login/load, materialization, saves, direct SQL, and copyover paths. The removed
+  pre-refactor `sql_delete_player_items` API was not reintroduced.
+- Replay drains only proven prefixes. Terminal or unproven operations archive
+  complete PID groups with original bytes and hashes before compaction; their
+  fences survive restart. Transient and ambiguous commits retain active frames.
+  Archive/sync failure keeps admission closed. Queued captures stay retained if
+  both archive persistence and requeue allocation fail.
+- Ordinary checkpoints retain every death, XP, and spell receipt frame. Exact
+  worker ACKs compare full encoded payloads. Verified obsolete non-death receipts
+  can retire a replay frame without acknowledging newer live state. Journal ACK
+  failures retry without advancing the simulation's acknowledged revision.
+- Fault injection found that decode allocation failure was classified as corrupt
+  data. The reader now returns an I/O failure and preserves the active file;
+  initialization also catches allocation failures and keeps all admission closed.
+  The native allocation matrix proves valid bytes do not become an archive.
+- The lifecycle inventory now protects both archive and PID-policy stores.
+  Native restore qualification validates the production format and requires
+  protected files to remain byte-identical. Damaged digests, invalid/unsafe
+  policies, wrong roots, and symlinks refuse qualification.
+
+Focused native journal, worker, load/save pipeline, live terminal failure,
+quarantined dispatcher, corruption/allocation, restore, and death lifecycle
+tests pass. The isolated MariaDB fixtures pass item topology/equipment replay,
+retired-component/cycle/foreign-owner quarantine, exact spell/XP receipts, and
+the terminal-death receipt matrix. SQL death repository and load-stack compilation
+pass; their general runtime tests explicitly skip without dedicated fixtures.
+The lifecycle suite passes 14 cases, immutable migration runner 14, backup
+remediation 17, and runtime compatibility nine. The 52-case coverage run found
+two stale source-line assertions after guard insertion; both corrected cases
+pass in a focused rerun. Census remains 862 routes, 2,812 occurrences, 2,754
+unique sites, zero unmapped sites. Normal validation and generated `--check`
+pass; release validation still fails for missing executable writer evidence.
+
+Both production profiles compile after the integration. SQL SHA-256 is
+`a0cf572a888d4ac1eaa87b9a86b45390afd4f998ad543be737f87e21b94fc632`;
+flatfile is
+`6c70970f01453412b3ba7deb342cd5b32e99a86c43c9e76457e51829bb88a5bd`.
+Real offering and XP-ACK crash journeys pass on both exact binaries through
+recovery and a second cold restart, preserving the original offering tombstones,
+one reward UID, exact cash and XP, and a closed obligation.
+
+These remain uncommitted local candidates. The private captured-journal fixture,
+fresh staging-derived native backup restore, migration history/checksum check,
+and dedicated staging restore mount remain pending. Full writer evidence,
+production query budgets, and concurrent publication/save, group, copyover, and
+database interruption qualification remain required. No staging or production
+restart, migration, reset, accounting activation, or PR was performed.
+
+A later read-only metadata comparison found a concrete migration fork. All 45
+live history rows match staging's own tracked manifest. Candidate and staging
+entries 0001–0044 match; at 0045 staging applied
+`0045_item_extra_description_fulltext_unique`, whereas this candidate expects
+`0045_quest_reward_obligation`. Both apply and verify checksums also differ.
+The earlier 0046–0049 upgrade range is superseded. The immutable runner correctly
+refuses the fork before any apply/verify/record step. A focused regression retains
+that refusal even when the applied count and history digest are internally
+consistent. Preserve original history and qualify a supported transition on the
+clone; do not relabel the applied migration or disable the boot gate.
+
+Replay review also found that CRC32 equality alone suppressed duplicate frames.
+The merged reader now compares complete payload bytes inside each identity
+bucket. A native regression constructs codec-valid CRC32 collisions for ordinary,
+XP, and spell snapshots and proves both distinct frames reach apply; a true
+duplicate in the same collision bucket is still suppressed. The full journal
+suite, allocation refusal matrix, and disposable SQL receipt/death fixtures pass
+after this fix. Production profiles both compile. The newer candidate hashes
+supersede the earlier journal integration artifacts: SQL
+`ba385af2d2183b87e3381a5ca4e4f14b72f75154324b7d01d03854fc270b7849`,
+flatfile
+`83a1763a03e74abb11fd26716cdf3eeee3fcbccbf1358c4db6a53713db57bd4e`.
+Final offering and XP-ACK crash reruns pass on both newer exact binaries through
+the second cold restart. The immutable migration suite passes all 15 cases,
+including the verified fork refusal. Normal accounting validation, matrix
+`--check`, changed-line formatting, and `git diff --check` pass. Full accounting
+release validation remains blocked for missing executable writer evidence.
+
+
+## 2026-09-30: append-only staging migration transition qualified
+
+Fresh `origin/main` fetch confirms this worktree includes the refactor merge
+`62a680dea`; committed HEAD and main have zero divergence. The candidate now
+supports two exact, complete migration histories. Canonical databases append
+`0050_item_extra_description_fulltext_unique`; the explicit staging manifest
+retains staging's original 0045 and appends the five missing candidate steps at
+sequences 46–50. The historical staging apply/verifier artifacts retain their
+original checksums. No history row is renamed, deleted, or rewritten.
+
+The new dual-engine test uses the real migration runner on disposable MySQL
+8.0.46 and MariaDB 10.11.19 databases. It verifies:
+
+- canonical and staging histories converge on identical schema metadata for
+  each engine, with 223 runtime tables;
+- staging's first 45 receipts, including timestamps, remain unchanged and
+  exactly five new receipts are appended;
+- canonical selection rejects the original fork before a schema change, and
+  rerunning either completed manifest preserves every receipt;
+- long descriptions sharing a 255-character prefix and distinct case/accent
+  variants retain their original rows through migration/replay;
+- duplicate complete values refuse before permanent DDL without deleting rows;
+- both shell and actual compiled boot predicates accept each completed history
+  and reject edited old receipts, a checksum from the other history, and a
+  changed generated digest expression; restoring the exact schema restores
+  successful verification.
+
+The checked-in metadata fingerprints are:
+
+| Engine | Normalized SHA-256 |
+| --- | --- |
+| MySQL 8.0.46 | `3fb1ba07114cefca9d5f3c75d1e81ca34b417d517800a8e5c1e0554e73e4fc7e` |
+| MariaDB 10.11.19 | `d617f29895e70446566b3a57a5912accd6f299be687d060225f8431fa029ec3c` |
+
+The boot gate now recomputes the complete seven-field, length-framed history
+checksum and binds it to the matching stored state. It separately pins the
+generated description expressions because the generic generated-column flag
+cannot prove their contents. MySQL's escaped empty-string metadata and Windows
+CRLF temporary manifests are covered by the native qualification. A read-only
+SSH probe also confirms the existing staging MariaDB 10.11.14 columns satisfy
+the exact expression predicate. It did not modify the staging database.
+
+Both production profiles build. SQL SHA-256 is `526edd3e87b02613df33c400163acd7395b15a8647fe621ab5f285ec5e289221`;
+flatfile SHA-256 is `01399766c69ac2b5df31d0d72a5633a43c0aacc3a77d1684b8079acdd704c1cf`. Offering and XP-ACK crash journeys pass on both
+exact binaries through recovery and the second cold restart. The disposable
+MariaDB item reconciliation, spell/XP exact receipt, and terminal-death receipt
+matrix pass on the 50-step schema. The historical 0002 verifier is checked on
+the first fixture pass and skipped on the second after 0050 replaces its prefix
+index; the 0050 verifier checks the final schema. Immutable runner tests pass
+17 cases; runtime compatibility tests pass ten. Offline runtime validation,
+normal accounting validation, and generated coverage `--check` pass. Line-only
+census reanchoring preserves all 862 routes and 2,754 unique sites.
+
+These results qualify the local schema transition and selected native paths.
+They do not complete the staging-derived backup restore, private journal
+capture, dedicated restore mount, damaged ownership case reconciliation,
+complete accounting writer evidence, or integrated release fault matrix. The
+accounting release validator still refuses missing executable writer evidence.
+No staging/production migration, repair, reset, restart, accounting activation,
+or pull request was performed.
+
+## 2026-09-30: migration lock and receipt atomicity qualified
+
+The immutable runner now retains one client connection from advisory-lock
+acquisition through DDL verification, receipt/state commit, and lock release.
+The previous per-statement client could release the lock before migration work.
+A failed history-state comparison now rolls back the inserted receipt before
+reporting failure. Automatic reconnect is disabled; connection loss, SQL errors,
+output bounds, timeouts, allocation failures, and cancellation permanently fence
+the executor and roll back any open transaction.
+
+The complete canonical/staging transition fixture passes with this transport on
+disposable MySQL 8.0.46 and MariaDB 10.11.19 databases. The native fault fixture
+also proves competing-runner exclusion, stable connection identity across DDL,
+failed-state rollback, connection-kill rollback, no writes after session loss,
+and cancellation/allocation rollback. Both runtime fingerprints are unchanged.
+The focused immutable-runner suite passes 19 cases on Linux. Its Windows run
+cannot exercise Unix ownership checks, POSIX shell adapters, or privileged
+symlink creation; the maintained operational target is Linux.
+
+Reproduce both full schema histories with
+`python3 tests/async/test_staging_migration_fork_mysql.py`, or just the native
+session faults with the same command and `--lock-only`. Local evidence is in
+ignored `tmp/staging-fork-held-session-qualification.json` and
+`tmp/migration-session-fault-qualification.json`. No remote operational change
+was made. The staging-derived restore and complete accounting release gates
+remain pending.
+
+## 2026-09-30: staging-derived migration and recovery-file rehearsal
+
+The completed staging generation `[protected generation identity]` was verified read-only
+on staging and captured through SFTP into an ignored local directory with a
+Windows ACL granting access only to the current user. Capture completed at
+14:47:25 UTC.
+All 14 files match the frozen manifest; total size is 141,794,893 bytes and the
+manifest SHA-256 is `[protected manifest digest]`. The source checkout remained
+`381bf595c2892252c3549673687a4f13dc0b8b95`. This is a completed historical
+generation, not a fresh cutover backup or a second independent rollback copy.
+
+An isolated local MariaDB 10.11.14 container, matching staging's server version,
+restored the SQL dump under a new database name with a schema-scoped import
+account. The canonical manifest refused the 45-step fork before changes. The
+explicit staging manifest then appended exactly five migrations. All original
+45 receipts, including timestamps, remained byte-identical. Deterministic
+native dumps of player data, player/pet payloads and descriptions, current
+custody, ownership baseline/ledger, death disposition/custody, critical inbox,
+currency ledger, and banks remained identical. Shell and actual compiled boot
+predicates passed on the upgraded clone; the second migration run preserved all
+50 receipts. Accounting activation and economic opening tables remained empty.
+The container was removed after qualification.
+
+The complete captured generation also passes the candidate backup verifier on a
+private Linux copy. The newly built native recovery qualifier passes preflight
+and drained checks twice on copied journals, quarantine archive/PID policy, and
+locker receipts. Active player and critical journals have zero records. The
+native parser reports 83,536,054 protected player payload bytes; every original
+recovery file remains byte-identical. The captured generation is reverified
+afterward. No live journal was replayed and no remote file or database was changed.
+
+The frozen database retains **417 custody-history cases** with 29,945 normalized
+death evidence rows: 406 exact death witnesses, ten related-root witnesses, and
+one unwitnessed case. A protected custody artifact binds these cases to the SQL
+dump checksum. Physical topology covers 73,490 rows and 72,609 distinct nonzero
+UIDs; it reports **1,901 findings**: 1,077 ambiguous payload rows, 346 missing
+UIDs, 170 missing payload owners, 298 owner disagreements, and ten missing
+current owners. The 1,069 rows sharing duplicate UIDs are included in this
+census. Custody and topology categories overlap and are not a count of distinct
+items requiring restitution. Migration leaves all these cases unchanged.
+
+This closes the staging-derived schema transition and captured recovery-file
+format gates for this generation. It does not qualify candidate service
+boot/login/save/copyover against the full clone, independent monetary
+reconciliation, cross-backup/journal case dispositions, ownership repair, a
+fresh rollback generation, or the remote dedicated restore mount. A new opening
+and accounting activation remain guarded. Protected local receipts and raw
+evidence stay under `tmp/staging-private-proof`; player data and archives are
+not included in the repository.
+
+## 2026-09-30: complete staging history accepted by restore qualification
+
+The database restore qualifier now accepts either exact completed immutable
+history already supported by the boot gate. It loads and verifies both known
+manifests, refuses partial/mixed/edited/extended histories before native value
+checks, and closes the persistent client on success or failure. It does not
+apply migrations, relabel receipts, or accept arbitrary manifests.
+
+The focused Linux immutable-runner suite passes 22 tests, including both
+completed histories, seven incomplete or damaged variants, and cleanup on
+success/refusal. The full dual-engine fixture passes canonical and staging
+migration, rerun, lock/fault, history/state tamper, and description-expression
+checks on MySQL 8.0.46 and MariaDB 10.11.19. Its native fixture independently
+checks the restore history selector against actual database rows while also
+running the compiled boot predicates. Runtime compatibility source/manifest
+contracts pass ten tests. Offline runtime, normal accounting contracts, and
+generated coverage checks pass; the accounting release validator still refuses
+`writer has no executable evidence`. These checks do not qualify every native
+monetary reconciliation query or the complete writer matrix.
+
+## 2026-09-30: exact SQL candidate starts on the upgraded staging clone
+
+The SQL production binary with SHA-256
+`526edd3e87b02613df33c400163acd7395b15a8647fe621ab5f285ec5e289221`
+passes the existing isolated service restore smoke test against a newly restored
+and upgraded copy of the captured staging generation on MariaDB 10.11.14. It
+uses the mini world in a separate user/network/PID namespace, reaches the exact
+healthy/persistence-ready HTTP state, starts the save/load/critical pipelines,
+and shuts down with normal termination and exit status zero. The copied
+journals, quarantine archive/PID policy, and locker receipts remain byte-identical.
+The temporary database container and socket volume are removed afterward.
+Accounting activation remains absent; this test does not enable an epoch.
+
+The restore-tools image supplies the existing `iproute2` prerequisite. Earlier
+attempts stopped before server launch because a copied journal directory had
+Windows mount permissions and the general QA image lacked `ip`. The corrected
+private Linux copy and existing restore-tools image pass the namespace and
+service checks. The integration test now detects missing `ip` in its prerequisite
+check instead of failing late during namespace startup.
+
+This closes minimal boot/readiness/normal-shutdown qualification on the captured
+staging data. It does not prove full-world boot, existing-character login/save,
+disconnect/copyover/database-fault journeys, monetary reconciliation, or repair
+of the preserved custody cases. The full backup manager's dedicated mount,
+fresh independent erasure evidence, latest rollback generation, and remote
+operational cutover gates remain. Protected local evidence is in ignored
+`tmp/staging-private-proof/clone-service-qualification.json` and the private
+service log. No staging or production operation was performed.

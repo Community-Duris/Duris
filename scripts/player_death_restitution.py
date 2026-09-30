@@ -97,6 +97,7 @@ DEATH_NORMALIZED_SCHEMA_VERSION = 8
 # label is authoritative and must not be confused with raw wire_version.
 DEATH_SCHEMA_VERSION = DEATH_NORMALIZED_SCHEMA_VERSION
 DEATH_WIRE_VERSIONS = frozenset({2, 4, 6, 8})
+DEATH_WIRE_SCHEMAS = {wire: 8 for wire in DEATH_WIRE_VERSIONS} | {13: 13, 15: 15}
 ITEM_MONEY = 20
 VOBJ_COINS = 3
 ITEM_ARTIFACT = REAL_ARTIFACT_FLAG
@@ -1458,10 +1459,10 @@ def decode_payload(payload: bytes) -> dict[str, Any]:
         raise ToolError("codec bridge returned invalid structured output") from exc
     if not isinstance(decoded, dict):
         raise ToolError("codec bridge returned an invalid death object")
-    if (decoded.get("wire_version") not in DEATH_WIRE_VERSIONS
-            or decoded.get("schema_version") != DEATH_NORMALIZED_SCHEMA_VERSION):
+    expected_schema = DEATH_WIRE_SCHEMAS.get(decoded.get("wire_version"))
+    if expected_schema is None or decoded.get("schema_version") != expected_schema:
         raise ToolError(
-            "death payload is not a supported raw-wire death encoding normalized to schema-8"
+            "death payload is not a supported raw-wire death encoding with matching schema-8, schema-13 or schema-15"
         )
     return decoded
 

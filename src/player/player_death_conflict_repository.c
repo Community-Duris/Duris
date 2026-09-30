@@ -141,7 +141,7 @@ std::string wire(const player_snapshot &snapshot)
 void valid_request(const player_snapshot &snapshot)
 {
 	require(snapshot.pid > 0 && snapshot.revision && snapshot.death &&
-			snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION &&
+			player_snapshot_is_death_request_schema(snapshot.schema_version) &&
 			snapshot.components == PLAYER_CHECKPOINT_COMPONENT_ALL &&
 			snapshot.items.empty() && !snapshot.death->conflict_evidence,
 		EINVAL);
@@ -387,13 +387,13 @@ std::optional<stored_record> read_record(MYSQL *connection, const std::string &p
 	require(player_snapshot_decode(reinterpret_cast<const uint8_t *>(row[7]), lengths[7],
 				       &output.snapshot) == player_snapshot_codec_result::ok);
 	const auto &snapshot = output.snapshot;
-	require(snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION &&
+	require(player_snapshot_is_death_evidence_schema(snapshot.schema_version) &&
 		snapshot.death && snapshot.death->conflict_evidence && snapshot.pid == output.pid &&
 		snapshot.revision == output.identity.save_revision &&
 		snapshot.death->operation_id.bytes == output.identity.operation_id.bytes &&
 		snapshot.death->corpse.front().object_uid == output.identity.corpse_item_uid);
 	auto request = snapshot;
-	request.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+	request.schema_version = player_snapshot_death_request_schema(snapshot.schema_version);
 	request.death->conflict_evidence.reset();
 	valid_request(request);
 	require(digest(wire(request)) == output.request_hash);
@@ -517,7 +517,8 @@ retain_death_conflict(MYSQL *connection, const player_snapshot &request, bool te
 			require(mysql_num_rows(cases.get()) == 0, EEXIST);
 		}
 		auto retained = request;
-		retained.schema_version = PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION;
+		retained.schema_version =
+			player_snapshot_death_evidence_schema(request.schema_version);
 		retained.death->conflict_evidence =
 			observations(connection, tx.session, request, request_bytes.size());
 		const auto payload = wire(retained);

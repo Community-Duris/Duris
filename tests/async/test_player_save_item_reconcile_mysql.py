@@ -24,6 +24,9 @@ HARNESS = r'''
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <fstream>
+#include <iterator>
+#include <cerrno>
 #include <limits>
 #include <string>
 #include <vector>
@@ -181,6 +184,22 @@ void open_journal(const std::string &directory)
     }
 }
 
+std::vector<char> journal_bytes(const std::string &path)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file.good()) return {};
+    return std::vector<char>(std::istreambuf_iterator<char>(file), {});
+}
+
+bool exact_quarantine(int pid, const std::string &directory, const std::vector<char> &original)
+{
+    const auto archive = journal_bytes(directory + "/player-save.journal.quarantine.archive");
+    return !original.empty() && !archive.empty() &&
+           std::search(archive.begin(), archive.end(), original.begin(), original.end()) != archive.end() &&
+           player_save_journal_pid_quarantined(pid) &&
+           player_save_journal_health_copy().records == 0;
+}
+
 bool replay_case(MYSQL *db, const std::string &directory, const char *case_name,
                  player_save_journal_result expected)
 {
@@ -211,6 +230,8 @@ int main(int argc, char **argv)
     const int equipment_pid = lag_pid + 3;
     const int legacy_equipment_pid = lag_pid + 4;
     const int retired_pid = lag_pid + 5;
+    const int orphan_pid = lag_pid + 6;
+    const int orphan_pet_pid = lag_pid + 7;
     constexpr uint64_t lag_root = UINT64_C(9000000000000000100);
     constexpr uint64_t lag_child = UINT64_C(9000000000000000101);
     constexpr uint64_t foreign_item = UINT64_C(9000000000000000102);
@@ -232,6 +253,8 @@ int main(int argc, char **argv)
     seed_player(db, equipment_pid, "ItemReconEquipmentFixture");
     seed_player(db, legacy_equipment_pid, "ItemReconLegacyEquipFixture");
     seed_player(db, retired_pid, "ItemReconRetiredFixture");
+    seed_player(db, orphan_pid, "ItemReconOrphanFixture");
+    seed_player(db, orphan_pet_pid, "ItemReconOrphanPetFixture");
     exec_sql(db,
              "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
              "owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
@@ -398,6 +421,7 @@ int main(int argc, char **argv)
 
     // Inactive legacy equipment has no accounting reference. Its native slot
     // must survive a normal save while the new custody column still defaults 0.
+    open_journal(journal_root + "/healthy-direct-save");
     player_snapshot legacy_equipment =
         make_snapshot(legacy_equipment_pid, 2, {{legacy_equipment_item, 19}});
     legacy_equipment.items[0].equipment_slot = 5;
@@ -440,6 +464,7 @@ int main(int argc, char **argv)
 
     // A queued save contains a spell component forest that was later retired.
     // Keep the stale frame for diagnosis without restoring either native row.
+    player_save_journal_shutdown();
     const std::string retired_directory = journal_root + "/retired-component-save";
     player_snapshot retired_snapshot =
         make_snapshot(retired_pid, 2, {{retired_root, 20}, {retired_child, 21}});
@@ -447,6 +472,7 @@ int main(int argc, char **argv)
     open_journal(retired_directory);
     if (player_save_journal_append(retired_snapshot) != player_save_journal_result::ok)
         return 2;
+    const auto retired_original = journal_bytes(retired_directory + "/player-save.journal");
     player_save_journal_shutdown();
     exec_sql(db, "UPDATE item_current_owner SET owner_type=8,owner_id=0,state=2,"
                  "item_revision=2 WHERE item_uid IN (" + std::to_string(retired_root) +
@@ -473,22 +499,22 @@ int main(int argc, char **argv)
         request.deadline_usec =
             persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
         const auto loaded = player_load_repository_execute(db, request);
-        if (loaded.outcome != player_load_outcome::applied)
+        if (loaded.outcome != player_load_outcome::cancelled)
             std::cerr << "retired load outcome=" << static_cast<int>(loaded.outcome)
                       << " stage=" << (loaded.failed_component ? loaded.failed_component : "none")
                       << " error=" << loaded.error_code << '\n';
-        return loaded.outcome == player_load_outcome::applied &&
-               loaded.snapshot.items.empty();
+        return loaded.outcome == player_load_outcome::cancelled &&
+               loaded.error_code == EPERM && loaded.snapshot.items.empty();
     };
     mysql_close(db);
     db = connect_db();
     const bool retired_blocked = replay_case(db, retired_directory,
-        "retired_component_save", player_save_journal_result::replay_blocked);
+        "retired_component_save", player_save_journal_result::ok);
     const uint64_t retired_native_count = scalar(
         db, "SELECT COUNT(*) FROM player_items WHERE obj_uid IN (" +
             std::to_string(retired_root) + "," + std::to_string(retired_child) + ")");
     all_passed &= expect(retired_blocked &&
-                         player_save_journal_health_copy().records == 1 &&
+                         exact_quarantine(retired_pid, retired_directory, retired_original) &&
                          scalar(db, "SELECT save_revision FROM player_data WHERE pid=" +
                                     std::to_string(retired_pid)) == 1 &&
                          retired_native_count == 0 &&
@@ -502,8 +528,8 @@ int main(int argc, char **argv)
     replay_context retired_context{db};
     const auto retired_restart = player_save_journal_replay(apply_snapshot,
                                                             &retired_context);
-    all_passed &= expect(retired_restart == player_save_journal_result::replay_blocked &&
-                         player_save_journal_health_copy().records == 1 &&
+    all_passed &= expect(retired_restart == player_save_journal_result::ok &&
+                         exact_quarantine(retired_pid, retired_directory, retired_original) &&
                          scalar(db, "SELECT COUNT(*) FROM player_items WHERE obj_uid IN (" +
                                     std::to_string(retired_root) + "," +
                                     std::to_string(retired_child) + ")") == 0 &&
@@ -515,6 +541,7 @@ int main(int argc, char **argv)
               << " projected_uids=" << retired_native_count << '\n';
     player_save_journal_shutdown();
 
+    open_journal(journal_root + "/healthy-direct-refusals");
     player_snapshot incomplete_snapshot =
         make_snapshot(lag_pid, 3, {{lag_root, 15}});
     const player_save_apply_result missing_payload =
@@ -536,16 +563,59 @@ int main(int argc, char **argv)
               << " revision=" << missing_payload_revision
               << " projected_uids=" << missing_payload_rows << std::endl;
 
+    // Load skips rows with no custody. A later full save or pet replacement must
+    // retain that sole payload for the one-time ownership repair.
+    exec_sql(db, "INSERT INTO player_items(pid,vnum,equip_slot,obj_uid) VALUES(" +
+                     std::to_string(orphan_pid) + ",22,0,9000000000000000110)");
+    const auto orphan_before = query_rows(
+        db, "SELECT id,obj_uid,vnum FROM player_items WHERE pid=" + std::to_string(orphan_pid));
+    const auto orphan_result = player_snapshot_repository_apply(
+        db, make_snapshot(orphan_pid, 2, {}));
+    all_passed &= expect(
+        orphan_result.outcome == player_save_apply_outcome::terminal_failure &&
+            orphan_result.error_code == PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
+            orphan_result.custody_diagnosis == player_save_custody_diagnosis::orphaned_saved_item &&
+            query_rows(db, "SELECT id,obj_uid,vnum FROM player_items WHERE pid=" +
+                               std::to_string(orphan_pid)) == orphan_before &&
+            scalar(db, "SELECT save_revision FROM player_data WHERE pid=" +
+                           std::to_string(orphan_pid)) == 1,
+        "orphaned player item was deleted by a full save");
+
+    exec_sql(db, "INSERT INTO player_pets(owner_pid,mob_vnum,pet_uid) VALUES(" +
+                     std::to_string(orphan_pet_pid) + ",23,9000000000000000120)");
+    const uint64_t orphan_pet_id = scalar(
+        db, "SELECT id FROM player_pets WHERE owner_pid=" + std::to_string(orphan_pet_pid));
+    exec_sql(db, "INSERT INTO player_pet_items(pet_id,vnum,obj_uid) VALUES(" +
+                     std::to_string(orphan_pet_id) + ",24,9000000000000000121)");
+    player_snapshot orphan_pet_snapshot = make_snapshot(orphan_pet_pid, 2, {});
+    orphan_pet_snapshot.components = PLAYER_COMPONENT_PETS;
+    const auto orphan_pet_result = player_snapshot_repository_apply(db, orphan_pet_snapshot);
+    all_passed &= expect(
+        orphan_pet_result.outcome == player_save_apply_outcome::terminal_failure &&
+            orphan_pet_result.error_code == PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
+            orphan_pet_result.custody_diagnosis ==
+                player_save_custody_diagnosis::orphaned_saved_pet_item &&
+            scalar(db, "SELECT COUNT(*) FROM player_pet_items WHERE pet_id=" +
+                           std::to_string(orphan_pet_id)) == 1 &&
+            scalar(db, "SELECT COUNT(*) FROM player_pets WHERE id=" +
+                           std::to_string(orphan_pet_id)) == 1,
+        "orphaned pet item was deleted by pet replacement");
+
     const std::string cycle_snapshot_dir = journal_root + "/invalid-owner-cycle";
     player_snapshot cycle_snapshot =
         make_snapshot(lag_pid, 3, {{lag_root, 15}, {lag_child, 16}});
+    player_save_journal_shutdown();
     open_journal(cycle_snapshot_dir);
     if (player_save_journal_append(cycle_snapshot) != player_save_journal_result::ok)
     {
         std::cerr << "could not append invalid-topology player save frame\n";
         return 2;
     }
+    const auto cycle_original = journal_bytes(cycle_snapshot_dir + "/player-save.journal");
     player_save_journal_shutdown();
+    exec_sql(db, "DELETE FROM player_pet_items WHERE pet_id=" + std::to_string(orphan_pet_id));
+    exec_sql(db, "DELETE FROM player_pets WHERE id=" + std::to_string(orphan_pet_id));
+    exec_sql(db, "DELETE FROM player_items WHERE pid=" + std::to_string(orphan_pid));
     exec_sql(db, "UPDATE item_current_owner SET parent_item_uid=" +
                      std::to_string(lag_child) + ",item_revision=3 WHERE item_uid=" +
                      std::to_string(lag_root));
@@ -559,7 +629,7 @@ int main(int argc, char **argv)
     mysql_close(db);
     db = connect_db();
     const bool cycle_blocked = replay_case(db, cycle_snapshot_dir, "invalid_owner_cycle",
-                                           player_save_journal_result::replay_blocked);
+                                           player_save_journal_result::ok);
     const auto cycle_health = player_save_journal_health_copy();
     const uint64_t cycle_revision =
         scalar(db, "SELECT save_revision FROM player_data WHERE pid=" + std::to_string(lag_pid));
@@ -567,13 +637,13 @@ int main(int argc, char **argv)
     const auto cycle_projection_after = query_rows(
         db, "SELECT obj_uid,vnum,COALESCE(container_id,0) FROM player_items WHERE pid=" +
                 std::to_string(lag_pid) + " ORDER BY obj_uid");
-    all_passed &= expect(cycle_blocked && cycle_health.records == 1,
-                         "invalid authoritative cycle was not retained as blocked");
+    all_passed &= expect(cycle_blocked && exact_quarantine(lag_pid, cycle_snapshot_dir, cycle_original),
+                         "invalid authoritative cycle was not archived and fenced");
     all_passed &= expect(cycle_revision == 2 && cycle_owner_after == cycle_owner_before &&
                              cycle_projection_after == cycle_projection_before,
                          "cycle refusal changed custody, projection, or save revision");
     std::cout << "CASE invalid_owner_cycle replay="
-              << describe(cycle_blocked ? player_save_journal_result::replay_blocked
+              << describe(cycle_blocked ? player_save_journal_result::ok
                                         : player_save_journal_result::ok)
               << " pending_frames=" << cycle_health.records
               << " unchanged="
@@ -603,6 +673,7 @@ int main(int argc, char **argv)
         std::cerr << "could not append conflicting synthetic player save frame\n";
         return 2;
     }
+    const auto foreign_original = journal_bytes(foreign_directory + "/player-save.journal");
     player_save_journal_shutdown();
     const std::string foreign_owner_query =
         "SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,"
@@ -616,12 +687,12 @@ int main(int argc, char **argv)
     mysql_close(db);
     db = connect_db();
     const bool foreign_blocked = replay_case(db, foreign_directory, "conflicting_foreign_owner",
-                                             player_save_journal_result::replay_blocked);
+                                             player_save_journal_result::ok);
     const uint64_t conflict_revision = scalar(
         db, "SELECT save_revision FROM player_data WHERE pid=" + std::to_string(conflict_pid));
     const auto foreign_owner_after = query_rows(db, foreign_owner_query);
     const auto foreign_projection_after = query_rows(db, foreign_projection_query);
-    all_passed &= expect(foreign_blocked, "foreign owner conflict was not fail-closed");
+    all_passed &= expect(foreign_blocked && exact_quarantine(conflict_pid, foreign_directory, foreign_original), "foreign owner conflict was not fail-closed");
     all_passed &= expect(conflict_revision == 1, "conflicting save advanced durable revision");
     all_passed &= expect(foreign_owner_after == foreign_owner_before,
                          "foreign owner's authoritative custody changed");
@@ -634,8 +705,8 @@ int main(int argc, char **argv)
     replay_context foreign_context{db};
     const auto foreign_restart = player_save_journal_replay(apply_snapshot, &foreign_context);
     const auto foreign_health = player_save_journal_health_copy();
-    all_passed &= expect(foreign_restart == player_save_journal_result::replay_blocked &&
-                             foreign_health.records == 1,
+    all_passed &= expect(foreign_restart == player_save_journal_result::ok &&
+                             exact_quarantine(conflict_pid, foreign_directory, foreign_original),
                          "restart incorrectly discarded a genuine ownership conflict");
     all_passed &= expect(query_rows(db, foreign_owner_query) == foreign_owner_before &&
                              query_rows(db, foreign_projection_query) == foreign_projection_before,
@@ -653,7 +724,8 @@ int main(int argc, char **argv)
                      std::to_string(conflict_pid) + "," +
                      std::to_string(equipment_pid) + "," +
                      std::to_string(legacy_equipment_pid) + "," +
-                     std::to_string(retired_pid) + ")");
+                     std::to_string(retired_pid) + "," + std::to_string(orphan_pid) +
+                     "," + std::to_string(orphan_pet_pid) + ")");
     exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid=" +
                  std::to_string(retired_child));
     exec_sql(db, "DELETE FROM item_current_owner WHERE item_uid=" +
@@ -708,6 +780,8 @@ def main() -> None:
                 "src/player/player_death_conflict_repository.c",
                 "src/persistence/critical_command.c",
                 "src/persistence/player_death_restitution_command.c",
+                "src/persistence/quest_reward_obligation_repository.c",
+                "src/item/item_transfer_command.c", "src/economy/currency_command.c",
                 "src/sql/item_extra_descr_codec.c", "src/persistence/persistence_observability.c",
                 "-Wl,--gc-sections", "-lmysqlclient", "-lcrypto", "-pthread", "-o", str(binary),
             ],

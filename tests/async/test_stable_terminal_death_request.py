@@ -48,7 +48,7 @@ capture = section(
     "bool requeue_pinned_death(int pid, uint64_t corpse_uid);",
 )
 for token in (
-    "PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION",
+    "player_snapshot_is_death_request_schema(snapshot.schema_version)",
     "snapshot.death->operation_id.bytes",
     "snapshot.death->wallet_pile_uid",
     "snapshot.death->corpse.front().object_uid",
@@ -194,13 +194,18 @@ int main()
     operation.bytes[15] = 0x4C;
     player_snapshot captured;
     make_snapshot(captured, pid, revision, operation, corpse_uid, wallet_uid, snapshot_bytes);
+    captured.schema_version = PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+    player_spell_effect_receipt_snapshot spell_receipt = {};
+    spell_receipt.operation_id.bytes[0] = 77;
+    spell_receipt.effect_id = 6;
+    captured.spell_effect_receipts.push_back(spell_receipt);
     assert(!retain_and_enqueue_death_snapshot(captured, corpse_uid + 1,
                                               wallet_uid, operation));
     assert(pending_append.empty() && !fence.death_snapshot && retained_bytes == 0);
     assert(retain_and_enqueue_death_snapshot(captured, corpse_uid, wallet_uid, operation));
     assert(pending_append.size() == 1);
     assert(fence.death_snapshot.has_value());
-    assert(fence.death_snapshot->schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION);
+    assert(fence.death_snapshot->schema_version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION);
     assert(fence.revision == revision && fence.corpse_uid == corpse_uid);
     assert(fence.operation_id.bytes == operation.bytes && fence.wallet_pile_uid == wallet_uid);
     assert(retained_bytes == snapshot_bytes * 2);
@@ -243,6 +248,9 @@ int main()
         assert(submitted.death->operation_id.bytes == operation.bytes);
         assert(submitted.death->wallet_pile_uid == wallet_uid);
         assert(submitted.death->corpse.front().object_uid == corpse_uid);
+        assert(submitted.spell_effect_receipts.size() == 1);
+        assert(submitted.spell_effect_receipts[0].operation_id.bytes == spell_receipt.operation_id.bytes);
+        assert(submitted.spell_effect_receipts[0].effect_id == 6);
         assert(player_revision_begin_inflight(pid, revision, components));
         assert(player_revision_fail_inflight(pid, revision, components));
         player_save_completion failure = {};
@@ -257,7 +265,7 @@ int main()
         assert(pending_append.size() == 1);
         const player_snapshot &retried = pending_append.front();
         assert(retried.revision == revision);
-        assert(retried.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION);
+        assert(retried.schema_version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION);
         assert(retried.death->operation_id.bytes == operation.bytes);
         assert(retried.death->wallet_pile_uid == wallet_uid);
         assert(retried.death->corpse.front().object_uid == corpse_uid);
@@ -347,6 +355,6 @@ with tempfile.TemporaryDirectory(prefix="duris-stable-death-request-") as temp_d
     )
     subprocess.run([str(binary)], cwd=ROOT, check=True, timeout=10)
 
-print("[PASS] format-8 death request keeps revision, operation, corpse and wallet identity across failure/ambiguous retries")
+print("[PASS] format-13 death request keeps revision, operation, corpse, wallet and spell receipt identity across failure/ambiguous retries")
 print("[PASS] journal/stale completions hold; exact database ACK releases the pinned request")
 print("[PASS] pinned memory is byte-bounded and capacity refusal can be safely reset")

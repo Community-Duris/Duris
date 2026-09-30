@@ -16,12 +16,19 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0044_shopkeeper_item_properties`, and the contract describes 220
-current tables: the 170-table baseline plus the post-baseline runtime tables created
-by immutable migrations. Migration 0042 records a nullable keeper roaming policy;
-legacy rows remain unknown until a shopkeeper checkpoint. Migration 0043 records
-nullable item condition, and migration 0044 preserves dynamic properties while an
-item is held by a shopkeeper. Migration 0029 adds
+The migration manifest, compiled compatibility head, and runtime manifest now end
+at `0050_item_extra_description_fulltext_unique`, with 223 expected runtime tables.
+Migration 0050 replaces the description-prefix unique indexes with indexes over
+the complete description SHA-256. It preserves distinct long, case, and accent
+variants and refuses duplicate complete values before permanent DDL; it never
+deletes those conflicting rows. The metadata fingerprints were measured on
+disposable MySQL 8.0.46 and MariaDB 10.11 schemas using the real immutable runner.
+Completed canonical and staging histories reach identical schema metadata on
+each engine. Migration 0042 records
+a nullable keeper roaming policy; legacy rows remain unknown until a
+shopkeeper checkpoint. Migration 0043 records nullable item condition, and
+migration 0044 preserves dynamic properties while an item is held by a
+shopkeeper. Migration 0029 adds
 the replay-safe `critical_operation_inbox.failure_stage` receipt field as
 `SMALLINT UNSIGNED NOT
 NULL DEFAULT 0` immediately after `result_code`; it creates no table. A legacy clone
@@ -36,9 +43,9 @@ column metadata forms.
 The verifier correction changes migration 0041's recorded checksum. A database
 that already recorded the earlier checksum fails closed and needs an explicit
 clone-based reconciliation before it can use this contract.
-Fingerprints are measured on clean `mysql:8.0` and `mariadb:10.11` schemas with
-`tests/async/telemetry_rollup_schema_mysql.py --update-contract`; they must not be
-copied from a production-derived clone.
+Future fingerprints must be measured on clean `mysql:8.0` and `mariadb:10.11`
+schemas with the runtime verifier; they must not be copied from a
+production-derived clone.
 
 An existing populated database must first be upgraded only on a disposable clone.
 Run the legacy convergence, then the immutable runner against the same clone before
@@ -65,6 +72,39 @@ The legacy upgrade remains guarded and additive; a database left at head
 first complete the clone sequence above. Never run migration or destructive
 verification commands against production.
 
+## Staging's immutable 0045 fork
+
+Staging applied `0045_item_extra_description_fulltext_unique` before the canonical
+quest migration. Its first 45 receipts and the original checksummed migration
+files must stay intact. On a verified, isolated staging clone, select the explicit
+manifest when running the existing migration runner:
+
+```sh
+python3 scripts/migration_runner.py \
+  --manifest migrations/migration_manifest.staging_0045.json run
+./migrations/verify_runtime_compatibility.sh --schema-only
+```
+
+| Staging sequence | Immutable migration ID |
+| --- | --- |
+| 45, already applied | `0045_item_extra_description_fulltext_unique` |
+| 46 | `0045_quest_reward_obligation` |
+| 47 | `0046_economic_realized_trade_price` |
+| 48 | `0047_quest_xp_receipt` |
+| 49 | `0048_quest_xp_entitlement` |
+| 50 | `0049_player_spell_effect_receipt` |
+
+The canonical manifest continues to reject this fork before any migration runs.
+The explicit manifest appends the five missing steps and produces a different
+history checksum from the canonical 50-step history. Both completed checksums
+are compiled into the boot gate; every historical row is recomputed and matched
+to its stored state. Partial histories and mixed head/state identities fail.
+
+These commands are clone preparation instructions. A production-role staging
+environment still requires the runner's target allow-list, fresh verified backup,
+quiescence checks, and explicit operational authorization. This does not change
+accounting activation or resolve ownership holds.
+
 ## Boot gate
 
 `initialize_mysql()` opens the main connection through the shared trusted connection
@@ -72,15 +112,20 @@ constructor. Before any lookup write, item UID reservation, pool/worker startup,
 recovery replay, listener acceptance, or gameplay publication, it verifies:
 
 - the sealed baseline ID and table-name fingerprint;
-- immutable migration ID, sequence, apply/verifier hashes, applied count, and history
-  checksum;
-- all 220 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- the exact completed canonical or staging-fork history, including all seven
+  immutable receipt fields in sequence order, and its matching stored count and
+  checksum; checking only the last row or the stored digest is insufficient;
+- all 223 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
+- the exact normalized stored SHA-256 expressions on player and pet descriptions;
+  the generic generated-column flag alone cannot prove those expressions;
 - `utf8mb4`, UTC, READ COMMITTED, strict SQL modes, ten-second connection/read/write
   deadlines, exact target allow-listing, and verified TLS for remote hosts.
 
-Failures abort boot with stable `COMPAT-E001`, `COMPAT-E002`, or `COMPAT-E003`
+Failures abort boot with stable compatibility reason IDs. `COMPAT-E008` identifies
+full-history/state disagreement; `COMPAT-E009` identifies description-expression
+drift. Existing metadata failures retain `COMPAT-E001`, `COMPAT-E002`, and `COMPAT-E003`
 reason IDs. Messages identify only expected contract identities and never include
 credentials, SQL text, or bound values.
 
@@ -95,6 +140,32 @@ treated as ambiguous and also aborts boot with `COMPAT-E007`; the next boot reva
 both state and live rows, so state cannot claim a version whose rows were not committed.
 
 ## Verification
+
+The immutable migration runner retains one MySQL client connection for the
+entire run. Its advisory lock, quiescence check, DDL, receipt insertion, and
+history-state update use that connection. Automatic reconnect is disabled.
+A receipt and its compare-and-swap state update commit together; a failed
+comparison rolls back the receipt. Connection loss, SQL failure, timeout,
+oversized output, allocation failure, or cancellation closes and fences the
+session. A caller must start a new executor and revalidate history before
+continuing; the failed executor cannot silently reacquire a connection.
+
+The native migration-session fixture verifies lock exclusion, session identity,
+receipt rollback, connection loss during an open transaction, and fencing after
+SQL, output-bound, timeout, allocation, and cancellation failures on disposable
+MySQL 8.0.46 and MariaDB 10.11.19 targets. Run just these fault cases with:
+
+```sh
+python3 tests/async/test_staging_migration_fork_mysql.py --lock-only
+```
+
+Omit `--lock-only` to also qualify both complete migration histories, immutable
+prefix preservation, duplicate refusal, and shell/compiled boot drift checks.
+The database restore qualifier also accepts exactly either completed history.
+It refuses partial, mixed, edited, or extended histories before value-domain
+qualification, and closes its client session on success or failure. The native
+fixture checks this selector against the same actual rows as the compiled boot
+predicate, including each history tamper and stored-state mismatch.
 
 ```sh
 python3 scripts/validate_runtime_compatibility.py

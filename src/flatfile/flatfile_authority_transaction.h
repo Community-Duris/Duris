@@ -12,7 +12,9 @@
  * Callers that build a transaction from a fixed domain contract must assert their
  * own maximum against this value at compile time.
  */
-constexpr size_t flatfile_authority_transaction_maximum_operations = 32;
+// One player save can carry 4096 operation receipts, its snapshot, a death
+// disposition, and a custody after-image. The total byte limit still applies.
+constexpr size_t flatfile_authority_transaction_maximum_operations = 4099;
 constexpr size_t flatfile_authority_transaction_maximum_bytes = 256 * 1024 * 1024;
 
 struct flatfile_authority_after_image

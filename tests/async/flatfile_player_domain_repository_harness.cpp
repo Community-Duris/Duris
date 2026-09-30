@@ -91,6 +91,9 @@ static void append_retained_result(const fs::path &path, uint16_t result_size)
 	payload.push_back(static_cast<uint8_t>(result_size));
 	payload.push_back(static_cast<uint8_t>(result_size >> 8));
 	payload.insert(payload.end(), result_size, 0xa5);
+	size_t version_offset = 8;
+	if (read_u32(file, &version_offset) >= 4)
+		payload.insert(payload.end(), 8, 0);
 	write_player_domain_fixture(path, file, payload);
 }
 
@@ -412,7 +415,7 @@ int main(int argc, char **argv)
 		"legacy v2 player domain did not remain readable and snapshot-owned");
 
 	static_assert(CRITICAL_COMPLETION_RESULT_MAX_BYTES > 2048);
-	for (uint32_t version : { 2U, 3U })
+	for (uint32_t version : { 2U, 3U, 4U })
 	{
 		for (uint16_t result_size : { 2048, 2049 })
 		{
@@ -429,6 +432,16 @@ int main(int argc, char **argv)
 				domains / ("player-" + std::to_string(pid) + ".domain");
 			if (version == 2)
 				convert_player_domain_to_v2(fixture);
+			else if (version == 3)
+			{
+				std::fstream file(fixture,
+						  std::ios::in | std::ios::out | std::ios::binary);
+				file.seekp(8);
+				const char legacy_version[4] = { 3, 0, 0, 0 };
+				file.write(legacy_version, sizeof(legacy_version));
+				require(file.good(),
+					"could not downgrade the empty v3 domain fixture");
+			}
 			append_retained_result(fixture, result_size);
 			const auto expected = result_size == 2048 ?
 						      flatfile_player_domain_result::ok :

@@ -238,6 +238,10 @@ def run(server):
                         ["python3", "tests/async/test_player_save_item_reconcile_mysql.py"],
                         cwd=ROOT, env=environment, check=True,
                     )
+                    subprocess.run(
+                        ["python3", "tests/async/test_player_spell_effect_receipt_mysql.py"],
+                        cwd=ROOT, env=environment, check=True,
+                    )
                 except Exception:
                     print(output_path.read_text()[-6000:])
                     print(journey.runtime_logs(runtime))

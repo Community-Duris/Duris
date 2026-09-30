@@ -659,7 +659,7 @@ void finish(const flatfile_economic_control &control, updates files, operations 
 				      std::move(encoded) });
 	*out = std::move(candidate);
 }
-void require_empty(const std::string &root)
+bool evidence_directory_empty(const std::string &root)
 {
 	const int fd =
 		open(directory(root).c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
@@ -689,7 +689,7 @@ void require_empty(const std::string &root)
 	const auto error = errno;
 	closedir(dir);
 	need(!error, EIO);
-	need(empty, EEXIST);
+	return empty;
 }
 }
 unsigned int flatfile_economic_control_read(const std::string &root,
@@ -723,6 +723,10 @@ unsigned int flatfile_economic_legacy_domain_gate(const std::string &root,
 			}
 			need(S_ISDIR(info.st_mode));
 			recover(root, lock);
+			// Boot creates this private directory before accounting is initialized.
+			// Any retained evidence still requires a valid inactive control record.
+			if (evidence_directory_empty(root))
+				return;
 			const auto control = load_control(root);
 			need(!nonzero(control.active_epoch), EAGAIN);
 		},
@@ -889,7 +893,7 @@ unsigned int flatfile_accounting_authority_storage::bootstrap(
 		{
 			need(nonzero(lineage) && nonzero(operation), EINVAL);
 			recover(root, lock);
-			require_empty(root);
+			need(evidence_directory_empty(root), EEXIST);
 			flatfile_economic_control control;
 			control.lineage = lineage;
 			control.creating_operation = control.last_operation = operation;

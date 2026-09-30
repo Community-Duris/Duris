@@ -8,8 +8,8 @@
 # to see it is to look.
 #
 #   orphan payload rows   player_items / player_pet_items with no item_current_owner
-#                         row. The item loads today but is dropped from the snapshot
-#                         and DELETED by the next full save. This is item loss.
+#                         row. The load skips the row and the next item/pet save
+#                         now refuses, preserving the payload for repair.
 #
 #   missing payload rows  item_current_owner rows for a player whose payload row is
 #                         gone. The item cannot be rebuilt; the row is inert.
@@ -55,7 +55,7 @@ ACTIVE_STATE=1   # item_custody_state::active
 echo "Database: $DB_NAME on $DB_HOST"
 echo
 
-echo "== Orphan payload rows (item loss: dropped at load, deleted at next save) =="
+echo "== Orphan payload rows (save refused until ownership repair) =="
 if (( DETAIL )); then
   run_sql "
     SELECT 'character' AS source, pi.pid, pi.id, pi.vnum, pi.obj_uid

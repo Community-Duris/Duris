@@ -225,7 +225,11 @@ def journal_capture(stage, p, capacity_base=None):
         require(name in JOURNAL_FILES, "invalid_journal_roots")
         allowed = {JOURNAL_FILES[name]}
         if name == "players":
-            allowed.add("player-save.journal.quarantine")
+            # Preserve native quarantine evidence and its persistent PID fence.
+            # Backup copies/checksums opaque bytes; native restore validates them.
+            allowed.update({"player-save.journal.quarantine",
+                            "player-save.journal.quarantine.archive",
+                            "player-save.quarantine-pids"})
         for relative, metadata in snapshots[name].items():
             receipt = re.fullmatch(r"locker-identification/([1-9][0-9]{0,9})\.receipt", relative)
             service_lock = name == "critical" and relative == "locker-identification/.service-lock"

@@ -44,6 +44,7 @@
 #include "sql/sql_account.h"
 #include "sql/sql_player_identity.h"
 #include "player/player_name.h"
+#include "player/player_save_journal.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_revision_state.h"
@@ -2700,6 +2701,13 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	player_load_result loaded = {};
 	if (!c || !d || c->pid <= 0 || !d->account || !d->account->acct_name)
 		return NULL;
+	if (player_save_journal_pid_quarantined(c->pid))
+	{
+		SEND_TO_Q(
+			"This character is temporarily unavailable while its save data is under review.\r\n",
+			d);
+		return NULL;
+	}
 	if (!d->player_load_request_id)
 	{
 		player_load_request request = {};
@@ -2763,6 +2771,11 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 			return NULL;
 		}
 		loaded = std::move(retry);
+	}
+	if (loaded.pid > 0 && player_save_journal_pid_quarantined(loaded.pid))
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		return NULL;
 	}
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
@@ -2979,6 +2992,18 @@ void account_player_load_complete(P_desc d, player_load_result result)
 	    result.recovery_gate == player_load_recovery_gate::unavailable)
 	{
 		account_recovery_gate_refused(d, result.recovery_gate);
+		return;
+	}
+	if (d->player_load_pid > 0 && player_save_journal_pid_quarantined(d->player_load_pid))
+	{
+		d->player_load_request_id = 0;
+		d->player_load_pid = 0;
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		SEND_TO_Q(
+			"This character is temporarily unavailable while its save data is under review.\r\n",
+			d);
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		display_character_list(d);
 		return;
 	}
 	if (d->player_load_pid <= 0)

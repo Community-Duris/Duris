@@ -36,6 +36,7 @@
 #include "economy/account_bank_balances.h"
 #include "economy/collector_service.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_save_journal.h"
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
 #include "world/handler.h"
@@ -1697,6 +1698,8 @@ enum class character_save_admission
 
 static character_save_admission admit_character_save(P_char ch, bool is_locker_char)
 {
+	if (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch)))
+		return character_save_admission::rejected;
 	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 	{
 		// A degraded load may have omitted durable inventory or sidecar state. Treat

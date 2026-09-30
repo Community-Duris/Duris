@@ -9,6 +9,7 @@
 #include "persistence/critical_command_coordinator.h"
 #include "item/item_transfer_command.h"
 #include "item/item_ownership_runtime.h"
+#include "item/quest_reward_continuation.h"
 #include "economy/shop_trade_command.h"
 #include "economy/coin_transfer_command.h"
 
@@ -39,6 +40,17 @@ struct flatfile_quest_reward_obligation
 {
 	critical_operation_id offering_operation = {};
 	std::vector<uint8_t> continuation;
+	uint64_t xp_applied_mask = 0;
+	uint64_t economic_applied_mask = 0;
+	bool economic_history_verified = true;
+};
+
+struct flatfile_quest_xp_entitlement
+{
+	critical_operation_id offering_operation = {};
+	quest_reward_continuation terms;
+	uint32_t reward_index = 0;
+	uint32_t amount = 0;
 };
 
 enum class flatfile_item_repository_result
@@ -154,7 +166,17 @@ flatfile_item_repository_result flatfile_item_repository_list_active_player_item
 // promised reward effects.
 flatfile_item_repository_result flatfile_item_repository_pending_quest_rewards(
 	const std::string &root, uint32_t player_pid,
-	std::vector<flatfile_quest_reward_obligation> *obligations, std::string *error);
+	std::vector<flatfile_quest_reward_obligation> *obligations, std::string *error,
+	std::vector<flatfile_quest_xp_entitlement> *entitlements = nullptr,
+	player_revision_t durable_revision = UINT64_MAX);
+// Stage application markers with the XP-bearing player image under the same
+// authority lock. Existing markers must precede the player's durable revision.
+// Verification never prepares an image or advances a marker.
+flatfile_item_repository_result flatfile_item_repository_prepare_quest_xp_receipts(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,
+	player_revision_t durable_revision, player_revision_t applied_revision,
+	const std::vector<player_quest_xp_receipt_snapshot> &receipts, bool verify_only,
+	flatfile_authority_operation *operation, std::string *error);
 flatfile_item_repository_result
 flatfile_item_repository_ack_quest_reward(const std::string &root, uint32_t player_pid,
 					  const critical_operation_id &offering_operation,
@@ -196,7 +218,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantine(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<uint64_t> &custody_uids, flatfile_authority_operation *operation,
-	std::string *error);
+	std::string *error, const std::vector<player_quest_xp_receipt_snapshot> &receipts = {},
+	player_revision_t durable_revision = 0, player_revision_t applied_revision = 0);
 /* Prepare player and verified locker-custody removal as one authority image. */
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,

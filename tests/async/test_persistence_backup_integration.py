@@ -5,7 +5,7 @@ Build bin/server/dms_new with make -C src, and bin/server/dms_restore_flatfile
 with PERSISTENCE_BACKEND=flatfile and an explicit DMS_BINARY path. Then run
 DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py.
 Requires g++, libcrypto,
-MariaDB server/client tools, bash, openssl and unshare permission (CAP_SYS_ADMIN
+MariaDB server/client tools, bash, openssl, iproute2 and unshare permission (CAP_SYS_ADMIN
 in the validation container). Uses no existing DB, runtime .env, Redis or game.
 Every daemon has its own new datadir and Unix socket with TCP disabled; candidate
 game processes boot in their own network namespaces and are terminated afterward.
@@ -47,7 +47,7 @@ def sql(env, query=None, payload=None):
 class PersistenceRecoveryIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        for command in ("g++", "mysql", "mysqldump", "mariadbd", "mariadb-install-db", "unshare", "openssl"):
+        for command in ("g++", "mysql", "mysqldump", "mariadbd", "mariadb-install-db", "unshare", "openssl", "ip"):
             if not shutil.which(command):
                 raise RuntimeError("integration prerequisite unavailable: " + command)
         for name in ("dms_new", "dms_restore_flatfile"):
@@ -167,6 +167,65 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.assertEqual(backup.inventory(live, exclude_locks=True), before)
         self.assertEqual(backup.inventory(generation), captured)
         self.assertIn(b"Entering game loop.", (candidate / "service.log").read_bytes())
+
+    def test_spell_receipt_state_qualification(self):
+        self.build_native_fixture()
+        for case in ("valid", "corrupt", "wrong-operation", "wrong-pid", "public-file",
+                     "hardlink", "future-receipt", "missing-player", "retired-owner"):
+            with self.subTest(case=case):
+                candidate = self.p["restore_root"] / ("spell-" + case)
+                candidate.mkdir(mode=0o700)
+                backup.write_json(candidate / "ISOLATED_RESTORE", {"synthetic": True})
+                state = candidate / "state"
+                backup.run([str(self.fixture), "seed", str(state)])
+                player = state / "players/42.snapshot"
+                prior_player = player.read_bytes()
+                backup.run([str(self.fixture), "seed-spell-receipt", str(state)])
+                receipt = state / "players/42-a5000000000000000000000000000000.spell"
+                self.assertTrue(receipt.is_file())
+                if case == "corrupt":
+                    receipt.write_bytes(b"corrupt")
+                elif case == "wrong-operation":
+                    receipt.rename(receipt.with_name("42-b6000000000000000000000000000000.spell"))
+                elif case == "wrong-pid":
+                    receipt.rename(receipt.with_name("43-a5000000000000000000000000000000.spell"))
+                elif case == "public-file":
+                    receipt.chmod(0o644)
+                elif case == "hardlink":
+                    os.link(receipt, candidate / "alias")
+                elif case == "future-receipt":
+                    player.write_bytes(prior_player)
+                elif case == "missing-player":
+                    player.unlink()
+                elif case == "retired-owner":
+                    backup.run([str(self.fixture), "retire-spell-owner", str(state)])
+                for phase in ("--state-preflight", None):
+                    command = [str(ROOT / "bin/tools/qualify_flatfile_restore")]
+                    if phase:
+                        command.append(phase)
+                    command.append(str(state))
+                    if case in ("valid", "retired-owner"):
+                        backup.run(command)
+                    else:
+                        with self.assertRaises(backup.BackupError):
+                            backup.run(command)
+
+                if case == "valid":
+                    live = self.base / "spell-live"
+                    shutil.copytree(state, live)
+                    self.p["live_roots"] = [live]
+                    before = backup.inventory(live, exclude_locks=True)
+                    with mock.patch.dict(os.environ, {"FLATFILE_STATE_DIR": str(live)}):
+                        captured = backup.backup(self.p, "flatfile-primary")
+                    generation = self.p["root"] / captured["generation"]
+                    relative = receipt.relative_to(state)
+                    expected = receipt.read_bytes()
+                    self.assertEqual((generation / "state" / relative).read_bytes(), expected)
+                    restored = restore.restore(self.p, captured["generation"], self.ledger())
+                    self.assertEqual(restored["result"], "qualified")
+                    restored_candidate = self.p["restore_root"] / restored["candidate"]
+                    self.assertEqual((restored_candidate / "state" / relative).read_bytes(), expected)
+                    self.assertEqual(backup.inventory(live, exclude_locks=True), before)
 
     def test_locker_receipt_qualification_rejects_corruption_and_unexpected_entries(self):
         self.build_native_fixture()

@@ -4,6 +4,7 @@
 #include "core/defines.h"
 #include "persistence/persistence_observability.h"
 #include "persistence/player_death_restitution_command.h"
+#include "player/player_save_journal.h"
 #include "player/player_snapshot_codec.h"
 #include "sql/item_extra_descr_codec.h"
 #include "world/vnum.obj.h"
@@ -389,6 +390,16 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 	}
 	int column = 0;
 	result->pid = static_cast<int32_t>(signed_value(row[column++]));
+	// Name-based requests have no PID at admission; check the resolved identity
+	// before copying any player payload or loading optional components.
+	if (result->pid > 0 && player_save_journal_pid_quarantined(result->pid))
+	{
+		mysql_free_result(rows);
+		result->outcome = player_load_outcome::cancelled;
+		result->error_code = EPERM;
+		result->failed_component = "durable player-save quarantine";
+		return false;
+	}
 	result->account_name = row[column] ? row[column] : "";
 	++column;
 	if (result->pid <= 0 || result->account_name.empty() ||
@@ -1932,6 +1943,18 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 	    request.deadline_usec <= now_usec ||
 	    request.deadline_usec - now_usec > PLAYER_LOAD_TIMEOUT_USEC)
 		return false;
+	if (request.pending_spell_effect_operations.size() > PLAYER_SPELL_EFFECT_RECEIPT_MAX ||
+	    (!request.include_items && !request.pending_spell_effect_operations.empty()))
+		return false;
+	for (size_t index = 0; index < request.pending_spell_effect_operations.size(); ++index)
+	{
+		const auto &operation = request.pending_spell_effect_operations[index];
+		if (critical_operation_id_is_zero(operation))
+			return false;
+		for (size_t prior = 0; prior < index; ++prior)
+			if (request.pending_spell_effect_operations[prior].bytes == operation.bytes)
+				return false;
+	}
 	if (request.death_recovery_query.kind != player_death_recovery_query_kind::none)
 		return pid_identity && !request.include_items && !request.include_pets &&
 		       player_death_recovery_query_request_valid(request.death_recovery_query,
@@ -1949,6 +1972,13 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	result.request_account_name = request.account_name;
 	result.request_player_name = request.player_name;
 	result.death_recovery_query.kind = request.death_recovery_query.kind;
+	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
+	{
+		result.outcome = player_load_outcome::cancelled;
+		result.error_code = EPERM;
+		result.failed_component = "durable player-save quarantine";
+		return result;
+	}
 	const uint64_t started = persistence_observability_now_usec();
 	if (!connection || !player_load_request_valid(request, started))
 	{
@@ -2124,7 +2154,8 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 					result.pending_quest_rewards.push_back(
 						{ obligation.offering_operation,
 						  std::move(obligation.continuation),
-						  obligation.terms, obligation.xp_applied_mask });
+						  obligation.terms, obligation.xp_applied_mask,
+						  obligation.economic_applied_mask });
 				result.metrics.row_count +=
 					static_cast<uint32_t>(result.pending_quest_rewards.size());
 				for (const auto &obligation : result.pending_quest_rewards)
@@ -2181,16 +2212,46 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 				      "quest_xp_entitlements");
 		}
 	}
+	if (!request.pending_spell_effect_operations.empty())
 	{
-		MYSQL_RES *rows = query(
-			connection,
-			"SELECT operation_id,effect_id FROM player_spell_effect_receipt WHERE pid=" +
-				std::to_string(result.pid) + " ORDER BY created_at DESC,operation_id DESC LIMIT " +
-				std::to_string(PLAYER_SPELL_EFFECT_RECEIPT_MAX + 1),
-			&result);
+		MYSQL_RES *rows = nullptr;
+		bool query_oom = false;
+		try
+		{
+			std::string statement =
+				"SELECT operation_id,effect_id FROM player_spell_effect_receipt WHERE pid=" +
+				std::to_string(result.pid) + " AND operation_id IN (";
+			constexpr char hex[] = "0123456789abcdef";
+			for (size_t index = 0;
+			     index < request.pending_spell_effect_operations.size(); ++index)
+			{
+				if (index)
+					statement += ',';
+				statement += "UNHEX('";
+				for (uint8_t byte :
+				     request.pending_spell_effect_operations[index].bytes)
+				{
+					statement += hex[byte >> 4];
+					statement += hex[byte & 15];
+				}
+				statement += "')";
+			}
+			statement +=
+				") LIMIT " +
+				std::to_string(request.pending_spell_effect_operations.size() + 1);
+			rows = query(connection, statement, &result);
+		}
+		catch (const std::bad_alloc &)
+		{
+			query_oom = true;
+			result.error_code = ENOMEM;
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+				      "spell_effect_receipts");
+		}
 		if (!rows)
 		{
-			result.error_code = mysql_errno(connection);
+			if (!query_oom)
+				result.error_code = mysql_errno(connection);
 			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
 				      "spell_effect_receipts");
 		}
@@ -2198,7 +2259,8 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		{
 			try
 			{
-				result.spell_effect_receipts.reserve(PLAYER_SPELL_EFFECT_RECEIPT_MAX);
+				result.spell_effect_receipts.reserve(
+					request.pending_spell_effect_operations.size());
 				MYSQL_ROW row = nullptr;
 				while ((row = mysql_fetch_row(rows)))
 				{
@@ -2214,7 +2276,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 					if (!lengths || !row[0] || lengths[0] != 16 || !effect_id ||
 					    effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX ||
 					    result.spell_effect_receipts.size() >=
-						    PLAYER_SPELL_EFFECT_RECEIPT_MAX)
+						    request.pending_spell_effect_operations.size())
 					{
 						result.error_code = EINVAL;
 						mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,

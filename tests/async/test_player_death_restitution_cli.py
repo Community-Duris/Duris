@@ -143,6 +143,7 @@ class RestitutionCliTests(unittest.TestCase):
         for wire, schema in (
             (1, 8), (3, 8), (5, 8), (7, 8), (99, 8),
             (2, 7), (6, 7), (8, 7),
+            (13, 8), (8, 13), (10, 10), (14, 14), (15, 8), (15, 13), (16, 16),
         ):
             with self.subTest(wire=wire, schema=schema):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
@@ -150,6 +151,14 @@ class RestitutionCliTests(unittest.TestCase):
                 }).encode())
                 with self.assertRaisesRegex(cli.ToolError, "raw-wire.*schema-8"):
                     cli.decode_payload(b"fixture")
+        run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
+            "wire_version": 13, "schema_version": 13,
+        }).encode())
+        self.assertEqual(cli.decode_payload(b"fixture")["schema_version"], 13)
+        run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
+            "wire_version": 15, "schema_version": 15,
+        }).encode())
+        self.assertEqual(cli.decode_payload(b"fixture")["schema_version"], 15)
 
     def test_normalized_related_payload_is_reused_and_deduplicated(self) -> None:
         selected = [payload_item(900, -1)]
@@ -202,6 +211,18 @@ class RestitutionCliTests(unittest.TestCase):
                     self.assertEqual(int.from_bytes(payload[:4], "little"), 8)
                     self.assertEqual(decoded["wire_version"], 8)
                     self.assertEqual(decoded["schema_version"], 8)
+                    self.assertIsInstance(decoded["death"], dict)
+                extended = subprocess.run([str(fixture), "--spell-receipt"], capture_output=True, check=True).stdout.decode("ascii")
+                for line in extended.splitlines():
+                    decoded = cli.decode_payload(bytes.fromhex(line))
+                    self.assertEqual(decoded["wire_version"], 13)
+                    self.assertEqual(decoded["schema_version"], 13)
+                    self.assertIsInstance(decoded["death"], dict)
+                extended = subprocess.run([str(fixture), "--quest-receipt"], capture_output=True, check=True).stdout.decode("ascii")
+                for line in extended.splitlines():
+                    decoded = cli.decode_payload(bytes.fromhex(line))
+                    self.assertEqual(decoded["wire_version"], 15)
+                    self.assertEqual(decoded["schema_version"], 15)
                     self.assertIsInstance(decoded["death"], dict)
             for bad_wire in (7, 99):
                 corrupted = bytearray(payloads[0])

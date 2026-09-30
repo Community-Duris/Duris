@@ -1993,10 +1993,11 @@ struct vines_component_context
 	int32_t count;
 };
 
-spell_component_effect_status spell_vines_component_retirement_completed(
-	const critical_operation_id & /*operation_id*/, P_char actor, bool committed,
-	const item_transfer_result &, unsigned int /*error_code*/, const uint8_t *encoded,
-	size_t encoded_size)
+spell_component_effect_status
+spell_vines_component_retirement_completed(const critical_operation_id &operation_id, P_char actor,
+					   bool committed, const item_transfer_result &,
+					   unsigned int /*error_code*/, const uint8_t *encoded,
+					   size_t encoded_size)
 {
 	spell_component_context_reader reader(encoded, encoded_size);
 	vines_component_context context = {};
@@ -2008,18 +2009,26 @@ spell_component_effect_status spell_vines_component_retirement_completed(
 		send_to_char("Your green herbs remain intact as the spell fizzles.\r\n", actor);
 		return spell_component_effect_status::complete;
 	}
-	act("&+GGreen&n vines sprout up around you forming a protective shield.", FALSE, actor, 0,
-	    0, TO_CHAR);
-	act("&+GVines&n sprout up around $n forming a protective shield.", FALSE, actor, 0, 0,
-	    TO_NOTVICT);
-	struct affected_type effect = {};
-	effect.type = SPELL_VINES;
-	effect.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
-	effect.bitvector5 = AFF5_VINES;
-	effect.duration = context.level / 2;
-	effect.modifier = 40 * context.count;
-	affect_to_char(actor, &effect);
-	return spell_component_effect_status::complete;
+	if (IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return spell_component_effect_status::waiting_for_owner;
+	if (!spell_component_retirement_effect_applied(operation_id))
+	{
+		if (!spell_component_retirement_effect_applied_once(operation_id))
+			return spell_component_effect_status::retry;
+		act("&+GGreen&n vines sprout up around you forming a protective shield.", FALSE,
+		    actor, 0, 0, TO_CHAR);
+		act("&+GVines&n sprout up around $n forming a protective shield.", FALSE, actor, 0,
+		    0, TO_NOTVICT);
+		struct affected_type effect = {};
+		effect.type = SPELL_VINES;
+		effect.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+		effect.bitvector5 = AFF5_VINES;
+		effect.duration = context.level / 2;
+		effect.modifier = 40 * context.count;
+		affect_to_char(actor, &effect);
+	}
+	return spell_component_retirement_save_effect(operation_id, actor,
+						      item_spell_component_effect::vines);
 }
 
 void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char /*tar_ch*/,

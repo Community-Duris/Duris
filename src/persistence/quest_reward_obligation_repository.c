@@ -1,9 +1,158 @@
 #include "persistence/quest_reward_obligation_repository.h"
+#include "economy/currency_command.h"
 
 #include <array>
 #include <cerrno>
+#include <charconv>
+#include <cstring>
+#include <memory>
 #include <new>
+#include <string>
 #include <utility>
+
+#ifndef __NO_MYSQL__
+namespace
+{
+bool receipt_number(const char *text, uint64_t *value)
+{
+	if (!text || !value)
+		return false;
+	const auto end = text + strlen(text);
+	const auto converted = std::from_chars(text, end, *value);
+	return converted.ec == std::errc{} && converted.ptr == end;
+}
+
+// These are immutable native event witnesses, not current inventory/balance
+// guesses. The caller's player-load transaction also supplies the live projection.
+quest_reward_obligation_result read_economic_receipts(MYSQL *connection,
+						      quest_reward_obligation_record *record,
+						      unsigned int *database_error)
+try
+{
+	uint64_t mask = 0;
+	for (size_t index = 0; index < record->terms.reward_count; ++index)
+	{
+		const auto &reward = record->terms.rewards[index];
+		std::string query;
+		if (reward.type == 1U)
+		{
+			const auto source = quest_item_reward_source_id(record->terms, index);
+			if (!source)
+				return quest_reward_obligation_result::corrupt;
+			query = "SELECT i.result_payload,(i.status=1 AND i.result_code=0 AND i.command_type=5 "
+				"AND l.from_owner_type=7 AND l.from_owner_id=0 AND l.from_owner_context_id=0 "
+				"AND l.to_owner_type=1 AND l.to_owner_context_id=0 AND l.item_revision=1 "
+				"AND l.item_uid=l.root_item_uid AND l.to_owner_id=" +
+				std::to_string(record->terms.player_pid) +
+				" AND c.vnum=" + std::to_string(reward.number) +
+				"),l.item_uid,l.from_owner_revision,l.to_owner_revision "
+				"FROM item_ownership_ledger l JOIN critical_operation_inbox i "
+				"ON i.operation_id=l.operation_id LEFT JOIN item_current_owner c ON c.item_uid=l.item_uid "
+				"WHERE l.reason_type=2 AND l.reason_id=" +
+				std::to_string(source) +
+				" AND (l.parent_item_uid IS NULL OR l.parent_item_uid=0) LIMIT 2";
+		}
+		else if (reward.type == 3U)
+		{
+			critical_operation_id child = {};
+			if (!critical_operation_id_derive(record->offering_operation,
+							  QUEST_REWARD_CURRENCY_OPERATION_DOMAIN,
+							  static_cast<uint32_t>(index + 1), &child))
+				return quest_reward_obligation_result::corrupt;
+			char hex[33] = {};
+			if (!critical_operation_id_to_hex(child, hex, sizeof(hex)))
+				return quest_reward_obligation_result::corrupt;
+			const uint64_t value = reward.number;
+			query = "SELECT i.result_payload,(i.status=1 AND i.result_code=0 AND i.command_type=3 "
+				"AND l.pid=" +
+				std::to_string(record->terms.player_pid) +
+				" AND l.reason_type=5 AND l.reason_id=" +
+				std::to_string(index + 1) +
+				" AND l.source_site=5 AND l.bank_delta_copper=0 AND l.bank_delta_silver=0 "
+				"AND l.bank_delta_gold=0 AND l.bank_delta_platinum=0 AND l.wallet_delta_copper=" +
+				std::to_string(value % 10) +
+				" AND l.wallet_delta_silver=" + std::to_string((value / 10) % 10) +
+				" AND l.wallet_delta_gold=" + std::to_string((value / 100) % 10) +
+				" AND l.wallet_delta_platinum=" + std::to_string(value / 1000) +
+				"),l.wallet_after_copper,l.wallet_after_silver,"
+				"l.wallet_after_gold,l.wallet_after_platinum,l.bank_after_copper,l.bank_after_silver,"
+				"l.bank_after_gold,l.bank_after_platinum,l.wallet_revision,l.bank_revision "
+				"FROM critical_operation_inbox i LEFT JOIN currency_ledger l ON l.operation_id=i.operation_id "
+				"WHERE i.operation_id=UNHEX('" +
+				std::string(hex) + "') LIMIT 2";
+		}
+		else
+			continue;
+		if (mysql_real_query(connection, query.data(), query.size()))
+		{
+			if (database_error)
+				*database_error = mysql_errno(connection);
+			return quest_reward_obligation_result::database_error;
+		}
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows)
+		{
+			if (database_error)
+				*database_error = mysql_errno(connection);
+			return quest_reward_obligation_result::database_error;
+		}
+		if (!mysql_num_rows(rows.get()))
+			continue;
+		if (mysql_num_rows(rows.get()) != 1)
+			return quest_reward_obligation_result::corrupt;
+		MYSQL_ROW row = mysql_fetch_row(rows.get());
+		const auto lengths = mysql_fetch_lengths(rows.get());
+		if (!row || !lengths || !row[0] || !row[1] || strcmp(row[1], "1"))
+			return quest_reward_obligation_result::corrupt;
+		if (reward.type == 1U)
+		{
+			item_transfer_result result = {};
+			uint64_t uid = 0, from = 0, to = 0;
+			if (!item_transfer_command_decode_result(
+				    reinterpret_cast<const uint8_t *>(row[0]), lengths[0],
+				    &result) ||
+			    !receipt_number(row[2], &uid) || !receipt_number(row[3], &from) ||
+			    !receipt_number(row[4], &to) || !uid || result.root_item_uid != uid ||
+			    !result.item_count || result.max_item_revision != 1 ||
+			    result.from_owner_revision != from || result.to_owner_revision != to)
+				return quest_reward_obligation_result::corrupt;
+		}
+		else
+		{
+			currency_command_result result = {};
+			if (!currency_command_decode_result(
+				    reinterpret_cast<const uint8_t *>(row[0]), lengths[0], &result))
+				return quest_reward_obligation_result::corrupt;
+			for (size_t field = 0; field < 10; ++field)
+			{
+				uint64_t expected = 0;
+				if (!receipt_number(row[field + 2], &expected))
+					return quest_reward_obligation_result::corrupt;
+				const uint64_t actual =
+					field < 4 ?
+						static_cast<uint64_t>(result.wallet.amount[field]) :
+					field < 8 ? static_cast<uint64_t>(
+							    result.bank.amount[field - 4]) :
+					field == 8 ? result.wallet_revision :
+						     result.bank_revision;
+				if (actual != expected)
+					return quest_reward_obligation_result::corrupt;
+			}
+		}
+		mask |= UINT64_C(1) << index;
+	}
+	record->economic_applied_mask = mask;
+	return quest_reward_obligation_result::ok;
+}
+catch (const std::bad_alloc &)
+{
+	if (database_error)
+		*database_error = ENOMEM;
+	return quest_reward_obligation_result::database_error;
+}
+}
+#endif
 
 quest_reward_obligation_result
 quest_reward_obligation_repository_pending(MYSQL *connection, uint32_t player_pid,
@@ -110,6 +259,13 @@ quest_reward_obligation_repository_pending(MYSQL *connection, uint32_t player_pi
 						   continuation.begin() + continuation_length);
 			record.terms = terms;
 			record.xp_applied_mask = xp_applied_mask;
+			const auto receipts =
+				read_economic_receipts(connection, &record, database_error_code);
+			if (receipts != quest_reward_obligation_result::ok)
+			{
+				mysql_stmt_close(statement);
+				return receipts;
+			}
 			selected.push_back(record);
 		}
 		catch (const std::bad_alloc &)

@@ -53,6 +53,7 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "macro.checked_item_publication_declaration": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item.",
     "account.cleanup_temp_char": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
     "player.new_character_zero": "init_char assigns an initial zero wallet to a newly allocated PC before its first durable baseline; no existing holding is retired.",
     "morph.new_body_zero": "morph clears the cash on a freshly read NPC body before publishing it as the player morph; the original PC wallet remains separate.",
@@ -861,10 +862,10 @@ def build() -> dict:
         function = FUNCTION_FIXES.get(route_id, raw["symbol"])
         if function.startswith("def "):
             function = function[4:]
-        if route_id in {"kingdom.workshop_props", "macro.clear_money_definition", "macro.add_coins_declaration", "macro.difficulty_scale_declaration", "macro.money_helper_declarations", "macro.economic_submit_declarations", "macro.item_constructor_declarations"}:
+        if route_id in {"kingdom.workshop_props", "macro.clear_money_definition", "macro.add_coins_declaration", "macro.difficulty_scale_declaration", "macro.money_helper_declarations", "macro.economic_submit_declarations", "macro.item_constructor_declarations", "macro.checked_item_publication_declaration"}:
             function = None
         locations = source_definition_lines(ROOT / file_path, function)
-        if route_id not in {"kingdom.workshop_props", "macro.clear_money_definition", "macro.add_coins_declaration", "macro.difficulty_scale_declaration", "macro.money_helper_declarations", "macro.economic_submit_declarations", "macro.item_constructor_declarations"} and not locations:
+        if route_id not in {"kingdom.workshop_props", "macro.clear_money_definition", "macro.add_coins_declaration", "macro.difficulty_scale_declaration", "macro.money_helper_declarations", "macro.economic_submit_declarations", "macro.item_constructor_declarations", "macro.checked_item_publication_declaration"} and not locations:
             raise ValueError(f"source function definition not found for {route_id}: {file_path}:{function}")
         if route_id in NON_WRITERS:
             disposition = "non_writer_candidate"

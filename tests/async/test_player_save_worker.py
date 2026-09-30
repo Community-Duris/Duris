@@ -41,6 +41,7 @@ struct apply_state
     bool first_started = false;
     bool release_first = false;
     unsigned int deaths = 0;
+    unsigned int spell_receipts_seen = 0;
 };
 
 struct capacity_state
@@ -55,6 +56,7 @@ struct journal_hook_state
 {
     unsigned int appends = 0;
     unsigned int acknowledgements = 0;
+    unsigned int fail_acknowledgements = 0;
 };
 
 bool journal_append(const player_snapshot &, void *raw)
@@ -63,9 +65,14 @@ bool journal_append(const player_snapshot &, void *raw)
     return true;
 }
 
-bool journal_ack(int, player_revision_t, void *raw)
+bool journal_ack(const player_snapshot &, player_revision_t, void *raw)
 {
-    ++static_cast<journal_hook_state *>(raw)->acknowledgements;
+    auto &state = *static_cast<journal_hook_state *>(raw);
+    ++state.acknowledgements;
+    if (state.fail_acknowledgements) {
+        --state.fail_acknowledgements;
+        return false;
+    }
     return true;
 }
 
@@ -75,6 +82,11 @@ player_save_apply_result apply_snapshot(const player_snapshot &snapshot, void *r
     std::unique_lock<std::mutex> lock(state.mutex);
     ++state.active;
     if (snapshot.death) { assert(snapshot.death->corpse[0].object_uid == 90000); ++state.deaths; }
+    if (snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION) {
+        assert(snapshot.spell_effect_receipts.size() == 1);
+        assert(snapshot.spell_effect_receipts[0].effect_id == 6);
+        ++state.spell_receipts_seen;
+    }
     state.max_active = std::max(state.max_active, state.active);
     ++state.attempts[snapshot.pid];
     if (snapshot.pid == 1 && snapshot.revision == 1)
@@ -165,60 +177,169 @@ void verify_death_acknowledgements()
         {false, player_save_apply_outcome::applied, 1, true, true},
         {false, player_save_apply_outcome::already_applied, 1, true, true},
     };
-    for (const auto &test : cases) {
-        player_save_worker_reset_for_tests();
-        player_revision_reset_for_tests();
-        assert(player_revision_hydrate(71, 20));
-        auto snapshot = next_snapshot(71, PLAYER_CHECKPOINT_COMPONENT_ALL);
-        if (test.death) {
-            snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
-            snapshot.death.emplace();
-            snapshot.death->operation_id.bytes[0] = 1;
-            snapshot.death->corpse.emplace_back();
-            snapshot.death->corpse[0].object_uid = 90000;
-            assert(player_revision_pin_terminal_death(71, snapshot.revision));
-        }
-        forced_result forced{test.outcome, test.delta};
-        journal_hook_state hooks;
-        assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &hooks));
-        assert(player_save_worker_init(force_result, &forced, 1));
-        assert(player_save_worker_submit(snapshot) == player_save_submit_result::accepted);
-        player_save_completion completion = {};
-        wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
-        player_save_worker_shutdown();
-        assert(hooks.acknowledgements == static_cast<unsigned>(test.journal_ack));
-        player_revision_snapshot state = {};
-        assert(player_revision_snapshot_copy(71, &state));
-        if (test.completed) {
-            assert(state.acknowledged_revision == snapshot.revision);
-            assert(state.unacknowledged_components == 0);
-        } else {
-            assert(state.acknowledged_revision == 20);
-            assert(state.queued_revision == snapshot.revision);
-            assert(state.queued_components == snapshot.components);
-            assert(state.inflight_components == 0);
-        }
-        if (test.death && !test.completed) {
-            assert(!player_revision_mark(71, PLAYER_COMPONENT_STATUS, nullptr));
-            forced = {player_save_apply_outcome::applied, 0};
+    for (bool with_xp : {false, true})
+        for (const auto &test : cases) {
+            player_save_worker_reset_for_tests();
+            player_revision_reset_for_tests();
+            assert(player_revision_hydrate(71, 20));
+            auto snapshot = next_snapshot(71, PLAYER_CHECKPOINT_COMPONENT_ALL);
+            if (test.death) {
+                snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+                snapshot.death.emplace();
+                player_spell_effect_receipt_snapshot receipt = {};
+                receipt.operation_id.bytes[0] = 77;
+                receipt.effect_id = 6;
+                snapshot.spell_effect_receipts.push_back(receipt);
+                if (with_xp) {
+                    snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+                    player_quest_xp_receipt_snapshot xp = {};
+                    xp.offering_operation.bytes[0] = 88;
+                    xp.amount = 75;
+                    snapshot.quest_xp_receipts.push_back(xp);
+                }
+                snapshot.death->operation_id.bytes[0] = 1;
+                snapshot.death->corpse.emplace_back();
+                snapshot.death->corpse[0].object_uid = 90000;
+                assert(player_revision_pin_terminal_death(71, snapshot.revision));
+            }
+            forced_result forced{test.outcome, test.delta};
+            journal_hook_state hooks;
+            assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &hooks));
             assert(player_save_worker_init(force_result, &forced, 1));
             assert(player_save_worker_submit(snapshot) == player_save_submit_result::accepted);
+            player_save_completion completion = {};
             wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
             player_save_worker_shutdown();
-            assert(hooks.acknowledgements == 1);
+            assert(hooks.acknowledgements == static_cast<unsigned>(test.journal_ack));
+            assert(completion.quest_xp_receipts.size() == static_cast<size_t>(test.death && with_xp && test.completed));
+            if (!completion.quest_xp_receipts.empty())
+                assert(completion.quest_xp_receipts[0].amount == 75 &&
+                       completion.quest_xp_receipts[0].offering_operation.bytes[0] == 88);
+            player_revision_snapshot state = {};
             assert(player_revision_snapshot_copy(71, &state));
-            assert(state.acknowledged_revision == snapshot.revision);
-            assert(state.unacknowledged_components == 0);
+            if (test.completed) {
+                assert(state.acknowledged_revision == snapshot.revision);
+                assert(state.unacknowledged_components == 0);
+            } else {
+                assert(state.acknowledged_revision == 20);
+                assert(state.queued_revision == snapshot.revision);
+                assert(state.queued_components == snapshot.components);
+                assert(state.inflight_components == 0);
+            }
+            if (test.death && !test.completed) {
+                assert(!player_revision_mark(71, PLAYER_COMPONENT_STATUS, nullptr));
+                forced = {player_save_apply_outcome::applied, 0};
+                assert(player_save_worker_init(force_result, &forced, 1));
+                assert(player_save_worker_submit(snapshot) == player_save_submit_result::accepted);
+                wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+                player_save_worker_shutdown();
+                assert(hooks.acknowledgements == 1);
+                assert(player_revision_snapshot_copy(71, &state));
+                assert(state.acknowledged_revision == snapshot.revision);
+                assert(state.unacknowledged_components == 0);
+            }
+            if (test.death)
+                assert(player_revision_unpin_terminal_death(71, snapshot.revision));
         }
-        if (test.death)
-            assert(player_revision_unpin_terminal_death(71, snapshot.revision));
-    }
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+}
+
+void verify_receipt_acknowledgements()
+{
+    struct test_case {
+        player_save_apply_outcome outcome;
+        int64_t delta;
+        bool acknowledged;
+    };
+    const test_case cases[] = {
+        {player_save_apply_outcome::stale_revision, 1, false},
+        {player_save_apply_outcome::applied, 1, false},
+        {player_save_apply_outcome::already_applied, 1, false},
+        {player_save_apply_outcome::applied, 0, true},
+        {player_save_apply_outcome::already_applied, 0, true},
+    };
+    for (bool spell : {false, true})
+        for (const auto &test : cases) {
+            player_save_worker_reset_for_tests();
+            player_revision_reset_for_tests();
+            assert(player_revision_hydrate(72, 20));
+            auto snapshot = next_snapshot(72, spell ? PLAYER_COMPONENT_AFFECTS :
+                                                     PLAYER_COMPONENT_STATUS);
+            if (spell) {
+                snapshot.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+                player_spell_effect_receipt_snapshot receipt = {};
+                receipt.operation_id.bytes[0] = 0xa5;
+                receipt.effect_id = 6;
+                snapshot.spell_effect_receipts.push_back(receipt);
+            } else {
+                snapshot.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+                player_quest_xp_receipt_snapshot receipt = {};
+                receipt.offering_operation.bytes[0] = 0x42;
+                receipt.reward_index = 1;
+                receipt.amount = 20;
+                snapshot.quest_xp_receipts.push_back(receipt);
+            }
+            forced_result forced{test.outcome, test.delta};
+            journal_hook_state hooks;
+            assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &hooks));
+            assert(player_save_worker_init(force_result, &forced, 1));
+            assert(player_save_worker_submit(snapshot) == player_save_submit_result::accepted);
+            player_save_completion completion = {};
+            wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+            player_save_worker_shutdown();
+            assert(hooks.acknowledgements == static_cast<unsigned>(test.acknowledged));
+            assert(completion.spell_effect_receipts.size() ==
+                   static_cast<size_t>(test.acknowledged && spell));
+            assert(completion.failed_spell_effect_receipts.size() ==
+                   static_cast<size_t>(!test.acknowledged && spell));
+            assert(completion.quest_xp_receipts.size() ==
+                   static_cast<size_t>(test.acknowledged && !spell));
+            if (test.acknowledged && spell)
+                assert(completion.spell_effect_receipts[0].operation_id.bytes[0] == 0xa5);
+            if (test.acknowledged && !spell)
+                assert(completion.quest_xp_receipts[0].offering_operation.bytes[0] == 0x42);
+            player_revision_snapshot state = {};
+            assert(player_revision_snapshot_copy(72, &state));
+            assert(state.acknowledged_revision ==
+                   (test.acknowledged ? snapshot.revision : 20));
+            assert(state.unacknowledged_components ==
+                   (test.acknowledged ? 0 : snapshot.components));
+        }
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+}
+
+void verify_spell_receipt_worker_admission()
+{
+    player_revision_reset_for_tests();
+    player_save_worker_reset_for_tests();
+    apply_state state;
+    assert(player_save_worker_init(apply_snapshot, &state, 1));
+    assert(player_revision_hydrate(42, 0));
+    auto snapshot = next_snapshot(42, PLAYER_COMPONENT_AFFECTS);
+    snapshot.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+    player_spell_effect_receipt_snapshot receipt = {};
+    receipt.operation_id.bytes[0] = 0xa5;
+    receipt.effect_id = 6;
+    snapshot.spell_effect_receipts.push_back(receipt);
+    assert(player_save_worker_submit(std::move(snapshot)) ==
+           player_save_submit_result::accepted);
+    player_save_completion completions[2] = {};
+    wait_until([&] {
+        player_save_worker_pulse(completions, 2);
+        return player_save_worker_health_copy().applied == 1;
+    });
+    assert(state.spell_receipts_seen == 1);
+    player_save_worker_shutdown();
     player_save_worker_reset_for_tests();
     player_revision_reset_for_tests();
 }
 
 int main()
 {
+    verify_receipt_acknowledgements();
+    verify_spell_receipt_worker_admission();
     verify_death_acknowledgements();
     player_revision_reset_for_tests();
     player_save_worker_reset_for_tests();
@@ -319,6 +440,54 @@ int main()
     assert(player_save_worker_submit(next_snapshot(5, PLAYER_COMPONENT_STATUS)) ==
            player_save_submit_result::durably_spilled);
     assert(journal_hooks.appends == 2 && journal_hooks.acknowledgements == 1);
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+
+    // A committed DB result is not an acknowledged save while the journal
+    // checkpoint fails; retry that exact snapshot and surface the failure.
+    apply_state ack_retry_apply;
+    journal_hook_state ack_retry_hooks;
+    ack_retry_hooks.fail_acknowledgements = 1;
+    assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &ack_retry_hooks));
+    assert(player_save_worker_init(apply_snapshot, &ack_retry_apply, 1));
+    assert(player_revision_hydrate(9, 0));
+    assert(player_save_worker_submit(next_snapshot(9, PLAYER_COMPONENT_STATUS)) ==
+           player_save_submit_result::accepted);
+    wait_until([&] {
+        player_save_worker_pulse(completions, 8);
+        return player_save_worker_health_copy().applied == 1;
+    });
+    auto retry_health = player_save_worker_health_copy();
+    assert(retry_health.journal_ack_failures == 1 && retry_health.retryable_failures == 1);
+    assert(ack_retry_hooks.appends == 1 && ack_retry_hooks.acknowledgements == 2);
+    assert(ack_retry_apply.attempts[9] == 2);
+    player_save_worker_shutdown();
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+
+    apply_state exhausted_apply;
+    journal_hook_state exhausted_hooks;
+    exhausted_hooks.fail_acknowledgements = PLAYER_SAVE_WORKER_MAX_RETRIES + 1;
+    assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &exhausted_hooks));
+    assert(player_save_worker_init(apply_snapshot, &exhausted_apply, 1));
+    assert(player_revision_hydrate(9, 0));
+    assert(player_save_worker_submit(next_snapshot(9, PLAYER_COMPONENT_STATUS)) ==
+           player_save_submit_result::accepted);
+    wait_until([&] {
+        player_save_worker_pulse(completions, 8);
+        return player_save_worker_health_copy().retries_exhausted == 1;
+    });
+    const auto exhausted_health = player_save_worker_health_copy();
+    assert(exhausted_health.applied == 0 && exhausted_health.inflight_pids == 0);
+    assert(exhausted_health.journal_ack_failures == PLAYER_SAVE_WORKER_MAX_RETRIES + 1);
+    assert(exhausted_hooks.appends == 1 &&
+           exhausted_hooks.acknowledgements == PLAYER_SAVE_WORKER_MAX_RETRIES + 1);
+    player_revision_snapshot unresolved{};
+    assert(player_revision_snapshot_copy(9, &unresolved));
+    assert((unresolved.unacknowledged_components & PLAYER_COMPONENT_STATUS) != 0);
+    assert((unresolved.queued_components & PLAYER_COMPONENT_STATUS) != 0);
+    assert(unresolved.inflight_components == 0);
+    player_save_worker_shutdown();
     player_save_worker_reset_for_tests();
     player_revision_reset_for_tests();
 

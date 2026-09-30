@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
@@ -17,6 +18,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import migration_runner as runner  # noqa: E402
+import qualify_database_restore as restore_qualifier  # noqa: E402
 
 
 class FakeExecutor:
@@ -49,6 +51,61 @@ class FakeExecutor:
 
 
 class ImmutableMigrationRunnerTest(unittest.TestCase):
+    def test_restore_accepts_both_complete_supported_histories(self):
+        for path in (runner.DEFAULT_MANIFEST,
+                     ROOT / "migrations/migration_manifest.staging_0045.json"):
+            manifest = runner.load_manifest(path)
+            rows = [runner.AppliedMigration(
+                step.migration_id, step.sequence, step.description,
+                step.apply_checksum, step.verify_checksum, step.compatibility,
+                manifest.runner_version) for step in manifest.migrations]
+            with self.subTest(manifest=path.name):
+                restore_qualifier.require_completed_history(rows)
+
+    def test_restore_rejects_partial_mixed_and_edited_histories(self):
+        manifest = runner.load_manifest()
+        stage = runner.load_manifest(
+            ROOT / "migrations/migration_manifest.staging_0045.json")
+        def receipts(selected):
+            return [runner.AppliedMigration(
+                step.migration_id, step.sequence, step.description,
+                step.apply_checksum, step.verify_checksum, step.compatibility,
+                selected.runner_version) for step in selected.migrations]
+        canonical, staging = receipts(manifest), receipts(stage)
+        mixed = list(canonical)
+        mixed[44] = staging[44]
+        for label, rows in (
+            ("empty", []), ("common_prefix", canonical[:44]),
+            ("unmigrated_stage", staging[:45]), ("missing_head", canonical[:-1]),
+            ("mixed", mixed),
+            ("edited_old_receipt", [replace(canonical[0], description="edited")] + canonical[1:]),
+            ("extra_receipt", staging + [staging[-1]]),
+        ):
+            with self.subTest(history=label), self.assertRaisesRegex(
+                    RuntimeError, "incomplete_or_unknown"):
+                restore_qualifier.require_completed_history(rows)
+
+    def test_restore_closes_session_on_success_and_history_refusal(self):
+        manifest = runner.load_manifest()
+        rows = [runner.AppliedMigration(
+            step.migration_id, step.sequence, step.description,
+            step.apply_checksum, step.verify_checksum, step.compatibility,
+            manifest.runner_version) for step in manifest.migrations]
+        for complete in (True, False):
+            executor = FakeExecutor(rows if complete else rows[:-1])
+            executor.sql = mock.Mock(return_value="0")
+            with self.subTest(complete=complete), mock.patch.dict(os.environ, {
+                    "DB_NAME": "duris_restore", "DB_SOCKET": "/tmp/disposable.sock"}), \
+                    mock.patch.object(runner, "MysqlExecutor", return_value=executor):
+                if complete:
+                    restore_qualifier.main()
+                    self.assertGreater(executor.sql.call_count, 0)
+                else:
+                    with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+                        restore_qualifier.main()
+                    executor.sql.assert_not_called()
+            self.assertEqual(executor.events, ["baseline", "unlock"])
+
     def make_production_backup(self, directory: Path, database: str = "duris") -> Path:
         path = directory / "production.sql.gz"
         payload = (
@@ -116,9 +173,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 49)
+        self.assertEqual(len(manifest.migrations), 50)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0049_player_spell_effect_receipt")
+                         "0050_item_extra_description_fulltext_unique")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -219,6 +276,57 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
             with self.assertRaisesRegex(runner.MigrationContractError, "edited"):
                 runner.run_pending(manifest, executor)
             self.assertFalse(any(event.startswith("apply:") for event in executor.events))
+
+    def test_staging_sequence_45_fork_refuses_before_schema_changes(self):
+        manifest = runner.load_manifest()
+        self.assertEqual(manifest.migrations[44].migration_id, "0045_quest_reward_obligation")
+        rows = [runner.AppliedMigration(
+            item.migration_id, item.sequence, item.description,
+            item.apply_checksum, item.verify_checksum, item.compatibility,
+            manifest.runner_version,
+        ) for item in manifest.migrations[:44]]
+        rows.append(runner.AppliedMigration(
+            "0045_item_extra_description_fulltext_unique", 45,
+            "verified staging fork fixture",
+            runner.checksum(b"synthetic full-text uniqueness apply"),
+            runner.checksum(b"synthetic full-text uniqueness verify"),
+            manifest.migrations[44].compatibility, manifest.runner_version,
+        ))
+        # A consistent history count and digest do not make this a candidate prefix.
+        runner.validate_history_state(rows, 45, runner.history_checksum(rows))
+        executor = FakeExecutor(rows)
+        with self.assertRaisesRegex(runner.MigrationContractError, "edited or reordered"):
+            runner.run_pending(manifest, executor)
+        self.assertEqual(executor.events, ["lock", "baseline", "unlock"])
+        self.assertEqual(executor.rows, rows)
+
+    def test_explicit_staging_manifest_appends_without_rewriting_history(self):
+        staging = runner.load_manifest(ROOT / "migrations/migration_manifest.staging_0045.json")
+        rows = [runner.AppliedMigration(
+            item.migration_id, item.sequence, item.description, item.apply_checksum,
+            item.verify_checksum, item.compatibility, staging.runner_version,
+        ) for item in staging.migrations[:45]]
+        executor = FakeExecutor(rows)
+        self.assertEqual(runner.run_pending(staging, executor),
+                         [item.migration_id for item in staging.migrations[45:]])
+        self.assertEqual(executor.rows[:45], rows)
+        self.assertEqual(len(executor.rows), 50)
+        replay = FakeExecutor(executor.rows)
+        self.assertEqual(runner.run_pending(staging, replay), [])
+        self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
+        with self.assertRaisesRegex(runner.MigrationContractError, "edited or reordered"):
+            runner.run_pending(runner.load_manifest(), FakeExecutor(rows))
+
+    def test_runtime_history_query_is_bounded_and_covers_every_receipt_field(self):
+        sql = runner.runtime_history_sql(51)
+        for field in ("migration_id", "sequence_number", "description", "apply_checksum",
+                      "verify_checksum", "compatibility", "runner_version"):
+            self.assertIn(field, sql)
+        self.assertEqual(sql.count("UNHEX(LPAD(HEX(OCTET_LENGTH("), 7)
+        self.assertTrue(sql.endswith("ORDER BY sequence_number LIMIT 51"))
+        for invalid in (0, -1, True, "51", 10001):
+            with self.assertRaises(runner.MigrationContractError):
+                runner.runtime_history_sql(invalid)
 
     def test_history_head_detects_trailing_deletion(self):
         row = runner.AppliedMigration("0001_test", 1, "test", "1" * 64,
@@ -329,6 +437,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         }
         with mock.patch.dict(os.environ, environment, clear=True):
             executor = runner.MysqlExecutor(manifest)
+            self.assertIn("--skip-reconnect", executor.command)
+            self.assertIn("--unbuffered", executor.command)
+            self.assertEqual(executor.command[1], "--no-defaults")
             self.assertIn("--protocol=socket", executor.command)
             self.assertIn("--socket=/run/mysqld/mysqld.sock", executor.command)
             with mock.patch.object(runner.shutil, "which", return_value="/usr/bin/mysql"), \
@@ -345,6 +456,37 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         with mock.patch.dict(os.environ, environment, clear=True):
             with self.assertRaisesRegex(runner.MigrationContractError, "absolute"):
                 runner.MysqlExecutor(manifest)
+
+    def test_receipt_record_rolls_back_a_failed_state_compare(self):
+        manifest = runner.load_manifest()
+        environment = {"ENVIRONMENT": "test", "DB_HOST": "127.0.0.1",
+                       "DB_NAME": "migration_test", "DB_USER": "test", "DB_PASSWD": "test"}
+        with mock.patch.dict(os.environ, environment, clear=True):
+            executor = runner.MysqlExecutor(manifest)
+        with mock.patch.object(executor, "applied", return_value=[]), \
+                mock.patch.object(executor, "sql", side_effect=["0", ""]) as sql:
+            with self.assertRaisesRegex(runner.MigrationContractError, "head changed"):
+                executor.record(manifest.migrations[0], manifest.runner_version)
+            self.assertIn("START TRANSACTION", sql.call_args_list[0].args[0])
+            self.assertNotIn("COMMIT", sql.call_args_list[0].args[0])
+            self.assertEqual(sql.call_args_list[1].args[0], "ROLLBACK;")
+        with mock.patch.object(executor, "applied", return_value=[]), \
+                mock.patch.object(executor, "sql", side_effect=["1", ""]) as sql:
+            executor.record(manifest.migrations[0], manifest.runner_version)
+            self.assertEqual(sql.call_args_list[1].args[0], "COMMIT;")
+
+    def test_closed_transport_cannot_reconnect_or_run_a_statement(self):
+        manifest = runner.load_manifest()
+        environment = {"ENVIRONMENT": "test", "DB_HOST": "127.0.0.1",
+                       "DB_NAME": "migration_test", "DB_USER": "test", "DB_PASSWD": "test"}
+        with mock.patch.dict(os.environ, environment, clear=True):
+            executor = runner.MysqlExecutor(manifest)
+        executor._close_session()
+        with mock.patch.object(runner.subprocess, "Popen") as spawn:
+            with self.assertRaisesRegex(runner.MigrationContractError, "session is closed"):
+                executor.sql("SELECT 1;")
+            spawn.assert_not_called()
+        executor.release_lock()
 
     def test_legacy_data_markers_are_not_recast_as_complete_history(self):
         ledger = (ROOT / "migrations/immutable_migration_ledger.sql").read_text()

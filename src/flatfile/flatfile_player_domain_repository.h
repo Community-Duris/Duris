@@ -109,6 +109,8 @@ struct flatfile_legacy_domain_receipt
 	unsigned int result_code = 0;
 	uint16_t result_size = 0;
 	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result = {};
+	uint32_t quest_reward_index = 0; // One-based frozen reward slot; zero is unproven.
+	uint32_t quest_reward_amount = 0;
 };
 flatfile_player_domain_result flatfile_player_domain_legacy_receipt_locked(
 	const std::string &root, const flatfile_authority_lock &lock, int32_t pid,

@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 222;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 223;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons',"
 	"'account_bound_rewards','account_characters','account_erasure_evidence',"
@@ -57,7 +57,8 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'player_intros','player_item_affects','player_item_extra_descr','player_items',"
 	"'player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges','player_skills',"
-	"'player_spellbooks','player_timers','player_undead_slots','player_witnesses','poll_options',"
+	"'player_spell_effect_receipt','player_spellbooks','player_timers',"
+	"'player_undead_slots','player_witnesses','poll_options',"
 	"'poll_votes','polls','prepstatement_duris_sql','private_chest_log','private_chests',"
 	"'progress','quest_reward_obligation','quest_reward_xp_entitlement','quest_trophy','races','racewar_stat_mods','saved_item_affects',"
 	"'saved_item_extra_descr','saved_item_recovery_handoff','saved_items','season_reset_state',"
@@ -71,9 +72,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'telemetry_session','timers','towns','world_quest_accomplished','zone_story_quest_state',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"8ec971565427c441d5edfa1ec79a0ce5277f2c7211455416a412d775d97c2186";
+	"3fb1ba07114cefca9d5f3c75d1e81ca34b417d517800a8e5c1e0554e73e4fc7e";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"637b74d4e42078ebc1256123e2a866c5512ec7074ab99fa3a4c05feadc8560c5";
+	"d617f29895e70446566b3a57a5912accd6f299be687d060225f8431fa029ec3c";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -99,16 +100,46 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * adds one runtime table. Migration 0046 adds realized copper prices to
  * economic operation roots without adding a runtime table; migration 0047 adds
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
- * entitlements. The 0048 schema fingerprints still require measurement on
- * MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0048_quest_xp_entitlement";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 48;
+ * entitlements. Migration 0049 adds player spell-effect receipts. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0050_item_extra_description_fulltext_unique";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 50;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"ed93976ddb651024c3c4ec55a4b2d0becb318c18ce8ad8e930defb0530182b49";
+	"63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"8c1d98ffb08292d4b10143a7f414902da3ecb93b63ec8d13fd7fe9fc7b263175";
+	"d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"3a918fa6ba72299f5dfce37a4e0c48d37a55e0dae35a6f780d5799c8d4ef3018";
+	"7b90d2cadab45ee89f3960ac7d4387032b93d6a3be6c9d279742a28ced7f5ae0";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0049_player_spell_effect_receipt";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 50;
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
+	"46779e7b1cf8a12af6828f263a4842ddfed21303719f693224ac130a76371f5b";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
+	"ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
+	"b627a1c34b80ba5f3be3bad64e1fa583aaa9ec63e420317a698bf18efada80b7";
+constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
+	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING "
+	"utf8mb4))),16,'0')),CONVERT(migration_id USING "
+	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING "
+	"utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING "
+	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING "
+	"utf8mb4))),16,'0')),CONVERT(description USING "
+	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING "
+	"utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING "
+	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING "
+	"utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING "
+	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING "
+	"utf8mb4))),16,'0')),CONVERT(compatibility USING "
+	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING "
+	"utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history "
+	"ORDER BY sequence_number LIMIT 51";
+constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
+	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
+	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "
+	"data_type='binary' AND character_maximum_length=32 AND LOWER(extra) LIKE '%stored generated%' AND LO"
+	"WER(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CONCAT(CHAR(92),CHAR(39),CHAR(92),CHAR(39)"
+	"),CONCAT(CHAR(39),CHAR(39))),CHAR(96),''),' "
+	"',''),'_utf8mb4',''))='unhex(sha2(coalesce(description,''''),256))'";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

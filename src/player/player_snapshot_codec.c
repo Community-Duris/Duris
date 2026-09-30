@@ -277,8 +277,8 @@ bool valid_metadata(const player_snapshot &snapshot)
 	return (snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 		snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 		snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
-		snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
-		snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION) &&
+		player_snapshot_is_death_request_schema(snapshot.schema_version) ||
+		player_snapshot_is_death_evidence_schema(snapshot.schema_version)) &&
 	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
 	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
@@ -321,7 +321,7 @@ bool valid_death(const player_snapshot &snapshot)
 			[](const auto &pet) { return pet.hold_reason == pet_hold_reason::none; }))
 		return false;
 	const auto &death = *snapshot.death;
-	if ((snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION) !=
+	if (player_snapshot_is_death_evidence_schema(snapshot.schema_version) !=
 	    death.conflict_evidence.has_value())
 		return false;
 	if (!nonzero_operation(death.operation_id) || death.corpse_room_vnum <= 0 ||
@@ -403,8 +403,7 @@ bool valid_quest_xp_receipts(const player_snapshot &snapshot)
 	if (snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
 	    snapshot.quest_xp_receipts.empty())
 		return true;
-	if (snapshot.schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
-	    snapshot.schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)
+	if (!player_snapshot_has_quest_receipt_schema(snapshot.schema_version))
 		return snapshot.quest_xp_receipts.empty();
 	if (snapshot.quest_xp_receipts.empty() || snapshot.quest_xp_receipts.size() > 64)
 		return false;
@@ -425,9 +424,14 @@ bool valid_quest_xp_receipts(const player_snapshot &snapshot)
 
 bool valid_spell_effect_receipts(const player_snapshot &snapshot)
 {
-	if (snapshot.schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)
+	if (!player_snapshot_has_spell_receipt_schema(snapshot.schema_version))
 		return snapshot.spell_effect_receipts.empty();
+	if ((snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
+	     snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION) &&
+	    snapshot.spell_effect_receipts.empty())
+		return true;
 	if (snapshot.spell_effect_receipts.empty() ||
+	    !(snapshot.components & PLAYER_COMPONENT_AFFECTS) ||
 	    snapshot.spell_effect_receipts.size() > PLAYER_SPELL_EFFECT_RECEIPT_MAX)
 		return false;
 	for (size_t index = 0; index < snapshot.spell_effect_receipts.size(); ++index)
@@ -1121,8 +1125,7 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 			   });
 		out.boolean(snapshot.recipes_are_external);
 		out.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES);
-		if (snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
-		    snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)
+		if (player_snapshot_has_quest_receipt_schema(snapshot.schema_version))
 			out.vector(snapshot.quest_xp_receipts,
 				   [&](const auto &receipt)
 				   {
@@ -1132,8 +1135,7 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 					   out.number<uint32_t>(receipt.reward_index);
 					   out.number<uint32_t>(receipt.amount);
 				   });
-		if (snapshot.schema_version ==
-		    PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)
+		if (player_snapshot_has_spell_receipt_schema(snapshot.schema_version))
 			out.vector(snapshot.spell_effect_receipts,
 				   [&](const auto &receipt)
 				   {
@@ -1184,9 +1186,10 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 		    snapshot.schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
-		    snapshot.schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
-		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION &&
-		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION)
+		    snapshot.schema_version !=
+			    PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+		    !player_snapshot_is_death_request_schema(snapshot.schema_version) &&
+		    !player_snapshot_is_death_evidence_schema(snapshot.schema_version))
 			return player_snapshot_codec_result::unsupported_version;
 		if (!in.number(snapshot.pid) || !in.number(snapshot.revision) ||
 		    !in.number(snapshot.components) || !in.number(snapshot.save_intent) ||
@@ -1295,13 +1298,15 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (wire_version >= 5 &&
 		    !in.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES))
 			return in.result;
-		if ((wire_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
-		     wire_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION) &&
+		if (player_snapshot_has_quest_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.quest_xp_receipts,
 			       [&](auto &receipt)
 			       {
 				       if (in.size - in.offset < receipt.offering_operation.bytes.size())
+				       {
+					       in.result = player_snapshot_codec_result::truncated;
 					       return false;
+				       }
 				       std::copy_n(in.data + in.offset,
 					   receipt.offering_operation.bytes.size(),
 					   receipt.offering_operation.bytes.begin());
@@ -1309,12 +1314,15 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       return in.number(receipt.reward_index) && in.number(receipt.amount);
 			       }))
 			return in.result;
-		if (wire_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+		if (player_snapshot_has_spell_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.spell_effect_receipts,
 			       [&](auto &receipt)
 			       {
 				       if (in.size - in.offset < receipt.operation_id.bytes.size())
+				       {
+					       in.result = player_snapshot_codec_result::truncated;
 					       return false;
+				       }
 				       std::copy_n(in.data + in.offset,
 					   receipt.operation_id.bytes.size(),
 					   receipt.operation_id.bytes.begin());
@@ -1322,14 +1330,13 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       return in.number(receipt.effect_id);
 			       }))
 			return in.result;
-		if (snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
-		    snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION)
+		if (player_snapshot_is_death_request_schema(snapshot.schema_version) ||
+		    player_snapshot_is_death_evidence_schema(snapshot.schema_version))
 		{
 			snapshot.death.emplace();
 			if (!decode_death(in, *snapshot.death))
 				return in.result;
-			if (snapshot.schema_version ==
-			    PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION)
+			if (player_snapshot_is_death_evidence_schema(snapshot.schema_version))
 			{
 				snapshot.death->conflict_evidence.emplace();
 				if (!decode_evidence(in, *snapshot.death->conflict_evidence))

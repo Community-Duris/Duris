@@ -25,7 +25,7 @@ from import_legacy_dump import (
 
 ROOT = Path(__file__).resolve().parents[1]
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
-ARTIFACT_HEADER = "# duris-item-topology-classification-v1"
+ARTIFACT_HEADER = "# duris-item-topology-classification-v2"
 ARTIFACT_COLUMNS = (
     "category\tsource_table\tsource_row_id\titem_uid\tpayload_parent_uid\t"
     "expected_root_uid\tcurrent_parent_uid\tcurrent_root_uid\tpayload_owner_type\t"
@@ -47,7 +47,7 @@ class Row:
 
     source_table: str
     source_row_id: int
-    item_uid: int
+    item_uid: int | None
     payload_parent_uid: int | None
     payload_owner_type: int
     payload_owner_id: int | None
@@ -158,33 +158,48 @@ WITH candidate AS (
   SELECT 'player_items' source_table,i.id source_row_id,i.obj_uid item_uid,
          p.obj_uid payload_parent_uid,1 payload_owner_type,
          CAST(i.pid AS UNSIGNED) payload_owner_id,0 payload_owner_context_id,i.vnum,
-         IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0) broken_parent
-  FROM player_items i LEFT JOIN player_items p ON p.id=i.container_id WHERE i.obj_uid>0
+         IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0) broken_parent
+  FROM player_items i LEFT JOIN player_items p ON p.id=i.container_id
+  UNION ALL
+  SELECT 'player_pet_items',i.id,i.obj_uid,p.obj_uid,11,
+         CAST(pp.pet_uid AS UNSIGNED),CAST(pp.owner_pid AS UNSIGNED),i.vnum,
+         IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0)
+  FROM player_pet_items i JOIN player_pets pp ON pp.id=i.pet_id
+  LEFT JOIN player_pet_items p ON p.id=i.container_id
   UNION ALL
   SELECT 'corpse_items',i.id,i.obj_uid,p.obj_uid,4,
          ((CAST(pd.pid AS UNSIGNED)<<32)|(CAST(c.save_id AS UNSIGNED)&4294967295)),0,
-         i.vnum,IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
+         i.vnum,IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0)
   FROM corpse_items i JOIN corpses c ON c.id=i.corpse_id
   LEFT JOIN player_data pd ON LOWER(pd.name)=LOWER(c.player_name)
-  LEFT JOIN corpse_items p ON p.id=i.container_id WHERE i.obj_uid>0
+  LEFT JOIN corpse_items p ON p.id=i.container_id
   UNION ALL
   SELECT 'locker_items',i.id,i.obj_uid,p.obj_uid,5,CAST(i.locker_id AS UNSIGNED),
          CAST(COALESCE(i.chest_id,public_chest.id,0) AS UNSIGNED),i.vnum,
-         IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
+         IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0)
   FROM locker_items i LEFT JOIN locker_items p ON p.id=i.container_id
   LEFT JOIN private_chests public_chest
     ON public_chest.locker_id=i.locker_id AND public_chest.is_public=1
-  WHERE i.obj_uid>0
   UNION ALL
   SELECT 'account_locker_items',i.id,i.obj_uid,p.obj_uid,5,
          CAST(i.chest_id AS UNSIGNED),0,i.vnum,
-         IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
+         IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0)
   FROM account_locker_items i LEFT JOIN account_locker_items p ON p.id=i.container_id
-  WHERE i.obj_uid>0
   UNION ALL
   SELECT 'saved_items',i.id,i.obj_uid,p.obj_uid,3,CAST(i.room_vnum AS UNSIGNED),0,i.vnum,
-         IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
-  FROM saved_items i LEFT JOIN saved_items p ON p.id=i.container_id WHERE i.obj_uid>0
+         IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0)
+  FROM saved_items i LEFT JOIN saved_items p ON p.id=i.container_id
+  UNION ALL
+  SELECT 'shopkeeper_items',i.id,i.obj_uid,p.obj_uid,9,
+         CASE WHEN s.shop_id>=0 THEN CAST(s.shop_id AS UNSIGNED)+1 ELSE NULL END,
+         0,i.vnum,IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0)
+  FROM shopkeeper_items i LEFT JOIN shopkeepers s ON s.id=i.shopkeeper_id
+  LEFT JOIN shopkeeper_items p ON p.id=i.container_id
+  UNION ALL
+  SELECT 'siege_items',i.id,i.obj_uid,p.obj_uid,3,
+         CASE WHEN i.room_vnum>0 THEN CAST(i.room_vnum AS UNSIGNED) ELSE NULL END,
+         0,i.vnum,IF(i.container_id IS NOT NULL AND (p.obj_uid IS NULL OR p.obj_uid=0),1,0)
+  FROM siege_items i LEFT JOIN siege_items p ON p.id=i.container_id
 ), ledger AS (
   SELECT item_uid,COUNT(*) event_count FROM item_ownership_ledger GROUP BY item_uid
 ), open_quarantine AS (
@@ -198,8 +213,8 @@ SELECT candidate.source_table,candidate.source_row_id,candidate.item_uid,
        current_item.root_item_uid,current_item.parent_item_uid,current_item.owner_type,
        current_item.owner_id,current_item.owner_context_id,current_item.item_revision,
        current_item.vnum,current_item.state,
-       CASE WHEN baseline.item_uid IS NULL THEN NULL
-            ELSE baseline.opening_item_revision+COALESCE(ledger.event_count,0) END,
+       CASE WHEN baseline.item_uid IS NULL AND ledger.item_uid IS NULL THEN NULL
+            ELSE COALESCE(baseline.opening_item_revision,0)+COALESCE(ledger.event_count,0) END,
        payload_parent.state,payload_parent.owner_type,payload_parent.owner_id,
        payload_parent.owner_context_id
 FROM candidate
@@ -235,7 +250,7 @@ def load_rows(query: Callable[[str], str]) -> list[Row]:
         if len(fields) != 23 or re.fullmatch(r"[a-z_]+", fields[0]) is None:
             raise TopologyError("topology query returned malformed data")
         result.append(Row(
-            fields[0], _integer(fields[1]), _integer(fields[2]), _optional(fields[3]),
+            fields[0], _integer(fields[1]), _optional(fields[2]), _optional(fields[3]),
             _integer(fields[4]), _optional(fields[5]), _integer(fields[6]),
             _integer(fields[7]), bool(_integer(fields[8])), bool(_integer(fields[9])),
             *(_optional(value) for value in fields[10:]),
@@ -243,15 +258,21 @@ def load_rows(query: Callable[[str], str]) -> list[Row]:
     return result
 
 
-def _canonical_rows(rows: list[Row]) -> tuple[dict[int, Row], dict[int, str]]:
-    """Select one row per UID while retaining duplicate/ambiguous failures."""
+def _canonical_rows(rows: list[Row]) -> tuple[dict[int, Row], dict[int, str],
+                                             dict[int, list[Row]]]:
+    """Resolve ancestry once per UID while retaining every duplicate source row."""
     grouped: dict[int, list[Row]] = defaultdict(list)
     for row in rows:
+        if not row.item_uid:
+            continue
         grouped[row.item_uid].append(row)
     canonical: dict[int, Row] = {}
     invalid: dict[int, str] = {}
+    duplicates: dict[int, list[Row]] = {}
     for item_uid, candidates in grouped.items():
         first = candidates[0]
+        if len(candidates) > 1:
+            duplicates[item_uid] = candidates
         payloads = {
             (row.payload_parent_uid, row.payload_owner_type, row.payload_owner_id,
              row.payload_owner_context_id, row.vnum) for row in candidates
@@ -261,9 +282,9 @@ def _canonical_rows(rows: list[Row]) -> tuple[dict[int, Row], dict[int, str]]:
         elif len(payloads) != 1:
             invalid[item_uid] = "ambiguous_payload"
         elif len(candidates) != 1:
-            invalid[item_uid] = "duplicate_custody_rows"
+            invalid[item_uid] = "duplicate_payload_uid"
         canonical[item_uid] = first
-    return canonical, invalid
+    return canonical, invalid, duplicates
 
 
 def _roots(rows: dict[int, Row], invalid: dict[int, str], maximum_depth: int = 32) \
@@ -308,12 +329,16 @@ def _roots(rows: dict[int, Row], invalid: dict[int, str], maximum_depth: int = 3
 
 def classify(rows: list[Row], maximum_depth: int = 32) -> list[Finding]:
     """Classify corruption before otherwise expected lifecycle transitions."""
-    canonical, initial = _canonical_rows(rows)
+    canonical, initial, duplicates = _canonical_rows(rows)
     roots, graph_failures = _roots(canonical, initial, maximum_depth)
-    findings: list[Finding] = []
+    findings: list[Finding] = [
+        Finding("missing_item_uid", row) for row in rows if not row.item_uid
+    ]
     for item_uid, row in canonical.items():
         root = roots.get(item_uid)
-        if row.payload_owner_id is None:
+        if item_uid in duplicates:
+            category = initial[item_uid]
+        elif row.payload_owner_id is None:
             category = "missing_payload_owner"
         elif item_uid in graph_failures:
             category = graph_failures[item_uid]
@@ -350,6 +375,8 @@ def classify(rows: list[Row], maximum_depth: int = 32) -> list[Finding]:
         else:
             continue
         findings.append(Finding(category, row, root))
+        for duplicate in duplicates.get(item_uid, [])[1:]:
+            findings.append(Finding(category, duplicate, root))
     return sorted(findings, key=lambda finding: (
         finding.category, finding.row.source_table, finding.row.source_row_id))
 
@@ -357,12 +384,17 @@ def classify(rows: list[Row], maximum_depth: int = 32) -> list[Finding]:
 def summary(rows: list[Row], findings: list[Finding]) -> str:
     """Render identifier-free aggregate category counts."""
     counts = Counter(finding.category for finding in findings)
+    uid_counts = Counter(row.item_uid for row in rows if row.item_uid)
+    duplicate_uid_rows = sum(count for count in uid_counts.values() if count > 1)
     expected = sum(counts[category] for category in EXPECTED_CATEGORIES)
     repairable = sum(counts[category] for category in REPAIRABLE_CATEGORIES)
     corrupt = len(findings) - expected - repairable
     categories = ",".join(f"{name}:{counts[name]}" for name in sorted(counts)) or "none"
     return (
-        f"payload_rows={len(rows)} unique_items={len({row.item_uid for row in rows})} "
+        f"payload_rows={len(rows)} unique_items={len({row.item_uid for row in rows if row.item_uid})} "
+        f"duplicate_uid_rows={duplicate_uid_rows} "
+        f"null_uids={sum(row.item_uid is None for row in rows)} "
+        f"zero_uids={sum(row.item_uid == 0 for row in rows)} "
         f"expected_transitions={expected} repairable_drift={repairable} "
         f"corruption={corrupt} categories={categories}"
     )

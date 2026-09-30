@@ -146,12 +146,36 @@ spell_component_effect_status spell_vines_component_retirement_completed(
 // until the effect owner has an operation-scoped receipt.
 bool spell_component_retirement_restore_context(
 	const item_transfer_payload &payload,
-	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> *context, size_t *context_size);
+	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> *context, size_t *context_size,
+	uint32_t *effect_id = nullptr, uint32_t *receipt_owner_pid = nullptr);
 bool spell_component_retirement_replayed_publication(
 	const critical_operation_id &operation_id, P_char actor, bool committed,
 	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
 	size_t context_size);
 bool spell_component_retirement_waiting_for_effect(const critical_operation_id &operation_id);
+struct player_load_spell_effect_receipt;
+struct player_spell_effect_receipt_snapshot;
+bool spell_component_retirement_restore_replayed_effect(const critical_operation_id &operation_id,
+							uint32_t actor_pid, uint32_t effect_id,
+							uint32_t receipt_owner_pid = 0);
+bool spell_component_retirement_bind_effect_owner(const critical_operation_id &operation_id,
+						  uint32_t actor_pid, uint32_t owner_pid,
+						  item_spell_component_effect effect);
+bool spell_component_retirement_append_owner_operations(
+	uint32_t owner_pid, std::vector<critical_operation_id> *operations);
+bool spell_component_retirement_pending_save_receipts(
+	uint32_t owner_pid, std::vector<player_spell_effect_receipt_snapshot> *receipts);
+void spell_component_retirement_recover_receipts(uint32_t actor_pid,
+						 const player_load_spell_effect_receipt *receipts,
+						 size_t count);
+void spell_component_retirement_save_completed(int32_t actor_pid, bool acknowledged,
+					       const player_spell_effect_receipt_snapshot *receipts,
+					       size_t count);
+bool spell_component_retirement_effect_applied(const critical_operation_id &operation_id);
+bool spell_component_retirement_effect_applied_once(const critical_operation_id &operation_id);
+spell_component_effect_status
+spell_component_retirement_save_effect(const critical_operation_id &operation_id, P_char actor,
+				       item_spell_component_effect effect);
 // Restore durable soulbind publication from the serialized item command.
 bool spell_item_lifecycle_restore_replayed_command(const critical_command &command);
 

@@ -15,7 +15,7 @@ assert "quest_item_reward_source_id(" in reward
 assert contains(reward, "pl, obj, pl, NULL, source, source_id")
 assert contains(reward, "pl, obj, pl->in_room, source, nullptr, source_id")
 assert "economic_source_kind::quest_completion" in reward
-helper = extract_function("world/quest.c", "static uint64_t quest_item_reward_source_id(")
+helper = extract_function("item/quest_reward_continuation.h", "inline uint64_t quest_item_reward_source_id(uint64_t")
 
 program = r'''
 #include <cassert>

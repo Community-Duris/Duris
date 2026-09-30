@@ -152,6 +152,7 @@ struct player_load_request
 	std::string player_name;
 	bool include_items = true;
 	bool include_pets = true;
+	std::vector<critical_operation_id> pending_spell_effect_operations;
 	player_death_recovery_query_request death_recovery_query = {};
 };
 
@@ -184,6 +185,8 @@ struct player_load_quest_reward
 	std::vector<uint8_t> continuation;
 	quest_reward_continuation terms;
 	uint64_t xp_applied_mask = 0;
+	uint64_t economic_applied_mask = 0;
+	bool economic_history_verified = true;
 };
 
 struct player_load_quest_xp_entitlement

@@ -21,6 +21,56 @@ constexpr uint32_t PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION = 10;
 constexpr uint32_t PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION = 11;
 // Ordinary save frames that retain operation-scoped spell effect application receipts.
 constexpr uint32_t PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION = 12;
+// Death dispositions retain applied spell receipts, including conflict evidence.
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION = 13;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION = 14;
+// Death frames carrying quest XP and optionally applied spell receipts.
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION = 15;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION = 16;
+
+constexpr bool player_snapshot_is_death_request_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+}
+constexpr bool player_snapshot_is_death_evidence_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+}
+constexpr bool player_snapshot_has_spell_receipt_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+}
+constexpr bool player_snapshot_has_quest_receipt_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+}
+constexpr uint32_t player_snapshot_death_request_schema(uint32_t version)
+{
+	if (version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+	return version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ?
+		       PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION :
+		       PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+}
+constexpr uint32_t player_snapshot_death_evidence_schema(uint32_t version)
+{
+	if (version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+	return version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ?
+		       PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION :
+		       PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION;
+}
 constexpr uint32_t PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX = 6;
 constexpr size_t PLAYER_SPELL_EFFECT_RECEIPT_MAX = 4096;
 constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMNS = 64;

@@ -30,6 +30,8 @@ def function(text: str, signature: str) -> str:
 
 verify = function(repository, "query_result reconcile_player_item_custody(")
 apply_items = function(repository, "query_result apply_items(")
+apply_pets = function(repository, "query_result apply_pets(")
+orphan_guard = function(repository, "query_result reject_orphaned_saved_items(")
 
 # The proof uses the sealed replacement graph, reconstructs every root/parent,
 # and locks the authoritative rows in the same transaction as replacement.
@@ -47,7 +49,8 @@ for token in (
     "ORDER BY item_uid FOR UPDATE",
 ):
     assert contains(verify, token), token
-assert contains(verify, "PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH")
+assert contains(function(repository, "query_result custody_payload_mismatch("),
+                "PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH")
 assert contains(verify, "coin_payload IS NOT NULL")
 assert contains(verify, "inline_coin_payload")
 assert contains(verify, "matched.size() != expected.size()")
@@ -66,6 +69,16 @@ assert index(apply_items, "reconcile_player_item_custody") < index(
 )
 assert not contains(verify, "DELETE FROM")
 assert not contains(verify, "UPDATE item_current_owner")
+assert contains(orphan_guard, "LEFT JOIN item_current_owner")
+assert contains(orphan_guard, "own.item_uid IS NULL LIMIT 1 FOR UPDATE")
+assert contains(orphan_guard, "orphaned_saved_item")
+assert contains(orphan_guard, "orphaned_saved_pet_item")
+assert index(apply_items, "reject_orphaned_saved_items") < index(
+    apply_items, '"DELETE FROM player_items WHERE pid="'
+)
+assert index(apply_pets, "reject_orphaned_saved_items") < index(
+    apply_pets, '"DELETE FROM player_pet_items WHERE pet_id="'
+)
 
 # New item dirtiness is always a complete equipment+inventory graph. This also
 # prevents equip-root children (stored with equip_slot=0) from being mistaken

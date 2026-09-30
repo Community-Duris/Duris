@@ -24,6 +24,10 @@
 
 namespace
 {
+static_assert(WORLD_RECOVERY_MAX_BYTES ==
+		      REDIS_WORLD_GENERATION_MAX_CHUNKS * REDIS_WORLD_GENERATION_CHUNK_BYTES,
+	      "world capture and Redis transport bounds must remain coordinated");
+
 struct world_keys
 {
 	char fence[128];

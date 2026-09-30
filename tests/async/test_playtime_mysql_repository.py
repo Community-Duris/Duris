@@ -143,6 +143,7 @@ with tempfile.TemporaryDirectory(prefix="duris-playtime-sql-") as temporary:
     source.write_text(HARNESS)
     subprocess.run(["g++", "-std=c++20", "-ffunction-sections", "-fdata-sections", "-Isrc",
                     "-I/usr/include/mysql", str(source), "src/player/player_snapshot_repository.c",
+                    "src/player/player_save_journal.c",
                     "src/player/player_snapshot_codec.c", "src/sql/item_extra_descr_codec.c",
                     "src/persistence/persistence_observability.c",
                     "-Wl,--gc-sections", "-lmysqlclient", "-pthread", "-o", str(binary)], cwd=ROOT, check=True)

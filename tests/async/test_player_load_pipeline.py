@@ -36,6 +36,16 @@ bool player_save_pipeline_save_admitted(int) { return true; }
 // This fixture isolates load-queue mechanics with a healthy save side. Actual
 // replay readiness is exercised by test_death_journal_pipeline_lifecycle.py.
 bool player_save_pipeline_loads_allowed() { return true; }
+bool item_movement_transaction_pending_spell_effects(
+    uint32_t pid, std::vector<critical_operation_id> *operations)
+{
+    assert(pid > 0 && operations);
+    critical_operation_id operation = {};
+    operation.bytes[0] = static_cast<uint8_t>(pid);
+    operations->push_back(operation);
+    return true;
+}
+bool player_save_journal_pid_quarantined(int) { return false; }
 
 extern "C" MYSQL *sql_pool_acquire(void) { return nullptr; }
 extern "C" void sql_pool_release(MYSQL *) {}
@@ -68,6 +78,13 @@ struct callback_state
 
 player_load_result execute(const player_load_request &request, void *raw)
 {
+    if (request.include_items) {
+        assert(request.pending_spell_effect_operations.size() == 1);
+        assert(request.pending_spell_effect_operations[0].bytes[0] ==
+               static_cast<uint8_t>(request.pid));
+    } else {
+        assert(request.pending_spell_effect_operations.empty());
+    }
     auto &state = *static_cast<callback_state *>(raw);
     if (request.request_id >= 1000)
     {
@@ -164,6 +181,11 @@ int main()
     assert(player_load_pipeline_execute_sync(request(6, 60), &synchronous));
     assert(synchronous.request_id == 6 && synchronous.pid == 60);
     assert(synchronous.outcome == player_load_outcome::applied);
+    auto preview = request(7, 70);
+    preview.include_items = false;
+    preview.include_pets = false;
+    assert(player_load_pipeline_execute_sync(preview, &synchronous));
+    assert(synchronous.request_id == 7 && synchronous.pid == 70);
 
     assert(player_load_pipeline_submit(request(1000, 1000)) ==
            player_load_submit_outcome::accepted);
@@ -250,6 +272,7 @@ for contract in (
     "invalidate_uncertain_result(&result, error)",
     "selected_execute_callback()",
     "flatfile_player_load_repository_execute_selected",
+    "item_movement_transaction_pending_spell_effects(",
 ):
     assert contract in PIPELINE
 
@@ -268,6 +291,10 @@ for contract in (
     assert contract in REPOSITORY
 assert REPOSITORY.index("load_status(connection") < REPOSITORY.index("load_components(connection")
 assert REPOSITORY.index("load_components(connection") < REPOSITORY.index("load_bank(connection")
+assert 'FROM player_spell_effect_receipt WHERE pid=' in REPOSITORY
+assert 'AND operation_id IN (' in REPOSITORY
+assert 'if (!request.pending_spell_effect_operations.empty())' in REPOSITORY
+assert 'ORDER BY created_at DESC,operation_id DESC LIMIT' not in REPOSITORY
 
 assert "restoreCharOnly(player" not in ACCOUNT
 assert "player_load_pipeline_submit(request)" in ACCOUNT

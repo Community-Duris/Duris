@@ -35,7 +35,7 @@ RUNTIME_VERIFY = ROOT / "migrations/verify_runtime_compatibility.sh"
 VALIDATOR = ROOT / "scripts/validate_runtime_compatibility.py"
 
 BOOTSTRAP_TABLE_COUNT = 203
-RUNTIME_TABLE_COUNT = 221
+RUNTIME_TABLE_COUNT = 223
 
 NEW_TABLES = ("telemetry_cohort_member", "telemetry_rollup_session")
 SESSION_TABLE = "telemetry_rollup_session"
@@ -800,13 +800,16 @@ def setup_full_schema(engine: Engine, manifest: object) -> dict[str, object]:
     for replay in (1, 2):
         for step in manifest.migrations:
             engine.sql_file(step.apply_path)
-            # Later additive migrations change the shape checked by the sealed
-            # 0014 and 0033 verifiers. Apply every migration twice, while the
-            # later verifiers check the resulting shape on both passes.
+            # Later migrations supersede the shape checked by older sealed
+            # verifiers. In particular, 0050 replaces 0002's description-prefix
+            # indexes. Apply every migration twice, while later verifiers check
+            # the resulting shape on both passes.
             stale_after_later_additive = (
                 replay == 2 and step.migration_id in {
+                    "0002_player_item_metadata_uniqueness",
                     "0014_telemetry_storage", "0031_economy_accounting",
-                    "0033_economic_sql_lifecycle_owner"
+                    "0033_economic_sql_lifecycle_owner",
+                    "0045_quest_reward_obligation",
                 }
             )
             result = (
@@ -956,14 +959,14 @@ def update_contract(measured: dict[str, str], migration_manifest: object) -> dic
 
     def replace_multiline(name: str, replacement: str) -> None:
         nonlocal header
-        pattern = rf'(constexpr const char \*{re.escape(name)} =\n\t")[^"]*(";)'
+        pattern = rf'(constexpr const char \*{re.escape(name)} =\s*")[^"]*(";)'
         header, count = re.subn(pattern, rf"\g<1>{replacement}\g<2>", header)
         if count != 1:
             raise SchemaTestFailure(f"expected one multiline header constant: {name}")
 
     def replace_inline(name: str, replacement: str) -> None:
         nonlocal header
-        pattern = rf'(constexpr const char \*{re.escape(name)} = ")[^"]*(";)'
+        pattern = rf'(constexpr const char \*{re.escape(name)} =\s*")[^"]*(";)'
         header, count = re.subn(pattern, rf"\g<1>{replacement}\g<2>", header)
         if count != 1:
             raise SchemaTestFailure(f"expected one inline header constant: {name}")

@@ -54,13 +54,14 @@ std::string player_lock_filename(int32_t pid)
 
 bool valid_snapshot(const player_snapshot &snapshot)
 {
-	const uint32_t required = snapshot.death ? PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION :
-						   PLAYER_SNAPSHOT_SCHEMA_VERSION;
-	return (snapshot.schema_version == required ||
-		(!snapshot.death && snapshot.schema_version ==
-		 PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION)) &&
-	       snapshot.pid > 0 && snapshot.revision &&
-	       snapshot.components && !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
+	return (snapshot.death ?
+			player_snapshot_is_death_request_schema(snapshot.schema_version) :
+			(snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+			 snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+			 snapshot.schema_version ==
+				 PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)) &&
+	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
+	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES &&
 	       (!snapshot.death || !snapshot.death->corpse.empty());
@@ -457,6 +458,125 @@ bool replace_items_together(player_component_mask_t components)
 	return !(components & items) || (components & items) == items;
 }
 
+static_assert(PLAYER_SPELL_EFFECT_RECEIPT_MAX + 3 <=
+	      flatfile_authority_transaction_maximum_operations);
+
+std::string spell_receipt_filename(int32_t pid, const critical_operation_id &operation)
+{
+	constexpr char hex[] = "0123456789abcdef";
+	std::string filename = std::to_string(pid) + "-";
+	for (uint8_t byte : operation.bytes)
+	{
+		filename += hex[byte >> 4];
+		filename += hex[byte & 15];
+	}
+	return filename + ".spell";
+}
+
+flatfile_player_load_result read_spell_receipt(const std::string &root, int32_t pid,
+					       const critical_operation_id &operation,
+					       player_snapshot *receipt, std::string *error)
+{
+	const auto read = flatfile_player_snapshot_read_file(player_directory(root),
+							     spell_receipt_filename(pid, operation),
+							     pid, receipt, error);
+	if (read != flatfile_player_load_result::ok)
+		return read;
+	if (receipt->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	    receipt->death || !receipt->quest_xp_receipts.empty() ||
+	    receipt->spell_effect_receipts.size() != 1 ||
+	    receipt->spell_effect_receipts.front().operation_id.bytes != operation.bytes)
+		return flatfile_player_load_result::invalid;
+	return flatfile_player_load_result::ok;
+}
+
+flatfile_player_load_result verify_spell_receipts(const std::string &root,
+						  const player_snapshot &request,
+						  player_revision_t durable_revision,
+						  std::string *error)
+{
+	for (const auto &expected : request.spell_effect_receipts)
+	{
+		player_snapshot stored;
+		const auto read = read_spell_receipt(root, request.pid, expected.operation_id,
+						     &stored, error);
+		if (read != flatfile_player_load_result::ok)
+			return read;
+		if (stored.revision > durable_revision ||
+		    stored.spell_effect_receipts.front().effect_id != expected.effect_id)
+			return flatfile_player_load_result::invalid;
+	}
+	return flatfile_player_load_result::ok;
+}
+
+flatfile_player_load_result verify_death_receipt(const std::string &root,
+						 const player_snapshot &request, std::string *error)
+{
+	if (!request.death)
+		return flatfile_player_load_result::ok;
+	player_snapshot stored;
+	const auto read = flatfile_player_snapshot_read_file(
+		death_directory(root), death_filename(request.pid, request.revision), request.pid,
+		&stored, error);
+	if (read != flatfile_player_load_result::ok)
+		return read;
+	auto expected = request;
+	std::vector<uint8_t> expected_bytes, stored_bytes;
+	return encode_file(&expected, &expected_bytes) && encode_file(&stored, &stored_bytes) &&
+			       expected_bytes == stored_bytes ?
+		       flatfile_player_load_result::ok :
+		       flatfile_player_load_result::invalid;
+}
+
+// Load the player and only requested receipt identities under the same recovered
+// authority cut. Historical receipts never consume the snapshot's row budget.
+flatfile_player_load_result load_snapshot_with_spell_receipts(
+	const std::string &root, int32_t pid, const std::vector<critical_operation_id> &operations,
+	player_snapshot *snapshot, std::vector<player_load_spell_effect_receipt> *receipts,
+	std::string *error)
+{
+	if (pid <= 0 || !snapshot || !receipts ||
+	    operations.size() > PLAYER_SPELL_EFFECT_RECEIPT_MAX)
+		return flatfile_player_load_result::invalid;
+	flatfile_player_snapshot_lock snapshot_lock;
+	flatfile_authority_lock authority;
+	if (!snapshot_lock.acquire(root, pid, error) || !authority.acquire(root, error))
+		return flatfile_player_load_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_player_load_result::io_error :
+			       flatfile_player_load_result::invalid;
+	const auto loaded = flatfile_player_snapshot_read(root, pid, snapshot, error);
+	if (loaded != flatfile_player_load_result::ok)
+		return loaded;
+	try
+	{
+		std::unordered_set<std::string> seen;
+		for (const auto &operation : operations)
+		{
+			if (critical_operation_id_is_zero(operation) ||
+			    !seen.insert(spell_receipt_filename(pid, operation)).second)
+				return flatfile_player_load_result::invalid;
+			player_snapshot stored;
+			const auto read = read_spell_receipt(root, pid, operation, &stored, error);
+			if (read == flatfile_player_load_result::not_found)
+				continue;
+			if (read != flatfile_player_load_result::ok)
+				return read;
+			if (stored.revision > snapshot->revision)
+				return flatfile_player_load_result::invalid;
+			receipts->push_back(
+				{ operation, stored.spell_effect_receipts.front().effect_id });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_load_result::io_error;
+	}
+	return flatfile_player_load_result::ok;
+}
+
 bool merge_snapshot(const player_snapshot &incoming, player_snapshot *materialized)
 {
 	if (!materialized || materialized->pid != incoming.pid ||
@@ -694,8 +814,8 @@ flatfile_player_load_result flatfile_player_snapshot_load(const std::string &roo
 							  player_snapshot *snapshot,
 							  std::string *error)
 {
-	std::lock_guard<std::mutex> guard(player_mutex);
-	return flatfile_player_snapshot_read(root, pid, snapshot, error);
+	std::vector<player_load_spell_effect_receipt> receipts;
+	return load_snapshot_with_spell_receipts(root, pid, {}, snapshot, &receipts, error);
 }
 
 player_load_result flatfile_player_load_repository_execute(const std::string &root,
@@ -742,8 +862,9 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		return result;
 	}
 
-	const flatfile_player_load_result snapshot_loaded =
-		flatfile_player_snapshot_load(root, identity.pid, &result.snapshot, &error);
+	const flatfile_player_load_result snapshot_loaded = load_snapshot_with_spell_receipts(
+		root, identity.pid, request.pending_spell_effect_operations, &result.snapshot,
+		&result.spell_effect_receipts, &error);
 	if (snapshot_loaded != flatfile_player_load_result::ok)
 	{
 		result.failed_component = "snapshot";
@@ -807,8 +928,10 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	}
 	{
 		std::vector<flatfile_quest_reward_obligation> obligations;
+		std::vector<flatfile_quest_xp_entitlement> entitlements;
 		const auto loaded = flatfile_item_repository_pending_quest_rewards(
-			root, static_cast<uint32_t>(identity.pid), &obligations, &error);
+			root, static_cast<uint32_t>(identity.pid), &obligations, &error,
+			&entitlements, result.snapshot.revision);
 		if (loaded == flatfile_item_repository_result::ok)
 		{
 			bool malformed = false;
@@ -827,12 +950,22 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 					}
 					result.pending_quest_rewards.push_back(
 						{ obligation.offering_operation,
-						  std::move(obligation.continuation), terms });
+						  std::move(obligation.continuation), terms,
+						  obligation.xp_applied_mask,
+						  obligation.economic_applied_mask,
+						  obligation.economic_history_verified });
 				}
+				result.pending_quest_xp_entitlements.reserve(entitlements.size());
+				for (auto &entitlement : entitlements)
+					result.pending_quest_xp_entitlements.push_back(
+						{ entitlement.offering_operation,
+						  std::move(entitlement.terms),
+						  entitlement.reward_index, entitlement.amount });
 			}
 			catch (const std::bad_alloc &)
 			{
 				result.pending_quest_rewards.clear();
+				result.pending_quest_xp_entitlements.clear();
 				result.error_code = ENOMEM;
 				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
 					      "quest_reward_obligations");
@@ -840,6 +973,7 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 			if (malformed)
 			{
 				result.pending_quest_rewards.clear();
+				result.pending_quest_xp_entitlements.clear();
 				result.error_code = EILSEQ;
 				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
 					      "quest_reward_obligations");
@@ -923,16 +1057,27 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 {
 	if (!valid_snapshot(snapshot) || !replace_items_together(snapshot.components))
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	if (!snapshot.quest_xp_receipts.empty() &&
+	    (!(snapshot.components & PLAYER_COMPONENT_STATUS) ||
+	     std::none_of(snapshot.status_integers.begin(), snapshot.status_integers.end(),
+			  [](const player_snapshot_integer &row)
+			  { return row.field == player_status_field::experience; })))
+		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	std::vector<uint8_t> validated;
+	if (player_snapshot_encode(snapshot, &validated) != player_snapshot_codec_result::ok)
+		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
 	flatfile_player_snapshot_lock snapshot_lock;
 	if (!snapshot_lock.acquire(root, snapshot.pid, error))
 		return { player_save_apply_outcome::retryable_failure, 0, EIO };
 	flatfile_authority_lock authority;
-	if (snapshot.death)
+	// Even an ordinary save must recover a prior receipt/death transaction before
+	// advancing the player file, or recovery could overwrite a newer checkpoint.
 	{
-		if (!authority.acquire(root, error))
+		flatfile_authority_lock recovery;
+		if (!recovery.acquire(root, error))
 			return { player_save_apply_outcome::retryable_failure, 0, EIO };
 		const auto recovered =
-			flatfile_authority_transaction_recover(root, authority, error);
+			flatfile_authority_transaction_recover(root, recovery, error);
 		if (recovered != flatfile_authority_transaction_result::ok)
 			return { recovered == flatfile_authority_transaction_result::io_error ?
 					 player_save_apply_outcome::retryable_failure :
@@ -940,15 +1085,16 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				 0, EIO };
 	}
 	player_snapshot materialized = {};
-	const flatfile_player_load_result loaded =
-		flatfile_player_snapshot_read(root, snapshot.pid, &materialized, error);
+	auto loaded = flatfile_player_snapshot_read(root, snapshot.pid, &materialized, error);
 	if (loaded == flatfile_player_load_result::invalid)
 		return { player_save_apply_outcome::terminal_failure, 0, EILSEQ };
 	if (loaded == flatfile_player_load_result::io_error)
 		return { player_save_apply_outcome::retryable_failure, 0, EIO };
+	const bool baseline_missing = loaded == flatfile_player_load_result::not_found;
 	if (loaded == flatfile_player_load_result::not_found)
 	{
-		if (snapshot.death || snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL)
+		if (snapshot.death || !snapshot.quest_xp_receipts.empty() ||
+		    snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL)
 			return { player_save_apply_outcome::terminal_failure, 0, ENOENT };
 		const flatfile_item_baseline_result item_baseline =
 			establish_item_baseline(root, snapshot, error);
@@ -977,17 +1123,138 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 						 EINVAL) };
 		materialized = snapshot;
 	}
-	else
+	// Baseline helpers acquire authority themselves. Recover again and reread the
+	// current player after those helpers release it, then hold authority to commit.
+	if (!authority.acquire(root, error))
+		return { player_save_apply_outcome::retryable_failure, 0, EIO };
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return { recovered == flatfile_authority_transaction_result::io_error ?
+				 player_save_apply_outcome::retryable_failure :
+				 player_save_apply_outcome::terminal_failure,
+			 0, EIO };
+	player_snapshot current;
+	loaded = flatfile_player_snapshot_read(root, snapshot.pid, &current, error);
+	const player_revision_t prior_revision =
+		loaded == flatfile_player_load_result::ok ? current.revision : 0;
+	if (loaded == flatfile_player_load_result::not_found && !baseline_missing)
+		return { player_save_apply_outcome::terminal_failure, 0, ENOENT };
+	if (loaded == flatfile_player_load_result::invalid ||
+	    loaded == flatfile_player_load_result::io_error)
+		return { loaded == flatfile_player_load_result::io_error ?
+				 player_save_apply_outcome::retryable_failure :
+				 player_save_apply_outcome::terminal_failure,
+			 0,
+			 static_cast<unsigned int>(
+				 loaded == flatfile_player_load_result::io_error ? EIO : EILSEQ) };
+	if (loaded == flatfile_player_load_result::ok)
 	{
+		materialized = std::move(current);
 		if (materialized.revision >= snapshot.revision)
+		{
+			auto verified = verify_death_receipt(root, snapshot, error);
+			if (verified == flatfile_player_load_result::ok)
+				verified = verify_spell_receipts(root, snapshot,
+								 materialized.revision, error);
+			if (verified != flatfile_player_load_result::ok)
+				return { verified == flatfile_player_load_result::io_error ?
+						 player_save_apply_outcome::retryable_failure :
+						 player_save_apply_outcome::terminal_failure,
+					 materialized.revision,
+					 static_cast<unsigned int>(
+						 verified == flatfile_player_load_result::io_error ?
+							 EIO :
+							 EILSEQ) };
+			if (!snapshot.quest_xp_receipts.empty())
+			{
+				flatfile_authority_operation ignored;
+				const auto checked =
+					flatfile_item_repository_prepare_quest_xp_receipts(
+						root, authority, snapshot.pid,
+						materialized.revision, snapshot.revision,
+						snapshot.quest_xp_receipts, true, &ignored, error);
+				if (checked != flatfile_item_repository_result::unchanged)
+					return {
+						checked == flatfile_item_repository_result::io_error ?
+							player_save_apply_outcome::retryable_failure :
+							player_save_apply_outcome::terminal_failure,
+						materialized.revision,
+						static_cast<unsigned int>(
+							checked == flatfile_item_repository_result::
+										io_error ?
+								EIO :
+								EILSEQ)
+					};
+			}
 			return { materialized.revision == snapshot.revision ?
 					 player_save_apply_outcome::already_applied :
 					 player_save_apply_outcome::stale_revision,
-				 materialized.revision, 0 };
+				 materialized.revision, 0, player_save_custody_diagnosis::none,
+				 !snapshot.death && (!snapshot.quest_xp_receipts.empty() ||
+						     !snapshot.spell_effect_receipts.empty()) };
+		}
 		if (!merge_snapshot(snapshot, &materialized))
 			return { player_save_apply_outcome::terminal_failure, materialized.revision,
 				 EINVAL };
 	}
+	std::vector<flatfile_authority_operation> operations;
+	if (!snapshot.death && !snapshot.quest_xp_receipts.empty())
+	{
+		flatfile_authority_operation quest_xp;
+		const auto prepared = flatfile_item_repository_prepare_quest_xp_receipts(
+			root, authority, snapshot.pid, prior_revision, snapshot.revision,
+			snapshot.quest_xp_receipts, false, &quest_xp, error);
+		if (prepared == flatfile_item_repository_result::ok)
+			operations.push_back(std::move(quest_xp));
+		else if (prepared != flatfile_item_repository_result::unchanged)
+			return { prepared == flatfile_item_repository_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0,
+				 static_cast<unsigned int>(
+					 prepared == flatfile_item_repository_result::io_error ?
+						 EIO :
+						 EILSEQ) };
+	}
+	for (const auto &receipt : snapshot.spell_effect_receipts)
+	{
+		player_snapshot stored;
+		const auto read = read_spell_receipt(root, snapshot.pid, receipt.operation_id,
+						     &stored, error);
+		if (read == flatfile_player_load_result::ok)
+		{
+			if (stored.revision > prior_revision ||
+			    stored.spell_effect_receipts.front().effect_id != receipt.effect_id)
+				return { player_save_apply_outcome::terminal_failure, 0, EILSEQ };
+			continue;
+		}
+		if (read != flatfile_player_load_result::not_found)
+			return { read == flatfile_player_load_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0,
+				 static_cast<unsigned int>(
+					 read == flatfile_player_load_result::io_error ? EIO :
+											 EILSEQ) };
+		stored = {};
+		stored.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+		stored.pid = snapshot.pid;
+		stored.revision = snapshot.revision;
+		stored.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+		stored.spell_effect_receipts.push_back(receipt);
+		std::vector<uint8_t> receipt_bytes;
+		if (!encode_file(&stored, &receipt_bytes))
+			return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+		operations.push_back({ flatfile_authority_store::players,
+				       flatfile_authority_operation_kind::write,
+				       spell_receipt_filename(snapshot.pid, receipt.operation_id),
+				       std::move(receipt_bytes) });
+	}
+	materialized.spell_effect_receipts.clear();
+	materialized.quest_xp_receipts.clear();
+	if (materialized.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	    materialized.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION)
+		materialized.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
 	std::vector<uint8_t> bytes;
 	// Keep the immutable evidence, quarantine and empty player projection in the
 	// same recoverable authority transaction. A failed commit leaves no evidence
@@ -1005,7 +1272,6 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
 	if (snapshot.death)
 	{
-		std::vector<flatfile_authority_operation> operations;
 		operations.push_back({ flatfile_authority_store::player_deaths,
 				       flatfile_authority_operation_kind::write,
 				       death_filename(snapshot.pid, snapshot.revision),
@@ -1024,7 +1290,8 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 		}
 		flatfile_authority_operation quarantine;
 		const auto prepared = flatfile_item_repository_prepare_death_quarantine(
-			root, authority, snapshot.pid, custody_uids, &quarantine, error);
+			root, authority, snapshot.pid, custody_uids, &quarantine, error,
+			snapshot.quest_xp_receipts, prior_revision, snapshot.revision);
 		if (prepared == flatfile_item_repository_result::ok)
 			operations.push_back(std::move(quarantine));
 		else if (prepared != flatfile_item_repository_result::unchanged)
@@ -1032,6 +1299,10 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 					 player_save_apply_outcome::retryable_failure :
 					 player_save_apply_outcome::terminal_failure,
 				 0, EIO };
+	}
+	if (snapshot.death || !snapshot.spell_effect_receipts.empty() ||
+	    !snapshot.quest_xp_receipts.empty())
+	{
 		operations.push_back({ flatfile_authority_store::players,
 				       flatfile_authority_operation_kind::write,
 				       player_filename(snapshot.pid), std::move(bytes) });

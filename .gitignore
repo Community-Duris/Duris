@@ -107,3 +107,14 @@ db/Backup/
 
 # Local incident/recovery working sets (player data, never committed)
 /private/
+
+# Legacy area-editor build outputs and machine-local IDE state.
+# Keep .obj world data tracked; it is game content, not compiler output.
+/areas/de/de_win32/Backup/
+/areas/de/de_win32/Debug/
+/areas/de/de_win32/Release/
+/areas/de/de_win32/x64/
+/areas/de/de_win32/UpgradeLog.htm
+/areas/de/de_win32/*.vcxproj.user
+/areas/dewin32/*.exe
+/logs/boot.log

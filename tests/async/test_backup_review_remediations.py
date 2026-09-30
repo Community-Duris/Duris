@@ -16,6 +16,7 @@ import tempfile
 import threading
 import time
 import unittest
+from typing import cast
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,6 +79,41 @@ class BackupReviewRemediationTests(Fixture):
         value = dict(self.p, journal_roots={"players": players, "critical": critical})
         with self.assertRaisesRegex(backup.BackupError, "journal_filename"):
             backup.journal_capture(stage, value)
+
+    def test_player_quarantine_evidence_is_preserved_byte_exact(self):
+        players = cast(dict[str, Path], self.p["journal_roots"])["players"]
+        evidence = {
+            "player-save.journal.quarantine.archive": b"synthetic opaque archive; native validation is separate",
+            "player-save.quarantine-pids": b"101\n102\n",
+            "player-save.journal.quarantine": b"",
+        }
+        for name, payload in evidence.items():
+            path = players / name
+            path.write_bytes(payload)
+            path.chmod(0o600)
+        stage = self.base / "stage"
+        stage.mkdir(mode=0o700)
+        captured = backup.journal_capture(stage, self.p)
+        self.assertEqual(backup.inventory(players), captured["players"])
+        self.assertEqual(backup.inventory(stage / "journals/players"), captured["players"])
+        for name, payload in evidence.items():
+            self.assertEqual((stage / "journals/players" / name).read_bytes(), payload)
+
+    def test_player_quarantine_names_are_not_allowed_in_critical_root(self):
+        critical = cast(dict[str, Path], self.p["journal_roots"])["critical"]
+        (critical / "player-save.journal.quarantine.archive").write_bytes(b"synthetic")
+        stage = self.base / "stage"
+        stage.mkdir(mode=0o700)
+        with self.assertRaisesRegex(backup.BackupError, "journal_filename"):
+            backup.journal_capture(stage, self.p)
+
+    def test_unmanaged_legacy_quarantine_still_blocks_backup(self):
+        players = cast(dict[str, Path], self.p["journal_roots"])["players"]
+        (players / "player-save.journal.quarantine").write_bytes(b"unmanaged synthetic bytes")
+        stage = self.base / "stage"
+        stage.mkdir(mode=0o700)
+        with self.assertRaisesRegex(backup.BackupError, "journal_quarantine_nonempty"):
+            backup.journal_capture(stage, self.p)
 
     def test_journal_capture_preserves_locker_receipts_and_empty_service_lock(self):
         critical = self.p["journal_roots"]["critical"]

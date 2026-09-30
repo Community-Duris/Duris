@@ -217,6 +217,32 @@ int main(int argc, char **argv)
 		"could not reset corruption fixtures");
 	{
 		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error), "could not acquire capacity lock");
+		std::vector<flatfile_authority_operation> maximum;
+		for (size_t i = 0; i < flatfile_authority_transaction_maximum_operations; ++i)
+			maximum.push_back({ flatfile_authority_store::players,
+					    flatfile_authority_operation_kind::write,
+					    "receipt-capacity-" + std::to_string(i),
+					    bytes("receipt") });
+		setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+		require(flatfile_authority_transaction_commit_operations(root.string(), lock,
+									 maximum, &error) ==
+				flatfile_authority_transaction_result::io_error,
+			"maximum receipt bundle was refused before the commit fault");
+		maximum.push_back({ flatfile_authority_store::players,
+				    flatfile_authority_operation_kind::write,
+				    "receipt-over-capacity", bytes("receipt") });
+		require(flatfile_authority_transaction_commit_operations(root.string(), lock,
+									 maximum, &error) ==
+				flatfile_authority_transaction_result::invalid,
+			"over-capacity receipt bundle was admitted");
+		unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+		require(!fs::exists(domains / ".critical-authority-transaction") &&
+				!fs::exists(players / "receipt-capacity-0"),
+			"refused capacity bundle published files or a journal");
+	}
+	{
+		flatfile_authority_lock lock;
 		require(lock.acquire(root.string(), &error), "could not acquire corruption lock");
 		setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 		require(flatfile_authority_transaction_commit(root.string(), lock, images,

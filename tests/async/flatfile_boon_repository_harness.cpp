@@ -249,6 +249,15 @@ int main(int argc, char **argv)
 				    .victim_race = 4,
 				    .victim_flags = 1 };
 	const critical_command first_command = command(mob, 1);
+	const auto evidence = root / "economic-evidence";
+	fs::create_directory(evidence);
+	fs::permissions(evidence, fs::perms::owner_all, fs::perm_options::replace);
+	std::ofstream(evidence / "incomplete.eal") << "incomplete";
+	require(flatfile_boon_repository_apply(root.string(), first_command).error_code == EILSEQ &&
+			flatfile_boon_shop_repository_apply(root.string(), shop_command(42, 0, 20))
+					.error_code == EILSEQ,
+		"incomplete accounting evidence did not hold boon rewards and purchases");
+	fs::remove(evidence / "incomplete.eal");
 	critical_apply_result applied =
 		flatfile_boon_repository_apply(root.string(), first_command);
 	boon_reward_result first = decode_applied_result(applied);

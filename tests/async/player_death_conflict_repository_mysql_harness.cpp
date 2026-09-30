@@ -206,7 +206,7 @@ void unchanged_failure(MYSQL *db, const player_snapshot &request, outcome expect
 		"refusal mutated source or retained a partial record");
 	require(!(db->server_status & SERVER_STATUS_IN_TRANS), "transaction leaked");
 }
-player_snapshot terminal_request()
+player_snapshot terminal_request(bool spell_receipt = false, bool quest_receipt = false)
 {
 	auto request = make_death(7);
 	request.death->wallet_before.fill(0);
@@ -216,7 +216,79 @@ player_snapshot terminal_request()
 	std::erase_if(request.death->custody,
 		      [](const auto &item) { return item.item.item_uid == 202; });
 	request.status_integers.push_back({ player_status_field::hit_difference, -321, 0, false });
+	if (spell_receipt)
+	{
+		request.schema_version = PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+		player_spell_effect_receipt_snapshot receipt = {};
+		receipt.operation_id.bytes[0] = 77;
+		receipt.effect_id = 6;
+		request.spell_effect_receipts.push_back(receipt);
+		player_affect_snapshot affect = {};
+		affect.type = 77;
+		affect.duration = 23;
+		request.affects.push_back(affect);
+	}
+	if (quest_receipt)
+	{
+		request.schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+		player_quest_xp_receipt_snapshot receipt = {};
+		receipt.offering_operation.bytes[0] = 88;
+		receipt.amount = 75;
+		request.quest_xp_receipts.push_back(receipt);
+		request.status_integers.push_back(
+			{ player_status_field::experience, 75, 0, false });
+	}
 	return request;
+}
+
+void seed_terminal_quest(MYSQL *db)
+{
+	std::vector<uint8_t> bytes;
+	const auto add = [&](uint64_t value, unsigned width)
+	{
+		for (unsigned index = 0; index < width; ++index)
+			bytes.push_back(static_cast<uint8_t>(value >> (index * 8)));
+	};
+	// Version-5 solo continuation: one offered root and one frozen XP award.
+	for (uint32_t value : { 5, PROBE_PID, 1, 0, 77, 1201 })
+		add(value, 4);
+	add(123456789, 8);
+	add(1, 4);
+	add(9001, 8);
+	add(1, 4);
+	for (uint32_t value : { 5, 75, 0, 75, 1, 50, 0, 1, 50, 1, PROBE_PID })
+		add(value, 4);
+	add(5, 4);
+	for (char value : std::string("Probe"))
+		bytes.push_back(value);
+	add(1, 4);
+	bytes.push_back('d');
+	for (uint32_t value : { 1, PROBE_PID, 0, 75 })
+		add(value, 4);
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string hex;
+	for (uint8_t byte : bytes)
+	{
+		hex += digits[byte >> 4];
+		hex += digits[byte & 15];
+	}
+	execute(db,
+		"INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('58000000000000000000000000000000'),UNHEX(REPEAT('00',32)),UNHEX(REPEAT('00',32)),2,2,1,1,X'')");
+	execute(db,
+		"INSERT INTO quest_reward_obligation(offering_operation_id,player_pid,continuation) VALUES(UNHEX('58000000000000000000000000000000'),1,UNHEX('" +
+			hex + "'))");
+	execute(db,
+		"INSERT INTO quest_reward_xp_entitlement(offering_operation_id,recipient_pid,reward_index,amount) VALUES(UNHEX('58000000000000000000000000000000'),1,0,75)");
+}
+
+std::string terminal_quest_state(MYSQL *db)
+{
+	return scalar(db, "SELECT exp FROM player_data WHERE pid=1") + ':' +
+	       scalar(db,
+		      "SELECT xp_applied_mask FROM quest_reward_obligation WHERE offering_operation_id=UNHEX('58000000000000000000000000000000')") +
+	       ':' +
+	       scalar(db,
+		      "SELECT CONCAT_WS(':',amount,COALESCE(CAST(applied_at AS CHAR),'NULL')) FROM quest_reward_xp_entitlement WHERE offering_operation_id=UNHEX('58000000000000000000000000000000')");
 }
 
 // Length-prefix every SQL cell, preserving all columns and NULL independently
@@ -274,7 +346,7 @@ void terminal_receipt(MYSQL *db, const player_snapshot &request)
 			       "SELECT payload FROM player_death_disposition WHERE pid=1 AND save_revision=7"),
 		"terminal disposition differs from hash-checked evidence");
 	auto original = retained;
-	original.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+	original.schema_version = player_snapshot_death_request_schema(retained.schema_version);
 	original.death->conflict_evidence.reset();
 	require(encoded(original) == encoded(request),
 		"terminal archive changed request identity/body");
@@ -284,10 +356,15 @@ void terminal_receipt(MYSQL *db, const player_snapshot &request)
 		"terminal custody observations missing");
 }
 
-void terminal_tests(MYSQL *&db, const std::string &mode)
+void terminal_tests(MYSQL *&db, const std::string &requested_mode)
 {
 	using save = player_save_apply_outcome;
-	const auto request = terminal_request();
+	const bool quest_receipt = requested_mode == "--terminal-quest-matrix";
+	const bool spell_receipt = quest_receipt || requested_mode == "--terminal-spell-matrix";
+	const std::string mode = spell_receipt ? "--terminal-matrix" : requested_mode;
+	const auto request = terminal_request(spell_receipt, quest_receipt);
+	if (quest_receipt)
+		seed_terminal_quest(db);
 	const auto protected_before = protected_state(db);
 	const auto native_before = source_state(db);
 	const auto refuse = [&](const player_snapshot &input)
@@ -298,6 +375,10 @@ void terminal_tests(MYSQL *&db, const std::string &mode)
 			       "SELECT CONCAT_WS(':',level,hit_diff) FROM player_data WHERE pid=1");
 		const auto count =
 			scalar(db, "SELECT COUNT(*) FROM player_death_conflict_evidence");
+		const auto spell_before =
+			scalar(db, "SELECT COUNT(*) FROM player_spell_effect_receipt");
+		const auto affects_before = scalar(db, "SELECT COUNT(*) FROM player_affects");
+		const auto xp_before = quest_receipt ? terminal_quest_state(db) : std::string{};
 		const auto result = player_death_conflict_apply(db, input);
 		require(result.outcome != save::applied &&
 				result.outcome != save::already_applied &&
@@ -310,6 +391,12 @@ void terminal_tests(MYSQL *&db, const std::string &mode)
 					scalar(db,
 					       "SELECT COUNT(*) FROM player_death_conflict_evidence"),
 			"terminal refusal changed source, state, or archive");
+		require(spell_before == scalar(db,
+					       "SELECT COUNT(*) FROM player_spell_effect_receipt") &&
+				affects_before == scalar(db, "SELECT COUNT(*) FROM player_affects"),
+			"terminal refusal partially committed spell effect or receipt");
+		require(!quest_receipt || terminal_quest_state(db) == xp_before,
+			"terminal refusal partially committed XP or its application marker");
 		require(!(db->server_status & SERVER_STATUS_IN_TRANS),
 			"terminal refusal leaked transaction");
 		return result;
@@ -411,6 +498,53 @@ void terminal_tests(MYSQL *&db, const std::string &mode)
 	require(player_death_conflict_apply(db, request).outcome == save::already_applied,
 		"terminal exact replay failed");
 	terminal_receipt(db, request);
+	if (quest_receipt)
+	{
+		require(scalar(db, "SELECT exp FROM player_data WHERE pid=1") == "75" &&
+				scalar(db,
+				       "SELECT xp_applied_mask FROM quest_reward_obligation WHERE offering_operation_id=UNHEX('58000000000000000000000000000000')") ==
+					"1" &&
+				scalar(db,
+				       "SELECT applied_at IS NOT NULL FROM quest_reward_xp_entitlement WHERE offering_operation_id=UNHEX('58000000000000000000000000000000')") ==
+					"1",
+			"terminal XP and application markers did not commit together");
+		player_snapshot retained;
+		require(player_death_conflict_read(db, 1, request.death->operation_id, &retained)
+						.outcome == outcome::read &&
+				retained.schema_version ==
+					PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION &&
+				retained.quest_xp_receipts.size() == 1 &&
+				retained.spell_effect_receipts.size() == 1,
+			"terminal archive dropped the coupled receipts");
+		execute(db,
+			"UPDATE quest_reward_xp_entitlement SET applied_at=NULL WHERE offering_operation_id=UNHEX('58000000000000000000000000000000')");
+		refuse(request);
+		execute(db,
+			"UPDATE quest_reward_xp_entitlement SET applied_at=CURRENT_TIMESTAMP(6) WHERE offering_operation_id=UNHEX('58000000000000000000000000000000')");
+		auto invalid = request;
+		invalid.quest_xp_receipts[0].amount = 74;
+		refuse(invalid);
+		require(player_death_conflict_apply(db, request).outcome == save::already_applied,
+			"restored exact XP receipt did not replay");
+	}
+	if (spell_receipt)
+	{
+		require(scalar(db,
+			       "SELECT effect_id FROM player_spell_effect_receipt WHERE pid=1 AND operation_id=UNHEX('4d000000000000000000000000000000')") ==
+					"6" &&
+				scalar(db,
+				       "SELECT duration FROM player_affects WHERE pid=1 AND type=77") ==
+					"23",
+			"terminal affect and receipt did not commit together");
+		execute(db, "DELETE FROM player_spell_effect_receipt WHERE pid=1");
+		refuse(request);
+		execute(db,
+			"INSERT INTO player_spell_effect_receipt(pid,operation_id,effect_id) VALUES(1,UNHEX('4d000000000000000000000000000000'),1)");
+		refuse(request);
+		execute(db, "UPDATE player_spell_effect_receipt SET effect_id=6 WHERE pid=1");
+		require(player_death_conflict_apply(db, request).outcome == save::already_applied,
+			"restored exact spell receipt did not replay");
+	}
 	require(protected_state(db) == protected_before,
 		"terminal commit changed payload/custody/pet/wallet bytes");
 	auto changed = request;
@@ -422,6 +556,8 @@ void terminal_tests(MYSQL *&db, const std::string &mode)
 	changed = request;
 	changed.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
 	changed.death.reset();
+	changed.spell_effect_receipts.clear();
+	changed.quest_xp_receipts.clear();
 	changed.revision = 8;
 	require(refuse(changed).error_code == EBUSY,
 		"unresolved case allowed a later partial checkpoint");
@@ -433,7 +569,7 @@ void terminal_tests(MYSQL *&db, const std::string &mode)
 		"UPDATE player_death_disposition SET payload=UNHEX('" + receipt + "') WHERE pid=1");
 	terminal_receipt(db, request);
 	std::cout
-		<< "PASS: " << mode
+		<< "PASS: " << requested_mode
 		<< "; exact terminal receipt/replay, unchanged complete payload/custody/pet/wallet state, wrong identity/counter/partial-save refusal\n";
 }
 }
