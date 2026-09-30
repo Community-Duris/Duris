@@ -378,8 +378,6 @@ struct empty_movement_context
 	uint64_t actor_runtime_id;
 };
 
-bool item_get_deferred = false;
-bool item_get_rejected = false;
 enum class get_phase
 {
 	admission,
@@ -482,6 +480,7 @@ static get_outcome publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, in
 			act("$n gets $p from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
 	}
 	const obj_to_char_result placement = obj_to_char_checked(o_obj, ch);
+	bool haul_delivery_failed = false;
 	if (haul)
 	{
 		P_obj delivered = find_live_item_uid(picked_uid);
@@ -490,12 +489,12 @@ static get_outcome publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, in
 		else
 		{
 			haul->failed = true;
-			item_get_rejected = true;
+			haul_delivery_failed = true;
 			haul->rejections.emplace_back(
 				"An accepted item could not be delivered to your inventory.\r\n");
 		}
 	}
-	return get_placement_outcome(placement);
+	return haul_delivery_failed ? get_outcome::rejected : get_placement_outcome(placement);
 }
 
 static void report_coin_get_rejection(P_char actor, P_obj container)
@@ -898,8 +897,6 @@ static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 	P_obj corpse = NULL;
 	bool slip = FALSE;
 	get_outcome outcome = get_outcome::rejected;
-	item_get_deferred = false;
-	item_get_rejected = false;
 	if (phase == get_phase::publication)
 	{
 		if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[1], PC_CORPSE))
@@ -1065,7 +1062,6 @@ static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 			report_movement_reject(ch, reject, "get", o_obj);
 			return get_outcome::rejected;
 		}
-		item_get_deferred = true;
 		return get_outcome::deferred;
 	}
 	if (IS_NPC(ch) && item_command_uses_durable_ownership(o_obj))
@@ -1101,7 +1097,6 @@ static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 				report_movement_reject(ch, reject, "mobile_get", o_obj);
 				return get_outcome::rejected;
 			}
-			item_get_deferred = true;
 			return get_outcome::deferred;
 		}
 	}
@@ -1110,11 +1105,10 @@ publish_after_ack:
 
 	if (IS_PC(ch) && o_obj->type == ITEM_MONEY)
 	{
-		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, showit);
-		item_get_rejected = !item_get_deferred;
-		if (item_get_rejected)
+		const bool submitted = submit_coin_get(ch, o_obj, s_obj, showit);
+		if (!submitted)
 			report_coin_get_rejection(ch, s_obj);
-		return item_get_deferred ? get_outcome::deferred : get_outcome::rejected;
+		return submitted ? get_outcome::deferred : get_outcome::rejected;
 	}
 
 	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) ||
@@ -1374,10 +1368,8 @@ static get_outcome do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj
 					     bool &found, get_phase phase)
 {
 	const get_outcome outcome = get_with_phase(ch, o_obj, s_obj, TRUE, phase);
-	if (item_get_deferred || outcome == get_outcome::deferred)
-		return get_outcome::deferred;
-	if (item_get_rejected || outcome == get_outcome::rejected)
-		return get_outcome::rejected;
+	if (outcome == get_outcome::deferred || outcome == get_outcome::rejected)
+		return outcome;
 	found = TRUE;
 	return outcome;
 }
@@ -1395,14 +1387,14 @@ static get_outcome do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_o
 	return outcome;
 }
 
-static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
+static get_outcome do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
 					   bool &found, const char *post_tag, get_phase phase)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
 	const get_outcome outcome =
 		do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total, phase);
 	if (money || outcome != get_outcome::placed)
-		return;
+		return outcome;
 	GETDBG_LOG(
 		"%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
 		post_tag, GET_NAME(ch), world[ch->in_room].number,
@@ -1410,6 +1402,7 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 		o_obj->obj_uid, OBJ_CARRIED_BY(o_obj, ch) ? 1 : 0,
 		s_obj->short_description ? s_obj->short_description : "(none)", OBJ_VNUM(s_obj),
 		s_obj->obj_uid, total);
+	return outcome;
 }
 
 static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj,
@@ -1420,7 +1413,7 @@ static void do_get_reject_fighting_bags(P_char ch, bool &fail);
 static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
 						 const char *tag, int carried, int carry_w,
 						 int cap_w, bool &fail);
-static void
+static get_outcome
 do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total,
 				  bool &found, bool corpse_flag, const char *post_tag,
 				  const coin_get_submission_options *coin_options = NULL,
@@ -1477,14 +1470,13 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 	}
 	if (coin_options && o_obj && GET_ITEM_TYPE(o_obj) == ITEM_MONEY)
 	{
-		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
-		item_get_rejected = !item_get_deferred;
-		if (item_get_rejected)
+		const bool submitted = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
+		if (!submitted)
 			report_coin_get_rejection(ch, s_obj);
-		return;
+		return submitted ? get_outcome::deferred : get_outcome::rejected;
 	}
 
-	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag, phase);
+	return do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag, phase);
 }
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -1838,7 +1830,7 @@ static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
 	do_get_reject_object(ch, o_obj, "is too heavy.", fail);
 }
 
-static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total,
+static get_outcome do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total,
 				      get_phase phase = get_phase::admission)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
@@ -1847,6 +1839,7 @@ static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &
 	/* A complete coin pickup extracts the object inside get(). */
 	if (!money && outcome == get_outcome::placed)
 		do_get_log_room_artifact_pickup(ch, o_obj);
+	return outcome;
 }
 
 namespace
@@ -2059,20 +2052,21 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 			}
 			options = &coin_options;
 		}
+		get_outcome outcome;
 		if (container)
-			do_get_finalize_container_success(actor, actor, container, object,
+			outcome = do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
 							  "GETDBG[get-container-bulk-post]",
 							  options, get_phase::publication);
 		else
-			do_get_finalize_room_item(actor, object, found_item, state.total,
+			outcome = do_get_finalize_room_item(actor, object, found_item, state.total,
 						  get_phase::publication);
-		if (item_get_deferred)
+		if (outcome == get_outcome::deferred)
 		{
 			announce_corpse_bulk_get(actor, state, container);
 			return false;
 		}
-		if (item_get_rejected)
+		if (outcome == get_outcome::rejected)
 			state.failed = true;
 		else
 			announce_corpse_bulk_get(actor, state, container);
