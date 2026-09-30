@@ -383,8 +383,13 @@ bool item_get_deferred = false;
 bool item_get_rejected = false;
 static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,
 			    const coin_get_submission_options *options = NULL);
-bool item_put_ack_publication = false;
-bool item_put_deferred = false;
+enum class put_phase
+{
+	admission,
+	publication,
+};
+static bool put_with_phase(P_char ch, P_obj object, P_obj container, int showit,
+			   put_phase phase);
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
 std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
@@ -766,9 +771,8 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
 		return;
 	}
-	item_put_ack_publication = true;
-	const bool stored = put(actor, object, container, context.showit);
-	item_put_ack_publication = false;
+	const bool stored = put_with_phase(actor, object, container, context.showit,
+					   put_phase::publication);
 	(void)stored;
 }
 
@@ -783,10 +787,10 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
  * ownership (coins, unowned transients, PC corpse roots) and uid-less containers stay
  * synchronous.
  */
-bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
+bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit,
+		       put_phase phase)
 {
-	item_put_deferred = false;
-	if (item_put_ack_publication || !IS_PC(actor) ||
+	if (phase == put_phase::publication || !IS_PC(actor) ||
 	    !item_command_uses_durable_ownership(object) || !container->obj_uid)
 		return false;
 	item_ownership_runtime_entry item_runtime = {};
@@ -816,8 +820,6 @@ bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 					      destination.reason_id, item_put_completion, &context,
 					      sizeof(context), NULL, &reject))
 		report_movement_reject(actor, reject, "put", object);
-	else
-		item_put_deferred = true;
 	return true;
 }
 
@@ -5278,12 +5280,10 @@ void bulk_put_completion(P_char actor, bool committed, const item_transfer_resul
 		bulk_puts.erase(found);
 		return;
 	}
-	item_put_ack_publication = true;
 	for (P_obj object : objects)
 	{
-		if (!put(actor, object, container, FALSE))
+		if (!put_with_phase(actor, object, container, FALSE, put_phase::publication))
 		{
-			item_put_ack_publication = false;
 			persistence_alert(AVATAR, "item_movement", "put_batch_publish", "none",
 					  "none", "publication_rejected", "item_uid=%llu",
 					  (unsigned long long)object->obj_uid);
@@ -5292,7 +5292,6 @@ void bulk_put_completion(P_char actor, bool committed, const item_transfer_resul
 		}
 		++state.total;
 	}
-	item_put_ack_publication = false;
 	finish_bulk_put_after_commit(actor, state, container);
 	finish_bulk_put(actor, context.actor_pid);
 }
@@ -5671,11 +5670,11 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 #undef PUT_ALLDOT
 #undef PUT_ITEM
 
-bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
+			   put_phase phase)
 {
 	char Gbuf3[MAX_STRING_LENGTH];
 
-	item_put_deferred = false;
 	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
 					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
@@ -5730,7 +5729,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				}
 				if (s_obj->value[0] > s_obj->value[3])
 				{
-					if (defer_durable_put(ch, o_obj, s_obj, showit))
+					if (defer_durable_put(ch, o_obj, s_obj, showit, phase))
 						return TRUE;
 					if (showit)
 						send_to_char("Ok.\r\n", ch);
@@ -5838,7 +5837,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					      GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
 					{
 #endif
-						if (defer_durable_put(ch, o_obj, s_obj, showit))
+						if (defer_durable_put(ch, o_obj, s_obj, showit,
+								      phase))
 							return TRUE;
 						if (showit)
 							send_to_char("Ok.\r\n", ch);
@@ -5937,6 +5937,11 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	char_light(ch);
 	room_light(ch->in_room, REAL);
 	return (FALSE);
+}
+
+bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+{
+	return put_with_phase(ch, o_obj, s_obj, showit, put_phase::admission);
 }
 
 void do_give(P_char ch, char *argument, int cmd)

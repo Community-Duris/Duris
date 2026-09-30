@@ -149,8 +149,8 @@ ok &= check(
 ok &= check(
     "put publication revalidates the full set before publishing it",
     put_completion.index("for (uint64_t item_uid : state.durable_items)")
-    < put_completion.index("item_put_ack_publication = true;")
-    < put_completion.index("for (P_obj object : objects)"),
+    < put_completion.index("for (P_obj object : objects)")
+    < put_completion.index("put_with_phase(actor, object, container, FALSE, put_phase::publication)"),
 )
 ok &= check(
     "transient put paths run only after the durable commit",
