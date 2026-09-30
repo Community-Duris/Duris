@@ -49,8 +49,8 @@ durable_lifecycle = body(HANDLER, "bool durable_corpse_lifecycle_enabled()",
                          "} // namespace")
 get_item = body(ACTOBJ, "void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
                 "int fight_in_room")
-put_item = body(ACTOBJ, "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
-                "void do_give")
+put_item = body(ACTOBJ, "static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,",
+                "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)")
 devour = body(MONSTER_ATTACKS, "int devour(", "void event_tentacles")
 dog_one = body(VERZANAN_SPECS, "int dog_one(", "int dog_two(")
 dog_two = body(VERZANAN_SPECS, "int dog_two(", "int drunk_one(")

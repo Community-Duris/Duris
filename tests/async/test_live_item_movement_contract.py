@@ -58,7 +58,9 @@ class LiveItemMovementContractTests(unittest.TestCase):
             self.assertIn(f"item_transfer_reason::{reason}", actobj)
         self.assertIn("item_movement_transaction_submit", actobj)
         self.assertIn("item_get_ack_publication", actobj)
-        self.assertIn("item_put_ack_publication", actobj)
+        self.assertNotIn("item_put_ack_publication", actobj)
+        self.assertIn("put_with_phase(actor, object, container, context.showit,", actobj)
+        self.assertIn("put_phase::publication", actobj)
         self.assertIn("start_container_bulk_get", actobj)
         self.assertIn("bulk_get_completion", actobj)
         self.assertIn("start_bulk_drop", actobj)
@@ -98,6 +100,18 @@ class LiveItemMovementContractTests(unittest.TestCase):
                 body.index("if (placement != obj_to_char_result::placed)"),
                 body.index("studioproc_give(")
             )
+
+    def test_put_publication_phase_is_local_to_each_call(self):
+        actobj = (SRC / "actobj.c").read_text()
+        admission = extract_function("cmd/actobj.c", "bool put(P_char ch,")
+        deferred = extract_function("cmd/actobj.c", "bool defer_durable_put(")
+        self.assertIn("put_phase::admission", admission)
+        self.assertIn("phase == put_phase::publication", deferred)
+        self.assertNotIn("item_put_ack_publication", actobj)
+        self.assertIn(
+            "put_with_phase(actor, object, container, FALSE, put_phase::publication)",
+            extract_function("cmd/actobj.c", "void bulk_put_completion("),
+        )
 
     def test_pc_corpse_roots_bypass_generic_ownership_transfers(self):
         actobj = (SRC / "actobj.c").read_text()
