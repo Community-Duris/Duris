@@ -378,9 +378,15 @@ struct empty_movement_context
 	uint64_t actor_runtime_id;
 };
 
-bool item_get_ack_publication = false;
 bool item_get_deferred = false;
 bool item_get_rejected = false;
+enum class get_phase
+{
+	admission,
+	publication,
+};
+static void get_with_phase(P_char ch, P_obj object, P_obj container, int showit,
+			   get_phase phase);
 static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,
 			    const coin_get_submission_options *options = NULL);
 enum class put_phase
@@ -425,7 +431,8 @@ P_obj find_live_item_uid(uint64_t item_uid)
 	return NULL;
 }
 
-static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showit, bool slip)
+static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showit, bool slip,
+				  get_phase phase)
 {
 	obj_from_obj(o_obj);
 
@@ -433,7 +440,7 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 	s_obj->space -= GET_OBJ_SPACE(o_obj);
 #endif
 
-	bulk_get_state *haul = item_get_ack_publication ? corpse_bulk_get(ch, s_obj->obj_uid) :
+	bulk_get_state *haul = phase == get_phase::publication ? corpse_bulk_get(ch, s_obj->obj_uid) :
 							  NULL;
 	const uint64_t picked_uid = o_obj->obj_uid;
 	const std::string picked_name =
@@ -524,9 +531,7 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
 				  "runtime_rejected", "save_id=%d",
 				  container->value[CORPSE_SAVEID]);
-	item_get_ack_publication = true;
-	get(actor, object, container, context.showit);
-	item_get_ack_publication = false;
+	get_with_phase(actor, object, container, context.showit, get_phase::publication);
 	if (IS_NPC(actor))
 	{
 		// Mob scavenging used to evaluate equipment immediately after the live
@@ -850,7 +855,8 @@ bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 }
 
 /** Pick up one object, publishing durable item movement only after its commit. */
-void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+static void get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
+			   get_phase phase)
 {
 	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -858,7 +864,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	bool slip = FALSE;
 	item_get_deferred = false;
 	item_get_rejected = false;
-	if (item_get_ack_publication)
+	if (phase == get_phase::publication)
 	{
 		if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[1], PC_CORPSE))
 			corpse = s_obj;
@@ -1272,18 +1278,18 @@ publish_after_ack:
 	}
 	if (s_obj)
 	{
-		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		if (phase == get_phase::admission && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
 			return;
 		}
 
-		publish_container_get(ch, o_obj, s_obj, showit, slip);
+		publish_container_get(ch, o_obj, s_obj, showit, slip, phase);
 	}
 	else
 	{
-		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		if (phase == get_phase::admission && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
@@ -1313,6 +1319,11 @@ publish_after_ack:
 	room_light(ch->in_room, REAL);
 }
 
+void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+{
+	get_with_phase(ch, o_obj, s_obj, showit, get_phase::admission);
+}
+
 int fight_in_room(P_char ch)
 {
 	P_char person = NULL;
@@ -1327,9 +1338,10 @@ int fight_in_room(P_char ch)
 	return FALSE;
 }
 
-static bool do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
+static bool do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
+				      get_phase phase)
 {
-	get(ch, o_obj, s_obj, TRUE);
+	get_with_phase(ch, o_obj, s_obj, TRUE, phase);
 	if (item_get_deferred || item_get_rejected)
 		return false;
 	found = TRUE;
@@ -1337,9 +1349,9 @@ static bool do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool 
 }
 
 static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
-					int &total)
+					int &total, get_phase phase)
 {
-	if (!do_get_commit_pickup_core(ch, s_obj, o_obj, found))
+	if (!do_get_commit_pickup_core(ch, s_obj, o_obj, found, phase))
 		return;
 	++total;
 	if (s_obj && (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
@@ -1348,10 +1360,10 @@ static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, boo
 }
 
 static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
-					   bool &found, const char *post_tag)
+					   bool &found, const char *post_tag, get_phase phase)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
-	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total);
+	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total, phase);
 	if (money)
 		return;
 	GETDBG_LOG(
@@ -1363,7 +1375,8 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 		s_obj->obj_uid, total);
 }
 
-static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj);
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj,
+						 P_obj s_obj, get_phase phase);
 static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail);
 static void do_get_reject_closed(P_char ch, bool &fail);
 static void do_get_reject_fighting_bags(P_char ch, bool &fail);
@@ -1373,7 +1386,8 @@ static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o
 static void
 do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total,
 				  bool &found, bool corpse_flag, const char *post_tag,
-				  const coin_get_submission_options *coin_options = NULL)
+				  const coin_get_submission_options *coin_options = NULL,
+				  get_phase phase = get_phase::admission)
 {
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
 	{
@@ -1392,7 +1406,7 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 		{
 			if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
 			{
-				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
+				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj, phase);
 				// If the artifact was picked up across racewar lines.
 				if ((s_obj->value[5] != RACEWAR_NONE) &&
 				    (GET_RACEWAR(ch) != s_obj->value[5]))
@@ -1413,7 +1427,7 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 				      obj_index[o_obj->R_num].virtual_number,
 				      s_obj->action_description);
 
-				if (!item_get_ack_publication ||
+				if (phase == get_phase::admission ||
 				    !corpse_bulk_get(ch, s_obj->obj_uid))
 					act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 			}
@@ -1433,7 +1447,7 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 		return;
 	}
 
-	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag);
+	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag, phase);
 }
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -1449,12 +1463,13 @@ static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
 	}
 }
 
-static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj)
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj,
+						 P_obj s_obj, get_phase phase)
 {
 	logit(LOG_CORPSE, "%s %s: %s [%d] (ARTIFACT) from %s", GET_NAME(ch),
 	      (hood == ch) ? "" : GET_NAME(hood), o_obj->name,
 	      obj_index[o_obj->R_num].virtual_number, s_obj->action_description);
-	if (!item_get_ack_publication || !corpse_bulk_get(ch, s_obj->obj_uid))
+	if (phase == get_phase::admission || !corpse_bulk_get(ch, s_obj->obj_uid))
 		act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 }
 
@@ -1786,10 +1801,11 @@ static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
 	do_get_reject_object(ch, o_obj, "is too heavy.", fail);
 }
 
-static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total)
+static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total,
+				      get_phase phase = get_phase::admission)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
-	do_get_finalize_pickup_core(ch, 0, o_obj, found, total);
+	do_get_finalize_pickup_core(ch, 0, o_obj, found, total, phase);
 	/* A complete coin pickup extracts the object inside get(). */
 	if (!money)
 		do_get_log_room_artifact_pickup(ch, o_obj);
@@ -2005,15 +2021,14 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 			}
 			options = &coin_options;
 		}
-		item_get_ack_publication = true;
 		if (container)
 			do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
 							  "GETDBG[get-container-bulk-post]",
-							  options);
+							  options, get_phase::publication);
 		else
-			do_get_finalize_room_item(actor, object, found_item, state.total);
-		item_get_ack_publication = false;
+			do_get_finalize_room_item(actor, object, found_item, state.total,
+						  get_phase::publication);
 		if (item_get_deferred)
 		{
 			announce_corpse_bulk_get(actor, state, container);
@@ -2095,15 +2110,15 @@ static void bulk_get_completion(P_char actor, bool committed, const item_transfe
 				  container->value[CORPSE_SAVEID]);
 
 	bool found_item = false;
-	item_get_ack_publication = true;
 	for (P_obj object : roots)
 		if (container)
 			do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
-							  "GETDBG[get-container-bulk-post]");
+							  "GETDBG[get-container-bulk-post]", NULL,
+							  get_phase::publication);
 		else
-			do_get_finalize_room_item(actor, object, found_item, state.total);
-	item_get_ack_publication = false;
+			do_get_finalize_room_item(actor, object, found_item, state.total,
+						  get_phase::publication);
 	if (finish_bulk_get_after_commit(actor, state, container))
 		finish_bulk_get(actor, context.actor_pid);
 }

@@ -96,7 +96,8 @@ static std::unordered_map<int, std::string> rooms;
 static std::string output;
 static int submissions=0, alerts=0, coin_attempts=0;
 static bool admitted=true, owned=true, fail_delivery=false, pile_ok=true;
-static bool item_get_ack_publication=false, item_get_deferred=false, item_get_rejected=false;
+enum class get_phase { admission, publication };
+static bool item_get_deferred=false, item_get_rejected=false;
 static P_obj find_live_item_uid(uint64_t uid) { auto i=objects.find(uid); return i==objects.end()?nullptr:i->second; }
 static void send_to_char(const char *s,P_char) { output+=s; }
 static void act(const char *s,int,P_char ch,P_obj,void *,int target) {
@@ -155,16 +156,17 @@ finalizers = r'''
 static bool coin_options_seen=false;
 static coin_get_submission_options last_coin_options = {};
 static void do_get_finalize_container_success(P_char ch,P_char,P_obj container,P_obj object,
- int &total,bool &found,bool,const char *,const coin_get_submission_options *options=nullptr) {
+ int &total,bool &found,bool,const char *,const coin_get_submission_options *options=nullptr,
+ get_phase phase=get_phase::admission) {
  item_get_deferred=false; item_get_rejected=false;
  if(object->type==ITEM_MONEY) {
   ++coin_attempts; coin_options_seen=options!=nullptr;
   if(options) last_coin_options=*options;
   item_get_deferred=admitted; item_get_rejected=!admitted; return;
  }
- publish_container_get(ch,object,container,TRUE,false); ++total; found=true;
+ publish_container_get(ch,object,container,TRUE,false,phase); ++total; found=true;
 }
-static void do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total) {
+static void do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total,get_phase=get_phase::admission) {
  obj_to_char(o,ch); ++total; found=true;
 }
 '''
@@ -342,9 +344,7 @@ int main() {
  setup(&scavenger,&npc_bag,&npc_loot,nullptr);
  assert(corpse_bulk_get(nullptr,npc_bag.obj_uid)==nullptr);
  assert(corpse_bulk_get(&scavenger,npc_bag.obj_uid)==nullptr);
- item_get_ack_publication=true;
- publish_container_get(&scavenger,&npc_loot,&npc_bag,TRUE,false);
- item_get_ack_publication=false;
+ publish_container_get(&scavenger,&npc_loot,&npc_bag,TRUE,false,get_phase::publication);
  assert(OBJ_CARRIED_BY(&npc_loot,&scavenger) && bulk_gets.empty());
  puts("corpse haul: held transfer/adoption/coins, movement, rejection, stale source, disconnect and strict NPC publication passed");
 }
