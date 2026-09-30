@@ -46,9 +46,9 @@ single_get = function_body(ACTOBJ, "static get_outcome get_with_phase(P_char ch,
 submit_batch = function_body(
     MOVEMENT, "bool item_movement_transaction_submit_batch("
 )
-room_finalize = function_body(ACTOBJ, "static void do_get_finalize_room_item(")
+room_finalize = function_body(ACTOBJ, "static get_outcome do_get_finalize_room_item(")
 container_finalize = function_body(
-    ACTOBJ, "static void do_get_finalize_container_item("
+    ACTOBJ, "static get_outcome do_get_finalize_container_item("
 )
 
 ok = True
@@ -138,7 +138,7 @@ ok &= check(
 )
 ok &= check(
     "coin completions resume the existing selected-item list",
-    "if (item_get_deferred)" in after_commit
+    "if (outcome == get_outcome::deferred)" in after_commit
     and "return false;" in after_commit
     and "state.synchronous_items.erase" in after_commit
     and "bulk_gets.emplace(actor_pid, std::move(state))" in start_bulk
