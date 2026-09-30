@@ -156,7 +156,7 @@ int main()
         self.assertLess(refusal, gift.index("quest_completion(qcp, ch, pl)"))
 
     def test_generic_player_candidate_needs_source_before_active_admission(self):
-        publication = extract_function("world/handler.c", "void obj_to_char(")
+        publication = extract_function("world/handler.c", "obj_to_char_result obj_to_char_checked(")
         candidate = publication.index("if (!has_authoritative_ownership && creation_candidate &&")
         grant = publication.index("item_creation_grant_submit_to_player(", candidate)
         self.assertIn("!economic_gameplay_authority::active()",

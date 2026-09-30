@@ -80,6 +80,16 @@ class ItemCommandPipelineContractTests(unittest.TestCase):
         self.assertIn("item_drop_completion", ACTOBJ)
         self.assertIn("completion callback publishes", DOC)
 
+    def test_get_outcome_flows_through_bulk_coin_publication(self):
+        self.assertNotIn("item_get_deferred", ACTOBJ)
+        self.assertNotIn("item_get_rejected", ACTOBJ)
+        bulk = ACTOBJ.split("static bool finish_bulk_get_after_commit(", 1)[1].split(
+            "static void bulk_get_completion(", 1
+        )[0]
+        self.assertIn("if (outcome == get_outcome::deferred)", bulk)
+        self.assertIn("if (outcome == get_outcome::rejected)", bulk)
+        self.assertIn("haul_delivery_failed ? get_outcome::rejected", ACTOBJ)
+
     def test_parser_runtime_forms(self):
         if not shutil.which("g++"):
             self.skipTest("native g++ is unavailable; GitHub Linux runs this contract")
