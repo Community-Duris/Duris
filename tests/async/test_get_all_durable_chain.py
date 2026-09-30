@@ -42,7 +42,7 @@ select_item = function_body(ACTOBJ, "static bool select_bulk_get_item(")
 completion = function_body(ACTOBJ, "static void bulk_get_completion(")
 after_commit = function_body(ACTOBJ, "static bool finish_bulk_get_after_commit(")
 finish = function_body(ACTOBJ, "static void report_bulk_get(")
-single_get = function_body(ACTOBJ, "static void get_with_phase(P_char ch, P_obj o_obj", last=True)
+single_get = function_body(ACTOBJ, "static get_outcome get_with_phase(P_char ch, P_obj o_obj", last=True)
 submit_batch = function_body(
     MOVEMENT, "bool item_movement_transaction_submit_batch("
 )
@@ -157,9 +157,10 @@ ok &= check(
 ok &= check(
     "coin extraction cannot be followed by stale debug or artifact dereferences",
     "const bool money" in room_finalize
-    and "if (!money)" in room_finalize
+    and "if (!money && outcome == get_outcome::placed)" in room_finalize
     and "const bool money" in container_finalize
-    and container_finalize.index("if (money)") < container_finalize.index("GETDBG_LOG"),
+    and container_finalize.index("if (money || outcome != get_outcome::placed)")
+    < container_finalize.index("GETDBG_LOG"),
 )
 
 if not ok:

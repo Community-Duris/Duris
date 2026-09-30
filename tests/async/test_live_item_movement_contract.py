@@ -122,6 +122,41 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("get_phase::publication", completion)
         self.assertNotIn("item_get_ack_publication", actobj)
 
+    def test_get_finalizers_use_pickup_outcome_before_accessing_item(self):
+        pickup = extract_function(
+            "cmd/actobj.c", "static get_outcome get_with_phase(P_char ch, P_obj o_obj"
+        )
+        container = extract_function(
+            "cmd/actobj.c", "static void do_get_finalize_container_item("
+        )
+        count = extract_function(
+            "cmd/actobj.c", "static get_outcome do_get_finalize_pickup_core("
+        )
+        room = extract_function(
+            "cmd/actobj.c", "static void do_get_finalize_room_item("
+        )
+        self.assertIn("obj_to_char_checked(o_obj, ch)", pickup)
+        self.assertIn("return get_outcome::consumed;", pickup)
+        self.assertIn("outcome != get_outcome::placed", container)
+        self.assertLess(
+            container.index("outcome != get_outcome::placed"),
+            container.index("GETDBG_LOG("),
+        )
+        self.assertLess(
+            count.index("outcome != get_outcome::placed && outcome != get_outcome::consumed"),
+            count.index("++total"),
+        )
+        self.assertIn("!money && outcome == get_outcome::placed", room)
+
+        completion = extract_function("cmd/actobj.c", "void item_get_completion(")
+        bulk = extract_function("cmd/actobj.c", "static void bulk_get_completion(")
+        self.assertLess(
+            completion.index("publication != get_outcome::placed"),
+            completion.index("CheckEqWorthUsing(actor, claimed)"),
+        )
+        self.assertIn("P_obj delivered = find_live_item_uid(item_uid);", bulk)
+        self.assertIn("state.failed = true;", bulk)
+
     def test_pc_corpse_roots_bypass_generic_ownership_transfers(self):
         actobj = (SRC / "actobj.c").read_text()
         policy = (SRC / "item/item_command_policy.c").read_text()
@@ -130,7 +165,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertGreaterEqual(
             actobj.count("item_command_uses_durable_ownership("), 10
         )
-        get_body = actobj[actobj.index("static void get_with_phase(P_char ch, P_obj o_obj") :]
+        get_body = actobj[actobj.index("static get_outcome get_with_phase(P_char ch, P_obj o_obj") :]
         get_body = get_body[: get_body.index("int fight_in_room")]
         self.assertIn(
             "IS_PC(ch) && item_command_uses_durable_ownership(o_obj)", get_body
