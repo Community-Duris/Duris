@@ -43,10 +43,14 @@
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
+#include "persistence/persistence_observability.h"
 #include "item/objmisc.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "magic/spell_item_lifecycle.h"
+#include "player/player_load_repository.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_snapshot.h"
 #include "economy/economic_gameplay_authority.h"
 #include <array>
 #include "kingdom/kingdom_store_piece.h"
@@ -166,8 +170,19 @@ enum class spell_component_retirement_stage : uint8_t
 	effect_pending,
 };
 
-std::unordered_map<std::string, spell_component_retirement_stage>
-	spell_component_retired_items;
+struct spell_component_retirement_state
+{
+	spell_component_retirement_stage stage = spell_component_retirement_stage::items_pending;
+	uint32_t actor_pid = 0;
+	uint32_t owner_pid = 0;
+	item_spell_component_effect effect = item_spell_component_effect::faerie_sight;
+	bool effect_applied = false;
+	bool save_requested = false;
+	bool save_acknowledged = false;
+	uint64_t next_save_request_at_usec = 0;
+};
+
+std::unordered_map<std::string, spell_component_retirement_state> spell_component_retired_items;
 
 std::string spell_component_operation_key(const critical_operation_id &operation_id)
 {
@@ -230,11 +245,20 @@ bool spell_component_retirement_published(const critical_operation_id &operation
 		try
 		{
 			operation_key = spell_component_operation_key(operation_id);
-			auto [state, inserted] = spell_component_retired_items.try_emplace(
-				operation_key, spell_component_retirement_stage::items_pending);
-			(void)inserted;
-			if (state->second != spell_component_retirement_stage::items_retired &&
-			    state->second != spell_component_retirement_stage::effect_pending)
+			auto [state, inserted] =
+				spell_component_retired_items.try_emplace(operation_key);
+			if (inserted)
+			{
+				state->second.actor_pid = static_cast<uint32_t>(GET_PID(actor));
+				state->second.owner_pid = state->second.actor_pid;
+				state->second.effect = context.effect;
+			}
+			if (state->second.actor_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+			    state->second.effect != context.effect)
+				return false;
+			if (state->second.stage !=
+				    spell_component_retirement_stage::items_retired &&
+			    state->second.stage != spell_component_retirement_stage::effect_pending)
 			{
 				if (result.item_count < context.item_count)
 					return false;
@@ -259,12 +283,22 @@ bool spell_component_retirement_published(const critical_operation_id &operation
 				}
 				for (size_t index = 0; index < context.item_count; ++index)
 					extract_obj(spell_component_by_uid(context.item_uids[index]));
-				state->second = spell_component_retirement_stage::items_retired;
+				state->second.stage =
+					spell_component_retirement_stage::items_retired;
 			}
 		}
 		catch (const std::bad_alloc &)
 		{
 			return false;
+		}
+	}
+	if (committed)
+	{
+		const auto state = spell_component_retired_items.find(operation_key);
+		if (state != spell_component_retired_items.end() && state->second.save_acknowledged)
+		{
+			spell_component_retired_items.erase(state);
+			return true;
 		}
 	}
 	spell_component_effect_completion_fn continuation =
@@ -281,9 +315,9 @@ bool spell_component_retirement_published(const critical_operation_id &operation
 		auto state = spell_component_retired_items.find(operation_key);
 		if (state == spell_component_retired_items.end())
 			return false;
-		state->second = status == spell_component_effect_status::waiting_for_owner ?
-					spell_component_retirement_stage::effect_pending :
-					spell_component_retirement_stage::items_retired;
+		state->second.stage = status == spell_component_effect_status::waiting_for_owner ?
+					      spell_component_retirement_stage::effect_pending :
+					      spell_component_retirement_stage::items_retired;
 	}
 	return status == spell_component_effect_status::complete;
 }
@@ -293,7 +327,7 @@ bool spell_component_retirement_published(const critical_operation_id &operation
 bool spell_component_retirement_restore_context(
 	const item_transfer_payload &payload,
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> *encoded_context,
-	size_t *encoded_context_size)
+	size_t *encoded_context_size, uint32_t *restored_effect_id, uint32_t *restored_owner_pid)
 {
 	if (!encoded_context || !encoded_context_size ||
 	    payload.continuation.kind !=
@@ -323,6 +357,28 @@ bool spell_component_retirement_restore_context(
 	if (context.continuation_context_size)
 		memcpy(context.continuation_context.data(), data.data() + context_offset,
 		       context.continuation_context_size);
+	uint32_t owner_pid = context.effect == item_spell_component_effect::vines ?
+				     static_cast<uint32_t>(payload.from_owner.id) :
+				     0;
+	if (context.effect == item_spell_component_effect::faerie_sight)
+	{
+		spell_component_context_reader reader(context.continuation_context.data(),
+						      context.continuation_context_size);
+		uint64_t runtime_id = 0;
+		int32_t actor_pid = 0, level = 0, target_pid = 0;
+		uint8_t dust_count = 0, self_target = 0;
+		if (!reader.get_u64(&runtime_id) || !reader.get_i32(&actor_pid) ||
+		    !reader.get_i32(&level) || !reader.get_u8(&dust_count) ||
+		    !reader.get_u8(&self_target) || self_target > 1 || actor_pid <= 0 ||
+		    static_cast<uint64_t>(actor_pid) != payload.from_owner.id ||
+		    dust_count != payload.item_count ||
+		    (context.continuation_context_size == 22 && !reader.get_i32(&target_pid)) ||
+		    !reader.finished() || target_pid < 0 ||
+		    (self_target && target_pid && target_pid != actor_pid))
+			return false;
+		owner_pid = self_target ? static_cast<uint32_t>(actor_pid) :
+					  static_cast<uint32_t>(target_pid);
+	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const uint64_t uid = payload.items[index].item_uid;
@@ -337,6 +393,10 @@ bool spell_component_retirement_restore_context(
 		return false;
 	memcpy(encoded_context->data(), &context, sizeof(context));
 	*encoded_context_size = sizeof(context);
+	if (restored_effect_id)
+		*restored_effect_id = effect_id;
+	if (restored_owner_pid)
+		*restored_owner_pid = owner_pid;
 	return true;
 }
 
@@ -349,6 +409,16 @@ bool spell_component_retirement_replayed_publication(
 		return false;
 	if (committed)
 	{
+		spell_component_retirement_context restored = {};
+		memcpy(&restored, context, sizeof(restored));
+		const auto state = spell_component_retired_items.find(
+			spell_component_operation_key(operation_id));
+		if (state != spell_component_retired_items.end() && state->second.owner_pid &&
+		    (restored.effect == item_spell_component_effect::vines ||
+		     restored.effect == item_spell_component_effect::faerie_sight))
+			return spell_component_retirement_published(operation_id, actor, true,
+								    result, error_code, context,
+								    context_size);
 		send_to_char(
 			"Your spell components were consumed, but the spell effect is waiting for safe recovery. Please wait or contact staff.\r\n",
 			actor);
@@ -365,11 +435,266 @@ bool spell_component_retirement_waiting_for_effect(const critical_operation_id &
 		const auto found = spell_component_retired_items.find(
 			spell_component_operation_key(operation_id));
 		return found != spell_component_retired_items.end() &&
-		       found->second == spell_component_retirement_stage::effect_pending;
+		       found->second.stage == spell_component_retirement_stage::effect_pending;
 	}
 	catch (const std::bad_alloc &)
 	{
 		return false;
+	}
+}
+
+bool spell_component_retirement_restore_replayed_effect(const critical_operation_id &operation_id,
+							uint32_t actor_pid, uint32_t effect_id,
+							uint32_t receipt_owner_pid)
+{
+	const auto effect = static_cast<item_spell_component_effect>(effect_id);
+	if (effect != item_spell_component_effect::vines &&
+	    effect != item_spell_component_effect::faerie_sight)
+		return true;
+	if (effect == item_spell_component_effect::vines && !receipt_owner_pid)
+		receipt_owner_pid = actor_pid;
+	if (!receipt_owner_pid)
+		return true;
+	if (!actor_pid)
+		return false;
+	try
+	{
+		auto [found, inserted] = spell_component_retired_items.try_emplace(
+			spell_component_operation_key(operation_id));
+		if (inserted)
+		{
+			found->second.stage = spell_component_retirement_stage::items_retired;
+			found->second.actor_pid = actor_pid;
+			found->second.owner_pid = receipt_owner_pid;
+			found->second.effect = effect;
+		}
+		return found->second.actor_pid == actor_pid &&
+		       found->second.owner_pid == receipt_owner_pid &&
+		       found->second.effect == effect;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool spell_component_retirement_bind_effect_owner(const critical_operation_id &operation_id,
+						  uint32_t actor_pid, uint32_t owner_pid,
+						  item_spell_component_effect effect)
+{
+	if (!actor_pid || !owner_pid)
+		return false;
+	try
+	{
+		auto found = spell_component_retired_items.find(
+			spell_component_operation_key(operation_id));
+		if (found == spell_component_retired_items.end() ||
+		    found->second.actor_pid != actor_pid || found->second.effect != effect ||
+		    (found->second.effect_applied && found->second.owner_pid != owner_pid))
+			return false;
+		found->second.owner_pid = owner_pid;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool spell_component_retirement_append_owner_operations(
+	uint32_t owner_pid, std::vector<critical_operation_id> *operations)
+{
+	if (!owner_pid || !operations)
+		return false;
+	try
+	{
+		for (const auto &[key, state] : spell_component_retired_items)
+		{
+			if (state.owner_pid != owner_pid ||
+			    (state.effect != item_spell_component_effect::vines &&
+			     state.effect != item_spell_component_effect::faerie_sight))
+				continue;
+			critical_operation_id operation_id = {};
+			if (key.size() != operation_id.bytes.size())
+				return false;
+			memcpy(operation_id.bytes.data(), key.data(), key.size());
+			bool duplicate = false;
+			for (const auto &existing : *operations)
+				if (existing.bytes == operation_id.bytes)
+					duplicate = true;
+			if (duplicate)
+				continue;
+			if (operations->size() >= ITEM_MOVEMENT_PENDING_MAX)
+				return false;
+			operations->push_back(operation_id);
+		}
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool spell_component_retirement_pending_save_receipts(
+	uint32_t owner_pid, std::vector<player_spell_effect_receipt_snapshot> *receipts)
+{
+	if (!owner_pid || !receipts)
+		return false;
+	try
+	{
+		for (const auto &[key, state] : spell_component_retired_items)
+		{
+			if (state.owner_pid != owner_pid || !state.effect_applied ||
+			    state.save_acknowledged)
+				continue;
+			player_spell_effect_receipt_snapshot receipt = {};
+			if (key.size() != receipt.operation_id.bytes.size() ||
+			    (state.effect != item_spell_component_effect::vines &&
+			     state.effect != item_spell_component_effect::faerie_sight) ||
+			    receipts->size() >= PLAYER_SPELL_EFFECT_RECEIPT_MAX)
+				return false;
+			memcpy(receipt.operation_id.bytes.data(), key.data(), key.size());
+			receipt.effect_id = static_cast<uint32_t>(state.effect);
+			receipts->push_back(receipt);
+		}
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+void spell_component_retirement_recover_receipts(uint32_t actor_pid,
+						 const player_load_spell_effect_receipt *receipts,
+						 size_t count)
+{
+	if (!actor_pid || (count && !receipts))
+		return;
+	for (auto &[key, state] : spell_component_retired_items)
+	{
+		if (state.owner_pid != actor_pid)
+			continue;
+		bool found = false;
+		for (size_t index = 0; index < count; ++index)
+			if (receipts[index].effect_id == static_cast<uint32_t>(state.effect) &&
+			    key.size() == receipts[index].operation_id.bytes.size() &&
+			    memcmp(key.data(), receipts[index].operation_id.bytes.data(),
+				   key.size()) == 0)
+			{
+				found = true;
+				break;
+			}
+		state.effect_applied = found;
+		state.save_acknowledged = found;
+		state.save_requested = false;
+	}
+}
+
+void spell_component_retirement_save_completed(int32_t actor_pid, bool acknowledged,
+					       const player_spell_effect_receipt_snapshot *receipts,
+					       size_t count)
+{
+	if (actor_pid <= 0 || (count && !receipts))
+		return;
+	for (size_t index = 0; index < count; ++index)
+	{
+		try
+		{
+			auto found = spell_component_retired_items.find(
+				spell_component_operation_key(receipts[index].operation_id));
+			if (found == spell_component_retired_items.end() ||
+			    found->second.owner_pid != static_cast<uint32_t>(actor_pid) ||
+			    static_cast<uint32_t>(found->second.effect) !=
+				    receipts[index].effect_id)
+				continue;
+			found->second.save_requested = false;
+			if (acknowledged)
+				found->second.save_acknowledged = true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return;
+		}
+	}
+}
+
+bool spell_component_retirement_effect_applied(const critical_operation_id &operation_id)
+{
+	try
+	{
+		const auto found = spell_component_retired_items.find(
+			spell_component_operation_key(operation_id));
+		return found != spell_component_retired_items.end() && found->second.effect_applied;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool spell_component_retirement_effect_applied_once(const critical_operation_id &operation_id)
+{
+	try
+	{
+		auto found = spell_component_retired_items.find(
+			spell_component_operation_key(operation_id));
+		if (found == spell_component_retired_items.end() ||
+		    (found->second.effect != item_spell_component_effect::vines &&
+		     found->second.effect != item_spell_component_effect::faerie_sight))
+			return false;
+		found->second.effect_applied = true;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+spell_component_effect_status
+spell_component_retirement_save_effect(const critical_operation_id &operation_id, P_char actor,
+				       item_spell_component_effect effect)
+{
+	if (!actor || GET_PID(actor) <= 0 ||
+	    (effect != item_spell_component_effect::vines &&
+	     effect != item_spell_component_effect::faerie_sight))
+		return spell_component_effect_status::retry;
+	try
+	{
+		auto found = spell_component_retired_items.find(
+			spell_component_operation_key(operation_id));
+		if (found == spell_component_retired_items.end() ||
+		    found->second.owner_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+		    found->second.effect != effect || !found->second.effect_applied)
+			return spell_component_effect_status::retry;
+		if (found->second.save_acknowledged)
+			return spell_component_effect_status::complete;
+		const uint64_t now = persistence_observability_now_usec();
+		if (!found->second.save_requested && now >= found->second.next_save_request_at_usec)
+		{
+			constexpr uint64_t retry_delay_usec = UINT64_C(5000000);
+			found->second.next_save_request_at_usec =
+				now > UINT64_MAX - retry_delay_usec ? UINT64_MAX :
+								      now + retry_delay_usec;
+			const player_spell_effect_receipt_snapshot receipt = {
+				operation_id, static_cast<uint32_t>(effect)
+			};
+			const int room_vnum = actor->in_room >= 0 && world ?
+						      world[actor->in_room].number :
+						      NOWHERE;
+			const auto saved = player_save_pipeline_request_spell_effect(
+				actor, PLAYER_COMPONENT_AFFECTS, &receipt, room_vnum);
+			found->second.save_requested =
+				saved == player_save_pipeline_result::queued ||
+				saved == player_save_pipeline_result::coalesced;
+		}
+		return spell_component_effect_status::waiting_for_owner;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return spell_component_effect_status::waiting_for_owner;
 	}
 }
 

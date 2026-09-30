@@ -2689,9 +2689,11 @@ bool item_movement_transaction_restore_replayed_command(const critical_command &
 		item_transfer_continuation_kind::spell_component_retirement;
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> spell_context = {};
 	size_t spell_context_size = 0;
-	if (spell_component_retirement &&
-	    !spell_component_retirement_restore_context(payload, &spell_context,
-							&spell_context_size))
+	uint32_t spell_effect_id = 0;
+	uint32_t spell_receipt_owner_pid = 0;
+	if (spell_component_retirement && !spell_component_retirement_restore_context(
+						  payload, &spell_context, &spell_context_size,
+						  &spell_effect_id, &spell_receipt_owner_pid))
 		return false;
 	const item_movement_publication_fn publication =
 		account_reward_duplicate_promotion ? account_reward_duplicate_promotion_publication :
@@ -2707,8 +2709,44 @@ bool item_movement_transaction_restore_replayed_command(const critical_command &
 		(account_reward_retirement || account_reward_duplicate_promotion) ?
 			payload.continuation.data.size() :
 		(spell_component_retirement ? spell_context_size : 0);
-	return item_movement_transaction_restore_replayed_publication(
-		command, publication, replay_context, replay_context_size);
+	if (!item_movement_transaction_restore_replayed_publication(
+		    command, publication, replay_context, replay_context_size))
+		return false;
+	return !spell_component_retirement ||
+	       spell_component_retirement_restore_replayed_effect(
+		       command.operation_id, static_cast<uint32_t>(payload.from_owner.id),
+		       spell_effect_id, spell_receipt_owner_pid);
+}
+
+bool item_movement_transaction_pending_spell_effects(uint32_t actor_pid,
+						     std::vector<critical_operation_id> *operations)
+{
+	if (!actor_pid || !operations)
+		return false;
+	try
+	{
+		std::vector<critical_operation_id> found;
+		for (const auto &[key, entry] : pending)
+		{
+			if (entry.actor_pid != actor_pid ||
+			    entry.payload.continuation.kind !=
+				    item_transfer_continuation_kind::spell_component_retirement)
+				continue;
+			if (key.size() != 16 || found.size() >= ITEM_MOVEMENT_PENDING_MAX)
+				return false;
+			critical_operation_id operation_id = {};
+			memcpy(operation_id.bytes.data(), key.data(), operation_id.bytes.size());
+			found.push_back(operation_id);
+		}
+		if (!spell_component_retirement_append_owner_operations(actor_pid, &found))
+			return false;
+		*operations = std::move(found);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }
 
 bool item_movement_transaction_restore_replayed_publication(

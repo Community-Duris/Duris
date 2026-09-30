@@ -39,11 +39,11 @@ flatfile_economic_control_read(const std::string &root, const flatfile_authority
 
 namespace
 {
-// Native formats 2 and 3 retain their 2048-byte receipt limit independently
-// of the larger in-memory completion buffer. No persistent format change.
+// Native receipts retain their 2048-byte result limit independently of the
+// larger in-memory completion buffer. Format 4 adds eight bytes of quest proof.
 constexpr size_t FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES = 2048;
 static_assert(FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
-constexpr uint32_t domain_format_version = 3;
+constexpr uint32_t domain_format_version = 4;
 constexpr std::array<uint8_t, 8> player_magic = { 'D', 'U', 'R', 'P', 'D', 'O', 'M', 0 };
 constexpr std::array<uint8_t, 8> bank_magic = { 'D', 'U', 'R', 'B', 'A', 'N', 'K', 0 };
 constexpr std::array<uint8_t, 8> transaction_magic = { 'D', 'U', 'R', 'T', 'X', 'N', 0, 0 };
@@ -72,6 +72,8 @@ struct domain_operation
 	unsigned int result_code = 0;
 	uint16_t result_size = 0;
 	std::array<uint8_t, FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES> result = {};
+	uint32_t quest_reward_index = 0;
+	uint32_t quest_reward_amount = 0;
 };
 
 struct player_authority
@@ -697,6 +699,7 @@ flatfile_player_domain_result decode_player_authority(const std::vector<uint8_t>
 			return flatfile_player_domain_result::io_error;
 		}
 		for (domain_operation &operation : decoded.operations)
+		{
 			if (!payload.raw(operation.operation_id.bytes.data(),
 					 operation.operation_id.bytes.size()) ||
 			    !payload.raw(operation.command_digest.data(),
@@ -707,6 +710,18 @@ flatfile_player_domain_result decode_player_authority(const std::vector<uint8_t>
 			    !payload.raw(operation.result.data(), operation.result_size) ||
 			    critical_operation_id_is_zero(operation.operation_id))
 				return flatfile_player_domain_result::invalid;
+			if (format_version >= 4 &&
+			    (!payload.number(&operation.quest_reward_index) ||
+			     !payload.number(&operation.quest_reward_amount)))
+				return flatfile_player_domain_result::invalid;
+			if ((operation.quest_reward_index == 0) !=
+				    (operation.quest_reward_amount == 0) ||
+			    operation.quest_reward_index > 64 ||
+			    (operation.quest_reward_index &&
+			     (operation.result_code ||
+			      operation.result_size != CURRENCY_RESULT_PAYLOAD_BYTES)))
+				return flatfile_player_domain_result::invalid;
+		}
 	}
 	std::string canonical;
 	if (payload.offset != payload.size || decoded.record.pid != pid ||
@@ -781,6 +796,8 @@ bool encode_player_authority(const player_authority &authority, std::vector<uint
 		payload.number(operation.result_code);
 		payload.number(operation.result_size);
 		payload.raw(operation.result.data(), operation.result_size);
+		payload.number(operation.quest_reward_index);
+		payload.number(operation.quest_reward_amount);
 	}
 	const uint64_t revision = std::max(
 		{ record.domains.wallet_revision, record.domains.epic_revision,
@@ -1267,6 +1284,8 @@ flatfile_player_domain_result flatfile_player_domain_legacy_receipt_locked(
 			retained.command_digest = operation.command_digest;
 			retained.result_code = operation.result_code;
 			retained.result_size = operation.result_size;
+			retained.quest_reward_index = operation.quest_reward_index;
+			retained.quest_reward_amount = operation.quest_reward_amount;
 			std::copy_n(operation.result.begin(), operation.result_size,
 				    retained.result.begin());
 			*receipt = std::move(retained);
@@ -1753,6 +1772,7 @@ critical_apply_result apply_epic_command(const std::string &root, const critical
 	operation.result_code = result_code;
 	operation.result_size = encoded_result.size();
 	std::copy(encoded_result.begin(), encoded_result.end(), operation.result.begin());
+
 	try
 	{
 		authority.operations.push_back(operation);
@@ -1952,6 +1972,27 @@ critical_apply_result apply_currency_command(const std::string &root,
 	operation.result_code = result_code;
 	operation.result_size = encoded_result.size();
 	std::copy(encoded_result.begin(), encoded_result.end(), operation.result.begin());
+	if (!result_code && payload.reason == currency_reason_type::wallet_reward &&
+	    command.source_site == critical_source_site::recovery && payload.reason_id > 0 &&
+	    payload.reason_id <= 64)
+	{
+		uint64_t amount = 0, scale = 1;
+		bool canonical = true;
+		for (size_t index = 0; index < 4; ++index, scale *= 10)
+		{
+			const auto delta = payload.wallet_delta.amount[index];
+			canonical = canonical && !payload.bank_delta.amount[index] && delta >= 0 &&
+				    (index == 3 || delta < 10) &&
+				    static_cast<uint64_t>(delta) <= UINT32_MAX / scale;
+			if (canonical)
+				amount += static_cast<uint64_t>(delta) * scale;
+		}
+		if (canonical && amount && amount <= UINT32_MAX)
+		{
+			operation.quest_reward_index = static_cast<uint32_t>(payload.reason_id);
+			operation.quest_reward_amount = static_cast<uint32_t>(amount);
+		}
+	}
 	try
 	{
 		authority.operations.push_back(operation);

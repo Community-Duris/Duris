@@ -23,6 +23,7 @@
 #include "sql/sql_player_recipes.h"
 #include "sql/sql_spellbook.h"
 #include "player/player_playtime.h"
+#include "player/player_save_journal.h"
 #include "sql/item_extra_descr_codec.h"
 #include <errno.h>
 #include <limits.h>
@@ -1108,7 +1109,8 @@ bool sql_player_exists(const char *name)
 
 bool sql_player_rename(P_char ch, const char *new_name)
 {
-	if (!DB || !new_name || !ch)
+	if (!DB || !new_name || !ch ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	char normalized_name[MAX_STRING_LENGTH];
@@ -1238,7 +1240,7 @@ bool sql_player_deletion_guard(int pid)
 
 bool sql_delete_player(int pid, bool forget_revision)
 {
-	if (!DB || pid <= 0)
+	if (!DB || pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 
 	bool own_txn = false;
@@ -1287,6 +1289,8 @@ bool sql_save_player(P_char ch, int type, int room)
 		logit(LOG_DEBUG, "sql_save_player: invalid char or npc");
 		return false;
 	}
+	if (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch)))
+		return false;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 	{
 		logit(LOG_DEBUG,
@@ -1420,13 +1424,16 @@ bool sql_save_player(P_char ch, int type, int room)
 /* Persist player status and establish opening ledgers for a new character. */
 static bool sql_save_player_status(P_char ch, int type, int room)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	int pid = GET_PID(ch);
 	int db_pid = -1;
 
 	if (!sql_try_get_player_pid(GET_NAME(ch), &db_pid))
+		return false;
+	if (db_pid > 0 && player_save_journal_pid_quarantined(db_pid))
 		return false;
 
 	// if pid is 0 but player exists by name, look up the pid
@@ -2063,7 +2070,8 @@ static bool sql_save_player_status(P_char ch, int type, int room)
 
 static bool sql_save_player_skills(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	// Start own transaction if not already in one
@@ -2154,7 +2162,8 @@ static bool sql_save_player_skills(P_char ch)
 
 static bool sql_save_player_affects(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	// Start own transaction if not already in one
@@ -3446,7 +3455,8 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 
 static bool sql_save_player_items(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	// Start own transaction if not already in one
@@ -3745,7 +3755,8 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 // pet save - save all player's pets with equipment
 static bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 	// New-character baseline saves run before enter_game places the character in
 	// the world. writeCharacter has already resolved a durable birthplace/home
@@ -3790,7 +3801,8 @@ bool sql_load_player_pets(P_char /*ch*/)
 
 static bool sql_save_player_shapechanges(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	// Start own transaction if not already in one
@@ -3874,7 +3886,8 @@ static bool sql_save_player_shapechanges(P_char ch)
 
 bool sql_load_player_shapechanges(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	int pid = GET_PID(ch);
@@ -3932,7 +3945,7 @@ bool sql_load_player_shapechanges(P_char ch)
 
 bool sql_add_player_recipe(int pid, int recipe_vnum)
 {
-	if (!DB || pid <= 0)
+	if (!DB || pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 
 	char query[256];
@@ -3944,7 +3957,7 @@ bool sql_add_player_recipe(int pid, int recipe_vnum)
 
 bool sql_delete_player_recipes(int pid)
 {
-	if (!DB || pid <= 0)
+	if (!DB || pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 
 	char query[128];
@@ -4055,7 +4068,7 @@ static char *sql_row_str(MYSQL_ROW row, int idx)
 
 bool sql_load_player_status(P_char ch, int pid)
 {
-	if (!ch || !DB || pid <= 0)
+	if (!ch || !DB || pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 
 	char query[2048];
@@ -4405,7 +4418,8 @@ bool sql_load_player_status(P_char ch, int pid)
 
 bool sql_load_player_skills(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	int pid = GET_PID(ch);
@@ -4437,7 +4451,8 @@ bool sql_load_player_skills(P_char ch)
 
 bool sql_load_player_affects(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
 
 	int pid = GET_PID(ch);
@@ -4507,7 +4522,8 @@ static bool sql_parse_persisted_item_uid(const char *text, uint64_t *uid)
 
 static bool sql_load_player_items(P_char ch)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB ||
+	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 	{
 		return false;
 	}
@@ -4852,6 +4868,9 @@ static bool sql_load_player_items(P_char ch)
 
 static bool sql_load_player_epic_bonus(P_char ch)
 {
+	if (!ch || !IS_PC(ch) || GET_PID(ch) <= 0 ||
+	    player_save_journal_pid_quarantined(GET_PID(ch)))
+		return false;
 	return epic_bonus_hydrate(ch);
 }
 
@@ -4867,6 +4886,8 @@ P_char sql_load_player(const char *name)
 		logit(LOG_DEBUG, "sql_load_player: outcome=not_found");
 		return NULL;
 	}
+	if (player_save_journal_pid_quarantined(pid))
+		return NULL;
 
 	// allocate character structure
 	P_char ch = (P_char)malloc(sizeof(struct char_data));

@@ -1,7 +1,9 @@
 #include "player/player_load_materialize.h"
+#include "player/player_save_journal.h"
 #include "net/output_preference_codec.h"
 
 #include "item/item_ownership_runtime.h"
+#include "magic/spell_item_lifecycle.h"
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_save_pipeline.h"
@@ -382,6 +384,8 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      result.pid);
 		return false;
 	}
+	if (result.pid > 0 && player_save_journal_pid_quarantined(result.pid))
+		return false;
 	if (!valid_snapshot(result))
 	{
 		// The repository runs on a worker thread and cannot log, so this is the first
@@ -883,9 +887,14 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	      (PLAYER_LOAD_DEGRADED_ITEMS | PLAYER_LOAD_DEGRADED_PETS |
 	       PLAYER_LOAD_DEGRADED_RECOVERY)))
 	{
+		spell_component_retirement_recover_receipts(static_cast<uint32_t>(result.pid),
+							    result.spell_effect_receipts.data(),
+							    result.spell_effect_receipts.size());
 		for (const player_load_quest_reward &reward : result.pending_quest_rewards)
 			quest_reward_recover_pending(ch, reward.offering_operation, reward.terms,
-					     reward.xp_applied_mask);
+						     reward.xp_applied_mask,
+						     reward.economic_applied_mask,
+						     reward.economic_history_verified);
 		for (const player_load_quest_xp_entitlement &entitlement :
 		     result.pending_quest_xp_entitlements)
 			quest_reward_recover_xp_entitlement(ch, entitlement.offering_operation,

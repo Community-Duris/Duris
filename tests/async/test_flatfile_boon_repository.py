@@ -4,6 +4,7 @@ from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
+from test_flatfile_accounting_store import SOURCES as ACCOUNTING_SOURCES
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -24,6 +25,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
         rel("combat_outcome_command.c"),
         rel("critical_command.c"),
     ]
+    for source in ["src/flatfile/flatfile_accounting_authority.c", *ACCOUNTING_SOURCES[1:]]:
+        if source not in sources:
+            sources.append(source)
     compile_result = subprocess.run(
         [
             "g++",

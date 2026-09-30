@@ -668,6 +668,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "46779e7b1cf8a12af6828f263a4842ddfed21303719f693224ac130a76371f5b",
       "verify_checksum": "ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a"
+    },
+    {
+      "id": "0050_item_extra_description_fulltext_unique",
+      "sequence": 50,
+      "description": "Enforce full-value uniqueness for player and pet item descriptions",
+      "apply": "immutable/0050_item_extra_description_fulltext_unique.sql",
+      "verify": "immutable/0050_item_extra_description_fulltext_unique.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8",
+      "verify_checksum": "d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78"
     }
   ]
 }

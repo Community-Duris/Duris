@@ -359,15 +359,29 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "source_pid_recipient_pid_and_item_uid",
       "technical_purpose": "approved disputed-death restitution plan and immutable operator audit",
-      "controller_decision": {"status": "pending", "reference": "PENDING-CONTROLLER-DECISION"},
-      "export_rule": {"disposition": "pending", "subject_route": "direct_player", "decision": {"status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION"}, "excluded_fields": [], "shared_fields": []},
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
-      "dependencies": ["database:player_death_disposition"]
+      "dependencies": [
+        "database:player_death_disposition"
+      ]
     },
     {
       "id": "database:player_death_restitution_item",
@@ -376,15 +390,29 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "source_pid_recipient_pid_and_item_uid",
       "technical_purpose": "per-original-identity restitution classification and transition evidence",
-      "controller_decision": {"status": "pending", "reference": "PENDING-CONTROLLER-DECISION"},
-      "export_rule": {"disposition": "pending", "subject_route": "direct_player", "decision": {"status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION"}, "excluded_fields": [], "shared_fields": []},
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
-      "dependencies": ["database:player_death_restitution_receipt"]
+      "dependencies": [
+        "database:player_death_restitution_receipt"
+      ]
     },
     {
       "id": "database:player_death_restitution_delivery",
@@ -393,15 +421,29 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "source_pid_recipient_pid_and_item_uid",
       "technical_purpose": "global original-identity delivery deduplication and immutable payload",
-      "controller_decision": {"status": "pending", "reference": "PENDING-CONTROLLER-DECISION"},
-      "export_rule": {"disposition": "pending", "subject_route": "direct_player", "decision": {"status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION"}, "excluded_fields": [], "shared_fields": []},
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
-      "dependencies": ["database:player_death_restitution_item"]
+      "dependencies": [
+        "database:player_death_restitution_item"
+      ]
     },
     {
       "id": "database:player_death_restitution_runtime",
@@ -410,15 +452,29 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "source_pid_recipient_pid_and_item_uid",
       "technical_purpose": "current exact serialized state for restitution-delivered identities",
-      "controller_decision": {"status": "pending", "reference": "PENDING-CONTROLLER-DECISION"},
-      "export_rule": {"disposition": "pending", "subject_route": "direct_player", "decision": {"status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION"}, "excluded_fields": [], "shared_fields": []},
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
-      "dependencies": ["database:player_death_restitution_delivery"]
+      "dependencies": [
+        "database:player_death_restitution_delivery"
+      ]
     },
     {
       "id": "database:player_death_conflict_evidence",
@@ -427,8 +483,20 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "operation_id_pid_save_revision_and_corpse_item_uid",
       "technical_purpose": "immutable v10 death-save conflict evidence; never loadable inventory or a save-success receipt; unresolved until a separate resolution record",
-      "controller_decision": {"status": "pending", "reference": "PENDING-CONTROLLER-DECISION"},
-      "export_rule": {"disposition": "pending", "subject_route": "direct_player", "decision": {"status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION"}, "excluded_fields": [], "shared_fields": []},
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
@@ -495,7 +563,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:accounts"]
+      "dependencies": [
+        "database:accounts"
+      ]
     },
     {
       "id": "database:account_bound_reward_pwipe_state",
@@ -585,7 +655,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:accounts"]
+      "dependencies": [
+        "database:accounts"
+      ]
     },
     {
       "id": "database:account_characters",
@@ -643,7 +715,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:accounts"]
+      "dependencies": [
+        "database:accounts"
+      ]
     },
     {
       "id": "database:account_locker_access",
@@ -672,7 +746,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:account_lockers"]
+      "dependencies": [
+        "database:account_lockers"
+      ]
     },
     {
       "id": "database:account_locker_item_affects",
@@ -701,7 +777,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:account_locker_items"]
+      "dependencies": [
+        "database:account_locker_items"
+      ]
     },
     {
       "id": "database:account_locker_item_extra_descr",
@@ -730,7 +808,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:account_locker_items"]
+      "dependencies": [
+        "database:account_locker_items"
+      ]
     },
     {
       "id": "database:account_locker_items",
@@ -759,7 +839,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:locker_chests"]
+      "dependencies": [
+        "database:locker_chests"
+      ]
     },
     {
       "id": "database:account_lockers",
@@ -788,7 +870,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:accounts"]
+      "dependencies": [
+        "database:accounts"
+      ]
     },
     {
       "id": "database:accounts",
@@ -907,7 +991,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:artifact_guild_outcome"]
+      "dependencies": [
+        "database:artifact_guild_outcome"
+      ]
     },
     {
       "id": "database:artifact_domain_baseline",
@@ -965,7 +1051,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:item_current_owner"]
+      "dependencies": [
+        "database:item_current_owner"
+      ]
     },
     {
       "id": "database:artifact_guild_outcome",
@@ -994,7 +1082,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:artifact_guild_outcome_delta",
@@ -1023,7 +1113,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:artifact_guild_outcome"]
+      "dependencies": [
+        "database:artifact_guild_outcome"
+      ]
     },
     {
       "id": "database:artifacts",
@@ -1168,7 +1260,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:item_current_owner"]
+      "dependencies": [
+        "database:item_current_owner"
+      ]
     },
     {
       "id": "database:auction_item_pickups",
@@ -1226,7 +1320,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:auction_money_pickups",
@@ -1342,7 +1438,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:boon_reward_outcome_entry",
@@ -1371,7 +1469,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:boon_reward_outcome"]
+      "dependencies": [
+        "database:boon_reward_outcome"
+      ]
     },
     {
       "id": "database:boons",
@@ -1603,7 +1703,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:collector_ledger",
@@ -1632,7 +1734,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:collector_listings",
@@ -1661,7 +1765,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:collector_deaths"]
+      "dependencies": [
+        "database:collector_deaths"
+      ]
     },
     {
       "id": "database:collector_reconciliation_quarantine",
@@ -1748,7 +1854,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:combat_outcome"]
+      "dependencies": [
+        "database:combat_outcome"
+      ]
     },
     {
       "id": "database:combat_outcome",
@@ -1777,7 +1885,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:combat_outcome_participant",
@@ -1806,7 +1916,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:combat_outcome"]
+      "dependencies": [
+        "database:combat_outcome"
+      ]
     },
     {
       "id": "database:corpse_catalog_state",
@@ -1864,7 +1976,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:corpse_items"]
+      "dependencies": [
+        "database:corpse_items"
+      ]
     },
     {
       "id": "database:corpse_item_extra_descr",
@@ -1893,7 +2007,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:corpse_items"]
+      "dependencies": [
+        "database:corpse_items"
+      ]
     },
     {
       "id": "database:corpse_items",
@@ -1922,7 +2038,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:corpses"]
+      "dependencies": [
+        "database:corpses"
+      ]
     },
     {
       "id": "database:corpses",
@@ -2015,7 +2133,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:quest_reward_obligation",
@@ -2035,7 +2155,9 @@
           "status": "pending",
           "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
         },
-        "excluded_fields": ["continuation"],
+        "excluded_fields": [
+          "continuation"
+        ],
         "shared_fields": []
       },
       "season_action": "retain",
@@ -2044,7 +2166,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:quest_reward_xp_entitlement",
@@ -2073,7 +2197,10 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox", "database:quest_reward_obligation"]
+      "dependencies": [
+        "database:critical_operation_inbox",
+        "database:quest_reward_obligation"
+      ]
     },
     {
       "id": "database:player_spell_effect_receipt",
@@ -2131,7 +2258,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_outbox"]
+      "dependencies": [
+        "database:critical_outbox"
+      ]
     },
     {
       "id": "database:critical_test_state",
@@ -2247,7 +2376,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:currency_wallet_baseline",
@@ -2392,7 +2523,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:eq_drop",
@@ -2479,7 +2612,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:guilds"]
+      "dependencies": [
+        "database:guilds"
+      ]
     },
     {
       "id": "database:guild_outcome_ledger",
@@ -2508,7 +2643,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:artifact_guild_outcome"]
+      "dependencies": [
+        "database:artifact_guild_outcome"
+      ]
     },
     {
       "id": "database:guild_ranks",
@@ -2537,7 +2674,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:guilds"]
+      "dependencies": [
+        "database:guilds"
+      ]
     },
     {
       "id": "database:guild_transactions",
@@ -2798,7 +2937,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:item_ownership_quarantine",
@@ -3059,7 +3200,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:account_lockers"]
+      "dependencies": [
+        "database:account_lockers"
+      ]
     },
     {
       "id": "database:locker_chests",
@@ -3088,7 +3231,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:account_lockers"]
+      "dependencies": [
+        "database:account_lockers"
+      ]
     },
     {
       "id": "database:locker_item_affects",
@@ -3117,7 +3262,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:locker_items"]
+      "dependencies": [
+        "database:locker_items"
+      ]
     },
     {
       "id": "database:locker_item_extra_descr",
@@ -3146,7 +3293,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:locker_items"]
+      "dependencies": [
+        "database:locker_items"
+      ]
     },
     {
       "id": "database:locker_items",
@@ -3175,7 +3324,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:lockers"]
+      "dependencies": [
+        "database:lockers"
+      ]
     },
     {
       "id": "database:locker_kickouts",
@@ -3204,7 +3355,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:account_lockers"]
+      "dependencies": [
+        "database:account_lockers"
+      ]
     },
     {
       "id": "database:locker_session_state",
@@ -3468,7 +3621,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:offline_messages"]
+      "dependencies": [
+        "database:offline_messages"
+      ]
     },
     {
       "id": "database:outposts",
@@ -3700,7 +3855,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_data",
@@ -3818,7 +3975,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_granted_cmds",
@@ -3847,7 +4006,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_intros",
@@ -3876,7 +4037,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_item_affects",
@@ -3905,7 +4068,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_items"]
+      "dependencies": [
+        "database:player_items"
+      ]
     },
     {
       "id": "database:player_item_extra_descr",
@@ -3934,7 +4099,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_items"]
+      "dependencies": [
+        "database:player_items"
+      ]
     },
     {
       "id": "database:player_items",
@@ -3963,7 +4130,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_languages",
@@ -3992,7 +4161,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_pet_item_affects",
@@ -4021,7 +4192,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_pet_items"]
+      "dependencies": [
+        "database:player_pet_items"
+      ]
     },
     {
       "id": "database:player_pet_item_extra_descr",
@@ -4050,7 +4223,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_pet_items"]
+      "dependencies": [
+        "database:player_pet_items"
+      ]
     },
     {
       "id": "database:player_pet_items",
@@ -4079,7 +4254,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_pets"]
+      "dependencies": [
+        "database:player_pets"
+      ]
     },
     {
       "id": "database:player_pets",
@@ -4108,7 +4285,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_recipes",
@@ -4195,7 +4374,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_spellbooks",
@@ -4224,7 +4405,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_timers",
@@ -4253,7 +4436,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_undead_slots",
@@ -4282,7 +4467,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:player_witnesses",
@@ -4311,7 +4498,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_data"]
+      "dependencies": [
+        "database:player_data"
+      ]
     },
     {
       "id": "database:poll_options",
@@ -4456,7 +4645,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:lockers"]
+      "dependencies": [
+        "database:lockers"
+      ]
     },
     {
       "id": "database:private_chests",
@@ -4487,7 +4678,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:lockers"]
+      "dependencies": [
+        "database:lockers"
+      ]
     },
     {
       "id": "database:progress",
@@ -4632,7 +4825,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:saved_items"]
+      "dependencies": [
+        "database:saved_items"
+      ]
     },
     {
       "id": "database:saved_item_extra_descr",
@@ -4661,7 +4856,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:saved_items"]
+      "dependencies": [
+        "database:saved_items"
+      ]
     },
     {
       "id": "database:saved_item_recovery_handoff",
@@ -4690,7 +4887,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:saved_items"]
+      "dependencies": [
+        "database:saved_items"
+      ]
     },
     {
       "id": "database:saved_items",
@@ -4748,7 +4947,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:ship_armor",
@@ -4777,7 +4978,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:ships"]
+      "dependencies": [
+        "database:ships"
+      ]
     },
     {
       "id": "database:ship_cargo_market_mods",
@@ -4864,7 +5067,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:ships"]
+      "dependencies": [
+        "database:ships"
+      ]
     },
     {
       "id": "database:ship_slots",
@@ -4893,7 +5098,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:ships"]
+      "dependencies": [
+        "database:ships"
+      ]
     },
     {
       "id": "database:ships",
@@ -4980,7 +5187,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:shopkeepers"]
+      "dependencies": [
+        "database:shopkeepers"
+      ]
     },
     {
       "id": "database:shopkeeper_item_affects",
@@ -5009,7 +5218,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:shopkeeper_items"]
+      "dependencies": [
+        "database:shopkeeper_items"
+      ]
     },
     {
       "id": "database:shopkeeper_item_extra_descr",
@@ -5038,7 +5249,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:shopkeeper_items"]
+      "dependencies": [
+        "database:shopkeeper_items"
+      ]
     },
     {
       "id": "database:shopkeeper_items",
@@ -5067,7 +5280,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:shopkeepers"]
+      "dependencies": [
+        "database:shopkeepers"
+      ]
     },
     {
       "id": "database:shopkeepers",
@@ -5125,7 +5340,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:siege_items"]
+      "dependencies": [
+        "database:siege_items"
+      ]
     },
     {
       "id": "database:siege_item_extra_descr",
@@ -5154,7 +5371,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:siege_items"]
+      "dependencies": [
+        "database:siege_items"
+      ]
     },
     {
       "id": "database:siege_items",
@@ -5328,7 +5547,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:critical_operation_inbox"]
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     },
     {
       "id": "database:zone_touch_outcome_participant",
@@ -5357,7 +5578,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:zone_touch_outcome"]
+      "dependencies": [
+        "database:zone_touch_outcome"
+      ]
     },
     {
       "id": "database:zone_touches",
@@ -5502,7 +5725,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:lifecycle_archive_jobs"]
+      "dependencies": [
+        "database:lifecycle_archive_jobs"
+      ]
     },
     {
       "id": "database:lifecycle_archive_rows",
@@ -5531,7 +5756,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:lifecycle_archive_batches"]
+      "dependencies": [
+        "database:lifecycle_archive_batches"
+      ]
     },
     {
       "id": "database:lifecycle_archive_evidence",
@@ -5572,12 +5799,21 @@
       "data_category": "personal_or_mixed_durable_store",
       "data_subject_key": "account_scope_hash",
       "technical_purpose": "authenticated erasure request fence, progress, and reconciliation state",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
       "export_rule": {
         "disposition": "pending",
         "subject_route": "direct_account",
-        "decision": { "status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION" },
-        "excluded_fields": ["account_scope_hash", "subject_token"],
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "account_scope_hash",
+          "subject_token"
+        ],
         "shared_fields": []
       },
       "season_action": "retain",
@@ -5595,11 +5831,17 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "erasure_request_id",
       "technical_purpose": "per-store erasure ordering, action, and exact remaining-identifier evidence",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
       "export_rule": {
         "disposition": "pending",
         "subject_route": "dependency",
-        "decision": { "status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION" },
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
         "excluded_fields": [],
         "shared_fields": []
       },
@@ -5609,7 +5851,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:account_erasure_requests"]
+      "dependencies": [
+        "database:account_erasure_requests"
+      ]
     },
     {
       "id": "database:account_erasure_evidence",
@@ -5618,11 +5862,17 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "erasure_request_id",
       "technical_purpose": "minimal redacted erasure transition and reconciliation evidence",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
       "export_rule": {
         "disposition": "pending",
         "subject_route": "dependency",
-        "decision": { "status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION" },
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
         "excluded_fields": [],
         "shared_fields": []
       },
@@ -5632,7 +5882,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:account_erasure_requests"]
+      "dependencies": [
+        "database:account_erasure_requests"
+      ]
     },
     {
       "id": "database:account_erasure_tombstones",
@@ -5641,12 +5893,21 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "non_reversible_subject_token",
       "technical_purpose": "durable no-resurrection marker applied before restore, replay, import, or publication",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
       "export_rule": {
         "disposition": "exclude",
         "subject_route": "lifecycle_metadata",
-        "decision": { "status": "not_required", "reference": "TECHNICAL-SECURITY-EXCLUSION" },
-        "excluded_fields": ["account_scope_hash", "subject_token"],
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-SECURITY-EXCLUSION"
+        },
+        "excluded_fields": [
+          "account_scope_hash",
+          "subject_token"
+        ],
         "shared_fields": []
       },
       "season_action": "retain",
@@ -5655,7 +5916,9 @@
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
-      "dependencies": ["database:account_erasure_requests"]
+      "dependencies": [
+        "database:account_erasure_requests"
+      ]
     },
     {
       "id": "database:lookup_dataset_state",
@@ -5664,15 +5927,26 @@
       "data_category": "reference_or_configuration",
       "data_subject_key": "none",
       "technical_purpose": "atomic compiled race and class dataset version, checksum, and counts",
-      "controller_decision": { "status": "not_required", "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION" },
-      "export_rule": {
-        "disposition": "exclude", "subject_route": "not_subject_scoped",
-        "decision": { "status": "not_required", "reference": "TECHNICAL-NON-SUBJECT-DATA" },
-        "excluded_fields": [], "shared_fields": []
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
-      "season_action": "retain", "active_retention": "service_lifetime",
-      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
-      "exception": "none", "protected_record": false,
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
       "dependencies": []
     },
     {
@@ -5682,15 +5956,26 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "not_applicable",
       "technical_purpose": "monotonic season identity and irreversible reset boundary state",
-      "controller_decision": { "status": "not_required", "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION" },
-      "export_rule": {
-        "disposition": "exclude", "subject_route": "lifecycle_metadata",
-        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
-        "excluded_fields": [], "shared_fields": []
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
-      "season_action": "retain", "active_retention": "service_lifetime",
-      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
-      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-METADATA-EXCLUSION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
       "dependencies": []
     },
     {
@@ -5700,15 +5985,29 @@
       "data_category": "operational_metadata",
       "data_subject_key": "optional_operator_identity",
       "technical_purpose": "durable server boot, shutdown, uptime, and stop-reason history",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
-      "export_rule": {
-        "disposition": "exclude", "subject_route": "lifecycle_metadata",
-        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
-        "excluded_fields": ["initiated_by", "reason"], "shared_fields": []
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
       },
-      "season_action": "retain", "active_retention": "pending_controller_decision",
-      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
-      "exception": "none", "protected_record": false,
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-METADATA-EXCLUSION"
+        },
+        "excluded_fields": [
+          "initiated_by",
+          "reason"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
       "dependencies": []
     },
     {
@@ -5718,15 +6017,26 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "not_applicable",
       "technical_purpose": "honest fresh-bootstrap or verified-legacy schema adoption identity",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
-      "export_rule": {
-        "disposition": "exclude", "subject_route": "lifecycle_metadata",
-        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
-        "excluded_fields": [], "shared_fields": []
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
       },
-      "season_action": "retain", "active_retention": "pending_controller_decision",
-      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
-      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-METADATA-EXCLUSION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
       "dependencies": []
     },
     {
@@ -5736,15 +6046,26 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "not_applicable",
       "technical_purpose": "immutable ordered post-baseline migration identity and content hashes",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
-      "export_rule": {
-        "disposition": "exclude", "subject_route": "lifecycle_metadata",
-        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
-        "excluded_fields": [], "shared_fields": []
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
       },
-      "season_action": "retain", "active_retention": "pending_controller_decision",
-      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
-      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-METADATA-EXCLUSION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
       "dependencies": []
     },
     {
@@ -5754,15 +6075,26 @@
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "not_applicable",
       "technical_purpose": "tamper-evident applied-history count and immutable chain head",
-      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
-      "export_rule": {
-        "disposition": "exclude", "subject_route": "lifecycle_metadata",
-        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
-        "excluded_fields": [], "shared_fields": []
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
       },
-      "season_action": "retain", "active_retention": "pending_controller_decision",
-      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
-      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-METADATA-EXCLUSION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
       "dependencies": []
     },
     {
@@ -5823,7 +6155,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:personal_data_export_requests"]
+      "dependencies": [
+        "database:personal_data_export_requests"
+      ]
     },
     {
       "id": "database:personal_data_export_audit",
@@ -5852,7 +6186,9 @@
       "terminal_action": "retain",
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
-      "dependencies": ["database:personal_data_export_requests"]
+      "dependencies": [
+        "database:personal_data_export_requests"
+      ]
     },
     {
       "id": "redis:world_recovery",
@@ -6056,6 +6392,68 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "file:player_save_quarantine_archive",
+      "kind": "quarantine",
+      "locator": "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine.archive",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "hashed original player-save evidence and persistent admission fences",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:player_save_journal"
+      ]
+    },
+    {
+      "id": "file:player_save_quarantine_policy",
+      "kind": "recovery_state",
+      "locator": "PLAYER_SAVE_JOURNAL_DIR/player-save.quarantine-pids",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "operator-selected protected player admission policy",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:player_save_journal"
+      ]
     },
     {
       "id": "file:critical_command_journal",
@@ -7475,6 +7873,35 @@
         ],
         "shared_fields": []
       }
+    },
+    {
+      "id": "file:player-spell-receipts",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/players/*.spell",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id",
+      "technical_purpose": "immutable player spell effect application receipts committed with player affects; retain through publication replay and controller-approved recovery horizon",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
     }
   ]
 }

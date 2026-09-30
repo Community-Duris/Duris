@@ -11,8 +11,11 @@
 #include "core/defines.h"
 #include "world/vnum.obj.h"
 #include <algorithm>
+#include <cerrno>
+#include <cstdarg>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
 
 #include <cstdlib>
 #include <filesystem>
@@ -23,6 +26,28 @@
 #include <unistd.h>
 
 namespace fs = std::filesystem;
+
+static const char *read_failure_filename = nullptr;
+#ifdef DURIS_FLATFILE_PLAYER_READ_FAULT_TEST
+extern "C" int __real_openat(int, const char *, int, ...);
+extern "C" int __wrap_openat(int fd, const char *name, int flags, ...)
+{
+	mode_t mode = 0;
+	if (flags & O_CREAT)
+	{
+		va_list arguments;
+		va_start(arguments, flags);
+		mode = va_arg(arguments, int);
+		va_end(arguments);
+	}
+	if (!(flags & O_CREAT) && read_failure_filename && !strcmp(name, read_failure_filename))
+	{
+		errno = EIO;
+		return -1;
+	}
+	return __real_openat(fd, name, flags, mode);
+}
+#endif
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now)
 {
@@ -502,6 +527,562 @@ static void coin_player_matrix(const fs::path &path)
 }
 
 /** Inspect synthetic authority on request, otherwise exercise player repository durability and recovery. */
+static void spell_receipt_matrix(const fs::path &path)
+{
+	const std::string root = path.string();
+	for (const auto &directory :
+	     { path, path / "players", path / "domains", path / "identities",
+	       path / "identities/names", path / "player-deaths" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	std::string error;
+	int32_t pid = 0;
+	for (int32_t i = 1; i <= 42; ++i)
+		require(flatfile_identity_allocate_pid(root, &pid, &error) ==
+				flatfile_identity_result::ok,
+			"spell identity allocation");
+	require(flatfile_identity_claim(root, 42, "Player", "Account-One", &error) ==
+			flatfile_identity_result::ok,
+		"spell identity claim");
+	require(flatfile_player_snapshot_apply(root, make_full(1), &error).outcome ==
+			player_save_apply_outcome::applied,
+		"spell player baseline: " + error);
+	auto effect = make_full(2);
+	effect.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+	effect.components = PLAYER_COMPONENT_AFFECTS;
+	effect.affects[0].type = 333;
+	effect.affects[0].duration = 20;
+	player_spell_effect_receipt_snapshot receipt = {};
+	receipt.operation_id.bytes[0] = 0xa5;
+	receipt.effect_id = 6;
+	effect.spell_effect_receipts.push_back(receipt);
+	const fs::path receipt_path = path / "players/42-a5000000000000000000000000000000.spell";
+	player_load_request request;
+	request.pid = 42;
+	request.account_name = "Account-One";
+	request.request_id = 1;
+	request.pending_spell_effect_operations.push_back(receipt.operation_id);
+	const auto load = [&]
+	{
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		return flatfile_player_load_repository_execute(root, request);
+	};
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+	require(flatfile_player_snapshot_apply(root, effect, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"effect acknowledged a refused authority commit");
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	auto loaded = load();
+	require(loaded.outcome == player_load_outcome::applied && loaded.snapshot.revision == 1 &&
+			loaded.spell_effect_receipts.empty() && !fs::exists(receipt_path),
+		"refused effect changed player or left a phantom receipt");
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(flatfile_player_snapshot_apply(root, effect, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"effect acknowledged an interrupted authority commit");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	// A fresh process must recover player and receipt together before returning either.
+	const pid_t child = fork();
+	require(child >= 0, "spell restart fork");
+	if (!child)
+	{
+		const auto restarted = load();
+		_exit(restarted.outcome == player_load_outcome::applied &&
+				      restarted.snapshot.revision == 2 &&
+				      restarted.snapshot.affects[0].type == 333 &&
+				      restarted.snapshot.affects[0].duration == 20 &&
+				      restarted.spell_effect_receipts.size() == 1 &&
+				      restarted.spell_effect_receipts[0].effect_id == 6 ?
+			      0 :
+			      1);
+	}
+	int status = 0;
+	require(waitpid(child, &status, 0) == child && WIFEXITED(status) && !WEXITSTATUS(status),
+		"separate-process effect recovery lost its affect or receipt");
+	require(flatfile_player_snapshot_apply(root, effect, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"effect exact replay failed");
+	read_failure_filename = "42-a5000000000000000000000000000000.spell";
+	const auto failed_replay = flatfile_player_snapshot_apply(root, effect, &error);
+	require(failed_replay.outcome == player_save_apply_outcome::retryable_failure &&
+			failed_replay.error_code == EIO &&
+			load().outcome == player_load_outcome::retryable_failure,
+		"receipt read I/O error became a durable acknowledgment or terminal corruption");
+	read_failure_filename = nullptr;
+	std::ifstream receipt_file(receipt_path, std::ios::binary);
+	const std::string original((std::istreambuf_iterator<char>(receipt_file)),
+				   std::istreambuf_iterator<char>());
+	receipt_file.close();
+	fs::remove(receipt_path);
+	require(flatfile_player_snapshot_apply(root, effect, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"bare revision acknowledged a missing spell receipt");
+	{
+		std::ofstream restore(receipt_path, std::ios::binary);
+		restore.write(original.data(), original.size());
+	}
+	fs::permissions(receipt_path, fs::perms::owner_read | fs::perms::owner_write,
+			fs::perm_options::replace);
+	auto conflicting = effect;
+	conflicting.spell_effect_receipts[0].effect_id = 1;
+	require(flatfile_player_snapshot_apply(root, conflicting, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"exact replay accepted a conflicting spell effect");
+	auto ordinary = make_status(3, 51, 1202);
+	ordinary.status_integers.push_back({ player_status_field::racewar, 0, 0, false });
+	require(flatfile_player_snapshot_apply(root, ordinary, &error).outcome ==
+			player_save_apply_outcome::applied,
+		"ordinary checkpoint after spell receipt failed");
+	const auto obsolete = flatfile_player_snapshot_apply(root, effect, &error);
+	require(obsolete.outcome == player_save_apply_outcome::stale_revision &&
+			obsolete.operation_receipts_verified &&
+			!player_save_result_matches_exact_request(effect, obsolete),
+		"obsolete spell receipt was not verified separately from live ACK");
+	require(flatfile_player_snapshot_apply(root, conflicting, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"newer counter hid a conflicting historical spell receipt");
+	// An unrelated corrupt historical file cannot consume the pending-operation budget.
+	{
+		std::ofstream unrelated(path / "players/42-ff000000000000000000000000000000.spell");
+		unrelated << "unrelated protected history";
+	}
+	loaded = load();
+	require(loaded.outcome == player_load_outcome::applied && loaded.snapshot.revision == 3 &&
+			loaded.spell_effect_receipts.size() == 1 &&
+			loaded.snapshot.spell_effect_receipts.empty(),
+		"ordinary save discarded receipt history or load scanned unrelated history");
+	conflicting.revision = 4;
+	require(flatfile_player_snapshot_apply(root, conflicting, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"a later effect save overwrote a conflicting operation receipt");
+	{
+		std::fstream corrupt(receipt_path, std::ios::in | std::ios::out | std::ios::binary);
+		corrupt.seekp(-1, std::ios::end);
+		corrupt.put(static_cast<char>(original.back() ^ 0x5a));
+	}
+	require(load().outcome == player_load_outcome::component_failure,
+		"corrupt requested receipt allowed effect recovery");
+	{
+		std::ofstream restore(receipt_path, std::ios::binary);
+		restore.write(original.data(), original.size());
+	}
+	// A valid receipt newer than the restored player file is inconsistent evidence.
+	// It cannot authorize a later save to acknowledge the effect without recovery.
+	const fs::path player_path = path / "players/42.snapshot";
+	std::ifstream player_file(player_path, std::ios::binary);
+	const std::string prior_player((std::istreambuf_iterator<char>(player_file)),
+				       std::istreambuf_iterator<char>());
+	player_file.close();
+	auto future = effect;
+	future.revision = 4;
+	future.spell_effect_receipts[0].operation_id.bytes[0] = 0xc7;
+	require(flatfile_player_snapshot_apply(root, future, &error).outcome ==
+			player_save_apply_outcome::applied,
+		"future receipt fixture commit failed");
+	{
+		std::ofstream restore(player_path, std::ios::binary);
+		restore.write(prior_player.data(), prior_player.size());
+	}
+	request.pending_spell_effect_operations.push_back(
+		future.spell_effect_receipts[0].operation_id);
+	require(load().outcome == player_load_outcome::component_failure,
+		"receipt ahead of restored player state allowed effect recovery");
+	future.revision = 5;
+	require(flatfile_player_snapshot_apply(root, future, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"a later save acknowledged a receipt ahead of prior durable player state");
+	request.pending_spell_effect_operations.pop_back();
+	fs::remove(path / "players/42-c7000000000000000000000000000000.spell");
+	auto death = make_death(4);
+	death.schema_version = PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+	receipt.operation_id.bytes[0] = 0xb6;
+	death.spell_effect_receipts.push_back(receipt);
+	death.affects[0].type = 333;
+	death.affects[0].duration = 30;
+	request.pending_spell_effect_operations.push_back(receipt.operation_id);
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(flatfile_player_snapshot_apply(root, death, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"death effect acknowledged an interrupted authority commit");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	loaded = load();
+	require(loaded.outcome == player_load_outcome::applied && loaded.snapshot.revision == 4 &&
+			loaded.snapshot.items.empty() &&
+			loaded.snapshot.affects[0].duration == 30 &&
+			loaded.spell_effect_receipts.size() == 2,
+		"death receipt, player state or custody did not recover together: outcome=" +
+			std::to_string(static_cast<unsigned>(loaded.outcome)) + " component=" +
+			(loaded.failed_component ? loaded.failed_component : "none") +
+			" revision=" + std::to_string(loaded.snapshot.revision) +
+			" receipts=" + std::to_string(loaded.spell_effect_receipts.size()));
+	require(flatfile_player_snapshot_apply(root, death, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"death spell receipt exact replay failed");
+	read_failure_filename = "42-4.death";
+	const auto failed_death_replay = flatfile_player_snapshot_apply(root, death, &error);
+	require(failed_death_replay.outcome == player_save_apply_outcome::retryable_failure &&
+			failed_death_replay.error_code == EIO,
+		"death evidence read I/O error became terminal corruption");
+	read_failure_filename = nullptr;
+	auto wrong_death = death;
+	wrong_death.affects[0].duration = 31;
+	require(flatfile_player_snapshot_apply(root, wrong_death, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"changed death bytes were acknowledged by revision alone");
+	std::cout
+		<< "flat spell receipts: affect/save atomicity, separate-process recovery, scoped history, corruption/conflict refusal, death retry\n";
+}
+
+static void quest_xp_matrix(const fs::path &path, uint32_t version, bool group = false,
+			    bool terminal = false)
+{
+	const std::string root = path.string();
+	const auto read_bytes = [](const fs::path &file)
+	{
+		std::ifstream input(file, std::ios::binary);
+		require(input.good(), "quest snapshot read");
+		return std::vector<uint8_t>(std::istreambuf_iterator<char>(input),
+					    std::istreambuf_iterator<char>());
+	};
+	const auto write_bytes = [](const fs::path &file, const std::vector<uint8_t> &bytes)
+	{
+		std::ofstream output(file, std::ios::binary | std::ios::trunc);
+		output.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+		require(output.good(), "quest snapshot restore");
+	};
+	for (const auto &directory :
+	     { path, path / "players", path / "domains", path / "identities",
+	       path / "identities/names", path / "player-deaths" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	std::string error;
+	int32_t pid = 0;
+	for (int32_t i = 1; i <= 43; ++i)
+		require(flatfile_identity_allocate_pid(root, &pid, &error) ==
+				flatfile_identity_result::ok,
+			"quest identity allocation");
+	require(flatfile_identity_claim(root, 42, "Player", "Account-One", &error) ==
+				flatfile_identity_result::ok &&
+			flatfile_identity_claim(root, 43, "Peer", "Account-One", &error) ==
+				flatfile_identity_result::ok,
+		"quest identity claims");
+	auto baseline = make_full(1);
+	if (terminal)
+	{
+		baseline.pets.clear();
+		auto held = baseline.items[1];
+		held.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		held.object_uid = 103;
+		baseline.items.push_back(held);
+	}
+	baseline.status_integers.push_back({ player_status_field::experience, 100, 0, false });
+	require(flatfile_player_snapshot_apply(root, baseline, &error).outcome ==
+			player_save_apply_outcome::applied,
+		"quest owner baseline");
+	auto peer = baseline;
+	peer.pid = 43;
+	peer.items.clear();
+	peer.pets.clear();
+	peer.status_strings[0].value = "Peer";
+	require(flatfile_player_snapshot_apply(root, peer, &error).outcome ==
+			player_save_apply_outcome::applied,
+		"quest peer baseline");
+	const auto player_bytes_before = read_bytes(path / "players/42.snapshot");
+	item_transfer_payload offering = {};
+	offering.from_owner = { item_owner_type::player, 42, 0 };
+	offering.to_owner = { item_owner_type::destruction, 0, 0 };
+	offering.reason = item_transfer_reason::quest_turnin;
+	offering.reason_id = 711;
+	offering.expected_from_revision = 1;
+	offering.multi_root = true;
+	offering.item_count = 2;
+	offering.items[0] = { 100, 100, 0, 1, 500, item_custody_state::active };
+	offering.items[1] = { 101, 100, 100, 1, 501, item_custody_state::active };
+	offering.continuation.kind = item_transfer_continuation_kind::quest_offering;
+	auto &data = offering.continuation.data;
+	const auto append32 = [&](uint32_t value)
+	{
+		for (size_t byte = 0; byte < 4; ++byte)
+			data.push_back(value >> (byte * 8));
+	};
+	const auto append64 = [&](uint64_t value)
+	{
+		for (size_t byte = 0; byte < 8; ++byte)
+			data.push_back(value >> (byte * 8));
+	};
+	for (auto value : { version, 42U, 0U, 0U, 711U, 500U })
+		append32(value);
+	append64(1700000000);
+	append32(1);
+	append64(100);
+	append32(1);
+	for (auto value : { 5U, 100U, 0U, 75U })
+		append32(value);
+	const uint32_t count = group ? 2 : 1;
+	for (auto value : { 3U, 50U, 0U, count, 50U, count })
+		append32(value);
+	append32(42);
+	if (count == 2)
+		append32(43);
+	append32(6);
+	data.insert(data.end(), { 'P', 'l', 'a', 'y', 'e', 'r' });
+	append32(8);
+	data.insert(data.end(), { 'q', 'u', 'e', 's', 't', '-', 'i', 'd' });
+	if (version == 5)
+	{
+		append32(count);
+		for (auto value : { 42U, 0U, 75U })
+			append32(value);
+		if (group)
+			for (auto value : { 43U, 0U, 50U })
+				append32(value);
+	}
+	quest_reward_continuation terms;
+	require(quest_reward_continuation_decode(data.data(), data.size(), &terms),
+		"quest continuation fixture");
+	critical_operation_id operation = {};
+	operation.bytes[0] = 0xd2;
+	critical_command command = {};
+	require(item_transfer_command_build(&command, operation, offering,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"quest offering build");
+	command.accepted_at_usec = 100;
+	require(flatfile_item_repository_apply(root, command).outcome ==
+				critical_apply_outcome::applied &&
+			flatfile_item_repository_apply(root, command).outcome ==
+				critical_apply_outcome::already_applied,
+		"current quest offering did not commit or replay");
+	const auto catalog_before_xp = read_bytes(path / "domains/item_ownership");
+	player_load_request request;
+	request.account_name = "Account-One";
+	request.request_id = 1;
+	const auto load = [&](int32_t target)
+	{
+		request.pid = target;
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		return flatfile_player_load_repository_execute(root, request);
+	};
+	auto loaded = load(42);
+	require(loaded.outcome == player_load_outcome::applied && !loaded.degraded_components &&
+			loaded.pending_quest_rewards.size() == 1 &&
+			loaded.pending_quest_rewards[0].xp_applied_mask == 0,
+		"current continuation was not recoverable");
+	require(flatfile_item_repository_ack_quest_reward(root, 42, operation, &error) ==
+			flatfile_item_repository_result::invalid,
+		"unpaid owner XP acknowledged");
+	auto reward = baseline;
+	reward.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+	reward.revision = 2;
+	reward.components = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES;
+	reward.status_integers.back().signed_value = 175;
+	if (terminal)
+	{
+		reward = make_death(2);
+		reward.schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+		reward.status_integers.push_back(
+			{ player_status_field::experience, 175, 0, false });
+		reward.death->wallet_pile_uid = 0;
+		reward.death->wallet_before = {};
+		reward.death->corpse.resize(1);
+		auto held = baseline.items.back();
+		held.parent_index = 0;
+		reward.death->corpse.push_back(held);
+		reward.death->custody.clear();
+		reward.death->custody.push_back(
+			{ { 103, 103, 0, 1, 501, item_custody_state::active },
+			  { item_owner_type::player, 42, 0 },
+			  2 });
+	}
+	reward.quest_xp_receipts.push_back({ operation, 0, 75 });
+	auto bad = reward;
+	bad.pid = 44;
+	bad.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+	bad.items.clear();
+	bad.pets.clear();
+	require(flatfile_player_snapshot_apply(root, bad, &error).outcome ==
+				player_save_apply_outcome::terminal_failure &&
+			read_bytes(path / "domains/item_ownership") == catalog_before_xp &&
+			!fs::exists(path / "players/44.snapshot"),
+		"XP save recreated missing player authority");
+	bad = reward;
+	bad.quest_xp_receipts[0].amount = 76;
+	require(flatfile_player_snapshot_apply(root, bad, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"changed XP amount accepted");
+	bad = reward;
+	bad.components = PLAYER_COMPONENT_TROPHIES;
+	require(flatfile_player_snapshot_apply(root, bad, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"XP receipt without status accepted");
+	bad = reward;
+	bad.quest_xp_receipts[0].offering_operation.bytes[0] = 0xe2;
+	require(flatfile_player_snapshot_apply(root, bad, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"unknown XP offering accepted");
+	if (version == 5)
+	{
+		bad = reward;
+		bad.pid = 43;
+		require(flatfile_player_snapshot_apply(root, bad, &error).outcome ==
+				player_save_apply_outcome::terminal_failure,
+			"foreign XP amount accepted");
+		// Existing schema 12 can commit both receipt families with one player save.
+		reward.schema_version = terminal ?
+						PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION :
+						PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+		reward.components |= PLAYER_COMPONENT_AFFECTS;
+		player_spell_effect_receipt_snapshot spell = {};
+		spell.operation_id.bytes[0] = 0xd3;
+		spell.effect_id = 6;
+		reward.spell_effect_receipts.push_back(spell);
+		request.pending_spell_effect_operations.push_back(spell.operation_id);
+	}
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+	require(flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"refused XP save acknowledged");
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	loaded = load(42);
+	require(loaded.snapshot.revision == 1 && loaded.pending_quest_rewards.size() == 1 &&
+			loaded.pending_quest_rewards[0].xp_applied_mask == 0 &&
+			loaded.spell_effect_receipts.empty(),
+		"refused XP save changed receipt or XP");
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"interrupted XP save acknowledged");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	const pid_t child = fork();
+	require(child >= 0, "quest restart fork");
+	if (!child)
+	{
+		const auto restarted = load(42);
+		_exit(restarted.outcome == player_load_outcome::applied &&
+				      !restarted.degraded_components &&
+				      restarted.snapshot.revision == 2 &&
+				      restarted.snapshot.status_integers.back().signed_value ==
+					      175 &&
+				      restarted.pending_quest_rewards.size() == 1 &&
+				      restarted.pending_quest_rewards[0].xp_applied_mask == 1 &&
+				      restarted.spell_effect_receipts.size() ==
+					      (version == 5 ? 1U : 0U) ?
+			      0 :
+			      1);
+	}
+	int status = 0;
+	require(waitpid(child, &status, 0) == child && WIFEXITED(status) && !WEXITSTATUS(status),
+		"separate-process XP recovery lost XP or application marker");
+	require(flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"exact XP replay failed");
+	read_failure_filename = "item_ownership";
+	require(flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"XP read error was acknowledged");
+	read_failure_filename = nullptr;
+	bad = reward;
+	bad.quest_xp_receipts[0].amount = 76;
+	require(flatfile_player_snapshot_apply(root, bad, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"changed XP replay acknowledged");
+	const auto player_bytes_after = read_bytes(path / "players/42.snapshot");
+	const auto catalog_after_xp = read_bytes(path / "domains/item_ownership");
+	if (terminal)
+	{
+		flatfile_item_ownership_record held;
+		require(flatfile_item_repository_lookup_uid(root, 103, &held, &error) ==
+					flatfile_item_repository_result::ok &&
+				held.state == item_custody_state::quarantined &&
+				held.item_revision == 2,
+			"combined XP marker and custody image lost quarantine");
+		player_snapshot disposition;
+		require(flatfile_player_snapshot_read_file(
+				flatfile_player_snapshot_file::death_directory(root),
+				flatfile_player_snapshot_file::death_filename(42, 2), 42,
+				&disposition, &error) == flatfile_player_load_result::ok &&
+				disposition.schema_version ==
+					PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION &&
+				disposition.quest_xp_receipts.size() == 1 &&
+				disposition.spell_effect_receipts.size() == 1,
+			"immutable death disposition lost XP or spell receipt");
+	}
+	write_bytes(path / "domains/item_ownership", catalog_before_xp);
+	require(flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"missing exact XP application marker acknowledged");
+	write_bytes(path / "domains/item_ownership", catalog_after_xp);
+	write_bytes(path / "players/42.snapshot", player_bytes_before);
+	loaded = load(42);
+	require(loaded.outcome != player_load_outcome::applied ||
+			(loaded.degraded_components & PLAYER_LOAD_DEGRADED_RECOVERY),
+		"player restored behind XP receipt did not hold recovery");
+	bad = reward;
+	bad.revision = 3;
+	require(flatfile_player_snapshot_apply(root, bad, &error).outcome ==
+			player_save_apply_outcome::terminal_failure,
+		"future XP marker accepted");
+	write_bytes(path / "players/42.snapshot", player_bytes_after);
+	require(flatfile_item_repository_ack_quest_reward(root, 42, operation, &error) ==
+			flatfile_item_repository_result::ok,
+		"paid owner XP acknowledgement failed");
+	require(flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"acknowledged XP replay failed");
+	if (group)
+	{
+		loaded = load(43);
+		require(!loaded.degraded_components && loaded.pending_quest_rewards.empty() &&
+				loaded.pending_quest_xp_entitlements.size() == 1 &&
+				loaded.pending_quest_xp_entitlements[0].amount == 50,
+			"owner acknowledgement erased peer entitlement");
+		peer.revision = 2;
+		peer.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+		peer.components = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES;
+		peer.status_integers.back().signed_value = 150;
+		peer.quest_xp_receipts.push_back({ operation, 0, 50 });
+		require(flatfile_player_snapshot_apply(root, peer, &error).outcome ==
+					player_save_apply_outcome::applied &&
+				flatfile_player_snapshot_apply(root, peer, &error).outcome ==
+					player_save_apply_outcome::already_applied,
+			"peer XP save or exact replay failed after owner acknowledgement");
+		loaded = load(43);
+		require(!loaded.degraded_components && loaded.pending_quest_xp_entitlements.empty(),
+			"paid peer entitlement recovered twice");
+	}
+	auto ordinary = baseline;
+	ordinary.revision = 3;
+	ordinary.components = PLAYER_COMPONENT_STATUS;
+	ordinary.status_integers.back().signed_value = 175;
+	require(flatfile_player_snapshot_apply(root, ordinary, &error).outcome ==
+				player_save_apply_outcome::applied &&
+			flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+				player_save_apply_outcome::stale_revision,
+		"stale XP replay advanced receipt");
+	if (!terminal)
+	{
+		const auto obsolete = flatfile_player_snapshot_apply(root, reward, &error);
+		require(obsolete.operation_receipts_verified &&
+				!player_save_result_matches_exact_request(reward, obsolete),
+			"obsolete XP receipt was not verified separately from live ACK");
+		write_bytes(path / "domains/item_ownership", catalog_before_xp);
+		require(flatfile_player_snapshot_apply(root, reward, &error).outcome ==
+				player_save_apply_outcome::terminal_failure,
+			"newer counter hid missing historical XP marker");
+		write_bytes(path / "domains/item_ownership", catalog_after_xp);
+	}
+	std::cout
+		<< "flat quest XP v" << version << (group ? " group" : " solo")
+		<< (terminal ? " death" : " ordinary")
+		<< ": atomic save, recipient validation, process recovery, exact replay, restore refusal\n";
+}
+
 int main(int argc, char **argv)
 {
 	if (argc == 3 && std::string(argv[2]) == "seed-creation-bank")
@@ -679,6 +1260,11 @@ int main(int argc, char **argv)
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
 	coin_player_matrix(root / "coin-player");
+	spell_receipt_matrix(root / "spell-player");
+	quest_xp_matrix(root / "quest-xp-solo", 4);
+	quest_xp_matrix(root / "quest-xp-current-solo", 5);
+	quest_xp_matrix(root / "quest-xp-group", 5, true);
+	quest_xp_matrix(root / "quest-xp-death", 5, true, true);
 	const fs::path players = root / "players";
 	const fs::path identities = root / "identities/names";
 	const fs::path domains = root / "domains";

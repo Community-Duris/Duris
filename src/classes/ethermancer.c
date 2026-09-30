@@ -319,20 +319,24 @@ static void apply_faerie_sight(int level, P_char ch, P_char victim, size_t paid_
 	send_to_char("&+mYour eyes begin to twinkle.&n\r\n", ch);
 }
 
-spell_component_effect_status spell_faerie_sight_component_completed(
-	const critical_operation_id & /*operation_id*/, P_char actor, bool committed,
-	const item_transfer_result &, unsigned int /*error_code*/, const uint8_t *encoded,
-	size_t encoded_size)
+spell_component_effect_status
+spell_faerie_sight_component_completed(const critical_operation_id &operation_id, P_char actor,
+				       bool committed, const item_transfer_result &,
+				       unsigned int /*error_code*/, const uint8_t *encoded,
+				       size_t encoded_size)
 {
 	spell_component_context_reader reader(encoded, encoded_size);
 	uint64_t victim_runtime_id = 0;
 	int32_t actor_pid = 0;
 	int32_t level = 0;
+	int32_t target_pid = 0;
 	uint8_t dust_count = 0;
 	uint8_t self_target = 0;
 	if (!actor || !reader.get_u64(&victim_runtime_id) || !reader.get_i32(&actor_pid) ||
 	    !reader.get_i32(&level) || !reader.get_u8(&dust_count) ||
-	    !reader.get_u8(&self_target) || self_target > 1 || !reader.finished())
+	    !reader.get_u8(&self_target) || self_target > 1 ||
+	    (encoded_size == 22 && !reader.get_i32(&target_pid)) || !reader.finished() ||
+	    target_pid < 0 || (self_target && target_pid && target_pid != actor_pid))
 		return spell_component_effect_status::retry;
 	if (!IS_PC(actor) || GET_PID(actor) != actor_pid || !dust_count || dust_count > 8)
 		return spell_component_effect_status::retry;
@@ -341,14 +345,49 @@ spell_component_effect_status spell_faerie_sight_component_completed(
 		send_to_char("Your faerie dust was not consumed; the sight fades.\r\n", actor);
 		return spell_component_effect_status::complete;
 	}
+	if (self_target)
+		target_pid = actor_pid;
+	if (target_pid &&
+	    !spell_component_retirement_bind_effect_owner(
+		    operation_id, static_cast<uint32_t>(actor_pid),
+		    static_cast<uint32_t>(target_pid), item_spell_component_effect::faerie_sight))
+		return spell_component_effect_status::retry;
 	P_char victim = self_target ? actor : NULL;
 	if (!victim)
 		for (P_char candidate = character_list; candidate; candidate = candidate->next)
-			if (candidate->runtime_id == victim_runtime_id)
+			if (target_pid ? (IS_PC(candidate) && GET_PID(candidate) == target_pid) :
+					 candidate->runtime_id == victim_runtime_id)
 			{
 				victim = candidate;
 				break;
 			}
+	if (!victim && target_pid)
+		return spell_component_effect_status::waiting_for_owner;
+	if (victim && IS_PC(victim))
+	{
+		if (!spell_component_retirement_bind_effect_owner(
+			    operation_id, static_cast<uint32_t>(actor_pid),
+			    static_cast<uint32_t>(GET_PID(victim)),
+			    item_spell_component_effect::faerie_sight))
+			return spell_component_effect_status::retry;
+		if (IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) ||
+		    IS_SET(victim->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+			return spell_component_effect_status::waiting_for_owner;
+		if (!spell_component_retirement_effect_applied(operation_id))
+		{
+			if (!spell_component_retirement_effect_applied_once(operation_id))
+				return spell_component_effect_status::retry;
+			if (!IS_ALIVE(actor) || !IS_ALIVE(victim) ||
+			    actor->in_room != victim->in_room)
+				send_to_char(
+					"The faerie dust is spent, but your target is no longer here.\r\n",
+					actor);
+			else
+				apply_faerie_sight(level, actor, victim, dust_count, false);
+		}
+		return spell_component_retirement_save_effect(
+			operation_id, victim, item_spell_component_effect::faerie_sight);
+	}
 	if (!victim || !IS_ALIVE(actor) || !IS_ALIVE(victim) || actor->in_room != victim->in_room)
 	{
 		send_to_char("The faerie dust is spent, but your target is no longer here.\r\n",
@@ -372,6 +411,7 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	if (active && dust_count)
 	{
 		if (!IS_PC(ch) || GET_PID(ch) <= 0 || dust_count > 8 ||
+		    (IS_PC(victim) && GET_PID(victim) <= 0) ||
 		    (victim != ch && !victim->runtime_id))
 		{
 			send_to_char("Faerie dust cannot be consumed right now.\r\n", ch);
@@ -380,7 +420,8 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		spell_component_context_writer context;
 		if (!context.put_u64(victim->runtime_id) || !context.put_i32(GET_PID(ch)) ||
 		    !context.put_i32(level) || !context.put_u8(static_cast<uint8_t>(dust_count)) ||
-		    !context.put_u8(victim == ch ? 1 : 0))
+		    !context.put_u8(victim == ch ? 1 : 0) ||
+		    !context.put_i32(IS_PC(victim) ? GET_PID(victim) : 0))
 			return;
 		if (!spell_consume_components(ch, VOBJ_FORAGE_FAERIE_DUST, dust_count,
 					      SPELL_FAERIE_SIGHT, item_spell_component_effect::faerie_sight,

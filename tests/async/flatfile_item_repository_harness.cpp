@@ -2431,12 +2431,31 @@ int main(int argc, char **argv)
 	std::ifstream legacy_input(legacy_file, std::ios::binary);
 	std::vector<uint8_t> legacy_bytes((std::istreambuf_iterator<char>(legacy_input)),
 					  std::istreambuf_iterator<char>());
-	require(legacy_bytes.size() > 61 && std::all_of(legacy_bytes.end() - 5, legacy_bytes.end(),
+	legacy_bytes.resize(legacy_bytes.size() - 17); // Strip format 8 creation/history proof.
+	require(legacy_bytes.size() > 69 && std::all_of(legacy_bytes.end() - 13, legacy_bytes.end(),
 							[](uint8_t byte) { return byte == 0; }),
-		"version 6 operation trailer did not match the empty fixture");
+		"version 7 operation trailer did not match the empty fixture");
+	legacy_bytes.resize(legacy_bytes.size() - 8);
+	legacy_bytes[8] = 6;
+	uint32_t legacy_payload_size = static_cast<uint32_t>(legacy_bytes.size() - 56);
+	for (size_t byte = 0; byte < 4; ++byte)
+		legacy_bytes[12 + byte] = static_cast<uint8_t>(legacy_payload_size >> (byte * 8));
+	SHA256(legacy_bytes.data() + 56, legacy_payload_size, legacy_bytes.data() + 24);
+	{
+		std::ofstream legacy_output(legacy_file, std::ios::binary | std::ios::trunc);
+		legacy_output.write(reinterpret_cast<const char *>(legacy_bytes.data()),
+				    legacy_bytes.size());
+		require(legacy_output.good(), "could not write version 6 fixture");
+	}
+	require(flatfile_item_repository_load_owner(
+			legacy_root.string(), { item_owner_type::player, 84, 0 }, &owner_revision,
+			&items, &error) == flatfile_item_repository_result::ok &&
+			flatfile_item_repository_apply(legacy_root.string(), legacy_creation)
+					.outcome == critical_apply_outcome::already_applied,
+		"version 6 catalog with an operation was not replayable");
 	legacy_bytes.resize(legacy_bytes.size() - 5);
 	legacy_bytes[8] = 5;
-	const uint32_t legacy_payload_size = static_cast<uint32_t>(legacy_bytes.size() - 56);
+	legacy_payload_size = static_cast<uint32_t>(legacy_bytes.size() - 56);
 	for (size_t byte = 0; byte < 4; ++byte)
 		legacy_bytes[12 + byte] = static_cast<uint8_t>(legacy_payload_size >> (byte * 8));
 	SHA256(legacy_bytes.data() + 56, legacy_payload_size, legacy_bytes.data() + 24);
@@ -2469,7 +2488,7 @@ int main(int argc, char **argv)
 	item_transfer_payload offering = {};
 	offering.from_owner = quest_player;
 	offering.to_owner = { item_owner_type::destruction, 0, 0 };
-	offering.reason = item_transfer_reason::destruction;
+	offering.reason = item_transfer_reason::quest_turnin;
 	offering.reason_id = 711;
 	offering.expected_from_revision = 1;
 	offering.multi_root = true;
@@ -2477,7 +2496,7 @@ int main(int argc, char **argv)
 	offering.items[0] = { 900, 900, 0, 1, 500, item_custody_state::active };
 	offering.items[1] = { 901, 901, 0, 1, 501, item_custody_state::active };
 	offering.continuation.kind = item_transfer_continuation_kind::quest_offering;
-	offering.continuation.data.assign(64, 0);
+	offering.continuation.data.assign(72, 0);
 	auto write32 = [&](size_t offset, uint32_t value)
 	{
 		for (size_t byte = 0; byte < 4; ++byte)
@@ -2498,9 +2517,11 @@ int main(int argc, char **argv)
 	write32(32, 2);
 	write64(36, 900);
 	write64(44, 901);
-	write32(52, 1);
+	write32(52, 2);
 	write32(56, 1);
 	write32(60, 777);
+	write32(64, 3);
+	write32(68, 1234);
 	critical_command offering_command = {};
 	require(item_transfer_command_build(&offering_command, operation(250), offering,
 					    critical_source_site::command,
@@ -2508,6 +2529,13 @@ int main(int argc, char **argv)
 		"could not build quest offering command");
 	offering_command.accepted_at_usec = 250;
 	std::vector<flatfile_quest_reward_obligation> obligations;
+	flatfile_player_domain_record quest_domains;
+	quest_domains.pid = 42;
+	quest_domains.account_name = "quest-account";
+	require(flatfile_player_domain_establish_initial_player(quest_root.string(), quest_domains,
+								&error) ==
+			flatfile_player_domain_result::ok,
+		"quest cash domain baseline failed: " + error);
 	require(flatfile_item_repository_pending_quest_rewards(quest_root.string(), 42,
 							       &obligations, &error) ==
 				flatfile_item_repository_result::ok &&
@@ -2542,6 +2570,116 @@ int main(int argc, char **argv)
 			critical_operation_id_equal(obligations[0].offering_operation,
 						    offering_command.operation_id),
 		"committed offering lost its exact reward obligation");
+	require(obligations[0].economic_history_verified && !obligations[0].economic_applied_mask,
+		"unpaid quest slots were reported as delivered");
+	// The two retained operations contain no creation proof yet. Downgrade
+	// their format-8 trailers to a genuine format-7 catalog, not just its header.
+	const fs::path legacy_quest_root = fs::path(argv[1]).string() + "-legacy-quest";
+	fs::create_directories(legacy_quest_root / "domains");
+	fs::permissions(legacy_quest_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(legacy_quest_root / "domains", fs::perms::owner_all,
+			fs::perm_options::replace);
+	std::ifstream quest_catalog_input(quest_root / "domains/item_ownership", std::ios::binary);
+	std::vector<uint8_t> historical((std::istreambuf_iterator<char>(quest_catalog_input)),
+					std::istreambuf_iterator<char>());
+	constexpr size_t empty_operation_format8_bytes = 126;
+	constexpr size_t format8_proof_bytes = 17;
+	const size_t first_proof = historical.size() - empty_operation_format8_bytes -
+				   offering.continuation.data.size() - format8_proof_bytes;
+	require(std::all_of(historical.begin() + first_proof,
+			    historical.begin() + first_proof + format8_proof_bytes,
+			    [](uint8_t byte) { return byte == 0; }),
+		"legacy quest fixture proof boundary was wrong");
+	historical.erase(historical.begin() + first_proof,
+			 historical.begin() + first_proof + format8_proof_bytes);
+	historical.resize(historical.size() - format8_proof_bytes);
+	historical[8] = 7;
+	const uint32_t historical_size = static_cast<uint32_t>(historical.size() - 56);
+	for (size_t byte = 0; byte < 4; ++byte)
+		historical[12 + byte] = static_cast<uint8_t>(historical_size >> (byte * 8));
+	SHA256(historical.data() + 56, historical_size, historical.data() + 24);
+	{
+		std::ofstream output(legacy_quest_root / "domains/item_ownership",
+				     std::ios::binary);
+		output.write(reinterpret_cast<const char *>(historical.data()), historical.size());
+		require(output.good(), "could not write historical quest catalog");
+	}
+	fs::permissions(legacy_quest_root / "domains/item_ownership",
+			fs::perms::owner_read | fs::perms::owner_write, fs::perm_options::replace);
+	require(flatfile_item_repository_pending_quest_rewards(legacy_quest_root.string(), 42,
+							       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.size() == 1 && !obligations[0].economic_history_verified &&
+			!obligations[0].economic_applied_mask,
+		"historical quest was guessed unpaid from absent provenance");
+	require(flatfile_item_repository_apply(legacy_quest_root.string(),
+					       single_creation(249, 999, 84, 0))
+				.outcome == critical_apply_outcome::applied,
+		"historical catalog upgrade fixture failed");
+	require(flatfile_item_repository_pending_quest_rewards(legacy_quest_root.string(), 42,
+							       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.size() == 1 && !obligations[0].economic_history_verified,
+		"format upgrade cleared the historical quest hold");
+	quest_reward_continuation frozen;
+	require(quest_reward_continuation_decode(offering.continuation.data.data(),
+						 offering.continuation.data.size(), &frozen),
+		"quest fixture did not decode");
+	item_transfer_payload reward_item = {};
+	reward_item.from_owner = { item_owner_type::system, 0, 0 };
+	reward_item.to_owner = quest_player;
+	reward_item.reason = item_transfer_reason::creation;
+	reward_item.reason_id = static_cast<int64_t>(quest_item_reward_source_id(frozen, 0));
+	reward_item.expected_to_revision = 2;
+	reward_item.selected_item_uid = reward_item.target_root_item_uid = 902;
+	reward_item.item_count = 1;
+	reward_item.items[0] = { 902, 902,
+				 0,   ITEM_TRANSFER_ABSENT_REVISION,
+				 777, item_custody_state::absent };
+	critical_command grant = {};
+	require(item_transfer_command_build(&grant, operation(253), reward_item,
+					    critical_source_site::recovery,
+					    critical_deadline_class::recovery),
+		"quest reward creation build failed");
+	grant.accepted_at_usec = 253;
+	require(flatfile_item_repository_apply(quest_root.string(), grant).outcome ==
+			critical_apply_outcome::applied,
+		"quest native creation receipt failed");
+	require(flatfile_item_repository_pending_quest_rewards(quest_root.string(), 42,
+							       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.size() == 1 && obligations[0].economic_applied_mask == 1,
+		"quest creation was not recognized at cold load");
+	critical_operation_id cash_id = {};
+	require(critical_operation_id_derive(offering_command.operation_id,
+					     QUEST_REWARD_CURRENCY_OPERATION_DOMAIN, 2, &cash_id),
+		"quest cash child operation failed");
+	currency_command_payload cash = {};
+	cash.pid = 42;
+	strcpy(cash.account_name.data(), "quest-account");
+	cash.reason = currency_reason_type::wallet_reward;
+	cash.reason_id = 2;
+	cash.wallet_delta.amount = { 4, 3, 2, 1 };
+	critical_command payment = {};
+	require(currency_command_build(&payment, cash_id, cash, UINT64_MAX, UINT64_MAX,
+				       critical_source_site::recovery,
+				       critical_deadline_class::recovery),
+		"quest cash command build failed");
+	payment.accepted_at_usec = 254;
+	require(flatfile_player_domain_apply(quest_root.string(), payment).outcome ==
+			critical_apply_outcome::applied,
+		"quest native cash payment failed");
+	require(flatfile_item_repository_pending_quest_rewards(quest_root.string(), 42,
+							       &obligations, &error) ==
+				flatfile_item_repository_result::ok &&
+			obligations.size() == 1 && obligations[0].economic_applied_mask == 3 &&
+			obligations[0].economic_history_verified,
+		"quest cash provenance was not recognized at cold load");
+	// Changed admission metadata remains a conflicting command, even though the
+	// load path can prove that this frozen reward has already been delivered.
+	++payment.accepted_at_usec;
+	require(flatfile_player_domain_apply(quest_root.string(), payment).error_code == EEXIST,
+		"quest proof weakened exact command replay");
 	require(flatfile_item_repository_ack_quest_reward(quest_root.string(), 77,
 							  offering_command.operation_id, &error) ==
 			flatfile_item_repository_result::invalid,

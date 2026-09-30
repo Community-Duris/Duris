@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REWARD_VNUM = 22805
 
 
-def quest_fixture(run_root: Path) -> None:
+def quest_fixture(run_root: Path, xp_reward: int = 0) -> None:
     journey.make_fixture(run_root)
     mini = run_root / "areas_mini"
     mobiles = mini / "mini.mob"
@@ -66,6 +66,9 @@ G I 22803
 G I 22804
 S
 """
+    if xp_reward:
+        assert 0 < xp_reward <= 1000
+        quest = quest.replace("R C 1000\n", f"R C 1000\nR E {xp_reward}\n", 1)
     assert content.count("$~") == 1
     quests.write_text(content.replace("$~", quest + "$~"))
 

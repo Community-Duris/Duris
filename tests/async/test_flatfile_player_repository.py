@@ -24,6 +24,7 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             "-Werror",
             "-D__NO_MYSQL__",
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+            "-DDURIS_FLATFILE_PLAYER_READ_FAULT_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_player_repository_harness.cpp",
@@ -79,6 +80,7 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             rel("flatfile_ip_activity_repository.c"),
             "-lcrypto",
             "-pthread",
+            "-Wl,--wrap=openat",
             "-o",
             str(binary),
         ],
@@ -115,7 +117,7 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
     player_source = (SRC / "flatfile_player_repository.c").read_text()
     materialize_source = (SRC / "player_load_materialize.c").read_text()
     for token in (
-        "constexpr uint32_t domain_format_version = 3",
+        "constexpr uint32_t domain_format_version = 4",
         "base_stat_revision",
         "record.domains.base_stats",
         "format_version >= 3",

@@ -76,9 +76,20 @@ mapping/native bucket sizes are 663,624/335,944 bytes; the epoch catalog is at m
 393,288 bytes. A defensive 2 MiB file-read limit applies. Capacity refusal never
 evicts a mapping, alias or epoch. Rename into a full new-locator bucket leaves
 the original alias intact. Revisions cannot wrap. Journal staging preflights
-32 destinations, duplicate destinations and exact 256 MiB framing.
+4,099 destinations, duplicate destinations and exact 256 MiB framing. The
+operation limit includes bounded player spell receipt saves; metadata adapters
+still enforce their own domain and byte bounds.
 
 ## Reads, initialization and limits
+
+The legacy domain gate recovers the authority journal while holding the root
+lock. A missing evidence directory or an empty owner-only directory permits
+legacy writes before accounting initialization. Boot creates that empty directory
+even for an inactive accounting deployment. Nonempty evidence requires a valid
+control record and epoch catalog; active accounting refuses legacy writes with
+`EAGAIN`. Unsafe directory metadata and incomplete or corrupt evidence remain
+held. Boon reward and shop transactions use this shared gate after exact replay
+lookup, alongside the existing auction, collector, and shop trade callers.
 
 Cold native lookup returns a currently active mapping. Retained lookup uses the
 immutable account key and does not require current activity, selected epoch or

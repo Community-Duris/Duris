@@ -17,6 +17,7 @@ shop_trade_command critical_command epic_command currency_command auction_comman
 combat_outcome_command boon_reward_command boon_shop_command persistence_observability
 persistence_mode flatfile_ip_activity_repository flatfile_ship_repository
 flatfile_association_repository flatfile_nexus_repository kingdom_db kingdom_geometry
+flatfile_item_accounting_reference economic_accounting_item_reference economic_accounting_types
 """.split()
 
 

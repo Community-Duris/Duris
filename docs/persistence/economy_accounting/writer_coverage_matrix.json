@@ -9,11 +9,11 @@
   ],
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 861,
+    "draft_registry_rows": 862,
     "function_definition_anchors_verified": 854,
-    "matrix_rows": 861,
-    "non_function_candidate_anchors": 7,
-    "non_writer_or_out_of_scope_candidates": 93,
+    "matrix_rows": 862,
+    "non_function_candidate_anchors": 8,
+    "non_writer_or_out_of_scope_candidates": 94,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 77,
     "routes_with_schema_2_gameplay_producer": 9,
@@ -24,7 +24,7 @@
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 14,
-    "non_writer_candidate": 93,
+    "non_writer_candidate": 94,
     "offline_operational_writer": 3,
     "runtime_mutation_route": 688,
     "runtime_projection_route": 63
@@ -39,33 +39,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 861 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 862 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2811,
-    "current_unique_path_line_family_sites": 2753,
+    "current_occurrences": 2812,
+    "current_unique_path_line_family_sites": 2754,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "aec41e3c091689b49cb74196badcffe8780228dd",
+    "draft_source_commit": "62a680deab9da0b9e0912f09397b78277f5de88e",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2753,
+    "draft_unique_sites": 2754,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 179,
-      "item_lifecycle": 1152,
-      "item_publication": 1066,
+      "item_lifecycle": 1150,
+      "item_publication": 1069,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 54
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 861-row registry maps 2753 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2753,
-    "mapped_unique_sites_from_draft_rows": 2753,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 862-row registry maps 2754 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2754,
+    "mapped_unique_sites_from_draft_rows": 2754,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "aec41e3c091689b49cb74196badcffe8780228dd",
+  "repository_head": "62a680deab9da0b9e0912f09397b78277f5de88e",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -117,7 +117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1898
+          1899
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",
@@ -223,7 +223,7 @@
       },
       "id": "account.reward_duplicate_cleanup",
       "native_effects": {
-        "custody_effect": "Direct child item custody is moved to the duplicate root\u00e2\u20ac\u2122s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
+        "custody_effect": "Direct child item custody is moved to the duplicate root\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
         "holding_effect": "No coin balance changes.",
         "native_state_targets": [
           "direct child item UIDs and player_items parent links",
@@ -1611,7 +1611,7 @@
       },
       "id": "artifact.monolith_absorb",
       "native_effects": {
-        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u00e2\u20ac\u2122s charge count to the survivor and extracts the duplicate.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s charge count to the survivor and extracts the duplicate.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "surviving monolith payload",
@@ -1629,7 +1629,7 @@
         "function": "artifact_monolith",
         "original_draft_symbol": "artifact_monolith"
       },
-      "source_classification": "The periodic monolith proc adds a duplicate room monolith\u00e2\u20ac\u2122s charge count to the survivor and extracts the duplicate.",
+      "source_classification": "The periodic monolith proc adds a duplicate room monolith\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s charge count to the survivor and extracts the duplicate.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -3677,7 +3677,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          557
+          561
         ],
         "file": "scripts/persistence_backup.py",
         "function": "backup",
@@ -3723,7 +3723,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          469
+          473
         ],
         "file": "scripts/persistence_backup.py",
         "function": "prune_unretained",
@@ -4592,7 +4592,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          362
+          401
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_faerie_sight",
@@ -4649,7 +4649,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          897
+          938
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_beacon",
@@ -4706,7 +4706,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1034
+          1075
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_bolt",
@@ -4763,7 +4763,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2423
+          2464
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_single_cosmic_rift",
@@ -5729,7 +5729,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3564
+          3641
         ],
         "file": "src/cmd/actobj.c",
         "function": "refund_committed_coin_debit",
@@ -5794,7 +5794,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4055
+          4132
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_put",
@@ -5858,7 +5858,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3664
+          4006
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -5922,7 +5922,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4606
+          4683
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_debit",
@@ -5986,7 +5986,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3738
+          3815
         ],
         "file": "src/cmd/actobj.c",
         "function": "begin_coin_give_credit",
@@ -6033,7 +6033,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3813
+          3890
         ],
         "file": "src/cmd/actobj.c",
         "function": "prepare_coin_pile",
@@ -6098,7 +6098,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4304
+          4381
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_get",
@@ -6162,7 +6162,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3677
+          3754
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_give",
@@ -6351,7 +6351,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2081
+          2085
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -6398,7 +6398,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2081
+          2085
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -7192,7 +7192,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1830
+          1845
         ],
         "file": "src/combat/fight.c",
         "function": "die",
@@ -7298,7 +7298,7 @@
       },
       "id": "combat.disarm_slot_relink",
       "native_effects": {
-        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00e2\u20ac\u2122s carrying list; its owner UID stays with that character.",
+        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list; its owner UID stays with that character.",
         "holding_effect": "No coin balance change at these sites.",
         "native_state_targets": [
           "same-character equipment and inventory slots",
@@ -7317,7 +7317,7 @@
         "function": "do_disarm",
         "original_draft_symbol": "do_disarm"
       },
-      "source_classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00e2\u20ac\u2122s carrying list; its owner UID stays with that character.",
+      "source_classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list; its owner UID stays with that character.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -7428,7 +7428,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3422
+          3434
         ],
         "file": "src/combat/fight.c",
         "function": "check_shields",
@@ -7782,7 +7782,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4872
+          4884
         ],
         "file": "src/combat/fight.c",
         "function": "hit",
@@ -8064,7 +8064,7 @@
       },
       "id": "craft.make_lock_payload",
       "native_effects": {
-        "custody_effect": "A successful make lock changes an existing container\u00e2\u20ac\u2122s lock flags/value or a door pair\u00e2\u20ac\u2122s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+        "custody_effect": "A successful make lock changes an existing container\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock flags/value or a door pair\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
         "holding_effect": "No coin balance change at these sites.",
         "native_state_targets": [
           "live container payload or door state",
@@ -8082,7 +8082,7 @@
         "function": "make_lock",
         "original_draft_symbol": "make_lock"
       },
-      "source_classification": "A successful make lock changes an existing container\u00e2\u20ac\u2122s lock flags/value or a door pair\u00e2\u20ac\u2122s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+      "source_classification": "A successful make lock changes an existing container\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock flags/value or a door pair\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -9633,8 +9633,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          467,
-          12308
+          468,
+          12334
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9826,7 +9826,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1780
+          1800
         ],
         "file": "src/flatfile/flatfile_player_domain_repository.c",
         "function": "apply_currency_command",
@@ -9951,7 +9951,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6402
+          6406
         ],
         "file": "src/world/handler.c",
         "function": "add_coins",
@@ -10012,7 +10012,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6548
+          6552
         ],
         "file": "src/world/handler.c",
         "function": "create_money",
@@ -10073,7 +10073,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2762
+          2766
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -10519,7 +10519,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2135
+          2139
         ],
         "file": "src/world/handler.c",
         "function": "money_to_inventory",
@@ -10768,7 +10768,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4441
+          4445
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_release_money",
@@ -10829,7 +10829,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3819
+          3823
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -10876,7 +10876,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5118
+          5122
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_compaction",
@@ -11020,7 +11020,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4602
+          4606
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_destruction",
@@ -11265,7 +11265,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4457
+          4461
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_nested_release",
@@ -11390,7 +11390,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4072
+          4076
         ],
         "file": "src/world/handler.c",
         "function": "recover_corpse_raise_items",
@@ -11451,7 +11451,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4732
+          4736
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_raise",
@@ -11513,7 +11513,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3819
+          3823
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -11575,7 +11575,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4238
+          4242
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection_item",
@@ -11701,7 +11701,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3756
+          3760
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_transient_items",
@@ -13057,7 +13057,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4306
+          4310
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -13138,7 +13138,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4306
+          4310
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -16320,7 +16320,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2303
+          2380
         ],
         "file": "src/cmd/actobj.c",
         "function": "start_bulk_get",
@@ -16381,7 +16381,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3347
+          3424
         ],
         "file": "src/cmd/actobj.c",
         "function": "drop_transient_object",
@@ -16442,7 +16442,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5542
+          5546
         ],
         "file": "src/world/handler.c",
         "function": "extract_char",
@@ -16569,7 +16569,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          773
+          829
         ],
         "file": "src/cmd/actobj.c",
         "function": "defer_durable_put",
@@ -16631,7 +16631,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          422
+          456
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_container_get",
@@ -16992,8 +16992,8 @@
           1852
         ],
         "file": "src/world/handler.c",
-        "function": "obj_to_char",
-        "original_draft_symbol": "obj_to_char"
+        "function": "obj_to_char_checked",
+        "original_draft_symbol": "obj_to_char_checked"
       },
       "source_classification": "After a failed creation grant, only a never-owned creation candidate is freed; any object with an owner row is preserved.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
@@ -17258,8 +17258,8 @@
           1852
         ],
         "file": "src/world/handler.c",
-        "function": "obj_to_char",
-        "original_draft_symbol": "obj_to_char"
+        "function": "obj_to_char_checked",
+        "original_draft_symbol": "obj_to_char_checked"
       },
       "source_classification": "CRUMBLELOOT item is extracted on attempted player publication; a durable UID needs a destruction event.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
@@ -17562,7 +17562,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6410
+          6500
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drink",
@@ -17624,7 +17624,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10012
+          10113
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18247,7 +18247,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7713
+          7803
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18309,7 +18309,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7647
+          7737
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18557,7 +18557,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3361
+          3365
         ],
         "file": "src/world/handler.c",
         "function": "extract_obj",
@@ -18726,7 +18726,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6608
+          6698
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_eat",
@@ -19079,7 +19079,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3196
+          3200
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_at_end",
@@ -19140,7 +19140,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2027
+          2031
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_char",
@@ -19201,7 +19201,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3050
+          3054
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_obj",
@@ -19262,7 +19262,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3257
+          3261
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_obj",
@@ -19323,7 +19323,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2212
+          2216
         ],
         "file": "src/world/handler.c",
         "function": "equip_char",
@@ -19384,7 +19384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2762
+          2766
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -19445,7 +19445,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2910
+          2914
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_room",
@@ -19694,7 +19694,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3045
+          3122
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_junk",
@@ -19755,7 +19755,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4647
+          4724
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_dropalldot",
@@ -19816,7 +19816,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5193
+          5197
         ],
         "file": "src/world/handler.c",
         "function": "Decay",
@@ -19877,7 +19877,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4764
+          4841
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drop",
@@ -19938,7 +19938,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          838
+          1351
         ],
         "file": "src/cmd/actobj.c",
         "function": "get",
@@ -19999,7 +19999,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5929
+          6012
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_give",
@@ -20060,7 +20060,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5661
+          6007
         ],
         "file": "src/cmd/actobj.c",
         "function": "put",
@@ -20242,7 +20242,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9732
+          9833
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20419,7 +20419,7 @@
         "function": "modenhance",
         "original_draft_symbol": "modenhance"
       },
-      "source_classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00e2\u20ac\u2122s description.",
+      "source_classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s description.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -20803,8 +20803,8 @@
           1852
         ],
         "file": "src/world/handler.c",
-        "function": "obj_to_char",
-        "original_draft_symbol": "obj_to_char"
+        "function": "obj_to_char_checked",
+        "original_draft_symbol": "obj_to_char_checked"
       },
       "source_classification": "Generic object-to-character publication can admit a previously untracked UID.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
@@ -20922,7 +20922,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          678
+          729
         ],
         "file": "src/cmd/actobj.c",
         "function": "pet_give_completion",
@@ -20984,7 +20984,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5507
+          5511
         ],
         "file": "src/world/handler.c",
         "function": "hold_durable_pet_items",
@@ -21045,7 +21045,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9636
+          9737
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -23011,8 +23011,8 @@
           1852
         ],
         "file": "src/world/handler.c",
-        "function": "obj_to_char",
-        "original_draft_symbol": "obj_to_char"
+        "function": "obj_to_char_checked",
+        "original_draft_symbol": "obj_to_char_checked"
       },
       "source_classification": "Refused training-dummy placement redirects a NOWHERE object to the room from char, equip, container and append helpers.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
@@ -23069,7 +23069,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2341
+          2345
         ],
         "file": "src/world/handler.c",
         "function": "transfer_inventory",
@@ -23211,7 +23211,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6239
+          6329
         ],
         "file": "src/cmd/actobj.c",
         "function": "weight_change_object",
@@ -24544,7 +24544,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2008
+          2018
         ],
         "file": "src/core/files.c",
         "function": "delete_character_result",
@@ -24922,8 +24922,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          293,
-          5455
+          294,
+          5481
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24983,8 +24983,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          269,
-          1239
+          270,
+          1241
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -25045,8 +25045,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          721,
-          4756
+          722,
+          4840
         ],
         "file": "src/sql/sql.c",
         "function": "sql_pwipe",
@@ -25092,8 +25092,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          548,
-          2794
+          549,
+          2878
         ],
         "file": "src/sql/sql.c",
         "function": "sql_soft_delete_character",
@@ -26582,7 +26582,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          212
+          227
         ],
         "file": "src/magic/magic.c",
         "function": "spell_component_retirement_published",
@@ -26639,7 +26639,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          130
+          134
         ],
         "file": "src/magic/magic.c",
         "function": "get_spell_component",
@@ -27934,7 +27934,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2025
+          2034
         ],
         "file": "src/magic/spells.c",
         "function": "cast_vines",
@@ -27991,7 +27991,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2564
+          2573
         ],
         "file": "src/magic/spells.c",
         "function": "create_walls",
@@ -29155,7 +29155,7 @@
       },
       "id": "movement.drag_room_relink",
       "native_effects": {
-        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00e2\u20ac\u2122s new room with the same UID.",
+        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s new room with the same UID.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "old and new live room contents",
@@ -29174,7 +29174,7 @@
         "function": "do_drag",
         "original_draft_symbol": "do_drag"
       },
-      "source_classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00e2\u20ac\u2122s new room with the same UID.",
+      "source_classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s new room with the same UID.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -30350,7 +30350,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          598
+          609
         ],
         "file": "src/player/player_load_repository.c",
         "function": "load_bank",
@@ -30526,7 +30526,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4122
+          4132
         ],
         "file": "src/core/files.c",
         "function": "confiscate_all",
@@ -30573,13 +30573,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4026
+          4036
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
         "original_draft_symbol": "confiscate_item"
       },
-      "source_classification": "The second confiscation branch\u00e2\u20ac\u2122s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+      "source_classification": "The second confiscation branch\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -30631,7 +30631,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4026
+          4036
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
@@ -30691,7 +30691,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1602
+          1743
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -30752,7 +30752,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1691
+          1755
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30812,7 +30812,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1691
+          1755
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30872,7 +30872,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2198
+          2208
         ],
         "file": "src/core/files.c",
         "function": "restoreStatus",
@@ -30932,7 +30932,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          374
+          376
         ],
         "file": "src/player/player_load_materialize.c",
         "function": "player_load_materialize",
@@ -30979,7 +30979,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4556
+          4536
         ],
         "file": "src/account/nanny.c",
         "function": "init_char",
@@ -31026,7 +31026,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          825
+          826
         ],
         "file": "src/core/files.c",
         "function": "writeObjectlist",
@@ -31073,7 +31073,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1202
+          1203
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -31133,7 +31133,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1202
+          1203
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -31193,8 +31193,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          463,
-          12173
+          464,
+          12199
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31254,8 +31254,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          234,
-          4051
+          235,
+          4069
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -31316,7 +31316,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1691
+          1755
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -31375,7 +31375,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1606
+          1679
         ],
         "file": "src/world/quest.c",
         "function": "quester",
@@ -31494,7 +31494,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          838
+          882
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -31554,7 +31554,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          838
+          882
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -31632,7 +31632,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1368
+          1451
         ],
         "file": "src/world/quest.c",
         "function": "submit_durable_quest_offering",
@@ -31752,7 +31752,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          346
+          390
         ],
         "file": "src/world/quest.c",
         "function": "give_reward",
@@ -31810,7 +31810,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1506
+          1579
         ],
         "file": "src/world/quest.c",
         "function": "tell_quest",
@@ -32172,7 +32172,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2041
+          2044
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -32234,7 +32234,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1318
+          1321
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",
@@ -32736,7 +32736,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3265
+          3275
         ],
         "file": "src/core/files.c",
         "function": "restoreObjects",
@@ -32797,7 +32797,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4629
+          4639
         ],
         "file": "src/core/files.c",
         "function": "restorePetStatus",
@@ -32844,13 +32844,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4417
+          4427
         ],
         "file": "src/core/files.c",
         "function": "writePet",
         "original_draft_symbol": "writePet"
       },
-      "source_classification": "Pet save\u00e2\u20ac\u2122s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+      "source_classification": "Pet save\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -32970,7 +32970,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4417
+          4427
         ],
         "file": "src/core/files.c",
         "function": "writePet",
@@ -33218,7 +33218,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4844
+          4854
         ],
         "file": "src/core/files.c",
         "function": "restoreSavedItems",
@@ -33281,8 +33281,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          416,
-          10972
+          417,
+          10998
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33343,8 +33343,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          412,
-          9442
+          413,
+          9468
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33405,8 +33405,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          408,
-          9388
+          409,
+          9414
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33469,7 +33469,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3714
+          3724
         ],
         "file": "src/core/files.c",
         "function": "read_one_object",
@@ -33532,8 +33532,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          381,
-          8302
+          382,
+          8328
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33580,8 +33580,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          381,
-          8302
+          382,
+          8328
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33628,7 +33628,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          910
+          911
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33691,7 +33691,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6292
+          6318
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -33754,8 +33754,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          252,
-          4503
+          253,
+          4523
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -33818,8 +33818,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          551,
-          7153
+          552,
+          7179
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -33882,8 +33882,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          416,
-          10972
+          417,
+          10998
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33930,8 +33930,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          416,
-          10972
+          417,
+          10998
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33994,7 +33994,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9530
+          9556
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34056,7 +34056,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9530
+          9556
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34103,7 +34103,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9482
+          9508
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -34150,7 +34150,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7302
+          7328
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -36446,8 +36446,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          441,
-          11750
+          442,
+          11776
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36506,8 +36506,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          433,
-          11632
+          434,
+          11658
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36567,8 +36567,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          429,
-          11378
+          430,
+          11404
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -38750,7 +38750,7 @@
       },
       "id": "special.disarm_pick_gloves_slot_relink",
       "native_effects": {
-        "custody_effect": "The gloves proc unequips the struck character\u00e2\u20ac\u2122s weapon into the same character\u00e2\u20ac\u2122s carrying list.",
+        "custody_effect": "The gloves proc unequips the struck character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "victim equipment slot",
@@ -38770,7 +38770,7 @@
         "function": "disarm_pick_gloves",
         "original_draft_symbol": "disarm_pick_gloves"
       },
-      "source_classification": "The gloves proc unequips the struck character\u00e2\u20ac\u2122s weapon into the same character\u00e2\u20ac\u2122s carrying list.",
+      "source_classification": "The gloves proc unequips the struck character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -40128,7 +40128,7 @@
       },
       "id": "special.io_assistant_rose_grant",
       "native_effects": {
-        "custody_effect": "Io\u00e2\u20ac\u2122s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "custody_effect": "Io\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "fresh rose UID",
@@ -40147,7 +40147,7 @@
         "function": "io_assistant",
         "original_draft_symbol": "io_assistant"
       },
-      "source_classification": "Io\u00e2\u20ac\u2122s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "source_classification": "Io\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -42621,7 +42621,7 @@
       },
       "id": "special.treasure_chest_potion_grant",
       "native_effects": {
-        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00e2\u20ac\u2122s inventory.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s inventory.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "chest UID",
@@ -42640,7 +42640,7 @@
         "function": "treasure_chest",
         "original_draft_symbol": "treasure_chest"
       },
-      "source_classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00e2\u20ac\u2122s inventory.",
+      "source_classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s inventory.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -44803,7 +44803,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          655
+          696
         ],
         "file": "src/classes/ethermancer.c",
         "function": "grant_wind_blade",
@@ -45038,7 +45038,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2460
+          2537
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_get",
@@ -50649,6 +50649,51 @@
         "original_draft_symbol": "world_quest_refund_payment"
       },
       "source_classification": "World-quest refund credits player wallet after a prior payment; source is the original paid root.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item.",
+      "id": "macro.checked_item_publication_declaration",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "The declaration names the checked placement helper; the implementation and every call are inventoried separately.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "field_name_not_function",
+        "definition_lines": [],
+        "file": "src/world/handler.h",
+        "function": null,
+        "original_draft_symbol": "obj_to_char_checked"
+      },
+      "source_classification": "Checked object-to-character placement declaration only; the implementation and callers are separate reviewed routes.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

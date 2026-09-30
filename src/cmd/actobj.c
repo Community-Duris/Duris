@@ -888,6 +888,8 @@ bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 }
 }
 
+namespace
+{
 /** Pick up one object, publishing durable item movement only after its commit. */
 static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
 				  get_phase phase)
@@ -1344,6 +1346,7 @@ publish_after_ack:
 	room_light(ch->in_room, REAL);
 	return outcome;
 }
+} // namespace
 
 void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {
@@ -5729,6 +5732,8 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 #undef PUT_ALLDOT
 #undef PUT_ITEM
 
+namespace
+{
 static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
 			   put_phase phase)
 {
@@ -5997,6 +6002,7 @@ static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
 	room_light(ch->in_room, REAL);
 	return (FALSE);
 }
+} // namespace
 
 bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {

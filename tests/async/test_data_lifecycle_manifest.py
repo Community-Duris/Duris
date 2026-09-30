@@ -40,6 +40,10 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0033_economic_sql_lifecycle_owner.sql",
     ROOT / "migrations" / "immutable" / "0034_player_death_conflict_evidence.sql",
     ROOT / "migrations" / "immutable" / "0036_economic_sql_activation_receipt.sql",
+    ROOT / "migrations" / "immutable" / "0045_quest_reward_obligation.sql",
+    ROOT / "migrations" / "immutable" / "0047_quest_xp_receipt.sql",
+    ROOT / "migrations" / "immutable" / "0048_quest_xp_entitlement.sql",
+    ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -101,10 +105,32 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 220)
-        self.assertEqual(report["non_database_stores"], 34)
+        self.assertEqual(report["database_tables"], 223)
+        self.assertEqual(report["non_database_stores"], 37)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
+
+    def test_spell_receipts_are_protected_recovery_evidence(self) -> None:
+        entry = self.entry("file:player-spell-receipts")
+        self.assertEqual(entry["locator"], "FLATFILE_ROOT/players/*.spell")
+        self.assertTrue(entry["protected_record"])
+        self.assertEqual(entry["season_action"], "retain")
+        self.assertEqual(entry["terminal_action"], "retain")
+        self.assertEqual(entry["kind"], "recovery_state")
+
+    def test_journal_archive_and_fences_are_protected_recovery_evidence(self) -> None:
+        for name in ("file:player_save_quarantine_archive", "file:player_save_quarantine_policy"):
+            entry = self.entry(name)
+            self.assertTrue(entry["protected_record"])
+            self.assertEqual(entry["season_action"], "retain")
+            self.assertEqual(entry["terminal_action"], "retain")
+            missing = json.loads(json.dumps(self.manifest))
+            missing["entries"] = [item for item in missing["entries"] if item["id"] != name]
+            with tempfile.TemporaryDirectory() as temporary:
+                self.assert_rejected(
+                    self.run_validator(self.write_manifest(Path(temporary), missing)),
+                    "missing",
+                )
 
     def test_death_conflict_evidence_is_protected_and_not_player_cascaded(self) -> None:
         entry = self.entry("database:player_death_conflict_evidence")

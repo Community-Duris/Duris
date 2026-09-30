@@ -97,6 +97,7 @@ static bool sql_trace_enabled(void);
 static bool sql_trace_active(void);
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
 static bool sql_verify_metadata_fingerprint(void);
+static bool sql_verify_migration_history(void);
 #endif
 
 static int flat_sql_shop_sell(P_char ch, P_obj obj, int value)
@@ -1651,9 +1652,11 @@ static bool sql_verify_boot_database(void)
 		"LOWER(HEX(schema_fingerprint))='%s' AND manifest_version=%u AND runner_version=1),"
 		"(SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='%s' AND "
 		"sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' AND "
-		"LOWER(HEX(verify_checksum))='%s' AND runner_version=1),"
+		"LOWER(HEX(verify_checksum))='%s' AND runner_version=1 OR "
+		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
+		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1),"
 		"(SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND "
-		"applied_count=%u AND LOWER(HEX(history_checksum))='%s'),"
+		"applied_count=%u AND LOWER(HEX(history_checksum)) IN ('%s','%s')),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
 		"AND table_type='BASE TABLE' AND table_name IN (%s)),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
@@ -1662,8 +1665,12 @@ static bool sql_verify_boot_database(void)
 		RUNTIME_BASELINE_ID, RUNTIME_BASELINE_FINGERPRINT,
 		RUNTIME_COMPATIBILITY_MANIFEST_VERSION, RUNTIME_MIGRATION_HEAD_ID,
 		RUNTIME_MIGRATION_HEAD_SEQUENCE, RUNTIME_MIGRATION_APPLY_CHECKSUM,
-		RUNTIME_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
-		RUNTIME_MIGRATION_HISTORY_CHECKSUM, RUNTIME_TABLE_SQL_LIST, RUNTIME_TABLE_SQL_LIST);
+		RUNTIME_MIGRATION_VERIFY_CHECKSUM, RUNTIME_STAGING_0045_MIGRATION_HEAD_ID,
+		RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE,
+		RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM,
+		RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
+		RUNTIME_MIGRATION_HISTORY_CHECKSUM, RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM,
+		RUNTIME_TABLE_SQL_LIST, RUNTIME_TABLE_SQL_LIST);
 	if (!result)
 	{
 		logit(LOG_STATUS, "FATAL: COMPAT-E001 compatibility metadata query failed");
@@ -1681,6 +1688,21 @@ static bool sql_verify_boot_database(void)
 		logit(LOG_STATUS,
 		      "FATAL: COMPAT-E002 migration, table, engine, or collation identity mismatch expected_baseline=%s expected_head=%s expected_tables=%u",
 		      RUNTIME_BASELINE_ID, RUNTIME_MIGRATION_HEAD_ID, RUNTIME_CURRENT_TABLE_COUNT);
+		return false;
+	}
+	if (!sql_verify_migration_history())
+	{
+		logit(LOG_STATUS, "FATAL: COMPAT-E008 full migration history or state mismatch");
+		return false;
+	}
+	result = db_query("%s", RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL);
+	row = result ? mysql_fetch_row(result) : NULL;
+	bool description_ok = row && row[0] && !strcmp(row[0], "2");
+	if (result)
+		mysql_free_result(result);
+	if (!description_ok)
+	{
+		logit(LOG_STATUS, "FATAL: COMPAT-E009 item-description digest expression mismatch");
 		return false;
 	}
 	if (!sql_verify_metadata_fingerprint())
@@ -2159,6 +2181,68 @@ static bool sql_verify_boot_database(void)
 		return false;
 	}
 	return true;
+}
+
+/* Match all seven immutable fields, including every historical row. The
+ * stored state digest alone cannot prove that older receipts remain intact. */
+static bool sql_verify_migration_history(void)
+{
+	MYSQL_RES *result = db_query("%s", RUNTIME_MIGRATION_HISTORY_SQL);
+	if (!result)
+		return false;
+	if (mysql_num_rows(result) != RUNTIME_MIGRATION_HEAD_SEQUENCE)
+	{
+		mysql_free_result(result);
+		return false;
+	}
+	std::string canonical;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)) != NULL)
+	{
+		unsigned long *lengths = mysql_fetch_lengths(result);
+		if (!row[0] || !lengths || !lengths[0] || lengths[0] % 2 ||
+		    lengths[0] / 2 > RUNTIME_METADATA_MAX_BYTES - canonical.size())
+		{
+			mysql_free_result(result);
+			return false;
+		}
+		for (size_t i = 0; i < lengths[0]; i += 2)
+		{
+			unsigned byte = 0;
+			for (size_t j = 0; j < 2; ++j)
+			{
+				const char digit = row[0][i + j];
+				if (!((digit >= '0' && digit <= '9') ||
+				      (digit >= 'A' && digit <= 'F')))
+				{
+					mysql_free_result(result);
+					return false;
+				}
+				byte = byte * 16 + (digit <= '9' ? digit - '0' : digit - 'A' + 10);
+			}
+			canonical += static_cast<char>(byte);
+		}
+	}
+	mysql_free_result(result);
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	if (!SHA256(reinterpret_cast<const unsigned char *>(canonical.data()), canonical.size(),
+		    digest))
+		return false;
+	char encoded[SHA256_DIGEST_LENGTH * 2 + 1];
+	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
+	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
+	if (strcmp(encoded, RUNTIME_MIGRATION_HISTORY_CHECKSUM) &&
+	    strcmp(encoded, RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM))
+		return false;
+	result = db_query("SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 "
+			  "AND applied_count=%u AND LOWER(HEX(history_checksum))='%s'",
+			  RUNTIME_MIGRATION_HEAD_SEQUENCE, encoded);
+	row = result ? mysql_fetch_row(result) : NULL;
+	bool valid = row && row[0] && !strcmp(row[0], "1");
+	if (result)
+		mysql_free_result(result);
+	return valid;
 }
 
 static bool sql_verify_metadata_fingerprint(void)

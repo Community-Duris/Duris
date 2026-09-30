@@ -41,6 +41,7 @@
 #include "persistence/critical_outbox.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_materialize.h"
+#include "player/player_save_journal.h"
 #include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
 #include "persistence/persistence_observability.h"
@@ -1275,6 +1276,8 @@ static P_char copyover_load_player(const char *name, P_desc d)
 		return NULL;
 	}
 #endif
+	if (result.pid > 0 && player_save_journal_pid_quarantined(result.pid))
+		return NULL;
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
 		return NULL;

@@ -16,7 +16,7 @@ def main() -> None:
     count = extract_function("ethermancer.c", "static size_t faerie_sight_dust_count(")
     apply = extract_function("ethermancer.c", "static void apply_faerie_sight(")
     completed = extract_function(
-        "ethermancer.c", "spell_component_effect_status spell_faerie_sight_component_completed("
+        "ethermancer.c", "spell_component_effect_status\nspell_faerie_sight_component_completed("
     )
     cast = extract_function("ethermancer.c", "void spell_faerie_sight(")
     program = r'''
@@ -34,6 +34,7 @@ constexpr uint32_t AFF2_DETECT_EVIL = 4;
 constexpr uint32_t AFF_FARSEE = 8;
 constexpr uint32_t AFF_DETECT_INVISIBLE = 16;
 constexpr int LOG_EXIT = 1;
+constexpr unsigned CHAR_RFLAG_LOAD_DEGRADED = 1;
 #define TRUE 1
 #define FALSE 0
 struct character;
@@ -56,6 +57,7 @@ struct character {
     bool npc = false;
     bool alive = true;
     uint32_t affected2 = 0;
+    unsigned runtime_flags = 0;
     object *carrying = nullptr;
     affected_type *affected = nullptr;
     character *next = nullptr;
@@ -82,6 +84,8 @@ int added_affects = 0, messages = 0;
 bool accept_submission = true;
 size_t requested_count = 0;
 bool requested_exact = false;
+bool effect_applied = false, save_acknowledged = false;
+int saved_pid = 0;
 item_movement_completion_fn pending = nullptr;
 std::array<uint8_t, 48> pending_context = {};
 size_t pending_context_size = 0;
@@ -123,6 +127,23 @@ void extract_obj(P_obj item) {
     remove_dust(character_list);
     ++direct_removed;
 }
+bool spell_component_retirement_bind_effect_owner(const critical_operation_id &,
+    uint32_t actor_pid, uint32_t owner_pid, item_spell_component_effect) {
+    return actor_pid == 42 && (owner_pid == 42 || owner_pid == 99);
+}
+bool spell_component_retirement_effect_applied(const critical_operation_id &) {
+    return effect_applied;
+}
+bool spell_component_retirement_effect_applied_once(const critical_operation_id &) {
+    effect_applied = true;
+    return true;
+}
+spell_component_effect_status spell_component_retirement_save_effect(
+    const critical_operation_id &, P_char owner, item_spell_component_effect) {
+    saved_pid = owner->pid;
+    return save_acknowledged ? spell_component_effect_status::complete :
+        spell_component_effect_status::waiting_for_owner;
+}
 bool spell_consume_components(P_char, int vnum, size_t count, uint32_t reason,
                               item_spell_component_effect effect,
                               item_movement_completion_fn continuation,
@@ -152,9 +173,20 @@ void complete(P_char actor, bool committed) {
         }
     item_transfer_result result {1, static_cast<uint16_t>(requested_count)};
     critical_operation_id operation_id{};
-    assert(continuation(operation_id, actor, committed, result, 0,
-                        pending_context.data(), pending_context_size) ==
-           spell_component_effect_status::complete);
+    auto status = continuation(operation_id, actor, committed, result, 0,
+                               pending_context.data(), pending_context_size);
+    if (committed) {
+        assert(status == spell_component_effect_status::waiting_for_owner);
+        const int effects_before_retry = added_affects;
+        assert(continuation(operation_id, actor, true, result, 0,
+                            pending_context.data(), pending_context_size) ==
+               spell_component_effect_status::waiting_for_owner);
+        assert(added_affects == effects_before_retry);
+        save_acknowledged = true;
+        assert(continuation(operation_id, actor, true, result, 0,
+                            pending_context.data(), pending_context_size) ==
+               spell_component_effect_status::complete);
+    } else assert(status == spell_component_effect_status::complete);
 }
 void reset(P_char actor) {
     actor->carrying = nullptr;
@@ -165,6 +197,8 @@ void reset(P_char actor) {
     requested_exact = false;
     pending = nullptr;
     accept_submission = true;
+    effect_applied = save_acknowledged = false;
+    saved_pid = 0;
 }
 int main() {
     character actor;
@@ -181,9 +215,11 @@ int main() {
     actor.carrying = &dust1;
     spell_faerie_sight(40, &actor, argument, 0, &actor, nullptr);
     assert(submitted == 1 && requested_count == 1 && requested_exact);
+    assert(pending_context_size == 22);
     assert(added_affects == 0 && direct_removed == 0);
     complete(&actor, true);
     assert(durable_removed == 1 && direct_removed == 0 && added_affects == 2);
+    assert(saved_pid == 42);
     assert(IS_AFFECTED2(&actor, AFF2_DETECT_MAGIC));
 
     reset(&actor);
@@ -255,6 +291,7 @@ int main() {
     target.in_room = 2;
     complete(&actor, true);
     assert(durable_removed == 1 && added_affects == 0 && direct_removed == 0);
+    assert(saved_pid == 99);
 
     active_epoch = false;
     reset(&actor);

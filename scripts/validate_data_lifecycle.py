@@ -91,12 +91,19 @@ REQUIRED_NON_DATABASE_STORES = {
     "file:player_save_quarantine": (
         "quarantine", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine",
     ),
+    "file:player_save_quarantine_archive": (
+        "quarantine", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine.archive",
+    ),
+    "file:player_save_quarantine_policy": (
+        "recovery_state", "PLAYER_SAVE_JOURNAL_DIR/player-save.quarantine-pids",
+    ),
     "file:critical_command_journal": ("journal", "CRITICAL_COMMAND_JOURNAL_DIR"),
     "file:persistence_fallback": ("fallback", "legacy persistence fallback file"),
     "file:persistence_fallback_quarantine": (
         "quarantine", "legacy persistence fallback quarantine",
     ),
     "file:player-deaths": ("recovery_state", "FLATFILE_ROOT/player-deaths/*.death"),
+    "file:player-spell-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.spell"),
     "file:zone-story-quests": (
         "recovery_state", "FLATFILE_ROOT/domains/zone-story-quests.state",
     ),

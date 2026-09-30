@@ -175,6 +175,94 @@ int main(int argc, char **argv)
 		"evidence encoding is not replay-stable");
 
 	// A downgrade must reject rather than silently discard retained payloads.
+	for (bool evidence : { false, true })
+	{
+		auto with_receipt = evidence ? snapshot : legacy;
+		with_receipt.schema_version =
+			evidence ? PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION :
+				   PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+		player_spell_effect_receipt_snapshot receipt = {};
+		receipt.operation_id.bytes[0] = 77;
+		receipt.effect_id = 6;
+		with_receipt.spell_effect_receipts.push_back(receipt);
+		std::vector<uint8_t> extended;
+		require(player_snapshot_encode(with_receipt, &extended) ==
+				player_snapshot_codec_result::ok,
+			"death spell receipt encode failed");
+		player_snapshot readback;
+		require(player_snapshot_decode(extended.data(), extended.size(), &readback) ==
+					player_snapshot_codec_result::ok &&
+				readback.spell_effect_receipts.size() == 1 &&
+				readback.spell_effect_receipts[0].operation_id.bytes ==
+					receipt.operation_id.bytes &&
+				readback.spell_effect_receipts[0].effect_id == 6 &&
+				readback.death->conflict_evidence.has_value() == evidence,
+			"death or evidence lost its exact spell receipt");
+		require(player_snapshot_encode(readback, &replay) ==
+					player_snapshot_codec_result::ok &&
+				replay == extended,
+			"death spell receipt replay bytes changed");
+		auto downgrade = with_receipt;
+		downgrade.schema_version = evidence ?
+						   PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION :
+						   PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+		rejected_encode(downgrade);
+		downgrade = with_receipt;
+		downgrade.spell_effect_receipts.clear();
+		rejected_encode(downgrade);
+		for (size_t size = 0; size < extended.size(); ++size)
+			rejected_decode(extended, size);
+	}
+	for (bool evidence : { false, true })
+		for (bool spell : { false, true })
+		{
+			auto with_xp = evidence ? snapshot : legacy;
+			with_xp.schema_version =
+				evidence ? PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION :
+					   PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+			player_quest_xp_receipt_snapshot xp = {};
+			xp.offering_operation.bytes[0] = 88;
+			xp.reward_index = 0;
+			xp.amount = 75;
+			with_xp.quest_xp_receipts.push_back(xp);
+			if (spell)
+			{
+				player_spell_effect_receipt_snapshot receipt = {};
+				receipt.operation_id.bytes[0] = 77;
+				receipt.effect_id = 6;
+				with_xp.spell_effect_receipts.push_back(receipt);
+			}
+			std::vector<uint8_t> extended;
+			require(player_snapshot_encode(with_xp, &extended) ==
+					player_snapshot_codec_result::ok,
+				"death XP receipt encode failed");
+			player_snapshot readback;
+			require(player_snapshot_decode(extended.data(), extended.size(),
+						       &readback) ==
+						player_snapshot_codec_result::ok &&
+					readback.quest_xp_receipts.size() == 1 &&
+					readback.quest_xp_receipts[0].offering_operation.bytes ==
+						xp.offering_operation.bytes &&
+					readback.quest_xp_receipts[0].amount == 75 &&
+					readback.spell_effect_receipts.size() ==
+						(spell ? 1U : 0U) &&
+					readback.death->conflict_evidence.has_value() == evidence,
+				"death XP or optional spell receipt was lost");
+			require(player_snapshot_encode(readback, &replay) ==
+						player_snapshot_codec_result::ok &&
+					replay == extended,
+				"death XP receipt replay bytes changed");
+			auto downgrade = with_xp;
+			downgrade.schema_version =
+				evidence ? PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION :
+					   PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+			rejected_encode(downgrade);
+			downgrade = with_xp;
+			downgrade.quest_xp_receipts.clear();
+			rejected_encode(downgrade);
+			for (size_t size = 0; size < extended.size(); ++size)
+				rejected_decode(extended, size);
+		}
 	auto invalid = snapshot;
 	invalid.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 	rejected_encode(invalid);

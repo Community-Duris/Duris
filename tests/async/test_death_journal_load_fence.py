@@ -43,6 +43,7 @@ HARNESS = r'''
 #include "player/player_snapshot_codec.h"
 #include "world/db.h"
 #include "world/vnum.obj.h"
+#include "world/quest_reward_recovery.h"
 
 #include <cassert>
 #include <cstdarg>
@@ -57,6 +58,10 @@ int reset_count = 0;
 int item_materialize_count = 0;
 int pet_stage_count = 0;
 P_room world = nullptr;
+bool item_movement_transaction_pending_spell_effects(uint32_t, std::vector<critical_operation_id> *) { return true; }
+void spell_component_retirement_recover_receipts(uint32_t, const player_load_spell_effect_receipt *, size_t) {}
+void quest_reward_recover_pending(P_char, const critical_operation_id &, const quest_reward_continuation &, uint64_t, uint64_t, bool) {}
+void quest_reward_recover_xp_entitlement(P_char, const critical_operation_id &, const quest_reward_continuation &, uint32_t, uint32_t) {}
 
 bool player_save_pipeline_loads_allowed(void)
 {
@@ -175,7 +180,11 @@ player_snapshot terminal_death_snapshot()
 {
     player_snapshot death = ordinary_snapshot(80, 4);
     player_item_snapshot bag = death.items[0];
-    death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+    death.schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+    player_quest_xp_receipt_snapshot xp = {};
+    xp.offering_operation.bytes[0] = 88;
+    xp.amount = 75;
+    death.quest_xp_receipts.push_back(xp);
     death.items.clear();
     death.pets.clear();
     death.status_integers.push_back({player_status_field::deaths, 7, 0, false});
@@ -235,6 +244,10 @@ player_save_apply_result apply_snapshot(const player_snapshot &snapshot, void *r
     auto &state = *static_cast<apply_state *>(raw);
     ++state.calls;
     assert(snapshot.pid == 80 || snapshot.pid == 81);
+    if (snapshot.death) {
+        assert(snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION);
+        assert(snapshot.quest_xp_receipts.size() == 1 && snapshot.quest_xp_receipts[0].amount == 75);
+    }
     if (state.reject)
         return {player_save_apply_outcome::retryable_failure, snapshot.revision - 1, 1205};
     return {player_save_apply_outcome::applied, snapshot.revision, 0};
