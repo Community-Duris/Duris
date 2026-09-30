@@ -47,7 +47,7 @@ deferred_compaction = body(HANDLER, "bool persistence_defer_corpse_compaction(",
                            "bool persistence_defer_corpse_destruction(")
 durable_lifecycle = body(HANDLER, "bool durable_corpse_lifecycle_enabled()",
                          "} // namespace")
-get_item = body(ACTOBJ, "static void get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,",
+get_item = body(ACTOBJ, "static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,",
                 "void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)")
 put_item = body(ACTOBJ, "static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,",
                 "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)")

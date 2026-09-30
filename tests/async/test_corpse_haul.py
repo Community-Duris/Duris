@@ -97,6 +97,8 @@ static std::string output;
 static int submissions=0, alerts=0, coin_attempts=0;
 static bool admitted=true, owned=true, fail_delivery=false, pile_ok=true;
 enum class get_phase { admission, publication };
+enum class get_outcome { rejected, deferred, placed, consumed, destroyed };
+enum class obj_to_char_result { rejected, deferred, placed, destroyed };
 static bool item_get_deferred=false, item_get_rejected=false;
 static P_obj find_live_item_uid(uint64_t uid) { auto i=objects.find(uid); return i==objects.end()?nullptr:i->second; }
 static void send_to_char(const char *s,P_char) { output+=s; }
@@ -104,10 +106,12 @@ static void act(const char *s,int,P_char ch,P_obj,void *,int target) {
  if(target==TO_ROOM) rooms[ch->in_room]+=s; else output+=s;
 }
 static void obj_from_obj(P_obj o) { o->location=0; }
-static void obj_to_char(P_obj o,P_char ch) {
- if(fail_delivery) { objects.erase(o->obj_uid); return; }
+static obj_to_char_result obj_to_char_checked(P_obj o,P_char ch) {
+ if(fail_delivery) { objects.erase(o->obj_uid); return obj_to_char_result::destroyed; }
  o->location=3; o->carrier=ch;
+ return obj_to_char_result::placed;
 }
+static void obj_to_char(P_obj o,P_char ch) { (void)obj_to_char_checked(o,ch); }
 static bool item_owner_identity_equal(item_owner_identity a,item_owner_identity b) { return a.type==b.type && a.id==b.id; }
 static bool item_owner_identity_valid(item_owner_identity a) { return a.id != 0; }
 static bool item_ownership_runtime_lookup(uint64_t,item_ownership_runtime_entry *r) { r->owner={}; return owned; }
@@ -355,7 +359,9 @@ parts = [prelude, take('struct synchronous_get_item')+';', take('struct bulk_get
          take('struct bulk_movement_context')+';',
          'static std::unordered_map<uint32_t,bulk_get_state> bulk_gets;',
          take('static bulk_get_state *corpse_bulk_get('),
-         take('static void announce_corpse_bulk_get('), take('static void publish_container_get('), finalizers]
+         take('static void announce_corpse_bulk_get('),
+         take('static get_outcome get_placement_outcome('),
+         take('static get_outcome publish_container_get('), finalizers]
 for name in ['static bool bulk_get_source_matches(', 'static bool bulk_get_source_for_roots(',
              'static bool bulk_get_source_available(',
              'static bool bulk_get_corpse_source_available(',
