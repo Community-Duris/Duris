@@ -4,6 +4,7 @@ from pathlib import Path
 import runpy
 import subprocess
 import tempfile
+from _paths import extract_function
 
 # Reuse the production helper harness and its identity/ACK negative cases. It
 # runs first; the second executable adds the public APIs whose old coverage was
@@ -15,6 +16,7 @@ section = base['section']
 HARNESS = base['HARNESS'].replace('int main()', 'int retained_helper_checks()', 1)
 HARNESS += r'''
 #include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "core/defines.h"
 #include <chrono>
 #include <thread>
@@ -34,10 +36,26 @@ uint64_t persistence_observability_now_usec() { return 0; }
 void logit(int, const char *, ...) {}
 bool database_ready = false;
 bool journal_ready = false;
+bool player_save_journal_pid_quarantined(int) { return false; }
 bool capture_component_mismatch = false;
+std::vector<player_quest_xp_receipt_snapshot> pending_xp;
+bool merge_spell_effect_receipts(player_snapshot *, const player_snapshot &) { return true; }
 size_t capture_bytes = 256;
 player_snapshot_capture_result capture_result = player_snapshot_capture_result::ok;
 player_save_terminal_result await_terminal_fence(int, player_revision_t, uint64_t, bool);
+'''
+HARNESS += extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n"
+HARNESS += r'''
+} // namespace
+bool quest_reward_recovery_pending_save_receipts(int,
+    std::vector<player_quest_xp_receipt_snapshot> *receipts, player_component_mask_t *components) {
+    *receipts = pending_xp;
+    *components = pending_xp.empty() ? 0 : PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES;
+    return true;
+}
+bool spell_component_retirement_pending_save_receipts(uint32_t, std::vector<player_spell_effect_receipt_snapshot> *) { return true; }
+player_snapshot_codec_result player_snapshot_encode(const player_snapshot &, std::vector<uint8_t> *) { return player_snapshot_codec_result::ok; }
+namespace {
 '''
 HARNESS += section(PIPELINE, 'terminal_fence *allocate_terminal_fence_locked(int pid)',
                    '/** Find a recipient-only save/login fence;')
@@ -149,12 +167,22 @@ int main()
     assert(saved(&player, &corpse) == player_save_terminal_result::unavailable);
     assert(find_terminal_fence_locked(player.pid) == nullptr);
     player.runtime_flags |= CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP;
+    player_quest_xp_receipt_snapshot xp = {};
+    xp.offering_operation.bytes[0] = 88;
+    xp.amount = 75;
+    pending_xp.push_back(xp);
     assert(saved(&player, &corpse) == player_save_terminal_result::timed_out);
     const int captures = capture_count;
     terminal_fence *pinned = find_terminal_fence_locked(player.pid);
     assert(pinned && pinned->death_pinned);
     const player_revision_t revision = pinned->revision;
-    assert(pending_append.size() == 1 && retained_bytes == capture_bytes * 2);
+    const auto pinned_bytes = (capture_bytes + 32) * 2;
+    assert(pending_append.size() == 1 && retained_bytes == pinned_bytes);
+    assert(pinned->death_snapshot->schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION);
+    assert(pinned->death_snapshot->quest_xp_receipts.size() == 1 &&
+           pinned->death_snapshot->quest_xp_receipts[0].amount == 75);
+    // Later recovery state changes must not recapture or alter this request.
+    pending_xp[0].amount = 76;
     assert(player_save_pipeline_terminal_death_resume(&player, corpse.obj_uid + 1, 1) ==
            player_save_terminal_result::unavailable);
 
@@ -166,6 +194,8 @@ int main()
     assert(player_save_pipeline_terminal_death_resume(&player, corpse.obj_uid, 1) ==
            player_save_terminal_result::timed_out);
     assert(capture_count == captures && pinned->revision == revision);
+    assert(pinned->death_snapshot->quest_xp_receipts[0].amount == 75 &&
+           pending_append.front().quest_xp_receipts[0].amount == 75);
 
     database_ready = true;
     assert(player_save_pipeline_terminal_death_resume(&player, corpse.obj_uid, 20) ==

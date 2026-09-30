@@ -15,6 +15,8 @@ struct quest_reward_obligation_record
 	std::vector<uint8_t> continuation;
 	quest_reward_continuation terms;
 	uint64_t xp_applied_mask = 0;
+	// Verified native item/cash receipts, indexed by the frozen reward slot.
+	uint64_t economic_applied_mask = 0;
 };
 
 struct quest_reward_xp_entitlement_record

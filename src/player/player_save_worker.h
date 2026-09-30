@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 constexpr size_t PLAYER_SAVE_WORKER_MAX_PIDS = 256;
 constexpr size_t PLAYER_SAVE_WORKER_MAX_RESULTS = 256;
@@ -33,6 +34,8 @@ enum class player_save_custody_diagnosis : uint8_t
 	invalid_custody_topology = 10,
 	invalid_death_payload = 11,
 	saved_item_absent_from_death_payload = 12,
+	orphaned_saved_item = 13,
+	orphaned_saved_pet_item = 14,
 };
 
 inline const char *player_save_custody_diagnosis_name(
@@ -64,6 +67,10 @@ inline const char *player_save_custody_diagnosis_name(
 		return "invalid_death_payload";
 	case player_save_custody_diagnosis::saved_item_absent_from_death_payload:
 		return "saved_item_absent_from_death_payload";
+	case player_save_custody_diagnosis::orphaned_saved_item:
+		return "orphaned_saved_item";
+	case player_save_custody_diagnosis::orphaned_saved_pet_item:
+		return "orphaned_saved_pet_item";
 	case player_save_custody_diagnosis::none:
 	default:
 		return "none";
@@ -87,14 +94,19 @@ struct player_save_apply_result
 	unsigned int error_code;
 	player_save_custody_diagnosis custody_diagnosis =
 		player_save_custody_diagnosis::none;
+	// Replay may retire an obsolete non-death frame only after the repository
+	// verifies every attached operation receipt. This does not ACK a live save.
+	bool operation_receipts_verified = false;
 };
 
-// A death needs its own exact successful receipt. Leave ordinary snapshots to
-// each caller's existing policy; a newer counter alone cannot retire a death.
-inline bool player_save_result_matches_death_request(const player_snapshot &snapshot,
+// A newer revision alone cannot prove that death disposition or an attached
+// operation receipt committed. Only the exact successful save can ACK live state.
+inline bool player_save_result_matches_exact_request(const player_snapshot &snapshot,
 						     const player_save_apply_result &result)
 {
-	return !snapshot.death || ((result.outcome == player_save_apply_outcome::applied ||
+	const bool exact_required = snapshot.death || !snapshot.quest_xp_receipts.empty() ||
+				    !snapshot.spell_effect_receipts.empty();
+	return !exact_required || ((result.outcome == player_save_apply_outcome::applied ||
 				    result.outcome == player_save_apply_outcome::already_applied) &&
 				   result.durable_revision == snapshot.revision);
 }
@@ -113,6 +125,12 @@ struct player_save_completion
 	uint64_t queued_at_usec;
 	uint64_t started_at_usec;
 	uint64_t completed_at_usec;
+	// Populated only after the exact snapshot succeeds and its revision is
+	// acknowledged. Owners can match operation IDs without inferring from a counter.
+	std::vector<player_quest_xp_receipt_snapshot> quest_xp_receipts;
+	std::vector<player_spell_effect_receipt_snapshot> spell_effect_receipts;
+	// A final failed attempt releases the owner's retry gate without granting an ACK.
+	std::vector<player_spell_effect_receipt_snapshot> failed_spell_effect_receipts;
 };
 
 enum class player_save_submit_result : uint8_t
@@ -142,6 +160,7 @@ struct player_save_worker_health
 	uint64_t applied;
 	uint64_t stale;
 	uint64_t retryable_failures;
+	uint64_t journal_ack_failures;
 	uint64_t terminal_failures;
 	uint64_t custody_payload_mismatches;
 	uint64_t retries_exhausted;
@@ -158,13 +177,19 @@ struct player_save_worker_health
 using player_save_apply_fn = player_save_apply_result (*)(const player_snapshot &snapshot,
 							  void *context);
 using player_save_journal_append_fn = bool (*)(const player_snapshot &snapshot, void *context);
-using player_save_journal_ack_fn = bool (*)(int pid, player_revision_t revision, void *context);
+using player_save_journal_ack_fn = bool (*)(const player_snapshot &snapshot,
+					    player_revision_t durable_revision, void *context);
+// A terminal hook must establish a login/save fence even when archive I/O
+// fails. It runs on the worker before publishing the completion.
+using player_save_journal_terminal_fn = void (*)(const player_snapshot &snapshot,
+						 void *context) noexcept;
 
 bool player_save_worker_init(player_save_apply_fn apply, void *context,
 			     unsigned int worker_threads = PLAYER_SAVE_WORKER_DEFAULT_THREADS);
 void player_save_worker_shutdown(void);
 bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
-					  player_save_journal_ack_fn acknowledge, void *context);
+					  player_save_journal_ack_fn acknowledge, void *context,
+					  player_save_journal_terminal_fn terminal = nullptr);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);
 player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot);
 size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity);

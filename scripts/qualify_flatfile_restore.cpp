@@ -29,6 +29,9 @@ void logit(const char *, const char *, ...) {}
 #include <charconv>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <map>
 #include <iostream>
 #include <set>
 #include <stdexcept>
@@ -108,11 +111,13 @@ static void qualify_locker_receipts(const std::filesystem::path &directory)
 }
 
 // Init uses the production codecs and may quarantine a corrupt player frame.
-// This runs only on copied candidate journals; any quarantine is a hard failure.
+// This runs only on copied candidate journals. Native archived evidence and its
+// admission policy must survive qualification unchanged; new corruption fails.
 static void qualify_journals(const std::filesystem::path &candidate, bool drained)
 {
 	require(candidate.is_absolute() &&
 		std::filesystem::is_regular_file(candidate / "ISOLATED_RESTORE"));
+	std::map<std::filesystem::path, std::vector<char>> protected_files;
 	for (const char *name : { "players", "critical" })
 	{
 		const auto directory = candidate / "journals" / name;
@@ -129,6 +134,26 @@ static void qualify_journals(const std::filesystem::path &candidate, bool draine
 				continue;
 			}
 			require(entry.is_regular_file() && !entry.is_symlink());
+			if (std::string(name) == "players" &&
+			    (entry.path().filename() == "player-save.journal.quarantine.archive" ||
+			     entry.path().filename() == "player-save.quarantine-pids"))
+			{
+				const uintmax_t maximum =
+					entry.path().filename() == "player-save.quarantine-pids" ?
+						4096 :
+						2ULL * PLAYER_SAVE_JOURNAL_MAX_BYTES;
+				require(entry.file_size() <= maximum);
+				// The production parser below verifies archive digests, PID
+				// manifests, private permissions, and policy syntax.
+				std::ifstream file(entry.path(), std::ios::binary);
+				require(file.good());
+				protected_files.emplace(
+					entry.path(),
+					std::vector<char>(std::istreambuf_iterator<char>(file),
+							  {}));
+				require(!file.bad());
+				continue;
+			}
 			require(entry.path().filename() == filename ||
 				(entry.path().filename() == "player-save.journal.quarantine" &&
 				 entry.file_size() == 0));
@@ -137,9 +162,15 @@ static void qualify_journals(const std::filesystem::path &candidate, bool draine
 	require(player_save_journal_init((candidate / "journals/players").c_str()));
 	const auto player = player_save_journal_health_copy();
 	player_save_journal_shutdown();
+	for (const auto &[path, original] : protected_files)
+	{
+		std::ifstream file(path, std::ios::binary);
+		require(file.good());
+		const std::vector<char> observed(std::istreambuf_iterator<char>(file), {});
+		require(!file.bad() && observed == original);
+	}
 	require(player.initialized && player.corrupt_records == 0 &&
-		player.unsupported_records == 0 && player.quarantined_bytes == 0 &&
-		(!drained || player.records == 0));
+		player.unsupported_records == 0 && (!drained || player.records == 0));
 	require(critical_command_journal_init((candidate / "journals/critical").c_str()));
 	const auto critical = critical_command_journal_health_copy();
 	critical_command_journal_shutdown();
@@ -147,6 +178,7 @@ static void qualify_journals(const std::filesystem::path &candidate, bool draine
 		critical.last_result == critical_command_journal_result::ok &&
 		(!drained || critical.records == 0));
 	std::cout << "{\"player_records\":" << player.records
+		  << ",\"protected_player_bytes\":" << player.quarantined_bytes
 		  << ",\"critical_records\":" << critical.records << "}\n";
 }
 
@@ -257,6 +289,52 @@ int main(int argc, char **argv)
 		}
 		for (const auto &entry : std::filesystem::directory_iterator(root + "/players"))
 		{
+			if (entry.path().extension() == ".spell")
+			{
+				const auto stem = entry.path().stem().string();
+				const auto separator = stem.find('-');
+				require(separator != std::string::npos);
+				int32_t pid = 0;
+				const auto parsed =
+					std::from_chars(stem.data(), stem.data() + separator, pid);
+				require(parsed.ec == std::errc() &&
+					parsed.ptr == stem.data() + separator && pid > 0 &&
+					stem.substr(0, separator) == std::to_string(pid));
+				flatfile_identity_record identity;
+				require(flatfile_identity_lookup_pid(root, pid, &identity,
+								     &error) ==
+						flatfile_identity_result::ok &&
+					(!identity.active || known.count(pid) == 1));
+				player_snapshot receipt;
+				require(flatfile_player_snapshot_read_file(
+						root + "/players", entry.path().filename().string(),
+						pid, &receipt,
+						&error) == flatfile_player_load_result::ok &&
+					receipt.schema_version ==
+						PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+					!receipt.death && receipt.quest_xp_receipts.empty() &&
+					receipt.spell_effect_receipts.size() == 1);
+				std::string operation;
+				constexpr char hex[] = "0123456789abcdef";
+				for (uint8_t byte :
+				     receipt.spell_effect_receipts.front().operation_id.bytes)
+				{
+					operation += hex[byte >> 4];
+					operation += hex[byte & 15];
+				}
+				require(stem.substr(separator + 1) == operation);
+				player_snapshot snapshot;
+				const auto read =
+					flatfile_player_snapshot_read(root, pid, &snapshot, &error);
+				require(read == flatfile_player_load_result::ok ?
+						receipt.revision <= snapshot.revision :
+						read == flatfile_player_load_result::not_found);
+				if (read == flatfile_player_load_result::not_found)
+				{
+					require(!identity.active);
+				}
+				continue;
+			}
 			if (entry.path().extension() != ".snapshot")
 				continue;
 			const auto stem = entry.path().stem().string();

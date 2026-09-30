@@ -111,6 +111,15 @@ void assert_closed_reads()
     const unsigned before = lifecycle::pool_calls;
     auto request = load_request();
     player_load_result result = {};
+    if (player_save_journal_pid_quarantined(request.pid)) {
+        assert(!player_load_pipeline_execute_sync(request, &result));
+        assert(player_load_pipeline_submit(request) == player_load_submit_outcome::unavailable);
+        request = load_request(true);
+        assert(!player_load_pipeline_execute_sync(request, &result));
+        assert(player_load_pipeline_submit(request) == player_load_submit_outcome::unavailable);
+        assert(lifecycle::pool_calls == before);
+        return;
+    }
     assert(player_load_pipeline_execute_sync(request, &result));
     if (lifecycle::pool_calls != before) {
         std::cerr << "FAIL: normal SQL read reached pool before replay readiness\n";
@@ -180,20 +189,39 @@ int main(int argc, char **argv)
         player_save_apply_outcome::stale_revision,
         player_save_apply_outcome::applied,
     };
+    unsigned case_number = 0;
     for (const auto outcome : blocked) {
-        begin_replay(directory, outcome, outcome == player_save_apply_outcome::applied);
+        const std::string isolated = directory + "-outcome-" + std::to_string(++case_number);
+        assert(player_save_journal_init(isolated.c_str()));
+        assert(player_save_journal_append(death) == player_save_journal_result::ok);
+        player_save_journal_shutdown();
+        begin_replay(isolated, outcome, outcome == player_save_apply_outcome::applied);
         assert_closed_reads();
         assert(!player_load_materialize(&untouched, stale));
         release_replay();
-        await([] { return player_save_pipeline_health_copy().replay_blocked; });
-        assert(!player_save_pipeline_loads_allowed());
-        assert(player_save_journal_health_copy().records == 1);
+        const bool retry = outcome == player_save_apply_outcome::retryable_failure ||
+                           outcome == player_save_apply_outcome::ambiguous_commit;
+        if (retry) {
+            await([] { return player_save_pipeline_health_copy().replay_blocked; });
+            assert(!player_save_pipeline_loads_allowed());
+            assert(player_save_journal_health_copy().records == 1);
+            assert(!player_save_journal_pid_quarantined(80));
+        } else {
+            await([] { return player_save_pipeline_health_copy().replay_complete; });
+            assert(player_save_pipeline_loads_allowed());
+            assert(player_save_journal_health_copy().records == 0);
+            assert(player_save_journal_pid_quarantined(80));
+        }
         assert_closed_reads();
         assert(!player_load_materialize(&untouched, stale));
         assert(untouched.player.level == 9 && untouched_pc.pid == 900);
         assert(reset_count == 0 && item_materialize_count == 0 && pet_stage_count == 0);
         player_save_pipeline_shutdown();
         assert(!player_save_pipeline_loads_allowed());
+        assert(player_save_journal_init(isolated.c_str()));
+        assert(player_save_journal_pid_quarantined(80) == !retry);
+        assert(player_save_journal_health_copy().records == (retry ? 1 : 0));
+        player_save_journal_shutdown();
     }
     // The same durable death (not an unrelated empty/ordinary journal) is now
     // exactly acknowledged through the real dispatcher and checkpoint code.
@@ -220,7 +248,7 @@ int main(int argc, char **argv)
     assert(!player_save_pipeline_loads_allowed());
     assert_closed_reads();
     player_load_pipeline_shutdown();
-    std::cout << "PASS: real SQL-build dispatcher/worker/journal lifecycle; startup and 5 blocked outcomes deny reads and hydration; exact death replay opens; stop/init failure close; recovery read routing preserved\n";
+    std::cout << "PASS: real SQL-build lifecycle; startup/transient/ambiguous replay deny reads and hydration; terminal/unproven PID groups stay fenced across restart; exact death replay opens; stop/init failure close\n";
 }
 '''
 

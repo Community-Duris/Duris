@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <openssl/sha.h>
 
 struct quest_reward_goal
 {
@@ -54,6 +55,45 @@ constexpr size_t QUEST_REWARD_MAX_CREDITED_PIDS = 64;
 constexpr size_t QUEST_REWARD_MAX_CHARACTER_NAME_BYTES = 64;
 constexpr size_t QUEST_REWARD_MAX_DEFINITION_ID_BYTES = 4096;
 constexpr uint32_t QUEST_REWARD_FLAG_SKILL_ELIGIBLE_AT_ADMISSION = 1U << 0;
+constexpr uint32_t QUEST_REWARD_CURRENCY_OPERATION_DOMAIN = 0x51524352;
+
+// A consumed UID identifies a one-use quest instance. The same source is used
+// by admission and native receipt verification, including repeated item goals.
+inline uint64_t quest_item_reward_source_id(uint64_t offering_uid, int vnum,
+					    uint32_t duplicate_ordinal)
+{
+	if (!offering_uid || vnum <= 0)
+		return 0;
+	uint8_t source[24] = { 'q', 'u', 'e', 's', 't', '-', 'v', '1' };
+	for (size_t index = 0; index < 8; ++index)
+		source[8 + index] = static_cast<uint8_t>(offering_uid >> (index * 8));
+	for (size_t index = 0; index < 4; ++index)
+	{
+		source[16 + index] =
+			static_cast<uint8_t>(static_cast<uint32_t>(vnum) >> (index * 8));
+		source[20 + index] = static_cast<uint8_t>(duplicate_ordinal >> (index * 8));
+	}
+	uint8_t digest[SHA256_DIGEST_LENGTH] = {};
+	SHA256(source, sizeof(source), digest);
+	uint64_t source_id = 0;
+	for (size_t index = 0; index < 8; ++index)
+		source_id = (source_id << 8) | digest[index];
+	source_id &= INT64_MAX;
+	return source_id ? source_id : 1;
+}
+
+inline uint64_t quest_item_reward_source_id(const quest_reward_continuation &terms, size_t index)
+{
+	if (!terms.root_count || index >= terms.reward_count || terms.rewards[index].type != 1U)
+		return 0;
+	uint32_t ordinal = 0;
+	for (size_t prior = 0; prior < index; ++prior)
+		if (terms.rewards[prior].type == 1U &&
+		    terms.rewards[prior].number == terms.rewards[index].number)
+			++ordinal;
+	return quest_item_reward_source_id(terms.roots[0],
+					   static_cast<int>(terms.rewards[index].number), ordinal);
+}
 
 // Version 1 retained exact offering terms. Version 2 also freezes the credited
 // party and stable quest identity. Version 3 adds skill eligibility metadata.

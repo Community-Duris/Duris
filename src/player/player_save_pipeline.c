@@ -14,6 +14,8 @@
 #include "player/player_snapshot_repository.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "magic/spell_item_lifecycle.h"
+#include "world/quest_reward_recovery.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -219,7 +221,7 @@ bool death_snapshot_identity_matches(const terminal_fence &fence)
 	if (!fence.death_snapshot)
 		return false;
 	const player_snapshot &snapshot = *fence.death_snapshot;
-	return snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION &&
+	return player_snapshot_is_death_request_schema(snapshot.schema_version) &&
 	       snapshot.revision == fence.revision && snapshot.death &&
 	       snapshot.death->operation_id.bytes == fence.operation_id.bytes &&
 	       snapshot.death->wallet_pile_uid == fence.wallet_pile_uid &&
@@ -250,27 +252,44 @@ void dispatcher_main()
 					  health.initialized && !stop_requested);
 	}
 
+	player_snapshot snapshot;
+	bool retry_inflight = false;
 	for (;;)
 	{
-		player_snapshot snapshot;
 		{
 			std::unique_lock<std::mutex> lock(pipeline_mutex);
-			append_available.wait(
-				lock, [] { return stop_requested || !pending_append.empty(); });
-			if (stop_requested && pending_append.empty())
-				break;
-			snapshot = std::move(pending_append.front());
-			pending_append.pop_front();
-			append_inflight = true;
-			append_inflight_pid = snapshot.pid;
-			append_inflight_revision = snapshot.revision;
+			if (!retry_inflight)
+			{
+				append_available.wait(
+					lock,
+					[] { return stop_requested || !pending_append.empty(); });
+				if (stop_requested && pending_append.empty())
+					break;
+				snapshot = std::move(pending_append.front());
+				pending_append.pop_front();
+				append_inflight = true;
+				append_inflight_pid = snapshot.pid;
+				append_inflight_revision = snapshot.revision;
+			}
+			retry_inflight = false;
 			update_depth_locked();
 		}
 
 		const player_save_journal_result appended = player_save_journal_append(snapshot);
+		const bool quarantined = appended == player_save_journal_result::quarantined_pid;
+		// A capture queued before the fence still needs durable preservation.
+		// Archive it without admitting it to SQL or claiming a revision ACK.
+		const bool quarantine_preserved =
+			quarantined && player_save_journal_archive_quarantined(snapshot) ==
+					       player_save_journal_result::ok;
 		{
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
-			if (appended == player_save_journal_result::ok)
+			if (quarantine_preserved)
+			{
+				retained_bytes -= snapshot.encoded_size_bound;
+				++health.durable_spills;
+			}
+			else if (appended == player_save_journal_result::ok)
 			{
 				try
 				{
@@ -293,21 +312,31 @@ void dispatcher_main()
 				++health.append_failures;
 				try
 				{
-					pending_append.push_front(std::move(snapshot));
+					if (quarantined)
+						pending_append.push_back(std::move(snapshot));
+					else
+						pending_append.push_front(std::move(snapshot));
 				}
 				catch (const std::bad_alloc &)
 				{
-					retained_bytes -= snapshot.encoded_size_bound;
+					// No durable copy exists. Keep the already-owned capture and
+					// its in-flight fence until it is archived, appended, or requeued.
+					retry_inflight = true;
 					++health.overloads;
 				}
 			}
-			append_inflight = false;
-			append_inflight_pid = 0;
-			append_inflight_revision = 0;
+			if (!retry_inflight)
+			{
+				append_inflight = false;
+				append_inflight_pid = 0;
+				append_inflight_revision = 0;
+			}
 			update_depth_locked();
 		}
-		if (appended != player_save_journal_result::ok)
+		if (appended != player_save_journal_result::ok && !quarantine_preserved)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		if (!retry_inflight)
+			snapshot = {};
 	}
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	health.dispatcher_running = false;
@@ -345,8 +374,9 @@ bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &sou
 {
 	if (!target || source.quest_xp_receipts.empty())
 		return true;
-	if (target->death || source.death ||
-	    (target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+	if (source.death ||
+	    (!player_snapshot_is_death_request_schema(target->schema_version) &&
+	     target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
 	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
 		return false;
@@ -372,7 +402,11 @@ bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &sou
 	if (!added)
 		return true;
 	const size_t schema_overhead =
-		target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ? 4 : 0;
+		target->schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ? 8 :
+		(target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+		 target->schema_version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION) ?
+										 4 :
+										 0;
 	if (target->quest_xp_receipts.size() + added > 64 ||
 	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
 	    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
@@ -399,12 +433,11 @@ bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &sou
 	{
 		return false;
 	}
-	if (target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION)
-	{
+	if (target->death)
+		target->schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+	else if (target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION)
 		target->schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
-		target->encoded_size_bound += 4;
-	}
-	target->encoded_size_bound += 24 * added;
+	target->encoded_size_bound += schema_overhead + 24 * added;
 	return true;
 }
 
@@ -412,8 +445,9 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 {
 	if (!target || source.spell_effect_receipts.empty())
 		return true;
-	if (target->death || source.death ||
-	    (target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+	if (source.death ||
+	    (!player_snapshot_is_death_request_schema(target->schema_version) &&
+	     target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
 	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
 		return false;
@@ -439,7 +473,10 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 		return true;
 	const size_t schema_overhead =
 		target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ? 8 :
-		target->schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ? 4 : 0;
+		target->schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+				target->schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ?
+									   4 :
+									   0;
 	if (target->spell_effect_receipts.size() + added > PLAYER_SPELL_EFFECT_RECEIPT_MAX ||
 	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
 	    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
@@ -464,7 +501,11 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 	{
 		return false;
 	}
-	target->schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+	target->schema_version =
+		target->death ? (target->quest_xp_receipts.empty() ?
+					 PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION :
+					 PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION) :
+				PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
 	target->encoded_size_bound += schema_overhead + 20 * added;
 	return true;
 }
@@ -472,6 +513,8 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 /** Admit or coalesce a snapshot within queue and byte limits before notifying the dispatcher. */
 player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 {
+	if (player_save_journal_pid_quarantined(snapshot.pid))
+		return player_save_pipeline_result::unavailable;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!health.initialized || stop_requested ||
 	    find_target_save_login_fence_locked(snapshot.pid))
@@ -574,7 +617,8 @@ bool player_save_pipeline_init(const char *journal_directory)
 		player_save_journal_shutdown();
 		return false;
 	}
-	if (!player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack, nullptr))
+	if (!player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack, nullptr,
+						  player_save_journal_worker_terminal))
 	{
 		player_save_worker_shutdown();
 		player_save_journal_shutdown();
@@ -640,6 +684,8 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 	 * delete container descendants or make an exact custody comparison impossible. */
 	if (components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY))
 		components |= PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
+	if (player_save_journal_pid_quarantined(pid))
+		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!accepting)
 		return false;
@@ -676,6 +722,8 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
+	if (player_save_journal_pid_quarantined(GET_PID(ch)))
+		return player_save_pipeline_result::unavailable;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 		return player_save_pipeline_result::unavailable;
 	{
@@ -686,9 +734,53 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		    fence && fence->death_pinned)
 			return player_save_pipeline_result::unavailable;
 	}
+	player_snapshot pending_effects;
+	player_component_mask_t required_components = 0;
+	if (!quest_reward_recovery_pending_save_receipts(
+		    GET_PID(ch), &pending_effects.quest_xp_receipts, &required_components))
+		return player_save_pipeline_result::capture_failed;
+	if (!spell_component_retirement_pending_save_receipts(
+		    GET_PID(ch), &pending_effects.spell_effect_receipts))
+		return player_save_pipeline_result::capture_failed;
+	if (spell_effect_receipt)
+	{
+		try
+		{
+			const auto found = std::find_if(
+				pending_effects.spell_effect_receipts.begin(),
+				pending_effects.spell_effect_receipts.end(),
+				[&](const auto &existing) {
+					return existing.operation_id.bytes ==
+					       spell_effect_receipt->operation_id.bytes;
+				});
+			if (found != pending_effects.spell_effect_receipts.end())
+			{
+				if (found->effect_id != spell_effect_receipt->effect_id)
+					return player_save_pipeline_result::invalid;
+			}
+			else
+				pending_effects.spell_effect_receipts.push_back(
+					*spell_effect_receipt);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return player_save_pipeline_result::capture_failed;
+		}
+	}
+	// Applied rewards/effects need their component boundary even when the first
+	// checkpoint never queued or this caller only dirtied another component.
 	player_revision_snapshot revision = {};
 	if (!player_revision_snapshot_copy(GET_PID(ch), &revision))
 		return player_save_pipeline_result::unavailable;
+	if (!pending_effects.spell_effect_receipts.empty())
+		required_components |= PLAYER_COMPONENT_AFFECTS;
+	const auto missing_components = required_components & ~revision.dirty_components;
+	if (missing_components)
+	{
+		if (!player_save_pipeline_mark(GET_PID(ch), missing_components) ||
+		    !player_revision_snapshot_copy(GET_PID(ch), &revision))
+			return player_save_pipeline_result::capture_failed;
+	}
 	if (!revision.dirty_components)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -753,32 +845,12 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
 			return player_save_pipeline_result::capture_failed;
 	}
-	if (spell_effect_receipt)
+	if (!pending_effects.quest_xp_receipts.empty() ||
+	    !pending_effects.spell_effect_receipts.empty())
 	{
-		const bool empty_operation = std::all_of(
-			spell_effect_receipt->operation_id.bytes.begin(),
-			spell_effect_receipt->operation_id.bytes.end(),
-			[](uint8_t byte) { return !byte; });
-		const size_t schema_overhead =
-			snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ? 8 : 4;
-		if (empty_operation ||
-		    spell_effect_receipt->effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX ||
-		    !spell_effect_receipt->effect_id || snapshot.death ||
-		    snapshot.spell_effect_receipts.size() >= PLAYER_SPELL_EFFECT_RECEIPT_MAX ||
-		    snapshot.encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
-		    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - snapshot.encoded_size_bound ||
-		    20 > PLAYER_SNAPSHOT_MAX_BYTES - snapshot.encoded_size_bound - schema_overhead)
-			return player_save_pipeline_result::invalid;
-		try
-		{
-			snapshot.spell_effect_receipts.push_back(*spell_effect_receipt);
-		}
-		catch (const std::bad_alloc &)
-		{
+		if (!merge_quest_xp_receipts(&snapshot, pending_effects) ||
+		    !merge_spell_effect_receipts(&snapshot, pending_effects))
 			return player_save_pipeline_result::capture_failed;
-		}
-		snapshot.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
-		snapshot.encoded_size_bound += schema_overhead + 20;
 		std::vector<uint8_t> encoded;
 		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
 			return player_save_pipeline_result::capture_failed;
@@ -804,6 +876,8 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 int save_intent, int room_vnum)
 {
 	if (ch && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
+	if (ch && player_save_journal_pid_quarantined(GET_PID(ch)))
 		return player_save_pipeline_result::unavailable;
 	if (!ch || IS_NPC(ch) || !player_save_pipeline_mark(GET_PID(ch), components))
 		return player_save_pipeline_result::invalid;
@@ -890,7 +964,7 @@ bool retain_and_enqueue_death_snapshot(player_snapshot snapshot, uint64_t corpse
 	terminal_fence *fence = find_terminal_fence_locked(snapshot.pid);
 	if (!health.initialized || stop_requested || !fence || !fence->death_pinned ||
 	    fence->revision != snapshot.revision || fence->death_snapshot ||
-	    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION || !snapshot.death ||
+	    !player_snapshot_is_death_request_schema(snapshot.schema_version) || !snapshot.death ||
 	    snapshot.death->operation_id.bytes != operation_id.bytes ||
 	    snapshot.death->wallet_pile_uid != wallet_pile_uid || snapshot.death->corpse.empty() ||
 	    snapshot.death->corpse.front().object_uid != corpse_uid)
@@ -935,6 +1009,8 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !timeout_msec)
 		return player_save_terminal_result::invalid;
+	if (player_save_journal_pid_quarantined(GET_PID(ch)))
+		return player_save_terminal_result::unavailable;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
@@ -965,6 +1041,8 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 		return resumed;
 	if (!corpse)
 		return player_save_terminal_result::invalid;
+	if (player_save_journal_pid_quarantined(GET_PID(ch)))
+		return player_save_terminal_result::unavailable;
 	// A payload-gap load keeps its valid item graph read-only. Its only safe
 	// terminal write is the immutable death disposition, which records that
 	// graph and quarantines matching durable custody. Every other degraded load
@@ -994,12 +1072,24 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 	if (player_death_snapshot_capture(ch, corpse, wallet_pile, operation_id, revision,
 					  room_vnum, {},
 					  &snapshot) != player_snapshot_capture_result::ok ||
-	    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION || !snapshot.death)
+	    !player_snapshot_is_death_request_schema(snapshot.schema_version) || !snapshot.death)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		++health.capture_failures;
 		return player_save_terminal_result::invalid;
 	}
+	player_snapshot pending_effects;
+	player_component_mask_t required_components = 0;
+	if (!quest_reward_recovery_pending_save_receipts(pid, &pending_effects.quest_xp_receipts,
+							 &required_components) ||
+	    !merge_quest_xp_receipts(&snapshot, pending_effects) ||
+	    !spell_component_retirement_pending_save_receipts(
+		    pid, &pending_effects.spell_effect_receipts) ||
+	    !merge_spell_effect_receipts(&snapshot, pending_effects))
+		return player_save_terminal_result::unavailable;
+	std::vector<uint8_t> encoded;
+	if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
+		return player_save_terminal_result::invalid;
 	player_revision_t queued_revision = 0;
 	player_component_mask_t components = 0;
 	if (!player_revision_queue(pid, &queued_revision, &components) ||
@@ -1249,6 +1339,24 @@ void player_save_pipeline_pulse(void)
 			}
 		}
 	}
+	for (size_t index = 0; index < completed; ++index)
+	{
+		if (!completions[index].quest_xp_receipts.empty())
+			quest_reward_recovery_save_acknowledged(
+				completions[index].pid, completions[index].revision,
+				completions[index].quest_xp_receipts.data(),
+				completions[index].quest_xp_receipts.size());
+		if (!completions[index].spell_effect_receipts.empty())
+			spell_component_retirement_save_completed(
+				completions[index].pid, true,
+				completions[index].spell_effect_receipts.data(),
+				completions[index].spell_effect_receipts.size());
+		if (!completions[index].failed_spell_effect_receipts.empty())
+			spell_component_retirement_save_completed(
+				completions[index].pid, false,
+				completions[index].failed_spell_effect_receipts.data(),
+				completions[index].failed_spell_effect_receipts.size());
+	}
 	for (size_t index = 0; index < custody_mismatch_count; ++index)
 	{
 		bool recapture_scheduled = false;
@@ -1390,6 +1498,8 @@ bool player_save_pipeline_target_save_pending(int pid)
 {
 	if (pid <= 0)
 		return true;
+	if (player_save_journal_pid_quarantined(pid))
+		return true;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (!health.initialized || stop_requested || !accepting ||
@@ -1412,6 +1522,8 @@ bool player_save_pipeline_acquire_target_save_login_fence(int pid,
 							  player_revision_t expected_revision)
 {
 	if (pid <= 0 || expected_revision == std::numeric_limits<player_revision_t>::max())
+		return false;
+	if (player_save_journal_pid_quarantined(pid))
 		return false;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -1467,6 +1579,8 @@ bool player_save_pipeline_target_save_login_fenced(int pid)
 {
 	if (pid <= 0)
 		return false;
+	if (player_save_journal_pid_quarantined(pid))
+		return true;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	return find_target_save_login_fence_locked(pid) != nullptr;
 }
@@ -1474,6 +1588,8 @@ bool player_save_pipeline_target_save_login_fenced(int pid)
 bool player_save_pipeline_save_admitted(int pid)
 {
 	if (pid <= 0)
+		return false;
+	if (player_save_journal_pid_quarantined(pid))
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (find_target_save_login_fence_locked(pid))

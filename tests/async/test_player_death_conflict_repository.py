@@ -17,6 +17,7 @@ def compile_sql(output, repository_source=None, snapshot_source=None, extra_flag
                     str(harness_source or ROOT / "tests/async/player_death_conflict_repository_mysql_harness.cpp"),
                     str(repository_source or ROOT / "src/player/player_death_conflict_repository.c"),
                     str(snapshot_source or ROOT / "src/player/player_snapshot_repository.c"), "src/player/player_snapshot_codec.c",
+                    "src/player/player_save_journal.c",
                     "src/sql/item_extra_descr_codec.c", "src/persistence/persistence_observability.c",
                     "src/persistence/economic_sql_lifecycle_guard.c",
                     *libs, "-lcrypto", "-o", str(output)], cwd=ROOT, check=True)

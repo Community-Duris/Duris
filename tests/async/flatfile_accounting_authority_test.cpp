@@ -274,7 +274,15 @@ void basic(const fs::path &root)
 	absent.revision = 99;
 	assert(flatfile_economic_control_read(f.root, f.lock, &absent, &f.error) == EILSEQ &&
 	       absent.revision == 99);
+	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == 0);
+	const auto stray = root / "economic-evidence" / "incomplete.eal";
+	std::ofstream(stray) << "incomplete";
 	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == EILSEQ);
+	fs::remove(stray);
+	fs::permissions(root / "economic-evidence", fs::perms::group_read, fs::perm_options::add);
+	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == EILSEQ);
+	fs::permissions(root / "economic-evidence", fs::perms::owner_all,
+			fs::perm_options::replace);
 	f.initialize();
 	assert(flatfile_economic_legacy_domain_gate(f.root, f.lock, &f.error) == 0);
 	auto initial = f.control();
@@ -663,7 +671,7 @@ void corrupt_native(const fs::path &root)
 					       &f.error) == EINVAL &&
 	       changes.size() == 1 && changes[0].bytes == bytes{ 9 });
 	changes.clear();
-	for (size_t i = 0; i < 30; ++i)
+	for (size_t i = 0; i < flatfile_authority_transaction_maximum_operations; ++i)
 		changes.push_back({ flatfile_authority_store::domains,
 				    flatfile_authority_operation_kind::write,
 				    "domain-" + std::to_string(i),
@@ -671,7 +679,7 @@ void corrupt_native(const fs::path &root)
 	assert(metadata_access::retire_mapping(f.root, f.lock, f.control().revision,
 					       mapping.account, 0, id(6), &changes,
 					       &f.error) == ENOSPC &&
-	       changes.size() == 30);
+	       changes.size() == flatfile_authority_transaction_maximum_operations);
 	assert(f.bank("synthetic").account.authority_id == mapping.account.authority_id);
 }
 void crash_boundaries(const fs::path &parent)

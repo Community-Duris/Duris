@@ -70,7 +70,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery and SQL lifecycle tables.
-        self.assertEqual(report["current_table_count"], 221)
+        self.assertEqual(report["current_table_count"], 223)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -84,7 +84,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'economic_sql_activation_receipt'", self.header)
         self.assertIn("'economic_sql_global_activation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0046_economic_realized_trade_price")
+                         "0050_item_extra_description_fulltext_unique")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -108,6 +108,36 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertLess(verify, populate)
         self.assertLess(populate, allocator)
         self.assertLess(allocator, pool)
+
+    def test_completed_staging_history_is_pinned_and_queries_cannot_drift(self):
+        import tempfile
+        from unittest import mock
+        value = runtime.load()
+        self.assertEqual(value["migration_head"]["sequence"], 50)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 50)
+        self.assertEqual(value["staging_0045_migration_head"]["id"],
+                         "0049_player_spell_effect_receipt")
+        self.assertNotEqual(value["migration_head"]["history_checksum"],
+                            value["staging_0045_migration_head"]["history_checksum"])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "runtime.json"
+            for field in ("staging_0045_migration_head", "migration_history_sql",
+                          "extra_description_generation_sql"):
+                damaged = json.loads(json.dumps(value))
+                if isinstance(damaged[field], dict):
+                    damaged[field]["history_checksum"] = "0" * 64
+                else:
+                    damaged[field] += " LIMIT 1"
+                path.write_text(json.dumps(damaged))
+                with mock.patch.object(runtime, "MANIFEST", path):
+                    with self.assertRaises(runtime.migration_runner.MigrationContractError):
+                        runtime.validate()
+            header = Path(directory) / "runtime.h"
+            header.write_text(self.header.replace(
+                value["staging_0045_migration_head"]["history_checksum"], "0" * 64))
+            with mock.patch.object(runtime, "HEADER", header):
+                with self.assertRaises(runtime.migration_runner.MigrationContractError):
+                    runtime.validate()
 
     def test_mysql_boundary_precedes_hydration_workers_replay_and_gameplay(self):
         mysql_boundary = (
@@ -170,7 +200,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                       "information_schema.statistics", "referential_constraints"):
             self.assertIn(token, self.sql)
         self.assertIn("RUNTIME_METADATA_MAX_BYTES - canonical.size()", self.sql)
-        for reason in ("COMPAT-E001", "COMPAT-E002", "COMPAT-E003", "COMPAT-E007"):
+        for reason in ("COMPAT-E001", "COMPAT-E002", "COMPAT-E003", "COMPAT-E007",
+                       "COMPAT-E008", "COMPAT-E009"):
             self.assertIn(reason, self.sql)
         compatibility_logs = [line for line in self.sql.splitlines() if "COMPAT-E" in line]
         self.assertFalse(any(secret in line.lower() for line in compatibility_logs

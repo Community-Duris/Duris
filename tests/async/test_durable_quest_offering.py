@@ -66,9 +66,13 @@ assert "spell_item_lifecycle_restore_replayed_command(command)" in gameplay_rest
 assert "item_movement_transaction_restore_replayed_command(command)" in gameplay_restore
 context_start = quest.index("constexpr size_t QUEST_DURABLE_MAX_OFFERINGS")
 context_end = quest.index("static P_obj quest_object_by_uid(", context_start)
-recovery_helpers_start = quest.index("static uint64_t quest_item_reward_source_id(")
+recovery_helpers_start = quest.index("struct quest_reward_recovery_attempt")
 recovery_helpers_end = quest.index("void give_reward(", recovery_helpers_start)
 recovery_helpers = quest[recovery_helpers_start:recovery_helpers_end]
+reward_header = source("item/quest_reward_continuation.h").read_text()
+reward_source_start = reward_header.index("constexpr uint32_t QUEST_REWARD_CURRENCY_OPERATION_DOMAIN")
+reward_source_end = reward_header.index("// Version 1 retained exact offering terms.", reward_source_start)
+recovery_helpers = reward_header[reward_source_start:reward_source_end] + recovery_helpers
 functions = "\n".join(
     extract_function("world/quest.c", signature)
     for signature in (
@@ -186,7 +190,8 @@ struct quest_reward_continuation {
     std::string character_name, definition_id;
 };
 void quest_reward_recover_pending(P_char, const critical_operation_id &,
-                                  const quest_reward_continuation &, uint64_t = 0);
+                                  const quest_reward_continuation &, uint64_t = 0,
+                                  uint64_t = 0, bool = true);
 void quest_reward_recover_xp_entitlement(P_char, const critical_operation_id &,
                                          const quest_reward_continuation &, uint32_t,
                                          uint32_t);
@@ -205,6 +210,7 @@ namespace economic_gameplay_authority { bool active() { return accounting_active
 constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 768;
 constexpr size_t ITEM_TRANSFER_CONTINUATION_MAX_BYTES = 8 * 1024;
 constexpr size_t QUEST_REWARD_MAX_CREDITED_PIDS = 64;
+constexpr size_t QUEST_REWARD_MAX_CHARACTER_NAME_BYTES = 64;
 constexpr size_t QUEST_REWARD_MAX_DEFINITION_ID_BYTES = 4096;
 constexpr uint32_t QUEST_REWARD_FLAG_SKILL_ELIGIBLE_AT_ADMISSION = 1U;
 constexpr int VIRTUAL = 1;
@@ -243,16 +249,19 @@ room rooms[50] = {};
 room *world = rooms;
 int submissions = 0, rewards = 0, messages = 0, dirty = 0, removed = 0, acked = 0;
 using player_revision_t = uint64_t;
+using player_component_mask_t = uint64_t;
 struct player_revision_snapshot { player_revision_t current_revision = 0, acknowledged_revision = 0; };
 enum class player_save_pipeline_result { queued, coalesced, unavailable };
 enum persistence_mode { PERSISTENCE_MODE_MARIADB_PRIMARY = 0,
                         PERSISTENCE_MODE_MARIADB_PRIMARY_FLATFILE_FALLBACK,
                         PERSISTENCE_MODE_FLATFILE_PRIMARY };
-enum persistence_mode persistence_mode_get() { return PERSISTENCE_MODE_MARIADB_PRIMARY; }
+enum persistence_mode test_mode = PERSISTENCE_MODE_MARIADB_PRIMARY;
+enum persistence_mode persistence_mode_get() { return test_mode; }
 player_revision_snapshot save_revision;
+bool revision_available = true;
 int skill_save_requests = 0;
 bool player_revision_snapshot_copy(int, player_revision_snapshot *out) {
-    if (!out) return false;
+    if (!out || !revision_available) return false;
     *out = save_revision;
     return true;
 }
@@ -266,11 +275,13 @@ struct player_quest_xp_receipt_snapshot {
     uint32_t reward_index = 0, amount = 0;
 };
 int xp_gained = 0, xp_save_requests = 0;
+bool xp_save_refused = false;
 std::vector<player_quest_xp_receipt_snapshot> queued_xp_receipts;
 int gain_exp(P_char, P_char, int amount, int) { xp_gained += amount; return amount; }
 player_save_pipeline_result player_save_pipeline_request_quest_xp(
     P_char, uint64_t, const player_quest_xp_receipt_snapshot *receipts, size_t count, int) {
     ++xp_save_requests;
+    if (xp_save_refused) return player_save_pipeline_result::unavailable;
     queued_xp_receipts.assign(receipts, receipts + count);
     ++save_revision.current_revision;
     return player_save_pipeline_result::queued;
@@ -388,7 +399,7 @@ bool item_movement_transaction_submit_batch(
     ++submissions;
     return true;
 }
-''' + quest[context_start:context_end] + "\n" + recovery_helpers + "\n" + functions + r'''
+''' + extract_function("item/quest_reward_continuation.h", "inline bool quest_reward_continuation_decode(") + "\n" + quest[context_start:context_end] + "\n" + recovery_helpers + "\n" + functions + r'''
 int main() {
     new_exp_table[11] = 1000;
     new_exp_table[21] = 2000;
@@ -699,6 +710,15 @@ int main() {
            queued_xp_receipts[0].amount == 75 && acked == xp_acks_before);
     save_revision.acknowledged_revision = save_revision.current_revision;
     quest_reward_recovery_pulse();
+    assert(acked == xp_acks_before);
+    auto wrong_xp_receipt = queued_xp_receipts[0];
+    wrong_xp_receipt.amount = 74;
+    quest_reward_recovery_save_acknowledged(actor.pid, save_revision.current_revision,
+                                            &wrong_xp_receipt, 1);
+    assert(acked == xp_acks_before);
+    quest_reward_recovery_save_acknowledged(actor.pid, save_revision.current_revision,
+                                            queued_xp_receipts.data(),
+                                            queued_xp_receipts.size());
     assert(acked == xp_acks_before + 1);
     quest_reward_recover_pending(&actor, operation, pending, UINT64_C(1));
     assert(xp_gained == xp_before + 75 && xp_save_requests == xp_saves_before + 1 &&
@@ -752,16 +772,134 @@ int main() {
     teammate_linkdead.next = &mob;
     assert(quest_reward_character_present(teammate_linkdead.pid) == &teammate_linkdead);
     item_transfer_result group_xp_result{};
-    group_xp_result.operation_id.bytes[0] = 14;
-    const auto group_xp_before = xp_gained;
-    const auto group_xp_saves_before = xp_save_requests;
-    complete_quest_offering(&actor, true, group_xp_result, 0,
-                            reinterpret_cast<const uint8_t *>(&group_context),
-                            sizeof(group_context));
-    assert(xp_gained == group_xp_before + 200);
-    assert(xp_save_requests == group_xp_saves_before + 2);
-    assert(queued_xp_receipts.back().reward_index == 0 &&
-           queued_xp_receipts.back().amount == 100);
+    // Group XP admission and publication use the same frozen contract on both
+    // maintained backends, including a participant with no descriptor.
+    for (auto mode : {PERSISTENCE_MODE_MARIADB_PRIMARY, PERSISTENCE_MODE_FLATFILE_PRIMARY}) {
+        test_mode = mode;
+        accounting_active = true;
+        member.ch = &teammate_linkdead;
+        actor.group = &member;
+        const auto group_submissions_before = submissions;
+        assert(submit_durable_quest_offering(&mob, &actor, 0, actor.carrying));
+        assert(submissions == group_submissions_before + 1);
+        quest_reward_continuation admitted;
+        assert(quest_reward_continuation_decode(saved_continuation.data.data(), saved_continuation.data.size(), &admitted));
+        assert(admitted.credited_count == 2 && admitted.xp_award_count == 2 &&
+               admitted.rewards[0].frozen_amount == 100 && admitted.xp_awards[0].amount == 100);
+        actor.group = nullptr;
+        group_xp_result.operation_id.bytes[0] = 14 + static_cast<unsigned>(mode);
+        const auto group_xp_before = xp_gained;
+        const auto group_xp_saves_before = xp_save_requests;
+        complete_quest_offering(&actor, true, group_xp_result, 0,
+                                reinterpret_cast<const uint8_t *>(&group_context),
+                                sizeof(group_context));
+        assert(xp_gained == group_xp_before + 200);
+        assert(xp_save_requests == group_xp_saves_before + 2);
+        assert(queued_xp_receipts.back().reward_index == 0 &&
+               queued_xp_receipts.back().amount == 100);
+    }
+    test_mode = PERSISTENCE_MODE_MARIADB_PRIMARY;
+    accounting_active = false;
+    // Lost save admission cannot discard applied XP or reopen its live replay
+    // fence. A later checkpoint collects its exact receipt and components.
+    quest_reward_recoveries.clear();
+    pending.version = 4;
+    pending.credited_count = pending.party_size = 1;
+    pending.credited_pids[0] = actor.pid;
+    pending.reward_count = 2;
+    actor.only.pc->skills[47].learned = 0;
+    pending.rewards[0] = {QUEST_GOAL_SKILL, 47, QUEST_REWARD_FLAG_SKILL_ELIGIBLE_AT_ADMISSION};
+    pending.rewards[1] = {QUEST_GOAL_EXP, 100, 0, 75};
+    operation.bytes[0] = 30;
+    xp_save_refused = true;
+    const auto refused_xp_before = xp_gained;
+    const auto refused_acks_before = acked;
+    quest_reward_recover_pending(&actor, operation, pending, 0);
+    assert(xp_gained == refused_xp_before + 75);
+    quest_reward_recover_pending(&actor, operation, pending, 0);
+    assert(xp_gained == refused_xp_before + 75);
+    std::vector<player_quest_xp_receipt_snapshot> fallback;
+    player_component_mask_t required_components = 0;
+    assert(quest_reward_recovery_pending_save_receipts(actor.pid, &fallback, &required_components));
+    assert(fallback.size() == 1 && fallback[0].offering_operation.bytes == operation.bytes &&
+           fallback[0].amount == 75 && fallback[0].reward_index == 1 &&
+           actor.only.pc->skills[47].learned == 1 && required_components ==
+           (PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES | PLAYER_COMPONENT_SKILLS));
+    revision_available = false;
+    quest_reward_recovery_pulse();
+    revision_available = true;
+    assert(acked == refused_acks_before);
+    assert(quest_reward_recovery_pending_save_receipts(actor.pid, &fallback, &required_components));
+    assert(fallback.size() == 1);
+    quest_reward_recovery_save_acknowledged(actor.pid, save_revision.current_revision + 1,
+                                            fallback.data(), fallback.size());
+    assert(acked == refused_acks_before + 1);
+    assert(quest_reward_recovery_pending_save_receipts(actor.pid, &fallback, &required_components));
+    assert(fallback.empty() && required_components == 0);
+    // The same fallback protects a descriptor-less peer, with no owner ACK.
+    pending.version = 5;
+    pending.reward_count = 1;
+    pending.rewards[0] = {QUEST_GOAL_EXP, 100, 0, 75};
+    pending.credited_count = pending.party_size = 2;
+    pending.credited_pids[1] = teammate_linkdead.pid;
+    pending.xp_award_count = 2;
+    pending.xp_awards[0] = {static_cast<uint32_t>(actor.pid), 0, 75};
+    pending.xp_awards[1] = {static_cast<uint32_t>(teammate_linkdead.pid), 0, 50};
+    operation.bytes[0] = 31;
+    quest_reward_recover_xp_entitlement(&teammate_linkdead, operation, pending, 0, 50);
+    quest_reward_recover_xp_entitlement(&teammate_linkdead, operation, pending, 0, 50);
+    assert(xp_gained == refused_xp_before + 125);
+    assert(quest_reward_recovery_pending_save_receipts(teammate_linkdead.pid, &fallback, &required_components));
+    assert(fallback.size() == 1 && fallback[0].amount == 50);
+    quest_reward_recovery_save_acknowledged(teammate_linkdead.pid, save_revision.current_revision + 1,
+                                            fallback.data(), fallback.size());
+    assert(quest_reward_recovery_pending_save_receipts(teammate_linkdead.pid, &fallback, &required_components));
+    assert(fallback.empty() && acked == refused_acks_before + 1);
+    // Receipt capacity must refuse before a 65th live XP application, then
+    // become available again after the exact completion of the first batch.
+    pending.version = 4;
+    pending.credited_count = pending.party_size = 1;
+    const auto capacity_xp_before = xp_gained;
+    for (unsigned index = 0; index < 64; ++index) {
+        operation.bytes[0] = 100 + index;
+        quest_reward_recover_pending(&actor, operation, pending, 0);
+    }
+    assert(xp_gained == capacity_xp_before + 64 * 75);
+    operation.bytes[0] = 200;
+    quest_reward_recover_pending(&actor, operation, pending, 0);
+    assert(xp_gained == capacity_xp_before + 64 * 75);
+    assert(quest_reward_recovery_pending_save_receipts(actor.pid, &fallback, &required_components));
+    assert(fallback.size() == 64);
+    quest_reward_recovery_save_acknowledged(actor.pid, save_revision.current_revision + 1,
+                                            fallback.data(), fallback.size());
+    assert(quest_reward_recovery_pending_save_receipts(actor.pid, &fallback, &required_components));
+    assert(fallback.empty());
+    quest_reward_recover_pending(&actor, operation, pending, 0);
+    assert(xp_gained == capacity_xp_before + 65 * 75);
+    xp_save_refused = false;
+    // Only native verified slots suppress economic delivery on cold recovery.
+    pending.version = 2;
+    pending.reward_count = 2;
+    pending.rewards[0] = {QUEST_GOAL_ITEM, 88, 0, 0};
+    pending.rewards[1] = {QUEST_GOAL_COINS, 50, 0, 0};
+    operation.bytes[0] = 201;
+    const auto paid_grants = queued_grants.size(), paid_cash = queued_currencies.size();
+    const auto paid_acks = acked, paid_messages = messages;
+    quest_reward_recover_pending(&actor, operation, pending, 0, 3);
+    assert(queued_grants.size() == paid_grants && queued_currencies.size() == paid_cash && acked == paid_acks + 1);
+    operation.bytes[0] = 202;
+    quest_reward_recover_pending(&actor, operation, pending, 0, 1);
+    assert(queued_grants.size() == paid_grants && queued_currencies.size() == paid_cash + 1 && acked == paid_acks + 1);
+    auto remaining_cash = queued_currencies.back();
+    remaining_cash.completion(&actor, true, {}, 0, remaining_cash.context.data(), remaining_cash.context.size());
+    assert(acked == paid_acks + 2);
+    operation.bytes[0] = 203;
+    quest_reward_recover_pending(&actor, operation, pending, 0, 3, false);
+    assert(queued_grants.size() == paid_grants && queued_currencies.size() == paid_cash + 1 && acked == paid_acks + 2);
+    assert(messages > paid_messages);
+    operation.bytes[0] = 204;
+    quest_reward_recover_pending(&actor, operation, pending, 0, 4);
+    assert(queued_grants.size() == paid_grants && queued_currencies.size() == paid_cash + 1 && acked == paid_acks + 2);
 }
 P_obj unequip_char(P_char mob, int slot) {
     P_obj object = mob->equipment[slot];

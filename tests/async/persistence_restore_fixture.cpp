@@ -77,6 +77,31 @@ int main(int argc, char **argv)
 	const std::string mode = argv[1];
 	const fs::path root = argv[2];
 	std::string error;
+	if (mode == "retire-spell-owner")
+	{
+		require(flatfile_identity_remove(root.string(), 42, "Player", &error) ==
+				flatfile_identity_result::ok,
+			"retired receipt fixture identity failed");
+		fs::remove(root / "players/42.snapshot");
+		return 0;
+	}
+	if (mode == "seed-spell-receipt")
+	{
+		player_snapshot snapshot;
+		require(flatfile_player_snapshot_load(root.string(), 42, &snapshot, &error) ==
+				flatfile_player_load_result::ok,
+			"spell receipt seed requires existing synthetic player");
+		snapshot.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+		++snapshot.revision;
+		player_spell_effect_receipt_snapshot receipt;
+		receipt.operation_id.bytes[0] = 0xa5;
+		receipt.effect_id = 6;
+		snapshot.spell_effect_receipts.push_back(receipt);
+		require(flatfile_player_snapshot_apply(root.string(), snapshot, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"synthetic spell receipt seed failed");
+		return 0;
+	}
 	if (mode == "seed-receipt")
 	{
 		currency_command_payload payload = {};

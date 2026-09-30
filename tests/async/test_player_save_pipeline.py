@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Runtime revision-state and source contracts for nonterminal player-save cutover."""
 
-from _paths import SRC, rel
+from _paths import SRC, rel, extract_function
 import subprocess
 import tempfile
 from pathlib import Path
@@ -111,13 +111,23 @@ checkpoint = section(
     "static player_save_pipeline_result checkpoint_dirty_with_quest_xp(",
     "player_save_pipeline_result player_save_pipeline_checkpoint_dirty",
 )
+checkpoint_entry = section(
+    PIPELINE,
+    "player_save_pipeline_result player_save_pipeline_checkpoint_dirty",
+    "player_save_pipeline_result player_save_pipeline_request",
+)
+assert "return checkpoint_dirty_with_quest_xp(ch, save_intent, room_vnum, nullptr, 0);" in checkpoint_entry
 assert checkpoint.index("if (!revision.dirty_components)") < checkpoint.index(
     "player_revision_queue"
 )
 assert checkpoint.index("player_revision_queue") < checkpoint.index("player_snapshot_capture")
-for forbidden in ("player_save_journal_", "sql_", "redis_", "fopen", "open(", "write("):
+assert checkpoint.index("player_save_journal_pid_quarantined") < checkpoint.index(
+    "player_revision_snapshot_copy"
+)
+for forbidden in ("sql_", "redis_", "fopen", "open(", "write("):
     assert forbidden not in checkpoint
 pulse = section(PIPELINE, "void player_save_pipeline_pulse", "player_save_pipeline_health")
+assert "quest_reward_recovery_save_acknowledged(" in pulse
 assert "player_save_worker_pulse" in pulse
 assert "acknowledge_terminal_fence_completion_locked(completions[index])" in pulse
 assert "player_save_worker_submit_retained" in pulse
@@ -286,6 +296,7 @@ terminal_preamble = r'''
 #include <chrono>
 #include <mutex>
 #include <thread>
+bool player_save_journal_pid_quarantined(int) { return false; }
 struct char_data { int pid; unsigned int runtime_flags; };
 struct obj_data { int uid; };
 #define IS_SET(flag, bit) ((flag) & (bit))
@@ -431,3 +442,170 @@ subprocess.run([
 ], cwd=ROOT, check=True)
 subprocess.run([str(terminal_binary)], check=True, timeout=10)
 print("[PASS] ten terminal-intent trials cover prior ACK, pending save, timed-out camp retry, and journal handoff")
+
+# Compile the real checkpoint and receipt merge with controlled admission/capture
+# failures. Revision state and codec remain real so component and wire checks run.
+receipt_harness = r'''
+#include "player/player_save_pipeline.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
+#include "core/defines.h"
+#include <algorithm>
+#include <cassert>
+#include <mutex>
+#include <new>
+struct char_data { int pid; unsigned int runtime_flags = 0; };
+#undef GET_PID
+#undef IS_NPC
+#define GET_PID(ch) ((ch)->pid)
+#define IS_NPC(ch) false
+#define IS_SET(flag, bit) ((flag) & (bit))
+#define LOG_STATUS 0
+constexpr int RENT_CRASH = 1, RENT_INN = 3;
+std::mutex pipeline_mutex;
+struct { int unchanged = 0, capture_failures = 0; } health;
+struct terminal_fence { bool death_pinned = false; };
+terminal_fence *find_terminal_fence_locked(int) { return nullptr; }
+void *find_target_save_login_fence_locked(int) { return nullptr; }
+bool player_save_journal_pid_quarantined(int) { return false; }
+bool snapshot_is_retained_locked(int, player_revision_t) { return false; }
+bool trace_player_saves() { return false; }
+uint64_t persistence_observability_now_usec() { return 0; }
+void logit(int, const char *, ...) {}
+bool player_save_pipeline_mark(int pid, player_component_mask_t components) {
+    return player_revision_mark(pid, components, nullptr);
+}
+bool capture_fails = false;
+bool refuse_enqueue = false;
+player_snapshot pending, captured;
+bool quest_reward_recovery_pending_save_receipts(
+    int, std::vector<player_quest_xp_receipt_snapshot> *receipts,
+    player_component_mask_t *components) {
+    *receipts = pending.quest_xp_receipts;
+    *components = receipts->empty() ? 0 : PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES;
+    return true;
+}
+bool spell_component_retirement_pending_save_receipts(
+    uint32_t, std::vector<player_spell_effect_receipt_snapshot> *receipts) {
+    *receipts = pending.spell_effect_receipts;
+    return true;
+}
+player_snapshot_capture_result player_snapshot_capture(
+    P_char ch, player_revision_t revision, player_component_mask_t components,
+    int intent, int room, player_snapshot *snapshot) {
+    if (capture_fails) return player_snapshot_capture_result::malformed_source;
+    snapshot->schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+    snapshot->pid = ch->pid;
+    snapshot->revision = revision;
+    snapshot->components = components;
+    snapshot->save_intent = intent;
+    snapshot->room_vnum = room;
+    snapshot->encoded_size_bound = 4096;
+    return player_snapshot_capture_result::ok;
+}
+player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot) {
+    captured = std::move(snapshot);
+    return refuse_enqueue ? player_save_pipeline_result::overloaded : player_save_pipeline_result::queued;
+}
+''' + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function(
+    "player_save_pipeline.c", "static player_save_pipeline_result checkpoint_dirty_with_quest_xp("
+) + r'''
+void verify() {
+    assert(captured.components & PLAYER_COMPONENT_AFFECTS);
+    assert(captured.spell_effect_receipts.size() == 1);
+    assert(captured.spell_effect_receipts[0].operation_id.bytes[0] == 77);
+    std::vector<uint8_t> bytes;
+    assert(player_snapshot_encode(captured, &bytes) == player_snapshot_codec_result::ok);
+    player_snapshot decoded;
+    assert(player_snapshot_decode(bytes.data(), bytes.size(), &decoded) == player_snapshot_codec_result::ok);
+    assert(decoded.spell_effect_receipts[0].effect_id == 6);
+}
+int main() {
+    char_data player {41};
+    assert(player_revision_hydrate(41, 0));
+    player_spell_effect_receipt_snapshot receipt = {};
+    receipt.operation_id.bytes[0] = 77;
+    receipt.effect_id = 6;
+    pending.spell_effect_receipts.push_back(receipt);
+    capture_fails = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::capture_failed);
+    capture_fails = false;
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_STATUS));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) == player_save_pipeline_result::queued);
+    verify();
+    refuse_enqueue = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::overloaded);
+    refuse_enqueue = false;
+    assert(player_save_pipeline_mark(41, PLAYER_CHECKPOINT_COMPONENT_ALL));
+    player_revision_snapshot before;
+    assert(player_revision_snapshot_copy(41, &before));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_INN, 1201, nullptr, 0) == player_save_pipeline_result::queued);
+    verify();
+    assert(captured.revision == before.current_revision && captured.save_intent == RENT_INN);
+    assert(captured.components == PLAYER_CHECKPOINT_COMPONENT_ALL);
+    // Conflicting identity is refused; an explicit duplicate is never appended twice.
+    receipt.effect_id = 1;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::invalid);
+    auto death = captured;
+    death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+    death.death.emplace();
+    death.spell_effect_receipts.clear();
+    const auto bound = death.encoded_size_bound;
+    assert(merge_spell_effect_receipts(&death, pending));
+    assert(death.schema_version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION);
+    assert(death.encoded_size_bound == bound + 24);
+    // Applied XP from a refused capture/admission enters subsequent ordinary
+    // and terminal checkpoints together with its progression components.
+    player_quest_xp_receipt_snapshot xp = {};
+    xp.offering_operation.bytes[0] = 88;
+    xp.reward_index = 0;
+    xp.amount = 75;
+    pending.quest_xp_receipts.push_back(xp);
+    capture_fails = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, &xp, 1) == player_save_pipeline_result::capture_failed);
+    capture_fails = false;
+    refuse_enqueue = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, &xp, 1) == player_save_pipeline_result::overloaded);
+    refuse_enqueue = false;
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_LANGUAGES));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) == player_save_pipeline_result::queued);
+    verify();
+    assert(captured.quest_xp_receipts.size() == 1 && captured.quest_xp_receipts[0].amount == 75);
+    assert((captured.components & (PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES)) ==
+           (PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES));
+    assert(player_save_pipeline_mark(41, PLAYER_CHECKPOINT_COMPONENT_ALL));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_INN, 1201, nullptr, 0) == player_save_pipeline_result::queued);
+    assert(captured.quest_xp_receipts.size() == 1);
+    auto mixed_death = captured;
+    mixed_death.schema_version = PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+    mixed_death.death.emplace();
+    mixed_death.quest_xp_receipts.clear();
+    const auto mixed_bound = mixed_death.encoded_size_bound;
+    assert(merge_quest_xp_receipts(&mixed_death, pending));
+    assert(mixed_death.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION);
+    assert(mixed_death.encoded_size_bound == mixed_bound + 28);
+    assert(merge_spell_effect_receipts(&mixed_death, pending));
+    assert(mixed_death.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION);
+    assert(mixed_death.quest_xp_receipts.size() == 1 && mixed_death.spell_effect_receipts.size() == 1);
+    auto xp_death = mixed_death;
+    xp_death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+    xp_death.quest_xp_receipts.clear();
+    xp_death.spell_effect_receipts.clear();
+    const auto xp_bound = xp_death.encoded_size_bound;
+    assert(merge_quest_xp_receipts(&xp_death, pending));
+    assert(xp_death.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION);
+    assert(xp_death.encoded_size_bound == xp_bound + 32);
+    assert(merge_spell_effect_receipts(&death, pending) && death.spell_effect_receipts.size() == 1);
+    assert(death.encoded_size_bound == bound + 24);
+}
+'''
+with tempfile.TemporaryDirectory(prefix="duris-pending-spell-save-") as directory:
+    path = Path(directory)
+    program = path / "pending.cpp"
+    binary = path / "pending"
+    program.write_text(receipt_harness)
+    subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
+                    str(program), rel("player_revision_state.c"), rel("player_snapshot_codec.c"),
+                    "-o", str(binary)], cwd=ROOT, check=True)
+    subprocess.run([str(binary)], check=True)
+print("[PASS] capture/admission failures retain quest XP and spell receipts in later ordinary/terminal saves and combined death merges")

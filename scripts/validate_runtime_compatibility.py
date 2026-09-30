@@ -20,7 +20,8 @@ FIELDS = {
     "manifest_version", "baseline_id", "baseline_table_count",
     "baseline_table_fingerprint", "current_table_count",
     "runtime_table_sql_list", "normalized_metadata_fingerprints", "migration_head",
-    "connection", "lookup",
+    "connection", "lookup", "staging_0045_migration_head", "migration_history_sql",
+    "extra_description_generation_sql",
 }
 HEAD_FIELDS = {"id", "sequence", "apply_checksum", "verify_checksum",
                "history_checksum"}
@@ -42,6 +43,16 @@ EXPECTED_CONNECTION = {
     "write_timeout_seconds": 10,
     "remote_tls_required": True,
 }
+EXTRA_DESCRIPTION_GENERATION_SQL = (
+    "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+    "AND table_name IN ('player_item_extra_descr','player_pet_item_extra_descr') "
+    "AND column_name='description_sha256' AND data_type='binary' "
+    "AND character_maximum_length=32 AND LOWER(extra) LIKE '%stored generated%' "
+    "AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,"
+    "CONCAT(CHAR(92),CHAR(39),CHAR(92),CHAR(39)),CONCAT(CHAR(39),CHAR(39))),"
+    "CHAR(96),''),' ',''),"
+    "'_utf8mb4',''))='unhex(sha2(coalesce(description,''''),256))'"
+)
 
 
 # Explicit offline contract for the post-baseline death schema. This supplements
@@ -140,7 +151,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 222:
+            value["current_table_count"] != 223:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -158,8 +169,8 @@ def load() -> dict:
                 for item in fingerprints.values()):
         raise migration_runner.MigrationContractError(
             "runtime metadata fingerprints are invalid")
-    if not isinstance(value["migration_head"], dict) or \
-            set(value["migration_head"]) != HEAD_FIELDS or \
+    if any(not isinstance(value[name], dict) or set(value[name]) != HEAD_FIELDS
+           for name in ("migration_head", "staging_0045_migration_head")) or \
             not isinstance(value["connection"], dict) or \
             set(value["connection"]) != CONNECTION_FIELDS or \
             value["connection"] != EXPECTED_CONNECTION or value["lookup"] != {
@@ -188,18 +199,36 @@ def validate() -> dict:
             value["baseline_table_fingerprint"] != migration.required_table_fingerprint or \
             not migration.migrations:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
+    staging = migration_runner.load_manifest(
+        ROOT / "migrations/migration_manifest.staging_0045.json")
+    if len(migration.migrations) != 50 or len(staging.migrations) != 50 or \
+            staging.baseline_id != migration.baseline_id or \
+            staging.required_tables != migration.required_tables or \
+            staging.migrations[:44] != migration.migrations[:44] or \
+            staging.migrations[44].migration_id != \
+            "0045_item_extra_description_fulltext_unique":
+        raise migration_runner.MigrationContractError("unsupported staging migration fork")
+    from dataclasses import replace
+    if staging.migrations[45:] != tuple(
+            replace(item, sequence=item.sequence + 1)
+            for item in migration.migrations[44:49]):
+        raise migration_runner.MigrationContractError("staging migration append drift")
     head = migration.migrations[-1]
-    applied = [migration_runner.AppliedMigration(
-        item.migration_id, item.sequence, item.description, item.apply_checksum,
-        item.verify_checksum, item.compatibility, migration.runner_version,
-    ) for item in migration.migrations]
-    expected_head = {
-        "id": head.migration_id, "sequence": head.sequence,
-        "apply_checksum": head.apply_checksum, "verify_checksum": head.verify_checksum,
-        "history_checksum": migration_runner.history_checksum(applied),
-    }
-    if value["migration_head"] != expected_head:
-        raise migration_runner.MigrationContractError("runtime migration head drift")
+    for name, contract in (("migration_head", migration),
+                           ("staging_0045_migration_head", staging)):
+        final = contract.migrations[-1]
+        applied = [migration_runner.AppliedMigration(
+            item.migration_id, item.sequence, item.description, item.apply_checksum,
+            item.verify_checksum, item.compatibility, contract.runner_version,
+        ) for item in contract.migrations]
+        expected_head = {
+            "id": final.migration_id, "sequence": final.sequence,
+            "apply_checksum": final.apply_checksum,
+            "verify_checksum": final.verify_checksum,
+            "history_checksum": migration_runner.history_checksum(applied),
+        }
+        if value[name] != expected_head:
+            raise migration_runner.MigrationContractError("runtime migration head drift")
     lifecycle_manifest = lifecycle.load_manifest(
         ROOT / "migrations/data_lifecycle_manifest.json"
     )
@@ -234,6 +263,26 @@ def validate() -> dict:
     if compiled_table_list != expected_table_list:
         raise migration_runner.MigrationContractError(
             "compiled runtime table inventory drift")
+    for field, constant, expected_sql in (
+            ("migration_history_sql", "RUNTIME_MIGRATION_HISTORY_SQL",
+             migration_runner.runtime_history_sql(len(migration.migrations) + 1)),
+            ("extra_description_generation_sql", "RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL",
+             EXTRA_DESCRIPTION_GENERATION_SQL)):
+        match = re.search(rf"{constant}\s*=\s*((?:\"[^\"]*\"\s*)+);", header)
+        compiled = "".join(json.loads(literal) for literal in
+                           re.findall(r'"[^\"]*"', match.group(1))) if match else None
+        if value[field] != expected_sql or compiled != expected_sql:
+            raise migration_runner.MigrationContractError("compiled runtime query drift")
+    for suffix, field in (("HEAD_ID", "id"), ("HEAD_SEQUENCE", "sequence"),
+                          ("APPLY_CHECKSUM", "apply_checksum"),
+                          ("VERIFY_CHECKSUM", "verify_checksum"),
+                          ("HISTORY_CHECKSUM", "history_checksum")):
+        for prefix, name in (("RUNTIME_MIGRATION_", "migration_head"),
+                             ("RUNTIME_STAGING_0045_MIGRATION_",
+                              "staging_0045_migration_head")):
+            match = re.search(rf'{prefix}{suffix}\s*=\s*("[^\"]*"|[0-9]+);', header)
+            if match is None or json.loads(match.group(1)) != value[name][field]:
+                raise migration_runner.MigrationContractError("compiled runtime history drift")
     required_literals = (
         str(value["manifest_version"]), value["baseline_id"],
         value["baseline_table_fingerprint"], str(value["baseline_table_count"]),

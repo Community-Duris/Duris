@@ -275,7 +275,7 @@ bool player_death_recovery_detail_identity_valid(int32_t pid,
 						 const player_snapshot &snapshot)
 {
 	return pid > 0 && !critical_operation_id_is_zero(requested) && snapshot.pid == pid &&
-	       snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION &&
+	       player_snapshot_is_death_evidence_schema(snapshot.schema_version) &&
 	       snapshot.death && snapshot.death->conflict_evidence &&
 	       !snapshot.death->corpse.empty() && snapshot.revision == identity.save_revision &&
 	       snapshot.death->operation_id.bytes == requested.bytes &&

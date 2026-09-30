@@ -22,18 +22,6 @@
 #include <type_traits>
 #include <unordered_set>
 
-__attribute__((weak)) unsigned int
-flatfile_economic_control_read(const std::string &root, const flatfile_authority_lock &lock,
-			       flatfile_economic_control *control, std::string *error)
-{
-	(void)root;
-	(void)lock;
-	(void)control;
-	if (error)
-		error->clear();
-	return 0;
-}
-
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'B', 'O', 'O', 'N', 0 };
@@ -1096,20 +1084,8 @@ critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EEXIST };
-	std::error_code metadata_error;
-	const bool evidence_exists = std::filesystem::exists(
-		std::filesystem::path(root) / "economic-evidence", metadata_error);
-	if (metadata_error)
-		return { critical_apply_outcome::retryable_failure, 0, EIO };
-	if (evidence_exists)
-	{
-		flatfile_economic_control control;
-		const auto status = flatfile_economic_control_read(root, lock, &control, &error);
-		if (status)
-			return { critical_apply_outcome::retryable_failure, 0, status };
-		if (!critical_operation_id_is_zero(control.active_epoch))
-			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
-	}
+	if (const auto gate = flatfile_economic_legacy_domain_gate(root, lock, &error))
+		return { critical_apply_outcome::retryable_failure, 0, gate };
 	if (catalog.operations.size() >= operation_maximum ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
@@ -1321,20 +1297,8 @@ critical_apply_result flatfile_boon_shop_repository_apply(const std::string &roo
 		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EEXIST };
-	std::error_code metadata_error;
-	const bool evidence_exists = std::filesystem::exists(
-		std::filesystem::path(root) / "economic-evidence", metadata_error);
-	if (metadata_error)
-		return { critical_apply_outcome::retryable_failure, 0, EIO };
-	if (evidence_exists)
-	{
-		flatfile_economic_control control;
-		const auto status = flatfile_economic_control_read(root, lock, &control, &error);
-		if (status)
-			return { critical_apply_outcome::retryable_failure, 0, status };
-		if (!critical_operation_id_is_zero(control.active_epoch))
-			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
-	}
+	if (const auto gate = flatfile_economic_legacy_domain_gate(root, lock, &error))
+		return { critical_apply_outcome::retryable_failure, 0, gate };
 	if (catalog.shop_operations.size() >= operation_maximum ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
