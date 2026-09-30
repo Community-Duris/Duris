@@ -1849,7 +1849,7 @@ static void mark_char_or_owner_dirty(P_char ch)
 }
 
 // Give an object to a char
-void obj_to_char(P_obj object, P_char ch)
+obj_to_char_result obj_to_char_checked(P_obj object, P_char ch)
 {
 	P_obj o;
 	char Gbuf[MAX_STRING_LENGTH];
@@ -1858,7 +1858,7 @@ void obj_to_char(P_obj object, P_char ch)
 	{
 		logit(LOG_MOB, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
 		logit(LOG_OBJ, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!object)
@@ -1871,7 +1871,7 @@ void obj_to_char(P_obj object, P_char ch)
 		{
 			logit(LOG_OBJ, "obj_to_char: no obj: player (%s).", GET_NAME(ch));
 		}
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (training_dummy_is(ch))
@@ -1880,14 +1880,14 @@ void obj_to_char(P_obj object, P_char ch)
 		      J_NAME(ch), OBJ_VNUM(object));
 		if (OBJ_NOWHERE(object) && ch->in_room != NOWHERE)
 			obj_to_room(object, ch->in_room);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!OBJ_NOWHERE(object))
 	{
 		logit(LOG_DEBUG, "obj_to_char: wonders never cease, obj vnum %d not in NOWHERE",
 		      OBJ_VNUM(object));
-		return;
+		return obj_to_char_result::rejected;
 		/*
 		    act("&+gWith a scurry, bugs appear from nowhere, engulfing $p.", TRUE, ch, object, 0, TO_ROOM);
 		    extract_obj(object, TRUE); // A bug -> eating an arti.. ouch.
@@ -1897,11 +1897,7 @@ void obj_to_char(P_obj object, P_char ch)
 
 	if (IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
-		// DEFERRED: use-after-free — extract_obj frees object, but callers in
-		// do_get/give/remove (actobj.c) still dereference the stale pointer.
-		// Setting object=NULL here only clears our local copy; the caller's
-		// pointer is passed by value. Fix requires returning a freed-status
-		// from obj_to_char/obj_to_room, touching hundreds of call sites.
+		// Callers using the checked entry point must not access object after this.
 		if (ch->in_room)
 		{
 			snprintf(
@@ -1911,8 +1907,7 @@ void obj_to_char(P_obj object, P_char ch)
 			send_to_room(Gbuf, ch->in_room);
 		}
 		extract_obj(object, TRUE); // Crumbleloot arti?
-		object = NULL;
-		return;
+		return obj_to_char_result::destroyed;
 	}
 
 	// A persisted generic item may only reach a player after its active ownership row names
@@ -1940,7 +1935,7 @@ void obj_to_char(P_obj object, P_char ch)
 			    !economic_gameplay_authority::active() &&
 			    item_creation_grant_submit_to_player(
 				    ch, object, ch, NULL, economic_source_kind::world_generation))
-				return;
+				return obj_to_char_result::deferred;
 			logit(LOG_FILE,
 			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",
 			      (unsigned long long)object->obj_uid, OBJ_VNUM(object), GET_PID(ch));
@@ -1954,7 +1949,10 @@ void obj_to_char(P_obj object, P_char ch)
 			 * loaded graph must remain available for recovery.
 			 */
 			if (!has_authoritative_ownership && creation_candidate)
+			{
 				extract_obj(object, FALSE);
+				return obj_to_char_result::destroyed;
+			}
 			else
 				logit(LOG_FILE,
 				      "obj_to_char preserved non-candidate object after publication refusal "
@@ -1964,7 +1962,7 @@ void obj_to_char(P_obj object, P_char ch)
 				      (unsigned int)ownership.owner.type,
 				      (unsigned long long)ownership.owner.id,
 				      (unsigned int)ownership.state);
-			return;
+			return obj_to_char_result::rejected;
 		}
 	}
 
@@ -2018,6 +2016,12 @@ void obj_to_char(P_obj object, P_char ch)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+	return obj_to_char_result::placed;
+}
+
+void obj_to_char(P_obj object, P_char ch)
+{
+	(void)obj_to_char_checked(object, ch);
 }
 
 /*

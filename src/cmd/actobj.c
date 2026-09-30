@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/handler.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -377,13 +378,30 @@ struct empty_movement_context
 	uint64_t actor_runtime_id;
 };
 
-bool item_get_ack_publication = false;
-bool item_get_deferred = false;
-bool item_get_rejected = false;
+enum class get_phase
+{
+	admission,
+	publication,
+};
+enum class get_outcome
+{
+	rejected,
+	deferred,
+	placed,
+	consumed,
+	destroyed,
+};
+static get_outcome get_with_phase(P_char ch, P_obj object, P_obj container, int showit,
+				  get_phase phase);
 static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,
 			    const coin_get_submission_options *options = NULL);
-bool item_put_ack_publication = false;
-bool item_put_deferred = false;
+enum class put_phase
+{
+	admission,
+	publication,
+};
+static bool put_with_phase(P_char ch, P_obj object, P_obj container, int showit,
+			   put_phase phase);
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
 std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
@@ -419,7 +437,24 @@ P_obj find_live_item_uid(uint64_t item_uid)
 	return NULL;
 }
 
-static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showit, bool slip)
+static get_outcome get_placement_outcome(obj_to_char_result placement)
+{
+	switch (placement)
+	{
+	case obj_to_char_result::placed:
+		return get_outcome::placed;
+	case obj_to_char_result::deferred:
+		return get_outcome::deferred;
+	case obj_to_char_result::destroyed:
+		return get_outcome::destroyed;
+	case obj_to_char_result::rejected:
+		return get_outcome::rejected;
+	}
+	return get_outcome::rejected;
+}
+
+static get_outcome publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
+					 bool slip, get_phase phase)
 {
 	obj_from_obj(o_obj);
 
@@ -427,7 +462,7 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 	s_obj->space -= GET_OBJ_SPACE(o_obj);
 #endif
 
-	bulk_get_state *haul = item_get_ack_publication ? corpse_bulk_get(ch, s_obj->obj_uid) :
+	bulk_get_state *haul = phase == get_phase::publication ? corpse_bulk_get(ch, s_obj->obj_uid) :
 							  NULL;
 	const uint64_t picked_uid = o_obj->obj_uid;
 	const std::string picked_name =
@@ -444,7 +479,8 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 		if (showit && !slip)
 			act("$n gets $p from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
 	}
-	obj_to_char(o_obj, ch);
+	const obj_to_char_result placement = obj_to_char_checked(o_obj, ch);
+	bool haul_delivery_failed = false;
 	if (haul)
 	{
 		P_obj delivered = find_live_item_uid(picked_uid);
@@ -453,11 +489,12 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 		else
 		{
 			haul->failed = true;
-			item_get_rejected = true;
+			haul_delivery_failed = true;
 			haul->rejections.emplace_back(
 				"An accepted item could not be delivered to your inventory.\r\n");
 		}
 	}
+	return haul_delivery_failed ? get_outcome::rejected : get_placement_outcome(placement);
 }
 
 static void report_coin_get_rejection(P_char actor, P_obj container)
@@ -518,9 +555,17 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
 				  "runtime_rejected", "save_id=%d",
 				  container->value[CORPSE_SAVEID]);
-	item_get_ack_publication = true;
-	get(actor, object, container, context.showit);
-	item_get_ack_publication = false;
+	const get_outcome publication =
+		get_with_phase(actor, object, container, context.showit, get_phase::publication);
+	if (publication != get_outcome::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "get_publish", "none", "none",
+				  "publication_rejected", "item_uid=%llu", context.item_uid);
+		send_to_char(
+			"The committed item could not be delivered; staff have been alerted.\r\n",
+			actor);
+		return;
+	}
 	if (IS_NPC(actor))
 	{
 		// Mob scavenging used to evaluate equipment immediately after the live
@@ -662,7 +707,7 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 	act("$n gives $p to $N.", TRUE, actor, object, recipient, TO_NOTVICT);
 	act("$n gives you $p.", FALSE, actor, object, recipient, TO_VICT);
 	send_to_char("Ok.\r\n", actor);
-	obj_to_char(object, recipient);
+	const obj_to_char_result placement = obj_to_char_checked(object, recipient);
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
@@ -671,6 +716,12 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 								 PLAYER_COMPONENT_INVENTORY);
 	char_light(actor);
 	room_light(actor->in_room, REAL);
+	if (placement != obj_to_char_result::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "give_publish", "none", "none",
+				  "live_placement_failed", "item_uid=%llu", context.item_uid);
+		return;
+	}
 	nq_action_check(actor, recipient, NULL);
 	studioproc_give(recipient, object, actor);
 }
@@ -715,12 +766,18 @@ void pet_give_completion(P_char actor, bool committed, const item_transfer_resul
 	act("$n gives $p to $N.", TRUE, source, object, destination, TO_NOTVICT);
 	act("$n gives you $p.", FALSE, source, object, destination, TO_VICT);
 	send_to_char("Ok.\r\n", source);
-	obj_to_char(object, destination);
+	const obj_to_char_result placement = obj_to_char_checked(object, destination);
 	mark_player_dirty_components(context.owner_pid,
 				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
 					     PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_PETS);
 	char_light(source);
 	room_light(context.room, REAL);
+	if (placement != obj_to_char_result::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "pet_give_publish", "none", "none",
+				  "live_placement_failed", "item_uid=%llu", context.item_uid);
+		return;
+	}
 	nq_action_check(source, destination, NULL);
 	studioproc_give(destination, object, source);
 }
@@ -753,9 +810,8 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
 		return;
 	}
-	item_put_ack_publication = true;
-	const bool stored = put(actor, object, container, context.showit);
-	item_put_ack_publication = false;
+	const bool stored = put_with_phase(actor, object, container, context.showit,
+					   put_phase::publication);
 	(void)stored;
 }
 
@@ -770,10 +826,10 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
  * ownership (coins, unowned transients, PC corpse roots) and uid-less containers stay
  * synchronous.
  */
-bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
+bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit,
+		       put_phase phase)
 {
-	item_put_deferred = false;
-	if (item_put_ack_publication || !IS_PC(actor) ||
+	if (phase == put_phase::publication || !IS_PC(actor) ||
 	    !item_command_uses_durable_ownership(object) || !container->obj_uid)
 		return false;
 	item_ownership_runtime_entry item_runtime = {};
@@ -803,8 +859,6 @@ bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 					      destination.reason_id, item_put_completion, &context,
 					      sizeof(context), NULL, &reject))
 		report_movement_reject(actor, reject, "put", object);
-	else
-		item_put_deferred = true;
 	return true;
 }
 
@@ -835,15 +889,15 @@ bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 }
 
 /** Pick up one object, publishing durable item movement only after its commit. */
-void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
+				  get_phase phase)
 {
 	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
 	char Gbuf3[MAX_STRING_LENGTH];
 	P_obj corpse = NULL;
 	bool slip = FALSE;
-	item_get_deferred = false;
-	item_get_rejected = false;
-	if (item_get_ack_publication)
+	get_outcome outcome = get_outcome::rejected;
+	if (phase == get_phase::publication)
 	{
 		if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[1], PC_CORPSE))
 			corpse = s_obj;
@@ -857,14 +911,14 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		logit(LOG_EXIT, "call to get with NULL obj or ch");
 		GETDBG_LOG("GETDBG[get-null-args]: ch=%p obj=%p container=%p showit=%d", (void *)ch,
 			   (void *)o_obj, (void *)s_obj, showit ? 1 : 0);
-		return;
+		return get_outcome::rejected;
 	}
 	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
 					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
 	{
 		send_to_char("That corpse is settling into the world; try again shortly.\r\n", ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	if (account_bound_reward_owner(ch, o_obj) == false &&
@@ -873,7 +927,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		send_to_char(
 			"You may not take that account-bound reward; it belongs to another account.\r\n",
 			ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	if (o_obj->condition <= 0)
@@ -886,7 +940,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		MakeScrap(ch, o_obj);
-		return;
+		return get_outcome::destroyed;
 	}
 
 	if (GET_CHAR_SKILL(ch, SKILL_SLIP))
@@ -908,7 +962,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		send_to_char("No mobs taking things from the well!\r\n", ch);
-		return;
+		return get_outcome::rejected;
 	}
 	if (IS_NPC(ch) && (GET_RNUM(ch) == real_mobile(250)))
 	{
@@ -920,7 +974,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		send_to_char("Too bad you're a mirror image and can't, eh?\r\n", ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	/* Trap check */
@@ -933,7 +987,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			OBJ_VNUM(o_obj), o_obj->obj_uid,
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
-		return;
+		return get_outcome::rejected;
 	}
 
 	/* Don't screw up my pointers! */
@@ -949,13 +1003,13 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		act("You can't, $p is hitched to $N.", FALSE, ch, o_obj, o_obj->hitched_to,
 		    TO_CHAR);
-		return;
+		return get_outcome::rejected;
 	}
 	if (item_command_uses_durable_ownership(o_obj) && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 	    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 	{
 		send_to_char("&+LYou cannot take that.&n\n\r", ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	GETDBG_LOG(
@@ -993,7 +1047,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		{
 			report_movement_reject(ch, item_movement_reject::owner_mismatch, "get",
 					       o_obj);
-			return;
+			return get_outcome::rejected;
 		}
 		const item_transfer_reason reason = source.type == item_owner_type::locker ?
 							    item_transfer_reason::locker_withdraw :
@@ -1006,10 +1060,9 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 						      &reject))
 		{
 			report_movement_reject(ch, reject, "get", o_obj);
-			return;
+			return get_outcome::rejected;
 		}
-		item_get_deferred = true;
-		return;
+		return get_outcome::deferred;
 	}
 	if (IS_NPC(ch) && item_command_uses_durable_ownership(o_obj))
 	{
@@ -1029,7 +1082,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			{
 				report_movement_reject(ch, item_movement_reject::owner_mismatch,
 						       "mobile_get", o_obj);
-				return;
+				return get_outcome::rejected;
 			}
 			P_char master = GET_MASTER(ch);
 			const int64_t claimant_pid =
@@ -1042,10 +1095,9 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				    item_get_completion, &context, sizeof(context), NULL, &reject))
 			{
 				report_movement_reject(ch, reject, "mobile_get", o_obj);
-				return;
+				return get_outcome::rejected;
 			}
-			item_get_deferred = true;
-			return;
+			return get_outcome::deferred;
 		}
 	}
 
@@ -1053,11 +1105,10 @@ publish_after_ack:
 
 	if (IS_PC(ch) && o_obj->type == ITEM_MONEY)
 	{
-		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, showit);
-		item_get_rejected = !item_get_deferred;
-		if (item_get_rejected)
+		const bool submitted = submit_coin_get(ch, o_obj, s_obj, showit);
+		if (!submitted)
 			report_coin_get_rejection(ch, s_obj);
-		return;
+		return submitted ? get_outcome::deferred : get_outcome::rejected;
 	}
 
 	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) ||
@@ -1097,7 +1148,7 @@ publish_after_ack:
 								    "(none)",
 				s_obj ? OBJ_VNUM(s_obj) : -1);
 			send_to_char("You can't carry any of the coins.\r\n", ch);
-			return;
+			return get_outcome::rejected;
 		}
 		ADD_MONEY(ch, total_value);
 		if (total_value > 999999)
@@ -1231,11 +1282,6 @@ publish_after_ack:
 			}
 			send_to_char(Gbuf3, ch);
 			extract_obj(o_obj);
-			// DEFERRED: use-after-free — extract_obj frees o_obj, but callers in
-			// do_get_finalize_container_item and do_get_log_room_artifact_pickup
-			// still dereference the stale pointer (short_description, R_num, obj_uid).
-			// Fix requires obj_to_char/obj_to_room returning a freed-status, or a
-			// zombie flag, touching hundreds of call sites.
 			o_obj = NULL;
 		}
 
@@ -1253,26 +1299,26 @@ publish_after_ack:
 		/* Send GMCP update for coin change */
 		gmcp_char_vitals(ch);
 
-		return;
+		return get_outcome::consumed;
 	}
 	if (s_obj)
 	{
-		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		if (phase == get_phase::admission && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
-			return;
+			return get_outcome::rejected;
 		}
 
-		publish_container_get(ch, o_obj, s_obj, showit, slip);
+		outcome = publish_container_get(ch, o_obj, s_obj, showit, slip, phase);
 	}
 	else
 	{
-		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		if (phase == get_phase::admission && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
-			return;
+			return get_outcome::rejected;
 		}
 
 		// log floor pickup for duplication prevention
@@ -1288,7 +1334,7 @@ publish_after_ack:
 		act("You get $p.", 0, ch, o_obj, 0, TO_CHAR);
 		if (showit && !slip)
 			act("$n gets $p.", 1, ch, o_obj, 0, TO_ROOM);
-		obj_to_char(o_obj, ch);
+		outcome = get_placement_outcome(obj_to_char_checked(o_obj, ch));
 	}
 
 	if (corpse)
@@ -1296,6 +1342,12 @@ publish_after_ack:
 
 	char_light(ch);
 	room_light(ch->in_room, REAL);
+	return outcome;
+}
+
+void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+{
+	(void)get_with_phase(ch, o_obj, s_obj, showit, get_phase::admission);
 }
 
 int fight_in_room(P_char ch)
@@ -1312,33 +1364,37 @@ int fight_in_room(P_char ch)
 	return FALSE;
 }
 
-static bool do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
+static get_outcome do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj,
+					     bool &found, get_phase phase)
 {
-	get(ch, o_obj, s_obj, TRUE);
-	if (item_get_deferred || item_get_rejected)
-		return false;
+	const get_outcome outcome = get_with_phase(ch, o_obj, s_obj, TRUE, phase);
+	if (outcome == get_outcome::deferred || outcome == get_outcome::rejected)
+		return outcome;
 	found = TRUE;
-	return true;
+	return outcome;
 }
 
-static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
-					int &total)
+static get_outcome do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj,
+					       bool &found, int &total, get_phase phase)
 {
-	if (!do_get_commit_pickup_core(ch, s_obj, o_obj, found))
-		return;
+	const get_outcome outcome = do_get_commit_pickup_core(ch, s_obj, o_obj, found, phase);
+	if (outcome != get_outcome::placed && outcome != get_outcome::consumed)
+		return outcome;
 	++total;
 	if (s_obj && (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
 		if (s_obj->value[3] > 0)
 			s_obj->value[3]--;
+	return outcome;
 }
 
-static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
-					   bool &found, const char *post_tag)
+static get_outcome do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
+					   bool &found, const char *post_tag, get_phase phase)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
-	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total);
-	if (money)
-		return;
+	const get_outcome outcome =
+		do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total, phase);
+	if (money || outcome != get_outcome::placed)
+		return outcome;
 	GETDBG_LOG(
 		"%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
 		post_tag, GET_NAME(ch), world[ch->in_room].number,
@@ -1346,19 +1402,22 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 		o_obj->obj_uid, OBJ_CARRIED_BY(o_obj, ch) ? 1 : 0,
 		s_obj->short_description ? s_obj->short_description : "(none)", OBJ_VNUM(s_obj),
 		s_obj->obj_uid, total);
+	return outcome;
 }
 
-static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj);
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj,
+						 P_obj s_obj, get_phase phase);
 static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail);
 static void do_get_reject_closed(P_char ch, bool &fail);
 static void do_get_reject_fighting_bags(P_char ch, bool &fail);
 static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
 						 const char *tag, int carried, int carry_w,
 						 int cap_w, bool &fail);
-static void
+static get_outcome
 do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total,
 				  bool &found, bool corpse_flag, const char *post_tag,
-				  const coin_get_submission_options *coin_options = NULL)
+				  const coin_get_submission_options *coin_options = NULL,
+				  get_phase phase = get_phase::admission)
 {
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
 	{
@@ -1377,7 +1436,7 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 		{
 			if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
 			{
-				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
+				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj, phase);
 				// If the artifact was picked up across racewar lines.
 				if ((s_obj->value[5] != RACEWAR_NONE) &&
 				    (GET_RACEWAR(ch) != s_obj->value[5]))
@@ -1398,7 +1457,7 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 				      obj_index[o_obj->R_num].virtual_number,
 				      s_obj->action_description);
 
-				if (!item_get_ack_publication ||
+				if (phase == get_phase::admission ||
 				    !corpse_bulk_get(ch, s_obj->obj_uid))
 					act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 			}
@@ -1411,14 +1470,13 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 	}
 	if (coin_options && o_obj && GET_ITEM_TYPE(o_obj) == ITEM_MONEY)
 	{
-		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
-		item_get_rejected = !item_get_deferred;
-		if (item_get_rejected)
+		const bool submitted = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
+		if (!submitted)
 			report_coin_get_rejection(ch, s_obj);
-		return;
+		return submitted ? get_outcome::deferred : get_outcome::rejected;
 	}
 
-	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag);
+	return do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag, phase);
 }
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -1434,12 +1492,13 @@ static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
 	}
 }
 
-static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj)
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj,
+						 P_obj s_obj, get_phase phase)
 {
 	logit(LOG_CORPSE, "%s %s: %s [%d] (ARTIFACT) from %s", GET_NAME(ch),
 	      (hood == ch) ? "" : GET_NAME(hood), o_obj->name,
 	      obj_index[o_obj->R_num].virtual_number, s_obj->action_description);
-	if (!item_get_ack_publication || !corpse_bulk_get(ch, s_obj->obj_uid))
+	if (phase == get_phase::admission || !corpse_bulk_get(ch, s_obj->obj_uid))
 		act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 }
 
@@ -1771,13 +1830,16 @@ static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
 	do_get_reject_object(ch, o_obj, "is too heavy.", fail);
 }
 
-static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total)
+static get_outcome do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total,
+				      get_phase phase = get_phase::admission)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
-	do_get_finalize_pickup_core(ch, 0, o_obj, found, total);
+	const get_outcome outcome =
+		do_get_finalize_pickup_core(ch, 0, o_obj, found, total, phase);
 	/* A complete coin pickup extracts the object inside get(). */
-	if (!money)
+	if (!money && outcome == get_outcome::placed)
 		do_get_log_room_artifact_pickup(ch, o_obj);
+	return outcome;
 }
 
 namespace
@@ -1990,21 +2052,21 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 			}
 			options = &coin_options;
 		}
-		item_get_ack_publication = true;
+		get_outcome outcome;
 		if (container)
-			do_get_finalize_container_success(actor, actor, container, object,
+			outcome = do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
 							  "GETDBG[get-container-bulk-post]",
-							  options);
+							  options, get_phase::publication);
 		else
-			do_get_finalize_room_item(actor, object, found_item, state.total);
-		item_get_ack_publication = false;
-		if (item_get_deferred)
+			outcome = do_get_finalize_room_item(actor, object, found_item, state.total,
+						  get_phase::publication);
+		if (outcome == get_outcome::deferred)
 		{
 			announce_corpse_bulk_get(actor, state, container);
 			return false;
 		}
-		if (item_get_rejected)
+		if (outcome == get_outcome::rejected)
 			state.failed = true;
 		else
 			announce_corpse_bulk_get(actor, state, container);
@@ -2080,15 +2142,27 @@ static void bulk_get_completion(P_char actor, bool committed, const item_transfe
 				  container->value[CORPSE_SAVEID]);
 
 	bool found_item = false;
-	item_get_ack_publication = true;
 	for (P_obj object : roots)
+	{
+		const uint64_t item_uid = object->obj_uid;
 		if (container)
 			do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
-							  "GETDBG[get-container-bulk-post]");
+							  "GETDBG[get-container-bulk-post]", NULL,
+							  get_phase::publication);
 		else
-			do_get_finalize_room_item(actor, object, found_item, state.total);
-	item_get_ack_publication = false;
+			do_get_finalize_room_item(actor, object, found_item, state.total,
+						  get_phase::publication);
+		P_obj delivered = find_live_item_uid(item_uid);
+		if (!delivered || !OBJ_CARRIED_BY(delivered, actor))
+		{
+			state.failed = true;
+			state.rejections.emplace_back(
+				"A committed item could not be delivered; staff have been alerted.\r\n");
+			persistence_alert(AVATAR, "item_movement", "get_batch_publish", "none",
+					  "none", "publication_rejected", "item_uid=%llu", item_uid);
+		}
+	}
 	if (finish_bulk_get_after_commit(actor, state, container))
 		finish_bulk_get(actor, context.actor_pid);
 }
@@ -5265,12 +5339,10 @@ void bulk_put_completion(P_char actor, bool committed, const item_transfer_resul
 		bulk_puts.erase(found);
 		return;
 	}
-	item_put_ack_publication = true;
 	for (P_obj object : objects)
 	{
-		if (!put(actor, object, container, FALSE))
+		if (!put_with_phase(actor, object, container, FALSE, put_phase::publication))
 		{
-			item_put_ack_publication = false;
 			persistence_alert(AVATAR, "item_movement", "put_batch_publish", "none",
 					  "none", "publication_rejected", "item_uid=%llu",
 					  (unsigned long long)object->obj_uid);
@@ -5279,7 +5351,6 @@ void bulk_put_completion(P_char actor, bool committed, const item_transfer_resul
 		}
 		++state.total;
 	}
-	item_put_ack_publication = false;
 	finish_bulk_put_after_commit(actor, state, container);
 	finish_bulk_put(actor, context.actor_pid);
 }
@@ -5658,11 +5729,11 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 #undef PUT_ALLDOT
 #undef PUT_ITEM
 
-bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,
+			   put_phase phase)
 {
 	char Gbuf3[MAX_STRING_LENGTH];
 
-	item_put_deferred = false;
 	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
 					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
@@ -5717,7 +5788,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				}
 				if (s_obj->value[0] > s_obj->value[3])
 				{
-					if (defer_durable_put(ch, o_obj, s_obj, showit))
+					if (defer_durable_put(ch, o_obj, s_obj, showit, phase))
 						return TRUE;
 					if (showit)
 						send_to_char("Ok.\r\n", ch);
@@ -5825,7 +5896,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					      GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
 					{
 #endif
-						if (defer_durable_put(ch, o_obj, s_obj, showit))
+						if (defer_durable_put(ch, o_obj, s_obj, showit,
+								      phase))
 							return TRUE;
 						if (showit)
 							send_to_char("Ok.\r\n", ch);
@@ -5924,6 +5996,11 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	char_light(ch);
 	room_light(ch->in_room, REAL);
 	return (FALSE);
+}
+
+bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+{
+	return put_with_phase(ch, o_obj, s_obj, showit, put_phase::admission);
 }
 
 void do_give(P_char ch, char *argument, int cmd)
@@ -6195,10 +6272,17 @@ void do_give(P_char ch, char *argument, int cmd)
 	act("$n gives $p to $N.", 1, ch, obj, vict, TO_NOTVICT);
 	act("$n gives you $p.", 0, ch, obj, vict, TO_VICT);
 	send_to_char("Ok.\r\n", ch);
-	// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
-	// extraction (handler.c), but callers below dereference obj (IS_ARTIFACT,
-	// short_description, R_num). Fix requires obj_to_char returning freed-status.
-	obj_to_char(obj, vict);
+	const obj_to_char_result placement = obj_to_char_checked(obj, vict);
+	if (placement != obj_to_char_result::placed)
+	{
+		if (IS_PC(ch))
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
+								PLAYER_COMPONENT_EQUIPMENT |
+								PLAYER_COMPONENT_INVENTORY);
+		char_light(ch);
+		room_light(ch->in_room, REAL);
+		return;
+	}
 	if (IS_TRUSTED(ch))
 	{
 		if (IS_ARTIFACT(obj))
@@ -7747,16 +7831,27 @@ int remove_item(P_char ch, P_obj obj, int position)
 				strip_holy_sword(ch);
 			}
 
-			// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
-			// extraction (handler.c), but callers below dereference obj (IS_SET,
-			// get_obj_affect, obj_affect_remove). Fix requires obj_to_char
-			// returning freed-status or a zombie flag.
-			obj_to_char(unequip_char(ch, position), ch);
+			const bool was_invisible = IS_SET(obj->bitvector, AFF_INVISIBLE);
+			const struct obj_affect *enchant = get_obj_affect(obj, SKILL_ENCHANT);
+			const bool was_enchanted = enchant != NULL;
+			const int enchant_data = was_enchanted ? enchant->data : 0;
+			const obj_to_char_result placement =
+				obj_to_char_checked(unequip_char(ch, position), ch);
 
 			// Remove Affects
-			if (IS_SET(obj->bitvector, AFF_INVISIBLE) &&
+			if (was_invisible &&
 			    affected_by_spell(ch, TAG_PERMINVIS) && !wearing_invis(ch))
 				affect_from_char(ch, TAG_PERMINVIS);
+
+			if (placement == obj_to_char_result::destroyed)
+			{
+				if (was_enchanted)
+				{
+					affect_from_char(ch, enchant_data);
+					return REMOVE_BREAK_ENCHANT;
+				}
+				return REMOVE_SUCCESS;
+			}
 
 			if (obj && (o_af = get_obj_affect(obj, SKILL_ENCHANT)))
 			{

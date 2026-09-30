@@ -108,8 +108,8 @@ print("[PASS] bounded dispatcher journals before worker eligibility and retains 
 
 checkpoint = section(
     PIPELINE,
+    "static player_save_pipeline_result checkpoint_dirty_with_quest_xp(",
     "player_save_pipeline_result player_save_pipeline_checkpoint_dirty",
-    "player_save_pipeline_result player_save_pipeline_request",
 )
 assert checkpoint.index("if (!revision.dirty_components)") < checkpoint.index(
     "player_revision_queue"
@@ -127,6 +127,14 @@ assert "if (append && !acknowledge)" in WORKER
 print("[PASS] simulation-thread checkpoint and completion paths contain no external I/O")
 
 write_character = section(FILES, "int writeCharacter(P_char ch", "int deleteCharacter")
+admission = section(FILES, "static character_save_admission admit_character_save(",
+                    "int writeCharacter(P_char ch")
+assert admission.index("CHAR_RFLAG_LOAD_DEGRADED") < admission.index(
+    "player_save_pipeline_save_admitted") < admission.index(
+    "corpse_raise_player_save_fenced")
+assert "collector_service_recover_player(ch)" in admission
+assert write_character.index("admit_character_save(ch, is_locker_char)") < write_character.index(
+    "// locker hook (pre-save)")
 branch = write_character.index("player_save_pipeline_is_nonterminal_type")
 assert "!sql_in_transaction()" in write_character[:branch]
 for legacy in (
@@ -169,6 +177,10 @@ assert legacy_save.index("SET save_revision") < legacy_save.index("if (own_txn)"
 assert "player_revision_acknowledge_durable" in legacy_save
 assert legacy_save.index("if (own_txn)") < legacy_save.index(
     "player_revision_acknowledge_durable"
+)
+assert "if (own_txn)\n\t{\n\t\tif (compatibility_revision" in legacy_save
+assert legacy_save.index("player_revision_acknowledge_durable") < legacy_save.index(
+    "clear_player_dirty_container_flags(ch)"
 )
 print("[PASS] transactional compatibility saves fence every older immutable revision")
 

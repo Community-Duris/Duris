@@ -37,6 +37,7 @@ struct operation_state
 	uint64_t attachments;
 	critical_operation_phase phase;
 	bool retain_until_publication;
+	bool publication_checkpointing = false;
 	bool admission_failure_queued;
 	critical_completion admission_failure_completion;
 	critical_completion publication_completion;
@@ -59,6 +60,8 @@ std::mutex coordinator_mutex;
 std::condition_variable work_available;
 std::condition_variable result_available;
 std::condition_variable admission_available;
+std::condition_variable publication_checkpoint_finished;
+size_t publication_checkpoints_inflight = 0;
 std::unordered_map<std::string, std::unique_ptr<operation_state>> operations;
 std::deque<std::string> pending;
 std::deque<std::string> pending_admission;
@@ -922,6 +925,7 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	    !critical_command_journal_init(journal_directory_path))
 		return false;
 	operations.clear();
+	publication_checkpoints_inflight = 0;
 	pending.clear();
 	pending_admission.clear();
 	completion_delivery.clear();
@@ -1030,7 +1034,9 @@ bool critical_command_coordinator_shutdown(void)
 	for (std::thread &worker : workers)
 		if (worker.joinable())
 			worker.join();
-	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	std::unique_lock<std::mutex> lock(coordinator_mutex);
+	publication_checkpoint_finished.wait(
+		lock, [] { return publication_checkpoints_inflight == 0; });
 	workers.clear();
 	operations.clear();
 	pending.clear();
@@ -1252,15 +1258,37 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 {
 	if (critical_operation_id_is_zero(operation_id))
 		return false;
-	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	const std::string identity = operation_key(operation_id);
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || !operation_is_publication_pending(*found->second) ||
+		    found->second->publication_checkpointing)
+			return false;
+		found->second->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+	}
+
+	critical_command_journal_result checkpoint = critical_command_journal_result::io_failure;
+	try
+	{
+		checkpoint = critical_command_journal_checkpoint(operation_id);
+	}
+	catch (...)
+	{
+		// Leave the journal entry and publication fence available for retry.
+	}
+
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	--publication_checkpoints_inflight;
+	publication_checkpoint_finished.notify_all();
 	auto found = operations.find(identity);
 	if (found == operations.end() || !operation_is_publication_pending(*found->second))
 		return false;
-	if (critical_command_journal_checkpoint(operation_id) !=
-	    critical_command_journal_result::ok)
-		return false;
 	operation_state &state = *found->second;
+	state.publication_checkpointing = false;
+	if (checkpoint != critical_command_journal_result::ok)
+		return false;
 	remove_fences(identity, state.command);
 	remember_completed(identity, state.command, state.publication_completion);
 	operations.erase(found);
