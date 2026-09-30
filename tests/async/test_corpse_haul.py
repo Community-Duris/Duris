@@ -168,7 +168,8 @@ static void do_get_finalize_container_success(P_char ch,P_char,P_obj container,P
   if(options) last_coin_options=*options;
   item_get_deferred=admitted; item_get_rejected=!admitted; return;
  }
- publish_container_get(ch,object,container,TRUE,false,phase); ++total; found=true;
+ get_outcome outcome=publish_container_get(ch,object,container,TRUE,false,phase);
+ if(outcome==get_outcome::placed) { ++total; found=true; }
 }
 static void do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total,get_phase=get_phase::admission) {
  obj_to_char(o,ch); ++total; found=true;
@@ -312,7 +313,9 @@ int main() {
  acknowledge(nullptr); assert(bulk_gets.empty());
  // A failed live delivery is never listed in the haul.
  reset(); setup(&actor,&corpse,&dagger,nullptr); start_bulk_get(&actor,&corpse,nullptr,false);
- fail_delivery=true; acknowledge(&actor); assert(output.find("  a dagger")==std::string::npos);
+ fail_delivery=true; acknowledge(&actor);
+ assert(output.find("  a dagger")==std::string::npos);
+ assert(output.find("Some contents were not acquired")!=std::string::npos);
  // Coin-only and mixed operations hold output across acknowledgements. The
  // actual committed denominations are copied before shared formatter reuse.
  for(bool mixed : {false,true}) {
