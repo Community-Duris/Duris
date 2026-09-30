@@ -30,9 +30,10 @@ locker_prepare_failure = locker_leave[
     locker_leave.index("\n\telse\n", locker_leave.index("else if (!pLocker->LockerToPFile())"))
 ]
 
-cleanup = files[files.index("// Failed saves always restore"):files.index("return result;", files.index("// Failed saves always restore"))]
-assert cleanup.index("if (!persistence_should_extract_terminal_inventory") < cleanup.index("equip_char") < cleanup.index("else")
-assert cleanup.index("else") < cleanup.index("extract_obj")
+cleanup = files[files.index("static void finish_saved_character_inventory("):
+                files.index("int writeCharacter(P_char", files.index("static void finish_saved_character_inventory("))]
+assert cleanup.index("if (!persistence_should_extract_terminal_inventory") < cleanup.index("equip_char") < cleanup.index("return;")
+assert cleanup.index("return;") < cleanup.index("extract_obj")
 
 checks = {
     "failed save restores equipment": "persistence_should_extract_terminal_inventory" in cleanup and "equip_char" in cleanup,
@@ -99,11 +100,20 @@ checks["voluntary logout requires database acknowledgement"] = (
 
 player_sql_start = files.index("if (!sql_save_player(ch, type, room))")
 player_sql_failure = files[
-    player_sql_start:files.index("// Failed saves always restore", player_sql_start)
+    player_sql_start:files.index("// Failed saves restore", player_sql_start)
 ]
 checks["player SQL failure flat fallback writes retired"] = (
     "flat_fallback_retired" in player_sql_failure
     and "persistence_write_character_flat_fallback" not in player_sql_failure
+)
+checks["both save paths share durability-gated inventory cleanup"] = (
+    files.count("finish_saved_character_inventory(ch, true, terminal_type)") == 1
+    and files.count("finish_saved_character_inventory(ch, result != 0, terminal_type)") == 1
+    and "persistence_should_extract_terminal_inventory(save_succeeded, terminal_type)" in cleanup
+    and files.index("player_save_pipeline_terminal(ch, type, room, 5000, false)")
+        < files.index("finish_saved_character_inventory(ch, true, terminal_type)")
+    and files.index("if (!sql_save_player(ch, type, room))")
+        < files.index("finish_saved_character_inventory(ch, result != 0, terminal_type)")
 )
 
 flat_terminal_start = files.index("#ifdef __NO_MYSQL__", files.index("int writeCharacter"))
