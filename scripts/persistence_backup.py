@@ -677,6 +677,7 @@ def previous_completion_matches(items, receipt, p):
             items[1][1]["created"] <= completed <= items[0][1]["created"] + 300 and
             receipt.get("result") == "ok" and
             receipt.get("generation") == items[1][0].name and
+            isinstance(replica, str) and
             replica in {"not_configured", "transport_and_readback_verified"} and
             (p.get("replica_root") is None or
              replica == "transport_and_readback_verified"))
@@ -684,7 +685,8 @@ def previous_completion_matches(items, receipt, p):
 
 def require_within_rpo(generation, p):
     age = int(time.time()) - generation[1]["created"]
-    require(0 <= age <= p["rpo_seconds"], "published_generation_rpo_exceeded")
+    if not 0 <= age <= p["rpo_seconds"]:
+        protected_refusal(generation[0].parent, p, "published_generation_rpo_exceeded")
 
 
 def complete_generation(root, p, destination, event):
