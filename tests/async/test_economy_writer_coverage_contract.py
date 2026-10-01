@@ -399,14 +399,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
         expected = {
-            "world.mobile_template": ("src/world/db.c", {2280, 2281, 2282, 2283,
-                                                     2671, 2672, 2673, 2674}),
-            "player.flatfile_baseline_projection": ("src/core/files.c", {1875, 1876, 1877, 1878,
-                                                                           1880, 1881, 1882, 1883}),
-            "player.legacy_flatfile_load": ("src/core/files.c", {2429, 2430, 2431, 2432}),
-            "recovery.pet_cash_discard": ("src/core/files.c", {4698, 4699, 4700, 4701,
-                                                                4703, 4704, 4705, 4706}),
-            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1623, 2134}),
+            "world.mobile_template": ("src/world/db.c", {2280, 2281, 2282, 2283, 2671, 2672, 2673, 2674}),
+            "player.flatfile_baseline_projection": ("src/core/files.c", {1872, 1873, 1874, 1875, 1877, 1878, 1879, 1880}),
+            "player.legacy_flatfile_load": ("src/core/files.c", {2426, 2427, 2428, 2429}),
+            "recovery.pet_cash_discard": ("src/core/files.c", {4691, 4692, 4693, 4694, 4696, 4697, 4698, 4699}),
+            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1633, 2144}),
         }
         current = {(row["path"], row["line"], row["family"])
                    for row in coverage.load_validator().scan_sources(ROOT)}
@@ -818,7 +815,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
         self.assertEqual(owners[("src/sql/sql_player.c", 10224, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11365, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11364, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",

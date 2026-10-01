@@ -460,15 +460,17 @@ void check_restitution_runtime_transfer(MYSQL *connection)
 	       rejected_craft.error_code == EPERM);
 	assert(scalar(connection,
 		      ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
-		       std::to_string(uid) + " AND owner_id=41 AND state=1 AND item_revision=1").c_str()) == 1);
+		       std::to_string(uid) + " AND owner_id=41 AND state=1 AND item_revision=1")
+			      .c_str()) == 1);
 	assert(scalar(connection,
 		      ("SELECT COUNT(*) FROM player_death_restitution_delivery WHERE item_uid=" +
-		       std::to_string(uid)).c_str()) ==
-	       1);
+		       std::to_string(uid))
+			      .c_str()) == 1);
 	const std::vector<uint8_t> preserved_payload = read_blob(
 		connection,
 		("SELECT state_payload FROM player_death_restitution_runtime WHERE item_uid=" +
-		 std::to_string(uid)).c_str());
+		 std::to_string(uid))
+			.c_str());
 	assert(preserved_payload == initial_payload);
 	assert(owner_revision(connection, source) == source_revision);
 	item_transfer_payload transfer = {};
@@ -1815,14 +1817,14 @@ void check_quest_reward_obligation(MYSQL *&connection)
 	assert(scalar(connection, ("SELECT COUNT(*) FROM item_ownership_ledger WHERE "
 				   "operation_id=UNHEX('" +
 				   operation_id + "')")
-				  .c_str()) == 1);
+					  .c_str()) == 1);
 	assert(scalar(connection,
 		      ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
-	       std::to_string(root_uid) + " AND state=" +
-	       std::to_string(static_cast<unsigned>(item_custody_state::destroyed)) +
-	       " AND owner_type=" +
-	       std::to_string(static_cast<unsigned>(item_owner_type::destruction)))
-		      .c_str()) == 1);
+		       std::to_string(root_uid) + " AND state=" +
+		       std::to_string(static_cast<unsigned>(item_custody_state::destroyed)) +
+		       " AND owner_type=" +
+		       std::to_string(static_cast<unsigned>(item_owner_type::destruction)))
+			      .c_str()) == 1);
 	MYSQL *reopened = open_pool_test_connection();
 	assert(reopened);
 	std::vector<quest_reward_obligation_record> pending_rewards;
@@ -1929,8 +1931,14 @@ void check_craft_conservation(MYSQL *connection)
 	checkpoint.revision = 1;
 	checkpoint.components = PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_EQUIPMENT;
 	checkpoint.items = { output };
-	assert(player_snapshot_repository_apply(connection, checkpoint).outcome ==
-	       player_save_apply_outcome::applied);
+	// Published carried slots use zero on this branch; the frozen detached craft
+	// output uses -1 until publication.
+	checkpoint.items[0].equipment_slot = 0;
+	const auto checkpoint_result = player_snapshot_repository_apply(connection, checkpoint);
+	if (checkpoint_result.outcome != player_save_apply_outcome::applied)
+		fprintf(stderr, "craft checkpoint outcome=%u error=%u\n",
+			(unsigned)checkpoint_result.outcome, checkpoint_result.error_code);
+	assert(checkpoint_result.outcome == player_save_apply_outcome::applied);
 	player_load_request request = {};
 	request.request_id = 551;
 	request.pid = 551;
@@ -1943,6 +1951,16 @@ void check_craft_conservation(MYSQL *connection)
 			reloaded.failed_component ? reloaded.failed_component : "none");
 	assert(reloaded.outcome == player_load_outcome::applied &&
 	       reloaded.snapshot.items.size() == 1);
+	assert(reloaded.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
+	player_load_request by_name = request;
+	by_name.request_id = 552;
+	by_name.pid = 0;
+	by_name.account_name.clear();
+	by_name.player_name = "CraftConservation";
+	by_name.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	const auto named = player_load_repository_execute(connection, by_name);
+	assert(named.outcome == player_load_outcome::applied && named.pid == 551 &&
+	       named.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
 	const auto &loaded = reloaded.snapshot.items[0];
 	assert(loaded.object_uid == output.object_uid &&
 	       loaded.craftsmanship == output.craftsmanship);

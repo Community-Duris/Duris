@@ -21,7 +21,8 @@ constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
 constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_DEATH_GATE_QUERY_MAX = 1;
-constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = 1;
+// Reward obligations and retained XP entitlements are separate bounded reads.
+constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = 2;
 // The primary-key lock precedes the consistent view. Name-based requests also
 // resolve the PID before starting that transaction, then revalidate under lock.
 constexpr size_t PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX = 1;

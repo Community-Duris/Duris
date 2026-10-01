@@ -79,7 +79,7 @@ def run(binary, mode='file'):
             CRITICAL_COMMAND_JOURNAL_DIR=str(runtime / 'journals/critical'),
             REDIS='FALSE', CHAOS_MUD='FALSE', LISTEN_ADDRESS='127.0.0.1',
             DURIS_TLS_PORT=str(tls), DURIS_WEBSOCKET_PORT=str(ws),
-            DURIS_WEBSOCKET_LISTEN_ADDRESS='127.0.0.1')
+            DURIS_WEBSOCKET_LISTEN_ADDRESS='127.0.0.1', DURIS_NEVENT_TRACE_PLAYER='1')
         database = None
         if mode == 'redis':
             host = os.environ['TEST_DB_HOST']
@@ -120,7 +120,11 @@ def run(binary, mode='file'):
                 client = None
             if process and process.poll() is None:
                 process.terminate()
-                process.wait(timeout=30)
+                try:
+                    process.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=10)
             if output:
                 output.close()
 
@@ -135,6 +139,10 @@ def run(binary, mode='file'):
                 time.sleep(.1)
 
         def command(text, duration=.5):
+            # Staff fixture grants are asynchronous. Settle the preceding save
+            # before starting another setup grant, then await its checkpoint.
+            if text.startswith('load obj '):
+                save_items()
             drain(client, .1)
             client.send(text)
             result = ''
@@ -147,6 +155,8 @@ def run(binary, mode='file'):
             if '[Return to continue' in result:
                 client.send('q')
                 drain(client)
+            if text.startswith('load obj '):
+                save_items()
             return result
 
         def save_items():
@@ -234,6 +244,11 @@ def run(binary, mode='file'):
             assert sum(item['vnum'] == 102 for item in items) == 1, items
             print('PASS real NPC death and corpse loot of automatic vial', flush=True)
             # A durable NPC is only used to hold the real combat open for observation.
+            for name in (granted[2], granted[0]):
+                command('setbit char ' + name + ' basehit 30000', 1)
+                command('setbit char ' + name + ' hit 30000', 1)
+                stat = command('stat mob ' + name)
+                assert int(re.search(r'Hits:\s*\[\s*(\d+)', stat).group(1)) >= 1000, stat
             command('setattr ' + granted[2] + ' agi 103')
             client.send('force ' + granted[2] + ' kill ' + granted[0])
             client.expect('alchemical mixture', timeout=45)
@@ -303,6 +318,8 @@ def run(binary, mode='file'):
         except Exception:
             print((runtime / 'server.out').read_text(errors='replace')[-6000:])
             print(journey.runtime_logs(runtime)[-12000:])
+            print('\n'.join(line for line in full_logs().splitlines()
+                            if 'PLAYER SAVE TRACE: stage=completion' in line)[-12000:])
             if client:
                 print(client.transcript.decode(errors='replace')[-9000:])
             raise

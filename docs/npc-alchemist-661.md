@@ -110,11 +110,12 @@ stealing is currently disabled, so the theft proof uses the supported staff rout
 | Authored potion/vial loads | Retained | Existing independently classified world-content writers |
 | Assassin poison / Encrust / Harvester | Retained; PR #573 supplies conservation repair | Exact craft receipts and branch-specific source/recovery contracts |
 
-Master has no experimental-accounting admission API. This PR does not port the
-new writer to that branch or certify durable accounting replay. That port must
-bind the choice and UID to a durable spawn/source identity and refuse unsupported
-active issuance **before** allocation/publication. Issue #661 stays open for that
-port and its SQL/flat-file restore/replay evidence.
+This branch deliberately ports the master feature. Automatic vial issuance
+refuses while accounting is active, before RNG, the decision marker or item
+allocation. Enabling that writer still requires a durable spawn/source identity,
+the exact UID, admission and retained publication. Issue #661 stays open for
+that active integration; the inactive gameplay and recovery evidence is recorded
+in docs/alchemist-accounting-port-551-661.md.
 
 ## Qualification
 

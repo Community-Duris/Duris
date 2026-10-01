@@ -328,12 +328,10 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(connection, snapshot.pid, "player_timers",
-				      "timer_id,timer_value", snapshot.timers,
-				      [](auto &sql, const auto &row) {
-					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
-						  << row.value << ",0))";
-				      });
+		result = replace_rows(
+			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
+			snapshot.timers, [](auto &sql, const auto &row)
+			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
@@ -1553,8 +1551,8 @@ query_result apply_quest_xp_receipts(MYSQL *connection, const player_snapshot &s
 			return { false, EINVAL };
 		const std::string update_sql =
 			"UPDATE quest_reward_obligation SET xp_applied_mask=xp_applied_mask | " +
-			std::to_string(bit) + " WHERE offering_operation_id=UNHEX('" + operation_hex +
-			"') AND player_pid=" + std::to_string(snapshot.pid) +
+			std::to_string(bit) + " WHERE offering_operation_id=UNHEX('" +
+			operation_hex + "') AND player_pid=" + std::to_string(snapshot.pid) +
 			" AND acknowledged_at IS NULL";
 		query = execute(connection, update_sql);
 		if (!query.ok || mysql_affected_rows(connection) != 1)
@@ -1635,18 +1633,19 @@ query_result apply_spell_effect_receipts(MYSQL *connection, const player_snapsho
 {
 	for (const auto &receipt : snapshot.spell_effect_receipts)
 	{
-		if (!receipt.effect_id || receipt.effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX)
+		if (!receipt.effect_id ||
+		    receipt.effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX)
 			return { false, EINVAL };
 		const std::string operation_hex = hex_operation(receipt.operation_id);
-		query_result query = execute(
-			connection,
-			"SELECT effect_id FROM player_spell_effect_receipt WHERE pid=" +
-				std::to_string(snapshot.pid) + " AND operation_id=UNHEX('" + operation_hex +
-				"') FOR UPDATE");
+		query_result query =
+			execute(connection,
+				"SELECT effect_id FROM player_spell_effect_receipt WHERE pid=" +
+					std::to_string(snapshot.pid) + " AND operation_id=UNHEX('" +
+					operation_hex + "') FOR UPDATE");
 		if (!query.ok)
 			return query;
-		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(mysql_store_result(connection),
-										      mysql_free_result);
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+			mysql_store_result(connection), mysql_free_result);
 		if (!result)
 			return { false, mysql_errno(connection) ? mysql_errno(connection) : EIO };
 		MYSQL_ROW row = mysql_fetch_row(result.get());
@@ -1654,7 +1653,8 @@ query_result apply_spell_effect_receipts(MYSQL *connection, const player_snapsho
 		{
 			char *end = nullptr;
 			errno = 0;
-			const unsigned long stored_effect = std::strtoul(row[0] ? row[0] : "", &end, 10);
+			const unsigned long stored_effect =
+				std::strtoul(row[0] ? row[0] : "", &end, 10);
 			if (errno || !end || *end || stored_effect != receipt.effect_id)
 				return { false, EINVAL };
 			continue;
@@ -1946,9 +1946,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 						player_revision_t source_revision)
 {
 	using outcome = player_death_terminal_write_outcome;
-	const auto failed = [](unsigned int code) {
-		return player_death_terminal_write_result{ outcome::failed, code ? code : EIO };
-	};
+	const auto failed = [](unsigned int code)
+	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
 	if (!connection)
 		return failed(EINVAL);
 #ifndef __NO_MYSQL__
