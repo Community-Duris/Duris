@@ -318,7 +318,14 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 		  std::unordered_set<const obj_data *> &seen, size_t depth, bool omit_norent,
 		  bool audit_ownership)
 {
-	if (!object || (omit_norent && IS_SET(object->extra_flags, ITEM_NORENT)))
+	if (!object)
+		return player_snapshot_capture_result::ok;
+	item_ownership_runtime_entry ownership = {};
+	const bool ownership_loaded = object->obj_uid &&
+				      item_ownership_runtime_lookup(object->obj_uid, &ownership);
+	const bool active_durable_custody = ownership_loaded &&
+					    ownership.state == item_custody_state::active;
+	if (omit_norent && IS_SET(object->extra_flags, ITEM_NORENT) && !active_durable_custody)
 		return player_snapshot_capture_result::ok;
 	if (depth > PLAYER_SNAPSHOT_MAX_DEPTH)
 		return player_snapshot_capture_result::limit_exceeded;
@@ -339,11 +346,18 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	// practical way to find those paths in a codebase with 271 obj_to_char() calls.
 	if (audit_ownership && object->obj_uid)
 	{
-		item_ownership_runtime_entry ownership = {};
-		if (!item_ownership_runtime_lookup(object->obj_uid, &ownership))
+		if (!ownership_loaded)
 			logit(LOG_DEBUG,
 			      "player_snapshot_capture: component=items outcome=unowned_object "
 			      "uid=%llu vnum=%d recovery=audit_grant_path",
+			      (unsigned long long)object->obj_uid,
+			      obj_index[object->R_num].virtual_number);
+		else if (omit_norent && IS_SET(object->extra_flags, ITEM_NORENT) &&
+			 active_durable_custody)
+			logit(LOG_DEBUG,
+			      "player_snapshot_capture: component=items "
+			      "outcome=durable_norent_included uid=%llu vnum=%d "
+			      "recovery=preserve_authoritative_payload",
 			      (unsigned long long)object->obj_uid,
 			      obj_index[object->R_num].virtual_number);
 	}

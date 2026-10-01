@@ -8,24 +8,41 @@ cd "$ROOT"
 NAME="duris-currency-$$-$RANDOM"
 PASSWORD="currency-$$-$RANDOM"
 IMAGE="${CURRENCY_DB_IMAGE:-mariadb:10.11}"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+cleanup() { docker rm -fv "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"
-export ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="${mapping##*:}"
+published_host=127.0.0.1
+published_port="${mapping##*:}"
+container_host="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")"
+export ENVIRONMENT=test
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 export DB_NAME=currency_coin_test CURRENCY_TEST_DB_NAME=currency_coin_test
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
-MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
 ready=0
-for _ in $(seq 1 90); do
-    if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break; fi
-    sleep 1
+# A nested Docker/WSL caller has a different loopback namespace. Prefer the
+# exact published port through Docker's host gateway before a bridge address.
+for candidate in "$published_host:$published_port" "host.docker.internal:$published_port" "$container_host:3306"; do
+    [[ "$candidate" == :3306 ]] && continue
+    export DB_HOST="${candidate%:*}" DB_PORT="${candidate##*:}"
+    MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
+    for _ in $(seq 1 10); do
+        if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
+        sleep 1
+    done
 done
-[[ "$ready" == 1 ]]
+if [[ "$ready" != 1 ]]; then
+    printf 'Disposable currency SQL readiness failed on the bounded local endpoints.\n' >&2
+    "${MYSQL[@]}" --connect-timeout=3 -e 'SELECT 1' >/dev/null
+    exit 1
+fi
 "${MYSQL[@]}" -e "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/bootstrap_multithread_safe.sql"
+# Exercise the same additive critical-command migration used by deployed
+# schemas, including the failure-stage column used by the coin ESTALE receipt.
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/critical_command_inbox_outbox.sql"
+DB_NAME="$DB_NAME" "$ROOT/migrations/verify_critical_command_schema.sh"
 # Use the current schema, including portable timestamp defaults required when
 # the loader harness creates its connection-local fixture tables on MySQL 8.
 for migration in "$ROOT"/migrations/immutable/*.sql; do
@@ -69,6 +86,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/collector_command.c src/economy/collector_codec.c \
     src/economy/collector_policy.c src/economy/collector_repository.c \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
+    src/persistence/player_death_restitution_command.c src/persistence/player_death_restitution_repository.c \
     src/player/player_load_repository.c src/player/player_load_topology.c src/persistence/persistence_observability.c \
     src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
@@ -78,7 +96,9 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/player_load_repository_mysql_harness.cpp \
     src/player/player_load_repository.c src/player/player_load_topology.c \
-    src/player/player_snapshot_codec.c src/persistence/persistence_observability.c \
-    "${MYSQL_LIBS[@]}" -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
+    src/player/player_snapshot_codec.c src/persistence/critical_command.c \
+    src/persistence/player_death_restitution_command.c \
+    src/persistence/persistence_observability.c \
+    "${MYSQL_LIBS[@]}" -lcrypto -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
 PLAYER_LOAD_DISPOSABLE_SCHEMA=1 GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOUNT_CHARACTER_NAME=CoinMatrix \
     "$ROOT/bin/tests/player_load_repository_mysql_harness"

@@ -5,6 +5,7 @@
 // payload and the disputed custody rows are all still there afterwards.
 #include "player/player_snapshot_repository.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_save_worker.h"
 #include "classes/necromancy.h"
 #include "core/defines.h"
 #include "world/vnum.obj.h"
@@ -26,6 +27,12 @@ void sql_pool_release(MYSQL *) {}
 MYSQL *sql_pool_replace_connection(MYSQL *)
 {
 	return nullptr;
+}
+// The fixture has no extra descriptions; fail if a new path starts requiring
+// the full SQL string encoder instead of silently faking it.
+char *sql_escape_string(const char *)
+{
+	std::abort();
 }
 
 namespace
@@ -198,7 +205,7 @@ int main()
 		       "SELECT GROUP_CONCAT(CONCAT_WS(':',item_uid,root_item_uid,item_revision,"
 		       "vnum,state,owner_type,owner_id,owner_revision) ORDER BY item_uid) FROM "
 		       "player_death_custody WHERE pid=1 AND save_revision=5") ==
-			"201:201:3:501:1:1:1:5,202:202:18446744073709551615:3:0:0:0:0,203:201:1:501:1:1:5",
+			"201:201:3:501:1:1:1:5,202:202:18446744073709551615:3:0:0:0:0,203:201:1:501:1:1:1:5",
 		"the death disposition lost its disputed custody evidence");
 
 	// The record decodes back to the same corpse topology, UIDs and wallet.
@@ -241,6 +248,7 @@ int main()
 	// An ordinary save on a later revision leaves the record standing.
 	player_snapshot ordinary = make_death(6);
 	ordinary.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	ordinary.components = PLAYER_COMPONENT_STATUS;
 	ordinary.save_intent = 1;
 	ordinary.death.reset();
 	require(player_snapshot_repository_apply(connection, ordinary).outcome ==
@@ -249,6 +257,24 @@ int main()
 	require(scalar(connection, "SELECT COUNT(*) FROM player_death_disposition WHERE pid=1") ==
 			"1",
 		"an ordinary save discarded the death disposition");
+
+	// A payload outside the captured corpse must not be deleted by a later
+	// disputed death, even if its custody row is present and active.
+	execute(connection,
+		"INSERT INTO player_items (pid,vnum,equip_slot,container_id,quantity,item_type,"
+		"obj_uid) VALUES (1,501,0,NULL,1,0,300)");
+	execute(connection,
+		"INSERT INTO item_current_owner (item_uid,root_item_uid,parent_item_uid,owner_type,"
+		"owner_id,item_revision,vnum,state) VALUES (300,300,NULL,1,1,1,501,1)");
+	applied = player_snapshot_repository_apply(connection, make_death(7));
+	require(applied.outcome == player_save_apply_outcome::terminal_failure &&
+			applied.error_code == PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH,
+		"death deleted a payload absent from its immutable corpse evidence");
+	require(scalar(connection,
+		       "SELECT COUNT(*) FROM player_items WHERE pid=1 AND obj_uid=300") == "1" &&
+			scalar(connection, "SELECT save_revision FROM player_data WHERE pid=1") ==
+				"6",
+		"rejected death changed the player payload or revision");
 
 	// A death record the codec cannot accept must never reach the tables.
 	player_snapshot malformed = make_death(7);

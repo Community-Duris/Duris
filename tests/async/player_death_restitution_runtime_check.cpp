@@ -404,7 +404,9 @@ CREATE TABLE IF NOT EXISTS `player_pets` (
   `charm_duration` int DEFAULT '-1',
   `room_vnum` int DEFAULT '0',
   `saved_at` timestamp NULL DEFAULT NULL,
+  `pet_uid` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_player_pets_pet_uid` (`pet_uid`),
   KEY `idx_owner_pid` (`owner_pid`),
   CONSTRAINT `fk_player_pets_owner` FOREIGN KEY (`owner_pid`) REFERENCES `player_data` (`pid`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci)SQL");

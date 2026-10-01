@@ -45,6 +45,7 @@ struct apply_state
     bool late_started = false;
     bool hold_all = false;
     bool release_all = false;
+    bool already_applied = false;
 };
 
 critical_command make_command(unsigned int tag, std::vector<critical_entity_key> keys)
@@ -100,9 +101,13 @@ critical_apply_result apply(const critical_command &command, void *raw)
         state.late_started = true;
         state.changed.notify_all();
     }
+    if (!state.already_applied && (tag == 16 || tag == 17))
+        return {tag == 16 ? critical_apply_outcome::ambiguous_commit :
+                critical_apply_outcome::retryable_failure, 0, 2013};
     if (tag == 4 && attempt == 1)
         return {critical_apply_outcome::ambiguous_commit, 0, 2013};
-    return {critical_apply_outcome::applied, 1, 0};
+    return {state.already_applied ? critical_apply_outcome::already_applied :
+            critical_apply_outcome::applied, 1, 0};
 }
 
 struct replay_state
@@ -299,6 +304,91 @@ int main(int argc, char **argv)
     auto health = critical_command_coordinator_health_copy();
     assert(health.ambiguous == 1 && health.retries == 1 && health.fenced_keys == 0);
     assert(critical_command_coordinator_submit(d) == critical_submit_result::attached);
+
+    critical_command publication = make_command(12, {{critical_entity_type::item, 120},
+                                                       {critical_entity_type::player, 12}});
+    assert(critical_command_coordinator_submit_for_publication(publication) ==
+           critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit(publication) ==
+           critical_submit_result::identity_conflict);
+    assert(critical_command_coordinator_submit_for_publication(publication) ==
+           critical_submit_result::attached);
+    critical_completion held = {};
+    wait_until([&] {
+        const size_t count = critical_command_coordinator_pulse(completions, 16);
+        if (count != 1)
+            return false;
+        return critical_command_coordinator_health_copy().publication_pending == 1;
+    });
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 120}, nullptr));
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::player, 12}, nullptr));
+    assert(critical_command_coordinator_get_completed(publication.operation_id, &held));
+    assert(held.outcome == critical_apply_outcome::applied);
+    critical_operation_id invalid_publication_id = {};
+    invalid_publication_id.bytes[0] = 1;
+    assert(!critical_command_coordinator_acknowledge_publication(invalid_publication_id));
+    assert(critical_command_coordinator_health_copy().publication_pending == 1);
+    assert(!critical_command_coordinator_drain(5));
+    // The fence must block actual worker execution, not just report busy.
+    critical_command follower = make_command(14, {{critical_entity_type::item, 120}});
+    critical_command unrelated = make_command(15, {{critical_entity_type::item, 150}});
+    assert(critical_command_coordinator_submit(follower) ==
+           critical_submit_result::awaiting_durability);
+    assert(critical_command_coordinator_submit_for_publication(follower) ==
+           critical_submit_result::identity_conflict);
+    assert(critical_command_coordinator_submit(unrelated) ==
+           critical_submit_result::awaiting_durability);
+    wait_until([&] {
+        critical_command_coordinator_pulse(completions, 16);
+        return critical_command_coordinator_get_completed(unrelated.operation_id, &held);
+    });
+    {
+        std::lock_guard<std::mutex> guard(state.mutex);
+        assert(state.attempts[14] == 0);
+        assert(state.attempts[15] == 1);
+    }
+    assert(critical_command_coordinator_acknowledge_publication(publication.operation_id));
+    wait_until([&] {
+        critical_command_coordinator_pulse(completions, 16);
+        return critical_command_coordinator_get_completed(follower.operation_id, &held);
+    });
+    {
+        std::lock_guard<std::mutex> guard(state.mutex);
+        assert(state.attempts[14] == 1);
+    }
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 120}, nullptr));
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::player, 12}, nullptr));
+    assert(critical_command_coordinator_health_copy().publication_pending == 0);
+
+    // The callback hold is process-local; after restart the journaled command
+    // replays against authoritative SQL (already_applied) and can checkpoint
+    // without inventing a stale actor/object callback.
+    critical_command restart_publication = make_command(
+        13, {{critical_entity_type::item, 130}, {critical_entity_type::player, 13}});
+    assert(critical_command_coordinator_submit_for_publication(restart_publication) ==
+           critical_submit_result::awaiting_durability);
+    wait_until([&] {
+        critical_command_coordinator_pulse(completions, 16);
+        return critical_command_coordinator_health_copy().publication_pending == 1;
+    });
+    assert(critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 130}, nullptr));
+    critical_command_coordinator_shutdown();
+    apply_state restart_state;
+    restart_state.already_applied = true;
+    assert(critical_command_coordinator_init(argv[2], apply, &restart_state, 1));
+    wait_until([&] {
+        critical_command_coordinator_pulse(completions, 16);
+        return critical_command_coordinator_health_copy().completed == 1;
+    });
+    assert(!critical_command_coordinator_is_fenced(
+        {critical_entity_type::item, 130}, nullptr));
+    assert(critical_command_journal_health_copy().records == 0);
+
     critical_command_coordinator_quiesce();
     critical_command rejected = make_command(6, {{critical_entity_type::player, 6}});
     assert(critical_command_coordinator_submit(rejected) == critical_submit_result::unavailable);
@@ -343,6 +433,32 @@ int main(int argc, char **argv)
         capacity.changed.notify_all();
     }
     critical_command_coordinator_shutdown();
+
+    // Exhausted uncertainty is NOT a terminal result that publication may ack.
+    for (unsigned int tag : {16u, 17u}) {
+        const std::string directory = std::string(argv[2]) + "-uncertain-" + std::to_string(tag);
+        apply_state uncertain;
+        assert(critical_command_coordinator_init(directory.c_str(), apply, &uncertain, 1));
+        critical_command command = make_command(tag, {{critical_entity_type::item, tag}});
+        assert(critical_command_coordinator_submit_for_publication(command) ==
+               critical_submit_result::awaiting_durability);
+        wait_until([&] { return critical_command_coordinator_pulse(completions, 16) == 1; });
+        assert(critical_command_coordinator_is_fenced({critical_entity_type::item, tag}, nullptr));
+        assert(critical_command_journal_health_copy().records == 1);
+        assert(!critical_command_coordinator_acknowledge_publication(command.operation_id));
+        assert(critical_command_coordinator_health_copy().blocked == 1);
+        assert(critical_command_journal_health_copy().records == 1);
+        critical_command_coordinator_shutdown();
+        apply_state reconciled;
+        reconciled.already_applied = true;
+        assert(critical_command_coordinator_init(directory.c_str(), apply, &reconciled, 1));
+        wait_until([&] {
+            critical_command_coordinator_pulse(completions, 16);
+            return critical_command_coordinator_health_copy().completed == 1;
+        });
+        assert(critical_command_journal_health_copy().records == 0);
+        critical_command_coordinator_shutdown();
+    }
     return 0;
 }
 '''
@@ -442,6 +558,7 @@ assert "awaiting=%llu" in ACTINF
 assert "admission_queue_bytes=%llu" in ACTINF
 assert "durable_admissions=%llu" in ACTINF
 assert "admission_uncertain=%llu" in ACTINF
+assert "publication_pending=%llu" in ACTINF
 assert "command.payload" not in ACTINF and "operation_id" not in ACTINF
 assert "critical_command_equal" in COORDINATOR and "identity_conflict" in COORDINATOR
 assert "keys_available" in COORDINATOR and "acquire_keys" in COORDINATOR

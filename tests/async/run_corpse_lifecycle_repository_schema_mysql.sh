@@ -44,6 +44,8 @@ done
 "${MYSQL[@]}" -e \
 	"CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/bootstrap_multithread_safe.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0013_pet_restore_state.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0028_pet_custody.sql"
 
 mkdir -p "$ROOT/bin/tests"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"

@@ -629,7 +629,7 @@ int main(int argc, char **argv)
 	init_cmdlog(); /* init cmd.debug file - DCL */
 	(void)telemetry_runtime_init(telemetry_runtime_options_from_environment());
 
-	run_the_game(port, sslport);
+	const int game_exit_status = run_the_game(port, sslport);
 	telemetry_shutdown_request telemetry_shutdown{};
 	telemetry_shutdown.final_flush = 1U;
 	telemetry_monotonic_usec telemetry_deadline_now = 0U;
@@ -650,7 +650,7 @@ int main(int argc, char **argv)
 	shutdown_mysql();
 	close_cmdlog();
 
-	return (0);
+	return game_exit_status;
 }
 
 static void finalize_styled_command(P_desc descriptor)
@@ -725,7 +725,7 @@ static void touch(const char *filename)
 
 /* Init sockets, run game, and cleanup sockets */
 
-void run_the_game(int port, int sslport)
+int run_the_game(int port, int sslport)
 {
 	long time_before = 0;
 	long time_after = 0;
@@ -904,7 +904,7 @@ void run_the_game(int port, int sslport)
 	 * and turning a controlled configuration failure into SIGABRT. */
 	if (!player_load_pipeline_init())
 		logit(LOG_STATUS,
-		      "Player load pipeline unavailable; existing-character login fails closed.");
+		      "Player load pipeline unavailable; existing-character login will use synchronous fallback.");
 	/* Same rule for the mail worker: joinable thread only after the fatal loads. */
 	if (!account_recovery_init())
 		logit(LOG_STATUS,
@@ -1054,7 +1054,7 @@ void run_the_game(int port, int sslport)
 		logit(LOG_EXIT, "Rebooting.");
 		logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 		ws_broadcast_mud_shutdown("reboot");
-		exit(52); /* what's so great about HHGTTG, anyhow? */
+		return 52; /* what's so great about HHGTTG, anyhow? */
 	}
 	// A successful copyover replaces this process from inside game_loop(). A
 	// failed copyover resumes that loop, so reaching here with the flag set is
@@ -1062,26 +1062,27 @@ void run_the_game(int port, int sslport)
 	if (_copyover)
 	{
 		logit(LOG_EXIT, "Copyover returned unexpectedly; refusing fallback exit.");
-		return;
+		return 0;
 	}
 	if (_autoboot)
 	{
 		logit(LOG_EXIT, "Auto reboot.");
 		logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 		ws_broadcast_mud_shutdown("autoreboot");
-		exit(54);
+		return 54;
 	}
 	if (_pwipe)
 	{
 		logit(LOG_EXIT, "Pwipe Shutdown.");
 		logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 		ws_broadcast_mud_shutdown("pwipe");
-		exit(55);
+		return 55;
 	}
 	ws_broadcast_mud_shutdown("manual");
 	logit(LOG_EXIT, "Normal termination of game.");
 	logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 	logit(LOG_STATUS, "Normal termination of game.");
+	return 0;
 }
 
 /* Accept new connects, relay commands, and call 'heartbeat-functs' */
@@ -1882,6 +1883,78 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 	ctx.prompts_us = prompts_us;
 }
 
+static void log_telemetry_health_event(const telemetry_health_event &event)
+{
+	if (event.kind == telemetry_health_event_kind::none)
+		return;
+	char record_kinds[160]{};
+	char reason_flags[160]{};
+	const std::uint32_t failure_reasons = TELEMETRY_HEALTH_REASON_WRITER_DEGRADED |
+					      TELEMETRY_HEALTH_REASON_CIRCUIT_OPEN |
+					      TELEMETRY_HEALTH_REASON_PERMANENT_FAILURE |
+					      TELEMETRY_HEALTH_REASON_RECOVERY_PENDING;
+	const std::uint64_t kind_mask = event.health.inflight_active != 0U ?
+						event.health.inflight_record_kind_mask :
+					(event.reason_mask & failure_reasons) != 0U ?
+						event.health.last_failure_record_kind_mask :
+						0U;
+	(void)telemetry_health_record_kind_mask_format(kind_mask, record_kinds,
+						       sizeof(record_kinds));
+	(void)telemetry_health_reason_mask_format(event.reason_mask, reason_flags,
+						  sizeof(reason_flags));
+	logit(LOG_STATUS,
+	      "telemetry_health event=%s severity=%s reasons=%u reason_flags=%s state=%s "
+	      "previous_state=%s "
+	      "backend=%s schema=%u producer=%llu:%llu last_admitted_seq=%llu "
+	      "last_committed_seq=%llu last_commit_monotonic_us=%llu last_commit_age_known=%u "
+	      "last_commit_age_us=%llu failure_class=%s error=%u "
+	      "last_failure_monotonic_us=%llu last_failure_age_known=%u last_failure_age_us=%llu "
+	      "admitted=%llu/%llu applied=%llu duplicate=%llu stale=%llu invalid=%llu conflict=%llu "
+	      "dropped=%llu/%llu queue=%llu/%u high_water=%llu inflight=%u "
+	      "inflight_seq=%llu-%llu record_kinds=%s retries=%u/%u backoff_us=%llu "
+	      "advisory_lock=%s gaps=%llu unclosed_tails=%llu quarantined=%llu "
+	      "affected_producer=%llu:%llu affected_seq=%llu-%llu duration_us=%llu",
+	      telemetry_health_event_kind_name(event.kind),
+	      telemetry_health_alert_severity_name(event.severity), event.reason_mask, reason_flags,
+	      telemetry_health_state_name(event.current_state),
+	      telemetry_health_state_name(event.previous_state),
+	      telemetry_health_backend_name(event.health.backend), event.health.schema_version,
+	      (unsigned long long)event.health.producer.boot_id,
+	      (unsigned long long)event.health.producer.process_id,
+	      (unsigned long long)event.health.last_admitted_record_seq,
+	      (unsigned long long)event.health.last_committed_record_seq,
+	      (unsigned long long)event.health.last_success_monotonic_usec,
+	      event.last_commit_age_available, (unsigned long long)event.last_commit_age_usec,
+	      telemetry_health_failure_class_name(event.health.last_failure_class),
+	      event.health.last_error_code,
+	      (unsigned long long)event.health.last_failure_monotonic_usec,
+	      event.last_failure_age_available, (unsigned long long)event.last_failure_age_usec,
+	      (unsigned long long)event.health.admitted_detail,
+	      (unsigned long long)event.health.admitted_control,
+	      (unsigned long long)event.health.applied_records,
+	      (unsigned long long)event.health.duplicate_records,
+	      (unsigned long long)event.health.stale_checkpoint_records,
+	      (unsigned long long)event.health.invalid_records,
+	      (unsigned long long)event.health.conflict_records,
+	      (unsigned long long)event.health.dropped_detail,
+	      (unsigned long long)event.health.dropped_control,
+	      (unsigned long long)event.health.queue_depth, event.health.queue_capacity,
+	      (unsigned long long)event.health.queue_high_water, event.health.inflight_active,
+	      (unsigned long long)event.health.inflight_first_record_seq,
+	      (unsigned long long)event.health.inflight_last_record_seq, record_kinds,
+	      event.health.inflight_retry_attempts, event.health.repository_retry_attempts,
+	      (unsigned long long)event.health.retry_backoff_remaining_usec,
+	      telemetry_health_advisory_lock_name(event.health.advisory_lock_state),
+	      (unsigned long long)event.health.sequence_gap_count,
+	      (unsigned long long)event.health.unclosed_tail_count,
+	      (unsigned long long)event.health.quarantined_records,
+	      (unsigned long long)event.affected_producer.boot_id,
+	      (unsigned long long)event.affected_producer.process_id,
+	      (unsigned long long)event.affected_first_record_seq,
+	      (unsigned long long)event.affected_last_record_seq,
+	      (unsigned long long)event.alert_duration_usec);
+}
+
 static void run_event_phase(game_loop_pulse_context &ctx)
 {
 	const uint64_t loop_tick = ctx.loop_tick;
@@ -1904,6 +1977,7 @@ static void run_event_phase(game_loop_pulse_context &ctx)
 		telemetry_request.slot = static_cast<std::uint16_t>(
 			static_cast<unsigned int>(pulse) % telemetry_slots);
 		(void)telemetry_runtime_pulse(telemetry_request);
+		log_telemetry_health_event(telemetry_runtime_health_observe(telemetry_pulse_now));
 	}
 
 	item_creation_grant_prepare_pulse();
@@ -1940,9 +2014,11 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		for (size_t index = 0; index < critical_completion_count; ++index)
 			if (critical_completions[index].outcome ==
 			    critical_apply_outcome::terminal_failure)
-				persistence_alert(AVATAR, "critical_command", "completion", "none",
-						  "none", "integrity_failure",
-						  "operation metadata redacted");
+				persistence_alert(
+					AVATAR, "critical_command", "completion", "none",
+					critical_failure_stage_name(
+						critical_completions[index].failure_stage),
+					"integrity_failure", "operation metadata redacted");
 		player_save_pipeline_pulse();
 		persistence_pulse_character_saves();
 		death_extract_retry_pulse();
@@ -2362,9 +2438,14 @@ void game_loop(int port, int sslport)
 	}
 	else if (copyover_boot)
 	{
-		// copyover mode but recovery failed - can't bind new sockets because old ones still open
-		logit(LOG_STATUS, "FATAL: copyover recovery failed, cannot continue");
-		exit(1);
+		/* The inherited listeners are still open, so this process cannot safely
+		 * bind replacements.  Return through normal shutdown to join every worker;
+		 * exit(1) here left joinable std::threads and turned a rejected copyover into
+		 * SIGABRT plus a core dump.  The supervisor then performs a cold restart. */
+		logit(LOG_STATUS,
+		      "FATAL: copyover recovery failed; requesting graceful cold restart");
+		_reboot = 1;
+		return;
 	}
 	else
 	{
@@ -3359,7 +3440,7 @@ void close_socket(struct descriptor_data *d)
 		FREE(d->storage);
 
 #endif
-		/* I really do not want to crash it. */
+		/* I really don't wanna crash it  */
 #ifdef USE_ACCOUNT
 	if (d->account)
 		d->account = free_account(d->account);

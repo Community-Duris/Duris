@@ -425,7 +425,8 @@ static item_owner_identity admitted_owner;
 bool item_movement_transaction_submit(P_char, P_obj, P_obj parent,
     const item_owner_identity &from, const item_owner_identity &to,
     item_transfer_reason reason, int64_t, item_movement_completion_fn callback,
-    const void *context, size_t size, P_obj, item_movement_reject *)
+    const void *context, size_t size, P_obj, item_movement_reject *,
+    item_movement_publication_fn)
 {
     assert(item_owner_identity_equal(from, to));
     assert(reason == item_transfer_reason::player_get && size == sizeof(admission_context));
@@ -712,13 +713,14 @@ int main()
 	/* When both domains are pending, an input must be safe under both gates. */
 	struct txt_q combined = {};
 	item_pending = true;
+	push(&combined, "repair pick");
 	push(&combined, "inventory");
 	push(&combined, "deposit all");
 	push(&combined, "say waiting");
 	assert(get_playing_cmd_from_q(&actor, &combined, dest));
 	expect_text(dest, "say waiting");
 	assert(!get_playing_cmd_from_q(&actor, &combined, dest));
-	expect_text(combined.head->text, "inventory");
+	expect_text(combined.head->text, "repair pick");
 	expect_text(combined.tail->text, "deposit all");
 	drain(&combined);
 	item_pending = false;

@@ -85,6 +85,10 @@
 /* The garrison's issued weapon. ONE prototype, restrung and retyped per guard
  * from its class and rank the way randomeq.c scales VOBJ_RANDOM_WEAPON. */
 #define VOBJ_KINGDOM_GUARD_WEAPON 495
+/* The guild store's gear blank, areas/obj/guildhalls.obj 48018. ONE prototype,
+ * retyped, restated and restrung per purchase by src/kingdom/kingdom_craft.c
+ * for the buyer's level, the way the guard weapon is per guard. */
+#define VOBJ_KINGDOM_CRAFT_BLANK 48018
 
 #define VOBJ_RANDOM_ARMOR 1252
 #define VOBJ_RANDOM_THRUSTED 1253

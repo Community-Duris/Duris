@@ -19,6 +19,17 @@ set -euo pipefail
 # Always run from the repository root so relative paths resolve correctly.
 cd "$(dirname "$0")/.." || exit 1
 
+# Git runs hooks with a relative GIT_INDEX_FILE.  git-clang-format changes
+# directories while building its temporary trees; let it use the default index
+# normally, and make non-default paths absolute before staged formatting.
+if [[ "${GIT_INDEX_FILE:-}" == ".git/index" && -f "$PWD/.git/index" ]]; then
+  unset GIT_INDEX_FILE
+elif [[ -n "${GIT_INDEX_FILE:-}" && "$GIT_INDEX_FILE" != /* ]]; then
+  export GIT_INDEX_FILE="$PWD/$GIT_INDEX_FILE"
+elif [[ "${GIT_INDEX_FILE:-}" == "$PWD/.git/index" ]]; then
+  unset GIT_INDEX_FILE
+fi
+
 MODE="worktree"
 CHECK=0
 REV=""
@@ -184,7 +195,7 @@ if [[ "$MODE" == "staged" ]]; then
   worktree_updated=1
   for pass in 0 1 2 3 4 5; do
     set +e
-    out="$(git -c color.ui=false clang-format "${ARGS[@]}" ${REV:+"$REV"})"
+    out="$(git -c color.ui=false -c diff.context=0 clang-format "${ARGS[@]}" ${REV:+"$REV"})"
     rc=$?
     set -e
 
@@ -208,7 +219,7 @@ if [[ "$MODE" == "staged" ]]; then
         ;;
     esac
 
-    if (( rc != 1 )) || [[ "$out" != "diff --git "* ]]; then
+    if (( rc != 0 && rc != 1 )) || [[ "$out" != "diff --git "* ]]; then
       echo "ERROR: git clang-format could not produce a staged formatting patch." >&2
       [[ -n "$out" ]] && echo "$out" >&2
       exit 1

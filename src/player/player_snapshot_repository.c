@@ -437,6 +437,26 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		if (!item_id)
 			return { false, EIO };
 		ids.push_back(item_id);
+		if (!pet_items)
+		{
+			player_item_snapshot standalone = row;
+			standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			std::vector<uint8_t> runtime;
+			if (player_item_snapshot_list_encode({ standalone }, &runtime) !=
+			    player_snapshot_codec_result::ok)
+				return { false, EINVAL };
+			result = execute(
+				connection,
+				"INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
+					std::to_string(item_id) + "," +
+					quote(connection,
+					      std::string(reinterpret_cast<const char *>(
+								  runtime.data()),
+							  runtime.size())) +
+					")");
+			if (!result.ok)
+				return result;
+		}
 
 		std::unordered_set<uint64_t> affect_keys;
 		std::unordered_set<std::string> description_keys;
@@ -687,10 +707,189 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 	return { true, 0 };
 }
 
+struct expected_player_item_custody
+{
+	uint64_t root_item_uid;
+	uint64_t parent_item_uid;
+	int32_t vnum;
+};
+
+bool parse_custody_uint64(const char *text, uint64_t *value)
+{
+	if (!text || !value || !*text)
+		return false;
+	char *end = nullptr;
+	errno = 0;
+	const unsigned long long parsed = std::strtoull(text, &end, 10);
+	if (errno || end == text || *end)
+		return false;
+	*value = static_cast<uint64_t>(parsed);
+	return true;
+}
+
+/**
+ * Prove that a complete replacement payload is an exact projection of active player
+ * custody before deleting a single existing payload row.  Inline coin custody is the
+ * sole exception: coin_payload is itself an authoritative, independently loadable item
+ * payload and therefore does not require a player_items row.
+ */
+query_result verify_player_item_custody(MYSQL *connection, const player_snapshot &snapshot)
+{
+	std::unordered_map<uint64_t, expected_player_item_custody> expected;
+	try
+	{
+		expected.reserve(snapshot.items.size());
+		for (size_t index = 0; index < snapshot.items.size(); ++index)
+		{
+			const player_item_snapshot &item = snapshot.items[index];
+			if (!item.object_uid || item.vnum <= 0 ||
+			    item.parent_index >= static_cast<int32_t>(index) ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT)
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+
+			uint64_t root_item_uid = item.object_uid;
+			uint64_t parent_item_uid = 0;
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				const player_item_snapshot &parent =
+					snapshot.items[item.parent_index];
+				const auto parent_custody = expected.find(parent.object_uid);
+				if (parent_custody == expected.end())
+					return { false,
+						 PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+				root_item_uid = parent_custody->second.root_item_uid;
+				parent_item_uid = parent.object_uid;
+			}
+			if (!expected.emplace(item.object_uid,
+					      expected_player_item_custody{
+						      root_item_uid, parent_item_uid, item.vnum })
+				     .second)
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { false, ENOMEM };
+	}
+
+	const std::string sql =
+		"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),vnum,"
+		"coin_payload IS NOT NULL FROM item_current_owner WHERE owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::player)) +
+		" AND owner_id=" + std::to_string(snapshot.pid) +
+		" AND owner_context_id=0 AND state=" +
+		std::to_string(static_cast<unsigned>(item_custody_state::active)) +
+		" ORDER BY item_uid FOR UPDATE";
+	query_result query = execute(connection, sql);
+	if (!query.ok)
+		return query;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+		return { false, mysql_errno(connection) };
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(rows)) != nullptr)
+	{
+		uint64_t item_uid = 0, root_item_uid = 0, parent_item_uid = 0;
+		const bool valid = parse_custody_uint64(row[0], &item_uid) && item_uid &&
+				   parse_custody_uint64(row[1], &root_item_uid) && root_item_uid &&
+				   parse_custody_uint64(row[2], &parent_item_uid) && row[3] &&
+				   row[4];
+		if (!valid)
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+
+		const auto found = expected.find(item_uid);
+		const bool inline_coin_payload = std::strcmp(row[4], "0") != 0;
+		if (found == expected.end())
+		{
+			if (inline_coin_payload)
+				continue;
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		const expected_player_item_custody &item = found->second;
+		if (item.root_item_uid != root_item_uid ||
+		    item.parent_item_uid != parent_item_uid || std::to_string(item.vnum) != row[3])
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		expected.erase(found);
+	}
+	mysql_free_result(rows);
+	return expected.empty() ? query_result{ true, 0 } :
+				  query_result{ false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+}
+
+// A death disposition deliberately has no active inventory snapshot: the live
+// items are recorded in its immutable corpse payload instead. Before removing
+// the old player_items projection, prove that every stored payload is present
+// in that corpse. A custody row with no payload may then be quarantined by its
+// captured root without making the normal complete-save check destructive.
+query_result verify_player_death_item_payload(MYSQL *connection, const player_snapshot &snapshot)
+{
+	if (!snapshot.death || !snapshot.items.empty())
+		return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+	std::unordered_map<uint64_t, int32_t> captured;
+	try
+	{
+		captured.reserve(snapshot.death->corpse.size());
+		for (const player_item_snapshot &item : snapshot.death->corpse)
+			if (!item.object_uid || item.vnum <= 0 ||
+			    !captured.emplace(item.object_uid, item.vnum).second)
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { false, ENOMEM };
+	}
+	const query_result query =
+		execute(connection, "SELECT obj_uid,vnum FROM player_items WHERE pid=" +
+					    std::to_string(snapshot.pid) + " FOR UPDATE");
+	if (!query.ok)
+		return query;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+		return { false, mysql_errno(connection) };
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(rows)) != nullptr)
+	{
+		uint64_t item_uid = 0;
+		if (!parse_custody_uint64(row[0], &item_uid) || !item_uid || !row[1])
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		const auto found = captured.find(item_uid);
+		if (found == captured.end() || std::to_string(found->second) != row[1])
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		captured.erase(found);
+	}
+	mysql_free_result(rows);
+	return { true, 0 };
+}
+
 query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 {
 	const bool equipment = snapshot.components & PLAYER_COMPONENT_EQUIPMENT;
 	const bool inventory = snapshot.components & PLAYER_COMPONENT_INVENTORY;
+	/* New snapshots always replace both halves together.  Keep accepting legacy
+	 * component-only journal records, but require every complete replacement to
+	 * prove its payload/custody equivalence before the destructive projection. */
+	if (equipment && inventory)
+	{
+		const query_result verified =
+			snapshot.death ? verify_player_death_item_payload(connection, snapshot) :
+					 verify_player_item_custody(connection, snapshot);
+		if (!verified.ok)
+			return verified;
+	}
 	std::string deletion = "DELETE FROM player_items WHERE pid=" + std::to_string(snapshot.pid);
 	if (equipment != inventory)
 		deletion += equipment ? " AND equip_slot>0" : " AND equip_slot=0";
@@ -770,6 +969,33 @@ query_result verify_pet_custody(MYSQL *connection, int pid, const player_pet_sna
 	return expected.empty() ? query_result{ true, 0 } : query_result{ false, ESTALE };
 }
 
+query_result pet_has_live_custody(MYSQL *connection, int pid, uint64_t pet_uid, bool *has_custody)
+{
+	if (!has_custody)
+		return { false, EINVAL };
+	*has_custody = false;
+	if (!pet_uid)
+		return { true, 0 };
+	const std::string sql =
+		"SELECT 1 FROM item_current_owner WHERE owner_type=" +
+		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
+		" AND owner_id=" + std::to_string(pet_uid) +
+		" AND owner_context_id=" + std::to_string(pid) + " AND state IN (" +
+		std::to_string(static_cast<unsigned>(item_custody_state::active)) + "," +
+		std::to_string(static_cast<unsigned>(item_custody_state::quarantined)) +
+		") LIMIT 1";
+	query_result result = execute(connection, sql);
+	if (!result.ok)
+		return result;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+		return { false, mysql_errno(connection) };
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	*has_custody = row != nullptr;
+	mysql_free_result(rows);
+	return { true, 0 };
+}
+
 query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
 {
 	query_result result = { true, 0 };
@@ -779,6 +1005,16 @@ query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
 	{
 		if (pet.pet_uid && !pet_uids.insert(pet.pet_uid).second)
 			return { false, EINVAL };
+		if (pet.hold_reason == pet_hold_reason::custody_pending)
+		{
+			bool has_custody = false;
+			result = pet_has_live_custody(connection, snapshot.pid, pet.pet_uid,
+						      &has_custody);
+			if (!result.ok)
+				return result;
+			if (!has_custody)
+				continue;
+		}
 		uint64_t pet_id = 0;
 		if (pet.pet_uid)
 		{
@@ -852,13 +1088,16 @@ query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
 		missing.back() = ')';
 	}
 	const std::string custody =
-		"EXISTS (SELECT 1 FROM item_owner_revision own WHERE own.owner_type=" +
+		"EXISTS (SELECT 1 FROM item_current_owner own WHERE own.owner_type=" +
 		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
 		" AND own.owner_id=player_pets.pet_uid AND own.owner_context_id=" +
-		std::to_string(snapshot.pid) + " AND own.revision>0)";
+		std::to_string(snapshot.pid) + " AND own.state IN (" +
+		std::to_string(static_cast<unsigned>(item_custody_state::active)) + "," +
+		std::to_string(static_cast<unsigned>(item_custody_state::quarantined)) + "))";
 	result = execute(connection, "UPDATE player_pets SET hold_reason=" +
 					     std::to_string(static_cast<uint32_t>(
 						     pet_hold_reason::custody_pending)) +
+					     ",room_vnum=" + std::to_string(snapshot.room_vnum) +
 					     " WHERE " + missing + " AND " + custody);
 	if (!result.ok)
 		return result;
@@ -1047,7 +1286,9 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	// Death records require their custody disposition to commit with this save.
 	// Never acknowledge one through the ordinary component-only writer.
 	if (snapshot.death ? snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
-				     snapshot.death->corpse.empty() :
+				     snapshot.death->corpse.empty() ||
+				     snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL ||
+				     !snapshot.items.empty() :
 			     snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION)
 		return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 

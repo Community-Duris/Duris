@@ -684,8 +684,11 @@ void do_nchat(P_char, char *, int);
 void do_jestros(P_char ch, char *argument, int cmd);
 void do_tranquilize(P_char ch, char *argument, int cmd);
 void do_storage(P_char ch, char *arg, int cmd);
+void newb_spellup(P_char ch, P_char victim);
 void do_newb_spellup_all(P_char ch, char *arg, int cmd);
 void do_newb_spellup(P_char ch, char *arg, int cmd);
+void community_spellup_command(P_char ch, char *arg);
+void community_spellup_reset_for_boot(void);
 void do_givepet(P_char ch, char *arg, int cmd);
 void do_petition_block(P_char, char *, int);
 void concat_which_flagsde(const char *flagType, const flagDef flagNames[], char *buf);
@@ -1035,6 +1038,10 @@ bool check_nevents();
 
 // epic.c
 void refund_epic_skills(P_char ch);
+
+/* ferryact.c */
+bool is_ferry_object(P_obj);
+void ferry_forget_object(P_obj);
 
 /* fight.c */
 bool rapier_dirk(P_char, P_char);
@@ -1874,7 +1881,12 @@ void do_teach(P_char, char *, int);
 void handle_scribe(P_char, P_char, P_obj, void *);
 void handle_spell_mem(P_char);
 void handle_undead_mem(P_char);
-void stop_memorizing(P_char);
+enum class memorization_stop_reason : uint8_t
+{
+	voluntary,
+	disrupted
+};
+void stop_memorizing(P_char, memorization_stop_reason = memorization_stop_reason::disrupted);
 int forget_spells(P_char, int);
 void do_stance(P_char, char *, int);
 int memorize_last_spell(P_char ch);
@@ -2067,7 +2079,7 @@ void create_denied_file(const char *, char *);
 int getNewPCidNumb(void);
 void setNewPCidNumbfromFile(void);
 char *statstr(int);
-bool _parse_name(char *, char *);
+bool _parse_name(char *, char *, bool);
 bool has_avail_class(P_desc);
 void display_classtable(P_desc);
 extern int invitemode;
@@ -2359,7 +2371,7 @@ void AddDeadChar(P_char);
 void AddDeadObj(P_obj);
 void game_loop(int, int);
 void game_up_message(int);
-void run_the_game(int, int);
+int run_the_game(int, int);
 
 /* sparser.c */
 
@@ -2481,6 +2493,7 @@ void resolve_nova(P_char);
 void spell_spore_burst(int, P_char, char *, int, P_char, P_obj);
 void spell_siren_song(int, P_char, char *, int, P_char, P_obj);
 void spell_harmonic_resonance(int, P_char, char *, int, P_char, P_obj);
+const char *elemental_aura_failure_message(P_char);
 void spell_elemental_aura(int, P_char, char *, int, P_char, P_obj);
 void spell_summon_insects(int, P_char, char *, int, P_char, P_obj);
 void spell_consecrate_land(int, P_char, char *, int, P_char, P_obj);
@@ -3199,13 +3212,8 @@ void do_specialize(P_char, char *, int);
 void event_enchant(P_char ch, P_char victim, P_obj obj, void *data);
 void do_encrust(P_char, char *, int);
 void do_spellbind(P_char, char *, int);
-void do_mix(P_char, char *, int);
 void do_fix(P_char, char *, int);
 void do_forge(P_char, char *, int);
-P_obj get_bottle(P_char);
-int spl2potion(int);
-P_obj get_potion(P_char);
-bool MobAlchemistGetPotions(P_char, int, int);
 bool randomize_potion_non_damage(P_obj, int);
 void do_enchant(P_char, char *, int);
 P_obj check_furnace(P_char);

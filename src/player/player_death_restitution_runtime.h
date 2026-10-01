@@ -43,6 +43,11 @@ enum class player_death_restitution_runtime_result : uint8_t
 	journal_uncertain,
 	journal_failure,
 	identity_conflict,
+	duplicate_staging,
+	no_staging,
+	malformed_chunk,
+	incomplete_chunk,
+	chunk_limit,
 };
 
 struct player_death_restitution_runtime_submission

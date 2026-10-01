@@ -11,6 +11,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 
 SCRIPT = ROOT / "scripts" / "player_death_restitution.py"
@@ -319,10 +320,19 @@ int main(int argc, char **argv)
 
     invoke_command("begin");
     assert(last_message.find("staging started") != std::string::npos);
-    for (size_t offset = 0; offset < encoded.size(); offset += 800)
+    const size_t chunk_limit = PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNK_HEX;
+    assert(chunk_limit == 1004);
+    assert(PLAYER_DEATH_RESTITUTION_STAFF_MAX_CHUNKS == 1045);
+    assert(chunk_limit + std::string("restitution chunk ").size() < MAX_INPUT_LENGTH);
+    for (size_t offset = 0; offset < encoded.size(); offset += chunk_limit)
     {
-        const size_t chunk_size = std::min<size_t>(800, encoded.size() - offset);
-        invoke_command("chunk " + encoded.substr(offset, chunk_size));
+        const size_t chunk_size = std::min<size_t>(chunk_limit, encoded.size() - offset);
+        const std::string line = "restitution chunk " + encoded.substr(offset, chunk_size);
+        // Model the input-reader cap before command dispatch. No reframing to
+        // smaller, workaround chunks may hide an invalid exporter contract.
+        const std::string transported = line.substr(0, MAX_INPUT_LENGTH - 1);
+        assert(transported == line);
+        invoke_command(transported.substr(std::string("restitution ").size()));
         assert(last_message.find("chunk accepted") != std::string::npos);
     }
     invoke_command("commit");
@@ -377,7 +387,13 @@ with tempfile.TemporaryDirectory(prefix="duris-restitution-handoff-") as temp_di
     assert payload["evidence_digest"] == json.loads(inspect_path.read_text())["evidence_digest"]
     assert "100" not in payload["artifact_timing_approvals"]
     assert "".join(payload["chunks"]) == payload["canonical_hex"]
-    assert all(0 < len(chunk) <= 1022 for chunk in payload["chunks"])
+    # Include the actual command prefix in the transport budget: comm.c keeps
+    # MAX_INPUT_LENGTH - 1 characters, not that many payload characters.
+    assert all(0 < len(chunk) <= 1004 and len(chunk) % 2 == 0
+               and len("restitution chunk " + chunk) <= 1023
+               for chunk in payload["chunks"])
+    assert cli.STAFF_CHUNK_HEX == 1004
+    assert (cli.STAFF_PAYLOAD_MAX_BYTES * 2 + cli.STAFF_CHUNK_HEX - 1) // cli.STAFF_CHUNK_HEX == 1045
     command = bytes.fromhex(payload["canonical_hex"])
     assert hashlib.sha256(command).hexdigest() == payload["command_digest"]
     # The command header is 92 bytes; the native plan places its two distinct
@@ -390,6 +406,110 @@ with tempfile.TemporaryDirectory(prefix="duris-restitution-handoff-") as temp_di
     assert command[digest_offset + 64:digest_offset + 96] == bytes.fromhex(plan["plan_digest"])
     approval_digest = payload.pop("approval_digest")
     assert cli.digest_json(payload) == approval_digest
+
+    # Preserve the pre-mode artifact's exact v3 digest and operation identity.
+    # Its historical schema lacks both fields; never rewrite an approved plan.
+    legacy_plan = dict(plan)
+    for field in ("preparation_mode", "exportable", "plan_digest", "restitution_id_hex"):
+        legacy_plan.pop(field)
+    legacy_plan["plan_digest"] = cli.digest_json(legacy_plan)
+    legacy_material = (
+        b"duris-player-death-restitution-v1\0"
+        + bytes.fromhex(legacy_plan["evidence_digest"])
+        + legacy_plan["recipient_pid"].to_bytes(8, "little")
+        + bytes.fromhex(legacy_plan["plan_digest"])
+    )
+    legacy_plan["restitution_id_hex"] = hashlib.sha256(legacy_material).digest()[:16].hex()
+    legacy_plan_path = temp / "legacy-plan.json"
+    legacy_export_path = temp / "legacy-export.json"
+    cli.atomic_write_json(legacy_plan_path, legacy_plan, overwrite=False)
+    assert cli.load_plan(legacy_plan_path) == legacy_plan
+    run_cli(
+        "export", "--plan", str(legacy_plan_path), "--inspect", str(inspect_path),
+        "--artifact", str(legacy_export_path), "--approve", "--actor", "approved-staff",
+        "--reason", "death_restitution",
+    )
+    legacy_payload = json.loads(legacy_export_path.read_text())
+    assert legacy_payload["plan_digest"] == legacy_plan["plan_digest"]
+    assert legacy_payload["restitution_id_hex"] == legacy_plan["restitution_id_hex"]
+    assert json.loads(legacy_plan_path.read_text()) == legacy_plan
+
+    # Exercise apply's independent revalidation callsite up to the SQL boundary.
+    # This artifact-only probe does not claim database application or quiescence.
+    class ApplyBoundaryReached(Exception):
+        pass
+
+    database = mock.Mock(policy=None)
+    database.run.side_effect = ApplyBoundaryReached
+    with mock.patch.object(cli, "check_quiescence"), \
+            mock.patch.object(cli, "fetch_receipt", return_value=None), \
+            mock.patch.object(cli, "build_inspection", return_value=json.loads(inspect_path.read_text())):
+        try:
+            cli.apply_plan(database, legacy_plan, temp / "unused-proof", "approved-staff", "death_restitution")
+        except ApplyBoundaryReached:
+            pass
+        else:
+            raise AssertionError("legacy plan did not reach the SQL boundary")
+    database.run.assert_called_once()
+    assert legacy_plan["restitution_id_hex"] in database.run.call_args.args[0]
+    assert legacy_plan["plan_digest"] in database.run.call_args.args[0]
+
+    # Exercise production-classified native preparation through the real CLI,
+    # without mocking plan reconstruction or command encoding. The synthetic
+    # target has no connection: planning/export must consume only artifacts.
+    native_inspect_path = temp / "native-inspection.json"
+    native_plan_path = temp / "native-plan.json"
+    native_export_path = temp / "native-export.json"
+    native_target_path = temp / "native-target.json"
+    native_inspection = inspection_artifact(cli)
+    native_target = {
+        "host": "no-database.invalid", "port": "3306", "database": "duris",
+        "production": True, "server_fingerprint": "ab" * 32,
+    }
+    native_inspection.pop("evidence_digest")
+    native_inspection["target"] = native_target
+    native_inspection["evidence_digest"] = cli.digest_json(native_inspection)
+    cli.atomic_write_json(native_inspect_path, native_inspection, overwrite=False)
+    cli.atomic_write_json(native_target_path, cli.make_target_info(native_target, None), overwrite=False)
+    refused = run_cli(
+        "plan", "--inspect", str(native_inspect_path), "--native",
+        "--approve-production", "--artifact", str(native_plan_path), check=False,
+    )
+    assert refused.returncode == 2 and not native_plan_path.exists()
+    run_cli(
+        "plan", "--inspect", str(native_inspect_path),
+        "--target-info", str(native_target_path), "--preparation-mode", "native",
+        "--artifact", str(native_plan_path),
+    )
+    unapproved = json.loads(native_plan_path.read_text())
+    assert unapproved["eligible_count"] == 1 and unapproved["exportable"] is False
+    refused = run_cli(
+        "export", "--plan", str(native_plan_path), "--inspect", str(native_inspect_path),
+        "--artifact", str(native_export_path), "--approve", "--actor", "approved-staff",
+        "--reason", "death_restitution", check=False,
+    )
+    assert refused.returncode == 2 and not native_export_path.exists()
+    run_cli(
+        "plan", "--inspect", str(native_inspect_path),
+        "--target-info", str(native_target_path), "--preparation-mode", "native",
+        "--approve-production", "--artifact", str(native_plan_path), "--overwrite",
+    )
+    native_plan = json.loads(native_plan_path.read_text())
+    assert native_plan["exportable"] is True and native_plan["applyable"] is False
+    assert native_plan["target"] == native_target
+    assert not native_plan.get("backup_receipt") and not native_plan.get("maintenance_boundary")
+    run_cli(
+        "export", "--plan", str(native_plan_path), "--inspect", str(native_inspect_path),
+        "--artifact", str(native_export_path), "--approve", "--actor", "approved-staff",
+        "--reason", "death_restitution",
+    )
+    native_payload = json.loads(native_export_path.read_text())
+    assert native_payload["plan_digest"] == native_plan["plan_digest"]
+    assert native_payload["evidence_digest"] == native_inspection["evidence_digest"]
+    assert native_payload["restitution_id_hex"] == native_plan["restitution_id_hex"]
+    assert native_payload["recipient_pid"] == native_plan["recipient_pid"]
+    assert "".join(native_payload["chunks"]) == native_payload["canonical_hex"]
+    assert all(len("restitution chunk " + chunk) <= 1023 for chunk in native_payload["chunks"])
 
     artifact_inspect_path = temp / "artifact-inspection.json"
     artifact_plan_path = temp / "artifact-plan.json"
@@ -471,6 +591,8 @@ with tempfile.TemporaryDirectory(prefix="duris-restitution-handoff-") as temp_di
         check=True,
     )
     subprocess.run([str(binary), payload["canonical_hex"]], cwd=ROOT, check=True, timeout=10)
+    subprocess.run([str(binary), legacy_payload["canonical_hex"]], cwd=ROOT, check=True, timeout=10)
+    subprocess.run([str(binary), native_payload["canonical_hex"]], cwd=ROOT, check=True, timeout=10)
     subprocess.run([str(binary), artifact_payload["canonical_hex"]], cwd=ROOT, check=True, timeout=10)
 
 print("[PASS] operator export is accepted by the production staff command; stale evidence and auth are fenced")

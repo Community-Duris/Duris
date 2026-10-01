@@ -47,6 +47,9 @@ idle_rent = body(limits, "void point_update(void)")
 assert idle_rent.index("persistence_save_character_terminal(i, RENT_LINKDEAD)") < idle_rent.index(
     "extract_char_after_terminal_save(i)"
 )
+assert idle_rent.index("if (GET_STAT(i) == STAT_DEAD)") < idle_rent.index(
+    "persistence_save_character_terminal(i, RENT_LINKDEAD)"
+)
 
 camp = body(affects, "int camp(P_char ch)")
 assert camp.index("persistence_save_character_terminal(ch, RENT_CAMPED)") < camp.index(
@@ -63,9 +66,13 @@ for inn_signature in ("int inn(", "int undead_inn("):
     assert "persistence_save_character_terminal" in inn
     assert "extract_char_after_terminal_save(ch)" in inn
 
+ghost_attempt = body(actwiz, "static bool extractlink_attempt(P_char ch")
+assert ghost_attempt.count("extract_char_after_terminal_save(vict)") == 1
+assert ghost_attempt.index(
+    "persistence_save_character_terminal(vict, RENT_LINKDEAD)"
+) < ghost_attempt.index("extract_char_after_terminal_save(vict)")
 ghosts = body(actwiz, "void do_extractlink(P_char ch")
-assert ghosts.count("extract_char_after_terminal_save(vict)") == 2
-assert "persistence_save_character_terminal(vict, RENT_LINKDEAD)" in ghosts
+assert ghosts.count("extractlink_attempt(ch, vict)") == 1
 
 death = body(fight, "void die(P_char ch, P_char killer)")
 assert death.index("persistence_save_character_terminal(ch, RENT_DEATH)") < death.index(

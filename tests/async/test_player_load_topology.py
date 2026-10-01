@@ -154,8 +154,15 @@ for source in (repository, flatfile):
 assert "outcome=topology_repaired" in materialize
 assert "recovery=next_full_save" in materialize
 missing_payload = materialize[materialize.index("if (result.missing_payload_rows)"):]
-missing_payload = missing_payload[:missing_payload.index("reset_char(ch);")]
+missing_payload = missing_payload[:missing_payload.index(
+    "ch->only.pc->load_degraded_components")]
 assert "recovery=operator_repair" in missing_payload
 assert "recovery=next_full_save" not in missing_payload
+payload_gap_fence = materialize.index(
+    'mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS, "items", "missing_payload_rows")'
+)
+assert materialize.index("player_load_items_materialize") < payload_gap_fence
+assert payload_gap_fence < materialize.index("affect_total(ch, FALSE)")
+assert "CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP" in materialize[payload_gap_fence:]
 
 print("player-load item topology self-healing passed")

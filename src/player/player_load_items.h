@@ -52,6 +52,7 @@ bool player_load_item_graph_materialize_detached(
 bool player_load_item_graph_materialize_creation(const item_transfer_payload &payload,
 						 const item_transfer_result &result,
 						 std::vector<P_obj> *roots);
+void player_load_item_runtime_state_apply(P_obj object, const player_item_snapshot &item);
 void player_load_items_activate_equipment(P_char character);
 void player_load_items_discard(P_char character);
 

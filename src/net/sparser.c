@@ -8,6 +8,7 @@
 */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "world/difficulty.h"
@@ -751,6 +752,8 @@ void add_follower(P_char ch, P_char leader)
 	k->follower = ch;
 	k->next = leader->followers;
 	leader->followers = k;
+
+	item_restrict_player_pet_equipment(ch);
 
 	// Login stages pet links before placing either character in the world.
 	// Visibility and room broadcasts are only valid after placement.
@@ -2772,6 +2775,18 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 	else
 	{
 		args[0] = '\0';
+	}
+
+	/* Reject elemental-aura no-ops before use_spell consumes mana or a slot. */
+	if (!weaving && arg->spell == SPELL_ELEMENTAL_AURA)
+	{
+		const char *failure = elemental_aura_failure_message(ch);
+		if (failure)
+		{
+			send_to_char(failure, ch);
+			StopCasting(ch);
+			return;
+		}
 	}
 
 	/*

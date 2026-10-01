@@ -980,9 +980,9 @@ def main() -> int:
         if not isinstance(chunks, list) or not chunks or "canonical_hex" not in staff_payload:
             raise JourneyFailure("canonical builder export did not produce a chunked payload")
         canonical_hex = staff_payload["canonical_hex"]
-        # The export chunks are codec-sized (1022 hex chars), but the live
-        # command line is MAX_INPUT_LENGTH=1024 including `restitution chunk `.
-        # Reframe the exact exported canonical bytes for transport; do not
+        # The exporter now accounts for the command prefix (1004 hex chars).
+        # Retain this journey's conservative 800-character transport framing;
+        # reframe the exact exported canonical bytes only, and do not
         # decode/rebuild or otherwise alter the approved command.
         transport_chunks = [
             canonical_hex[offset:offset + 800]

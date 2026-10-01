@@ -18,6 +18,9 @@ assert "player_death_restitution_staff_begin" in COMMAND
 assert "player_death_restitution_staff_append_hex" in COMMAND
 assert "player_death_restitution_staff_commit" in COMMAND
 assert "GET_LEVEL(ch) < FORGER" in COMMAND
+assert "restitution status <operation-id>" in COMMAND
+assert "delivery=not_verified" in COMMAND
+assert "DO NOT RETRY" in COMMAND
 assert "CMD_GRT(CMD_RESTITUTION" in INTERP
 assert '"restitution"' in INTERP
 assert "CMD_RESTITUTION 863" in INTERP_H
@@ -77,6 +80,7 @@ critical_submit_result coordinator_result = critical_submit_result::journal_unce
 critical_operation_id submitted_operation = {};
 bool target_fence_held = false;
 int release_calls = 0;
+int submit_calls = 0;
 
 critical_operation_id operation_id(uint8_t seed)
 {
@@ -201,6 +205,7 @@ bool player_save_pipeline_save_admitted(int pid)
 
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
+    ++submit_calls;
     submitted_operation = command.operation_id;
     return coordinator_result;
 }
@@ -225,9 +230,23 @@ int main()
         do_restitution(&staff, input.data(), CMD_RESTITUTION);
     };
 
+    invoke_command("");
+    assert(last_message.find("inspect") != std::string::npos);
+    invoke_command("chunk aa");
+    assert(last_message.find("no active staging") != std::string::npos);
     invoke_command("begin");
     assert(last_message.find("staging started") != std::string::npos);
-    for (size_t offset = 0; offset < encoded.size(); offset += 800)
+    size_t offset = 0;
+    {
+        const size_t chunk_size = std::min<size_t>(800, encoded.size());
+        invoke_command("chunk " + encoded.substr(0, chunk_size));
+        assert(last_message.find("chunk accepted") != std::string::npos);
+        offset = chunk_size;
+        invoke_command("begin");
+        assert(last_message.find("Existing restitution staging retained") != std::string::npos);
+        assert(last_message.find("accepted_chunks=1/") != std::string::npos);
+    }
+    for (; offset < encoded.size(); offset += 800)
     {
         const size_t chunk_size = std::min<size_t>(800, encoded.size() - offset);
         invoke_command("chunk " + encoded.substr(offset, chunk_size));
@@ -236,6 +255,20 @@ int main()
     invoke_command("commit");
     assert(last_message.find("journal-uncertain") != std::string::npos);
     assert(submitted_operation.bytes == command.operation_id.bytes);
+    char operation_hex[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+    assert(critical_operation_id_to_hex(submitted_operation, operation_hex,
+                                        sizeof(operation_hex)));
+    invoke_command(std::string("status ") + operation_hex);
+    assert(last_message.find("phase=status") != std::string::npos);
+    assert(last_message.find("state=journal-uncertain") != std::string::npos);
+    assert(last_message.find("delivery=not_verified") != std::string::npos);
+    assert(last_message.find("retry: do not retry this operation") != std::string::npos);
+    assert(last_message.find("delivery=verified") == std::string::npos);
+    player_death_restitution_runtime_operation_status operation_status = {};
+    assert(player_death_restitution_runtime_operation_status_copy(
+        "approved-staff", FORGER, submitted_operation, &operation_status));
+    assert(!player_death_restitution_runtime_operation_status_copy(
+        "other-staff", FORGER, submitted_operation, &operation_status));
     assert(target_fence_held);
     assert(!player_death_restitution_runtime_login_admit(20));
     assert(player_death_restitution_runtime_login_admit(21));
@@ -257,9 +290,32 @@ int main()
     assert(release_calls == 0);
 
     completion.outcome = critical_apply_outcome::already_applied;
+    player_death_restitution_result receipt = {};
+    receipt.restitution_id = submitted_operation;
+    receipt.source_pid = 10;
+    receipt.recipient_pid = 20;
+    receipt.delivery_epoch = 1700000001;
+    receipt.durable_revision = 13;
+    receipt.candidate_count = 1;
+    receipt.delivered_count = 1;
+    receipt.unresolved_count = 0;
+    receipt.mutation_applied = true;
+    std::array<uint8_t, PLAYER_DEATH_RESTITUTION_RESULT_BYTES> receipt_payload = {};
+    assert(player_death_restitution_command_encode_result(receipt, &receipt_payload));
+    completion.result_size = receipt_payload.size();
+    std::copy(receipt_payload.begin(), receipt_payload.end(), completion.result_payload.begin());
     player_death_restitution_runtime_handle_completions(&completion, 1);
     assert(!target_fence_held);
     assert(release_calls == 1);
+    invoke_command(std::string("status ") + operation_hex);
+    assert(last_message.find("state=durable-receipt-unverified") != std::string::npos);
+    assert(last_message.find("durable_receipt=recorded") != std::string::npos);
+    assert(last_message.find("delivery=not_verified") != std::string::npos);
+    assert(last_message.find("delivery=verified") == std::string::npos);
+    assert(player_death_restitution_staff_submit_hex(
+               "approved-staff", FORGER, encoded.data(), encoded.size(), nullptr) ==
+           player_death_restitution_runtime_result::attached);
+    assert(submit_calls == 1);
 
     command.source_site = critical_source_site::recovery;
     assert(critical_command_normalize(&command));
@@ -267,6 +323,15 @@ int main()
     assert(player_death_restitution_staff_submit_hex(
                "approved-staff", FORGER, unapproved.data(), unapproved.size(), nullptr) ==
            player_death_restitution_runtime_result::invalid_plan);
+    invoke_command("begin");
+    invoke_command("chunk a");
+    assert(last_message.find("odd-length") != std::string::npos);
+    invoke_command("chunk gg");
+    assert(last_message.find("non-hex") != std::string::npos);
+    invoke_command("abort");
+    assert(last_message.find("staged data was discarded") != std::string::npos);
+    invoke_command("abort");
+    assert(last_message.find("no staged data exists") != std::string::npos);
     return 0;
 }
 '''

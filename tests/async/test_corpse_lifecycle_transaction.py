@@ -21,11 +21,12 @@ HARNESS = r'''
 static std::vector<critical_command> submitted;
 static bool externally_fenced = false;
 static bool release_completed = false;
-static bool retryable_release_failed = false;
 static bool retryable_release_completed = false;
+static bool fenced_release_failed = false;
 static bool queued_destruction_completed = false;
 static bool resurrection_completed = false;
 static bool raise_completed = false;
+static bool world_raise_completed = false;
 static bool nested_completed = false;
 
 bool redis_invalidate_artifact_cache(void)
@@ -121,6 +122,25 @@ static corpse_lifecycle_payload raise_follower(uint32_t owner_pid, uint32_t save
 	payload.action = corpse_lifecycle_action::raise_follower;
 	payload.expected_room_revision = 0;
 	payload.old_room_vnum = 0;
+	return payload;
+}
+
+static corpse_lifecycle_payload raise_world_follower(uint32_t high, uint32_t low)
+{
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::raise_world_follower;
+	payload.owner_pid = high;
+	payload.save_id = low;
+	payload.expected_room_revision = 4;
+	payload.destination_player_pid = 89;
+	payload.expected_player_revision = 6;
+	payload.room_vnum = 907;
+	payload.owner_name = "world corpse";
+	payload.pet_uid = (static_cast<uint64_t>(high) << 32) | low;
+	payload.pet_mob_vnum = 701;
+	payload.pet_hit = payload.pet_max_hit = 20;
+	payload.pet_mana = payload.pet_max_mana = 10;
+	payload.pet_vitality = payload.pet_max_vitality = 5;
 	return payload;
 }
 
@@ -240,6 +260,31 @@ static critical_completion raise_completion(size_t index, uint32_t owner_pid,
 	return value;
 }
 
+static critical_completion world_raise_completion(size_t index, uint32_t high,
+					    uint32_t low, uint64_t room_revision)
+{
+	critical_completion value = {};
+	value.operation_id = submitted[index].operation_id;
+	value.outcome = critical_apply_outcome::applied;
+	corpse_lifecycle_result result = {};
+	result.owner_pid = high;
+	result.save_id = low;
+	result.action = corpse_lifecycle_action::raise_world_follower;
+	result.catalog_revision = room_revision;
+	result.corpse_owner_revision = room_revision;
+	result.pet_owner_revision = 1;
+	result.max_item_revision = 10;
+	result.item_count = 2;
+	result.destruction_owner_revision = 1;
+	result.max_discarded_item_revision = 9;
+	result.discarded_item_count = 1;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	value.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
 static critical_completion nested_completion(size_t index, uint32_t owner_pid,
 				      uint32_t save_id, uint64_t catalog_revision)
 {
@@ -263,21 +308,21 @@ static void on_release(bool committed, const corpse_lifecycle_result &result,
 	release_completed = true;
 }
 
-static void on_retryable_release(bool committed, const corpse_lifecycle_result &,
+static void on_retryable_release(bool committed, const corpse_lifecycle_result &result,
 				 unsigned int error_code,
 				 const corpse_lifecycle_payload &payload)
 {
-	assert(!committed && error_code == ESTALE && payload.expected_corpse_revision == 3);
-	retryable_release_failed = true;
+	assert(committed && error_code == 0 && result.owner_pid == 44 &&
+	       payload.expected_corpse_revision == 4 && payload.expected_room_revision == 0);
+	retryable_release_completed = true;
 }
 
-static void on_retryable_release_success(bool committed, const corpse_lifecycle_result &result,
-					 unsigned int error_code,
-					 const corpse_lifecycle_payload &payload)
+static void on_fenced_release(bool committed, const corpse_lifecycle_result &,
+				      unsigned int error_code,
+				      const corpse_lifecycle_payload &payload)
 {
-	assert(committed && error_code == 0 && result.owner_pid == 44 &&
-	       payload.expected_corpse_revision == 3 && payload.expected_room_revision == 1);
-	retryable_release_completed = true;
+	assert(!committed && error_code == ESTALE && payload.expected_corpse_revision == 4);
+	fenced_release_failed = true;
 }
 
 static void on_queued_destruction(bool committed, const corpse_lifecycle_result &result,
@@ -309,6 +354,18 @@ static void on_raise(bool committed, const corpse_lifecycle_result &result,
 	       payload.destination_player_pid == 88 && !payload.old_room_vnum &&
 	       payload.expected_corpse_revision == 1);
 	raise_completed = true;
+}
+
+static void on_world_raise(bool committed, const corpse_lifecycle_result &result,
+			   unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 &&
+	       result.action == corpse_lifecycle_action::raise_world_follower &&
+	       result.corpse_owner_revision == 5 && result.pet_owner_revision == 1 &&
+	       result.discarded_item_count == 1 && payload.expected_corpse_revision == 9 &&
+	       payload.expected_room_revision == 4 && payload.destination_player_pid == 89 &&
+	       payload.pet_uid == ((static_cast<uint64_t>(5) << 32) | 99));
+	world_raise_completed = true;
 }
 
 static void on_nested(bool committed, const corpse_lifecycle_result &result,
@@ -385,12 +442,18 @@ int main()
 	stale_release.operation_id = submitted[6].operation_id;
 	stale_release.outcome = critical_apply_outcome::terminal_failure;
 	stale_release.error_code = ESTALE;
+	stale_release.durable_revision = 4;
 	corpse_lifecycle_transaction_handle_completions(&stale_release, 1);
-	assert(retryable_release_failed);
-	assert(corpse_lifecycle_transaction_release(release(44, 22, 901, 1),
-						     on_retryable_release_success));
-	assert(submitted.size() == 8 && decode(7).expected_corpse_revision == 3 &&
-	       decode(7).expected_room_revision == 1);
+	assert(!retryable_release_completed && submitted.size() == 7);
+	for (unsigned int pulse = 0;
+	     pulse < CORPSE_LIFECYCLE_STALE_RETRY_BACKOFF_PULSES; ++pulse)
+	{
+		corpse_lifecycle_transaction_pulse();
+		assert(submitted.size() == 7);
+	}
+	corpse_lifecycle_transaction_pulse();
+	assert(submitted.size() == 8 && decode(7).expected_corpse_revision == 4 &&
+	       decode(7).expected_room_revision == 0);
 	done = release_completion(7, 44, 22, 16);
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
 	assert(retryable_release_completed);
@@ -447,12 +510,53 @@ int main()
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
 	assert(nested_completed && !corpse_lifecycle_transaction_busy(48, 26));
 
+	// A second stale result fences the corpse. It cannot create another
+	// operation, and the terminal callback is delivered exactly once.
+	assert(corpse_lifecycle_transaction_hydrate(49, 27, 3));
+	assert(corpse_lifecycle_transaction_release(release(49, 27, 910, 0),
+						     on_fenced_release));
+	assert(submitted.size() == 17);
+	critical_completion first_fenced_stale = {};
+	first_fenced_stale.operation_id = submitted[16].operation_id;
+	first_fenced_stale.outcome = critical_apply_outcome::terminal_failure;
+	first_fenced_stale.error_code = ESTALE;
+	first_fenced_stale.durable_revision = 4;
+	corpse_lifecycle_transaction_handle_completions(&first_fenced_stale, 1);
+	assert(!fenced_release_failed && submitted.size() == 17);
+	for (unsigned int pulse = 0;
+	     pulse < CORPSE_LIFECYCLE_STALE_RETRY_BACKOFF_PULSES; ++pulse)
+		corpse_lifecycle_transaction_pulse();
+	corpse_lifecycle_transaction_pulse();
+	assert(submitted.size() == 18 && decode(17).expected_corpse_revision == 4);
+	critical_completion second_fenced_stale = {};
+	second_fenced_stale.operation_id = submitted[17].operation_id;
+	second_fenced_stale.outcome = critical_apply_outcome::terminal_failure;
+	second_fenced_stale.error_code = ESTALE;
+	second_fenced_stale.durable_revision = 4;
+	corpse_lifecycle_transaction_handle_completions(&second_fenced_stale, 1);
+	assert(fenced_release_failed && !corpse_lifecycle_transaction_busy(49, 27));
+	assert(!corpse_lifecycle_transaction_release(release(49, 27, 910, 0),
+						      on_fenced_release));
+
+	auto world_raise = raise_world_follower(5, 99);
+	assert(corpse_lifecycle_transaction_raise_world_follower(world_raise, 9,
+							 on_world_raise));
+	assert(corpse_lifecycle_transaction_raise_world_follower(world_raise, 9,
+							 on_world_raise));
+	assert(submitted.size() == 19 &&
+	       decode(18).action == corpse_lifecycle_action::raise_world_follower &&
+	       decode(18).expected_corpse_revision == 9 && submitted[18].keys.size() == 5);
+	done = world_raise_completion(18, 5, 99, 5);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(world_raise_completed && !corpse_lifecycle_transaction_busy(5, 99));
+
 	const auto health = corpse_lifecycle_transaction_health_copy();
-	assert(health.submitted == 16 && health.committed == 15 && health.rejected == 1 &&
+	assert(health.submitted == 19 && health.committed == 16 && health.rejected == 3 &&
 	       health.pending == 0 && health.dirty == 0);
 	assert(corpse_lifecycle_transaction_forget(42, 20));
 	assert(corpse_lifecycle_transaction_forget(43, 21));
 	assert(corpse_lifecycle_transaction_forget(44, 22));
+	assert(corpse_lifecycle_transaction_forget(49, 27));
 	return 0;
 }
 '''

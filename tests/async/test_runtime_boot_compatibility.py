@@ -49,7 +49,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes both death recovery tables, verified on both supported engines.
-        self.assertEqual(report["current_table_count"], 202)
+        self.assertEqual(report["current_table_count"], 204)
         for table in ("player_death_disposition", "player_death_custody"):
             self.assertIn("'" + table + "'", self.header)
         for table in ("collector_catalog_state", "collector_deaths",
@@ -59,7 +59,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'corpse_catalog_state'", self.header)
         self.assertIn("'zone_story_quest_state'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0027_saved_item_recovery_handoff")
+                         "0031_player_item_runtime_state")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -99,7 +99,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertLess(hydrate, redis)
         self.assertLess(redis, run_game)
 
-        game = self.comm[self.comm.index("void run_the_game(int port, int sslport)"):
+        game = self.comm[self.comm.index("int run_the_game(int port, int sslport)"):
                          self.comm.index("void game_loop(int port, int sslport)")]
         for boundary in ("player_load_pipeline_init", "locker_async_init",
                          "player_save_pipeline_init",

@@ -202,6 +202,44 @@ bool critical_command_equal(const critical_command &left, const critical_command
 	       left_encoded == right_encoded;
 }
 
+const char *critical_failure_stage_name(critical_failure_stage stage)
+{
+	switch (stage)
+	{
+	case critical_failure_stage::none:
+		return "none";
+	case critical_failure_stage::coin_source_wallet_revision:
+		return "coin_source_wallet_revision";
+	case critical_failure_stage::coin_source_bank_revision:
+		return "coin_source_bank_revision";
+	case critical_failure_stage::coin_destination_wallet_revision:
+		return "coin_destination_wallet_revision";
+	case critical_failure_stage::coin_destination_bank_revision:
+		return "coin_destination_bank_revision";
+	case critical_failure_stage::coin_source_owner_revision:
+		return "coin_source_owner_revision";
+	case critical_failure_stage::coin_destination_owner_revision:
+		return "coin_destination_owner_revision";
+	case critical_failure_stage::coin_source_item_revision:
+		return "coin_source_item_revision";
+	case critical_failure_stage::coin_destination_item_revision:
+		return "coin_destination_item_revision";
+	case critical_failure_stage::coin_source_target_parent_revision:
+		return "coin_source_target_parent_revision";
+	case critical_failure_stage::coin_destination_target_parent_revision:
+		return "coin_destination_target_parent_revision";
+	case critical_failure_stage::coin_source_coin_payload_revision:
+		return "coin_source_coin_payload_revision";
+	case critical_failure_stage::coin_destination_coin_payload_revision:
+		return "coin_destination_coin_payload_revision";
+	case critical_failure_stage::coin_destination_rebase:
+		return "coin_destination_rebase";
+	case critical_failure_stage::coin_revision_unknown:
+		return "coin_revision_unknown";
+	}
+	return critical_failure_stage_valid(stage) ? "multiple_revision_gates" : "invalid";
+}
+
 critical_command_codec_result critical_command_encode(const critical_command &command,
 						      std::vector<uint8_t> *encoded)
 {

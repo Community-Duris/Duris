@@ -16,6 +16,9 @@ TRANSIENT = 524288
 UIDS = (880000000001, 880000000002, 880000000003)
 GIVE_UIDS = (880000000004, 880000000005)
 PROC_UID = 880000000006
+NPC_GEAR_UIDS = (880000000007, 880000000008, 880000000009)
+NPC_TRANSIENT_UID = 880000000010
+NPC_MONEY_UID = 880000000011
 OWNER_PID, SAVE_ID, ROOM = 880001, 1004, 22800
 
 
@@ -156,18 +159,40 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                             f"obj_uid={npc_uid});"
                             "INSERT INTO saved_items(item_key,room_vnum,vnum,"
                             "container_id,obj_uid,weight,wear_flags,name,short_descr)"
-                            f" VALUES('ordinary_npc_corpse',{ROOM},5,@corpse_row,"
-                            f"{GIVE_UIDS[0]},1,1,'ordinary trinket','an ordinary trinket');"
+                            f" VALUES('ordinary_npc_corpse',{ROOM},48,@corpse_row,"
+                            f"{NPC_GEAR_UIDS[0]},5,1,'ordinary backpack',"
+                            "'an ordinary backpack');"
+                            "SET @ordinary_row=LAST_INSERT_ID();"
+                            "INSERT INTO saved_items(item_key,room_vnum,vnum,"
+                            "container_id,obj_uid,weight,wear_flags,name,short_descr)"
+                            f" VALUES('ordinary_npc_corpse',{ROOM},48,@ordinary_row,"
+                            f"{NPC_GEAR_UIDS[1]},2,0,'no-take token',"
+                            "'a no-take token');"
+                            "SET @no_take_row=LAST_INSERT_ID();"
                             "INSERT INTO saved_items(item_key,room_vnum,vnum,"
                             "container_id,obj_uid,weight,extra_flags,wear_flags,name,short_descr)"
-                            f" VALUES('ordinary_npc_corpse',{ROOM},5,@corpse_row,"
-                            f"{PROC_UID},1,2050,0,'probe token','a probe token');"
+                            f" VALUES('ordinary_npc_corpse',{ROOM},5,@no_take_row,"
+                            f"{NPC_GEAR_UIDS[2]},1,2050,0,'no-show token',"
+                            "'a no-show token');"
+                            "INSERT INTO saved_items(item_key,room_vnum,vnum,"
+                            "container_id,obj_uid,weight,extra_flags,wear_flags,name,short_descr)"
+                            f" VALUES('ordinary_npc_corpse',{ROOM},5,@ordinary_row,"
+                            f"{NPC_TRANSIENT_UID},1,{TRANSIENT},1,'fading token',"
+                            "'a fading token');"
+                            "INSERT INTO saved_items(item_key,room_vnum,vnum,item_type,"
+                            "container_id,obj_uid,weight,value0,value1,value2,value3,"
+                            "name,short_descr)"
+                            f" VALUES('ordinary_npc_corpse',{ROOM},3,20,@corpse_row,"
+                            f"{NPC_MONEY_UID},2,1,2,3,4,'coins','some coins');"
                             "INSERT INTO item_current_owner(item_uid,root_item_uid,"
                             "parent_item_uid,owner_type,owner_id,owner_context_id,"
                             "item_revision,vnum,state) VALUES"
-                            f"({GIVE_UIDS[0]},{npc_uid},{npc_uid},3,{ROOM},0,1,5,1),"
-                            f"({PROC_UID},{npc_uid},{npc_uid},3,{ROOM},0,1,5,1)")
-                    process, game_port = start(True)
+                            f"({NPC_GEAR_UIDS[0]},{npc_uid},{npc_uid},3,{ROOM},0,1,48,1),"
+                            f"({NPC_GEAR_UIDS[1]},{npc_uid},{NPC_GEAR_UIDS[0]},3,{ROOM},0,1,48,1),"
+                            f"({NPC_GEAR_UIDS[2]},{npc_uid},{NPC_GEAR_UIDS[1]},3,{ROOM},0,1,5,1),"
+                            f"({NPC_TRANSIENT_UID},{npc_uid},{NPC_GEAR_UIDS[0]},3,{ROOM},0,1,5,1),"
+                            f"({NPC_MONEY_UID},{npc_uid},{npc_uid},3,{ROOM},0,1,3,1)")
+                    process, game_port = start("--chaos-off" not in sys.argv[2:])
                     client = journey.reconnect_character(game_port,
                                                          expected_room=None)
                     client.pending.clear()
@@ -177,29 +202,58 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     client.send("cast 'create greater dracolich' corpse")
                     outcome, transcript = client.expect_any(
                         ("The corpse summons a greater",
-                         "The equipped corpse cannot be raised safely.",
+                         "The corpse resists the raising and remains intact.",
                          "You abort your spell before it's done!",
                          "You can't animate", "This spell requires"), timeout=120)
-                    if outcome.startswith("You abort your spell"):
+                    if outcome.startswith(("You abort your spell", "The corpse resists")):
                         return False
                     if "--npc-gear-probe" in sys.argv[2:]:
-                        assert outcome == "The equipped corpse cannot be raised safely.", transcript
-                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
-                                   f"item_uid IN ({npc_uid},{GIVE_UIDS[0]},{PROC_UID}) "
-                                   f"AND owner_type=3 AND owner_id={ROOM} AND state=1") == "3"
-                        assert sql("SELECT COUNT(*) FROM player_items WHERE obj_uid IN "
-                                   f"({GIVE_UIDS[0]},{PROC_UID})") == "0"
-                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid IN "
-                                   f"({GIVE_UIDS[0]},{PROC_UID})") == "0"
-                        assert sql("SELECT COUNT(*) FROM player_pets WHERE "
-                                   f"owner_pid={pid}") == "0"
+                        assert outcome.startswith("The corpse summons"), transcript
                         assert sql("SELECT COUNT(*) FROM critical_operation_inbox "
-                                   "WHERE command_type=16") == "0"
+                                   "WHERE command_type=16 AND result_code=0") == "1"
+                        tracked = (f"({npc_uid},{NPC_GEAR_UIDS[0]},"
+                                   f"{NPC_GEAR_UIDS[1]},{NPC_GEAR_UIDS[2]},"
+                                   f"{NPC_TRANSIENT_UID},{NPC_MONEY_UID})")
+                        assert sql("SELECT COUNT(*) FROM saved_items WHERE obj_uid IN "
+                                   f"{tracked}") == "0"
+                        if sql("SELECT COUNT(*) FROM player_pets WHERE "
+                               f"owner_pid={pid} AND pet_uid={npc_uid}") == "0":
+                            assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                       f"item_uid IN {tracked} AND owner_type=8 "
+                                       "AND owner_id=0 AND state=2") == "6"
+                            assert sql("SELECT COUNT(*) FROM player_items WHERE obj_uid IN "
+                                       f"{tracked}") == "0"
+                            assert sql("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid IN "
+                                       f"{tracked}") == "0"
+                            print("hostile NPC corpse raise destroyed the complete graph; "
+                                  "retrying for friendly custody", flush=True)
+                            return False
+                        assert sql("SELECT COUNT(*) FROM player_items WHERE obj_uid IN "
+                                   f"{tracked}") == "0"
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid IN "
+                                   f"({NPC_GEAR_UIDS[0]},{NPC_GEAR_UIDS[1]},"
+                                   f"{NPC_GEAR_UIDS[2]})") == "3"
+                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                   f"item_uid IN ({NPC_GEAR_UIDS[0]},"
+                                   f"{NPC_GEAR_UIDS[1]},{NPC_GEAR_UIDS[2]}) "
+                                   f"AND owner_type=11 AND owner_id={npc_uid} "
+                                   f"AND owner_context_id={pid} AND state=1") == "3"
+                        assert sql("SELECT CONCAT(root_item_uid,':',"
+                                   "COALESCE(parent_item_uid,0)) FROM item_current_owner "
+                                   f"WHERE item_uid={NPC_GEAR_UIDS[2]}") == \
+                               f"{NPC_GEAR_UIDS[0]}:{NPC_GEAR_UIDS[1]}"
+                        assert sql("SELECT CONCAT(extra_flags,':',wear_flags) FROM "
+                                   "player_pet_items WHERE obj_uid="
+                                   f"{NPC_GEAR_UIDS[2]}") == "2050:0"
+                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                                   f"item_uid IN ({npc_uid},{NPC_TRANSIENT_UID},"
+                                   f"{NPC_MONEY_UID}) AND owner_type=8 AND owner_id=0 "
+                                   "AND state=2") == "3"
                         client.pending.clear()
                         client.send("look")
                         room = client.expect("Pos: standing >", timeout=20)
-                        assert "corpse of an ordinary beast" in room, room
-                        assert "dracolich" not in room.lower(), room
+                        assert "corpse of an ordinary beast" not in room, room
+                        assert room.lower().count("dracolich") == 1, room
                         client.send("save")
                         client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
                         client.close()
@@ -212,41 +266,31 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                         client.pending.clear()
                         client.send("look")
                         room = client.expect("Pos: standing >", timeout=20)
-                        if "corpse of an ordinary beast" not in room:
-                            client.pending.clear()
-                            client.send("look")
-                            room = client.expect("Pos: standing >", timeout=20)
-                        if "corpse of an ordinary beast" not in room:
-                            print("restart source rows:", sql("SELECT COUNT(*) FROM "
-                                  "saved_items WHERE item_key='ordinary_npc_corpse'"),
-                                  "destination rows:", sql("SELECT COUNT(*) FROM "
-                                  f"saved_items WHERE item_key='item.uid.{npc_uid}'"),
-                                  "handoffs:", sql("SELECT COUNT(*) FROM "
-                                  "saved_item_recovery_handoff"),
-                                  "authority rows:", sql("SELECT COUNT(*) FROM "
-                                  "item_current_owner WHERE "
-                                  f"item_uid IN ({npc_uid},{GIVE_UIDS[0]},{PROC_UID}) "
-                                  f"AND owner_type=3 AND owner_id={ROOM} AND state=1"),
-                                  flush=True)
-                        assert "corpse of an ordinary beast" in room, room
-                        assert "dracolich" not in room.lower(), room
-                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
-                                   f"item_uid IN ({npc_uid},{GIVE_UIDS[0]},{PROC_UID}) "
-                                   f"AND owner_type=3 AND owner_id={ROOM} AND state=1") == "3"
-                        assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
-                                   f"item_uid IN ({GIVE_UIDS[0]},{PROC_UID}) AND "
-                                   f"root_item_uid={npc_uid} AND "
-                                   f"parent_item_uid={npc_uid}") == "2"
-                        assert sql("SELECT COUNT(*) FROM saved_items WHERE "
-                                   f"item_key='item.uid.{npc_uid}'") == "3"
-                        assert sql("SELECT COUNT(*) FROM saved_item_recovery_handoff "
-                                   f"WHERE source_uid={npc_uid} AND retired_at IS NOT NULL") == "1"
-                        print("equipped NPC corpse refusal: original room custody "
-                              "and full graph retained across save/restart", flush=True)
+                        assert "corpse of an ordinary beast" not in room, room
+                        assert room.lower().count("dracolich") == 1, room
+                        assert sql("SELECT COUNT(*) FROM player_pet_items WHERE obj_uid IN "
+                                   f"({NPC_GEAR_UIDS[0]},{NPC_GEAR_UIDS[1]},"
+                                   f"{NPC_GEAR_UIDS[2]})") == "3"
+                        assert sql("SELECT COUNT(DISTINCT obj_uid) FROM player_pet_items "
+                                   "WHERE obj_uid IN "
+                                   f"({NPC_GEAR_UIDS[0]},{NPC_GEAR_UIDS[1]},"
+                                   f"{NPC_GEAR_UIDS[2]})") == "3"
+                        assert sql("SELECT CONCAT(root_item_uid,':',"
+                                   "COALESCE(parent_item_uid,0),':',owner_type,':',"
+                                   "owner_id,':',owner_context_id) FROM "
+                                   f"item_current_owner WHERE item_uid={NPC_GEAR_UIDS[2]}") == \
+                               (f"{NPC_GEAR_UIDS[0]}:{NPC_GEAR_UIDS[1]}:11:"
+                                f"{npc_uid}:{pid}")
+                        print("equipped NPC corpse raise: ordinary, no-take, and "
+                              "no-show nested gear retained once under pet custody "
+                              "across save/restart", flush=True)
                         return True
                     assert outcome.startswith("The corpse summons"), transcript
                     assert sql("SELECT COUNT(*) FROM critical_operation_inbox "
-                               "WHERE command_type=16") == "0"
+                               "WHERE command_type=16 AND result_code=0") == "1"
+                    if sql("SELECT COUNT(*) FROM player_pets WHERE "
+                           f"owner_pid={pid} AND pet_uid={npc_uid}") == "0":
+                        return False
                     client.pending.clear()
                     client.send("look")
                     client.expect("Adrift in the Plane of Life", timeout=20)
@@ -256,16 +300,14 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                     if "--npc-charmed-give-control" in sys.argv[2:]:
                         client.pending.clear()
                         client.send("give trinket dracolich")
-                        refusal = client.expect("That pet cannot accept a durable item",
-                                                timeout=20)
-                        assert "cannot accept a durable item" in refusal
+                        client.expect("Ok.", timeout=20)
                         assert sql("SELECT CONCAT(owner_type,':',owner_id,':',state) "
                                    "FROM item_current_owner WHERE item_uid=" +
-                                   str(GIVE_UIDS[1])) == f"1:{pid}:1"
-                        print("ordinary NPC-corpse charmed follower: durable give "
-                              "refused; player retained original UID", flush=True)
-                    print("ordinary NPC corpse: one live follower, no player-corpse "
-                          "durable command", flush=True)
+                                   str(GIVE_UIDS[1])) == f"11:{npc_uid}:1"
+                        print("ordinary NPC-corpse charmed follower accepted a durable "
+                              "item under pet custody", flush=True)
+                    print("ordinary NPC corpse: one live follower and one durable "
+                          "world-corpse command", flush=True)
                     return True
 
                 corpse_owner = (OWNER_PID << 32) | SAVE_ID
@@ -826,7 +868,8 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                            ("durable_raise", "corpse_lifecycle", "corpse_trace",
                             "raise_submission",
                             "critical_command", "pet_transfer", "item_movement",
-                            "mysql")))[-6000:], flush=True)
+                            "sql_load_saved_item_contents", "ownership", "mysql")))[-6000:],
+                      flush=True)
                 print("server tail:", output_path.read_text(errors="replace")[-2500:],
                       flush=True)
                 runtime_log = journey.runtime_logs(game)

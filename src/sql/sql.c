@@ -797,6 +797,23 @@ static bool sql_target_is_allowed(const char *host, const char *database)
 	return false;
 }
 
+/* The production role's plain-telnet port.  DURIS_PRODUCTION_PORT lets a second
+ * production-role install share a host; unset keeps DFLT_PORT.  An invalid value
+ * returns 0, which no running port matches. */
+static int sql_production_port(void)
+{
+	const char *configured = getenv("DURIS_PRODUCTION_PORT");
+	if (!configured || !*configured)
+		return DFLT_PORT;
+
+	errno = 0;
+	char *end = NULL;
+	long parsed = strtol(configured, &end, 10);
+	if (errno == ERANGE || end == configured || *end || parsed < 1 || parsed > 65535)
+		return 0;
+	return (int)parsed;
+}
+
 static bool sql_runtime_config_valid(void)
 {
 	const char *role = getenv("ENVIRONMENT");
@@ -834,7 +851,15 @@ static bool sql_runtime_config_valid(void)
 		}
 	}
 
-	if (!strcmp(role, "production") && RUNNING_PORT != DFLT_PORT)
+	const int production_port = sql_production_port();
+	if (!production_port)
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: DURIS_PRODUCTION_PORT is invalid");
+		return false;
+	}
+
+	if (!strcmp(role, "production") && RUNNING_PORT != production_port)
 	{
 		logit(LOG_STATUS,
 		      "Database configuration rejected: production role requires the production port");
@@ -1432,7 +1457,7 @@ const char *sql_persistence_db_name(void)
 {
 	const bool production_name = !strcmp(DB_NAME, "duris") || !strcmp(DB_NAME, "duris_prod");
 
-	if (RUNNING_PORT != DFLT_PORT && production_name)
+	if (RUNNING_PORT != sql_production_port() && production_name)
 		return "duris_dev";
 	return DB_NAME;
 }
@@ -1739,7 +1764,7 @@ static bool sql_verify_boot_database(void)
 		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
 		"AND ((table_name='critical_operation_inbox' AND column_name IN "
 		"('operation_id','command_hash','keys_hash','command_type','schema_version',"
-		"'payload_version','status','result_code','durable_revision','result_payload',"
+		"'payload_version','status','result_code','failure_stage','durable_revision','result_payload',"
 		"'created_at','committed_at')) OR (table_name='critical_test_state' AND "
 		"column_name IN ('entity_type','entity_id','value','revision','updated_at')) OR "
 		"(table_name='critical_outbox' AND column_name IN "
@@ -1756,12 +1781,12 @@ static bool sql_verify_boot_database(void)
 	}
 	row = mysql_fetch_row(result);
 	lengths = row ? mysql_fetch_lengths(result) : NULL;
-	const bool critical_columns_ok = row && lengths && row[0] && atoi(row[0]) == 34;
+	const bool critical_columns_ok = row && lengths && row[0] && atoi(row[0]) == 35;
 	mysql_free_result(result);
 	if (!critical_columns_ok)
 	{
 		logit(LOG_STATUS,
-		      "FATAL: critical command schema is incomplete at boot (expected 34 required columns).");
+		      "FATAL: critical command schema is incomplete at boot (expected 35 required columns).");
 		return false;
 	}
 	const char *critical_index_probe =
@@ -2210,6 +2235,13 @@ int sql_save_player_core(P_char ch)
 	char assoc_name[MAX_STRING_LENGTH];
 	char assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	struct char_player_data *p;
+	if (ch && IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		logit(LOG_DEBUG,
+		      "sql_save_player_core: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return 1;
+	}
 
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);

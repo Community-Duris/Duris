@@ -48,6 +48,8 @@ using namespace std;
 #include "persistence/persistence_queue.h"
 #include "persistence/persistence_log.h"
 #include <chrono>
+#include <limits>
+#include <mutex>
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/latency_trace.h"
 #include "classes/specializations.h"
@@ -909,7 +911,102 @@ static const char *persistence_alert_category(const char *value, char *out, size
 	return used ? out : "unknown";
 }
 
+struct persistence_alert_rate_limit_decision
+{
+	bool allowed = false;
+	unsigned int suppressed = 0;
+	unsigned long long suppressed_age_secs = 0;
+};
+
+struct persistence_alert_rate_limit_entry
+{
+	bool used = false;
+	char key[2048] = {};
+	std::chrono::steady_clock::time_point next_allowed = {};
+	std::chrono::steady_clock::time_point suppressed_since = {};
+	unsigned int suppressed = 0;
+};
+
+static std::mutex persistence_alert_rate_limit_mutex;
+
+static persistence_alert_rate_limit_decision
+persistence_alert_wizlog_decision(const char *domain, const char *owner, const char *item_uid,
+				  const char *event_id, const char *action, const char *alert)
+{
+	constexpr size_t slot_count = 256;
+	static persistence_alert_rate_limit_entry entries[slot_count] = {};
+	char safe_domain[64];
+	char safe_owner[64];
+	char safe_item_uid[64];
+	char safe_event_id[64];
+	char safe_action[64];
+	const char *domain_key =
+		persistence_alert_category(domain, safe_domain, sizeof(safe_domain));
+	const char *owner_key = persistence_alert_category(owner, safe_owner, sizeof(safe_owner));
+	const char *item_key =
+		persistence_alert_category(item_uid, safe_item_uid, sizeof(safe_item_uid));
+	const char *event_key =
+		persistence_alert_category(event_id, safe_event_id, sizeof(safe_event_id));
+	const char *action_key =
+		persistence_alert_category(action, safe_action, sizeof(safe_action));
+	char key[2048];
+	checked_snprintf(key, sizeof(key), "%s|%s|%s|%s|%s|%s", domain_key, owner_key, item_key,
+			 event_key, action_key, alert ? alert : "");
+
+	using clock = std::chrono::steady_clock;
+	const std::lock_guard<std::mutex> lock(persistence_alert_rate_limit_mutex);
+	const auto now = clock::now();
+	persistence_alert_rate_limit_decision decision;
+	size_t free_slot = slot_count;
+	size_t oldest_slot = 0;
+	for (size_t index = 0; index < slot_count; ++index)
+	{
+		if (!entries[index].used)
+		{
+			free_slot = index;
+			break;
+		}
+		if (!strcmp(entries[index].key, key))
+		{
+			if (now < entries[index].next_allowed)
+			{
+				if (entries[index].suppressed <
+				    std::numeric_limits<unsigned int>::max())
+					++entries[index].suppressed;
+				if (entries[index].suppressed_since == clock::time_point{})
+					entries[index].suppressed_since = now;
+				return decision;
+			}
+			decision.allowed = true;
+			decision.suppressed = entries[index].suppressed;
+			if (decision.suppressed &&
+			    entries[index].suppressed_since != clock::time_point{})
+			{
+				const auto age = std::chrono::duration_cast<std::chrono::seconds>(
+					now - entries[index].suppressed_since);
+				decision.suppressed_age_secs = static_cast<unsigned long long>(
+					age.count() > 0 ? age.count() : 1);
+			}
+			entries[index].suppressed = 0;
+			entries[index].suppressed_since = {};
+			entries[index].next_allowed = now + std::chrono::seconds(30);
+			return decision;
+		}
+		if (entries[index].next_allowed < entries[oldest_slot].next_allowed)
+			oldest_slot = index;
+	}
+	const size_t slot = free_slot < slot_count ? free_slot : oldest_slot;
+	entries[slot].used = true;
+	checked_snprintf(entries[slot].key, sizeof(entries[slot].key), "%s", key);
+	entries[slot].next_allowed = now + std::chrono::seconds(30);
+	entries[slot].suppressed = 0;
+	entries[slot].suppressed_since = {};
+	decision.allowed = true;
+	return decision;
+}
+
 static void persistence_vreport(persistence_severity severity, int level, const char *domain,
+				const char *owner, const char *item_uid, const char *event_id,
 				const char *action, const char *format, va_list args)
 {
 	char details[1024];
@@ -937,31 +1034,38 @@ static void persistence_vreport(persistence_severity severity, int level, const 
 
 	persistence_log_submit(alert);
 	if (severity != persistence_severity::ok && severity != persistence_severity::info)
-		wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
+	{
+		const auto decision = persistence_alert_wizlog_decision(domain, owner, item_uid,
+									event_id, action, alert);
+		if (decision.allowed)
+		{
+			if (decision.suppressed)
+				wizlog(level, "&+R&-LPERSISTENCE:&n %s (suppressed=%u age=%llus)",
+				       alert, decision.suppressed, decision.suppressed_age_secs);
+			else
+				wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
+		}
+	}
 }
 
 void persistence_report(persistence_severity severity, int level, const char *domain,
 			const char *owner, const char *item_uid, const char *event_id,
 			const char *action, const char *format, ...)
 {
-	(void)owner;
-	(void)item_uid;
-	(void)event_id;
 	va_list args;
 	va_start(args, format);
-	persistence_vreport(severity, level, domain, action, format, args);
+	persistence_vreport(severity, level, domain, owner, item_uid, event_id, action, format,
+			    args);
 	va_end(args);
 }
 
 void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
 		       const char *event_id, const char *action, const char *format, ...)
 {
-	(void)owner;
-	(void)item_uid;
-	(void)event_id;
 	va_list args;
 	va_start(args, format);
-	persistence_vreport(persistence_severity::alert, level, domain, action, format, args);
+	persistence_vreport(persistence_severity::alert, level, domain, owner, item_uid, event_id,
+			    action, format, args);
 	va_end(args);
 }
 

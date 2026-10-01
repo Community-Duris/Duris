@@ -110,14 +110,14 @@ A
 19 3
 #131206
 staff truth~
-&+ythe staff of Truth&N~
+&+ythe staff of &+YT&+Wr&+Yu&+Wt&+Yh&N~
 &+yThe staff of Truth lies here.&N~
 ~
 4 6 3 0 15 0 163840 16385 66 0 0
 51 13 13 371 0 0 0 0
-0 200000 100 40 28 0 83886080
+0 200000 100 296 28 0 83886080
 A
-13 20
+13 30
 A
 34 5
 #131207
@@ -184,8 +184,8 @@ huge key blazing white flame~
 &+Wa huge &+Ykey&+W of b&Nl&+Wa&Nz&+Wi&Nn&+Wg white flame&N~
 &+WA huge &+Ykey&+W of b&Nl&+Wa&Nz&+Wi&Nn&+Wg white flame&N lies here.~
 ~
-18 1 3 0 15 0 33554433 16385 64 0 0
-0 100 0 0 0 0 0 0
+18 1 3 0 15 0 41943041 16385 64 0 0
+0 0 0 0 0 0 0 0
 0 1 100
 E
 huge key blazing white flame~

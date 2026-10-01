@@ -12,6 +12,8 @@
 constexpr int MAX_WEAR = 4, MAX_OBJ_AFFECT = 4, NOWHERE = -1;
 constexpr int VIRTUAL = 0, REAL = 1, LOG_DEBUG = 0, LOG_MOB = 1;
 constexpr int LOC_CARRIED = 1, LOC_INSIDE = 2;
+constexpr unsigned char OBJ_RFLAG_CREATION_CANDIDATE = 1u << 2;
+#define REMOVE_BIT(var, bit) ((var) = (var) & ~((unsigned long)(bit)))
 constexpr int STRUNG_KEYS = 1, STRUNG_DESC2 = 2, STRUNG_DESC1 = 4, STRUNG_DESC3 = 8;
 struct Character;
 struct Object;
@@ -25,6 +27,7 @@ struct Object
 {
 	int R_num = 0, weight = 0, cost = 0, value[8] = {}, str_mask = 0, loc_p = 0, wear_flags = 0,
 	    type = 0, material = 0, db_item_id = 0;
+	unsigned char runtime_flags = 0;
 	long timer[1] = {};
 	unsigned long extra_flags = 0, bitvector = 0, bitvector2 = 0, bitvector3 = 0,
 		      bitvector4 = 0, bitvector5 = 0;
@@ -71,12 +74,14 @@ struct
 	int number = 200;
 	P_char people = nullptr;
 } world[3];
-struct
+struct ShopIndex
 {
 	int keeper = 0, in_room = 0, shop_is_roaming = 0, dirty = 0, number_items_produced = 0,
 	    producing[4] = {};
 	shopkeeper_save_retry_state dirty_save_retry = {};
-} shop_index[4];
+};
+ShopIndex shop_indexes[4];
+ShopIndex *shop_index = shop_indexes;
 int number_of_shops = 4, top_of_world = 2;
 P_char character_list = nullptr;
 std::vector<P_obj> objects;
@@ -306,6 +311,19 @@ bool sql_run_query(const char *)
 	return false;
 }
 
+bool is_replicated_shop(int shop)
+{
+	if (shop < 0 || shop >= number_of_shops || shop_index[shop].in_room <= 0)
+		return false;
+	for (int candidate = 0; candidate < number_of_shops; ++candidate)
+		if (candidate != shop && shop_index[candidate].keeper == shop_index[shop].keeper &&
+		    shop_index[candidate].in_room > 0 &&
+		    shop_index[candidate].in_room != shop_index[shop].in_room &&
+		    (!shop_index[shop].shop_is_roaming || !shop_index[candidate].shop_is_roaming))
+			return true;
+	return false;
+}
+
 // PRODUCTION_RESTORE
 // PRODUCTION_HELPER
 
@@ -322,7 +340,7 @@ int number(int low, int)
 void apply_zone_modifier(P_char) {}
 void reset_mobile(int force_item_repop, bool expect_skip)
 {
-	int zone = 0, last_cmd = 1, last_mob_load = 1;
+	int zone = 0, last_cmd = 1, last_mob_load = 1, configured_shop = -1, replicated_shop = -1;
 	P_char mob = character_list, last_mob = mob, tmp_mob = mob, last_mob_followable = mob;
 	(void)zone;
 	(void)last_cmd;
@@ -381,6 +399,9 @@ int main(int argc, char **argv)
 	}
 	if (scenario == "reset")
 	{
+		// The original durable identity remains roaming for restore compatibility,
+		// but its configured anchor still receives a room-scoped reset.
+		shop_index[0].shop_is_roaming = 1;
 		P_char incumbent = spawn(0);
 		obj_to_char(read_object(90, REAL), incumbent);
 		for (int force : { 1, 2, 0 })
@@ -392,14 +413,36 @@ int main(int argc, char **argv)
 			       has_item(incumbent, 90));
 		}
 		command.arg3 = 1;
-		reset_mobile(1, false); // A keeper elsewhere does not occupy this room.
-		assert(births == 2 && world[1].people);
+		command.arg2 = 1;
+		reset_mobile(0,
+			     false); // Fixed shop identity is room-scoped, not global-vnum scoped.
+		assert(births == 2 && world[1].people &&
+		       world[1].people->only.npc->shopkeeper_shop_id == 1);
 		extract_char(world[1].people);
+		command.arg2 = 10;
 		reset_mobile(0, false); // A killed keeper can respawn.
 		assert(births == 3);
 		world[1].people->shopkeeper = false;
 		reset_mobile(1, false); // Non-shop NPC population behavior is unchanged.
 		assert(births == 4);
+
+		// Reconciliation can preserve a fixed keeper that walked away from its
+		// configured room. The initial zone reset must not create a second identity.
+		shop_index[3].keeper = 1;
+		shop_index[3].in_room = 202;
+		command.arg1 = 1;
+		command.arg2 = 10;
+		command.arg3 = 2;
+		P_char moved = spawn(2, 1);
+		GET_BIRTHPLACE(moved) = 202;
+		bind_shopkeeper(moved, 3);
+		unlink_room(moved);
+		char_to_room(moved, 1, 0);
+		const int births_before_moved_reset = births;
+		reset_mobile(2, true);
+		assert(births == births_before_moved_reset && !world[2].people &&
+		       world[1].people == moved);
+
 		command.arg3 = NOWHERE;
 		reset_mobile(1, false); // Existing invalid-room handling still rejects placement.
 	}
