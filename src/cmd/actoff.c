@@ -6271,7 +6271,7 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 	//  Yes weapon procs on backstabs - Drannak
 	if (obj_index[weapon->R_num].func.obj)
 	{
-		(*obj_index[weapon->R_num].func.obj)(weapon, ch, CMD_MELEE_HIT, (char *)victim);
+		invoke_object_special(weapon, ch, CMD_MELEE_HIT, (char *)victim);
 	}
 
 	if (weapon->value[4])

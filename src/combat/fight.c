@@ -4735,8 +4735,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 				data.flags = flags;
 				data.messages = messages;
 
-				if ((*obj_index[item->R_num].func.obj)(item, victim, CMD_GOTNUKED,
-								       (char *)&data))
+				if (invoke_object_special(item, victim, CMD_GOTNUKED,
+							  (char *)&data))
 				{
 					if (GET_STAT(victim) == STAT_DEAD)
 						return DAM_VICTDEAD;
@@ -8127,6 +8127,8 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 
 bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 {
+	if (item_restricted_for_player_pet(ch, obj))
+		return FALSE;
 	struct extra_descr_data *ex;
 	int spells[3];
 	int room;
@@ -8136,8 +8138,7 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 	if ((OBJ_VNUM(obj) == 21 || OBJ_VNUM(obj) == 22) && native_artifact_owns(OBJ_VNUM(obj)))
 	{
 		if (obj_index[obj->R_num].func.obj)
-			return (*obj_index[obj->R_num].func.obj)(obj, ch, CMD_MELEE_HIT,
-								 (char *)victim);
+			return invoke_object_special(obj, ch, CMD_MELEE_HIT, (char *)victim);
 		return FALSE;
 	}
 
@@ -8145,8 +8146,7 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 	{
 		if (obj_index[obj->R_num].func.obj != NULL)
 		{
-			return (*obj_index[obj->R_num].func.obj)(obj, ch, CMD_MELEE_HIT,
-								 (char *)victim);
+			return invoke_object_special(obj, ch, CMD_MELEE_HIT, (char *)victim);
 		}
 		else
 		{
@@ -10150,6 +10150,10 @@ void perform_violence(void)
 		if (is_char_in_room(ch, room) && IS_NPC(ch) && IS_AWAKE(ch) && CAN_ACT(ch))
 			MobCombat(ch);
 
+		// NPC effects can kill or move either participant.
+		if (!is_char_in_room(opponent, room) || !is_char_in_room(ch, room))
+			continue;
+
 		appear(ch);
 		appear(opponent);
 
@@ -10368,8 +10372,7 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 		if (obj_index[item->R_num].func.obj != NULL)
 		{
 			data.victim = ch;
-			if ((*obj_index[item->R_num].func.obj)(item, opponent, CMD_GOTHIT,
-							       (char *)&data))
+			if (invoke_object_special(item, opponent, CMD_GOTHIT, (char *)&data))
 			{
 				return FALSE;
 			}

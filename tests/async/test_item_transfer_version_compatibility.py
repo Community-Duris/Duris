@@ -380,6 +380,35 @@ int main()
 	assert(!item_transfer_command_build(&command, operation(), invalid_death,
 					    critical_source_site::combat,
 					    critical_deadline_class::interactive));
+
+ static_assert(static_cast<uint16_t>(item_transfer_reason::trusted_steal) == 26);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::soulbind) == 27);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::slip) == 28);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::craft) == 29);
+ item_transfer_payload craft = {};
+ craft.from_owner = {item_owner_type::player, 42, 0};
+ craft.to_owner = craft.from_owner;
+ craft.reason = item_transfer_reason::craft;
+ craft.multi_root = true;
+ craft.item_count = 1;
+ craft.items[0] = {900, 900, 0, 1, 500, item_custody_state::active};
+ craft.selected_item_uid = 900;
+ craft.expected_from_revision = craft.expected_to_revision = 1;
+ assert(item_transfer_command_build(&command, operation(), craft, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ // Exact old-draft reason bytes must decode as craft without changing normal soulbind.
+ set_reason(&command, item_transfer_reason::soulbind);
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ item_transfer_payload soulbind = {};
+ soulbind.from_owner = {item_owner_type::player, 42, 0};
+ soulbind.to_owner = {item_owner_type::player, 43, 0};
+ soulbind.reason = item_transfer_reason::soulbind;
+ soulbind.reason_id = 42;
+ soulbind.item_count = 1;
+ soulbind.items[0] = {901, 901, 0, 1, 500, item_custody_state::active};
+ soulbind.selected_item_uid = soulbind.target_root_item_uid = 901;
+ assert(item_transfer_command_build(&command, operation(), soulbind, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::soulbind);
 	return 0;
 }
 '''
@@ -405,6 +434,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
             "-Isrc",
             str(source),
             rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",
