@@ -25,7 +25,7 @@ def cpu(path):
     return (int(fields[11]) + int(fields[12])) / os.sysconf("SC_CLK_TCK")
 
 
-def run(binary, output, population=1000, seconds=180):
+def run(binary, output, population=1000, seconds=180, smoke=False):
     with tempfile.TemporaryDirectory(prefix="activity-server-journey-") as temporary:
         root = Path(temporary); state = root / "state"; runtime = root / "runtime"
         state.mkdir(mode=0o700); (state / "domains").mkdir(mode=0o700); runtime.mkdir()
@@ -94,6 +94,11 @@ def run(binary, output, population=1000, seconds=180):
                 client.send("properties show world.activity.enabled")
                 text = client.expect("world.activity.enabled") + drain(client, .5)
                 assert f"{enabled}.000" in text, text
+                if smoke:
+                    drain(client, 24)
+                    results.append(dict(enabled=enabled, population=population, mode="smoke"))
+                    Path(output).write_text(json.dumps(results, indent=2) + "\n")
+                    continue
                 # Let the previous cadence and warm-up analytics window drain.
                 deadline = time.monotonic() + 80
                 while time.monotonic() < deadline: drain(client, 1)
@@ -152,7 +157,8 @@ def run(binary, output, population=1000, seconds=180):
             status = journey.runtime_logs(runtime)
             matches = re.findall(r"WORLD ACTIVITY: enabled=1 ready=1 indexed_npcs=(\d+) players=(\d+) corpses=(\d+)", status)
             assert matches and int(matches[-1][0]) >= population and int(matches[-1][1]) == 1, matches
-            print("real world activity server: matched sparse capture, normal wandering callbacks, live disable/enable and copyover rebuild passed", flush=True)
+            mode = "population/reload smoke" if smoke else "matched sparse capture"
+            print(f"real world activity server: {mode}, normal wandering callbacks, live disable/enable and copyover rebuild passed", flush=True)
         except Exception:
             print((runtime / "server.out").read_text(errors="replace")[-5000:])
             print(journey.runtime_logs(runtime)); raise
@@ -160,4 +166,4 @@ def run(binary, output, population=1000, seconds=180):
 
 
 if __name__ == "__main__":
-    run(Path(sys.argv[1]).resolve(), sys.argv[2])
+    run(Path(sys.argv[1]).resolve(), sys.argv[2], smoke="--smoke" in sys.argv[3:])

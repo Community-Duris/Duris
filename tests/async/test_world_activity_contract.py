@@ -89,6 +89,12 @@ def test_bounded_regions_equipment_and_scheduler_cleanup():
     scheduler = (ROOT / "src/world/new_events.c").read_text(encoding="utf-8")
     assert "ch->world_activity_mundane_event_sequence == event->sequence" in scheduler
     assert "ch->world_activity_mundane_event = NULL" in scheduler
+    combat_path = ROOT / "src/combat/fight_state.c"
+    if not combat_path.exists():
+        combat_path = ROOT / "src/combat/fight.c"
+    combat = combat_path.read_text(encoding="utf-8")
+    assert "world_activity_promote_character(ch)" in combat
+    assert "world_activity_promote_character(victim)" in combat
 
 
 if __name__ == "__main__":
