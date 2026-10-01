@@ -1243,8 +1243,9 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"pi.item_properties,OCTET_LENGTH(pi.item_properties),own.equipment_slot,"
 		"EXISTS(SELECT 1 FROM economic_accounting_item_reference reference "
 		"WHERE reference.item_uid=own.item_uid AND "
-		"reference.after_revision=own.item_revision) "
+		"reference.after_revision=own.item_revision),HEX(runtime.payload) "
 		"FROM player_items pi "
+		"LEFT JOIN player_item_runtime_state runtime ON runtime.item_id=pi.id "
 		"LEFT JOIN item_current_owner own ON own.item_uid=pi.obj_uid LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=own.owner_type "
 		"AND owner_revision.owner_id=own.owner_id AND "
@@ -1291,6 +1292,30 @@ bool load_items(MYSQL *connection, player_load_result *result)
 					    return false;
 				    }
 				    return true;
+			    }
+			    if (row[46])
+			    {
+				    std::vector<uint8_t> encoded;
+				    std::vector<player_item_snapshot> state;
+				    if (!decode_hex_payload(row[46], &encoded) ||
+					player_item_snapshot_list_decode(encoded.data(),
+									 encoded.size(), &state) !=
+						player_snapshot_codec_result::ok ||
+					state.size() != 1 ||
+					state[0].object_uid != item.object_uid ||
+					state[0].vnum != item.vnum)
+					    return false;
+				    // Canonical columns and custody still own placement and mutable base
+				    // fields. The extension supplies only state absent from those columns.
+				    item.generated_key = state[0].generated_key;
+				    item.anti_flags = state[0].anti_flags;
+				    item.anti2_flags = state[0].anti2_flags;
+				    item.extra2_flags = state[0].extra2_flags;
+				    item.craftsmanship = state[0].craftsmanship;
+				    for (size_t timer = 1; timer < item.timers.size(); ++timer)
+					    item.timers[timer] = state[0].timers[timer];
+				    item.dynamic_affects = std::move(state[0].dynamic_affects);
+				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
 			    }
 			    uint64_t custody_slot = 0, slot_evidence = 0;
 			    if (!parse_unsigned(row[44], MAX_WEAR, &custody_slot) ||

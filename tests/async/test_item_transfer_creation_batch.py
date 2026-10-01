@@ -173,6 +173,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-creation-batch-") a
             "-Isrc",
             str(source),
             rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",

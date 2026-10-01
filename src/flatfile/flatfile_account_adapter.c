@@ -85,6 +85,17 @@ bool membership_records(P_acct account, std::vector<flatfile_identity_record> *r
 		value.blocked = character->blocked;
 		value.active = true;
 		value.racewar = character->racewar;
+		if (character->racewar == ACCT_IMMORTAL)
+		{
+			// The menu's immortal category is not the character's gameplay side.
+			// Keep the established domain identity when saving a staff account.
+			flatfile_identity_record retained;
+			const char *root = persistence_mode_flatfile_root();
+			if (!root || flatfile_identity_lookup_pid(root, value.pid, &retained,
+							 nullptr) != flatfile_identity_result::ok)
+				return false;
+			value.racewar = retained.racewar;
+		}
 		value.level = character->level;
 		value.race = character->race;
 		value.primary_class = character->m_class;

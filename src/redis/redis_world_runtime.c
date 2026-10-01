@@ -968,6 +968,50 @@ bool redis_world_recovery_drain(uint64_t timeout_msec)
 #endif
 }
 
+void redis_world_recovery_resume_after_copyover(void)
+{
+#ifndef __NO_REDIS__
+	if (!world_enabled)
+		return;
+	world_recovery_quiesced = false;
+	redis_floor_runtime_set_quiesced(true);
+	redis_world_writer_retry_schedule("copyover_exec_failed");
+#endif
+}
+
+bool redis_world_recovery_prepare_copyover(void)
+{
+#ifdef __NO_REDIS__
+	return true;
+#else
+	if (!world_enabled)
+		return true;
+	// Exec replaces the token holder without running normal shutdown. Drain
+	// every writer before releasing its fence so the replacement can claim it.
+	if (!redis_world_recovery_drain(3000) || !redis_flush_floor_drops() ||
+	    !redis_floor_store_drain(3000))
+		return false;
+	world_recovery_quiesced = true;
+	redis_floor_runtime_set_quiesced(true);
+	redis_world_writer_retry_cancel();
+	if (world_recovery_pipeline_health_copy().initialized)
+		world_recovery_pipeline_cancel();
+	if (!world_writer_token.empty())
+	{
+		const redis_world_store_config config = redis_world_store_config_copy();
+		if (!redis_world_store_release_fence(&config, world_writer_token.c_str()))
+		{
+			redis_world_recovery_resume_after_copyover();
+			return false;
+		}
+	}
+	world_writer_token.clear();
+	world_writer_lease_msec = 0;
+	world_writer_epoch = 0;
+	return true;
+#endif
+}
+
 bool redis_world_recovery_quiesce(void)
 {
 #ifdef __NO_REDIS__
