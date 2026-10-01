@@ -89,6 +89,8 @@ static bool native_property_read(void *, const char *key, float *value) noexcept
 {
 	if (std::strcmp(key, "exp.zoneTrophy.observe") == 0)
 		*value = get_property(key, 0.0);
+	else if (std::strcmp(key, "exp.rested.enabled") == 0)
+		*value = get_property(key, 1.0);
 	else if (std::strcmp(key, "epic.touch.maxPayoutFactor") == 0)
 		*value = get_property(key, 10.0);
 	else if (std::strcmp(key, "epic.touch.PayoutFactor") == 0)
