@@ -150,7 +150,7 @@ int main() {
   actor.player.level = level; actor.points.spell_pulse = speed;
   npc.alchemist_action_until_pulse = 0; ne_event_tick = 0;
   const int round = static_cast<int>(actor.specials.base_combat_round)+1;
-  const int reference = level >=41 ? SPELL_PRISMATIC_RAY : level >=26 ? SPELL_CONE_OF_COLD : level >=21 ? SPELL_FIREBALL : SPELL_SHOCKING_GRASP;
+  const int reference = level >=41 ? SPELL_PRISMATIC_RAY : level >=26 ? SPELL_FIREBALL : level >=21 ? SPELL_CONE_OF_COLD : SPELL_BURNING_HANDS;
   unsigned long long caster_ready = 0;
   int caster_actions = 0, alchemist_actions = 0;
   for (unsigned long long tick = 0; tick < 60000; ++tick) {

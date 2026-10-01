@@ -46,14 +46,14 @@ int reference_spell(int level)
 	if (level >= 41)
 		return SPELL_PRISMATIC_RAY;
 	if (level >= 26)
-		return SPELL_CONE_OF_COLD;
-	if (level >= 21)
 		return SPELL_FIREBALL;
+	if (level >= 21)
+		return SPELL_CONE_OF_COLD;
 	if (level >= 16)
 		return SPELL_LIGHTNING_BOLT;
 	if (level >= 11)
 		return SPELL_ACID_BLAST;
-	return SPELL_SHOCKING_GRASP;
+	return SPELL_BURNING_HANDS;
 }
 bool usable_template(const object_template *prototype)
 {

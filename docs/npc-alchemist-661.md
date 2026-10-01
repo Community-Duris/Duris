@@ -52,8 +52,8 @@ before continuing; the melee caller also checks both remain in the room after
 
 The reference is a single-class offensive sorcerer at the same level, with slots,
 a valid opponent and no protection that forces a different spell selection:
-shocking grasp (6), acid blast (11), lightning bolt (16), fireball (21), cone of
-cold (26-40), and prismatic ray (41+). This is a documented reference cadence,
+burning hands (6), acid blast (11), lightning bolt (16), cone of cold (21),
+fireball (26-40), and prismatic ray (41+). This is a documented reference cadence,
 not a claim that every caster's random spell choice has the same duration.
 
 The ability uses the actual `SpellCastTime` for that reference spell and rounds
