@@ -1158,7 +1158,8 @@ player_save_journal_result player_save_journal_checkpoint(int pid,
 			if (frame.snapshot.pid != pid ||
 			    frame.snapshot.revision > durable_revision || frame.snapshot.death ||
 			    !frame.snapshot.quest_xp_receipts.empty() ||
-			    !frame.snapshot.spell_effect_receipts.empty())
+			    !frame.snapshot.spell_effect_receipts.empty() ||
+			    !frame.snapshot.craft_receipts.empty())
 				retained.push_back(std::move(frame));
 	}
 	catch (const std::bad_alloc &)
@@ -1189,7 +1190,7 @@ bool is_proven_operation(const journal_frame &frame,
 			 const std::vector<operation_record_proof> &proofs)
 {
 	if (!frame.snapshot.death && frame.snapshot.quest_xp_receipts.empty() &&
-	    frame.snapshot.spell_effect_receipts.empty())
+	    frame.snapshot.spell_effect_receipts.empty() && frame.snapshot.craft_receipts.empty())
 		return false;
 	for (const operation_record_proof &proof : proofs)
 		if (frame.snapshot.pid == proof.pid && frame.snapshot.revision == proof.revision &&
@@ -1237,6 +1238,7 @@ player_save_journal_result checkpoint_proven(const std::map<int, player_revision
 			const bool ordinary_match = !frame.snapshot.death &&
 						    frame.snapshot.quest_xp_receipts.empty() &&
 						    frame.snapshot.spell_effect_receipts.empty() &&
+						    frame.snapshot.craft_receipts.empty() &&
 						    found != acknowledged.end() &&
 						    frame.snapshot.revision <= found->second;
 			if (operation_match || ordinary_match)
@@ -1412,7 +1414,8 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			// operation receipt committed. Require exact success or explicit
 			// verification of every operation in an obsolete non-death frame.
 			if (frame.snapshot.death || !frame.snapshot.quest_xp_receipts.empty() ||
-			    !frame.snapshot.spell_effect_receipts.empty())
+			    !frame.snapshot.spell_effect_receipts.empty() ||
+			    !frame.snapshot.craft_receipts.empty())
 			{
 				const bool verified_obsolete_operations =
 					!frame.snapshot.death &&
@@ -1494,7 +1497,7 @@ bool player_save_journal_worker_ack(const player_snapshot &snapshot,
 {
 	(void)context;
 	if (!snapshot.death && snapshot.quest_xp_receipts.empty() &&
-	    snapshot.spell_effect_receipts.empty())
+	    snapshot.spell_effect_receipts.empty() && snapshot.craft_receipts.empty())
 		return player_save_journal_checkpoint(snapshot.pid, durable_revision) ==
 		       player_save_journal_result::ok;
 	if (durable_revision != snapshot.revision)

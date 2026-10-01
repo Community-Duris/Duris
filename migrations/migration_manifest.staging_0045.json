@@ -698,6 +698,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "e2de795797aeaf2ad2a268dffc65e1fb9195fb5e8fa1c6720a39608e153ebe0a",
       "verify_checksum": "ae28a2787322dc5cf7e7b76d635289fed03e93fc3d59c5983c4e75e8c931327f"
+    },
+    {
+      "id": "0053_craft_progression",
+      "sequence": 53,
+      "description": "Commit frozen recipe progression and player application revisions",
+      "apply": "immutable/0053_craft_progression.sql",
+      "verify": "immutable/0053_craft_progression.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
+      "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
     }
   ]
 }

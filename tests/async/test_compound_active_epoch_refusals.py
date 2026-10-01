@@ -78,11 +78,12 @@ int main() {
                                  r"\s*\{\s*if \(refuse_unported_shop_mutation\(" +
                                  actor + r"\)\)\s*return")
 
-    def test_crafting_and_refining_refuse_before_inputs(self):
+    def test_refining_refuses_before_inputs_and_recipes_use_compound_owner(self):
         craft = function(self.crafting,
                          "void crafting_handle_command(P_char ch, enum crafting_mode mode, char *argument)")
-        self.assertLess(craft.index("economic_gameplay_authority::active()"),
-                        craft.index("crafting_mode_enabled(mode)"))
+        self.assertNotIn("Crafting is unavailable", craft)
+        self.assertIn("item_movement_transaction_submit_craft", self.crafting)
+        self.assertNotIn("chaos_material_pouch_record_generated", self.crafting)
         smith = function(self.tradeskill, "int smith(P_char ch, P_char pl, int cmd, char *arg)")
         self.assertLess(smith.index("economic_gameplay_authority::active()"),
                         smith.index("obj_from_char(tobj)"))

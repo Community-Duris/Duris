@@ -4,6 +4,7 @@
 #include "player/player_snapshot_codec.h"
 
 #include <cstring>
+#include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
 #include <type_traits>
@@ -56,6 +57,51 @@ std::string death_filename(int32_t pid, uint64_t revision)
 }
 
 using namespace flatfile_player_snapshot_file;
+
+bool flatfile_player_snapshot_encode_file(const player_snapshot &snapshot,
+					  std::vector<uint8_t> *bytes)
+{
+	if (!bytes || snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL)
+		return false;
+	try
+	{
+		player_snapshot normalized = snapshot;
+		normalized.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+		std::vector<uint8_t> payload;
+		if (player_snapshot_encode(normalized, &payload) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		normalized.encoded_size_bound = payload.size();
+		if (player_snapshot_encode(normalized, &payload) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		std::vector<uint8_t> candidate;
+		candidate.reserve(payload.size() + 68);
+		candidate.insert(candidate.end(), player_magic.begin(), player_magic.end());
+		auto number = [&](uint64_t value, size_t size)
+		{
+			for (size_t index = 0; index < size; ++index)
+				candidate.push_back(static_cast<uint8_t>(value >> (index * 8)));
+		};
+		number(player_file_version, 4);
+		number(payload.size(), 4);
+		number(static_cast<uint32_t>(normalized.pid), 4);
+		number(normalized.revision, 8);
+		number(normalized.components, 8);
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+		SHA256(payload.data(), payload.size(), digest.data());
+		candidate.insert(candidate.end(), digest.begin(), digest.end());
+		candidate.insert(candidate.end(), payload.begin(), payload.end());
+		if (candidate.size() > player_file_maximum)
+			return false;
+		*bytes = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
 
 flatfile_player_load_result flatfile_player_snapshot_read(const std::string &root, int32_t pid,
 							  player_snapshot *snapshot,

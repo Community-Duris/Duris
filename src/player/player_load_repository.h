@@ -31,14 +31,16 @@ constexpr size_t PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX = 1;
 // Optional pending spell operations share one bounded receipt SELECT.
 constexpr size_t PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_CRAFT_PROGRESSION_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_PID_QUERY_MAX =
 	PLAYER_LOAD_BASE_QUERY_MAX + PLAYER_LOAD_RESTITUTION_QUERY_MAX +
 	PLAYER_LOAD_PET_CUSTODY_QUERY_MAX + PLAYER_LOAD_DEATH_GATE_QUERY_MAX +
 	PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX + PLAYER_LOAD_QUEST_REWARD_QUERY_MAX;
 constexpr size_t PLAYER_LOAD_NAME_QUERY_MAX =
 	PLAYER_LOAD_PID_QUERY_MAX + PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX;
-constexpr size_t PLAYER_LOAD_QUERY_MAX =
-	PLAYER_LOAD_NAME_QUERY_MAX + PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_QUERY_MAX = PLAYER_LOAD_NAME_QUERY_MAX +
+					 PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX +
+					 PLAYER_LOAD_CRAFT_PROGRESSION_QUERY_MAX;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 // A payload row the ownership ledger no longer backs is skipped rather than refusing the
@@ -161,6 +163,7 @@ struct player_load_request
 	bool include_items = true;
 	bool include_pets = true;
 	std::vector<critical_operation_id> pending_spell_effect_operations;
+	std::vector<critical_operation_id> pending_craft_operations = {};
 	player_death_recovery_query_request death_recovery_query = {};
 };
 
@@ -242,6 +245,7 @@ struct player_load_result
 	std::vector<player_load_quest_reward> pending_quest_rewards;
 	std::vector<player_load_quest_xp_entitlement> pending_quest_xp_entitlements;
 	std::vector<player_load_spell_effect_receipt> spell_effect_receipts;
+	std::vector<player_craft_receipt_snapshot> craft_receipts = {};
 	player_load_read_mask_t read_components = 0;
 	std::vector<int64_t> recent_pvp_deaths;
 	std::vector<int32_t> completed_epic_zones;

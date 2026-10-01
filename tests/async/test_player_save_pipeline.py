@@ -480,6 +480,11 @@ bool creation_pending = false;
 bool item_movement_transaction_player_creation_busy(P_char) { return creation_pending; }
 bool refuse_enqueue = false;
 player_snapshot pending, captured;
+constexpr auto CRAFT_PROGRESSION_COMPONENTS = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS | PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+struct { bool (*pending)(uint32_t, std::vector<player_craft_receipt_snapshot> *) = nullptr; } craft_progression_hooks;
+bool craft_progression_pending_save_receipts(uint32_t pid, std::vector<player_craft_receipt_snapshot> *receipts) {
+    return craft_progression_hooks.pending ? craft_progression_hooks.pending(pid, receipts) : true;
+}
 bool quest_reward_recovery_pending_save_receipts(
     int, std::vector<player_quest_xp_receipt_snapshot> *receipts,
     player_component_mask_t *components) {
@@ -509,7 +514,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot) {
     captured = std::move(snapshot);
     return refuse_enqueue ? player_save_pipeline_result::overloaded : player_save_pipeline_result::queued;
 }
-''' + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function(
+''' + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_craft_receipts(") + "\n" + extract_function(
     "player_save_pipeline.c", "static player_save_pipeline_result checkpoint_dirty_with_quest_xp("
 ) + r'''
 void verify() {
@@ -603,6 +608,33 @@ int main() {
     assert(xp_death.encoded_size_bound == xp_bound + 32);
     assert(merge_spell_effect_receipts(&death, pending) && death.spell_effect_receipts.size() == 1);
     assert(death.encoded_size_bound == bound + 24);
+    player_craft_receipt_snapshot craft = {};
+    craft.operation_id.bytes[0] = 99;
+    craft.discipline = 2;
+    craft.experience = 7000;
+    pending.craft_receipts.push_back(craft);
+    craft_progression_hooks.pending = [](uint32_t, std::vector<player_craft_receipt_snapshot> *out) {
+        *out = pending.craft_receipts;
+        return true;
+    };
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_LANGUAGES));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) == player_save_pipeline_result::queued);
+    verify();
+    assert(captured.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION);
+    assert(captured.craft_receipts.size() == 1 && captured.quest_xp_receipts.size() == 1);
+    assert((captured.components & CRAFT_PROGRESSION_COMPONENTS) == CRAFT_PROGRESSION_COMPONENTS);
+    auto craft_death = mixed_death;
+    const auto craft_bound = craft_death.encoded_size_bound;
+    assert(merge_craft_receipts(&craft_death, pending));
+    assert(craft_death.schema_version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION);
+    assert(craft_death.encoded_size_bound == craft_bound + 28);
+    assert(merge_craft_receipts(&craft_death, pending));
+    assert(craft_death.encoded_size_bound == craft_bound + 28 && craft_death.craft_receipts.size() == 1);
+    auto conflict = pending;
+    ++conflict.craft_receipts[0].experience;
+    assert(!merge_craft_receipts(&craft_death, conflict));
+    craft_death.components &= ~PLAYER_COMPONENT_SKILLS;
+    assert(!merge_craft_receipts(&craft_death, pending));
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-pending-spell-save-") as directory:

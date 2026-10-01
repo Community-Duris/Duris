@@ -23,6 +23,11 @@ bool player_save_journal_pid_quarantined(int)
 {
 	return false;
 }
+bool item_movement_transaction_pending_craft_progression(uint32_t, std::vector<critical_operation_id> *operations)
+{
+	operations->clear();
+	return true;
+}
 bool item_movement_transaction_pending_spell_effects(uint32_t,
 						     std::vector<critical_operation_id> *operations)
 {

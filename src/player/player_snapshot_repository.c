@@ -1697,6 +1697,51 @@ query_result verify_spell_effect_receipts(MYSQL *connection, const player_snapsh
 	return { true, 0 };
 }
 
+query_result craft_receipts(MYSQL *connection, const player_snapshot &snapshot, bool apply)
+{
+	for (const auto &receipt : snapshot.craft_receipts)
+	{
+		const std::string operation_hex = hex_operation(receipt.operation_id);
+		auto query = execute(
+			connection,
+			"SELECT c.discipline,c.experience,c.applied_revision,i.status,i.result_code "
+			"FROM player_craft_progression c JOIN critical_operation_inbox i "
+			"ON i.operation_id=c.operation_id WHERE c.pid=" +
+				std::to_string(snapshot.pid) + " AND c.operation_id=UNHEX('" +
+				operation_hex + "') FOR UPDATE");
+		if (!query.ok)
+			return query;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows || mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 5)
+			return { false,
+				 rows ? ENOENT :
+					(mysql_errno(connection) ? mysql_errno(connection) : EIO) };
+		MYSQL_ROW row = mysql_fetch_row(rows.get());
+		std::array<uint64_t, 5> values = {};
+		for (size_t index = 0; index < values.size(); ++index)
+			if (!row || !parse_custody_uint64(row[index], &values[index]))
+				return { false, EILSEQ };
+		rows.reset();
+		if (values[0] != receipt.discipline || values[1] != receipt.experience ||
+		    values[2] > snapshot.revision || values[3] != 1 || values[4] != 0)
+			return { false, EILSEQ };
+		if (values[2])
+			continue;
+		if (!apply)
+			return { false, ENOENT };
+		query = execute(connection,
+				"UPDATE player_craft_progression SET applied_revision=" +
+					std::to_string(snapshot.revision) +
+					" WHERE operation_id=UNHEX('" + operation_hex +
+					"') AND pid=" + std::to_string(snapshot.pid) +
+					" AND applied_revision=0");
+		if (!query.ok || mysql_affected_rows(connection) != 1)
+			return { false, query.ok ? EAGAIN : query.error_code };
+	}
+	return { true, 0 };
+}
+
 std::string hex_payload(const std::vector<uint8_t> &payload)
 {
 	static constexpr char digits[] = "0123456789abcdef";
@@ -1925,6 +1970,12 @@ player_save_apply_result read_durable_revision(MYSQL *connection, const player_s
 		if (!receipt.ok)
 			return failure(receipt.error_code);
 	}
+	if (revision == snapshot.revision && !snapshot.craft_receipts.empty())
+	{
+		const auto receipt = craft_receipts(connection, snapshot, false);
+		if (!receipt.ok)
+			return failure(receipt.error_code);
+	}
 	if (revision == snapshot.revision && !snapshot.quest_xp_receipts.empty())
 	{
 		const auto receipt = verify_quest_xp_receipts(connection, snapshot);
@@ -2008,6 +2059,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 			query = verify_quest_xp_receipts(connection, request);
 		if (query.ok)
 			query = verify_spell_effect_receipts(connection, request);
+		if (query.ok)
+			query = craft_receipts(connection, request, false);
 		return query.ok ?
 			       player_death_terminal_write_result{ outcome::already_written, 0 } :
 			       failed(query.error_code);
@@ -2023,6 +2076,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 	if (query.ok)
 		query = apply_spell_effect_receipts(connection, request);
 	if (query.ok)
+		query = craft_receipts(connection, request, true);
+	if (query.ok)
 		query = record_death(connection, retained, true);
 	if (!query.ok)
 		return failed(query.error_code);
@@ -2037,6 +2092,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 		query = verify_quest_xp_receipts(connection, request);
 	if (query.ok)
 		query = verify_spell_effect_receipts(connection, request);
+	if (query.ok)
+		query = craft_receipts(connection, request, false);
 	return query.ok ? player_death_terminal_write_result{ outcome::written, 0 } :
 			  failed(query.error_code);
 }
@@ -2057,6 +2114,7 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 			    snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL ||
 			    !snapshot.items.empty() :
 		    (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+		     snapshot.schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION &&
 		     snapshot.schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
 		     snapshot.schema_version !=
 			     PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
@@ -2104,6 +2162,9 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 		const auto quest_receipt = spell_receipt.ok ?
 						   verify_quest_xp_receipts(connection, snapshot) :
 						   spell_receipt;
+		const auto craft_receipt = quest_receipt.ok ?
+						   craft_receipts(connection, snapshot, false) :
+						   quest_receipt;
 		execute(connection, "ROLLBACK");
 		if (!receipt.ok)
 			return failure(receipt.error_code, receipt.custody_diagnosis);
@@ -2111,11 +2172,14 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 			return failure(spell_receipt.error_code);
 		if (!quest_receipt.ok)
 			return failure(quest_receipt.error_code);
+		if (!craft_receipt.ok)
+			return failure(craft_receipt.error_code);
 		return { durable == snapshot.revision ? player_save_apply_outcome::already_applied :
 							player_save_apply_outcome::stale_revision,
 			 durable, 0, player_save_custody_diagnosis::none,
 			 !snapshot.death && (!snapshot.quest_xp_receipts.empty() ||
-					     !snapshot.spell_effect_receipts.empty()) };
+					     !snapshot.spell_effect_receipts.empty() ||
+					     !snapshot.craft_receipts.empty()) };
 	}
 
 	// An unresolved case also fences later checkpoints, not just cold loads.
@@ -2143,6 +2207,8 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 		query = apply_quest_xp_receipts(connection, snapshot);
 	if (query.ok && !snapshot.spell_effect_receipts.empty())
 		query = apply_spell_effect_receipts(connection, snapshot);
+	if (query.ok && !snapshot.craft_receipts.empty())
+		query = craft_receipts(connection, snapshot, true);
 	if (query.ok)
 		query = apply_death(connection, snapshot);
 	if (!query.ok)

@@ -1,5 +1,6 @@
 #include "item/item_movement_transaction.h"
 #include "item/craft_pouch_mutation.h"
+#include "player/craft_progression_hooks.h"
 #include "combat/chaos_pouch_publication.h"
 
 #include "item/item_ownership_runtime.h"
@@ -1716,6 +1717,29 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
+		if (committed && entry.payload.continuation.kind ==
+					 item_transfer_continuation_kind::craft_recipe)
+		{
+			craft_recipe_continuation terms;
+			if (!craft_progression_hooks.publish ||
+			    !craft_recipe_continuation_decode(entry.payload.continuation.data,
+							      &terms))
+			{
+				retain_publication_failure(entry, "recipe progression");
+				return;
+			}
+			const auto progression = craft_progression_hooks.publish(
+				entry.completed.operation_id, actor, terms);
+			if (progression != craft_progression_publication_result::ready)
+			{
+				if (progression == craft_progression_publication_result::waiting)
+					entry.publication_status = publication_state::owner_waiting;
+				else
+					retain_publication_failure(entry, "recipe progression");
+				account_health();
+				return;
+			}
+		}
 		if (!committed)
 			discard_craft_outputs(entry);
 		// Mark before notification. An ack retry must not notch or announce twice.
@@ -1740,6 +1764,10 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
+		if (found->second.payload.continuation.kind ==
+			    item_transfer_continuation_kind::craft_recipe &&
+		    craft_progression_hooks.acknowledged)
+			craft_progression_hooks.acknowledged(operation_id);
 		pending.erase(found);
 		if (committed)
 			++health.committed;
@@ -2507,7 +2535,8 @@ bool item_movement_transaction_submit_craft(
 	size_t output_count, int64_t recipe_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, item_movement_reject *reject,
 	P_obj retained_pouch, const chaos_material_pouch_usage *pouch_usage,
-	size_t pouch_usage_count, chaos_pouch_usage_mode pouch_mode)
+	size_t pouch_usage_count, chaos_pouch_usage_mode pouch_mode,
+	const craft_recipe_continuation *recipe)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -2520,6 +2549,12 @@ bool item_movement_transaction_submit_craft(
 				      pouch_usage_count > CRAFT_POUCH_MUTATION_MAX_MATERIALS :
 			      pouch_usage || pouch_usage_count) ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
+		return reject_with(reject, item_movement_reject::invalid_request);
+	if (recipe &&
+	    (!craft_progression_hooks.publish || output_count != 1 ||
+	     recipe->player_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+	     recipe->recipe_vnum != recipe_id || recipe->output_uid != outputs[0]->obj_uid ||
+	     !recipe->pouch_mutation.empty()))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
@@ -2661,6 +2696,22 @@ bool item_movement_transaction_submit_craft(
 	      item_blob.empty() || item_blob.size() > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES)) ||
 	    (output_count && item_blob.empty()))
 		return reject_with(reject, item_movement_reject::snapshot_failure);
+	if (recipe)
+	{
+		try
+		{
+			craft_recipe_continuation terms = *recipe;
+			terms.pouch_mutation = std::move(pouch_continuation.data);
+			if (!craft_recipe_continuation_encode(terms, &pouch_continuation.data))
+				return reject_with(reject,
+						   item_movement_reject::command_build_failure);
+			pouch_continuation.kind = item_transfer_continuation_kind::craft_recipe;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return reject_with(reject, item_movement_reject::allocation_failure);
+		}
+	}
 	item_transfer_payload payload = { .from_owner = owner,
 					  .to_owner = owner,
 					  .reason = item_transfer_reason::craft,
@@ -3255,6 +3306,37 @@ bool item_movement_transaction_restore_replayed_command(const critical_command &
 	       spell_component_retirement_restore_replayed_effect(
 		       command.operation_id, static_cast<uint32_t>(payload.from_owner.id),
 		       spell_effect_id, spell_receipt_owner_pid);
+}
+
+bool item_movement_transaction_pending_craft_progression(
+	uint32_t actor_pid, std::vector<critical_operation_id> *operations)
+{
+	if (!actor_pid || !operations)
+		return false;
+	try
+	{
+		std::vector<critical_operation_id> found;
+		for (const auto &[key, entry] : pending)
+		{
+			if (entry.actor_pid != actor_pid ||
+			    entry.payload.continuation.kind !=
+				    item_transfer_continuation_kind::craft_recipe)
+				continue;
+			if (key.size() != 16 || found.size() >= PLAYER_CRAFT_RECEIPT_MAX)
+				return false;
+			critical_operation_id operation = {};
+			memcpy(operation.bytes.data(), key.data(), operation.bytes.size());
+			found.push_back(operation);
+		}
+		std::sort(found.begin(), found.end(), [](const auto &left, const auto &right)
+			  { return left.bytes < right.bytes; });
+		*operations = std::move(found);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }
 
 bool item_movement_transaction_pending_spell_effects(uint32_t actor_pid,
