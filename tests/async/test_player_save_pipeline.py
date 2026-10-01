@@ -479,6 +479,8 @@ bool capture_fails = false;
 bool creation_pending = false;
 bool item_movement_transaction_player_creation_busy(P_char) { return creation_pending; }
 bool refuse_enqueue = false;
+bool grant_publication_pending = false;
+bool item_creation_grant_player_publication_pending(P_char) { return grant_publication_pending; }
 player_snapshot pending, captured;
 constexpr auto CRAFT_PROGRESSION_COMPONENTS = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS | PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
 struct { bool (*pending)(uint32_t, std::vector<player_craft_receipt_snapshot> *) = nullptr; } craft_progression_hooks;
@@ -538,6 +540,15 @@ int main() {
     assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::unavailable);
     assert(pending.spell_effect_receipts.size() == 1 && !captured.pid);
     creation_pending = false;
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_INVENTORY));
+    player_revision_snapshot before_grant, after_grant;
+    assert(player_revision_snapshot_copy(41, &before_grant));
+    grant_publication_pending = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::unavailable);
+    assert(player_revision_snapshot_copy(41, &after_grant));
+    assert(after_grant.dirty_components == before_grant.dirty_components);
+    assert(after_grant.queued_components == 0 && captured.pid == 0);
+    grant_publication_pending = false;
     capture_fails = true;
     assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::capture_failed);
     capture_fails = false;

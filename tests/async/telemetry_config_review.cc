@@ -7,7 +7,7 @@ namespace
 {
 telemetry_config_snapshot fixture(telemetry_config_revision revision, std::uint32_t policy)
 {
-	property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 0U, 0U };
+	property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 0U, 0U, 1.0F };
 	auto capture = make_capture(values);
 	telemetry_config_property_snapshot properties{};
 	CHECK(telemetry_config_property_snapshot_capture(&capture, &properties) ==
@@ -22,7 +22,7 @@ telemetry_config_snapshot fixture(telemetry_config_revision revision, std::uint3
 void review_regressions()
 {
 	// Effective defaults and explicitly loaded identical values share one catalog key.
-	property_values defaults_values{ 0.0F, 10.0F, 1.0F, 0.1F, 0.1F, 0U, 0U };
+	property_values defaults_values{ 0.0F, 10.0F, 1.0F, 0.1F, 0.1F, 0U, 0U, 1.0F };
 	auto capture = make_capture(defaults_values);
 	telemetry_config_property_snapshot loaded{};
 	CHECK(telemetry_config_property_snapshot_capture(&capture, &loaded) ==
