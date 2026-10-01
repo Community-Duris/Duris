@@ -54,6 +54,8 @@ def body(text, signature):
 checks = []
 
 busy = body(movement, "bool item_movement_transaction_player_busy(P_char actor)")
+creation_busy = body(movement, "bool item_movement_transaction_player_creation_busy(P_char actor)")
+assert contains(busy, "item_movement_transaction_player_creation_busy(actor)")
 checks.append((
     "busy covers movements submitted toward the player, not just by them",
     contains(busy, "const item_owner_identity owner = { item_owner_type::player, pid, 0 };")
@@ -62,12 +64,12 @@ checks.append((
 ))
 checks.append((
     "busy covers a creation grant queued for the player as recipient",
-    contains(busy, "for (const pending_creation_grant &request : queue.requests)")
-    and contains(busy, "if (!request.to_room && request.recipient_pid == pid)")
+    contains(creation_busy, "for (const pending_creation_grant &request : queue.requests)")
+    and contains(creation_busy, "if (!request.to_room && request.recipient_pid == pid)")
 ))
 checks.append((
     "busy still reports the player's own queued creation grants",
-    contains(busy, "if (creation_grants.find(pid) != creation_grants.end())")
+    contains(creation_busy, "if (creation_grants.find(pid) != creation_grants.end())")
 ))
 
 corpse = body(fight, "P_obj make_corpse(P_char ch, int loss)")

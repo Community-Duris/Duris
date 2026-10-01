@@ -140,7 +140,7 @@ def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> 
     return result.stdout + result.stderr
 
 
-def history(engine: schema.Engine, limit: int = 51) -> str:
+def history(engine: schema.Engine, limit: int = 52) -> str:
     return engine.sql("SELECT HEX(CONCAT(migration_id,CHAR(0),sequence_number,CHAR(0),"
                       "description,CHAR(0),HEX(apply_checksum),CHAR(0),HEX(verify_checksum),"
                       "CHAR(0),compatibility,CHAR(0),runner_version,CHAR(0),applied_at)) "
@@ -429,7 +429,7 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate(fork, "migration_manifest.staging_0045.json")
             check(after == history(fork), "staging rerun rewrote migration receipts")
             check(fork.sql("SELECT COUNT(*) FROM mud_schema_history;", database=fork.database)
-                  == "51", "transition did not append exactly six receipts")
+                  == "52", "transition did not append exactly seven receipts")
             runtime = json.loads(schema.RUNTIME_MANIFEST.read_text())
             for current, key in ((normal, "migration_head"),
                                  (fork, "staging_0045_migration_head")):

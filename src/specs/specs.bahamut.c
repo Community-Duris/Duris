@@ -3,6 +3,7 @@
 #include <time.h>
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -465,8 +466,8 @@ void event_dragonlord_check(P_char ch, P_char /*victim*/, P_obj obj, void * /*da
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -519,9 +520,8 @@ int dragonlord_plate_old(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 				if (temp_obj && (obj != temp_obj))
 				{
 					if (obj_index[temp_obj->R_num].func.obj != NULL)
-						(*obj_index[temp_obj->R_num].func.obj)(
-							temp_obj, temp_ch, CMD_REMOVE,
-							(char *)"all");
+						invoke_object_special(temp_obj, temp_ch, CMD_REMOVE,
+								      (char *)"all");
 					obj_to_char(unequip_char(temp_ch, k), temp_ch);
 				}
 			}

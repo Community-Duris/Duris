@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+from contract_text import contains
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -51,7 +52,7 @@ assert "case CON_GET_RETURN:" not in NANNY
 assert "writeCharacter(ch, 2, NOWHERE)" in schedule_helper
 assert schedule_helper.index("writeCharacter(ch, 2, NOWHERE)") < schedule_helper.index("load_chaos_new_character_kit(ch)")
 assert "load_chaos_new_character_kit(ch);" not in enter_game
-assert "item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data()," in chaos_loader
+assert contains(chaos_loader, "item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),")
 assert "kit.count = 0;" in chaos_loader
 assert chaos_loader.index("if (item_failure)") < chaos_loader.index("item_creation_grant_submit_batch_to_player_before_entry")
 assert chaos_loader.index("item_creation_grant_submit_batch_to_player_before_entry") < chaos_loader.index("kit.count = 0;")

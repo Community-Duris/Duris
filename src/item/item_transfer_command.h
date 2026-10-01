@@ -91,6 +91,8 @@ enum class item_transfer_reason : uint16_t
 	// Quest turn-ins retire the submitted UIDs under a quest-specific reason and
 	// retain the reward continuation with the same durable operation.
 	quest_turnin,
+	// Atomic retirement and admission of detached crafted outputs.
+	craft,
 };
 
 constexpr bool item_transfer_forced_weapon_drop(item_transfer_reason reason)

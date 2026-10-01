@@ -3088,8 +3088,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 				data.flags = flags;
 				data.messages = messages;
 
-				if ((*obj_index[item->R_num].func.obj)(item, victim, CMD_GOTNUKED,
-								       (char *)&data))
+				if (invoke_object_special(item, victim, CMD_GOTNUKED,
+							  (char *)&data))
 				{
 					if (GET_STAT(victim) == STAT_DEAD)
 						return DAM_VICTDEAD;

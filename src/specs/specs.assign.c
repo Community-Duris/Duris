@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -2669,5 +2670,5 @@ void item_procs(void)
 
 	for (i = object_list; i; i = i->next)
 		if (obj_index[i->R_num].func.obj)
-			(*obj_index[i->R_num].func.obj)(i, NULL, 0, NULL);
+			invoke_object_special(i, NULL, 0, NULL);
 }

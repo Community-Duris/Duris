@@ -17,8 +17,9 @@ python3 scripts/migration_runner.py run
 ```
 
 The migration manifest, compiled compatibility head, and runtime manifest now end
-at `0051_quest_item_witness_lookup`, with 223 expected runtime tables.
-Migration 0051 adds the nonunique `(reason_type, reason_id)` item-ledger index
+at `0052_quest_item_witness_lookup`, with 224 expected runtime tables.
+Migration 0051 preserves player item runtime state. Migration 0052 adds the
+nonunique `(reason_type, reason_id)` item-ledger index
 used by bounded quest reward recovery. It preserves duplicate evidence and
 refuses an existing index with a different shape. Both manifests append this
 step without modifying older receipts or migration files.
@@ -97,11 +98,12 @@ python3 scripts/migration_runner.py \
 | 48 | `0047_quest_xp_receipt` |
 | 49 | `0048_quest_xp_entitlement` |
 | 50 | `0049_player_spell_effect_receipt` |
-| 51 | `0051_quest_item_witness_lookup` |
+| 51 | `0051_player_item_runtime_state` |
+| 52 | `0052_quest_item_witness_lookup` |
 
 The canonical manifest continues to reject this fork before any migration runs.
-The explicit manifest appends six steps and produces a different
-history checksum from the canonical 51-step history. Both completed checksums
+The explicit manifest appends seven steps and produces a different
+history checksum from the canonical 52-step history. Both completed checksums
 are compiled into the boot gate; every historical row is recomputed and matched
 to its stored state. Partial histories and mixed head/state identities fail.
 

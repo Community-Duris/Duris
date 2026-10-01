@@ -2,7 +2,7 @@
 
 Local implementation remains on `codex/accounting-review-fixes`. Accounting
 activation and full-feature release remain blocked. No production access,
-deployment, push, PR publication, or merge was performed.
+deployment, push, PR publication, or GitHub merge was performed.
 
 ## Established fixes and evidence
 
@@ -41,10 +41,24 @@ deployment, push, PR publication, or merge was performed.
 The initial reviewed public branch was `8ef7e9d243d3ccb14477a88d142c17743fba78a0`.
 A current GitHub refresh found `bd7fe95c6dcb47c04c68ba9689429f12e112909e`, including
 the alchemist accounting port and immutable migration
-`0051_player_item_runtime_state`. That upstream migration must retain sequence
-51; the unpublished local quest index migration must move to sequence 52.
-Integration, merged schema fingerprints, and fresh candidate qualification are
-pending. The checkout's `origin` points to `Community-Duris/DurisMUD`; refresh
+`0051_player_item_runtime_state`. The local integration preserves that immutable
+migration at sequence 51 and appends the unpublished quest index at sequence 52.
+Canonical and staging histories now have 52 receipts. Fresh disposable native
+schemas, migration replay, bounded quest reads, item save reconciliation, exact
+spell/quest receipts, and shell compatibility pass on both engines. The staging
+fork also passes on both engines with its original 45 receipts preserved,
+seven appended steps, compiled boot verification, metadata tamper refusal,
+advisory-lock ownership, connection-loss rollback, and cancellation faults.
+
+The measured complete runtime metadata fingerprints are
+`13daaa95b721f9492328e33cbf8a657a800c383ef799f80d88902b0f504d63bd`
+for MySQL and
+`59c33f6d8b4de0ca6919c7e609d48df6ea7a98031292c030efc9bf2668214cf4`
+for MariaDB. The compiled header and runtime manifest validate together.
+The writer matrix now contains 864 routes and 2,816 lexical occurrences;
+all 2,758 unique sites are mapped. Release qualification remains blocked.
+
+The checkout's `origin` points to `Community-Duris/DurisMUD`; refresh
 the requested `Community-Duris/Duris` repository explicitly.
 
 The fresh 803-test regression batch and auction/collector/shop native fixtures

@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "core/structs.h"
@@ -2241,6 +2242,12 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 	{
 		logit(LOG_DEBUG,
 		      "equip_char: and now for something completely different, obj not in NOWHERE");
+		return;
+	}
+
+	if (item_restricted_for_player_pet(ch, obj))
+	{
+		obj_to_char(obj, ch);
 		return;
 	}
 
@@ -5218,8 +5225,7 @@ void Decay(P_obj obj)
 		//                 so genericdecay = false -- no need to do a default decay
 		if (obj_index[obj->R_num].func.obj)
 		{
-			genericdecay =
-				!(*obj_index[obj->R_num].func.obj)(obj, NULL, CMD_DECAY, NULL);
+			genericdecay = !invoke_object_special(obj, NULL, CMD_DECAY, NULL);
 		}
 		// Corpse
 		else if (obj->R_num == real_object(VOBJ_CORPSE))

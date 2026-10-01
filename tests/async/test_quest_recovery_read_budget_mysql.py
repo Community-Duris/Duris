@@ -237,7 +237,8 @@ def main() -> None:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
             "-I/usr/include/mysql", str(source), "src/persistence/quest_reward_obligation_repository.c",
             "src/persistence/critical_command.c", "src/item/item_transfer_command.c",
-            "src/economy/currency_command.c", "-lmysqlclient", "-lcrypto", "-o", str(binary),
+            "src/economy/currency_command.c", "src/player/player_snapshot_codec.c",
+            "-lmysqlclient", "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)
         subprocess.run([str(binary)], cwd=ROOT, check=True, timeout=60)
 

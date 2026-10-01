@@ -4,6 +4,7 @@
 import unittest
 
 from _paths import extract_function, source
+from contract_text import contains
 
 
 class QuestXpAccountingScopeTests(unittest.TestCase):
@@ -33,7 +34,7 @@ class QuestXpAccountingScopeTests(unittest.TestCase):
         self.assertIn("GET_PID(player) == static_cast<int>(pid)", present)
         self.assertNotIn("desc", present)
         self.assertIn("member->ch->in_room != actor->in_room", capture)
-        self.assertIn("quest_reward_character_present(static_cast<uint32_t>(GET_PID(member->ch)))", capture)
+        self.assertTrue(contains(capture, "quest_reward_character_present(static_cast<uint32_t>(GET_PID(member->ch)))"))
         self.assertNotIn("desc", capture)
         self.assertIn("quest_reward_character_present(award.recipient_pid)", quest)
         payout = quest[quest.index("for (size_t index = 0; index < continuation.xp_award_count; ++index)"):]

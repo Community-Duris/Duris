@@ -16,6 +16,7 @@
 ;
 
 #include "core/prototypes.h"
+
 #include "item/forced_weapon_drop.h"
 #include "item/native_artifact_actions.h"
 #include "core/structs.h"
