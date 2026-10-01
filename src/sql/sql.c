@@ -1654,9 +1654,11 @@ static bool sql_verify_boot_database(void)
 		"sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' AND "
 		"LOWER(HEX(verify_checksum))='%s' AND runner_version=1 OR "
 		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
+		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1 OR "
+		"migration_id='%s' AND sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' "
 		"AND LOWER(HEX(verify_checksum))='%s' AND runner_version=1),"
 		"(SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND "
-		"applied_count=%u AND LOWER(HEX(history_checksum)) IN ('%s','%s')),"
+		"applied_count=%u AND LOWER(HEX(history_checksum)) IN ('%s','%s','%s')),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
 		"AND table_type='BASE TABLE' AND table_name IN (%s)),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
@@ -1668,9 +1670,13 @@ static bool sql_verify_boot_database(void)
 		RUNTIME_MIGRATION_VERIFY_CHECKSUM, RUNTIME_STAGING_0045_MIGRATION_HEAD_ID,
 		RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE,
 		RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM,
-		RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
+		RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM,
+		RUNTIME_MASTER_0031_MIGRATION_HEAD_ID, RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE,
+		RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM,
+		RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
 		RUNTIME_MIGRATION_HISTORY_CHECKSUM, RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM,
-		RUNTIME_TABLE_SQL_LIST, RUNTIME_TABLE_SQL_LIST);
+		RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM, RUNTIME_TABLE_SQL_LIST,
+		RUNTIME_TABLE_SQL_LIST);
 	if (!result)
 	{
 		logit(LOG_STATUS, "FATAL: COMPAT-E001 compatibility metadata query failed");
@@ -2233,7 +2239,8 @@ static bool sql_verify_migration_history(void)
 		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
 	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
 	if (strcmp(encoded, RUNTIME_MIGRATION_HISTORY_CHECKSUM) &&
-	    strcmp(encoded, RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM))
+	    strcmp(encoded, RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM) &&
+	    strcmp(encoded, RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM))
 		return false;
 	result = db_query("SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 "
 			  "AND applied_count=%u AND LOWER(HEX(history_checksum))='%s'",
