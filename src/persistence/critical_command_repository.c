@@ -41,6 +41,7 @@
 
 namespace
 {
+static_assert(BOON_REWARD_RESULT_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 constexpr uint8_t INBOX_COMMITTED = 1;
 constexpr uint16_t OUTBOX_DESTINATION_TEST = 1;
 constexpr uint16_t OUTBOX_EVENT_TEST_MUTATED = 1;

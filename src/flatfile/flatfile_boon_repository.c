@@ -23,6 +23,7 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'B', 'O', 'O', 'N', 0 };
+static_assert(BOON_REWARD_RESULT_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 constexpr uint32_t catalog_version = 3;
 constexpr uint32_t catalog_reward_event_version = 2;
 constexpr uint32_t catalog_legacy_version = 1;
