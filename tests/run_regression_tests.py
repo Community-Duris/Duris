@@ -50,6 +50,8 @@ MANUAL_ONLY_TEST_NAMES = frozenset(
         "test_player_save_journal_quarantine.py",
         # Owns disposable Docker databases and measures the staging schema fork.
         "test_staging_migration_fork_mysql.py",
+        # Requires an explicitly disposable loopback database on each SQL engine.
+        "test_quest_recovery_read_budget_mysql.py",
         "test_mob_gold_dial_runtime.py",
         "test_mysql_playtime_journey.py",
         "test_pet_restart_journey.py",

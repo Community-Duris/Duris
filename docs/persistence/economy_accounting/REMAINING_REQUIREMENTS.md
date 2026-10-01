@@ -1,10 +1,14 @@
 # Double-entry economy: remaining requirements
 
-Reassessed 2026-09-27 at add-double-entry HEAD 49af585c4. This is the current
-feature checklist; [the economy contract](../ECONOMY_ACCOUNTING.md) defines the
-wire, identity, and conservation rules. The [delivery plan](DELIVERY_PLAN.md)
-links five executable work plans. A component test or source reference is not a
-qualified player journey.
+The R1-R8 requirement contract below remains the feature checklist;
+[the economy contract](../ECONOMY_ACCOUNTING.md) defines the wire, identity, and
+conservation rules. The evidence table and counts below are the historical
+2026-09-27 assessment at add-double-entry HEAD `49af585c4`. Use the
+[active completion plan](FINISH_ACCOUNTING_PLAN.md) and
+[review continuation](REVIEW_CONTINUATION_2026-09-30.md) for current implementation
+and qualification status. The [delivery plan](DELIVERY_PLAN.md) links five
+executable work plans. A component test or source reference is not a qualified
+player journey.
 
 ## Product boundary
 
