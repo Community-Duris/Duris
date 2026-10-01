@@ -636,15 +636,13 @@ int main(int argc, char **argv)
 			second.join();
 			const auto retained_count =
 				std::count_if(results.begin(), results.end(),
-					      [](const auto &result)
-					      {
+					      [](const auto &result) {
 						      return result.outcome == outcome::retained &&
 							     !result.error_code;
 					      });
 			const auto replay_count = std::count_if(
 				results.begin(), results.end(),
-				[](const auto &result)
-				{
+				[](const auto &result) {
 					return result.outcome == outcome::already_retained &&
 					       !result.error_code;
 				});

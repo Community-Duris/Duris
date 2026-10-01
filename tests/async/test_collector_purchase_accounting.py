@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Executable typed collector purchase plan and rejection regressions."""
 
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -12,7 +13,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="collector-purchase-accounting-") as directory:
         binary = Path(directory) / "collector-purchase-accounting"
         subprocess.run([
-            "g++-12", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic",
+            os.environ.get("CXX", "g++"), "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic",
             "-Werror", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
             "tests/async/collector_purchase_accounting_test.cpp",

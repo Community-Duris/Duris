@@ -305,8 +305,8 @@ void writer_cases(const critical_operation_id &epoch, const economic_account_key
 	       purchased.wallet_revision == 5 && purchased.bank_revision == 8 &&
 	       purchased.shop_revision == 10 && purchased.item_revisions[0] == 5);
 	assert(scalar("SELECT realized_price_copper FROM economic_accounting_operation WHERE operation_id=" +
-		      literal(buy.operation_id)) == static_cast<uint64_t>(
-			      payload_for(shop_trade_action::buy_existing).price));
+		      literal(buy.operation_id)) ==
+	       static_cast<uint64_t>(payload_for(shop_trade_action::buy_existing).price));
 	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + std::to_string(PLAYER) +
 		      " AND obj_uid=" + std::to_string(ITEM)) == 1);
 	assert(scalar("SELECT COUNT(*) FROM shopkeeper_items WHERE shopkeeper_id=" +

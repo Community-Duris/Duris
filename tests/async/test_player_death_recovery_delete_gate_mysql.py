@@ -45,6 +45,7 @@ PRELUDE = r'''
 #include <type_traits>
 
 MYSQL *DB = nullptr;
+bool player_save_journal_pid_quarantined(int) { return false; }
 static bool transaction_active = false;
 static int character_deletion_guard_pid = 0;
 static unsigned revision_forgets = 0;

@@ -49,6 +49,15 @@ bool safe_room_spell_target_allowed(P_char, int, P_char) { return true; }
 
 static room_data rooms[2]{};
 P_room world = rooms;
+// The production spell bodies re-resolve participants after callbacks. This
+// fixture owns a fixed room population and gives each participant a unique ID.
+P_char find_character_by_runtime_id(uint64_t id)
+{
+    if (!id) return nullptr;
+    for (P_char ch = world[0].people; ch; ch = ch->next_in_room)
+        if (ch->runtime_id == id) return ch;
+    return nullptr;
+}
 static index_data indexes[1]{};
 P_index mob_index = indexes, obj_index = indexes;
 Skill skills[MAX_AFFECT_TYPES + 1];
@@ -206,6 +215,7 @@ int main()
     skills[SPELL_DEATH_FIELD].spell_pointer = spell_death_field;
     skills[SPELL_DEATH_FIELD].targets = TAR_AREA;
     char_data caster{}, targets[8]{};
+    caster.runtime_id = 1;
     npc_only_data npc{};
     pc_only_data players[9]{};
     caster.only.npc = &npc;
@@ -216,6 +226,7 @@ int main()
     caster.points.hit = 10000;
     for (int i = 0; i < 8; ++i)
     {
+        targets[i].runtime_id = static_cast<uint64_t>(i + 2);
         targets[i].only.pc = &players[i];
         targets[i].specials.position = POS_STANDING | STAT_NORMAL;
         targets[i].specials.fighting = &caster;

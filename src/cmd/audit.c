@@ -57,16 +57,16 @@ void audit_item(P_char ch, char *argument)
 		}
 		if (obj->obj_uid == 0)
 		{
-			send_to_char("That item has no unique object identifier (obj_uid == 0).\r\n",
-				     ch);
+			send_to_char(
+				"That item has no unique object identifier (obj_uid == 0).\r\n",
+				ch);
 			return;
 		}
 		target_uid = static_cast<uint64_t>(obj->obj_uid);
 	}
 
 	char header[MAX_STRING_LENGTH];
-	std::snprintf(header, sizeof(header),
-		      "&+Y=== Accounting Audit for Item UID %llu ===&n\r\n",
+	std::snprintf(header, sizeof(header), "&+Y=== Accounting Audit for Item UID %llu ===&n\r\n",
 		      static_cast<unsigned long long>(target_uid));
 	send_to_char(header, ch);
 
@@ -115,8 +115,8 @@ void audit_item(P_char ch, char *argument)
 		const auto &ref = history[i];
 		char line[MAX_STRING_LENGTH];
 		std::snprintf(line, sizeof(line),
-			      "[%zu] op=%s rev=%llu->%llu line=%u event=%u child=%u\r\n",
-			      i + 1, format_operation_id(ref.operation_id).c_str(),
+			      "[%zu] op=%s rev=%llu->%llu line=%u event=%u child=%u\r\n", i + 1,
+			      format_operation_id(ref.operation_id).c_str(),
 			      static_cast<unsigned long long>(ref.before_revision),
 			      static_cast<unsigned long long>(ref.after_revision),
 			      static_cast<unsigned>(ref.line_index),

@@ -44,6 +44,8 @@ runner = importlib.util.module_from_spec(runner_spec)
 sys.modules[runner_spec.name] = runner
 runner_spec.loader.exec_module(runner)
 expected_resource_intensive = {
+    "test_player_quarantine_restore.py",
+    "test_static_quest_reward_journey.py",
     "test_account_recovery_journey.py",
     "test_creation_prompt_journey.py",
     "test_game_loop_session_journey.py",
@@ -61,6 +63,15 @@ expected_resource_intensive = {
 }
 assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
 assert runner.MANUAL_ONLY_TEST_NAMES == {
+    "test_player_save_journal_quarantine.py",
+    "test_staging_migration_fork_mysql.py",
+    "test_quest_recovery_read_budget_mysql.py",
+    "test_economic_accounting_schema_mysql.py",
+    "test_economic_baseline_schema_mysql.py",
+    "test_economic_accounting_item_reference_mysql.py",
+    "test_player_save_item_reconcile_mysql.py",
+    "test_player_spell_effect_receipt_mysql.py",
+    "test_economic_sql_lifecycle_owner_contract.py",
     "test_mob_gold_dial_runtime.py",
     "test_mysql_playtime_journey.py",
     "test_pet_restart_journey.py",

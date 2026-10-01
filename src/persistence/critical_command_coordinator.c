@@ -717,8 +717,7 @@ void admission_worker_main()
 				{
 					admission_available.wait(
 						lock,
-						[]
-						{
+						[] {
 							return stop_requested ||
 							       !pending_admission.empty() ||
 							       recovery_requested;
@@ -1035,8 +1034,8 @@ bool critical_command_coordinator_shutdown(void)
 		if (worker.joinable())
 			worker.join();
 	std::unique_lock<std::mutex> lock(coordinator_mutex);
-	publication_checkpoint_finished.wait(
-		lock, [] { return publication_checkpoints_inflight == 0; });
+	publication_checkpoint_finished.wait(lock,
+					     [] { return publication_checkpoints_inflight == 0; });
 	workers.clear();
 	operations.clear();
 	pending.clear();
@@ -1262,7 +1261,8 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
 		auto found = operations.find(identity);
-		if (found == operations.end() || !operation_is_publication_pending(*found->second) ||
+		if (found == operations.end() ||
+		    !operation_is_publication_pending(*found->second) ||
 		    found->second->publication_checkpointing)
 			return false;
 		found->second->publication_checkpointing = true;

@@ -176,6 +176,9 @@ bool item_movement_transaction_restore_replayed_publication(
 	const void *context, size_t context_size);
 void item_movement_transaction_player_ready(P_char actor);
 bool item_movement_transaction_player_busy(P_char actor);
+// A creation commit can advance custody before its item is published live.
+// Ordinary snapshots must wait until every inbound creation has published.
+bool item_movement_transaction_player_creation_busy(P_char actor);
 item_movement_health item_movement_transaction_health_copy(void);
 void item_movement_transaction_reset_for_tests(void);
 

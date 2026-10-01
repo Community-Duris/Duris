@@ -31,7 +31,8 @@ int main(int argc, char **argv)
 	// Find by legacy operation id and event index
 	economic_accounting_item_reference found_legacy = {};
 	auto find_legacy_status = flatfile_item_accounting_reference_find_by_legacy(
-		root, buyback_ref.legacy_operation_id, buyback_ref.legacy_event_index, &found_legacy);
+		root, buyback_ref.legacy_operation_id, buyback_ref.legacy_event_index,
+		&found_legacy);
 	assert(find_legacy_status == flatfile_item_accounting_status::ok);
 	assert(found_legacy.item_uid == 998877);
 	assert(found_legacy.before_revision == 5);
@@ -62,8 +63,8 @@ int main(int argc, char **argv)
 		assert(append_status == flatfile_item_accounting_status::ok);
 
 		economic_accounting_item_reference item_check = {};
-		find_item_status = flatfile_item_accounting_reference_find_by_item(
-			root, 1000 + idx, 2, &item_check);
+		find_item_status = flatfile_item_accounting_reference_find_by_item(root, 1000 + idx,
+										   2, &item_check);
 		assert(find_item_status == flatfile_item_accounting_status::ok);
 		assert(item_check.line_index == idx);
 		assert(item_check.event_index == idx);

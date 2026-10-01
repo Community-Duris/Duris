@@ -132,8 +132,8 @@ void worker_main()
 		if (completion.result == quest_reward_obligation_result::pending_effects)
 		{
 			std::unique_lock<std::mutex> lock(pipeline_mutex);
-			const bool stopped = request_ready.wait_for(
-				lock, std::chrono::seconds(5), [] { return stopping; });
+			const bool stopped = request_ready.wait_for(lock, std::chrono::seconds(5),
+								    [] { return stopping; });
 			if (stopped)
 				break;
 			try

@@ -54,7 +54,7 @@ struct ferry_definition
 	{
 		int room_vnum;
 		const char *name;
-	} * stops;
+	} *stops;
 };
 
 Ferry *create_ferry(const struct ferry_definition *fd)

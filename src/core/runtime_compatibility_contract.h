@@ -72,9 +72,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'telemetry_session','timers','towns','world_quest_accomplished','zone_story_quest_state',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"3fb1ba07114cefca9d5f3c75d1e81ca34b417d517800a8e5c1e0554e73e4fc7e";
+	"30f4c20358afa8c80ec13497ac20e632d2cfe4cb4ab6774b610a9f6cc30585df";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"d617f29895e70446566b3a57a5912accd6f299be687d060225f8431fa029ec3c";
+	"8bec2a3b4511df1776b8b6e3b4847e646d31321c7db75743d33c6402050884ad";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -100,23 +100,24 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * adds one runtime table. Migration 0046 adds realized copper prices to
  * economic operation roots without adding a runtime table; migration 0047 adds
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
- * entitlements. Migration 0049 adds player spell-effect receipts. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0050_item_extra_description_fulltext_unique";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 50;
+ * entitlements. Migration 0049 adds player spell-effect receipts. Migration
+ * 0051 indexes immutable item witnesses by quest source identity. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0051_quest_item_witness_lookup";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 51;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8";
+	"e2de795797aeaf2ad2a268dffc65e1fb9195fb5e8fa1c6720a39608e153ebe0a";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78";
+	"ae28a2787322dc5cf7e7b76d635289fed03e93fc3d59c5983c4e75e8c931327f";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"7b90d2cadab45ee89f3960ac7d4387032b93d6a3be6c9d279742a28ced7f5ae0";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0049_player_spell_effect_receipt";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 50;
+	"51823e62ce0235c4c28463f464a1758c94376b8b1bf56f797824c2b5fda20577";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0051_quest_item_witness_lookup";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 51;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"46779e7b1cf8a12af6828f263a4842ddfed21303719f693224ac130a76371f5b";
+	"e2de795797aeaf2ad2a268dffc65e1fb9195fb5e8fa1c6720a39608e153ebe0a";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a";
+	"ae28a2787322dc5cf7e7b76d635289fed03e93fc3d59c5983c4e75e8c931327f";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"b627a1c34b80ba5f3be3bad64e1fa583aaa9ec63e420317a698bf18efada80b7";
+	"94b5e1f7d17474d8c7ad6c48d65c54abc619261bc9a0b3c0a91da7c62b7471e3";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING "
 	"utf8mb4))),16,'0')),CONVERT(migration_id USING "
@@ -132,7 +133,7 @@ constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"utf8mb4))),16,'0')),CONVERT(compatibility USING "
 	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING "
 	"utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history "
-	"ORDER BY sequence_number LIMIT 51";
+	"ORDER BY sequence_number LIMIT 52";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

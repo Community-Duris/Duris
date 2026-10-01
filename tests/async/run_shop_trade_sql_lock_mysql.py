@@ -61,7 +61,7 @@ root_sources = [
     "src/account/session_audit_command.c",
     "src/player/player_load_topology.c",
 ]
-common = ["g++-12", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+common = [os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
           "-O1", "-g", "-ffunction-sections", "-fdata-sections",
           "-Wl,--gc-sections", "-Isrc"]
 

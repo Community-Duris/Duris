@@ -38,8 +38,7 @@ enum class player_save_custody_diagnosis : uint8_t
 	orphaned_saved_pet_item = 14,
 };
 
-inline const char *player_save_custody_diagnosis_name(
-	player_save_custody_diagnosis diagnosis)
+inline const char *player_save_custody_diagnosis_name(player_save_custody_diagnosis diagnosis)
 {
 	switch (diagnosis)
 	{
@@ -92,8 +91,7 @@ struct player_save_apply_result
 	player_save_apply_outcome outcome;
 	player_revision_t durable_revision;
 	unsigned int error_code;
-	player_save_custody_diagnosis custody_diagnosis =
-		player_save_custody_diagnosis::none;
+	player_save_custody_diagnosis custody_diagnosis = player_save_custody_diagnosis::none;
 	// Replay may retire an obsolete non-death frame only after the repository
 	// verifies every attached operation receipt. This does not ACK a live save.
 	bool operation_receipts_verified = false;
@@ -119,8 +117,7 @@ struct player_save_completion
 	player_save_apply_outcome outcome;
 	player_revision_t durable_revision;
 	unsigned int error_code;
-	player_save_custody_diagnosis custody_diagnosis =
-		player_save_custody_diagnosis::none;
+	player_save_custody_diagnosis custody_diagnosis = player_save_custody_diagnosis::none;
 	unsigned int retry_count;
 	uint64_t queued_at_usec;
 	uint64_t started_at_usec;

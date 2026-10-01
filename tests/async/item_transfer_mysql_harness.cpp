@@ -1784,14 +1784,14 @@ void check_quest_reward_obligation(MYSQL *&connection)
 	assert(scalar(connection, ("SELECT COUNT(*) FROM item_ownership_ledger WHERE "
 				   "operation_id=UNHEX('" +
 				   operation_id + "')")
-				  .c_str()) == 1);
+					  .c_str()) == 1);
 	assert(scalar(connection,
 		      ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
-	       std::to_string(root_uid) + " AND state=" +
-	       std::to_string(static_cast<unsigned>(item_custody_state::destroyed)) +
-	       " AND owner_type=" +
-	       std::to_string(static_cast<unsigned>(item_owner_type::destruction)))
-		      .c_str()) == 1);
+		       std::to_string(root_uid) + " AND state=" +
+		       std::to_string(static_cast<unsigned>(item_custody_state::destroyed)) +
+		       " AND owner_type=" +
+		       std::to_string(static_cast<unsigned>(item_owner_type::destruction)))
+			      .c_str()) == 1);
 	MYSQL *reopened = open_pool_test_connection();
 	assert(reopened);
 	std::vector<quest_reward_obligation_record> pending_rewards;

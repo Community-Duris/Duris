@@ -41,7 +41,7 @@ if sys.argv[1:] and not compile_only:
 with tempfile.TemporaryDirectory(prefix="run-", dir=work) as temporary:
     executable = work / "collector" if compile_only else Path(temporary) / "collector"
     flags = [
-        "g++-12",
+        os.environ.get("CXX", "g++"),
         "-std=c++20",
         "-Wall",
         "-Wextra",

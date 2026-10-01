@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import unittest
 from unittest import mock
 
@@ -166,7 +167,10 @@ class AccountingSchemaTest(unittest.TestCase):
                 'ALTER TABLE economic_accounting_account_effect ALTER CHECK chk_economic_effect_index NOT ENFORCED;',
                 'ALTER TABLE economic_accounting_account_effect ALTER CHECK chk_economic_effect_index ENFORCED;',
             ))
-        sealed = ['bash', str(ROOT/'migrations/immutable/0031_economy_accounting.sh')]
+        # The current schema includes 0046's trade-price column. The sealed
+        # 0031 verifier describes the earlier migration stage and must remain
+        # unchanged; damage checks here exercise the current metadata contract.
+        sealed = [sys.executable, str(ROOT/'migrations/verify_economy_accounting_schema.py')]
         for damage,repair in changes:
             try:
                 self.execute(damage)

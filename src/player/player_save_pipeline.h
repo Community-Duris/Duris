@@ -100,12 +100,14 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 int save_intent, int room_vnum);
 // Capture progression and its quest reward identities in one save-journal frame.
 // SQL applies the experience snapshot and receipt mask in the same transaction.
-player_save_pipeline_result player_save_pipeline_request_quest_xp(
-	P_char ch, player_component_mask_t components,
-	const player_quest_xp_receipt_snapshot *receipts, size_t receipt_count, int room_vnum);
-player_save_pipeline_result player_save_pipeline_request_spell_effect(
-	P_char ch, player_component_mask_t components,
-	const player_spell_effect_receipt_snapshot *receipt, int room_vnum);
+player_save_pipeline_result
+player_save_pipeline_request_quest_xp(P_char ch, player_component_mask_t components,
+				      const player_quest_xp_receipt_snapshot *receipts,
+				      size_t receipt_count, int room_vnum);
+player_save_pipeline_result
+player_save_pipeline_request_spell_effect(P_char ch, player_component_mask_t components,
+					  const player_spell_effect_receipt_snapshot *receipt,
+					  int room_vnum);
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
 							  bool allow_journal_handoff);

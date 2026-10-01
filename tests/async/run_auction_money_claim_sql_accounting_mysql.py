@@ -37,7 +37,7 @@ files = [
     "src/persistence/economic_sql_auction_money_claim_transaction.c",
     "src/persistence/critical_command.c",
 ]
-flags = ["g++-12", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+flags = [os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
          "-O1", "-g", "-Isrc"]
 flags += shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
 flags += files + shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))

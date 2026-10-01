@@ -190,8 +190,8 @@ std::string spell_component_operation_key(const critical_operation_id &operation
 			   operation_id.bytes.size());
 }
 
-spell_component_effect_completion_fn spell_component_effect_callback(
-	item_spell_component_effect effect)
+spell_component_effect_completion_fn
+spell_component_effect_callback(item_spell_component_effect effect)
 {
 	switch (effect)
 	{
@@ -224,9 +224,8 @@ P_obj spell_component_by_uid(uint64_t item_uid)
 	return found;
 }
 
-bool spell_component_retirement_published(const critical_operation_id &operation_id,
-						  P_char actor, bool committed,
-					  const item_transfer_result &result,
+bool spell_component_retirement_published(const critical_operation_id &operation_id, P_char actor,
+					  bool committed, const item_transfer_result &result,
 					  unsigned int error_code, const uint8_t *encoded,
 					  size_t encoded_size)
 {
@@ -264,10 +263,12 @@ bool spell_component_retirement_published(const critical_operation_id &operation
 					return false;
 				for (size_t index = 0; index < context.item_count; ++index)
 				{
-					P_obj item = spell_component_by_uid(context.item_uids[index]);
+					P_obj item =
+						spell_component_by_uid(context.item_uids[index]);
 					item_ownership_runtime_entry runtime = {};
 					if (!item || !OBJ_CARRIED_BY(item, actor) ||
-					    !item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
+					    !item_ownership_runtime_lookup(item->obj_uid,
+									   &runtime) ||
 					    runtime.state != item_custody_state::destroyed ||
 					    runtime.owner.type != item_owner_type::destruction ||
 					    runtime.vnum != OBJ_VNUM(item) ||
@@ -282,7 +283,8 @@ bool spell_component_retirement_published(const critical_operation_id &operation
 					}
 				}
 				for (size_t index = 0; index < context.item_count; ++index)
-					extract_obj(spell_component_by_uid(context.item_uids[index]));
+					extract_obj(
+						spell_component_by_uid(context.item_uids[index]));
 				state->second.stage =
 					spell_component_retirement_stage::items_retired;
 			}
@@ -338,8 +340,8 @@ bool spell_component_retirement_restore_context(
 	const std::vector<uint8_t> &data = payload.continuation.data;
 	const bool legacy = data.size() >= 4 && data.size() <= 4 + 48 && data[1] == 0 &&
 			    data[2] == 0 && data[3] == 0;
-	if (!legacy && (data.size() < 6 || data.size() > 6 + 48 || data[0] != 1 ||
-			data[5] != data.size() - 6))
+	if (!legacy &&
+	    (data.size() < 6 || data.size() > 6 + 48 || data[0] != 1 || data[5] != data.size() - 6))
 		return false;
 	const size_t effect_offset = legacy ? 0 : 1;
 	const size_t context_offset = legacy ? 4 : 6;
@@ -400,10 +402,11 @@ bool spell_component_retirement_restore_context(
 	return true;
 }
 
-bool spell_component_retirement_replayed_publication(
-	const critical_operation_id &operation_id, P_char actor, bool committed,
-	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
-	size_t context_size)
+bool spell_component_retirement_replayed_publication(const critical_operation_id &operation_id,
+						     P_char actor, bool committed,
+						     const item_transfer_result &result,
+						     unsigned int error_code,
+						     const uint8_t *context, size_t context_size)
 {
 	if (!actor || !context || context_size != sizeof(spell_component_retirement_context))
 		return false;
@@ -700,7 +703,7 @@ spell_component_retirement_save_effect(const critical_operation_id &operation_id
 
 bool spell_consume_components(P_char actor, int vnum, size_t max_components, uint32_t reason_id,
 			      item_spell_component_effect effect,
-				      spell_component_effect_completion_fn continuation,
+			      spell_component_effect_completion_fn continuation,
 			      const void *continuation_context, size_t continuation_context_size,
 			      bool require_exact_count)
 {
@@ -740,11 +743,10 @@ bool spell_consume_components(P_char actor, int vnum, size_t max_components, uin
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 	item_movement_reject reject = item_movement_reject::none;
 	item_transfer_continuation durable_continuation = {};
-	durable_continuation.kind =
-		item_transfer_continuation_kind::spell_component_retirement;
+	durable_continuation.kind = item_transfer_continuation_kind::spell_component_retirement;
 	try
 	{
-	durable_continuation.data.resize(6 + continuation_context_size);
+		durable_continuation.data.resize(6 + continuation_context_size);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -753,8 +755,7 @@ bool spell_consume_components(P_char actor, int vnum, size_t max_components, uin
 	durable_continuation.data[0] = 1;
 	const uint32_t effect_id = static_cast<uint32_t>(effect);
 	for (size_t byte = 0; byte < sizeof(effect_id); ++byte)
-		durable_continuation.data[byte + 1] =
-			static_cast<uint8_t>(effect_id >> (byte * 8));
+		durable_continuation.data[byte + 1] = static_cast<uint8_t>(effect_id >> (byte * 8));
 	durable_continuation.data[5] = static_cast<uint8_t>(continuation_context_size);
 	if (continuation_context_size)
 		memcpy(durable_continuation.data.data() + 6, continuation_context,
@@ -765,7 +766,6 @@ bool spell_consume_components(P_char actor, int vnum, size_t max_components, uin
 		&context, sizeof(context), NULL, &reject, spell_component_retirement_published,
 		economic_source_kind::spell_consumption, 0, durable_continuation);
 }
-
 
 /*
  * Offensive Spells

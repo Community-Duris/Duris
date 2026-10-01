@@ -163,8 +163,8 @@ unsigned int economic_sql_pending_claim_source_stage(MYSQL *connection,
 
 unsigned int economic_sql_pending_claim_source_consume(
 	MYSQL *connection, const critical_operation_id &spending_operation,
-	const economic_account_key &claim_account, uint32_t beneficiary_pid,
-	uint64_t claim_balance, uint64_t amount)
+	const economic_account_key &claim_account, uint32_t beneficiary_pid, uint64_t claim_balance,
+	uint64_t amount)
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
@@ -177,7 +177,8 @@ unsigned int economic_sql_pending_claim_source_consume(
 #else
 	if (!connection || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
 	    critical_operation_id_is_zero(spending_operation) || !beneficiary_pid || !amount ||
-	    claim_balance > UINT_MAX || amount > claim_balance || !economic_account_key_valid(claim_account) ||
+	    claim_balance > UINT_MAX || amount > claim_balance ||
+	    !economic_account_key_valid(claim_account) ||
 	    claim_account.kind != economic_account_kind::pending_claim || claim_account.context_id)
 		return EINVAL;
 	try
@@ -191,7 +192,8 @@ unsigned int economic_sql_pending_claim_source_consume(
 		if (!row(connection,
 			 "SELECT native_id FROM economic_account_mapping WHERE mapping_id=" +
 				 std::to_string(claim_account.authority_id) +
-				 " AND lineage=" + lineage + " AND account_kind=5 AND context_id=0 "
+				 " AND lineage=" + lineage +
+				 " AND account_kind=5 AND context_id=0 "
 				 "AND backend_kind=1 AND locator_kind=5 AND active_native_id=" +
 				 std::to_string(beneficiary_pid) +
 				 " AND retiring_operation_id IS NULL FOR UPDATE",
@@ -202,7 +204,8 @@ unsigned int economic_sql_pending_claim_source_consume(
 			return EILSEQ;
 		if (!row(connection,
 			 "SELECT COALESCE(SUM(amount),0) FROM economic_pending_claim_source WHERE "
-			 "lineage=" + lineage + " AND claim_mapping_id=" +
+			 "lineage=" +
+				 lineage + " AND claim_mapping_id=" +
 				 std::to_string(claim_account.authority_id) +
 				 " AND beneficiary_pid=" + std::to_string(beneficiary_pid) +
 				 " AND claim_operation_id IS NULL",
@@ -215,20 +218,20 @@ unsigned int economic_sql_pending_claim_source_consume(
 			 "SELECT o.outcome,e.before_copper-e.after_copper "
 			 "FROM economic_accounting_operation o "
 			 "JOIN economic_accounting_account_effect e ON e.operation_id=o.operation_id "
-			 "WHERE o.operation_id=" + hex(spending_operation.bytes) +
-				 " AND o.lineage=" + lineage + " AND e.account_key=" + hex(encoded) +
-				 " FOR UPDATE",
+			 "WHERE o.operation_id=" +
+				 hex(spending_operation.bytes) + " AND o.lineage=" + lineage +
+				 " AND e.account_key=" + hex(encoded) + " FOR UPDATE",
 			 2, &values))
 			return errno ? static_cast<unsigned int>(errno) : EILSEQ;
 		uint64_t outcome = 0, debit = 0;
 		if (!u64(values[0], &outcome) || outcome != 1 || !u64(values[1], &debit) ||
 		    debit != amount)
-		return EILSEQ;
+			return EILSEQ;
 
 		if (!execute(connection,
 			     "SELECT HEX(source_operation_id),source_slot,amount "
-			     "FROM economic_pending_claim_source WHERE lineage=" + lineage +
-				     " AND claim_mapping_id=" +
+			     "FROM economic_pending_claim_source WHERE lineage=" +
+				     lineage + " AND claim_mapping_id=" +
 				     std::to_string(claim_account.authority_id) +
 				     " AND beneficiary_pid=" + std::to_string(beneficiary_pid) +
 				     " AND claim_operation_id IS NULL "
@@ -258,12 +261,14 @@ unsigned int economic_sql_pending_claim_source_consume(
 				return ENOTSUP;
 			critical_operation_id source_operation = {};
 			if (operation_hex.size() != 32 ||
-			    !critical_operation_id_from_hex(operation_hex.c_str(), &source_operation))
+			    !critical_operation_id_from_hex(operation_hex.c_str(),
+							    &source_operation))
 				return EILSEQ;
 			if (!execute(connection,
 				     "UPDATE economic_pending_claim_source SET claim_operation_id=" +
 					     hex(spending_operation.bytes) +
-					     " WHERE source_operation_id=" + hex(source_operation.bytes) +
+					     " WHERE source_operation_id=" +
+					     hex(source_operation.bytes) +
 					     " AND source_slot=" + std::to_string(source_slot) +
 					     " AND claim_operation_id IS NULL"))
 				return errno ? static_cast<unsigned int>(errno) : EIO;

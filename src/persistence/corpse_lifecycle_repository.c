@@ -1427,8 +1427,7 @@ bool lock_transfer_owners(MYSQL *connection, item_transfer_payload *transfer,
 			  [](const owner_lock &left, const owner_lock &right)
 			  { return owner_less(left.owner, right.owner); });
 		if (std::adjacent_find(locks->begin(), locks->end(),
-				       [](const owner_lock &left, const owner_lock &right)
-				       {
+				       [](const owner_lock &left, const owner_lock &right) {
 					       return item_owner_identity_equal(left.owner,
 										right.owner);
 				       }) != locks->end())

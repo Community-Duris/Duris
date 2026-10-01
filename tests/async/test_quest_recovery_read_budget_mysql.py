@@ -37,6 +37,19 @@ uint64_t selects(MYSQL *db) {
     mysql_free_result(rows);
     return count;
 }
+uint64_t handler_reads(MYSQL *db) {
+    sql(db, "SHOW SESSION STATUS WHERE Variable_name IN "
+            "('Handler_read_key','Handler_read_next','Handler_read_rnd_next')");
+    MYSQL_RES *rows = mysql_store_result(db);
+    assert(rows);
+    uint64_t count = 0;
+    while (MYSQL_ROW row = mysql_fetch_row(rows)) {
+        assert(row[1]);
+        count += std::strtoull(row[1], nullptr, 10);
+    }
+    mysql_free_result(rows);
+    return count;
+}
 std::string hex(const std::vector<uint8_t> &bytes) {
     constexpr char digits[] = "0123456789abcdef";
     std::string out;
@@ -83,7 +96,8 @@ int main() {
             "item_revision INT,item_uid BIGINT UNSIGNED,root_item_uid BIGINT UNSIGNED,"
             "from_owner_revision BIGINT,to_owner_revision BIGINT,"
             "KEY(from_owner_type,from_owner_id,from_owner_context_id),"
-            "KEY(to_owner_type,to_owner_id,to_owner_context_id))");
+            "KEY(to_owner_type,to_owner_id,to_owner_context_id),"
+            "KEY(operation_id),KEY idx_item_ledger_reason_source(reason_type,reason_id))");
     sql(db, "CREATE TEMPORARY TABLE currency_ledger(operation_id BINARY(16) PRIMARY KEY,pid INT,reason_type INT,"
             "reason_id INT,source_site INT,bank_delta_copper INT,bank_delta_silver INT,bank_delta_gold INT,"
             "bank_delta_platinum INT,wallet_delta_copper INT,wallet_delta_silver INT,wallet_delta_gold INT,"
@@ -138,6 +152,22 @@ int main() {
             }
         }
     }
+    // Same reason and owner as the wanted events: owner lookup alone cannot
+    // avoid scanning this unrelated history. Migration 0051 supplies the exact
+    // non-unique reason/source lookup while preserving duplicate detection.
+    for (unsigned batch=0;batch<100;++batch) {
+        std::string values;
+        for (unsigned offset=1;offset<=1000;++offset) {
+            if (!values.empty()) values += ',';
+            const auto source = batch*1000+offset;
+            values += "(UNHEX('00000000000000000000000000000000'),2,"+
+                std::to_string(source)+",NULL,7,0,0,1,7,0,1,"+
+                std::to_string(1000000+source)+","+
+                std::to_string(1000000+source)+",8,9)";
+        }
+        sql(db,"INSERT INTO item_ownership_ledger VALUES"+values);
+    }
+    const auto reads_before = handler_reads(db);
     const auto started = std::chrono::steady_clock::now();
     assert(read() == quest_reward_obligation_result::ok && pending.size()==64);
     const auto usec = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -145,9 +175,12 @@ int main() {
     assert(metrics.query_count==3 && metrics.row_count==64+4096 && metrics.byte_count>continuation_bytes);
     assert(metrics.row_count <= PLAYER_SNAPSHOT_MAX_ROWS && metrics.byte_count <= PLAYER_SNAPSHOT_MAX_BYTES);
     assert(static_cast<uint64_t>(usec) < PLAYER_LOAD_TIMEOUT_USEC);
+    const auto native_reads = handler_reads(db)-reads_before;
+    assert(native_reads < 25000); // Refuse a full scan of 100,000 old events.
     for (const auto &record : pending) assert(record.economic_applied_mask==UINT64_MAX);
     std::cout << "maximum workload: obligations=64 slots=4096 queries=" << metrics.query_count
-              << " rows=" << metrics.row_count << " bytes=" << metrics.byte_count << " usec=" << usec << '\n';
+              << " rows=" << metrics.row_count << " bytes=" << metrics.byte_count
+              << " history=100000 handler_reads=" << native_reads << " usec=" << usec << '\n';
     const auto extra = terms(10000);
     inbox(db,"41000000000000000000000000000000",5,{});
     sql(db,"INSERT INTO quest_reward_obligation VALUES(UNHEX('41000000000000000000000000000000'),7,UNHEX('"+
@@ -181,6 +214,8 @@ int main() {
     assert(quest_reward_xp_entitlement_repository_pending(db,7,&entitlements,&error,&metrics)==quest_reward_obligation_result::corrupt);
     assert(entitlements.size()==1 && entitlements[0].amount==100 && metrics.byte_count==xp.size()+24);
     sql(db,"DROP TEMPORARY TABLE quest_reward_xp_entitlement");
+    // Keep shadowing any real migrated table while exercising failed prepare.
+    sql(db,"CREATE TEMPORARY TABLE quest_reward_xp_entitlement(invalid_shape INT)");
     assert(quest_reward_xp_entitlement_repository_pending(db,7,&entitlements,&error,&metrics)==quest_reward_obligation_result::database_error);
     assert(entitlements.size()==1 && !metrics.query_count && !metrics.row_count && error);
     mysql_close(db);

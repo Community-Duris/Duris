@@ -52,7 +52,8 @@ def source_contract() -> None:
     ):
         assert marker in runtime
 
-    fight = (SRC / "combat" / "fight.c").read_text()
+    fight = "\n".join((SRC / "combat" / name).read_text() for name in
+                      ("fight.c", "fight_state.c", "damage_support.c"))
     for marker in (
         "telemetry_runtime_game_combat_damage",
         "telemetry_runtime_game_combat_healing",

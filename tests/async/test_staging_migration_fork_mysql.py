@@ -15,6 +15,7 @@ import re
 import secrets
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -32,6 +33,8 @@ def check(condition: bool, message: str) -> None:
 
 
 def qa(engine: schema.Engine, command: list[str]) -> subprocess.CompletedProcess:
+    if isinstance(engine, LoopbackEngine):
+        return engine.qa(command)
     environment = dict(os.environ)
     environment.update({"ENVIRONMENT": "test", "DB_HOST": "127.0.0.1", "DB_PORT": "3306",
                         "DB_USER": "root", "DB_PASSWD": engine.password,
@@ -48,6 +51,87 @@ def qa(engine: schema.Engine, command: list[str]) -> subprocess.CompletedProcess
     return result
 
 
+class LoopbackEngine(schema.Engine):
+    """Native transport restricted to an explicitly disposable loopback server.
+
+    The caller owns the server lifecycle. Only uniquely generated test databases
+    and this object's private temporary files are created by this transport.
+    """
+    def __init__(self, label: str, container: str, password: str, database: str):
+        super().__init__(label, container, password, database)
+        check(os.environ.get("TEST_DB_DISPOSABLE") == "1" and
+              os.environ.get("STAGING_FORK_DISPOSABLE_SERVER") == "1" and
+              os.environ.get("DB_HOST") == "127.0.0.1" and
+              not os.environ.get("DB_SOCKET"),
+              "native staging qualification requires an explicitly disposable loopback server")
+        self.port = os.environ.get("DB_PORT", "")
+        check(self.port.isdigit() and 1 <= int(self.port) <= 65535,
+              "explicit disposable server port is required")
+        self.user = os.environ.get("DB_USER", "")
+        check(bool(self.user), "explicit disposable server user is required")
+        self.directory = tempfile.TemporaryDirectory(prefix="duris-staging-verifiers-")
+        self.copies = {}
+
+    def environment(self):
+        return dict(os.environ, ENVIRONMENT="test", DB_HOST="127.0.0.1",
+                    DB_PORT=self.port, DB_USER=self.user, DB_PASSWD=self.password,
+                    DB_NAME=self.database, TEST_DB_DISPOSABLE="1", MYSQL_PWD=self.password)
+
+    def mysql_args(self, database=None, sql=None):
+        args = ["mysql", "--no-defaults", "--protocol=tcp", "-h127.0.0.1",
+                "-P" + self.port, "-u" + self.user, "-N", "-B", "--raw"]
+        if database is not None:
+            args.append(database)
+        if sql is not None:
+            args.extend(["-e", sql])
+        return args
+
+    def sql(self, statement, *, database=None, check=True):
+        result = subprocess.run(self.mysql_args(database, statement),
+                                env=self.environment(), capture_output=True, text=True)
+        if check and result.returncode:
+            raise schema.SchemaTestFailure(schema.redact(result.stderr))
+        return result.stdout.strip()
+
+    def sql_file(self, path):
+        result = subprocess.run(self.mysql_args(self.database), input=path.read_bytes(),
+                                env=self.environment(), capture_output=True)
+        check(result.returncode == 0, schema.redact(result.stderr.decode()))
+
+    def wait_ready(self):
+        self.server_version = self.sql("SELECT VERSION();")
+        valid = (self.server_version.startswith("8.0.") and "MariaDB" not in self.server_version
+                 if self.label == "mysql8" else
+                 self.server_version.startswith("10.11.") and "MariaDB" in self.server_version)
+        check(valid, "disposable server version does not match the selected engine")
+
+    def copy(self, source, destination):
+        target = Path(self.directory.name) / Path(destination).name
+        target.write_bytes(source.read_bytes().replace(b"\r\n", b"\n"))
+        self.copies[destination] = str(target)
+
+    def exec(self, args, *, check=True):
+        environment = self.environment()
+        command = list(args)
+        while command and command[0] == "-e":
+            key, value = command[1].split("=", 1)
+            environment[key] = self.copies.get(value, value)
+            command = command[2:]
+        environment.update(DB_PORT=self.port, DB_USER=self.user)
+        command = [self.copies.get(value, value) for value in command]
+        result = subprocess.run(command, env=environment, capture_output=True)
+        if check and result.returncode:
+            raise schema.SchemaTestFailure(schema.redact(result.stderr.decode()))
+        return result
+
+    def qa(self, command):
+        result = subprocess.run(command, cwd=ROOT, env=self.environment(),
+                                capture_output=True, text=True)
+        result.stdout = schema.redact(result.stdout)
+        result.stderr = schema.redact(result.stderr)
+        return result
+
+
 def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> str:
     result = qa(engine, ["python3", "scripts/migration_runner.py", "--manifest",
                          "migrations/" + manifest_name, "run"])
@@ -56,7 +140,7 @@ def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> 
     return result.stdout + result.stderr
 
 
-def history(engine: schema.Engine, limit: int = 50) -> str:
+def history(engine: schema.Engine, limit: int = 51) -> str:
     return engine.sql("SELECT HEX(CONCAT(migration_id,CHAR(0),sequence_number,CHAR(0),"
                       "description,CHAR(0),HEX(apply_checksum),CHAR(0),HEX(verify_checksum),"
                       "CHAR(0),compatibility,CHAR(0),runner_version,CHAR(0),applied_at)) "
@@ -111,8 +195,13 @@ def duplicate_guard(engine: schema.Engine, step: runner.Migration) -> None:
                "(2,3,'probe','same');", database=engine.database)
     before = engine.sql("SELECT * FROM player_item_extra_descr ORDER BY id;",
                         database=engine.database)
-    result = schema.run_process(schema.mysql_args(engine, engine.database, None),
-                                input_bytes=step.apply_path.read_bytes(), check=False)
+    if isinstance(engine, LoopbackEngine):
+        result = subprocess.run(engine.mysql_args(engine.database),
+                                input=step.apply_path.read_bytes(), env=engine.environment(),
+                                capture_output=True)
+    else:
+        result = schema.run_process(schema.mysql_args(engine, engine.database, None),
+                                    input_bytes=step.apply_path.read_bytes(), check=False)
     check(result.returncode != 0, "duplicate complete values were accepted")
     check(before == engine.sql("SELECT * FROM player_item_extra_descr ORDER BY id;",
                                database=engine.database), "duplicate guard deleted evidence")
@@ -263,26 +352,36 @@ def native_lock_fixture() -> dict:
             value.release_lock()
 
 
-def run(update: bool, lock_only: bool = False) -> dict:
+def run(update: bool, lock_only: bool = False, loopback_engine: str | None = None) -> dict:
     canonical = runner.load_manifest()
     staging = runner.load_manifest(ROOT / "migrations/migration_manifest.staging_0045.json")
     report = {}
     engines = []
     token = secrets.token_hex(5)
     containers = []
+    native_engines = []
+    def engine_factory(*args):
+        engine = LoopbackEngine(*args) if loopback_engine else schema.Engine(*args)
+        if loopback_engine:
+            native_engines.append(engine)
+        return engine
     try:
         for label, image, password_key in (
                 ("mysql8", "mysql:8.0.46", "MYSQL_ROOT_PASSWORD"),
                 ("mariadb10_11", "mariadb:10.11", "MARIADB_ROOT_PASSWORD")):
+            if loopback_engine and label != loopback_engine:
+                continue
             name = f"duris-staging-fork-{token}-{label}"
-            password = secrets.token_urlsafe(30)
+            password = os.environ.get("DB_PASSWD", "") if loopback_engine else secrets.token_urlsafe(30)
+            check(bool(password), "explicit disposable server password is required")
             schema.SECRETS.append(password)
-            schema.run_process(["docker", "run", "-d", "--network", "none", "--name", name,
+            if not loopback_engine:
+                schema.run_process(["docker", "run", "-d", "--network", "none", "--name", name,
                                 "--label", "codex.task=duris-staging-fork", "-e",
                                 f"{password_key}={password}", image])
-            containers.append(name)
+                containers.append(name)
             if lock_only:
-                engine = schema.Engine(label, name, password, f"duris_268_{token}_locktest")
+                engine = engine_factory(label, name, password, f"duris_268_{token}_locktest")
                 engine.wait_ready()
                 engine.create_database()
                 engine.sql_file(ROOT / "migrations/immutable_migration_ledger.sql")
@@ -294,8 +393,8 @@ def run(update: bool, lock_only: bool = False) -> dict:
                                  "native_migration_session": json.loads(result.stdout)}
                 print(f"{label}: native lock/session/receipt/cancellation faults passed", flush=True)
                 continue
-            normal = schema.Engine(label, name, password, f"duris_268_{token}_canonicaltest")
-            fork = schema.Engine(label, name, password, f"duris_268_{token}_stagingtest")
+            normal = engine_factory(label, name, password, f"duris_268_{token}_canonicaltest")
+            fork = engine_factory(label, name, password, f"duris_268_{token}_stagingtest")
             print(f"{label}: building canonical history with the real runner", flush=True)
             setup(normal, canonical)
             migrate(normal, "migration_manifest.json")
@@ -303,7 +402,8 @@ def run(update: bool, lock_only: bool = False) -> dict:
             migrate(normal, "migration_manifest.json")
             check(snapshot == history(normal), "canonical rerun rewrote migration receipts")
             normal_rows = descriptions(normal)
-            normal.sql_file(canonical.migrations[-1].apply_path)
+            normal.sql_file(next(step for step in canonical.migrations if step.migration_id ==
+                                 "0050_item_extra_description_fulltext_unique").apply_path)
             check(normal_rows == description_rows(normal), "canonical replay changed descriptions")
             print(f"{label}: building immutable staging prefix through 0045", flush=True)
             partial = replace(staging, migrations=staging.migrations[:45])
@@ -329,7 +429,7 @@ def run(update: bool, lock_only: bool = False) -> dict:
             migrate(fork, "migration_manifest.staging_0045.json")
             check(after == history(fork), "staging rerun rewrote migration receipts")
             check(fork.sql("SELECT COUNT(*) FROM mud_schema_history;", database=fork.database)
-                  == "50", "transition did not append exactly five receipts")
+                  == "51", "transition did not append exactly six receipts")
             runtime = json.loads(schema.RUNTIME_MANIFEST.read_text())
             for current, key in ((normal, "migration_head"),
                                  (fork, "staging_0045_migration_head")):
@@ -348,13 +448,14 @@ def run(update: bool, lock_only: bool = False) -> dict:
                   "canonical and staging schema metadata differ")
             report[label] = {"fingerprint": measured, "staging_prefix_preserved": True,
                              "first_45_receipt_sha256": hashlib.sha256(before.encode()).hexdigest(),
-                             "staging_append_count": 5, "reruns_preserved_receipts": True,
+                             "staging_append_count": 6, "reruns_preserved_receipts": True,
                              "description_rows_preserved": True}
-            duplicate_guard(schema.Engine(label, name, password,
+            duplicate_guard(engine_factory(label, name, password,
                                           f"duris_268_{token}_duplicatetest"),
-                            canonical.migrations[-1])
+                            next(step for step in canonical.migrations if step.migration_id ==
+                                 "0050_item_extra_description_fulltext_unique"))
             report[label]["duplicates_refuse_before_ddl_without_deleting_evidence"] = True
-            lock_engine = schema.Engine(label, name, password, f"duris_268_{token}_locktest")
+            lock_engine = engine_factory(label, name, password, f"duris_268_{token}_locktest")
             lock_engine.create_database()
             lock_engine.sql_file(ROOT / "migrations/immutable_migration_ledger.sql")
             lock_result = qa(lock_engine, ["python3", "tests/async/test_staging_migration_fork_mysql.py",
@@ -412,6 +513,8 @@ def run(update: bool, lock_only: bool = False) -> dict:
             report[label]["old_receipt_mixed_state_and_expression_tamper_rejected"] = True
         return report
     finally:
+        for engine in native_engines:
+            engine.directory.cleanup()
         for name in containers:
             check(name.startswith(f"duris-staging-fork-{token}-"), "unexpected cleanup target")
             subprocess.run(["docker", "rm", "-f", name], capture_output=True)
@@ -424,11 +527,15 @@ if __name__ == "__main__":
     parser.add_argument("--native-lock-fixture", action="store_true")
     parser.add_argument("--lock-only", action="store_true",
                         help="run only the native migration-session faults on both engines")
+    parser.add_argument("--disposable-loopback", choices=("mysql8", "mariadb10_11"),
+                        help="use an explicitly guarded task-owned native server; caller owns cleanup")
     arguments = parser.parse_args()
     if arguments.update_contract and (arguments.lock_only or arguments.native_lock_fixture):
         parser.error("contract updates require the complete schema qualification")
+    if arguments.update_contract and arguments.disposable_loopback:
+        parser.error("contract updates require both engines in one qualification")
     result = native_lock_fixture() if arguments.native_lock_fixture else run(
-        arguments.update_contract, arguments.lock_only)
+        arguments.update_contract, arguments.lock_only, arguments.disposable_loopback)
     text = json.dumps(result, indent=2) + "\n"
     if arguments.report:
         arguments.report.write_text(text)
