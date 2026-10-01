@@ -2,12 +2,14 @@
 """Keep SQL ownership UID coverage scoped to known accounting lineages."""
 
 from pathlib import Path
+from decimal import Decimal
+import json
 import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
-from economic_sql_audit_snapshot import (infer_created_mapping_origins,
+from economic_sql_audit_snapshot import (ExportError, infer_created_mapping_origins,
                                          auction_escrow_balance,
                                          auction_escrow_mapping_is_live,
                                          native_source_count,
@@ -234,6 +236,7 @@ class UidScopeTests(unittest.TestCase):
 
         class ConsumerCursor:
             sql = ""
+            source_amount = Decimal("100")
 
             def execute(self, sql, _params):
                 self.sql = sql
@@ -253,9 +256,11 @@ class UidScopeTests(unittest.TestCase):
                          "before_gold": 0, "before_platinum": 0,
                          "after_copper": 40, "after_silver": 0,
                          "after_gold": 0, "after_platinum": 0,
-                         "source_rows": 1, "source_amount": 100}]
+                         "source_rows": 1, "source_amount": self.source_amount}]
 
         rows, coverage = read_pending_claim_consumers(ConsumerCursor(), lineage)
+        self.assertIs(type(rows[0]["source_amount"]), int)
+        self.assertEqual(json.loads(json.dumps(rows))[0]["source_amount"], 100)
         self.assertEqual(coverage, {"rows": 1, "missing_source_rows": 0,
                                     "mismatched_source_amounts": 0})
         self.assertEqual(rows[0]["pending_claim_debits"], [{
@@ -265,6 +270,15 @@ class UidScopeTests(unittest.TestCase):
         self.assertEqual(rows[0]["inbox_receipt"], {
             "status": 1, "result_code": 0, "failure_stage": 0,
             "committed_at_present": True})
+
+        cursor = ConsumerCursor()
+        cursor.source_amount = Decimal("9007199254740993")
+        rows, coverage = read_pending_claim_consumers(cursor, lineage)
+        self.assertEqual(json.loads(json.dumps(rows))[0]["source_amount"], 9007199254740993)
+        self.assertEqual(coverage["mismatched_source_amounts"], 1)
+        cursor.source_amount = Decimal("100.5")
+        with self.assertRaises(ExportError):
+            read_pending_claim_consumers(cursor, lineage)
 
 
 if __name__ == "__main__":

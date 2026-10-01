@@ -17,7 +17,7 @@ if options.client_free_only and options.concurrency_rounds:
     parser.error('client-free and SQL concurrency modes cannot be combined')
 if not options.client_free_only and (os.environ.get('ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA')!='1' or os.environ.get('DB_HOST')!='127.0.0.1' or os.environ.get('DB_SOCKET') or not re.fullmatch(r'economic_schema_test_[A-Za-z0-9_]+',os.environ.get('DB_NAME',''))):
     raise SystemExit('explicit disposable loopback schema required')
-files=['tests/async/economic_sql_baseline_transaction_test.cpp','src/persistence/economic_sql_baseline_transaction.c','src/economy/economic_baseline_command.c','src/economy/economic_baseline_adapter.c','src/economy/economic_baseline_codec.c','src/economy/economic_accounting_intent.c','src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c','src/persistence/critical_command.c','src/item/item_transfer_command.c']
+files=['tests/async/economic_sql_baseline_transaction_test.cpp','src/persistence/economic_sql_baseline_transaction.c','src/economy/economic_baseline_command.c','src/economy/economic_baseline_adapter.c','src/economy/economic_baseline_codec.c','src/economy/economic_accounting_intent.c','src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c','src/persistence/critical_command.c','src/item/item_transfer_command.c', 'src/player/player_snapshot_codec.c']
 with tempfile.TemporaryDirectory(prefix='duris-sql-baseline-') as temporary:
     for mode in (('client-free',) if options.client_free_only else (('sql',) if options.concurrency_rounds else ('sql','client-free'))):
         executable=Path(temporary)/mode

@@ -549,7 +549,12 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 			}
 			if ((mentioned.contains(item.object_uid) ||
 			     accounted.contains(item.object_uid)) &&
-			    owner != owned.end())
+			    owner != owned.end() &&
+			    (owner->second.equipment_slot || owner->second.parent_item_uid ||
+			     accounted.contains(item.object_uid)))
+				// Creation's initial zero slot predates ordinary wear. Keep the
+				// saved slot unless custody has an explicit position or a receipt
+				// for a later movement, including removal back to inventory.
 				nodes.back().item.equipment_slot = owner->second.equipment_slot;
 		}
 		for (const auto &item : additions)
@@ -1095,7 +1100,7 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 			for (size_t index = 0; index < items.size(); ++index)
 			{
 				const auto &item = items[index];
-				if (!item.object_uid || mentioned.contains(item.object_uid))
+				if (!item.object_uid)
 					continue;
 				const auto stored = owner_records.find(item.object_uid);
 				if (stored == owner_records.end())
@@ -1135,7 +1140,10 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 			const auto found = flatfile_item_accounting_reference_find_by_item(
 				root, uid, record.item_revision, &reference, error);
 			if (found == flatfile_item_accounting_status::ok)
-				accounted.insert(uid);
+			{
+				if (reference.before_revision != 0)
+					accounted.insert(uid);
+			}
 			else if (found != flatfile_item_accounting_status::not_found)
 				return found == flatfile_item_accounting_status::io_error ?
 					       flatfile_shop_trade_materialization_result::io_error :

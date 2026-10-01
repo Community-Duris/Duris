@@ -33,8 +33,8 @@ admin = pymysql.connect(**settings)
 try:
     with admin.cursor() as cursor:
         cursor.execute(f"CREATE DATABASE `{schema}`")
-        cursor.execute(f"CREATE USER '{reader}'@'%' IDENTIFIED BY 'disposable-audit-only'")
-        cursor.execute(f"GRANT SELECT ON `{schema}`.* TO '{reader}'@'%'")
+        cursor.execute(f"CREATE USER '{reader}'@'127.0.0.1' IDENTIFIED BY 'disposable-audit-only'")
+        cursor.execute(f"GRANT SELECT ON `{schema}`.* TO '{reader}'@'127.0.0.1'")
     setup = pymysql.connect(**(settings | {"database": schema}))
     try:
         with setup.cursor() as cursor:
@@ -45,7 +45,9 @@ try:
                            "PRIMARY KEY,reason SMALLINT UNSIGNED,outcome TINYINT UNSIGNED,"
                            "result_code INT UNSIGNED) ENGINE=InnoDB")
             cursor.execute("CREATE TABLE critical_operation_inbox (operation_id BINARY(16) "
-                           "PRIMARY KEY,status TINYINT UNSIGNED,result_code INT UNSIGNED) ENGINE=InnoDB")
+                           "PRIMARY KEY,status TINYINT UNSIGNED,result_code INT UNSIGNED,"
+                           "failure_stage INT NOT NULL DEFAULT 0,"
+                           "committed_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB")
             cursor.execute("CREATE TABLE economic_baseline_witness (operation_id BINARY(16) "
                            "PRIMARY KEY,lineage BINARY(16),epoch BINARY(16),book_revision BIGINT UNSIGNED,"
                            "holding_count SMALLINT UNSIGNED,item_count SMALLINT UNSIGNED,"
@@ -54,7 +56,7 @@ try:
             cursor.execute("INSERT INTO economic_baseline_control VALUES (%s,%s,%s,1,%s)",
                            (LINEAGE, EPOCH, OPENING, OP))
             cursor.execute("INSERT INTO economic_accounting_operation VALUES (%s,38,1,0)", (OP,))
-            cursor.execute("INSERT INTO critical_operation_inbox VALUES (%s,1,0)", (OP,))
+            cursor.execute("INSERT INTO critical_operation_inbox (operation_id,status,result_code) VALUES (%s,1,0)", (OP,))
             cursor.execute("INSERT INTO economic_baseline_witness VALUES "
                            "(%s,%s,%s,1,1,1,%s,%s)",
                            (OP, LINEAGE, EPOCH, row["witness_digest"], row["canonical_witness"]))
@@ -94,5 +96,5 @@ try:
 finally:
     with admin.cursor() as cursor:
         cursor.execute(f"DROP DATABASE IF EXISTS `{schema}`")
-        cursor.execute(f"DROP USER IF EXISTS '{reader}'@'%'")
+        cursor.execute(f"DROP USER IF EXISTS '{reader}'@'127.0.0.1'")
     admin.close()

@@ -25,7 +25,7 @@ def main():
             "src/economy/economic_accounting_types.c",
             "src/economy/economic_accounting_plan.c",
             "src/economy/economic_accounting_intent.c",
-            "src/item/item_transfer_command.c",
+            "src/item/item_transfer_command.c", "src/player/player_snapshot_codec.c",
             "src/persistence/critical_command.c",
             "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)

@@ -161,7 +161,7 @@ def run(binary: Path) -> None:
                         client.expect("You get", timeout=15)
                     client.send("give acorn lapney")
                     client.expect("Your quest offering is being accepted.", timeout=15)
-                    client.expect("a quest reward blade", timeout=30)
+                    client.expect("Your committed quest reward is being recovered.", timeout=30)
                 else:
                     client = journey.reconnect_character(port)
                 client.send("inventory")

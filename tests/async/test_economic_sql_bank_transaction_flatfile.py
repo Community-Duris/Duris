@@ -11,7 +11,7 @@ with tempfile.TemporaryDirectory(prefix='run-',dir=work) as temporary:
            'src/persistence/economic_sql_bank_transaction.c','src/economy/economic_currency_adapter.c',
            'src/economy/economic_accounting_intent.c','src/economy/economic_accounting_plan.c',
            'src/economy/economic_accounting_types.c','src/economy/currency_command.c',
-           'src/persistence/critical_command.c','src/item/item_transfer_command.c']
+           'src/persistence/critical_command.c','src/item/item_transfer_command.c', 'src/player/player_snapshot_codec.c']
     subprocess.run(['g++','-std=c++20','-Wall','-Wextra','-Wpedantic','-Werror','-D__NO_MYSQL__',
                     '-Isrc/no_mysql','-Isrc']+files+['-lcrypto','-o',str(executable)],cwd=ROOT,check=True)
     subprocess.run([str(executable)],check=True)
