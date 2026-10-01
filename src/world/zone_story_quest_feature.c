@@ -846,7 +846,8 @@ personal_summary service::summary_for_at(uint32_t season_id, uint32_t pid,
 		if (zone_state.completed > 0)
 			summary.zones.push_back(std::move(zone_state));
 	}
-	std::sort(summary.zones.begin(), summary.zones.end(), [](const auto &left, const auto &right)
+	std::sort(summary.zones.begin(), summary.zones.end(),
+		  [](const auto &left, const auto &right)
 		  {
 			  if (left.completed != right.completed)
 				  return left.completed > right.completed;
