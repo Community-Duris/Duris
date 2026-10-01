@@ -3212,7 +3212,6 @@ void do_specialize(P_char, char *, int);
 void event_enchant(P_char ch, P_char victim, P_obj obj, void *data);
 void do_encrust(P_char, char *, int);
 void do_spellbind(P_char, char *, int);
-void do_mix(P_char, char *, int);
 void do_fix(P_char, char *, int);
 void do_forge(P_char, char *, int);
 P_obj get_bottle(P_char);
