@@ -33,7 +33,7 @@ victim room check.
 | Assassin poison mixing | Refuse at gameplay entry before wait, recipe RNG or allocation | Native craft root with exact ingredient/output references |
 | Encrust | Refuse at gameplay entry before RNG or allocation | Native craft root, including zero-output failure |
 | Harvester shard exchange | Retain branch's existing early refusal | Native exchange root and selected shard/output references |
-| Craft submit API | Refuse before reserving output UIDs | Schema2 source/admission and exact retained result |
+| Craft submit API | Refuse before capturing/submitting output identities | Schema2 source/admission and exact retained result |
 | Automatic NPC vial | Refuse before RNG, decision marker or allocation | Durable zone reset-generation/spawn source owns choice and exact UID |
 | Virtual NPC mixture combat | Enabled through existing spell lifecycle | Existing lifecycle restrictions continue to apply |
 
@@ -49,7 +49,7 @@ the wider branch's unfinished writer qualification.
 Use the normal migration runner with the deployment's local configuration:
 
 ```sh
-python3 scripts/migration_runner.py preflight
+python3 scripts/migration_runner.py inspect
 python3 scripts/migration_runner.py run
 ```
 
@@ -62,6 +62,11 @@ MySQL8.0.46 and MariaDB10.11.14 databases. Runtime metadata fingerprints were
 measured from each resulting schema and sealed in the runtime manifest/header.
 No configured game database or production migration was run.
 
+The configured local database listener at 127.0.0.1:13312 was unreachable during
+qualification. Applying 0051 to that deployment remains a prerequisite before
+booting its upgraded SQL server; the disposable database results do not imply
+that the configured deployment has been migrated.
+
 ## Qualification
 
 Both maintained server backends and the focused craft, runtime-state, ownership,
@@ -69,6 +74,30 @@ reason/version, item load, publication-retention, account identity/membership,
 Redis copyover handoff and NPC ability fixtures pass. The NPC cadence fixture
 measures 33.33-33.36% of the reference caster across 60 scenarios.
 
-The master delivery has live gameplay proof on flat-file and MySQL/Redis.
-Separate accounting branch SQL/backend and live qualification results are
-recorded in the delivery PR; master evidence alone is not active accounting proof.
+The accounting branch's native SQL harness passes on MySQL8.0.46 and
+MariaDB10.11.14, exercising craft commit/refusal/replay, rich-state save/load and
+the branch's existing active accounting cases. The real-server flat-file journey
+passes theft, poison mixing, corpse loot, virtual mixture combat, Encrust,
+Harvester, three copyovers and cold player reload. The SQL/Redis journey result
+is recorded in the delivery PR. These journeys run with accounting inactive;
+they do not certify the intentionally refused active craft or vial routes.
+
+The SQL journey exposed a player-load query budget that allowed only one quest
+reward read although the repository performs separate obligation and XP
+entitlement reads. The budget now explicitly allows those two bounded queries;
+the native fixture verifies 31 queries for PID lookup and 32 for name lookup.
+Snapshot validity and recovery checks remain required.
+
+Concurrent staff grant/save qualification exposed inherited defect #664: a
+newly admitted item can be absent from an older sealed snapshot, whose safe SQL
+refusal quarantines the PID before recapture. The gameplay fixture awaits each
+staff setup grant's checkpoint. Its serialized result does not qualify that
+overlap; #664 owns a durable grant/save ordering repair. The existing custody and
+quarantine guards remain intact.
+
+The executable active-refusal fixture verifies the real poison/Encrust entry
+guards and the Harvester/craft allocation boundaries. The NPC fixture separately
+verifies active vial refusal before RNG, marking or allocation. Writer inventory
+validation covers 864 routes and maps every one of the 2758 unique lexical
+mutation sites; that census retains the branch's incomplete-coverage release
+gate and does not certify the wider accounting program.

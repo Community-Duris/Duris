@@ -2292,7 +2292,8 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 					if (!add_result_budget(rows, row, &result))
 					{
 						result.error_code = EOVERFLOW;
-						mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
 							      "spell_effect_receipts");
 						break;
 					}
@@ -2304,7 +2305,8 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 						    request.pending_spell_effect_operations.size())
 					{
 						result.error_code = EINVAL;
-						mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
 							      "spell_effect_receipts");
 						break;
 					}

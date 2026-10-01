@@ -541,8 +541,7 @@ bool valid_quest_offering_continuation(const item_transfer_payload &payload)
 
 bool valid_soulbind_continuation(const item_transfer_payload &payload)
 {
-	return payload.continuation.data.size() == 1 &&
-	       payload.continuation.data[0] <= 1 &&
+	return payload.continuation.data.size() == 1 && payload.continuation.data[0] <= 1 &&
 	       payload.reason == item_transfer_reason::soulbind && !payload.multi_root &&
 	       payload.from_owner.type == item_owner_type::player &&
 	       payload.to_owner.type == item_owner_type::player && payload.selected_item_uid &&
@@ -551,7 +550,7 @@ bool valid_soulbind_continuation(const item_transfer_payload &payload)
 }
 
 bool valid_spell_component_continuation(const item_transfer_payload &payload,
-				       uint16_t payload_version)
+					uint16_t payload_version)
 {
 	const auto &data = payload.continuation.data;
 	if (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
@@ -564,8 +563,8 @@ bool valid_spell_component_continuation(const item_transfer_payload &payload,
 	// receipt is available, but the journal must still decode them after upgrade.
 	const bool legacy = data.size() >= 4 && data.size() <= 4 + 48 && data[1] == 0 &&
 			    data[2] == 0 && data[3] == 0;
-	if (!legacy && (data.size() < 6 || data.size() > 6 + 48 || data[0] != 1 ||
-			data[5] != data.size() - 6))
+	if (!legacy &&
+	    (data.size() < 6 || data.size() > 6 + 48 || data[0] != 1 || data[5] != data.size() - 6))
 		return false;
 	const size_t effect_offset = legacy ? 0 : 1;
 	const uint32_t effect = static_cast<uint32_t>(data[effect_offset]) |
@@ -577,7 +576,7 @@ bool valid_spell_component_continuation(const item_transfer_payload &payload,
 }
 
 bool valid_account_reward_retirement_continuation(const item_transfer_payload &payload,
-							  uint16_t payload_version)
+						  uint16_t payload_version)
 {
 	const auto &data = payload.continuation.data;
 	const uint32_t version = data.size() >= 4 ? get_u32(data.data()) : 0;
@@ -601,22 +600,21 @@ bool valid_account_reward_retirement_continuation(const item_transfer_payload &p
 	       item.vnum == static_cast<int32_t>(get_u32(data.data() + 16));
 }
 
-bool valid_account_reward_duplicate_promotion_continuation(
-	const item_transfer_payload &payload, uint16_t payload_version)
+bool valid_account_reward_duplicate_promotion_continuation(const item_transfer_payload &payload,
+							   uint16_t payload_version)
 {
 	const auto &data = payload.continuation.data;
 	if (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION || !payload.multi_root ||
 	    (payload.reason != item_transfer_reason::player_get &&
 	     payload.reason != item_transfer_reason::player_put) ||
 	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
-	    payload.from_owner.context_id ||
-	    payload.from_owner.id != payload.to_owner.id ||
+	    payload.from_owner.context_id || payload.from_owner.id != payload.to_owner.id ||
 	    payload.to_owner.type != item_owner_type::player || payload.to_owner.context_id ||
 	    payload.selected_item_uid || data.size() < 48 || get_u32(data.data()) != 1 ||
 	    get_u32(data.data() + 4) > 1 || !get_u64(data.data() + 8) ||
 	    !get_u32(data.data() + 16) || get_u32(data.data() + 16) > INT32_MAX ||
-	    !get_u64(data.data() + 20) || get_u64(data.data() + 28) !=
-								 payload.target_parent_item_uid)
+	    !get_u64(data.data() + 20) ||
+	    get_u64(data.data() + 28) != payload.target_parent_item_uid)
 		return false;
 	const uint64_t duplicate_uid = get_u64(data.data() + 20);
 	const uint64_t target_parent_uid = get_u64(data.data() + 28);
@@ -639,7 +637,8 @@ bool valid_account_reward_duplicate_promotion_continuation(
 			const uint64_t uid = get_u64(data.data() + 40 + index * sizeof(uint64_t));
 			const item_transfer_entry *child = find_payload_item(payload, uid);
 			if (!uid || !child || child->parent_item_uid != duplicate_uid ||
-			    std::find(child_uids.begin(), child_uids.end(), uid) != child_uids.end())
+			    std::find(child_uids.begin(), child_uids.end(), uid) !=
+				    child_uids.end())
 				return false;
 			child_uids.push_back(uid);
 		}
@@ -836,7 +835,8 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	if (payload.to_owner.type == item_owner_type::system ||
 	    payload.from_owner.type == item_owner_type::destruction ||
 	    (payload.reason == item_transfer_reason::creation) != creation ||
-	    ((payload.reason == item_transfer_reason::destruction || quest_turnin) != destruction) ||
+	    ((payload.reason == item_transfer_reason::destruction || quest_turnin) !=
+	     destruction) ||
 	    (quest_turnin &&
 	     (payload.from_owner.type != item_owner_type::player || !payload.multi_root ||
 	      payload.reason_id <= 0 ||

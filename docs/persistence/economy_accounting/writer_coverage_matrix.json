@@ -588,7 +588,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1614
+          1618
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_enchant",
@@ -5863,7 +5863,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4142
+          4147
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -9639,7 +9639,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           470,
-          12417
+          12416
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -17074,8 +17074,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2729,
-          2741
+          2734,
+          2746
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17137,7 +17137,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1256
+          1257
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17199,7 +17199,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1156
+          1157
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17384,7 +17384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1037
+          1038
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17690,7 +17690,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1763
+          1767
         ],
         "file": "src/classes/salchemist.c",
         "function": "event_enchant",
@@ -17756,7 +17756,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          886
+          888
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -17822,7 +17822,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          886
+          888
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -17835,7 +17835,7 @@
       "blocking_policy_after_activation": {
         "decision": "not_a_playable_economy_or_custody_writer",
         "must_block_on_activation": false,
-        "required_policy": "Virtual Chaos-pouch Encrust refuses before generated-use mutation or provisional jewel allocation."
+        "required_policy": "Virtual Chaos-pouch Encrust allocates a temporary recipe descriptor, then refuses without generated-use mutation or live item publication."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": false,
@@ -17853,11 +17853,11 @@
       "disposition": "non_writer_candidate",
       "double_entry_evidence": {
         "existing_evidence": [],
-        "note": "Virtual Chaos-pouch Encrust refuses before generated-use mutation or provisional jewel allocation.",
+        "note": "Virtual Chaos-pouch Encrust allocates a temporary recipe descriptor, then refuses without generated-use mutation or live item publication.",
         "status": "not_applicable",
         "unified_operation_postings_observed": false
       },
-      "exclusion_reason": "Virtual Chaos-pouch Encrust refuses before generated-use mutation or provisional jewel allocation.",
+      "exclusion_reason": "Virtual Chaos-pouch Encrust allocates a temporary recipe descriptor, then refuses without generated-use mutation or live item publication.",
       "id": "item.encrust_virtual_jewel_stage",
       "native_effects": {
         "custody_effect": "none",
@@ -17869,13 +17869,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          886
+          888
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Virtual Chaos-pouch Encrust now refuses before generated-use mutation or jewel allocation.",
+      "source_classification": "Virtual Chaos-pouch Encrust allocates a temporary recipe descriptor, then refuses without generated-use mutation or live item publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -18384,7 +18384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          874
+          875
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18446,7 +18446,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          881
+          882
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -18569,7 +18569,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1199
+          1203
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -18616,7 +18616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1199
+          1203
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -19519,7 +19519,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2976
+          2982
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19581,7 +19581,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2789
+          2794
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20567,7 +20567,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1969
+          1972
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21157,7 +21157,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1532
+          1533
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21219,7 +21219,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1088
+          1089
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21587,7 +21587,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          943
+          944
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22182,7 +22182,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1328
+          1332
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22243,7 +22243,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1328
+          1332
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22367,7 +22367,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2797
+          2795
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -22659,7 +22659,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1503
+          1507
         ],
         "file": "src/classes/salchemist.c",
         "function": "thrusted_eq_proc",
@@ -30906,7 +30906,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           466,
-          12282
+          12281
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31884,7 +31884,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2053
+          2057
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -31946,7 +31946,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1330
+          1331
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",
@@ -32806,7 +32806,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          924
+          926
         ],
         "file": "src/player/player_load_items.c",
         "function": "player_load_items_discard",
@@ -36159,7 +36159,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           444,
-          11859
+          11858
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36219,7 +36219,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           436,
-          11741
+          11740
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36280,7 +36280,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           432,
-          11487
+          11486
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -50592,7 +50592,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2481
+          2486
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -50658,7 +50658,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          683
+          684
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -50708,7 +50708,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          726
+          727
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",

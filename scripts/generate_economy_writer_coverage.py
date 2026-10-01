@@ -104,7 +104,7 @@ NON_WRITERS = {
     "world.read_object_factory": "read_object instantiates a template into NOWHERE; durable item admission occurs only in a caller with a source and selected owner.",
     "world.zone_reset_stage_cleanup": "Reset branches free freshly allocated objects rejected by artifact, chance, destination or equipment checks before any live owner is assigned.",
     "item.poison_recipe_probe": "Poison recipe display reads and frees sample ingredient/vial templates without giving them to a character.",
-    "item.encrust_virtual_jewel_stage": "Virtual Chaos-pouch Encrust refuses before generated-use mutation or provisional jewel allocation.",
+    "item.encrust_virtual_jewel_stage": "Virtual Chaos-pouch Encrust allocates a temporary recipe descriptor, then refuses without generated-use mutation or live item publication.",
     "item.craft_rejected_stage_cleanup": "Frees only detached provisional craft outputs after rejection; admitted input custody is unchanged.",
     "recovery.sql_player_runtime_rejected_stage": "Discards this failed load attempt's provisional player graph without retiring durable custody.",
     "item.fix_material_probe": "Fix reads and frees a sample material template to describe the required component; the carried component is consumed separately.",

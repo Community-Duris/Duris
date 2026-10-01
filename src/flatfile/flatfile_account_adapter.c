@@ -91,8 +91,9 @@ bool membership_records(P_acct account, std::vector<flatfile_identity_record> *r
 			// Keep the established domain identity when saving a staff account.
 			flatfile_identity_record retained;
 			const char *root = persistence_mode_flatfile_root();
-			if (!root || flatfile_identity_lookup_pid(root, value.pid, &retained,
-							 nullptr) != flatfile_identity_result::ok)
+			if (!root ||
+			    flatfile_identity_lookup_pid(root, value.pid, &retained, nullptr) !=
+				    flatfile_identity_result::ok)
 				return false;
 			value.racewar = retained.racewar;
 		}

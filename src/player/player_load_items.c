@@ -606,10 +606,12 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 			object->craftsmanship = item.craftsmanship;
 		}
 		if (complete_snapshot_state ||
-		    (identity.override_mask & (PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS | PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
+		    (identity.override_mask &
+		     (PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS | PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
 			object->extra2_flags = item.extra2_flags;
 		if (complete_snapshot_state ||
-		    (identity.override_mask & (PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS | PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
+		    (identity.override_mask & (PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS |
+					       PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
 		{
 			const auto baseline =
 				std::find_if(item.dynamic_affects.begin(),

@@ -1848,8 +1848,8 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		const current_item &stored = selected[index];
 		const item_transfer_entry &entry = payload.items[index];
 		if (!update_item(connection, entry, stored.root_item_uid, stored.parent_item_uid,
-				 destruction, stored.item_revision,
-				 item_custody_state::destroyed, 0) ||
+				 destruction, stored.item_revision, item_custody_state::destroyed,
+				 0) ||
 		    !insert_craft_ledger(connection, command, payload, index, event_index_base,
 					 stored.item_revision + 1, owner_revision + 1,
 					 owner_revision + 1, payload.from_owner, destruction,
@@ -2411,8 +2411,7 @@ bool item_transfer_repository_execute_at_offset(
 		const uint16_t after_slot =
 			target_equipment_slot(payload, payload.selected_item_uid);
 		const auto root =
-			std::find_if(selected.begin(), selected.end(),
-				     [&](const current_item &item)
+			std::find_if(selected.begin(), selected.end(), [&](const current_item &item)
 				     { return item.item_uid == payload.selected_item_uid; });
 		if (payload.from_owner.type != item_owner_type::player ||
 		    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
@@ -2484,8 +2483,7 @@ bool item_transfer_repository_execute_at_offset(
 	if (item_transfer_forced_weapon_drop(payload.reason))
 	{
 		const auto root =
-			std::find_if(selected.begin(), selected.end(),
-				     [&](const current_item &item)
+			std::find_if(selected.begin(), selected.end(), [&](const current_item &item)
 				     { return item.item_uid == payload.selected_item_uid; });
 		if (root == selected.end() ||
 		    root->equipment_slot != static_cast<uint16_t>(payload.reason_id) ||

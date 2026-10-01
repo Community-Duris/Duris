@@ -559,7 +559,9 @@ void do_mixpoison(P_char ch, char *argument, int /*cmd*/)
 {
 	if (economic_gameplay_authority::active())
 	{
-		send_to_char("Poison crafting is unavailable under active economic accounting; your ingredients were preserved.\r\n", ch);
+		send_to_char(
+			"Poison crafting is unavailable under active economic accounting; your ingredients were preserved.\r\n",
+			ch);
 		return;
 	}
 
@@ -887,7 +889,9 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 {
 	if (economic_gameplay_authority::active())
 	{
-		send_to_char("Encrust is unavailable under active economic accounting; your item and jewel were preserved.\r\n", ch);
+		send_to_char(
+			"Encrust is unavailable under active economic accounting; your item and jewel were preserved.\r\n",
+			ch);
 		return;
 	}
 
