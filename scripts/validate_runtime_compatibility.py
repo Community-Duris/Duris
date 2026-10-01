@@ -201,7 +201,7 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     staging = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.staging_0045.json")
-    if len(migration.migrations) != 50 or len(staging.migrations) != 50 or \
+    if len(migration.migrations) != 51 or len(staging.migrations) != 51 or \
             staging.baseline_id != migration.baseline_id or \
             staging.required_tables != migration.required_tables or \
             staging.migrations[:44] != migration.migrations[:44] or \
@@ -209,9 +209,10 @@ def validate() -> dict:
             "0045_item_extra_description_fulltext_unique":
         raise migration_runner.MigrationContractError("unsupported staging migration fork")
     from dataclasses import replace
-    if staging.migrations[45:] != tuple(
+    if staging.migrations[45:-1] != tuple(
             replace(item, sequence=item.sequence + 1)
-            for item in migration.migrations[44:49]):
+            for item in migration.migrations[44:49]) or \
+            staging.migrations[-1] != migration.migrations[-1]:
         raise migration_runner.MigrationContractError("staging migration append drift")
     head = migration.migrations[-1]
     for name, contract in (("migration_head", migration),

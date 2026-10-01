@@ -124,8 +124,7 @@ unsigned int economic_sql_lock_authority(MYSQL *connection, const critical_opera
 			candidate.mappings.push_back({ request, 0 });
 		}
 		std::sort(candidate.mappings.begin(), candidate.mappings.end(),
-			  [](const auto &left, const auto &right)
-			  {
+			  [](const auto &left, const auto &right) {
 				  return left.request.account.authority_id <
 					 right.request.account.authority_id;
 			  });

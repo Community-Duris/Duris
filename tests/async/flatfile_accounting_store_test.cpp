@@ -685,9 +685,11 @@ int main(int argc, char **argv)
 		}
 		assert(flatfile_accounting_lookup(root.string(), lock, first.command, &decoded,
 						  &error) == status::ok);
-		// Thirty domain images plus two accounting images fit the real boundary.
+		// Domain images plus two accounting images fit the maintained boundary.
+		constexpr size_t domain_images =
+			flatfile_authority_transaction_maximum_operations - 2;
 		operations.clear();
-		for (size_t i = 0; i < 30; ++i)
+		for (size_t i = 0; i < domain_images; ++i)
 			operations.push_back({ flatfile_authority_store::domains,
 					       flatfile_authority_operation_kind::write,
 					       "domain-" + std::to_string(i),
@@ -695,14 +697,23 @@ int main(int argc, char **argv)
 		auto maximum = record(700);
 		assert(flatfile_accounting_test_access::stage(root.string(), lock, maximum,
 							      &operations, &error) == status::ok &&
-		       operations.size() == 32);
+		       operations.size() == flatfile_authority_transaction_maximum_operations);
 		assert(flatfile_accounting_test_access::commit(root.string(), lock, operations,
 							       &error) ==
 		       flatfile_authority_transaction_result::ok);
-		operations.resize(31);
+		// Stage a fresh domain batch. Reusing the previously committed batch
+		// would retain an accounting image for operation 700 and test a
+		// conflicting intent rather than the authority image-count boundary.
+		operations.clear();
+		for (size_t i = 0; i < domain_images + 1; ++i)
+			operations.push_back({ flatfile_authority_store::domains,
+					       flatfile_authority_operation_kind::write,
+					       "domain-" + std::to_string(i),
+					       { 1 } });
 		assert(flatfile_accounting_test_access::stage(root.string(), lock, record(701),
 							      &operations,
 							      &error) == status::capacity);
+		assert(operations.size() == domain_images + 1);
 	}
 	// Real process exit after each publication image, then lock/recovery/readback.
 	for (unsigned boundary = 1; boundary <= 3; ++boundary)

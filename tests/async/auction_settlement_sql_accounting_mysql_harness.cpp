@@ -459,9 +459,8 @@ int main()
 		     literal(claim.operation_id)) ==
 	       hex(staged.listing_operation.bytes.data(), staged.listing_operation.bytes.size()));
 	const uint32_t removed_no_bid_auction = auction(id(14), {}, ITEM + 300, 2000000000);
-	const auto removed_no_bid_escrow = mapping(
-		lineage, economic_account_kind::auction_escrow, 0, 4, removed_no_bid_auction,
-		bootstrap);
+	const auto removed_no_bid_escrow = mapping(lineage, economic_account_kind::auction_escrow,
+						   0, 4, removed_no_bid_auction, bootstrap);
 	const auto removed_no_bid_listing =
 		listing(removed_no_bid_auction, ITEM + 300, 2000000000, id(14), {});
 	auction_settlement_accounts removed_no_bid_accounts;
@@ -531,9 +530,8 @@ int main()
 		       &mutation_applied) != 0);
 	execute("ROLLBACK");
 	reconnect();
-	for (const auto operation :
-	     { sale.operation_id, removal.operation_id, remove_no_bid.operation_id,
-	       expired.operation_id })
+	for (const auto operation : { sale.operation_id, removal.operation_id,
+				      remove_no_bid.operation_id, expired.operation_id })
 	{
 		assert(scalar("SELECT LENGTH(canonical_intent) FROM "
 			      "economic_accounting_operation WHERE operation_id=" +

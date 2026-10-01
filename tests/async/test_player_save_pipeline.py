@@ -476,6 +476,8 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components) {
     return player_revision_mark(pid, components, nullptr);
 }
 bool capture_fails = false;
+bool creation_pending = false;
+bool item_movement_transaction_player_creation_busy(P_char) { return creation_pending; }
 bool refuse_enqueue = false;
 player_snapshot pending, captured;
 bool quest_reward_recovery_pending_save_receipts(
@@ -527,6 +529,10 @@ int main() {
     receipt.operation_id.bytes[0] = 77;
     receipt.effect_id = 6;
     pending.spell_effect_receipts.push_back(receipt);
+    creation_pending = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::unavailable);
+    assert(pending.spell_effect_receipts.size() == 1 && !captured.pid);
+    creation_pending = false;
     capture_fails = true;
     assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::capture_failed);
     capture_fails = false;

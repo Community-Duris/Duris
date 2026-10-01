@@ -604,12 +604,14 @@ int main()
         submit_result = critical_submit_result::unavailable;
         assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
         assert(item_movement_transaction_player_busy(&f.actor));
+        assert(item_movement_transaction_player_creation_busy(&f.actor));
         assert(OBJ_NOWHERE(&f.bag) && extractions.empty() && submitted.empty());
         submit_result = critical_submit_result::accepted;
         item_movement_transaction_handle_completions(nullptr, 0);
         assert(submitted.size() == 1);
         deliver(next_completion(critical_apply_outcome::applied));
         assert(publications[100] == 1 && !item_movement_transaction_player_busy(&f.actor));
+        assert(!item_movement_transaction_player_creation_busy(&f.actor));
     }
     // Capacity and coordinator availability are admission back-pressure: retain the
     // detached kit, keep the player gated, and retry once the coordinator recovers.

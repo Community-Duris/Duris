@@ -52,12 +52,12 @@ class SplitEconomyActivationContract(unittest.TestCase):
                    "obj_to_char_checked(" in row["excerpt"]]
         self.assertEqual(len({(row["path"], row["line"]) for row in checked}), 9)
         expected = {
-            ("src/cmd/actobj.c", 482): "item.command_publication",
-            ("src/cmd/actobj.c", 710): "item.command_publication",
-            ("src/cmd/actobj.c", 769): "item.pet_give_publication",
-            ("src/cmd/actobj.c", 1339): "item.legacy_get",
-            ("src/cmd/actobj.c", 6281): "item.legacy_give",
-            ("src/cmd/actobj.c", 7845): "item.equipment_remove",
+            ("src/cmd/actobj.c", 481): "item.command_publication",
+            ("src/cmd/actobj.c", 709): "item.command_publication",
+            ("src/cmd/actobj.c", 768): "item.pet_give_publication",
+            ("src/cmd/actobj.c", 1336): "item.legacy_get",
+            ("src/cmd/actobj.c", 6278): "item.legacy_give",
+            ("src/cmd/actobj.c", 7842): "item.equipment_remove",
             ("src/world/handler.c", 1852): "item.obj_to_char_admission",
             ("src/world/handler.c", 2024): "item.obj_to_char_admission",
             ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
@@ -492,11 +492,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertFalse(current - owners.keys(), "review newly detected native SQL writes")
         self.assertEqual(owners[("src/economy/auction_houses.c", 935, "sql_economy")],
                          {"auction.money_claim_compensation"})
-        self.assertEqual(owners[("src/economy/auction_houses.c", 2966, "sql_economy")],
+        self.assertEqual(owners[("src/economy/auction_houses.c", 2967, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9457, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9478, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10878, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10899, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
         for line in (888, 908, 941):
@@ -520,13 +520,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
             for site in writer.get("sites", []):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(writer["id"])
-        self.assertEqual(owners[(path, 1554, "economic_submit")],
+        self.assertEqual(owners[(path, 1573, "economic_submit")],
                          {"quest.durable_offering_submission"})
-        self.assertEqual(owners[(path, 917, "item_lifecycle")],
+        self.assertEqual(owners[(path, 951, "item_lifecycle")],
                          {"quest.durable_offering_publication"})
-        for line, family in ((876, "item_lifecycle"), (876, "item_publication"),
-                             (878, "item_lifecycle"), (1050, "item_lifecycle"),
-                             (1050, "item_publication"), (1052, "item_lifecycle")):
+        for line, family in ((910, "item_lifecycle"), (910, "item_publication"),
+                             (912, "item_lifecycle"), (1085, "item_lifecycle"),
+                             (1085, "item_publication"), (1087, "item_lifecycle")):
             self.assertEqual(owners[(path, line, family)],
                              {"quest.disappearing_npc_cleanup"})
         self.assertTrue(self.routes["quest.durable_offering_submission"]
@@ -816,9 +816,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10120, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10141, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11261, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11281, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -1255,7 +1255,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new conjuration item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 2279, "item_lifecycle")],
+        self.assertEqual(owners[(path, 2280, "item_lifecycle")],
                          {"spell.snakes_committed_arrow_cleanup"})
         for route_id in ("spell.room_creation_rejected_stage",
                          "spell.player_creation_rejected_stage"):

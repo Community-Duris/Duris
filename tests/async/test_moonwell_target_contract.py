@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MAGIC = (SRC / "magic.c").read_text()
+MAGIC = (SRC / "spell_portals.c").read_text()
 
 start = MAGIC.index("void spell_moonwell(")
 end = MAGIC.index("void spell_moonstone(", start)

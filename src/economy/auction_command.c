@@ -294,8 +294,8 @@ bool auction_command_decode_result(const uint8_t *encoded, size_t size,
 		    !read_le(&cursor, end, &result->item_revisions[index]))
 			return false;
 	return read_le(&cursor, end, &result->claim_credit_used) &&
-	       result->claim_credit_used >= 0 &&
-	       result->action > auction_action::unknown && result->action <= auction_action::remove;
+	       result->claim_credit_used >= 0 && result->action > auction_action::unknown &&
+	       result->action <= auction_action::remove;
 }
 
 bool auction_command_build(critical_command *command, critical_operation_id operation_id,

@@ -15,6 +15,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "magic/spell_item_lifecycle.h"
+#include "item/item_movement_transaction.h"
 #include "world/quest_reward_recovery.h"
 
 #include <algorithm>
@@ -383,14 +384,14 @@ bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &sou
 	size_t added = 0;
 	for (const auto &candidate : source.quest_xp_receipts)
 	{
-		auto found = std::find_if(target->quest_xp_receipts.begin(),
-					  target->quest_xp_receipts.end(),
-					  [&](const auto &existing)
-					  {
-						  return existing.offering_operation.bytes ==
-							 candidate.offering_operation.bytes &&
-							 existing.reward_index == candidate.reward_index;
-					  });
+		auto found = std::find_if(
+			target->quest_xp_receipts.begin(), target->quest_xp_receipts.end(),
+			[&](const auto &existing)
+			{
+				return existing.offering_operation.bytes ==
+					       candidate.offering_operation.bytes &&
+				       existing.reward_index == candidate.reward_index;
+			});
 		if (found != target->quest_xp_receipts.end())
 		{
 			if (found->amount != candidate.amount)
@@ -454,13 +455,10 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 	size_t added = 0;
 	for (const auto &candidate : source.spell_effect_receipts)
 	{
-		auto found = std::find_if(target->spell_effect_receipts.begin(),
-					  target->spell_effect_receipts.end(),
-					  [&](const auto &existing)
-					  {
-						  return existing.operation_id.bytes ==
-							 candidate.operation_id.bytes;
-					  });
+		auto found = std::find_if(
+			target->spell_effect_receipts.begin(), target->spell_effect_receipts.end(),
+			[&](const auto &existing)
+			{ return existing.operation_id.bytes == candidate.operation_id.bytes; });
 		if (found != target->spell_effect_receipts.end())
 		{
 			if (found->effect_id != candidate.effect_id)
@@ -487,12 +485,13 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 		target->spell_effect_receipts.reserve(target->spell_effect_receipts.size() + added);
 		for (const auto &candidate : source.spell_effect_receipts)
 		{
-			const bool present = std::any_of(
-				target->spell_effect_receipts.begin(), target->spell_effect_receipts.end(),
-				[&](const auto &existing)
-				{
-					return existing.operation_id.bytes == candidate.operation_id.bytes;
-				});
+			const bool present =
+				std::any_of(target->spell_effect_receipts.begin(),
+					    target->spell_effect_receipts.end(),
+					    [&](const auto &existing) {
+						    return existing.operation_id.bytes ==
+							   candidate.operation_id.bytes;
+					    });
 			if (!present)
 				target->spell_effect_receipts.push_back(candidate);
 		}
@@ -531,12 +530,14 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 			for (const auto &receipt : snapshot.quest_xp_receipts)
 			{
 				const auto found = std::find_if(
-					queued.quest_xp_receipts.begin(), queued.quest_xp_receipts.end(),
+					queued.quest_xp_receipts.begin(),
+					queued.quest_xp_receipts.end(),
 					[&](const auto &pending)
 					{
 						return pending.offering_operation.bytes ==
 							       receipt.offering_operation.bytes &&
-						       pending.reward_index == receipt.reward_index &&
+						       pending.reward_index ==
+							       receipt.reward_index &&
 						       pending.amount == receipt.amount;
 					});
 				if (found == queued.quest_xp_receipts.end())
@@ -549,7 +550,8 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 					queued.spell_effect_receipts.end(),
 					[&](const auto &pending)
 					{
-						return pending.operation_id.bytes == receipt.operation_id.bytes &&
+						return pending.operation_id.bytes ==
+							       receipt.operation_id.bytes &&
 						       pending.effect_id == receipt.effect_id;
 					});
 				if (found == queued.spell_effect_receipts.end())
@@ -716,8 +718,8 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 
 /** Capture and enqueue pending player components with the supplied save intent and room. */
 static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
-	P_char ch, int save_intent, int room_vnum,
-	const player_quest_xp_receipt_snapshot *receipts, size_t receipt_count,
+	P_char ch, int save_intent, int room_vnum, const player_quest_xp_receipt_snapshot *receipts,
+	size_t receipt_count,
 	const player_spell_effect_receipt_snapshot *spell_effect_receipt = nullptr)
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
@@ -725,6 +727,8 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 	if (player_save_journal_pid_quarantined(GET_PID(ch)))
 		return player_save_pipeline_result::unavailable;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
+	if (item_movement_transaction_player_creation_busy(ch))
 		return player_save_pipeline_result::unavailable;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -820,9 +824,10 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		for (size_t index = 0; index < receipt_count; ++index)
 		{
 			const auto &receipt = receipts[index];
-			const bool empty_operation = std::all_of(
-				receipt.offering_operation.bytes.begin(),
-				receipt.offering_operation.bytes.end(), [](uint8_t byte) { return !byte; });
+			const bool empty_operation =
+				std::all_of(receipt.offering_operation.bytes.begin(),
+					    receipt.offering_operation.bytes.end(),
+					    [](uint8_t byte) { return !byte; });
 			if (empty_operation || receipt.reward_index >= 64 || !receipt.amount)
 				return player_save_pipeline_result::invalid;
 			for (size_t prior = 0; prior < index; ++prior)
@@ -884,9 +889,10 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
 }
 
-player_save_pipeline_result player_save_pipeline_request_quest_xp(
-	P_char ch, player_component_mask_t components,
-	const player_quest_xp_receipt_snapshot *receipts, size_t receipt_count, int room_vnum)
+player_save_pipeline_result
+player_save_pipeline_request_quest_xp(P_char ch, player_component_mask_t components,
+				      const player_quest_xp_receipt_snapshot *receipts,
+				      size_t receipt_count, int room_vnum)
 {
 	if (!ch || IS_NPC(ch) || !receipts || !receipt_count || receipt_count > 64 ||
 	    !(components & PLAYER_COMPONENT_STATUS) ||
@@ -898,9 +904,10 @@ player_save_pipeline_result player_save_pipeline_request_quest_xp(
 	return checkpoint_dirty_with_quest_xp(ch, RENT_CRASH, room_vnum, receipts, receipt_count);
 }
 
-player_save_pipeline_result player_save_pipeline_request_spell_effect(
-	P_char ch, player_component_mask_t components,
-	const player_spell_effect_receipt_snapshot *receipt, int room_vnum)
+player_save_pipeline_result
+player_save_pipeline_request_spell_effect(P_char ch, player_component_mask_t components,
+					  const player_spell_effect_receipt_snapshot *receipt,
+					  int room_vnum)
 {
 	if (!ch || IS_NPC(ch) || !receipt || !(components & PLAYER_COMPONENT_AFFECTS) ||
 	    (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) ||

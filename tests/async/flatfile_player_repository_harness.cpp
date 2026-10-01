@@ -424,8 +424,7 @@ static void coin_player_matrix(const fs::path &path)
 							    &error) ==
 				flatfile_item_repository_result::ok,
 			"coin player custody load");
-		require(std::any_of(owned.begin(), owned.end(),
-				    [](const auto &item)
+		require(std::any_of(owned.begin(), owned.end(), [](const auto &item)
 				    { return item.item_uid == 100 && item.equipment_slot == 5; }),
 			"equipped player baseline slot missing");
 		flatfile_item_repository_load_owner(root, { item_owner_type::destruction, 0, 0 },

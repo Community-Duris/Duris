@@ -176,7 +176,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1081
+          1076
         ],
         "file": "src/account/account_reward.c",
         "function": "summon_one",
@@ -235,7 +235,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          637
+          636
         ],
         "file": "src/account/account_reward.c",
         "function": "existing_character_instance",
@@ -294,7 +294,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1339
+          1335
         ],
         "file": "src/account/account_reward.c",
         "function": "dismiss_player_grant",
@@ -352,7 +352,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1787
+          1782
         ],
         "file": "src/account/account_reward.c",
         "function": "dissolve_reward_containers",
@@ -2271,7 +2271,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           699,
-          2290
+          2291
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_info",
@@ -2336,7 +2336,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1632
+          1633
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_item_claim_completed",
@@ -2598,7 +2598,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           557,
-          2490
+          2491
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_bid",
@@ -2659,7 +2659,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2519
+          2520
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_bid_legacy",
@@ -2720,7 +2720,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3112
+          3113
         ],
         "file": "src/economy/auction_houses.c",
         "function": "finalize_auction_legacy",
@@ -2786,7 +2786,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2591
+          2595
         ],
         "file": "src/flatfile/flatfile_auction_repository.c",
         "function": "flatfile_auction_repository_apply",
@@ -2983,7 +2983,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           749,
-          2799
+          2800
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_pickup",
@@ -3044,7 +3044,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1846
+          1847
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_offer_legacy",
@@ -3111,7 +3111,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           459,
-          1744
+          1745
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_offer",
@@ -3179,7 +3179,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           749,
-          2799
+          2800
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_pickup",
@@ -3301,7 +3301,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2885
+          2886
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_pickup_legacy",
@@ -3368,7 +3368,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           862,
-          3256
+          3257
         ],
         "file": "src/economy/auction_houses.c",
         "function": "insert_money_pickup",
@@ -3435,7 +3435,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           586,
-          2395
+          2396
         ],
         "file": "src/economy/auction_houses.c",
         "function": "auction_remove",
@@ -3502,7 +3502,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           858,
-          3100
+          3101
         ],
         "file": "src/economy/auction_houses.c",
         "function": "finalize_auction",
@@ -3569,7 +3569,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          928
+          926
         ],
         "file": "src/economy/auction_repository.c",
         "function": "auction_repository_execute",
@@ -4649,7 +4649,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          938
+          939
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_beacon",
@@ -4706,7 +4706,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1075
+          1076
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_frost_bolt",
@@ -4763,7 +4763,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2464
+          2465
         ],
         "file": "src/classes/ethermancer.c",
         "function": "spell_single_cosmic_rift",
@@ -5048,7 +5048,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3026
+          3025
         ],
         "file": "src/classes/new_skills.c",
         "function": "do_bind",
@@ -5105,7 +5105,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3222
+          3221
         ],
         "file": "src/classes/new_skills.c",
         "function": "capture",
@@ -5162,7 +5162,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2803
+          2802
         ],
         "file": "src/classes/new_skills.c",
         "function": "do_carve",
@@ -5276,7 +5276,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2031
+          2030
         ],
         "file": "src/classes/new_skills.c",
         "function": "event_summon_book",
@@ -5333,7 +5333,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2075
+          2074
         ],
         "file": "src/classes/new_skills.c",
         "function": "event_summon_totem",
@@ -5729,7 +5729,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3641
+          3639
         ],
         "file": "src/cmd/actobj.c",
         "function": "refund_committed_coin_debit",
@@ -5794,7 +5794,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4132
+          4130
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_put",
@@ -5858,7 +5858,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4006
+          4010
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -5922,7 +5922,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4683
+          4681
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_debit",
@@ -5986,7 +5986,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3815
+          3813
         ],
         "file": "src/cmd/actobj.c",
         "function": "begin_coin_give_credit",
@@ -6033,7 +6033,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3890
+          3888
         ],
         "file": "src/cmd/actobj.c",
         "function": "prepare_coin_pile",
@@ -6098,7 +6098,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4381
+          4379
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_get",
@@ -6162,7 +6162,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3754
+          3752
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_give",
@@ -6226,8 +6226,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          972,
-          1043
+          971,
+          1042
         ],
         "file": "src/economy/coin_transfer_accounting.c",
         "function": "coin_transfer_accounting_record",
@@ -6288,7 +6288,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          564
+          563
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_coin",
@@ -6769,7 +6769,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1999
+          1995
         ],
         "file": "src/flatfile/flatfile_collector_repository.c",
         "function": "flatfile_collector_repository_apply",
@@ -9268,7 +9268,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          919
+          918
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -9332,7 +9332,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          829
+          828
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -9634,7 +9634,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           468,
-          12334
+          12333
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9890,7 +9890,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          879
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -10263,7 +10263,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          706
+          704
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_prepared",
@@ -10580,7 +10580,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          801
+          799
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_wallet_value",
@@ -10706,7 +10706,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3466
+          3473
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_compact_corpse",
@@ -11639,7 +11639,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2160
+          2159
         ],
         "file": "src/persistence/corpse_lifecycle_repository.c",
         "function": "corpse_lifecycle_repository_execute",
@@ -13447,7 +13447,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3313
+          3314
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_wall_of_bones",
@@ -16320,7 +16320,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2380
+          2378
         ],
         "file": "src/cmd/actobj.c",
         "function": "start_bulk_get",
@@ -16381,7 +16381,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3424
+          3422
         ],
         "file": "src/cmd/actobj.c",
         "function": "drop_transient_object",
@@ -16489,7 +16489,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1338
+          1337
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -16569,7 +16569,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          829
+          828
         ],
         "file": "src/cmd/actobj.c",
         "function": "defer_durable_put",
@@ -16631,7 +16631,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          456
+          455
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_container_get",
@@ -17069,8 +17069,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2288,
-          2300
+          2293,
+          2305
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17132,7 +17132,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1044
+          1045
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17194,7 +17194,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          944
+          945
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17379,7 +17379,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          825
+          826
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17562,7 +17562,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6500
+          6497
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drink",
@@ -17624,7 +17624,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10113
+          10110
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18247,7 +18247,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7803
+          7800
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18309,7 +18309,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7737
+          7734
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18433,7 +18433,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          662
+          663
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18495,7 +18495,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          669
+          670
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -18726,7 +18726,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6698
+          6695
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_eat",
@@ -19568,7 +19568,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2535
+          2541
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19630,7 +19630,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2348
+          2353
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -19694,7 +19694,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3122
+          3120
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_junk",
@@ -19755,7 +19755,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4724
+          4722
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_dropalldot",
@@ -19877,7 +19877,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4841
+          4839
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drop",
@@ -19938,7 +19938,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1351
+          1348
         ],
         "file": "src/cmd/actobj.c",
         "function": "get",
@@ -19999,7 +19999,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6012
+          6009
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_give",
@@ -20060,7 +20060,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6007
+          6004
         ],
         "file": "src/cmd/actobj.c",
         "function": "put",
@@ -20242,7 +20242,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9833
+          9830
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20616,7 +20616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1710
+          1713
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -20922,7 +20922,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          729
+          728
         ],
         "file": "src/cmd/actobj.c",
         "function": "pet_give_completion",
@@ -21045,7 +21045,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9737
+          9734
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -21445,7 +21445,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1320
+          1321
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21507,7 +21507,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          876
+          877
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21875,7 +21875,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          731
+          732
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22655,7 +22655,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2445
+          2443
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -23211,7 +23211,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6329
+          6326
         ],
         "file": "src/cmd/actobj.c",
         "function": "weight_change_object",
@@ -27091,7 +27091,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          855
+          852
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_ensis_unguis",
@@ -27144,7 +27144,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          907
+          904
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_lancea_cineralae",
@@ -27201,7 +27201,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          786
+          783
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "load_soulbind",
@@ -27368,7 +27368,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          959
+          956
         ],
         "file": "src/magic/spell_item_lifecycle.c",
         "function": "spell_simulacrum_anguis",
@@ -27991,7 +27991,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2573
+          2575
         ],
         "file": "src/magic/spells.c",
         "function": "create_walls",
@@ -29676,7 +29676,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1124
+          1122
         ],
         "file": "src/account/nanny.c",
         "function": "perform_eq_wipe",
@@ -29734,7 +29734,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          899
+          896
         ],
         "file": "src/account/nanny.c",
         "function": "load_obj_to_newbies",
@@ -30979,7 +30979,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4536
+          4533
         ],
         "file": "src/account/nanny.c",
         "function": "init_char",
@@ -31194,7 +31194,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           464,
-          12199
+          12198
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31375,7 +31375,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1679
+          1698
         ],
         "file": "src/world/quest.c",
         "function": "quester",
@@ -31494,7 +31494,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          882
+          916
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -31554,7 +31554,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          882
+          916
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -31632,7 +31632,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1451
+          1469
         ],
         "file": "src/world/quest.c",
         "function": "submit_durable_quest_offering",
@@ -31752,7 +31752,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          390
+          427
         ],
         "file": "src/world/quest.c",
         "function": "give_reward",
@@ -31810,7 +31810,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1579
+          1598
         ],
         "file": "src/world/quest.c",
         "function": "tell_quest",
@@ -32172,7 +32172,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2044
+          2048
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -32234,7 +32234,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1321
+          1322
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",
@@ -36447,7 +36447,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           442,
-          11776
+          11775
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36507,7 +36507,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           434,
-          11658
+          11657
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36568,7 +36568,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           430,
-          11404
+          11403
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -37723,7 +37723,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1055
+          1054
         ],
         "file": "src/persistence/economic_sql_shop_trade_transaction.c",
         "function": "apply_native_trade",
@@ -37786,7 +37786,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          855
+          854
         ],
         "file": "src/persistence/economic_sql_shop_trade_transaction.c",
         "function": "apply_item_events",
@@ -44071,7 +44071,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2138
+          2141
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_doom_blade",
@@ -44248,7 +44248,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2092
+          2093
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_summon_insects",
@@ -44520,7 +44520,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2233
+          2235
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "sticks_to_snakes_retirement_completed",
@@ -44579,7 +44579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2290
+          2291
         ],
         "file": "src/magic/spell_conjuration.c",
         "function": "spell_sticks_to_snakes",
@@ -44803,7 +44803,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          696
+          697
         ],
         "file": "src/classes/ethermancer.c",
         "function": "grant_wind_blade",
@@ -45038,7 +45038,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2537
+          2535
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_get",

@@ -354,14 +354,14 @@ int main()
 	assert(critical_command_repository_apply(connection, command).outcome ==
 	       critical_apply_outcome::already_applied);
 	execute("UPDATE economic_accounting_operation SET realized_price_copper=" +
-		std::to_string(listing.price_value + 1) + " WHERE operation_id=" +
-		literal(command.operation_id));
+		std::to_string(listing.price_value + 1) +
+		" WHERE operation_id=" + literal(command.operation_id));
 	assert(economic_sql_collector_verify_retained(connection, command, 0,
 						      retained_purchase.data(),
 						      retained_purchase.size()) != 0);
 	execute("UPDATE economic_accounting_operation SET realized_price_copper=" +
-		std::to_string(listing.price_value) + " WHERE operation_id=" +
-		literal(command.operation_id));
+		std::to_string(listing.price_value) +
+		" WHERE operation_id=" + literal(command.operation_id));
 	assert(economic_sql_collector_verify_retained(connection, command, 0,
 						      retained_purchase.data(),
 						      retained_purchase.size()) == 0);

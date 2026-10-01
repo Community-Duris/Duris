@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Pure pending-money source-set and balanced claim regression."""
 
+import os
 from pathlib import Path
 import subprocess
 
@@ -12,7 +13,7 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     binary = work / "auction-money-claim-accounting"
     subprocess.run([
-        "g++-12", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic",
+        os.environ.get("CXX", "g++"), "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic",
         "-Werror", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
         "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
         "tests/async/auction_money_claim_accounting_test.cpp",

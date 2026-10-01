@@ -371,14 +371,12 @@ void qualified_projection_regressions()
 	       error::unauthorized);
 	assert(critical_command_equal(retained_item, frozen_item_bytes));
 
-	for (auto command :
-	     { transfer(currency_reason_type::atm_deposit),
-	       transfer(currency_reason_type::atm_withdraw),
-	       chaos_starter_bank(),
-	       wallet_reason_command(currency_reason_type::wallet_reward, 7),
-	       wallet_reason_command(currency_reason_type::wallet_spend, 7), frozen_deposit_bytes,
-	       frozen_withdraw_bytes, frozen_starter_bytes, frozen_reward, frozen_quest_reward,
-	       frozen_spend })
+	for (auto command : { transfer(currency_reason_type::atm_deposit),
+			      transfer(currency_reason_type::atm_withdraw), chaos_starter_bank(),
+			      wallet_reason_command(currency_reason_type::wallet_reward, 7),
+			      wallet_reason_command(currency_reason_type::wallet_spend, 7),
+			      frozen_deposit_bytes, frozen_withdraw_bytes, frozen_starter_bytes,
+			      frozen_reward, frozen_quest_reward, frozen_spend })
 	{
 		const auto before = command;
 		assert(economic_gameplay_authority::prepare_currency(&command) ==

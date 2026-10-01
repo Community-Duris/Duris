@@ -323,6 +323,7 @@ void process_with_paging(P_char character, char *input);
 static bool bulk_get_pending = false;
 bool bulk_get_player_busy(P_char) { return bulk_get_pending; }
 bool currency_transaction_player_busy(P_char) { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool input_allowed_while_item_moving(const char *input);
 bool input_allowed_while_currency_pending(const char *) { return true; }
 bool input_allowed_while_item_and_currency_pending(const char *input)

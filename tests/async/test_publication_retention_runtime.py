@@ -79,6 +79,7 @@ bool item_ownership_runtime_apply(const item_transfer_payload &, const item_tran
 }
 
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
 bool economic_gameplay_authority::active() { return false; }
 economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
@@ -136,9 +137,10 @@ critical_apply_result apply_transfer(const critical_command &command, void *)
     return applied;
 }
 
-bool publication_callback(P_char actor, bool committed, const item_transfer_result &result,
+bool publication_callback(const critical_operation_id &operation, P_char actor, bool committed, const item_transfer_result &result,
                           unsigned int, const uint8_t *, size_t)
 {
+    assert(std::any_of(operation.bytes.begin(), operation.bytes.end(), [](uint8_t byte) { return byte != 0; }));
     assert(committed);
     assert(result.item_count == 1);
     if (!actor || actor->runtime_id != 7001)

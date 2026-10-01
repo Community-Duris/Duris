@@ -79,11 +79,12 @@ def read_item_ownership(state_root: pathlib.Path) -> dict[int, list[dict[str, in
     header_size = 8 + 4 + 4 + 8 + 32
     require(data[:8] == b"DUROWN\0\0", "flatfile item ownership magic changed")
     version, payload_size, revision = struct.unpack_from("<IIQ", data, 8)
-    require(version == 4 and revision > 0, "flatfile item ownership header is invalid")
+    require(version == 8 and revision > 0, "flatfile item ownership header is invalid")
     require(payload_size == len(data) - header_size, "flatfile item ownership size is invalid")
     payload = data[header_size:]
-    # Version 4 adds collector_catalog_changed only to operation rows. Owner
-    # and item layouts are unchanged; this reader stops before that ledger.
+    # Format 8 retains the owner's layout. Each item carries format 5's
+    # equipment slot after its variable coin payload; later provenance fields
+    # live in operation rows, which this reader does not consume.
     owner_count, item_count, _ = struct.unpack_from("<III", payload)
     offset = struct.calcsize("<III") + owner_count * struct.calcsize("<BQQQ")
     item_format = "<QQQBQQQiB"
@@ -108,6 +109,8 @@ def read_item_ownership(state_root: pathlib.Path) -> dict[int, list[dict[str, in
         offset += 4
         require(offset + coin_size <= len(payload), "flatfile coin payload is truncated")
         offset += coin_size
+        require(offset + 2 <= len(payload), "flatfile equipment slot is truncated")
+        offset += 2
         by_vnum.setdefault(vnum, []).append(
             {
                 "item_uid": item_uid,

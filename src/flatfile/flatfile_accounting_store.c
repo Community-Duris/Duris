@@ -485,8 +485,8 @@ std::vector<uint8_t> source_claim_bytes(const flatfile_accounting_record &record
 	return envelope(source_claim_magic, payload);
 }
 flatfile_read_result read_source_claim(const std::string &root,
-				      const economic_operation_metadata &metadata,
-				      std::vector<uint8_t> *bytes, std::string *error)
+				       const economic_operation_metadata &metadata,
+				       std::vector<uint8_t> *bytes, std::string *error)
 {
 	return read(root, source_claim_name(metadata), 256, bytes, error);
 }
@@ -687,27 +687,31 @@ flatfile_accounting_status flatfile_accounting_storage::stage_source_claim(
 	return guarded(
 		[&]
 		{
-		require(lock.owns(root) && operations);
-		economic_frozen_intent intent;
-		checked(economic_intent_decode(record.command.accounting_intent, &intent));
-		if (record.result_code || !intent.admission.metadata.source_event)
-			return;
-		require(operations->size() < flatfile_authority_transaction_maximum_operations,
-			status::capacity);
-		const std::string name = source_claim_name(intent.admission.metadata);
-		for (const auto &operation : *operations)
-			require(operation.store != flatfile_authority_store::economic_evidence ||
-				operation.filename != name);
-		std::vector<uint8_t> existing;
-		const auto read_result =
-			read_source_claim(root, intent.admission.metadata, &existing, error);
-		require(read_result == flatfile_read_result::not_found,
-			read_result == flatfile_read_result::io_error ? status::io_error :
-			read_result == flatfile_read_result::invalid ? status::invalid :
-									   status::already_exists);
-		auto encoded = source_claim_bytes(record);
-		require_room(*operations, 8 + name.size() + encoded.size());
-		append(*operations, name, std::move(encoded));
+			require(lock.owns(root) && operations);
+			economic_frozen_intent intent;
+			checked(economic_intent_decode(record.command.accounting_intent, &intent));
+			if (record.result_code || !intent.admission.metadata.source_event)
+				return;
+			require(operations->size() <
+					flatfile_authority_transaction_maximum_operations,
+				status::capacity);
+			const std::string name = source_claim_name(intent.admission.metadata);
+			for (const auto &operation : *operations)
+				require(operation.store !=
+						flatfile_authority_store::economic_evidence ||
+					operation.filename != name);
+			std::vector<uint8_t> existing;
+			const auto read_result = read_source_claim(root, intent.admission.metadata,
+								   &existing, error);
+			require(read_result == flatfile_read_result::not_found,
+				read_result == flatfile_read_result::io_error ?
+					status::io_error :
+				read_result == flatfile_read_result::invalid ?
+					status::invalid :
+					status::already_exists);
+			auto encoded = source_claim_bytes(record);
+			require_room(*operations, 8 + name.size() + encoded.size());
+			append(*operations, name, std::move(encoded));
 		},
 		error);
 }
@@ -718,27 +722,29 @@ flatfile_accounting_status flatfile_accounting_storage::verify_source_claim(
 	return guarded(
 		[&]
 		{
-		require(lock.owns(root));
-		economic_frozen_intent intent;
-		checked(economic_intent_decode(record.command.accounting_intent, &intent));
-		if (!intent.admission.metadata.source_event)
-			return;
-		std::vector<uint8_t> retained;
-		const auto read_result =
-			read_source_claim(root, intent.admission.metadata, &retained, error);
-		if (record.result_code)
-		{
-			require(read_result == flatfile_read_result::not_found,
+			require(lock.owns(root));
+			economic_frozen_intent intent;
+			checked(economic_intent_decode(record.command.accounting_intent, &intent));
+			if (!intent.admission.metadata.source_event)
+				return;
+			std::vector<uint8_t> retained;
+			const auto read_result = read_source_claim(root, intent.admission.metadata,
+								   &retained, error);
+			if (record.result_code)
+			{
+				require(read_result == flatfile_read_result::not_found,
+					read_result == flatfile_read_result::io_error ?
+						status::io_error :
+					read_result == flatfile_read_result::invalid ?
+						status::invalid :
+						status::conflict);
+				return;
+			}
+			require(read_result == flatfile_read_result::ok,
 				read_result == flatfile_read_result::io_error ? status::io_error :
-				read_result == flatfile_read_result::invalid ? status::invalid :
-										   status::conflict);
-			return;
-		}
-		require(read_result == flatfile_read_result::ok,
-			read_result == flatfile_read_result::io_error ? status::io_error :
-			read_result == flatfile_read_result::invalid ? status::invalid :
-									   status::not_found);
-		require(retained == source_claim_bytes(record), status::conflict);
+				read_result == flatfile_read_result::invalid  ? status::invalid :
+										status::not_found);
+			require(retained == source_claim_bytes(record), status::conflict);
 		},
 		error);
 }

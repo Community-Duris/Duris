@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+from contract_text import index
 
 from _paths import ROOT, source
 
@@ -209,10 +210,10 @@ assert "chaos_material_pouch_collection_completion" in MATERIALS_C
 assert "chaos_material_pouch_revert_collected" in MATERIALS_C
 assert "obj_from_char(material)" not in MATERIALS_C
 assert "extract_obj(material, FALSE)" in MATERIALS_C
-assert MATERIALS_C.index("chaos_material_pouch_record_collected(pouch, usage.data(), usage_count)") < MATERIALS_C.index(
+assert index(MATERIALS_C, "chaos_material_pouch_record_collected(pouch, usage.data(), usage_count)") < index(MATERIALS_C,
     "item_movement_transaction_submit_batch(actor, roots, root_count"
 )
-assert MATERIALS_C.index("chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count)") < MATERIALS_C.index(
+assert index(MATERIALS_C, "chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count)") < index(MATERIALS_C,
     "pending_collections.erase(actor_pid);\n\t\tlogit(LOG_FILE, \"CHAOS pouch collection could not be queued"
 )
 assert "CHAOS_MATERIAL_POUCH_SEARCH_BUDGET" in MATERIALS
@@ -235,9 +236,6 @@ assert "CHAOS_RESOURCE_" not in NANNY
 assert "chaos_resource_" not in NANNY
 assert "PLR3_CHAOS_STARTER_PENDING" not in NANNY
 assert "item_creation_grant_submit_to_player_before_entry_with_completion" not in NANNY
-assert "item_creation_grant_submit_to_player_before_entry_with_completion" not in source(
-    "item/item_movement_transaction.h"
-).read_text(encoding="utf-8", errors="replace")
 SNAPSHOT = source("player_snapshot.h").read_text(encoding="utf-8", errors="replace")
 assert "PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024" in SNAPSHOT
 assert "PLAYER_SNAPSHOT_MAX_ROWS = 8192" in SNAPSHOT

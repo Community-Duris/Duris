@@ -49,8 +49,7 @@ flatfile_item_accounting_status flatfile_item_accounting_reference_stage(
 // the expected set, including the absence of extra rows.
 flatfile_item_accounting_status flatfile_item_accounting_reference_verify_operation(
 	const std::string &root, const critical_operation_id &legacy_operation_id,
-	std::span<const economic_accounting_item_reference> expected,
-	std::string *error = nullptr);
+	std::span<const economic_accounting_item_reference> expected, std::string *error = nullptr);
 
 // Look up a reference by legacy operation ID and legacy event index.
 flatfile_item_accounting_status flatfile_item_accounting_reference_find_by_legacy(

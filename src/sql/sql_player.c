@@ -1403,7 +1403,7 @@ bool sql_save_player(P_char ch, int type, int room)
 	{
 		if (compatibility_revision &&
 		    !player_revision_acknowledge_durable(GET_PID(ch), compatibility_revision,
-						     PLAYER_CHECKPOINT_COMPONENT_ALL))
+							 PLAYER_CHECKPOINT_COMPONENT_ALL))
 		{
 			logit(LOG_DEBUG,
 			      "sql_save_player: component=revision outcome=acknowledge_failure");
@@ -11256,8 +11256,7 @@ void sql_restore_saved_items(void)
 		std::unordered_set<P_obj> tree_objects;
 		if (!sql_saved_item_custody_matches(obj, obj->obj_uid, 0, room_vnum, &tree_uids,
 						    &tree_objects) ||
-		    std::any_of(tree_uids.begin(), tree_uids.end(),
-				[&published_uids](uint64_t uid)
+		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
 				{ return published_uids.find(uid) != published_uids.end(); }) ||
 		    [&]()
 		    {

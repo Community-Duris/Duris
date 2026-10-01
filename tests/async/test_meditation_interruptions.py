@@ -27,7 +27,7 @@ policy = extract(interp, "static bool command_preserves_meditation(")
 
 assert "command_preserves_meditation(" in interp
 assert "argument + begin + look_at" in interp
-assert "stop_meditation(victim);" in (SRC / "combat" / "fight.c").read_text(
+assert "stop_meditation(victim);" in (SRC / "combat" / "fight_state.c").read_text(
     encoding="utf-8", errors="replace"
 )
 assert "if (!IS_AFFECTED(ch, AFF_MEDITATE))" in (SRC / "cmd" / "actnew.c").read_text(

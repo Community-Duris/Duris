@@ -750,8 +750,7 @@ bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t p
 	return (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
 	       mobile_claim || pet_give || pet_return || accounted_container_destruction ||
-	       accounted_player_quest_turnin ||
-	       locker_transfer(payload) ||
+	       accounted_player_quest_turnin || locker_transfer(payload) ||
 	       corpse_loot_transfer(payload) ||
 	       (payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION && room_transfer(payload)) ||
 	       (payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
@@ -1072,18 +1071,17 @@ economic_item_position accounting_position(const flatfile_item_ownership_record 
 		 item.item_revision, item.state,	 item.equipment_slot };
 }
 
-const flatfile_item_ownership_record *catalog_item(const ownership_catalog &catalog,
-							  uint64_t uid)
+const flatfile_item_ownership_record *catalog_item(const ownership_catalog &catalog, uint64_t uid)
 {
 	const auto found = std::lower_bound(catalog.items.begin(), catalog.items.end(), uid,
-					     [](const auto &item, uint64_t key)
-					     { return item.item_uid < key; });
+					    [](const auto &item, uint64_t key)
+					    { return item.item_uid < key; });
 	return found != catalog.items.end() && found->item_uid == uid ? &*found : nullptr;
 }
 
-bool build_item_accounting_references(
-	const critical_command &command, const economic_accounting_plan &plan,
-	std::vector<economic_accounting_item_reference> *references)
+bool build_item_accounting_references(const critical_command &command,
+				      const economic_accounting_plan &plan,
+				      std::vector<economic_accounting_item_reference> *references)
 {
 	if (!references)
 		return false;
@@ -1121,8 +1119,7 @@ bool build_item_accounting_references(
 
 bool build_item_accounting_plan(const critical_command &command,
 				const item_transfer_payload &payload,
-				const ownership_catalog &before,
-				const ownership_catalog &after,
+				const ownership_catalog &before, const ownership_catalog &after,
 				flatfile_accounting_record *record,
 				std::vector<economic_accounting_item_reference> *references)
 try
@@ -1142,10 +1139,12 @@ try
 	{
 		plan.items_before.reserve(payload.item_count);
 		for (size_t index = 0; index < payload.item_count; ++index)
-			plan.items_before.push_back(
-				{ payload.items[index].item_uid,
-				  { { item_owner_type::unknown, 0, 0 }, 0, 0, 0,
-				    item_custody_state::absent } });
+			plan.items_before.push_back({ payload.items[index].item_uid,
+						      { { item_owner_type::unknown, 0, 0 },
+							0,
+							0,
+							0,
+							item_custody_state::absent } });
 	}
 	else
 	{
@@ -1159,10 +1158,10 @@ try
 		roots.erase(std::unique(roots.begin(), roots.end()), roots.end());
 		for (const auto &item : before.items)
 			if (std::binary_search(roots.begin(), roots.end(), item.root_item_uid))
-				plan.items_before.push_back({ item.item_uid, accounting_position(item) });
+				plan.items_before.push_back(
+					{ item.item_uid, accounting_position(item) });
 		std::sort(plan.items_before.begin(), plan.items_before.end(),
-			  [](const auto &left, const auto &right)
-			  { return left.uid < right.uid; });
+			  [](const auto &left, const auto &right) { return left.uid < right.uid; });
 	}
 	plan.items_after = plan.items_before;
 	plan.item_events.reserve(payload.item_count);
@@ -1170,12 +1169,10 @@ try
 	{
 		const auto &entry = payload.items[index];
 		auto prior = std::lower_bound(plan.items_before.begin(), plan.items_before.end(),
-					      entry.item_uid,
-					      [](const auto &item, uint64_t uid)
+					      entry.item_uid, [](const auto &item, uint64_t uid)
 					      { return item.uid < uid; });
 		auto current = std::lower_bound(plan.items_after.begin(), plan.items_after.end(),
-						entry.item_uid,
-						[](const auto &item, uint64_t uid)
+						entry.item_uid, [](const auto &item, uint64_t uid)
 						{ return item.uid < uid; });
 		if (prior == plan.items_before.end() || prior->uid != entry.item_uid ||
 		    current == plan.items_after.end() || current->uid != entry.item_uid)
@@ -1207,9 +1204,9 @@ try
 		    after_position.root_uid != target_root ||
 		    after_position.parent_uid != target_parent ||
 		    after_position.revision != before_position.revision + 1 ||
-		    after_position.state !=
-			    (payload.to_owner.type == item_owner_type::destruction ?
-				     item_custody_state::destroyed : item_custody_state::active))
+		    after_position.state != (payload.to_owner.type == item_owner_type::destruction ?
+						     item_custody_state::destroyed :
+						     item_custody_state::active))
 			return false;
 		current->position = after_position;
 		plan.item_events.push_back({ static_cast<uint32_t>(index), 0, entry.item_uid,
@@ -1217,9 +1214,8 @@ try
 	}
 	if (economic_plan_normalize(&plan) != economic_accounting_error::ok ||
 	    economic_plan_validate_structure(plan) != economic_accounting_error::ok ||
-	    economic_item_effects_validate(plan.items_before, plan.items_after,
-					   plan.item_events, 0) !=
-		economic_accounting_error::ok ||
+	    economic_item_effects_validate(plan.items_before, plan.items_after, plan.item_events,
+					   0) != economic_accounting_error::ok ||
 	    !build_item_accounting_references(command, plan, references))
 		return false;
 	return economic_plan_encode(plan, &record->plan) == economic_accounting_error::ok;
@@ -1238,7 +1234,8 @@ bool plan_metadata_matches(const economic_plan_metadata &actual,
 		(!actual.source_event ||
 		 (actual.source_event->kind == expected.source_event->kind &&
 		  actual.source_event->source.bytes == expected.source_event->source.bytes &&
-		  actual.source_event->generation.bytes == expected.source_event->generation.bytes &&
+		  actual.source_event->generation.bytes ==
+			  expected.source_event->generation.bytes &&
 		  actual.source_event->sequence == expected.source_event->sequence &&
 		  actual.source_event->slot == expected.source_event->slot));
 	return actual.version == expected.version &&
@@ -1255,11 +1252,11 @@ bool plan_metadata_matches(const economic_plan_metadata &actual,
 	       actual.domain_digest == expected.domain_digest;
 }
 
-bool verify_accounted_item_record(
-	const critical_command &command, const item_transfer_payload &payload,
-	const flatfile_accounting_record &record, unsigned int result_code,
-	const item_transfer_result &result,
-	std::vector<economic_accounting_item_reference> *references)
+bool verify_accounted_item_record(const critical_command &command,
+				  const item_transfer_payload &payload,
+				  const flatfile_accounting_record &record,
+				  unsigned int result_code, const item_transfer_result &result,
+				  std::vector<economic_accounting_item_reference> *references)
 {
 	if (!references || record.result_code != result_code ||
 	    record.failure_stage != critical_failure_stage::none)
@@ -1285,9 +1282,8 @@ bool verify_accounted_item_record(
 	    !plan.accounts.empty() || !plan.postings.empty() || !plan.children.empty() ||
 	    plan.item_events.size() != payload.item_count ||
 	    plan.item_events.size() != result.item_count ||
-	    economic_item_effects_validate(plan.items_before, plan.items_after,
-					   plan.item_events, 0) !=
-		economic_accounting_error::ok)
+	    economic_item_effects_validate(plan.items_before, plan.items_after, plan.item_events,
+					   0) != economic_accounting_error::ok)
 		return false;
 	economic_plan_metadata expected_metadata;
 	if (economic_intent_plan_metadata(command, intent, &expected_metadata) !=
@@ -1305,16 +1301,17 @@ bool verify_accounted_item_record(
 						   &parent_uid) ||
 		    !item_owner_identity_equal(event.after.owner, payload.to_owner) ||
 		    event.after.root_uid != root_uid || event.after.parent_uid != parent_uid ||
-		    event.after.state !=
-			    (payload.to_owner.type == item_owner_type::destruction ?
-				     item_custody_state::destroyed : item_custody_state::active) ||
+		    event.after.state != (payload.to_owner.type == item_owner_type::destruction ?
+						  item_custody_state::destroyed :
+						  item_custody_state::active) ||
 		    event.after.revision != event.before.revision + 1)
 			return false;
 		if (payload.reason == item_transfer_reason::creation)
 		{
 			if (event.before.owner.type != item_owner_type::unknown ||
 			    event.before.state != item_custody_state::absent ||
-			    event.before.revision || event.before.root_uid || event.before.parent_uid)
+			    event.before.revision || event.before.root_uid ||
+			    event.before.parent_uid)
 				return false;
 		}
 		else if (!item_owner_identity_equal(event.before.owner, payload.from_owner) ||
@@ -1331,30 +1328,31 @@ bool verify_accounted_item_record(
 class flatfile_accounting_item_transfer_transaction
 {
     public:
-	static flatfile_accounting_status stage(
-		const std::string &root, const flatfile_authority_lock &lock,
-		const flatfile_accounting_record &record,
-		std::vector<flatfile_authority_operation> *operations, std::string *error)
+	static flatfile_accounting_status
+	stage(const std::string &root, const flatfile_authority_lock &lock,
+	      const flatfile_accounting_record &record,
+	      std::vector<flatfile_authority_operation> *operations, std::string *error)
 	{
 		return flatfile_accounting_storage::stage(root, lock, record, operations, error);
 	}
-	static flatfile_accounting_status stage_source_claim(
-		const std::string &root, const flatfile_authority_lock &lock,
-		const flatfile_accounting_record &record,
-		std::vector<flatfile_authority_operation> *operations, std::string *error)
+	static flatfile_accounting_status
+	stage_source_claim(const std::string &root, const flatfile_authority_lock &lock,
+			   const flatfile_accounting_record &record,
+			   std::vector<flatfile_authority_operation> *operations,
+			   std::string *error)
 	{
 		return flatfile_accounting_storage::stage_source_claim(root, lock, record,
 								       operations, error);
 	}
-	static flatfile_accounting_status verify_source_claim(
-		const std::string &root, const flatfile_authority_lock &lock,
-		const flatfile_accounting_record &record, std::string *error)
+	static flatfile_accounting_status
+	verify_source_claim(const std::string &root, const flatfile_authority_lock &lock,
+			    const flatfile_accounting_record &record, std::string *error)
 	{
 		return flatfile_accounting_storage::verify_source_claim(root, lock, record, error);
 	}
-	static flatfile_authority_transaction_result commit(
-		const std::string &root, const flatfile_authority_lock &lock,
-		const std::vector<flatfile_authority_operation> &operations, std::string *error)
+	static flatfile_authority_transaction_result
+	commit(const std::string &root, const flatfile_authority_lock &lock,
+	       const std::vector<flatfile_authority_operation> &operations, std::string *error)
 	{
 		return flatfile_accounting_storage::commit(root, lock, operations, error);
 	}
@@ -1362,31 +1360,34 @@ class flatfile_accounting_item_transfer_transaction
 
 namespace
 {
-critical_apply_result item_accounting_failure(flatfile_accounting_status status,
-						      uint64_t revision)
+critical_apply_result item_accounting_failure(flatfile_accounting_status status, uint64_t revision)
 {
 	if (status == flatfile_accounting_status::io_error ||
 	    status == flatfile_accounting_status::capacity)
 		return { critical_apply_outcome::retryable_failure, revision,
-			 static_cast<unsigned int>(status == flatfile_accounting_status::io_error ?
-							   EIO : ENOSPC) };
+			 static_cast<unsigned int>(
+				 status == flatfile_accounting_status::io_error ? EIO : ENOSPC) };
 	return { critical_apply_outcome::terminal_failure, revision,
-		 static_cast<unsigned int>(status == flatfile_accounting_status::already_exists ||
-					   status == flatfile_accounting_status::conflict ?
-					   EEXIST : EILSEQ) };
+		 static_cast<unsigned int>(
+			 status == flatfile_accounting_status::already_exists ||
+					 status == flatfile_accounting_status::conflict ?
+				 EEXIST :
+				 EILSEQ) };
 }
 
 critical_apply_result item_reference_failure(flatfile_item_accounting_status status,
-						      uint64_t revision)
+					     uint64_t revision)
 {
 	if (status == flatfile_item_accounting_status::io_error ||
 	    status == flatfile_item_accounting_status::capacity)
 		return { critical_apply_outcome::retryable_failure, revision,
-			 static_cast<unsigned int>(status == flatfile_item_accounting_status::io_error ?
-							   EIO : ENOSPC) };
+			 static_cast<unsigned int>(
+				 status == flatfile_item_accounting_status::io_error ? EIO :
+										       ENOSPC) };
 	return { critical_apply_outcome::terminal_failure, revision,
-		 static_cast<unsigned int>(status == flatfile_item_accounting_status::already_exists ?
-						   EEXIST : EILSEQ) };
+		 static_cast<unsigned int>(
+			 status == flatfile_item_accounting_status::already_exists ? EEXIST :
+										     EILSEQ) };
 }
 }
 
@@ -3153,8 +3154,7 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 {
 	item_transfer_payload payload = {};
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
-	const bool accounted =
-		command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	const bool accounted = command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 	if (root.empty() ||
 	    (accounted ? !item_transfer_accounting_command_supported(command) :
 			 !critical_command_valid(command)) ||
@@ -3191,45 +3191,46 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	for (const operation_state &entry : catalog.operations)
 		if (critical_operation_id_equal(entry.operation_id, command.operation_id))
 		{
-		if (CRYPTO_memcmp(entry.command_digest.data(), digest.data(),
-				  digest.size()))
-			return { critical_apply_outcome::terminal_failure, catalog.revision,
-				 EEXIST };
-		if (accounted)
-		{
-			flatfile_accounting_record retained;
-			const auto status =
-				flatfile_accounting_lookup(root, authority, command, &retained, &error);
-			if (status != flatfile_accounting_status::ok)
-				return item_accounting_failure(status, catalog.revision);
-			std::vector<economic_accounting_item_reference> references;
-			if (!verify_accounted_item_record(command, payload, retained,
-							  entry.result_code, entry.result,
-							  &references))
-				return { critical_apply_outcome::terminal_failure,
-					 catalog.revision, EILSEQ };
-			const auto refs = flatfile_item_accounting_reference_verify_operation(
-				root, command.operation_id, references, &error);
-			if (refs != flatfile_item_accounting_status::ok)
-				return item_reference_failure(refs, catalog.revision);
-			const auto claim =
-				flatfile_accounting_item_transfer_transaction::verify_source_claim(
-					root, authority, retained, &error);
-			if (claim != flatfile_accounting_status::ok)
-				return item_accounting_failure(claim, catalog.revision);
-		}
-		return make_result(entry.result_code ?
+			if (CRYPTO_memcmp(entry.command_digest.data(), digest.data(),
+					  digest.size()))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 EEXIST };
+			if (accounted)
+			{
+				flatfile_accounting_record retained;
+				const auto status = flatfile_accounting_lookup(
+					root, authority, command, &retained, &error);
+				if (status != flatfile_accounting_status::ok)
+					return item_accounting_failure(status, catalog.revision);
+				std::vector<economic_accounting_item_reference> references;
+				if (!verify_accounted_item_record(command, payload, retained,
+								  entry.result_code, entry.result,
+								  &references))
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EILSEQ };
+				const auto refs =
+					flatfile_item_accounting_reference_verify_operation(
+						root, command.operation_id, references, &error);
+				if (refs != flatfile_item_accounting_status::ok)
+					return item_reference_failure(refs, catalog.revision);
+				const auto claim = flatfile_accounting_item_transfer_transaction::
+					verify_source_claim(root, authority, retained, &error);
+				if (claim != flatfile_accounting_status::ok)
+					return item_accounting_failure(claim, catalog.revision);
+			}
+			return make_result(entry.result_code ?
 						   critical_apply_outcome::terminal_failure :
 						   critical_apply_outcome::already_applied,
-			   entry.result_code, entry.result);
-	}
+					   entry.result_code, entry.result);
+		}
 	if (accounted)
 	{
 		flatfile_accounting_record retained;
 		const auto status =
 			flatfile_accounting_lookup(root, authority, command, &retained, &error);
 		if (status == flatfile_accounting_status::ok)
-			return { critical_apply_outcome::terminal_failure, catalog.revision, EEXIST };
+			return { critical_apply_outcome::terminal_failure, catalog.revision,
+				 EEXIST };
 		if (status != flatfile_accounting_status::not_found)
 			return item_accounting_failure(status, catalog.revision);
 	}
@@ -3570,11 +3571,10 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 				 EILSEQ };
 		record.result.assign(encoded_result.begin(), encoded_result.end());
 		std::vector<economic_accounting_item_reference> references;
-		if (!result_code &&
-		    !build_item_accounting_plan(command, payload, catalog, candidate, &record,
-						&references))
+		if (!result_code && !build_item_accounting_plan(command, payload, catalog,
+								candidate, &record, &references))
 			return { errno == ENOMEM ? critical_apply_outcome::retryable_failure :
-						critical_apply_outcome::terminal_failure,
+						   critical_apply_outcome::terminal_failure,
 				 catalog.revision,
 				 static_cast<unsigned int>(errno == ENOMEM ? ENOMEM : EILSEQ) };
 		std::vector<flatfile_authority_operation> operations;
@@ -3608,21 +3608,23 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		const auto committed = flatfile_accounting_item_transfer_transaction::commit(
 			root, authority, operations, &error);
 		if (committed != flatfile_authority_transaction_result::ok)
-			return { committed == flatfile_authority_transaction_result::io_error ?
-					 critical_apply_outcome::retryable_failure :
-					 critical_apply_outcome::terminal_failure,
-				 catalog.revision,
-				 static_cast<unsigned int>(
-					 committed == flatfile_authority_transaction_result::io_error ?
-						 EIO :
-						 EILSEQ) };
+			return {
+				committed == flatfile_authority_transaction_result::io_error ?
+					critical_apply_outcome::retryable_failure :
+					critical_apply_outcome::terminal_failure,
+				catalog.revision,
+				static_cast<unsigned int>(
+					committed == flatfile_authority_transaction_result::io_error ?
+						EIO :
+						EILSEQ)
+			};
 		flatfile_accounting_record retained;
 		const auto looked_up =
 			flatfile_accounting_lookup(root, authority, command, &retained, &error);
 		if (looked_up != flatfile_accounting_status::ok)
 			return item_accounting_failure(looked_up, catalog.revision);
-		if (!verify_accounted_item_record(command, payload, retained, result_code,
-						  result, &references))
+		if (!verify_accounted_item_record(command, payload, retained, result_code, result,
+						  &references))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EILSEQ };
 		const auto refs_verified = flatfile_item_accounting_reference_verify_operation(
@@ -3640,14 +3642,16 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		const auto committed =
 			flatfile_authority_transaction_commit(root, authority, images, &error);
 		if (committed != flatfile_authority_transaction_result::ok)
-			return { committed == flatfile_authority_transaction_result::io_error ?
-					 critical_apply_outcome::retryable_failure :
-					 critical_apply_outcome::terminal_failure,
-				 catalog.revision,
-				 static_cast<unsigned int>(
-					 committed == flatfile_authority_transaction_result::io_error ?
-						 EIO :
-						 EILSEQ) };
+			return {
+				committed == flatfile_authority_transaction_result::io_error ?
+					critical_apply_outcome::retryable_failure :
+					critical_apply_outcome::terminal_failure,
+				catalog.revision,
+				static_cast<unsigned int>(
+					committed == flatfile_authority_transaction_result::io_error ?
+						EIO :
+						EILSEQ)
+			};
 	}
 	if (!accounted && !result_code && payload.item_count > 0)
 	{

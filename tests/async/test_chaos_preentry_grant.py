@@ -9,7 +9,7 @@ import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 NANNY = (ROOT / "src/account/nanny.c").read_text(encoding="utf-8", errors="replace")
-ACTWIZ = (ROOT / "src/cmd/actwiz.c").read_text(encoding="utf-8", errors="replace")
+ACTWIZ = (ROOT / "src/account/wiz_newchar.c").read_text(encoding="utf-8", errors="replace")
 PROTOTYPES = (ROOT / "src/core/prototypes.h").read_text(
     encoding="utf-8", errors="replace"
 )

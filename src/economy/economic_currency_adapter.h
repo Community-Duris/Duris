@@ -83,10 +83,11 @@ economic_accounting_error economic_chaos_starter_bank_prepare(
 
 // Wallet-only quest reward issuance. The deterministic child operation ID is
 // also the source identity for retries of the consumed offering's reward.
-economic_accounting_error economic_quest_wallet_reward_intent(
-	const critical_command &command, const critical_operation_id &epoch,
-	const economic_account_key &wallet, const economic_account_key &bank,
-	std::vector<uint8_t> *encoded);
+economic_accounting_error economic_quest_wallet_reward_intent(const critical_command &command,
+							      const critical_operation_id &epoch,
+							      const economic_account_key &wallet,
+							      const economic_account_key &bank,
+							      std::vector<uint8_t> *encoded);
 economic_accounting_error economic_quest_wallet_reward_prepare(
 	const critical_command &command, const economic_frozen_intent &intent,
 	const economic_currency_authority &authority, currency_revision_policy revision_policy,

@@ -549,7 +549,7 @@ operation_fields(const critical_command &root, const economic_frozen_intent &int
 		 { "actor_kind", std::to_string(static_cast<uint8_t>(metadata.actor_kind)) },
 		 { "actor_id", std::to_string(metadata.actor_id) },
 		 { "reason", std::to_string(static_cast<uint16_t>(metadata.reason)) },
-			 { "source_event", source_event },
+		 { "source_event", source_event },
 		 { "intent_digest", hex(metadata.intent_digest) },
 		 { "domain_digest", hex(metadata.domain_digest) },
 		 { "plan_digest", plan ? hex(plan_digest) : "NULL" },
@@ -658,8 +658,7 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 	      plan ? plan->postings.size() : 0);
 	count(connection, "economic_accounting_item_reference", where,
 	      plan ? plan->item_events.size() : 0);
-	count(connection, "economic_accounting_source_claim", where,
-	      has_source_claim ? 1 : 0);
+	count(connection, "economic_accounting_source_claim", where, has_source_claim ? 1 : 0);
 	count(connection, "item_ownership_ledger", where, 0);
 }
 void verify_item_reference_rows(MYSQL *connection, const critical_command &root,
@@ -905,7 +904,7 @@ coin_transfer_accounting_intent(const critical_command &root, const critical_ope
 		{
 			item_transfer_payload source_pile = {};
 			if (!item_transfer_command_decode_payload(payload.source.change,
-								   &source_pile) ||
+								  &source_pile) ||
 			    source_pile.item_count != 1)
 				return error::unauthorized;
 			source_revision = source_pile.items[0].expected_item_revision;
@@ -924,13 +923,14 @@ coin_transfer_accounting_intent(const critical_command &root, const critical_ope
 	}
 }
 
-bool coin_transfer_accounting_source_event(economic_account_kind source_kind,
-					  uint64_t source_id, uint64_t source_revision,
-					  bool source_retired, bool destination_created,
-					  economic_source_event *event) noexcept
+bool coin_transfer_accounting_source_event(economic_account_kind source_kind, uint64_t source_id,
+					   uint64_t source_revision, bool source_retired,
+					   bool destination_created,
+					   economic_source_event *event) noexcept
 {
-	if (!event || (source_kind != economic_account_kind::wallet &&
-		       source_kind != economic_account_kind::pile) ||
+	if (!event ||
+	    (source_kind != economic_account_kind::wallet &&
+	     source_kind != economic_account_kind::pile) ||
 	    !source_id || source_revision == UINT64_MAX ||
 	    (!source_retired && !destination_created))
 		return false;
@@ -941,8 +941,7 @@ bool coin_transfer_accounting_source_event(economic_account_kind source_kind,
 		result.source.bytes[1 + byte] = static_cast<uint8_t>(source_id >> (byte * 8));
 	std::memcpy(result.source.bytes.data() + 9, "COINACC", 7);
 	for (size_t byte = 0; byte < 8; ++byte)
-		result.generation.bytes[byte] =
-			static_cast<uint8_t>(source_revision >> (byte * 8));
+		result.generation.bytes[byte] = static_cast<uint8_t>(source_revision >> (byte * 8));
 	std::memcpy(result.generation.bytes.data() + 8, "COINLIFE", 8);
 	result.slot = (source_retired ? 1U : 0U) | (destination_created ? 2U : 0U);
 	*event = result;

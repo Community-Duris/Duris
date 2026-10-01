@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Keep unported compound commands ahead of their first native mutation."""
 
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -59,7 +60,7 @@ int main() {
             cpp = Path(temporary) / "gate.cpp"
             binary = Path(temporary) / "gate"
             cpp.write_text(source)
-            subprocess.run(["g++-12", "-std=c++20", "-Wall", "-Wextra", "-Werror",
+            subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Werror",
                             str(cpp), "-o", str(binary)], check=True)
             subprocess.run([str(binary)], check=True)
 

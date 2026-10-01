@@ -509,8 +509,7 @@ bool stage_money(MYSQL *connection, uint32_t pid, int64_t amount)
 			       "claim_revision=claim_revision+1");
 }
 
-bool lock_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t *money,
-				uint64_t *revision)
+bool lock_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t *money, uint64_t *revision)
 {
 	if (!pid || !money || !revision ||
 	    !execute(connection,
@@ -534,7 +533,7 @@ bool lock_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t *money,
 	}
 	uint64_t parsed_money = 0;
 	const bool valid = parse_u64(row[0], &parsed_money) && parsed_money <= UINT_MAX &&
-			    parse_u64(row[1], revision);
+			   parse_u64(row[1], revision);
 	if (query)
 		mysql_free_result(query);
 	if (!valid)
@@ -546,14 +545,13 @@ bool lock_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t *money,
 	return true;
 }
 
-bool debit_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t amount,
-				 uint64_t revision)
+bool debit_auction_claim_balance(MYSQL *connection, uint32_t pid, int64_t amount, uint64_t revision)
 {
 	return pid && amount > 0 && revision != UINT64_MAX &&
 	       execute(connection,
 		       "UPDATE auction_money_pickups SET money=money-" + std::to_string(amount) +
-			       ",claim_revision=claim_revision+1 WHERE pid=" +
-			       std::to_string(pid) + " AND money>=" + std::to_string(amount) +
+			       ",claim_revision=claim_revision+1 WHERE pid=" + std::to_string(pid) +
+			       " AND money>=" + std::to_string(amount) +
 			       " AND claim_revision=" + std::to_string(revision)) &&
 	       mysql_affected_rows(connection) == 1;
 }

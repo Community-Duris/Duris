@@ -5,7 +5,7 @@ Both helpers below used to write through `struct damage_messages`, whose members
 now hold immutable text.  Each formatted with MAX_STRING_LENGTH (65536) into a
 caller buffer that was much smaller, so each takes the caller's real size now.
 """
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
@@ -35,8 +35,7 @@ check(
 check("damage_messages has no writable char * member", "\tchar *" not in decl)
 
 # anatomy_strike borrows hit()'s buffers and is told how big they are.
-ana_start = fight.index("int anatomy_strike(")
-ana = fight[ana_start:fight.index("\nint required_weapon_skill(", ana_start)]
+ana = extract_function("attack_effects.c", "int anatomy_strike(")
 check("anatomy_strike takes the caller's buffers", "char *attacker_msg" in ana and
       "char *victim_msg" in ana and "char *room_msg" in ana)
 check("anatomy_strike takes the caller's buffer size", "size_t msg_size" in ana)

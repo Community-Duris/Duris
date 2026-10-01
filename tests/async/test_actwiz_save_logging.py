@@ -3,7 +3,7 @@ from _paths import SRC
 from pathlib import Path
 import sys
 
-text = (SRC / "actwiz.c").read_text()
+text = (SRC / "staff_newbie_aid.c").read_text()
 count = text.count('if (!do_save_silent(victim, 1))')
 log = text.count('logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));')
 

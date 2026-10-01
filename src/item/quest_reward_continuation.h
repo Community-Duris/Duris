@@ -153,11 +153,9 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 		return false;
 	const size_t reward_record_bytes = version >= 4 ? 16 : (version >= 3 ? 12 : 8);
 	const size_t reward_bytes = static_cast<size_t>(value.reward_count) * reward_record_bytes;
-	if (size - offset < reward_bytes ||
-	    (version == 1 && size - offset != reward_bytes))
+	if (size - offset < reward_bytes || (version == 1 && size - offset != reward_bytes))
 		return false;
-	for (size_t index = 0; index < value.reward_count; ++index,
-	     offset += reward_record_bytes)
+	for (size_t index = 0; index < value.reward_count; ++index, offset += reward_record_bytes)
 	{
 		value.rewards[index] = { read32(offset), read32(offset + 4),
 					 version >= 3 ? read32(offset + 8) : 0,
@@ -190,12 +188,12 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 		    value.strongest_party_level < 0 || !value.credited_count ||
 		    value.credited_count > QUEST_REWARD_MAX_CREDITED_PIDS ||
 		    value.party_size != value.credited_count ||
-	    size - offset < static_cast<size_t>(value.credited_count) * sizeof(uint32_t) +
-					   2 * sizeof(uint32_t))
+		    size - offset < static_cast<size_t>(value.credited_count) * sizeof(uint32_t) +
+					    2 * sizeof(uint32_t))
 			return false;
 		bool includes_player = false;
-		for (size_t index = 0; index < value.credited_count; ++index,
-		     offset += sizeof(uint32_t))
+		for (size_t index = 0; index < value.credited_count;
+		     ++index, offset += sizeof(uint32_t))
 		{
 			const uint32_t pid = read32(offset);
 			if (!pid)
@@ -213,7 +211,8 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 		if (!name_length || name_length > QUEST_REWARD_MAX_CHARACTER_NAME_BYTES ||
 		    size - offset < static_cast<size_t>(name_length) + sizeof(uint32_t))
 			return false;
-		value.character_name.assign(reinterpret_cast<const char *>(data + offset), name_length);
+		value.character_name.assign(reinterpret_cast<const char *>(data + offset),
+					    name_length);
 		if (value.character_name.find('\0') != std::string::npos)
 			return false;
 		offset += name_length;

@@ -877,6 +877,30 @@ int main() {
     quest_reward_recover_pending(&actor, operation, pending, 0);
     assert(xp_gained == capacity_xp_before + 65 * 75);
     xp_save_refused = false;
+    // A mixed recovered reward must publish all economic effects before sealing
+    // its XP save. Otherwise native custody can advance past the saved graph.
+    quest_reward_recoveries.clear();
+    pending.version = 4;
+    pending.reward_count = 3;
+    pending.rewards[0] = {QUEST_GOAL_ITEM, 88, 0, 0};
+    pending.rewards[1] = {QUEST_GOAL_COINS, 50, 0, 0};
+    pending.rewards[2] = {QUEST_GOAL_EXP, 75, 0, 75};
+    operation.bytes[0] = 200;
+    const auto mixed_saves = xp_save_requests, mixed_acks = acked;
+    quest_reward_recover_pending(&actor, operation, pending, 0);
+    assert(xp_save_requests == mixed_saves && acked == mixed_acks);
+    auto mixed_recovery_item = queued_grants.back();
+    mixed_recovery_item.grant_object->carrier = &actor;
+    mixed_recovery_item.completion(&actor, mixed_recovery_item.grant_object->obj_uid, true, 0);
+    quest_reward_recovery_pulse();
+    assert(xp_save_requests == mixed_saves && acked == mixed_acks);
+    auto mixed_cash = queued_currencies.back();
+    mixed_cash.completion(&actor, true, {}, 0, mixed_cash.context.data(), mixed_cash.context.size());
+    assert(xp_save_requests == mixed_saves + 1 && acked == mixed_acks);
+    assert(queued_xp_receipts.size() == 1 && queued_xp_receipts[0].reward_index == 2);
+    quest_reward_recovery_save_acknowledged(actor.pid, save_revision.current_revision,
+                                            queued_xp_receipts.data(), queued_xp_receipts.size());
+    assert(acked == mixed_acks + 1);
     // Only native verified slots suppress economic delivery on cold recovery.
     pending.version = 2;
     pending.reward_count = 2;

@@ -2059,8 +2059,7 @@ bool item_transfer_repository_execute_at_offset(
 		const uint16_t after_slot =
 			target_equipment_slot(payload, payload.selected_item_uid);
 		const auto root =
-			std::find_if(selected.begin(), selected.end(),
-				     [&](const current_item &item)
+			std::find_if(selected.begin(), selected.end(), [&](const current_item &item)
 				     { return item.item_uid == payload.selected_item_uid; });
 		if (payload.from_owner.type != item_owner_type::player ||
 		    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
@@ -2132,8 +2131,7 @@ bool item_transfer_repository_execute_at_offset(
 	if (item_transfer_forced_weapon_drop(payload.reason))
 	{
 		const auto root =
-			std::find_if(selected.begin(), selected.end(),
-				     [&](const current_item &item)
+			std::find_if(selected.begin(), selected.end(), [&](const current_item &item)
 				     { return item.item_uid == payload.selected_item_uid; });
 		if (root == selected.end() ||
 		    root->equipment_slot != static_cast<uint16_t>(payload.reason_id) ||

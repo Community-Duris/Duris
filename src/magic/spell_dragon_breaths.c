@@ -313,7 +313,7 @@ void spell_acid_breath(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 			 &messages) != DAM_NONEDEAD)
 		return;
 
-	/*
+		/*
 	 * And now for the damage on equipment
 	 */
 

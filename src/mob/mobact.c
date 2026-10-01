@@ -113,7 +113,7 @@ struct remember_data
 {
 	P_char c;
 	struct remember_data *next;
-} * remember_array[MAX_ZONES];
+} *remember_array[MAX_ZONES];
 
 // Many mobiles are multiclass, and do not pick the best skin spell for protection.
 // This function when called selects the best available skin spell for the mobile.

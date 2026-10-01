@@ -137,7 +137,7 @@ preflight = event.index("if (!weaving && arg->spell == SPELL_ELEMENTAL_AURA)")
 resource = event.index("use_spell(ch, arg->spell)")
 assert preflight < resource, "elemental-aura rejection must precede use_spell()"
 assert "StopCasting(ch);" in event[preflight:resource]
-magic = source("magic.c").read_text(encoding="utf-8")
+magic = source("spell_elemental_shields.c").read_text(encoding="utf-8")
 assert "failure = elemental_aura_failure_message(ch);" in magic
 
 functions = [

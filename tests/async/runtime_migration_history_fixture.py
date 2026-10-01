@@ -18,6 +18,9 @@ def main() -> int:
             os.environ.get("TEST_DB_DISPOSABLE") != "1" or \
             not os.environ.get("DB_NAME", "").startswith("duris_268_"):
         raise RuntimeError("runtime fixture requires an explicitly disposable test DB")
+    port = os.environ.get("DB_PORT", "3306")
+    if not port.isdigit() or not 1 <= int(port) <= 65535:
+        raise RuntimeError("invalid disposable database port")
     # Exercise the restore's exact complete-history selector against the same
     # native rows as the compiled boot predicate, including its tamper cases.
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -61,7 +64,9 @@ static MYSQL_RES *db_query(const char *format, ...) {
 int main() {
     DB = mysql_init(nullptr);
     if (!DB || !mysql_real_connect(DB, getenv("DB_HOST"), getenv("DB_USER"),
-        getenv("DB_PASSWD"), getenv("DB_NAME"), 3306, nullptr, 0) ||
+        getenv("DB_PASSWD"), getenv("DB_NAME"),
+        getenv("DB_PORT") ? static_cast<unsigned int>(std::strtoul(getenv("DB_PORT"), nullptr, 10)) : 3306,
+        nullptr, 0) ||
         mysql_set_character_set(DB, "utf8mb4")) return 2;
     bool history = sql_verify_migration_history();
     bool metadata = sql_verify_metadata_fingerprint();

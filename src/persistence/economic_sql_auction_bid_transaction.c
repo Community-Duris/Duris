@@ -406,10 +406,9 @@ bool insert_operation(MYSQL *connection, const critical_command &command,
 		std::to_string(static_cast<uint8_t>(meta.actor_kind)) + "," +
 		std::to_string(meta.actor_id) + "," +
 		std::to_string(static_cast<uint16_t>(meta.reason)) + "," + hex(source) + "," +
-		realized_price_sql + "," +
-		hex(intent_digest) + "," + hex(intent.domain_digest) + "," +
-		(plan ? hex(plan_digest) : "NULL") + "," + hex(command.accounting_intent) + "," +
-		(plan ? hex(encoded_plan) : "NULL") + "," +
+		realized_price_sql + "," + hex(intent_digest) + "," + hex(intent.domain_digest) +
+		"," + (plan ? hex(plan_digest) : "NULL") + "," + hex(command.accounting_intent) +
+		"," + (plan ? hex(encoded_plan) : "NULL") + "," +
 		(plan ? "1,0," : "2," + std::to_string(result_code) + ",") +
 		std::to_string(plan ? plan->accounts.size() : 0) + "," +
 		std::to_string(plan ? plan->postings.size() : 0) + ",0,0,0,0)";

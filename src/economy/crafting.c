@@ -29,8 +29,8 @@ namespace
 {
 bool grant_crafted_item(P_char ch, P_obj object)
 {
-	if (object && item_creation_grant_submit_to_player(
-		      ch, object, ch, NULL, economic_source_kind::crafting))
+	if (object && item_creation_grant_submit_to_player(ch, object, ch, NULL,
+							   economic_source_kind::crafting))
 		return true;
 	if (object)
 		extract_obj(object, FALSE);

@@ -141,6 +141,11 @@ bool sql_begin_transaction()
 {
 	return false;
 }
+bool sql_player_deletion_guard(int)
+{
+	// The offline pfile tool has no SQL authority and cannot approve deletion.
+	return false;
+}
 bool sql_commit()
 {
 	return false;
