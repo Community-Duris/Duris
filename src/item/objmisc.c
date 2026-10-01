@@ -206,6 +206,57 @@ void event_random_exit(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*dat
 	extract_obj(obj);
 }
 
+// Hidden NPC helper equipment must never activate for a player-owned pet.
+// Resolve physical custody as well as the explicit actor: periodic callbacks
+// have no actor, and speech/defensive dispatch may pass someone else. A live
+// holder is authoritative: an NPC defender keeps its helper proc when attacked
+// by a PC pet, even though CMD_GOTHIT passes the attacking pet as the actor.
+bool item_restricted_for_player_pet(P_char actor, P_obj obj)
+{
+	if (!obj || !(obj->extra_flags & ITEM_NOSHOW))
+		return false;
+	P_obj root = obj;
+	for (size_t depth = 0; root && depth < 1024; ++depth)
+	{
+		if (root->loc_p == LOC_CARRIED || root->loc_p == LOC_WORN)
+		{
+			P_char holder = root->loc.carrying;
+			return holder && IS_PC_PET(holder);
+		}
+		if (root->loc_p != LOC_INSIDE)
+			return actor && IS_PC_PET(actor);
+		root = root->loc.inside;
+	}
+	// Fail closed for a malformed/cyclic containment chain; never mutate it.
+	return root != nullptr;
+}
+
+int invoke_object_special(P_obj obj, P_char actor, int command, char *argument)
+{
+	if (!obj || item_restricted_for_player_pet(actor, obj) || obj->R_num < 0 || !obj_index ||
+	    !obj_index[obj->R_num].func.obj)
+		return FALSE;
+	return (*obj_index[obj->R_num].func.obj)(obj, actor, command, argument);
+}
+
+void item_restrict_player_pet_equipment(P_char actor)
+{
+	if (!actor || !IS_PC_PET(actor))
+		return;
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+	{
+		P_obj obj = actor->equipment[slot];
+		if (obj && item_restricted_for_player_pet(actor, obj))
+		{
+			// Equipment topology changes, not ownership: retain the object UID,
+			// complete child graph and the same pet's custody, without a grant.
+			obj = unequip_char(actor, slot, FALSE);
+			if (obj)
+				obj_to_char(obj, actor);
+		}
+	}
+}
+
 int obj_zone_id(P_obj o)
 {
 	P_obj tobj = o;

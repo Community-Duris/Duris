@@ -235,8 +235,7 @@ int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 		if (obj_index[item->R_num].func.obj != NULL)
 		{
 			data.victim = ch;
-			if ((*obj_index[item->R_num].func.obj)(item, opponent, CMD_GOTHIT,
-							       (char *)&data))
+			if (invoke_object_special(item, opponent, CMD_GOTHIT, (char *)&data))
 			{
 				return FALSE;
 			}
