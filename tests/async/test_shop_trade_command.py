@@ -260,7 +260,7 @@ with tempfile.TemporaryDirectory(prefix="duris-shop-trade-command-") as temp_dir
             "-Isrc",
             str(source),
             rel("shop_trade_command.c"),
-            rel("item_transfer_command.c"), rel("player_snapshot_codec.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("player_snapshot_codec.c"),
             rel("currency_command.c"),
             rel("critical_command.c"),
             "-lcrypto",

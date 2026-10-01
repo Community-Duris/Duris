@@ -31,6 +31,12 @@ PRELUDE = r'''
 #include <cstring>
 #include <gnutls/gnutls.h>
 
+struct craft_pouch_mutation;
+bool chaos_pouch_publish_committed(P_obj, const craft_pouch_mutation &) {
+    assert(false); // This fixture exercises movement and output, not pouch crafts.
+    return false;
+}
+
 static bool custom_prompt = false;
 ResolvedOutputProfile player_output_profile(P_char, OutputChannel channel, OutputPolicy policy) {
     OutputProfilePreferences choices;
@@ -414,10 +420,10 @@ def main():
                         '-fsanitize=address,undefined', '-Isrc', str(source),
                         *[str(SRC / name) for name in ['output_profiles.c', 'output_style.c', 'prompt.c', 'ansi.c', 'mccp.c', 'unicode.c', 'json_utils.c', 'safe_format.c',
                             'item_movement_transaction.c', 'item_ownership_runtime.c',
-                            'item_transfer_command.c', 'critical_command.c',
+                            'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c", 'critical_command.c',
                             'player_snapshot_capture.c', 'player_snapshot_codec.c']],
                         '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-o', str(binary)],
-                       cwd=ROOT, check=True, timeout=120)
+                       cwd=ROOT, check=True, timeout=180)
         subprocess.run([str(binary)], check=True, timeout=30)
 
 

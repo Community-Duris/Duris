@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check supported craft admission and remaining virtual-material refusal."""
+"""Check supported physical and pouch craft admission before live mutation."""
 from _paths import extract_function
 
 movement = extract_function('item_movement_transaction.c',
@@ -14,8 +14,11 @@ for symbol in ('do_mixpoison', 'do_encrust'):
     assert 'item_movement_transaction_submit_craft(' in function
     assert 'economic_gameplay_authority::active()' not in function
 encrust = extract_function('salchemist.c', 'void do_encrust(')
-assert encrust.index('Virtual Chaos-pouch encrust is temporarily unavailable') < encrust.index('number(1, 110)')
+assert encrust.index('chaos_material_pouch_can_record_generated') < encrust.index('number(1, 110)')
+assert 'virtual_jewel ? 1 : 2' in encrust
+assert 'virtual_jewel ? &pouch_usage : nullptr' in encrust
+assert 'chaos_material_pouch_record_generated(' not in encrust
 harvester = extract_function('drannak.c', 'int pvp_store(')
 assert 'item_movement_transaction_submit_craft(' in harvester
 assert 'economic_gameplay_authority::active()' not in harvester
-print('supported alchemy admission and virtual-material pre-mutation refusal passed')
+print('supported alchemy admission and atomic virtual-material craft passed')

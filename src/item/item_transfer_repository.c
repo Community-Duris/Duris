@@ -1,4 +1,5 @@
 #include "item/item_transfer_repository.h"
+#include "item/craft_pouch_mutation.h"
 #include "economy/item_transfer_accounting.h"
 #include "core/defines.h"
 #include "player/player_snapshot_codec.h"
@@ -15,6 +16,7 @@
 #include <limits>
 #include <mysql.h>
 #include <new>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -1490,7 +1492,7 @@ bool update_owner_revision(MYSQL *connection, const item_owner_identity &owner,
 bool insert_ledger(MYSQL *connection, const critical_command &command,
 		   const item_transfer_payload &payload, size_t index, uint16_t event_index_base,
 		   uint64_t item_revision, uint64_t from_revision, uint64_t to_revision,
-		   uint16_t from_equipment_slot)
+		   uint16_t from_equipment_slot, uint16_t forced_to_equipment_slot = UINT16_MAX)
 {
 	static const char SQL[] =
 		"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,"
@@ -1510,7 +1512,9 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 	uint8_t to_type = static_cast<uint8_t>(payload.to_owner.type);
 	uint16_t reason = static_cast<uint16_t>(payload.reason);
 	uint16_t source = static_cast<uint16_t>(command.source_site);
-	uint16_t to_equipment_slot = target_equipment_slot(payload, entry.item_uid);
+	uint16_t to_equipment_slot = forced_to_equipment_slot == UINT16_MAX ?
+					     target_equipment_slot(payload, entry.item_uid) :
+					     forced_to_equipment_slot;
 	unsigned long operation_length = command.operation_id.bytes.size();
 	MYSQL_BIND bindings[20] = {};
 	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
@@ -1692,7 +1696,8 @@ bool insert_craft_ledger(MYSQL *connection, const critical_command &command,
 			 uint16_t event_index_base, uint64_t item_revision, uint64_t from_revision,
 			 uint64_t to_revision, const item_owner_identity &from_owner,
 			 const item_owner_identity &to_owner, uint64_t root_item_uid,
-			 uint64_t parent_item_uid, uint16_t from_equipment_slot = 0)
+			 uint64_t parent_item_uid, uint16_t from_equipment_slot = 0,
+			 uint16_t to_equipment_slot = UINT16_MAX)
 {
 	item_transfer_payload leg = payload;
 	leg.from_owner = from_owner;
@@ -1704,7 +1709,117 @@ bool insert_craft_ledger(MYSQL *connection, const critical_command &command,
 	leg.items[index].root_item_uid = root_item_uid;
 	leg.items[index].parent_item_uid = parent_item_uid;
 	return insert_ledger(connection, command, leg, index, event_index_base, item_revision,
-			     from_revision, to_revision, from_equipment_slot);
+			     from_revision, to_revision, from_equipment_slot, to_equipment_slot);
+}
+
+bool update_craft_pouch_metadata(MYSQL *connection, const item_transfer_payload &payload,
+				 const craft_pouch_mutation &pouch, unsigned int *result_code)
+{
+	if (!pouch.before.object_uid)
+		return true;
+	const std::string selector = "p.obj_uid=" + std::to_string(pouch.before.object_uid) +
+				     " AND p.pid=" + std::to_string(payload.from_owner.id) +
+				     " AND p.vnum=" + std::to_string(pouch.before.vnum);
+	const std::string query = "SELECT p.id,r.payload FROM player_items p LEFT JOIN "
+				  "player_item_runtime_state r ON r.item_id=p.id WHERE " +
+				  selector + " FOR UPDATE";
+	if (!run_sql(connection, query))
+		return false;
+	using rows_ptr = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
+	rows_ptr rows(mysql_store_result(connection), mysql_free_result);
+	if (!rows)
+		return false;
+	MYSQL_ROW row = mysql_fetch_row(rows.get());
+	if (!row || mysql_num_rows(rows.get()) != 1 || !row[0])
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	char *end = nullptr;
+	errno = 0;
+	const uint64_t item_id = std::strtoull(row[0], &end, 10);
+	if (errno || !end || *end || !item_id)
+		return false;
+	std::vector<player_item_snapshot> runtime;
+	if (row[1])
+	{
+		const auto *lengths = mysql_fetch_lengths(rows.get());
+		if (!lengths ||
+		    player_item_snapshot_list_decode(reinterpret_cast<const uint8_t *>(row[1]),
+						     lengths[1], &runtime) !=
+			    player_snapshot_codec_result::ok ||
+		    runtime.size() != 1 || runtime[0].object_uid != pouch.before.object_uid ||
+		    runtime[0].vnum != pouch.before.vnum)
+		{
+			*result_code = EBADMSG;
+			return true;
+		}
+	}
+	rows.reset();
+	const std::string ledger_rows = "item_id=" + std::to_string(item_id) +
+					" AND BINARY LEFT(keyword,19)='CHAOS_POUCH_LEDGER_'";
+	if (!run_sql(connection, "SELECT keyword,description FROM player_item_extra_descr WHERE " +
+					 ledger_rows + " ORDER BY id FOR UPDATE"))
+		return false;
+	rows.reset(mysql_store_result(connection));
+	if (!rows)
+		return false;
+	player_item_snapshot native = {};
+	native.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	native.object_uid = pouch.before.object_uid;
+	native.vnum = pouch.before.vnum;
+	while ((row = mysql_fetch_row(rows.get())))
+	{
+		const auto *lengths = mysql_fetch_lengths(rows.get());
+		if (!row[0] || !row[1] || !lengths ||
+		    native.extra_descriptions.size() >= CHAOS_MATERIAL_POUCH_LEDGER_MAX_CHUNKS)
+		{
+			*result_code = EBADMSG;
+			return true;
+		}
+		native.extra_descriptions.push_back({ std::string(row[0], lengths[0]),
+						      std::string(row[1], lengths[1]),
+						      false,
+						      {} });
+	}
+	rows.reset();
+	player_item_snapshot updated;
+	const auto prepared = chaos_pouch_ledger_apply_native(
+		pouch.before, pouch.after, pouch.usage, pouch.mode, native, &updated);
+	if (prepared != chaos_pouch_ledger_result::ok)
+	{
+		*result_code = prepared == chaos_pouch_ledger_result::capacity ? ENOMEM : ESTALE;
+		return true;
+	}
+	std::vector<uint8_t> runtime_bytes;
+	if (!runtime.empty())
+	{
+		player_item_snapshot runtime_after;
+		if (chaos_pouch_ledger_overlay(updated, runtime[0], &runtime_after) !=
+			    chaos_pouch_ledger_result::ok ||
+		    player_item_snapshot_list_encode({ runtime_after }, &runtime_bytes) !=
+			    player_snapshot_codec_result::ok)
+			return false;
+	}
+	// Change only reserved counter rows. Canonical item attributes, equipment,
+	// other descriptions and the native runtime fields keep their locked values.
+	if (!run_sql(connection, "DELETE FROM player_item_extra_descr WHERE " + ledger_rows))
+		return false;
+	for (const auto &description : updated.extra_descriptions)
+		if (!run_sql(
+			    connection,
+			    "INSERT INTO player_item_extra_descr(item_id,keyword,description) VALUES(" +
+				    std::to_string(item_id) + "," +
+				    quote(connection, description.keyword) + "," +
+				    quote(connection, description.description) + ")"))
+			return false;
+	return runtime_bytes.empty() ||
+	       run_sql(connection,
+		       "UPDATE player_item_runtime_state SET payload=" +
+			       quote(connection, std::string(reinterpret_cast<const char *>(
+								     runtime_bytes.data()),
+							     runtime_bytes.size())) +
+			       " WHERE item_id=" + std::to_string(item_id));
 }
 
 bool execute_craft(MYSQL *connection, const critical_command &command,
@@ -1731,7 +1846,9 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 	if (!sync_restitution_runtime_payload(connection, payload))
 		return false;
 	std::vector<player_item_snapshot> outputs;
+	craft_pouch_mutation pouch;
 	if (!decode_craft_outputs(payload, &outputs) ||
+	    !craft_pouch_mutation_from_payload(payload, &pouch) ||
 	    static_cast<size_t>(event_index_base) + payload.item_count + outputs.size() >
 		    UINT16_MAX)
 	{
@@ -1776,6 +1893,11 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		std::sort(selected_roots.begin(), selected_roots.end());
 		for (const current_item &candidate : current)
 		{
+			if (candidate.item_uid == pouch.before.object_uid)
+			{
+				selected.push_back(candidate);
+				continue;
+			}
 			uint64_t ancestor = candidate.item_uid;
 			for (size_t depth = 0; depth <= current.size(); ++depth)
 			{
@@ -1844,8 +1966,8 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		std::vector<economic_item_snapshot> inputs;
 		try
 		{
-			inputs.reserve(selected.size());
-			for (const auto &item : selected)
+			inputs.reserve(current.size());
+			for (const auto &item : current)
 				inputs.push_back(accounting_snapshot(item));
 		}
 		catch (const std::bad_alloc &)
@@ -1871,20 +1993,30 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		return true;
 	}
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	if (!update_craft_pouch_metadata(connection, payload, pouch, result_code))
+		return false;
+	if (*result_code)
+		return true;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const current_item &stored = selected[index];
 		const item_transfer_entry &entry = payload.items[index];
+		const bool retained = entry.item_uid == pouch.before.object_uid;
+		const auto destination = retained ? payload.from_owner : destruction;
 		if (!update_item(connection, entry, stored.root_item_uid, stored.parent_item_uid,
-				 destruction, stored.item_revision, item_custody_state::destroyed,
-				 0) ||
+				 destination, stored.item_revision,
+				 retained ? item_custody_state::active :
+					    item_custody_state::destroyed,
+				 retained ? stored.equipment_slot : 0) ||
 		    !insert_craft_ledger(connection, command, payload, index, event_index_base,
 					 stored.item_revision + 1, owner_revision + 1,
-					 owner_revision + 1, payload.from_owner, destruction,
+					 owner_revision + 1, payload.from_owner, destination,
 					 stored.root_item_uid, stored.parent_item_uid,
-					 stored.equipment_slot))
+					 stored.equipment_slot,
+					 retained ? stored.equipment_slot : 0))
 			return false;
-		if (!run_sql(connection, "DELETE FROM player_items WHERE obj_uid=" +
+		if (!retained &&
+		    !run_sql(connection, "DELETE FROM player_items WHERE obj_uid=" +
 						 std::to_string(entry.item_uid) + " AND pid=" +
 						 std::to_string(payload.from_owner.id)))
 			return false;

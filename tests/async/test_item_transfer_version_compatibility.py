@@ -772,7 +772,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
             "-Werror",
             "-Isrc",
             str(source),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",

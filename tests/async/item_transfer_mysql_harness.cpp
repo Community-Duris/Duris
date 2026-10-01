@@ -5,6 +5,8 @@
 #include "item/item_transfer_command.h"
 #include "item/item_transfer_repository.h"
 #include "item/item_uid_allocator.h"
+#include "item/craft_pouch_mutation.h"
+#include "world/vnum.obj.h"
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
@@ -2137,6 +2139,200 @@ void check_craft_conservation(MYSQL *connection)
 	       0);
 }
 
+void check_accounted_pouch_conservation(MYSQL *connection)
+{
+	auto scalar = [](MYSQL *database, const std::string &query)
+	{ return ::scalar(database, query.c_str()); };
+	const item_owner_identity owner = { item_owner_type::player, 553, 0 };
+	execute(connection,
+		"INSERT INTO player_data(pid,name,account_name) VALUES(553,'AccountedPouch','CraftFixture')");
+	execute(connection,
+		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES(1,553,0,1)");
+	execute(connection,
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state,equipment_slot) VALUES"
+		"(55301,55301,NULL,1,553,0,1,800,1,0),(55302,55301,55301,1,553,0,1,400300,1,0),"
+		"(55303,55303,NULL,1,553,0,1,400000,1,0),(55304,55304,NULL,1,553,0,1,400000,1,0),(55305,55305,NULL,1,553,0,1,9000,1,0),(55307,55307,NULL,1,553,0,1,9000,1,0)");
+	execute(connection,
+		"INSERT INTO player_items(pid,vnum,obj_uid,item_type) VALUES(553,800,55301,15)");
+	const auto parent_id =
+		scalar(connection, "SELECT id FROM player_items WHERE obj_uid=55301");
+	execute(connection,
+		"INSERT INTO player_items(pid,vnum,obj_uid,item_type,container_id,cost) VALUES(553,400300,55302,15," +
+			std::to_string(parent_id) + ",333)");
+	execute(connection,
+		"INSERT INTO player_items(pid,vnum,obj_uid,item_type) VALUES(553,400000,55303,1),(553,400000,55304,1),(553,9000,55305,1),(553,9000,55307,1)");
+	const auto pouch_id = scalar(connection, "SELECT id FROM player_items WHERE obj_uid=55302");
+	player_item_snapshot before = runtime_item(55302, VOBJ_CHAOS_CRAFT_POUCH, 1900001234);
+	before.vnum = VOBJ_CHAOS_CRAFT_POUCH;
+	before.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	before.extra_descriptions.push_back(
+		{ "inscription", "preserve native inscription", false, {} });
+	std::vector<uint8_t> runtime;
+	assert(player_item_snapshot_list_encode({ before }, &runtime) ==
+	       player_snapshot_codec_result::ok);
+	execute(connection, "INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
+				    std::to_string(pouch_id) + ",UNHEX('" + bytes_hex(runtime) +
+				    "'))");
+	execute(connection,
+		"INSERT INTO player_item_extra_descr(item_id,keyword,description) VALUES(" +
+			std::to_string(pouch_id) + ",'inscription','preserve native inscription')");
+	auto command = [&](uint8_t discriminator, uint64_t owner_rev, uint64_t material_uid,
+			   uint64_t pouch_rev, chaos_pouch_usage_mode mode, bool output)
+	{
+		item_transfer_payload payload = {};
+		payload.from_owner = payload.to_owner = owner;
+		payload.expected_from_revision = payload.expected_to_revision = owner_rev;
+		payload.reason = item_transfer_reason::craft;
+		payload.reason_id =
+			mode == chaos_pouch_usage_mode::collected ? VOBJ_CHAOS_CRAFT_POUCH : 400291;
+		payload.multi_root = true;
+		payload.selected_item_uid = output ? 55306 : material_uid;
+		payload.item_count = 2;
+		payload.items[0] = { 55302,
+				     55301,
+				     55301,
+				     pouch_rev,
+				     VOBJ_CHAOS_CRAFT_POUCH,
+				     item_custody_state::active };
+		payload.items[1] = { material_uid,
+				     material_uid,
+				     0,
+				     1,
+				     mode == chaos_pouch_usage_mode::collected ? 400000 : 9000,
+				     item_custody_state::active };
+		craft_pouch_mutation mutation;
+		mutation.before = before;
+		mutation.mode = mode;
+		mutation.usage = { { mode == chaos_pouch_usage_mode::collected ? 400000 : 400291,
+				     1 } };
+		assert(chaos_pouch_ledger_prepare(before, mutation.usage, mode, &mutation.after) ==
+		       chaos_pouch_ledger_result::ok);
+		payload.continuation.kind = item_transfer_continuation_kind::craft_pouch_usage;
+		assert(craft_pouch_mutation_encode(mutation, &payload.continuation.data));
+		if (output)
+		{
+			std::vector<uint8_t> bytes;
+			auto result = runtime_item(55306, 1251, 1900001240);
+			result.vnum = 1251;
+			assert(player_item_snapshot_list_encode({ result }, &bytes) ==
+			       player_snapshot_codec_result::ok);
+			payload.item_blob_size = bytes.size();
+			std::copy(bytes.begin(), bytes.end(), payload.item_blob.begin());
+		}
+		return accounted_item_transfer(operation(discriminator), payload, operation(67),
+					       operation(68), 553, economic_source_kind::crafting);
+	};
+	auto collect = command(78, 1, 55303, 1, chaos_pouch_usage_mode::collected, false);
+	execute(connection,
+		"CREATE TRIGGER pouch_craft_rollback BEFORE INSERT ON item_ownership_ledger "
+		"FOR EACH ROW BEGIN IF NEW.item_uid=55302 THEN SIGNAL SQLSTATE '45000' "
+		"SET MYSQL_ERRNO=1644,MESSAGE_TEXT='pouch craft rollback fixture'; END IF; END");
+	const auto interrupted = critical_command_repository_apply(connection, collect);
+	assert(interrupted.outcome != critical_apply_outcome::applied &&
+	       interrupted.outcome != critical_apply_outcome::already_applied);
+	assert(owner_revision(connection, owner) == 1);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55303") == 1);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_item_extra_descr WHERE item_id=" +
+					  std::to_string(pouch_id) +
+					  " AND keyword='CHAOS_POUCH_LEDGER_0'") == 0);
+	assert(read_blob(connection,
+			 ("SELECT payload FROM player_item_runtime_state WHERE item_id=" +
+			  std::to_string(pouch_id))
+				 .c_str()) == runtime);
+	execute(connection, "DROP TRIGGER pouch_craft_rollback");
+	auto applied = critical_command_repository_apply(connection, collect);
+	if (applied.outcome != critical_apply_outcome::applied)
+		fprintf(stderr, "pouch collection outcome=%u error=%u sql=%s\n",
+			(unsigned)applied.outcome, applied.error_code, mysql_error(connection));
+	assert(applied.outcome == critical_apply_outcome::applied);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid=55302 AND root_item_uid=55301 AND parent_item_uid=55301 AND state=1 AND item_revision=2 AND owner_id=553") ==
+	       1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_items WHERE obj_uid=55302 AND cost=333 AND container_id=" +
+			      std::to_string(parent_id)) == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_item_extra_descr WHERE item_id=" +
+			      std::to_string(pouch_id) +
+			      " AND keyword='CHAOS_POUCH_LEDGER_0' AND description='0:0:1;'") == 1);
+	assert(critical_command_repository_apply(connection, collect).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(critical_command_repository_reconcile(connection, collect).outcome ==
+	       critical_apply_outcome::already_applied);
+	auto reload = [&]
+	{
+		player_load_request request = {};
+		request.request_id = 553;
+		request.pid = 553;
+		request.account_name = "CraftFixture";
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		request.include_items = true;
+		const auto loaded = player_load_repository_execute(connection, request);
+		assert(loaded.outcome == player_load_outcome::applied);
+		const auto item = std::find_if(loaded.snapshot.items.begin(),
+					       loaded.snapshot.items.end(), [](const auto &value)
+					       { return value.object_uid == 55302; });
+		assert(item != loaded.snapshot.items.end());
+		before = *item;
+		before.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	};
+	reload();
+	// A changed native counter must refuse the complete operation before material
+	// retirement, even when owner and item revisions still match the command.
+	const auto stale_counter =
+		command(81, 2, 55304, 2, chaos_pouch_usage_mode::collected, false);
+	execute(connection,
+		"UPDATE player_item_extra_descr SET description='0:0:9;' WHERE item_id=" +
+			std::to_string(pouch_id) + " AND keyword='CHAOS_POUCH_LEDGER_0'");
+	assert(critical_command_repository_apply(connection, stale_counter).outcome ==
+	       critical_apply_outcome::terminal_failure);
+	assert(owner_revision(connection, owner) == 2);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55304") == 1);
+	execute(connection,
+		"UPDATE player_item_extra_descr SET description='0:0:1;' WHERE item_id=" +
+			std::to_string(pouch_id) + " AND keyword='CHAOS_POUCH_LEDGER_0'");
+	const auto second = command(79, 2, 55304, 2, chaos_pouch_usage_mode::collected, false);
+	assert(critical_command_repository_apply(connection, second).outcome ==
+	       critical_apply_outcome::applied);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_item_extra_descr WHERE item_id=" +
+			      std::to_string(pouch_id) +
+			      " AND keyword='CHAOS_POUCH_LEDGER_0' AND description='0:0:2;'") == 1);
+	reload();
+	const auto encrust = command(80, 3, 55305, 3, chaos_pouch_usage_mode::generated, true);
+	assert(critical_command_repository_apply(connection, encrust).outcome ==
+	       critical_apply_outcome::applied);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55306") == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_item_extra_descr WHERE item_id=" +
+			      std::to_string(pouch_id) +
+			      " AND keyword='CHAOS_POUCH_LEDGER_0' AND description='0:0:2;210:1:0;'") ==
+	       1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_item_extra_descr WHERE item_id=" +
+			      std::to_string(pouch_id) +
+			      " AND keyword='inscription' AND description='preserve native inscription'") ==
+	       1);
+	assert(critical_command_repository_reconcile(connection, encrust).outcome ==
+	       critical_apply_outcome::already_applied);
+	reload();
+	const auto broken = command(82, 4, 55307, 4, chaos_pouch_usage_mode::generated, false);
+	assert(critical_command_repository_apply(connection, broken).outcome ==
+	       critical_apply_outcome::applied);
+	assert(critical_command_repository_apply(connection, broken).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(owner_revision(connection, owner) == 5);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55307") == 0);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_item_extra_descr WHERE item_id=" +
+			      std::to_string(pouch_id) +
+			      " AND keyword='CHAOS_POUCH_LEDGER_0' AND description='0:0:2;210:2:0;'") ==
+	       1);
+	puts("PASS: retained pouch counters, collection and virtual craft commit with unchanged UID and native attributes");
+	puts("PASS: pouch rollback, stale native counters and zero-output virtual failure preserve atomicity and replay");
+}
+
 int main()
 {
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
@@ -2563,6 +2759,7 @@ int main()
 	}
 	check_craft_conservation(connection);
 	check_accounted_craft_conservation(connection);
+	check_accounted_pouch_conservation(connection);
 	mysql_close(connection);
 	return 0;
 }

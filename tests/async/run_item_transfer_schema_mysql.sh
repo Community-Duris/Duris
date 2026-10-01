@@ -30,7 +30,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
     tests/async/item_extra_descr_codec_sql_escape_stub.cpp \
     src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
-    src/item/item_transfer_command.c src/item/item_transfer_repository.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c \
     src/item/economic_accounting_item_reference.c \
     src/sql/item_extra_descr_codec.c \
 	 src/economy/auction_command.c src/economy/auction_repository.c \

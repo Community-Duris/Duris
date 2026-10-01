@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 COMMON = ['src/item/locker_receipt.c', 'src/flatfile/flatfile_store.c',
           'src/economy/currency_command.c', 'src/persistence/critical_command.c',
           'src/world/epic_command.c', 'src/combat/combat_outcome_command.c']
-SQL = ['src/item/item_transfer_command.c', 'src/item/item_transfer_repository.c',
+SQL = ['src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", 'src/item/item_transfer_repository.c',
        'src/economy/auction_command.c', 'src/economy/auction_repository.c',
        'src/combat/combat_outcome_repository.c', 'src/guild/artifact_guild_command.c',
        'src/guild/artifact_guild_repository.c', 'src/economy/boon_reward_command.c',

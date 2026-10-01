@@ -29,7 +29,7 @@ def main() -> None:
                 str(ROOT / "src/economy/collector_codec.c"),
                 str(ROOT / "src/economy/collector_command.c"),
                 str(ROOT / "src/economy/currency_command.c"),
-                str(ROOT / "src/item/item_transfer_command.c"), str(ROOT / "src/player/player_snapshot_codec.c"),
+                str(ROOT / "src/item/item_transfer_command.c"), str(ROOT / "src/item/craft_pouch_mutation.c"), str(ROOT / "src/combat/chaos_pouch_ledger.c"), str(ROOT / "src/player/player_snapshot_codec.c"),
                 str(ROOT / "src/persistence/critical_command.c"),
                 str(ROOT / "tests/async/collector_command_harness.cpp"),
                 "-lcrypto",

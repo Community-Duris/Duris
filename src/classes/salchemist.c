@@ -1003,22 +1003,35 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	}
 	if (virtual_jewel)
 	{
-		// Pouch usage has its own durable accounting path. Refuse the virtual
-		// material until it can participate in this same craft receipt.
-		extract_obj(jewel);
-		act("Virtual Chaos-pouch encrust is temporarily unavailable while its durable receipt is prepared.",
-		    FALSE, ch, 0, 0, TO_CHAR);
-		return;
+		const chaos_material_pouch_usage usage = { OBJ_VNUM(jewel), 1 };
+		if (!chaos_material_pouch_can_record_generated(ch, &usage, 1))
+		{
+			extract_obj(jewel);
+			send_to_char(
+				"The Chaos craft pouch counter cannot record this encrust.\r\n",
+				ch);
+			return;
+		}
 	}
 
 	// Trap state is not represented by the durable item snapshot yet. Preserve
 	// both inputs rather than publish a replacement that loses its trap on reload.
 	if (item->trap_eff || item->trap_dam || item->trap_charge || item->trap_level)
 	{
+		if (virtual_jewel)
+			extract_obj(jewel);
 		send_to_char("Remove the item's trap before encrusting it.\r\n", ch);
 		return;
 	}
 	craftsmanship = item->craftsmanship;
+	P_obj retained_pouch = virtual_jewel ? chaos_material_pouch_find(ch) : nullptr;
+	const chaos_material_pouch_usage pouch_usage = { OBJ_VNUM(jewel), 1 };
+	const int jewel_vnum = OBJ_VNUM(jewel);
+	if (virtual_jewel && !retained_pouch)
+	{
+		extract_obj(jewel);
+		return;
+	}
 	const bool succeeded = number(1, 110) <= skill;
 	if (!succeeded)
 	{
@@ -1026,13 +1039,17 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 		const alchemy_craft_context context = { SKILL_ENCRUST, 5, 0 };
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_craft(
-			    ch, inputs, 2, nullptr, 0, OBJ_VNUM(jewel), alchemy_craft_completed,
-			    &context, sizeof(context), &reject))
+			    ch, inputs, virtual_jewel ? 1 : 2, nullptr, 0, jewel_vnum,
+			    alchemy_craft_completed, &context, sizeof(context), &reject,
+			    retained_pouch, virtual_jewel ? &pouch_usage : nullptr,
+			    virtual_jewel ? 1 : 0))
 			send_to_char(
 				"The encrust service is busy; your item and jewel were preserved.\r\n",
 				ch);
 		else
 			CharWait(ch, PULSE_VIOLENCE);
+		if (virtual_jewel)
+			extract_obj(jewel);
 		return;
 	}
 
@@ -1107,9 +1124,10 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	P_obj inputs[] = { item, jewel };
 	const alchemy_craft_context context = { SKILL_ENCRUST, 4, 1 };
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_movement_transaction_submit_craft(ch, inputs, 2, &new_item, 1, OBJ_VNUM(jewel),
-						    alchemy_craft_completed, &context,
-						    sizeof(context), &reject))
+	if (!item_movement_transaction_submit_craft(
+		    ch, inputs, virtual_jewel ? 1 : 2, &new_item, 1, jewel_vnum,
+		    alchemy_craft_completed, &context, sizeof(context), &reject, retained_pouch,
+		    virtual_jewel ? &pouch_usage : nullptr, virtual_jewel ? 1 : 0))
 	{
 		extract_obj(new_item);
 		send_to_char("The encrust service is busy; your item and jewel were preserved.\r\n",
@@ -1117,6 +1135,8 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	}
 	else
 		CharWait(ch, PULSE_VIOLENCE);
+	if (virtual_jewel)
+		extract_obj(jewel);
 	return;
 }
 
