@@ -19,13 +19,16 @@
 #include <cstdio>
 #include <limits>
 #include <unordered_set>
+#include <vector>
 
 extern P_char character_list;
 extern P_obj object_list;
 extern P_room world;
 extern P_index mob_index;
 extern const int top_of_world;
+extern int top_of_mobt;
 extern unsigned long long ne_event_tick;
+extern P_nevent current_nevent;
 
 extern void event_mob_mundane(P_char, P_char, P_obj, void *);
 
@@ -39,7 +42,7 @@ constexpr int MAX_ACTIVITY_MULTIPLIER = 8;
 
 struct activity_config
 {
-	bool enabled = true;
+	bool enabled = false;
 	int distant_pulses = DEFAULT_DISTANT_SECONDS * WAIT_SEC;
 	int grace_pulses = DEFAULT_GRACE_SECONDS * WAIT_SEC;
 	int nearby_multiplier = DEFAULT_NEARBY_MULTIPLIER;
@@ -55,10 +58,15 @@ struct activity_zone
 	uint32_t adjacent_corpses = 0;
 	uint64_t grace_until = 0;
 	std::unordered_set<P_char> npcs;
+	std::vector<int> neighbors;
 };
 
 activity_config config;
-std::array<activity_zone, MAX_ZONES> zones;
+// Small zones share one region. Large zones are partitioned along actual exits
+// into at most 64 rooms, so one traveller cannot activate an entire overworld.
+constexpr int MAX_REGION_ROOMS = 64;
+std::vector<activity_zone> zones;
+std::vector<int> room_regions;
 bool configuration_loaded = false;
 bool ready = false;
 bool bootstrapped = false;
@@ -76,8 +84,77 @@ int activity_zone_for_room(int room)
 	if (!valid_room(room))
 		return -1;
 
-	const int zone = world[room].zone;
-	return zone >= 0 && zone < MAX_ZONES ? zone : -1;
+	if (static_cast<std::size_t>(room) >= room_regions.size())
+		return -1;
+	return room_regions[room];
+}
+
+void rebuild_regions()
+{
+	zones.clear();
+	room_regions.assign(static_cast<std::size_t>(top_of_world) + 1, -1);
+	std::array<int, MAX_ZONES> room_counts{};
+	std::array<int, MAX_ZONES> small_regions{};
+	small_regions.fill(-1);
+	for (int room = 0; room <= top_of_world; ++room)
+		if (world[room].zone < MAX_ZONES)
+			++room_counts[world[room].zone];
+	for (int room = 0; room <= top_of_world; ++room)
+	{
+		const int zone = world[room].zone;
+		if (zone >= MAX_ZONES || room_regions[room] >= 0)
+			continue;
+		if (room_counts[zone] <= MAX_REGION_ROOMS && small_regions[zone] >= 0)
+		{
+			room_regions[room] = small_regions[zone];
+			continue;
+		}
+		const int region = static_cast<int>(zones.size());
+		zones.emplace_back();
+		room_regions[room] = region;
+		if (room_counts[zone] <= MAX_REGION_ROOMS)
+		{
+			small_regions[zone] = region;
+			continue;
+		}
+		std::array<int, MAX_REGION_ROOMS> pending{};
+		pending[0] = room;
+		int count = 1;
+		for (int at = 0; at < count && count < MAX_REGION_ROOMS; ++at)
+			for (int door = 0; door < NUM_EXITS && count < MAX_REGION_ROOMS; ++door)
+			{
+				const auto *exit = world[pending[at]].dir_option[door];
+				if (!exit || !valid_room(exit->to_room))
+					continue;
+				const int destination = exit->to_room;
+				if (world[destination].zone != zone ||
+				    room_regions[destination] >= 0)
+					continue;
+				room_regions[destination] = region;
+				pending[count++] = destination;
+			}
+	}
+	// Symmetric halo includes one-way exits: activity on either side of a
+	// boundary keeps the other side nearby. Topology is built once per rebuild.
+	for (int room = 0; room <= top_of_world; ++room)
+		for (int door = 0; door < NUM_EXITS; ++door)
+		{
+			const auto *exit = world[room].dir_option[door];
+			if (!exit)
+				continue;
+			const int own = activity_zone_for_room(room);
+			const int neighbor = activity_zone_for_room(exit->to_room);
+			if (own < 0 || neighbor < 0 || own == neighbor)
+				continue;
+			zones[own].neighbors.push_back(neighbor);
+			zones[neighbor].neighbors.push_back(own);
+		}
+	for (auto &zone : zones)
+	{
+		auto &neighbors = zone.neighbors;
+		std::sort(neighbors.begin(), neighbors.end());
+		neighbors.erase(std::unique(neighbors.begin(), neighbors.end()), neighbors.end());
+	}
 }
 
 template <typename Callback> void for_each_related_zone(int room, Callback &&callback)
@@ -88,34 +165,16 @@ template <typename Callback> void for_each_related_zone(int room, Callback &&cal
 
 	callback(own_zone, false);
 
-	std::array<int, NUM_EXITS> seen{};
-	int seen_count = 0;
-	for (int door = 0; door < NUM_EXITS; ++door)
-	{
-		if (!world[room].dir_option[door])
-			continue;
-		const int destination = world[room].dir_option[door]->to_room;
-		const int neighbor_zone = activity_zone_for_room(destination);
-		if (neighbor_zone < 0 || neighbor_zone == own_zone)
-			continue;
-
-		bool duplicate = false;
-		for (int i = 0; i < seen_count; ++i)
-			if (seen[i] == neighbor_zone)
-			{
-				duplicate = true;
-				break;
-			}
-		if (duplicate)
-			continue;
-		seen[seen_count++] = neighbor_zone;
-		callback(neighbor_zone, true);
-	}
+	for (int neighbor : zones[own_zone].neighbors)
+		callback(neighbor, true);
 }
 
 bool direct_activity(const activity_zone &zone)
 {
-	return zone.players > 0 || zone.corpses > 0;
+	// Corpse recovery protects the surrounding halo at the normal cadence too.
+	// A predator crossing the region edge must not lose movement opportunities
+	// while the independent corpse decay clock continues.
+	return zone.players > 0 || zone.corpses > 0 || zone.adjacent_corpses > 0;
 }
 
 bool nearby_activity(const activity_zone &zone)
@@ -153,10 +212,11 @@ void extend_grace(activity_zone &zone)
 	zone.grace_until = std::max(zone.grace_until, bounded_tick_add(config.grace_pulses));
 }
 
-void wake_zone(int zone_number, bool force)
+void wake_zone(int zone_number, bool force, int encounter_room = NOWHERE)
 {
 	if (!ready || (!config.enabled && !force) || (!config.wake_enabled && !force) ||
-	    !nevent_is_game_thread() || zone_number < 0 || zone_number >= MAX_ZONES)
+	    !nevent_is_game_thread() || zone_number < 0 ||
+	    static_cast<std::size_t>(zone_number) >= zones.size())
 		return;
 
 	for (P_char mob : zones[zone_number].npcs)
@@ -177,7 +237,7 @@ void wake_zone(int zone_number, bool force)
 		}
 
 		/* Spread a promotion through at most one normal ambient interval. */
-		const int target = number(1, PULSE_MOBILE);
+		const int target = mob->in_room == encounter_room ? 1 : number(1, PULSE_MOBILE);
 		if (remaining > target &&
 		    nevent_advance_by(nevent_handle_from_event(event),
 				      static_cast<unsigned long long>(remaining - target)))
@@ -185,14 +245,21 @@ void wake_zone(int zone_number, bool force)
 	}
 }
 
-void mark_promotions(const std::array<int, NUM_EXITS + 1> &promoted, int count)
+void wake_encounter_room(int room)
 {
-	if (!ready)
+	if (!ready || !config.enabled || !config.wake_enabled || !nevent_is_game_thread() ||
+	    !valid_room(room))
 		return;
-	for (int i = 0; i < count; ++i)
+	for (P_char mob = world[room].people; mob; mob = mob->next_in_room)
 	{
-		++wake_promotions;
-		wake_zone(promoted[i], false);
+		if (!IS_ALIVE(mob) || !IS_NPC(mob))
+			continue;
+		const auto handle = world_activity_mundane_event(mob);
+		if (!handle.event)
+			continue;
+		const int remaining = ne_event_time(handle.event);
+		if (remaining > 1 && nevent_advance_by(handle, remaining - 1))
+			++wake_events;
 	}
 }
 
@@ -201,39 +268,41 @@ void adjust_reason(int room, bool player_reason, int delta)
 	if (!config.enabled)
 		return;
 
-	std::array<int, NUM_EXITS + 1> promoted{};
-	int promoted_count = 0;
-	for_each_related_zone(room,
-			      [&](int zone_number, bool adjacent)
-			      {
-				      activity_zone &zone = zones[zone_number];
-				      const bool was_nearby = nearby_activity(zone);
+	for_each_related_zone(
+		room,
+		[&](int zone_number, bool adjacent)
+		{
+			activity_zone &zone = zones[zone_number];
+			const bool was_nearby = nearby_activity(zone);
+			const bool was_active = direct_activity(zone);
 
-				      uint32_t *counter = nullptr;
-				      if (player_reason)
-					      counter = adjacent ? &zone.adjacent_players :
-								   &zone.players;
-				      else
-					      counter = adjacent ? &zone.adjacent_corpses :
-								   &zone.corpses;
+			uint32_t *counter = nullptr;
+			if (player_reason)
+				counter = adjacent ? &zone.adjacent_players : &zone.players;
+			else
+				counter = adjacent ? &zone.adjacent_corpses : &zone.corpses;
 
-				      if (delta > 0)
-				      {
-					      if (*counter < std::numeric_limits<uint32_t>::max())
-						      ++*counter;
-				      }
-				      else if (delta < 0 && *counter > 0)
-					      --*counter;
+			if (delta > 0)
+			{
+				if (*counter < std::numeric_limits<uint32_t>::max())
+					++*counter;
+			}
+			else if (delta < 0 && *counter > 0)
+				--*counter;
 
-				      if (delta < 0)
-					      extend_grace(zone);
+			if (delta < 0)
+				extend_grace(zone);
 
-				      if (delta > 0 && !was_nearby && nearby_activity(zone) &&
-					  promoted_count < static_cast<int>(promoted.size()))
-					      promoted[promoted_count++] = zone_number;
-			      });
-
-	mark_promotions(promoted, promoted_count);
+			if (ready && delta > 0 &&
+			    ((!was_nearby && nearby_activity(zone)) ||
+			     (!was_active && direct_activity(zone))))
+			{
+				++wake_promotions;
+				wake_zone(zone_number, false, adjacent ? NOWHERE : room);
+			}
+		});
+	if (delta > 0)
+		wake_encounter_room(room);
 }
 
 bool pc_corpse(P_obj object)
@@ -260,19 +329,59 @@ int effective_room(P_obj object)
 	return NOWHERE;
 }
 
-void walk_corpse_subtree(P_obj object, int room, bool entering, int depth)
+bool sibling_cycle(P_obj object)
 {
-	/* Containment is guarded by obj_can_nest(), so a live object graph is a
-	 * tree.  Keep a depth fence for corrupted/recovery input without paying
-	 * for a heap-backed visited set on every object transfer. */
-	if (!object || depth > 1024)
-		return;
+	P_obj slow = object, fast = object;
+	for (int steps = 0; fast && fast->next_content; ++steps)
+	{
+		if (steps >= 65536)
+			return true;
+		slow = slow->next_content;
+		fast = fast->next_content->next_content;
+		if (slow == fast)
+			return true;
+	}
+	return false;
+}
 
-	if (pc_corpse(object))
-		adjust_reason(room, false, entering ? 1 : -1);
-
-	for (P_obj child = object->contains; child; child = child->next_content)
-		walk_corpse_subtree(child, room, entering, depth + 1);
+void walk_corpse_subtree(P_obj object, int room, bool entering)
+{
+	// Fixed traversal storage avoids heap allocation and recursive stack
+	// exhaustion. Parent validation and sibling-cycle checks reject malformed
+	// recovery graphs before repeatedly counting the same corpse.
+	struct frame
+	{
+		P_obj object;
+		P_obj next_child;
+	};
+	std::array<frame, 1024> stack{};
+	int depth = 0;
+	unsigned int visited = 0;
+	P_obj current = object;
+	while (current && visited++ < 65536)
+	{
+		if (pc_corpse(current))
+			adjust_reason(room, false, entering ? 1 : -1);
+		P_obj child = current->contains;
+		if (child && !sibling_cycle(child) && depth < static_cast<int>(stack.size()))
+		{
+			stack[depth++] = { current, child };
+		}
+		current = nullptr;
+		while (depth > 0 && !current)
+		{
+			frame &parent = stack[depth - 1];
+			P_obj next = parent.next_child;
+			if (!next)
+			{
+				--depth;
+				continue;
+			}
+			parent.next_child = next->next_content;
+			if (OBJ_INSIDE(next) && next->loc.inside == parent.object)
+				current = next;
+		}
+	}
 }
 
 void update_object_subtree(P_obj object, bool entering)
@@ -289,15 +398,16 @@ void update_object_subtree(P_obj object, bool entering)
 	if (!valid_room(room))
 		return;
 
-	walk_corpse_subtree(object, room, entering, 0);
+	walk_corpse_subtree(object, room, entering);
 }
 
 void update_character_objects(P_char ch, bool entering)
 {
 	if (!ch)
 		return;
-	for (P_obj object = ch->carrying; object; object = object->next_content)
-		update_object_subtree(object, entering);
+	if (!sibling_cycle(ch->carrying))
+		for (P_obj object = ch->carrying; object; object = object->next_content)
+			update_object_subtree(object, entering);
 	for (int slot = 0; slot < MAX_WEAR; ++slot)
 		if (ch->equipment[slot])
 			update_object_subtree(ch->equipment[slot], entering);
@@ -307,20 +417,22 @@ void wake_all_indexed_mobs(bool force)
 {
 	if (!ready || !nevent_is_game_thread())
 		return;
-	for (int zone_number = 0; zone_number < MAX_ZONES; ++zone_number)
+	for (int zone_number = 0; zone_number < static_cast<int>(zones.size()); ++zone_number)
 		wake_zone(zone_number, force);
 }
 
 void load_configuration()
 {
 	activity_config next;
-	next.enabled = get_property("world.activity.enabled", 1) != 0;
-	next.distant_pulses = std::clamp(
-		get_property("world.activity.distant.seconds", DEFAULT_DISTANT_SECONDS) * WAIT_SEC,
-		PULSE_MOBILE, MAX_ACTIVITY_SECONDS * WAIT_SEC);
-	next.grace_pulses = std::clamp(
-		get_property("world.activity.grace.seconds", DEFAULT_GRACE_SECONDS) * WAIT_SEC, 0,
-		MAX_ACTIVITY_SECONDS * WAIT_SEC);
+	next.enabled = get_property("world.activity.enabled", 0) != 0;
+	next.distant_pulses =
+		std::clamp(get_property("world.activity.distant.seconds", DEFAULT_DISTANT_SECONDS),
+			   (PULSE_MOBILE + WAIT_SEC - 1) / WAIT_SEC, MAX_ACTIVITY_SECONDS) *
+		WAIT_SEC;
+	next.grace_pulses =
+		std::clamp(get_property("world.activity.grace.seconds", DEFAULT_GRACE_SECONDS), 0,
+			   MAX_ACTIVITY_SECONDS) *
+		WAIT_SEC;
 	next.nearby_multiplier = std::clamp(get_property("world.activity.nearby.multiplier",
 							 DEFAULT_NEARBY_MULTIPLIER),
 					    1, MAX_ACTIVITY_MULTIPLIER);
@@ -371,12 +483,16 @@ void world_activity_reload()
 void world_activity_rebuild()
 {
 	bootstrapped = true;
+	ready = false;
 	reset_activity_state();
 	if (!config.enabled)
 	{
 		ready = false;
 		return;
 	}
+	if (!world || top_of_world < 0)
+		return;
+	rebuild_regions();
 
 	for (P_char ch = character_list; ch; ch = ch->next)
 	{
@@ -537,7 +653,7 @@ void world_activity_promote_character(P_char ch)
 {
 	if (!config.enabled || !ready || !ch || !valid_room(ch->in_room))
 		return;
-	wake_zone(activity_zone_for_room(ch->in_room), false);
+	wake_encounter_room(ch->in_room);
 }
 
 void world_activity_object_enter(P_obj object)
@@ -560,7 +676,8 @@ bool world_activity_mob_is_timing_sensitive(P_char ch)
 	if (IS_PATROL(ch) || TRUSTED_NPC(ch) || IS_SET(ch->specials.act, ACT_SPEC) ||
 	    IS_SET(ch->specials.act, ACT_SENTINEL) || (HAS_MEMORY(ch) && GET_MEMORY(ch)))
 		return true;
-	if (!ch->only.npc || mob_index[GET_RNUM(ch)].qst_func || mob_index[GET_RNUM(ch)].func.mob)
+	if (!ch->only.npc || !mob_index || GET_RNUM(ch) < 0 || GET_RNUM(ch) > top_of_mobt ||
+	    mob_index[GET_RNUM(ch)].qst_func || mob_index[GET_RNUM(ch)].func.mob)
 		return true;
 	if (IS_AFFECTED2(ch, AFF2_CASTING | AFF2_MEMORIZING | AFF2_SCRIBING | AFF2_HUNTER) ||
 	    GET_POS(ch) != POS_STANDING || GET_HIT(ch) < GET_MAX_HIT(ch))
@@ -602,6 +719,14 @@ void world_activity_schedule_mundane_after(P_char ch, int delay)
 {
 	if (!ch)
 		return;
+	const nevent_handle existing = world_activity_mundane_event(ch);
+	// The scheduler destroys the dispatched event after its callback. Its
+	// successor must be a new event; only pending events can be rescheduled.
+	if (existing.event && existing.event != current_nevent)
+	{
+		nevent_reschedule_after(existing, std::max(0, delay));
+		return;
+	}
 	const nevent_schedule_result result =
 		add_event(event_mob_mundane, std::max(0, delay), ch, 0, 0, 0, 0, 0);
 	if (result.was_scheduled())

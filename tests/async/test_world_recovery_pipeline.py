@@ -898,6 +898,7 @@ void run_artifact_boot()
 }
 void reconcile_shopkeepers(bool) {}
 void initialize_transport() {}
+void world_activity_rebuild() {}
 void run_recovery_boot()
 {
 @RECOVERY_BOOT@

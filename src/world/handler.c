@@ -2231,6 +2231,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 	ch->equipment[pos] = obj;
 	obj->loc.wearing = ch;
 	obj->loc_p = LOC_WORN;
+	world_activity_object_enter(obj);
 
 	if (IS_ARTIFACT(obj))
 	{

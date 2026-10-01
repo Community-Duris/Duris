@@ -56,7 +56,9 @@ def test_mundane_handle_is_sequence_validated_and_corpse_walk_has_no_heap_visito
     assert "world_activity_mundane_event_sequence" in STRUCTS
     assert "nevent_handle_is_active(event)" in ACTIVITY
     assert "event.event->func != event_mob_mundane" in ACTIVITY
-    assert "depth > 1024" in ACTIVITY
+    assert "std::array<frame, 1024>" in ACTIVITY
+    assert "sibling_cycle(child)" in ACTIVITY
+    assert "visited++ < 65536" in ACTIVITY
     assert "std::unordered_set<P_obj>" not in ACTIVITY
     assert "world_activity_schedule_mundane_after(was_fighting, WAIT_SEC / 2)" in ACTOFF
 
@@ -72,6 +74,21 @@ def test_runtime_switch_and_build_registration_exist():
         assert key in PROPERTIES
     assert "world/world_activity.o" in MAKEFILE
     assert "bootstrapped && enabled_changed && config.enabled" in ACTIVITY
+    assert 'get_property("world.activity.enabled", 0)' in ACTIVITY
+    assert "world.activity.enabled=0.000" in PROPERTIES
+
+
+def test_bounded_regions_equipment_and_scheduler_cleanup():
+    assert "MAX_REGION_ROOMS = 64" in ACTIVITY
+    assert "zones[own].neighbors.push_back(neighbor)" in ACTIVITY
+    assert "zones[neighbor].neighbors.push_back(own)" in ACTIVITY
+    assert "!was_active && direct_activity(zone)" in ACTIVITY
+    assert "zone.adjacent_corpses > 0" in ACTIVITY
+    equip = HANDLER[HANDLER.index("void equip_char(P_char"):HANDLER.index("P_obj unequip_char(")]
+    assert equip.index("obj->loc.wearing = ch") < equip.index("world_activity_object_enter(obj)")
+    scheduler = (ROOT / "src/world/new_events.c").read_text(encoding="utf-8")
+    assert "ch->world_activity_mundane_event_sequence == event->sequence" in scheduler
+    assert "ch->world_activity_mundane_event = NULL" in scheduler
 
 
 if __name__ == "__main__":
@@ -82,6 +99,7 @@ if __name__ == "__main__":
         test_promotion_is_indexed_and_rebuilt_after_recovery,
         test_mundane_handle_is_sequence_validated_and_corpse_walk_has_no_heap_visitor,
         test_runtime_switch_and_build_registration_exist,
+        test_bounded_regions_equipment_and_scheduler_cleanup,
     ):
         test()
     print("world activity contract checks passed")
