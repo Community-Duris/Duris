@@ -39,8 +39,8 @@ flatfile_economic_control_read(const std::string &root, const flatfile_authority
 
 namespace
 {
-// Native receipts retain their 2048-byte result limit independently of the
-// larger in-memory completion buffer. Format 4 adds eight bytes of quest proof.
+// Native formats 2 and 3 retain their 2048-byte receipt limit independently
+// of the larger in-memory completion buffer. Format 4 adds eight bytes of quest proof.
 constexpr size_t FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES = 2048;
 static_assert(FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 constexpr uint32_t domain_format_version = 4;
