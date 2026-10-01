@@ -57,6 +57,7 @@
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_death_restitution_locker.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
@@ -932,7 +933,7 @@ void load_obj_to_newbies(P_char ch)
    free.
    -JAB */
 
-bool _parse_name(char *arg, char *name)
+bool _parse_name(char *arg, char *name, bool character_name)
 {
 	int i;
 	const char *smart_ass[] = { "someone",	 "somebody",  "me",	   "self",	"all",
@@ -980,6 +981,12 @@ bool _parse_name(char *arg, char *name)
 	if (search_block(name, smart_ass, TRUE) >= 0)
 		return TRUE;
 	if (sub_string_set(name, rude_ass))
+		return TRUE;
+
+	/* do_start_impl() makes an OVERLORD of any character named on god_list, so
+	 * no character may take one of those names, even after a wipe frees it.
+	 * Account names grant nothing and skip this check. */
+	if (character_name && god_check(name))
 		return TRUE;
 
 	return FALSE;
@@ -1980,6 +1987,7 @@ void enter_game(P_desc d)
 
 	do_look(ch, 0, -4);
 	account_bound_reward_on_login(ch);
+	player_death_restitution_locker_notice(ch);
 
 	if (has_innate(ch, INNATE_SUMMON_BOOK))
 	{
@@ -2075,7 +2083,7 @@ void select_terminal(P_desc d, const char *arg)
 #else
 	//  account stuff instead of name
 	STATE(d) = CON_GET_ACCT_NAME;
-	SEND_TO_Q("Please enter your account name: ", d);
+	send_account_name_prompt(d);
 #endif
 }
 
@@ -2152,7 +2160,7 @@ void select_name(P_desc d, char *arg, int flag)
 		//  close_socket(d);
 		return;
 	}
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal name, please try another.\r\n", d);
 		SEND_TO_Q("Name: ", d);

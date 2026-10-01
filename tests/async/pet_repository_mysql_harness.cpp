@@ -1,4 +1,5 @@
 // Run only against an explicitly provisioned disposable pet_state_test schema.
+#include "core/defines.h"
 #include "player/player_snapshot_repository.h"
 #include "player/player_load_repository.h"
 #include "player/pet_restore_state.h"
@@ -76,6 +77,7 @@ int main()
 	item.vnum = 100;
 	item.type = 9;
 	item.equipment_slot = 1;
+	item.extra_flags = ITEM_NOSHOW;
 	item.condition = 100;
 	item.affects[0] = { 13, 19 };
 	pet.items.push_back(item);
@@ -108,6 +110,7 @@ int main()
 		assert(restored.hold_reason == snapshot.pets[0].hold_reason);
 		assert(restored.items.size() == 1 && restored.items[0].object_uid == 212212);
 		assert(restored.items[0].affects[0] == item.affects[0]);
+		assert(restored.items[0].extra_flags == item.extra_flags);
 		assert(loaded.authoritative_item_count == 1);
 		snapshot.pets = loaded.snapshot.pets;
 	}
@@ -161,5 +164,5 @@ int main()
 	sql("DELETE FROM player_data WHERE pid=212212");
 	mysql_close(db);
 	std::cout
-		<< "production SQL pet save/load: generated state, opaque held state, equipped UID and repeated replacement passed\n";
+		<< "production SQL pet save/load: generated state, opaque held state, hidden equipment flag/UID and repeated replacement passed\n";
 }

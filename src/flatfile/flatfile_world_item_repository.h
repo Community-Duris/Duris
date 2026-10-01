@@ -96,6 +96,16 @@ struct flatfile_corpse_release_mutation
 	uint64_t catalog_revision = 0;
 };
 
+struct flatfile_world_corpse_raise_mutation
+{
+	flatfile_authority_after_image after_image;
+	std::vector<flatfile_corpse_custody_item> expected_items;
+	std::vector<player_item_snapshot> pet_items;
+	std::vector<uint64_t> durable_uids;
+	std::vector<uint64_t> discarded_uids;
+	uint64_t catalog_revision = 0;
+};
+
 struct collector_command_payload;
 struct flatfile_collector_world_mutation
 {
@@ -160,6 +170,10 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
 flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const corpse_lifecycle_payload &payload, flatfile_corpse_release_mutation *mutation,
+	std::string *error);
+flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload, flatfile_world_corpse_raise_mutation *mutation,
 	std::string *error);
 
 #endif

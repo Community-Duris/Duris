@@ -41,6 +41,9 @@ bool corpse_lifecycle_transaction_resurrect(const corpse_lifecycle_payload &payl
 					    corpse_lifecycle_release_completion_fn completion);
 bool corpse_lifecycle_transaction_raise_follower(const corpse_lifecycle_payload &payload,
 						 corpse_lifecycle_release_completion_fn completion);
+bool corpse_lifecycle_transaction_raise_world_follower(
+	const corpse_lifecycle_payload &payload, uint64_t source_item_revision,
+	corpse_lifecycle_release_completion_fn completion);
 bool corpse_lifecycle_transaction_hydrate(uint32_t owner_pid, uint32_t save_id,
 					  uint64_t corpse_revision);
 bool corpse_lifecycle_transaction_note_item_transfer(uint32_t owner_pid, uint32_t save_id,

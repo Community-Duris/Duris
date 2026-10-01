@@ -81,6 +81,8 @@ class TargetTests(unittest.TestCase):
             replace(policy, maintenance_kind="systemd", maintenance_id="duris-mud.service").require_maintenance()
 
     def test_user_systemd_boundary_binds_owner_manager_unit_and_cgroup(self):
+        if os.getuid() == 0:
+            self.skipTest("user-systemd ownership requires a non-root test runner")
         uid = os.getuid()
         db_name = "duris_user_manager_fixture"
         policy_env = self.env(ENVIRONMENT="production", DB_NAME=db_name)
@@ -213,6 +215,8 @@ class TargetTests(unittest.TestCase):
             policy.require_maintenance()
 
     def test_user_systemd_boundary_refuses_owner_state_and_visibility_bypasses(self):
+        if os.getuid() == 0:
+            self.skipTest("user-systemd ownership requires a non-root test runner")
         uid = os.getuid()
         db_name = "duris_user_manager_fixture"
         env = self.env(ENVIRONMENT="production", DB_NAME=db_name)

@@ -3518,6 +3518,35 @@
       "dependencies": ["database:player_items"]
     },
     {
+      "id": "database:player_item_runtime_state",
+      "kind": "database_table",
+      "locator": "player_item_runtime_state",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_items"]
+    },
+    {
       "id": "database:player_items",
       "kind": "database_table",
       "locator": "player_items",

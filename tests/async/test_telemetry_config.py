@@ -59,7 +59,7 @@ def check_reviewed_property_values() -> None:
             continue
         key, value = line.split("=", 1)
         values[key.strip()] = value.strip()
-    assert values["exp.zoneTrophy.observe"] == "0"
+    assert values["exp.zoneTrophy.observe"] == "0.000"
     assert values["epic.touch.maxPayoutFactor"] == "10.000"
     assert values["epic.touch.PayoutFactor"] == "1.000"
     assert values["epic.zone.alignmentMod"] == "0.200"

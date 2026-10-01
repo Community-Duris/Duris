@@ -2,6 +2,7 @@
 
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "item/objmisc.h"
 #include "persistence/latency_trace.h"
 
 #include <algorithm>
@@ -188,7 +189,7 @@ bool live_context(const pending_item_action &entry, P_char &actor, P_char &targe
 	    target->in_room != actor->in_room)
 		return false;
 	source = live_source(entry, actor);
-	if (!source)
+	if (!source || item_restricted_for_player_pet(actor, source))
 		return false;
 	if (entry.selected->definition.source == item_action_source::equipped)
 	{
@@ -482,7 +483,8 @@ static item_action_start start_action(uint32_t ability_id, P_char actor, P_char 
 		}
 	}
 	if (!IS_ALIVE(actor) || !IS_ALIVE(target) || !source || !source->obj_uid ||
-	    !actor->runtime_id || !target->runtime_id || actor->in_room == NOWHERE ||
+	    item_restricted_for_player_pet(actor, source) || !actor->runtime_id ||
+	    !target->runtime_id || actor->in_room == NOWHERE ||
 	    next_action_id == std::numeric_limits<uint64_t>::max())
 		return reject();
 	if (pending.size() >= static_cast<size_t>(config.total))

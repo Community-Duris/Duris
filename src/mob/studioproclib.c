@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -330,6 +331,8 @@ static int (*proclib_chain_prev(int rnum))(P_obj, P_char, int, char *)
 
 int proclib_obj_cmd_bridge(P_obj obj, P_char ch, int cmd, char *argument)
 {
+	if (item_restricted_for_player_pet(ch, obj))
+		return FALSE;
 	int (*prev)(P_obj, P_char, int, char *);
 
 	if (!obj)

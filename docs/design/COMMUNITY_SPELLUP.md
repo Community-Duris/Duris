@@ -102,7 +102,9 @@ retaining a disconnected character.
 
 The implementation snapshots the supported affect state before and after each
 effect. Reports distinguish applied, refreshed, upgraded, unchanged, blocked, and
-failed outcomes. In particular:
+failed outcomes. Result displays group effects under color-coded, aligned outcome
+labels, omit zero-count groups, add `xN` counts for multi-player passes, and wrap
+long groups at 78 visible columns. In particular:
 
 - `rest` distinguishes a new rested affect, a rested-to-well-rested upgrade, and
   a refresh. Its existing duration value of 150 is an affect duration, not a

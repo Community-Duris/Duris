@@ -7,7 +7,8 @@ drops an identifiable starter item, saves, and exits.  A fresh process then
 boots against the same isolated authority, restores the floor item, reloads the
 player with the saved terminal intent, and moves the item back to the player.
 This also keeps the corpse, saved-item, and shopkeeper boot stages under a real
-full-world boot rather than harnesses alone.
+full-world boot rather than harnesses alone, and requires a sailing path for
+every leg of every ferry route.
 
 DURIS_FULL_WORLD_ARTIFACT_DIR retains synthetic authority, journals, server logs,
 exit status, and a redacted monotonic command/response timeline on failure only.
@@ -270,8 +271,14 @@ def wait_for_boot(process: subprocess.Popen[str], output, output_path: pathlib.P
         "Entering game loop." in boot_output,
         "full-world server did not reach the game loop:\n" + boot_output,
     )
-    for stage in ("-- Player corpses", "-- Shopkeepers"):
+    for stage in ("-- Player corpses", "-- Shopkeepers", "Booting Ferries"):
         require(stage in boot_output, f"full-world boot skipped {stage}:\n" + boot_output)
+    # Ferry::init() routes every leg of every ferries[] entry at boot and puts a
+    # ticket automat at every stop.
+    require("no path found!" not in boot_output,
+            "a ferry route leg has no sailing path:\n" + boot_output)
+    require("can't find ferry ticket automat" not in boot_output,
+            "a ferry stop has no ticket automat:\n" + boot_output)
     record("boot_ready", pid=process.pid)
     return boot_output
 

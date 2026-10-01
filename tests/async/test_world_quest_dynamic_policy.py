@@ -83,7 +83,7 @@ def test_suggest_target_reads_cached_candidates() -> None:
 
 
 def test_boot_populates_catalog_before_loop_in_all_modes() -> None:
-    game = COMM[COMM.index("void run_the_game(int port, int sslport)"):]
+    game = COMM[COMM.index("int run_the_game(int port, int sslport)"):]
     boot_start = game.index("-- Calculating avg mob level and world-quest catalog.")
     boot_end = game.index("--  Done calculating mob level and world-quest catalog.", boot_start)
     boot = game[boot_start:boot_end]

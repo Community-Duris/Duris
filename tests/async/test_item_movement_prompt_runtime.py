@@ -68,6 +68,17 @@ void obj_to_room(P_obj, int) {}
 void mark_player_dirty_components(int, player_component_mask_t) {}
 P_char find_player_by_pid(int pid) { return character_list && GET_PID(character_list) == pid ? character_list : nullptr; }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command)
+{
+    assert(false && "default caller unexpectedly requested publication retention");
+    return critical_submit_result::unavailable;
+}
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{
+    assert(false && "default caller unexpectedly acknowledged publication");
+    return false;
+}
+
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
     submitted = std::move(command);

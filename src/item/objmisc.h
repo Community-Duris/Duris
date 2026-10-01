@@ -503,6 +503,9 @@
 #define PIPE_REGULAR 5
 
 #ifndef _DE_
+bool item_restricted_for_player_pet(P_char actor, P_obj obj);
+int invoke_object_special(P_obj obj, P_char actor, int command, char *argument);
+void item_restrict_player_pet_equipment(P_char actor);
 int obj_zone_id(P_obj o);
 int obj_room_id(P_obj o);
 #endif

@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <vector>
+#include <unordered_set>
 #include "combat/damage.h"
 #include "core/defines.h"
 #include "world/epic.h"
@@ -68,7 +69,7 @@ struct alchemy_craft_context
 {
 	int skill;
 	int kind;
-	bool ingredients_consumed;
+	unsigned int count;
 };
 
 void alchemy_craft_completed(P_char ch, bool committed, const item_transfer_result &, unsigned int,
@@ -84,12 +85,12 @@ void alchemy_craft_completed(P_char ch, bool committed, const item_transfer_resu
 			ch);
 		return;
 	}
-	if (craft.kind >= 1 && craft.kind <= 3)
-		notch_skill(ch, craft.skill, 6.25);
 	if (craft.kind == 1)
-		send_to_char("You finish mixing the poison.\r\n", ch);
-	else if (craft.kind == 2)
-		send_to_char("You finish mixing the potion.\r\n", ch);
+	{
+		notch_skill(ch, SKILL_MIXPOISON, 6.25);
+		send_to_char_f(ch, "You finish mixing %u poison%s.\r\n", craft.count,
+			       craft.count == 1 ? "" : "s");
+	}
 	else if (craft.kind == 4)
 	{
 		act("...creating a real masterpiece!", TRUE, ch, 0, 0, TO_ROOM);
@@ -102,45 +103,29 @@ void alchemy_craft_completed(P_char ch, bool committed, const item_transfer_resu
 		act("...and breaks it in the process.", TRUE, ch, 0, 0, TO_ROOM);
 		wizlog(56, "%s ruined an encrust attempt.", GET_NAME(ch));
 	}
-	else if (craft.kind == 3)
-	{
-		if (craft.ingredients_consumed)
-			send_to_char(
-				"The mixture consumes the ingredients without producing a potion.\r\n",
-				ch);
-		else
-			send_to_char(
-				"You ran out of bottles before the ingredients were consumed.\r\n",
-				ch);
-	}
-	else
-		send_to_char("The mixture consumes the ingredients without producing a potion.\r\n",
-			     ch);
 }
 
-bool collect_required_objects(P_char ch, const int required[], bool poison,
-			      std::vector<P_obj> *objects)
+bool collect_required_objects(P_char ch, const int required[],
+			      const std::unordered_set<P_obj> &used, std::vector<P_obj> *objects)
 {
-	if (!ch || !required || !objects)
-		return false;
 	int remaining[MAX_INGREDIENTS + 1] = {};
 	for (int index = 0; index < MAX_INGREDIENTS + 1; ++index)
 		remaining[index] = required[index];
 	objects->clear();
 	for (P_obj object = ch->carrying; object; object = object->next_content)
 	{
-		const int object_id = poison ? obj_index[object->R_num].virtual_number :
-					       get_id_for(object);
+		if (used.contains(object))
+			continue;
 		for (int index = 0; index < MAX_INGREDIENTS + 1; ++index)
-			if (remaining[index] == object_id)
+			if (remaining[index] && remaining[index] == OBJ_VNUM(object))
 			{
 				remaining[index] = 0;
 				objects->push_back(object);
 				break;
 			}
 	}
-	for (int index = 0; index < MAX_INGREDIENTS + 1; ++index)
-		if (remaining[index])
+	for (int value : remaining)
+		if (value)
 		{
 			objects->clear();
 			return false;
@@ -859,180 +844,69 @@ void do_mixpoison(P_char ch, char *argument, int /*cmd*/)
 	}
 	for (i = 0; poison_data[i].poison_type; i++)
 	{
-		if (GET_LEVEL(ch) >= poison_data[i].level_required &&
-		    skl_lvl >= poison_data[i].skill_required)
-		{
-			std::vector<P_obj> ingredients;
-			if (!collect_required_objects(ch, poison_data[i].ingredients, true,
-						      &ingredients))
-				continue;
-			P_obj poison_vial = read_object(poison_data[i].vnum, VIRTUAL);
-			if (!poison_vial)
-				continue;
-			char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
-			snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch),
-				 poison_vial->name);
-			poison_vial->name = str_dup(gbuf2);
-			snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s",
-				 poison_vial->short_description, GET_NAME(ch));
-			set_short_description(poison_vial, buffer);
-			std::vector<P_obj> inputs;
-			inputs.reserve(ingredients.size() + 1);
-			inputs.push_back(vial);
-			inputs.insert(inputs.end(), ingredients.begin(), ingredients.end());
-			const alchemy_craft_context context = { SKILL_MIXPOISON, 1, true };
-			item_movement_reject reject = item_movement_reject::none;
-			if (!item_movement_transaction_submit_craft(
-				    ch, inputs.data(), inputs.size(), &poison_vial, 1,
-				    poison_data[i].vnum, alchemy_craft_completed, &context,
-				    sizeof(context), &reject))
-			{
-				extract_obj(poison_vial);
-				send_to_char(
-					"The poison craft service is busy; no ingredients were consumed.\r\n",
-					ch);
-			}
-			else
-				CharWait(ch, PULSE_VIOLENCE);
-			return;
-		}
-	}
-
-	act("No poison created in the vial!", FALSE, ch, 0, 0, TO_CHAR);
-	return;
-}
-
-void do_mix(P_char ch, char *argument, int /*cmd*/)
-{
-	P_obj bottle;
-	char arg[MAX_STRING_LENGTH];
-	int i;
-
-	if (!GET_CHAR_SKILL(ch, SKILL_MIX))
-	{
-		act("Well trying might not hurt, but dont.", FALSE, ch, 0, 0, TO_CHAR);
-		return;
-	}
-
-	CharWait(ch, PULSE_VIOLENCE * 1);
-	one_argument(argument, arg);
-	if (*arg)
-	{
-		act("Get a potion bottle, and have the garlic and stuff in inventory and type mix!",
-		    FALSE, ch, 0, 0, TO_CHAR);
-		return;
-	}
-
-	bottle = get_bottle(ch);
-	if (!bottle)
-	{
-		act("You need to have a potion bottle in your inventory.", FALSE, ch, 0, 0,
-		    TO_CHAR);
-		return;
-	}
-	for (i = 0; potion_data[i].spell_type; i++)
-	{
-		if (GET_LEVEL(ch) < potion_data[i].spell_level)
+		if (GET_LEVEL(ch) < poison_data[i].level_required ||
+		    skl_lvl < poison_data[i].skill_required)
 			continue;
-		std::vector<P_obj> ingredients;
-		if (!collect_required_objects(ch, potion_data[i].ingredients, false, &ingredients))
-			continue;
-
-		struct alchemy_bottle_candidate
+		std::vector<P_obj> inputs, outputs, ingredients;
+		std::unordered_set<P_obj> used;
+		// Bound the plan below the command's item/key and snapshot byte budgets.
+		constexpr size_t max_poison_batch = 64;
+		while (outputs.size() < max_poison_batch)
 		{
-			P_obj object;
-			bool generated;
-		};
-		std::vector<alchemy_bottle_candidate> available_bottles;
-		for (P_obj object = ch->carrying; object; object = object->next_content)
-			if (OBJ_VNUM(object) == VOBJ_POTION_BOTTLES &&
-			    strstr(object->name, "bottle"))
-				available_bottles.push_back({ object, false });
-
-		std::vector<P_obj> consumed_bottles;
-		std::vector<P_obj> outputs;
-		bool ingredients_consumed = false;
-		bool produced_potion = false;
-		while (!available_bottles.empty())
-		{
-			const alchemy_bottle_candidate current = available_bottles.front();
-			available_bottles.erase(available_bottles.begin());
-			if (!current.generated)
-				consumed_bottles.push_back(current.object);
-
-			if (number(1, 160) < ((GET_C_WIS(ch) + GET_C_DEX(ch)) / 2))
-			{
-				P_obj potion = read_object(potion_data[i].vnum, VIRTUAL);
-				if (!potion)
+			vial = nullptr;
+			for (P_obj candidate = ch->carrying; candidate;
+			     candidate = candidate->next_content)
+				if (!used.contains(candidate) &&
+				    OBJ_VNUM(candidate) == VOBJ_POISON_VIALS &&
+				    strstr(candidate->name, "vial"))
 				{
-					for (P_obj output : outputs)
-						extract_obj(output);
-					return;
-				}
-				potion->value[0] = GET_LEVEL(ch);
-				char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
-				snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch),
-					 potion->name);
-				potion->name = str_dup(gbuf2);
-				snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s",
-					 potion->short_description, GET_NAME(ch));
-				set_short_description(potion, buffer);
-				outputs.push_back(potion);
-				produced_potion = true;
-			}
-
-			if (number(0, 5))
-				available_bottles.insert(available_bottles.begin(),
-							 { nullptr, true });
-
-			if (number(0, GET_CHAR_SKILL(ch, SKILL_MIX) / 10 + number(1, 2)))
-			{
-				if (available_bottles.empty())
+					vial = candidate;
 					break;
-				continue;
-			}
-			ingredients_consumed = true;
-			break;
-		}
-
-		for (const alchemy_bottle_candidate &candidate : available_bottles)
-		{
-			if (!candidate.generated)
-				continue;
-			P_obj replacement = read_object(VOBJ_POTION_BOTTLES, VIRTUAL);
-			if (!replacement)
+				}
+			if (!vial || !collect_required_objects(ch, poison_data[i].ingredients, used,
+							       &ingredients))
+				break;
+			P_obj output = read_object(poison_data[i].vnum, VIRTUAL);
+			if (!output)
+				break;
+			char name[MAX_STRING_LENGTH], description[MAX_STRING_LENGTH];
+			snprintf(name, sizeof(name), "%s %s", GET_NAME(ch), output->name);
+			output->name = str_dup(name);
+			snprintf(description, sizeof(description), "%s mixed by %s",
+				 output->short_description, GET_NAME(ch));
+			set_short_description(output, description);
+			inputs.push_back(vial);
+			used.insert(vial);
+			for (P_obj ingredient : ingredients)
 			{
-				for (P_obj output : outputs)
-					extract_obj(output);
-				return;
+				inputs.push_back(ingredient);
+				used.insert(ingredient);
 			}
-			outputs.push_back(replacement);
+			outputs.push_back(output);
 		}
-
-		std::vector<P_obj> inputs = consumed_bottles;
-		if (ingredients_consumed)
-			inputs.insert(inputs.end(), ingredients.begin(), ingredients.end());
-		const alchemy_craft_context context = { SKILL_MIX, produced_potion ? 2 : 3,
-							ingredients_consumed };
+		if (outputs.empty())
+			continue;
+		const alchemy_craft_context context = { SKILL_MIXPOISON, 1,
+							static_cast<unsigned int>(outputs.size()) };
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_craft(
-			    ch, inputs.data(), inputs.size(),
-			    outputs.empty() ? nullptr : outputs.data(), outputs.size(),
-			    potion_data[i].spell_type, alchemy_craft_completed, &context,
-			    sizeof(context), &reject))
+			    ch, inputs.data(), inputs.size(), outputs.data(), outputs.size(),
+			    poison_data[i].vnum, alchemy_craft_completed, &context, sizeof(context),
+			    &reject))
 		{
 			for (P_obj output : outputs)
 				extract_obj(output);
 			send_to_char(
-				"The potion craft service is busy; no ingredients were consumed.\r\n",
+				"The poison craft service is busy; no ingredients were consumed.\r\n",
 				ch);
 		}
 		else
-			CharWait(ch, PULSE_VIOLENCE * 2);
+			CharWait(ch, PULSE_VIOLENCE);
 		return;
 	}
 
-	act("No potion created in the bottle!\r\n", FALSE, ch, 0, 0, TO_CHAR);
+	act("No poison created in the vial!", FALSE, ch, 0, 0, TO_CHAR);
+	return;
 }
 
 bool is_neg_good(sbyte location)
@@ -1373,12 +1247,19 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
+	// Trap state is not represented by the durable item snapshot yet. Preserve
+	// both inputs rather than publish a replacement that loses its trap on reload.
+	if (item->trap_eff || item->trap_dam || item->trap_charge || item->trap_level)
+	{
+		send_to_char("Remove the item's trap before encrusting it.\r\n", ch);
+		return;
+	}
 	craftsmanship = item->craftsmanship;
 	const bool succeeded = number(1, 110) <= skill;
 	if (!succeeded)
 	{
 		P_obj inputs[] = { item, jewel };
-		const alchemy_craft_context context = { skill, 5, false };
+		const alchemy_craft_context context = { SKILL_ENCRUST, 5, 0 };
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_craft(
 			    ch, inputs, 2, nullptr, 0, OBJ_VNUM(jewel), alchemy_craft_completed,
@@ -1460,7 +1341,7 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	if (IS_SET(new_item->extra2_flags, ITEM2_ENHANCED))
 		describe_encrusted_enhanced(new_item);
 	P_obj inputs[] = { item, jewel };
-	const alchemy_craft_context context = { skill, 4, false };
+	const alchemy_craft_context context = { SKILL_ENCRUST, 4, 1 };
 	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit_craft(ch, inputs, 2, &new_item, 1, OBJ_VNUM(jewel),
 						    alchemy_craft_completed, &context,

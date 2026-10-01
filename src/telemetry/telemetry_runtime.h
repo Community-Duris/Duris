@@ -5,6 +5,7 @@
 #include "telemetry/telemetry_config_private.h"
 #include "telemetry/telemetry_combat_summary.h"
 #include "telemetry/telemetry_encounter.h"
+#include "telemetry/telemetry_health.h"
 #include "telemetry/telemetry_progression.h"
 #include "telemetry/telemetry_types.h"
 
@@ -445,6 +446,13 @@ telemetry_runtime_outcome telemetry_runtime_shutdown(telemetry_shutdown_request 
  * teardown. Idempotent after completion. */
 telemetry_runtime_outcome telemetry_runtime_final_reap(void);
 telemetry_health_snapshot telemetry_runtime_health_copy(void);
+/* Game-loop observer: reads cached atomics only and never calls the SQL writer.
+ * State transitions are emitted immediately; identical active failures are
+ * rate-limited by the monitor. */
+telemetry_health_event
+telemetry_runtime_health_observe(telemetry_monotonic_usec now_monotonic_usec) noexcept;
+telemetry_health_status
+telemetry_runtime_health_status_copy(telemetry_monotonic_usec now_monotonic_usec) noexcept;
 
 static_assert(std::is_trivially_copyable_v<telemetry_session_handoff>);
 static_assert(std::is_trivially_copyable_v<telemetry_session_resume>);

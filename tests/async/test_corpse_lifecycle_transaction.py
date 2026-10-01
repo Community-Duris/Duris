@@ -26,6 +26,7 @@ static bool fenced_release_failed = false;
 static bool queued_destruction_completed = false;
 static bool resurrection_completed = false;
 static bool raise_completed = false;
+static bool world_raise_completed = false;
 static bool nested_completed = false;
 
 bool redis_invalidate_artifact_cache(void)
@@ -121,6 +122,25 @@ static corpse_lifecycle_payload raise_follower(uint32_t owner_pid, uint32_t save
 	payload.action = corpse_lifecycle_action::raise_follower;
 	payload.expected_room_revision = 0;
 	payload.old_room_vnum = 0;
+	return payload;
+}
+
+static corpse_lifecycle_payload raise_world_follower(uint32_t high, uint32_t low)
+{
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::raise_world_follower;
+	payload.owner_pid = high;
+	payload.save_id = low;
+	payload.expected_room_revision = 4;
+	payload.destination_player_pid = 89;
+	payload.expected_player_revision = 6;
+	payload.room_vnum = 907;
+	payload.owner_name = "world corpse";
+	payload.pet_uid = (static_cast<uint64_t>(high) << 32) | low;
+	payload.pet_mob_vnum = 701;
+	payload.pet_hit = payload.pet_max_hit = 20;
+	payload.pet_mana = payload.pet_max_mana = 10;
+	payload.pet_vitality = payload.pet_max_vitality = 5;
 	return payload;
 }
 
@@ -240,6 +260,31 @@ static critical_completion raise_completion(size_t index, uint32_t owner_pid,
 	return value;
 }
 
+static critical_completion world_raise_completion(size_t index, uint32_t high,
+					    uint32_t low, uint64_t room_revision)
+{
+	critical_completion value = {};
+	value.operation_id = submitted[index].operation_id;
+	value.outcome = critical_apply_outcome::applied;
+	corpse_lifecycle_result result = {};
+	result.owner_pid = high;
+	result.save_id = low;
+	result.action = corpse_lifecycle_action::raise_world_follower;
+	result.catalog_revision = room_revision;
+	result.corpse_owner_revision = room_revision;
+	result.pet_owner_revision = 1;
+	result.max_item_revision = 10;
+	result.item_count = 2;
+	result.destruction_owner_revision = 1;
+	result.max_discarded_item_revision = 9;
+	result.discarded_item_count = 1;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	value.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
 static critical_completion nested_completion(size_t index, uint32_t owner_pid,
 				      uint32_t save_id, uint64_t catalog_revision)
 {
@@ -309,6 +354,18 @@ static void on_raise(bool committed, const corpse_lifecycle_result &result,
 	       payload.destination_player_pid == 88 && !payload.old_room_vnum &&
 	       payload.expected_corpse_revision == 1);
 	raise_completed = true;
+}
+
+static void on_world_raise(bool committed, const corpse_lifecycle_result &result,
+			   unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 &&
+	       result.action == corpse_lifecycle_action::raise_world_follower &&
+	       result.corpse_owner_revision == 5 && result.pet_owner_revision == 1 &&
+	       result.discarded_item_count == 1 && payload.expected_corpse_revision == 9 &&
+	       payload.expected_room_revision == 4 && payload.destination_player_pid == 89 &&
+	       payload.pet_uid == ((static_cast<uint64_t>(5) << 32) | 99));
+	world_raise_completed = true;
 }
 
 static void on_nested(bool committed, const corpse_lifecycle_result &result,
@@ -481,8 +538,20 @@ int main()
 	assert(!corpse_lifecycle_transaction_release(release(49, 27, 910, 0),
 						      on_fenced_release));
 
+	auto world_raise = raise_world_follower(5, 99);
+	assert(corpse_lifecycle_transaction_raise_world_follower(world_raise, 9,
+							 on_world_raise));
+	assert(corpse_lifecycle_transaction_raise_world_follower(world_raise, 9,
+							 on_world_raise));
+	assert(submitted.size() == 19 &&
+	       decode(18).action == corpse_lifecycle_action::raise_world_follower &&
+	       decode(18).expected_corpse_revision == 9 && submitted[18].keys.size() == 5);
+	done = world_raise_completion(18, 5, 99, 5);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(world_raise_completed && !corpse_lifecycle_transaction_busy(5, 99));
+
 	const auto health = corpse_lifecycle_transaction_health_copy();
-	assert(health.submitted == 18 && health.committed == 15 && health.rejected == 3 &&
+	assert(health.submitted == 19 && health.committed == 16 && health.rejected == 3 &&
 	       health.pending == 0 && health.dirty == 0);
 	assert(corpse_lifecycle_transaction_forget(42, 20));
 	assert(corpse_lifecycle_transaction_forget(43, 21));

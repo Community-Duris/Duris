@@ -369,6 +369,8 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::pet_return:
 	case item_transfer_reason::trusted_steal:
 	case item_transfer_reason::craft:
+	case item_transfer_reason::soulbind:
+	case item_transfer_reason::slip:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -521,11 +523,22 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
 	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
+	const bool world_corpse_raise_pet =
+		corpse_raise_pet && payload.from_owner.type == item_owner_type::room &&
+		payload.from_owner.id && payload.from_owner.id <= INT32_MAX &&
+		!payload.from_owner.context_id && payload.to_owner.type == item_owner_type::pet &&
+		payload.to_owner.id && payload.to_owner.context_id &&
+		payload.to_owner.context_id <= INT32_MAX && payload.multi_root &&
+		!payload.target_root_item_uid && !payload.target_parent_item_uid &&
+		static_cast<uint64_t>(payload.reason_id) == payload.to_owner.id;
 	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
 	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
 	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
 	const bool craft = payload.reason == item_transfer_reason::craft;
-	if (trusted_steal &&
+	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
+	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (player_transfer &&
 	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
 	     payload.from_owner.type != item_owner_type::player ||
 	     payload.to_owner.type != item_owner_type::player || !payload.from_owner.id ||
@@ -570,16 +583,17 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 			    payload.reason_id != static_cast<int64_t>(payload.from_owner.id))) ||
 	    ((pet_give || pet_return) && (payload.multi_root || payload.target_parent_item_uid)))
 		return false;
-	const bool corpse_context_required = payload_version >=
-						     ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
-					     (corpse_create || corpse_loot || corpse_raise_pet);
+	const bool corpse_context_required =
+		payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
+		(corpse_create || corpse_loot || (corpse_raise_pet && !world_corpse_raise_pet));
 	if (corpse_context_required != payload.corpse.present ||
 	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
 			       payload.to_owner.type != item_owner_type::corpse)) ||
 	    (corpse_loot && (payload.from_owner.type != item_owner_type::corpse ||
 			     payload.to_owner.type != item_owner_type::player)) ||
-	    (corpse_raise_pet && (payload.from_owner.type != item_owner_type::corpse ||
-				  payload.to_owner.type != item_owner_type::pet)))
+	    (corpse_raise_pet && !world_corpse_raise_pet &&
+	     (payload.from_owner.type != item_owner_type::corpse ||
+	      payload.to_owner.type != item_owner_type::pet)))
 		return false;
 	if (payload.corpse.present)
 	{
@@ -1010,6 +1024,13 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	payload->target_parent_item_uid = get_u64(command.payload.data() + TARGET_PARENT_OFFSET);
 	payload->expected_target_parent_revision =
 		get_u64(command.payload.data() + TARGET_PARENT_REVISION_OFFSET);
+	// The unpublished craft draft used value 27 before master assigned it to
+	// soulbind. Only that draft's same-player shape can mean craft; real soulbind
+	// records always move between distinct players. Validation below remains strict.
+	if (command.payload_version == 7 && payload->reason == item_transfer_reason::soulbind &&
+	    payload->from_owner.type == item_owner_type::player &&
+	    item_owner_identity_equal(payload->from_owner, payload->to_owner))
+		payload->reason = item_transfer_reason::craft;
 	payload->multi_root =
 		command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
 		(payload->selected_item_uid == 0 || payload->reason == item_transfer_reason::craft);
@@ -1108,8 +1129,7 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	       std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
 			  expected.expected_revisions.begin(),
 			  [](const critical_expected_revision &left,
-			     const critical_expected_revision &right)
-			  {
+			     const critical_expected_revision &right) {
 				  return critical_entity_key_equal(left.key, right.key) &&
 					 left.revision == right.revision;
 			  });

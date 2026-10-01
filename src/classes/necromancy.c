@@ -7,6 +7,7 @@
 #include "core/files.h"
 #include "core/utils.h"
 #include "classes/necromancy.h"
+#include "item/objmisc.h"
 #include "economy/collector_presence.h"
 #include "player/pet_restore_runtime.h"
 #include <cstdint>
@@ -246,6 +247,9 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	}
 
 	linked_affect_to_char(mob, &af, ch, LNK_PET);
+	// Charm may add the follower before this owner link exists. Normalize only
+	// after ownership is established, retaining hidden items in this pet's custody.
+	item_restrict_player_pet_equipment(mob);
 
 	if (flag & PET_NOCASH)
 	{
@@ -1297,19 +1301,20 @@ void create_saved_corpse(P_obj obj, P_char mob)
 
 namespace
 {
-void discard_nested_money(P_obj container)
+void discard_nested_raise_exclusions(P_obj container, bool preserve_coin_piles)
 {
 	for (P_obj item = container ? container->contains : nullptr, next = nullptr; item;
 	     item = next)
 	{
 		next = item->next_content;
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
+		if (IS_SET(item->extra_flags, ITEM_TRANSIENT) ||
+		    (!preserve_coin_piles && GET_ITEM_TYPE(item) == ITEM_MONEY))
 		{
 			obj_from_obj(item);
 			extract_obj(item);
 		}
 		else
-			discard_nested_money(item);
+			discard_nested_raise_exclusions(item, preserve_coin_piles);
 	}
 }
 
@@ -1382,7 +1387,8 @@ bool prepare_corpse_raise_pet_state(P_obj corpse, P_char caster, P_char follower
 void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj corpse,
 					corpse_raise_kind kind, int level, int variant,
 					const char *message, uint64_t pet_uid, bool hostile,
-					int32_t prepared_duration, const std::string &restore_state)
+					int32_t prepared_duration, const std::string &restore_state,
+					bool preserve_coin_piles)
 {
 	if (!caster || !follower || !corpse || caster->in_room <= NOWHERE)
 		return;
@@ -1425,22 +1431,23 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		logit(LOG_DEBUG,
 		      "corpse_trace dracolich_prepare corpse_vnum=%d corpse_level=%d remaining_minutes=%d caster_level=%d",
 		      OBJ_VNUM(corpse), corpse->value[CORPSE_LEVEL], timeToDecay, level);
-	// Remove currency before measuring the durable equipment that will be placed
-	// in player custody.  A raise cannot roll the committed transfer back merely
-	// because the player's live carry limits changed while it was in flight.
+	// Remove dissolving objects before measuring the durable inventory. A raise
+	// cannot roll the committed transfer back merely because live carry limits
+	// changed while it was in flight. Coin piles remain physical inventory.
 	for (P_obj item = corpse->contains, next = nullptr; item; item = next)
 	{
 		next = item->next_content;
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
+		if (IS_SET(item->extra_flags, ITEM_TRANSIENT) ||
+		    (!preserve_coin_piles && GET_ITEM_TYPE(item) == ITEM_MONEY))
 		{
 			obj_from_obj(item);
 			extract_obj(item);
 		}
 		else
-			discard_nested_money(item);
+			discard_nested_raise_exclusions(item, preserve_coin_piles);
 	}
 
-	if (!pet_uid && corpse_raise_exceeds_carry_capacity(caster, corpse))
+	if (!pet_uid && !hostile && corpse_raise_exceeds_carry_capacity(caster, corpse))
 	{
 		send_to_char(
 			"The recovered equipment leaves you overburdened. Drop something before fighting or moving.\r\n",
@@ -1463,12 +1470,13 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 			logit(LOG_CORPSE, "%s raised with eq: [%d] %s", corpse->short_description,
 			      obj_index[item->R_num].virtual_number, item->name);
 		obj_from_obj(item);
-		if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
+		if (IS_SET(item->extra_flags, ITEM_TRANSIENT) ||
+		    (!preserve_coin_piles && GET_ITEM_TYPE(item) == ITEM_MONEY))
 			extract_obj(item);
 		else
 		{
-			discard_nested_money(item);
-			obj_to_char_at_end(item, pet_uid ? follower : caster);
+			discard_nested_raise_exclusions(item, preserve_coin_piles);
+			obj_to_char_at_end(item, (pet_uid || hostile) ? follower : caster);
 		}
 	}
 

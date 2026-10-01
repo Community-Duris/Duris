@@ -16,6 +16,8 @@
 ;
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
+#include "item/forced_weapon_drop.h"
 #include "item/native_artifact_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -2386,8 +2388,8 @@ void event_revenant_crown(P_char ch, P_char /*victim*/, P_obj obj, void * /*data
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -2430,8 +2432,7 @@ int revenant_helm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			if (obj_index[temp_obj->R_num].func.obj != NULL)
 			{
 				// Call the objects remove proc if there might be one.
-				(*obj_index[temp_obj->R_num].func.obj)(temp_obj, ch, CMD_REMOVE,
-								       (char *)"all");
+				invoke_object_special(temp_obj, ch, CMD_REMOVE, (char *)"all");
 			}
 			obj_to_char(unequip_char(ch, k), ch);
 			if (!IS_ALIVE(ch))
@@ -2548,8 +2549,8 @@ void event_dragonlord_check(P_char ch, P_char /*victim*/, P_obj obj, void * /*da
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -2602,9 +2603,8 @@ int dragonlord_plate_old(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 				if (temp_obj && (obj != temp_obj))
 				{
 					if (obj_index[temp_obj->R_num].func.obj != NULL)
-						(*obj_index[temp_obj->R_num].func.obj)(
-							temp_obj, temp_ch, CMD_REMOVE,
-							(char *)"all");
+						invoke_object_special(temp_obj, temp_ch, CMD_REMOVE,
+								      (char *)"all");
 					obj_to_char(unequip_char(temp_ch, k), temp_ch);
 				}
 			}
@@ -9318,18 +9318,8 @@ int fumblegaunts(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			    !IS_SET(ch->equipment[WIELD]->extra_flags, ITEM_NODROP) &&
 			    (ch->equipment[WIELD]->type == ITEM_WEAPON))
 			{
-				send_to_char(
-					"&=LYYou swing at your foe _really_ badly, sending your weapon flying!\n",
-					ch);
-				act("$n stumbles with $s attack, sending $s weapon flying!", TRUE,
-				    ch, 0, 0, TO_ROOM);
-				P_obj weap = unequip_char(ch, WIELD);
-				if (weap)
-				{
-					obj_to_room(weap, ch->in_room);
-				}
-				char_light(ch);
-				room_light(ch->in_room, REAL);
+				forced_weapon_drop(ch, ch->equipment[WIELD],
+						   forced_weapon_drop_cause::combat_fumble);
 			}
 			else
 				send_to_char("You stumble, but recover in time!\n", ch);

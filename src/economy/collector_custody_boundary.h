@@ -22,6 +22,9 @@ collector_item_transfer_boundary_reason(const item_transfer_payload &payload)
 	// the live object nevertheless changed hands.
 	if (payload.reason == item_transfer_reason::mobile_claim)
 		return collector::reason::claimed;
+	if (payload.reason == item_transfer_reason::corpse_raise_pet &&
+	    payload.to_owner.type == item_owner_type::pet)
+		return collector::reason::claimed;
 	if (payload.to_owner.type == item_owner_type::destruction ||
 	    payload.reason == item_transfer_reason::destruction)
 		return collector::reason::destroyed;
@@ -38,6 +41,10 @@ inline uint32_t collector_item_transfer_actor_pid(const item_transfer_payload &p
 	if (payload.reason == item_transfer_reason::mobile_claim && payload.reason_id > 0 &&
 	    static_cast<uint64_t>(payload.reason_id) <= std::numeric_limits<uint32_t>::max())
 		return static_cast<uint32_t>(payload.reason_id);
+	if (payload.reason == item_transfer_reason::corpse_raise_pet &&
+	    payload.to_owner.type == item_owner_type::pet &&
+	    payload.to_owner.context_id <= std::numeric_limits<uint32_t>::max())
+		return static_cast<uint32_t>(payload.to_owner.context_id);
 	const uint64_t actor =
 		payload.to_owner.type == item_owner_type::player   ? payload.to_owner.id :
 		payload.from_owner.type == item_owner_type::player ? payload.from_owner.id :
@@ -60,6 +67,7 @@ collector_corpse_lifecycle_boundary_reason(const corpse_lifecycle_payload &paylo
 		return collector::reason::destroyed;
 	case corpse_lifecycle_action::resurrect:
 	case corpse_lifecycle_action::raise_follower:
+	case corpse_lifecycle_action::raise_world_follower:
 		return collector::reason::claimed;
 	case corpse_lifecycle_action::release_nested:
 		return payload.destination_player_pid ? collector::reason::claimed :

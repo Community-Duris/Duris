@@ -1039,6 +1039,10 @@ bool check_nevents();
 // epic.c
 void refund_epic_skills(P_char ch);
 
+/* ferryact.c */
+bool is_ferry_object(P_obj);
+void ferry_forget_object(P_obj);
+
 /* fight.c */
 bool rapier_dirk(P_char, P_char);
 int calculate_thac_zero(P_char, int);
@@ -2075,7 +2079,7 @@ void create_denied_file(const char *, char *);
 int getNewPCidNumb(void);
 void setNewPCidNumbfromFile(void);
 char *statstr(int);
-bool _parse_name(char *, char *);
+bool _parse_name(char *, char *, bool);
 bool has_avail_class(P_desc);
 void display_classtable(P_desc);
 extern int invitemode;
@@ -2367,7 +2371,7 @@ void AddDeadChar(P_char);
 void AddDeadObj(P_obj);
 void game_loop(int, int);
 void game_up_message(int);
-void run_the_game(int, int);
+int run_the_game(int, int);
 
 /* sparser.c */
 
@@ -2489,6 +2493,7 @@ void resolve_nova(P_char);
 void spell_spore_burst(int, P_char, char *, int, P_char, P_obj);
 void spell_siren_song(int, P_char, char *, int, P_char, P_obj);
 void spell_harmonic_resonance(int, P_char, char *, int, P_char, P_obj);
+const char *elemental_aura_failure_message(P_char);
 void spell_elemental_aura(int, P_char, char *, int, P_char, P_obj);
 void spell_summon_insects(int, P_char, char *, int, P_char, P_obj);
 void spell_consecrate_land(int, P_char, char *, int, P_char, P_obj);
@@ -3207,7 +3212,6 @@ void do_specialize(P_char, char *, int);
 void event_enchant(P_char ch, P_char victim, P_obj obj, void *data);
 void do_encrust(P_char, char *, int);
 void do_spellbind(P_char, char *, int);
-void do_mix(P_char, char *, int);
 void do_fix(P_char, char *, int);
 void do_forge(P_char, char *, int);
 P_obj get_bottle(P_char);

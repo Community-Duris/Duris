@@ -31,6 +31,15 @@ extern const int top_of_world;
 
 namespace
 {
+enum class publication_state : uint8_t
+{
+	none,
+	ready,
+	retrying,
+	blocked,
+	ack_pending,
+};
+
 struct pending_movement
 {
 	uint32_t actor_pid;
@@ -44,12 +53,16 @@ struct pending_movement
 	bool adopting;
 	bool adoption_only;
 	item_movement_completion_fn completion;
+	item_movement_publication_fn publication;
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> context;
 	size_t context_size;
 	bool completion_ready;
 	bool publication_failed;
+	unsigned int publication_attempts;
+	publication_state publication_status;
 	bool creation_batch;
 	bool registry_applied;
+	bool craft_notified = false;
 	bool collector_invalidated;
 	critical_completion completed;
 };
@@ -157,8 +170,7 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry)
-			   {
+			   [&](const auto &entry) {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -424,8 +436,9 @@ bool craft_live_ready(P_char actor, const pending_movement &entry)
 	try
 	{
 		for (size_t index = 0; index < entry.payload.item_count; ++index)
-			if (entry.payload.items[index].item_uid ==
-			    entry.payload.items[index].root_item_uid)
+			if (item_transfer_selected_root(entry.payload,
+							entry.payload.items[index].item_uid) ==
+			    entry.payload.items[index].item_uid)
 				input_roots.insert(entry.payload.items[index].item_uid);
 	}
 	catch (const std::bad_alloc &)
@@ -447,9 +460,82 @@ bool craft_live_ready(P_char actor, const pending_movement &entry)
 	return true;
 }
 
+bool restore_craft_outputs(const pending_movement &entry)
+{
+	std::vector<player_item_snapshot> outputs;
+	std::vector<uint64_t> roots;
+	if (!craft_output_roots(entry.payload, &outputs, &roots))
+		return false;
+	std::vector<player_item_snapshot> missing;
+	std::vector<int32_t> remap(outputs.size(), -1);
+	std::vector<bool> absent(outputs.size(), false);
+	for (size_t index = 0; index < outputs.size(); ++index)
+	{
+		const auto &item = outputs[index];
+		absent[index] = item.parent_index < 0 ? !find_item(item.object_uid) :
+							absent[item.parent_index];
+		if (!absent[index])
+		{
+			P_obj existing = find_item(item.object_uid);
+			if (!existing || OBJ_VNUM(existing) != item.vnum ||
+			    (item.parent_index >= 0 &&
+			     (!OBJ_INSIDE(existing) ||
+			      existing->loc.inside !=
+				      find_item(outputs[item.parent_index].object_uid))))
+				return false;
+			continue;
+		}
+		if (find_item(item.object_uid))
+			return false;
+		remap[index] = static_cast<int32_t>(missing.size());
+		missing.push_back(item);
+		if (item.parent_index >= 0)
+			missing.back().parent_index = remap[item.parent_index];
+	}
+	if (missing.empty())
+		return true;
+	item_transfer_payload projection = {};
+	projection.from_owner = { item_owner_type::system, 0, 0 };
+	projection.to_owner = entry.payload.to_owner;
+	projection.reason = item_transfer_reason::creation;
+	projection.multi_root = true;
+	projection.item_count = static_cast<uint16_t>(missing.size());
+	std::vector<uint8_t> encoded;
+	if (player_item_snapshot_list_encode(missing, &encoded) !=
+		    player_snapshot_codec_result::ok ||
+	    encoded.size() > projection.item_blob.size())
+		return false;
+	projection.item_blob_size = static_cast<uint32_t>(encoded.size());
+	std::copy(encoded.begin(), encoded.end(), projection.item_blob.begin());
+	for (size_t index = 0; index < missing.size(); ++index)
+	{
+		size_t root = index;
+		while (missing[root].parent_index >= 0)
+			root = static_cast<size_t>(missing[root].parent_index);
+		projection.items[index] = { missing[index].object_uid,
+					    missing[root].object_uid,
+					    missing[index].parent_index < 0 ?
+						    0 :
+						    missing[missing[index].parent_index].object_uid,
+					    ITEM_TRANSFER_ABSENT_REVISION,
+					    missing[index].vnum,
+					    item_custody_state::absent };
+	}
+	item_transfer_result result = {};
+	result.root_item_uid = item_transfer_result_root(projection);
+	result.item_count = projection.item_count;
+	item_transfer_result committed = {};
+	if (!item_transfer_command_decode_result(entry.completed.result_payload.data(),
+						 entry.completed.result_size, &committed))
+		return false;
+	result.to_owner_revision = committed.to_owner_revision;
+	std::vector<P_obj> staged;
+	return player_load_item_graph_materialize_creation(projection, result, &staged);
+}
+
 bool publish_craft(const pending_movement &entry, P_char actor)
 {
-	if (!craft_live_ready(actor, entry))
+	if (!restore_craft_outputs(entry) || !craft_live_ready(actor, entry))
 		return false;
 	std::vector<player_item_snapshot> outputs;
 	std::vector<uint64_t> output_roots;
@@ -459,8 +545,9 @@ bool publish_craft(const pending_movement &entry, P_char actor)
 	try
 	{
 		for (size_t index = 0; index < entry.payload.item_count; ++index)
-			if (entry.payload.items[index].item_uid ==
-			    entry.payload.items[index].root_item_uid)
+			if (item_transfer_selected_root(entry.payload,
+							entry.payload.items[index].item_uid) ==
+			    entry.payload.items[index].item_uid)
 				input_roots.insert(entry.payload.items[index].item_uid);
 	}
 	catch (const std::bad_alloc &)
@@ -505,6 +592,11 @@ void discard_craft_outputs(const pending_movement &entry)
 	}
 }
 
+bool retained_player_transfer_reason(item_transfer_reason reason)
+{
+	return reason == item_transfer_reason::soulbind || reason == item_transfer_reason::slip;
+}
+
 item_owner_identity creation_grant_owner(const pending_creation_grant &request)
 {
 	return request.to_room ?
@@ -535,8 +627,28 @@ bool creation_grant_tree_available(P_obj object)
 bool creation_grant_request_live_ready(P_char actor, const pending_creation_grant &request)
 {
 	P_obj object = find_item(request.item_uid);
-	return object && (OBJ_NOWHERE(object) || OBJ_CARRIED_BY(object, actor)) &&
-	       creation_grant_tree_available(object);
+	if (!object || !creation_grant_tree_available(object))
+		return false;
+	if (OBJ_NOWHERE(object))
+		return true;
+	if (request.to_room)
+		return request.room > NOWHERE && request.room <= top_of_world &&
+		       OBJ_IN_ROOM(object, request.room);
+
+	P_char recipient = request.allow_pre_entry && actor &&
+					   request.recipient_pid ==
+						   static_cast<uint32_t>(GET_PID(actor)) ?
+				   actor :
+				   find_live_player(request.recipient_pid);
+	if (!recipient)
+		return false;
+	if (OBJ_CARRIED_BY(object, recipient))
+		return true;
+	if (!request.target_container_uid)
+		return false;
+	P_obj container = find_item(request.target_container_uid);
+	return container && OBJ_CARRIED_BY(container, recipient) &&
+	       GET_ITEM_TYPE(container) == ITEM_CONTAINER && OBJ_INSIDE_OBJ(object, container);
 }
 
 bool creation_grant_batch_live_ready(P_char actor, const creation_grant_queue &queue)
@@ -638,13 +750,47 @@ void note_creation_grant_publication_failure(P_char actor, creation_grant_queue 
 	if (queue.publication_failed)
 		return;
 	queue.publication_failed = true;
-	statuslog(56, "&+RALERT&n: committed starter kit needs live publication repair (pid=%u)",
-		  actor_pid);
+	const pending_creation_grant *request = queue.requests.empty() ? nullptr :
+									 &queue.requests.front();
+	P_obj object = request ? find_item(request->item_uid) : nullptr;
+	const char *kind = queue.batch_submission ? "batch" : "single";
+	const uint32_t recipient_pid = request ? request->recipient_pid : actor_pid;
+	unsigned int loc_p = object ? object->loc_p : 0;
+	uint32_t carrier_pid = 0;
+	uint32_t wearer_pid = 0;
+	uint64_t container_uid = 0;
+	int room = NOWHERE;
+	if (object && OBJ_CARRIED(object) && object->loc.carrying && IS_PC(object->loc.carrying))
+		carrier_pid = static_cast<uint32_t>(GET_PID(object->loc.carrying));
+	if (object && OBJ_WORN(object) && object->loc.wearing && IS_PC(object->loc.wearing))
+		wearer_pid = static_cast<uint32_t>(GET_PID(object->loc.wearing));
+	if (object && OBJ_INSIDE(object) && object->loc.inside)
+		container_uid = object->loc.inside->obj_uid;
+	if (object && OBJ_ROOM(object) && object->loc.room > NOWHERE &&
+	    object->loc.room <= top_of_world)
+		room = world[object->loc.room].number;
+	const unsigned long long item_uid = object ? object->obj_uid :
+						     (request ? request->item_uid : 0);
+	const int vnum = object ? OBJ_VNUM(object) : -1;
+	statuslog(56,
+		  "&+RALERT&n: committed %s creation grant needs live publication repair "
+		  "(actor_pid=%u recipient_pid=%u uid=%llu vnum=%d loc_p=%u carrier_pid=%u "
+		  "wearer_pid=%u container_uid=%llu room=%d)",
+		  kind, actor_pid, recipient_pid, item_uid, vnum, loc_p, carrier_pid, wearer_pid,
+		  static_cast<unsigned long long>(container_uid), room);
 	persistence_alert(AVATAR, "item", "redacted", "none", "none", "stale_live_publication",
-			  "pid=%u", actor_pid);
-	send_to_char("The ownership authority committed, but the item grant needs live "
-		     "publication repair. Please wait or reconnect.\r\n",
-		     actor);
+			  "kind=%s uid=%llu vnum=%d recipient_pid=%u loc_p=%u carrier_pid=%u "
+			  "wearer_pid=%u container_uid=%llu room=%d",
+			  kind, item_uid, vnum, recipient_pid, loc_p, carrier_pid, wearer_pid,
+			  static_cast<unsigned long long>(container_uid), room);
+	if (actor)
+		send_to_char(
+			queue.batch_submission ?
+				"The ownership authority committed, but your item grant batch "
+				"needs live publication repair. Please wait or reconnect.\r\n" :
+				"The ownership authority committed, but the granted item needs "
+				"live publication repair. Please wait or reconnect.\r\n",
+			actor);
 }
 
 bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,
@@ -657,7 +803,7 @@ bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,
 	{
 		const pending_creation_grant &request = queue.requests[index];
 		P_obj object = find_item(request.item_uid);
-		if (!object || !creation_grant_tree_available(object))
+		if (!object || !creation_grant_request_live_ready(actor, request))
 			needs_reconciliation = true;
 	}
 	if (!needs_reconciliation)
@@ -1170,11 +1316,20 @@ void account_health()
 {
 	health.pending = pending.size();
 	health.retained_offline = 0;
+	health.publication_retrying = 0;
+	health.publication_blocked = 0;
+	health.publication_ack_pending = 0;
 	for (const auto &[key, entry] : pending)
 	{
 		(void)key;
 		if (entry.completion_ready)
 			++health.retained_offline;
+		if (entry.publication_status == publication_state::retrying)
+			++health.publication_retrying;
+		else if (entry.publication_status == publication_state::blocked)
+			++health.publication_blocked;
+		else if (entry.publication_status == publication_state::ack_pending)
+			++health.publication_ack_pending;
 	}
 }
 
@@ -1224,16 +1379,74 @@ void publish_corpse_batch(const pending_movement &entry)
 		}
 }
 
+/** Retain a failed opt-in publication without spinning or dropping its fence. */
+void retain_publication_failure(pending_movement &entry, const char *reason)
+{
+	if (!entry.publication_failed)
+	{
+		entry.publication_failed = true;
+		++health.stale_publications;
+		logit(LOG_FILE, "item movement publication retained (pid=%u reason=%s)",
+		      entry.actor_pid, reason ? reason : "unknown");
+		persistence_alert(AVATAR, "item", "redacted", "none", "none",
+				  "stale_live_publication", "pid=%u reason=%s", entry.actor_pid,
+				  reason ? reason : "unknown");
+	}
+	if (entry.publication_attempts < ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS)
+		++entry.publication_attempts;
+	entry.publication_status = entry.publication_attempts >=
+						   ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS ?
+					   publication_state::blocked :
+					   publication_state::retrying;
+}
+
 /** Publish a completion, retaining committed work if the live registry cannot advance. */
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
 	pending_movement &entry = found->second;
+	const bool craft = entry.payload.reason == item_transfer_reason::craft;
+	const bool retained = entry.publication || craft;
+	if (retained && (entry.completed.outcome == critical_apply_outcome::ambiguous_commit ||
+			 entry.completed.outcome == critical_apply_outcome::retryable_failure))
+	{
+		// Exhausted uncertainty remains owned by coordinator recovery. Never
+		// tell the command it failed or acknowledge away its replay record.
+		account_health();
+		return;
+	}
 	item_transfer_result result = {};
 	const bool decoded = item_transfer_command_decode_result(
 		entry.completed.result_payload.data(), entry.completed.result_size, &result);
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
+	const bool durable_outcome = entry.completed.outcome == critical_apply_outcome::applied ||
+				     entry.completed.outcome ==
+					     critical_apply_outcome::already_applied;
+	if (retained && entry.publication_status == publication_state::ack_pending)
+	{
+		if (critical_command_coordinator_acknowledge_publication(
+			    entry.completed.operation_id))
+		{
+			const bool was_committed = committed;
+			pending.erase(found);
+			if (was_committed)
+				++health.committed;
+			else
+				++health.rejected;
+		}
+		account_health();
+		return;
+	}
+	if (retained && durable_outcome && !decoded)
+	{
+		// A durable success without a decodable result cannot be safely projected.
+		// Keep both the movement record and coordinator fence for repair; never
+		// reinterpret it as a rejection and release ownership authority.
+		retain_publication_failure(entry, "invalid_result");
+		account_health();
+		return;
+	}
 	if (committed && result.collector_catalog_changed && !entry.collector_invalidated)
 	{
 		collector_catalog_cache_invalidate();
@@ -1261,7 +1474,9 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	}
 	if (committed && !registry_applied)
 	{
-		if (!entry.publication_failed)
+		if (retained)
+			retain_publication_failure(entry, "registry");
+		else if (!entry.publication_failed)
 		{
 			entry.publication_failed = true;
 			++health.rejected;
@@ -1270,17 +1485,93 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
-	const bool craft = entry.payload.reason == item_transfer_reason::craft;
-	if (committed && craft && !publish_craft(entry, actor))
+	if (craft)
 	{
-		if (!entry.publication_failed)
+		if (!actor)
 		{
-			entry.publication_failed = true;
-			++health.stale_publications;
-			persistence_alert(AVATAR, "item_movement", "craft_publish", "none", "none",
-					  "stale_live_publication", "actor_pid=%u",
-					  entry.actor_pid);
+			account_health();
+			return;
 		}
+		if (committed && !publish_craft(entry, actor))
+		{
+			retain_publication_failure(entry, "craft");
+			account_health();
+			return;
+		}
+		if (!committed)
+			discard_craft_outputs(entry);
+		// Mark before notification. An ack retry must not notch or announce twice.
+		const std::string pending_key = found->first;
+		const critical_operation_id operation_id = entry.completed.operation_id;
+		if (!entry.craft_notified)
+		{
+			entry.craft_notified = true;
+			const auto context = entry.context;
+			const size_t context_size = entry.context_size;
+			if (entry.completion)
+				entry.completion(actor, committed, result,
+						 decoded ? entry.completed.error_code : EBADMSG,
+						 context.data(), context_size);
+		}
+		found = pending.find(pending_key);
+		if (found == pending.end())
+			return;
+		if (!critical_command_coordinator_acknowledge_publication(operation_id))
+		{
+			found->second.publication_status = publication_state::ack_pending;
+			account_health();
+			return;
+		}
+		pending.erase(found);
+		if (committed)
+			++health.committed;
+		else
+			++health.rejected;
+		account_health();
+		return;
+	}
+	if (entry.publication)
+	{
+		if (!actor)
+		{
+			account_health();
+			return;
+		}
+		const std::string pending_key = found->first;
+		const auto context = entry.context;
+		const size_t context_size = entry.context_size;
+		const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
+		bool published = false;
+		try
+		{
+			published = entry.publication(actor, committed, result, error_code,
+						      context.data(), context_size);
+		}
+		catch (...)
+		{
+			published = false;
+		}
+		auto current = pending.find(pending_key);
+		if (current == pending.end())
+			return;
+		if (!published)
+		{
+			retain_publication_failure(current->second, "callback");
+			account_health();
+			return;
+		}
+		if (!critical_command_coordinator_acknowledge_publication(
+			    current->second.completed.operation_id))
+		{
+			current->second.publication_status = publication_state::ack_pending;
+			account_health();
+			return;
+		}
+		pending.erase(current);
+		if (committed)
+			++health.committed;
+		else
+			++health.rejected;
 		account_health();
 		return;
 	}
@@ -1307,8 +1598,7 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			return;
 		}
 	}
-	if (!committed && craft)
-		discard_craft_outputs(entry);
+
 	if (entry.creation_batch)
 	{
 		if (committed)
@@ -1473,7 +1763,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
 				      size_t context_size, P_obj corpse_context,
-				      item_movement_reject *reject)
+				      item_movement_reject *reject,
+				      item_movement_publication_fn publication)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1592,10 +1883,14 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.adopting = !adopted,
 		.adoption_only = !adopted && item_owner_identity_equal(from_owner, to_owner),
 		.completion = completion,
+		.publication = publication,
 		.context = {},
 		.context_size = context_size,
 		.completion_ready = false,
 		.publication_failed = false,
+		.publication_attempts = 0,
+		.publication_status = publication ? publication_state::ready :
+						    publication_state::none,
 		.creation_batch = false,
 		.registry_applied = false,
 		.collector_invalidated = false,
@@ -1613,7 +1908,9 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		publication ?
+			critical_command_coordinator_submit_for_publication(std::move(command)) :
+			critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
 		++health.submission_failures;
@@ -1637,14 +1934,12 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	return true;
 }
 
-bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, size_t root_count,
-					    P_obj target_container,
-					    const item_owner_identity &from_owner,
-					    const item_owner_identity &to_owner,
-					    item_transfer_reason reason, int64_t reason_id,
-					    item_movement_completion_fn completion,
-					    const void *context, size_t context_size,
-					    P_obj corpse_context, item_movement_reject *reject)
+bool item_movement_transaction_submit_batch(
+	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
+	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
+	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj corpse_context,
+	item_movement_reject *reject, item_movement_publication_fn publication)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -1800,10 +2095,14 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		.adopting = false,
 		.adoption_only = false,
 		.completion = completion,
+		.publication = publication,
 		.context = {},
 		.context_size = context_size,
 		.completion_ready = false,
 		.publication_failed = false,
+		.publication_attempts = 0,
+		.publication_status = publication ? publication_state::ready :
+						    publication_state::none,
 		.creation_batch = creation,
 		.registry_applied = false,
 		.collector_invalidated = false,
@@ -1821,7 +2120,9 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		publication ?
+			critical_command_coordinator_submit_for_publication(std::move(command)) :
+			critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
 		++health.submission_failures;
@@ -1893,6 +2194,7 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 		    coordinator_item_fenced(root) || coin_movement_pending(root) ||
 		    !item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
 		    !item_owner_identity_equal(runtime.owner, owner) ||
+		    runtime.root_item_uid != root->obj_uid || runtime.parent_item_uid ||
 		    !input_uids.insert(root->obj_uid).second ||
 		    !capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
 			return reject_with(reject, item_movement_reject::topology_mismatch);
@@ -1978,10 +2280,13 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 				   .adopting = false,
 				   .adoption_only = false,
 				   .completion = completion,
+				   .publication = nullptr,
 				   .context = {},
 				   .context_size = context_size,
 				   .completion_ready = false,
 				   .publication_failed = false,
+				   .publication_attempts = 0,
+				   .publication_status = publication_state::ready,
 				   .creation_batch = false,
 				   .registry_applied = false,
 				   .collector_invalidated = false,
@@ -1998,7 +2303,7 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		critical_command_coordinator_submit_for_publication(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
 		++health.submission_failures;
@@ -2334,11 +2639,48 @@ void item_creation_grant_cancel_batch_before_entry(P_char actor)
 	}
 }
 
+void retry_publications(void)
+{
+	std::vector<std::string> retry_keys;
+	try
+	{
+		retry_keys.reserve(pending.size());
+		for (const auto &[key, entry] : pending)
+			if ((entry.publication ||
+			     entry.payload.reason == item_transfer_reason::craft) &&
+			    entry.completion_ready &&
+			    (entry.publication_status == publication_state::ready ||
+			     entry.publication_status == publication_state::retrying ||
+			     entry.publication_status == publication_state::ack_pending))
+				retry_keys.push_back(key);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return;
+	}
+	for (const std::string &key : retry_keys)
+	{
+		auto found = pending.find(key);
+		if (found == pending.end())
+			continue;
+		if (found->second.publication_status == publication_state::ack_pending)
+		{
+			publish(found, nullptr);
+			continue;
+		}
+		if (!found->second.actor_pid)
+			continue;
+		if (P_char actor = find_live_player(found->second.actor_pid))
+			publish(found, actor);
+	}
+}
+
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count)
 {
 	if (count && !completions)
 		return;
+	retry_publications();
 	for (size_t index = 0; index < count; ++index)
 	{
 		auto found = pending.find(operation_key(completions[index].operation_id));
@@ -2357,9 +2699,20 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			collector_catalog_cache_invalidate();
 			found->second.collector_invalidated = true;
 		}
-		if (found->second.actor_pid)
+		if ((found->second.publication ||
+		     found->second.payload.reason == item_transfer_reason::craft) &&
+		    found->second.publication_status == publication_state::ack_pending)
+			publish(found, nullptr);
+		else if (found->second.actor_pid)
 		{
-			if (P_char actor = find_live_player(found->second.actor_pid))
+			P_char actor = find_live_player(found->second.actor_pid);
+			if (!actor &&
+			    retained_player_transfer_reason(found->second.requested_reason) &&
+			    found->second.payload.to_owner.type == item_owner_type::player &&
+			    found->second.payload.to_owner.id <= INT32_MAX)
+				actor = find_live_player(
+					static_cast<uint32_t>(found->second.payload.to_owner.id));
+			if (actor)
 				publish(found, actor);
 		}
 		else if (found->second.actor_runtime_id)
@@ -2380,19 +2733,40 @@ void item_movement_transaction_player_ready(P_char actor)
 		return;
 	for (;;)
 	{
-		auto found =
-			std::find_if(pending.begin(), pending.end(),
-				     [&](const auto &entry)
-				     {
-					     return entry.second.actor_pid ==
-							    static_cast<uint32_t>(GET_PID(actor)) &&
-						    entry.second.completion_ready;
-				     });
+		auto found = std::find_if(
+			pending.begin(), pending.end(),
+			[&](const auto &entry)
+			{
+				const bool source_ready = entry.second.actor_pid ==
+							  static_cast<uint32_t>(GET_PID(actor));
+				const bool destination_ready =
+					retained_player_transfer_reason(
+						entry.second.requested_reason) &&
+					entry.second.payload.to_owner.type ==
+						item_owner_type::player &&
+					entry.second.payload.to_owner.id ==
+						static_cast<uint64_t>(GET_PID(actor));
+				return (source_ready || destination_ready) &&
+				       entry.second.completion_ready;
+			});
 		if (found == pending.end())
 			break;
 		/* publish may invoke a callback that inserts and rehashes pending. */
 		const std::string key = found->first;
-		publish(found, actor);
+		if ((found->second.publication ||
+		     found->second.payload.reason == item_transfer_reason::craft) &&
+		    found->second.publication_status == publication_state::blocked)
+		{
+			// A reconnect/reload is an explicit recovery edge, not a pulse loop.
+			found->second.publication_attempts = 0;
+			found->second.publication_status = publication_state::ready;
+		}
+		P_char publisher = find_live_player(found->second.actor_pid);
+		if (!publisher && retained_player_transfer_reason(found->second.requested_reason))
+			publisher = actor;
+		if (!publisher)
+			break;
+		publish(found, publisher);
 		if (pending.find(key) != pending.end())
 			break;
 	}
