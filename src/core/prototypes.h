@@ -3214,6 +3214,7 @@ void do_encrust(P_char, char *, int);
 void do_spellbind(P_char, char *, int);
 void do_fix(P_char, char *, int);
 void do_forge(P_char, char *, int);
+P_obj get_bottle(P_char);
 int spl2potion(int);
 P_obj get_potion(P_char);
 bool MobAlchemistGetPotions(P_char, int, int);
