@@ -137,6 +137,9 @@ bool player_save_pipeline_is_nonterminal_type(int save_intent);
 // Exact-PID save/login barrier used by offline critical commands.  A target
 // fence rejects new saves for that PID without quiescing unrelated players.
 bool player_save_pipeline_target_save_pending(int pid);
+// Game-thread creation admission waits for sealed saves, while dirty components
+// remain eligible for capture after the grant is published.
+bool player_save_pipeline_sealed_save_pending(int pid);
 bool player_save_pipeline_acquire_target_save_login_fence(int pid,
 							  player_revision_t expected_revision);
 void player_save_pipeline_release_target_save_login_fence(int pid,

@@ -808,7 +808,9 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		return player_save_pipeline_result::unavailable;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 		return player_save_pipeline_result::unavailable;
-	if (item_movement_transaction_player_creation_busy(ch))
+	// Pending grants must publish before capturing their recipient inventory.
+	if (item_movement_transaction_player_creation_busy(ch) ||
+	    item_creation_grant_player_publication_pending(ch))
 		return player_save_pipeline_result::unavailable;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -1600,6 +1602,25 @@ bool player_save_pipeline_is_nonterminal_type(int save_intent)
 	       save_intent != RENT_CAMPED && save_intent != RENT_DEATH &&
 	       save_intent != RENT_POOFARTI && save_intent != RENT_SWAPARTI &&
 	       save_intent != RENT_FIGHTARTI;
+}
+
+bool player_save_pipeline_sealed_save_pending(int pid)
+{
+	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
+		return true;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    find_target_save_login_fence_locked(pid) || find_terminal_fence_locked(pid) ||
+		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid))
+			return true;
+	}
+	if (player_save_worker_pid_pending(pid))
+		return true;
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(pid, &revision))
+		return false;
+	return revision.overflowed || revision.queued_components || revision.inflight_components;
 }
 
 bool player_save_pipeline_target_save_pending(int pid)

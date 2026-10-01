@@ -2,7 +2,9 @@
 """Run a disposable real-server A/B journey for ordered divine refusal."""
 
 from pathlib import Path
+import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -105,7 +107,7 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def configure_fixture(runtime: Path, enabled: bool) -> None:
+def configure_fixture(runtime: Path, enabled: bool, authored: bool = False) -> None:
     journey.make_fixture(runtime)
     journey.generate_certificate(runtime)
 
@@ -128,8 +130,14 @@ def configure_fixture(runtime: Path, enabled: bool) -> None:
     mobile_path = runtime / "areas_mini/mini.mob"
     mobiles = mobile_path.read_text(encoding="utf-8")
     require(mobiles.count("$~") == 1, "minimal mobile terminator changed")
+    clerics = CLERIC_MOBS
+    if authored:
+        clerics = clerics.replace("#22801\n", "#66026\n").replace("#22802\n", "#66031\n")
+    mobiles = mobiles.replace("$~", clerics + "$~")
+    blocks = re.findall(r"(?ms)^#\d+\n.*?(?=^#\d+\n|^\$~)", mobiles)
     mobile_path.write_text(
-        mobiles.replace("$~", CLERIC_MOBS + "$~"), encoding="utf-8"
+        "".join(sorted(blocks, key=lambda block: int(block.split("\n", 1)[0][1:]))) + "$~\n",
+        encoding="utf-8",
     )
 
 
@@ -156,8 +164,10 @@ def elevate_player(root: Path, state: Path) -> None:
     subprocess.run([str(binary), str(state)], check=True)
 
 
-def run_scenario(server_binary: Path, enabled: bool) -> None:
-    label = "enabled-100-percent" if enabled else "disabled"
+def run_scenario(server_binary: Path, enabled: bool, authored: bool = False) -> None:
+    label = ("authored-100-percent" if authored else
+             ("enabled-100-percent" if enabled else "disabled"))
+    refusal = "Garl has forbidden it" if authored else "My deity has warned me"
     print(f"divine refusal journey: {label}", flush=True)
     with tempfile.TemporaryDirectory(prefix=f"divine-refusal-{label}-") as temporary:
         root = Path(temporary)
@@ -167,7 +177,7 @@ def run_scenario(server_binary: Path, enabled: bool) -> None:
         (state / "domains").mkdir(mode=0o700)
         runtime.mkdir()
         (runtime / "logs/log").mkdir(parents=True)
-        configure_fixture(runtime, enabled)
+        configure_fixture(runtime, enabled, authored)
         for name in ("players", "critical"):
             (runtime / "journals" / name).mkdir(parents=True, mode=0o700)
         (runtime / "bin/server").mkdir(parents=True)
@@ -241,7 +251,7 @@ def run_scenario(server_binary: Path, enabled: bool) -> None:
             boot()
             client = journey.reconnect_character(port)
             drain(client)
-            for vnum in (22801, 22802, 22803):
+            for vnum in ((66026, 66031, 22803) if authored else (22801, 22802, 22803)):
                 client.send(f"givepet Taverek {vnum}")
                 response = drain(client)
                 require("not loadable" not in response.lower(), response)
@@ -253,10 +263,10 @@ def run_scenario(server_binary: Path, enabled: bool) -> None:
             if not enabled:
                 client.send("order healer cast 'heal' Taverek")
                 heal = client.expect("Ok.", timeout=15) + drain(client, 1.0)
-                require("My deity has warned me" not in heal, heal)
+                require(refusal not in heal, heal)
                 client.send("order striker kill raoul")
                 attack = client.expect("Ok.", timeout=15) + drain(client, 1.0)
-                require("My deity has warned me" not in attack, attack)
+                require(refusal not in attack, attack)
                 print(
                     "PASS disabled: ordered heal and attack accepted (2/2), no refusal",
                     flush=True,
@@ -264,14 +274,14 @@ def run_scenario(server_binary: Path, enabled: bool) -> None:
             else:
                 client.send("order healer frobnicate")
                 unknown = client.expect("Ok.", timeout=15) + drain(client)
-                require("My deity has warned me" not in unknown, unknown)
+                require(refusal not in unknown, unknown)
 
                 client.send("order healer abort")
                 exempt = client.expect("Ok.", timeout=15) + drain(client)
-                require("My deity has warned me" not in exempt, exempt)
+                require(refusal not in exempt, exempt)
 
                 client.send("order healer cast 'heal' Taverek")
-                heal = client.expect("My deity has warned me", timeout=15)
+                heal = client.expect(refusal, timeout=15)
                 heal += drain(client)
                 require("Ok." not in heal, heal)
 
@@ -281,11 +291,11 @@ def run_scenario(server_binary: Path, enabled: bool) -> None:
                 client.send("order healer kill raoul")
                 retry = client.expect("still refusing that order", timeout=15)
                 retry += drain(client)
-                require("My deity has warned me" not in retry, retry)
+                require(refusal not in retry, retry)
                 require("Ok." not in retry, retry)
 
                 client.send("order striker ki raoul")
-                attack = client.expect("My deity has warned me", timeout=15)
+                attack = client.expect(refusal, timeout=15)
                 attack += drain(client)
                 require("Ok." not in attack, attack)
 
@@ -294,6 +304,36 @@ def run_scenario(server_binary: Path, enabled: bool) -> None:
                 mixed += drain(client)
                 require("Ok." in mixed, mixed)
                 require("None here are loyal" not in mixed, mixed)
+                if authored:
+                    # An invalid admin reload must preserve the authored lines,
+                    # then a valid replacement must affect the next order.
+                    content = runtime / "lib/misc/divine_refusal.json"
+                    content.write_text("{malformed", encoding="utf-8")
+                    client.send("properties reload")
+                    client.expect("Pos: standing >", timeout=15)
+                    drain(client)
+                    time.sleep(8.5)
+                    client.send("order healer cast 'heal' Taverek")
+                    retained = client.expect(refusal, timeout=15) + drain(client)
+                    require("Ok." not in retained, retained)
+                    content.write_text(json.dumps({
+                        "version": 1, "revision": 2,
+                        "entries": {"66026": {
+                            "patron": "Garl",
+                            "message": "{patron} declines this command.",
+                        }},
+                    }), encoding="utf-8")
+                    client.send("properties reload")
+                    client.expect("Pos: standing >", timeout=15)
+                    drain(client)
+                    time.sleep(8.5)
+                    client.send("order healer cast 'heal' Taverek")
+                    replacement = client.expect(
+                        "Garl declines this command.", timeout=15
+                    ) + drain(client)
+                    require("Ok." not in replacement, replacement)
+                    print("PASS authored: both pilot vnums, malformed reload retention, "
+                          "valid replacement visible on the next order", flush=True)
                 print(
                     "PASS enabled: ordered heal and attack refused (0/2 cleric "
                     "dispatches), retry stayed locked, mixed non-cleric acted",
@@ -329,6 +369,7 @@ def main() -> int:
     )
     run_scenario(binary, False)
     run_scenario(binary, True)
+    run_scenario(binary, True, authored=True)
     print(
         "Divine refusal disposable A/B complete; forced boundaries are not a DPS estimate.",
         flush=True,

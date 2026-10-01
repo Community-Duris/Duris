@@ -179,6 +179,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
 				 cmd/divine_refusal_policy.o \
+				 cmd/divine_refusal_content.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
@@ -299,6 +300,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/epic_skills.o \
 				 classes/ethermancer.o \
 				 world/events.o \
+				 world/world_activity.o \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \

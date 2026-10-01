@@ -11,9 +11,9 @@ namespace
 {
 
 constexpr const char *GOLDEN_FINGERPRINT =
-	"71daf2a6e0a9faa4f200f855b88426d6cac93b9b3cead7d66046ac0263e0daf7";
-constexpr std::uint32_t GOLDEN_PROPERTY_VERSION = 1867102185U;
-constexpr telemetry_config_id GOLDEN_CONFIG_ID = 8204136469756508836ULL;
+	"59d7d32c66e983892b115dda333d75ec73500e13e015c7e3fb90a2bdb4b1f65f";
+constexpr std::uint32_t GOLDEN_PROPERTY_VERSION = 4128692423U;
+constexpr telemetry_config_id GOLDEN_CONFIG_ID = 6473875177026978697ULL;
 
 struct property_values
 {
@@ -24,6 +24,7 @@ struct property_values
 	float minimum_alignment;
 	std::size_t calls;
 	std::size_t frequency_calls;
+	float rested_enabled;
 };
 
 struct reviewed_property_catalog
@@ -120,6 +121,8 @@ bool property_read(void *context, const char *key, float *value) noexcept
 	}
 	if (std::strcmp(key, "exp.zoneTrophy.observe") == 0)
 		*value = properties->observe;
+	else if (std::strcmp(key, "exp.rested.enabled") == 0)
+		*value = properties->rested_enabled;
 	else if (std::strcmp(key, "epic.touch.maxPayoutFactor") == 0)
 		*value = properties->max_payout_factor;
 	else if (std::strcmp(key, "epic.touch.PayoutFactor") == 0)
@@ -282,12 +285,19 @@ void test_registry_and_capture(property_values &values, telemetry_config_snapsho
 	CHECK(count == TELEMETRY_CONFIG_PROPERTY_MAX);
 	CHECK(find_definition("rested.xp_multiplier") != nullptr);
 	CHECK(find_definition("wellrested.xp_multiplier") != nullptr);
+	const auto *rested_enabled = find_definition("rested.enabled");
+	CHECK(rested_enabled != nullptr);
+	CHECK(rested_enabled->role == telemetry_config_property_role::effective);
+	CHECK(rested_enabled->kind == telemetry_config_property_kind::boolean);
+	CHECK(std::strcmp(rested_enabled->source_key, "exp.rested.enabled") == 0);
+	CHECK(rested_enabled->default_value == 1U);
 	CHECK(find_definition("trophy.exp.zoneTrophy.observe") != nullptr);
 	CHECK(find_definition("payout.epic.touch.PayoutFactor") != nullptr);
 	CHECK(find_definition("unused.epic.freqMod.tick.waitSecs") != nullptr);
 	CHECK(!telemetry_config_property_name_is_allowlisted("DURISWEB_SECRET"));
 	CHECK(!telemetry_config_property_name_is_allowlisted("DB_PASSWD"));
 	CHECK(telemetry_config_property_name_is_allowlisted("epic.zone.alignmentMod"));
+	CHECK(telemetry_config_property_name_is_allowlisted("exp.rested.enabled"));
 
 	telemetry_config_property_capture defaults{};
 	defaults.mode = telemetry_config_property_capture_mode::declared_defaults;
@@ -295,6 +305,8 @@ void test_registry_and_capture(property_values &values, telemetry_config_snapsho
 	CHECK(telemetry_config_property_snapshot_capture(&defaults, &default_snapshot) ==
 	      telemetry_config_build_outcome::built);
 	CHECK(default_snapshot.property_version != 0U);
+	CHECK(default_snapshot.entries[count - 1U].id == 20U);
+	CHECK(default_snapshot.entries[count - 1U].value == 1U);
 	CHECK(values.frequency_calls == 0U);
 
 	property_values probe = values;
@@ -308,7 +320,8 @@ void test_registry_and_capture(property_values &values, telemetry_config_snapsho
 	      telemetry_config_build_outcome::built);
 	CHECK(golden_properties.property_version != default_snapshot.property_version);
 	CHECK(values.frequency_calls == 0U);
-	CHECK(values.calls == 5U);
+	CHECK(values.calls == 6U);
+	CHECK(golden_properties.entries[count - 1U].value == 1U);
 	property_values conversion = values;
 	conversion.observe = 1.9f;
 	telemetry_config_property_capture conversion_capture{};
@@ -347,6 +360,29 @@ void test_registry_and_capture(property_values &values, telemetry_config_snapsho
 	std::fprintf(stdout, "golden fingerprint=%s property_version=%u config_id=%llu\n",
 		     actual_hex, golden.property_version,
 		     static_cast<unsigned long long>(golden.config_id));
+
+	property_values disabled_values = values;
+	disabled_values.rested_enabled = 0.0F;
+	const telemetry_config_property_capture disabled_probe_capture =
+		make_capture(disabled_values);
+	telemetry_config_property_snapshot disabled_probe{};
+	CHECK(telemetry_config_property_snapshot_capture(&disabled_probe_capture,
+							 &disabled_probe) ==
+	      telemetry_config_build_outcome::built);
+	catalog_add(catalog, disabled_probe);
+	const telemetry_config_property_capture disabled_capture =
+		make_capture(disabled_values, &catalog);
+	telemetry_config_capture_input disabled_input = input;
+	disabled_input.revision = 2U;
+	disabled_input.properties = disabled_capture;
+	telemetry_config_property_snapshot disabled_properties{};
+	const telemetry_config_snapshot disabled =
+		build_snapshot(disabled_input, &disabled_properties);
+	CHECK(disabled.property_version != golden.property_version);
+	CHECK(disabled.config_id != golden.config_id);
+	CHECK(std::memcmp(disabled.fingerprint, golden.fingerprint,
+			  TELEMETRY_CONFIG_FINGERPRINT_BYTES) != 0);
+	CHECK(disabled_properties.entries[count - 1U].value == 0U);
 
 	telemetry_config_capture_input missing_input = input;
 	missing_input.properties.reader = {};
@@ -403,7 +439,7 @@ void test_canonical_identity(const telemetry_config_snapshot &golden,
 	CHECK(same_effective.revision != golden.revision);
 	CHECK(same_effective.effective_utc_usec != golden.effective_utc_usec);
 
-	property_values changed{ 0.0f, 10.0f, 1.25f, 0.2f, 0.15f, 0U, 0U };
+	property_values changed{ 0.0f, 10.0f, 1.25f, 0.2f, 0.15f, 0U, 0U, 1.0f };
 	auto *catalog = static_cast<reviewed_property_catalog *>(input.properties.catalog.context);
 	property_values changed_probe_values = changed;
 	const telemetry_config_property_capture changed_probe_capture =
@@ -674,7 +710,7 @@ void test_disabled_and_public(const telemetry_config_capture_input &base_input,
 
 int main()
 {
-	property_values values{ 0.0f, 10.0f, 1.0f, 0.2f, 0.15f, 0U, 0U };
+	property_values values{ 0.0f, 10.0f, 1.0f, 0.2f, 0.15f, 0U, 0U, 1.0f };
 	reviewed_property_catalog catalog{};
 	telemetry_config_property_snapshot properties{};
 	telemetry_config_snapshot golden{};
@@ -684,7 +720,7 @@ int main()
 		make_input(1U, 123456789LL, 0x15161718U, live);
 	test_canonical_identity(golden, base_input, properties);
 
-	property_values changed_values{ 0.0f, 10.0f, 1.25f, 0.2f, 0.15f, 0U, 0U };
+	property_values changed_values{ 0.0f, 10.0f, 1.25f, 0.2f, 0.15f, 0U, 0U, 1.0f };
 	property_values changed_probe_values = changed_values;
 	const telemetry_config_property_capture changed_probe_capture =
 		make_capture(changed_probe_values);

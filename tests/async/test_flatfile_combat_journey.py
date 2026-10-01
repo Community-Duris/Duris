@@ -220,8 +220,9 @@ def add_death_conflict(state_root: pathlib.Path, parent_uid: int) -> int:
         version, size, _ = struct.unpack_from("<IIQ", data, 8)
         require(version == 8 and size == len(data) - 56, "custody fixture format changed")
         require(hashlib.sha256(data[56:]).digest() == data[24:56], "invalid custody fixture")
-        # Format 8 keeps owner rows and appends a uint16 equipment slot to each
-        # item after its coin payload. Preserve all operation rows verbatim.
+        # Current accounting format 8 keeps owner rows and item fields through
+        # the coin payload stable. Since version 5, each item also ends with a
+        # uint16 equipment slot. Preserve all operation/receipt rows verbatim.
         owners, items, _ = struct.unpack_from("<III", data, 56)
         at = 68 + owners * 25
         last_uid = 0
@@ -234,8 +235,9 @@ def add_death_conflict(state_root: pathlib.Path, parent_uid: int) -> int:
             at += 58 + row[-1] + 2
         require(parent is not None and parent[3:6] == (1, 1, 0), "fixture root is not player-owned")
         ghost_uid = last_uid + 10000
-        ghost = struct.pack("<QQQBQQQiBIH", ghost_uid, parent_uid, parent_uid,
-                            1, 1, 0, 1, 15, 1, 0, 0)
+        ghost = struct.pack("<QQQBQQQiBI", ghost_uid, parent_uid, parent_uid,
+                            1, 1, 0, 1, 15, 1, 0)
+        ghost += struct.pack("<H", 0)
         data[at:at] = ghost
         struct.pack_into("<I", data, 12, size + len(ghost))
         struct.pack_into("<I", data, 60, items + 1)

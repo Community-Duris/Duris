@@ -169,6 +169,10 @@ bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,
 					uint64_t source_id = 0);
 bool item_creation_grant_mark_blocking(P_char actor);
 bool item_creation_grant_blocks_commands(P_char actor);
+// Only admitted grants block snapshot capture. Queued grants waiting for an
+// older save must allow that save to finish; unrelated publication owners may
+// themselves require a receipt-bearing save.
+bool item_creation_grant_player_publication_pending(P_char player);
 // Orderly maintenance must not quiesce between the roots of an accepted kit.
 bool item_creation_grant_batches_pending(void);
 // A disconnected pre-entry character cannot finish unsubmitted kit roots.
