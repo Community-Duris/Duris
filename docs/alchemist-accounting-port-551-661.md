@@ -78,8 +78,10 @@ The accounting branch's native SQL harness passes on MySQL8.0.46 and
 MariaDB10.11.14, exercising craft commit/refusal/replay, rich-state save/load and
 the branch's existing active accounting cases. The real-server flat-file journey
 passes theft, poison mixing, corpse loot, virtual mixture combat, Encrust,
-Harvester, three copyovers and cold player reload. The SQL/Redis journey result
-is recorded in the delivery PR. These journeys run with accounting inactive;
+Harvester, three copyovers and cold player reload. The real-server MySQL/Redis
+journey also passes all of those operations, unchanged craft runtime payloads
+and recovery of the depleted NPC without another vial roll. These journeys run
+with accounting inactive;
 they do not certify the intentionally refused active craft or vial routes.
 
 The SQL journey exposed a player-load query budget that allowed only one quest
