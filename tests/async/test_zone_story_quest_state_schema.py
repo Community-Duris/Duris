@@ -68,9 +68,14 @@ def main() -> None:
     assert flatfile_entry["terminal_action"] == "retain"
 
     repository = (ROOT / "src/sql/zone_story_quest_state_repository.c").read_text()
-    assert "SELECT state_version,catalog_revision,state_blob" in repository
+    assert "SELECT state_id,state_version,catalog_revision,state_blob" in repository
     assert "FROM zone_story_quest_state" in repository
     assert "ON DUPLICATE KEY UPDATE" in repository
+    daily_step = manifest["migrations"][-1]
+    assert daily_step["id"] == "0051_discovered_zone_daily_state"
+    for kind in ("apply", "verify"):
+        assert daily_step[kind + "_checksum"] == hashlib.sha256((ROOT / "migrations" / daily_step[kind]).read_bytes()).hexdigest()
+    assert "START TRANSACTION" in repository and 'execute("COMMIT")' in repository
     print("zone-story quest state schema contract passed")
 
 

@@ -458,6 +458,23 @@ int main()
 	assert(terms.version == 5 && terms.xp_award_count == 2 &&
 	       terms.xp_awards[0].recipient_pid == 42 && terms.xp_awards[0].amount == 75 &&
 	       terms.xp_awards[1].recipient_pid == 43 && terms.xp_awards[1].amount == 100);
+    auto frozen_daily = frozen_group_xp;
+    put_u32(&frozen_daily, 0, 6);
+    const size_t daily_offset = frozen_daily.size();
+    frozen_daily.resize(daily_offset + 20);
+    put_u32(&frozen_daily, daily_offset, 7);
+    put_u32(&frozen_daily, daily_offset + 4, 2);
+    put_u32(&frozen_daily, daily_offset + 8, 1);
+    put_u32(&frozen_daily, daily_offset + 12, 1);
+    put_u32(&frozen_daily, daily_offset + 16, 43);
+    assert(quest_reward_continuation_decode(frozen_daily.data(), frozen_daily.size(), &terms));
+    assert(terms.version == 6 && terms.season_id == 7 && terms.catalog_revision == 2 &&
+        terms.daily_count == 1 && terms.daily_pids[0] == 43 && terms.xp_award_count == 2);
+    auto foreign_daily = frozen_daily;
+    put_u32(&foreign_daily, daily_offset + 16, 99);
+    assert(!quest_reward_continuation_decode(foreign_daily.data(), foreign_daily.size(), &terms));
+    frozen_daily.pop_back();
+    assert(!quest_reward_continuation_decode(frozen_daily.data(), frozen_daily.size(), &terms));
 	auto inconsistent_completer_xp = frozen_group_xp;
 	put_u32(&inconsistent_completer_xp, xp_award_count_offset + 12, 74);
 	assert(!quest_reward_continuation_decode(inconsistent_completer_xp.data(),

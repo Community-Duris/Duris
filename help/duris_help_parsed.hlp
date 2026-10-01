@@ -18140,6 +18140,24 @@ quest
 *For the purchaser, displays how many more times the quest may be shared.
 quest share <player>
 *Shares your quest with others, if you bought the quest.
+
+Discovered area quest journal:
+quest zone <area>
+*Lists the story quests in an area your character has visited this season.
+quest daily
+*Shows today's quests across your discovered areas when daily quests are enabled.
+quest daily <area>
+*Lists available, locked, and completed daily quests in that area.
+achievements zones
+*Shows your zone discovery achievements and seasonal quest completion.
+achievements zone <area>
+*Shows discovery and unique quest milestones for that area.
+
+Complete the real quest with its giver. Daily credit resets at 00:00 UTC.
+Only the first qualifying daily completion each day adds 1 renown. Normal quest
+rewards continue unchanged. Story-only quests and item exchanges do not become
+dailies. Remote map previews do not discover areas.
+
 ==See also==
 zones, mobs, bartender
 The following help topics also matched your search:

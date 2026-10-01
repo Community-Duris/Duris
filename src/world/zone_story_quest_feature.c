@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <limits>
 #include <map>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <tuple>
@@ -441,8 +442,7 @@ const zone_story_quest_catalog::catalog &service::catalog() const
 void service::set_daily_policy(daily_policy policy)
 {
 	daily_policy_ = policy;
-	if (!valid_period(daily_policy_.period_seconds))
-		daily_policy_.period_seconds = 24 * 60 * 60;
+	daily_policy_.period_seconds = 24 * 60 * 60;
 	if (daily_policy_.maximum_party_level_delta < 0)
 		daily_policy_.maximum_party_level_delta = 0;
 }
@@ -482,7 +482,7 @@ bool service::eligible_for_current_catalog(
 	const auto *definition = find_definition(transaction.quest_definition_id);
 	if (!definition)
 		return fail(error, "quest definition is not in the active catalog");
-	if (!definition->active || !definition->eligible_for_zone_completion)
+	if (!definition->active)
 		return fail(error, "quest definition is not eligible for zone completion");
 	if (definition->content_revision != catalog_.content_revision ||
 	    transaction.content_revision != definition->content_revision)
@@ -545,11 +545,10 @@ service::apply_transaction(const zone_story_quest_tracking::completion_transacti
 			fail(error, "completion transaction ID was reused with different data");
 			return result::conflict;
 		}
-		if (award_daily)
-			award_daily_for(transaction);
 		return result::already_applied;
 	}
 
+	dirty_transactions_.insert(transaction.transaction_id);
 	transactions_.emplace(transaction.transaction_id,
 			      stored_transaction{ transaction, encoded });
 	for (uint32_t pid : transaction.credited_pids)
@@ -558,7 +557,13 @@ service::apply_transaction(const zone_story_quest_tracking::completion_transacti
 		    deleted_characters_.end())
 			continue;
 		auto &state = state_for(transaction.season_id, pid);
-		state.transaction_ids.emplace(transaction.transaction_id, encoded);
+		dirty_characters_.insert({ transaction.season_id, pid });
+		const auto first =
+			state.first_completion_times.find(transaction.quest_definition_id);
+		if (first == state.first_completion_times.end() ||
+		    transaction.completed_at < first->second)
+			state.first_completion_times[transaction.quest_definition_id] =
+				transaction.completed_at;
 		state.credit_masks[transaction.quest_definition_id] |=
 			zone_story_quest_tracking::credit_mask_for_pid(transaction, pid);
 		if (pid == transaction.direct_completer_pid && !character_name.empty())
@@ -566,7 +571,8 @@ service::apply_transaction(const zone_story_quest_tracking::completion_transacti
 		if (pid == transaction.direct_completer_pid && racewar != RACEWAR_NONE)
 			state.racewar = racewar;
 	}
-	if (award_daily)
+	project_daily(transaction, award_daily);
+	if (award_daily && transaction.schema_version == 1)
 		award_daily_for(transaction);
 	return result::applied;
 }
@@ -581,13 +587,8 @@ result service::record_completion(const completion_event &event, std::string *er
 		return fail(error,
 			    "direct completer is deleted and must re-identify before earning credit"),
 		       result::rejected;
-	const std::string before = serialize_state();
-	const result recorded = apply_transaction(event.transaction, event.character_name,
-						  event.racewar, false, true, error);
-	if (recorded == result::invalid || recorded == result::conflict ||
-	    recorded == result::rejected)
-		return recorded;
-
+	bool new_observation = false;
+	std::string observation_id;
 	if (event.attempt_observed)
 	{
 		telemetry_observation observation;
@@ -606,13 +607,20 @@ result service::record_completion(const completion_event &event, std::string *er
 		observation.duration_seconds = event.duration_seconds;
 		observation.outcome = event.outcome;
 		observation.accessible = true;
-		const result telemetry_result = record_telemetry(observation, error);
-		if (telemetry_result == result::conflict || telemetry_result == result::invalid)
-		{
-			std::string restore_error;
-			deserialize_state(before, &restore_error);
-			return telemetry_result;
-		}
+		observation_id = observation.observation_id;
+		const result observed = record_telemetry(observation, error);
+		if (observed == result::conflict || observed == result::invalid)
+			return observed;
+		new_observation = observed == result::applied;
+	}
+	const result recorded = apply_transaction(event.transaction, event.character_name,
+						  event.racewar, false, true, error);
+	if (new_observation && recorded != result::applied && recorded != result::already_applied)
+	{
+		telemetry_by_definition_[event.transaction.quest_definition_id].erase(
+			observation_id);
+		telemetry_.erase(observation_id);
+		dirty_telemetry_.erase(observation_id);
 	}
 	return recorded;
 }
@@ -635,20 +643,30 @@ result service::record_telemetry(const telemetry_observation &observation, std::
 		return result::already_applied;
 	}
 	telemetry_.emplace(observation.observation_id, observation);
+	telemetry_by_definition_[observation.quest_definition_id].insert(
+		observation.observation_id);
+	dirty_telemetry_.insert(observation.observation_id);
 	return result::applied;
 }
 
-void service::remember_character(uint32_t season_id, uint32_t pid, std::string character_name,
+bool service::remember_character(uint32_t season_id, uint32_t pid, std::string character_name,
 				 bool leaderboard_eligible, int racewar)
 {
 	if (!season_id || !pid)
-		return;
+		return false;
 	const std::pair<uint32_t, uint32_t> key{ season_id, pid };
-	deleted_characters_.erase(key);
+	if (deleted_characters_.count(key))
+		return false;
+	const auto *old_state = find_state(season_id, pid);
+	if (leaderboard_eligible && old_state && old_state->character_name == character_name &&
+	    (racewar == RACEWAR_NONE || old_state->racewar == racewar) &&
+	    !leaderboard_exclusions_.count(key))
+		return false;
+	dirty_characters_.insert(key);
 	if (!leaderboard_eligible)
 	{
-		leaderboard_exclusions_.insert(key);
-		return;
+		const bool changed = leaderboard_exclusions_.insert(key).second;
+		return changed;
 	}
 	leaderboard_exclusions_.erase(key);
 	auto &state = state_for(season_id, pid);
@@ -658,7 +676,7 @@ void service::remember_character(uint32_t season_id, uint32_t pid, std::string c
 
 	const std::string normalized_name = lower_name(state.character_name);
 	if (normalized_name.empty())
-		return;
+		return true;
 	/* Names are unique for current player rows, but durable quest state can outlive
 	 * a rename or deleted character.  Once a current PID re-identifies a name,
 	 * keep any older PID carrying that same display name out of the public list. */
@@ -668,7 +686,9 @@ void service::remember_character(uint32_t season_id, uint32_t pid, std::string c
 		    lower_name(other_state.character_name) != normalized_name)
 			continue;
 		leaderboard_exclusions_.insert(other_key);
+		dirty_characters_.insert(other_key);
 	}
+	return true;
 }
 
 bool service::erase_character(uint32_t season_id, uint32_t pid)
@@ -676,6 +696,7 @@ bool service::erase_character(uint32_t season_id, uint32_t pid)
 	if (!season_id || !pid)
 		return false;
 	const std::pair<uint32_t, uint32_t> key{ season_id, pid };
+	all_dirty_ = true;
 	characters_.erase(key);
 	leaderboard_exclusions_.erase(key);
 	deleted_characters_.insert(key);
@@ -689,7 +710,11 @@ bool service::erase_character(uint32_t season_id, uint32_t pid)
 	for (auto telemetry = telemetry_.begin(); telemetry != telemetry_.end();)
 	{
 		if (telemetry->second.pid == pid)
+		{
+			telemetry_by_definition_[telemetry->second.quest_definition_id].erase(
+				telemetry->first);
 			telemetry = telemetry_.erase(telemetry);
+		}
 		else
 			++telemetry;
 	}
@@ -700,6 +725,7 @@ bool service::erase_character_all_seasons(uint32_t pid, uint32_t current_season_
 {
 	if (!pid || !current_season_id)
 		return false;
+	all_dirty_ = true;
 	std::set<uint32_t> seasons;
 	seasons.insert(current_season_id);
 	for (const auto &[key, state] : characters_)
@@ -730,7 +756,11 @@ bool service::erase_character_all_seasons(uint32_t pid, uint32_t current_season_
 	for (auto telemetry = telemetry_.begin(); telemetry != telemetry_.end();)
 	{
 		if (telemetry->second.pid == pid)
+		{
+			telemetry_by_definition_[telemetry->second.quest_definition_id].erase(
+				telemetry->first);
 			telemetry = telemetry_.erase(telemetry);
+		}
 		else
 			++telemetry;
 	}
@@ -753,21 +783,10 @@ std::set<std::string> service::completed_definition_ids(uint32_t season_id, uint
 		}
 		return completed_ids;
 	}
-	for (const auto &[transaction_id, encoded] : state->transaction_ids)
-	{
-		zone_story_quest_tracking::completion_transaction transaction;
-		const auto stored = transactions_.find(transaction_id);
-		if (stored != transactions_.end())
-			transaction = stored->second.transaction;
-		else if (!zone_story_quest_tracking::deserialize_transaction(encoded, &transaction))
-			continue;
-		if (transaction.season_id != season_id || transaction.completed_at <= 0 ||
-		    transaction.completed_at > completed_before ||
-		    zone_story_quest_tracking::credit_mask_for_pid(transaction, pid) ==
-			    zone_story_quest_tracking::ZONE_STORY_CREDIT_NONE)
-			continue;
-		completed_ids.insert(transaction.quest_definition_id);
-	}
+	for (const auto &[definition_id, completed_at] : state->first_completion_times)
+		if (completed_at > 0 && completed_at <= completed_before &&
+		    state->credit_masks.count(definition_id))
+			completed_ids.insert(definition_id);
 	return completed_ids;
 }
 
@@ -778,6 +797,13 @@ zone_progress service::progress_for_zone_at(uint32_t season_id, uint32_t pid, in
 	(void)pid;
 	zone_progress progress;
 	progress.zone_number = zone_number;
+	const auto *registry = find_zone(zone_number);
+	if (registry)
+		progress.zone_name = registry->name;
+	progress.discovered = has_discovered(season_id, pid, zone_number);
+	const auto *discovery_state = find_state(season_id, pid);
+	if (progress.discovered)
+		progress.discovered_at = discovery_state->discoveries.at(zone_number).visited_at;
 	for (const auto &definition : catalog_.definitions)
 	{
 		if (definition.zone_number != zone_number)
@@ -837,13 +863,20 @@ personal_summary service::summary_for_at(uint32_t season_id, uint32_t pid,
 		if (definition.active && definition.eligible_for_zone_completion &&
 		    definition.content_revision == catalog_.content_revision)
 			zones.insert(definition.zone_number);
+	if (state)
+		for (const auto &[zone, discovery] : state->discoveries)
+		{
+			(void)discovery;
+			zones.insert(zone);
+			++summary.discovered_zones;
+		}
 	for (int32_t zone : zones)
 	{
 		zone_progress zone_state =
 			progress_for_zone_at(season_id, pid, zone, all_completed_ids);
 		if (zone_state.available && zone_state.completed == zone_state.total)
 			++summary.full_zones;
-		if (zone_state.completed > 0)
+		if (zone_state.completed > 0 || zone_state.discovered)
 			summary.zones.push_back(std::move(zone_state));
 	}
 	std::sort(summary.zones.begin(), summary.zones.end(),
@@ -938,16 +971,21 @@ leaderboard_page service::leaderboard(uint32_t season_id, int32_t zone_number, u
 }
 
 evidence_summary service::evidence_for(std::string_view quest_definition_id,
-				       uint32_t content_revision) const
+				       uint32_t content_revision, int64_t observed_before) const
 {
 	evidence_summary summary;
 	summary.quest_definition_id = quest_definition_id;
 	summary.content_revision = content_revision;
 	std::set<uint32_t> pids;
 	bool all_accessible = true;
-	for (const auto &[id, observation] : telemetry_)
+	const auto ids = telemetry_by_definition_.find(std::string(quest_definition_id));
+	const std::set<std::string> empty;
+	for (const auto &id : ids == telemetry_by_definition_.end() ? empty : ids->second)
 	{
-		(void)id;
+		const auto found = telemetry_.find(id);
+		if (found == telemetry_.end() || found->second.observed_at > observed_before)
+			continue;
+		const auto &observation = found->second;
 		if (observation.quest_definition_id != quest_definition_id ||
 		    observation.content_revision != content_revision)
 			continue;
@@ -1058,121 +1096,212 @@ int64_t service::period_for(int64_t timestamp, int64_t period_seconds)
 	return timestamp / period_seconds;
 }
 
-daily_assignment service::assign_daily(uint32_t season_id, uint32_t pid, int level, int racewar,
-				       int64_t now, std::string *error)
+const zone_story_quest_catalog::zone_definition *service::find_zone(int32_t number) const
 {
-	daily_assignment empty;
-	empty.season_id = season_id;
-	empty.pid = pid;
-	if (!season_id || !pid || now <= 0 || level < 0 ||
-	    !valid_period(daily_policy_.period_seconds))
-	{
-		fail(error, "invalid daily assignment context");
-		return empty;
-	}
-	const int64_t period = period_for(now, daily_policy_.period_seconds);
-	daily_assignment assignment;
-	assignment.season_id = season_id;
-	assignment.pid = pid;
-	assignment.period = period;
-	assignment.assigned_at = period * daily_policy_.period_seconds;
-	assignment.expires_at = (period + 1) * daily_policy_.period_seconds;
-	const auto *existing_state = find_state(season_id, pid);
-	if (existing_state)
-	{
-		const auto existing = existing_state->daily_assignments.find(period);
-		if (existing != existing_state->daily_assignments.end())
-			return existing->second;
-	}
-	assignment.status = daily_policy_.enabled ? daily_status::no_eligible_candidate :
-						    daily_status::disabled;
-	if (!daily_policy_.enabled)
-		return assignment;
-	auto &state = state_for(season_id, pid);
-	std::vector<std::string> candidates;
-	for (const auto &definition : catalog_.definitions)
-	{
-		if (!definition.active || !definition.eligible_for_zone_completion ||
-		    definition.content_revision != catalog_.content_revision)
-			continue;
-		const evidence_summary evidence =
-			evidence_for(definition.definition_id, definition.content_revision);
-		if (!evidence.suitable || (level < daily_policy_.minimum_level) ||
-		    (daily_policy_.maximum_level > 0 && level > daily_policy_.maximum_level) ||
-		    (daily_policy_.minimum_racewar > 0 &&
-		     racewar < daily_policy_.minimum_racewar) ||
-		    (daily_policy_.maximum_racewar > 0 && racewar > daily_policy_.maximum_racewar))
-			continue;
-		if (evidence.has_level_range &&
-		    (level < evidence.minimum_level || level > evidence.maximum_level))
-			continue;
-		if (evidence.has_racewar_range &&
-		    (racewar < evidence.minimum_racewar || racewar > evidence.maximum_racewar))
-			continue;
-		candidates.push_back(definition.definition_id);
-	}
-	std::sort(candidates.begin(), candidates.end());
-	if (!candidates.empty())
-	{
-		/* Stable, deterministic selection is intentional: there is no reroll path. */
-		uint64_t hash = 1469598103934665603ULL;
-		const std::string seed = std::to_string(season_id) + ":" + std::to_string(pid) +
-					 ":" + std::to_string(period);
-		for (unsigned char value : seed)
-		{
-			hash ^= value;
-			hash *= 1099511628211ULL;
-		}
-		assignment.quest_definition_id = candidates[hash % candidates.size()];
-		assignment.content_revision = catalog_.content_revision;
-		assignment.status = daily_status::assigned;
-	}
-	state.daily_assignments.emplace(period, assignment);
-	return assignment;
+	for (const auto &zone : catalog_.zones)
+		if (zone.zone_number == number)
+			return &zone;
+	return nullptr;
 }
 
-result service::complete_daily(uint32_t season_id, uint32_t pid, std::string_view transaction_id,
-			       int64_t now, std::string *error)
+bool service::has_discovered(uint32_t season, uint32_t pid, int32_t zone, int64_t before) const
 {
-	if (!daily_policy_.enabled)
-		return fail(error, "daily quests are disabled"), result::disabled;
-	if (!season_id || !pid || transaction_id.empty() || now <= 0)
-		return fail(error, "invalid daily completion context"), result::invalid;
-	const int64_t period = period_for(now, daily_policy_.period_seconds);
-	const auto *state = find_state(season_id, pid);
+	const auto *state = find_state(season, pid);
 	if (!state)
-		return fail(error, "daily assignment was not found"), result::not_found;
-	const auto assignment = state->daily_assignments.find(period);
-	if (assignment == state->daily_assignments.end())
-		return fail(error, "daily assignment was not found"), result::not_found;
-	if (assignment->second.status == daily_status::completed)
+		return false;
+	const auto found = state->discoveries.find(zone);
+	return found != state->discoveries.end() && found->second.visited_at <= before;
+}
+
+result service::discover_zone(uint32_t season, uint32_t pid, int32_t number, int32_t room,
+			      int64_t visited_at, std::string_view source, std::string *error)
+{
+	const auto *zone = find_zone(number);
+	if (!season || !pid || visited_at <= 0 || !zone || !zone->discoverable ||
+	    room < zone->first_vnum || room > zone->last_vnum ||
+	    (source != "arrival" && source != "completion-backfill") ||
+	    deleted_characters_.count({ season, pid }) ||
+	    leaderboard_exclusions_.count({ season, pid }))
+		return fail(error, "invalid zone discovery evidence"), result::rejected;
+	if (has_discovered(season, pid, number))
 		return result::already_applied;
-	if (assignment->second.status != daily_status::assigned ||
-	    now >= assignment->second.expires_at)
-		return fail(error, "daily assignment is not active"), result::rejected;
-	const auto transaction = transactions_.find(std::string(transaction_id));
-	if (transaction == transactions_.end())
-		return fail(error, "authoritative completion transaction was not found"),
-		       result::not_found;
-	if (transaction->second.transaction.season_id != season_id ||
-	    transaction->second.transaction.quest_definition_id !=
-		    assignment->second.quest_definition_id ||
-	    transaction->second.transaction.content_revision !=
-		    assignment->second.content_revision ||
-	    transaction->second.transaction.completed_at < assignment->second.assigned_at ||
-	    transaction->second.transaction.completed_at >= assignment->second.expires_at ||
-	    !contains_pid(transaction->second.transaction, pid))
-		return fail(error, "completion does not satisfy the assigned daily quest"),
-		       result::rejected;
-	auto &mutable_state = state_for(season_id, pid);
-	const std::string reward_key = std::to_string(season_id) + ":" + std::to_string(pid) + ":" +
-				       std::to_string(period);
-	if (!mutable_state.reward_keys.emplace(reward_key, std::string(transaction_id)).second)
-		return result::already_applied;
-	mutable_state.daily_assignments[period].status = daily_status::completed;
-	mutable_state.daily_assignments[period].reward_amount = 1;
-	mutable_state.daily_assignments[period].completion_transaction_id = transaction_id;
+	dirty_characters_.insert({ season, pid });
+	state_for(season, pid)
+		.discoveries.emplace(number, character_state::discovery{ room, visited_at,
+									 std::string(source) });
 	return result::applied;
+}
+
+int32_t service::resolve_zone(std::string_view name, std::string *error) const
+{
+	const auto query = lower_name(name);
+	std::vector<int32_t> exact, partial;
+	for (const auto &zone : catalog_.zones)
+	{
+		if (!zone.discoverable || query.empty())
+			continue;
+		const auto candidate = lower_name(zone.name);
+		if (candidate == query)
+			exact.push_back(zone.zone_number);
+		else if (candidate.find(query) != std::string::npos)
+			partial.push_back(zone.zone_number);
+	}
+	const auto &matches = exact.empty() ? partial : exact;
+	if (matches.size() == 1)
+		return matches.front();
+	fail(error, matches.empty() ? "No area matches that name." :
+				      "That area name is ambiguous; use its full name.");
+	return -1;
+}
+
+bool service::daily_eligible_for(uint32_t season, uint32_t pid, std::string_view id, int level,
+				 int racewar, int strongest, int64_t now) const
+{
+	const auto *definition = find_definition(id);
+	if (!daily_policy_.enabled || !season || !pid || now <= 0 || now < checklist_starts_at_ ||
+	    !definition || !definition->active || !definition->repeatable ||
+	    !definition->daily_eligible ||
+	    definition->content_revision != catalog_.content_revision ||
+	    !has_discovered(season, pid, definition->zone_number, now) ||
+	    deleted_characters_.count({ season, pid }) ||
+	    leaderboard_exclusions_.count({ season, pid }) || level < daily_policy_.minimum_level ||
+	    strongest <= 0 || strongest > level + daily_policy_.maximum_party_level_delta ||
+	    (daily_policy_.maximum_level && level > daily_policy_.maximum_level))
+		return false;
+	const auto evidence = evidence_for(id, definition->content_revision, now);
+	if (!evidence.suitable || level < evidence.minimum_level || level > evidence.maximum_level)
+		return false;
+	bool faction_observed = false;
+	const auto ids = telemetry_by_definition_.find(std::string(id));
+	const std::set<std::string> empty;
+	for (const auto &key : ids == telemetry_by_definition_.end() ? empty : ids->second)
+	{
+		const auto found = telemetry_.find(key);
+		if (found == telemetry_.end())
+			continue;
+		const auto &observation = found->second;
+		if (observation.quest_definition_id == id &&
+		    observation.content_revision == definition->content_revision &&
+		    observation.racewar == racewar &&
+		    observation.outcome == telemetry_outcome::success && observation.accessible &&
+		    observation.observed_at <= now)
+			faction_observed = true;
+	}
+	if (!faction_observed)
+		return false;
+	const auto *state = find_state(season, pid);
+	for (const auto &prerequisite : definition->prerequisites)
+		if (!state || !state->credit_masks.count(prerequisite))
+			return false;
+	return true;
+}
+
+bool service::existing_transaction(
+	std::string_view id, zone_story_quest_tracking::completion_transaction *transaction) const
+{
+	const auto found = transactions_.find(std::string(id));
+	if (found == transactions_.end())
+		return false;
+	if (transaction)
+		*transaction = found->second.transaction;
+	return true;
+}
+
+void service::project_daily(const zone_story_quest_tracking::completion_transaction &tx,
+			    bool award_bonus)
+{
+	if (tx.daily_policy_revision != 1 || tx.completed_at < checklist_starts_at_)
+		return;
+	const int64_t period = period_for(tx.completed_at);
+	for (uint32_t pid : tx.daily_credited_pids)
+	{
+		if (deleted_characters_.count({ tx.season_id, pid }))
+			continue;
+		auto &state = state_for(tx.season_id, pid);
+		state.daily_completions[period].insert(tx.quest_definition_id);
+		if (award_bonus)
+			state.reward_keys.emplace(std::to_string(tx.season_id) + ":" +
+							  std::to_string(pid) + ":" +
+							  std::to_string(period),
+						  tx.transaction_id);
+	}
+}
+
+std::string service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level,
+				    int racewar, int64_t now, bool daily_only, bool colors) const
+{
+	const auto *zone = find_zone(number);
+	if (!zone || !zone->discoverable)
+		return "No playable area matches that name.\r\n";
+	std::ostringstream out;
+	out << "\r\n"
+	    << color(colors, "&+L") << zone->name
+	    << (daily_only ? " daily quests" : " quest journal") << color(colors, "&n") << "\r\n";
+	if (!has_discovered(season, pid, number))
+		return out.str() +
+		       "  Undiscovered: visit this area to unlock its journal and daily quests.\r\n";
+	if (daily_only && !daily_policy_.enabled)
+		return out.str() + "  Daily quests are currently disabled.\r\n";
+	if (daily_only)
+		out << "  Resets at 00:00 UTC in "
+		    << display_remaining((period_for(now) + 1) * 86400 - now)
+		    << ". First qualifying completion earns 1 renown today.\r\n";
+	const auto *state = find_state(season, pid);
+	const int64_t period = period_for(now);
+	size_t count = 0;
+	for (const auto &definition : catalog_.definitions)
+	{
+		if (definition.zone_number != number || !definition.active)
+			continue;
+		if (daily_only && !definition.daily_eligible)
+			continue;
+		++count;
+		bool daily_done =
+			state && state->daily_completions.count(period) &&
+			state->daily_completions.at(period).count(definition.definition_id);
+		bool story_done = state && state->credit_masks.count(definition.definition_id);
+		std::string status =
+			daily_only ? (daily_done ? "Done today" :
+				      daily_eligible_for(season, pid, definition.definition_id,
+							 level, racewar, level, now) ?
+						   "Available" :
+						   "Locked") :
+				     (story_done ? "Story complete" : "Story incomplete");
+		if (!daily_only && definition.daily_eligible && daily_policy_.enabled)
+			status += daily_done ? "; Done today" :
+				  daily_eligible_for(season, pid, definition.definition_id, level,
+						     racewar, level, now) ?
+					       "; Available today" :
+					       "; Locked today";
+		out << "  [" << status << "] " << display_quest_name(&definition) << "\r\n";
+		if (!definition.objective.empty())
+			out << "    " << definition.objective << "\r\n";
+		if (!daily_only && !definition.daily_eligible)
+			out << "    Story only: " << definition.daily_exclusion << "\r\n";
+		if ((daily_only && status == "Locked") ||
+		    status.find("Locked today") != std::string::npos)
+			out << "    Not currently available. Complete earlier requests or return after more progress.\r\n";
+	}
+	if (!count)
+		out << "  This area has no " << (daily_only ? "daily-suitable" : "tracked")
+		    << " quests.\r\n";
+	return out.str();
+}
+
+result service::complete_daily(uint32_t season, uint32_t pid, std::string_view id, int64_t now,
+			       std::string *error)
+{
+	(void)now;
+	const auto *state = find_state(season, pid);
+	if (state)
+		for (const auto &[key, transaction] : state->reward_keys)
+		{
+			(void)key;
+			if (transaction == id)
+				return result::already_applied;
+		}
+	return fail(error, "daily completion must be frozen in the authoritative turn-in receipt"),
+	       result::rejected;
 }
 
 daily_assignment service::daily_for(uint32_t season_id, uint32_t pid, int64_t period) const
@@ -1194,6 +1323,24 @@ std::string service::render_zone(uint32_t season_id, uint32_t pid, int32_t zone_
 	output << "\r\n"
 	       << color(colors, "&+L") << display_zone_name(progress) << " completion for "
 	       << display_character_name(summary) << color(colors, "&n") << "\r\n";
+	output << "  Discovery achievement: "
+	       << (progress.discovered ? "Discovered" : "Undiscovered") << "\r\n";
+	if (find_zone(zone_number) && !progress.discovered)
+		return output.str() + "  Visit this area to unlock its private quest progress.\r\n";
+	if (daily_policy_.enabled)
+	{
+		const auto *state = find_state(season_id, pid);
+		const auto period = period_for(static_cast<int64_t>(std::time(nullptr)));
+		size_t done = 0;
+		if (state && state->daily_completions.count(period))
+			for (const auto &id : state->daily_completions.at(period))
+			{
+				const auto *definition = find_definition(id);
+				if (definition && definition->zone_number == zone_number)
+					++done;
+			}
+		output << "  Daily quests completed today: " << done << "\r\n";
+	}
 	if (!progress.available)
 	{
 		output << "  N/A: this zone has no active zone-story quests in the current catalog.\r\n";
@@ -1229,13 +1376,14 @@ std::string service::render_summary(uint32_t season_id, uint32_t pid,
 	output << "\r\n"
 	       << color(colors, "&+L") << "Zone-story achievements for "
 	       << display_character_name(summary) << color(colors, "&n") << "\r\n";
+	output << "  Discovered zones: " << summary.discovered_zones << "\r\n";
 	if (summary.total == 0)
 	{
 		output << "  N/A: the current production catalog contains no eligible quests.\r\n";
-		return output.str();
 	}
-	output << "  Overall: " << display_count(summary.completed) << " unique quests ("
-	       << display_percentage(summary.completed, summary.total) << ")\r\n";
+	else
+		output << "  Overall: " << display_count(summary.completed) << " unique quests ("
+		       << display_percentage(summary.completed, summary.total) << ")\r\n";
 	output << "  Fully completed zones: " << summary.full_zones << "\r\n";
 	if (daily_policy_.enabled && summary.renown > 0)
 		output << "  Daily renown: " << summary.renown << "\r\n";
@@ -1302,82 +1450,190 @@ std::string service::render_leaderboard(uint32_t season_id, int32_t zone_number,
 	return output.str();
 }
 
-std::string service::render_daily(uint32_t season_id, uint32_t pid, int level, int racewar,
-				  int64_t now, bool colors)
+std::string service::render_daily(uint32_t season, uint32_t pid, int level, int racewar,
+				  int64_t now, bool colors) const
 {
 	if (!daily_policy_.enabled)
 		return {};
-	const daily_assignment assignment = assign_daily(season_id, pid, level, racewar, now);
-	if (assignment.status != daily_status::assigned &&
-	    assignment.status != daily_status::completed &&
-	    assignment.status != daily_status::expired)
-		return {};
-	const auto *definition = find_definition(assignment.quest_definition_id);
-	if (!definition)
-		return {};
-	std::ostringstream output;
-	output << "\r\n" << color(colors, "&+L") << "Daily Quest" << color(colors, "&n") << "\r\n";
-	const personal_summary summary = summary_for(season_id, pid);
-	output << "  Renown: " << summary.renown << "\r\n";
-	output << "  Quest: " << display_quest_name(definition) << "\r\n";
-	if (!definition->zone_name.empty())
-		output << "  Area: " << definition->zone_name << "\r\n";
-	if (!definition->giver_name.empty())
-		output << "  From: " << definition->giver_name << "\r\n";
-	if (!definition->objective.empty())
-		output << "  Objective: " << definition->objective << "\r\n";
-	output << "  Reward: 1 renown\r\n";
-	switch (assignment.status)
+	std::ostringstream out;
+	out << "\r\n"
+	    << color(colors, "&+L") << "Daily Quests" << color(colors, "&n") << "\r\n"
+	    << "  All suitable quests in discovered areas can be completed once today.\r\n"
+	    << "  First daily completion earns 1 renown; original quest rewards are unchanged.\r\n"
+	    << "  Resets at 00:00 UTC in " << display_remaining((period_for(now) + 1) * 86400 - now)
+	    << ".\r\n";
+	const auto *state = find_state(season, pid);
+	const auto period = period_for(now);
+	size_t completed = state && state->daily_completions.count(period) ?
+				   state->daily_completions.at(period).size() :
+				   0;
+	out << "  Completed today: " << completed << "; renown: " << summary_for(season, pid).renown
+	    << "\r\n";
+	if (now < checklist_starts_at_)
+		out << "  The new checklist begins at the next UTC reset.\r\n";
+	bool any = false;
+	for (const auto &zone : catalog_.zones)
 	{
-	case daily_status::assigned:
-		output << "  Status: Ready to complete\r\n"
-		       << "  Resets in: " << display_remaining(assignment.expires_at - now)
-		       << "\r\n";
-		break;
-	case daily_status::completed:
-		output << "  Status: Completed; reward claimed\r\n";
-		break;
-	case daily_status::expired:
-		output << "  Status: Expired\r\n";
-		break;
-	default:
-		break;
+		if (!zone.discoverable || !has_discovered(season, pid, zone.zone_number))
+			continue;
+		any = true;
+		size_t available = 0, done = 0;
+		for (const auto &definition : catalog_.definitions)
+		{
+			if (definition.zone_number != zone.zone_number ||
+			    !definition.daily_eligible)
+				continue;
+			if (state && state->daily_completions.count(period) &&
+			    state->daily_completions.at(period).count(definition.definition_id))
+				++done;
+			else if (daily_eligible_for(season, pid, definition.definition_id, level,
+						    racewar, level, now))
+				++available;
+		}
+		out << "  " << zone.name << ": " << done << " done today, " << available
+		    << " available\r\n";
 	}
-	return output.str();
+	if (!any)
+		out << "  Explore an area to discover its daily quests.\r\n";
+	out << "  Use 'quest daily <area>' for its checklist.\r\n";
+	return out.str();
 }
 
-std::string service::render_daily_score(uint32_t season_id, uint32_t pid, int level, int racewar,
-					int64_t now, bool colors)
+std::string service::render_daily_score(uint32_t season, uint32_t pid, int level, int racewar,
+					int64_t now, bool colors) const
 {
+	(void)level;
+	(void)racewar;
 	if (!daily_policy_.enabled)
 		return {};
-	const daily_assignment assignment = assign_daily(season_id, pid, level, racewar, now);
-	const personal_summary summary = summary_for(season_id, pid);
-	const bool active = assignment.status == daily_status::assigned;
-	const bool completed = assignment.status == daily_status::completed;
-	if (!active && !completed && summary.renown == 0)
-		return {};
-	std::ostringstream output;
-	output << "\r\n" << color(colors, "&+L") << "Daily: " << color(colors, "&n");
-	if (active)
-		output << "quest available - type 'quest' for details";
-	else if (completed)
-		output << "quest completed";
-	if (summary.renown > 0)
+	const auto *state = find_state(season, pid);
+	const auto period = period_for(now);
+	const size_t done = state && state->daily_completions.count(period) ?
+				    state->daily_completions.at(period).size() :
+				    0;
+	return "\r\n" + std::string(color(colors, "&+L")) + "Daily: " + color(colors, "&n") +
+	       std::to_string(done) + " completed today; renown " +
+	       std::to_string(summary_for(season, pid).renown) +
+	       " - type 'quest daily' for details\r\n";
+}
+
+zone_story_quest_state::changes service::changes_for_persistence() const
+{
+	zone_story_quest_state::changes updates;
+	updates.replace = all_dirty_;
+	if (all_dirty_)
 	{
-		if (active || completed)
-			output << "; ";
-		output << "renown " << summary.renown;
+		updates.values = zone_story_quest_state::split_document(serialize_state());
+		return updates;
 	}
-	output << "\r\n";
-	return output.str();
+	for (const auto &key : dirty_characters_)
+	{
+		service subset;
+		const auto found = characters_.find(key);
+		if (found != characters_.end())
+			subset.characters_.emplace(key, found->second);
+		if (deleted_characters_.count(key))
+			subset.deleted_characters_.insert(key);
+		if (leaderboard_exclusions_.count(key))
+			subset.leaderboard_exclusions_.insert(key);
+		auto values = zone_story_quest_state::split_document(subset.serialize_state());
+		values.erase("meta");
+		updates.values.insert(values.begin(), values.end());
+	}
+	for (const auto &id : dirty_transactions_)
+	{
+		const auto found = transactions_.find(id);
+		updates.values["T:" + hex_encode(id)] =
+			found == transactions_.end() ?
+				std::string() :
+				"T|" + hex_encode(id) + "|" + hex_encode(found->second.encoded) +
+					"\n";
+	}
+	for (const auto &id : dirty_telemetry_)
+	{
+		const auto found = telemetry_.find(id);
+		updates.values["E:" + hex_encode(id)] =
+			found == telemetry_.end() ?
+				std::string() :
+				"E|" + hex_encode(id) + "|" +
+					hex_encode(serialize_observation(found->second)) + "\n";
+	}
+	return updates;
+}
+
+void service::mark_persisted()
+{
+	all_dirty_ = false;
+	dirty_characters_.clear();
+	dirty_transactions_.clear();
+	dirty_telemetry_.clear();
+}
+
+std::function<void()> service::checkpoint_for(uint32_t season, const std::vector<uint32_t> &pids,
+					      std::string_view txid)
+{
+	std::map<std::pair<uint32_t, uint32_t>, std::optional<character_state>> states;
+	for (uint32_t pid : pids)
+	{
+		const auto *state = find_state(season, pid);
+		states[{ season, pid }] = state ? std::optional<character_state>(*state) :
+						  std::nullopt;
+	}
+	const std::string id(txid), observation_id = "completion:" + id;
+	const auto transaction = transactions_.find(id);
+	const std::optional<stored_transaction> old_transaction =
+		transaction == transactions_.end() ?
+			std::nullopt :
+			std::optional<stored_transaction>(transaction->second);
+	const auto observation = telemetry_.find(observation_id);
+	const std::optional<telemetry_observation> old_observation =
+		observation == telemetry_.end() ?
+			std::nullopt :
+			std::optional<telemetry_observation>(observation->second);
+	return [this, states = std::move(states), id, observation_id, old_transaction,
+		old_observation, exclusions = leaderboard_exclusions_,
+		deleted = deleted_characters_, all_dirty = all_dirty_,
+		dirty_characters = dirty_characters_, dirty_transactions = dirty_transactions_,
+		dirty_telemetry = dirty_telemetry_]()
+	{
+		for (const auto &[key, state] : states)
+			if (state)
+				characters_[key] = *state;
+			else
+				characters_.erase(key);
+		if (!id.empty())
+		{
+			if (old_transaction)
+				transactions_[id] = *old_transaction;
+			else
+				transactions_.erase(id);
+			const auto current = telemetry_.find(observation_id);
+			if (current != telemetry_.end())
+				telemetry_by_definition_[current->second.quest_definition_id].erase(
+					observation_id);
+			if (old_observation)
+			{
+				telemetry_[observation_id] = *old_observation;
+				telemetry_by_definition_[old_observation->quest_definition_id]
+					.insert(observation_id);
+			}
+			else
+				telemetry_.erase(observation_id);
+		}
+		leaderboard_exclusions_ = exclusions;
+		deleted_characters_ = deleted;
+		all_dirty_ = all_dirty;
+		dirty_characters_ = dirty_characters;
+		dirty_transactions_ = dirty_transactions;
+		dirty_telemetry_ = dirty_telemetry;
+	};
 }
 
 std::string service::serialize_state(std::string *error) const
 {
 	(void)error;
 	std::ostringstream output;
-	output << "ZSQF|1\n";
+	output << "ZSQF|2\nK|" << checklist_starts_at_ << "\n";
 	for (const auto &[id, stored] : transactions_)
 	{
 		bool includes_deleted_pid = false;
@@ -1402,6 +1658,17 @@ std::string service::serialize_state(std::string *error) const
 		for (const auto &[definition_id, credit_mask] : state.credit_masks)
 			output << "C|" << state.season_id << "|" << state.pid << "|"
 			       << hex_encode(definition_id) << "|" << credit_mask << "\n";
+		for (const auto &[id, completed_at] : state.first_completion_times)
+			output << "F|" << state.season_id << "|" << state.pid << "|"
+			       << hex_encode(id) << "|" << completed_at << "\n";
+		for (const auto &[period, definitions] : state.daily_completions)
+			for (const auto &id : definitions)
+				output << "P|" << state.season_id << "|" << state.pid << "|"
+				       << period << "|" << hex_encode(id) << "\n";
+		for (const auto &[zone, discovery] : state.discoveries)
+			output << "V|" << state.season_id << "|" << state.pid << "|" << zone << "|"
+			       << discovery.room_vnum << "|" << discovery.visited_at << "|"
+			       << discovery.source << "\n";
 		for (const auto &[period, assignment] : state.daily_assignments)
 			output << "D|" << state.season_id << "|" << state.pid << "|" << period
 			       << "|" << hex_encode(assignment.quest_definition_id) << "|"
@@ -1447,7 +1714,14 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 	std::vector<telemetry_observation> observations;
 	std::vector<std::pair<uint32_t, uint32_t>> deleted;
 	std::vector<std::pair<uint32_t, uint32_t>> leaderboard_exclusions;
+	std::vector<std::tuple<uint32_t, uint32_t, int32_t, int32_t, int64_t, std::string>>
+		discoveries;
+	std::vector<std::tuple<uint32_t, uint32_t, int64_t, std::string>> daily_projections;
+	std::vector<std::tuple<uint32_t, uint32_t, std::string, int64_t>> first_completions;
+	int version = 0;
+	int64_t cutover = 0;
 	bool header_seen = false;
+	bool cutover_seen = false;
 	size_t begin = 0;
 	while (begin < encoded.size())
 	{
@@ -1459,14 +1733,59 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 		if (line.empty())
 			continue;
 		const auto fields = split(line);
-		if (fields.size() == 2 && fields[0] == "ZSQF" && fields[1] == "1")
+		if (fields.size() == 2 && fields[0] == "ZSQF" &&
+		    (fields[1] == "1" || fields[1] == "2") && !header_seen)
 		{
+			version = fields[1] == "1" ? 1 : 2;
 			header_seen = true;
 			continue;
 		}
 		if (!header_seen)
 			return fail(error, "zone-story state header is missing");
-		if (fields[0] == "T" && fields.size() == 3)
+		if (fields[0] == "K" && fields.size() == 2 && version == 2)
+		{
+			if (cutover_seen || !parse_integer(fields[1], &cutover) || cutover < 0)
+				return fail(error, "invalid checklist cutover");
+			cutover_seen = true;
+		}
+		else if (fields[0] == "F" && fields.size() == 5 && version == 2)
+		{
+			uint32_t season = 0, pid = 0;
+			int64_t completed_at = 0;
+			std::string id;
+			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
+			    !hex_decode(fields[3], &id) ||
+			    !parse_integer(fields[4], &completed_at) || !season || !pid ||
+			    id.empty() || completed_at <= 0)
+				return fail(error, "invalid first completion time");
+			first_completions.emplace_back(season, pid, id, completed_at);
+		}
+		else if (fields[0] == "P" && fields.size() == 5 && version == 2)
+		{
+			uint32_t season = 0, pid = 0;
+			int64_t period = 0;
+			std::string id;
+			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
+			    !parse_integer(fields[3], &period) || !hex_decode(fields[4], &id) ||
+			    !season || !pid || period < 0 || id.empty())
+				return fail(error, "invalid daily projection");
+			daily_projections.emplace_back(season, pid, period, id);
+		}
+		else if (fields[0] == "V" && fields.size() == 7 && version == 2)
+		{
+			uint32_t season = 0, pid = 0;
+			int32_t zone = 0, room = 0;
+			int64_t at = 0;
+			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
+			    !parse_integer(fields[3], &zone) || !parse_integer(fields[4], &room) ||
+			    !parse_integer(fields[5], &at) || !season || !pid || zone <= 0 ||
+			    room <= 0 || at <= 0 ||
+			    (fields[6] != "arrival" && fields[6] != "completion-backfill"))
+				return fail(error, "invalid discovery record");
+			discoveries.emplace_back(season, pid, zone, room, at,
+						 std::string(fields[6]));
+		}
+		else if (fields[0] == "T" && fields.size() == 3)
 		{
 			std::string transaction_encoded;
 			if (!hex_decode(fields[2], &transaction_encoded))
@@ -1475,6 +1794,10 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 			if (!zone_story_quest_tracking::deserialize_transaction(
 				    transaction_encoded, &transaction, error))
 				return false;
+			std::string stored_id;
+			if (!hex_decode(fields[1], &stored_id) ||
+			    stored_id != transaction.transaction_id)
+				return fail(error, "completion record ID differs from its payload");
 			transactions.push_back(std::move(transaction));
 		}
 		else if (fields[0] == "N" && (fields.size() == 4 || fields.size() == 5))
@@ -1559,53 +1882,97 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 	}
 	if (!header_seen)
 		return fail(error, "zone-story state header is missing");
-	characters_.clear();
-	deleted_characters_.clear();
-	leaderboard_exclusions_.clear();
-	transactions_.clear();
-	telemetry_.clear();
+	if (version == 2 && !cutover_seen)
+		return fail(error, "checklist cutover is missing");
+	service candidate(catalog_);
+	candidate.set_daily_policy(daily_policy_);
+	candidate.checklist_starts_at_ = cutover;
+	candidate.deleted_characters_.clear();
+	candidate.leaderboard_exclusions_.clear();
+	candidate.transactions_.clear();
+	candidate.telemetry_.clear();
 	for (const auto &[season, pid] : deleted)
-		deleted_characters_.insert({ season, pid });
+		candidate.deleted_characters_.insert({ season, pid });
 	for (const auto &[season, pid] : leaderboard_exclusions)
-		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
-			leaderboard_exclusions_.insert({ season, pid });
+		if (candidate.deleted_characters_.find({ season, pid }) ==
+		    candidate.deleted_characters_.end())
+			candidate.leaderboard_exclusions_.insert({ season, pid });
 	for (const auto &[season, pid, name, racewar] : names)
-		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
+		if (candidate.deleted_characters_.find({ season, pid }) ==
+		    candidate.deleted_characters_.end())
 		{
-			auto &state = state_for(season, pid);
+			auto &state = candidate.state_for(season, pid);
 			state.character_name = name;
 			state.racewar = racewar;
 		}
 	for (const auto &[season, pid, definition_id, credit_mask] : credits)
-		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
-			state_for(season, pid).credit_masks[definition_id] = credit_mask;
+		if (candidate.deleted_characters_.find({ season, pid }) ==
+		    candidate.deleted_characters_.end())
+			candidate.state_for(season, pid).credit_masks[definition_id] = credit_mask;
+	for (const auto &[season, pid, id, completed_at] : first_completions)
+		if (!candidate.deleted_characters_.count({ season, pid }))
+		{
+			auto &times = candidate.state_for(season, pid).first_completion_times;
+			const auto old = times.find(id);
+			if (old == times.end() || completed_at < old->second)
+				times[id] = completed_at;
+		}
 	for (const auto &assignment : assignments)
-		if (deleted_characters_.find({ assignment.season_id, assignment.pid }) ==
-		    deleted_characters_.end())
-			state_for(assignment.season_id, assignment.pid)
+		if (candidate.deleted_characters_.find({ assignment.season_id, assignment.pid }) ==
+		    candidate.deleted_characters_.end())
+			candidate.state_for(assignment.season_id, assignment.pid)
 				.daily_assignments[assignment.period] = assignment;
 	for (const auto &[season, pid, reward_key, transaction_id] : rewards)
-		if (deleted_characters_.find({ season, pid }) == deleted_characters_.end())
-			state_for(season, pid).reward_keys[reward_key] = transaction_id;
+		if (candidate.deleted_characters_.find({ season, pid }) ==
+		    candidate.deleted_characters_.end())
+			candidate.state_for(season, pid).reward_keys[reward_key] = transaction_id;
 	for (const auto &observation : observations)
 	{
 		bool deleted_pid = false;
-		for (const auto &[season, pid] : deleted_characters_)
+		for (const auto &[season, pid] : candidate.deleted_characters_)
 			if (pid == observation.pid)
 			{
 				deleted_pid = true;
 				break;
 			}
 		if (!deleted_pid)
-			telemetry_[observation.observation_id] = observation;
+		{
+			candidate.telemetry_[observation.observation_id] = observation;
+			candidate.telemetry_by_definition_[observation.quest_definition_id].insert(
+				observation.observation_id);
+		}
 	}
 	for (const auto &transaction : transactions)
 	{
-		const result applied =
-			apply_transaction(transaction, {}, RACEWAR_NONE, true, false, error);
+		const result applied = candidate.apply_transaction(transaction, {}, RACEWAR_NONE,
+								   true, false, error);
 		if (applied != result::applied && applied != result::already_applied)
 			return false;
 	}
+	if (version == 1)
+	{
+		candidate.checklist_starts_at_ =
+			(period_for(static_cast<int64_t>(std::time(nullptr))) + 1) * 86400;
+		for (const auto &tx : transactions)
+			for (const auto &zone : catalog_.zones)
+				if (zone.discoverable && tx.room_vnum >= zone.first_vnum &&
+				    tx.room_vnum <= zone.last_vnum)
+					for (uint32_t pid : tx.credited_pids)
+						candidate.discover_zone(tx.season_id, pid,
+									zone.zone_number,
+									tx.room_vnum,
+									tx.completed_at,
+									"completion-backfill");
+	}
+	for (const auto &[season, pid, zone, room, at, source] : discoveries)
+		if (!candidate.deleted_characters_.count({ season, pid }))
+			candidate.state_for(season, pid)
+				.discoveries.emplace(zone, character_state::discovery{ room, at,
+										       source });
+	for (const auto &[season, pid, period, id] : daily_projections)
+		if (!candidate.deleted_characters_.count({ season, pid }))
+			candidate.state_for(season, pid).daily_completions[period].insert(id);
+	*this = std::move(candidate);
 	return true;
 }
 } // namespace zone_story_quest_feature

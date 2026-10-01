@@ -1,3 +1,4 @@
+#include "world/zone_story_quest_runtime.h"
 /*
  * gmcp.c - gmcp protocol for durismud
  *
@@ -1155,6 +1156,7 @@ void gmcp_quest_status(struct char_data *ch)
 /* generate and send quest.map for bartender quests */
 void gmcp_quest_map(struct char_data *ch)
 {
+	zone_story_quest_runtime::temporary_placement placement;
 	int old_room, map_room;
 
 	if (!ch || !ch->desc)

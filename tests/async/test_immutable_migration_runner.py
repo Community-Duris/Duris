@@ -173,9 +173,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 50)
+        self.assertEqual(len(manifest.migrations), 51)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0050_item_extra_description_fulltext_unique")
+                         "0051_discovered_zone_daily_state")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -310,7 +310,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(staging, executor),
                          [item.migration_id for item in staging.migrations[45:]])
         self.assertEqual(executor.rows[:45], rows)
-        self.assertEqual(len(executor.rows), 50)
+        self.assertEqual(len(executor.rows), 51)
         replay = FakeExecutor(executor.rows)
         self.assertEqual(runner.run_pending(staging, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])

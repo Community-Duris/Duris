@@ -19,31 +19,6 @@ extern int pulse;
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
 
-namespace
-{
-int zone_number_from_player_name(const char *value)
-{
-	if (!value || !*value)
-		return 0;
-
-	const int numeric_zone = atoi(value);
-	if (numeric_zone > 0)
-		return numeric_zone;
-
-	if (!zone_table || top_of_zone_table < 0)
-		return 0;
-	for (int index = 0; index <= top_of_zone_table; ++index)
-	{
-		if (!zone_table[index].name)
-			continue;
-		const std::string area_name = strip_ansi(zone_table[index].name);
-		if (is_abbrev(value, area_name.c_str()))
-			return zone_table[index].number;
-	}
-	return 0;
-}
-} // namespace
-
 int get_frags(P_char ch)
 {
 	return ch->only.pc->frags;
@@ -63,7 +38,6 @@ void do_achievements(P_char ch, char *arg, int /*cmd*/)
 				ch);
 			return;
 		}
-		zone_story_quest_runtime::remember_character(ch);
 		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
 				    ch->desc->term_type != TERM_SKIP_ANSI;
 		const uint32_t season = zone_story_quest_runtime::current_season_id();
@@ -71,10 +45,12 @@ void do_achievements(P_char ch, char *arg, int /*cmd*/)
 		std::string output;
 		if (is_abbrev(section, "zone"))
 		{
-			const int zone = zone_number_from_player_name(remaining);
+			std::string error;
+			const int zone = tracker->resolve_zone(remaining ? remaining : "", &error);
 			if (zone <= 0)
 			{
-				send_to_char("Usage: achievements zone <area>\r\n", ch);
+				send_to_char((error + " Use achievements zone <area>.\r\n").c_str(),
+					     ch);
 				return;
 			}
 			output = tracker->render_zone(season, pid, zone, GET_NAME(ch), colors);

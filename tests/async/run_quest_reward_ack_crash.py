@@ -49,7 +49,7 @@ def pending_quest_reward_count(state_root: Path, player_pid: int) -> int:
 
 
 def run(binary: Path, expect_recovered: bool, *, sql=None,
-        sql_environment=None, fault_phase: str = "offering") -> None:
+        sql_environment=None, fault_phase: str = "offering", daily: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="duris-quest-crash-state-") as state_tmp, \
          tempfile.TemporaryDirectory(prefix="duris-quest-crash-run-") as run_tmp:
         state_root, run_root = Path(state_tmp), Path(run_tmp)
@@ -60,7 +60,14 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
                            check=True)
         (run_root / "logs/log").mkdir(parents=True)
         (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
-        quest.quest_fixture(run_root, xp_reward=100)
+        quest.quest_fixture(run_root, xp_reward=100, daily=daily)
+        if daily:
+            quest.seed_daily_evidence(state_root, xp_reward=100)
+            if sql is not None:
+                evidence = (state_root / "domains/zone-story-quests.state").read_bytes()[56:].decode("ascii")
+                evidence = evidence.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+                sql("INSERT INTO zone_story_quest_state (state_id,state_version,catalog_revision,state_blob) "
+                    "VALUES (1,2,2,'" + evidence + "')")
         journey.generate_certificate(run_root)
         journals = run_root / "journals"
         (journals / "players").mkdir(parents=True, mode=0o700)
@@ -77,6 +84,8 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             "DURIS_WEBSOCKET_PORT": str(websocket_port), "REDIS": "FALSE",
             "CHAOS_MUD": "FALSE",
         }
+        if daily:
+            environment["ZONE_STORY_DAILY_ENABLED"] = "true"
         if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
             environment["LD_LIBRARY_PATH"] = runtime_library_path
         if sql_environment is not None:
@@ -202,6 +211,9 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
                 journey.require(pending_after_load == 0,
                                 f"recovered reward obligation remains pending: "
                                 f"{pending_after_load}")
+            if daily:
+                client.send("quest daily")
+                client.expect("Completed today: 1; renown: 1", timeout=15)
             client.send("quit")
             client.expect("ACCOUNT MENU", timeout=30)
             client.send("0")
@@ -234,8 +246,14 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             client.send("save")
             client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
             again = authority()
+            if daily:
+                client.send("quest daily")
+                client.expect("Completed today: 1; renown: 1", timeout=15)
             journey.require(again == recovered, "second restart changed reward UID, XP or cash")
             journey.require(pending_rewards() == 0, "second restart reopened the obligation")
+            if daily:
+                client.send("quest daily")
+                client.expect("Completed today: 1; renown: 1", timeout=15)
             client.send("quit")
             client.expect("ACCOUNT MENU", timeout=30)
             client.send("0")
@@ -258,7 +276,7 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
                 output.close()
 
 
-def run_sql(binary: Path, fault_phase: str) -> None:
+def run_sql(binary: Path, fault_phase: str, daily: bool = False) -> None:
     if os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("TEST_DB_HOST") != "127.0.0.1":
         raise RuntimeError("TEST_DB_DISPOSABLE=1 and a loopback disposable database are required")
     database = "quest_journey_test_" + uuid.uuid4().hex[:12]
@@ -285,7 +303,7 @@ def run_sql(binary: Path, fault_phase: str) -> None:
         for command in (["adopt", "--kind", "fresh_bootstrap"], ["run"]):
             subprocess.run(["python3", "scripts/migration_runner.py", *command],
                            cwd=quest.ROOT, env=environment, check=True, timeout=600)
-        run(binary, True, sql=sql, sql_environment=environment, fault_phase=fault_phase)
+        run(binary, True, sql=sql, sql_environment=environment, fault_phase=fault_phase, daily=daily)
     finally:
         sql("DROP DATABASE " + database, False)
 

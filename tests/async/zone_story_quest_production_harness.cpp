@@ -2,10 +2,15 @@
 #include "world/zone_story_quest_production.h"
 
 #include <cstdlib>
+#include <algorithm>
 #include <iostream>
 #include <string>
 
 P_index mob_index;
+P_index obj_index = nullptr;
+FILE *mob_f = nullptr;
+FILE *obj_f = nullptr;
+int top_of_objt = -1;
 int number_of_quests = 0;
 struct quest_data quest_index[1];
 struct zone_data *zone_table = nullptr;
@@ -31,8 +36,10 @@ int main()
 	char mob_name[] = "the archivist";
 	mobs[0].desc2 = mob_name;
 	zone_data zones[1] = {};
-	char area_name[] = "The First Heavens";
+	char area_name[] = "&+WThe First Heavens&n";
 	zones[0].number = 1;
+	zones[0].top = 1281;
+	zones[0].reset_mode = 2;
 	zones[0].name = area_name;
 	zone_table = zones;
 	top_of_zone_table = 0;
@@ -59,6 +66,8 @@ int main()
 	const auto catalog = zone_story_quest_production::build_runtime_catalog(1, &error);
 	require(error.empty() && catalog.definitions.size() == 2,
 		"runtime production catalog did not deduplicate identical Q blocks");
+	require(catalog.definitions[0].daily_eligible && catalog.definitions[1].daily_eligible,
+		"supported exact item contracts did not remain daily candidates");
 	require(catalog.definitions[0].zone_number == 1 && catalog.definitions[0].giver_vnum == 17,
 		"low-vnum quester was not assigned to its valid zone");
 	require(catalog.definitions[0].giver_name == "the archivist" &&
@@ -81,6 +90,41 @@ int main()
 			std::string::npos,
 		"canonical completion key omitted give goals");
 
+	mobs[0].desc2 = nullptr;
+	mob_f = tmpfile();
+	require(mob_f, "prototype text fixture could not open");
+	fputs("archivist~\n&+Wthe archivist&n~\n", mob_f);
+	const long saved_position = ftell(mob_f);
+	const auto lazy_catalog = zone_story_quest_production::build_runtime_catalog(1, &error);
+	require(lazy_catalog.definitions[0].giver_name == "the archivist" &&
+			ftell(mob_f) == saved_position,
+		"lazy prototype names were missing or changed the loader position");
+	fclose(mob_f);
+	mob_f = nullptr;
+	goal_data coins{ .goal_type = QUEST_GOAL_COINS, .number = 10, .next = &give };
+	first.give = &coins;
+	const auto mixed_catalog = zone_story_quest_production::build_runtime_catalog(2, &error);
+	require(std::any_of(mixed_catalog.definitions.begin(), mixed_catalog.definitions.end(),
+			    [](const auto &definition) {
+				    return definition.daily_exclusion ==
+					   "Unsupported durable offering";
+			    }),
+		"mixed currency/item contract became a daily without a supported offering path");
+	goal_data large[15] = {};
+	for (int index = 0; index < 15; ++index)
+	{
+		large[index].goal_type = QUEST_GOAL_ITEM;
+		large[index].number = 25000 + index;
+		large[index].next = index < 14 ? &large[index + 1] : nullptr;
+	}
+	first.give = large;
+	const auto oversized_catalog =
+		zone_story_quest_production::build_runtime_catalog(2, &error);
+	require(std::any_of(
+			oversized_catalog.definitions.begin(), oversized_catalog.definitions.end(),
+			[](const auto &definition)
+			{ return definition.daily_exclusion == "Unsupported durable offering"; }),
+		"oversized native offering contract became a daily");
 	std::cout << "zone-story runtime production catalog regression passed\n";
 	return 0;
 }

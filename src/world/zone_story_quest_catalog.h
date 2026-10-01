@@ -12,11 +12,22 @@ namespace zone_story_quest_catalog
 {
 constexpr uint32_t ZONE_STORY_QUEST_CATALOG_SCHEMA_VERSION = 1;
 
+struct zone_definition
+{
+	int32_t zone_number = 0;
+	std::string name;
+	std::string source_area;
+	int32_t first_vnum = 0;
+	int32_t last_vnum = 0;
+	bool discoverable = true;
+};
+
 struct catalog
 {
 	uint32_t schema_version = ZONE_STORY_QUEST_CATALOG_SCHEMA_VERSION;
 	uint32_t content_revision = 0;
 	std::vector<zone_story_quest_tracking::quest_definition> definitions;
+	std::vector<zone_definition> zones = {};
 };
 
 struct diagnostic

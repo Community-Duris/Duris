@@ -101,22 +101,22 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * economic operation roots without adding a runtime table; migration 0047 adds
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0050_item_extra_description_fulltext_unique";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 50;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0051_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 51;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8";
+	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78";
+	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"7b90d2cadab45ee89f3960ac7d4387032b93d6a3be6c9d279742a28ced7f5ae0";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0049_player_spell_effect_receipt";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 50;
+	"82d38227ba5b286cc2474826465d6b9ac06f1c6049125a6bf80fbae7953bbb43";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0051_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 51;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"46779e7b1cf8a12af6828f263a4842ddfed21303719f693224ac130a76371f5b";
+	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a";
+	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"b627a1c34b80ba5f3be3bad64e1fa583aaa9ec63e420317a698bf18efada80b7";
+	"eaa0b0f305c96d73376454d8d74d971df77c4cb27e5f89b50f585e446c247731";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING "
 	"utf8mb4))),16,'0')),CONVERT(migration_id USING "
@@ -132,7 +132,7 @@ constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"utf8mb4))),16,'0')),CONVERT(compatibility USING "
 	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING "
 	"utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history "
-	"ORDER BY sequence_number LIMIT 51";
+	"ORDER BY sequence_number LIMIT 52";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

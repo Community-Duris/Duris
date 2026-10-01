@@ -678,6 +678,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8",
       "verify_checksum": "d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78"
+    },
+    {
+      "id": "0051_discovered_zone_daily_state",
+      "sequence": 51,
+      "description": "Retain legacy quest state and permit discovered-zone daily receipts",
+      "apply": "immutable/0051_discovered_zone_daily_state.sql",
+      "verify": "immutable/0051_discovered_zone_daily_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+      "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe"
     }
   ]
 }

@@ -36,6 +36,7 @@ zone_story_quest_tracking::quest_definition definition(const char *id, int zone)
 		.zone_name = zone == 900 ? "The Ember Coast" : "The Dusk Archive",
 		.objective = zone == 900 ? "Bring the lost sigil back to the harbor master." :
 					   "Deliver the sealed message to the dusk archivist.",
+		.daily_eligible = true,
 	};
 }
 
@@ -79,6 +80,9 @@ int main()
 				 definition("zone-story:901:001", 901),
 				 definition("zone-story:901:002", 901) }
 	};
+	catalog.zones = { { 900, "The Ember Coast", "ember", 90000, 90099, true },
+			  { 901, "The Dusk Archive", "dusk", 90100, 90199, true },
+			  { 902, "Empty Coast", "empty", 90200, 90299, true } };
 	service tracker(catalog);
 	std::string error;
 	completion_event conflicting =
@@ -217,6 +221,7 @@ int main()
 			std::string::npos,
 		"empty leaderboard did not expose the viewer's current progress");
 
+	tracker.discover_zone(7, 42, 900, 90010, 172800100, "arrival");
 	const std::string color_output = tracker.render_zone(7, 42, 900, "Alice", true);
 	const std::string plain_output = tracker.render_zone(7, 42, 900, "Alice", false);
 	require(color_output.find("&+") != std::string::npos &&
@@ -239,8 +244,7 @@ int main()
 				std::string::npos &&
 			empty_summary_output.find("The Ember Coast:") == std::string::npos &&
 			empty_summary_output.find("The Dusk Archive:") == std::string::npos &&
-			empty_tracker.render_zone(7, 42, 901, "Alice", false)
-					.find("Completed: 0 unique quests (0.00%)") !=
+			empty_tracker.render_zone(7, 42, 901, "Alice", false).find("Undiscovered") !=
 				std::string::npos,
 		"empty achievement list changed overall totals or per-zone zero progress");
 
@@ -334,55 +338,85 @@ int main()
 	const evidence_summary evidence = tracker.evidence_for("zone-story:901:002", 7);
 	require(evidence.suitable && evidence.observed_attempts >= 2 && evidence.distinct_pids >= 2,
 		"evidence policy did not produce a suitable candidate");
-	const int64_t daily_now = 200 * 86400 + 100;
-	const daily_assignment assignment = tracker.assign_daily(7, 42, 10, 1, daily_now, &error);
-	require(assignment.status == daily_status::assigned &&
-			assignment.quest_definition_id == "zone-story:901:002",
-		"daily assignment did not select the evidence-backed quest");
-	require(tracker.assign_daily(7, 42, 10, 1, daily_now, &error).quest_definition_id ==
-			assignment.quest_definition_id,
-		"daily assignment rerolled within a fixed period");
-	const std::string daily_score = tracker.render_daily_score(7, 42, 10, 1, daily_now, false);
-	require(daily_score.find("quest available") != std::string::npos &&
-			daily_score.find("Objective") == std::string::npos &&
-			daily_score.find("The Dusk Archive") == std::string::npos,
-		"score exposed more than the minimum daily reminder");
-	const std::string daily_detail = tracker.render_daily(7, 42, 10, 1, daily_now, false);
-	require(daily_detail.find("Carry the dusk message") != std::string::npos &&
-			daily_detail.find("The Dusk Archive") != std::string::npos &&
-			daily_detail.find("dusk archivist") != std::string::npos &&
-			daily_detail.find("completion_key") == std::string::npos,
-		"daily quest detail was not player-facing");
-
-	completion_event daily_completion = completion("tx-daily", "zone-story:901:002", 901, 42,
-						       assignment.assigned_at + 100, { 42 });
-	require(tracker.record_completion(daily_completion, &error) == result::applied,
-		"daily authoritative completion was not applied");
-	require(tracker.complete_daily(7, 42, "tx-daily", daily_completion.transaction.completed_at,
-				       &error) == result::already_applied,
-		"daily reward was not finalized exactly once");
-	require(tracker.summary_for(7, 42).renown == 1,
-		"daily completion awarded the wrong renown amount");
-	require(tracker.summary_for(7, 42).completed == 3,
-		"daily repeat completion incorrectly changed zone numerator more than once");
-	require(tracker.render_daily(7, 42, 10, 1, daily_now, false).find("Renown: 1") !=
-			std::string::npos,
-		"daily output did not expose the committed renown total");
+	tracker.remember_character(7, 42, "Alice", true, RACEWAR_GOOD);
+	const int64_t daily_now = 2001 * 86400 + 100;
+	require(!tracker.daily_eligible_for(7, 42, "zone-story:901:002", 10, 1, 10, daily_now),
+		"undiscovered daily was available");
+	require(tracker.discover_zone(7, 42, 901, 90110, daily_now - 10, "arrival", &error) ==
+				result::applied &&
+			tracker.discover_zone(7, 42, 901, 90190, daily_now, "arrival", &error) ==
+				result::already_applied,
+		"discovery was not idempotent");
+	require(tracker.discover_zone(7, 42, 902, 90210, daily_now, "arrival") == result::applied &&
+			tracker.progress_for_zone(7, 42, 902).discovered &&
+			!tracker.progress_for_zone(7, 42, 902).available,
+		"empty area did not receive separate discovery credit");
+	require(tracker.daily_eligible_for(7, 42, "zone-story:901:002", 10, 1, 10, daily_now) &&
+			!tracker.daily_eligible_for(7, 42, "zone-story:901:002", 10, 2, 10,
+						    daily_now) &&
+			!tracker.daily_eligible_for(7, 42, "zone-story:901:002", 10, 1, 25,
+						    daily_now),
+		"daily access ignored discovery, exact faction, or carry protection");
+	const std::string before_view = tracker.serialize_state();
+	require(tracker.render_daily(7, 42, 10, 1, daily_now, false).find("The Dusk Archive") !=
+				std::string::npos &&
+			tracker.render_journal(7, 42, 901, 10, 1, daily_now, true, false)
+					.find("Available") != std::string::npos &&
+			tracker.serialize_state() == before_view,
+		"daily view mutated persistent state");
+	completion_event daily_completion =
+		completion("tx-daily", "zone-story:901:002", 901, 42, daily_now, { 42, 77 });
+	daily_completion.transaction.daily_policy_revision = 1;
+	daily_completion.transaction.daily_credited_pids = { 42 };
+	require(tracker.record_completion(daily_completion, &error) == result::applied &&
+			tracker.record_completion(daily_completion, &error) ==
+				result::already_applied &&
+			tracker.summary_for(7, 42).renown == 1 &&
+			tracker.summary_for(7, 77).renown == 0,
+		"frozen daily recipients or duplicate reward were incorrect");
+	auto repeat = daily_completion;
+	repeat.transaction.transaction_id = "tx-daily-repeat";
+	require(tracker.record_completion(repeat, &error) == result::applied &&
+			tracker.summary_for(7, 42).renown == 1,
+		"same-day repeat granted another bonus");
+	auto second = daily_completion;
+	second.transaction.transaction_id = "tx-daily-second";
+	second.transaction.quest_definition_id = "zone-story:901:001";
+	require(tracker.record_completion(second, &error) == result::applied &&
+			tracker.summary_for(7, 42).renown == 1 &&
+			tracker.render_daily(7, 42, 10, 1, daily_now, false)
+					.find("Completed today: 2") != std::string::npos,
+		"second quest did not use the shared daily bonus cap");
+	auto tomorrow = daily_completion;
+	tomorrow.transaction.transaction_id = "tx-daily-tomorrow";
+	tomorrow.transaction.completed_at = (service::period_for(daily_now) + 1) * 86400;
+	require(tracker.record_completion(tomorrow, &error) == result::applied &&
+			tracker.summary_for(7, 42).renown == 2,
+		"UTC reset did not allow tomorrow's credit");
+	require(tracker.render_journal(7, 77, 901, 10, 1, daily_now, false, false)
+				.find("Undiscovered") != std::string::npos,
+		"group story credit unlocked another character's journal");
 
 	const std::string serialized = tracker.serialize_state(&error);
 	service recovered(catalog);
 	recovered.set_daily_policy(policy);
 	require(recovered.deserialize_state(serialized, &error), "state did not recover");
-	require(recovered.summary_for(7, 42).renown == 1 &&
+	require(recovered.summary_for(7, 42).renown == 2 &&
 			recovered.progress_for_zone(7, 42, 900).completed == 2,
 		"recovered state lost completion or renown");
 	require(serialized.find("H|7|88") != std::string::npos &&
 			recovered.render_leaderboard(7, 0, 0, 10, 88, false).find("Staff") ==
 				std::string::npos,
 		"leaderboard exclusion did not survive state recovery");
-	require(recovered.daily_for(7, 42, service::period_for(daily_now)).status ==
-			daily_status::completed,
-		"recovered daily assignment did not remain completed");
+	require(recovered.has_discovered(7, 42, 901) &&
+			recovered.render_journal(7, 42, 901, 10, 1, daily_now, true, false)
+					.find("Done today") != std::string::npos,
+		"daily and discovery facts did not survive restart");
+	const std::string before_corrupt = recovered.serialize_state();
+	require(!recovered.deserialize_state(serialized + "V|7|42|901|90110|bad|arrival\n",
+					     &error) &&
+			recovered.serialize_state() == before_corrupt,
+		"corrupt load partially mutated live state");
 
 	recovered.remember_character(8, 42, "OldSeasonName");
 	telemetry_observation deleted_observation;
@@ -414,10 +448,16 @@ int main()
 	require(recovered_after_delete.deserialize_state(deleted_serialized, &error),
 		"state did not recover after all-season deletion");
 	require(recovered_after_delete.summary_for(7, 42).completed == 0 &&
-			recovered_after_delete.summary_for(7, 77).completed == 2 &&
+			recovered_after_delete.summary_for(7, 77).completed == 3 &&
 			recovered_after_delete.evidence_for("zone-story:900:001", 7)
 					.observed_attempts == 0,
 		"deletion tombstone did not survive restart without erasing a group member");
+	require(recovered_after_delete
+				.render_leaderboard(7, 0, 0, 10, 77, false, daily_now + 86400 * 2)
+				.find("3 unique quests") != std::string::npos,
+		"deletion lost the remaining group member's delayed public progress");
+	require(recovered.changes_for_persistence().replace,
+		"all-season deletion did not request physical compaction");
 
 	service disabled(catalog);
 	require(disabled.get_daily_policy().enabled == false,
@@ -429,35 +469,12 @@ int main()
 			daily_status::none,
 		"disabled daily rendering created durable assignment state");
 	service disabled_after_assignment(catalog);
-	disabled_after_assignment.set_daily_policy(policy);
-	for (uint32_t pid : { 100U, 101U })
-	{
-		telemetry_observation observation;
-		observation.observation_id = "disabled-evidence-" + std::to_string(pid);
-		observation.quest_definition_id = "zone-story:901:002";
-		observation.content_revision = 7;
-		observation.observed_at = 172800500 + pid;
-		observation.pid = pid;
-		observation.level = 10;
-		observation.racewar = 1;
-		observation.party_size = 1;
-		observation.strongest_party_level = 10;
-		observation.outcome = telemetry_outcome::success;
-		observation.accessible = true;
-		require(disabled_after_assignment.record_telemetry(observation, &error) ==
-				result::applied,
-			"disabled reward evidence fixture was not applied");
-	}
-	const daily_assignment disabled_fixture =
-		disabled_after_assignment.assign_daily(7, 42, 10, 1, daily_now, &error);
-	disabled_after_assignment.set_daily_policy(daily_policy{});
 	completion_event disabled_completion =
-		completion("tx-disabled", disabled_fixture.quest_definition_id.c_str(), 901, 42,
-			   disabled_fixture.assigned_at + 100, { 42 });
+		completion("tx-disabled", "zone-story:901:002", 901, 42, daily_now, { 42 });
 	require(disabled_after_assignment.record_completion(disabled_completion, &error) ==
 				result::applied &&
 			disabled_after_assignment.summary_for(7, 42).renown == 0,
-		"disabling daily quests allowed a new reward to be earned");
+		"completion without frozen eligibility acquired a daily reward");
 
 	zone_story_quest_catalog::catalog empty_catalog = { .content_revision = 7,
 							    .definitions = {} };

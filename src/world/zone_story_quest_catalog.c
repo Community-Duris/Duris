@@ -32,6 +32,18 @@ bool validate(const catalog &catalog, std::vector<diagnostic> *diagnostics)
 		valid = false;
 	}
 
+	std::unordered_set<int32_t> zone_numbers;
+	for (const auto &zone : catalog.zones)
+	{
+		if (!zone_numbers.insert(zone.zone_number).second || zone.name.empty() ||
+		    zone.first_vnum < 0 || zone.last_vnum < zone.first_vnum ||
+		    (zone.discoverable && zone.zone_number <= 0))
+		{
+			add_diagnostic(diagnostics, -1, "invalid_zone_registry",
+				       "area registry has duplicate or invalid ownership metadata");
+			valid = false;
+		}
+	}
 	std::unordered_set<std::string> definition_ids;
 	for (std::size_t index = 0; index < catalog.definitions.size(); ++index)
 	{

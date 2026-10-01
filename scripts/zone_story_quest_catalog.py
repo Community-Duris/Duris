@@ -23,6 +23,7 @@ REQUIRED_FIELDS = {
 
 QUEST_BLOCK_RE = re.compile(r"^#(-?\d+)\s*$")
 GOAL_RE = re.compile(r"^([GR])\s+([ITCSE])\s+(-?\d+)\s*$")
+MAX_DURABLE_ITEM_OFFERINGS = 14
 
 
 def active_quest_files(source_root):
@@ -56,13 +57,43 @@ def completion_key(give_goals, receive_goals, disappear):
     return f"give={give};receive={receive};disappear={int(disappear)}"
 
 
-def production_catalog(source_root, content_revision=1):
+def zone_registry(source_root):
+    zones = []
+    for line in (source_root / "areas/AREA").read_text().splitlines():
+        if not line.strip() or line.lstrip().startswith("*"): continue
+        stem = line.split()[0]
+        path = source_root / "areas/zon" / f"{stem}.zon"
+        if not path.is_file(): continue
+        lines = path.read_text(errors="replace").splitlines()
+        header = next((i for i, text in enumerate(lines) if re.fullmatch(r"#-?\d+", text.strip())), None)
+        if header is None: continue
+        number = int(lines[header].strip()[1:])
+        if number >= 2**31: number -= 2**32
+        name_lines = []
+        i = header + 1
+        while i < len(lines):
+            name_lines.append(lines[i].split("~")[0])
+            if "~" in lines[i]: break
+            i += 1
+        terms = lines[i + 1].split()
+        zones.append({"zone_number": number, "name": re.sub(r"&(?:\+[A-Za-z]|[A-Za-z0-9])", "", " ".join(name_lines)).strip(), "source_area": stem,
+                      "last_vnum": int(terms[0]), "reset_mode": int(terms[1]), "discoverable": number > 0})
+    zones.sort(key=lambda zone: zone["zone_number"])
+    previous = -1
+    for zone in zones:
+        zone["first_vnum"] = previous + 1
+        previous = zone["last_vnum"]
+    return zones
+
+
+def production_catalog(source_root, content_revision=2):
     """Build the eligible catalog from active legacy static/story qst sources.
 
     Bartender/random world quests are intentionally absent: they are generated
     at runtime and have no stable zone-story definition identity.
     """
     definitions = []
+    zones = zone_registry(source_root)
     seen_contracts = set()
     for path in active_quest_files(source_root):
         current_giver = None
@@ -119,22 +150,32 @@ def production_catalog(source_root, content_revision=1):
                 continue
             seen_contracts.add(base_key)
             encoded_key = key.encode("utf-8").hex()
-            # Runtime quest_data retains the giver VNUM but not the source
-            # AREA filename.  Duris' zone namespace is the giver-vnum
-            # hundred-block; the historical low-vnum heavens questers are
-            # assigned to zone 1 explicitly.
-            zone_number = max(1, giver_vnum // 100)
+            owner = next((zone for zone in zones if zone["first_vnum"] <= giver_vnum <= zone["last_vnum"]), None)
+            if owner is None or owner["zone_number"] < 0: continue
+            zone_number = owner["zone_number"]
+            repeatable = not block["disappear"] or owner["reset_mode"] != 0
+            give, receive = sorted(block["give"]), sorted(block["receive"])
+            item_offering = any(kind == "I" and number > 0 for kind, number in give)
+            returns_offering = any(kind == "I" and (kind, number) in receive for kind, number in give)
+            durable_offering = len(give) <= MAX_DURABLE_ITEM_OFFERINGS and all(kind == "I" and number > 0 for kind, number in give)
+            daily = zone_number > 0 and repeatable and item_offering and not returns_offering and durable_offering
+            exclusion = "" if daily else ("Administrative content" if zone_number <= 0 else
+                "Story-only quest" if not repeatable else "Item exchange" if returns_offering else
+                "No repeatable item offering" if not item_offering else "Unsupported durable offering")
             definitions.append(
                 {
                     "definition_id": f"zone-story:qst:{giver_vnum}:{encoded_key}",
                     "source_system": "zone_story",
                     "zone_number": zone_number,
-                    "source_area": path.stem,
+                    "source_area": owner["source_area"],
                     "giver_vnum": giver_vnum,
                     "completion_key": encoded_key,
                     "active": True,
-                    "eligible_for_zone_completion": True,
-                    "repeatable": True,
+                    "eligible_for_zone_completion": zone_number > 0,
+                    "repeatable": repeatable,
+                    "daily_eligible": daily,
+                    "daily_exclusion": exclusion,
+                    "prerequisites": [],
                     "content_revision": content_revision,
                 }
             )
@@ -150,6 +191,7 @@ def production_catalog(source_root, content_revision=1):
             "excludes": ["bartender_random_world_quests"],
             "fingerprint_sha256": hashlib.sha256(fingerprint_payload).hexdigest(),
         },
+        "zones": [zone for zone in zones if zone["zone_number"] >= 0],
         "definitions": definitions,
     }
 
@@ -197,7 +239,7 @@ def validate_catalog(catalog):
             seen.add(definition_id)
         if definition["source_system"] != "zone_story":
             diagnostics.append(diagnostic(index, "wrong_source_system", "source_system must be zone_story"))
-        if not isinstance(definition["zone_number"], int) or definition["zone_number"] <= 0:
+        if not isinstance(definition["zone_number"], int) or definition["zone_number"] < 0:
             diagnostics.append(diagnostic(index, "invalid_zone_number", "zone_number must be positive"))
         if not isinstance(definition["source_area"], str) or not definition["source_area"]:
             diagnostics.append(diagnostic(index, "invalid_source_area", "source_area must be non-empty"))
@@ -218,8 +260,8 @@ def validate_catalog(catalog):
                     "definition revision does not match catalog revision",
                 )
             )
-        if definition["repeatable"] is not True:
-            diagnostics.append(diagnostic(index, "non_repeatable_initial_scope", definition_id))
+        if definition.get("daily_eligible") and (not definition["repeatable"] or not definition["active"]):
+            diagnostics.append(diagnostic(index, "invalid_daily_eligibility", definition_id))
 
     return diagnostics
 
@@ -274,7 +316,7 @@ def main():
                         help="build a production catalog from areas/AREA and areas/qst")
     parser.add_argument("--production-output", type=pathlib.Path,
                         help="write the generated production catalog JSON")
-    parser.add_argument("--content-revision", type=int, default=1)
+    parser.add_argument("--content-revision", type=int, default=2)
     parser.add_argument("--json", action="store_true", dest="as_json")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()

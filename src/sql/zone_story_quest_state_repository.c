@@ -1,73 +1,277 @@
 #include "sql/zone_story_quest_state_repository.h"
-
 #include "sql/sql.h"
-
+#include <array>
+#include <charconv>
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
+#include <set>
+#include <zlib.h>
 
+namespace
+{
 #ifndef __NO_MYSQL__
-#include <cstdlib>
-#include <mysql.h>
+using zone_story_quest_state::records;
+std::array<records, 256> buckets;
+std::array<size_t, 256> stored_bytes{};
+bool loaded_buckets = false;
+
+std::string packed_bucket(const records &values)
+{
+	const std::string payload = zone_story_quest_state::encode(values);
+	if (payload.size() < 1024)
+		return payload;
+	if (payload.size() > 64U * 1024U * 1024U)
+		return {};
+	uLongf size = compressBound(payload.size());
+	std::string compressed(size, '\0');
+	if (compress2(reinterpret_cast<Bytef *>(compressed.data()), &size,
+		      reinterpret_cast<const Bytef *>(payload.data()), payload.size(),
+		      Z_BEST_SPEED) != Z_OK)
+		return {};
+	compressed.resize(size);
+	return "ZSQZ|1|" + std::to_string(payload.size()) + "\n" +
+	       zone_story_quest_state::hex(compressed) + "\n";
+}
+
+bool unpack_bucket(std::string_view payload, records *values)
+{
+	if (!payload.starts_with("ZSQZ|1|"))
+		return zone_story_quest_state::decode_journal(payload, values);
+	const auto end = payload.find('\n');
+	if (end == std::string_view::npos || end <= 7 || !payload.ends_with('\n'))
+		return false;
+	size_t decoded_size = 0;
+	const auto number = payload.substr(7, end - 7);
+	const auto parsed =
+		std::from_chars(number.data(), number.data() + number.size(), decoded_size);
+	if (parsed.ec != std::errc{} || parsed.ptr != number.data() + number.size() ||
+	    decoded_size < 7 || decoded_size > 64U * 1024U * 1024U)
+		return false;
+	std::string compressed;
+	if (!zone_story_quest_state::unhex(payload.substr(end + 1, payload.size() - end - 2),
+					   &compressed))
+		return false;
+	std::string decoded(decoded_size, '\0');
+	uLongf actual = decoded_size;
+	uLong compressed_size = compressed.size();
+	if (uncompress2(reinterpret_cast<Bytef *>(decoded.data()), &actual,
+			reinterpret_cast<const Bytef *>(compressed.data()),
+			&compressed_size) != Z_OK ||
+	    actual != decoded_size || compressed_size != compressed.size())
+		return false;
+	return zone_story_quest_state::decode(decoded, values);
+}
+
+bool execute(const std::string &query)
+{
+	// Dynamic SQL bypasses qry's small stack buffer. All writes below use this
+	// same, guarded main-thread connection and one InnoDB transaction.
+	return sql_trace_exec("zone-story/state", query.data(), query.size(), true, true);
+}
+bool number(const char *text, unsigned long *value)
+{
+	if (!text || !*text)
+		return false;
+	char *end = nullptr;
+	errno = 0;
+	*value = std::strtoul(text, &end, 10);
+	return !errno && end != text && !*end;
+}
 #endif
+sql_zone_story_quest_state_result invalid(std::string *error, const char *message)
+{
+	if (error)
+		*error = message;
+	return sql_zone_story_quest_state_result::invalid;
+}
+}
 
 sql_zone_story_quest_state_result
 sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string *state,
-				std::string *error)
+				std::string *error, bool *legacy)
 {
 	if (!expected_catalog_revision || !state)
-	{
-		if (error)
-			*error = "zone-story SQL state output is null";
-		return sql_zone_story_quest_state_result::invalid;
-	}
+		return invalid(error, "invalid zone-story SQL state request");
 #ifdef __NO_MYSQL__
+	(void)legacy;
 	if (error)
 		*error = "SQL state repository is unavailable in a flat-file build";
 	return sql_zone_story_quest_state_result::io_error;
 #else
-	MYSQL_RES *result = db_query("SELECT state_version,catalog_revision,state_blob "
-				     "FROM zone_story_quest_state WHERE state_id=1 LIMIT 1");
+	loaded_buckets = false;
+	MYSQL_RES *result = db_query("SELECT state_id,state_version,catalog_revision,state_blob "
+				     "FROM zone_story_quest_state ORDER BY state_id");
 	if (!result)
 	{
 		if (error)
 			*error = "zone-story SQL state query failed";
 		return sql_zone_story_quest_state_result::io_error;
 	}
-	MYSQL_ROW row = mysql_fetch_row(result);
-	unsigned long *lengths = mysql_fetch_lengths(result);
-	if (!row)
+	std::array<records, 256> candidate;
+	std::array<size_t, 256> candidate_bytes{};
+	bool aggregate = false;
+	size_t count = 0;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)))
 	{
-		mysql_free_result(result);
-		return sql_zone_story_quest_state_result::not_found;
+		const unsigned long *lengths = mysql_fetch_lengths(result);
+		unsigned long id = 0, version = 0, revision = 0;
+		if (!lengths || !row[3] || !number(row[0], &id) || !number(row[1], &version) ||
+		    !number(row[2], &revision) || id < 1 || id > 255 ||
+		    (version != 1 && version != 2) ||
+		    (revision != expected_catalog_revision &&
+		     !(revision == 1 && expected_catalog_revision == 2)))
+		{
+			mysql_free_result(result);
+			return invalid(
+				error,
+				"zone-story SQL state schema or catalog revision is invalid");
+		}
+		++count;
+		const std::string payload(row[3], lengths[3]);
+		if (id == 1 && payload.starts_with("ZSQF|"))
+		{
+			aggregate = true;
+			for (auto &[key, value] : zone_story_quest_state::split_document(payload))
+				candidate[zone_story_quest_state::bucket(key)].emplace(
+					std::move(key), std::move(value));
+		}
+		else
+		{
+			records values;
+			if (version != 2 || !unpack_bucket(payload, &values))
+			{
+				mysql_free_result(result);
+				return invalid(error, "zone-story SQL bucket is corrupt");
+			}
+			for (const auto &[key, value] : values)
+				if (zone_story_quest_state::bucket(key) != id || value.empty())
+				{
+					mysql_free_result(result);
+					return invalid(
+						error,
+						"zone-story SQL record is in the wrong bucket");
+				}
+			candidate[id] = std::move(values);
+			candidate_bytes[id] = payload.size();
+		}
 	}
-	if (!row[0] || !row[1] || !row[2] || !lengths)
-	{
-		mysql_free_result(result);
-		if (error)
-			*error = "zone-story SQL state row is null";
-		return sql_zone_story_quest_state_result::invalid;
-	}
-	char *version_end = nullptr;
-	char *revision_end = nullptr;
-	errno = 0;
-	const unsigned long version = std::strtoul(row[0], &version_end, 10);
-	const int version_errno = errno;
-	errno = 0;
-	const unsigned long revision = std::strtoul(row[1], &revision_end, 10);
-	const int revision_errno = errno;
-	if (version_errno || revision_errno || version_end == row[0] || revision_end == row[1] ||
-	    *version_end || *revision_end || version != 1 ||
-	    revision != expected_catalog_revision ||
-	    revision > std::numeric_limits<uint32_t>::max())
-	{
-		mysql_free_result(result);
-		if (error)
-			*error = "zone-story SQL state schema or catalog revision is invalid";
-		return sql_zone_story_quest_state_result::invalid;
-	}
-	state->assign(row[2], lengths[2]);
 	mysql_free_result(result);
+	if (aggregate && count != 1)
+		return invalid(error, "mixed legacy and record zone-story SQL state");
+	if (count && !candidate[1].count("meta"))
+		return invalid(error, "zone-story SQL metadata is missing");
+	buckets = std::move(candidate);
+	stored_bytes = candidate_bytes;
+	loaded_buckets = true;
+	if (legacy)
+		*legacy = aggregate;
+	if (!count)
+		return sql_zone_story_quest_state_result::not_found;
+	records values;
+	for (const auto &bucket : buckets)
+		values.insert(bucket.begin(), bucket.end());
+	*state = zone_story_quest_state::document(values);
+	return sql_zone_story_quest_state_result::ok;
+#endif
+}
+
+sql_zone_story_quest_state_result
+sql_zone_story_quest_records_save(uint32_t catalog_revision,
+				  const zone_story_quest_state::changes &updates,
+				  std::string *error)
+{
+	if (!catalog_revision)
+		return invalid(error, "zone-story SQL catalog revision is invalid");
+#ifdef __NO_MYSQL__
+	(void)updates;
+	if (error)
+		*error = "SQL state repository is unavailable in a flat-file build";
+	return sql_zone_story_quest_state_result::io_error;
+#else
+	if (!loaded_buckets && !updates.replace)
+		return invalid(error, "zone-story SQL state has not been loaded");
+	std::map<unsigned, records> changed;
+	if (updates.replace)
+	{
+		for (unsigned id = 1; id <= 255; ++id)
+			if (!buckets[id].empty() || stored_bytes[id] > 7)
+				changed[id] = {};
+		changed[1] = {};
+	}
+	for (const auto &[key, value] : updates.values)
+	{
+		const unsigned id = zone_story_quest_state::bucket(key);
+		const auto previous = buckets[id].find(key);
+		if (!updates.replace &&
+		    ((value.empty() && previous == buckets[id].end()) ||
+		     (previous != buckets[id].end() && previous->second == value)))
+			continue;
+		if (!changed.count(id))
+			changed[id] = updates.replace ? records() : buckets[id];
+		if (value.empty())
+			changed[id].erase(key);
+		else
+			changed[id][key] = value;
+	}
+	const auto metadata = changed.find(1);
+	if ((metadata != changed.end() && metadata->second.count("meta") &&
+	     metadata->second.at("meta").empty()) ||
+	    (updates.replace && (metadata == changed.end() || !metadata->second.count("meta"))) ||
+	    (!updates.replace && !buckets[1].count("meta") &&
+	     (metadata == changed.end() || !metadata->second.count("meta"))))
+		return invalid(error, "zone-story SQL metadata is missing");
+	if (changed.empty())
+		return sql_zone_story_quest_state_result::ok;
+	std::vector<std::string> statements;
+	std::map<unsigned, size_t> next_stored;
+	for (const auto &[id, values] : changed)
+	{
+		// Fast compressed snapshots keep changed bucket writes small as receipts
+		// accumulate. Replacing a snapshot also physically removes erased data.
+		const std::string payload = packed_bucket(values);
+		if (payload.empty() || payload.size() >= 16U * 1024U * 1024U)
+			return invalid(error, "zone-story SQL bucket exceeds encoding capacity");
+		char *escaped = sql_escape_string(payload.c_str());
+		if (!escaped)
+		{
+			if (error)
+				*error = "zone-story SQL bucket could not be escaped";
+			return sql_zone_story_quest_state_result::io_error;
+		}
+		statements.push_back(
+			"INSERT INTO zone_story_quest_state "
+			"(state_id,state_version,catalog_revision,state_blob,updated_at) VALUES (" +
+			std::to_string(id) + ",2," + std::to_string(catalog_revision) + ",'" +
+			escaped +
+			"',UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE state_version=VALUES(state_version),"
+			"catalog_revision=VALUES(catalog_revision),state_blob=VALUES(state_blob),updated_at=VALUES(updated_at)");
+		free(escaped);
+		next_stored[id] = payload.size();
+	}
+	bool saved = execute("START TRANSACTION");
+	for (const auto &statement : statements)
+	{
+		if (!saved)
+			break;
+		saved = execute(statement);
+	}
+	if (saved)
+		saved = execute("COMMIT");
+	if (!saved)
+	{
+		execute("ROLLBACK");
+		if (error)
+			*error = "zone-story SQL state transaction failed";
+		return sql_zone_story_quest_state_result::io_error;
+	}
+	for (auto &[id, values] : changed)
+	{
+		buckets[id] = std::move(values);
+		stored_bytes[id] = next_stored.at(id);
+	}
+	loaded_buckets = true;
 	return sql_zone_story_quest_state_result::ok;
 #endif
 }
@@ -76,40 +280,6 @@ sql_zone_story_quest_state_result sql_zone_story_quest_state_save(uint32_t catal
 								  const std::string &state,
 								  std::string *error)
 {
-	/* MEDIUMTEXT is capped at 16 MiB; reject larger blobs before issuing SQL. */
-	if (!catalog_revision || state.size() > 16U * 1024U * 1024U)
-	{
-		if (error)
-			*error = "zone-story SQL state is oversized";
-		return sql_zone_story_quest_state_result::invalid;
-	}
-#ifdef __NO_MYSQL__
-	(void)catalog_revision;
-	(void)state;
-	if (error)
-		*error = "SQL state repository is unavailable in a flat-file build";
-	return sql_zone_story_quest_state_result::io_error;
-#else
-	char *escaped = sql_escape_string(state.c_str());
-	if (!escaped)
-	{
-		if (error)
-			*error = "zone-story SQL state could not be escaped";
-		return sql_zone_story_quest_state_result::io_error;
-	}
-	const bool saved = qry(
-		"INSERT INTO zone_story_quest_state (state_id,state_version,catalog_revision,state_blob,updated_at) "
-		"VALUES (1,1,%u,'%s',UTC_TIMESTAMP(6)) "
-		"ON DUPLICATE KEY UPDATE state_version=VALUES(state_version), "
-		"catalog_revision=VALUES(catalog_revision),state_blob=VALUES(state_blob),updated_at=VALUES(updated_at)",
-		catalog_revision, escaped);
-	free(escaped);
-	if (!saved)
-	{
-		if (error)
-			*error = "zone-story SQL state write failed";
-		return sql_zone_story_quest_state_result::io_error;
-	}
-	return sql_zone_story_quest_state_result::ok;
-#endif
+	return sql_zone_story_quest_records_save(
+		catalog_revision, { zone_story_quest_state::split_document(state), true }, error);
 }

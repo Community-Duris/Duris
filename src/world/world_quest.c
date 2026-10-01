@@ -627,21 +627,43 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 	}
 
 	half_chop(args, name, who);
-	if (*name && isname(name, "daily"))
+	if (*name && (!str_cmp(name, "daily") || !str_cmp(name, "zone")))
 	{
-		if (zone_story_quest_runtime::service())
+		auto *tracker = zone_story_quest_runtime::service();
+		if (!tracker)
 		{
-			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
-					    ch->desc->term_type != TERM_SKIP_ANSI;
-			std::string daily = zone_story_quest_runtime::render_daily(ch, colors);
-			if (!daily.empty())
-				send_to_char(daily.c_str(), ch);
+			send_to_char("The quest journal is unavailable.\r\n", ch);
+			return;
 		}
+		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+				    ch->desc->term_type != TERM_SKIP_ANSI;
+		const bool daily = !str_cmp(name, "daily");
+		std::string output, error;
+		if (*who)
+		{
+			const int32_t zone = tracker->resolve_zone(who, &error);
+			output = zone < 0 ?
+					 error + "\r\n" :
+					 tracker->render_journal(
+						 zone_story_quest_runtime::current_season_id(),
+						 GET_PID(ch), zone, GET_LEVEL(ch), GET_RACEWAR(ch),
+						 static_cast<int64_t>(time(NULL)), daily, colors);
+		}
+		else if (daily)
+		{
+			output = zone_story_quest_runtime::render_daily(ch, colors);
+			if (output.empty())
+				output = "Daily quests are currently disabled.\r\n";
+		}
+		else
+			output = "Use 'quest zone <area>' to view a discovered area's journal.\r\n";
+		if (ch->desc)
+			page_string(ch->desc, output.data(), true);
+		else
+			send_to_char(output.c_str(), ch);
 		return;
 	}
-	/* When a populated daily assignment exists, show its player-facing details
-	 * alongside the ordinary bartender/world quest.  Empty or disabled daily
-	 * state deliberately contributes no text. */
+	/* Show discovered-area daily progress alongside the ordinary world quest. */
 	if (zone_story_quest_runtime::service())
 	{
 		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
