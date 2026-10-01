@@ -117,6 +117,16 @@ constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
 	"c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
 	"6249c3940ad0b39670044f395df0f6dadb6228b08a393796c1e3df7625d4c3eb";
+/* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID =
+	"0050_item_extra_description_fulltext_unique";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 51;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
+	"63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8";
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
+	"d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78";
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
+	"1dab744acfa6226abdefd33a4ef0634b7dc319d77165ac428ea2c7833debd7f5";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING "
 	"utf8mb4))),16,'0')),CONVERT(migration_id USING "

@@ -17,13 +17,15 @@ python3 scripts/migration_runner.py run
 ```
 
 The migration manifest, compiled compatibility head, and runtime manifest now end
-at `0050_item_extra_description_fulltext_unique`, with 223 expected runtime tables.
+at `0051_player_item_runtime_state`, with 224 expected runtime tables.
+Migration 0051 retains the complete carried-item runtime payload through SQL save
+and load; master already applied the identical SQL and verifier bytes as 0031.
 Migration 0050 replaces the description-prefix unique indexes with indexes over
 the complete description SHA-256. It preserves distinct long, case, and accent
 variants and refuses duplicate complete values before permanent DDL; it never
 deletes those conflicting rows. The metadata fingerprints were measured on
 disposable MySQL 8.0.46 and MariaDB 10.11 schemas using the real immutable runner.
-Completed canonical and staging histories reach identical schema metadata on
+Completed canonical, staging, and upgraded-master histories reach identical schema metadata on
 each engine. Migration 0042 records
 a nullable keeper roaming policy; legacy rows remain unknown until a
 shopkeeper checkpoint. Migration 0043 records nullable item condition, and
@@ -93,10 +95,11 @@ python3 scripts/migration_runner.py \
 | 48 | `0047_quest_xp_receipt` |
 | 49 | `0048_quest_xp_entitlement` |
 | 50 | `0049_player_spell_effect_receipt` |
+| 51 | `0051_player_item_runtime_state` |
 
 The canonical manifest continues to reject this fork before any migration runs.
-The explicit manifest appends the five missing steps and produces a different
-history checksum from the canonical 50-step history. Both completed checksums
+The explicit manifest appends the six missing steps and produces a different
+history checksum from the canonical 51-step history. All supported completed checksums
 are compiled into the boot gate; every historical row is recomputed and matched
 to its stored state. Partial histories and mixed head/state identities fail.
 
@@ -105,6 +108,62 @@ environment still requires the runner's target allow-list, fresh verified backup
 quiescence checks, and explicit operational authorization. This does not change
 accounting activation or resolve ownership holds.
 
+## Upgrading a master database through immutable 0031
+
+Master recorded `0031_player_item_runtime_state` where accounting recorded
+`0031_economy_accounting`. A database with the exact master prefix through 0031
+must select the explicit master upgrade manifest on its verified, isolated clone:
+
+```sh
+python3 scripts/migration_runner.py \
+  --manifest migrations/migration_manifest.master_0031.json run
+./migrations/verify_runtime_compatibility.sh --schema-only
+```
+
+This manifest retains all 31 recorded master receipts, including descriptions,
+checksums, runner versions, and sequence numbers. Its master step 0031 points to
+accounting's `0051_player_item_runtime_state` files because their sealed bytes
+are identical. It appends accounting migrations 0031 through 0050 at sequences
+32 through 51. Immutable migration IDs retain their assigned names; the manifest
+sequence is the application order, as it already is for the staging fork.
+The completed head is therefore `0050_item_extra_description_fulltext_unique`
+at **sequence 51**, with the same 224-table runtime schema as canonical accounting.
+The already-applied runtime-state migration is not recorded again under 0051.
+
+Use the canonical manifest for a fresh baseline or a history matching canonical
+accounting; use the staging manifest for the historical staging 0045 fork; use
+this manifest for the exact master 0031 prefix or its partially completed upgrade.
+Keep using the selected manifest for retries and future upgrades. The wrong
+manifest fails before apply. Do not edit receipts, re-adopt an existing baseline,
+or renumber an applied prefix to make a manifest fit. Unknown historical variants
+continue to fail closed and need separate clone qualification.
+
+The shell verifier, compiled boot gate, and isolated-restore qualifier accept
+only the three complete, pinned histories. They recompute every receipt and
+match the actual full-history checksum to its stored count/checksum state.
+A database at master 0031 still cannot boot the accounting binary until all
+20 accounting steps are applied and verified. A successful replay appends no
+receipts and preserves the original receipt timestamps and item runtime payloads.
+Schema compatibility does not activate economic accounting or resolve release
+qualification and custody holds.
+
+The native history-fork fixture exercises the real runner, append/replay,
+protected data, schema convergence, shell/compiled predicates, restore history,
+and tamper refusal on task-owned MySQL 8.0 and MariaDB 10.11 containers:
+
+```sh
+python3 tests/async/test_staging_migration_fork_mysql.py
+# To prove an actual master bootstrap upgrade, capture the reviewed master ref:
+git show <reviewed-master-commit>:migrations/bootstrap_multithread_safe.sql > /tmp/master-bootstrap.sql
+python3 tests/async/test_staging_migration_fork_mysql.py \
+  --master-bootstrap /tmp/master-bootstrap.sql
+```
+
+The optional bootstrap is used only for the disposable master-prefix fixture.
+Production execution retains the runner's existing authorization, allow-list,
+backup, and quiescence requirements. Rebuild and stage the updated binary before
+attempting an accounting boot against the upgraded clone.
+
 ## Boot gate
 
 `initialize_mysql()` opens the main connection through the shared trusted connection
@@ -112,7 +171,7 @@ constructor. Before any lookup write, item UID reservation, pool/worker startup,
 recovery replay, listener acceptance, or gameplay publication, it verifies:
 
 - the sealed baseline ID and table-name fingerprint;
-- the exact completed canonical or staging-fork history, including all seven
+- the exact completed canonical, staging-fork, or master-upgrade history, including all seven
   immutable receipt fields in sequence order, and its matching stored count and
   checksum; checking only the last row or the stored digest is insufficient;
 - all 223 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;

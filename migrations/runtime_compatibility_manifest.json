@@ -42,5 +42,12 @@
     "history_checksum": "6249c3940ad0b39670044f395df0f6dadb6228b08a393796c1e3df7625d4c3eb"
   },
   "migration_history_sql": "SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 52",
-  "extra_description_generation_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND data_type='binary' AND character_maximum_length=32 AND LOWER(extra) LIKE '%stored generated%' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CONCAT(CHAR(92),CHAR(39),CHAR(92),CHAR(39)),CONCAT(CHAR(39),CHAR(39))),CHAR(96),''),' ',''),'_utf8mb4',''))='unhex(sha2(coalesce(description,''''),256))'"
+  "extra_description_generation_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND data_type='binary' AND character_maximum_length=32 AND LOWER(extra) LIKE '%stored generated%' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CONCAT(CHAR(92),CHAR(39),CHAR(92),CHAR(39)),CONCAT(CHAR(39),CHAR(39))),CHAR(96),''),' ',''),'_utf8mb4',''))='unhex(sha2(coalesce(description,''''),256))'",
+  "master_0031_migration_head": {
+    "id": "0050_item_extra_description_fulltext_unique",
+    "sequence": 51,
+    "apply_checksum": "63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8",
+    "verify_checksum": "d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78",
+    "history_checksum": "1dab744acfa6226abdefd33a4ef0634b7dc319d77165ac428ea2c7833debd7f5"
+  }
 }

@@ -20,7 +20,8 @@ FIELDS = {
     "manifest_version", "baseline_id", "baseline_table_count",
     "baseline_table_fingerprint", "current_table_count",
     "runtime_table_sql_list", "normalized_metadata_fingerprints", "migration_head",
-    "connection", "lookup", "staging_0045_migration_head", "migration_history_sql",
+    "connection", "lookup", "staging_0045_migration_head", "master_0031_migration_head",
+    "migration_history_sql",
     "extra_description_generation_sql",
 }
 HEAD_FIELDS = {"id", "sequence", "apply_checksum", "verify_checksum",
@@ -170,7 +171,8 @@ def load() -> dict:
         raise migration_runner.MigrationContractError(
             "runtime metadata fingerprints are invalid")
     if any(not isinstance(value[name], dict) or set(value[name]) != HEAD_FIELDS
-           for name in ("migration_head", "staging_0045_migration_head")) or \
+           for name in ("migration_head", "staging_0045_migration_head",
+                        "master_0031_migration_head")) or \
             not isinstance(value["connection"], dict) or \
             set(value["connection"]) != CONNECTION_FIELDS or \
             value["connection"] != EXPECTED_CONNECTION or value["lookup"] != {
@@ -214,9 +216,24 @@ def validate() -> dict:
             for item in migration.migrations[44:49]) or \
             staging.migrations[50] != migration.migrations[50]:
         raise migration_runner.MigrationContractError("staging migration append drift")
+    master = migration_runner.load_manifest(
+        ROOT / "migrations/migration_manifest.master_0031.json")
+    # Receipt IDs are immutable names; sequence is the declared application order.
+    # Reuse 0051's identical SQL/verifier bytes without renaming master's receipt.
+    if len(master.migrations) != 51 or master.baseline_id != migration.baseline_id or \
+            master.required_tables != migration.required_tables or \
+            master.migrations[:30] != migration.migrations[:30] or \
+            master.migrations[30] != replace(migration.migrations[50], sequence=31,
+                migration_id="0031_player_item_runtime_state",
+                description="Preserve complete crafted item runtime state through SQL save and load") or \
+            master.migrations[31:] != tuple(
+                replace(item, sequence=item.sequence + 1)
+                for item in migration.migrations[30:50]):
+        raise migration_runner.MigrationContractError("master migration append drift")
     head = migration.migrations[-1]
     for name, contract in (("migration_head", migration),
-                           ("staging_0045_migration_head", staging)):
+                           ("staging_0045_migration_head", staging),
+                           ("master_0031_migration_head", master)):
         final = contract.migrations[-1]
         applied = [migration_runner.AppliedMigration(
             item.migration_id, item.sequence, item.description, item.apply_checksum,
@@ -280,7 +297,9 @@ def validate() -> dict:
                           ("HISTORY_CHECKSUM", "history_checksum")):
         for prefix, name in (("RUNTIME_MIGRATION_", "migration_head"),
                              ("RUNTIME_STAGING_0045_MIGRATION_",
-                              "staging_0045_migration_head")):
+                              "staging_0045_migration_head"),
+                             ("RUNTIME_MASTER_0031_MIGRATION_",
+                              "master_0031_migration_head")):
             match = re.search(rf'{prefix}{suffix}\s*=\s*("[^\"]*"|[0-9]+);', header)
             if match is None or json.loads(match.group(1)) != value[name][field]:
                 raise migration_runner.MigrationContractError("compiled runtime history drift")
