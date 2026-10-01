@@ -188,6 +188,8 @@ test-db:
 	bash tests/async/run_legacy_character_index_mysql.sh
 	CHARACTER_INDEX_DB_IMAGE=mariadb:10.11 bash tests/async/run_legacy_character_index_mysql.sh
 	tests/async/run_legacy_migration_mysql.sh
+	TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.4 tests/async/run_telemetry_repository_sql.sh
+	TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:11.4 tests/async/run_telemetry_repository_sql.sh
 	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mysql:8.0
 	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mariadb:11.4
 	tests/async/run_pet_repository_mysql.sh
