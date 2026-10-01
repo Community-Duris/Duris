@@ -21,7 +21,8 @@ constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
 constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_DEATH_GATE_QUERY_MAX = 1;
-constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = 1;
+// Reward obligations and retained XP entitlements are separate bounded reads.
+constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = 2;
 // The primary-key lock precedes the consistent view. Name-based requests also
 // resolve the PID before starting that transaction, then revalidate under lock.
 constexpr size_t PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX = 1;
@@ -76,6 +77,7 @@ enum player_load_item_override : uint16_t
 	PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS = UINT16_C(1) << 8,
 	PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS = UINT16_C(1) << 9,
 	PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS = UINT16_C(1) << 10,
+	PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME = UINT16_C(1) << 11,
 };
 
 constexpr uint16_t PLAYER_LOAD_ITEM_OVERRIDE_ALL =
