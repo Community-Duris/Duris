@@ -40,6 +40,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0048_quest_xp_entitlement.sql",
     ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
     ROOT / "migrations" / "economic_baseline.sql",
+    ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
 )
 
 ROOT_FIELDS = {
