@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "62a680deab9da0b9e0912f09397b78277f5de88e",
+  "source_commit": "4ac592b2f46156d2bd19c1c3c304ad5b703fd263",
   "census_complete": true,
   "writers": [
     {
@@ -5313,7 +5313,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          2134,
+          2135,
           "item_publication"
         ]
       ],
@@ -5358,17 +5358,17 @@
       "sites": [
         [
           "src/world/handler.c",
-          2105,
+          2106,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          2128,
+          2129,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          2208,
+          2209,
           "item_lifecycle"
         ]
       ],
@@ -8538,7 +8538,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          6406,
+          6412,
           "coin_bulk_mutation"
         ]
       ],
@@ -8575,22 +8575,22 @@
       "sites": [
         [
           "src/world/handler.c",
-          6552,
+          6558,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          6556,
+          6562,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          6565,
+          6571,
           "coin_bulk_mutation"
         ],
         [
           "src/world/handler.c",
-          6566,
+          6572,
           "coin_bulk_mutation"
         ]
       ],
@@ -8627,22 +8627,22 @@
       "sites": [
         [
           "src/world/handler.c",
-          2847,
+          2854,
           "coin_bulk_mutation"
         ],
         [
           "src/world/handler.c",
-          2851,
+          2858,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          2871,
+          2878,
           "coin_bulk_mutation"
         ],
         [
           "src/world/handler.c",
-          2876,
+          2883,
           "item_lifecycle"
         ]
       ],
@@ -9053,27 +9053,27 @@
       "sites": [
         [
           "src/world/handler.c",
-          2157,
+          2158,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          2162,
+          2163,
           "coin_bulk_mutation"
         ],
         [
           "src/world/handler.c",
-          2163,
+          2164,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          2200,
+          2201,
           "economic_submit"
         ],
         [
           "src/world/handler.c",
-          2203,
+          2204,
           "economic_submit"
         ]
       ],
@@ -9216,27 +9216,27 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          3487,
-          "item_publication"
-        ],
-        [
-          "src/classes/necromancy.c",
-          3488,
-          "item_publication"
-        ],
-        [
-          "src/classes/necromancy.c",
           3491,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3492,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3495,
           "item_lifecycle"
         ],
         [
           "src/classes/necromancy.c",
-          3500,
+          3504,
           "item_lifecycle"
         ],
         [
           "src/classes/necromancy.c",
-          3501,
+          3505,
           "item_publication"
         ]
       ],
@@ -9281,12 +9281,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          4453,
+          4460,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4454,
+          4461,
           "item_lifecycle"
         ]
       ],
@@ -9330,7 +9330,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          3981,
+          3988,
           "item_publication"
         ]
       ],
@@ -9374,27 +9374,27 @@
       "sites": [
         [
           "src/world/handler.c",
-          3894,
+          3901,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          3909,
+          3916,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          5143,
+          5150,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          5159,
+          5166,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          5167,
+          5174,
           "item_lifecycle"
         ]
       ],
@@ -9480,7 +9480,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          4635,
+          4642,
           "item_lifecycle"
         ]
       ],
@@ -9702,27 +9702,27 @@
       "sites": [
         [
           "src/world/handler.c",
-          4523,
+          4530,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4531,
+          4538,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          4535,
+          4542,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4539,
+          4546,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4541,
+          4548,
           "item_lifecycle"
         ]
       ],
@@ -9817,22 +9817,22 @@
       "sites": [
         [
           "src/world/handler.c",
-          4086,
+          4093,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4088,
+          4095,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          4092,
+          4099,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4116,
+          4123,
           "item_lifecycle"
         ]
       ],
@@ -9876,7 +9876,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          4789,
+          4796,
           "economic_submit"
         ]
       ],
@@ -9920,17 +9920,17 @@
       "sites": [
         [
           "src/world/handler.c",
-          4021,
+          4028,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4030,
+          4037,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4036,
+          4043,
           "item_lifecycle"
         ]
       ],
@@ -9974,17 +9974,17 @@
       "sites": [
         [
           "src/world/handler.c",
-          4278,
+          4285,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4284,
+          4291,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          4297,
+          4304,
           "item_publication"
         ]
       ],
@@ -10106,12 +10106,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          3768,
+          3775,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3769,
+          3776,
           "item_lifecycle"
         ]
       ],
@@ -10157,17 +10157,17 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          2961,
-          "item_publication"
-        ],
-        [
-          "src/classes/necromancy.c",
-          2962,
+          2965,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
           2966,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          2970,
           "item_lifecycle"
         ]
       ],
@@ -10267,12 +10267,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          2644,
+          2648,
           "item_lifecycle"
         ],
         [
           "src/classes/necromancy.c",
-          2649,
+          2653,
           "item_publication"
         ]
       ],
@@ -10509,12 +10509,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          2278,
+          2282,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          2289,
+          2293,
           "item_lifecycle"
         ]
       ],
@@ -10561,12 +10561,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          1791,
+          1795,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          1809,
+          1813,
           "item_lifecycle"
         ]
       ],
@@ -10613,12 +10613,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          2056,
+          2060,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          2068,
+          2072,
           "item_lifecycle"
         ]
       ],
@@ -10665,12 +10665,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          2529,
+          2533,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          2540,
+          2544,
           "item_lifecycle"
         ]
       ],
@@ -10717,12 +10717,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          49,
+          50,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          51,
+          52,
           "item_publication"
         ]
       ],
@@ -10769,12 +10769,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          1186,
+          1190,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          1200,
+          1204,
           "item_lifecycle"
         ]
       ],
@@ -10821,12 +10821,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          726,
+          730,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          754,
+          758,
           "item_lifecycle"
         ]
       ],
@@ -11064,32 +11064,32 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          1439,
+          1443,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          1440,
+          1444,
           "item_lifecycle"
         ],
         [
           "src/classes/necromancy.c",
-          1468,
+          1472,
           "item_publication"
-        ],
-        [
-          "src/classes/necromancy.c",
-          1471,
-          "item_lifecycle"
         ],
         [
           "src/classes/necromancy.c",
           1475,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/necromancy.c",
+          1479,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          1497,
+          1501,
           "item_lifecycle"
         ]
       ],
@@ -11136,12 +11136,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          1309,
+          1313,
           "item_publication"
         ],
         [
           "src/classes/necromancy.c",
-          1310,
+          1314,
           "item_lifecycle"
         ]
       ],
@@ -11361,12 +11361,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          4350,
+          4357,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          4355,
+          4362,
           "item_publication"
         ]
       ],
@@ -11411,7 +11411,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          4390,
+          4397,
           "economic_submit"
         ]
       ],
@@ -11448,7 +11448,7 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          1290,
+          1294,
           "item_publication"
         ]
       ],
@@ -11495,7 +11495,7 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          1263,
+          1267,
           "item_lifecycle"
         ]
       ],
@@ -11541,12 +11541,12 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          2753,
+          2757,
           "item_lifecycle"
         ],
         [
           "src/classes/necromancy.c",
-          2758,
+          2762,
           "item_publication"
         ]
       ],
@@ -11648,22 +11648,22 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          3448,
-          "item_publication"
-        ],
-        [
-          "src/classes/necromancy.c",
-          3449,
-          "item_publication"
-        ],
-        [
-          "src/classes/necromancy.c",
           3452,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3453,
+          "item_publication"
+        ],
+        [
+          "src/classes/necromancy.c",
+          3456,
           "item_lifecycle"
         ],
         [
           "src/classes/necromancy.c",
-          3457,
+          3461,
           "item_lifecycle"
         ]
       ],
@@ -12213,7 +12213,7 @@
       "sites": [
         [
           "src/cmd/interp.c",
-          1737,
+          1738,
           "money_helper"
         ]
       ],
@@ -14028,7 +14028,7 @@
         ],
         [
           "src/cmd/actobj.c",
-          10486,
+          10493,
           "economic_submit"
         ]
       ],
@@ -14112,32 +14112,32 @@
       "sites": [
         [
           "src/world/handler.c",
-          5751,
-          "item_publication"
-        ],
-        [
-          "src/world/handler.c",
           5757,
-          "item_lifecycle"
-        ],
-        [
-          "src/world/handler.c",
-          5761,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          5776,
+          5763,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          5781,
+          5767,
           "item_publication"
         ],
         [
           "src/world/handler.c",
           5782,
+          "item_lifecycle"
+        ],
+        [
+          "src/world/handler.c",
+          5787,
+          "item_publication"
+        ],
+        [
+          "src/world/handler.c",
+          5788,
           "item_publication"
         ]
       ],
@@ -14543,7 +14543,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          1953,
+          1954,
           "item_lifecycle"
         ]
       ],
@@ -14764,7 +14764,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          1909,
+          1910,
           "item_lifecycle"
         ]
       ],
@@ -15048,22 +15048,17 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          10132,
+          10139,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10135,
+          10142,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10148,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          10149,
+          10155,
           "item_publication"
         ],
         [
@@ -15073,17 +15068,22 @@
         ],
         [
           "src/cmd/actobj.c",
-          10158,
+          10163,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10160,
+          10165,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10161,
+          10167,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          10168,
           "item_publication"
         ]
       ],
@@ -15774,47 +15774,47 @@
         ],
         [
           "src/cmd/actobj.c",
-          8549,
+          8556,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8557,
+          8564,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8567,
+          8574,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8577,
+          8584,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8587,
+          8594,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8940,
+          8947,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8944,
+          8951,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8948,
+          8955,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8952,
+          8959,
           "item_publication"
         ]
       ],
@@ -15982,32 +15982,32 @@
       "sites": [
         [
           "src/world/handler.c",
-          3365,
+          3372,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          3384,
+          3391,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3386,
+          3393,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3400,
+          3407,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3404,
+          3411,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3409,
+          3416,
           "item_lifecycle"
         ]
       ],
@@ -16877,7 +16877,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          3200,
+          3207,
           "item_publication"
         ]
       ],
@@ -16921,7 +16921,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          2031,
+          2032,
           "item_publication"
         ]
       ],
@@ -16965,7 +16965,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          3054,
+          3061,
           "item_publication"
         ]
       ],
@@ -17009,7 +17009,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          3261,
+          3268,
           "item_publication"
         ]
       ],
@@ -17053,22 +17053,27 @@
       "sites": [
         [
           "src/world/handler.c",
-          2216,
+          2217,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          2287,
-          "item_publication"
-        ],
-        [
-          "src/world/handler.c",
-          2335,
+          2294,
           "item_publication"
         ],
         [
           "src/world/handler.c",
           2342,
+          "item_publication"
+        ],
+        [
+          "src/world/handler.c",
+          2349,
+          "item_publication"
+        ],
+        [
+          "src/world/handler.c",
+          2250,
           "item_publication"
         ]
       ],
@@ -17112,12 +17117,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          2766,
+          2773,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          2811,
+          2818,
           "item_publication"
         ]
       ],
@@ -17161,7 +17166,7 @@
       "sites": [
         [
           "src/world/handler.c",
-          2914,
+          2921,
           "item_publication"
         ]
       ],
@@ -17456,28 +17461,23 @@
       "sites": [
         [
           "src/world/handler.c",
-          5338,
+          5344,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          5343,
-          "item_publication"
-        ],
-        [
-          "src/world/handler.c",
-          5389,
-          "item_publication"
-        ],
-        [
-          "src/world/handler.c",
-          5390,
+          5349,
           "item_publication"
         ],
         [
           "src/world/handler.c",
           5395,
-          "item_lifecycle"
+          "item_publication"
+        ],
+        [
+          "src/world/handler.c",
+          5396,
+          "item_publication"
         ],
         [
           "src/world/handler.c",
@@ -17486,8 +17486,8 @@
         ],
         [
           "src/world/handler.c",
-          5411,
-          "item_publication"
+          5407,
+          "item_lifecycle"
         ],
         [
           "src/world/handler.c",
@@ -17496,12 +17496,17 @@
         ],
         [
           "src/world/handler.c",
-          5425,
+          5423,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          5429,
+          5431,
+          "item_publication"
+        ],
+        [
+          "src/world/handler.c",
+          5435,
           "item_lifecycle"
         ]
       ],
@@ -17884,7 +17889,7 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          9837,
+          9844,
           "item_lifecycle"
         ]
       ],
@@ -18342,22 +18347,22 @@
       "sites": [
         [
           "src/world/handler.c",
-          2022,
+          2023,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          1936,
+          1937,
           "economic_submit"
         ],
         [
           "src/world/handler.c",
-          1852,
+          1853,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          2024,
+          2025,
           "item_publication"
         ]
       ],
@@ -18499,12 +18504,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          5536,
+          5542,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          5541,
+          5547,
           "item_lifecycle"
         ]
       ],
@@ -18548,12 +18553,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          9826,
+          9833,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          9827,
+          9834,
           "item_lifecycle"
         ]
       ],
@@ -18862,12 +18867,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          135,
+          136,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          141,
+          142,
           "item_lifecycle"
         ]
       ],
@@ -19439,12 +19444,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          1816,
+          1817,
           "item_lifecycle"
         ],
         [
           "src/world/handler.c",
-          1819,
+          1820,
           "item_publication"
         ]
       ],
@@ -19787,7 +19792,7 @@
         ],
         [
           "src/cmd/actobj.c",
-          8032,
+          8039,
           "item_lifecycle"
         ],
         [
@@ -20424,27 +20429,27 @@
       "sites": [
         [
           "src/world/handler.c",
-          1882,
+          1883,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          2237,
+          2238,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3065,
+          3072,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3168,
+          3175,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          3225,
+          3232,
           "item_publication"
         ]
       ],
@@ -20488,12 +20493,12 @@
       "sites": [
         [
           "src/world/handler.c",
-          2352,
+          2359,
           "item_publication"
         ],
         [
           "src/world/handler.c",
-          2353,
+          2360,
           "item_publication"
         ]
       ],
@@ -25151,17 +25156,12 @@
       "sites": [
         [
           "src/mob/mobact.c",
-          8597,
-          "item_publication"
-        ],
-        [
-          "src/mob/mobact.c",
           8598,
           "item_publication"
         ],
         [
           "src/mob/mobact.c",
-          8606,
+          8599,
           "item_publication"
         ],
         [
@@ -25171,12 +25171,12 @@
         ],
         [
           "src/mob/mobact.c",
-          8623,
+          8608,
           "item_publication"
         ],
         [
           "src/mob/mobact.c",
-          8625,
+          8624,
           "item_publication"
         ],
         [
@@ -25186,12 +25186,12 @@
         ],
         [
           "src/mob/mobact.c",
-          8630,
+          8627,
           "item_publication"
         ],
         [
           "src/mob/mobact.c",
-          8640,
+          8631,
           "item_publication"
         ],
         [
@@ -25206,12 +25206,12 @@
         ],
         [
           "src/mob/mobact.c",
-          8646,
+          8643,
           "item_publication"
         ],
         [
           "src/mob/mobact.c",
-          8654,
+          8647,
           "item_publication"
         ],
         [
@@ -25226,7 +25226,12 @@
         ],
         [
           "src/mob/mobact.c",
-          8659,
+          8657,
+          "item_publication"
+        ],
+        [
+          "src/mob/mobact.c",
+          8660,
           "item_publication"
         ]
       ],
@@ -26769,22 +26774,22 @@
       "sites": [
         [
           "src/classes/necromancy.c",
-          252,
+          256,
           "coin_assignment"
         ],
         [
           "src/classes/necromancy.c",
-          253,
+          257,
           "coin_assignment"
         ],
         [
           "src/classes/necromancy.c",
-          254,
+          258,
           "coin_assignment"
         ],
         [
           "src/classes/necromancy.c",
-          255,
+          259,
           "coin_assignment"
         ]
       ],
@@ -29431,7 +29436,7 @@
       "sites": [
         [
           "src/player/player_load_items.c",
-          576,
+          580,
           "item_lifecycle"
         ]
       ],
@@ -29468,12 +29473,12 @@
       "sites": [
         [
           "src/player/player_load_items.c",
-          903,
+          907,
           "item_lifecycle"
         ],
         [
           "src/player/player_load_items.c",
-          913,
+          917,
           "item_lifecycle"
         ]
       ],
@@ -33938,27 +33943,27 @@
       "sites": [
         [
           "src/specs/specs.bahamut.c",
-          73,
-          "item_publication"
-        ],
-        [
-          "src/specs/specs.bahamut.c",
           74,
           "item_publication"
         ],
         [
           "src/specs/specs.bahamut.c",
-          79,
+          75,
           "item_publication"
         ],
         [
           "src/specs/specs.bahamut.c",
-          81,
-          "item_lifecycle"
+          80,
+          "item_publication"
         ],
         [
           "src/specs/specs.bahamut.c",
           82,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.bahamut.c",
+          83,
           "item_publication"
         ]
       ],
@@ -34032,12 +34037,12 @@
       "sites": [
         [
           "src/specs/specs.bahamut.c",
-          437,
+          438,
           "item_publication"
         ],
         [
           "src/specs/specs.bahamut.c",
-          470,
+          471,
           "item_publication"
         ]
       ],
@@ -34126,7 +34131,7 @@
       "sites": [
         [
           "src/specs/specs.cerebusp.c",
-          67,
+          68,
           "item_publication"
         ]
       ],
@@ -35995,67 +36000,67 @@
       "sites": [
         [
           "src/specs/specs.object.c",
-          1265,
-          "item_publication"
-        ],
-        [
-          "src/specs/specs.object.c",
           1266,
           "item_publication"
         ],
         [
           "src/specs/specs.object.c",
           1267,
-          "item_lifecycle"
-        ],
-        [
-          "src/specs/specs.object.c",
-          1287,
-          "money_helper"
-        ],
-        [
-          "src/specs/specs.object.c",
-          1290,
-          "money_helper"
-        ],
-        [
-          "src/specs/specs.object.c",
-          1293,
-          "money_helper"
-        ],
-        [
-          "src/specs/specs.object.c",
-          1296,
-          "money_helper"
-        ],
-        [
-          "src/specs/specs.object.c",
-          1332,
-          "item_lifecycle"
-        ],
-        [
-          "src/specs/specs.object.c",
-          1339,
           "item_publication"
         ],
         [
           "src/specs/specs.object.c",
-          1344,
+          1268,
           "item_lifecycle"
         ],
         [
           "src/specs/specs.object.c",
-          1351,
+          1288,
+          "money_helper"
+        ],
+        [
+          "src/specs/specs.object.c",
+          1291,
+          "money_helper"
+        ],
+        [
+          "src/specs/specs.object.c",
+          1294,
+          "money_helper"
+        ],
+        [
+          "src/specs/specs.object.c",
+          1297,
+          "money_helper"
+        ],
+        [
+          "src/specs/specs.object.c",
+          1333,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.object.c",
+          1340,
           "item_publication"
         ],
         [
           "src/specs/specs.object.c",
-          1356,
+          1345,
           "item_lifecycle"
         ],
         [
           "src/specs/specs.object.c",
-          1363,
+          1352,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.object.c",
+          1357,
+          "item_lifecycle"
+        ],
+        [
+          "src/specs/specs.object.c",
+          1364,
           "item_publication"
         ]
       ],
@@ -37154,7 +37159,7 @@
       "sites": [
         [
           "src/specs/specs.shabo.c",
-          851,
+          852,
           "item_publication"
         ]
       ],
@@ -37191,17 +37196,12 @@
       "sites": [
         [
           "src/specs/specs.shabo.c",
-          1103,
-          "item_publication"
-        ],
-        [
-          "src/specs/specs.shabo.c",
           1104,
           "item_publication"
         ],
         [
           "src/specs/specs.shabo.c",
-          1112,
+          1105,
           "item_publication"
         ],
         [
@@ -37211,7 +37211,7 @@
         ],
         [
           "src/specs/specs.shabo.c",
-          1173,
+          1114,
           "item_publication"
         ],
         [
@@ -37221,12 +37221,17 @@
         ],
         [
           "src/specs/specs.shabo.c",
-          1180,
+          1175,
           "item_publication"
         ],
         [
           "src/specs/specs.shabo.c",
           1181,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.shabo.c",
+          1182,
           "item_publication"
         ]
       ],
@@ -37263,22 +37268,22 @@
       "sites": [
         [
           "src/specs/specs.shabo.c",
-          1472,
-          "item_publication"
-        ],
-        [
-          "src/specs/specs.shabo.c",
           1473,
           "item_publication"
         ],
         [
           "src/specs/specs.shabo.c",
-          1479,
+          1474,
           "item_publication"
         ],
         [
           "src/specs/specs.shabo.c",
           1480,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.shabo.c",
+          1481,
           "item_publication"
         ]
       ],
@@ -37315,22 +37320,22 @@
       "sites": [
         [
           "src/specs/specs.shabo.c",
-          1405,
-          "item_publication"
-        ],
-        [
-          "src/specs/specs.shabo.c",
           1406,
           "item_publication"
         ],
         [
           "src/specs/specs.shabo.c",
-          1413,
+          1407,
           "item_publication"
         ],
         [
           "src/specs/specs.shabo.c",
           1414,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.shabo.c",
+          1415,
           "item_publication"
         ]
       ],
@@ -37367,12 +37372,12 @@
       "sites": [
         [
           "src/specs/specs.shabo.c",
-          976,
+          977,
           "item_publication"
         ],
         [
           "src/specs/specs.shabo.c",
-          980,
+          981,
           "item_publication"
         ]
       ],
@@ -45596,6 +45601,60 @@
       ],
       "evidence": [],
       "reachability_evidence": "The declaration names the checked placement helper; the implementation and every call are inventoried separately."
+    },
+    {
+      "id": "item.pet_hidden_equipment_relink",
+      "path": "src/item/objmisc.c",
+      "symbol": "item_restrict_player_pet_equipment",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Relinks hidden NPC helper gear from worn to carried on the same player-owned pet, preserving the UID and child graph; no player grant or item retirement is authorized.",
+      "authority_boundary": "Established PC-pet owner link and hidden-item policy precede the same-pet equipment-to-inventory relink. Preserve retained custody; do not grant the root to the player.",
+      "current_support": "Shared normalization runs after pet establishment and follower handling. Focused hidden-item behavior tests exist; selected-backend accounting authority, publication/save handoff and active-epoch qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_issue590_hidden_pet_items.py",
+        "tests/async/test_player_load_items.py",
+        "tests/async/test_issue590_economy_census.py"
+      ],
+      "sites": [
+        [
+          "src/item/objmisc.c",
+          253,
+          "item_publication"
+        ],
+        [
+          "src/item/objmisc.c",
+          255,
+          "item_publication"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "setup_pet invokes normalization after linking LNK_PET; add_follower invokes the shared helper. The helper unequips matching hidden gear and carries it on the same pet without extraction or player publication.",
+      "native_effects": {
+        "holding_effect": "No coin balance changes.",
+        "custody_effect": "Same-pet equipment-to-inventory relink; UID and contained child graph remain on the pet. Backend custody evidence is not qualified by this source review.",
+        "native_state_targets": [
+          "pet equipment slots",
+          "pet carrying list",
+          "object physical placement and owner snapshot dirtiness"
+        ]
+      }
     }
   ],
   "census": [
@@ -46141,265 +46200,265 @@
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 252,
+      "line": 256,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = 0;"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 253,
+      "line": 257,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = 0;"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 254,
+      "line": 258,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = 0;"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 255,
+      "line": 259,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = 0;"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 754,
+      "line": 758,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1200,
+      "line": 1204,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1263,
+      "line": 1267,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1310,
+      "line": 1314,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1440,
+      "line": 1444,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1471,
+      "line": 1475,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1497,
+      "line": 1501,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1809,
+      "line": 1813,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2068,
+      "line": 2072,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2289,
+      "line": 2293,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2540,
+      "line": 2544,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2644,
+      "line": 2648,
       "family": "item_lifecycle",
       "excerpt": "obj1 = read_object(2, VIRTUAL);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2753,
+      "line": 2757,
       "family": "item_lifecycle",
       "excerpt": "obj1 = read_object(2, VIRTUAL);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2966,
+      "line": 2970,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3452,
+      "line": 3456,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse, TRUE); // Empty corpse, but 'in game.'"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3457,
+      "line": 3461,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse, TRUE); // Dragon scales."
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3491,
+      "line": 3495,
       "family": "item_lifecycle",
       "excerpt": "if ((pile = read_object(VOBJ_PILE_BONES, VIRTUAL)) != NULL)"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3500,
+      "line": 3504,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 49,
+      "line": 50,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, caster);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 51,
+      "line": 52,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, follower);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 726,
+      "line": 730,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1186,
+      "line": 1190,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1290,
+      "line": 1294,
       "family": "item_publication",
       "excerpt": "obj_to_room(savecorpse, real_room(40));"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1309,
+      "line": 1313,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1439,
+      "line": 1443,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1468,
+      "line": 1472,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1475,
+      "line": 1479,
       "family": "item_publication",
       "excerpt": "obj_to_char_at_end(item, (pet_uid || hostile) ? follower : caster);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 1791,
+      "line": 1795,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2056,
+      "line": 2060,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2278,
+      "line": 2282,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2529,
+      "line": 2533,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2649,
+      "line": 2653,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj1, ch->in_room);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2758,
+      "line": 2762,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj1, ch->in_room);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2961,
+      "line": 2965,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 2962,
+      "line": 2966,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj_in_corpse, ch->in_room);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3448,
+      "line": 3452,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj_in_corpse);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3449,
+      "line": 3453,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj_in_corpse, ch->in_room);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3487,
+      "line": 3491,
       "family": "item_publication",
       "excerpt": "obj_from_obj(content);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3488,
+      "line": 3492,
       "family": "item_publication",
       "excerpt": "obj_to_room(content, ch->in_room);"
     },
     {
       "path": "src/classes/necromancy.c",
-      "line": 3501,
+      "line": 3505,
       "family": "item_publication",
       "excerpt": "obj_to_room(pile, ch->in_room);"
     },
@@ -47419,7 +47478,7 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10486,
+      "line": 10493,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
@@ -47563,19 +47622,19 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8032,
+      "line": 8039,
       "family": "item_lifecycle",
       "excerpt": "MakeScrap(ch, obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9827,
+      "line": 9834,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(poison, TRUE); // Transient artifact poison?"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9837,
+      "line": 9844,
       "family": "item_lifecycle",
       "excerpt": "if (P_obj obj = read_object(i, VIRTUAL))"
     },
@@ -47905,109 +47964,109 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8549,
+      "line": 8556,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8557,
+      "line": 8564,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_L, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8567,
+      "line": 8574,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_R, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8577,
+      "line": 8584,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LL, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8587,
+      "line": 8594,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LR, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8940,
+      "line": 8947,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8944,
+      "line": 8951,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_1, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8948,
+      "line": 8955,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_2, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8952,
+      "line": 8959,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_3, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9826,
+      "line": 9833,
       "family": "item_publication",
       "excerpt": "obj_from_char(poison);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10132,
+      "line": 10139,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10135,
+      "line": 10142,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, target);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10148,
+      "line": 10155,
       "family": "item_publication",
       "excerpt": "obj_from_obj(*moved_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10149,
+      "line": 10156,
       "family": "item_publication",
       "excerpt": "obj_to_obj(*moved_object, source);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10156,
+      "line": 10163,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10158,
+      "line": 10165,
       "family": "item_publication",
       "excerpt": "obj_from_room(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10160,
+      "line": 10167,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10161,
+      "line": 10168,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, source);"
     },
@@ -49015,7 +49074,7 @@
     },
     {
       "path": "src/cmd/interp.c",
-      "line": 1737,
+      "line": 1738,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, GUILD_COST, 0);"
     },
@@ -54018,6 +54077,18 @@
       "excerpt": "extract_obj(obj);"
     },
     {
+      "path": "src/item/objmisc.c",
+      "line": 253,
+      "family": "item_publication",
+      "excerpt": "obj = unequip_char(actor, slot, FALSE);"
+    },
+    {
+      "path": "src/item/objmisc.c",
+      "line": 255,
+      "family": "item_publication",
+      "excerpt": "obj_to_char(obj, actor);"
+    },
+    {
       "path": "src/item/randobj.c",
       "line": 218,
       "family": "item_lifecycle",
@@ -55675,97 +55746,97 @@
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8597,
+      "line": 8598,
       "family": "item_publication",
       "excerpt": "obj_from_char(bs_weap);"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8598,
+      "line": 8599,
       "family": "item_publication",
       "excerpt": "equip_char(ch, bs_weap, WIELD,"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8606,
+      "line": 8607,
       "family": "item_publication",
       "excerpt": "obj_from_char(bs_weap);"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8607,
+      "line": 8608,
       "family": "item_publication",
       "excerpt": "equip_char(ch, bs_weap,"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8623,
+      "line": 8624,
       "family": "item_publication",
       "excerpt": "obj_from_char("
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8625,
+      "line": 8626,
       "family": "item_publication",
       "excerpt": "obj_to_char("
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8626,
+      "line": 8627,
       "family": "item_publication",
       "excerpt": "unequip_char("
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8630,
+      "line": 8631,
       "family": "item_publication",
       "excerpt": "equip_char(ch,"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8640,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(bs_weap);"
-    },
-    {
-      "path": "src/mob/mobact.c",
       "line": 8641,
       "family": "item_publication",
-      "excerpt": "obj_to_char("
+      "excerpt": "obj_from_char(bs_weap);"
     },
     {
       "path": "src/mob/mobact.c",
       "line": 8642,
       "family": "item_publication",
+      "excerpt": "obj_to_char("
+    },
+    {
+      "path": "src/mob/mobact.c",
+      "line": 8643,
+      "family": "item_publication",
       "excerpt": "unequip_char("
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8646,
+      "line": 8647,
       "family": "item_publication",
       "excerpt": "equip_char(ch, bs_weap,"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8654,
+      "line": 8655,
       "family": "item_publication",
       "excerpt": "obj_from_char(bs_weap);"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8655,
+      "line": 8656,
       "family": "item_publication",
       "excerpt": "obj_to_char("
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8656,
+      "line": 8657,
       "family": "item_publication",
       "excerpt": "unequip_char(ch,"
     },
     {
       "path": "src/mob/mobact.c",
-      "line": 8659,
+      "line": 8660,
       "family": "item_publication",
       "excerpt": "equip_char(ch, bs_weap,"
     },
@@ -56107,19 +56178,19 @@
     },
     {
       "path": "src/player/player_load_items.c",
-      "line": 576,
+      "line": 580,
       "family": "item_lifecycle",
       "excerpt": "P_obj object = read_object(object_number, REAL);"
     },
     {
       "path": "src/player/player_load_items.c",
-      "line": 903,
+      "line": 907,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/player/player_load_items.c",
-      "line": 913,
+      "line": 917,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
@@ -56875,61 +56946,61 @@
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 81,
+      "line": 82,
       "family": "item_lifecycle",
       "excerpt": "heart = read_object(VOBJ_WH_DRAGONHEART_BAHAMUT, VIRTUAL);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 73,
+      "line": 74,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 74,
+      "line": 75,
       "family": "item_publication",
       "excerpt": "obj_to_room(t_obj, ch->in_room);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 79,
+      "line": 80,
       "family": "item_publication",
       "excerpt": "obj_to_room(unequip_char(ch, num), ch->in_room);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 79,
+      "line": 80,
       "family": "item_publication",
       "excerpt": "obj_to_room(unequip_char(ch, num), ch->in_room);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 82,
+      "line": 83,
       "family": "item_publication",
       "excerpt": "obj_to_room(heart, ch->in_room);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 437,
+      "line": 438,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, dragonlord_slot), ch);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 437,
+      "line": 438,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, dragonlord_slot), ch);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 470,
+      "line": 471,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
     {
       "path": "src/specs/specs.bahamut.c",
-      "line": 470,
+      "line": 471,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
@@ -56971,13 +57042,13 @@
     },
     {
       "path": "src/specs/specs.cerebusp.c",
-      "line": 67,
+      "line": 68,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
     {
       "path": "src/specs/specs.cerebusp.c",
-      "line": 67,
+      "line": 68,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
@@ -58141,61 +58212,55 @@
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1287,
+      "line": 1288,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, number(1, 10) * 1000);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1290,
+      "line": 1291,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, number(1, 10) * 100);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1293,
+      "line": 1294,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, number(1, 10) * 10);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1296,
+      "line": 1297,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, number(1, 10));"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1267,
+      "line": 1268,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(treasure, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1332,
+      "line": 1333,
       "family": "item_lifecycle",
       "excerpt": "tempobj = read_object(88831, VIRTUAL);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1344,
+      "line": 1345,
       "family": "item_lifecycle",
       "excerpt": "tempobj = read_object(88832, VIRTUAL);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1356,
+      "line": 1357,
       "family": "item_lifecycle",
       "excerpt": "tempobj = read_object(88833, VIRTUAL);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1265,
-      "family": "item_publication",
-      "excerpt": "obj_to_char(unequip_char(ch, HOLD), ch);"
-    },
-    {
-      "path": "src/specs/specs.object.c",
-      "line": 1265,
+      "line": 1266,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, HOLD), ch);"
     },
@@ -58203,23 +58268,29 @@
       "path": "src/specs/specs.object.c",
       "line": 1266,
       "family": "item_publication",
+      "excerpt": "obj_to_char(unequip_char(ch, HOLD), ch);"
+    },
+    {
+      "path": "src/specs/specs.object.c",
+      "line": 1267,
+      "family": "item_publication",
       "excerpt": "obj_from_char(treasure);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1339,
+      "line": 1340,
       "family": "item_publication",
       "excerpt": "obj_to_room(tempobj, ch->in_room);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1351,
+      "line": 1352,
       "family": "item_publication",
       "excerpt": "obj_to_room(tempobj, ch->in_room);"
     },
     {
       "path": "src/specs/specs.object.c",
-      "line": 1363,
+      "line": 1364,
       "family": "item_publication",
       "excerpt": "obj_to_room(tempobj, ch->in_room);"
     },
@@ -58429,121 +58500,121 @@
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 851,
+      "line": 852,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 851,
+      "line": 852,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 976,
+      "line": 977,
       "family": "item_publication",
       "excerpt": "obj_from_room(obj);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 980,
+      "line": 981,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, real_room(NECROMANCER_BOSS_ROOM));"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1103,
+      "line": 1104,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1104,
+      "line": 1105,
       "family": "item_publication",
       "excerpt": "obj_to_char(item, tempchar); /*"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1112,
+      "line": 1113,
       "family": "item_publication",
       "excerpt": "item = unequip_char(ch, pos);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1113,
+      "line": 1114,
       "family": "item_publication",
       "excerpt": "equip_char(tempchar, item, pos, TRUE);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1173,
+      "line": 1174,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1174,
+      "line": 1175,
       "family": "item_publication",
       "excerpt": "obj_to_char(item, tempchar2);"
-    },
-    {
-      "path": "src/specs/specs.shabo.c",
-      "line": 1180,
-      "family": "item_publication",
-      "excerpt": "item = unequip_char(i, pos);"
     },
     {
       "path": "src/specs/specs.shabo.c",
       "line": 1181,
       "family": "item_publication",
-      "excerpt": "equip_char(tempchar2, item, pos, TRUE);"
+      "excerpt": "item = unequip_char(i, pos);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1405,
+      "line": 1182,
       "family": "item_publication",
-      "excerpt": "obj_from_char(item);"
+      "excerpt": "equip_char(tempchar2, item, pos, TRUE);"
     },
     {
       "path": "src/specs/specs.shabo.c",
       "line": 1406,
       "family": "item_publication",
-      "excerpt": "obj_to_char(item, tempchar2);"
+      "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1413,
+      "line": 1407,
       "family": "item_publication",
-      "excerpt": "item = unequip_char(i, pos);"
+      "excerpt": "obj_to_char(item, tempchar2);"
     },
     {
       "path": "src/specs/specs.shabo.c",
       "line": 1414,
       "family": "item_publication",
-      "excerpt": "equip_char(tempchar2, item, pos, TRUE);"
+      "excerpt": "item = unequip_char(i, pos);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1472,
+      "line": 1415,
       "family": "item_publication",
-      "excerpt": "obj_from_char(item);"
+      "excerpt": "equip_char(tempchar2, item, pos, TRUE);"
     },
     {
       "path": "src/specs/specs.shabo.c",
       "line": 1473,
       "family": "item_publication",
+      "excerpt": "obj_from_char(item);"
+    },
+    {
+      "path": "src/specs/specs.shabo.c",
+      "line": 1474,
+      "family": "item_publication",
       "excerpt": "obj_to_char(item, tempchar2);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1479,
+      "line": 1480,
       "family": "item_publication",
       "excerpt": "item = unequip_char(ch, pos);"
     },
     {
       "path": "src/specs/specs.shabo.c",
-      "line": 1480,
+      "line": 1481,
       "family": "item_publication",
       "excerpt": "equip_char(tempchar2, item, pos, TRUE);"
     },
@@ -60997,243 +61068,237 @@
     },
     {
       "path": "src/world/handler.c",
-      "line": 1936,
+      "line": 1937,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_player("
     },
     {
       "path": "src/world/handler.c",
-      "line": 2200,
+      "line": 2201,
       "family": "economic_submit",
       "excerpt": "item_transfer_command_build(&transfer.destination.change, operation, pile,"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2203,
+      "line": 2204,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_coin(ch, transfer, money_inventory_completion,"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4390,
+      "line": 4397,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/world/handler.c",
-      "line": 4789,
+      "line": 4796,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(caster, corpse, nullptr, room, room,"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2162,
+      "line": 2163,
       "family": "coin_bulk_mutation",
       "excerpt": "std::fill(std::begin(ch->points.cash), std::end(ch->points.cash), 0);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2847,
+      "line": 2854,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(world[room].contents, object->value[0], object->value[1],"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2871,
+      "line": 2878,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(o->next_content, object->value[0],"
     },
     {
       "path": "src/world/handler.c",
-      "line": 6406,
+      "line": 6412,
       "family": "coin_bulk_mutation",
       "excerpt": "void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 6565,
+      "line": 6571,
       "family": "coin_bulk_mutation",
       "excerpt": "std::fill_n(obj->value, 4, 0);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 6566,
+      "line": 6572,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(obj, copper, silver, gold, platinum);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 135,
+      "line": 136,
       "family": "item_lifecycle",
       "excerpt": "proto = read_object(obj->R_num, REAL);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 141,
+      "line": 142,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(proto, TRUE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 1816,
+      "line": 1817,
       "family": "item_lifecycle",
       "excerpt": "P_obj flow = read_object(6107, VIRTUAL);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 1909,
+      "line": 1910,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, TRUE); // Crumbleloot arti?"
     },
     {
       "path": "src/world/handler.c",
-      "line": 1953,
+      "line": 1954,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2105,
+      "line": 2106,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2128,
+      "line": 2129,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2157,
+      "line": 2158,
       "family": "item_lifecycle",
       "excerpt": "P_obj money = create_money(cash[0], cash[1], cash[2], cash[3]);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2208,
+      "line": 2209,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(money, FALSE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2851,
+      "line": 2858,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2876,
+      "line": 2883,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3365,
+      "line": 3372,
       "family": "item_lifecycle",
       "excerpt": "void extract_obj(P_obj obj, int gone_for_good)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3409,
+      "line": 3416,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj->contains, gone_for_good);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3769,
+      "line": 3776,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3894,
+      "line": 3901,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(compact_pile);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3909,
+      "line": 3916,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(compact_pile);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4036,
+      "line": 4043,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse, TRUE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4088,
+      "line": 4095,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4116,
+      "line": 4123,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse, FALSE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4350,
+      "line": 4357,
       "family": "item_lifecycle",
       "excerpt": "P_obj money = create_money(payload.money[0], payload.money[1], payload.money[2],"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4454,
+      "line": 4461,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4531,
+      "line": 4538,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4541,
+      "line": 4548,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse, TRUE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4635,
+      "line": 4642,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse, TRUE);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5143,
+      "line": 5150,
       "family": "item_lifecycle",
       "excerpt": "P_obj pile = read_object(VOBJ_PILE_BONES, VIRTUAL);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5159,
+      "line": 5166,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(pile);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5167,
+      "line": 5174,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(pile);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5338,
+      "line": 5344,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
-    },
-    {
-      "path": "src/world/handler.c",
-      "line": 5395,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, TRUE); // Nowhere to drop artifact. :("
     },
     {
       "path": "src/world/handler.c",
@@ -61243,367 +61308,379 @@
     },
     {
       "path": "src/world/handler.c",
-      "line": 5429,
+      "line": 5407,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj, TRUE); // Nowhere to drop artifact. :("
+    },
+    {
+      "path": "src/world/handler.c",
+      "line": 5435,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/world/handler.c",
-      "line": 5536,
+      "line": 5542,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(ch->equipment[slot]);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5541,
+      "line": 5547,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5757,
+      "line": 5763,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5776,
+      "line": 5782,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 6552,
+      "line": 6558,
       "family": "item_lifecycle",
       "excerpt": "P_obj create_money(int copper, int silver, int gold, int platinum)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 6556,
+      "line": 6562,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(VOBJ_COINS, VIRTUAL);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 1819,
+      "line": 1820,
       "family": "item_publication",
       "excerpt": "obj_to_char(flow, t_ch);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 1852,
+      "line": 1853,
       "family": "item_publication",
       "excerpt": "obj_to_char_result obj_to_char_checked(P_obj object, P_char ch)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 1882,
+      "line": 1883,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, ch->in_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2022,
+      "line": 2023,
       "family": "item_publication",
       "excerpt": "void obj_to_char(P_obj object, P_char ch)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2024,
+      "line": 2025,
       "family": "item_publication",
       "excerpt": "(void)obj_to_char_checked(object, ch);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2031,
+      "line": 2032,
       "family": "item_publication",
       "excerpt": "void obj_from_char(P_obj object)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2134,
+      "line": 2135,
       "family": "item_publication",
       "excerpt": "obj_to_char(money, ch);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2163,
+      "line": 2164,
       "family": "item_publication",
       "excerpt": "obj_to_char(money, ch);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2216,
+      "line": 2217,
       "family": "item_publication",
       "excerpt": "void equip_char(P_char ch, P_obj obj, int pos, int nodrop)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2237,
+      "line": 2238,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2287,
+      "line": 2250,
+      "family": "item_publication",
+      "excerpt": "obj_to_char(obj, ch);"
+    },
+    {
+      "path": "src/world/handler.c",
+      "line": 2294,
       "family": "item_publication",
       "excerpt": "P_obj unequip_char(P_char ch, int pos, bool saving)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2335,
+      "line": 2342,
       "family": "item_publication",
       "excerpt": "unequip_char(kala->loc.wearing, b);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2342,
+      "line": 2349,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, i), ch);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2342,
+      "line": 2349,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, i), ch);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2352,
+      "line": 2359,
       "family": "item_publication",
       "excerpt": "obj_from_char(o);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2353,
+      "line": 2360,
       "family": "item_publication",
       "excerpt": "obj_to_char(o, recipient);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2766,
+      "line": 2773,
       "family": "item_publication",
       "excerpt": "void obj_to_room(P_obj object, int room)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2811,
+      "line": 2818,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, real_room(31724));"
     },
     {
       "path": "src/world/handler.c",
-      "line": 2914,
+      "line": 2921,
       "family": "item_publication",
       "excerpt": "void obj_from_room(P_obj object)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3054,
+      "line": 3061,
       "family": "item_publication",
       "excerpt": "void obj_to_obj(P_obj obj, P_obj obj_to)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3065,
+      "line": 3072,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, dummy_owner->in_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3168,
+      "line": 3175,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, dummy_owner->in_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3200,
+      "line": 3207,
       "family": "item_publication",
       "excerpt": "void obj_to_char_at_end(P_obj object, P_char ch)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3225,
+      "line": 3232,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, ch->in_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3261,
+      "line": 3268,
       "family": "item_publication",
       "excerpt": "void obj_from_obj(P_obj obj)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3384,
+      "line": 3391,
       "family": "item_publication",
       "excerpt": "obj_from_room(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3386,
+      "line": 3393,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3400,
+      "line": 3407,
       "family": "item_publication",
       "excerpt": "unequip_char(obj->loc.wearing, i);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3404,
+      "line": 3411,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3768,
+      "line": 3775,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 3981,
+      "line": 3988,
       "family": "item_publication",
       "excerpt": "obj_to_room(compact_pile, room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4021,
+      "line": 4028,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4030,
+      "line": 4037,
       "family": "item_publication",
       "excerpt": "obj_to_room(item, room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4086,
+      "line": 4093,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4092,
+      "line": 4099,
       "family": "item_publication",
       "excerpt": "obj_to_char_at_end(item, caster);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4278,
+      "line": 4285,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4284,
+      "line": 4291,
       "family": "item_publication",
       "excerpt": "if (slot == MAX_WEAR || unequip_char(actor, slot) != item)"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4297,
+      "line": 4304,
       "family": "item_publication",
       "excerpt": "obj_to_room(item, context.old_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4355,
+      "line": 4362,
       "family": "item_publication",
       "excerpt": "obj_to_room(money, context.old_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4453,
+      "line": 4460,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4523,
+      "line": 4530,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4535,
+      "line": 4542,
       "family": "item_publication",
       "excerpt": "obj_to_obj(item, parent);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 4539,
+      "line": 4546,
       "family": "item_publication",
       "excerpt": "obj_to_obj(item, parent);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5343,
+      "line": 5349,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(obj->loc.wearing, pos), obj->loc.wearing);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5343,
+      "line": 5349,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(obj->loc.wearing, pos), obj->loc.wearing);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5389,
+      "line": 5395,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5390,
+      "line": 5396,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, pos);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5411,
+      "line": 5417,
       "family": "item_publication",
       "excerpt": "obj_from_obj(t_obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5417,
+      "line": 5423,
       "family": "item_publication",
       "excerpt": "obj_to_room(t_obj, obj->loc.room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5425,
+      "line": 5431,
       "family": "item_publication",
       "excerpt": "obj_to_obj(t_obj, obj->loc.inside);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5751,
+      "line": 5757,
       "family": "item_publication",
       "excerpt": "obj = unequip_char(ch, l);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5761,
+      "line": 5767,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5781,
+      "line": 5787,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/handler.c",
-      "line": 5782,
+      "line": 5788,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
