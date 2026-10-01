@@ -112,6 +112,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic/magic.o \
 				 world/achievements.o \
 				 account/account.o \
+				 account/racewar_admission.o \
 				 account/password_hash.o \
 				 account/password_async.o \
 				 account/account_recovery.o \
@@ -121,6 +122,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/account_reward_config.o \
 				 world/hardcore_config.o \
 				 account/creation_availability_config.o \
+				 account/login_mode_banner.o \
 				 combat/frag_cap_config.o \
 				 cmd/actcomm.o \
 				 cmd/actinf.o \
@@ -129,9 +131,11 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
 				 cmd/divine_refusal_policy.o \
+				 cmd/divine_refusal_content.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
+				 cmd/community_spellup.o \
 				 cmd/player_death_restitution.o \
 				 net/ansi.o net/chat_presentation.o \
 				 net/output_style.o \
@@ -334,6 +338,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \
 				 item/item_command_parser.o \
+				 item/forced_weapon_drop.o \
 				 item/item_movement_transaction.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
@@ -409,6 +414,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_death_restitution_runtime.o \
 				 player/player_death_restitution_adapter.o \
 				 player/player_death_restitution_staff.o \
+				 player/player_death_restitution_locker.o \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
@@ -437,6 +443,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \
+				 classes/npc_alchemist.o \
 				 classes/sillusionist.o \
 				 net/sparser.o \
 				 mob/specials.o \
@@ -506,6 +513,7 @@ OBJS =  $(SHIP_OBJS) \
 				 kingdom/kingdom_harvest.o \
 				 kingdom/kingdom_guards.o \
 				 kingdom/kingdom_display.o \
+				 kingdom/kingdom_craft.o \
 				 kingdom/kingdom_cmds.o \
 				 kingdom/kingdom_db.o \
 				 world/transport.o \
@@ -545,6 +553,8 @@ OBJS =  $(SHIP_OBJS) \
 				 telemetry/telemetry_config.o \
 				 telemetry/telemetry_encounter.o \
 				 telemetry/telemetry_combat_summary.o \
+				 telemetry/telemetry_failure.o \
+				 telemetry/telemetry_health.o \
 				 telemetry/telemetry_repository.o \
 				 telemetry/telemetry_runtime.o \
 				 telemetry/telemetry_progression.o \

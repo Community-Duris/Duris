@@ -26,7 +26,7 @@ bool valid_pet(const player_pet_snapshot &pet)
 	       pet.order < static_cast<int32_t>(PLAYER_LOAD_PET_MAX) && pet.max_hit > 0 &&
 	       pet.hit >= 0 && pet.hit <= pet.max_hit && pet.max_mana >= 0 && pet.mana >= 0 &&
 	       pet.mana <= pet.max_mana && pet.max_vitality >= 0 && pet.vitality >= 0 &&
-	       pet.vitality <= pet.max_vitality && pet.charm_duration >= -1 && pet.room_vnum > 0;
+	       pet.vitality <= pet.max_vitality && pet.charm_duration >= -1;
 }
 }
 
@@ -94,7 +94,6 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 				    player_load_pet_materialize_outcome::allocation_failure);
 		}
 		if (!identity.database_id || !valid_pet(snapshot) || !unique ||
-		    snapshot.room_vnum != result.snapshot.room_vnum ||
 		    snapshot.items.size() != identity.item_identities.size() ||
 		    snapshot.items.size() > PLAYER_LOAD_ITEM_MAX - metrics->item_count)
 		{

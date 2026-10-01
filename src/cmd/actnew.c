@@ -1499,6 +1499,9 @@ void do_disarm(P_char ch, char *arg, int /*cmd*/)
 
 void event_meditation(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
+	if (!IS_AFFECTED(ch, AFF_MEDITATE))
+		return;
+
 	if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) / 2 > number(0, 100))
 	{
 		if (IS_AFFECTED(ch, AFF_BLIND))

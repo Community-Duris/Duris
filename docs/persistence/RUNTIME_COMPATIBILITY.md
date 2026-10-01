@@ -16,7 +16,7 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0029_critical_failure_stage`, and the contract describes 202
+The current head is `0030_telemetry_quarantine`, and the contract describes 203
 current tables: the 170-table baseline plus the post-baseline runtime tables created
 by immutable migrations. Migration 0029 adds the replay-safe
 `critical_operation_inbox.failure_stage` receipt field as `SMALLINT UNSIGNED NOT
@@ -24,6 +24,8 @@ NULL DEFAULT 0` immediately after `result_code`; it creates no table. A legacy c
 may already contain that column from the earlier compatibility DDL. The immutable
 step is guarded and re-runnable: it verifies the existing shape, preserves all rows,
 and records sequence 29 rather than trying to alter the old immutable history.
+Migration 0030 adds the protected `telemetry_quarantine` table used to isolate and
+replay record-specific telemetry storage failures without blocking the stream.
 Fingerprints are measured on clean `mysql:8.0` and `mariadb:10.11` schemas with
 `tests/async/telemetry_rollup_schema_mysql.py --update-contract`; they must not be
 copied from a production-derived clone.
@@ -49,7 +51,7 @@ any boot attempt. Never treat a successful SQL migration as proof that an old
 binary is compatible.
 
 The legacy upgrade remains guarded and additive; a database left at head
-`0028_pet_custody` must not be booted with this contract. An existing database must
+`0029_critical_failure_stage` must not be booted with this contract. An existing database must
 first complete the clone sequence above. Never run migration or destructive
 verification commands against production.
 
@@ -62,7 +64,7 @@ recovery replay, listener acceptance, or gameplay publication, it verifies:
 - the sealed baseline ID and table-name fingerprint;
 - immutable migration ID, sequence, apply/verifier hashes, applied count, and history
   checksum;
-- all 202 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- all 203 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
 - `utf8mb4`, UTC, READ COMMITTED, strict SQL modes, ten-second connection/read/write

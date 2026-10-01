@@ -9,6 +9,11 @@
 #include <cstdint>
 
 constexpr size_t CORPSE_LIFECYCLE_PENDING_MAX = 1024;
+// A stale corpse action gets one authoritative-revision retry.  The delay is
+// expressed in transaction pulses so the game thread remains non-blocking and
+// tests can exercise the state machine without sleeping.
+constexpr unsigned int CORPSE_LIFECYCLE_STALE_RETRY_LIMIT = 1;
+constexpr unsigned int CORPSE_LIFECYCLE_STALE_RETRY_BACKOFF_PULSES = 4;
 
 using corpse_lifecycle_release_completion_fn = void (*)(bool committed,
 							const corpse_lifecycle_result &result,
@@ -36,6 +41,9 @@ bool corpse_lifecycle_transaction_resurrect(const corpse_lifecycle_payload &payl
 					    corpse_lifecycle_release_completion_fn completion);
 bool corpse_lifecycle_transaction_raise_follower(const corpse_lifecycle_payload &payload,
 						 corpse_lifecycle_release_completion_fn completion);
+bool corpse_lifecycle_transaction_raise_world_follower(
+	const corpse_lifecycle_payload &payload, uint64_t source_item_revision,
+	corpse_lifecycle_release_completion_fn completion);
 bool corpse_lifecycle_transaction_hydrate(uint32_t owner_pid, uint32_t save_id,
 					  uint64_t corpse_revision);
 bool corpse_lifecycle_transaction_note_item_transfer(uint32_t owner_pid, uint32_t save_id,

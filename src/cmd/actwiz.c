@@ -4392,6 +4392,21 @@ void do_wizmsg(P_char ch, char *arg, int /*cmd*/)
 
 TimedShutdownData shutdownData = { 0, -1, TimedShutdownData::NONE, "", "" };
 
+static const char *scheduled_shutdown_type_name(int shutdown_type, bool uppercase)
+{
+	switch (shutdown_type)
+	{
+	case TimedShutdownData::OK:
+	case TimedShutdownData::PWIPE:
+		return uppercase ? "SHUTDOWN" : "shutdown";
+	case TimedShutdownData::COPYOVER:
+	case TimedShutdownData::AUTOREBOOT_COPYOVER:
+		return uppercase ? "COPYOVER" : "copyover";
+	default:
+		return uppercase ? "REBOOT" : "reboot";
+	}
+}
+
 /** Execute an immediate shutdown or schedule the next countdown warning for an active request. */
 void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 {
@@ -4431,7 +4446,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			break;
 
 		case TimedShutdownData::COPYOVER:
-			snprintf(buf, 500, "\r\n%s destroys the world as you know it.\r\n",
+			snprintf(buf, 500,
+				 "\r\n%s begins a copyover; your connection will be preserved.\r\n",
 				 shutdownData.IssuedBy);
 			send_to_all(buf);
 			logit(LOG_STATUS, "%s", buf);
@@ -4582,12 +4598,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 		// okay, see if a warning should be displayed...
 		if (secs <= shutdownData.next_warning)
 		{
-			const char *type = "REBOOT";
-			if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-			    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-			{
-				type = "SHUTDOWN";
-			}
+			const char *type =
+				scheduled_shutdown_type_name(shutdownData.eShutdownType, true);
 			if (secs > 60)
 				snprintf(buf, sizeof buf,
 					 "&+R*** Scheduled %s in %ld minutes ***&n\n", type,
@@ -4635,12 +4647,7 @@ void displayShutdownMsg(P_char ch)
 	time_t secs = shutdownData.reboot_time ? shutdownData.reboot_time - time(0) : 0;
 	if (secs < 0)
 		secs = 0;
-	const char *type = "REBOOT";
-	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-	{
-		type = "SHUTDOWN";
-	}
+	const char *type = scheduled_shutdown_type_name(shutdownData.eShutdownType, true);
 
 	if (secs > 60)
 		snprintf(buf, sizeof buf, "&+R*** Scheduled %s in %ld minute%s***&n\n", type,
@@ -4665,11 +4672,7 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 	char reason[MAX_STRING_LENGTH];
 	strcpy(reason, "No reason given"); // Default reason
 
-	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-	{
-		type = "shutdown";
-	}
+	type = scheduled_shutdown_type_name(shutdownData.eShutdownType, false);
 
 	// Parse: shutdown <type> [minutes] [reason...]
 	char temp_arg[MAX_INPUT_LENGTH];
@@ -4819,11 +4822,7 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("Go shut down someone your own size.\n", ch);
 		return;
 	}
-	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-	{
-		type = "shutdown";
-	}
+	type = scheduled_shutdown_type_name(shutdownData.eShutdownType, false);
 	strcpy(shutdownData.IssuedBy, GET_NAME(ch));
 	strlcpy(shutdownData.Reason, reason, sizeof shutdownData.Reason);
 	shutdownData.next_warning = -1;
@@ -10702,45 +10701,7 @@ void newb_spellup(P_char ch, P_char victim)
 
 void do_newb_spellup_all(P_char ch, char *arg, int /*cmd*/)
 {
-	P_desc d;
-	char buf[MAX_STRING_LENGTH];
-	int racewar_filter = 0;
-	int count = 0;
-
-	one_argument(arg, buf);
-
-	if (*buf)
-	{
-		if (*buf == 'g' || *buf == 'G')
-			racewar_filter = RACEWAR_GOOD;
-		else if (*buf == 'e' || *buf == 'E')
-			racewar_filter = RACEWAR_EVIL;
-		else
-		{
-			send_to_char("Usage: newbsa [g|e]\n", ch);
-			send_to_char("  g = good racewar only\n", ch);
-			send_to_char("  e = evil racewar only\n", ch);
-			send_to_char("  no argument = all players\n", ch);
-			return;
-		}
-	}
-
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->connected == CON_PLAYING && ch != d->character)
-		{
-			if (GET_LEVEL(d->character) <= 60)
-			{
-				if (racewar_filter == 0 ||
-				    GET_RACEWAR(d->character) == racewar_filter)
-				{
-					newb_spellup(ch, d->character);
-					count++;
-				}
-			}
-		}
-	}
-	send_to_char_f(ch, "Done. Blessed %d player%s.\n", count, count == 1 ? "" : "s");
+	community_spellup_command(ch, arg);
 }
 
 void do_newb_spellup(P_char ch, char *arg, int /*cmd*/)
@@ -13723,13 +13684,59 @@ void do_account(P_char ch, char *arg, int /*cmd*/)
  * Usage: extractlink <name> - extract specific ghost character
  *        extractlink all    - extract all ghost characters
  */
+static bool extractlink_attempt(P_char ch, P_char vict)
+{
+	char victim_name[MAX_INPUT_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	const bool dangling_descriptor = vict->desc && !is_desc_valid(vict->desc);
+	const char *name = GET_NAME(vict);
+
+	snprintf(victim_name, sizeof(victim_name), "%s", name ? name : "<unnamed>");
+	snprintf(buf, sizeof(buf), "Attempting ghost extraction: %s (%s).\r\n", victim_name,
+		 dangling_descriptor ? "invalid descriptor" : "linkdead");
+	send_to_char(buf, ch);
+
+	/* A pointer outside descriptor_list is never safe to retain or dereference. */
+	if (dangling_descriptor)
+		vict->desc = NULL;
+
+	if (!persistence_save_character_terminal(vict, RENT_LINKDEAD))
+	{
+		snprintf(buf, sizeof(buf),
+			 "Retained ghost %s: terminal save was not durable, so no extraction "
+			 "was performed. Resolve the persistence failure and retry.\r\n",
+			 victim_name);
+		send_to_char(buf, ch);
+		wizlog(GET_LEVEL(ch),
+		       "%s could not extract ghost character %s: terminal save was not "
+		       "durable; character retained",
+		       GET_NAME(ch), victim_name);
+		logit(LOG_WIZ,
+		      "%s could not extract ghost character %s: terminal save was not "
+		      "durable; character retained",
+		      GET_NAME(ch), victim_name);
+		return false;
+	}
+
+	extract_char_after_terminal_save(vict);
+	wizlog(GET_LEVEL(ch), "%s extracted ghost character %s", GET_NAME(ch), victim_name);
+	logit(LOG_WIZ, "%s extracted ghost character %s", GET_NAME(ch), victim_name);
+	snprintf(buf, sizeof(buf), "Extracted ghost: %s.\r\n", victim_name);
+	send_to_char(buf, ch);
+	return true;
+}
+
 void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict, next_vict;
 	char name[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
-	int count = 0;
-	int is_ghost;
+	int matches = 0;
+	int ghosts = 0;
+	int extracted = 0;
+	int retained = 0;
+	int connected = 0;
+	int excluded = 0;
 
 	if (!IS_TRUSTED(ch))
 		return;
@@ -13738,126 +13745,93 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 
 	if (!*name)
 	{
-		send_to_char("Usage: extractlink <name> - extract specific ghost character\r\n",
+		send_to_char("Usage:\r\n", ch);
+		send_to_char(
+			"  extractlink <name>  Save and extract a matching disconnected player\r\n",
+			ch);
+		send_to_char("  extractlink all     Save and extract every disconnected player\r\n",
 			     ch);
-		send_to_char("       extractlink all    - extract all ghost characters\r\n", ch);
-		send_to_char("Detects both linkdead and dangling pointer ghosts.\r\n", ch);
+		send_to_char("A character is retained when its terminal save is not durable.\r\n",
+			     ch);
+		send_to_char(
+			"Detects both linkdead characters and invalid descriptor pointers.\r\n",
+			ch);
 		return;
 	}
 
-	if (!strcasecmp(name, "all"))
+	const bool extract_all = !strcasecmp(name, "all");
+	for (vict = character_list; vict; vict = next_vict)
 	{
-		/* Extract all ghost PCs */
-		for (vict = character_list; vict; vict = next_vict)
+		next_vict = vict->next;
+
+		if (IS_NPC(vict))
+			continue;
+		if (!extract_all && !isname(name, GET_NAME(vict)))
+			continue;
+		if (!extract_all)
+			matches++;
+
+		if (vict == ch)
 		{
-			next_vict = vict->next;
-
-			if (IS_NPC(vict))
-				continue;
-
-			/* Skip if this is the command issuer */
-			if (vict == ch)
-				continue;
-
-			/* Check if ghost: no desc, or desc not in descriptor_list (dangling pointer) */
-			is_ghost = !vict->desc || !is_desc_valid(vict->desc);
-
-			if (!is_ghost)
-				continue;
-
-			snprintf(buf, MAX_STRING_LENGTH, "Extracting ghost: %s (%s)\r\n",
-				 GET_NAME(vict), vict->desc ? "dangling ptr" : "linkdead");
-			send_to_char(buf, ch);
-
-			wizlog(GET_LEVEL(ch), "%s extracted ghost character %s", GET_NAME(ch),
-			       GET_NAME(vict));
-			logit(LOG_WIZ, "%s extracted ghost character %s", GET_NAME(ch),
-			      GET_NAME(vict));
-
-			/* Clear dangling pointer before save/extract */
-			if (vict->desc && !is_desc_valid(vict->desc))
-				vict->desc = NULL;
-
-			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
-			if (!saved)
+			if (!extract_all)
 			{
-				send_to_char(
-					"Failed to save ghost character before extraction.\r\n",
-					ch);
-				continue;
+				excluded++;
+				send_to_char("Cannot extract yourself with extractlink.\r\n", ch);
 			}
-			extract_char_after_terminal_save(vict);
-			count++;
+			continue;
 		}
 
-		snprintf(buf, MAX_STRING_LENGTH, "Extracted %d ghost character%s.\r\n", count,
-			 count == 1 ? "" : "s");
-		send_to_char(buf, ch);
-	}
-	else
-	{
-		/* Extract specific ghost character by name */
-		for (vict = character_list; vict; vict = next_vict)
+		const bool is_ghost = !vict->desc || !is_desc_valid(vict->desc);
+		if (!is_ghost)
 		{
-			next_vict = vict->next;
-
-			if (IS_NPC(vict))
-				continue;
-
-			/* Skip if this is the command issuer */
-			if (vict == ch)
-				continue;
-
-			if (!isname(name, GET_NAME(vict)))
-				continue;
-
-			/* Check if ghost: no desc, or desc not in descriptor_list (dangling pointer) */
-			is_ghost = !vict->desc || !is_desc_valid(vict->desc);
-
-			if (!is_ghost)
+			if (!extract_all)
 			{
+				connected++;
 				snprintf(buf, MAX_STRING_LENGTH,
-					 "Skipping %s - has valid connection.\r\n", GET_NAME(vict));
+					 "Cannot extract %s: character has a valid connection.\r\n",
+					 GET_NAME(vict));
 				send_to_char(buf, ch);
-				continue;
 			}
-
-			snprintf(buf, MAX_STRING_LENGTH, "Extracting ghost: %s (%s)\r\n",
-				 GET_NAME(vict), vict->desc ? "dangling ptr" : "linkdead");
-			send_to_char(buf, ch);
-
-			wizlog(GET_LEVEL(ch), "%s extracted ghost character %s", GET_NAME(ch),
-			       GET_NAME(vict));
-			logit(LOG_WIZ, "%s extracted ghost character %s", GET_NAME(ch),
-			      GET_NAME(vict));
-
-			/* Clear dangling pointer before save/extract */
-			if (vict->desc && !is_desc_valid(vict->desc))
-				vict->desc = NULL;
-
-			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
-			if (!saved)
-			{
-				send_to_char(
-					"Failed to save ghost character before extraction.\r\n",
-					ch);
-				continue;
-			}
-			extract_char_after_terminal_save(vict);
-			count++;
+			continue;
 		}
 
-		if (count == 0)
-		{
-			send_to_char("No ghost character by that name found.\r\n", ch);
-		}
+		ghosts++;
+		if (extractlink_attempt(ch, vict))
+			extracted++;
+		else
+			retained++;
+	}
+
+	if (extract_all)
+	{
+		if (ghosts == 0)
+			send_to_char("extractlink all complete: no ghost characters found.\r\n",
+				     ch);
 		else
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Extracted %d ghost character%s.\r\n",
-				 count, count == 1 ? "" : "s");
+			snprintf(buf, sizeof(buf),
+				 "extractlink all complete: %d ghost%s found; %d extracted; %d "
+				 "retained after save failure.\r\n",
+				 ghosts, ghosts == 1 ? "" : "s", extracted, retained);
 			send_to_char(buf, ch);
 		}
+		return;
 	}
+
+	if (matches == 0)
+	{
+		snprintf(buf, sizeof(buf), "No player character matching '%s' was found.\r\n",
+			 name);
+		send_to_char(buf, ch);
+		return;
+	}
+
+	snprintf(buf, sizeof(buf),
+		 "extractlink result: %d match%s; %d ghost%s found; %d extracted; %d "
+		 "retained after save failure; %d connected; %d excluded.\r\n",
+		 matches, matches == 1 ? "" : "es", ghosts, ghosts == 1 ? "" : "s", extracted,
+		 retained, connected, excluded);
+	send_to_char(buf, ch);
 }
 
 /*

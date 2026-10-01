@@ -216,6 +216,35 @@ int main()
 	assert(target_root == 200 && target_parent == 0);
 	auto batch_command = command;
 
+	// A bulk `put all` may select several carried roots, including a container with
+	// children.  Only each selected root is reparented to the destination; descendants
+	// must remain below their original container instead of being flattened beside it.
+	item_transfer_payload nested_put = {};
+	nested_put.from_owner = { item_owner_type::player, 42, 0 };
+	nested_put.to_owner = nested_put.from_owner;
+	nested_put.reason = item_transfer_reason::player_put;
+	nested_put.reason_id = 900;
+	nested_put.expected_from_revision = 9;
+	nested_put.expected_to_revision = 9;
+	nested_put.target_root_item_uid = 900;
+	nested_put.target_parent_item_uid = 900;
+	nested_put.expected_target_parent_revision = 3;
+	nested_put.multi_root = true;
+	nested_put.item_count = 3;
+	nested_put.items[0] = { 100, 100, 0, 5, 500, item_custody_state::active };
+	nested_put.items[1] = { 101, 100, 100, 6, 501, item_custody_state::active };
+	nested_put.items[2] = { 200, 200, 0, 7, 502, item_custody_state::active };
+	assert(item_transfer_command_build(&command, operation(), nested_put,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(item_transfer_target_topology(decoded, 100, &target_root, &target_parent));
+	assert(target_root == 900 && target_parent == 900);
+	assert(item_transfer_target_topology(decoded, 101, &target_root, &target_parent));
+	assert(target_root == 900 && target_parent == 100);
+	assert(item_transfer_target_topology(decoded, 200, &target_root, &target_parent));
+	assert(target_root == 900 && target_parent == 900);
+
 	item_transfer_payload pet = {};
 	pet.from_owner = { item_owner_type::player, 42, 0 };
 	pet.to_owner = { item_owner_type::pet, 1000, 42 };
@@ -248,6 +277,39 @@ int main()
 					   critical_deadline_class::interactive));
 	assert(item_transfer_command_decode_payload(command, &decoded));
 	assert(decoded.reason == item_transfer_reason::pet_return);
+
+	item_transfer_payload trusted_steal = {};
+	trusted_steal.from_owner = { item_owner_type::player, 42, 0 };
+	trusted_steal.to_owner = { item_owner_type::player, 77, 0 };
+	trusted_steal.reason = item_transfer_reason::trusted_steal;
+	trusted_steal.reason_id = 42;
+	trusted_steal.expected_from_revision = 10;
+	trusted_steal.expected_to_revision = 11;
+	trusted_steal.selected_item_uid = 100;
+	trusted_steal.target_root_item_uid = 100;
+	trusted_steal.item_count = 1;
+	trusted_steal.items[0] = { 100, 100, 0, 5, 500, item_custody_state::active };
+	assert(item_transfer_command_build(&command, operation(), trusted_steal,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.reason == item_transfer_reason::trusted_steal &&
+	       decoded.reason_id == trusted_steal.reason_id);
+	auto invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.from_owner = { item_owner_type::room, 500, 0 };
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.reason_id = 77;
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.to_owner.id = 42;
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
 
 	// Version 6 batch commands remain replayable: v7 adds one trailing collector
 	// context length, which is absent from the older wire contract.
@@ -318,6 +380,35 @@ int main()
 	assert(!item_transfer_command_build(&command, operation(), invalid_death,
 					    critical_source_site::combat,
 					    critical_deadline_class::interactive));
+
+ static_assert(static_cast<uint16_t>(item_transfer_reason::trusted_steal) == 26);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::soulbind) == 27);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::slip) == 28);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::craft) == 29);
+ item_transfer_payload craft = {};
+ craft.from_owner = {item_owner_type::player, 42, 0};
+ craft.to_owner = craft.from_owner;
+ craft.reason = item_transfer_reason::craft;
+ craft.multi_root = true;
+ craft.item_count = 1;
+ craft.items[0] = {900, 900, 0, 1, 500, item_custody_state::active};
+ craft.selected_item_uid = 900;
+ craft.expected_from_revision = craft.expected_to_revision = 1;
+ assert(item_transfer_command_build(&command, operation(), craft, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ // Exact old-draft reason bytes must decode as craft without changing normal soulbind.
+ set_reason(&command, item_transfer_reason::soulbind);
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ item_transfer_payload soulbind = {};
+ soulbind.from_owner = {item_owner_type::player, 42, 0};
+ soulbind.to_owner = {item_owner_type::player, 43, 0};
+ soulbind.reason = item_transfer_reason::soulbind;
+ soulbind.reason_id = 42;
+ soulbind.item_count = 1;
+ soulbind.items[0] = {901, 901, 0, 1, 500, item_custody_state::active};
+ soulbind.selected_item_uid = soulbind.target_root_item_uid = 901;
+ assert(item_transfer_command_build(&command, operation(), soulbind, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::soulbind);
 	return 0;
 }
 '''
@@ -343,6 +434,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
             "-Isrc",
             str(source),
             rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",

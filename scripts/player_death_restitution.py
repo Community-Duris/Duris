@@ -102,10 +102,21 @@ VOBJ_COINS = 3
 ITEM_ARTIFACT = REAL_ARTIFACT_FLAG
 OWNER_UNKNOWN = 0
 OWNER_PLAYER = 1
+OWNER_LOCKER = 5
 STATE_ACTIVE = 1
 STATE_DESTROYED = 2
 STATE_QUARANTINED = 3
 ITEM_STATE_ABSENT = 0
+ITEM_TRANSIENT = 1 << 19
+
+DESTINATION_PLAYER_INVENTORY = "player_inventory"
+DESTINATION_ACCOUNT_LOCKER_BAG = "account_locker_restitution_bag"
+RESTITUTION_BAG_VNUM = 7670
+RESTITUTION_BAG_MARKER = "restitution_lost_items"
+RESTITUTION_BAG_ITEM_TYPE = 15
+RESTITUTION_BAG_MATERIAL = 15
+RESTITUTION_BAG_WEAR_FLAGS = 16385
+RESTITUTION_BAG_VALUES = [321312, 0, 0, 0, 0, 0, 0, 0]
 
 # Receipt state values are part of the operator contract, not server guesses.
 RECEIPT_APPROVED = 1
@@ -145,6 +156,7 @@ DISPOSITION = {
     "artifact_baseline_missing": 26,
     "artifact_timing_missing": 27,
     "artifact_timing_expired_at_loss": 28,
+    "artifact_recipient_deleted": 29,
 }
 MAX_ARTIFACT_COMPENSATION_SECONDS = 10 * 365 * 24 * 60 * 60
 
@@ -881,6 +893,246 @@ def fetch_player_authority(db: Mysql, pids: Iterable[int]) -> dict[str, dict[str
     return result
 
 
+def decoded_sql_text(value: str | None, label: str) -> str:
+    """Decode a HEX() text column without trusting mysql batch delimiters."""
+    try:
+        return hex_bytes(value, label).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ToolError(f"invalid {label}") from exc
+
+
+def restitution_bag_metadata(character_name: str, source_pid: int,
+                             death_revision: int) -> dict[str, Any]:
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", character_name):
+        raise ToolError("deleted recipient character name is not safe for a restitution bag")
+    safe_name = character_name.lower()
+    description = (
+        f"This transient restitution lost items bag contains equipment recovered for {character_name} "
+        f"(character PID {source_pid}, death revision {death_revision}). Keep it in the account locker "
+        "until you are ready to claim it; dropping it outside a locker makes the bag dissolve."
+    )
+    return {
+        "vnum": RESTITUTION_BAG_VNUM,
+        "item_type": RESTITUTION_BAG_ITEM_TYPE,
+        "material": RESTITUTION_BAG_MATERIAL,
+        "quantity": 1,
+        "weight": 0,
+        "cost": 1,
+        "timer": -1,
+        "extra_flags": ITEM_TRANSIENT,
+        "wear_flags": RESTITUTION_BAG_WEAR_FLAGS,
+        "values": list(RESTITUTION_BAG_VALUES),
+        "bitvectors": [0, 0, 0, 0, 0],
+        "condition": 100,
+        "name": f"{RESTITUTION_BAG_MARKER} restitution lost items bag {safe_name}",
+        "short_description": f"a restitution lost items bag for {character_name}",
+        "description": f"A restitution lost items bag for {character_name} rests here.",
+        "action_description": None,
+        "marker_keyword": RESTITUTION_BAG_MARKER,
+        "marker_description": description,
+        "original_character_name": character_name,
+    }
+
+
+def fetch_restitution_destination(
+    db: Mysql, source_pid: int, recipient_pid: int,
+    player_authority: Mapping[str, Mapping[str, int]], death_revision: int,
+) -> dict[str, Any]:
+    """Resolve a delivery identity without ever treating a reused name as a PID."""
+    if str(recipient_pid) in player_authority:
+        return {"destination": DESTINATION_PLAYER_INVENTORY, "recipient_pid": recipient_pid}
+    if recipient_pid != source_pid:
+        return {
+            "destination": "unresolved",
+            "recipient_pid": recipient_pid,
+            "error": "a deleted alternate recipient is not an authorized substitute for the source PID",
+        }
+
+    required = {
+        "accounts", "account_characters", "frag_leaderboard", "lockers", "private_chests",
+        "locker_items", "locker_item_affects", "locker_item_extra_descr", "item_uid_allocator",
+        "player_items", "corpse_items", "account_locker_items", "saved_items",
+        "player_pet_items", "shopkeeper_items", "siege_items",
+    }
+    missing = sorted(table for table in required if not table_exists(db, table))
+    if missing:
+        raise ToolError("deleted-recipient locker recovery schema is incomplete")
+
+    historical_rows = db.run(
+        "SELECT pid,HEX(account_name),HEX(char_name),racewar,"
+        "COALESCE(DATE_FORMAT(deleted_at,'%Y-%m-%d %H:%i:%s'),'') "
+        "FROM frag_leaderboard WHERE pid=" + sql_num(recipient_pid, "recipient pid", 1, 2**31 - 1)
+    )
+    if len(historical_rows) != 1 or len(historical_rows[0]) != 5:
+        raise ToolError("deleted recipient has no unique durable PID history")
+    historical = historical_rows[0]
+    if row_int(historical, 0, "historical recipient pid", 1) != recipient_pid:
+        raise ToolError("deleted recipient PID history is inconsistent")
+    account_name = decoded_sql_text(row_value(historical, 1), "historical account name")
+    character_name = decoded_sql_text(row_value(historical, 2), "historical character name")
+    racewar = row_int(historical, 3, "historical racewar", 0)
+    deleted_at = row_value(historical, 4) or ""
+    if not re.fullmatch(r"[A-Za-z0-9_.@-]{1,50}", account_name):
+        raise ToolError("deleted recipient has an invalid historical account identity")
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", character_name):
+        raise ToolError("deleted recipient has an invalid historical character identity")
+    if racewar is None or not 0 <= racewar <= 4 or not deleted_at:
+        raise ToolError("recipient PID history does not prove a deleted account character")
+
+    account_rows = db.run(
+        "SELECT HEX(account_name) FROM accounts WHERE LOWER(account_name)=LOWER(" +
+        sql_text(account_name, "historical account name") + ")"
+    )
+    if len(account_rows) != 1 or len(account_rows[0]) != 1:
+        raise ToolError("deleted recipient's account no longer exists uniquely")
+    canonical_account = decoded_sql_text(row_value(account_rows[0], 0), "account name")
+    if canonical_account.lower() != account_name.lower():
+        raise ToolError("deleted recipient account history disagrees with the surviving account")
+
+    corroborating_rows = db.run(
+        "SELECT HEX(account_name),pid,HEX(char_name),racewar,"
+        "IF(deleted_at IS NULL,0,1),COALESCE(DATE_FORMAT(deleted_at,'%Y-%m-%d %H:%i:%s'),'') "
+        "FROM account_characters WHERE pid=" + sql_num(recipient_pid, "recipient pid", 1, 2**31 - 1) +
+        " ORDER BY id"
+    )
+    if len(corroborating_rows) > 1:
+        raise ToolError("deleted recipient has ambiguous account-character history")
+    corroboration: dict[str, Any] | None = None
+    if corroborating_rows:
+        row = corroborating_rows[0]
+        if len(row) != 6:
+            raise ToolError("account-character history has an unexpected shape")
+        corroboration = {
+            "account_name": decoded_sql_text(row_value(row, 0), "account-character account"),
+            "pid": row_int(row, 1, "account-character pid", 1),
+            "character_name": decoded_sql_text(row_value(row, 2), "account-character name"),
+            "racewar": row_int(row, 3, "account-character racewar", 0),
+            "deleted": row_int(row, 4, "account-character deletion state", 0),
+            "deleted_at": row_value(row, 5) or "",
+        }
+        if (
+            corroboration["pid"] != recipient_pid or
+            corroboration["account_name"].lower() != account_name.lower() or
+            corroboration["character_name"].lower() != character_name.lower() or
+            corroboration["racewar"] != racewar or corroboration["deleted"] != 1
+        ):
+            raise ToolError("account-character history conflicts with durable PID history")
+
+    locker_name = f"account.{canonical_account.lower()}.{racewar}.locker"
+    locker_rows = db.run(
+        "SELECT id,COALESCE(owner_pid,0),COALESCE(owner_assoc_id,0),racewar,race "
+        "FROM lockers WHERE locker_name=" + sql_text(locker_name, "account locker name")
+    )
+    if len(locker_rows) > 1:
+        raise ToolError("account locker identity is ambiguous")
+    locker: dict[str, Any] = {
+        "locker_name": locker_name,
+        "exists": bool(locker_rows),
+        "locker_id": None,
+        "owner_pid": 0,
+        "owner_assoc_id": 0,
+        "racewar": racewar,
+        "race": 0,
+        "public_chest": {"exists": False, "chest_id": None},
+        "owner_revision_present": False,
+        "owner_revision": 0,
+        "item_count": 0,
+    }
+    if locker_rows:
+        row = locker_rows[0]
+        if len(row) != 5:
+            raise ToolError("account locker row has an unexpected shape")
+        locker_id = row_int(row, 0, "locker id", 1)
+        locker.update({
+            "locker_id": locker_id,
+            "owner_pid": row_int(row, 1, "locker owner pid", 0),
+            "owner_assoc_id": row_int(row, 2, "locker association", 0),
+            "racewar": row_int(row, 3, "locker racewar", 0),
+            "race": row_int(row, 4, "locker race", 0),
+        })
+        if locker["racewar"] != racewar:
+            raise ToolError("existing account locker racewar conflicts with recipient history")
+        chest_rows = db.run(
+            "SELECT id,HEX(chest_name),COALESCE(HEX(password_hash),''),is_public,"
+            "COALESCE(HEX(sort_config),'') FROM private_chests WHERE locker_id=" + str(locker_id) +
+            " AND is_public=1 ORDER BY id"
+        )
+        if len(chest_rows) > 1:
+            raise ToolError("account locker has more than one public chest")
+        if chest_rows:
+            chest = chest_rows[0]
+            if len(chest) != 5:
+                raise ToolError("public chest row has an unexpected shape")
+            chest_id = row_int(chest, 0, "public chest id", 1)
+            locker["public_chest"] = {
+                "exists": True,
+                "chest_id": chest_id,
+                "chest_name": decoded_sql_text(row_value(chest, 1), "public chest name"),
+                "password_hash_hex": (row_value(chest, 2) or "").lower(),
+                "is_public": row_int(chest, 3, "public chest flag", 0),
+                "sort_config_hex": (row_value(chest, 4) or "").lower(),
+            }
+            revision_rows = db.run(
+                "SELECT revision FROM item_owner_revision WHERE owner_type=" + str(OWNER_LOCKER) +
+                " AND owner_id=" + str(locker_id) + " AND owner_context_id=" + str(chest_id)
+            )
+            if len(revision_rows) > 1:
+                raise ToolError("locker owner revision is ambiguous")
+            if revision_rows:
+                locker["owner_revision_present"] = True
+                locker["owner_revision"] = row_int(
+                    revision_rows[0], 0, "locker owner revision", 0
+                )
+            locker["item_count"] = int_value(
+                db.scalar(
+                    "SELECT COUNT(*) FROM locker_items WHERE locker_id=" + str(locker_id) +
+                    " AND chest_id=" + str(chest_id)
+                ),
+                "locker item count", 0,
+            )
+            if locker["item_count"] and not locker["owner_revision_present"]:
+                raise ToolError("populated account locker has no ownership revision authority")
+        else:
+            legacy_public_count = int_value(
+                db.scalar(
+                    "SELECT COUNT(*) FROM locker_items WHERE locker_id=" + str(locker_id) +
+                    " AND chest_id IS NULL"
+                ),
+                "legacy public locker item count", 0,
+            )
+            if legacy_public_count:
+                raise ToolError("account locker has public items but no public chest authority")
+
+    allocator_rows = db.run("SELECT next_uid FROM item_uid_allocator WHERE allocator_id=1")
+    if len(allocator_rows) != 1 or len(allocator_rows[0]) != 1:
+        raise ToolError("item UID allocator singleton is missing")
+    bag_uid = row_int(allocator_rows[0], 0, "restitution bag UID", 1)
+    if bag_uid is None or bag_uid >= 2**64 - 1:
+        raise ToolError("item UID allocator cannot reserve a restitution bag")
+    if fetch_current_owners(db, [bag_uid]):
+        raise ToolError("item UID allocator points at an existing ownership identity")
+
+    return {
+        "destination": DESTINATION_ACCOUNT_LOCKER_BAG,
+        "recipient_pid": recipient_pid,
+        "deleted_character": {
+            "pid": recipient_pid,
+            "account_name": account_name,
+            "character_name": character_name,
+            "racewar": racewar,
+            "deleted_at": deleted_at,
+            "account_character_corroboration": corroboration,
+        },
+        "account_name": canonical_account,
+        "locker": locker,
+        "allocator_next_uid": bag_uid,
+        "bag": {
+            "item_uid": bag_uid,
+            **restitution_bag_metadata(character_name, source_pid, death_revision),
+        },
+    }
+
+
 def fetch_deliveries(db: Mysql, uids: Iterable[int]) -> dict[str, dict[str, Any]]:
     values = sorted({int_value(uid, "item UID", 1, 2**64 - 1) for uid in uids})
     if not values:
@@ -1416,6 +1668,9 @@ def build_inspection(
     projections = fetch_player_projections(db, all_uids)
     recipient_uids = fetch_recipient_uids(db, recipient_pid)
     player_authority = fetch_player_authority(db, {pid, recipient_pid})
+    destination_evidence = fetch_restitution_destination(
+        db, pid, recipient_pid, player_authority, revision
+    )
     related = fetch_related_deaths(db, pid, revision, all_uids, decode_payload)
     related_pairs = related_death_pairs(db, pid, revision, all_uids)
     related_custody_by_pair = fetch_custody_pairs(db, related_pairs)
@@ -1468,6 +1723,7 @@ def build_inspection(
         "current_owners": owners,
         "player_projections": projections,
         "player_authority": player_authority,
+        "destination_evidence": destination_evidence,
         "recipient_existing_uids": sorted(set(recipient_uids)),
         "related_deaths": related,
         "related_custody": related_custody,
@@ -1714,6 +1970,41 @@ def plan_from_inspection(
             if isinstance(recipient_authority, Mapping) else None
         ),
     }
+    destination_evidence = inspection.get("destination_evidence")
+    if destination_evidence is None:
+        destination_evidence = {
+            "destination": (
+                DESTINATION_PLAYER_INVENTORY
+                if isinstance(recipient_authority, Mapping) else "unresolved"
+            ),
+            "recipient_pid": recipient,
+        }
+    if not isinstance(destination_evidence, Mapping):
+        raise ToolError("inspection destination evidence has an invalid shape")
+    destination = destination_evidence.get("destination")
+    if destination not in {
+        DESTINATION_PLAYER_INVENTORY, DESTINATION_ACCOUNT_LOCKER_BAG, "unresolved"
+    }:
+        raise ToolError("inspection destination evidence has an unknown destination")
+    locker_delivery: dict[str, Any] | None = None
+    if destination == DESTINATION_ACCOUNT_LOCKER_BAG:
+        if recipient != pid:
+            raise ToolError("account-locker restitution is only valid for the deleted source PID")
+        locker_delivery = dict(destination_evidence)
+        bag = locker_delivery.get("bag")
+        locker = locker_delivery.get("locker")
+        deleted_character = locker_delivery.get("deleted_character")
+        if not isinstance(bag, Mapping) or not isinstance(locker, Mapping) or not isinstance(
+            deleted_character, Mapping
+        ):
+            raise ToolError("deleted-recipient locker evidence is incomplete")
+        bag_uid = int_value(bag.get("item_uid"), "restitution bag UID", 1, 2**64 - 2)
+        if bag_uid != int_value(
+            locker_delivery.get("allocator_next_uid"), "allocator next UID", 1, 2**64 - 2
+        ):
+            raise ToolError("restitution bag UID does not match allocator evidence")
+    else:
+        bag_uid = 0
     item_by_uid, payload_parent, payload_root, evidence_order, evidence_conflicts = payload_evidence_maps(inspection)
     custody_by_uid = {str(row["item_uid"]): row for row in inspection["custody_db"]}
     owners = inspection["current_owners"]
@@ -1736,6 +2027,8 @@ def plan_from_inspection(
     plans: list[dict[str, Any]] = []
     used_timing_compensations: set[str] = set()
     global_errors = list(inspection.get("consistency_errors", []))
+    if destination == "unresolved":
+        global_errors.append(str(destination_evidence.get("error") or "recipient destination is unresolved"))
     for uid_text in ordered_uids:
         item = item_by_uid.get(uid_text)
         custody = custody_by_uid.get(uid_text)
@@ -1828,6 +2121,12 @@ def plan_from_inspection(
             candidate["classification"] = "recipient_mismatch"
             candidate["disposition"] = DISPOSITION["recipient_mismatch"]
             candidate["note"] = "SQL first slice only restores to the source character"
+            plans.append(candidate)
+            continue
+        if destination == "unresolved":
+            candidate["classification"] = "recipient_mismatch"
+            candidate["disposition"] = DISPOSITION["recipient_mismatch"]
+            candidate["note"] = "recipient has no proven active-player or deleted-account destination"
             plans.append(candidate)
             continue
         if owner is None:
@@ -1929,6 +2228,14 @@ def plan_from_inspection(
             topology_reconciled = (
                 custody["parent_item_uid"] != delivered_parent or owner["parent_item_uid"] != delivered_parent
             )
+        if candidate["kind"] == "artifact" and destination == DESTINATION_ACCOUNT_LOCKER_BAG:
+            candidate["classification"] = "artifact_recipient_deleted"
+            candidate["disposition"] = DISPOSITION["artifact_recipient_deleted"]
+            candidate["note"] = (
+                "artifacts cannot be persisted in lockers; custody remains quarantined for separate repair"
+            )
+            plans.append(candidate)
+            continue
         if candidate["kind"] == "artifact":
             reconciliation = artifact_reconciliation(
                 item, pid, artifacts, owner,
@@ -1994,9 +2301,15 @@ def plan_from_inspection(
                 "basis": timing_basis,
                 "compensation_reference": compensation_reference,
             }
-        candidate["delivered_root_item_uid"] = delivered_root
-        candidate["delivered_parent_item_uid"] = delivered_parent
-        candidate["destination"] = "player_inventory"
+        candidate["delivered_root_item_uid"] = (
+            bag_uid if destination == DESTINATION_ACCOUNT_LOCKER_BAG else delivered_root
+        )
+        candidate["delivered_parent_item_uid"] = (
+            bag_uid
+            if destination == DESTINATION_ACCOUNT_LOCKER_BAG and delivered_parent == 0
+            else delivered_parent
+        )
+        candidate["destination"] = destination
         candidate["equipment_slot"] = 0
         candidate["eligible"] = True
         if candidate.get("artifact_reconciliation_required"):
@@ -2026,6 +2339,8 @@ def plan_from_inspection(
             if not row.get("eligible") or not row.get("delivered_parent_item_uid"):
                 continue
             parent_uid = str(row["delivered_parent_item_uid"])
+            if destination == DESTINATION_ACCOUNT_LOCKER_BAG and parent_uid == str(bag_uid):
+                continue
             if parent_uid not in eligible:
                 row["eligible"] = False
                 row["classification"] = "parent_not_recoverable"
@@ -2040,8 +2355,13 @@ def plan_from_inspection(
         "artifact_identity_unbound", "artifact_binding_conflict", "cross_death_payload_conflict",
         "artifact_legacy_conflict", "artifact_competing_instance", "artifact_baseline_missing",
         "artifact_timing_missing", "artifact_timing_expired_at_loss",
+        "artifact_recipient_deleted",
     }
     eligible_count = sum(1 for row in plans if row.get("eligible"))
+    deleted_artifact_block = (
+        destination == DESTINATION_ACCOUNT_LOCKER_BAG and
+        any(row["classification"] == "artifact_recipient_deleted" for row in plans)
+    )
     refusal_counts: dict[str, int] = {}
     for row in plans:
         if not row.get("eligible"):
@@ -2067,7 +2387,8 @@ def plan_from_inspection(
         "preparation_mode": mode,
         "source": source,
         "recipient_pid": recipient,
-        "destination": "player_inventory",
+        "destination": destination,
+        "destination_evidence": dict(destination_evidence),
         "evidence_digest": inspection["evidence_digest"],
         "payload_digest": inspection["payload_digest"],
         "native_fence": native_fence,
@@ -2090,11 +2411,14 @@ def plan_from_inspection(
         "production_approved": bool(approve_production),
         "applyable": bool(
             mode == PREPARATION_MODE_OFFLINE_SQL and eligible_count and not global_errors and recipient == pid and
+            destination in {DESTINATION_PLAYER_INVENTORY, DESTINATION_ACCOUNT_LOCKER_BAG} and
+            not deleted_artifact_block and
             (not reconciliation_items or approve_artifact_reconciliation) and
             (not production or (approve_production and receipt is not None and boundary is not None))
         ),
         "exportable": bool(
-            mode == PREPARATION_MODE_NATIVE and eligible_count and not global_errors and recipient == pid and
+            mode == PREPARATION_MODE_NATIVE and destination == DESTINATION_PLAYER_INVENTORY and
+            eligible_count and not global_errors and recipient == pid and
             (not reconciliation_items or approve_artifact_reconciliation) and
             (not production or approve_production)
         ),
@@ -2105,6 +2429,8 @@ def plan_from_inspection(
         "related_deaths": inspection.get("related_deaths", []),
         "item_loss_epochs": inspection.get("item_loss_epochs", {}),
     }
+    if locker_delivery is not None:
+        body["locker_delivery"] = locker_delivery
     if target is not None:
         body["target"] = target
     if boundary is not None:
@@ -3127,8 +3453,35 @@ def eligible_items(plan: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+ITEM_PROJECTION_TABLES = (
+    "player_items", "corpse_items", "locker_items", "account_locker_items",
+    "saved_items", "player_pet_items", "shopkeeper_items", "siege_items",
+)
+
+
+def projection_count_sql(uids: Iterable[int]) -> str:
+    values = sql_list(uids)
+    return "(" + "+".join(
+        "(SELECT COUNT(*) FROM " + table + " WHERE obj_uid IN " + values + ")"
+        for table in ITEM_PROJECTION_TABLES
+    ) + ")"
+
+
+def append_projection_locks(lines: list[str], uids: Iterable[int]) -> None:
+    values = list(uids)
+    for table in ITEM_PROJECTION_TABLES:
+        lines.append(
+            "SELECT obj_uid FROM " + table + " WHERE obj_uid IN " +
+            sql_list(values) + " FOR UPDATE;"
+        )
+
+
 def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
     require_offline_sql_plan(plan, "apply")
+    if plan.get("destination") == DESTINATION_ACCOUNT_LOCKER_BAG:
+        return build_locker_apply_sql(plan, actor, reason)
+    if plan.get("destination", DESTINATION_PLAYER_INVENTORY) != DESTINATION_PLAYER_INVENTORY:
+        raise ToolError("plan has no supported SQL restitution destination")
     source_pid = int_value(plan["source"]["pid"], "source pid", 1, 2**31 - 1)
     death_revision = int_value(plan["source"]["death_revision"], "death revision", 1, 2**64 - 1)
     recipient_pid = int_value(plan["recipient_pid"], "recipient pid", 1, 2**31 - 1)
@@ -3858,6 +4211,631 @@ def build_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
     return "\n".join(lines)
 
 
+def build_locker_apply_sql(plan: dict[str, Any], actor: str, reason: str) -> str:
+    """Build a stopped-server repair into a deleted character's account locker."""
+    source_pid = int_value(plan["source"]["pid"], "source pid", 1, 2**31 - 1)
+    death_revision = int_value(plan["source"]["death_revision"], "death revision", 1, 2**64 - 1)
+    recipient_pid = int_value(plan["recipient_pid"], "recipient pid", 1, 2**31 - 1)
+    if recipient_pid != source_pid:
+        raise ToolError("locker restitution recipient must be the deleted source PID")
+    locker_delivery = plan.get("locker_delivery")
+    if not isinstance(locker_delivery, Mapping):
+        raise ToolError("locker restitution plan has no destination evidence")
+    deleted = locker_delivery.get("deleted_character")
+    locker = locker_delivery.get("locker")
+    bag = locker_delivery.get("bag")
+    if not isinstance(deleted, Mapping) or not isinstance(locker, Mapping) or not isinstance(bag, Mapping):
+        raise ToolError("locker restitution destination evidence is incomplete")
+
+    account_name = str(locker_delivery.get("account_name", ""))
+    historical_account = str(deleted.get("account_name", ""))
+    character_name = str(deleted.get("character_name", ""))
+    racewar = int_value(deleted.get("racewar"), "deleted recipient racewar", 0, 4)
+    locker_name = str(locker.get("locker_name", ""))
+    if not re.fullmatch(r"[A-Za-z0-9_.@-]{1,50}", account_name):
+        raise ToolError("locker restitution account identity is invalid")
+    if not re.fullmatch(r"[A-Za-z0-9_.@-]{1,50}", historical_account):
+        raise ToolError("locker restitution historical account identity is invalid")
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", character_name):
+        raise ToolError("locker restitution character identity is invalid")
+    if locker_name != f"account.{account_name.lower()}.{racewar}.locker":
+        raise ToolError("locker restitution name is not canonical for the account and racewar")
+
+    expected_bag = restitution_bag_metadata(character_name, source_pid, death_revision)
+    bag_uid = int_value(bag.get("item_uid"), "restitution bag UID", 1, 2**64 - 2)
+    if bag_uid != int_value(
+        locker_delivery.get("allocator_next_uid"), "allocator next UID", 1, 2**64 - 2
+    ):
+        raise ToolError("locker restitution bag UID differs from allocator evidence")
+    for field, expected in expected_bag.items():
+        if bag.get(field) != expected:
+            raise ToolError("locker restitution bag metadata differs from the required template")
+
+    eligible = eligible_items(plan)
+    all_items = plan.get("items", [])
+    if not isinstance(all_items, list) or not all_items or not eligible:
+        raise ToolError("locker restitution plan has no deliverable candidates")
+    if len(all_items) > 3000 or len(eligible) > 3000:
+        raise ToolError("plan exceeds the supported restitution item bound")
+    if any(row.get("classification") == "artifact_recipient_deleted" for row in all_items):
+        raise ToolError("deleted-recipient artifacts block partial account-locker restitution")
+    if any(row.get("kind") == "artifact" for row in eligible):
+        raise ToolError("artifacts cannot be delivered to an account locker")
+    if bag_uid in {int_value(row["item_uid"], "item UID", 1) for row in all_items}:
+        raise ToolError("restitution bag UID collides with a death item")
+    actor = actor.strip()
+    reason = reason.strip()
+    if not re.fullmatch(r"[A-Za-z0-9_.@:/ -]{1,128}", actor):
+        raise ToolError("actor must be a short non-secret operator label")
+    if not re.fullmatch(r"[A-Za-z0-9_.@:/()\[\], -]{1,255}", reason):
+        raise ToolError("reason contains unsupported characters")
+
+    custody_evidence = plan.get("custody_evidence", [])
+    if not isinstance(custody_evidence, list) or len(custody_evidence) > 3000:
+        raise ToolError("plan is missing bounded custody evidence")
+    expected_owner_revisions = {
+        int_value(row["expected_current"]["owner_revision"], "current owner revision", 0, 2**64 - 1)
+        for row in eligible
+    }
+    if len(expected_owner_revisions) != 1:
+        raise ToolError("eligible items do not share one source owner revision")
+    expected_owner_revision = next(iter(expected_owner_revisions))
+
+    locker_exists = bool(locker.get("exists"))
+    expected_locker_id = (
+        int_value(locker.get("locker_id"), "locker id", 1, 2**32 - 1) if locker_exists else 0
+    )
+    chest = locker.get("public_chest")
+    if not isinstance(chest, Mapping):
+        raise ToolError("locker restitution public chest evidence is missing")
+    chest_exists = bool(chest.get("exists"))
+    if chest_exists and not locker_exists:
+        raise ToolError("public chest cannot exist without its account locker")
+    expected_chest_id = (
+        int_value(chest.get("chest_id"), "public chest id", 1, 2**32 - 1) if chest_exists else 0
+    )
+    owner_revision_present = bool(locker.get("owner_revision_present"))
+    if owner_revision_present and not chest_exists:
+        raise ToolError("locker revision evidence has no public chest identity")
+    expected_locker_revision = int_value(
+        locker.get("owner_revision", 0), "locker owner revision", 0, 2**64 - 2
+    )
+    expected_locker_items = int_value(locker.get("item_count", 0), "locker item count", 0)
+    expected_locker_insert = 0 if locker_exists else 1
+    expected_chest_insert = 0 if chest_exists else 1
+    expected_revision_insert = 0 if owner_revision_present else 1
+
+    rid = hex_bytes(plan["restitution_id_hex"], "restitution ID")
+    evidence_digest = hex_bytes(plan["evidence_digest"], "evidence digest")
+    plan_digest = hex_bytes(plan["plan_digest"], "plan digest")
+    payload_digest = hex_bytes(plan["payload_digest"], "payload digest")
+    death_operation = hex_bytes(plan["source"]["operation_id_hex"], "death operation")
+    n = len(eligible)
+
+    lines = [
+        "SET autocommit=0;",
+        "START TRANSACTION;",
+        "CREATE TEMPORARY TABLE restitution_apply_items ("
+        "item_uid BIGINT UNSIGNED NOT NULL PRIMARY KEY,"
+        "delivered_parent_item_uid BIGINT UNSIGNED NOT NULL,"
+        "expected_root_item_uid BIGINT UNSIGNED NOT NULL,"
+        "expected_parent_item_uid BIGINT UNSIGNED NOT NULL DEFAULT 0,"
+        "expected_item_revision BIGINT UNSIGNED NOT NULL,"
+        "expected_owner_revision BIGINT UNSIGNED NOT NULL,"
+        "expected_state TINYINT UNSIGNED NOT NULL,"
+        "vnum INT NOT NULL,metadata_digest BINARY(32) NOT NULL,"
+        "metadata_payload MEDIUMBLOB NOT NULL) ENGINE=InnoDB;",
+        "CREATE TEMPORARY TABLE restitution_custody_evidence ("
+        "item_uid BIGINT UNSIGNED NOT NULL PRIMARY KEY,root_item_uid BIGINT UNSIGNED NOT NULL,"
+        "parent_item_uid BIGINT UNSIGNED NOT NULL,item_revision BIGINT UNSIGNED NOT NULL,"
+        "vnum INT NOT NULL,state TINYINT UNSIGNED NOT NULL,owner_type TINYINT UNSIGNED NOT NULL,"
+        "owner_id BIGINT UNSIGNED NOT NULL,owner_context_id BIGINT UNSIGNED NOT NULL,"
+        "owner_revision BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB;",
+    ]
+    temp_values: list[str] = []
+    for row in eligible:
+        current = row.get("expected_current")
+        if not isinstance(current, Mapping):
+            raise ToolError("eligible item has no current ownership fence")
+        if int_value(row.get("delivered_root_item_uid"), "delivery root", 1) != bag_uid:
+            raise ToolError("locker delivery item does not use the restitution bag root")
+        temp_values.append("(" + ",".join([
+            sql_num(row["item_uid"], "item UID", 1, 2**64 - 1),
+            sql_num(row.get("delivered_parent_item_uid"), "delivery parent", 1, 2**64 - 1),
+            sql_num(current["root_item_uid"], "current root", 1, 2**64 - 1),
+            sql_num(current.get("parent_item_uid", 0), "current parent", 0, 2**64 - 1),
+            sql_num(current["item_revision"], "current item revision", 0, 2**64 - 1),
+            sql_num(current["owner_revision"], "current owner revision", 0, 2**64 - 1),
+            sql_num(current["state"], "current state", 0, 255),
+            sql_num(row["vnum"], "item vnum", 1, 2**31 - 1),
+            sql_blob(row["metadata_digest"], "metadata digest"),
+            sql_blob(row["metadata_payload_hex"], "metadata payload"),
+        ]) + ")")
+    lines.append(
+        "INSERT INTO restitution_apply_items(item_uid,delivered_parent_item_uid,expected_root_item_uid,"
+        "expected_parent_item_uid,expected_item_revision,expected_owner_revision,expected_state,vnum,"
+        "metadata_digest,metadata_payload) VALUES " + ",".join(temp_values) + ";"
+    )
+    # MySQL 8 cannot reopen one TEMPORARY table through two aliases in a
+    # statement. Keep the full parent fence in an exact, transaction-local copy.
+    lines.extend([
+        "CREATE TEMPORARY TABLE restitution_apply_parents LIKE restitution_apply_items;",
+        "INSERT INTO restitution_apply_parents SELECT * FROM restitution_apply_items;",
+    ])
+    custody_values: list[str] = []
+    for evidence in custody_evidence:
+        if not isinstance(evidence, Mapping):
+            raise ToolError("source custody evidence has an invalid row")
+        custody_values.append("(" + ",".join([
+            sql_num(evidence["item_uid"], "custody UID", 1, 2**64 - 1),
+            sql_num(evidence["root_item_uid"], "custody root", 1, 2**64 - 1),
+            sql_num(evidence.get("parent_item_uid", 0), "custody parent", 0, 2**64 - 1),
+            sql_num(evidence["expected_item_revision"], "custody item revision", 0, 2**64 - 1),
+            sql_num(evidence["vnum"], "custody vnum", 1, 2**31 - 1),
+            sql_num(evidence["expected_state"], "custody state", 0, 255),
+            sql_num(evidence["owner_type"], "custody owner type", 0, 255),
+            sql_num(evidence["owner_id"], "custody owner ID", 0, 2**64 - 1),
+            sql_num(evidence["owner_context_id"], "custody context", 0, 2**64 - 1),
+            sql_num(evidence["owner_revision"], "custody owner revision", 0, 2**64 - 1),
+        ]) + ")")
+    if custody_values:
+        lines.append(
+            "INSERT INTO restitution_custody_evidence(item_uid,root_item_uid,parent_item_uid,item_revision,"
+            "vnum,state,owner_type,owner_id,owner_context_id,owner_revision) VALUES " +
+            ",".join(custody_values) + ";"
+        )
+
+    eligible_uids = [int_value(row["item_uid"], "item UID", 1, 2**64 - 1) for row in eligible]
+    lines.extend([
+        f"SELECT GET_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION},0) INTO @restitution_lock;",
+        f"SET @restitution_owner=(IFNULL(IS_USED_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION}),0)=CONNECTION_ID());",
+        "SET @restitution_ok=(@restitution_lock=1 AND @restitution_owner=1);",
+        "SELECT restitution_id FROM player_death_restitution_receipt WHERE restitution_id=" +
+        sql_blob(rid) + " FOR UPDATE;",
+        "SET @restitution_completed=(SELECT COUNT(*) FROM player_death_restitution_receipt WHERE restitution_id=" +
+        sql_blob(rid) + " AND plan_digest=" + sql_blob(plan_digest) + " AND evidence_digest=" +
+        sql_blob(evidence_digest) + " AND status IN (2,3));",
+        "SELECT pid,save_revision FROM player_death_disposition WHERE pid=" + str(source_pid) +
+        " AND save_revision=" + str(death_revision) + " FOR UPDATE;",
+        "SELECT pid,save_revision,item_uid FROM player_death_custody WHERE pid=" + str(source_pid) +
+        " AND save_revision=" + str(death_revision) + " FOR UPDATE;",
+        "SELECT item_uid FROM item_current_owner WHERE item_uid IN " + sql_list(eligible_uids) + " FOR UPDATE;",
+        "SELECT revision FROM item_owner_revision WHERE owner_type=" + str(OWNER_PLAYER) +
+        " AND owner_id=" + str(source_pid) + " AND owner_context_id=0 FOR UPDATE;",
+        "SELECT pid FROM player_data WHERE pid=" + str(recipient_pid) + " FOR UPDATE;",
+        "SELECT pid FROM frag_leaderboard WHERE pid=" + str(recipient_pid) + " FOR UPDATE;",
+        "SELECT account_name FROM accounts WHERE LOWER(account_name)=LOWER(" +
+        sql_text(account_name, "account name") + ") FOR UPDATE;",
+        "SELECT id FROM account_characters WHERE pid=" + str(recipient_pid) + " FOR UPDATE;",
+        "SELECT id FROM lockers WHERE locker_name=" + sql_text(locker_name, "locker name") + " FOR UPDATE;",
+    ])
+    if locker_exists:
+        lines.append(
+            "SELECT id FROM private_chests WHERE locker_id=" + str(expected_locker_id) +
+            " AND is_public=1 FOR UPDATE;"
+        )
+    if chest_exists:
+        lines.extend([
+            "SELECT id FROM locker_items WHERE locker_id=" + str(expected_locker_id) +
+            " AND chest_id=" + str(expected_chest_id) + " FOR UPDATE;",
+            "SELECT revision FROM item_owner_revision WHERE owner_type=" + str(OWNER_LOCKER) +
+            " AND owner_id=" + str(expected_locker_id) + " AND owner_context_id=" +
+            str(expected_chest_id) + " FOR UPDATE;",
+        ])
+    elif locker_exists:
+        lines.append(
+            "SELECT id FROM locker_items WHERE locker_id=" + str(expected_locker_id) +
+            " AND chest_id IS NULL FOR UPDATE;"
+        )
+    lines.extend([
+        "SELECT next_uid FROM item_uid_allocator WHERE allocator_id=1 FOR UPDATE;",
+        "SELECT item_uid FROM item_current_owner WHERE item_uid=" + str(bag_uid) + " FOR UPDATE;",
+    ])
+    append_projection_locks(lines, [*eligible_uids, bag_uid])
+    lines.extend([
+        "SELECT d.item_uid FROM player_death_restitution_delivery d JOIN restitution_apply_items p "
+        "ON p.item_uid=d.item_uid FOR UPDATE;",
+        "SET @database_quiescent=((" + database_visibility_sql() + ")=1 AND "
+        "(SELECT COUNT(*) FROM information_schema.processlist WHERE ID<>CONNECTION_ID())=0 AND "
+        "(SELECT COUNT(*) FROM information_schema.innodb_trx WHERE trx_mysql_thread_id<>CONNECTION_ID())=0);",
+        "SET @restitution_collision=(SELECT COUNT(*) FROM player_death_restitution_receipt WHERE restitution_id=" +
+        sql_blob(rid) + " AND (plan_digest<>" + sql_blob(plan_digest) + " OR evidence_digest<>" +
+        sql_blob(evidence_digest) + "));",
+        "SET @death_ok=(SELECT COUNT(*) FROM player_death_disposition WHERE pid=" + str(source_pid) +
+        " AND save_revision=" + str(death_revision) + " AND operation_id=" + sql_blob(death_operation) +
+        " AND corpse_item_uid=" + sql_num(plan["source"].get("corpse_item_uid", 1), "corpse UID", 1, 2**64 - 1) +
+        " AND corpse_room_vnum=" + sql_num(plan["source"].get("corpse_room_vnum", 1), "corpse room", 1, 2**31 - 1) +
+        " AND wallet_revision=" + sql_num(plan["source"].get("wallet_revision", 1), "wallet revision", 1, 2**64 - 1) +
+        " AND wallet_pile_uid=" + sql_num(plan["source"].get("wallet_pile_uid", 0), "wallet UID", 0, 2**64 - 1) +
+        " AND wallet_copper=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[0], "wallet copper") +
+        " AND wallet_silver=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[1], "wallet silver") +
+        " AND wallet_gold=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[2], "wallet gold") +
+        " AND wallet_platinum=" + sql_num(plan["source"].get("wallet_before", [0, 0, 0, 0])[3], "wallet platinum") +
+        " AND SHA2(payload,256)=UPPER('" + payload_digest.hex() + "') AND FLOOR(UNIX_TIMESTAMP(recorded_at))=" +
+        sql_num(plan["source"].get("loss_epoch", 1), "source loss epoch", 1, 2**63 - 1) + ");",
+        "SET @custody_ok=((SELECT COUNT(*) FROM player_death_custody WHERE pid=" + str(source_pid) +
+        " AND save_revision=" + str(death_revision) + ")=" + str(len(custody_evidence)) +
+        " AND (SELECT COUNT(*) FROM player_death_custody c JOIN restitution_custody_evidence e "
+        "ON e.item_uid=c.item_uid AND e.root_item_uid=c.root_item_uid AND e.parent_item_uid=c.parent_item_uid "
+        "AND e.item_revision=c.item_revision AND e.vnum=c.vnum AND e.state=c.state "
+        "AND e.owner_type=c.owner_type AND e.owner_id=c.owner_id AND e.owner_context_id=c.owner_context_id "
+        "AND e.owner_revision=c.owner_revision WHERE c.pid=" + str(source_pid) + " AND c.save_revision=" +
+        str(death_revision) + ")=" + str(len(custody_evidence)) + ");",
+        "SET @recipient_deleted_ok=((SELECT COUNT(*) FROM player_data WHERE pid=" + str(recipient_pid) + ")=0);",
+        "SET @history_ok=((SELECT COUNT(*) FROM frag_leaderboard WHERE pid=" + str(recipient_pid) +
+        " AND BINARY account_name=BINARY " + sql_text(historical_account, "historical account") +
+        " AND BINARY char_name=BINARY " + sql_text(character_name, "historical character") +
+        " AND racewar=" + str(racewar) + " AND deleted_at IS NOT NULL "
+        "AND DATE_FORMAT(deleted_at,'%Y-%m-%d %H:%i:%s')=" +
+        sql_text(str(deleted.get("deleted_at", "")), "historical deletion time") + ")=1);",
+        "SET @account_ok=((SELECT COUNT(*) FROM accounts WHERE BINARY account_name=BINARY " +
+        sql_text(account_name, "account name") + ")=1);",
+    ])
+    corroboration = deleted.get("account_character_corroboration")
+    if corroboration is None:
+        lines.append(
+            "SET @account_character_ok=((SELECT COUNT(*) FROM account_characters WHERE pid=" +
+            str(recipient_pid) + ")=0);"
+        )
+    elif isinstance(corroboration, Mapping):
+        lines.append(
+            "SET @account_character_ok=((SELECT COUNT(*) FROM account_characters WHERE pid=" +
+            str(recipient_pid) + " AND BINARY account_name=BINARY " +
+            sql_text(str(corroboration.get("account_name", "")), "account-character account") +
+            " AND BINARY char_name=BINARY " +
+            sql_text(str(corroboration.get("character_name", "")), "account-character name") +
+            " AND racewar=" + sql_num(corroboration.get("racewar"), "account-character racewar", 0, 4) +
+            " AND deleted_at IS NOT NULL AND DATE_FORMAT(deleted_at,'%Y-%m-%d %H:%i:%s')=" +
+            sql_text(str(corroboration.get("deleted_at", "")), "account-character deletion time") + ")=1);"
+        )
+    else:
+        raise ToolError("account-character corroboration has an invalid shape")
+
+    if locker_exists:
+        lines.append(
+            "SET @locker_shape_ok=((SELECT COUNT(*) FROM lockers WHERE id=" + str(expected_locker_id) +
+            " AND BINARY locker_name=BINARY " + sql_text(locker_name, "locker name") +
+            " AND COALESCE(owner_pid,0)=" + sql_num(locker.get("owner_pid", 0), "locker owner pid", 0) +
+            " AND COALESCE(owner_assoc_id,0)=" + sql_num(locker.get("owner_assoc_id", 0), "locker association", 0) +
+            " AND racewar=" + sql_num(locker.get("racewar"), "locker racewar", 0, 4) +
+            " AND race=" + sql_num(locker.get("race", 0), "locker race", 0) + ")=1);"
+        )
+    else:
+        lines.append(
+            "SET @locker_shape_ok=((SELECT COUNT(*) FROM lockers WHERE BINARY locker_name=BINARY " +
+            sql_text(locker_name, "locker name") + ")=0);"
+        )
+    if chest_exists:
+        password_hash_hex = str(chest.get("password_hash_hex", ""))
+        sort_config_hex = str(chest.get("sort_config_hex", ""))
+        if not re.fullmatch(r"[0-9a-fA-F]*", password_hash_hex) or not re.fullmatch(r"[0-9a-fA-F]*", sort_config_hex):
+            raise ToolError("public chest evidence has invalid hexadecimal metadata")
+        lines.extend([
+            "SET @chest_shape_ok=((SELECT COUNT(*) FROM private_chests WHERE id=" + str(expected_chest_id) +
+            " AND locker_id=" + str(expected_locker_id) + " AND BINARY chest_name=BINARY " +
+            sql_text(str(chest.get("chest_name", "")), "public chest name") +
+            " AND COALESCE(HEX(password_hash),'')='" + password_hash_hex.upper() +
+            "' AND is_public=1 AND COALESCE(HEX(sort_config),'')='" + sort_config_hex.upper() + "')=1);",
+            "SET @locker_items_ok=((SELECT COUNT(*) FROM locker_items WHERE locker_id=" +
+            str(expected_locker_id) + " AND chest_id=" + str(expected_chest_id) + ")=" +
+            str(expected_locker_items) + ");",
+            "SET @locker_revision_shape_ok=((SELECT COUNT(*) FROM item_owner_revision WHERE owner_type=" +
+            str(OWNER_LOCKER) + " AND owner_id=" + str(expected_locker_id) + " AND owner_context_id=" +
+            str(expected_chest_id) + " AND revision=" + str(expected_locker_revision) + ")=" +
+            ("1" if owner_revision_present else "0") + ");",
+        ])
+    else:
+        lines.extend([
+            "SET @chest_shape_ok=" + (
+                "((SELECT COUNT(*) FROM private_chests WHERE locker_id=" + str(expected_locker_id) +
+                " AND is_public=1)=0)" if locker_exists else "1"
+            ) + ";",
+            "SET @locker_items_ok=" + (
+                "((SELECT COUNT(*) FROM locker_items WHERE locker_id=" + str(expected_locker_id) +
+                " AND chest_id IS NULL)=0)" if locker_exists else "1"
+            ) + ";",
+            "SET @locker_revision_shape_ok=" + ("1" if not owner_revision_present else "0") + ";",
+        ])
+
+    lines.extend([
+        "SET @allocator_ok=((SELECT COUNT(*) FROM item_uid_allocator WHERE allocator_id=1 AND next_uid=" +
+        str(bag_uid) + ")=1);",
+        "SET @bag_owner_absent=((SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" + str(bag_uid) + ")=0);",
+        "SET @owner_ok=(SELECT COUNT(*) FROM item_current_owner own JOIN restitution_apply_items p "
+        "ON p.item_uid=own.item_uid LEFT JOIN item_owner_revision r ON r.owner_type=own.owner_type "
+        "AND r.owner_id=own.owner_id AND r.owner_context_id=own.owner_context_id WHERE own.owner_type=" +
+        str(OWNER_PLAYER) + " AND own.owner_id=" + str(source_pid) + " AND own.owner_context_id=0 "
+        "AND own.root_item_uid=p.expected_root_item_uid AND COALESCE(own.parent_item_uid,0)=p.expected_parent_item_uid "
+        "AND own.item_revision=p.expected_item_revision AND own.state=p.expected_state "
+        "AND COALESCE(r.revision,0)=p.expected_owner_revision AND own.vnum=p.vnum);",
+        "SET @parent_ok=(SELECT COUNT(*) FROM restitution_apply_items p WHERE p.delivered_parent_item_uid=" +
+        str(bag_uid) + " OR EXISTS(SELECT 1 FROM item_current_owner parent JOIN restitution_apply_parents pp "
+        "ON pp.item_uid=p.delivered_parent_item_uid WHERE parent.owner_type=" + str(OWNER_PLAYER) +
+        " AND parent.owner_id=" + str(source_pid) + " AND parent.owner_context_id=0 "
+        "AND parent.root_item_uid=pp.expected_root_item_uid "
+        "AND COALESCE(parent.parent_item_uid,0)=pp.expected_parent_item_uid "
+        "AND parent.item_revision=pp.expected_item_revision AND parent.state=pp.expected_state "
+        "AND pp.expected_state=" + str(STATE_QUARANTINED) + "));",
+        "SET @revision_ok=(SELECT COUNT(*) FROM item_owner_revision WHERE owner_type=" + str(OWNER_PLAYER) +
+        " AND owner_id=" + str(source_pid) + " AND owner_context_id=0 AND revision=" +
+        str(expected_owner_revision) + ");",
+        "SET @delivery_ok=(SELECT COUNT(*) FROM player_death_restitution_delivery d JOIN restitution_apply_items p "
+        "ON p.item_uid=d.item_uid);",
+        "SET @projection_ok=" + projection_count_sql(eligible_uids) + ";",
+        "SET @bag_projection_ok=" + projection_count_sql([bag_uid]) + ";",
+        "SET @restitution_ok=@restitution_ok AND @database_quiescent=1 AND @restitution_collision=0 "
+        "AND (@restitution_completed=1 OR (@death_ok=1 AND @custody_ok=1 AND @recipient_deleted_ok=1 "
+        "AND @history_ok=1 AND @account_ok=1 AND @account_character_ok=1 AND @locker_shape_ok=1 "
+        "AND @chest_shape_ok=1 AND @locker_items_ok=1 AND @locker_revision_shape_ok=1 "
+        "AND @allocator_ok=1 AND @bag_owner_absent=1 AND @owner_ok=" + str(n) +
+        " AND @parent_ok=" + str(n) + " AND @revision_ok=1 AND @delivery_ok=0 "
+        "AND @projection_ok=0 AND @bag_projection_ok=0));",
+        "SET @receipt_inserted=0,@receipt_items_inserted=0,@allocator_updated=0,"
+        "@locker_record_inserted=0,@chest_record_inserted=0,@locker_revision_inserted=0,"
+        "@source_revision_updated=0,@locker_revision_updated=0,@bag_owner_inserted=0,"
+        "@owner_rows_updated=0,@bag_row_inserted=0,@locker_rows_inserted=0,"
+        "@delivery_rows_inserted=0,@runtime_rows_inserted=0,@affect_rows_inserted=0,"
+        "@description_rows_inserted=0;",
+        "SET @restitution_delivery_epoch=FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6)));",
+        "INSERT INTO player_death_restitution_receipt(restitution_id,source_pid,death_revision,recipient_pid,"
+        "death_operation_id,evidence_digest,plan_digest,status,actor,reason,candidate_count,delivered_count,"
+        "unresolved_count,applied_at) SELECT " + sql_blob(rid) + "," + str(source_pid) + "," +
+        str(death_revision) + "," + str(recipient_pid) + "," + sql_blob(death_operation) + "," +
+        sql_blob(evidence_digest) + "," + sql_blob(plan_digest) + ",2," + sql_text(actor, "actor") + "," +
+        sql_text(reason, "reason") + "," + str(len(all_items)) + "," + str(n) + "," +
+        str(len(all_items) - n) + ",CURRENT_TIMESTAMP(6) WHERE @restitution_ok=1 AND @restitution_completed=0;",
+        "SET @receipt_inserted=ROW_COUNT();",
+    ])
+
+    for row in all_items:
+        uid = int_value(row["item_uid"], "item UID", 1, 2**64 - 1)
+        payload_hex = row.get("metadata_payload_hex")
+        metadata_digest = row.get("metadata_digest")
+        payload_expr = sql_blob(payload_hex, "metadata payload") if payload_hex else "NULL"
+        digest_expr = sql_blob(metadata_digest, "metadata digest") if metadata_digest else "NULL"
+        delivered_revision = (
+            str(int_value(
+                row.get("expected_current", {}).get("item_revision", 0),
+                "current item revision", 0, 2**64 - 2,
+            ) + 1)
+            if row.get("eligible") else "0"
+        )
+        lines.extend([
+            "INSERT INTO player_death_restitution_item(restitution_id,item_uid,source_root_item_uid,"
+            "source_parent_item_uid,delivered_root_item_uid,delivered_parent_item_uid,source_item_revision,"
+            "delivered_item_revision,vnum,artifact_vnum,disposition,classification,metadata_digest,metadata_payload,note,"
+            "artifact_loss_epoch,artifact_source_timer_epoch,artifact_usable_lifetime_seconds,"
+            "artifact_delivered_timer_epoch,artifact_timing_basis,artifact_compensation_reference) SELECT " +
+            sql_blob(rid) + "," + str(uid) + "," +
+            sql_num(row.get("source_root_item_uid", 0), "source root", 0, 2**64 - 1) + "," +
+            sql_num(row.get("source_parent_item_uid", 0), "source parent", 0, 2**64 - 1) + "," +
+            sql_num(row.get("delivered_root_item_uid", 0), "delivery root", 0, 2**64 - 1) + "," +
+            sql_num(row.get("delivered_parent_item_uid", 0), "delivery parent", 0, 2**64 - 1) + "," +
+            sql_num(row.get("source_item_revision", 0), "source item revision", 0, 2**64 - 1) + "," +
+            delivered_revision + "," + sql_num(row.get("vnum", 0), "item vnum", 0, 2**31 - 1) + ",0," +
+            sql_num(row["disposition"], "disposition", 1, 255) + "," +
+            sql_text(row["classification"], "classification") + "," + digest_expr + "," + payload_expr + "," +
+            sql_text(row.get("note", ""), "note") + ",0,0,0,0," + sql_text("", "artifact timing basis") +
+            "," + sql_text("", "artifact compensation reference") +
+            " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+            "SET @receipt_items_inserted=@receipt_items_inserted+ROW_COUNT();",
+        ])
+
+    lines.extend([
+        "UPDATE item_uid_allocator SET next_uid=next_uid+1 WHERE @restitution_ok=1 "
+        "AND @restitution_completed=0 AND allocator_id=1 AND next_uid=" + str(bag_uid) + ";",
+        "SET @allocator_updated=ROW_COUNT();",
+        "SET @locker_id=NULL;",
+        "SELECT id INTO @locker_id FROM lockers WHERE BINARY locker_name=BINARY " +
+        sql_text(locker_name, "locker name") + " LIMIT 1;",
+        "INSERT INTO lockers(locker_name,owner_pid,owner_assoc_id,racewar,race) SELECT " +
+        sql_text(locker_name, "locker name") + ",NULL,NULL," + str(racewar) + ",0 "
+        "WHERE @restitution_ok=1 AND @restitution_completed=0 AND @locker_id IS NULL;",
+        "SET @locker_record_inserted=ROW_COUNT();",
+        "SET @locker_id=IF(@locker_id IS NULL,LAST_INSERT_ID(),@locker_id);",
+        "SET @chest_id=NULL;",
+        "SELECT id INTO @chest_id FROM private_chests WHERE locker_id=@locker_id AND is_public=1 LIMIT 1;",
+        "INSERT INTO private_chests(locker_id,chest_name,password_hash,is_public,sort_config) "
+        "SELECT @locker_id,'public',NULL,1,NULL WHERE @restitution_ok=1 AND @restitution_completed=0 "
+        "AND @chest_id IS NULL;",
+        "SET @chest_record_inserted=ROW_COUNT();",
+        "SET @chest_id=IF(@chest_id IS NULL,LAST_INSERT_ID(),@chest_id);",
+        "INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) "
+        "SELECT " + str(OWNER_LOCKER) + ",@locker_id,@chest_id,0 WHERE @restitution_ok=1 "
+        "AND @restitution_completed=0 AND NOT EXISTS(SELECT 1 FROM item_owner_revision WHERE owner_type=" +
+        str(OWNER_LOCKER) + " AND owner_id=@locker_id AND owner_context_id=@chest_id);",
+        "SET @locker_revision_inserted=ROW_COUNT();",
+        "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,"
+        "owner_context_id,item_revision,vnum,state) SELECT " + str(bag_uid) + "," + str(bag_uid) +
+        ",NULL," + str(OWNER_LOCKER) + ",@locker_id,@chest_id,1," + str(RESTITUTION_BAG_VNUM) +
+        "," + str(STATE_ACTIVE) + " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+        "SET @bag_owner_inserted=ROW_COUNT();",
+        "UPDATE item_owner_revision SET revision=revision+1 WHERE @restitution_ok=1 "
+        "AND @restitution_completed=0 AND owner_type=" + str(OWNER_PLAYER) + " AND owner_id=" +
+        str(source_pid) + " AND owner_context_id=0 AND revision=" + str(expected_owner_revision) + ";",
+        "SET @source_revision_updated=ROW_COUNT();",
+        "UPDATE item_owner_revision SET revision=revision+1 WHERE @restitution_ok=1 "
+        "AND @restitution_completed=0 AND owner_type=" + str(OWNER_LOCKER) +
+        " AND owner_id=@locker_id AND owner_context_id=@chest_id AND revision=" +
+        str(expected_locker_revision) + ";",
+        "SET @locker_revision_updated=ROW_COUNT();",
+        "UPDATE item_current_owner own JOIN restitution_apply_items p ON p.item_uid=own.item_uid SET "
+        "own.root_item_uid=" + str(bag_uid) + ",own.parent_item_uid=p.delivered_parent_item_uid,"
+        "own.owner_type=" + str(OWNER_LOCKER) + ",own.owner_id=@locker_id,own.owner_context_id=@chest_id,"
+        "own.item_revision=own.item_revision+1,own.state=" + str(STATE_ACTIVE) + " WHERE @restitution_ok=1 "
+        "AND @restitution_completed=0 AND own.owner_type=" + str(OWNER_PLAYER) + " AND own.owner_id=" +
+        str(source_pid) + " AND own.owner_context_id=0 AND own.root_item_uid=p.expected_root_item_uid "
+        "AND COALESCE(own.parent_item_uid,0)=p.expected_parent_item_uid "
+        "AND own.item_revision=p.expected_item_revision AND own.state=p.expected_state AND own.vnum=p.vnum;",
+        "SET @owner_rows_updated=ROW_COUNT();",
+    ])
+
+    item_columns = (
+        "locker_id,chest_id,vnum,container_id,quantity,weight,cost,timer,extra_flags,wear_flags,item_type,"
+        "value0,value1,value2,value3,value4,value5,value6,value7,name,short_descr,description,action_descr,"
+        "obj_uid,item_condition,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,item_material"
+    )
+    bag_values = [
+        "@locker_id", "@chest_id", str(RESTITUTION_BAG_VNUM), "NULL", "1", "0", "1", "-1",
+        str(ITEM_TRANSIENT), str(RESTITUTION_BAG_WEAR_FLAGS), str(RESTITUTION_BAG_ITEM_TYPE),
+        *(str(value) for value in RESTITUTION_BAG_VALUES),
+        sql_text(str(bag["name"]), "bag name"),
+        sql_text(str(bag["short_description"]), "bag short description"),
+        sql_text(str(bag["description"]), "bag description"),
+        "NULL", str(bag_uid), "100", "0", "0", "0", "0", "0", str(RESTITUTION_BAG_MATERIAL),
+    ]
+    lines.extend([
+        "INSERT INTO locker_items(" + item_columns + ") SELECT " + ",".join(bag_values) +
+        " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+        "SET @bag_row_inserted=ROW_COUNT();",
+        "SET @bag_item_id=LAST_INSERT_ID();",
+        "INSERT INTO locker_item_extra_descr(item_id,keyword,description) SELECT @bag_item_id," +
+        sql_text(str(bag["marker_keyword"]), "bag marker") + "," +
+        sql_text(str(bag["marker_description"]), "bag marker description") +
+        " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+        "SET @description_rows_inserted=@description_rows_inserted+ROW_COUNT();",
+    ])
+
+    variables: dict[int, str] = {bag_uid: "@bag_item_id"}
+    for row in eligible:
+        uid = int_value(row["item_uid"], "item UID", 1, 2**64 - 1)
+        variables[uid] = "@restitution_item_" + str(uid)
+        item = row["metadata"]
+        parent_uid = int_value(row["delivered_parent_item_uid"], "delivery parent", 1, 2**64 - 1)
+        container_expr = variables.get(parent_uid, "")
+        if not container_expr:
+            raise ToolError("eligible locker plan is not in payload parent order")
+        masks = {
+            "name_hex": 1, "short_description_hex": 4,
+            "description_hex": 2, "action_description_hex": 8,
+        }
+        strings = [
+            sql_blob(item[field], field) if item["string_mask"] & mask else "NULL"
+            for field, mask in masks.items()
+        ]
+        values = [sql_num(value, "item value", -2**31, 2**31 - 1) for value in item["values"]]
+        bitvectors = [sql_num(value, "item bitvector", 0, 2**64 - 1) for value in item["bitvectors"]]
+        row_values = [
+            "@locker_id", "@chest_id", sql_num(item["vnum"], "item vnum", 1, 2**31 - 1),
+            container_expr, "1", sql_num(item["weight"], "item weight", -2**31, 2**31 - 1),
+            sql_num(item["cost"], "item cost", -2**31, 2**31 - 1),
+            sql_num(item["timers"][0], "item timer", -2**63, 2**63 - 1),
+            sql_num(item["extra_flags"], "extra flags", 0, 2**32 - 1),
+            sql_num(item["wear_flags"], "wear flags", 0, 2**32 - 1),
+            sql_num(item["type"], "item type", -128, 127),
+            *values, *strings, sql_num(uid, "item UID", 1, 2**64 - 1),
+            sql_num(item["condition"], "item condition", -32768, 32767), *bitvectors,
+            sql_num(item["material"], "item material", -128, 127),
+        ]
+        lines.extend([
+            "INSERT INTO locker_items(" + item_columns + ") SELECT " + ",".join(row_values) +
+            " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+            "SET @locker_rows_inserted=@locker_rows_inserted+ROW_COUNT();",
+            "SET " + variables[uid] + "=LAST_INSERT_ID();",
+        ])
+        seen_affects: set[tuple[int, int]] = set()
+        for affect in item["affects"]:
+            pair = (
+                int_value(affect[0], "affect location", -32768, 32767),
+                int_value(affect[1], "affect modifier", -32768, 32767),
+            )
+            if pair == (0, 0) or pair in seen_affects:
+                continue
+            seen_affects.add(pair)
+            lines.extend([
+                "INSERT INTO locker_item_affects(item_id,location,modifier) SELECT " +
+                variables[uid] + "," + str(pair[0]) + "," + str(pair[1]) +
+                " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+                "SET @affect_rows_inserted=@affect_rows_inserted+ROW_COUNT();",
+            ])
+        seen_descriptions: set[tuple[bytes, bytes]] = set()
+        for description in item["extra_descriptions"]:
+            keyword = hex_bytes(description["keyword_hex"], "extra-description keyword")
+            text = hex_bytes(description["description_hex"], "extra-description text")
+            if description.get("spellbook"):
+                keyword = b"SPELLBOOK"
+                text = ("[" + ",".join(
+                    str(int_value(value, "spell ID", -2**31, 2**31 - 1))
+                    for value in description.get("spell_ids", [])
+                ) + "]").encode()
+            pair = (keyword, text)
+            if not keyword or pair in seen_descriptions:
+                continue
+            seen_descriptions.add(pair)
+            lines.extend([
+                "INSERT INTO locker_item_extra_descr(item_id,keyword,description) SELECT " +
+                variables[uid] + "," + sql_blob(keyword, "extra-description keyword") + "," +
+                sql_blob(text, "extra-description text") +
+                " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+                "SET @description_rows_inserted=@description_rows_inserted+ROW_COUNT();",
+            ])
+        payload = hex_bytes(item["item_payload_hex"], "item payload")
+        metadata_digest = hex_bytes(row["metadata_digest"], "metadata digest")
+        delivered_revision = int_value(
+            row["expected_current"]["item_revision"], "current item revision", 0, 2**64 - 2
+        ) + 1
+        lines.extend([
+            "INSERT INTO player_death_restitution_delivery(item_uid,restitution_id,source_pid,death_revision,"
+            "recipient_pid,source_item_revision,delivered_item_revision,delivered_item_id,metadata_digest,original_payload) "
+            "SELECT " + str(uid) + "," + sql_blob(rid) + "," + str(source_pid) + "," +
+            str(death_revision) + "," + str(recipient_pid) + "," +
+            sql_num(row["source_item_revision"], "source item revision", 0, 2**64 - 1) + "," +
+            str(delivered_revision) + "," + variables[uid] + "," + sql_blob(metadata_digest) + "," +
+            sql_blob(payload) + " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+            "SET @delivery_rows_inserted=@delivery_rows_inserted+ROW_COUNT();",
+            "INSERT INTO player_death_restitution_runtime(item_uid,recipient_pid,state_payload,state_digest) SELECT " +
+            str(uid) + "," + str(recipient_pid) + "," + sql_blob(payload) + "," + sql_blob(metadata_digest) +
+            " WHERE @restitution_ok=1 AND @restitution_completed=0;",
+            "SET @runtime_rows_inserted=@runtime_rows_inserted+ROW_COUNT();",
+        ])
+
+    expected_affects = 0
+    expected_descriptions = 1
+    for row in eligible:
+        item = row["metadata"]
+        expected_affects += len({
+            (int_value(affect[0], "affect location", -32768, 32767),
+             int_value(affect[1], "affect modifier", -32768, 32767))
+            for affect in item["affects"]
+            if (int_value(affect[0], "affect location", -32768, 32767),
+                int_value(affect[1], "affect modifier", -32768, 32767)) != (0, 0)
+        })
+        description_pairs: set[tuple[bytes, bytes]] = set()
+        for description in item["extra_descriptions"]:
+            keyword = hex_bytes(description["keyword_hex"], "extra-description keyword")
+            text = hex_bytes(description["description_hex"], "extra-description text")
+            if description.get("spellbook"):
+                keyword = b"SPELLBOOK"
+                text = ("[" + ",".join(str(value) for value in description.get("spell_ids", [])) + "]").encode()
+            if keyword:
+                description_pairs.add((keyword, text))
+        expected_descriptions += len(description_pairs)
+
+    lines.extend([
+        f"SET @restitution_owner=(IFNULL(IS_USED_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION}),0)=CONNECTION_ID());",
+        "SET @restitution_ok=@restitution_ok AND @restitution_owner=1;",
+        "SET @restitution_ok=@restitution_ok AND (@restitution_completed=1 OR ("
+        "@receipt_inserted=1 AND @receipt_items_inserted=" + str(len(all_items)) +
+        " AND @allocator_updated=1 AND @locker_record_inserted=" + str(expected_locker_insert) +
+        " AND @chest_record_inserted=" + str(expected_chest_insert) +
+        " AND @locker_revision_inserted=" + str(expected_revision_insert) +
+        " AND @source_revision_updated=1 AND @locker_revision_updated=1 "
+        "AND @bag_owner_inserted=1 AND @owner_rows_updated=" + str(n) +
+        " AND @bag_row_inserted=1 AND @locker_rows_inserted=" + str(n) +
+        " AND @delivery_rows_inserted=" + str(n) + " AND @runtime_rows_inserted=" + str(n) +
+        " AND @affect_rows_inserted=" + str(expected_affects) +
+        " AND @description_rows_inserted=" + str(expected_descriptions) + "));",
+        "SET @restitution_decision=IF(@restitution_ok=1,'COMMIT','ROLLBACK');",
+        "PREPARE restitution_decision_stmt FROM @restitution_decision;",
+        "EXECUTE restitution_decision_stmt;",
+        "DEALLOCATE PREPARE restitution_decision_stmt;",
+        "SELECT CONCAT('DURIS_RESULT|',IFNULL(@restitution_ok,0),'|',IFNULL(@restitution_completed,0),'|',"
+        "IFNULL(@restitution_lock,0),'|'," + str(n) + ");",
+        f"DO RELEASE_LOCK({RUNTIME_EXCLUSION_LOCK_EXPRESSION});",
+    ])
+    return "\n".join(lines)
+
+
 def apply_plan(
     db: Mysql, plan: dict[str, Any], proof: Path, actor: str, reason: str,
     approve_artifact_reconciliation: bool = False, *, policy: TargetPolicy | None = None,
@@ -4076,6 +5054,102 @@ def fetch_player_rows(db: Mysql, pid: int, uids: Iterable[int]) -> dict[str, dic
     return result
 
 
+def fetch_locker_rows(db: Mysql, locker_name: str,
+                      uids: Iterable[int]) -> dict[str, dict[str, Any]]:
+    values = sorted({int_value(uid, "item UID", 1, 2**64 - 1) for uid in uids})
+    if not values:
+        return {}
+    rows = db.run(
+        "SELECT li.id,li.locker_id,COALESCE(li.chest_id,0),li.vnum,COALESCE(li.container_id,0),"
+        "li.quantity,li.weight,li.cost,li.timer,li.extra_flags,li.wear_flags,li.item_type,"
+        "li.value0,li.value1,li.value2,li.value3,li.value4,li.value5,li.value6,li.value7,"
+        "HEX(li.name),HEX(li.short_descr),HEX(li.description),HEX(li.action_descr),"
+        "li.bitvector1,li.bitvector2,li.bitvector3,li.bitvector4,li.bitvector5,li.item_material,"
+        "li.obj_uid,li.item_condition FROM locker_items li JOIN lockers l ON l.id=li.locker_id "
+        "WHERE BINARY l.locker_name=BINARY " + sql_text(locker_name, "locker name") +
+        " AND li.obj_uid IN " + sql_list(values) + " ORDER BY li.id"
+    )
+    result: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if len(row) != 32:
+            raise ToolError("locker item readback has an unexpected shape")
+        uid = row_int(row, 30, "locker UID", 1)
+        if uid is None or str(uid) in result:
+            raise ToolError("locker item readback has a missing or duplicate UID")
+        result[str(uid)] = {
+            "id": row_int(row, 0, "locker item row", 1),
+            "locker_id": row_int(row, 1, "locker id", 1),
+            "chest_id": row_int(row, 2, "locker chest id", 0),
+            "vnum": row_int(row, 3, "locker vnum", 1),
+            "container_id": row_int(row, 4, "locker container ID", 0),
+            "quantity": row_int(row, 5, "quantity", 1),
+            "weight": row_int(row, 6, "weight", -2**31),
+            "cost": row_int(row, 7, "cost", -2**31),
+            "timer": row_int(row, 8, "timer", -2**63),
+            "extra_flags": row_int(row, 9, "extra flags", 0),
+            "wear_flags": row_int(row, 10, "wear flags", 0),
+            "type": row_int(row, 11, "item type", -128),
+            "values": [row_int(row, index, "item value", -2**31) for index in range(12, 20)],
+            "name_hex": row_nullable_hex(row, 20),
+            "short_description_hex": row_nullable_hex(row, 21),
+            "description_hex": row_nullable_hex(row, 22),
+            "action_description_hex": row_nullable_hex(row, 23),
+            "bitvectors": [
+                row_int(row, index, "item bitvector", 0) if row_value(row, index) is not None else None
+                for index in range(24, 29)
+            ],
+            "material": row_int(row, 29, "item material", -128),
+            "object_uid": uid,
+            "condition": row_int(row, 31, "item condition", -32768),
+        }
+    return result
+
+
+def fetch_locker_item_metadata(
+    db: Mysql, uids: Iterable[int],
+) -> tuple[dict[int, set[tuple[int, int]]], dict[int, set[tuple[bytes, bytes]]]]:
+    values = sorted({int_value(uid, "item UID", 1, 2**64 - 1) for uid in uids})
+    if not values:
+        return {}, {}
+    id_rows = db.run("SELECT id,obj_uid FROM locker_items WHERE obj_uid IN " + sql_list(values))
+    item_ids: dict[int, int] = {}
+    for row in id_rows:
+        item_id = row_int(row, 0, "locker item row", 1)
+        uid = row_int(row, 1, "locker UID", 1)
+        if item_id is None or uid is None or item_id in item_ids:
+            raise ToolError("locker metadata identity is ambiguous")
+        item_ids[item_id] = uid
+    affect_rows = db.run(
+        "SELECT ia.item_id,ia.location,ia.modifier FROM locker_item_affects ia "
+        "JOIN locker_items li ON li.id=ia.item_id WHERE li.obj_uid IN " + sql_list(values) +
+        " ORDER BY ia.item_id,ia.id"
+    )
+    affects: dict[int, set[tuple[int, int]]] = {}
+    for row in affect_rows:
+        item_id = row_int(row, 0, "affect item", 1)
+        if item_id not in item_ids:
+            continue
+        affects.setdefault(item_ids[item_id], set()).add((
+            row_int(row, 1, "affect location", -32768),
+            row_int(row, 2, "affect modifier", -32768),
+        ))
+    description_rows = db.run(
+        "SELECT ed.item_id,HEX(ed.keyword),HEX(ed.description) FROM locker_item_extra_descr ed "
+        "JOIN locker_items li ON li.id=ed.item_id WHERE li.obj_uid IN " + sql_list(values) +
+        " ORDER BY ed.item_id,ed.id"
+    )
+    descriptions: dict[int, set[tuple[bytes, bytes]]] = {}
+    for row in description_rows:
+        item_id = row_int(row, 0, "description item", 1)
+        if item_id not in item_ids:
+            continue
+        descriptions.setdefault(item_ids[item_id], set()).add((
+            hex_bytes(row_value(row, 1), "description keyword"),
+            hex_bytes(row_value(row, 2), "description text"),
+        ))
+    return affects, descriptions
+
+
 def fetch_item_metadata(db: Mysql, uids: Iterable[int]) -> tuple[dict[int, set[tuple[int, int]]], dict[int, set[tuple[bytes, bytes]]]]:
     values = sorted({int_value(uid, "item UID", 1, 2**64 - 1) for uid in uids})
     if not values:
@@ -4128,6 +5202,204 @@ def fetch_runtime_state(db: Mysql, uids: Iterable[int]) -> dict[str, str]:
     return {str(row_int(row, 0, "runtime UID", 1)): (row_value(row, 1) or "").lower() for row in rows}
 
 
+def verify_locker_plan(
+    db: Mysql, plan: dict[str, Any], receipt: dict[str, Any],
+    delivery_rows: list[dict[str, Any]], receipt_item_rows: dict[str, dict[str, Any]],
+    failures: list[str],
+) -> tuple[bool, int, list[str]]:
+    locker_delivery = plan.get("locker_delivery")
+    if not isinstance(locker_delivery, Mapping):
+        raise ToolError("locker restitution plan has no destination evidence")
+    locker = locker_delivery.get("locker")
+    bag = locker_delivery.get("bag")
+    deleted = locker_delivery.get("deleted_character")
+    if not isinstance(locker, Mapping) or not isinstance(bag, Mapping) or not isinstance(deleted, Mapping):
+        raise ToolError("locker restitution destination evidence is incomplete")
+    locker_name = str(locker.get("locker_name", ""))
+    bag_uid = int_value(bag.get("item_uid"), "restitution bag UID", 1, 2**64 - 1)
+    eligible = eligible_items(plan)
+    uids = [int_value(row["item_uid"], "item UID", 1) for row in eligible]
+    all_uids = [bag_uid, *uids]
+    physical = fetch_locker_rows(db, locker_name, all_uids)
+    owners = fetch_current_owners(db, all_uids)
+    affects, descriptions = fetch_locker_item_metadata(db, all_uids)
+    runtimes = fetch_runtime_state(db, uids)
+    delivery_by_uid = {str(row["item_uid"]): row for row in delivery_rows}
+    if len(receipt_item_rows) != len(plan.get("items", [])):
+        failures.append("restitution item receipt count differs")
+    if set(physical) != {str(uid) for uid in all_uids}:
+        failures.append("account locker is missing the bag or a delivered UID")
+
+    bag_row = physical.get(str(bag_uid))
+    bag_owner = owners.get(str(bag_uid))
+    if bag_row is None or bag_owner is None:
+        failures.append("restitution bag is missing from physical or ownership authority")
+        return False, len(eligible), sorted(set(failures))
+    locker_id = int_value(bag_row["locker_id"], "locker id", 1)
+    chest_id = int_value(bag_row["chest_id"], "public chest id", 1)
+    public_chest_count = int_value(db.scalar(
+        "SELECT COUNT(*) FROM lockers l JOIN private_chests c ON c.locker_id=l.id "
+        "WHERE l.id=" + str(locker_id) + " AND c.id=" + str(chest_id) +
+        " AND BINARY l.locker_name=BINARY " + sql_text(locker_name, "locker name") +
+        " AND c.is_public=1"
+    ), "public chest count", 0)
+    if public_chest_count != 1:
+        failures.append("restitution bag is not in the account locker's public chest")
+
+    expected_bag = restitution_bag_metadata(
+        str(deleted.get("character_name", "")),
+        int_value(plan["source"]["pid"], "source pid", 1),
+        int_value(plan["source"]["death_revision"], "death revision", 1),
+    )
+    bag_scalars = {
+        "vnum": RESTITUTION_BAG_VNUM,
+        "container_id": 0,
+        "quantity": expected_bag["quantity"],
+        "weight": expected_bag["weight"],
+        "cost": expected_bag["cost"],
+        "timer": expected_bag["timer"],
+        "extra_flags": expected_bag["extra_flags"],
+        "wear_flags": expected_bag["wear_flags"],
+        "type": expected_bag["item_type"],
+        "values": expected_bag["values"],
+        "material": expected_bag["material"],
+        "object_uid": bag_uid,
+        "condition": expected_bag["condition"],
+    }
+    for field, expected in bag_scalars.items():
+        if bag_row.get(field) != expected:
+            failures.append("restitution bag template metadata differs")
+            break
+    bag_strings = {
+        "name_hex": expected_bag["name"].encode().hex(),
+        "short_description_hex": expected_bag["short_description"].encode().hex(),
+        "description_hex": expected_bag["description"].encode().hex(),
+        "action_description_hex": None,
+    }
+    for field, expected in bag_strings.items():
+        if (bag_row.get(field) or None) != (expected or None):
+            failures.append("restitution bag restring metadata differs")
+            break
+    expected_marker = {(
+        expected_bag["marker_keyword"].encode(),
+        expected_bag["marker_description"].encode(),
+    )}
+    if descriptions.get(bag_uid, set()) != expected_marker:
+        failures.append("restitution bag durable marker differs")
+    if affects.get(bag_uid, set()):
+        failures.append("restitution bag has unexpected affects")
+    if (
+        bag_owner.get("owner_type") != OWNER_LOCKER or bag_owner.get("owner_id") != locker_id or
+        bag_owner.get("owner_context_id") != chest_id or bag_owner.get("root_item_uid") != bag_uid or
+        bag_owner.get("parent_item_uid") != 0 or bag_owner.get("item_revision") != 1 or
+        bag_owner.get("vnum") != RESTITUTION_BAG_VNUM or bag_owner.get("state") != STATE_ACTIVE
+    ):
+        failures.append("restitution bag ownership authority differs")
+    expected_destination_revision = int_value(
+        locker.get("owner_revision", 0), "locker owner revision", 0
+    ) + 1
+    if bag_owner.get("owner_revision") != expected_destination_revision:
+        failures.append("account locker ownership revision differs")
+
+    id_by_uid = {int(uid): row["id"] for uid, row in physical.items()}
+    for planned in eligible:
+        uid = int_value(planned["item_uid"], "item UID", 1)
+        key = str(uid)
+        item_row = physical.get(key)
+        owner = owners.get(key)
+        delivery = delivery_by_uid.get(key)
+        if item_row is None or owner is None or delivery is None:
+            failures.append("delivered locker UID is missing from one authority")
+            continue
+        if item_row.get("locker_id") != locker_id or item_row.get("chest_id") != chest_id:
+            failures.append("delivered UID is outside the restitution bag's locker chest")
+        if delivery.get("delivered_item_id") != item_row.get("id"):
+            failures.append("delivery receipt does not identify the locker item row")
+        if delivery.get("metadata_digest") != planned.get("metadata_digest"):
+            failures.append("delivery metadata digest differs")
+        if digest_bytes(hex_bytes(delivery.get("original_payload_hex"), "original payload")) != planned.get(
+            "metadata_digest"
+        ):
+            failures.append("original payload digest differs")
+        if (
+            owner.get("owner_type") != OWNER_LOCKER or owner.get("owner_id") != locker_id or
+            owner.get("owner_context_id") != chest_id or owner.get("state") != STATE_ACTIVE
+        ):
+            failures.append("current owner does not point to the account locker")
+        if (
+            owner.get("root_item_uid") != planned.get("delivered_root_item_uid") or
+            owner.get("parent_item_uid") != planned.get("delivered_parent_item_uid")
+        ):
+            failures.append("current locker ownership topology differs from the plan")
+        expected_item_revision = int_value(
+            planned["expected_current"]["item_revision"], "current item revision", 0
+        ) + 1
+        if owner.get("item_revision") != expected_item_revision:
+            failures.append("delivered locker item revision differs")
+
+        item = planned["metadata"]
+        expected_strings = {
+            "name_hex": item["name_hex"] if item["string_mask"] & 1 else None,
+            "short_description_hex": item["short_description_hex"] if item["string_mask"] & 4 else None,
+            "description_hex": item["description_hex"] if item["string_mask"] & 2 else None,
+            "action_description_hex": item["action_description_hex"] if item["string_mask"] & 8 else None,
+        }
+        for field, expected in expected_strings.items():
+            if (item_row.get(field) or None) != (expected or None):
+                failures.append("stored locker item string metadata differs")
+        scalar_fields = {
+            "vnum": item["vnum"], "quantity": 1, "weight": item["weight"], "cost": item["cost"],
+            "timer": item["timers"][0], "extra_flags": item["extra_flags"],
+            "wear_flags": item["wear_flags"], "type": item["type"], "values": item["values"],
+            "material": item["material"], "condition": item["condition"], "object_uid": uid,
+        }
+        for field, expected in scalar_fields.items():
+            if item_row.get(field) != expected:
+                failures.append("stored locker item scalar metadata differs")
+        for index, expected in enumerate(item["bitvectors"]):
+            if item_row.get("bitvectors", [None] * 5)[index] != expected:
+                failures.append("stored locker item bitvector metadata differs")
+        parent_uid = int_value(planned["delivered_parent_item_uid"], "delivery parent", 1)
+        if item_row.get("container_id") != id_by_uid.get(parent_uid, -1):
+            failures.append("locker container topology differs")
+        expected_affects = {
+            (int(affect[0]), int(affect[1])) for affect in item["affects"]
+            if (int(affect[0]), int(affect[1])) != (0, 0)
+        }
+        if affects.get(uid, set()) != expected_affects:
+            failures.append("locker item affects differ")
+        expected_descriptions: set[tuple[bytes, bytes]] = set()
+        for description in item["extra_descriptions"]:
+            keyword = hex_bytes(description["keyword_hex"], "description keyword")
+            text = hex_bytes(description["description_hex"], "description text")
+            if description.get("spellbook"):
+                keyword = b"SPELLBOOK"
+                text = ("[" + ",".join(str(value) for value in description.get("spell_ids", [])) + "]").encode()
+            if keyword:
+                expected_descriptions.add((keyword, text))
+        if descriptions.get(uid, set()) != expected_descriptions:
+            failures.append("locker item extra descriptions differ")
+        native_delivery_hex = _native_item_state_payload(
+            item, uid, int_value(planned.get("equipment_slot", 0), "equipment slot", -32768, 32767)
+        ).hex()
+        snapshot_runtime = _snapshot_runtime_state_payload(item)
+        accepted_runtime_payloads = {item["item_payload_hex"], native_delivery_hex}
+        if snapshot_runtime is not None:
+            accepted_runtime_payloads.add(snapshot_runtime.hex())
+        if runtimes.get(key) not in accepted_runtime_payloads:
+            failures.append("exact runtime metadata payload differs")
+
+    if receipt["status"] not in {RECEIPT_APPLIED, RECEIPT_VERIFIED}:
+        failures.append("receipt is not in an applied state")
+    global_projection_count = int_value(
+        db.scalar("SELECT " + projection_count_sql(all_uids)),
+        "global projection count", 0,
+    )
+    if global_projection_count != len(all_uids):
+        failures.append("delivered UID has a duplicate or missing physical projection")
+    return not failures, len(eligible), sorted(set(failures))
+
+
 def verify_plan(
     db: Mysql, plan: dict[str, Any], policy: TargetPolicy | None = None,
     target_info: Mapping[str, Any] | None = None,
@@ -4178,6 +5450,12 @@ def verify_plan(
     receipt_item_rows = fetch_restitution_item_rows(db, rid)
     if len(delivery_rows) != len(eligible):
         failures.append("delivery receipt count differs")
+    if plan.get("destination") == DESTINATION_ACCOUNT_LOCKER_BAG:
+        return verify_locker_plan(
+            db, plan, receipt, delivery_rows, receipt_item_rows, failures
+        )
+    if plan.get("destination", DESTINATION_PLAYER_INVENTORY) != DESTINATION_PLAYER_INVENTORY:
+        raise ToolError("plan has no supported verification destination")
     delivery_by_uid = {str(row["item_uid"]): row for row in delivery_rows}
     uids = [int(row["item_uid"]) for row in eligible]
     players = fetch_player_rows(db, int_value(plan["recipient_pid"], "recipient pid", 1), uids)

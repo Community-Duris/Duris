@@ -437,8 +437,7 @@ bool currency_transaction_player_busy(P_char character)
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
 	const uint8_t racewar = static_cast<uint8_t>(GET_RACEWAR(character));
 	return std::any_of(pending.begin(), pending.end(),
-			   [pid, racewar, account_known, account_name](const auto &item)
-			   {
+			   [pid, racewar, account_known, account_name](const auto &item) {
 				   return pending_affects_character(item.second, pid, racewar,
 								    account_known, account_name);
 			   });

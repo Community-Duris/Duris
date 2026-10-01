@@ -8,6 +8,7 @@
 ;
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -437,9 +438,8 @@ int skull_leggings(P_obj leggings, P_char ch, int cmd, char * /*arg*/)
 				{
 					if (obj_index[ch->equipment[slot]->R_num].func.obj != NULL)
 					{
-						(*obj_index[ch->equipment[slot]->R_num].func.obj)(
-							ch->equipment[slot], ch, CMD_REMOVE,
-							(char *)"all");
+						invoke_object_special(ch->equipment[slot], ch,
+								      CMD_REMOVE, (char *)"all");
 					}
 					obj_to_char(unequip_char(ch, slot), ch);
 				}

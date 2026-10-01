@@ -18,6 +18,8 @@ enum class item_creation_prepare_result
 // Each invocation creates at most one detached root. Captures must own their
 // data and must not retain a character pointer across pulses.
 using item_creation_prepare_fn = std::function<item_creation_prepare_result(P_char, P_obj *)>;
+using item_creation_grant_completion_fn = void (*)(P_char actor, uint64_t item_uid, bool committed,
+						   unsigned int error_code);
 bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare);
 void item_creation_grant_prepare_pulse(void);
 
@@ -34,6 +36,13 @@ using item_movement_completion_fn = void (*)(P_char actor, bool committed,
 					     const item_transfer_result &result,
 					     unsigned int error_code, const uint8_t *context,
 					     size_t context_size);
+// Opt-in callbacks are the publication boundary: returning false retains the
+// movement entry and the coordinator's entity fences for a later attempt.
+using item_movement_publication_fn = bool (*)(P_char actor, bool committed,
+					      const item_transfer_result &result,
+					      unsigned int error_code, const uint8_t *context,
+					      size_t context_size);
+constexpr unsigned int ITEM_MOVEMENT_PUBLICATION_MAX_ATTEMPTS = 8;
 
 // A submission can be refused for reasons that are operationally very different: a
 // transient conflict the player should simply retry, versus ledger state that disagrees
@@ -72,6 +81,9 @@ struct item_movement_health
 	uint64_t rejected;
 	uint64_t submission_failures;
 	uint64_t stale_publications;
+	uint64_t publication_retrying;
+	uint64_t publication_blocked;
+	uint64_t publication_ack_pending;
 };
 
 bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_container,
@@ -80,7 +92,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
 				      size_t context_size, P_obj corpse_context = NULL,
-				      item_movement_reject *reject = NULL);
+				      item_movement_reject *reject = NULL,
+				      item_movement_publication_fn publication = nullptr);
 // A corpse_create batch validates and publishes all captured live roots before
 // invoking completion. Its callback persists/finalizes the corpse, not the moves.
 // Stale topology retains the movement and busy fence without calling completion.
@@ -89,9 +102,32 @@ bool item_movement_transaction_submit_batch(
 	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context = NULL,
-	item_movement_reject *reject = NULL);
+	item_movement_reject *reject = NULL, item_movement_publication_fn publication = nullptr);
+// Atomically retire captured input trees and publish one or more detached output
+// trees through the existing critical-command coordinator.
+bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,
+					    P_obj const *outputs, size_t output_count,
+					    int64_t recipe_id,
+					    item_movement_completion_fn completion,
+					    const void *context, size_t context_size,
+					    item_movement_reject *reject = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
+/* As above, but invoke `completion` only after the ownership authority has
+ * published the detached object to the recipient (or has terminally rejected
+ * the grant). The callback context is copied into the bounded transaction
+ * state and must not contain live pointers. */
+bool item_creation_grant_submit_to_player_with_completion(P_char actor, P_obj object,
+							  P_char recipient,
+							  item_movement_completion_fn completion,
+							  const void *context, size_t context_size,
+							  P_obj target_container = NULL);
+// Reports only the final outcome: committed means the durable grant was also
+// published into the requested live inventory/container. The callback runs
+// after the grant queue releases this request, so it may submit a successor.
+bool item_creation_grant_submit_to_player_with_completion(
+	P_char actor, P_obj object, P_char recipient, P_obj target_container,
+	item_creation_grant_completion_fn completion);
 bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
 						       P_char recipient);
 // Admit all detached roots before starting any ownership operation. A refused

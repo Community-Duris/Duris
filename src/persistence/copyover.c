@@ -113,6 +113,7 @@ bool copyover_training_dummy_is(P_char ch)
 struct copyover_worker_resume_guard
 {
 	bool armed = true;
+	bool redis_released = false;
 	~copyover_worker_resume_guard()
 	{
 		if (!armed)
@@ -121,6 +122,8 @@ struct copyover_worker_resume_guard
 		critical_command_coordinator_resume();
 		critical_outbox_resume();
 		player_save_pipeline_resume();
+		if (redis_released)
+			redis_world_recovery_resume_after_copyover();
 	}
 };
 
@@ -775,6 +778,19 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			"\r\n*** Copyover cancelled: starter equipment is still being granted; retry after completion. ***\r\n");
 		return false;
 	}
+	// Only playing plain-Telnet descriptors can survive exec. Leave every
+	// connection on the live process if even one would be dropped.
+	for (d = descriptor_list; d; d = d->next)
+		if (d->descriptor >= 0 &&
+		    (d->connected != CON_PLAYING || !d->character || d->websocket || d->sslses))
+		{
+			logit(LOG_STATUS,
+			      "copyover: non-preservable connection fd=%d state=%d ws=%d ssl=%d; aborting",
+			      d->descriptor, d->connected, d->websocket, d->sslses ? 1 : 0);
+			notify_copyover_failure(
+				"\r\n*** Copyover cancelled: a connection cannot survive this handoff; server remains live. ***\r\n");
+			return false;
+		}
 
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
@@ -899,7 +915,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!fp)
 	{
 		logit(LOG_STATUS, "copyover: cant open %s for writing", copyover_tmp);
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}
 
@@ -920,7 +936,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	    fwrite(&ws_desc, sizeof(int), 1, fp) != 1)
 	{
 		logit(LOG_STATUS, "copyover: failed to write header/sockets");
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
 		return false;
@@ -938,7 +954,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				      "copyover: failed to write descriptor entry for %s host=%s term_type=%d",
 				      GET_NAME(d->character), d->host, d->term_type);
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -952,7 +968,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!write_telemetry_copyover_state(fp, num_descs))
 	{
 		logit(LOG_STATUS, "copyover: failed to write telemetry session handoff state");
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
 		return false;
@@ -971,7 +987,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				logit(LOG_STATUS, "copyover: failed to write mob entry for %s",
 				      GET_NAME(ch));
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -997,7 +1013,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				logit(LOG_STATUS, "copyover: failed to write object entry vnum %d",
 				      OBJ_VNUM(obj));
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -1019,7 +1035,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 					      "copyover: failed to write room door %d/%d", room,
 					      dir);
 					notify_copyover_failure(
-						"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+						"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 					fclose(fp);
 					unlink(copyover_tmp);
 					return false;
@@ -1032,7 +1048,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: failed to close %s: %s", copyover_tmp,
 		      strerror(errno));
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		unlink(copyover_tmp);
 		return false;
 	}
@@ -1040,13 +1056,19 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: failed to publish %s as %s: %s", copyover_tmp,
 		      COPYOVER_FILE, strerror(errno));
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		unlink(copyover_tmp);
 		return false;
 	}
 
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
 	      num_mobs, num_objs, num_rooms);
+	if (!redis_world_recovery_prepare_copyover())
+	{
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	resume_workers.redis_released = true;
 
 	// All prerequisite saves and the complete copyover file are durable. Only
 	// now may non-preservable transports be disconnected.
@@ -1147,6 +1169,43 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 // find_player_by_name already declared in prototypes.h
 
+#ifdef USE_ACCOUNT
+static P_acct copyover_load_account(const std::string &authoritative_account_name,
+				    int32_t player_id, const char *player_name)
+{
+	if (authoritative_account_name.empty() || !player_name || !*player_name)
+	{
+		logit(LOG_STATUS, "copyover: loaded player has no authoritative account identity");
+		return NULL;
+	}
+
+	P_acct account = allocate_account();
+	if (!account)
+	{
+		logit(LOG_STATUS, "copyover: failed to allocate restored account");
+		return NULL;
+	}
+	account->acct_name = str_dup(authoritative_account_name.c_str());
+	if (!account->acct_name || read_account(account) == -1 || !account->acct_name ||
+	    strcasecmp(account->acct_name, authoritative_account_name.c_str()))
+	{
+		logit(LOG_STATUS, "copyover: failed to load authoritative account");
+		return free_account(account);
+	}
+
+	for (struct acct_chars *character = account->acct_character_list; character;
+	     character = character->next)
+	{
+		if (character->pid == player_id && character->charname &&
+		    !strcasecmp(character->charname, player_name))
+			return account;
+	}
+
+	logit(LOG_STATUS, "copyover: restored account does not own loaded character");
+	return free_account(account);
+}
+#endif
+
 // load a player character for copyover recovery
 static P_char copyover_load_player(const char *name, P_desc d)
 {
@@ -1159,13 +1218,21 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
 	request.include_items = true;
 	request.include_pets = true;
-	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
-	    result.request_id != request.request_id ||
-	    result.outcome != player_load_outcome::applied)
+	const bool worker_loaded =
+		player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000);
+	if (!worker_loaded || result.request_id != request.request_id ||
+	    (result.outcome != player_load_outcome::applied &&
+	     result.outcome != player_load_outcome::degraded))
 	{
-		logit(LOG_STATUS, "copyover: worker load failed (request=%llu outcome=%u)",
-		      (unsigned long long)request.request_id, (unsigned int)result.outcome);
-		return NULL;
+		player_load_result retry = {};
+		if (!player_load_pipeline_execute_sync(request, &retry) ||
+		    retry.request_id != request.request_id)
+		{
+			logit(LOG_STATUS, "copyover: player load failed (request=%llu outcome=%u)",
+			      (unsigned long long)request.request_id, (unsigned int)result.outcome);
+			return NULL;
+		}
+		result = std::move(retry);
 	}
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
@@ -1195,6 +1262,15 @@ static P_char copyover_load_player(const char *name, P_desc d)
 		free_char(player);
 		return NULL;
 	}
+#ifdef USE_ACCOUNT
+	P_acct account = copyover_load_account(result.account_name, result.pid, GET_NAME(player));
+	if (!account)
+	{
+		free_char(player);
+		return NULL;
+	}
+	d->account = account;
+#endif
 	return player;
 }
 
@@ -1309,19 +1385,6 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				d->character = ch;
 				ch->desc = d;
 				d->connected = CON_PLAYING;
-
-#ifdef USE_ACCOUNT
-				// restore account for preserved telnet connections
-				d->account = allocate_account();
-				if (d->account)
-				{
-					d->account->acct_name = str_dup(desc_entry.player_name);
-					if (read_account(d->account) == -1)
-					{
-						d->account = free_account(d->account);
-					}
-				}
-#endif
 
 				// make them alive
 				SET_POS(ch, POS_STANDING + STAT_NORMAL);

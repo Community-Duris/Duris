@@ -23,9 +23,13 @@
 #include "item/locker_identify.h"
 #include "economy/shop_trade_transaction.h"
 #include "core/utils.h"
+#include "core/safe_format.h"
 #include "account/account.h"
 #include "account/account_recovery.h"
+#include "account/creation_availability_config.h"
+#include "account/login_mode_banner.h"
 #include "account/password_hash.h"
+#include "combat/chaos_config.h"
 #include <ctype.h>
 #include <math.h>
 #include <openssl/crypto.h>
@@ -44,7 +48,6 @@
 #include "player/player_load_pipeline.h"
 #include "player/player_revision_state.h"
 #include "player/player_save_pipeline.h"
-#include "player/player_death_restitution_adapter.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/locker_async.h"
@@ -249,14 +252,6 @@ bool prepare_account_reconnect(P_char character, P_desc descriptor)
 {
 	if (!character || !descriptor)
 		return false;
-	if (GET_PID(character) > 0 &&
-	    !player_death_restitution_runtime_login_admit(GET_PID(character)))
-	{
-		SEND_TO_Q(
-			"That character is temporarily unavailable; please try again shortly.\r\n",
-			descriptor);
-		return false;
-	}
 
 	const auto save_fenced = [character]()
 	{
@@ -311,6 +306,40 @@ bool prepare_account_reconnect(P_char character, P_desc descriptor)
 		return false;
 	}
 	return true;
+}
+
+bool account_load_outcome_needs_sync_retry(player_load_outcome outcome)
+{
+	return outcome == player_load_outcome::retryable_failure ||
+	       outcome == player_load_outcome::timed_out ||
+	       outcome == player_load_outcome::cancelled || outcome == player_load_outcome::stale;
+}
+
+bool build_account_load_request(P_desc d, struct acct_chars *c, player_load_request *request_out)
+{
+	if (!d || !c || c->pid <= 0 || !d->account || !d->account->acct_name || !request_out)
+		return false;
+	player_load_request request = {};
+	request.request_id = player_load_pipeline_next_request_id();
+	request.pid = c->pid;
+	request.account_name = d->account->acct_name;
+	if (STATE(d) == CON_ACCT_DELETE_CHAR)
+	{
+		// Confirmation only needs character metadata, not live items or pets.
+		request.include_items = false;
+		request.include_pets = false;
+	}
+	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	*request_out = std::move(request);
+	return true;
+}
+
+bool execute_account_load_sync(P_desc d, struct acct_chars *c, player_load_result *result_out)
+{
+	player_load_request request = {};
+	if (!build_account_load_request(d, c, &request))
+		return false;
+	return player_load_pipeline_execute_sync(request, result_out);
 }
 } // namespace
 
@@ -452,6 +481,16 @@ void close_account_sessions_named(const char *acct_name, P_desc except, const ch
 	}
 }
 
+void send_account_name_prompt(P_desc d)
+{
+	const std::string banner = login_mode_banner(duris_staging_enabled(), chaos_mud_enabled(),
+						     creation_all_races_enabled(),
+						     creation_all_classes_enabled());
+	if (!banner.empty())
+		SEND_TO_Q(banner.c_str(), d);
+	SEND_TO_Q("Please enter your account name: ", d);
+}
+
 void send_account_password_prompt(P_desc d)
 {
 	SEND_TO_Q(account_recovery_enabled() ?
@@ -542,7 +581,7 @@ void select_accountname(P_desc d, char *arg)
 		return;
 	}
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, false))
 	{
 		SEND_TO_Q("Illegal account name, please try another.\r\n", d);
 		SEND_TO_Q("Account Name: ", d);
@@ -1181,7 +1220,7 @@ void verify_new_account_information(P_desc d, char *arg)
 		SEND_TO_Q("Ok, starting over!\r\n", d);
 		d->account = free_account(d->account);
 		STATE(d) = CON_GET_ACCT_NAME;
-		SEND_TO_Q("Please enter your account name: ", d);
+		send_account_name_prompt(d);
 		return;
 	}
 	else
@@ -1339,63 +1378,13 @@ void account_select_char(P_desc d, char *arg)
 		return;
 	}
 
-	if (!can_connect(c, d))
+	const account_racewar_admission admission = account_check_racewar_admission(
+		d, c->racewar, c->blocked, c->racewar == ACCT_IMMORTAL);
+	if (!admission.allowed)
 	{
 		char buf[512];
-		int current_time = time(NULL);
-		int time_remaining = 0;
-		int minutes_remaining = 0;
-		int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
-
-		// Calculate time remaining for racewar timer
-		if (c->racewar == ACCT_GOOD &&
-		    current_time < (d->account->acct_evil + racewarSwitchTimer))
-		{
-			time_remaining =
-				(d->account->acct_evil + racewarSwitchTimer) - current_time;
-			minutes_remaining = (time_remaining + 59) / 60; // Round up
-			snprintf(
-				buf, 512,
-				"\r\n&+RSorry, you cannot play this Good-aligned character yet!&n\r\n"
-				"You must wait &+Y%d&n more minute%s before playing a Good character.\r\n"
-				"(You recently played an Evil character)\r\n\r\n",
-				minutes_remaining, minutes_remaining == 1 ? "" : "s");
-			SEND_TO_Q(buf, d);
-		}
-		else if (c->racewar == ACCT_EVIL &&
-			 current_time < (d->account->acct_good + racewarSwitchTimer))
-		{
-			time_remaining =
-				(d->account->acct_good + racewarSwitchTimer) - current_time;
-			minutes_remaining = (time_remaining + 59) / 60; // Round up
-			snprintf(
-				buf, 512,
-				"\r\n&+RSorry, you cannot play this Evil-aligned character yet!&n\r\n"
-				"You must wait &+Y%d&n more minute%s before playing an Evil character.\r\n"
-				"(You recently played a Good character)\r\n\r\n",
-				minutes_remaining, minutes_remaining == 1 ? "" : "s");
-			SEND_TO_Q(buf, d);
-		}
-		else if (c->blocked)
-		{
-			SEND_TO_Q(
-				"\r\n&+RThis character has been blocked and cannot be played.&n\r\n\r\n",
-				d);
-		}
-		else
-		{
-			SEND_TO_Q("Sorry, you can't play that character right now!\r\n", d);
-		}
-
-		display_character_list(d);
-		return;
-	}
-
-	if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
-	{
-		SEND_TO_Q(
-			"That character is temporarily unavailable; please try again shortly.\r\n",
-			d);
+		account_format_racewar_denial(&admission, buf, sizeof(buf));
+		SEND_TO_Q(buf, d);
 		display_character_list(d);
 		return;
 	}
@@ -1480,61 +1469,14 @@ void account_confirm_char(P_desc d, char *arg)
 			return;
 		}
 
-		// Verify can still connect (double-check racewar timer, etc.)
-		if (!can_connect(c, d))
+		// Verify the shared policy again immediately before loading.
+		const account_racewar_admission admission = account_check_racewar_admission(
+			d, c->racewar, c->blocked, c->racewar == ACCT_IMMORTAL);
+		if (!admission.allowed)
 		{
 			char buf[512];
-			int current_time = time(NULL);
-			int time_remaining = 0;
-			int minutes_remaining = 0;
-			int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
-
-			if (c->racewar == ACCT_GOOD &&
-			    current_time < (d->account->acct_evil + racewarSwitchTimer))
-			{
-				time_remaining = (d->account->acct_evil + 3600) - current_time;
-				minutes_remaining = (time_remaining + 59) / 60;
-				snprintf(
-					buf, 512,
-					"\r\n&+RSorry, you cannot play this Good-aligned character yet!&n\r\n"
-					"You must wait &+Y%d&n more minute%s before playing a Good character.\r\n",
-					minutes_remaining, minutes_remaining == 1 ? "" : "s");
-				SEND_TO_Q(buf, d);
-			}
-			else if (c->racewar == ACCT_EVIL &&
-				 current_time < (d->account->acct_good + racewarSwitchTimer))
-			{
-				time_remaining = (d->account->acct_good + 3600) - current_time;
-				minutes_remaining = (time_remaining + 59) / 60;
-				snprintf(
-					buf, 512,
-					"\r\n&+RSorry, you cannot play this Evil-aligned character yet!&n\r\n"
-					"You must wait &+Y%d&n more minute%s before playing an Evil character.\r\n",
-					minutes_remaining, minutes_remaining == 1 ? "" : "s");
-				SEND_TO_Q(buf, d);
-			}
-			else if (c->blocked)
-			{
-				SEND_TO_Q(
-					"\r\n&+RThis character has been blocked and cannot be played.&n\r\n",
-					d);
-			}
-
-			if (d->selected_char_name)
-			{
-				str_free(d->selected_char_name);
-				d->selected_char_name = NULL;
-			}
-			display_character_list(d);
-			STATE(d) = CON_ACCT_SELECT_CHAR;
-			return;
-		}
-
-		if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
-		{
-			SEND_TO_Q(
-				"That character is temporarily unavailable; please try again shortly.\r\n",
-				d);
+			account_format_racewar_denial(&admission, buf, sizeof(buf));
+			SEND_TO_Q(buf, d);
 			if (d->selected_char_name)
 			{
 				str_free(d->selected_char_name);
@@ -1581,6 +1523,23 @@ void account_confirm_char(P_desc d, char *arg)
 			d->selected_char_name = NULL;
 		}
 
+		account_racewar_admission committed_admission = {};
+		if (!account_commit_character_admission(d, ch, c->blocked, &committed_admission))
+		{
+			char buf[512];
+			account_format_racewar_denial(&committed_admission, buf, sizeof(buf));
+			SEND_TO_Q(buf, d);
+			ch->desc = NULL;
+			free_char(ch);
+			d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+			STATE(d) = CON_ACCT_SELECT_CHAR;
+			display_character_list(d);
+			return;
+		}
+
+		// The durable account write reloads account projections, invalidating c.
+		c = find_char_in_list(d->account->acct_character_list, GET_NAME(ch));
+
 		// Show MOTD and enter game
 		if (IS_TRUSTED(ch))
 			SEND_TO_Q(wizmotd.c_str(), d);
@@ -1590,8 +1549,11 @@ void account_confirm_char(P_desc d, char *arg)
 		echo_on(d);
 		STATE(d) = CON_PLAYING;
 		d->character = ch;
-		c->count++;
-		c->last = time(NULL);
+		if (c)
+		{
+			c->count++;
+			c->last = time(NULL);
+		}
 		enter_game(d);
 		const int projection_room = ch->in_room >= 0 && ch->in_room <= top_of_world ?
 						    world[ch->in_room].number :
@@ -1606,16 +1568,6 @@ void account_confirm_char(P_desc d, char *arg)
 					  "loaded character projection save failed");
 		}
 		d->prompt_mode = !item_creation_grant_blocks_commands(ch);
-
-		switch (GET_RACEWAR(ch))
-		{
-		case RACEWAR_GOOD:
-			d->account->acct_good = time(NULL);
-			break;
-		case RACEWAR_EVIL:
-			d->account->acct_evil = time(NULL);
-			break;
-		}
 
 		return;
 	}
@@ -2201,107 +2153,239 @@ void display_character_list(P_desc d, P_acct account)
 	}
 }
 
+static enum account_racewar_side account_racewar_side_for(int racewar, bool immortal)
+{
+	if (immortal)
+		return ACCOUNT_RACEWAR_EXEMPT;
+	if (racewar == RACEWAR_GOOD)
+		return ACCOUNT_RACEWAR_GOOD;
+	if (racewar == RACEWAR_EVIL)
+		return ACCOUNT_RACEWAR_EVIL;
+	return ACCOUNT_RACEWAR_UNRESTRICTED;
+}
+
+static account_racewar_admission
+account_check_racewar_admission_at(P_desc d, int racewar, bool blocked, bool immortal, long now)
+{
+	const enum account_racewar_side side = account_racewar_side_for(racewar, immortal);
+	if (!d || !d->account)
+		return { false, ACCOUNT_RACEWAR_DENIAL_UNAVAILABLE, side, 0 };
+
+	const long cooldown_seconds = get_property("account.timer.racewarSwitch", 3600);
+	return account_racewar_evaluate(side, blocked, d->account->acct_good, d->account->acct_evil,
+					now, cooldown_seconds);
+}
+
+account_racewar_admission account_check_racewar_admission(P_desc d, int racewar, bool blocked,
+							  bool immortal)
+{
+	return account_check_racewar_admission_at(d, racewar, blocked, immortal,
+						  static_cast<long>(time(NULL)));
+}
+
+void account_format_racewar_denial(const account_racewar_admission *result, char *buffer,
+				   size_t buffer_size)
+{
+	if (!buffer || !buffer_size)
+		return;
+	if (!result)
+	{
+		checked_snprintf(buffer, buffer_size,
+				 "Sorry, that character cannot enter the game right now.\r\n");
+		return;
+	}
+
+	switch (result->denial)
+	{
+	case ACCOUNT_RACEWAR_DENIAL_BLOCKED:
+		checked_snprintf(
+			buffer, buffer_size,
+			"\r\n&+RThis character has been blocked and cannot be played.&n\r\n\r\n");
+		break;
+	case ACCOUNT_RACEWAR_DENIAL_COOLDOWN:
+	{
+		const long minutes_remaining =
+			result->remaining_seconds / 60 + (result->remaining_seconds % 60 != 0);
+		const char *side = result->side == ACCOUNT_RACEWAR_GOOD ? "Good" : "Evil";
+		const char *opposite = result->side == ACCOUNT_RACEWAR_GOOD ? "Evil" : "Good";
+		checked_snprintf(
+			buffer, buffer_size,
+			"\r\n&+RSorry, you cannot play this %s-aligned character yet!&n\r\n"
+			"You must wait &+Y%ld&n more minute%s before playing a %s character.\r\n"
+			"(You recently played a %s character)\r\n\r\n",
+			side, minutes_remaining, minutes_remaining == 1 ? "" : "s", side, opposite);
+		break;
+	}
+	case ACCOUNT_RACEWAR_DENIAL_PERSISTENCE:
+		checked_snprintf(
+			buffer, buffer_size,
+			"\r\n&+RYour side-switch timer could not be saved safely. Please try again "
+			"shortly.&n\r\n\r\n");
+		break;
+	case ACCOUNT_RACEWAR_DENIAL_UNAVAILABLE:
+	case ACCOUNT_RACEWAR_DENIAL_NONE:
+	default:
+		checked_snprintf(
+			buffer, buffer_size,
+			"\r\n&+RSorry, that character cannot enter the game right now.&n\r\n\r\n");
+		break;
+	}
+}
+
+bool account_commit_character_admission(P_desc d, P_char character, bool blocked,
+					account_racewar_admission *result)
+{
+	if (!d || !d->account || !character)
+	{
+		const account_racewar_admission unavailable = { false,
+								ACCOUNT_RACEWAR_DENIAL_UNAVAILABLE,
+								ACCOUNT_RACEWAR_UNRESTRICTED, 0 };
+		if (result)
+			*result = unavailable;
+		return false;
+	}
+	const long admitted_at = static_cast<long>(time(NULL));
+	account_racewar_admission admission = account_check_racewar_admission_at(
+		d, GET_RACEWAR(character), blocked, IS_TRUSTED(character), admitted_at);
+	if (!admission.allowed)
+	{
+		if (result)
+			*result = admission;
+		return false;
+	}
+
+	if (admission.side != ACCOUNT_RACEWAR_GOOD && admission.side != ACCOUNT_RACEWAR_EVIL)
+	{
+		if (result)
+			*result = admission;
+		return true;
+	}
+
+	long *side_timestamp = admission.side == ACCOUNT_RACEWAR_GOOD ? &d->account->acct_good :
+									&d->account->acct_evil;
+	const long previous_timestamp = *side_timestamp;
+	*side_timestamp = admitted_at;
+	if (write_account(d->account) != 1)
+	{
+		*side_timestamp = previous_timestamp;
+		admission.allowed = false;
+		admission.denial = ACCOUNT_RACEWAR_DENIAL_PERSISTENCE;
+		admission.remaining_seconds = 0;
+		statuslog(56, "&+RALERT&n: racewar admission timestamp save failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
+				  "racewar admission timestamp save failed");
+		if (result)
+			*result = admission;
+		return false;
+	}
+
+	if (result)
+		*result = admission;
+	return true;
+}
+
 int can_connect(struct acct_chars *c, P_desc d)
 {
-	int current_time = time(NULL);
-	int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
-
-	if (c->blocked)
-		return 0;
-
-	if (c->racewar == ACCT_IMMORTAL)
-		return 1;
-
-	if ((c->racewar == ACCT_GOOD) &&
-	    (current_time < (d->account->acct_evil + racewarSwitchTimer)))
-		return 0;
-
-	if ((c->racewar == ACCT_EVIL) &&
-	    (current_time < (d->account->acct_good + racewarSwitchTimer)))
-		return 0;
-
-	return 1;
+	return c && account_check_racewar_admission(d, c->racewar, c->blocked,
+						    c->racewar == ACCT_IMMORTAL)
+			    .allowed;
 }
 
 int is_char_in_game(struct acct_chars *c, P_desc d)
 {
-	P_desc k = descriptor_list;
-	P_char ch = character_list;
+	if (!c || !d)
+		return 0;
 
-	for (; k; k = k->next)
+	P_desc previous_descriptor = NULL;
+	P_char ch = NULL;
+	for (P_desc candidate = descriptor_list; candidate; candidate = candidate->next)
 	{
-		if ((k != d) && k->character && GET_NAME(k->character) &&
-		    !strcasecmp(GET_NAME(k->character), c->charname))
+		if (candidate != d && candidate->character && GET_NAME(candidate->character) &&
+		    !strcasecmp(GET_NAME(candidate->character), c->charname))
 		{
-			// ok, same character, take over the descriptor
-			if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
-			{
-				SEND_TO_Q(
-					"That character is temporarily unavailable; please try again shortly.\r\n",
-					d);
-				return 1;
-			}
-			d->character = k->character;
-			d->character->desc = d;
-			close_socket(k);
-			SEND_TO_Q("Overriding old connection...\r\n", d);
+			previous_descriptor = candidate;
+			ch = candidate->character;
+			break;
 		}
 	}
-
-	for (; ch; ch = ch->next)
+	if (!ch)
 	{
-		if (IS_PC(ch) && !ch->desc && GET_NAME(ch) &&
-		    !strcasecmp(GET_NAME(ch), c->charname))
+		for (P_char candidate = character_list; candidate; candidate = candidate->next)
 		{
-			if (c->pid > 0 && !player_death_restitution_runtime_login_admit(c->pid))
+			if (IS_PC(candidate) && !candidate->desc && GET_NAME(candidate) &&
+			    !strcasecmp(GET_NAME(candidate), c->charname))
 			{
-				SEND_TO_Q(
-					"That character is temporarily unavailable; please try again shortly.\r\n",
-					d);
-				return 1;
+				ch = candidate;
+				break;
 			}
-			echo_on(d);
-			SEND_TO_Q("Reconnecting...\r\n", d);
-			if (!prepare_account_reconnect(ch, d))
-				return 0;
-			act("$n has reconnected.", TRUE, ch, 0, 0, TO_ROOM);
-			d->character = ch;
-			// sql_update_playerIP(ch);  // Deprecated function
-			ch->specials.timer = 0;
-			STATE(d) = CON_PLAYING;
-			(void)telemetry_runtime_game_connection_transition(
-				ch, d, telemetry_connection_transition_kind::attached);
-			(void)telemetry_runtime_game_context(ch, d);
+		}
+	}
+	if (!ch)
+		return 0;
+	const bool blocked = c->blocked;
 
-			logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character),
-			      d->host);
-			loginlog(d->character->player.level, "%s [%s] has reconnected.",
-				 GET_NAME(d->character), d->host);
+	account_racewar_admission admission =
+		account_check_racewar_admission(d, GET_RACEWAR(ch), blocked, IS_TRUSTED(ch));
+	if (!admission.allowed)
+	{
+		char buf[512];
+		account_format_racewar_denial(&admission, buf, sizeof(buf));
+		SEND_TO_Q(buf, d);
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		display_character_list(d);
+		return 1;
+	}
 
-			if (IS_SET(ch->specials.act, PLR_MORPH))
-			{
-				if (!ch->only.pc->switched || !IS_MORPH(ch->only.pc->switched) ||
-				    /*              (ch != ((P_char)
-				       ch->only.pc->switched->only.npc->memory))) */
-				    (ch != ch->only.pc->switched->only.npc->orig_char))
-				{
-					logit(LOG_EXIT,
-					      "Something fucked while trying to reconnect linkless morph");
-					ch->desc = NULL;
-					d->character = NULL;
-					STATE(d) = CON_ACCT_SELECT_CHAR;
-					display_character_list(d);
-					return 1;
-				}
-				d->original = ch;
-				d->character = ch->only.pc->switched;
-				d->character->desc = d;
-				ch->desc = NULL;
-			}
+	if (previous_descriptor)
+		close_socket(previous_descriptor);
+	if (!prepare_account_reconnect(ch, d))
+		return 0;
+	if (!account_commit_character_admission(d, ch, blocked, &admission))
+	{
+		char buf[512];
+		account_format_racewar_denial(&admission, buf, sizeof(buf));
+		SEND_TO_Q(buf, d);
+		ch->desc = NULL;
+		d->character = NULL;
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		display_character_list(d);
+		return 1;
+	}
+
+	echo_on(d);
+	SEND_TO_Q(previous_descriptor ? "Overriding old connection...\r\n" : "Reconnecting...\r\n",
+		  d);
+	act("$n has reconnected.", TRUE, ch, 0, 0, TO_ROOM);
+	d->character = ch;
+	ch->specials.timer = 0;
+	STATE(d) = CON_PLAYING;
+	(void)telemetry_runtime_game_connection_transition(
+		ch, d, telemetry_connection_transition_kind::attached);
+	(void)telemetry_runtime_game_context(ch, d);
+
+	logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
+	loginlog(d->character->player.level, "%s [%s] has reconnected.", GET_NAME(d->character),
+		 d->host);
+
+	if (IS_SET(ch->specials.act, PLR_MORPH))
+	{
+		if (!ch->only.pc->switched || !IS_MORPH(ch->only.pc->switched) ||
+		    (ch != ch->only.pc->switched->only.npc->orig_char))
+		{
+			logit(LOG_EXIT,
+			      "Something fucked while trying to reconnect linkless morph");
+			ch->desc = NULL;
+			d->character = NULL;
+			STATE(d) = CON_ACCT_SELECT_CHAR;
+			display_character_list(d);
 			return 1;
 		}
+		d->original = ch;
+		d->character = ch->only.pc->switched;
+		d->character->desc = d;
+		ch->desc = NULL;
 	}
-	return 0;
+	return 1;
 }
 
 struct acct_chars *find_char_in_list(struct acct_chars *list, char *arg)
@@ -2325,47 +2409,49 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	player_load_result loaded = {};
 	if (!c || !d || c->pid <= 0 || !d->account || !d->account->acct_name)
 		return NULL;
-	if (!player_death_restitution_runtime_login_admit(c->pid))
-		return NULL;
 	if (!d->player_load_request_id)
 	{
 		player_load_request request = {};
-		request.request_id = player_load_pipeline_next_request_id();
-		request.pid = c->pid;
-		request.account_name = d->account->acct_name;
-		if (STATE(d) == CON_ACCT_DELETE_CHAR)
-		{
-			// Confirmation only needs character metadata, not live items or pets.
-			request.include_items = false;
-			request.include_pets = false;
-		}
-		request.deadline_usec =
-			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		if (!build_account_load_request(d, c, &request))
+			return NULL;
 		d->player_load_pid = c->pid;
 		if (STATE(d) == CON_ACCT_CONFIRM_CHAR)
 		{
 			if (player_load_pipeline_submit(request) !=
 			    player_load_submit_outcome::accepted)
 			{
+				if (!player_load_pipeline_execute_sync(request, &loaded))
+				{
+					d->player_load_pid = 0;
+					return NULL;
+				}
+				d->player_load_pid = 0;
+				d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+			}
+			else
+			{
+				d->player_load_request_id = request.request_id;
+				d->player_load_pid = c->pid;
+				d->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT;
+				STATE(d) = CON_PLAYER_LOAD;
+				SEND_TO_Q("Loading character...\r\n", d);
+				return NULL;
+			}
+		}
+		else
+		{
+			player_load_result blocking = {};
+			if (player_load_pipeline_wait(request, &blocking,
+						      PLAYER_LOAD_TIMEOUT_USEC / 1000))
+				loaded = std::move(blocking);
+			else if (!execute_account_load_sync(d, c, &loaded))
+			{
 				d->player_load_pid = 0;
 				return NULL;
 			}
-			d->player_load_request_id = request.request_id;
-			d->player_load_pid = c->pid;
-			d->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT;
-			STATE(d) = CON_PLAYER_LOAD;
-			SEND_TO_Q("Loading character...\r\n", d);
-			return NULL;
-		}
-		player_load_result blocking = {};
-		if (!player_load_pipeline_wait(request, &blocking, PLAYER_LOAD_TIMEOUT_USEC / 1000))
-		{
 			d->player_load_pid = 0;
-			return NULL;
+			d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 		}
-		loaded = std::move(blocking);
-		d->player_load_pid = 0;
-		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 	}
 	else
 	{
@@ -2377,12 +2463,16 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		d->player_load_request_id = 0;
 		d->player_load_pid = 0;
 	}
-	if (!player_death_restitution_runtime_login_admit(c->pid))
+	if (account_load_outcome_needs_sync_retry(loaded.outcome))
 	{
-		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
-		return NULL;
+		player_load_result retry = {};
+		if (!execute_account_load_sync(d, c, &retry))
+		{
+			d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+			return NULL;
+		}
+		loaded = std::move(retry);
 	}
-
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
 	{
@@ -2414,8 +2504,10 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		return NULL;
 	}
 	d->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT;
-	// fixing racewar assignment on character list
-	c->racewar = GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL : ACCT_GOOD;
+	// Preserve the trusted-character exemption in the account projection.
+	c->racewar = IS_TRUSTED(player)			 ? ACCT_IMMORTAL :
+		     GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL :
+							   ACCT_GOOD;
 	d->rtype = loaded.snapshot.save_intent;
 	return player;
 }
@@ -2434,8 +2526,7 @@ void account_player_load_complete(P_desc d, player_load_result result)
 		result.pid = d->player_load_pid;
 		result.outcome = player_load_outcome::stale;
 	}
-	if (d->player_load_pid <= 0 ||
-	    !player_death_restitution_runtime_login_admit(d->player_load_pid))
+	if (d->player_load_pid <= 0)
 	{
 		d->player_load_request_id = 0;
 		d->player_load_pid = 0;
@@ -2446,6 +2537,15 @@ void account_player_load_complete(P_desc d, player_load_result result)
 		STATE(d) = CON_ACCT_SELECT_CHAR;
 		display_character_list(d);
 		return;
+	}
+	if (!player_save_pipeline_save_admitted(d->player_load_pid) &&
+	    (result.outcome == player_load_outcome::applied ||
+	     result.outcome == player_load_outcome::degraded))
+	{
+		result.outcome = player_load_outcome::degraded;
+		result.degraded_components |= PLAYER_LOAD_DEGRADED_RECOVERY;
+		if (!result.failed_component)
+			result.failed_component = "recovery";
 	}
 	const uint64_t completed_request_id = result.request_id;
 	try
@@ -2511,7 +2611,7 @@ void account_new_char_name(P_desc d, char *arg)
 	for (; isspace(*arg); arg++)
 		;
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal character name, please try another.\r\n", d);
 		account_new_char(d, NULL);
@@ -2656,7 +2756,9 @@ int sync_account_character_projection(P_char player, int room, int persist)
 	character->race = GET_RACE(player);
 	character->m_class = player->player.m_class;
 	character->secondary_class = player->player.secondary_class;
-	character->racewar = GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL : ACCT_GOOD;
+	character->racewar = IS_TRUSTED(player)			 ? ACCT_IMMORTAL :
+			     GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL :
+								   ACCT_GOOD;
 	if (room != NOWHERE)
 		character->last_room = room;
 	character->last_save = time(NULL);

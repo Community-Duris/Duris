@@ -114,7 +114,8 @@ std::string render_daily_surface(P_char player, bool colors, bool score, std::st
 		return {};
 	const std::string before = tracker.serialize_state(error);
 	tracker.remember_character(current_season_id(), static_cast<uint32_t>(GET_PID(player)),
-				   GET_NAME(player));
+				   GET_NAME(player), !IS_TRUSTED(player),
+				   static_cast<int>(GET_RACEWAR(player)));
 	const int64_t now = static_cast<int64_t>(time(NULL));
 	std::string output =
 		score ? tracker.render_daily_score(current_season_id(),
@@ -192,7 +193,8 @@ bool remember_character(P_char player, std::string *error)
 		return fail(error, "zone-story character identity is unavailable");
 	const std::string before = tracker.serialize_state(error);
 	tracker.remember_character(current_season_id(), static_cast<uint32_t>(GET_PID(player)),
-				   GET_NAME(player));
+				   GET_NAME(player), !IS_TRUSTED(player),
+				   static_cast<int>(GET_RACEWAR(player)));
 	const std::string after = tracker.serialize_state(error);
 	if (before == after)
 		return true;
@@ -291,6 +293,9 @@ bool record_legacy_completion(struct char_data *player, const quest_complete_dat
 {
 	if (!player || IS_NPC(player) || !completion)
 		return fail(error, "legacy zone-story completion requires a player and Q block");
+	if (IS_TRUSTED(player))
+		return fail(error,
+			    "immortal characters are not eligible for quest completion tracking");
 	const std::string *definition_id =
 		zone_story_quest_production::definition_id_for(completion);
 	if (!definition_id)
@@ -309,7 +314,7 @@ bool record_legacy_completion(struct char_data *player, const quest_complete_dat
 	{
 		for (group_list *member = player->group; member; member = member->next)
 		{
-			if (!member->ch || !IS_PC(member->ch) ||
+			if (!member->ch || !IS_PC(member->ch) || IS_TRUSTED(member->ch) ||
 			    member->ch->in_room != player->in_room)
 				continue;
 			const uint32_t member_pid = static_cast<uint32_t>(GET_PID(member->ch));

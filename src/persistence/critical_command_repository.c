@@ -41,6 +41,7 @@
 
 namespace
 {
+static_assert(BOON_REWARD_RESULT_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 constexpr uint8_t INBOX_COMMITTED = 1;
 constexpr uint16_t OUTBOX_DESTINATION_TEST = 1;
 constexpr uint16_t OUTBOX_EVENT_TEST_MUTATED = 1;
@@ -1428,7 +1429,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> result_payload = {};
 		const size_t result_size = result_code ? 0 : result_payload.size();
 		uint64_t durable_revision = 0;
-		if (!result_code)
+		if (result_code == ESTALE)
+			// On a rejected corpse action the result payload is intentionally
+			// empty. Carry the revision read under the corpse lock so the live
+			// transaction can reconcile once before fencing the action.
+			durable_revision = corpse_result.corpse_revision;
+		else if (!result_code)
 			durable_revision = std::max(
 				{ corpse_result.corpse_revision, corpse_result.catalog_revision,
 				  corpse_result.corpse_owner_revision,
@@ -1884,8 +1890,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				for (size_t i = 0; i < zone_payload.group_size; ++i)
 					order.push_back(i);
 				std::sort(order.begin(), order.end(),
-					  [&](size_t a, size_t b)
-					  {
+					  [&](size_t a, size_t b) {
 						  return zone_payload.participant_pids[a] <
 							 zone_payload.participant_pids[b];
 					  });
@@ -2069,6 +2074,31 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	applied.result_size = result_payload.size();
 	std::copy(result_payload.begin(), result_payload.end(), applied.result_payload.begin());
 	return applied;
+}
+
+bool critical_command_repository_begin_inbox_in_transaction(MYSQL *connection,
+							    const critical_command &command)
+{
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
+	if (!connection || !critical_command_valid(command) ||
+	    !command_hashes(command, &command_hash, &keys_hash))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	return insert_inbox(connection, command, command_hash, keys_hash);
+}
+
+bool critical_command_repository_finish_item_transfer_in_transaction(
+	MYSQL *connection, const critical_command &command, const item_transfer_result &result)
+{
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded = {};
+	const uint64_t durable_revision = std::max(
+		{ result.from_owner_revision, result.to_owner_revision, result.max_item_revision });
+	return connection && item_transfer_command_encode_result(result, &encoded) &&
+	       insert_outbox(connection, command, encoded.data(), encoded.size()) &&
+	       finish_inbox(connection, command, durable_revision, 0, encoded.data(),
+			    encoded.size());
 }
 
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,

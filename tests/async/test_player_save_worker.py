@@ -85,12 +85,15 @@ player_save_apply_result apply_snapshot(const player_snapshot &snapshot, void *r
     }
     state.revisions[snapshot.pid].push_back(snapshot.revision);
     const bool retry = snapshot.pid == 3 && state.attempts[snapshot.pid] == 1;
+    const bool custody_mismatch = snapshot.pid == 6;
     --state.active;
     state.changed.notify_all();
-    return {retry ? player_save_apply_outcome::retryable_failure
-                  : player_save_apply_outcome::applied,
-            retry ? snapshot.revision - 1 : snapshot.revision,
-            retry ? 1213U : 0U};
+    return {custody_mismatch ? player_save_apply_outcome::terminal_failure
+                            : retry ? player_save_apply_outcome::retryable_failure
+                                    : player_save_apply_outcome::applied,
+            (retry || custody_mismatch) ? snapshot.revision - 1 : snapshot.revision,
+            custody_mismatch ? PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH
+                             : retry ? 1213U : 0U};
 }
 
 player_save_apply_result hold_snapshot(const player_snapshot &snapshot, void *raw)
@@ -187,6 +190,17 @@ int main()
     assert(health.queued_bytes == 0);
     assert(health.high_water_pids >= 3);
     assert(health.max_revision_gap == 1);
+
+    assert(player_revision_hydrate(6, 0));
+    assert(player_save_worker_submit(next_snapshot(6, PLAYER_COMPONENT_INVENTORY)) ==
+           player_save_submit_result::accepted);
+    wait_until([&] {
+        player_save_worker_pulse(completions, 8);
+        return player_save_worker_health_copy().custody_payload_mismatches == 1;
+    });
+    const player_save_worker_health mismatch_health = player_save_worker_health_copy();
+    assert(mismatch_health.terminal_failures == 1);
+    assert(mismatch_health.custody_payload_mismatches == 1);
 
     player_save_worker_shutdown();
     assert(!player_save_worker_health_copy().running);
