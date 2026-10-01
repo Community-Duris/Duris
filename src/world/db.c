@@ -2797,7 +2797,7 @@ P_char read_mobile_probe(int nr, int type)
 void event_object_proc(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	if (obj_index[obj->R_num].func.obj)
-		(*obj_index[obj->R_num].func.obj)(obj, 0, CMD_PERIODIC, 0);
+		invoke_object_special(obj, 0, CMD_PERIODIC, 0);
 
 	/* Object procs may extract their owner, which detaches this event before freeing it. */
 	if (!current_nevent || current_nevent->obj != obj)
@@ -3141,7 +3141,7 @@ P_obj instantiate_object_template(const object_template &prototype)
 
 	if (obj_index[nr].func.obj)
 	{
-		if ((*obj_index[nr].func.obj)(obj, 0, CMD_SET_PERIODIC, 0))
+		if (invoke_object_special(obj, 0, CMD_SET_PERIODIC, 0))
 			add_event(event_object_proc, PULSE_MOBILE + number(-4, 4), 0, 0, obj, 0, 0,
 				  0);
 	}

@@ -308,6 +308,8 @@ regular:
 
 bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 {
+	if (item_restricted_for_player_pet(ch, obj))
+		return FALSE;
 	struct extra_descr_data *ex;
 	int spells[3];
 	int room;
@@ -317,8 +319,7 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 	if ((OBJ_VNUM(obj) == 21 || OBJ_VNUM(obj) == 22) && native_artifact_owns(OBJ_VNUM(obj)))
 	{
 		if (obj_index[obj->R_num].func.obj)
-			return (*obj_index[obj->R_num].func.obj)(obj, ch, CMD_MELEE_HIT,
-								 (char *)victim);
+			return invoke_object_special(obj, ch, CMD_MELEE_HIT, (char *)victim);
 		return FALSE;
 	}
 
@@ -326,8 +327,7 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 	{
 		if (obj_index[obj->R_num].func.obj != NULL)
 		{
-			return (*obj_index[obj->R_num].func.obj)(obj, ch, CMD_MELEE_HIT,
-								 (char *)victim);
+			return invoke_object_special(obj, ch, CMD_MELEE_HIT, (char *)victim);
 		}
 		else
 		{
