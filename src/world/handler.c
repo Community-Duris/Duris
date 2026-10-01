@@ -51,6 +51,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
 #include "world/world_recovery_pipeline.h"
+#include "world/world_activity.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -1179,6 +1180,7 @@ void char_from_room(P_char ch)
 		}
 		i->next_in_room = ch->next_in_room;
 	}
+	world_activity_character_leave(ch);
 
 	ch->specials.was_in_room = world[ch->in_room].number;
 	ch->in_room = NOWHERE;
@@ -1425,6 +1427,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	}
 
 	AddCharToZone(ch);
+	world_activity_character_enter(ch);
 
 	if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
 	{
@@ -1980,6 +1983,7 @@ void obj_to_char(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
+	world_activity_object_enter(object);
 	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
@@ -2048,6 +2052,7 @@ void obj_from_char(P_obj object)
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 
+	world_activity_object_leave(object);
 	object->loc_p = LOC_NOWHERE;
 	object->loc.carrying = NULL; // must clear full pointer, not just int-sized loc.room
 	object->next_content = NULL;
@@ -2226,6 +2231,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 	ch->equipment[pos] = obj;
 	obj->loc.wearing = ch;
 	obj->loc_p = LOC_WORN;
+	world_activity_object_enter(obj);
 
 	if (IS_ARTIFACT(obj))
 	{
@@ -2282,6 +2288,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 		clear_links(ch, obj, LNKFLG_BREAK_REMOVE);
 	all_affects(ch, FALSE);
 	ch->equipment[pos] = NULL;
+	world_activity_object_leave(obj);
 
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.wearing = NULL; // must clear full pointer, not just int-sized loc.room
@@ -2861,6 +2868,7 @@ void obj_to_room(P_obj object, int room)
 
 	if (object && (object->type == ITEM_CORPSE) && IS_SET(object->value[1], PC_CORPSE))
 		writeCorpse(object);
+	world_activity_object_enter(object);
 
 	if (OBJ_FALLING(object))
 	{
@@ -2921,6 +2929,7 @@ void obj_from_room(P_obj object)
 	    ((object->type == ITEM_LIGHT) && (object->value[2] == -1)))
 		room_light(object->loc.room, REAL);
 
+	world_activity_object_leave(object);
 	object->loc_p = LOC_NOWHERE;
 	object->loc.room = NOWHERE;
 	object->next_content = NULL;
@@ -3078,6 +3087,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 
 	add_weight(obj_to, obj->weight);
 	resync_reducing_container(obj_to);
+	world_activity_object_enter(obj);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
 	  wgt = GET_OBJ_WEIGHT(obj);
 	  for (tmp_obj = obj->loc.inside; wgt && tmp_obj;
@@ -3158,6 +3168,7 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 
 	add_weight(obj_to, obj->weight);
 	resync_reducing_container(obj_to);
+	world_activity_object_enter(obj);
 
 	mark_container_dirty(obj_to);
 }
@@ -3209,6 +3220,7 @@ void obj_to_char_at_end(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
+	world_activity_object_enter(object);
 	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
@@ -3294,6 +3306,7 @@ void obj_from_obj(P_obj obj)
 
 	mark_container_dirty(obj_from);
 
+	world_activity_object_leave(obj);
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.inside = NULL; // must clear full pointer, not just int-sized loc.room
 	obj->next_content = NULL;
