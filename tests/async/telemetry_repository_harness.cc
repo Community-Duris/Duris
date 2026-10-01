@@ -76,11 +76,16 @@ int main()
 #else
 #include <mysql.h>
 #include <new>
-#include <fstream>
 #include <string>
 #include <vector>
 
 static unsigned int fixture_port = 3306U;
+static std::string fixture_host;
+static std::string fixture_user;
+static std::string fixture_password;
+static std::string fixture_database;
+static std::string fixture_engine;
+static std::string fixture_server_version;
 static MYSQL *observer = nullptr;
 static MYSQL *sink = nullptr;
 static unsigned int factory_calls = 0;
@@ -196,15 +201,6 @@ static void execute(const std::string &sql)
 		std::exit(1);
 	}
 }
-static void execute_migration_statement(const std::string &sql)
-{
-	execute(sql);
-	if (sql.find("EXECUTE ") != std::string::npos)
-	{
-		if (auto *result = mysql_store_result(observer))
-			mysql_free_result(result);
-	}
-}
 static unsigned long long scalar(const char *sql)
 {
 	execute(sql);
@@ -240,9 +236,12 @@ MYSQL *sql_open_telemetry_connection(void)
 	MYSQL *connection = mysql_init(nullptr);
 	CHECK(connection != nullptr);
 	unsigned int timeout = 2;
+	unsigned int protocol = MYSQL_PROTOCOL_TCP;
 	mysql_options(connection, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
-	if (!mysql_real_connect(connection, "127.0.0.1", "root", "", "duris_telemetry_test",
-				fixture_port, nullptr, 0))
+	mysql_options(connection, MYSQL_OPT_PROTOCOL, &protocol);
+	if (!mysql_real_connect(connection, fixture_host.c_str(), fixture_user.c_str(),
+				fixture_password.c_str(), fixture_database.c_str(), fixture_port,
+				nullptr, 0))
 	{
 		mysql_close(connection);
 		return nullptr;
@@ -291,6 +290,15 @@ static telemetry_record interval_record()
 	for (const auto &record : normal_interval_records)
 		if (record.header.kind == telemetry_record_kind::interval)
 			return record;
+	CHECK(false);
+	return {};
+}
+static telemetry_record fixture_record(telemetry_record_kind kind, const telemetry_record *records,
+				       std::size_t count)
+{
+	for (std::size_t index = 0; index < count; ++index)
+		if (records[index].header.kind == kind)
+			return records[index];
 	CHECK(false);
 	return {};
 }
@@ -430,6 +438,92 @@ static telemetry_record combat_summary_record(unsigned long long sequence)
 static void seed_config()
 {
 	expect_one(normal_interval_configs[0], telemetry_apply_outcome::applied);
+}
+
+static telemetry_record record_kind_fixture(telemetry_record_kind kind)
+{
+	switch (kind)
+	{
+	case telemetry_record_kind::interval:
+		return interval_record();
+	case telemetry_record_kind::session_lifecycle:
+		return fixture_record(kind, normal_interval_records,
+				      std::size(normal_interval_records));
+	case telemetry_record_kind::session_checkpoint:
+		return checkpoint_record(1U, 100U, 7303U);
+	case telemetry_record_kind::coverage_gap:
+		return fixture_record(kind, drop_recovery_no_invented_context_records,
+				      std::size(drop_recovery_no_invented_context_records));
+	case telemetry_record_kind::configuration:
+		return normal_interval_configs[0];
+	case telemetry_record_kind::progression:
+		return progression_record(7306U, 25);
+	case telemetry_record_kind::encounter:
+		return encounter_record(7307U);
+	case telemetry_record_kind::combat_summary:
+		return combat_summary_record(7308U);
+	default:
+		CHECK(false);
+		return {};
+	}
+}
+
+static void change_one_field(telemetry_record &record)
+{
+	switch (record.header.kind)
+	{
+	case telemetry_record_kind::interval:
+		record.payload.interval.quality_flags |= TELEMETRY_QUALITY_LATE;
+		break;
+	case telemetry_record_kind::session_lifecycle:
+		record.payload.lifecycle.quality_flags |= TELEMETRY_QUALITY_LATE;
+		break;
+	case telemetry_record_kind::session_checkpoint:
+		record.payload.checkpoint.quality_flags |= TELEMETRY_QUALITY_LATE;
+		break;
+	case telemetry_record_kind::coverage_gap:
+		record.payload.gap.quality_flags |= TELEMETRY_QUALITY_LATE;
+		break;
+	case telemetry_record_kind::configuration:
+		++record.header.occurrence_utc_usec;
+		break;
+	case telemetry_record_kind::progression:
+		record.payload.progression.quality_flags |= TELEMETRY_QUALITY_LATE;
+		break;
+	case telemetry_record_kind::encounter:
+		record.payload.encounter.quality_flags |= TELEMETRY_QUALITY_SEQUENCE_GAP;
+		break;
+	case telemetry_record_kind::combat_summary:
+		++record.payload.combat_summary.damage_dealt;
+		break;
+	default:
+		CHECK(false);
+	}
+	CHECK(telemetry_record_is_valid(record));
+}
+
+static void every_record_kind_round_trip_tests()
+{
+	for (unsigned int number = 1U; number <= 8U; ++number)
+	{
+		const auto kind = static_cast<telemetry_record_kind>(number);
+		std::string label = "record-kind:" + std::to_string(number);
+		case_name = label.c_str();
+		reset_fixture();
+		if (kind != telemetry_record_kind::configuration)
+			seed_config();
+		const auto original = record_kind_fixture(kind);
+		CHECK(telemetry_record_is_valid(original));
+		expect_one(original, telemetry_apply_outcome::applied);
+		expect_one(original, telemetry_apply_outcome::duplicate_identical);
+		auto conflict = original;
+		change_one_field(conflict);
+		expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
+		const std::string count =
+			"SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=" +
+			std::to_string(number);
+		CHECK(scalar(count.c_str()) == 1U);
+	}
 }
 
 static void replay_and_isolation_tests()
@@ -1094,48 +1188,58 @@ static void bounds_and_lifecycle_tests()
 	CHECK(telemetry_repository_health_copy().state != telemetry_health_state::healthy);
 }
 
-int main(int argc, char **argv)
+int main()
 {
-	CHECK(argc >= 2);
 	const char *ack = std::getenv("TELEMETRY_REPOSITORY_DISPOSABLE");
 	CHECK(ack && std::strcmp(ack, "1") == 0);
-	const char *port = std::getenv("TELEMETRY_REPOSITORY_PORT");
-	CHECK(!port || std::strcmp(port, "3306") == 0 || std::strcmp(port, "3307") == 0);
-	fixture_port = port && std::strcmp(port, "3307") == 0 ? 3307U : 3306U;
+	auto required = [](const char *name)
+	{
+		const char *value = std::getenv(name);
+		CHECK(value && *value);
+		return value;
+	};
+	fixture_host = required("TELEMETRY_REPOSITORY_HOST");
+	fixture_user = required("TELEMETRY_REPOSITORY_USER");
+	fixture_password = required("TELEMETRY_REPOSITORY_PASSWORD");
+	fixture_database = required("TELEMETRY_REPOSITORY_DATABASE");
+	fixture_engine = required("TELEMETRY_REPOSITORY_DB_IMAGE");
+	CHECK(fixture_host == "127.0.0.1");
+	CHECK(fixture_database.starts_with("duris_telemetry_test_") &&
+	      fixture_database.size() >= 33U && fixture_database.size() <= 101U);
+	for (char character : fixture_database)
+		CHECK((character >= 'a' && character <= 'z') ||
+		      (character >= '0' && character <= '9') || character == '_');
+	char *port_end = nullptr;
+	const unsigned long parsed_port =
+		std::strtoul(required("TELEMETRY_REPOSITORY_PORT"), &port_end, 10);
+	CHECK(port_end && *port_end == '\0' && parsed_port > 0U && parsed_port <= 65535U);
+	fixture_port = static_cast<unsigned int>(parsed_port);
+	char *migration_count_end = nullptr;
+	const unsigned long expected_migration_count = std::strtoul(
+		required("TELEMETRY_REPOSITORY_MIGRATION_COUNT"), &migration_count_end, 10);
+	CHECK(migration_count_end && *migration_count_end == '\0' && expected_migration_count > 0U);
 	observer = mysql_init(nullptr);
 	CHECK(observer != nullptr);
-	CHECK(mysql_real_connect(observer, "127.0.0.1", "root", "", nullptr, fixture_port, nullptr,
-				 0) != nullptr);
+	unsigned int protocol = MYSQL_PROTOCOL_TCP;
+	CHECK(mysql_options(observer, MYSQL_OPT_PROTOCOL, &protocol) == 0);
+	CHECK(mysql_real_connect(observer, fixture_host.c_str(), fixture_user.c_str(),
+				 fixture_password.c_str(), fixture_database.c_str(), fixture_port,
+				 nullptr, 0) != nullptr);
 	CHECK(__real_mysql_real_query(observer, "SELECT VERSION()", 16) == 0);
 	MYSQL_RES *version = mysql_store_result(observer);
 	CHECK(version != nullptr);
 	MYSQL_ROW version_row = mysql_fetch_row(version);
 	CHECK(version_row && version_row[0]);
-	std::printf("Repository disposable fixture server: %s (port %u)\n", version_row[0],
-		    fixture_port);
+	fixture_server_version = version_row[0];
+	std::printf("Repository disposable fixture engine=%s server=%s database=%s (port %u)\n",
+		    fixture_engine.c_str(), fixture_server_version.c_str(),
+		    fixture_database.c_str(), fixture_port);
 	mysql_free_result(version);
-	execute("DROP DATABASE IF EXISTS duris_telemetry_test");
-	execute("CREATE DATABASE duris_telemetry_test");
-	CHECK(mysql_select_db(observer, "duris_telemetry_test") == 0);
-	for (int migration_index = 1; migration_index < argc; ++migration_index)
-	{
-		std::ifstream migration(argv[migration_index]);
-		CHECK(migration.good());
-		std::string schema;
-		for (std::string line; std::getline(migration, line);)
-			if (line.rfind("--", 0) != 0)
-				schema += line + "\n";
-		std::size_t start = 0;
-		for (std::size_t end = schema.find(';'); end != std::string::npos;
-		     end = schema.find(';', start))
-		{
-			execute_migration_statement(schema.substr(start, end - start));
-			start = end + 1;
-		}
-	}
+	CHECK(scalar("SELECT COUNT(*) FROM mud_schema_history") == expected_migration_count);
 	initialization_stop_tests();
 	allocation_failure_tests();
 	golden_tests();
+	every_record_kind_round_trip_tests();
 	replay_and_isolation_tests();
 	progression_replay_tests();
 	typed_extension_mapping_tests();
@@ -1149,7 +1253,7 @@ int main(int argc, char **argv)
 	bounds_and_lifecycle_tests();
 	shutdown_fixture();
 	mysql_close(observer);
-	std::puts(
-		"SQL repository runtime: PASS (10 golden fixtures and focused failure/isolation regressions)");
+	std::puts("SQL repository runtime: PASS (record kinds 1-8, 10 golden fixtures, and focused "
+		  "failure/isolation regressions)");
 }
 #endif
