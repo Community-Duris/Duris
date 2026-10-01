@@ -92,7 +92,7 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/currency_transaction_mysql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
-    src/item/item_transfer_command.c src/item/item_transfer_repository.c src/economy/auction_command.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
     src/economy/auction_repository.c src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
     src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
     src/economy/boon_reward_command.c src/economy/boon_reward_repository.c \
@@ -150,7 +150,7 @@ export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
     src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
-    src/item/item_transfer_command.c src/item/item_transfer_repository.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c \
     src/item/economic_accounting_item_reference.c \
     src/economy/auction_command.c src/economy/auction_repository.c \
     src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \

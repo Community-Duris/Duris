@@ -512,7 +512,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1743,
+          1747,
           "money_helper"
         ]
       ],
@@ -3476,7 +3476,7 @@
       "coverage": "legacy",
       "classification": "Chaos pouch collection submits a batch UID handoff.",
       "authority_boundary": "Accepted submit_pouch_collection source event, selected backend, expected native revisions and receipt before publication.",
-      "current_support": "Typed submission exists; complete accounting, backend parity and playable refusal unverified.",
+      "current_support": "Typed retained-pouch craft admission commits exact physical retirements, genuine output UIDs and bounded counter updates atomically. Native MySQL, MariaDB and flatfile repeated collection/replay tests pass; flatfile interrupted recovery and runtime publication retention pass. Integrated active-epoch gameplay remains unqualified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -3491,11 +3491,15 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_chaos_pouch_ledger.py",
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/test_issue_551_flatfile_craft.py"
+      ],
       "sites": [
         [
           "src/combat/chaos_materials.c",
-          491,
+          455,
           "economic_submit"
         ]
       ],
@@ -3696,12 +3700,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          1714,
+          1707,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          1714,
+          1707,
           "item_publication"
         ]
       ],
@@ -3738,12 +3742,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          854,
+          847,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          868,
+          861,
           "item_publication"
         ]
       ],
@@ -3757,9 +3761,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -3777,7 +3781,10 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
@@ -3792,27 +3799,27 @@
         ],
         [
           "src/classes/drannak.c",
-          456,
+          449,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          464,
+          457,
           "economic_submit"
         ],
         [
           "src/classes/drannak.c",
-          469,
+          462,
           "item_lifecycle"
         ]
       ],
       "evidence": [],
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -3851,12 +3858,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          924,
+          917,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          928,
+          921,
           "item_lifecycle"
         ]
       ],
@@ -3893,12 +3900,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          938,
+          931,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          942,
+          935,
           "item_lifecycle"
         ]
       ],
@@ -5810,52 +5817,6 @@
       }
     },
     {
-      "id": "combat.chaos_material_cleanup",
-      "path": "src/combat/chaos_materials.c",
-      "symbol": "extract_collected_objects",
-      "reason": "item_destroy",
-      "integration_issue": 482,
-      "owner": "primary / #482",
-      "coverage": "legacy",
-      "classification": "Chaos material collection system destroys stale or unused material objects.",
-      "authority_boundary": "Require chaos material collection cleanup cycle.",
-      "current_support": "Source review only; selected authority, backend gameplay qualification and projection proof unverified.",
-      "backends": {
-        "mysql": {
-          "status": "unverified",
-          "evidence": []
-        },
-        "mariadb": {
-          "status": "unverified",
-          "evidence": []
-        },
-        "flatfile": {
-          "status": "unverified",
-          "evidence": []
-        }
-      },
-      "test_candidates": [
-        "tests/async/test_economy_writer_coverage_contract.py"
-      ],
-      "evidence": [],
-      "reachability_evidence": "extract_collected_objects extracts material items collected during chaos processing.",
-      "sites": [
-        [
-          "src/combat/chaos_materials.c",
-          370,
-          "item_lifecycle"
-        ]
-      ],
-      "native_effects": {
-        "holding_effect": "No coin balance changes.",
-        "custody_effect": "Extracted material items are destroyed.",
-        "native_state_targets": [
-          "chaos material graph",
-          "item_current_owner lifecycle"
-        ]
-      }
-    },
-    {
       "id": "combat.chaos_material_probe",
       "path": "src/combat/chaos_materials.c",
       "symbol": "chaos_materials_initialize",
@@ -5888,12 +5849,12 @@
       "sites": [
         [
           "src/combat/chaos_materials.c",
-          526,
+          485,
           "item_lifecycle"
         ],
         [
           "src/combat/chaos_materials.c",
-          530,
+          489,
           "item_lifecycle"
         ]
       ],
@@ -14200,7 +14161,7 @@
       "sites": [
         [
           "src/item/item_transfer_command.c",
-          1449,
+          1459,
           "economic_submit"
         ]
       ],
@@ -14609,52 +14570,52 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1357,
+          1376,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1375,
+          1394,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2726,
+          2812,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2734,
+          2820,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2746,
+          2832,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2872,
+          2958,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2890,
+          2976,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2948,
+          3034,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          139,
+          141,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          146,
+          148,
           "economic_submit"
         ],
         [
@@ -14711,7 +14672,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1292,
+          1311,
           "item_publication"
         ]
       ],
@@ -14748,7 +14709,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1188,
+          1207,
           "item_lifecycle"
         ]
       ],
@@ -14866,7 +14827,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1043,
+          1062,
           "item_lifecycle"
         ]
       ],
@@ -15146,7 +15107,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1815,
+          1819,
           "item_lifecycle"
         ]
       ],
@@ -15169,9 +15130,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15189,14 +15150,17 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [],
       "evidence": [],
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -15204,7 +15168,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -15215,9 +15179,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Typed retained-pouch craft admission commits exact physical retirements, genuine output UIDs and bounded counter updates atomically. Native MySQL, MariaDB and flatfile repeated collection/replay tests pass; flatfile interrupted recovery and runtime publication retention pass. Integrated active-epoch gameplay remains unqualified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15235,37 +15199,41 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/test_chaos_pouch_ledger.py"
       ],
       "sites": [
         [
           "src/classes/salchemist.c",
-          1024,
+          1009,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1044,
+          1041,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          1055,
+          1056,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1060,
+          1061,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1126,
+          1127,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          1130,
+          1132,
           "item_lifecycle"
         ]
       ],
@@ -15273,7 +15241,7 @@
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -15281,7 +15249,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -15294,7 +15262,7 @@
       "coverage": "legacy",
       "classification": "Virtual Chaos-pouch Encrust allocates a temporary recipe descriptor, then refuses without generated-use mutation or live item publication.",
       "authority_boundary": "Stage object alone is not an admitted jewel; pouch generated-usage recording is a separate effect.",
-      "current_support": "Refusal-only route; provisional recipe objects are freed before live publication.",
+      "current_support": "Detached virtual jewel descriptors are validated then discarded; only the physical base retires, and generated usage updates the original retained pouch in the shared craft transaction.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15313,22 +15281,42 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          978,
+          962,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1002,
+          986,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1009,
+          993,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1016,
+          1000,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1022,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1032,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1052,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1139,
           "item_lifecycle"
         ]
       ],
@@ -15892,7 +15880,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          879,
+          898,
           "item_lifecycle"
         ]
       ],
@@ -15929,7 +15917,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          892,
+          911,
           "item_lifecycle"
         ]
       ],
@@ -16024,12 +16012,12 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1309,
+          1313,
           "item_publication"
         ],
         [
           "src/classes/salchemist.c",
-          1310,
+          1314,
           "item_lifecycle"
         ]
       ],
@@ -16073,17 +16061,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1263,
+          1267,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1270,
+          1274,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1273,
+          1277,
           "item_lifecycle"
         ]
       ],
@@ -17238,7 +17226,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2999,
+          3085,
           "item_lifecycle"
         ]
       ],
@@ -17275,7 +17263,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2850,
+          2936,
           "item_lifecycle"
         ]
       ],
@@ -18150,37 +18138,37 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          1905,
+          1924,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1972,
+          1991,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2120,
+          2139,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2193,
+          2212,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2398,
+          2417,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2471,
+          2490,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2479,
+          2498,
           "economic_submit"
         ],
         [
@@ -18514,9 +18502,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -18534,22 +18522,25 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
           "src/classes/salchemist.c",
-          636,
+          628,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          659,
+          651,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          665,
+          657,
           "item_lifecycle"
         ]
       ],
@@ -18557,7 +18548,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -18565,7 +18556,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -18607,12 +18598,12 @@
         ],
         [
           "src/classes/salchemist.c",
-          594,
+          586,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          598,
+          590,
           "item_lifecycle"
         ]
       ],
@@ -18707,12 +18698,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1540,
+          1559,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1541,
+          1560,
           "item_publication"
         ]
       ],
@@ -18749,22 +18740,22 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1100,
+          1119,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1137,
+          1156,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1143,
+          1162,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1147,
+          1166,
           "item_publication"
         ]
       ],
@@ -19087,7 +19078,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          992,
+          1011,
           "item_publication"
         ]
       ],
@@ -19681,87 +19672,82 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1393,
+          1397,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1396,
+          1400,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1399,
+          1403,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1402,
+          1406,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1405,
+          1409,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1408,
+          1412,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1411,
+          1415,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1414,
+          1418,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1417,
+          1421,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1420,
+          1424,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1423,
+          1427,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1426,
+          1430,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1429,
+          1433,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1432,
+          1436,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1435,
+          1439,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1438,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1447,
+          1442,
           "item_lifecycle"
         ],
         [
@@ -19771,7 +19757,7 @@
         ],
         [
           "src/classes/salchemist.c",
-          1462,
+          1455,
           "item_lifecycle"
         ],
         [
@@ -19781,12 +19767,17 @@
         ],
         [
           "src/classes/salchemist.c",
-          1467,
+          1470,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1468,
+          1471,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1472,
           "item_publication"
         ]
       ],
@@ -19830,17 +19821,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1364,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
           1368,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1369,
+          1372,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1373,
           "item_publication"
         ]
       ],
@@ -19886,22 +19877,22 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          1379,
+          1381,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1412,
+          1414,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1496,
+          1498,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1919,
+          2082,
           "sql_economy"
         ]
       ],
@@ -19937,12 +19928,12 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          2851,
+          3015,
           "economic_submit"
         ],
         [
           "src/item/item_transfer_repository.c",
-          2918,
+          3082,
           "economic_submit"
         ]
       ],
@@ -20174,7 +20165,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1538,
+          1542,
           "item_lifecycle"
         ]
       ],
@@ -21791,12 +21782,12 @@
         ],
         [
           "src/sql/sql.c",
-          5312,
+          5313,
           "sql_economy"
         ],
         [
           "src/sql/sql.c",
-          5340,
+          5341,
           "sql_economy"
         ]
       ],
@@ -22769,47 +22760,47 @@
         ],
         [
           "src/item/item_movement_transaction.h",
-          98,
+          99,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          109,
+          110,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          116,
+          117,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          126,
+          127,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          132,
+          134,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          153,
+          155,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          158,
+          160,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          162,
+          164,
           "economic_submit"
         ],
         [
           "src/item/item_transfer_command.h",
-          264,
+          274,
           "economic_submit"
         ]
       ],
@@ -27963,12 +27954,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2880,
+          2966,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.h",
-          150,
+          152,
           "economic_submit"
         ],
         [
@@ -45513,9 +45504,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Builds one legacy retained exact-input/output craft receipt. Active authority refuses before UID reservation; no active schema-2 craft owner is implemented.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Typed retained-pouch craft admission commits exact physical retirements, genuine output UIDs and bounded counter updates atomically. Native MySQL, MariaDB and flatfile repeated collection/replay tests pass; flatfile interrupted recovery and runtime publication retention pass. Integrated active-epoch gameplay remains unqualified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -45532,17 +45523,22 @@
       },
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
-        "tests/async/test_npc_alchemist_runtime.py"
+        "tests/async/test_npc_alchemist_runtime.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/test_chaos_pouch_ledger.py",
+        "tests/async/test_issue_551_flatfile_craft.py"
       ],
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2486,
+          2505,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2608,
+          2689,
           "economic_submit"
         ]
       ],
@@ -45550,7 +45546,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -45558,7 +45554,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -45569,9 +45565,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Projects the exact committed inactive craft result: retire selected live inputs once, reconstruct outputs with retained UIDs, and publish only to the committed player owner.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -45588,17 +45584,20 @@
       },
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
-        "tests/async/test_npc_alchemist_runtime.py"
+        "tests/async/test_npc_alchemist_runtime.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          712,
+          731,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          720,
+          739,
           "item_publication"
         ]
       ],
@@ -45606,7 +45605,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -45614,7 +45613,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -45649,7 +45648,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          739,
+          758,
           "item_lifecycle"
         ]
       ],
@@ -45700,7 +45699,7 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          1643,
+          1647,
           "sql_economy"
         ]
       ],
@@ -46115,7 +46114,7 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 464,
+      "line": 457,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
@@ -46139,49 +46138,49 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 456,
+      "line": 449,
       "family": "item_lifecycle",
       "excerpt": "orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 469,
+      "line": 462,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(orb);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 854,
+      "line": 847,
       "family": "item_lifecycle",
       "excerpt": "objrecipe = read_object(400210, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 924,
+      "line": 917,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 928,
+      "line": 921,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 938,
+      "line": 931,
       "family": "item_lifecycle",
       "excerpt": "reward = read_object(real_object(getItemFromZone(GET_ZONE(ch))), REAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 942,
+      "line": 935,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1714,
+      "line": 1707,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -46193,13 +46192,13 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 868,
+      "line": 861,
       "family": "item_publication",
       "excerpt": "obj_to_char(objrecipe, ch);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1714,
+      "line": 1707,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -46739,27 +46738,27 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1743,
+      "line": 1747,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(ch, circle * 10000, 0) != 0)"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 659,
+      "line": 651,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1044,
+      "line": 1041,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1126,
+      "line": 1127,
       "family": "economic_submit",
-      "excerpt": "if (!item_movement_transaction_submit_craft(ch, inputs, 2, &new_item, 1, OBJ_VNUM(jewel),"
+      "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
@@ -46775,37 +46774,49 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 594,
+      "line": 586,
       "family": "item_lifecycle",
       "excerpt": "P_obj poison_vial = read_object(poison_data[i].vnum, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 598,
+      "line": 590,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(poison_vial);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 636,
+      "line": 628,
       "family": "item_lifecycle",
       "excerpt": "P_obj output = read_object(poison_data[i].vnum, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 665,
+      "line": 657,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(output);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 978,
+      "line": 962,
       "family": "item_lifecycle",
       "excerpt": "jewel = read_object(static_cast<int>(jewel_vnum), VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1002,
+      "line": 986,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(jewel);"
+    },
+    {
+      "path": "src/classes/salchemist.c",
+      "line": 993,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(jewel);"
+    },
+    {
+      "path": "src/classes/salchemist.c",
+      "line": 1000,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
@@ -46817,223 +46828,235 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1016,
+      "line": 1022,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1024,
+      "line": 1032,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1055,
+      "line": 1052,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(jewel);"
+    },
+    {
+      "path": "src/classes/salchemist.c",
+      "line": 1056,
       "family": "item_lifecycle",
       "excerpt": "P_obj new_item = read_object(1251, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1060,
+      "line": 1061,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1130,
+      "line": 1132,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(new_item);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1263,
+      "line": 1139,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(jewel);"
+    },
+    {
+      "path": "src/classes/salchemist.c",
+      "line": 1267,
       "family": "item_lifecycle",
       "excerpt": "P_obj needed = read_object(imat, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1270,
+      "line": 1274,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1273,
+      "line": 1277,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1310,
+      "line": 1314,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1364,
+      "line": 1368,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1368,
+      "line": 1372,
       "family": "item_lifecycle",
       "excerpt": "ash = read_object(2670, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1393,
+      "line": 1397,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400261, VIRTUAL); // medium iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1396,
+      "line": 1400,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400262, VIRTUAL); // large iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1399,
+      "line": 1403,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400264, VIRTUAL); // medium steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1402,
+      "line": 1406,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400265, VIRTUAL); // large steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1405,
+      "line": 1409,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400267, VIRTUAL); // medium copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1408,
+      "line": 1412,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400268, VIRTUAL); // large copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1411,
+      "line": 1415,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400270, VIRTUAL); // medium silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1414,
+      "line": 1418,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400271, VIRTUAL); // large silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1417,
+      "line": 1421,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400273, VIRTUAL); // medium gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1420,
+      "line": 1424,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400274, VIRTUAL); // large gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1423,
+      "line": 1427,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400276, VIRTUAL); // medium platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1426,
+      "line": 1430,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400277, VIRTUAL); // large platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1429,
+      "line": 1433,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400279, VIRTUAL); // medium mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1432,
+      "line": 1436,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400280, VIRTUAL); // large mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1435,
+      "line": 1439,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400282, VIRTUAL); // medium adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1438,
+      "line": 1442,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400283, VIRTUAL); // large adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1447,
+      "line": 1451,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1451,
+      "line": 1455,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(2670, VIRTUAL); // Ash"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1462,
+      "line": 1466,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1466,
+      "line": 1470,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1467,
+      "line": 1471,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(second_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1538,
+      "line": 1542,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // A random eq arti?"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1815,
+      "line": 1819,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item, TRUE); // Not an arti, but ok."
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1309,
+      "line": 1313,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1369,
+      "line": 1373,
       "family": "item_publication",
       "excerpt": "obj_to_obj(ash, furnace);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1468,
+      "line": 1472,
       "family": "item_publication",
       "excerpt": "obj_to_obj(new_obj, furnace);"
     },
@@ -49511,25 +49534,19 @@
     },
     {
       "path": "src/combat/chaos_materials.c",
-      "line": 491,
+      "line": 455,
       "family": "economic_submit",
-      "excerpt": "if (!item_movement_transaction_submit_batch("
+      "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/combat/chaos_materials.c",
-      "line": 370,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(material, FALSE);"
-    },
-    {
-      "path": "src/combat/chaos_materials.c",
-      "line": 526,
+      "line": 485,
       "family": "item_lifecycle",
       "excerpt": "P_obj material = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/combat/chaos_materials.c",
-      "line": 530,
+      "line": 489,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(material, FALSE);"
     },
@@ -53789,331 +53806,331 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1357,
+      "line": 1376,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1375,
+      "line": 1394,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1905,
+      "line": 1924,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1972,
+      "line": 1991,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2120,
+      "line": 2139,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2193,
+      "line": 2212,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2398,
+      "line": 2417,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2471,
+      "line": 2490,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2479,
+      "line": 2498,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit_batch(actor, roots, root_count, target_container,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2486,
+      "line": 2505,
       "family": "economic_submit",
-      "excerpt": "bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,"
+      "excerpt": "bool item_movement_transaction_submit_craft("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2608,
+      "line": 2689,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2726,
+      "line": 2812,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2734,
+      "line": 2820,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2746,
+      "line": 2832,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2872,
+      "line": 2958,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2880,
+      "line": 2966,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2890,
+      "line": 2976,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2948,
+      "line": 3034,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 712,
+      "line": 731,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 739,
+      "line": 758,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 879,
+      "line": 898,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 892,
+      "line": 911,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(entry.object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1043,
+      "line": 1062,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1188,
+      "line": 1207,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2850,
+      "line": 2936,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2999,
+      "line": 3085,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 720,
+      "line": 739,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 992,
+      "line": 1011,
       "family": "item_publication",
       "excerpt": "obj_to_char(root, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1100,
+      "line": 1119,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, request.room);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1137,
+      "line": 1156,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, recipient);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1143,
+      "line": 1162,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1147,
+      "line": 1166,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, container);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1292,
+      "line": 1311,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1540,
+      "line": 1559,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1541,
+      "line": 1560,
       "family": "item_publication",
       "excerpt": "obj_to_obj(root, corpse);"
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 98,
+      "line": 99,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 109,
+      "line": 110,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 116,
+      "line": 117,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 126,
+      "line": 127,
       "family": "economic_submit",
-      "excerpt": "bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,"
+      "excerpt": "bool item_movement_transaction_submit_craft("
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 132,
+      "line": 134,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 139,
+      "line": 141,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 146,
+      "line": 148,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 150,
+      "line": 152,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 153,
+      "line": 155,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 158,
+      "line": 160,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.h",
-      "line": 162,
+      "line": 164,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
     {
       "path": "src/item/item_transfer_command.c",
-      "line": 1449,
+      "line": 1459,
       "family": "economic_submit",
       "excerpt": "bool item_transfer_command_build(critical_command *command, critical_operation_id operation_id,"
     },
     {
       "path": "src/item/item_transfer_command.h",
-      "line": 264,
+      "line": 274,
       "family": "economic_submit",
       "excerpt": "bool item_transfer_command_build(critical_command *command, critical_operation_id operation_id,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2851,
+      "line": 3015,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2918,
+      "line": 3082,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, *payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1379,
+      "line": 1381,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1412,
+      "line": 1414,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET root_item_uid=?,parent_item_uid=IF(?=0,NULL,?),\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1496,
+      "line": 1498,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1643,
+      "line": 1647,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1919,
+      "line": 2082,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?\";"
     },
@@ -60005,13 +60022,13 @@
     },
     {
       "path": "src/sql/sql.c",
-      "line": 5312,
+      "line": 5313,
       "family": "sql_economy",
       "excerpt": "qry(\"DELETE FROM saved_item_extra_descr\") && qry(\"DELETE FROM saved_items\"))"
     },
     {
       "path": "src/sql/sql.c",
-      "line": 5340,
+      "line": 5341,
       "family": "sql_economy",
       "excerpt": "if (qry(\"DELETE FROM ships\"))"
     },
@@ -62704,6 +62721,14 @@
       "path": "src/classes/salchemist.c",
       "symbol": "do_mix",
       "reason": "Executable route removed by #551/#661; shared numeric IDs and authored world content retained."
+    }
+  ],
+  "retired_routes_accounting": [
+    {
+      "id": "combat.chaos_material_cleanup",
+      "path": "src/combat/chaos_materials.c",
+      "symbol": "extract_collected_objects",
+      "reason": "Direct collection extraction was removed; shared craft publication now retires committed inputs after the retained pouch counter update."
     }
   ]
 }

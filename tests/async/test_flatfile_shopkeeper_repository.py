@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-shopkeeper-") as temporary:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
             "tests/async/flatfile_shopkeeper_repository_harness.cpp",
             rel("flatfile_shopkeeper_repository.c"), rel("player_snapshot_codec.c"),
-            rel("shop_trade_command.c"), rel("item_transfer_command.c"),
+            rel("shop_trade_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("currency_command.c"), rel("critical_command.c"),
             rel("flatfile_authority_transaction.c"), rel("flatfile_store.c"),
             "-lcrypto", "-pthread", "-o", str(binary),

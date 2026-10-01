@@ -26,7 +26,7 @@ class ItemTransferAccountingContextContract(unittest.TestCase):
                 "tests/async/item_transfer_accounting_context_test.cpp",
                 "src/item/item_transfer_repository.c",
                 "src/item/economic_accounting_item_reference.c",
-                "src/item/item_transfer_command.c",
+                "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
                 "src/economy/item_transfer_accounting.c",
                 "src/economy/economic_accounting_intent.c",
                 "src/economy/economic_accounting_plan.c",

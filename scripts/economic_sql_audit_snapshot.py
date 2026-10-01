@@ -903,6 +903,11 @@ def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], di
         operation_id = row["operation_id"]
         consumer = consumers.get(operation_id)
         if consumer is None:
+            # SQL SUM(BIGINT) is an exact Decimal on both supported drivers.
+            # Preserve its integer value for JSON without float conversion.
+            source_amount = int(row["source_amount"])
+            if source_amount != row["source_amount"]:
+                raise ExportError("nonintegral pending-claim source amount")
             consumer = {"operation_id": hex_id(operation_id),
                         "epoch": hex_id(row["epoch"]), "outcome": "committed",
                         "result_code": row["result_code"], "source_rows": row["source_rows"],
@@ -913,7 +918,7 @@ def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], di
                             "committed_at_present": bool(
                                 row["inbox_committed_at_present"]),
                         },
-                        "source_amount": row["source_amount"], "pending_claim_debits": []}
+                        "source_amount": source_amount, "pending_claim_debits": []}
             consumers[operation_id] = consumer
         consumer["pending_claim_debits"].append({"account_key": key.hex(), "amount": debit,
                                                  "before": before, "after": after})

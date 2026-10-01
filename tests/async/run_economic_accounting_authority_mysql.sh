@@ -14,7 +14,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -O1 -g -fsanitize=address,undefi
     -fno-omit-frame-pointer -fno-pie -no-pie -Isrc "${MYSQL_CFLAGS[@]}" \
     tests/async/economic_accounting_authority_mysql_harness.cpp \
     src/persistence/economic_accounting_repository.c src/economy/economic_accounting_types.c \
-    src/persistence/critical_command.c src/item/item_transfer_command.c \
+    src/persistence/critical_command.c src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
+    src/player/player_snapshot_codec.c \
     "${MYSQL_LIBS[@]}" -lcrypto -o "$TEMP/authority"
 ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 "$TEMP/authority"
 

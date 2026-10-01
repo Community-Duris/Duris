@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory(prefix='run-',dir=work) as temporary:
         command += [str(ROOT/name) for name in ('tests/async/economic_currency_adapter_test.cpp',
             'src/economy/economic_currency_adapter.c','src/economy/economic_accounting_intent.c',
             'src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
-            'src/economy/currency_command.c','src/persistence/critical_command.c','src/item/item_transfer_command.c')]
+            'src/economy/currency_command.c','src/persistence/critical_command.c','src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", 'src/player/player_snapshot_codec.c')]
         command+=['-lcrypto','-o',str(executable)]
         subprocess.run(command,check=True)
         environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')

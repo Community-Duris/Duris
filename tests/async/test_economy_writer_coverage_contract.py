@@ -496,10 +496,10 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(owners[("src/sql/sql_player.c", 10982, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
-        for line in (888, 908, 941):
+        for line in (887, 907, 940):
             self.assertEqual(owners[(shop_path, line, "sql_economy")],
                              {"shop.sql_native_item_events"})
-        self.assertEqual(owners[(shop_path, 1075, "sql_economy")],
+        self.assertEqual(owners[(shop_path, 1074, "sql_economy")],
                          {"shop.sql_native_balances"})
         for route_id in ("shop.sql_native_item_events", "shop.sql_native_balances"):
             route = self.routes[route_id]
@@ -895,10 +895,16 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          "item.npc_alchemist_potion_grant", "item.poison_ingredients_sink",
                          "item.encrust_generated_counter_orphan"} <= retired)
         self.assertTrue(retired.isdisjoint(self.routes))
-        for route_id in ("item.poison_mix", "item.encrust_transform", "item.craft_submit",
-                         "class.drannak_pvp_store", "item.npc_alchemist_vial_grant"):
+        for route_id in coverage.SCHEMA2_CRAFT_IDS:
+            self.assertTrue(self.routes[route_id]["current_critical_command_schema"]
+                            ["schema_2_gameplay_producer_connected"])
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
             self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]["decision"],
-                             "refuse_before_allocation_until_native_source_and_root_exist")
+                             "block_until_active_craft_journeys")
+        self.assertEqual(self.routes["item.npc_alchemist_vial_grant"]
+                         ["blocking_policy_after_activation"]["decision"],
+                         "refuse_before_allocation_until_native_source_and_root_exist")
 
     def test_artifact_item_sites_separate_display_boot_restore_and_live_replacement(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())

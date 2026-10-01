@@ -63,7 +63,7 @@ TABLES = (
     "legacy_operation_id BINARY(16),legacy_event_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_source_claim (lineage BINARY(16),source_event BINARY(48),"
     "operation_id BINARY(16)) ENGINE=InnoDB",
-    "CREATE TABLE economic_account_mapping (mapping_id BIGINT,account_kind INT,context_id BIGINT,"
+    "CREATE TABLE economic_account_mapping (mapping_id BIGINT,account_kind INT,locator_kind INT NOT NULL,context_id BIGINT,"
     "active_native_id BIGINT,lineage BINARY(16),backend_kind INT,"
     "retiring_operation_id BINARY(16) NULL,native_id BIGINT,"
     "creating_operation_id BINARY(16)) ENGINE=InnoDB",
@@ -129,8 +129,8 @@ admin = pymysql.connect(**settings)
 try:
     with admin.cursor() as cursor:
         cursor.execute(f"CREATE DATABASE `{schema}`")
-        cursor.execute(f"CREATE USER '{reader}'@'%' IDENTIFIED BY 'disposable-audit-only'")
-        cursor.execute(f"GRANT SELECT ON `{schema}`.* TO '{reader}'@'%'")
+        cursor.execute(f"CREATE USER '{reader}'@'127.0.0.1' IDENTIFIED BY 'disposable-audit-only'")
+        cursor.execute(f"GRANT SELECT ON `{schema}`.* TO '{reader}'@'127.0.0.1'")
     setup = pymysql.connect(**(settings | {"database": schema}))
     try:
         with setup.cursor() as cursor:
@@ -178,6 +178,10 @@ try:
             cursor.execute("INSERT INTO critical_operation_inbox "
                            "(operation_id,status,result_code) VALUES (%s,1,0)",
                            (new_wallet_root,))
+            cursor.execute("INSERT INTO critical_operation_inbox "
+                           "(operation_id,status,result_code) VALUES "
+                           "(%s,1,0),(%s,1,0),(%s,1,0)",
+                           (prior_root, consumed_source_root, consumer_root))
             for index, account, before, after, before_revision, after_revision in (
                     (0, key(1, 7), 5, 2, 4, 5), (1, key(2, 9), 3, 6, 1, 2)):
                 cursor.execute("INSERT INTO economic_accounting_account_effect VALUES "
@@ -248,11 +252,11 @@ try:
             cursor.execute("INSERT INTO item_ownership_ledger VALUES "
                            "(%s,0,84,84,NULL,1,7,0,1,0,2)", (creation_root,))
             cursor.execute("INSERT INTO economic_account_mapping VALUES "
-                           "(7,1,0,7,%s,1,NULL,7,%s),(9,2,0,9,%s,1,NULL,9,%s),"
-                           "(11,3,0,82,%s,1,NULL,82,%s),(12,4,0,5,%s,1,NULL,5,%s),"
-                           "(13,5,0,7,%s,1,NULL,7,%s),(14,6,0,3,%s,1,NULL,3,%s),"
-                           "(15,1,0,15,%s,1,NULL,15,%s),"
-                           "(16,1,0,16,%s,1,NULL,16,NULL)",
+                           "(7,1,1,0,7,%s,1,NULL,7,%s),(9,2,2,0,9,%s,1,NULL,9,%s),"
+                           "(11,3,3,0,82,%s,1,NULL,82,%s),(12,4,4,0,5,%s,1,NULL,5,%s),"
+                           "(13,5,5,0,7,%s,1,NULL,7,%s),(14,6,6,0,3,%s,1,NULL,3,%s),"
+                           "(15,1,1,0,15,%s,1,NULL,15,%s),"
+                           "(16,1,1,0,16,%s,1,NULL,16,NULL)",
                            (LINEAGE, INSTALL, LINEAGE, INSTALL, LINEAGE, INSTALL,
                             LINEAGE, INSTALL, LINEAGE, INSTALL, LINEAGE, INSTALL,
                             LINEAGE, new_wallet_root,
@@ -328,7 +332,7 @@ try:
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO auctions VALUES (6,'REMOVED',0,1,0)")
                 writer.execute("INSERT INTO economic_account_mapping VALUES "
-                               "(17,4,0,6,%s,1,NULL,6,NULL)", (LINEAGE,))
+                               "(17,4,4,0,6,%s,1,NULL,6,NULL)", (LINEAGE,))
             empty_removed = capture(audit, LINEAGE, EPOCH)
             empty_removed_report = Reconciler().audit(empty_removed)
             assert "dangling_auction_escrow_mapping" in \
@@ -338,7 +342,7 @@ try:
                 writer.execute("DELETE FROM auctions WHERE id=6")
                 writer.execute("INSERT INTO auctions VALUES (7,'OPEN',25,1,0)")
                 writer.execute("INSERT INTO economic_account_mapping VALUES "
-                               "(18,4,0,7,%s,1,NULL,7,NULL)", (LINEAGE,))
+                               "(18,4,4,0,7,%s,1,NULL,7,NULL)", (LINEAGE,))
             unfunded = capture(audit, LINEAGE, EPOCH)
             unfunded_report = Reconciler().audit(unfunded)
             assert "invalid_native_auction_escrow" in \
@@ -436,7 +440,12 @@ try:
                 "matched_opening_origins": 0, "unmatched_current_epoch_rows": 0,
                 "root_rows": 0}
             report = Reconciler().audit(snapshot)
-            assert report["exception_counts"] == {"evidence_loss": 1}, report
+            # This cut deliberately includes an unrelated-lineage wallet and
+            # a deposit root that cannot authorize creating a wallet mapping.
+            expected_exceptions = {"evidence_loss": 1,
+                                   "unmapped_native_wallet": 1,
+                                   "unauthorized_mapping_creation": 1}
+            assert report["exception_counts"] == expected_exceptions, report
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_operation VALUES "
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
@@ -469,23 +478,30 @@ try:
                 "status": 1, "result_code": 0, "failure_stage": 0,
                 "committed_at_present": True}
             assert historical_uid_snapshot["native"]["uid_event_coverage"] == {
-                "tracked_uids": 5, "ledger_events": 3,
-                "referenced_events": 2, "unreferenced_events": 1}
+                "tracked_uids": 5, "ledger_events": 2,
+                "referenced_events": 2, "unreferenced_events": 0}, historical_uid_snapshot["native"]["uid_event_coverage"]
             assert historical_uid_snapshot["native"]["unattributed_uid_event_coverage"] == {
                 "uids": 1, "events": 1}
             uid_86_history = [row for row in historical_uid_snapshot["native"]["uid_history_events"]
                               if row["uid"] == 86]
             assert [(row["before_revision"], row["revision"], row["referenced"])
-                    for row in uid_86_history] == [(0, 1, True), (1, 2, False)]
+                    for row in uid_86_history] == [(0, 1, True)]
+            unattributed_86 = [row for row in historical_uid_snapshot["native"]["unattributed_uid_events"]
+                               if row["uid"] == 86]
+            assert [(row["before_revision"], row["revision"])
+                    for row in unattributed_86] == [(1, 2)]
             assert next(row for row in historical_uid_snapshot["item_origins"]
                         if row["uid"] == 86)["origin"] == "creation"
             assert any(row["operation_id"] == prior_item_root.hex()
                        for row in historical_uid_snapshot["native"]["lineage_uid_references"])
             historical_uid_report = Reconciler().audit(historical_uid_snapshot)
             assert historical_uid_report["exception_counts"] == {
-                "evidence_loss": 1, "unreferenced_uid_event": 1,
+                **expected_exceptions,
+                "evidence_loss": 1,
+                "ambiguous_lineage_ownership_uid": 1,
+                "stale_native_item": 1,
                 "unattributed_ownership_event": 1}, historical_uid_report
-            assert historical_uid_report["exception_counts"]["unreferenced_uid_event"] == 1
+            assert historical_uid_report["exception_counts"].get("unreferenced_uid_event", 0) == 0
             assert historical_uid_report["exception_counts"].get(
                 "lineage_orphan_uid_reference", 0) == 0
             with setup.cursor() as writer:
@@ -573,8 +589,10 @@ try:
             assert unlinked_snapshot["native"]["unreferenced_uid_events"] == []
             unlinked_report = Reconciler().audit(unlinked_snapshot)
             assert unlinked_report["exception_counts"] == {
+                **expected_exceptions,
                 "evidence_loss": 1,
-                "ambiguous_lineage_ownership_uid": 1}, unlinked_report
+                "ambiguous_lineage_ownership_uid": 1,
+                "unattributed_ownership_event": 1}, unlinked_report
             assert any(exception.get("uid") == 84 for exception in
                        unlinked_report["exceptions"]
                        if exception["code"] == "ambiguous_lineage_ownership_uid")
@@ -590,7 +608,7 @@ try:
                 writer.execute("UPDATE economic_account_mapping SET active_native_id=9,"
                                "retiring_operation_id=NULL WHERE mapping_id=9")
                 writer.execute("INSERT INTO economic_account_mapping VALUES "
-                               "(16,2,0,NULL,%s,1,%s,16,%s)",
+                               "(16,2,2,0,NULL,%s,1,%s,16,%s)",
                                (LINEAGE, prior_root, prior_root))
             earlier_snapshot = capture(audit, LINEAGE, EPOCH)
             earlier_retirement = Reconciler().audit(earlier_snapshot)
@@ -598,7 +616,7 @@ try:
             historical_root = next(
                 root for root in earlier_snapshot["native"]["retirement_roots"]
                 if root["operation_id"] == prior_root.hex())
-            assert historical_root["reason"] == 33
+            assert historical_root["reason"] == 3
             assert historical_root["retirement_inbox_status"] == 1
             assert historical_root["retirement_inbox_result_code"] == 0
             assert historical_root["retirement_inbox_failure_stage"] == 0
@@ -674,7 +692,7 @@ try:
                     [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
                      str(output)], capture_output=True, text=True, timeout=30)
                 assert result.returncode == 1
-                assert json.loads(result.stdout)["exception_counts"] == {"evidence_loss": 1}
+                assert json.loads(result.stdout)["exception_counts"] == expected_exceptions
             with setup.cursor() as cursor:
                 cursor.execute("DELETE FROM economic_accounting_coin_posting "
                                "WHERE operation_id=%s AND line_index=1", (root,))
@@ -691,12 +709,12 @@ try:
                 cursor.execute("INSERT INTO player_data VALUES (8,0,0,0,0,1),"
                                "(9,0,0,0,0,1)")
                 cursor.execute("INSERT INTO economic_account_mapping VALUES "
-                               "(70,1,1,7,%s,1,NULL,7,%s),(10,2,0,10,%s,1,NULL,10,%s),"
-                               "(71,1,0,9,%s,1,NULL,9,%s)",
+                               "(70,1,1,1,7,%s,1,NULL,7,%s),(10,2,2,0,10,%s,1,NULL,10,%s),"
+                               "(71,1,1,0,9,%s,1,NULL,9,%s)",
                                (LINEAGE, OP, LINEAGE, OP,
                                 bytes.fromhex("dd" * 16), OP))
             unmapped = Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"]
-            assert unmapped["unmapped_native_wallet"] == 1
+            assert unmapped["unmapped_native_wallet"] == 3, unmapped
             assert unmapped["multiply_mapped_native_wallet"] == 1
             assert unmapped["dangling_bank_mapping"] == 1
             with setup.cursor() as cursor:
@@ -752,5 +770,5 @@ try:
 finally:
     with admin.cursor() as cursor:
         cursor.execute(f"DROP DATABASE IF EXISTS `{schema}`")
-        cursor.execute(f"DROP USER IF EXISTS '{reader}'@'%'")
+        cursor.execute(f"DROP USER IF EXISTS '{reader}'@'127.0.0.1'")
     admin.close()

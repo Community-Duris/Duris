@@ -10,6 +10,7 @@ from _paths import ROOT, rel
 HARNESS = r'''
 #include "core/utils.h"
 #include "economy/economic_gameplay_authority.h"
+#include "economy/item_transfer_accounting.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_transfer_command.h"
@@ -34,14 +35,23 @@ P_index obj_index = nullptr;
 extern const int top_of_world = 1;
 
 static item_ownership_runtime_entry runtime_entry = {};
+static item_ownership_runtime_entry pouch_runtime = {};
 static int publication_attempts = 0;
 static int completion_calls = 0;
 static int craft_callbacks = 0;
 static int extractions = 0;
 static int restores = 0;
 static bool allow_restore = false;
+static bool accounting_active = false;
 static obj_data restored_output = {};
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
+static bool publication_malloc_fail = false;
+static uint16_t expected_craft_inputs = 1;
+
+void *__malloc(size_t size, const char *, const char *, int) { return publication_malloc_fail ? nullptr : std::malloc(size); }
+void __free(void *value, const char *, int) { std::free(value); }
+char *str_dup(const char *value) { return ::strdup(value); }
+void str_free(const char *value) { std::free(const_cast<char *>(value)); }
 
 void obj_to_obj(P_obj, P_obj) {}
 void extract_obj(P_obj object, int) {
@@ -80,14 +90,16 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &pa
     return true;
 }
 void craft_callback(P_char actor, bool committed, const item_transfer_result &result, unsigned int, const uint8_t *, size_t) {
-    assert(actor && committed && result.item_count == 1);
+    assert(actor && committed && result.item_count == expected_craft_inputs);
     ++craft_callbacks;
 }
 
 bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry)
 {
-    if (item_uid != runtime_entry.item_uid || !entry)
+    if (!entry)
         return false;
+    if (item_uid == pouch_runtime.item_uid) { *entry = pouch_runtime; return true; }
+    if (item_uid != runtime_entry.item_uid) return false;
     *entry = runtime_entry;
     return true;
 }
@@ -108,11 +120,20 @@ bool item_ownership_runtime_apply(const item_transfer_payload &, const item_tran
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
 bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
-bool economic_gameplay_authority::active() { return false; }
-bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
+bool economic_gameplay_authority::active() { return accounting_active; }
 economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
-    critical_command *, uint32_t, economic_source_kind) {
-    return economic_accounting_error::ok;
+    critical_command *command, uint32_t pid, economic_source_kind source) {
+    assert(accounting_active && source == economic_source_kind::crafting);
+    critical_operation_id lineage = {}, epoch = {};
+    lineage.bytes[0] = 1; epoch.bytes[0] = 2;
+    std::vector<uint8_t> intent;
+    const auto status = item_transfer_accounting_intent(*command, lineage, epoch, pid,
+                                                       &intent, source);
+    if (status == economic_accounting_error::ok) {
+        command->schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+        command->accounting_intent = std::move(intent);
+    }
+    return status;
 }
 
 bool collector_death_enrollment_attach(P_char, P_obj, const critical_operation_id &,
@@ -131,7 +152,9 @@ player_snapshot_capture_result player_item_snapshot_tree_capture(P_obj object,
     player_item_snapshot snapshot = {};
     snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
     snapshot.object_uid = object->obj_uid;
-    snapshot.vnum = 42;
+    snapshot.vnum = obj_index[object->R_num].virtual_number;
+    for (auto extra = object->ex_description; extra; extra = extra->next)
+        snapshot.extra_descriptions.push_back({extra->keyword, extra->description, false, {}});
     snapshots->push_back(std::move(snapshot));
     return player_snapshot_capture_result::ok;
 }
@@ -140,6 +163,10 @@ critical_apply_result apply_transfer(const critical_command &command, void *)
 {
     item_transfer_payload payload = {};
     assert(item_transfer_command_decode_payload(command, &payload));
+    if (payload.reason == item_transfer_reason::craft) {
+        assert(command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+        assert(item_transfer_accounting_command_supported(command));
+    }
     item_transfer_result result = {};
     result.root_item_uid = payload.selected_item_uid;
     result.item_count = payload.item_count;
@@ -178,9 +205,10 @@ void completion_callback(P_char actor, bool committed, const item_transfer_resul
 int main(int argc, char **argv)
 {
     assert(argc == 2);
-    index_data index = {};
-    index.virtual_number = 42;
-    obj_index = &index;
+    index_data indexes[2] = {};
+    indexes[0].virtual_number = 42;
+    indexes[1].virtual_number = 400300;
+    obj_index = indexes;
 
     pc_only_data player = {};
     player.pid = 1001;
@@ -205,7 +233,8 @@ int main(int argc, char **argv)
     runtime_entry.vnum = 42;
     runtime_entry.state = item_custody_state::active;
 
-    assert(critical_command_coordinator_init(argv[1], apply_transfer, nullptr, 1));
+    assert(critical_command_coordinator_init(argv[1], apply_transfer, nullptr, 1,
+                                            nullptr, nullptr, item_transfer_accounting_command_supported));
     item_movement_reject reject = item_movement_reject::none;
     const item_owner_identity destination = {item_owner_type::player, 1001, 0};
     if (!item_movement_transaction_submit(
@@ -293,6 +322,7 @@ int main(int argc, char **argv)
     object_list = &output_a;
     P_obj inputs[] = {&object};
     P_obj outputs[] = {&output_a, &output_b};
+    accounting_active = true;
     assert(item_movement_transaction_submit_craft(&actor, inputs, 1, outputs, 2,
         551, craft_callback, nullptr, 0, &reject));
     character_list = nullptr;
@@ -318,6 +348,51 @@ int main(int argc, char **argv)
     assert(item_movement_transaction_health_copy().pending == 0);
     item_movement_transaction_handle_completions(nullptr, 0);
     assert(extractions == 1 && craft_callbacks == 1);
+    // Retained pouch counters publish after the commit, and a failed allocation
+    // leaves both the counter and physical input untouched under the same fence.
+    obj_data pouch = {};
+    pouch.obj_uid = 4999; pouch.R_num = 1;
+    pouch.loc_p = LOC_CARRIED; pouch.loc.carrying = &actor;
+    pouch.next = &object;
+    object_list = &pouch;
+    object.obj_uid = runtime_entry.item_uid;
+    object.next = nullptr;
+    object.loc_p = LOC_CARRIED; object.loc.carrying = &actor;
+    pouch_runtime = {4999,4999,0,destination,1,1,400300,item_custody_state::active};
+    const chaos_material_pouch_usage usage = {400291,1};
+    expected_craft_inputs = 2;
+    assert(item_movement_transaction_submit_craft(&actor, inputs, 1, nullptr, 0,
+        400291, craft_callback, nullptr, 0, &reject, &pouch, &usage, 1));
+    character_list = nullptr;
+    craft_completed = false;
+    for (int spin = 0; spin < 1000 && !craft_completed; ++spin) {
+        const size_t count = critical_command_coordinator_pulse(completions, 8);
+        item_movement_transaction_handle_completions(completions, count);
+        craft_completed = count > 0;
+        if (!craft_completed) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(craft_completed && pouch.ex_description == nullptr && extractions == 1 && craft_callbacks == 1);
+    assert(critical_command_coordinator_is_fenced({critical_entity_type::item, pouch.obj_uid}, nullptr));
+    character_list = &actor;
+    publication_malloc_fail = true;
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(pouch.ex_description == nullptr && extractions == 1 && craft_callbacks == 1);
+    assert(item_movement_transaction_health_copy().pending == 1);
+    publication_malloc_fail = false;
+    std::this_thread::sleep_for(std::chrono::milliseconds(70));
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(pouch.obj_uid == 4999 && OBJ_CARRIED_BY(&pouch, &actor));
+    assert(pouch.ex_description && std::strcmp(pouch.ex_description->description,"210:1:0;") == 0);
+    assert(extractions == 2 && craft_callbacks == 2);
+    assert(item_movement_transaction_health_copy().pending == 0);
+    assert(!critical_command_coordinator_is_fenced({critical_entity_type::item, pouch.obj_uid}, nullptr));
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(extractions == 2 && craft_callbacks == 2);
+    str_free(pouch.ex_description->keyword);
+    str_free(pouch.ex_description->description);
+    __free(pouch.ex_description,nullptr,0);
+    pouch.ex_description = nullptr;
+    accounting_active = false;
     // Restore the independent movement fixture for the uncertainty scenario.
     object.obj_uid = 5001;
     object.loc_p = LOC_CARRIED; object.loc.carrying = &actor;
@@ -360,7 +435,9 @@ with tempfile.TemporaryDirectory(prefix="duris-publication-retention-") as tempo
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-D__NO_MYSQL__", "-pthread", "-ffunction-sections", "-fdata-sections",
             "-Isrc", "-Isrc/no_mysql", str(source),
-            rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"), rel("player_snapshot_codec.c"),
+            rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("chaos_pouch_publication.c"), rel("player_snapshot_codec.c"),
+            rel("item_transfer_accounting.c"), rel("economic_accounting_types.c"),
+            rel("economic_accounting_plan.c"), rel("economic_accounting_intent.c"),
             rel("critical_command.c"), rel("persistence/critical_command_journal.c"),
             rel("persistence/critical_command_coordinator.c"),
             "-Wl,--gc-sections", "-lz", "-lcrypto", "-o", str(binary),

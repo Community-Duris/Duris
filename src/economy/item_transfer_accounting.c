@@ -1,8 +1,14 @@
 #include "economy/item_transfer_accounting.h"
+#include "item/craft_pouch_mutation.h"
 #include "world/vnum.obj.h"
+#include "player/player_snapshot_codec.h"
+#include "core/structs.h"
 
+#include <algorithm>
 #include <climits>
 #include <new>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace
 {
@@ -212,6 +218,54 @@ bool creation_source_valid(economic_source_kind kind)
 	}
 }
 
+bool craft_outputs(const item_transfer_payload &payload, uint32_t actor_pid,
+		   std::vector<player_item_snapshot> *outputs)
+{
+	if (!outputs || !actor_pid || actor_pid > INT32_MAX ||
+	    payload.reason != item_transfer_reason::craft ||
+	    payload.from_owner.type != item_owner_type::player ||
+	    payload.from_owner.id != actor_pid || payload.from_owner.context_id ||
+	    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+	    payload.expected_from_revision != payload.expected_to_revision || !payload.multi_root ||
+	    !payload.item_count || payload.item_count > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS ||
+	    payload.target_root_item_uid || payload.target_parent_item_uid ||
+	    payload.expected_target_parent_revision || payload.reason_id <= 0 ||
+	    payload.reason_id > UINT32_MAX || payload.logical_source_id || payload.corpse.present ||
+	    payload.collector.present || payload.item_blob_size > payload.item_blob.size())
+		return false;
+	craft_pouch_mutation pouch;
+	if (!craft_pouch_mutation_from_payload(payload, &pouch))
+		return false;
+	std::unordered_set<uint64_t> uids;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &item = payload.items[index];
+		if (!item.item_uid || item.expected_state != item_custody_state::active ||
+		    item.expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ||
+		    item.vnum == VOBJ_COINS || !uids.insert(item.item_uid).second)
+			return false;
+	}
+	outputs->clear();
+	if (payload.item_blob_size &&
+	    (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					      outputs) != player_snapshot_codec_result::ok ||
+	     outputs->empty()))
+		return false;
+	if (outputs->size() > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS - payload.item_count)
+		return false;
+	for (size_t index = 0; index < outputs->size(); ++index)
+	{
+		const auto &output = (*outputs)[index];
+		if (!output.object_uid || output.vnum <= 0 || output.vnum == VOBJ_COINS ||
+		    output.type == ITEM_MONEY || !uids.insert(output.object_uid).second ||
+		    output.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+		    output.parent_index >= static_cast<int32_t>(index) ||
+		    (output.equipment_slot != -1 && output.equipment_slot != 0))
+			return false;
+	}
+	return outputs->empty() || outputs->front().object_uid == payload.selected_item_uid;
+}
+
 uint64_t source_item_uid(const item_transfer_payload &payload)
 {
 	// The sorted item set is part of the frozen command. A UID-lifetime source
@@ -277,6 +331,30 @@ economic_accounting_error item_transfer_accounting_intent(const critical_command
 			facts.metadata.source_event =
 				item_lifecycle_source(payload, lifecycle_source, lineage);
 		}
+		else if (payload.reason == item_transfer_reason::craft)
+		{
+			std::vector<player_item_snapshot> outputs;
+			if (lifecycle_source != economic_source_kind::crafting ||
+			    !craft_outputs(payload, actor_pid, &outputs))
+				return error::unauthorized;
+			facts.metadata.reason = economic_reason::crafting_cost;
+			// Input UID lifetimes identify the consumed recipe even if a retry
+			// rebuilds its output UID or command ID. An output cannot be its own
+			// issuance authority.
+			craft_pouch_mutation pouch;
+			if (!craft_pouch_mutation_from_payload(payload, &pouch))
+				return error::unauthorized;
+			uint64_t consumed_uid = 0;
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (payload.items[index].item_uid != pouch.before.object_uid &&
+				    (!consumed_uid || payload.items[index].item_uid < consumed_uid))
+					consumed_uid = payload.items[index].item_uid;
+			if (!consumed_uid)
+				return error::unauthorized;
+			facts.metadata.source_event = { lifecycle_source, lineage, lineage,
+							consumed_uid,
+							static_cast<uint32_t>(payload.reason_id) };
+		}
 		else
 		{
 			if (lifecycle_source != economic_source_kind{} ||
@@ -313,7 +391,8 @@ bool item_transfer_accounting_command_supported(const critical_command &command)
 			return false;
 		economic_source_kind lifecycle_source = {};
 		if (intent.admission.metadata.reason == economic_reason::item_create ||
-		    intent.admission.metadata.reason == economic_reason::item_destroy)
+		    intent.admission.metadata.reason == economic_reason::item_destroy ||
+		    intent.admission.metadata.reason == economic_reason::crafting_cost)
 		{
 			if (!intent.admission.metadata.source_event)
 				return false;
@@ -336,4 +415,114 @@ bool item_transfer_accounting_command_supported(const critical_command &command)
 	{
 		return false;
 	}
+}
+
+economic_accounting_error
+item_transfer_craft_accounting_effects(const item_transfer_payload &payload,
+				       std::span<const economic_item_snapshot> inputs,
+				       economic_accounting_plan *plan)
+try
+{
+	using error = economic_accounting_error;
+	std::vector<player_item_snapshot> outputs;
+	if (!plan || inputs.size() < payload.item_count || payload.from_owner.id > INT32_MAX ||
+	    !craft_outputs(payload, static_cast<uint32_t>(payload.from_owner.id), &outputs))
+		return error::unauthorized;
+	craft_pouch_mutation pouch;
+	if (!craft_pouch_mutation_from_payload(payload, &pouch))
+		return error::unauthorized;
+	economic_accounting_plan effects;
+	std::unordered_map<uint64_t, const economic_item_snapshot *> native;
+	for (const auto &input : inputs)
+		if (!native.emplace(input.uid, &input).second)
+			return error::corrupt_evidence;
+	std::unordered_set<uint64_t> witnesses;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		uint64_t cursor = payload.items[index].item_uid;
+		bool complete = false;
+		for (size_t depth = 0; depth <= PLAYER_SNAPSHOT_MAX_DEPTH; ++depth)
+		{
+			const auto found = native.find(cursor);
+			if (found == native.end())
+				return error::topology;
+			witnesses.insert(cursor);
+			cursor = found->second->position.parent_uid;
+			if (!cursor)
+			{
+				complete = true;
+				break;
+			}
+		}
+		if (!complete)
+			return error::topology;
+	}
+	for (const uint64_t uid : witnesses)
+		effects.items_before.push_back(*native.at(uid));
+	std::sort(effects.items_before.begin(), effects.items_before.end(),
+		  [](const auto &left, const auto &right) { return left.uid < right.uid; });
+	effects.items_after = effects.items_before;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &expected = payload.items[index];
+		const auto found = std::lower_bound(effects.items_before.begin(),
+						    effects.items_before.end(), expected.item_uid,
+						    [](const auto &item, uint64_t uid)
+						    { return item.uid < uid; });
+		if (found == effects.items_before.end() || found->uid != expected.item_uid)
+			return error::corrupt_evidence;
+		const size_t position = static_cast<size_t>(found - effects.items_before.begin());
+		const auto &prior = *found;
+		if (prior.uid != expected.item_uid ||
+		    !item_owner_identity_equal(prior.position.owner, payload.from_owner) ||
+		    prior.position.root_uid != expected.root_item_uid ||
+		    prior.position.parent_uid != expected.parent_item_uid ||
+		    prior.position.revision != expected.expected_item_revision ||
+		    prior.position.state != item_custody_state::active)
+			return error::corrupt_evidence;
+		auto &after = effects.items_after[position].position;
+		if (expected.item_uid != pouch.before.object_uid)
+		{
+			after.owner = { item_owner_type::destruction, 0, 0 };
+			after.state = item_custody_state::destroyed;
+			after.equipment_slot = 0;
+		}
+		++after.revision;
+		effects.item_events.push_back(
+			{ static_cast<uint32_t>(index), 0, prior.uid, prior.position, after });
+	}
+	std::vector<uint64_t> roots;
+	roots.reserve(outputs.size());
+	for (size_t index = 0; index < outputs.size(); ++index)
+	{
+		const auto &output = outputs[index];
+		const bool root = output.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+		const uint64_t root_uid = root ? output.object_uid : roots[output.parent_index];
+		const uint64_t parent_uid = root ? 0 : outputs[output.parent_index].object_uid;
+		roots.push_back(root_uid);
+		const economic_item_position absent = {
+			{ item_owner_type::unknown, 0, 0 }, 0, 0, 0, item_custody_state::absent
+		};
+		const economic_item_position created = { payload.to_owner, root_uid, parent_uid, 1,
+							 item_custody_state::active };
+		effects.items_before.push_back({ output.object_uid, absent });
+		effects.items_after.push_back({ output.object_uid, created });
+		effects.item_events.push_back({ static_cast<uint32_t>(payload.item_count + index),
+						0, output.object_uid, absent, created });
+	}
+	for (auto *items : { &effects.items_before, &effects.items_after })
+		std::sort(items->begin(), items->end(),
+			  [](const auto &left, const auto &right) { return left.uid < right.uid; });
+	const auto valid = economic_item_effects_validate(effects.items_before, effects.items_after,
+							  effects.item_events, 0);
+	if (valid != error::ok)
+		return valid;
+	plan->items_before = std::move(effects.items_before);
+	plan->items_after = std::move(effects.items_after);
+	plan->item_events = std::move(effects.item_events);
+	return error::ok;
+}
+catch (const std::bad_alloc &)
+{
+	return economic_accounting_error::capacity;
 }

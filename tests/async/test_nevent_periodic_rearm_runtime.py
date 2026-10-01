@@ -2,6 +2,7 @@
 """Periodic nevent registry runtime and migration contracts."""
 
 from _paths import SRC
+from _object_special_fixture import object_special_functions
 import os
 import subprocess
 import tempfile
@@ -349,6 +350,8 @@ database = (SRC / "db.c").read_text(encoding="utf-8")
 
 object_event_harness = f'''
 #include "core/prototypes.h"
+#include "core/utils.h"
+#include "item/objmisc.h"
 #include "cmd/interp.h"
 
 #include <cstdlib>
@@ -385,6 +388,7 @@ static int object_proc(P_obj, P_char, int cmd, char *)
 \treturn true;
 }}
 
+{object_special_functions(dispatch=True, links=True)}
 {function_body(database, "void event_object_proc")}
 
 static void require(bool condition, int code)

@@ -41,7 +41,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
                         movement.index("item_ownership_runtime_apply"))
 
     def test_transfer_captures_exact_snapshot_before_submission(self):
-        movement = (SRC / "item_movement_transaction.c").read_text()
+        movement = extract_function("item_movement_transaction.c", "bool item_movement_transaction_submit(")
         capture = movement.index("player_item_snapshot_tree_capture")
         encode = movement.index("player_item_snapshot_list_encode")
         build = movement.index("item_transfer_command_build")

@@ -44,7 +44,7 @@ sources = [
   rel("flatfile_authority_transaction.c"),
   rel("flatfile_store.c"),
   rel("player_snapshot_codec.c"),
-  rel("item_transfer_command.c"),
+  rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
   rel("corpse_lifecycle_command.c"),
   rel("shop_trade_command.c"),
   rel("critical_command.c"),
@@ -63,7 +63,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-craft-test-") as temporary:
   compile_result = subprocess.run(
     [
       "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-      "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc",
+      "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+      "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-Isrc",
       "-Isrc/no_mysql", *sources, "-lcrypto", "-pthread", "-o", str(binary),
     ], cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
   )

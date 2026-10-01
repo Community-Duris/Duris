@@ -189,8 +189,11 @@ assert "chaos_material_pouch_is(item)" in SALCHEMIST
 assert "chaos_material_pouch_is(jewel)" in SALCHEMIST
 assert "read_object(static_cast<int>(jewel_vnum), VIRTUAL)" in SALCHEMIST
 assert "virtual_jewel" in SALCHEMIST
-assert "chaos_material_pouch_report_generated_failure" in SALCHEMIST
-assert "if (!chaos_material_pouch_record_generated" in SALCHEMIST
+# Virtual encrust retains the pouch and submits only the physical base item.
+assert "virtual_jewel ? 1 : 2" in SALCHEMIST
+assert "virtual_jewel ? &pouch_usage : nullptr" in SALCHEMIST
+assert "retained_pouch" in SALCHEMIST
+assert "chaos_material_pouch_record_generated(" not in SALCHEMIST
 CHAOS = source("chaos.c").read_text(encoding="utf-8", errors="replace")
 ACTINF = source("actinf.c").read_text(encoding="utf-8", errors="replace")
 ACTOBJ = source("actobj.c").read_text(encoding="utf-8", errors="replace")
@@ -204,18 +207,14 @@ assert "chaos_material_pouch_can_record_generated" in MATERIALS
 assert "chaos_material_pouch_record_collected" in MATERIALS
 assert "chaos_material_pouch_scoreboard" in MATERIALS
 assert "chaos_material_pouch_collect_inventory" in ACTOBJ
-assert "item_transfer_reason::destruction" in MATERIALS_C
-assert "item_movement_transaction_submit_batch" in MATERIALS_C
+assert "item_movement_transaction_submit_craft" in MATERIALS_C
+assert "chaos_pouch_usage_mode::collected" in MATERIALS_C
 assert "chaos_material_pouch_collection_completion" in MATERIALS_C
 assert "chaos_material_pouch_revert_collected" in MATERIALS_C
 assert "obj_from_char(material)" not in MATERIALS_C
-assert "extract_obj(material, FALSE)" in MATERIALS_C
-assert index(MATERIALS_C, "chaos_material_pouch_record_collected(pouch, usage.data(), usage_count)") < index(MATERIALS_C,
-    "item_movement_transaction_submit_batch(actor, roots, root_count"
-)
-assert index(MATERIALS_C, "chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count)") < index(MATERIALS_C,
-    "pending_collections.erase(actor_pid);\n\t\tlogit(LOG_FILE, \"CHAOS pouch collection could not be queued"
-)
+assert "void extract_collected_objects" not in MATERIALS_C
+assert "chaos_material_pouch_record_collected(pouch, usage.data(), usage_count)" not in MATERIALS_C
+assert "chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count)" not in MATERIALS_C
 assert "CHAOS_MATERIAL_POUCH_SEARCH_BUDGET" in MATERIALS
 assert "WEAR_ATTACH_BELT_1" in ACTOBJ
 assert "WEAR_ATTACH_BELT_3" in ACTOBJ

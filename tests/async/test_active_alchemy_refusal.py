@@ -1,40 +1,24 @@
 #!/usr/bin/env python3
-"""Execute active alchemy entry refusals and check allocation boundaries."""
-from pathlib import Path
-import subprocess
-import tempfile
-from _paths import ROOT, extract_function
+"""Check supported physical and pouch craft admission before live mutation."""
+from _paths import extract_function
 
-alchemy = (ROOT/'src/classes/salchemist.c').read_text()
 movement = extract_function('item_movement_transaction.c',
                             'bool item_movement_transaction_submit_craft(')
-assert movement.index('economic_gameplay_authority::active()') < movement.index('player_item_snapshot_tree_capture')
+admission = movement.index('economic_gameplay_authority::prepare_item_transfer(')
+assert admission < movement.index('pending.emplace(')
+assert admission < movement.index('critical_command_coordinator_submit_for_publication(')
+assert 'economic_source_kind::crafting' in movement[admission:]
+
+for symbol in ('do_mixpoison', 'do_encrust'):
+    function = extract_function('salchemist.c', 'void ' + symbol + '(')
+    assert 'item_movement_transaction_submit_craft(' in function
+    assert 'economic_gameplay_authority::active()' not in function
+encrust = extract_function('salchemist.c', 'void do_encrust(')
+assert encrust.index('chaos_material_pouch_can_record_generated') < encrust.index('number(1, 110)')
+assert 'virtual_jewel ? 1 : 2' in encrust
+assert 'virtual_jewel ? &pouch_usage : nullptr' in encrust
+assert 'chaos_material_pouch_record_generated(' not in encrust
 harvester = extract_function('drannak.c', 'int pvp_store(')
-buy = harvester[harvester.index('else if (strstr(arg, "1"))'):]
-assert buy.index('economic_gameplay_authority::active()') < buy.index('vnum_in_inv')
-assert buy.index('economic_gameplay_authority::active()') < buy.index('read_object')
-code = r'''
-#include <cassert>
-struct character { int ingredients=3, jewels=1; };
-using P_char=character *;
-struct economic_gameplay_authority { static bool active() { return true; } };
-static int notices=0, reached=0;
-void send_to_char(const char *, P_char) { ++notices; }
-'''
-for symbol, tail in [('do_mixpoison','\n\tP_obj vial;'), ('do_encrust','\n\tchar arg[')]:
-    function = extract_function('salchemist.c', 'void '+symbol+'(')
-    prefix = function[:function.index(tail)]
-    assert prefix.index('economic_gameplay_authority::active()') < prefix.index('send_to_char')
-    code += prefix.replace('char *argument', 'char * /*argument*/') + '\n++reached;\n}\n'
-code += r'''
-int main() {
-    character player; char arguments[]="mace green";
-    do_mixpoison(&player,arguments,0); do_encrust(&player,arguments,0);
-    assert(notices==2 && reached==0 && player.ingredients==3 && player.jewels==1);
-}
-'''
-with tempfile.TemporaryDirectory(prefix='active-alchemy-refusal-') as directory:
-    path=Path(directory);(path/'test.cpp').write_text(code)
-    subprocess.run(['g++','-std=c++20','-Wall','-Wextra','-Werror',str(path/'test.cpp'),'-o',str(path/'test')],check=True)
-    subprocess.run([str(path/'test')],check=True)
-print('active poison/Encrust entry refusals and Harvester/craft allocation boundaries passed')
+assert 'item_movement_transaction_submit_craft(' in harvester
+assert 'economic_gameplay_authority::active()' not in harvester
+print('supported alchemy admission and atomic virtual-material craft passed')

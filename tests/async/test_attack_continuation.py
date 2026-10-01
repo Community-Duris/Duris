@@ -617,7 +617,7 @@ for pv_callback in pv_defense_callbacks:
     assert pv_callback_offset < pv_callback_check
     pv_callback_offset = pv_callback_check + 1
 pv_item_callback = pv_common_compact.index(
-    "(*obj_index[item->R_num].func.obj)(item,opponent,CMD_GOTHIT,(char*)&data)"
+    "invoke_object_special(item,opponent,CMD_GOTHIT,(char*)&data)"
 )
 pv_item_check = pv_common_compact.index(
     "if(!refresh_attack_participants())returnFALSE;", pv_item_callback
@@ -953,7 +953,7 @@ assert len(stab_damage_positions) == 4
 for stab_damage in stab_damage_positions:
     assert single_stab.rfind("begin_attack_continuation(ch, victim, weapon)", 0, stab_damage) >= 0
     assert single_stab.index("refresh_stab_participants(continuation)", stab_damage) > stab_damage
-stab_object_proc = single_stab.index("(*obj_index[weapon->R_num].func.obj)")
+stab_object_proc = single_stab.index("invoke_object_special(weapon,")
 stab_object_check = single_stab.index("refresh_stab_participants(continuation)", stab_object_proc)
 stab_poison = single_stab.index("(skills[poison].spell_pointer)")
 stab_poison_check = single_stab.index("refresh_stab_participants(continuation)", stab_poison)
