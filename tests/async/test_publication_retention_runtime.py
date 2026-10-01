@@ -109,7 +109,6 @@ bool currency_transaction_coin_item_busy(uint64_t) { return false; }
 bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
 bool economic_gameplay_authority::active() { return false; }
-bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
     critical_command *, uint32_t, economic_source_kind) {
     return economic_accounting_error::ok;

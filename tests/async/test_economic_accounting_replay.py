@@ -18,7 +18,7 @@ with tempfile.TemporaryDirectory(prefix='run-', dir=work) as temporary, tempfile
     command += [str(ROOT / name) for name in (
         'tests/async/economic_accounting_replay_test.cpp',
         'src/economy/economic_accounting_intent.c', 'src/economy/economic_accounting_plan.c',
-        'src/economy/economic_accounting_types.c', 'src/item/item_transfer_command.c',
+        'src/economy/economic_accounting_types.c', 'src/item/item_transfer_command.c', 'src/player/player_snapshot_codec.c',
         'src/persistence/critical_command.c', 'src/persistence/critical_command_journal.c',
         'src/persistence/critical_command_coordinator.c')]
     command += ['-lcrypto', '-lz', '-o', str(executable)]

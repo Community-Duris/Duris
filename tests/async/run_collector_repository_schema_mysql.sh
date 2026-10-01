@@ -72,6 +72,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
 	src/economy/economic_accounting_plan.c \
 	src/economy/economic_accounting_intent.c \
 	src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
+	src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
+	src/persistence/economic_sql_shop_trade_transaction.c \
 	"${MYSQL_LIBS[@]}" -lcrypto \
 	-o "$ROOT/bin/tests/collector_repository_mysql_harness"
 "$ROOT/bin/tests/collector_repository_mysql_harness"

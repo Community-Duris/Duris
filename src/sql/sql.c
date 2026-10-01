@@ -5142,7 +5142,8 @@ bool sql_pwipe(int code_verify)
 		logit(LOG_DEBUG, "sql_pwipe: Clearing player item subtable data... .. .");
 		send_to_all("Clearing player item subtable data... .. .");
 		if (qry("DELETE FROM player_item_affects") &&
-		    qry("DELETE FROM player_item_extra_descr"))
+		    qry("DELETE FROM player_item_extra_descr") &&
+		    qry("DELETE FROM player_item_runtime_state"))
 		{
 			logit(LOG_DEBUG, "  success!");
 			send_to_all("  success!\n");

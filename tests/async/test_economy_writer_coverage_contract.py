@@ -496,10 +496,10 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(owners[("src/sql/sql_player.c", 10982, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
-        for line in (888, 908, 941):
+        for line in (887, 907, 940):
             self.assertEqual(owners[(shop_path, line, "sql_economy")],
                              {"shop.sql_native_item_events"})
-        self.assertEqual(owners[(shop_path, 1075, "sql_economy")],
+        self.assertEqual(owners[(shop_path, 1074, "sql_economy")],
                          {"shop.sql_native_balances"})
         for route_id in ("shop.sql_native_item_events", "shop.sql_native_balances"):
             route = self.routes[route_id]

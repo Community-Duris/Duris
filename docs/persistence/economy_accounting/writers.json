@@ -21791,12 +21791,12 @@
         ],
         [
           "src/sql/sql.c",
-          5312,
+          5313,
           "sql_economy"
         ],
         [
           "src/sql/sql.c",
-          5340,
+          5341,
           "sql_economy"
         ]
       ],
@@ -60005,13 +60005,13 @@
     },
     {
       "path": "src/sql/sql.c",
-      "line": 5312,
+      "line": 5313,
       "family": "sql_economy",
       "excerpt": "qry(\"DELETE FROM saved_item_extra_descr\") && qry(\"DELETE FROM saved_items\"))"
     },
     {
       "path": "src/sql/sql.c",
-      "line": 5340,
+      "line": 5341,
       "family": "sql_economy",
       "excerpt": "if (qry(\"DELETE FROM ships\"))"
     },

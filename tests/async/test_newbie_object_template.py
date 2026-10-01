@@ -325,6 +325,9 @@ int main()
 
 def main() -> int:
     functions = [
+        extract_function("affects.c", "P_char get_linked_char("),
+        extract_function("objmisc.c", "bool item_restricted_for_player_pet("),
+        extract_function("objmisc.c", "int invoke_object_special("),
         extract_function("specs/specs.library.c", "char *proclibobj_parse_default(char *)"),
         extract_function("db.c", "char *fread_string(FILE *fl)"),
         extract_function("core/utility.c", "int strn_cmp(const char *arg1, const char *arg2, uint n)"),

@@ -96,6 +96,8 @@ void player_save_pipeline_quiesce() {}
 void player_save_pipeline_resume() {}
 bool player_save_pipeline_drain(uint64_t) { return true; }
 bool redis_world_recovery_drain(uint64_t) { return true; }
+bool redis_world_recovery_prepare_copyover() { return true; }
+void redis_world_recovery_resume_after_copyover() {}
 bool persistence_flush_all_character_saves() { return true; }
 bool persistence_log_drain(unsigned timeout_ms) { assert(timeout_ms == 3000); return true; }
 
@@ -266,7 +268,7 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
     subprocess.run(common + [str(source), str(temp / "copyover.o"),
                    "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c", "src/world/generated_npc_state.c", "src/world/generated_npc_runtime.c",
                    "src/player/pet_restore_state.c",
-                            "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c",
+                            "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c", "src/player/player_snapshot_codec.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",
                             "-lz", "-pthread", "-lgnutls", "-lbsd", "-o", str(temp / "fixture")],
                    cwd=ROOT, check=True)

@@ -61,9 +61,76 @@ all 2,758 unique sites are mapped. Release qualification remains blocked.
 The checkout's `origin` points to `Community-Duris/DurisMUD`; refresh
 the requested `Community-Duris/Duris` repository explicitly.
 
-The fresh 803-test regression batch and auction/collector/shop native fixtures
-are still running against their frozen pre-integration copies. Completed
-component checks cannot qualify an unexecuted player route. The remaining
+The frozen pre-integration regression batch completed with 790 passing and
+13 failing tests out of 803. Its generic SQL combat entry skipped without
+database settings; it is not native SQL gameplay evidence. The fresh integrated
+812-test batch completed with 759 passing and 53 failing checks. Its failures
+remain visible; focused reruns after fixture and dependency repairs pass 23/24,
+then the remaining copyover check, followed by 6/25, 15/19, and the last four
+checks. Full-world and CHAOS kit gameplay require separate current-binary
+qualification below. A separate
+current-fixture follow-up passed 23 of 24 checks; the remaining copyover harness
+then passed with the current world-worker hooks. Death Field runtime and all
+52 writer-coverage contract tests also pass.
+
+A consolidated rerun of the 50 component failures finished with 49 passing and
+one writer-census failure in its frozen pre-reanchor snapshot. After retaining
+each route's evidence and updating the SQL line references, all 52 current-tree
+writer-coverage tests pass. Together with the three direct gameplay checks
+below, the previously failing checks have passing focused replacements. This
+does not claim a new all-green 812-test batch or release qualification.
+
+At integration commit `a7902d2dd95b8d0d93c30ad6e099d85da897ec8b`, strict SQL and
+flatfile production builds passed with SHA-256 values
+`7e2489cadb04f5d3fe864ef87a30d27202d005ad0de9a176a7635c73418b6b13` and
+`fa244bbd47949ffab54dbfb35b3c8fcfe65beb77ca378094b7f48bb74e2381b8`.
+The SQL offering and XP-ack crash journeys pass on both engines, and the same
+flatfile journeys and plain/MCCP copyover pass on these frozen binaries.
+Integrated native auction listing, bids, claims, settlement, shop, and collector
+fixtures pass on both engines. The integrated flatfile combat/death/loot/restart
+and first-session currency journeys also pass.
+
+Both engines pass the guarded, unassisted SQL retained-death-conflict journey:
+durable acknowledgement precedes the account menu, self-scoped list/detail and
+cold-entry refusal work, and restart retains the exact original items without
+manual fixture repair. This uses a separate strict `TEST_MUD` development binary,
+SHA-256 `5b65e7de33849c43f6b5a7005b7946a9dd7b1094a81febb28beeaad842cab093`.
+The test-only selector remains constrained to an explicitly disposable loopback
+database; this does not enable production conflict application.
+
+Native SELECT-only audit-origin and partial-snapshot fixtures pass on both
+engines. Real SQL exposed `SUM(BIGINT)` returning `Decimal`, which broke JSON
+export of pending-claim consumers. Export now converts only exact integral
+values, preserves values above JavaScript's exact integer range, and refuses
+fractions. Nine focused tests pass. Fixtures now retain inbox receipts and
+locator kinds and explicitly require the current fail-closed findings for
+unmapped wallets, unauthorized mapping creation, and unattributed UID history.
+The exporter still declares incomplete coverage; these checks do not qualify a
+complete independent audit.
+
+A direct latest-binary static quest diagnostic passes item save and cold
+reconnect with the same reward UID. Its fixture now waits for the recovery
+message and verifies the actual inventory instead of the old live-grant text.
+The integrated CHAOS kit journey reproduced a real equipment regression:
+historical creation custody with slot zero overrides later ordinary worn slots
+on load. Native repository tests now distinguish initial creation references
+from later custody movements: creation preserves a newer saved worn slot, while
+movement references and explicit native positions override stale snapshots.
+The reset manifest also now deletes `player_item_runtime_state` before its
+parent item rows; its schema and deletion-order regression passes. Strict
+production builds after these repairs have SHA-256 values
+`dcf11a07b85076455b32dba76d05cda04696e4bca49e4695ebed9d6d5dd3a3e8`
+(SQL) and
+`1da2726364dfa36e3ff7aabc39193588e2e99fd3e8d4d7f0424f58114060d8cd`
+(flatfile). On that flatfile binary, the static quest reward and all five CHAOS
+class kit journeys pass: Warrior, Monk, Thief, Sorcerer, and Dragoon. The
+full-world player/floor-item process-restart journey passes with the original
+mace UID, retained native custody, and private accounting directories. These
+are explicitly selected production artifacts, rather than claims that the
+regression suite's cache rebuilt them. The kit checks do not exercise virtual
+pouch encrust; that feature's explicit refusal remains unfinished.
+
+Completed component checks cannot qualify an unexecuted player route. The remaining
 R1-R8 requirements, full gameplay and fault matrix, independent audit,
 activation/refusal coverage, lifecycle proof, and flatfile parity still govern
 completion. Keep unsupported checks and failures visible; do not infer a green

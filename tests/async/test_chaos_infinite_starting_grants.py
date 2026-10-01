@@ -189,8 +189,15 @@ assert "chaos_material_pouch_is(item)" in SALCHEMIST
 assert "chaos_material_pouch_is(jewel)" in SALCHEMIST
 assert "read_object(static_cast<int>(jewel_vnum), VIRTUAL)" in SALCHEMIST
 assert "virtual_jewel" in SALCHEMIST
-assert "chaos_material_pouch_report_generated_failure" in SALCHEMIST
-assert "if (!chaos_material_pouch_record_generated" in SALCHEMIST
+# The alchemist port holds virtual jewels until pouch usage can be part of
+# the same durable craft receipt. Preserve that explicit boundary rather than
+# accepting a legacy counter update after the item transaction commits.
+virtual_guard = SALCHEMIST.index("// Pouch usage has its own durable accounting path.")
+virtual_refusal = SALCHEMIST.index("Virtual Chaos-pouch encrust is temporarily unavailable", virtual_guard)
+craft_submission = SALCHEMIST.index("item_movement_transaction_submit_craft(", virtual_refusal)
+assert virtual_guard < virtual_refusal < craft_submission
+assert "extract_obj(jewel);" in SALCHEMIST[virtual_guard:virtual_refusal]
+assert "return;" in SALCHEMIST[virtual_refusal:craft_submission]
 CHAOS = source("chaos.c").read_text(encoding="utf-8", errors="replace")
 ACTINF = source("actinf.c").read_text(encoding="utf-8", errors="replace")
 ACTOBJ = source("actobj.c").read_text(encoding="utf-8", errors="replace")

@@ -411,6 +411,13 @@ int number(int low, int)
 	return low;
 }
 void apply_zone_modifier(P_char) {}
+// The reset branch invokes this separate world producer after room placement.
+// This harness exercises shopkeeper population, not alchemist item generation.
+static int alchemist_spawn_calls = 0;
+void npc_alchemist_world_spawn(P_char)
+{
+	++alchemist_spawn_calls;
+}
 void reset_mobile(int force_item_repop, bool expect_skip)
 {
 	int zone = 0, last_cmd = 1, last_mob_load = 1, configured_shop = -1, replicated_shop = -1;
