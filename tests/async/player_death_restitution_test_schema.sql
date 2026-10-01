@@ -10,6 +10,7 @@ CREATE TABLE critical_operation_inbox (
     payload_version INT UNSIGNED NOT NULL,
     status TINYINT UNSIGNED NOT NULL,
     result_code INT NOT NULL DEFAULT 0,
+    failure_stage SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     durable_revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
     result_payload VARBINARY(4096) NOT NULL,
     committed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

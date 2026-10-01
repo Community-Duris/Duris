@@ -2551,13 +2551,32 @@ void free_shops(void)
 
 void assign_the_shopkeepers(void)
 {
-	int temp1;
-
-	for (temp1 = 0; temp1 < number_of_shops; temp1++)
+	for (int shop = 0; shop < number_of_shops; ++shop)
 	{
-		if (mob_index[shop_index[temp1].keeper].func.mob)
-			SHOP_FUNC(temp1) = mob_index[shop_index[temp1].keeper].func.mob;
-		mob_index[shop_index[temp1].keeper].func.mob = shop_keeper;
+		const int keeper = shop_index[shop].keeper;
+		int primary_shop = shop;
+		for (int prior = 0; prior < shop; ++prior)
+			if (shop_index[prior].keeper == keeper)
+			{
+				primary_shop = prior;
+				break;
+			}
+
+		// A mobile prototype may back multiple room-scoped shops. Its first
+		// record captures the original secondary special; later records must
+		// share that special rather than capturing shop_keeper after it has
+		// replaced the prototype callback. Capturing shop_keeper here makes the
+		// dispatcher call itself recursively until the process exhausts its stack.
+		if (primary_shop != shop)
+		{
+			SHOP_FUNC(shop) = SHOP_FUNC(primary_shop);
+			mob_index[keeper].func.mob = shop_keeper;
+			continue;
+		}
+
+		if (mob_index[keeper].func.mob && mob_index[keeper].func.mob != shop_keeper)
+			SHOP_FUNC(shop) = mob_index[keeper].func.mob;
+		mob_index[keeper].func.mob = shop_keeper;
 	}
 }
 

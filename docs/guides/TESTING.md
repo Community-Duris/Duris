@@ -95,14 +95,22 @@ or narrow the backend matrix merely to make a temporary-table fixture pass.
 ### Shared journey server artifacts
 
 The Python runner defaults `DURIS_REGRESSION_BUILD_CACHE` to
-`bin/regression-artifacts`. Account recovery, flat-file boot preflight, Chaos
-kit, combat and full-world boot acquire one compatible flat-file server from
+`bin/regression-artifacts`. Account recovery, auction/coin-put, flat-file boot
+preflight, Chaos kit, combat and full-world boot acquire one compatible flat-file server from
 `tests/async/server_build_artifacts.py`. Each journey retains its own temporary
 authority, journals, logs, listeners and process cleanup. Executables are shared
 read-only; runtime state is never stored in the artifact directory. The
 item-prompt ASan/UBSan harness remains a separate build with its existing flags
 and timeout. Resource-intensive tests still run serially, with two jobs per
-server build and the original 600-second build ceiling.
+server build and the original 600-second build ceiling. Auction/coin-put also
+builds its inspector in a per-invocation temporary directory, so independent
+runners do not overwrite a shared executable.
+
+Serial scheduling prevents compiler contention within one runner; it does not
+guarantee a warm cache. A filtered run, disabled cache, or changed build inputs
+can still require a cold server build in the serial phase. Even cache hits hash
+inputs and validate the artifact before reuse. The runner reports build and
+validation time separately so this cost remains visible.
 
 The artifact key covers all files under `src/` (including untracked files),
 test headers, the helper contract, the flat-file backend, and the inherited build

@@ -628,7 +628,7 @@ int main(int argc, char **argv)
 	init_cmdlog(); /* init cmd.debug file - DCL */
 	(void)telemetry_runtime_init(telemetry_runtime_options_from_environment());
 
-	run_the_game(port, sslport);
+	const int game_exit_status = run_the_game(port, sslport);
 	telemetry_shutdown_request telemetry_shutdown{};
 	telemetry_shutdown.final_flush = 1U;
 	telemetry_monotonic_usec telemetry_deadline_now = 0U;
@@ -649,7 +649,7 @@ int main(int argc, char **argv)
 	shutdown_mysql();
 	close_cmdlog();
 
-	return (0);
+	return game_exit_status;
 }
 
 static void finalize_styled_command(P_desc descriptor)
@@ -724,7 +724,7 @@ static void touch(const char *filename)
 
 /* Init sockets, run game, and cleanup sockets */
 
-void run_the_game(int port, int sslport)
+int run_the_game(int port, int sslport)
 {
 	long time_before = 0;
 	long time_after = 0;
@@ -1053,7 +1053,7 @@ void run_the_game(int port, int sslport)
 		logit(LOG_EXIT, "Rebooting.");
 		logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 		ws_broadcast_mud_shutdown("reboot");
-		exit(52); /* what's so great about HHGTTG, anyhow? */
+		return 52; /* what's so great about HHGTTG, anyhow? */
 	}
 	// A successful copyover replaces this process from inside game_loop(). A
 	// failed copyover resumes that loop, so reaching here with the flag set is
@@ -1061,26 +1061,27 @@ void run_the_game(int port, int sslport)
 	if (_copyover)
 	{
 		logit(LOG_EXIT, "Copyover returned unexpectedly; refusing fallback exit.");
-		return;
+		return 0;
 	}
 	if (_autoboot)
 	{
 		logit(LOG_EXIT, "Auto reboot.");
 		logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 		ws_broadcast_mud_shutdown("autoreboot");
-		exit(54);
+		return 54;
 	}
 	if (_pwipe)
 	{
 		logit(LOG_EXIT, "Pwipe Shutdown.");
 		logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 		ws_broadcast_mud_shutdown("pwipe");
-		exit(55);
+		return 55;
 	}
 	ws_broadcast_mud_shutdown("manual");
 	logit(LOG_EXIT, "Normal termination of game.");
 	logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good, max_ingame_evil);
 	logit(LOG_STATUS, "Normal termination of game.");
+	return 0;
 }
 
 /* Accept new connects, relay commands, and call 'heartbeat-functs' */
@@ -2432,9 +2433,14 @@ void game_loop(int port, int sslport)
 	}
 	else if (copyover_boot)
 	{
-		// copyover mode but recovery failed - can't bind new sockets because old ones still open
-		logit(LOG_STATUS, "FATAL: copyover recovery failed, cannot continue");
-		exit(1);
+		/* The inherited listeners are still open, so this process cannot safely
+		 * bind replacements.  Return through normal shutdown to join every worker;
+		 * exit(1) here left joinable std::threads and turned a rejected copyover into
+		 * SIGABRT plus a core dump.  The supervisor then performs a cold restart. */
+		logit(LOG_STATUS,
+		      "FATAL: copyover recovery failed; requesting graceful cold restart");
+		_reboot = 1;
+		return;
 	}
 	else
 	{

@@ -365,7 +365,10 @@ class MysqlExecutor:
                                                 else []), input=input_payload,
                                 capture_output=True, env=environment, check=False)
         if result.returncode:
-            raise MigrationContractError("database migration command failed")
+            detail = result.stderr.decode(errors="replace").strip().splitlines()
+            raise MigrationContractError(
+                "database migration command failed" +
+                (f": {detail[-1]}" if detail else ""))
         return result.stdout.decode().strip()
 
     def acquire_lock(self) -> None:
@@ -443,7 +446,10 @@ class MysqlExecutor:
         result = subprocess.run([str(migration.verify_path)], capture_output=True,
                                 env=environment, check=False)
         if result.returncode:
-            raise MigrationContractError("migration verifier failed")
+            detail = (result.stderr or result.stdout).decode(errors="replace").strip().splitlines()
+            raise MigrationContractError(
+                "migration verifier failed" +
+                (f": {detail[-1]}" if detail else ""))
 
     def record(self, migration: Migration, runner_version: int) -> None:
         description_hex = migration.description.encode("utf-8").hex()

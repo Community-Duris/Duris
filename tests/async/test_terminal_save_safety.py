@@ -89,6 +89,14 @@ checks["database terminal helper rejects journal-only durability"] = (
     "player_save_terminal_result::journal_durable" not in database_terminal_helper
 )
 
+checks["voluntary logout requires database acknowledgement"] = (
+    "if (type == RENT_INN || type == RENT_CAMPED)" in terminal_helper and
+    "persistence_save_character_terminal_with_policy(ch, type, 5000, false)" in
+        terminal_helper and
+    terminal_helper.index("if (type == RENT_INN || type == RENT_CAMPED)") <
+        terminal_helper.index("persistence_save_character_terminal_with_policy(ch, type, 2000, true)")
+)
+
 player_sql_start = files.index("if (!sql_save_player(ch, type, room))")
 player_sql_failure = files[
     player_sql_start:files.index("// Failed saves always restore", player_sql_start)

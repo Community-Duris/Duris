@@ -128,7 +128,7 @@ void do_newchar(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	// validate name
-	if (_parse_name(arg1, name_lower))
+	if (_parse_name(arg1, name_lower, true))
 	{
 		send_to_char("invalid name.\r\n", ch);
 		return;

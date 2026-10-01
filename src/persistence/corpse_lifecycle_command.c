@@ -109,8 +109,9 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 	const bool pet_present = payload.pet_uid != 0;
 	if (pet_present &&
 	    ((payload.action != corpse_lifecycle_action::raise_follower && !world_raise) ||
-	     payload.pet_uid != (world_raise ? source_identity :
-					       item_corpse_owner_id(payload.owner_pid, payload.save_id)) ||
+	     payload.pet_uid !=
+		     (world_raise ? source_identity :
+				    item_corpse_owner_id(payload.owner_pid, payload.save_id)) ||
 	     payload.pet_mob_vnum <= 0 || payload.pet_hit < 0 || payload.pet_max_hit <= 0 ||
 	     payload.pet_hit > payload.pet_max_hit || payload.pet_mana < 0 ||
 	     payload.pet_max_mana < 0 || payload.pet_mana > payload.pet_max_mana ||
@@ -131,8 +132,8 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 	     payload.action != corpse_lifecycle_action::raise_follower &&
 	     payload.action != corpse_lifecycle_action::release_nested && !world_raise) ||
 	    (world_raise ? !source_identity :
-			   (!payload.owner_pid || payload.owner_pid > INT32_MAX || !payload.save_id ||
-			    payload.save_id > INT32_MAX)) ||
+			   (!payload.owner_pid || payload.owner_pid > INT32_MAX ||
+			    !payload.save_id || payload.save_id > INT32_MAX)) ||
 	    !valid_text(payload.owner_name, CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES, true))
 		return false;
 	const bool no_target = !payload.target_root_item_uid && !payload.target_parent_item_uid &&
@@ -246,9 +247,7 @@ bool valid_result(const corpse_lifecycle_result &result)
 	if ((!result.discarded_item_count &&
 	     (result.destruction_owner_revision || result.max_discarded_item_revision)) ||
 	    (result.discarded_item_count &&
-	     (!result.destruction_owner_revision || !result.max_discarded_item_revision)) ||
-	    (result.action != corpse_lifecycle_action::raise_follower && !world_raise &&
-	     result.discarded_item_count))
+	     (!result.destruction_owner_revision || !result.max_discarded_item_revision)))
 		return false;
 	if (result.action == corpse_lifecycle_action::upsert)
 		return !result.collector_catalog_changed && result.corpse_revision &&
@@ -298,7 +297,6 @@ bool valid_result(const corpse_lifecycle_result &result)
 		       !result.wallet_revision && !result.bank_revision &&
 		       result.discarded_item_count && result.destruction_owner_revision &&
 		       result.max_discarded_item_revision && item_result &&
-		       (result.pet_owner_revision || !result.item_count) &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	if (result.action != corpse_lifecycle_action::release_nested || result.corpse_revision ||
@@ -635,18 +633,16 @@ bool corpse_lifecycle_command_build(critical_command *command, critical_operatio
 	{
 		const critical_entity_key room_key = { critical_entity_type::room,
 						       static_cast<uint64_t>(payload.room_vnum) };
-		const critical_entity_key player_key = {
-			critical_entity_type::player,
-			static_cast<uint64_t>(payload.destination_player_pid)
-		};
+		const critical_entity_key player_key = { critical_entity_type::player,
+							 static_cast<uint64_t>(
+								 payload.destination_player_pid) };
 		critical_entity_key destruction_key = {};
 		if (!item_owner_key({ item_owner_type::destruction, 0, 0 }, &destruction_key))
 			return false;
 		command->keys.push_back(room_key);
 		command->keys.push_back(player_key);
 		command->keys.push_back(destruction_key);
-		command->expected_revisions.push_back(
-			{ room_key, payload.expected_room_revision });
+		command->expected_revisions.push_back({ room_key, payload.expected_room_revision });
 		command->expected_revisions.push_back(
 			{ player_key, payload.expected_player_revision });
 		// Destruction is a serialization domain here. Its current revision is
@@ -663,8 +659,7 @@ bool corpse_lifecycle_command_build(critical_command *command, critical_operatio
 			command->keys.push_back(pet_key);
 			command->expected_revisions.push_back({ pet_key, 0 });
 		}
-		std::sort(command->keys.begin(), command->keys.end(),
-			  critical_entity_key_less);
+		std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
 		if (std::adjacent_find(command->keys.begin(), command->keys.end(),
 				       critical_entity_key_equal) != command->keys.end())
 			return false;

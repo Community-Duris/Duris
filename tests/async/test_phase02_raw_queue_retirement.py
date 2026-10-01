@@ -57,7 +57,7 @@ class Phase02RawQueueRetirementTests(unittest.TestCase):
 
     def test_boot_and_shutdown_do_not_activate_legacy_raw_workers(self):
         comm = (SRC / "comm.c").read_text()
-        run = comm[comm.index("void run_the_game"):]
+        run = comm[comm.index("int run_the_game"):]
         for forbidden in ("persistence_replay_fallback_events();",
                           "persistence_start_item_event_worker();",
                           "persistence_start_scalar_event_worker();",

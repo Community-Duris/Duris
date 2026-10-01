@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Drive the 'pulse' command through a real flat-file server.
 
-A disposable character named Tyrus is created in the minimal world; character creation
-makes that name an OVERLORD, which is above the Forger level the command needs for
-'adjust' and 'save'. The journey lists the rates, refuses badly formed and out-of-range
-values, adjusts one casting and one melee rate, checks the change reached the property
-table, saves, and checks the saved file. Run it explicitly with a fresh flat-file binary:
+A disposable character is created in the minimal world and raised to OVERLORD while the
+server is down (creation refuses the god_list names that once did this), which is above
+the Forger level the command needs for 'adjust' and 'save'. The journey lists the rates,
+refuses badly formed and out-of-range values, adjusts one casting and one melee rate,
+checks the change reached the property table, saves, and checks the saved file. Run it
+explicitly with a fresh flat-file binary:
 
     python3 tests/async/run_racial_pulse_journey.py --server bin/server/dms_new
 """
@@ -26,7 +27,7 @@ import test_flatfile_combat_journey as journey
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 ACCOUNT = "Pulseacct"
-CHARACTER = "Tyrus"
+CHARACTER = "Pulsewarden"
 EMAIL = "pulse@example.invalid"
 PROMPTS = ("Pos: standing >", "<>")
 
@@ -36,7 +37,7 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def create_god(client: journey.MudClient) -> None:
+def create_character(client: journey.MudClient) -> None:
     entry, _ = client.expect_any(("term type", "account name"))
     if entry == "term type":
         client.send("9")
@@ -160,17 +161,38 @@ def main() -> None:
             environment["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
         output_path = run_root / "server.out"
         with output_path.open("w", encoding="utf-8") as output:
-            process = subprocess.Popen([str(binary), "--minimal", "-s", "-d", str(run_root), str(plain_port)],
-                                       cwd=run_root, env=environment, text=True,
-                                       stdout=output, stderr=subprocess.STDOUT)
-            client = None
-            try:
+            def start() -> subprocess.Popen:
+                return subprocess.Popen([str(binary), "--minimal", "-s", "-d", str(run_root), str(plain_port)],
+                                        cwd=run_root, env=environment, text=True,
+                                        stdout=output, stderr=subprocess.STDOUT)
+
+            def wait_for_boot(boots: int) -> None:
                 deadline = time.monotonic() + 120
-                while time.monotonic() < deadline and "Entering game loop." not in output_path.read_text(errors="replace"):
+                while time.monotonic() < deadline and output_path.read_text(errors="replace").count("Entering game loop.") < boots:
                     require(process.poll() is None, "server exited during boot:\n" + output_path.read_text(errors="replace")[-6000:])
                     time.sleep(0.1)
+
+            process = start()
+            client = None
+            try:
+                wait_for_boot(1)
                 client = journey.MudClient(plain_port)
-                create_god(client)
+                create_character(client)
+                # Creation refuses god_list names, so the OVERLORD that 'pulse adjust' and
+                # 'pulse save' need is an ordinary character raised while the server is down.
+                command(client, "save", f"Save complete for {CHARACTER}.")
+                client.send("quit")
+                client.expect("ACCOUNT MENU", timeout=30)
+                client.close()
+                client = None
+                process.send_signal(signal.SIGTERM)
+                process.wait(timeout=30)
+                journey.make_overlord(state_root, CHARACTER)
+                process = start()
+                wait_for_boot(2)
+                client = journey.reconnect_character(plain_port, expected_room=None,
+                                                     account=ACCOUNT, character=CHARACTER)
+                client.expect_any(PROMPTS, timeout=30)
 
                 listing = command(client, "pulse", "pulse save")
                 require("Racial pulse" in listing, listing)

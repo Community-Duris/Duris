@@ -29,6 +29,7 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shopkeeper_restore.h"
 #include "item/item_ownership_runtime.h"
+#include "item/encumbrance_policy.h"
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
@@ -3334,7 +3335,8 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 					 */
 					GET_CARRYING_W(ch) = 0;
 					for (obj = ch->carrying; obj; obj = obj->next_content)
-						GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
+						GET_CARRYING_W(ch) +=
+							encumbrance_weight(GET_OBJ_WEIGHT(obj));
 				}
 				return root_obj ? root_obj : (P_obj)1;
 			}
@@ -3705,7 +3707,7 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 
 		GET_CARRYING_W(ch) = 0;
 		for (obj = ch->carrying; obj; obj = obj->next_content)
-			GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
+			GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(obj));
 	}
 
 	return root_obj ? root_obj : (P_obj)1;

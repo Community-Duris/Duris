@@ -47,6 +47,9 @@ idle_rent = body(limits, "void point_update(void)")
 assert idle_rent.index("persistence_save_character_terminal(i, RENT_LINKDEAD)") < idle_rent.index(
     "extract_char_after_terminal_save(i)"
 )
+assert idle_rent.index("if (GET_STAT(i) == STAT_DEAD)") < idle_rent.index(
+    "persistence_save_character_terminal(i, RENT_LINKDEAD)"
+)
 
 camp = body(affects, "int camp(P_char ch)")
 assert camp.index("persistence_save_character_terminal(ch, RENT_CAMPED)") < camp.index(

@@ -797,6 +797,23 @@ static bool sql_target_is_allowed(const char *host, const char *database)
 	return false;
 }
 
+/* The production role's plain-telnet port.  DURIS_PRODUCTION_PORT lets a second
+ * production-role install share a host; unset keeps DFLT_PORT.  An invalid value
+ * returns 0, which no running port matches. */
+static int sql_production_port(void)
+{
+	const char *configured = getenv("DURIS_PRODUCTION_PORT");
+	if (!configured || !*configured)
+		return DFLT_PORT;
+
+	errno = 0;
+	char *end = NULL;
+	long parsed = strtol(configured, &end, 10);
+	if (errno == ERANGE || end == configured || *end || parsed < 1 || parsed > 65535)
+		return 0;
+	return (int)parsed;
+}
+
 static bool sql_runtime_config_valid(void)
 {
 	const char *role = getenv("ENVIRONMENT");
@@ -834,7 +851,15 @@ static bool sql_runtime_config_valid(void)
 		}
 	}
 
-	if (!strcmp(role, "production") && RUNNING_PORT != DFLT_PORT)
+	const int production_port = sql_production_port();
+	if (!production_port)
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: DURIS_PRODUCTION_PORT is invalid");
+		return false;
+	}
+
+	if (!strcmp(role, "production") && RUNNING_PORT != production_port)
 	{
 		logit(LOG_STATUS,
 		      "Database configuration rejected: production role requires the production port");
@@ -1432,7 +1457,7 @@ const char *sql_persistence_db_name(void)
 {
 	const bool production_name = !strcmp(DB_NAME, "duris") || !strcmp(DB_NAME, "duris_prod");
 
-	if (RUNNING_PORT != DFLT_PORT && production_name)
+	if (RUNNING_PORT != sql_production_port() && production_name)
 		return "duris_dev";
 	return DB_NAME;
 }

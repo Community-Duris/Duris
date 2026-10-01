@@ -20,6 +20,10 @@
 
 namespace
 {
+// Native formats 2 and 3 retain their 2048-byte receipt limit independently
+// of the larger in-memory completion buffer. No persistent format change.
+constexpr size_t FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES = 2048;
+static_assert(FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 constexpr uint32_t domain_format_version = 3;
 constexpr std::array<uint8_t, 8> player_magic = { 'D', 'U', 'R', 'P', 'D', 'O', 'M', 0 };
 constexpr std::array<uint8_t, 8> bank_magic = { 'D', 'U', 'R', 'B', 'A', 'N', 'K', 0 };
@@ -48,7 +52,7 @@ struct domain_operation
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_digest;
 	unsigned int result_code = 0;
 	uint16_t result_size = 0;
-	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result = {};
+	std::array<uint8_t, FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES> result = {};
 };
 
 struct player_authority
@@ -1609,7 +1613,7 @@ critical_apply_result apply_currency_command(const std::string &root,
 critical_apply_result apply_combat_outcome_command(const std::string &root,
 						   const critical_command &command)
 {
-	static_assert(COMBAT_OUTCOME_RESULT_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
+	static_assert(COMBAT_OUTCOME_RESULT_BYTES <= FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES);
 	combat_outcome_payload payload = {};
 	std::vector<uint8_t> encoded_command;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};

@@ -19,6 +19,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+from unittest import mock
 
 from test_telemetry_contract_fixtures import canonical_config_fingerprint
 
@@ -180,6 +181,36 @@ def prepare_sql_fixture() -> tuple[dict[str, str], list[str], str]:
         raise
 
 
+def fixture_safety_contract() -> None:
+    safe = {
+        "TELEMETRY_REPOSITORY_HOST": "127.0.0.1",
+        "TELEMETRY_REPOSITORY_PORT": "3306",
+        "TELEMETRY_REPOSITORY_USER": "fixture",
+        "TELEMETRY_REPOSITORY_PASSWORD": "synthetic-test-secret",
+        "TELEMETRY_REPOSITORY_DATABASE": "duris_telemetry_test_synthetic_safety",
+    }
+    for field, value in (("TELEMETRY_REPOSITORY_HOST", "production.example"),
+                         ("TELEMETRY_REPOSITORY_HOST", "localhost"),
+                         ("TELEMETRY_REPOSITORY_DATABASE", "duris"),
+                         ("TELEMETRY_REPOSITORY_PORT", "0"),
+                         ("TELEMETRY_REPOSITORY_PORT", "65536"),
+                         ("TELEMETRY_REPOSITORY_PORT", "invalid"),
+                         ("TELEMETRY_REPOSITORY_PASSWORD", "")):
+        with mock.patch.dict(os.environ, {**safe, field: value}, clear=True):
+            try:
+                sql_environment()
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError(f"unsafe fixture accepted: {field}")
+    with mock.patch.dict(os.environ, {**safe, "DB_SOCKET": "/production.sock",
+                                      "MYSQL_UNIX_PORT": "/production.sock"}, clear=True):
+        environment, command, database = sql_environment()
+        assert "DB_SOCKET" not in environment and "MYSQL_UNIX_PORT" not in environment
+        assert "--protocol=tcp" in command and database == safe["TELEMETRY_REPOSITORY_DATABASE"]
+    print("Fixture target safety: PASS (seven unsafe targets refused, inherited sockets removed)", flush=True)
+
+
 def drop_sql_fixture(environment: dict[str, str], command: list[str], database: str) -> None:
     subprocess.run(command + ["-e", f"DROP DATABASE IF EXISTS `{database}`"],
                    check=True, env=environment)
@@ -273,6 +304,7 @@ def main():
     if args.sql_fixture and os.environ.get("TELEMETRY_REPOSITORY_DISPOSABLE") != "1":
         parser.error("--sql-fixture requires TELEMETRY_REPOSITORY_DISPOSABLE=1; database reset is destructive")
     repository_mapping_contract()
+    fixture_safety_contract()
     compiler = shlex.split(os.environ.get("CXX", "g++"))
     output_root = ROOT / "bin/tests"
     output_root.mkdir(parents=True, exist_ok=True)

@@ -80,6 +80,8 @@ enum class item_transfer_reason : uint16_t
 	// These existing-item handoffs have command-specific post-commit effects.
 	soulbind,
 	slip,
+	// Atomic retirement and admission of detached crafted outputs.
+	craft,
 };
 
 enum class item_custody_state : uint8_t
