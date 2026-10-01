@@ -10150,6 +10150,10 @@ void perform_violence(void)
 		if (is_char_in_room(ch, room) && IS_NPC(ch) && IS_AWAKE(ch) && CAN_ACT(ch))
 			MobCombat(ch);
 
+		// NPC effects can kill or move either participant.
+		if (!is_char_in_room(opponent, room) || !is_char_in_room(ch, room))
+			continue;
+
 		appear(ch);
 		appear(opponent);
 

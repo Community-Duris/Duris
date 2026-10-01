@@ -224,54 +224,6 @@ extern struct zone_data *zone_table;
 
 P_obj set_encrust_affect(P_obj obj, int proc);
 
-struct potion potion_data[] = {
-	{ SPELL_GREATER_LIVING_STONE,
-	  51,
-	  { LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, BONE },
-	  FIRST_POTION_VIRTUAL },
-	{ SPELL_STRONG_ACID,
-	  41,
-	  { BONE, DRAGONS_BLOOD, NIGHTSHADE, GREEN_HERB, LIVING_STONE },
-	  FIRST_POTION_VIRTUAL + 3 },
-	{ SPELL_ENTANGLE,
-	  41,
-	  { BONE, GREEN_HERB, GARLIC, MANDRAKE_ROOT },
-	  FIRST_POTION_VIRTUAL + 4 },
-	{ SPELL_GLASS_BOMB,
-	  36,
-	  { MANDRAKE_ROOT, GARLIC, GREEN_HERB, DRAGONS_BLOOD, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 5 },
-	{ SPELL_FLY,
-	  36,
-	  { MANDRAKE_ROOT, GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 6 },
-	{ SPELL_NAPALM,
-	  31,
-	  { GARLIC, DRAGONS_BLOOD, MANDRAKE_ROOT, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 7 },
-	{ SPELL_FEEBLEMIND,
-	  31,
-	  { GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 8 },
-	{ SPELL_GREASE,
-	  26,
-	  { GARLIC, DRAGONS_BLOOD, GREEN_HERB, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 9 },
-	{ SPELL_LIVING_STONE,
-	  26,
-	  { LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, MANDRAKE_ROOT },
-	  FIRST_POTION_VIRTUAL + 11 },
-	{ SPELL_SLOW,
-	  21,
-	  { DRAGONS_BLOOD, FAERIE_DUST, GREEN_HERB, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 13 },
-	{ SPELL_WITHER, 16, { NIGHTSHADE, GREEN_HERB, MANDRAKE_ROOT }, FIRST_POTION_VIRTUAL + 15 },
-	{ SPELL_DISPEL_MAGIC, 11, { NIGHTSHADE, GARLIC, MANDRAKE_ROOT }, FIRST_POTION_VIRTUAL + 16 },
-	{ SPELL_FAERIE_FIRE, 11, { GREEN_HERB, GARLIC, FAERIE_DUST }, FIRST_POTION_VIRTUAL + 17 },
-	{ SPELL_NITROGEN, 6, { GREEN_HERB, GARLIC }, FIRST_POTION_VIRTUAL + 18 },
-	{}
-};
-
 struct poison
 {
 	int poison_type;
@@ -322,11 +274,6 @@ struct poison poison_data[] = {
 	  VOBJ_POISON_VIAL_LIFELEAK },
 	{}
 };
-
-int basic_ingredients[] = { VOBJ_FORAGE_NIGHTSHADE,    VOBJ_FORAGE_MANDRAKE,
-			    VOBJ_FORAGE_GARLIC,	       VOBJ_FORAGE_FAERIE_DUST,
-			    VOBJ_FORAGE_DRAGON_BLOOD,  VOBJ_FORAGE_GREEN_HERB,
-			    VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_HUMAN_BONE };
 
 const char *encrust_color_list[] = { "",    "&+G", "&+R", "&+Y", "&+B", "&+L",
 				     "&+M", "&+r", "&+b", "&+m", " " };
@@ -1501,71 +1448,6 @@ void do_smelt(P_char ch, char * /*arg*/, int /*cmd*/)
 		act("&+L$p &+Lmakes a roaring sound!&n", FALSE, 0, furnace, 0, TO_ROOM);
 		// notch_skill(ch, SKILL_SMELT, 50);
 	}
-}
-
-bool MobAlchemistGetPotions(P_char ch, int type, int number)
-{
-	P_obj bottle;
-	int i = 0;
-
-	while (i++ < number)
-	{
-		bottle = read_object(potion_data[type].vnum, VIRTUAL);
-		bottle->value[0] = MIN(50, GET_LEVEL(ch));
-		obj_to_char(bottle, ch);
-	}
-	CharWait(ch, PULSE_VIOLENCE);
-
-	return TRUE;
-}
-
-int spl2potion(int spl)
-{
-	int i;
-
-	for (i = 0; potion_data[i].spell_type; i++)
-		if (potion_data[i].spell_type == spl)
-			return i;
-
-	return 0;
-}
-
-int count_potions(P_char ch)
-{
-	P_obj t_obj;
-	int level;
-	int potions = 0;
-
-	level = GET_LEVEL(ch);
-	for (t_obj = ch->carrying; t_obj; t_obj = t_obj->next_content)
-	{
-		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL &&
-		    obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 &&
-		    t_obj->value[0] <= level)
-			potions++;
-	}
-
-	return potions;
-}
-
-P_obj get_potion(P_char ch)
-{
-	P_obj t_obj, next_obj;
-	int count = count_potions(ch);
-	int pick = number(0, count - 1);
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL &&
-		    obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 &&
-		    t_obj->value[0] <= GET_LEVEL(ch) && pick-- == 0)
-		{
-			return t_obj;
-		}
-	}
-
-	return NULL;
 }
 
 #define LAST_HARMFUL_SPELL_TO_ADD 11
