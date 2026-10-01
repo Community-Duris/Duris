@@ -2,6 +2,7 @@
 """Auction listing must leave a connected player's next coin put usable."""
 
 import argparse
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -96,19 +97,22 @@ def main():
     parser.add_argument("--expect-regression", action="store_true",
                         help="verify the original failure and full-reload workaround")
     args = parser.parse_args()
-    subprocess.run([
-        "python3", "tests/async/test_flatfile_player_repository.py",
-        "--build-inspector", str(journey.INSPECTOR),
-    ], cwd=journey.ROOT, check=True, timeout=180)
-    with tempfile.TemporaryDirectory(prefix="auction-coin-put-",
-                                     dir=journey.ROOT / "bin/tests") as temporary:
+    (journey.ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f"auction-coin-put-{os.getpid()}-",
+                                     dir=journey.ROOT / "bin/tests") as build_tmp:
+        inspector = pathlib.Path(build_tmp) / "coin-death-inspector"
+        subprocess.run([
+            "python3", "tests/async/test_flatfile_player_repository.py",
+            "--build-inspector", str(inspector),
+        ], cwd=journey.ROOT, check=True, timeout=180)
         binary = (args.server.resolve() if args.server else
-                  journey.build_flatfile_server(pathlib.Path(temporary)))
+                  journey.build_flatfile_server(pathlib.Path(build_tmp)))
 
         def verify_session(client, port, state_root, populated_bank):
             verify(client, port, state_root, populated_bank, args.expect_regression)
 
-        with patch.object(journey, "make_fixture", make_fixture), \
+        with patch.object(journey, "INSPECTOR", inspector), \
+                patch.object(journey, "make_fixture", make_fixture), \
                 patch.object(first_session, "verify_first_session", verify_session):
             journey.run_journey(binary, reset_coins=True, first_session_only=True)
     print("Original auction/coin-put regression reproduced." if args.expect_regression else
