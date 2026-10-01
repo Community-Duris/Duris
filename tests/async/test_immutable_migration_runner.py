@@ -53,9 +53,10 @@ class FakeExecutor:
 
 
 class ImmutableMigrationRunnerTest(unittest.TestCase):
-    def test_restore_accepts_both_complete_supported_histories(self):
+    def test_restore_accepts_all_complete_supported_histories(self):
         for path in (runner.DEFAULT_MANIFEST,
-                     ROOT / "migrations/migration_manifest.staging_0045.json"):
+                     ROOT / "migrations/migration_manifest.staging_0045.json",
+                     ROOT / "migrations/migration_manifest.master_0031.json"):
             manifest = runner.load_manifest(path)
             rows = [runner.AppliedMigration(
                 step.migration_id, step.sequence, step.description,
@@ -68,18 +69,28 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         stage = runner.load_manifest(
             ROOT / "migrations/migration_manifest.staging_0045.json")
+        master = runner.load_manifest(
+            ROOT / "migrations/migration_manifest.master_0031.json")
         def receipts(selected):
             return [runner.AppliedMigration(
                 step.migration_id, step.sequence, step.description,
                 step.apply_checksum, step.verify_checksum, step.compatibility,
                 selected.runner_version) for step in selected.migrations]
         canonical, staging = receipts(manifest), receipts(stage)
+        upgraded_master = receipts(master)
         mixed = list(canonical)
         mixed[44] = staging[44]
+        mixed_master = list(canonical)
+        mixed_master[30] = upgraded_master[30]
         for label, rows in (
             ("empty", []), ("common_prefix", canonical[:44]),
             ("unmigrated_stage", staging[:45]), ("missing_head", canonical[:-1]),
             ("mixed", mixed),
+            ("unmigrated_master", upgraded_master[:31]),
+            ("mixed_master", mixed_master),
+            ("master_missing_head", upgraded_master[:-1]),
+            ("master_edited_receipt", upgraded_master[:30] +
+             [replace(upgraded_master[30], description="edited")] + upgraded_master[31:]),
             ("edited_old_receipt", [replace(canonical[0], description="edited")] + canonical[1:]),
             ("extra_receipt", staging + [staging[-1]]),
         ):
@@ -331,6 +342,40 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
         with self.assertRaisesRegex(runner.MigrationContractError, "edited or reordered"):
             runner.run_pending(runner.load_manifest(), FakeExecutor(rows))
+
+    def test_master_upgrade_preserves_sealed_prefix_resumes_and_replays(self):
+        master = runner.load_manifest(
+            ROOT / "migrations/migration_manifest.master_0031.json")
+        prefix = [runner.AppliedMigration(
+            item.migration_id, item.sequence, item.description, item.apply_checksum,
+            item.verify_checksum, item.compatibility, master.runner_version,
+        ) for item in master.migrations[:31]]
+        # Measured from master's actual manifest at 1862a5fb, including all metadata.
+        self.assertEqual(runner.history_checksum(prefix),
+                         "30be02f71b0cb9d0e70812c5762b112b1636f9ceb07f95e08d94743a5e971120")
+        self.assertEqual(prefix[-1].migration_id, "0031_player_item_runtime_state")
+        refused = FakeExecutor(prefix)
+        with self.assertRaisesRegex(runner.MigrationContractError, "edited or reordered"):
+            runner.run_pending(runner.load_manifest(), refused)
+        self.assertEqual(refused.events, ["lock", "baseline", "unlock"])
+        self.assertEqual(refused.rows, prefix)
+
+        interrupted = FakeExecutor(prefix, fail_verify=True)
+        with self.assertRaisesRegex(runner.MigrationContractError, "verify failed"):
+            runner.run_pending(master, interrupted)
+        self.assertEqual(interrupted.rows, prefix)
+        self.assertEqual(interrupted.events[-1], "unlock")
+        resumed = FakeExecutor(interrupted.rows)
+        self.assertEqual(runner.run_pending(master, resumed),
+                         [item.migration_id for item in master.migrations[31:]])
+        self.assertEqual(resumed.rows[:31], prefix)
+        self.assertEqual(len(resumed.rows), 51)
+        self.assertEqual(resumed.rows[-1].migration_id,
+                         "0050_item_extra_description_fulltext_unique")
+        replay = FakeExecutor(resumed.rows)
+        self.assertEqual(runner.run_pending(master, replay), [])
+        self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
+        restore_qualifier.require_completed_history(replay.rows)
 
     def test_runtime_history_query_is_bounded_and_covers_every_receipt_field(self):
         sql = runner.runtime_history_sql(51)

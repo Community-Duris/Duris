@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify the append-only staging fork on task-owned MySQL/MariaDB containers.
+"""Qualify append-only staging/master forks on task-owned MySQL/MariaDB containers.
 
 Uses the real migration runner and both the shell and compiled boot predicates.
 Never targets a configured server. --update-contract explicitly seals measured
@@ -56,7 +56,7 @@ def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> 
     return result.stdout + result.stderr
 
 
-def history(engine: schema.Engine, limit: int = 50) -> str:
+def history(engine: schema.Engine, limit: int = 51) -> str:
     return engine.sql("SELECT HEX(CONCAT(migration_id,CHAR(0),sequence_number,CHAR(0),"
                       "description,CHAR(0),HEX(apply_checksum),CHAR(0),HEX(verify_checksum),"
                       "CHAR(0),compatibility,CHAR(0),runner_version,CHAR(0),applied_at)) "
@@ -75,10 +75,11 @@ def boot(engine: schema.Engine, success: bool = True) -> str:
     return " | ".join(results)
 
 
-def setup(engine: schema.Engine, manifest: runner.Manifest) -> None:
+def setup(engine: schema.Engine, manifest: runner.Manifest,
+          bootstrap: Path | None = None) -> None:
     engine.wait_ready()
     engine.create_database()
-    engine.sql_file(schema.BOOTSTRAP)
+    engine.sql_file(bootstrap or schema.BOOTSTRAP)
     schema.seed_history(engine, replace(manifest, migrations=()))
 
 
@@ -263,9 +264,13 @@ def native_lock_fixture() -> dict:
             value.release_lock()
 
 
-def run(update: bool, lock_only: bool = False) -> dict:
+def run(update: bool, lock_only: bool = False, master_bootstrap: Path | None = None) -> dict:
     canonical = runner.load_manifest()
     staging = runner.load_manifest(ROOT / "migrations/migration_manifest.staging_0045.json")
+    master = runner.load_manifest(ROOT / "migrations/migration_manifest.master_0031.json")
+    unique_description_step = next(step for step in canonical.migrations
+                                   if step.migration_id ==
+                                   "0050_item_extra_description_fulltext_unique")
     report = {}
     engines = []
     token = secrets.token_hex(5)
@@ -296,6 +301,7 @@ def run(update: bool, lock_only: bool = False) -> dict:
                 continue
             normal = schema.Engine(label, name, password, f"duris_268_{token}_canonicaltest")
             fork = schema.Engine(label, name, password, f"duris_268_{token}_stagingtest")
+            from_master = schema.Engine(label, name, password, f"duris_268_{token}_mastertest")
             print(f"{label}: building canonical history with the real runner", flush=True)
             setup(normal, canonical)
             migrate(normal, "migration_manifest.json")
@@ -303,7 +309,7 @@ def run(update: bool, lock_only: bool = False) -> dict:
             migrate(normal, "migration_manifest.json")
             check(snapshot == history(normal), "canonical rerun rewrote migration receipts")
             normal_rows = descriptions(normal)
-            normal.sql_file(canonical.migrations[-1].apply_path)
+            normal.sql_file(unique_description_step.apply_path)
             check(normal_rows == description_rows(normal), "canonical replay changed descriptions")
             print(f"{label}: building immutable staging prefix through 0045", flush=True)
             partial = replace(staging, migrations=staging.migrations[:45])
@@ -329,10 +335,44 @@ def run(update: bool, lock_only: bool = False) -> dict:
             migrate(fork, "migration_manifest.staging_0045.json")
             check(after == history(fork), "staging rerun rewrote migration receipts")
             check(fork.sql("SELECT COUNT(*) FROM mud_schema_history;", database=fork.database)
-                  == "50", "transition did not append exactly five receipts")
+                  == "51", "staging transition did not append exactly six receipts")
+
+            print(f"{label}: upgrading immutable master prefix through 0031", flush=True)
+            setup(from_master, master, master_bootstrap)
+            prefix_result = qa(from_master, ["python3", "-c",
+                "import sys; from dataclasses import replace; sys.path.insert(0,'scripts'); "
+                "import migration_runner as m; "
+                "manifest=m.load_manifest(m.ROOT/'migrations/migration_manifest.master_0031.json'); "
+                "prefix=replace(manifest,migrations=manifest.migrations[:31]); "
+                "print(m.run_pending(prefix,m.MysqlExecutor(prefix)))"])
+            check(prefix_result.returncode == 0,
+                  "master prefix failed: " + prefix_result.stdout + prefix_result.stderr)
+            master_before = history(from_master, 31)
+            from_master.sql("SET FOREIGN_KEY_CHECKS=0; INSERT INTO player_item_runtime_state "
+                            "(item_id,payload) VALUES(4294900002,UNHEX('00017fff804d4153544552'));",
+                            database=from_master.database)
+            payload_query = "SELECT item_id,HEX(payload) FROM player_item_runtime_state ORDER BY item_id;"
+            payload_before = from_master.sql(payload_query, database=from_master.database)
+            boot(from_master, False)
+            refusal = migrate(from_master, "migration_manifest.json", False)
+            check("edited or reordered" in refusal, "canonical accepted master history")
+            check(master_before == history(from_master, 31), "refusal altered master receipts")
+            migrate(from_master, "migration_manifest.master_0031.json")
+            check(master_before == history(from_master, 31), "upgrade rewrote master receipts")
+            check(payload_before == from_master.sql(payload_query, database=from_master.database),
+                  "master upgrade changed retained item runtime payloads")
+            master_after = history(from_master)
+            migrate(from_master, "migration_manifest.master_0031.json")
+            check(master_after == history(from_master), "master rerun rewrote migration receipts")
+            check(from_master.sql("SELECT COUNT(*) FROM mud_schema_history;",
+                                  database=from_master.database) == "51",
+                  "master transition did not append exactly twenty receipts")
+            check(payload_before == from_master.sql(payload_query, database=from_master.database),
+                  "master rerun changed retained item runtime payloads")
             runtime = json.loads(schema.RUNTIME_MANIFEST.read_text())
             for current, key in ((normal, "migration_head"),
-                                 (fork, "staging_0045_migration_head")):
+                                 (fork, "staging_0045_migration_head"),
+                                 (from_master, "master_0031_migration_head")):
                 serialized = current.sql(runtime["migration_history_sql"],
                                          database=current.database)
                 digest = hashlib.sha256(b"".join(bytes.fromhex(line)
@@ -346,13 +386,20 @@ def run(update: bool, lock_only: bool = False) -> dict:
             measured = schema.measure_fingerprint(normal, runtime)
             check(schema.measure_fingerprint(fork, runtime) == measured,
                   "canonical and staging schema metadata differ")
-            report[label] = {"fingerprint": measured, "staging_prefix_preserved": True,
+            check(schema.measure_fingerprint(from_master, runtime) == measured,
+                  "canonical and upgraded master schema metadata differ")
+            report[label] = {"server_version": normal.server_version,
+                             "fingerprint": measured, "staging_prefix_preserved": True,
                              "first_45_receipt_sha256": hashlib.sha256(before.encode()).hexdigest(),
-                             "staging_append_count": 5, "reruns_preserved_receipts": True,
-                             "description_rows_preserved": True}
+                             "staging_append_count": 6, "reruns_preserved_receipts": True,
+                             "description_rows_preserved": True,
+                             "master_prefix_preserved": True, "master_append_count": 20,
+                             "first_31_receipt_sha256": hashlib.sha256(master_before.encode()).hexdigest(),
+                             "master_runtime_payload_preserved": True,
+                             "master_bootstrap": "supplied" if master_bootstrap else "current"}
             duplicate_guard(schema.Engine(label, name, password,
                                           f"duris_268_{token}_duplicatetest"),
-                            canonical.migrations[-1])
+                            unique_description_step)
             report[label]["duplicates_refuse_before_ddl_without_deleting_evidence"] = True
             lock_engine = schema.Engine(label, name, password, f"duris_268_{token}_locktest")
             lock_engine.create_database()
@@ -363,8 +410,8 @@ def run(update: bool, lock_only: bool = False) -> dict:
                   "native lock/receipt fault test failed: " + lock_result.stdout + lock_result.stderr)
             report[label]["native_migration_session"] = json.loads(lock_result.stdout)
             print(f"{label}: native lock/session/receipt faults passed", flush=True)
-            engines.append((label, normal, fork))
-            print(f"{label}: canonical and staging converge at {measured}", flush=True)
+            engines.append((label, normal, fork, from_master))
+            print(f"{label}: canonical, staging and master converge at {measured}", flush=True)
         if update:
             value = json.loads(schema.RUNTIME_MANIFEST.read_text())
             header_path = ROOT / "src/core/runtime_compatibility_contract.h"
@@ -377,8 +424,8 @@ def run(update: bool, lock_only: bool = False) -> dict:
                 value["normalized_metadata_fingerprints"][label] = new
             schema.RUNTIME_MANIFEST.write_text(json.dumps(value, indent=2) + "\n", newline="\n")
             header_path.write_text(header, newline="\n")
-        for label, normal, fork in engines:
-            for engine in (normal, fork):
+        for label, normal, fork, from_master in engines:
+            for engine in (normal, fork, from_master):
                 print(f"{label}/{engine.database.rsplit('_', 1)[-1]}: {boot(engine)}", flush=True)
                 # An old row tampered while the head/state remain unchanged must
                 # fail in the shell and the actual compiled boot predicate.
@@ -421,6 +468,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--update-contract", action="store_true")
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--master-bootstrap", type=Path,
+                        help="use a captured master bootstrap for the 0031 upgrade fixture")
     parser.add_argument("--native-lock-fixture", action="store_true")
     parser.add_argument("--lock-only", action="store_true",
                         help="run only the native migration-session faults on both engines")
@@ -428,7 +477,7 @@ if __name__ == "__main__":
     if arguments.update_contract and (arguments.lock_only or arguments.native_lock_fixture):
         parser.error("contract updates require the complete schema qualification")
     result = native_lock_fixture() if arguments.native_lock_fixture else run(
-        arguments.update_contract, arguments.lock_only)
+        arguments.update_contract, arguments.lock_only, arguments.master_bootstrap)
     text = json.dumps(result, indent=2) + "\n"
     if arguments.report:
         arguments.report.write_text(text)
