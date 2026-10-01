@@ -96,6 +96,22 @@ class Fixture(unittest.TestCase):
             self.assertEqual(backup.inventory(path), contents)
             backup.verify(path)
 
+    def scheduled(self):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with mock.patch.object(backup, "policy_load", return_value=self.p), \
+             mock.patch.object(sys, "argv", ["backup", "--policy", "/synthetic/policy", "schedule"]), \
+             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            result = backup.main()
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def finalized(self):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with mock.patch.object(backup, "policy_load", return_value=self.p), \
+             mock.patch.object(sys, "argv", ["backup", "--policy", "/synthetic/policy", "finalize"]), \
+             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            result = backup.main()
+        return result, stdout.getvalue(), stderr.getvalue()
+
     def ledger(self, **changes):
         value = dict(version=1, captured_at=int(time.time()),
                      policy_sha256=backup.digest(ROOT / "migrations/data_lifecycle_manifest.json"),
@@ -118,8 +134,16 @@ class PolicyTests(Fixture):
     def test_approved_defaults(self):
         loaded = self.load()
         expected = dict(self.p,
-                        live_roots=self.p["live_roots"] + list(self.p["journal_roots"].values()))
+                        live_roots=self.p["live_roots"] + list(self.p["journal_roots"].values()),
+                        resume_published=False, blocked_retry_seconds=3600)
         self.assertEqual(loaded, expected)
+
+    def test_recovery_policy_is_opt_in_and_retry_window_is_bounded(self):
+        self.assertFalse(self.load()["resume_published"])
+        self.assertTrue(self.load(resume_published=True)["resume_published"])
+        for seconds in (59, 604801, True):
+            with self.subTest(seconds=seconds), self.assertRaises(backup.BackupError):
+                self.load(blocked_retry_seconds=seconds)
 
     def test_invalid_policy_values(self):
         for changes in ({"approved": False}, {"custodian": "SET_BY_OPERATOR"},
@@ -390,6 +414,254 @@ class GenerationTests(Fixture):
         self.assertEqual(backup.status(self.p)["result"], "ok")
         self.assertEqual(backup.inventory(newest), contents)
         self.assertEqual(len(backup.generations(self.p["root"])), 2)
+
+    def test_next_scheduled_call_resumes_only_verified_publications_then_captures_again(self):
+        for failed_stage in ("after_publish", "after_verify", "before_rotation", "prune_complete",
+                             "status_write"):
+            with self.subTest(stage=failed_stage):
+                self.p["root"] = self.base / ("scheduled-resume-" + failed_stage)
+                self.p["resume_published"] = True
+                self.p["schedule_seconds"] = 0
+                self.baseline("flatfile-primary")
+                def interrupt(stage):
+                    if stage == failed_stage:
+                        raise OSError("synthetic interruption")
+                if failed_stage == "status_write":
+                    original = backup.write_json
+                    def fail_status(path, value):
+                        if path.name == "status.json":
+                            raise OSError("synthetic status publication failure")
+                        return original(path, value)
+                    failure = mock.patch.object(backup, "write_json", fail_status)
+                else:
+                    failure = mock.patch.object(backup, "checkpoint", interrupt)
+                with failure:
+                    result, unused_out, unused_error = self.scheduled()
+                self.assertEqual(result, 1)
+                published = backup.generations(self.p["root"])[0][0]
+                result, unused_out, error = self.scheduled()
+                self.assertEqual((result, error), (0, ""))
+                self.assertEqual(backup.status(self.p)["result"], "ok")
+                self.assertEqual(backup.generations(self.p["root"])[0][0], published)
+                result, unused_out, error = self.scheduled()
+                self.assertEqual((result, error), (0, ""))
+                self.assertNotEqual(backup.generations(self.p["root"])[0][0], published)
+                self.assertEqual(backup.status(self.p)["result"], "ok")
+
+    def test_scheduled_replication_pending_retries_then_allows_fresh_capture(self):
+        self.p["root"] = self.base / "scheduled-replication"
+        self.p["replica_root"] = self.base / "replica"
+        self.p["replica_root"].mkdir(mode=0o700)
+        self.p["schedule_seconds"] = 0
+        with mock.patch.object(backup, "replicate", return_value="transport_and_readback_verified"):
+            self.baseline("flatfile-primary")
+        self.p["resume_published"] = True
+        def interrupt(stage):
+            if stage == "after_publish":
+                raise OSError("synthetic publication interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            result, unused_out, unused_error = self.scheduled()
+        self.assertEqual(result, 1)
+        def failed_replication(*unused):
+            raise backup.BackupError("replica_mount_missing")
+        with mock.patch.object(backup, "replicate", side_effect=failed_replication):
+            result, unused_out, unused_error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json")["result"],
+                         "replication_pending")
+        with self.assertRaisesRegex(backup.BackupError, "replica_not_verified"):
+            backup.status(self.p)
+        with mock.patch.object(backup, "replicate", return_value="transport_and_readback_verified"):
+            result, unused_out, error = self.scheduled()
+            self.assertEqual((result, error), (0, ""))
+            self.assertEqual(backup.status(self.p)["result"], "ok")
+            newest = backup.generations(self.p["root"])[0][0]
+            result, unused_out, error = self.scheduled()
+        self.assertEqual((result, error), (0, ""))
+        self.assertNotEqual(backup.generations(self.p["root"])[0][0], newest)
+
+    def test_blocked_unfinalized_state_is_backed_off_without_trusting_later_corruption(self):
+        self.p["root"] = self.base / "scheduled-blocked"
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        def interrupt(stage):
+            if stage == "after_publish":
+                raise OSError("synthetic publication interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            self.assertEqual(self.scheduled()[0], 1)
+        result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("published_generation_requires_finalize_command", error)
+        with self.assertRaisesRegex(backup.BackupError,
+                                   "published_generation_requires_finalize_command"):
+            backup.status(self.p)
+        with mock.patch.object(backup, "verify", wraps=backup.verify) as verify:
+            result, unused_out, error = self.scheduled()
+            self.assertEqual(result, 1)
+            self.assertIn("published_generation_requires_finalize_command", error)
+            verify.assert_not_called()
+        newest = backup.generations(self.p["root"])[0][0]
+        data = newest / "database.sql.gz"
+        data.write_bytes(data.read_bytes() + b"changed after backoff")
+        with mock.patch.object(backup, "verify", wraps=backup.verify) as verify:
+            result, unused_out, error = self.scheduled()
+            self.assertEqual(result, 1)
+            self.assertIn("generation_checksum_mismatch", error)
+            verify.assert_called()
+
+    def test_corrupt_published_generation_is_never_auto_resumed(self):
+        self.p["root"] = self.base / "scheduled-corrupt"
+        self.p["resume_published"] = True
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        def interrupt(stage):
+            if stage == "after_publish":
+                raise OSError("synthetic publication interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            self.assertEqual(self.scheduled()[0], 1)
+        items = backup.generations(self.p["root"])
+        old_status = backup.read_json(self.p["root"] / "status.json")
+        newest = items[0][0]
+        data = newest / "database.sql.gz"
+        data.write_bytes(data.read_bytes() + b"corrupt before continuation")
+        result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("generation_checksum_mismatch", error)
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json"), old_status)
+        self.assertEqual({path.name for path in self.p["root"].iterdir()
+                          if backup.GENERATION.fullmatch(path.name)},
+                         {path.name for path, _ in items})
+
+    def test_scheduled_rotation_remnant_is_actionable_and_unchanged_retry_is_bounded(self):
+        self.p["root"] = self.base / "scheduled-trash"
+        self.p["resume_published"] = True
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        def interrupt(stage):
+            if stage == "prune_renamed":
+                raise OSError("synthetic rotation interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            self.assertEqual(self.scheduled()[0], 1)
+        self.assertEqual(len(list(self.p["root"].glob(".trash-*"))), 1)
+        trash = next(self.p["root"].glob(".trash-*"))
+        trash_before = backup.inventory(trash)
+        before = backup.read_json(self.p["root"] / "status.json")
+        result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("interrupted_job_requires_inspection", error)
+        with mock.patch.object(backup, "verify", wraps=backup.verify) as verify:
+            result, unused_out, error = self.scheduled()
+            self.assertEqual(result, 1)
+            self.assertIn("interrupted_job_requires_inspection", error)
+            verify.assert_not_called()
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json"), before)
+        self.assertEqual(len(list(self.p["root"].glob(".trash-*"))), 1)
+        result, unused_out, error = self.finalized()
+        self.assertEqual(result, 1)
+        self.assertIn("interrupted_job_requires_inspection", error)
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json"), before)
+        self.assertEqual(backup.inventory(trash), trash_before)
+
+    def test_auto_resume_preserves_capacity_and_capture_age_gates(self):
+        self.p["root"] = self.base / "scheduled-capacity"
+        self.p["resume_published"] = True
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        def interrupt(stage):
+            if stage == "after_publish":
+                raise OSError("synthetic publication interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            self.assertEqual(self.scheduled()[0], 1)
+        self.p["min_free_bytes"] = 1
+        with mock.patch.object(backup.shutil, "disk_usage", return_value=mock.Mock(free=0)):
+            result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("low_free_capacity", error)
+        self.p["min_free_bytes"] = 0
+        self.p["max_bytes"] = 1
+        before = {path: backup.inventory(path) for path, _ in backup.generations(self.p["root"])}
+        result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("retention_exceeds_capacity", error)
+        self.assertEqual({path: backup.inventory(path) for path, _ in backup.generations(self.p["root"])}, before)
+
+        self.p = policy(self.base)
+        self.p["root"] = self.base / "scheduled-rpo"
+        self.p["resume_published"] = True
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        old_capture_time = int(time.time()) - self.p["rpo_seconds"] - 10
+        with mock.patch.object(backup.time, "time", return_value=old_capture_time), \
+             mock.patch.object(backup, "checkpoint", interrupt):
+            with self.assertRaises(OSError):
+                self.create()
+        result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("published_generation_rpo_exceeded", error)
+        previous = backup.read_json(self.p["root"] / "status.json")
+        self.assertEqual(previous["result"], "ok")
+        with mock.patch.object(backup, "verify", wraps=backup.verify) as verify:
+            result, unused_out, error = self.scheduled()
+            self.assertEqual(result, 1)
+            self.assertIn("published_generation_rpo_exceeded", error)
+            verify.assert_not_called()
+        result, unused_out, error = self.finalized()
+        self.assertEqual(result, 1)
+        self.assertIn("published_generation_rpo_exceeded", error)
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json"), previous)
+
+    def test_malformed_completion_replica_is_a_protected_refusal(self):
+        self.p["root"] = self.base / "malformed-completion"
+        self.p["resume_published"] = True
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        def interrupt(stage):
+            if stage == "after_publish":
+                raise OSError("synthetic publication interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            self.assertEqual(self.scheduled()[0], 1)
+        receipt = backup.read_json(self.p["root"] / "status.json")
+        receipt["replica"] = []
+        backup.write_json(self.p["root"] / "status.json", receipt)
+        result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("published_generation_requires_finalize_command", error)
+        with mock.patch.object(backup, "verify", wraps=backup.verify) as verify:
+            self.assertEqual(self.scheduled()[0], 1)
+            verify.assert_not_called()
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json"), receipt)
+
+    def test_scheduled_resume_keeps_job_lock_exclusive(self):
+        self.p["root"] = self.base / "scheduled-lock"
+        self.p["resume_published"] = True
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        def interrupt(stage):
+            if stage == "after_publish":
+                raise OSError("synthetic publication interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            self.assertEqual(self.scheduled()[0], 1)
+        newest = backup.generations(self.p["root"])[0][0]
+        with backup.lock(self.p["root"] / ".job.lock"):
+            with mock.patch.object(backup, "LOCK_WAIT_SECONDS", 0):
+                result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("job_overlap_or_authority_busy", error)
+        self.assertEqual(backup.generations(self.p["root"])[0][0], newest)
+        result, unused_out, error = self.scheduled()
+        self.assertEqual((result, error), (0, ""))
+        self.assertEqual(backup.status(self.p)["result"], "ok")
+
+    def test_manual_finalize_refuses_staging_remnants_without_claiming_success(self):
+        self.create()
+        before = backup.read_json(self.p["root"] / "status.json")
+        orphan = self.p["root"] / ".staging-orphan"
+        orphan.mkdir(mode=0o700)
+        result, unused_out, error = self.finalized()
+        self.assertEqual(result, 1)
+        self.assertIn("interrupted_job_requires_inspection", error)
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json"), before)
+        self.assertTrue(orphan.is_dir())
 
 class CapacityAndInputTests(Fixture):
     def test_restore_capacity_requires_dedicated_mount(self):

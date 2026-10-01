@@ -15569,8 +15569,7 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	}
 	/* okay.. must be an object target! */
 
-	if (obj_index[obj->R_num].func.obj &&
-	    (*obj_index[obj->R_num].func.obj)(obj, ch, CMD_DISPEL, NULL))
+	if (obj_index[obj->R_num].func.obj && invoke_object_special(obj, ch, CMD_DISPEL, NULL))
 		return;
 
 	/* second deal with "special" objects (conjurerer wall spells) */

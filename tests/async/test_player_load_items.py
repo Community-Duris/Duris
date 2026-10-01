@@ -688,6 +688,43 @@ int main()
                player_load_item_materialize_outcome::invalid_snapshot);
     }
 
+    // #590: pet restore happens before its PC-owner link exists. Legacy hidden
+    // worn roots become carried, while UID, children, binding flags and custody
+    // remain intact; ordinary visible equipment still activates normally.
+    {
+        reset_test_state();
+        test_character restored(42);
+        npc_only_data npc = {};
+        restored.character.specials.act = ACT_ISNPC;
+        restored.character.only.npc = &npc;
+        player_load_result result = base_result();
+        add_item(result, 1, 59001, 100, PLAYER_SNAPSHOT_NO_PARENT, PRIMARY_WEAPON + 1);
+        add_item(result, 2, 59002, 101, 0, 0);
+        add_item(result, 3, 59003, 101, PLAYER_SNAPSHOT_NO_PARENT, HOLD + 1);
+        result.snapshot.items[0].extra_flags |= ITEM_NOSHOW;
+        const item_owner_identity custody = { item_owner_type::pet, 42, 590 };
+        for (auto &identity : result.item_identities)
+            identity.owner = custody;
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_item_graph_materialize_for_owner(
+            &restored.character, result.snapshot.items, result.item_identities,
+            custody, result.item_owner_revision, true, true, &metrics));
+        P_obj hidden = restored.character.carrying;
+        assert(hidden && hidden->obj_uid == 59001 && hidden->contains &&
+               hidden->contains->obj_uid == 59002 && IS_NOSHOW(hidden));
+        assert(!restored.character.equipment[PRIMARY_WEAPON]);
+        assert(restored.character.equipment[HOLD] &&
+               restored.character.equipment[HOLD]->obj_uid == 59003);
+        for (uint64_t uid : {59001, 59002, 59003}) {
+            item_ownership_runtime_entry entry = {};
+            assert(item_ownership_runtime_lookup(uid, &entry));
+            assert(item_owner_identity_equal(entry.owner, custody));
+        }
+        assert(item_ownership_runtime_size() == 3);
+        release_tree(hidden);
+        release_tree(restored.character.equipment[HOLD]);
+    }
+
     // Distinct native books coexist; reordered copies are duplicate metadata.
     for (bool duplicate : {false, true}) {
         reset_test_state();
