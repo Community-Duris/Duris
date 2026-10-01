@@ -442,6 +442,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \
+				 classes/npc_alchemist.o \
 				 classes/sillusionist.o \
 				 net/sparser.o \
 				 mob/specials.o \

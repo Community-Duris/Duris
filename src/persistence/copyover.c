@@ -113,6 +113,7 @@ bool copyover_training_dummy_is(P_char ch)
 struct copyover_worker_resume_guard
 {
 	bool armed = true;
+	bool redis_released = false;
 	~copyover_worker_resume_guard()
 	{
 		if (!armed)
@@ -121,6 +122,8 @@ struct copyover_worker_resume_guard
 		critical_command_coordinator_resume();
 		critical_outbox_resume();
 		player_save_pipeline_resume();
+		if (redis_released)
+			redis_world_recovery_resume_after_copyover();
 	}
 };
 
@@ -1060,6 +1063,12 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
 	      num_mobs, num_objs, num_rooms);
+	if (!redis_world_recovery_prepare_copyover())
+	{
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	resume_workers.redis_released = true;
 
 	// All prerequisite saves and the complete copyover file are durable. Only
 	// now may non-preservable transports be disconnected.
@@ -1160,6 +1169,43 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 // find_player_by_name already declared in prototypes.h
 
+#ifdef USE_ACCOUNT
+static P_acct copyover_load_account(const std::string &authoritative_account_name,
+				    int32_t player_id, const char *player_name)
+{
+	if (authoritative_account_name.empty() || !player_name || !*player_name)
+	{
+		logit(LOG_STATUS, "copyover: loaded player has no authoritative account identity");
+		return NULL;
+	}
+
+	P_acct account = allocate_account();
+	if (!account)
+	{
+		logit(LOG_STATUS, "copyover: failed to allocate restored account");
+		return NULL;
+	}
+	account->acct_name = str_dup(authoritative_account_name.c_str());
+	if (!account->acct_name || read_account(account) == -1 || !account->acct_name ||
+	    strcasecmp(account->acct_name, authoritative_account_name.c_str()))
+	{
+		logit(LOG_STATUS, "copyover: failed to load authoritative account");
+		return free_account(account);
+	}
+
+	for (struct acct_chars *character = account->acct_character_list; character;
+	     character = character->next)
+	{
+		if (character->pid == player_id && character->charname &&
+		    !strcasecmp(character->charname, player_name))
+			return account;
+	}
+
+	logit(LOG_STATUS, "copyover: restored account does not own loaded character");
+	return free_account(account);
+}
+#endif
+
 // load a player character for copyover recovery
 static P_char copyover_load_player(const char *name, P_desc d)
 {
@@ -1216,6 +1262,15 @@ static P_char copyover_load_player(const char *name, P_desc d)
 		free_char(player);
 		return NULL;
 	}
+#ifdef USE_ACCOUNT
+	P_acct account = copyover_load_account(result.account_name, result.pid, GET_NAME(player));
+	if (!account)
+	{
+		free_char(player);
+		return NULL;
+	}
+	d->account = account;
+#endif
 	return player;
 }
 
@@ -1330,19 +1385,6 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				d->character = ch;
 				ch->desc = d;
 				d->connected = CON_PLAYING;
-
-#ifdef USE_ACCOUNT
-				// restore account for preserved telnet connections
-				d->account = allocate_account();
-				if (d->account)
-				{
-					d->account->acct_name = str_dup(desc_entry.player_name);
-					if (read_account(d->account) == -1)
-					{
-						d->account = free_account(d->account);
-					}
-				}
-#endif
 
 				// make them alive
 				SET_POS(ch, POS_STANDING + STAT_NORMAL);
