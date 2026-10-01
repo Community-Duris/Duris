@@ -521,18 +521,7 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 			return EILSEQ;
 		if (payload.reason == item_transfer_reason::craft)
 		{
-			std::vector<economic_item_snapshot> inputs;
-			inputs.reserve(payload.item_count);
-			for (size_t index = 0; index < payload.item_count; ++index)
-			{
-				const auto found = std::find_if(
-					plan.items_before.begin(), plan.items_before.end(),
-					[&](const auto &item)
-					{ return item.uid == payload.items[index].item_uid; });
-				if (found == plan.items_before.end())
-					return EILSEQ;
-				inputs.push_back(*found);
-			}
+			const auto &inputs = plan.items_before;
 			economic_accounting_plan expected;
 			expected.metadata = expected_metadata;
 			std::vector<uint8_t> encoded_expected;

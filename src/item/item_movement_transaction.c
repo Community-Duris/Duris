@@ -1,4 +1,6 @@
 #include "item/item_movement_transaction.h"
+#include "item/craft_pouch_mutation.h"
+#include "combat/chaos_pouch_publication.h"
 
 #include "item/item_ownership_runtime.h"
 #include "economy/economic_gameplay_authority.h"
@@ -576,6 +578,15 @@ bool craft_live_ready(P_char actor, const pending_movement &entry)
 {
 	if (!actor)
 		return false;
+	craft_pouch_mutation pouch;
+	if (!craft_pouch_mutation_from_payload(entry.payload, &pouch))
+		return false;
+	if (pouch.before.object_uid)
+	{
+		P_obj object = find_item(pouch.before.object_uid);
+		if (!object || !object_belongs_to_actor(object, actor))
+			return false;
+	}
 	std::vector<player_item_snapshot> outputs;
 	std::vector<uint64_t> output_roots;
 	if (!craft_output_roots(entry.payload, &outputs, &output_roots))
@@ -584,9 +595,10 @@ bool craft_live_ready(P_char actor, const pending_movement &entry)
 	try
 	{
 		for (size_t index = 0; index < entry.payload.item_count; ++index)
-			if (item_transfer_selected_root(entry.payload,
+			if (entry.payload.items[index].item_uid != pouch.before.object_uid &&
+			    item_transfer_selected_root(entry.payload,
 							entry.payload.items[index].item_uid) ==
-			    entry.payload.items[index].item_uid)
+				    entry.payload.items[index].item_uid)
 				input_roots.insert(entry.payload.items[index].item_uid);
 	}
 	catch (const std::bad_alloc &)
@@ -685,6 +697,9 @@ bool publish_craft(const pending_movement &entry, P_char actor)
 {
 	if (!restore_craft_outputs(entry) || !craft_live_ready(actor, entry))
 		return false;
+	craft_pouch_mutation pouch;
+	if (!craft_pouch_mutation_from_payload(entry.payload, &pouch))
+		return false;
 	std::vector<player_item_snapshot> outputs;
 	std::vector<uint64_t> output_roots;
 	if (!craft_output_roots(entry.payload, &outputs, &output_roots))
@@ -693,15 +708,19 @@ bool publish_craft(const pending_movement &entry, P_char actor)
 	try
 	{
 		for (size_t index = 0; index < entry.payload.item_count; ++index)
-			if (item_transfer_selected_root(entry.payload,
+			if (entry.payload.items[index].item_uid != pouch.before.object_uid &&
+			    item_transfer_selected_root(entry.payload,
 							entry.payload.items[index].item_uid) ==
-			    entry.payload.items[index].item_uid)
+				    entry.payload.items[index].item_uid)
 				input_roots.insert(entry.payload.items[index].item_uid);
 	}
 	catch (const std::bad_alloc &)
 	{
 		return false;
 	}
+	if (pouch.before.object_uid &&
+	    !chaos_pouch_publish_committed(find_item(pouch.before.object_uid), pouch))
+		return false;
 	for (uint64_t uid : input_roots)
 	{
 		P_obj object = find_item(uid);
@@ -2483,12 +2502,12 @@ bool item_movement_transaction_submit_batch(
 						      lifecycle_source, logical_source_id, {});
 }
 
-bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,
-					    P_obj const *outputs, size_t output_count,
-					    int64_t recipe_id,
-					    item_movement_completion_fn completion,
-					    const void *context, size_t context_size,
-					    item_movement_reject *reject)
+bool item_movement_transaction_submit_craft(
+	P_char actor, P_obj const *inputs, size_t input_count, P_obj const *outputs,
+	size_t output_count, int64_t recipe_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, item_movement_reject *reject,
+	P_obj retained_pouch, const chaos_material_pouch_usage *pouch_usage,
+	size_t pouch_usage_count, chaos_pouch_usage_mode pouch_mode)
 {
 	item_movement_reject discarded = item_movement_reject::none;
 	if (!reject)
@@ -2497,6 +2516,9 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 	const bool valid_actor = actor && IS_PC(actor) && GET_PID(actor) > 0;
 	if (!valid_actor || !inputs || !input_count || input_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    (output_count && (!outputs || output_count > ITEM_TRANSFER_MAX_ITEMS)) ||
+	    (retained_pouch ? !pouch_usage || !pouch_usage_count ||
+				      pouch_usage_count > CRAFT_POUCH_MUTATION_MAX_MATERIALS :
+			      pouch_usage || pouch_usage_count) ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
@@ -2535,6 +2557,68 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 		    !input_uids.insert(root->obj_uid).second ||
 		    !capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
 			return reject_with(reject, item_movement_reject::topology_mismatch);
+	}
+	uint64_t consumed_selected_uid = 0;
+	for (const auto &item : items)
+		if (!consumed_selected_uid || item.root_item_uid < consumed_selected_uid)
+			consumed_selected_uid = item.root_item_uid;
+	item_transfer_continuation pouch_continuation;
+	if (retained_pouch)
+	{
+		item_ownership_runtime_entry runtime = {};
+		std::vector<player_item_snapshot> tree;
+		if (!retained_pouch->obj_uid || retained_pouch->contains ||
+		    !object_belongs_to_actor(retained_pouch, actor) ||
+		    coordinator_item_fenced(retained_pouch) ||
+		    coin_movement_pending(retained_pouch) ||
+		    !item_ownership_runtime_lookup(retained_pouch->obj_uid, &runtime) ||
+		    !item_owner_identity_equal(runtime.owner, owner) ||
+		    runtime.state != item_custody_state::active ||
+		    std::any_of(items.begin(), items.end(), [&](const auto &item)
+				{ return item.item_uid == retained_pouch->obj_uid; }) ||
+		    player_item_snapshot_tree_capture(retained_pouch, &tree, nullptr) !=
+			    player_snapshot_capture_result::ok ||
+		    tree.size() != 1)
+			return reject_with(reject, item_movement_reject::topology_mismatch);
+		craft_pouch_mutation pouch;
+		try
+		{
+			pouch.before = std::move(tree[0]);
+			pouch.mode = pouch_mode;
+			pouch.usage.assign(pouch_usage, pouch_usage + pouch_usage_count);
+			std::sort(pouch.usage.begin(), pouch.usage.end(),
+				  [](const auto &left, const auto &right)
+				  { return left.vnum < right.vnum; });
+			for (size_t index = 1; index < pouch.usage.size();)
+			{
+				if (pouch.usage[index - 1].vnum != pouch.usage[index].vnum)
+				{
+					++index;
+					continue;
+				}
+				if (pouch.usage[index - 1].count >
+				    UINT64_MAX - pouch.usage[index].count)
+					return reject_with(reject,
+							   item_movement_reject::snapshot_failure);
+				pouch.usage[index - 1].count += pouch.usage[index].count;
+				pouch.usage.erase(pouch.usage.begin() + index);
+			}
+			if (chaos_pouch_ledger_prepare(pouch.before, pouch.usage, pouch.mode,
+						       &pouch.after) !=
+				    chaos_pouch_ledger_result::ok ||
+			    !craft_pouch_mutation_encode(pouch, &pouch_continuation.data))
+				return reject_with(reject, item_movement_reject::snapshot_failure);
+			pouch_continuation.kind =
+				item_transfer_continuation_kind::craft_pouch_usage;
+			items.push_back({ runtime.item_uid, runtime.root_item_uid,
+					  runtime.parent_item_uid, runtime.item_revision,
+					  runtime.vnum, runtime.state });
+			input_uids.insert(runtime.item_uid);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return reject_with(reject, item_movement_reject::allocation_failure);
+		}
 	}
 	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
 		  { return left.item_uid < right.item_uid; });
@@ -2583,9 +2667,8 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 					  .reason_id = recipe_id,
 					  .expected_from_revision = owner_revision,
 					  .expected_to_revision = owner_revision,
-					  .selected_item_uid = output_count ?
-								       outputs[0]->obj_uid :
-								       items[0].root_item_uid,
+					  .selected_item_uid = output_count ? outputs[0]->obj_uid :
+									      consumed_selected_uid,
 					  .target_root_item_uid = 0,
 					  .target_parent_item_uid = 0,
 					  .expected_target_parent_revision = 0,
@@ -2596,7 +2679,7 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 					  .item_blob = {},
 					  .corpse = {},
 					  .collector = {},
-					  .continuation = {} };
+					  .continuation = std::move(pouch_continuation) };
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
 	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());

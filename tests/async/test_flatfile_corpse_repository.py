@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             rel("flatfile_player_domain_repository.c"),
             rel("flatfile_ip_activity_repository.c"),
             rel("corpse_lifecycle_command.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("player_snapshot_codec.c"),
             rel("collector_command.c"),
             rel("collector_codec.c"),

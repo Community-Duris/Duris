@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-collector-") as temporary:
         rel("collector_codec.c"),
         rel("collector_policy.c"),
         rel("auction_command.c"),
-        rel("item_transfer_command.c"),
+        rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
         rel("corpse_lifecycle_command.c"),
         rel("shop_trade_command.c"),
         rel("epic_command.c"),

@@ -1477,7 +1477,7 @@ def main(flatfile: bool = False) -> int:
                 rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
                 rel("economic_currency_adapter.c"), rel("economic_accounting_intent.c"),
                 rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
-                rel("coin_transfer_command.c"), rel("item_transfer_command.c"),
+                rel("coin_transfer_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
                 rel("coin_transfer_accounting.c"), rel("item_transfer_accounting.c"),
                 rel("economic_accounting_item_reference.c"),
                 rel("player_snapshot_codec.c"), rel("item_ownership_runtime.c"),

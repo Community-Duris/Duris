@@ -21,7 +21,7 @@ class CoinTransferSharedBankAccountingTest(unittest.TestCase):
                 "-fno-omit-frame-pointer", "-fno-pie", "-no-pie", "-D__NO_MYSQL__",
                 "-Isrc/no_mysql", "-Isrc", "tests/async/coin_transfer_shared_bank_accounting_test.cpp",
                 "src/economy/coin_transfer_command.c", "src/economy/currency_command.c",
-                "src/item/item_transfer_command.c", "src/player/player_snapshot_codec.c", "src/persistence/critical_command.c",
+                "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c", "src/persistence/critical_command.c",
                 "-lcrypto", "-o", str(binary),
             ], cwd=ROOT, check=True)
             subprocess.run([str(binary)], check=True, timeout=30, env=dict(

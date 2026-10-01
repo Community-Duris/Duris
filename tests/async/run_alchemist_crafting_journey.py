@@ -20,7 +20,7 @@ from run_generated_npc_journey import FIXTURE, drain
 
 def authored(vnum):
     for path in sorted((journey.ROOT / 'areas/obj').glob('*.obj')):
-        match = re.search(rf'(?ms)^#{vnum}\n.*?(?=^#\d+\n|^\$~)', path.read_text())
+        match = re.search(rf'(?ms)^#{vnum}\n.*?(?=^#\d+\n|^\$~|\Z)', path.read_text())
         if match:
             return match.group(0)
     raise AssertionError(f'missing authored object {vnum}')
@@ -41,7 +41,7 @@ def run(binary, mode='file'):
         path = runtime / 'areas_mini/mini.obj'
         objects = path.read_text()
         for vnum in (102, 470, 806, 808, 1251, 868, 866, 865, 863, 859,
-                     857, 855, 853, 850, 400230, 400231, 400291):
+                     857, 855, 853, 850, 400230, 400231, 400291, 400300):
             if not re.search(rf'(?m)^#{vnum}$', objects):
                 objects = objects.replace('$~', authored(vnum) + '$~')
         # real_object() uses the maintained sorted prototype index.
@@ -327,6 +327,65 @@ def run(binary, mode='file'):
                     assert re.search(r'Carried Items:\s*(\d+)', stat).group(1) == '0', stat
                 print('PASS SQL rich-state bytes and depleted NPC identity survive Redis cold recovery without reroll', flush=True)
             print('PASS Harvester exact retirement and all craft/vial UIDs survive cold player reload', flush=True)
+            # Enable the real pouch feature only after the ordinary starter and
+            # physical-craft journey, so the original fixture remains intact.
+            client.send('quit')
+            client.expect('ACCOUNT MENU', timeout=30)
+            stop()
+            env.update(CHAOS_MUD='TRUE', CHAOS_STARTER_FRIGATE='FALSE')
+            boot()
+            client = journey.reconnect_character(port)
+            command('load obj 400300')
+            pouch_items = [item for item in save_items() if item['vnum'] == 400300]
+            assert len(pouch_items) == 1, pouch_items
+            pouch_uid = pouch_items[0]['uid']
+            for _ in range(2):
+                command('load obj 400291')
+            collected = {item['uid'] for item in save_items() if item['vnum'] == 400291}
+            assert len(collected) == 2, collected
+            client.send('put all.green pouch')
+            client.expect('You record 2 collected materials', timeout=30)
+            assert collected.isdisjoint({item['uid'] for item in save_items()})
+            attempts = 0
+            for attempts in range(1, 6):
+                previous = {item['uid'] for item in save_items()}
+                command('load obj 677')
+                bases = {item['uid'] for item in save_items()
+                         if item['vnum'] == 677 and item['uid'] not in previous}
+                assert len(bases) == 1, bases
+                # The preceding physical journey leaves an already-encrusted
+                # mace in inventory. Target the newly loaded second match.
+                client.send('encrust 2.mace 400291')
+                result, _ = client.expect_any(('Hurrah! Hurrah!', 'You broke your item in the process.'), 30)
+                current = save_items()
+                assert bases.isdisjoint({item['uid'] for item in current}), current
+                assert not any(item['vnum'] == 400291 for item in current), current
+                assert [item['uid'] for item in current if item['vnum'] == 400300] == [pouch_uid]
+                if result == 'Hurrah! Hurrah!':
+                    break
+            else:
+                raise AssertionError('five valid virtual Encrust attempts failed')
+
+            def pouch_scores():
+                text = command('look in pouch')
+                clean = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', text)
+                assert re.search(rf'\b{attempts} generated / 2 collected\b', clean), clean
+                assert '[400291]' in clean, clean
+                return clean
+
+            pouch_scores()
+            client.send('shutdown copyover')
+            client.expect('Copyover complete!', timeout=90)
+            pouch_scores()
+            expected_pouch_items = {(item['uid'], item['vnum']) for item in save_items()}
+            client.send('quit')
+            client.expect('ACCOUNT MENU', timeout=30)
+            stop()
+            boot()
+            client = journey.reconnect_character(port)
+            assert expected_pouch_items == {(item['uid'], item['vnum']) for item in save_items()}
+            pouch_scores()
+            print('PASS real pouch collection and virtual Encrust preserve counters and the original pouch UID through copyover and cold reload', flush=True)
         except Exception:
             print((runtime / 'server.out').read_text(errors='replace')[-6000:])
             print(journey.runtime_logs(runtime)[-12000:])

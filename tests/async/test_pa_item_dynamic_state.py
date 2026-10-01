@@ -193,7 +193,7 @@ with tempfile.TemporaryDirectory(prefix="duris-pa-item-dynamic-state-") as tempo
             "-Isrc", str(loader_source), rel("player_load_items.c"),
             rel("player_load_pets.c"), "src/player/pet_restore_state.c",
             "src/player/pet_restore_runtime.c", rel("player_snapshot_codec.c"),
-            rel("item_transfer_command.c"), rel("item_ownership_runtime.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("item_ownership_runtime.c"),
             rel("critical_command.c"), "-lcrypto", "-o", str(loader_binary),
         ], cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     )

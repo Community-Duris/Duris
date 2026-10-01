@@ -37,6 +37,6 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/player_death_restitution_command.c \
     src/persistence/quest_reward_obligation_repository.c \
     src/player/player_save_journal.c \
-    src/item/item_transfer_command.c src/economy/currency_command.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/economy/currency_command.c \
     -Wl,--gc-sections "${MYSQL_LIBS[@]}" -lcrypto -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
 "$ROOT/bin/tests/player_load_repository_mysql_harness"

@@ -49,7 +49,7 @@ with tempfile.TemporaryDirectory(prefix='duris-baseline-') as temporary:
             'src/economy/economic_command_admission.c','src/economy/economic_currency_adapter.c',
             'src/persistence/critical_command_coordinator.c','src/persistence/critical_command_journal.c',
             'src/flatfile/flatfile_accounting_store.c','src/flatfile/flatfile_authority_transaction.c','src/flatfile/flatfile_store.c',
-            'src/economy/currency_command.c','src/persistence/critical_command.c','src/item/item_transfer_command.c',
+            'src/economy/currency_command.c','src/persistence/critical_command.c','src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
             'src/economy/coin_transfer_command.c','src/economy/coin_transfer_accounting.c',
             'src/economy/item_transfer_accounting.c','src/player/player_snapshot_codec.c')]
         command+=['-Wl,--wrap=_Znwm,--wrap=_Znam','-lcrypto','-lz','-pthread','-o',str(executable)]

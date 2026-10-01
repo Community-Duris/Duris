@@ -2,6 +2,7 @@
 #include "world/vnum.obj.h"
 #include "player/player_snapshot_codec.h"
 #include "core/structs.h"
+#include "item/craft_pouch_mutation.h"
 
 #include <cassert>
 #include <utility>
@@ -695,6 +696,70 @@ void craft_intent_and_native_effects_share_one_root()
 	assert(item_transfer_craft_accounting_effects(payload, inputs, &plan) != error::ok);
 }
 
+static void retained_pouch_is_an_update_and_never_a_source_lifetime()
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::player, 10, 0 };
+	payload.to_owner = payload.from_owner;
+	payload.reason = item_transfer_reason::craft;
+	payload.reason_id = VOBJ_CHAOS_CRAFT_POUCH;
+	payload.expected_from_revision = payload.expected_to_revision = 3;
+	payload.selected_item_uid = 100;
+	payload.multi_root = true;
+	payload.item_count = 2;
+	payload.items[0] = { 50, 40, 40, 7, VOBJ_CHAOS_CRAFT_POUCH, item_custody_state::active };
+	payload.items[1] = { 100, 100, 0, 2, 400000, item_custody_state::active };
+	craft_pouch_mutation pouch;
+	pouch.mode = chaos_pouch_usage_mode::collected;
+	pouch.usage = { { 400000, 1 } };
+	pouch.before.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	pouch.before.object_uid = 50;
+	pouch.before.vnum = VOBJ_CHAOS_CRAFT_POUCH;
+	assert(chaos_pouch_ledger_prepare(pouch.before, pouch.usage, pouch.mode, &pouch.after) ==
+	       chaos_pouch_ledger_result::ok);
+	payload.continuation.kind = item_transfer_continuation_kind::craft_pouch_usage;
+	assert(craft_pouch_mutation_encode(pouch, &payload.continuation.data));
+	critical_command command;
+	assert(item_transfer_command_build(&command, id(9), payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(command.payload_version == 10);
+	item_transfer_payload decoded = {};
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	auto old_reader = command;
+	old_reader.payload_version = ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION;
+	assert(!item_transfer_command_decode_payload(old_reader, &decoded));
+	std::vector<uint8_t> encoded;
+	assert(item_transfer_accounting_intent(command, id(1), id(2), 10, &encoded,
+					       economic_source_kind::crafting) == error::ok);
+	economic_frozen_intent intent;
+	assert(economic_intent_decode(encoded, &intent) == error::ok);
+	assert(intent.admission.metadata.source_event->sequence == 100);
+	const std::vector<economic_item_snapshot> before = {
+		{ 40, { payload.from_owner, 40, 0, 6, item_custody_state::active } },
+		{ 50, { payload.from_owner, 40, 40, 7, item_custody_state::active } },
+		{ 100, { payload.from_owner, 100, 0, 2, item_custody_state::active, 5 } }
+	};
+	economic_accounting_plan plan;
+	assert(item_transfer_craft_accounting_effects(payload, before, &plan) == error::ok);
+	assert(plan.item_events.size() == 2);
+	assert(plan.items_before.size() == 3 && plan.items_after.size() == 3);
+	assert(economic_item_position_equal(plan.items_before[0].position,
+					    plan.items_after[0].position));
+	assert(plan.item_events[0].uid == 50 &&
+	       plan.item_events[0].after.state == item_custody_state::active);
+	assert(plan.item_events[0].after.revision == 8 &&
+	       plan.item_events[0].after.parent_uid == 40);
+	assert(item_owner_identity_equal(plan.item_events[0].after.owner, payload.from_owner));
+	assert(plan.item_events[1].after.state == item_custody_state::destroyed &&
+	       plan.item_events[1].after.equipment_slot == 0);
+	pouch.usage[0].count = 2;
+	assert(chaos_pouch_ledger_prepare(pouch.before, pouch.usage, pouch.mode, &pouch.after) ==
+	       chaos_pouch_ledger_result::ok);
+	assert(craft_pouch_mutation_encode(pouch, &payload.continuation.data));
+	assert(!item_transfer_command_build(&command, id(9), payload, critical_source_site::command,
+					    critical_deadline_class::interactive));
+}
+
 int main()
 {
 	ordinary_moves_are_bound_to_actor_and_payload();
@@ -707,5 +772,6 @@ int main()
 	sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events();
 	corpse_custody_roots_bind_the_actor_and_exact_corpse();
 	craft_intent_and_native_effects_share_one_root();
+	retained_pouch_is_an_update_and_never_a_source_lifetime();
 	return 0;
 }

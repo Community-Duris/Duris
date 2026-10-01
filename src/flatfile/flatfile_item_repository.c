@@ -14,6 +14,7 @@
 #include "flatfile/flatfile_world_item_repository.h"
 #include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
+#include "item/craft_pouch_mutation.h"
 #include "flatfile/flatfile_shop_trade_repository.h"
 #include "persistence/persistence_mode.h"
 #include "economy/coin_transfer_command.h"
@@ -1147,6 +1148,25 @@ try
 				return false;
 			inputs.push_back({ item->item_uid, accounting_position(*item) });
 		}
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			uint64_t parent = payload.items[index].parent_item_uid;
+			for (size_t depth = 0; parent && depth <= PLAYER_SNAPSHOT_MAX_DEPTH;
+			     ++depth)
+			{
+				const auto *item = catalog_item(before, parent);
+				if (!item)
+					return false;
+				if (std::none_of(inputs.begin(), inputs.end(),
+						 [parent](const auto &candidate)
+						 { return candidate.uid == parent; }))
+					inputs.push_back(
+						{ item->item_uid, accounting_position(*item) });
+				parent = item->parent_item_uid;
+			}
+			if (parent)
+				return false;
+		}
 		if (item_transfer_craft_accounting_effects(payload, inputs, &plan) !=
 		    economic_accounting_error::ok)
 			return false;
@@ -1321,18 +1341,7 @@ bool verify_accounted_item_record(const critical_command &command,
 		return false;
 	if (payload.reason == item_transfer_reason::craft)
 	{
-		std::vector<economic_item_snapshot> inputs;
-		inputs.reserve(payload.item_count);
-		for (size_t index = 0; index < payload.item_count; ++index)
-		{
-			const auto uid = payload.items[index].item_uid;
-			const auto prior =
-				std::find_if(plan.items_before.begin(), plan.items_before.end(),
-					     [uid](const auto &item) { return item.uid == uid; });
-			if (prior == plan.items_before.end())
-				return false;
-			inputs.push_back(*prior);
-		}
+		const auto &inputs = plan.items_before;
 		economic_accounting_plan expected;
 		expected.metadata = expected_metadata;
 		std::vector<uint8_t> encoded;
@@ -1400,6 +1409,9 @@ unsigned int apply_craft(ownership_catalog *catalog, const item_transfer_payload
 		return ESTALE;
 	if (owner->revision == UINT64_MAX || catalog->revision == UINT64_MAX)
 		return ERANGE;
+	craft_pouch_mutation pouch;
+	if (!craft_pouch_mutation_from_payload(payload, &pouch))
+		return EBADMSG;
 	std::vector<player_item_snapshot> outputs;
 	if (payload.item_blob_size &&
 	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
@@ -1412,15 +1424,17 @@ unsigned int apply_craft(ownership_catalog *catalog, const item_transfer_payload
 	try
 	{
 		for (size_t index = 0; index < payload.item_count; ++index)
-			source_roots.push_back(payload.items[index].root_item_uid);
+			if (payload.items[index].item_uid != pouch.before.object_uid)
+				source_roots.push_back(payload.items[index].root_item_uid);
 		std::sort(source_roots.begin(), source_roots.end());
 		source_roots.erase(std::unique(source_roots.begin(), source_roots.end()),
 				   source_roots.end());
 		for (auto &entry : catalog->items)
 			if (entry.state == item_custody_state::active &&
 			    item_owner_identity_equal(entry.owner, payload.from_owner) &&
-			    std::binary_search(source_roots.begin(), source_roots.end(),
-					       entry.root_item_uid))
+			    (entry.item_uid == pouch.before.object_uid ||
+			     std::binary_search(source_roots.begin(), source_roots.end(),
+						entry.root_item_uid)))
 				source.push_back(&entry);
 	}
 	catch (const std::bad_alloc &)
@@ -1476,9 +1490,12 @@ unsigned int apply_craft(ownership_catalog *catalog, const item_transfer_payload
 	for (auto *entry : source)
 	{
 		++entry->item_revision;
-		entry->owner = { item_owner_type::destruction, 0, 0 };
-		entry->state = item_custody_state::destroyed;
-		entry->equipment_slot = 0;
+		if (entry->item_uid != pouch.before.object_uid)
+		{
+			entry->owner = { item_owner_type::destruction, 0, 0 };
+			entry->state = item_custody_state::destroyed;
+			entry->equipment_slot = 0;
+		}
 		result->max_item_revision =
 			std::max(result->max_item_revision, entry->item_revision);
 	}
@@ -3703,7 +3720,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	}
 	bool include_materialization = false;
 	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
-	    payload.item_blob_size)
+	    (payload.item_blob_size ||
+	     payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage))
 	{
 		const auto prepared = flatfile_item_transfer_materialization_prepare(
 			root, authority, command.operation_id, payload, &materialization, &error);

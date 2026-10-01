@@ -268,7 +268,7 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
     subprocess.run(common + [str(source), str(temp / "copyover.o"),
                    "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c", "src/world/generated_npc_state.c", "src/world/generated_npc_runtime.c",
                    "src/player/pet_restore_state.c",
-                            "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c", "src/player/player_snapshot_codec.c",
+                            "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",
                             "-lz", "-pthread", "-lgnutls", "-lbsd", "-o", str(temp / "fixture")],
                    cwd=ROOT, check=True)

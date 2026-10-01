@@ -1,5 +1,6 @@
 #ifndef ITEM_MOVEMENT_TRANSACTION_H
 #define ITEM_MOVEMENT_TRANSACTION_H
+#include "combat/chaos_pouch_types.h"
 
 #include "persistence/critical_command_coordinator.h"
 #include "item/item_transfer_command.h"
@@ -123,12 +124,13 @@ bool item_movement_transaction_submit_batch(
 	const item_transfer_continuation &continuation);
 // Atomically retire captured input trees and publish one or more detached output
 // trees through the existing critical-command coordinator.
-bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,
-					    P_obj const *outputs, size_t output_count,
-					    int64_t recipe_id,
-					    item_movement_completion_fn completion,
-					    const void *context, size_t context_size,
-					    item_movement_reject *reject = NULL);
+bool item_movement_transaction_submit_craft(
+	P_char actor, P_obj const *inputs, size_t input_count, P_obj const *outputs,
+	size_t output_count, int64_t recipe_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, item_movement_reject *reject = NULL,
+	P_obj retained_pouch = nullptr, const chaos_material_pouch_usage *pouch_usage = nullptr,
+	size_t pouch_usage_count = 0,
+	chaos_pouch_usage_mode pouch_mode = chaos_pouch_usage_mode::generated);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL,
 					  economic_source_kind source = {}, uint64_t source_id = 0);

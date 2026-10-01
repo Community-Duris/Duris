@@ -154,8 +154,8 @@ refusal, rollback and zero-output failure. Flatfile native craft and recovery
 tests and the typed admission tests pass. The item-accounting tests run under
 ASan/UBSan. Poison mixing, physical Encrust and Harvester shard exchange now
 reach this owner instead of their former blanket active-accounting refusal.
-Virtual pouch Encrust still refuses before RNG or counter mutation; an atomic
-pouch state update and collection operation remain required.
+The retained-pouch continuation below supersedes the virtual-pouch refusal
+present at this physical-craft checkpoint.
 
 Real-server crafting journeys pass on both SQL engines with private Redis and
 on flatfile. They retain original NPC identity and vial UIDs over two
@@ -193,6 +193,60 @@ their full server journeys; backend qualification statuses remain unverified.
 All 52 current writer-coverage contract tests pass after regenerating this
 matrix. The ordinary accounting validator passes; release qualification remains
 blocked for the remaining runtime routes.
+
+## Retained Chaos pouch craft and collection
+
+Item commands now use payload version 10; versions 2 through 9 remain readable.
+The new bounded continuation freezes one retained pouch, its exact before/after
+counter state, generated or collected usage, and the physical craft inputs.
+Collection retires exactly the physical quantities it records. Virtual Encrust
+retires the actual base item, counts one generated jewel, and admits only a
+genuine output UID on success. Its temporary virtual jewel has no custody event.
+Intended failure retires the base and records usage without creating an output.
+
+SQL and flatfile commit these counter changes with the craft's custody,
+accounting, source claim and item references. The pouch keeps its original UID,
+owner, parent, equipment position and other native attributes. Its revision
+advances; unchanged container ancestors witness the forest without emitting
+events. Source identity comes from the consumed physical input, allowing
+repeated use of the same retained pouch. Flatfile cold materialization overlays
+the committed counters while retaining saved native attributes and topology.
+
+Native MySQL 8.0.46 and MariaDB 10.11.14 tests pass repeated collection, nested
+pouch preservation, fresh loads, exact replay, virtual output and zero-output
+failure, a forced SQL rollback after counter preparation, and refusal of a
+changed native counter before material retirement. Flatfile native tests pass
+the corresponding compound operations and separate-process faults before
+commit, after the journal, and after one authority operation. ASan/UBSan tests
+cover malformed ledgers, counter overflow, bounded canonical envelopes, exact
+mutation validation and the actual publisher's allocation failures.
+
+Shared coordinator/publication tests keep the pouch and input unchanged while
+the actor is absent or publication allocation fails. The fence stays held until
+the committed counter can publish; physical extraction, callback and ACK occur
+once. Ordinary item transfers also initialize the optional pouch snapshot,
+preventing uninitialized identity from misrouting non-craft operations.
+
+Strict production builds after that initialization repair pass with SQL SHA-256
+`d0c7778a4ee7a762ab423d91e707732d18b1427df979a53f56a25c4e01e3ec0f`
+and flatfile SHA-256
+`7981619fd431f57b5a9cd203c07635c75a231089da04dd19deee1130b749a3eb`.
+Gameplay journeys on these artifacts pass on MySQL, MariaDB and flatfile:
+two materials retire into the pouch, virtual Encrust uses the pouch without a
+physical jewel, and the original pouch UID and exact counters survive copyover
+and cold player reload. The same journeys also repeat the ordinary physical
+craft and NPC vial/death-loot checks. Accounting is inactive during these server
+journeys; the active native/admission proofs are separate evidence. The broader
+813-test regression run remains in progress and has exposed standalone compile
+lists requiring the new modules; no complete green regression is claimed.
+Standalone restore, collector and movement build lists include
+the new codec dependencies. The updated writer matrix contains 863 routes,
+2,819 occurrences, 2,761 unique sites, zero unmapped sites and 15 connected
+schema-2 producers. All 52 writer-coverage contracts and the ordinary validator
+pass. Route qualification and activation remain blocked.
+
+Other pouch writers, including recipe/forge output, paid enhancement and debug
+generation, still need their own compound transaction and recovery proof.
 
 Completed component checks cannot qualify an unexecuted player route. The remaining
 R1-R8 requirements, full gameplay and fault matrix, independent audit,

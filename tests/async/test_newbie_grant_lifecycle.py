@@ -92,6 +92,8 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
     roots->push_back(&recovered_creation);
     return true;
 }
+struct craft_pouch_mutation;
+bool chaos_pouch_publish_committed(P_obj, const craft_pouch_mutation &) { assert(false); return false; }
 void __free(void *p, const char *, int) { free(p); }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
@@ -769,7 +771,7 @@ def main() -> int:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
             "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
             "-Isrc", str(source), rel("item_movement_transaction.c"),
-            rel("item_ownership_runtime.c"), rel("item_transfer_command.c"),
+            rel("item_ownership_runtime.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("critical_command.c"), rel("player_snapshot_capture.c"),
             rel("player_snapshot_codec.c"), "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)

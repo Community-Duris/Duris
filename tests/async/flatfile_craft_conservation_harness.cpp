@@ -4,6 +4,9 @@
 #include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_item_accounting_reference.h"
 #include "economy/item_transfer_accounting.h"
+#include "item/craft_pouch_mutation.h"
+#include "flatfile/flatfile_shop_trade_materialization.h"
+#include "world/vnum.obj.h"
 
 #include <filesystem>
 #include <iostream>
@@ -96,8 +99,10 @@ static void establish(const fs::path &root, uint64_t pid,
 		      const std::vector<flatfile_item_ownership_record> &items)
 {
 	fs::create_directories(root / "domains");
+	fs::create_directories(root / "players");
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "players", fs::perms::owner_all, fs::perm_options::replace);
 	std::string error;
 	require(flatfile_item_repository_establish_owner(
 			root.string(), { item_owner_type::player, pid, 0 }, items, &error) ==
@@ -184,6 +189,163 @@ static critical_command accounted(critical_command command, uint32_t pid)
 	command.accounting_intent = std::move(intent);
 	command.accepted_at_usec = 1;
 	return command;
+}
+
+static player_item_snapshot reconcile_pouch(const fs::path &root, uint64_t *revision)
+{
+	const auto owned = load(root, 99, revision);
+	player_snapshot player;
+	player.pid = 99;
+	flatfile_authority_lock lock;
+	std::string error;
+	require(lock.acquire(root.string(), &error), "pouch reconciliation lock failed");
+	require(flatfile_shop_trade_materialization_reconcile(root.string(), lock, 99, owned,
+							      &player, &error) ==
+			flatfile_shop_trade_materialization_result::ok,
+		"pouch reconstruction failed: " + error);
+	for (auto &item : player.items)
+		if (item.object_uid == 7002)
+		{
+			require(item.parent_index >= 0 &&
+					player.items[item.parent_index].object_uid == 7001,
+				"pouch did not retain its original container");
+			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			return item;
+		}
+	require(false, "retained pouch missing on cold reconstruction");
+	return {};
+}
+
+static void pouch_seed(const fs::path &root)
+{
+	const item_owner_identity owner = { item_owner_type::player, 99, 0 };
+	establish(root, 99,
+		  {
+			  { 7000, 7000, 0, owner, 1, 501, item_custody_state::active },
+			  { 7003, 7003, 0, owner, 1, 400000, item_custody_state::active },
+			  { 7004, 7004, 0, owner, 1, 400000, item_custody_state::active },
+			  { 7005, 7005, 0, owner, 1, 9000, item_custody_state::active },
+		  });
+	auto pouch = snapshot(7002, VOBJ_CHAOS_CRAFT_POUCH, 0);
+	pouch.generated_key = 93;
+	pouch.values[2] = 84;
+	pouch.extra_descriptions.push_back(
+		{ "inscription", "preserve native pouch inscription", false, {} });
+	const auto seed = craft_command(80, 99, 1,
+					{ { 7000, 7000, 0, 1, 501, item_custody_state::active } },
+					{ snapshot(7001, 800, -1), pouch });
+	require(flatfile_item_repository_apply(root.string(), seed).outcome ==
+			critical_apply_outcome::applied,
+		"native pouch seed did not apply");
+	activate(root);
+}
+
+static critical_command pouch_command(uint8_t discriminator, uint64_t revision,
+				      uint64_t material_uid, uint64_t pouch_revision,
+				      const player_item_snapshot &before,
+				      chaos_pouch_usage_mode mode,
+				      const std::vector<player_item_snapshot> &outputs = {})
+{
+	const int vnum = mode == chaos_pouch_usage_mode::collected ? 400000 : 9000;
+	auto base = craft_command(
+		discriminator, 99, revision,
+		{ { material_uid, material_uid, 0, 1, vnum, item_custody_state::active } },
+		outputs);
+	item_transfer_payload payload = {};
+	require(item_transfer_command_decode_payload(base, &payload),
+		"pouch base command did not decode");
+	payload.reason_id = mode == chaos_pouch_usage_mode::collected ? VOBJ_CHAOS_CRAFT_POUCH :
+									400291;
+	payload.item_count = 2;
+	payload.items[1] = payload.items[0];
+	payload.items[0] = {
+		7002, 7001, 7001, pouch_revision, VOBJ_CHAOS_CRAFT_POUCH, item_custody_state::active
+	};
+	craft_pouch_mutation mutation;
+	mutation.before = before;
+	mutation.mode = mode;
+	mutation.usage = { { mode == chaos_pouch_usage_mode::collected ? 400000 : 400291, 1 } };
+	require(chaos_pouch_ledger_prepare(before, mutation.usage, mode, &mutation.after) ==
+			chaos_pouch_ledger_result::ok,
+		"pouch mutation did not freeze");
+	payload.continuation.kind = item_transfer_continuation_kind::craft_pouch_usage;
+	require(craft_pouch_mutation_encode(mutation, &payload.continuation.data),
+		"pouch envelope did not encode");
+	require(item_transfer_command_build(&base, operation(discriminator), payload,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"pouch compound command did not build");
+	return accounted(std::move(base), 99);
+}
+
+static void retained_pouch_updates_are_atomic(const fs::path &root)
+{
+	pouch_seed(root);
+	uint64_t revision = 0;
+	auto before = reconcile_pouch(root, &revision);
+	require(revision == 2, "pouch seed owner revision mismatch");
+	const auto collect =
+		pouch_command(81, 2, 7003, 1, before, chaos_pouch_usage_mode::collected);
+	auto result = flatfile_item_repository_apply(root.string(), collect);
+	require(result.outcome == critical_apply_outcome::applied,
+		"pouch collection did not commit: " + std::to_string(result.error_code));
+	auto first = reconcile_pouch(root, &revision);
+	require(revision == 3 && first.object_uid == before.object_uid &&
+			first.generated_key == 93 && first.values[2] == 84 &&
+			first.extra_descriptions.back().description == "0:0:1;",
+		"pouch collection lost its native state or counters");
+	require(flatfile_item_repository_apply(root.string(), collect).outcome ==
+			critical_apply_outcome::already_applied,
+		"pouch collection replay was not exact once");
+	const auto second = pouch_command(82, 3, 7004, 2, first, chaos_pouch_usage_mode::collected);
+	require(flatfile_item_repository_apply(root.string(), second).outcome ==
+			critical_apply_outcome::applied,
+		"retained pouch was incorrectly reused as the issuance source");
+	auto twice = reconcile_pouch(root, &revision);
+	require(revision == 4 && twice.extra_descriptions.back().description == "0:0:2;",
+		"second collection did not advance exactly once");
+	const auto encrust = pouch_command(83, 4, 7005, 3, twice, chaos_pouch_usage_mode::generated,
+					   { snapshot(7100, 1251, -1) });
+	require(flatfile_item_repository_apply(root.string(), encrust).outcome ==
+			critical_apply_outcome::applied,
+		"virtual-material craft did not commit with its retained pouch");
+	auto generated = reconcile_pouch(root, &revision);
+	require(revision == 5 &&
+			generated.extra_descriptions.back().description == "0:0:2;210:1:0;",
+		"generated pouch counter did not commit with craft output");
+	for (const char *fault : { "DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT",
+				   "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL",
+				   "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION" })
+	{
+		const fs::path interrupted_root = root.string() + fault;
+		pouch_seed(interrupted_root);
+		const pid_t child = fork();
+		require(child >= 0, "pouch fault fixture did not fork");
+		if (!child)
+		{
+			setenv(fault, "1", 1);
+			const auto interrupted =
+				flatfile_item_repository_apply(interrupted_root.string(), collect);
+			_exit(interrupted.outcome == critical_apply_outcome::retryable_failure ? 0 :
+												 1);
+		}
+		int status = 0;
+		require(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
+				!WEXITSTATUS(status),
+			"pouch fault did not report uncertainty");
+		const bool committed = std::string(fault) !=
+				       "DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT";
+		auto recovered = reconcile_pouch(interrupted_root, &revision);
+		require(revision == (committed ? 3u : 2u) &&
+				chaos_pouch_ledger_counters_equal(recovered,
+								  committed ? first : before),
+			"pouch crash exposed counter/custody partial commit");
+		const auto resumed =
+			flatfile_item_repository_apply(interrupted_root.string(), collect);
+		require(resumed.outcome == (committed ? critical_apply_outcome::already_applied :
+							critical_apply_outcome::applied),
+			"pouch interrupted retry duplicated counters");
+	}
 }
 
 int main(int argc, char **argv)
@@ -340,6 +502,7 @@ int main(int argc, char **argv)
 	require(revision == 3 && items.empty(),
 		"accounted intended failure left live input custody");
 
-	std::cout << "Issue 551 flat-file craft conservation passed\n";
+	retained_pouch_updates_are_atomic(root.string() + "-pouch");
+	std::cout << "Issue 551 flat-file craft and retained pouch conservation passed\n";
 	return 0;
 }

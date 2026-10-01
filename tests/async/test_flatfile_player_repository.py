@@ -65,7 +65,7 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             rel("item_transfer_accounting.c"),
             rel("player_snapshot_codec.c"),
             rel("flatfile_store.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("corpse_lifecycle_command.c"),
             rel("shop_trade_command.c"),
             rel("critical_command.c"),

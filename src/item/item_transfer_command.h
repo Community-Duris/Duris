@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 9;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 10;
+constexpr uint16_t ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION = 9;
 constexpr uint16_t ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION = 8;
 constexpr uint16_t ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION = 7;
 constexpr uint16_t ITEM_TRANSFER_BATCH_PAYLOAD_VERSION = 6;
@@ -24,6 +25,7 @@ constexpr size_t ITEM_TRANSFER_PAYLOAD_BYTES =
 	ITEM_TRANSFER_HEADER_BYTES + ITEM_TRANSFER_LEGACY_MAX_ITEMS * ITEM_TRANSFER_ENTRY_BYTES;
 constexpr size_t ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES = 128 * 1024;
 constexpr size_t ITEM_TRANSFER_CONTINUATION_MAX_BYTES = 8 * 1024;
+constexpr size_t ITEM_TRANSFER_POUCH_CONTINUATION_MAX_BYTES = 128 * 1024;
 constexpr size_t ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES = 255;
 constexpr size_t ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES = 512;
 constexpr size_t ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES = 64 * 1024;
@@ -169,6 +171,7 @@ enum class item_transfer_continuation_kind : uint32_t
 	spell_component_retirement = 3,
 	account_reward_retirement = 4,
 	account_reward_duplicate_promotion = 5,
+	craft_pouch_usage = 6,
 };
 
 enum class item_spell_component_effect : uint32_t
@@ -180,6 +183,13 @@ enum class item_spell_component_effect : uint32_t
 	wall_of_bones = 5,
 	vines = 6,
 };
+
+constexpr size_t item_transfer_continuation_limit(item_transfer_continuation_kind kind)
+{
+	return kind == item_transfer_continuation_kind::craft_pouch_usage ?
+		       ITEM_TRANSFER_POUCH_CONTINUATION_MAX_BYTES :
+		       ITEM_TRANSFER_CONTINUATION_MAX_BYTES;
+}
 
 struct item_transfer_continuation
 {

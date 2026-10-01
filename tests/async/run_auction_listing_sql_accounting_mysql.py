@@ -32,7 +32,7 @@ files = [
     "src/economy/economic_accounting_types.c",
     "src/economy/economic_accounting_plan.c",
     "src/economy/economic_accounting_intent.c",
-    "src/item/item_transfer_command.c",
+    "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
     "src/player/player_snapshot_codec.c",
     "src/item/economic_accounting_item_reference.c",
     "src/persistence/economic_accounting_repository.c",

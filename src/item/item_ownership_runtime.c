@@ -1,4 +1,5 @@
 #include "item/item_ownership_runtime.h"
+#include "item/craft_pouch_mutation.h"
 
 #include "economy/collector_command.h"
 #include "player/player_snapshot_codec.h"
@@ -509,6 +510,9 @@ bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
 	    !item_owner_identity_equal(payload.from_owner, payload.to_owner))
 		return false;
 	std::vector<player_item_snapshot> outputs;
+	craft_pouch_mutation pouch;
+	if (!craft_pouch_mutation_from_payload(payload, &pouch))
+		return false;
 	if (payload.item_blob_size &&
 	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &outputs) != player_snapshot_codec_result::ok)
@@ -522,6 +526,13 @@ bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
 		for (size_t index = 0; index < payload.item_count; ++index)
 		{
 			const item_transfer_entry &expected = payload.items[index];
+			const bool retained = expected.item_uid == pouch.before.object_uid;
+			const item_owner_identity after_owner =
+				retained ?
+					payload.from_owner :
+					item_owner_identity{ item_owner_type::destruction, 0, 0 };
+			const auto after_state = retained ? item_custody_state::active :
+							    item_custody_state::destroyed;
 			auto found = entries.find(expected.item_uid);
 			uint64_t target_root = 0, target_parent = 0;
 			if (!item_transfer_target_topology(payload, expected.item_uid, &target_root,
@@ -536,17 +547,13 @@ bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
 				item_owner_identity_equal(found->second.owner, payload.from_owner) &&
 				found->second.state == item_custody_state::active) ||
 			       (found->second.item_revision == expected.expected_item_revision + 1 &&
-				found->second.owner.type == item_owner_type::destruction &&
-				found->second.state == item_custody_state::destroyed))))
+				item_owner_identity_equal(found->second.owner, after_owner) &&
+				found->second.state == after_state))))
 				return false;
-			changes.push_back({ expected.item_uid,
-					    target_root,
-					    target_parent,
-					    { item_owner_type::destruction, 0, 0 },
-					    expected.expected_item_revision + 1,
-					    result.from_owner_revision,
-					    expected.vnum,
-					    item_custody_state::destroyed });
+			changes.push_back({ expected.item_uid, target_root, target_parent,
+					    after_owner, expected.expected_item_revision + 1,
+					    result.from_owner_revision, expected.vnum,
+					    after_state });
 		}
 		std::unordered_set<uint64_t> output_uids;
 		output_uids.reserve(outputs.size());

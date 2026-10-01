@@ -260,6 +260,8 @@ OBJS =  $(SHIP_OBJS) \
          economy/cardgames.o \
          combat/chaos.o \
 				combat/chaos_materials.o \
+				combat/chaos_pouch_ledger.o \
+				combat/chaos_pouch_publication.o \
 				combat/chaos_config.o \
 				net/command_latency.o \
 				 net/comm.o \
@@ -435,6 +437,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
+				 item/craft_pouch_mutation.o \
 				 item/item_ownership_runtime.o \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \

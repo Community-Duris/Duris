@@ -26,7 +26,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-world-item-") as temporary:
             rel("player_snapshot_codec.c"),
             rel("flatfile_authority_transaction.c"),
             rel("flatfile_store.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-pthread",
