@@ -115,8 +115,13 @@ while off (including score, expiry and XP modifier reporting).
 contracts. The telemetry configuration tests cover the appended gate identity
 and compatibility with immutable historical catalog mappings.
 
-These executable harnesses are not an end-to-end server/player journey. Before
-non-draft acceptance, exercise a disposable local server with the setting missing,
-`1`, then `0`: verify XP deltas, account option `8`, score, both developer spell-up
-commands, witch-doctor purchases, and an already-rested character through an
-off/on transition. No production server is required for this verification.
+`python3 tests/async/run_rested_bonus_journey.py <flatfile-server-binary>` boots
+the complete server with two synthetic accounts and disposable state. It verifies
+disabled new-character/login awards, hidden account option 8 and direct refusal,
+both current staff commands (`newbsu` and community `newbsa`), fixed-input melee
+XP increases while automatic bonuses are disabled, actual persisted provenance,
+cold reload, live off/on controls, score visibility and copyover. The qualified
+fixture earned 3/4/6 XP across ordinary-off/rested/well-rested, including integer
+rounding. Exact tier arithmetic, missing-key defaults, resurrection exemption,
+ordinary-effect off/on transitions and purchase refusal remain covered by the
+production-function harness. No production server or schema change is required.
